@@ -2474,7 +2474,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('终局计分完成后，粗指针环境会在已选中手牌上显示该牌分值', () => {
+    it('终局计分完成后，粗指针环境需要点击手牌才显示该牌分值，并且再次点击可收起', () => {
         const originalForcedCoarsePointer = (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__;
         (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = true;
         const originalMatchMedia = window.matchMedia;
@@ -2546,11 +2546,89 @@ describe('FantasyRealms Board foundation', () => {
                 });
 
                 expect(screen.getByTestId('fantasyrealms-live-score-total')).toHaveAttribute('data-score-running', 'false');
+                expect(screen.queryByTestId('fantasyrealms-endgame-card-delta')).not.toBeInTheDocument();
+
+                const handRow = screen.getByTestId('fantasyrealms-hand-row');
+                const firstHandButton = within(handRow).getAllByRole('button')[0]!;
+
+                fireEvent.click(firstHandButton);
                 expect(screen.getByTestId('fantasyrealms-endgame-card-delta')).toHaveTextContent(/[+-]\d+/);
+
+                fireEvent.click(firstHandButton);
+                expect(screen.queryByTestId('fantasyrealms-endgame-card-delta')).not.toBeInTheDocument();
             });
         } finally {
             (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = originalForcedCoarsePointer;
             window.matchMedia = originalMatchMedia;
+            vi.useRealTimers();
+        }
+    });
+
+    it('终局静态分数提示会出现在手牌上方，而不是压进卡面中段', () => {
+        vi.useFakeTimers();
+        try {
+            withViewport(1280, 720, () => {
+                render(
+                    <Board
+                        G={{
+                            core: makeCore({
+                                playerIds: ['0', '1', '2'],
+                                players: {
+                                    '0': {
+                                        id: '0',
+                                        name: '玩家1',
+                                        hand: HAND_CARDS.map((card) => ({ ...card })),
+                                        score: 42,
+                                        scoreBreakdown: [],
+                                    },
+                                    '1': {
+                                        id: '1',
+                                        name: '玩家2',
+                                        hand: HAND_CARDS.slice(0, 6).map((card) => ({ ...card })),
+                                        score: 55,
+                                        scoreBreakdown: [],
+                                    },
+                                    '2': {
+                                        id: '2',
+                                        name: '玩家3',
+                                        hand: HAND_CARDS.slice(0, 5).map((card) => ({ ...card })),
+                                        score: 31,
+                                        scoreBreakdown: [],
+                                    },
+                                } as any,
+                            }),
+                            sys: {
+                                gameover: {
+                                    winner: '1',
+                                    scores: { '0': 42, '1': 55, '2': 31 },
+                                    winners: ['1'],
+                                },
+                            },
+                        } as any}
+                        dispatch={() => {}}
+                        playerID="0"
+                        matchData={[
+                            { id: 0, name: '测试玩家', isConnected: true },
+                            { id: 1, name: '第二玩家', isConnected: true },
+                            { id: 2, name: '第三玩家', isConnected: true },
+                        ]}
+                        isConnected
+                    />,
+                );
+
+                act(() => {
+                    vi.runAllTimers();
+                });
+
+                const handRow = screen.getByTestId('fantasyrealms-hand-row');
+                const firstHandButton = within(handRow).getAllByRole('button')[0]!;
+                fireEvent.mouseEnter(firstHandButton);
+
+                const delta = screen.getByTestId('fantasyrealms-endgame-card-delta');
+                const deltaStyle = window.getComputedStyle(delta);
+                expect(deltaStyle.top).toBe('-36px');
+            });
+        } finally {
             vi.useRealTimers();
         }
     });

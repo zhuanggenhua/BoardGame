@@ -346,6 +346,60 @@ function resolveRequestedServiceReuse(envOverrides = {}) {
     return value;
 }
 
+function shouldAutoPreferSharedSingleRun({
+    mode,
+    modeEnv,
+    envOverrides = {},
+    isListMode,
+}) {
+    if (isListMode || process.env.CI) {
+        return false;
+    }
+
+    if (mode === 'dev' || mode === 'parallel') {
+        return false;
+    }
+
+    if (modeEnv.PW_HAS_EXPLICIT_TARGET !== 'true') {
+        return false;
+    }
+
+    if (process.env.PW_WORKERS || envOverrides.PW_WORKERS) {
+        return false;
+    }
+
+    return !resolveUseDevServers(modeEnv);
+}
+
+function buildManagedRuntimeArgs({
+    explicitTargetPath,
+    preferSharedSingleRun,
+    runtimeScope,
+}) {
+    const args = [
+        'scripts/infra/e2e-runtime-manager.mjs',
+        'ensure',
+        '--json',
+        '--hold',
+        '--target',
+        explicitTargetPath,
+    ];
+
+    if (preferSharedSingleRun) {
+        args.push('--mode', 'shared-single');
+    } else {
+        args.push('--scope', runtimeScope);
+    }
+
+    return args;
+}
+
+function summarizeRuntimeBootstrapFailure(error) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    const [firstParagraph] = rawMessage.split(/\n\s*\n/);
+    return firstParagraph?.trim() || rawMessage;
+}
+
 function deriveManagedRuntimeScope(mode, explicitTargetPath) {
     const normalizedTarget = String(explicitTargetPath ?? '')
         .trim()
@@ -407,7 +461,11 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     }
 
     const requestedServiceReuse = resolveRequestedServiceReuse(envOverrides);
-    const preferSharedSingleRun = requestedServiceReuse === 'shared-single';
+    const autoPreferSharedSingleRun = (
+        requestedServiceReuse === ''
+        && shouldAutoPreferSharedSingleRun({ mode, modeEnv, envOverrides, isListMode })
+    );
+    const preferSharedSingleRun = requestedServiceReuse === 'shared-single' || autoPreferSharedSingleRun;
 
     const shouldUseManagedSingleRuntime = (
         mode !== 'dev'
@@ -439,7 +497,11 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
 
     if (preferSharedSingleRun) {
         modeEnv.PW_E2E_SERVICE_REUSE = 'shared-single';
-        console.log('♻️ 显式启用共享单 worker E2E runtime；将尝试复用 shared-single 服务。');
+        if (requestedServiceReuse === 'shared-single') {
+            console.log('♻️ 显式启用共享单 worker E2E runtime；将尝试复用 shared-single 服务。');
+        } else {
+            console.log('♻️ 本地显式目标 E2E 默认优先复用同 worktree 的 shared-single runtime；若共享 runtime 不可用，将自动回退到 isolated runtime。');
+        }
     } else if (
         !isListMode
         && modeEnv.PW_HAS_EXPLICIT_TARGET === 'true'
@@ -528,20 +590,36 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         }
 
         if (shouldUseManagedSingleRuntime) {
-            const managerArgs = [
-                'scripts/infra/e2e-runtime-manager.mjs',
-                'ensure',
-                '--json',
-                '--hold',
-                '--target',
-                explicitTargetPath,
-            ];
+            let managedBootstrap;
             if (preferSharedSingleRun) {
-                managerArgs.push('--mode', 'shared-single');
+                try {
+                    managedBootstrap = await ensureManagedRuntimeWithHold(runtimeNode, buildManagedRuntimeArgs({
+                        explicitTargetPath,
+                        preferSharedSingleRun: true,
+                        runtimeScope: modeEnv.PW_RUNTIME_SCOPE,
+                    }), modeEnv);
+                } catch (error) {
+                    console.warn(
+                        [
+                            '⚠️ shared-single runtime 复用失败，将自动回退到 isolated runtime。',
+                            summarizeRuntimeBootstrapFailure(error),
+                        ].join('\n'),
+                    );
+                    managedBootstrap = await ensureManagedRuntimeWithHold(runtimeNode, buildManagedRuntimeArgs({
+                        explicitTargetPath,
+                        preferSharedSingleRun: false,
+                        runtimeScope: modeEnv.PW_RUNTIME_SCOPE,
+                    }), modeEnv);
+                }
             } else {
-                managerArgs.push('--scope', modeEnv.PW_RUNTIME_SCOPE);
+                managedBootstrap = await ensureManagedRuntimeWithHold(runtimeNode, buildManagedRuntimeArgs({
+                    explicitTargetPath,
+                    preferSharedSingleRun: false,
+                    runtimeScope: modeEnv.PW_RUNTIME_SCOPE,
+                }), modeEnv);
             }
-            const { child, payload } = await ensureManagedRuntimeWithHold(runtimeNode, managerArgs, modeEnv);
+
+            const { child, payload } = managedBootstrap;
             heldRuntimeManager = child;
             managedRuntime = payload;
             const runtimeMode = payload.mode;

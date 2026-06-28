@@ -228,6 +228,10 @@ const isPostDamageFollowUpSettled = (state: JsonRecord): boolean => {
 };
 
 const dismissAttackShowcaseIfVisible = async (page: Page): Promise<void> => {
+    const foregroundModal = page.locator('#modal-root [role="dialog"], [data-testid="token-response-modal"]');
+    const hasForegroundModal = await foregroundModal.first().isVisible({ timeout: 1000 }).catch(() => false);
+    if (hasForegroundModal) return;
+
     const dismissButton = page.getByRole('button', { name: /开始防御|继续/ }).last();
     const isVisible = await dismissButton.isVisible({ timeout: 1000 }).catch(() => false);
     if (!isVisible) return;
@@ -344,7 +348,10 @@ const setupArtificerBeforeDamageResponseScene = async (
                     },
                 },
                 queue: [],
-            } : undefined,
+            } : {
+                current: undefined,
+                queue: [],
+            },
             responseWindow: {
                 current: {
                     id: 'artificer-before-damage-response-window',
@@ -557,7 +564,6 @@ const setupArtificerPostDamageBotChoiceScene = async (
     }, { timeout: 10000 }).toMatchObject({
         kind: 'simple-choice',
         sourceId: 'shock-bot',
-        customIds: ['artificer-activate-bot-resolve'],
     });
 };
 
@@ -3549,7 +3555,10 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
             sourceAbilityId: 'maximum-power',
             synth: 2,
             opponentHp: 37,
-            optionLabels: ['choices.artificerBotActivation.activateNanobot'],
+            optionLabels: [
+                'choices.artificerBotActivation.activateNanobot',
+                'choices.artificerBotActivation.skip',
+            ],
         });
 
         await game.screenshot('artificer-maximum-power-second-choice', testInfo);

@@ -1,5 +1,26 @@
 # DiceThrone 工匠全面审计
 
+> 2026-06-28 补充回写：当前工作目录已再次按最新工匠反馈与真实页面链路重跑：
+>
+> - `src/games/dicethrone/__tests__/artificer-intake.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-bot-persistence.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-closeout.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-overclock-energy-boost.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-overclock-nanobomb-sequencing.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-precision-fabrication.test.ts`
+> - `src/games/dicethrone/__tests__/token-response-window.test.ts`
+> - `e2e/dicethrone/artificer-intake.e2e.ts`
+> - `e2e/dicethrone/artificer-full-audit.e2e.ts`
+>
+> 当前结果为：领域测试 `78/78 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `28/28 passed`。本轮新增的真实页面收口点包括：
+>
+> - 受击前 token 响应弹窗在前景存在时，不再误点背后的“开始防御 / 继续”按钮。
+> - 受击前场景即使没有治疗机器人可用，也会保留完整交互壳结构，不再因为缺少 `interaction.current` 保护页炸掉。
+> - 攻击后机器人选择窗不再把“可跳过”误当成异常分支；真本能量第二次机器人选择已按当前语义同时允许“纳米机器人 / 跳过”。
+>
+> 当前这份文档顶部补充已覆盖旧的 `27/27`、`66/66` 口径；后文若仍出现旧数字，以本段和第 8、11 节回写为准。
+
 > 2026-06-27 补充回写：2026-06-24 版本把工匠记为“`P0 真实入口闭环已完成；扩展审计仍有余量`”。当前工作目录随后补齐了稍作调整 II、防御链，扳手攻击 II 升级后再次触发链，电路图 II、灵感突现 II、唤醒机械 II、超频运行 II 能量提升、电能脉冲 III 机械大军、真本能量双机器人不同选择链，以及真实在线电能机器人“本体保留、只记录本回合激活次数”链路。并已在当前工作目录重跑：
 >
 > - `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`
@@ -8,10 +29,11 @@
 > - `src/games/dicethrone/__tests__/artificer-overclock-energy-boost.test.ts`
 > - `src/games/dicethrone/__tests__/artificer-overclock-nanobomb-sequencing.test.ts`
 > - `src/games/dicethrone/__tests__/artificer-precision-fabrication.test.ts`
+> - `src/games/dicethrone/__tests__/token-response-window.test.ts`
 > - `e2e/dicethrone/artificer-intake.e2e.ts`
 > - `e2e/dicethrone/artificer-full-audit.e2e.ts`
 >
-> 当前结果为：领域测试 `66/66 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `27/27 passed`。对“开局合成器数量”“高级电能机器人降级/消失”“升级高级机器人合成器成本”“机器人被清除/转移指示物误处理”“扳手攻击 II 只加 3 伤害不走后续”这 5 条反馈，当前证据已闭环；按 `.codex/skill/add-new-faction/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 的门禁，本轮工匠对象级录入、机制、审计与真实入口验证已收口完成。
+> 当前结果为：领域测试 `78/78 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `28/28 passed`。对“开局合成器数量”“高级电能机器人降级/消失”“升级高级机器人合成器成本”“机器人被清除/转移指示物误处理”“扳手攻击 II 只加 3 伤害不走后续”，以及后续补报的“机器人可跳过”“治疗机器人真实受击响应”“纳米机器人 upkeep 可点击”“不可防御伤害下仍可打受击响应牌”等问题，当前证据已闭环；按 `.codex/skill/add-new-faction/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 的门禁，本轮工匠对象级录入、机制、审计与真实入口验证已收口完成。
 
 ## 1. 基本信息
 
@@ -46,8 +68,8 @@
 判定理由：
 
 - L0/L1：工匠素材、静态接入、资源路径、卡牌 atlas、骰面、状态图集已有当前代码和录入文档支撑。
-- L2：工匠主要机制已有 `artificer-intake / mechanics / bot-persistence / closeout / overclock-energy-boost / overclock-nanobomb-sequencing / precision-fabrication` 共 `66/66` 领域测试覆盖，且对象全集、共享消费点与 custom action 元数据均已锁定。
-- L3：当前已有 `27/27` 真实入口 E2E，覆盖全部玩家板能力的基础/升级代表链、全部专属手牌/升级牌的真实打出或真实触发链、工坊真实按钮制造/升级、电能机器人本体保留链、状态图标 sprite 命中，以及终极技的攻击前 token 响应与攻击后双机器人不同选择链。
+- L2：工匠主要机制已有 `artificer-intake / mechanics / bot-persistence / closeout / overclock-energy-boost / overclock-nanobomb-sequencing / precision-fabrication / token-response-window` 共 `78/78` 领域测试覆盖，且对象全集、共享消费点与 custom action 元数据均已锁定。
+- L3：当前已有 `28/28` 真实入口 E2E，覆盖全部玩家板能力的基础/升级代表链、全部专属手牌/升级牌的真实打出或真实触发链、工坊真实按钮制造/升级、电能机器人本体保留链、状态图标 sprite 命中，以及终极技的攻击前 token 响应与攻击后双机器人不同选择链。
 - L4：复杂链路已同时拿到命令级最终状态与真实 UI 收口证据；无独立交互 UI 的被动维护/共享工坊链路，已在共享链判等矩阵中登记为“同构合法复用”，当前批次不存在 `blocked` 或 `scoped-debt` 残项。
 
 ## 4. 权威来源
@@ -119,14 +141,14 @@
 ### L2 领域行为证据
 
 - `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`
-- 当前覆盖：42 个工匠核心机制用例，包括合成器、纳米爆弹、三类机器人、工坊动作、多人敌方目标选择、响应牌、奖励骰牌、升级能力、攻击后机器人选择链、防御技和终极后续链。
+- 当前覆盖：49 个工匠核心机制用例，外加 `intake / bot-persistence / closeout / overclock-energy-boost / overclock-nanobomb-sequencing / precision-fabrication / token-response-window` 共同组成 `78/78` 领域测试，通过验证合成器、纳米爆弹、三类机器人、工坊动作、多人敌方目标选择、响应牌、奖励骰牌、升级能力、攻击后机器人选择链、防御技、终极后续链，以及受击响应窗口与不可防御伤害等共享链门禁。
 - 本轮实跑命令：
 
 ```bash
-node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artificer-intake.test.ts src/games/dicethrone/__tests__/artificer-mechanics.test.ts src/games/dicethrone/__tests__/artificer-bot-persistence.test.ts src/games/dicethrone/__tests__/artificer-closeout.test.ts src/games/dicethrone/__tests__/artificer-overclock-energy-boost.test.ts src/games/dicethrone/__tests__/artificer-overclock-nanobomb-sequencing.test.ts src/games/dicethrone/__tests__/artificer-precision-fabrication.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1
+node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artificer-intake.test.ts src/games/dicethrone/__tests__/artificer-mechanics.test.ts src/games/dicethrone/__tests__/artificer-bot-persistence.test.ts src/games/dicethrone/__tests__/artificer-closeout.test.ts src/games/dicethrone/__tests__/artificer-overclock-energy-boost.test.ts src/games/dicethrone/__tests__/artificer-overclock-nanobomb-sequencing.test.ts src/games/dicethrone/__tests__/artificer-precision-fabrication.test.ts src/games/dicethrone/__tests__/token-response-window.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1
 ```
 
-- 本轮实跑结果：7 个测试文件通过，66 个用例通过。
+- 本轮实跑结果：8 个测试文件通过，78 个用例通过。
 
 ### 选择锚点修复证据
 
@@ -157,16 +179,38 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artifi
 node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e.ts
 ```
 
-  - 本轮实跑结果：27 个真实入口 E2E 通过。
+  - 本轮实跑结果：28 个真实入口 E2E 通过。
   - 关键截图：
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\合成大师应可从真实手牌打出并按电能奖励骰获得-5-合成器\artificer-masterpiece-after-play.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\纳米袭击应在-4-人组队局真实手牌打出且只允许选择敌方玩家\artificer-nano-attack-four-player-enemy-targets.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\扳手攻击-II-打出后应可从真实玩家板触发升级后的扳手攻击并走电能分支收口\artificer-wrench-strike-2-after-electricity-branch.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\工匠合成器、纳米爆弹和三类机器人状态图标应命中状态图集-sprite\artificer-status-icons-atlas-sprites.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\真本能量应可从真实玩家板触发并连续请求两个不同机器人的激活选择\artificer-maximum-power-second-choice.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\治疗机器人应在真实受伤前响应窗口可见并可点击使用\artificer-heal-bot-before-damage-window-open.png`
+  - 本轮 E2E 场景 / 断言回写：
+    - `dismissAttackShowcaseIfVisible` 先检查前景弹窗，避免受击 token 响应时误点背后按钮造成假失败。
+    - `setupArtificerBeforeDamageResponseScene` 在无治疗机器人可用时仍保留空的 `interaction` 结构，避免真实页面直接落入保护页。
+    - `setupArtificerPostDamageBotChoiceScene` 不再把“只有一个 customId”写死为唯一合法形态；当前真实页面允许“激活 / 跳过”同时存在。
+    - `真本能量` 第二次机器人选择的真实口径已更新为“纳米机器人 + 跳过”。
   - 本轮补充修复：`src/games/dicethrone/Board.tsx` 不再把所有 `type: 'upgrade'` 的牌强制送进能力升级入口；只有能解析出替换目标能力的升级牌才走 `PLAY_UPGRADE_CARD`，电弧盾这类响应型即时升级牌会按普通响应牌打出。
 - 当前余量：
   - 当前批次无 `blocked` 或 `scoped-debt` 残项。
   - 后续若继续补更多历史对照截图、跨英雄共享治理或额外多人玩法截图，属于扩充 evidence，不再构成工匠本轮完成门禁。
+
+### 反馈问题闭环对照
+
+| 用户反馈问题 | 当前证据 | 结论 |
+| --- | --- | --- |
+| 开局应有 3 个合成器，且三类机器人应各自独立存在 | `src/games/dicethrone/__tests__/artificer-intake.test.ts`：`工匠实际初始化状态开局自带 3 个合成器，并预置三类机器人独立状态` | 已闭环 |
+| 电能机器人升级后激活不应降级或消失；高级激活额外成本应为 1 | `src/games/dicethrone/__tests__/artificer-bot-persistence.test.ts`：`基础电能机器人激活后不会降级或消失，只记录本回合已激活次数`、`高级电能机器人激活后不会降级，且额外合成器成本降为 1`；E2E：`攻击后机器人选择链应可真实选择电能机器人并收口攻击后续`；截图：`artificer-post-damage-shock-bot-after-choice.png` | 已闭环 |
+| 升级基础机器人应花费 3 个合成器，而不是 2 个 | `src/games/dicethrone/__tests__/artificer-bot-persistence.test.ts`：`升级基础电能机器人会花费 3 个合成器，并保留机器人本体`；E2E：`工坊应可在真实主阶段通过按钮把基础电能机器人升级为高级机器人`；截图：`artificer-workshop-upgrade-shock-bot-after-click.png` | 已闭环 |
+| 机器人属于同伴，不应被清除 / 转移指示物效果误处理 | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`机器人作为不可移除同伴，不会被 REMOVE_STATUS 清掉`、`机器人作为不可移除同伴，不会被 TRANSFER_STATUS 转移走` | 已闭环 |
+| 扳手攻击 / 普攻花费 1 合成器走分支时，不能只加 3 伤害而漏掉其它结算 | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`扳手攻击 II 在正式命令链中可由升级后玩家板能力进入电能分支并推进到 defensiveRoll`；E2E：`扳手攻击 II 打出后应可从真实玩家板触发升级后的扳手攻击并走电能分支收口`；截图：`artificer-wrench-strike-2-after-electricity-branch.png` | 已闭环 |
+| 可用电能机器人时，玩家应允许跳过，不应被强制必须选一个激活 | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`单次机器人激活窗口也应允许跳过，并在跳过后直接收口攻击链`；E2E 场景回写：`setupArtificerPostDamageBotChoiceScene` 不再把“只有一个 customId”写死为唯一合法形态 | 已闭环 |
+| 治疗机器人应可在真实受击响应窗口使用 | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`治疗机器人满足受击条件时，应触发防御方 token 响应窗口而不是被系统跳过`、`治疗机器人只在至少 6 点攻击伤害窗口可用，并按工匠骰面治疗 1 或 2`；E2E：`治疗机器人应在真实受伤前响应窗口可见并可点击使用`；截图：`artificer-heal-bot-before-damage-window-open.png`、`artificer-heal-bot-before-damage-used.png` | 已闭环 |
+| 纳米机器人在 upkeep 满足条件时不应被自动跳过 | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`工匠 upkeep 存在可点纳米机器人时不应被 autoContinue 直接跳过`；intake E2E：`真实入口应通过工坊按钮激活纳米机器人并引爆纳米爆弹` | 已闭环 |
+| 受击响应牌应可在不可防御伤害时仍然打出 | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`工匠受击响应牌在不可防御攻击的防御阶段仍应允许打出`；`src/games/dicethrone/__tests__/token-response-window.test.ts`：`精准 Token 应该使攻击不可防御`；E2E：`机械的反击应在真实受伤前响应窗口从手牌打出并施加纳米爆弹`、`电弧盾应在真实受伤前响应窗口从手牌打出并选择花费合成器防止 3 点伤害`；截图：`artificer-mechanical-strike-after-play.png`、`artificer-arc-shield-after-choice.png` | 已闭环 |
+| 真本能量第二次机器人选择不应重复上一次，且当前真实页面允许“纳米机器人 / 跳过” | `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`：`真本能量的机器人激活链会二次请求且第二次不能重复选择同一机器人`；E2E：`真本能量应可从真实玩家板触发并连续请求两个不同机器人的激活选择`；截图：`artificer-maximum-power-first-choice.png`、`artificer-maximum-power-second-choice.png` | 已闭环 |
 
 ## 9. 禁止假阳性检查
 
@@ -182,7 +226,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e
 | 旧文档 | 旧口径 | 本轮修订结论 |
 | --- | --- | --- |
 | `evidence/dicethrone/dicethrone-artificer-l2-mechanics-2026-06-23.md` | “当前有效结论就是：工匠规则实现已落地，目录完成态已生效，真实入口证据已经并入本工作目录的未提交改动。” | 该结论只可继续理解为实现 closeout，不等于新版全面审计完成 |
-| `src/games/dicethrone/rule/工匠真相源表.md` | “当前工作目录 main 上，工匠已完成 closeout” | 已同步到当前 66/66 领域测试、3/3 intake、27/27 full audit 的对象级完成口径 |
+| `src/games/dicethrone/rule/工匠真相源表.md` | “当前工作目录 main 上，工匠已完成 closeout” | 已同步到当前 `78/78` 领域测试、`3/3` intake、`28/28` full audit 的对象级完成口径 |
 | `src/games/dicethrone/rule/工匠录入核对.md` | 多处写“真实入口待 L3/L4”，但文首又写 closeout 完成 | 已回写对象正文行，当前与最新真实入口结论一致 |
 | `src/games/dicethrone/rule/工匠卡牌录入核对.md` | 多数专属牌仍写 L2 / 真实 UI 待 L3 | 已同步到当前专属牌真实打出/真实触发已补齐的状态 |
 
@@ -191,7 +235,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e
 允许说：
 
 - “按当前项目新增派系规范，工匠当前工作目录已完成对象级录入、机制、审计与真实入口 E2E 收口。”
-- “工匠当前验证结果是：领域测试 `66/66 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `27/27 passed`。”
+- “工匠当前验证结果是：领域测试 `78/78 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `28/28 passed`。”
 - “当前仍保留的共享链说明，只是为了说明哪些对象是合法复用收口，不再代表本批次未完成。”
 
 禁止说：

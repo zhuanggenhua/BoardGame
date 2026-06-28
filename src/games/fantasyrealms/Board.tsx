@@ -83,6 +83,7 @@ type LiveMotionWindow = Window & {
         signature: string;
         clearTimer: number;
     };
+    __FR_DEBUG_OPENING_LOOP__?: boolean;
 };
 
 type EndgameScoreStep = {
@@ -108,6 +109,17 @@ const FANTASY_REALMS_BOARD_SHELL_SCOPE = '[data-game-page][data-game-id="fantasy
 const FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX = 16;
 const FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO = 1180 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 const FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO = 1500 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
+
+function debugFantasyRealmsOpeningLoop(label: string, payload?: Record<string, unknown>): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    if (!(window as LiveMotionWindow).__FR_DEBUG_OPENING_LOOP__) {
+        return;
+    }
+    console.debug('[FantasyRealmsOpeningLoop]', label, payload ?? {});
+}
+
 function prefersReducedMotion(): boolean {
     if (typeof window === 'undefined') return false;
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -545,6 +557,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const [reviewPlayerId, setReviewPlayerId] = React.useState<string | null>(null);
     const [magnifiedCard, setMagnifiedCard] = React.useState<TableCard | null>(null);
     const [hoveredEndgameCardId, setHoveredEndgameCardId] = React.useState<string | null>(null);
+    const [selectedEndgameCardId, setSelectedEndgameCardId] = React.useState<string | null>(null);
     const liveMotionSnapshotRef = React.useRef<LiveMotionSnapshot | null>(null);
     const liveMotionSequenceRef = React.useRef(0);
     const openingDealSignatureRef = React.useRef<string | null>(null);
@@ -909,6 +922,22 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         }
     }, [discardCards, displayedHandCards, magnifiedCard]);
 
+    React.useEffect(() => {
+        if (!isGameOver) {
+            setSelectedEndgameCardId(null);
+            return;
+        }
+
+        if (!selectedEndgameCardId) {
+            return;
+        }
+
+        const stillVisible = displayedHandCards.some((card) => card.id === selectedEndgameCardId);
+        if (!stillVisible) {
+            setSelectedEndgameCardId(null);
+        }
+    }, [displayedHandCards, isGameOver, selectedEndgameCardId]);
+
     const handleFocusCard = React.useCallback((cardId: string) => {
         dispatch('SET_FOCUS_CARD', { cardId });
     }, [dispatch]);
@@ -960,6 +989,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         if (shouldBlockInspectClick(inspectKey)) {
             return;
         }
+        if (isGameOver) {
+            handleFocusCard(card.id);
+            setSelectedEndgameCardId((current) => (current === card.id ? null : card.id));
+            if (!isCoarsePointer) {
+                setMagnifiedCard(card);
+            }
+            return;
+        }
         if (canDiscard && isTutorialCommandAllowed('DISCARD_CARD') && isTutorialTargetAllowed(card.id)) {
             handleFocusCard(card.id);
             if (isCoarsePointer && core.focusCardId !== card.id) {
@@ -977,6 +1014,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         core.focusCardId,
         dispatch,
         handleFocusCard,
+        isGameOver,
         isCoarsePointer,
         isTutorialCommandAllowed,
         isTutorialTargetAllowed,
@@ -1140,7 +1178,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         shouldAutoDrawFromDeck,
     ]);
     const minimalLiveEndgameSection = isGameOver ? (
-        <div className="fr-live-endgame fr-live-endgame--docked" data-testid="fantasyrealms-live-endgame">
+        <div
+            className="fr-live-endgame fr-live-endgame--docked"
+            data-testid="fantasyrealms-live-endgame"
+            data-tutorial-id="fantasyrealms-live-endgame"
+        >
             <div className="fr-live-endgame-rail" aria-label={t('progress.finalStandings')}>
                 <div className="fr-live-endgame-rail-header">
                     <div className="fr-live-endgame-rail-title">{t('progress.finalStandings')}</div>
@@ -1243,7 +1285,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 ) : null}
             </div>
             <div className={`fr-live-score-strip${isGameOver ? ' fr-live-score-strip--gameover' : ''}`} aria-label={t('score.tableTitle')} data-testid="fantasyrealms-live-score-strip">
-                <div className={`fr-live-score-band${isGameOver ? ' fr-live-score-band--gameover' : ''}`} data-testid="fantasyrealms-live-score-band">
+                <div
+                    className={`fr-live-score-band${isGameOver ? ' fr-live-score-band--gameover' : ''}`}
+                    data-testid="fantasyrealms-live-score-band"
+                    data-tutorial-id="fantasyrealms-live-score-band"
+                >
                     <div className="fr-live-score-band-kicker">
                         {liveScoreBandLabel}
                     </div>
@@ -1378,7 +1424,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                             ) : isGameOver
                                 && !endgameScoreSequence.isRunning
                                 && endgameCardDeltaById.has(card.id)
-                                && (hoveredEndgameCardId === card.id || (isCoarsePointer && core.focusCardId === card.id)) ? (
+                                && (
+                                    hoveredEndgameCardId === card.id
+                                    || selectedEndgameCardId === card.id
+                                ) ? (
                                     <div className="fr-endgame-card-delta fr-endgame-card-delta--static" data-testid="fantasyrealms-endgame-card-delta">
                                         <span className="fr-endgame-card-delta-text">
                                             {formatSignedDelta(endgameCardDeltaById.get(card.id) ?? 0)}
@@ -3964,14 +4013,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     position: absolute;
                     left: 0;
                     right: 0;
-                    top: -30px;
+                    top: -48px;
                     z-index: 5;
                     display: flex;
                     justify-content: center;
                     pointer-events: none;
                 }
                 .fr-endgame-card-delta--static {
-                    top: -20px;
+                    top: -36px;
                 }
                 .fr-endgame-card-delta-text {
                     display: inline-flex;

@@ -21,6 +21,7 @@
 | **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先建对象清单，再锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
 | **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；禁止把游戏特化语义退回共享默认 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；E2E 汇报必须附截图路径 |
+| **教程 / 新手引导设计** (tutorial/onboarding、教程看不懂、只在教按钮、需要重做教学结构) | `.codex/skill/tutorial-workflow/SKILL.md` + `docs/ai-rules/tutorial-design.md` + `.codex/skill/game-audit-workflow/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先走教程 workflow：先锁文案，再改实现；再核目标、收益、真实案例、计分因果、真实交互与截图证据 |
 | **打开图片 / 给我看图 / 截图真正打开到本机** | `.codex/skill/screenshot-delivery/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先区分 AI 核图和真实开图；固定顺序是 `view_image` 核图 → `npm run verify:open-image` 真开图 → 回复附 `OPENED_IMAGE` 证据和绝对路径 |
 | **首屏关键素材 / 图片预加载** (为什么没素材进度、为什么首帧抖动、atlas/牌背/桌面图是否必须预热) | `docs/ai-rules/critical-image-gate.md` + `docs/ai-rules/asset-pipeline.md` | 只要首屏依赖正式图片就必须配 `criticalImageResolver.ts`；真实房间页要能走到 `loadingAssets`；不要把“有图片资源”误当成“已配置首屏关键素材” |
 | **E2E 太慢 / 长链拆分 / 从主页起跑是否合理** | `docs/ai-rules/e2e-verification.md` | 先看三板斧、入口分层、组合式验证、时长预算；默认不要把主页漏斗和游戏流程绑成一条巨型 E2E |

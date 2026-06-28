@@ -708,7 +708,7 @@ test.describe('FantasyRealms live flow', () => {
             await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
             await expectTurnChipPrimaryReadable(page);
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-            await expectHandRowUsesStableHandSlotGrid(page, 7);
+            await expectHandRowUsesStableHandSlotGrid(page, 8);
             await expect(page.locator('.fr-card-slot--live-center-placeholder')).toHaveCount(0);
             await clearHandCardHoverState(page);
             const autoDrawPath = getEvidenceScreenshotPath(testInfo, '01-开局自动摸牌后-待弃牌');
@@ -1247,6 +1247,7 @@ test.describe('FantasyRealms live flow', () => {
             await expect(liveScoreTotal).toHaveAttribute('data-score-target', String(winnerStanding.score));
             await page.waitForTimeout(260);
             await expect(page.getByTestId('fantasyrealms-live-score-step')).toHaveCount(0);
+            await page.locator('.fr-card-button--live-hand').first().click();
             await expect(page.getByTestId('fantasyrealms-endgame-card-delta')).toBeVisible();
             const animatedTotalValue = Number(await liveScoreTotal.getAttribute('data-score-current'));
             expect(animatedTotalValue).toBeGreaterThan(0);

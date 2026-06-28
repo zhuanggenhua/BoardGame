@@ -1,7 +1,8 @@
 import type { TutorialManifest } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from './data/cards';
-import type { TableCard } from './foundation';
+
+type TableCard = (typeof OFFICIAL_FANTASY_REALMS_CARDS)[number];
 
 function byId(cardId: string): TableCard {
     const card = OFFICIAL_FANTASY_REALMS_CARDS.find((entry) => entry.id === cardId);
@@ -11,33 +12,81 @@ function byId(cardId: string): TableCard {
     return { ...card };
 }
 
-const DRAW_STEP_HAND = [
-    byId('wizard-collector'),
-];
-
-const DRAW_STEP_DISCARD = [
-    byId('weather-rainstorm'),
-];
-
-const TAKE_STEP_HAND = [
-    byId('artifact-gem-of-order'),
-    byId('leader-king'),
-    byId('flood-swamp'),
-    byId('weapon-magic-wand'),
-    byId('land-forest'),
-    byId('beast-hydra'),
+const DRAW_CASE_HAND = [
+    byId('artifact-book-of-changes'),
     byId('flame-candle'),
-];
-
-const TAKE_STEP_DISCARD = [
-    byId('land-bell-tower'),
+    byId('weapon-magic-wand'),
+    byId('leader-queen'),
+    byId('flood-swamp'),
     byId('weather-rainstorm'),
+    byId('weather-smoke'),
 ];
 
-const TAKE_STEP_DRAW_PILE = [
+const DRAW_CASE_DISCARD = [
+    byId('flood-swamp'),
+];
+
+const DRAW_CASE_DRAW_PILE = [
+    byId('wild-mirage'),
+    byId('leader-queen'),
+    byId('land-bell-tower'),
+    byId('wizard-necromancer'),
+];
+
+const TAKE_CASE_HAND = [
+    byId('artifact-book-of-changes'),
+    byId('flame-candle'),
+    byId('weapon-magic-wand'),
+    byId('wild-mirage'),
+    byId('weather-rainstorm'),
+    byId('weather-smoke'),
+    byId('flood-swamp'),
+];
+
+const TAKE_CASE_DISCARD = [
+    byId('land-bell-tower'),
+    byId('leader-queen'),
+];
+
+const TAKE_CASE_DRAW_PILE = [
+    byId('wizard-necromancer'),
+    byId('artifact-protection-rune'),
+    byId('land-forest'),
+];
+
+const SCORE_CASE_HAND = [
+    byId('artifact-book-of-changes'),
+    byId('flame-candle'),
+    byId('weapon-magic-wand'),
+    byId('wild-mirage'),
+    byId('weather-smoke'),
+    byId('wizard-collector'),
+    byId('land-bell-tower'),
+];
+
+const SCORE_CASE_DISCARD = [
+    byId('leader-queen'),
+    byId('artifact-protection-rune'),
+    byId('land-forest'),
+    byId('wizard-necromancer'),
+    byId('leader-king'),
+    byId('weather-air-elemental'),
+    byId('army-rangers'),
+    byId('weapon-sword-of-keth'),
+    byId('beast-hydra'),
+    byId('flood-island'),
+    byId('weather-rainstorm'),
+    byId('flame-lightning'),
+];
+
+const SCORE_CASE_OPPONENT_HAND = [
+    byId('leader-king'),
     byId('leader-queen'),
     byId('army-rangers'),
     byId('flood-island'),
+    byId('weather-rainstorm'),
+    byId('flame-lightning'),
+    byId('weapon-sword-of-keth'),
 ];
 
 export const FantasyRealmsTutorial: TutorialManifest = {
@@ -45,59 +94,57 @@ export const FantasyRealmsTutorial: TutorialManifest = {
     allowManualSkip: true,
     steps: [
         {
-            id: 'setup-draw-turn',
-            content: 'game-fantasyrealms:tutorial.steps.setupDrawTurn',
+            id: 'setup-overview',
+            content: 'game-fantasyrealms:tutorial.steps.setupOverview',
             position: 'center',
             showMask: true,
+            viewAs: '0',
             aiActions: [
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
                         fields: {
+                            setupConfig: {
+                                variant: 'standard',
+                                expansion: 'base',
+                                cursedHoardSuitsEnabled: false,
+                            },
+                            playerIds: ['0', '1', '2'],
                             currentPlayer: '0',
-                            turn: 1,
+                            turn: 3,
                             stage: 'draw',
-                            discardPile: DRAW_STEP_DISCARD,
-                            drawPile: [
-                                byId('flame-candle'),
-                                byId('land-bell-tower'),
-                                byId('weather-rainstorm'),
-                                byId('artifact-book-of-changes'),
-                                byId('wild-mirage'),
-                            ],
+                            discardPile: DRAW_CASE_DISCARD,
+                            drawPile: DRAW_CASE_DRAW_PILE,
                             players: {
                                 '0': {
-                                    hand: DRAW_STEP_HAND,
+                                    id: '0',
+                                    name: '你',
+                                    hand: DRAW_CASE_HAND,
                                 },
                                 '1': {
+                                    id: '1',
+                                    name: '对手 1',
+                                    hand: [],
+                                },
+                                '2': {
+                                    id: '2',
+                                    name: '对手 2',
                                     hand: [],
                                 },
                             },
-                            focusCardId: DRAW_STEP_HAND[0]!.id,
+                            focusCardId: 'flame-candle',
                         },
                     },
                 },
             ],
         },
         {
-            id: 'welcome',
-            content: 'game-fantasyrealms:tutorial.steps.welcome',
-            position: 'center',
-            infoStep: true,
-        },
-        {
-            id: 'deck-intro',
-            content: 'game-fantasyrealms:tutorial.steps.deckIntro',
-            highlightTarget: 'fantasyrealms-live-deck',
-            position: 'right',
-            infoStep: true,
-        },
-        {
-            id: 'center-row-intro',
-            content: 'game-fantasyrealms:tutorial.steps.centerRowIntro',
-            highlightTarget: 'fantasyrealms-live-center-row',
+            id: 'draw-overview',
+            content: 'game-fantasyrealms:tutorial.steps.drawOverview',
+            highlightTarget: 'fantasyrealms-live-hand-zone',
             position: 'top',
             infoStep: true,
+            viewAs: '0',
         },
         {
             id: 'draw-from-deck',
@@ -105,6 +152,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
             highlightTarget: 'fantasyrealms-live-action-draw',
             position: 'right',
             requireAction: true,
+            viewAs: '0',
             allowedCommands: ['DRAW_FROM_DECK'],
             advanceOnEvents: [{ type: 'CARDS_DRAWN', match: { playerId: '0' } }],
         },
@@ -114,8 +162,9 @@ export const FantasyRealmsTutorial: TutorialManifest = {
             highlightTarget: 'fantasyrealms-live-hand-zone',
             position: 'top',
             requireAction: true,
+            viewAs: '0',
             allowedCommands: ['DISCARD_CARD'],
-            allowedTargets: ['land-bell-tower'],
+            allowedTargets: ['leader-queen'],
             advanceOnEvents: [{ type: 'CARD_DISCARDED', match: { playerId: '0' } }],
         },
         {
@@ -123,25 +172,41 @@ export const FantasyRealmsTutorial: TutorialManifest = {
             content: 'game-fantasyrealms:tutorial.steps.setupTakeCenter',
             position: 'center',
             showMask: true,
+            viewAs: '0',
             aiActions: [
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
                         fields: {
+                            setupConfig: {
+                                variant: 'standard',
+                                expansion: 'base',
+                                cursedHoardSuitsEnabled: false,
+                            },
+                            playerIds: ['0', '1', '2'],
                             currentPlayer: '0',
-                            turn: 2,
+                            turn: 4,
                             stage: 'draw',
-                            discardPile: TAKE_STEP_DISCARD,
-                            drawPile: TAKE_STEP_DRAW_PILE,
+                            discardPile: TAKE_CASE_DISCARD,
+                            drawPile: TAKE_CASE_DRAW_PILE,
                             players: {
                                 '0': {
-                                    hand: TAKE_STEP_HAND,
+                                    id: '0',
+                                    name: '你',
+                                    hand: TAKE_CASE_HAND,
                                 },
                                 '1': {
+                                    id: '1',
+                                    name: '对手 1',
+                                    hand: [],
+                                },
+                                '2': {
+                                    id: '2',
+                                    name: '对手 2',
                                     hand: [],
                                 },
                             },
-                            focusCardId: TAKE_STEP_DISCARD[0]!.id,
+                            focusCardId: 'land-bell-tower',
                         },
                     },
                 },
@@ -153,6 +218,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
             highlightTarget: 'fantasyrealms-live-center-row',
             position: 'top',
             requireAction: true,
+            viewAs: '0',
             allowedCommands: ['TAKE_FROM_DISCARD'],
             allowedTargets: ['land-bell-tower'],
             advanceOnEvents: [{ type: 'DISCARD_CARD_TAKEN', match: { playerId: '0' } }],
@@ -163,29 +229,119 @@ export const FantasyRealmsTutorial: TutorialManifest = {
             highlightTarget: 'fantasyrealms-live-hand-zone',
             position: 'top',
             requireAction: true,
+            viewAs: '0',
             allowedCommands: ['DISCARD_CARD'],
-            allowedTargets: ['weapon-magic-wand'],
+            allowedTargets: ['weather-rainstorm'],
             advanceOnEvents: [{ type: 'CARD_DISCARDED', match: { playerId: '0' } }],
         },
         {
-            id: 'turn-loop',
-            content: 'game-fantasyrealms:tutorial.steps.turnLoop',
+            id: 'setup-score-showcase',
+            content: 'game-fantasyrealms:tutorial.steps.setupScoreShowcase',
+            position: 'center',
+            showMask: true,
+            viewAs: '0',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: {
+                            setupConfig: {
+                                variant: 'standard',
+                                expansion: 'base',
+                                cursedHoardSuitsEnabled: false,
+                            },
+                            playerIds: ['0', '1', '2'],
+                            currentPlayer: '0',
+                            turn: 9,
+                            stage: 'draw',
+                            drawPile: [],
+                            discardPile: SCORE_CASE_DISCARD,
+                            players: {
+                                '0': {
+                                    id: '0',
+                                    name: '你',
+                                    hand: SCORE_CASE_HAND,
+                                    score: 198,
+                                    scoreBreakdown: [
+                                        { label: '有效基础分', value: 48 },
+                                        { label: '总加分', value: 150 },
+                                        { label: '总减分', value: 0 },
+                                    ],
+                                },
+                                '1': {
+                                    id: '1',
+                                    name: '对手 1',
+                                    hand: SCORE_CASE_OPPONENT_HAND,
+                                    score: 154,
+                                    scoreBreakdown: [
+                                        { label: '有效基础分', value: 71 },
+                                        { label: '总加分', value: 83 },
+                                        { label: '总减分', value: 0 },
+                                    ],
+                                },
+                                '2': {
+                                    id: '2',
+                                    name: '对手 2',
+                                    hand: [],
+                                    score: 0,
+                                    scoreBreakdown: [
+                                        { label: '有效基础分', value: 0 },
+                                        { label: '总加分', value: 0 },
+                                        { label: '总减分', value: 0 },
+                                    ],
+                                },
+                            },
+                            focusCardId: 'flame-candle',
+                        },
+                    },
+                },
+                {
+                    commandType: 'SET_FOCUS_CARD',
+                    payload: {
+                        cardId: 'flame-candle',
+                    },
+                    playerId: '0',
+                },
+            ],
+        },
+        {
+            id: 'score-intro',
+            content: 'game-fantasyrealms:tutorial.steps.scoreIntro',
+            highlightTarget: 'fantasyrealms-live-score-band',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'score-card-details',
+            content: 'game-fantasyrealms:tutorial.steps.scoreCardDetails',
             highlightTarget: 'fantasyrealms-live-hand-zone',
             position: 'top',
             infoStep: true,
+            viewAs: '0',
         },
         {
-            id: 'endgame-rule',
-            content: 'game-fantasyrealms:tutorial.steps.endgameRule',
-            highlightTarget: 'fantasyrealms-live-center-row',
-            position: 'top',
+            id: 'score-total-review',
+            content: 'game-fantasyrealms:tutorial.steps.scoreTotalReview',
+            highlightTarget: 'fantasyrealms-live-score-band',
+            position: 'left',
             infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'endgame-review',
+            content: 'game-fantasyrealms:tutorial.steps.endgameReview',
+            highlightTarget: 'fantasyrealms-live-endgame',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
         },
         {
             id: 'finish',
             content: 'game-fantasyrealms:tutorial.steps.finish',
             position: 'center',
             infoStep: true,
+            viewAs: '0',
         },
     ],
 };

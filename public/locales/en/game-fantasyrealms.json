@@ -126,18 +126,19 @@
   },
   "tutorial": {
     "steps": {
-      "setupDrawTurn": "First, the table is fixed to a small teaching state so we can focus on the two formal actions of a turn.",
-      "welcome": "In Fantasy Realms, each turn really has only two actions: draw a card, then discard a card; or take a card from the public center row, then discard a card.",
-      "deckIntro": "This is the deck. When the public row is not attractive enough, you draw from here.",
-      "centerRowIntro": "This middle row is the open discard. It represents the second action: skip the deck, take one of these cards, then discard a card.",
-      "drawFromDeck": "Click the draw button on the right first. In duel mode, an undersized hand draws 2 and keeps 1, so a discard is guaranteed next.",
-      "discardAfterDraw": "Now discard Bell Tower. After drawing, this turn still requires one discard.",
-      "setupTakeCenter": "Next, look at the second formal action: take from the public center row, then close the turn with a discard.",
-      "takeCenterCard": "This time, do not draw from the deck. Take Bell Tower directly from the center row.",
-      "discardAfterCenter": "After taking from the center row, discard the Magic Wand to finish the turn.",
-      "turnLoop": "That is the real match loop: each turn you choose one of two action lines, draw-and-discard or take-from-center-and-discard.",
-      "endgameRule": "In multiplayer, the game ends when the public discard reaches its threshold. In duel, both hands must be refilled and the discard threshold must also be reached.",
-      "finish": "The basic tutorial is complete. You have now played through the two core Fantasy Realms actions: draw and discard, and take from the center row then discard."
+      "setupOverview": "In Fantasy Realms, each player starts with seven cards. On your turn, you draw one card from the deck or take one card from the discard pile, then discard one card. The game ends when the center discard pile reaches 10 cards, and the highest score wins.",
+      "drawOverview": "Draw 1 card from the deck now.",
+      "drawFromDeck": "Click the draw button.",
+      "discardAfterDraw": "After drawing Mirage, this hand's combo becomes clearer, and Queen is not helping right now. Select Queen and discard it.",
+      "setupTakeCenter": "Now look at the other case: if the center already has the card you want, take it directly.",
+      "takeCenterCard": "Bell Tower is in the center now, and it scores with the Candle in your hand. Select Bell Tower to take it.",
+      "discardAfterCenter": "Rainstorm does not help this group. Select Rainstorm and discard it.",
+      "setupScoreShowcase": "Now move into scoring.",
+      "scoreIntro": "Your total score is the base score of every active card, plus bonuses, minus penalties.",
+      "scoreCardDetails": "Hover or tap a card to inspect its base score and bonus effects.",
+      "scoreTotalReview": "Check the total score in the upper right to see how many points this hand earned.",
+      "endgameReview": "Hover or tap a card to keep checking how each card scored in the final hand.",
+      "finish": "That is the basic flow of Fantasy Realms. Try building an even higher-scoring hand."
     }
   },
   "error": {

@@ -164,6 +164,10 @@ const stopHeartbeat = startRuntimeHeartbeat(runtimeScope, () => ({
   active: true,
   ownerPids: [process.pid],
   servicePids: managedServices.map(service => service.child.pid).filter(pid => Number.isInteger(pid) && pid > 0),
+  serviceDetails: managedServices.map(service => ({
+    label: service.label,
+    pid: Number.isInteger(service.child.pid) && service.child.pid > 0 ? service.child.pid : null,
+  })),
   bootstrapLogFiles: bootstrapLogFile ? [bootstrapLogFile] : [],
   targetLabel: runtimeMetadata.targetLabel,
   sessionId: runtimeMetadata.sessionId,

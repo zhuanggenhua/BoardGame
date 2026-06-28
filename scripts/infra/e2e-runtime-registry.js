@@ -115,6 +115,33 @@ function uniqueStrings(values) {
   return [...new Set((Array.isArray(values) ? values : [values]).filter(value => typeof value === 'string' && value.trim()))];
 }
 
+function normalizeServiceDetails(values) {
+  const list = Array.isArray(values) ? values : [];
+  const normalized = [];
+  const seen = new Set();
+
+  for (const value of list) {
+    if (!value || typeof value !== 'object') {
+      continue;
+    }
+
+    const label = typeof value.label === 'string' ? value.label.trim() : '';
+    const pid = Number(value.pid);
+    if (!label || !Number.isInteger(pid) || pid <= 0) {
+      continue;
+    }
+
+    const key = `${label}:${pid}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    normalized.push({ label, pid });
+  }
+
+  return normalized;
+}
+
 function isPidAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) {
     return false;
@@ -319,6 +346,10 @@ function normalizeRuntimeRecord(record, cwd = process.cwd(), existing = null) {
   const targetLabel = typeof (record.targetLabel ?? existing?.targetLabel) === 'string'
     ? (record.targetLabel ?? existing?.targetLabel).trim()
     : '';
+  const serviceDetails = normalizeServiceDetails([
+    ...(existing?.serviceDetails ?? []),
+    ...(record.serviceDetails ?? []),
+  ]);
 
   return {
     ...existing,
@@ -338,6 +369,7 @@ function normalizeRuntimeRecord(record, cwd = process.cwd(), existing = null) {
     entrypoint,
     commandSource,
     targetLabel,
+    serviceDetails,
     active: record.active ?? existing?.active ?? true,
     createdAt,
     updatedAt: nowIso(),
@@ -367,6 +399,127 @@ function stripInspectionFields(runtime) {
   } = runtime;
 
   return rest;
+}
+
+function getWindowsProcessMemory(processIds) {
+  const ids = normalizePids(processIds);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const command = [
+    'powershell',
+    '-NoProfile',
+    '-Command',
+    `"Get-Process -Id ${ids.join(',')} -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,WS,PM | ConvertTo-Json -Compress"`,
+  ].join(' ');
+
+  try {
+    const output = execHidden(command, {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!output) {
+      return [];
+    }
+
+    const parsed = JSON.parse(output);
+    const rows = Array.isArray(parsed) ? parsed : [parsed];
+    return rows
+      .filter(row => row && typeof row === 'object')
+      .map(row => ({
+        pid: Number(row.Id),
+        name: typeof row.ProcessName === 'string' ? row.ProcessName : '',
+        workingSetBytes: Number(row.WS) || 0,
+        privateBytes: Number(row.PM) || 0,
+      }))
+      .filter(row => Number.isInteger(row.pid) && row.pid > 0);
+  } catch {
+    return [];
+  }
+}
+
+function getPosixProcessMemory(processIds) {
+  const ids = normalizePids(processIds);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  try {
+    const output = execHidden(`ps -o pid=,comm=,rss= -p ${ids.join(',')}`, {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!output) {
+      return [];
+    }
+
+    return output
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const match = line.match(/^(\d+)\s+(\S+)\s+(\d+)$/);
+        if (!match) {
+          return null;
+        }
+        return {
+          pid: Number(match[1]),
+          name: match[2],
+          workingSetBytes: Number(match[3]) * 1024,
+          privateBytes: 0,
+        };
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function getProcessMemoryRows(processIds) {
+  if (process.platform === 'win32') {
+    return getWindowsProcessMemory(processIds);
+  }
+
+  return getPosixProcessMemory(processIds);
+}
+
+export function getRuntimeProcessMemory(runtime) {
+  const ownerPids = normalizePids(runtime.ownerPids ?? runtime.ownerPid);
+  const servicePids = normalizePids(runtime.servicePids);
+  const otherPids = normalizePids(runtime.pids).filter(pid => !ownerPids.includes(pid) && !servicePids.includes(pid));
+  const rows = getProcessMemoryRows([...ownerPids, ...servicePids, ...otherPids]);
+  const rowByPid = new Map(rows.map(row => [row.pid, row]));
+  const serviceDetails = normalizeServiceDetails(runtime.serviceDetails);
+
+  const owner = ownerPids.map(pid => ({
+    pid,
+    ...(rowByPid.get(pid) ?? { name: '', workingSetBytes: 0, privateBytes: 0 }),
+  }));
+  const services = serviceDetails.map(detail => ({
+    label: detail.label,
+    pid: detail.pid,
+    ...(rowByPid.get(detail.pid) ?? { name: '', workingSetBytes: 0, privateBytes: 0 }),
+  }));
+  const unlabeledServicePids = servicePids.filter(pid => !serviceDetails.some(detail => detail.pid === pid));
+  const unlabeledServices = unlabeledServicePids.map(pid => ({
+    label: '未标记服务',
+    pid,
+    ...(rowByPid.get(pid) ?? { name: '', workingSetBytes: 0, privateBytes: 0 }),
+  }));
+  const others = otherPids.map(pid => ({
+    pid,
+    ...(rowByPid.get(pid) ?? { name: '', workingSetBytes: 0, privateBytes: 0 }),
+  }));
+  const allRows = [...owner, ...services, ...unlabeledServices, ...others];
+
+  return {
+    owner,
+    services: [...services, ...unlabeledServices],
+    others,
+    totalWorkingSetBytes: allRows.reduce((sum, row) => sum + (Number(row.workingSetBytes) || 0), 0),
+    totalPrivateBytes: allRows.reduce((sum, row) => sum + (Number(row.privateBytes) || 0), 0),
+  };
 }
 
 function readSharedRegistry(cwd = process.cwd()) {

@@ -1,40 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
-import { CHEAT_COMMANDS } from '../../../engine/systems/CheatSystem';
 import zhCNLocale from '../../../../public/locales/zh-CN/game-fantasyrealms.json';
-import { engineConfig } from '../game';
 import tutorial from '../tutorial';
 
 describe('FantasyRealms 教程配置', () => {
-    it('基础教程包含真实抓牌与拿中央牌两段可操作链路', () => {
+    it('基础教程改成短句示范局结构，只保留常规对局的真实流程', () => {
         expect(tutorial.id).toBe('fantasyrealms-basic');
         expect(tutorial.steps.map((step) => step.id)).toEqual([
-            'setup-draw-turn',
-            'welcome',
-            'deck-intro',
-            'center-row-intro',
+            'setup-overview',
+            'draw-overview',
             'draw-from-deck',
             'discard-after-draw',
             'setup-take-center',
             'take-center-card',
             'discard-after-center',
-            'turn-loop',
-            'endgame-rule',
+            'setup-score-showcase',
+            'score-intro',
+            'score-card-details',
+            'score-total-review',
+            'endgame-review',
             'finish',
         ]);
     });
 
-    it('需要用户操作的步骤都声明了允许命令和推进事件', () => {
-        const actionSteps = tutorial.steps.filter((step) => step.requireAction);
-        expect(actionSteps.length).toBeGreaterThan(0);
-
-        for (const step of actionSteps) {
-            expect(step.allowedCommands && step.allowedCommands.length > 0).toBe(true);
-            expect(step.advanceOnEvents && step.advanceOnEvents.length > 0).toBe(true);
-        }
-    });
-
-    it('正式可操作链只包含两条行动路线对应的四个动作位', () => {
+    it('需要用户操作的步骤仍然只允许真实游玩里的那条命令链', () => {
         const actionSteps = tutorial.steps.filter((step) => step.requireAction);
         expect(actionSteps.map((step) => step.id)).toEqual([
             'draw-from-deck',
@@ -50,101 +38,83 @@ describe('FantasyRealms 教程配置', () => {
         ]);
     });
 
-    it('抓牌步骤只允许从牌库摸牌，并由 CARDS_DRAWN 推进', () => {
-        const step = tutorial.steps.find((item) => item.id === 'draw-from-deck');
-        expect(step?.allowedCommands).toEqual(['DRAW_FROM_DECK']);
-        expect(step?.highlightTarget).toBe('fantasyrealms-live-action-draw');
-        expect(step?.advanceOnEvents).toContainEqual({
-            type: 'CARDS_DRAWN',
-            match: { playerId: '0' },
-        });
-    });
-
-    it('拿中央牌步骤锁定到公开区目标，并由 DISCARD_CARD_TAKEN 推进', () => {
-        const step = tutorial.steps.find((item) => item.id === 'take-center-card');
-        expect(step?.allowedCommands).toEqual(['TAKE_FROM_DISCARD']);
-        expect(step?.allowedTargets).toEqual(['land-bell-tower']);
-        expect(step?.advanceOnEvents).toContainEqual({
-            type: 'DISCARD_CARD_TAKEN',
-            match: { playerId: '0' },
-        });
-    });
-
-    it('教程规则文案会明确两种正式行动，而不是只讲抽象来源', () => {
-        expect(zhCNLocale.tutorial.steps.welcome).toContain('两种行动');
-        expect(zhCNLocale.tutorial.steps.welcome).toContain('摸一张牌，再弃一张牌');
-        expect(zhCNLocale.tutorial.steps.welcome).toContain('从中央公开弃牌里拿一张牌，再弃一张牌');
-        expect(zhCNLocale.tutorial.steps.centerRowIntro).toContain('第二种行动');
-        expect(zhCNLocale.tutorial.steps.centerRowIntro).toContain('再弃一张牌');
+    it('教程文案会先讲目标和基础回合，再直接点名当前牌和动作', () => {
+        expect(zhCNLocale.tutorial.steps.setupOverview).toContain('七张起始手牌');
+        expect(zhCNLocale.tutorial.steps.setupOverview).toContain('从牌库或弃牌堆抽取一张牌并弃掉一张牌');
+        expect(zhCNLocale.tutorial.steps.setupOverview).toContain('中央弃牌堆达到 10 张');
+        expect(zhCNLocale.tutorial.steps.drawOverview).toContain('现在从牌库摸 1 张牌');
         expect(zhCNLocale.tutorial.steps.drawFromDeck).toContain('摸牌按钮');
-        expect(zhCNLocale.tutorial.steps.turnLoop).toContain('摸牌并弃牌');
-        expect(zhCNLocale.tutorial.steps.turnLoop).toContain('拿中央公开弃牌并弃牌');
-        expect(zhCNLocale.tutorial.steps.finish).toContain('两种核心行动');
+        expect(zhCNLocale.tutorial.steps.discardAfterDraw).toContain('幻象');
+        expect(zhCNLocale.tutorial.steps.discardAfterDraw).toContain('王后');
+        expect(zhCNLocale.tutorial.steps.takeCenterCard).toContain('钟塔');
+        expect(zhCNLocale.tutorial.steps.takeCenterCard).toContain('蜡烛');
+        expect(zhCNLocale.tutorial.steps.takeCenterCard).toContain('选中钟塔');
+        expect(zhCNLocale.tutorial.steps.discardAfterCenter).toContain('选中暴风雨');
+        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('基础分');
+        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('奖励分');
+        expect(zhCNLocale.tutorial.steps.scoreCardDetails).toContain('点击或悬浮卡牌');
+        expect(zhCNLocale.tutorial.steps.scoreTotalReview).toContain('右上角总分');
+        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('每张牌在终局是怎么计分的');
+        expect(zhCNLocale.tutorial.steps.finish).toContain('尝试组出更高分的手牌');
     });
 
-    it('首个正式教学局面会同时摆出牌库与中央公开弃牌，避免第一张图只剩文字口径', () => {
-        const setupStep = tutorial.steps.find((item) => item.id === 'setup-draw-turn');
-        const mergeAction = setupStep?.aiActions?.[0];
-        expect(mergeAction?.commandType).toBe(CHEAT_COMMANDS.MERGE_STATE);
+    it('计分步骤会把分数带与终局区都纳入教学锚点', () => {
+        const scoreIntro = tutorial.steps.find((step) => step.id === 'score-intro');
+        const scoreTotalReview = tutorial.steps.find((step) => step.id === 'score-total-review');
+        const endgameReview = tutorial.steps.find((step) => step.id === 'endgame-review');
 
-        const discardPile = (mergeAction?.payload as { fields?: { discardPile?: Array<{ id: string }> } } | undefined)?.fields?.discardPile;
-        const drawPile = (mergeAction?.payload as { fields?: { drawPile?: Array<{ id: string }> } } | undefined)?.fields?.drawPile;
-
-        expect(discardPile?.map((card) => card.id)).toEqual(['weather-rainstorm']);
-        expect(drawPile?.map((card) => card.id)).toContain('flame-candle');
+        expect(scoreIntro?.highlightTarget).toBe('fantasyrealms-live-score-band');
+        expect(scoreTotalReview?.highlightTarget).toBe('fantasyrealms-live-score-band');
+        expect(endgameReview?.highlightTarget).toBe('fantasyrealms-live-endgame');
     });
 
-    it('setup-draw-turn 的教程注入会真正覆盖双人开局，并在摸牌后得到钟塔教学目标', () => {
-        const setupStep = tutorial.steps.find((item) => item.id === 'setup-draw-turn');
-        const mergeAction = setupStep?.aiActions?.[0];
-        expect(mergeAction?.commandType).toBe(CHEAT_COMMANDS.MERGE_STATE);
+    it('拿中央牌案例会强制拿钟塔并弃掉暴风雨，保证玩家看到真实组合收益', () => {
+        const takeCenterCard = tutorial.steps.find((step) => step.id === 'take-center-card');
+        const discardAfterCenter = tutorial.steps.find((step) => step.id === 'discard-after-center');
+        const discardAfterDraw = tutorial.steps.find((step) => step.id === 'discard-after-draw');
 
-        const playerIds = ['0', '1'];
-        const random = createSeededRandom('fantasyrealms-tutorial-test');
-        let state = {
-            core: engineConfig.domain.setup(playerIds, random),
-            sys: createInitialSystemState(playerIds, engineConfig.systems, 'fantasyrealms-tutorial-test'),
-        };
+        expect(takeCenterCard?.allowedTargets).toEqual(['land-bell-tower']);
+        expect(discardAfterDraw?.allowedTargets).toEqual(['leader-queen']);
+        expect(discardAfterCenter?.allowedTargets).toEqual(['weather-rainstorm']);
+    });
 
-        const mergeResult = executePipeline(
-            engineConfig as Parameters<typeof executePipeline>[0],
-            state,
-            {
-                type: mergeAction!.commandType,
-                playerId: '0',
-                payload: mergeAction!.payload,
-                timestamp: 1,
-                skipValidation: true,
-            } as Parameters<typeof executePipeline>[2],
-            random,
-            playerIds,
-        );
-        expect(mergeResult.success).toBe(true);
-        state = mergeResult.state;
+    it('终局案例步骤会直接切到标准局终局评分态，而不是只留一段口头说明', () => {
+        const setupScoreShowcase = tutorial.steps.find((step) => step.id === 'setup-score-showcase');
+        const mergeAction = setupScoreShowcase?.aiActions?.[0];
+        const focusAction = setupScoreShowcase?.aiActions?.[1];
+        const payload = mergeAction?.payload as {
+            fields?: {
+                playerIds?: string[];
+                setupConfig?: { variant?: string };
+                players?: Record<string, { score?: number; hand?: Array<{ id: string }> }>;
+                discardPile?: Array<{ id: string }>;
+                focusCardId?: string;
+            };
+        } | undefined;
 
-        expect(state.core.players['0']?.hand.map((card) => card.id)).toEqual(['wizard-collector']);
-        expect(state.core.discardPile.map((card) => card.id)).toEqual(['weather-rainstorm']);
-        expect(state.core.drawPile.slice(0, 2).map((card) => card.id)).toEqual(['flame-candle', 'land-bell-tower']);
-
-        const drawResult = executePipeline(
-            engineConfig as Parameters<typeof executePipeline>[0],
-            state,
-            {
-                type: 'DRAW_FROM_DECK',
-                playerId: '0',
-                payload: {},
-                timestamp: 2,
-                skipValidation: true,
-            } as Parameters<typeof executePipeline>[2],
-            random,
-            playerIds,
-        );
-        expect(drawResult.success).toBe(true);
-        expect(drawResult.state.core.stage).toBe('discard');
-        expect(drawResult.state.core.players['0']?.hand.map((card) => card.id)).toEqual([
-            'wizard-collector',
+        expect(mergeAction?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
+        expect(payload?.fields?.setupConfig?.variant).toBe('standard');
+        expect(payload?.fields?.playerIds).toEqual(['0', '1', '2']);
+        expect(payload?.fields?.players?.['0']?.score).toBe(198);
+        expect(payload?.fields?.players?.['1']?.score).toBe(154);
+        expect(payload?.fields?.players?.['2']?.score).toBe(0);
+        expect(payload?.fields?.discardPile).toHaveLength(12);
+        expect(payload?.fields?.focusCardId).toBe('flame-candle');
+        expect(payload?.fields?.players?.['0']?.hand?.map((card) => card.id)).toEqual([
+            'artifact-book-of-changes',
             'flame-candle',
+            'weapon-magic-wand',
+            'wild-mirage',
+            'weather-smoke',
+            'wizard-collector',
             'land-bell-tower',
         ]);
+        expect(focusAction).toMatchObject({
+            commandType: 'SET_FOCUS_CARD',
+            playerId: '0',
+            payload: {
+                cardId: 'flame-candle',
+            },
+        });
     });
 });

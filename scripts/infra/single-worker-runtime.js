@@ -285,6 +285,10 @@ export async function startSingleWorkerRuntime(options = {}) {
     targetLabel: runtimeMetadata.targetLabel,
     ownerPids: [process.pid],
     servicePids: managedServices.map(service => service.child.pid).filter(pid => Number.isInteger(pid) && pid > 0),
+    serviceDetails: managedServices.map(service => ({
+      label: service.label,
+      pid: Number.isInteger(service.child.pid) && service.child.pid > 0 ? service.child.pid : null,
+    })),
     bootstrapLogFiles: logFile ? [logFile] : [],
     sessionId: runtimeMetadata.sessionId,
     entrypoint: runtimeMetadata.entrypoint,
