@@ -53,6 +53,7 @@ describe('FantasyRealms 教程配置', () => {
     it('抓牌步骤只允许从牌库摸牌，并由 CARDS_DRAWN 推进', () => {
         const step = tutorial.steps.find((item) => item.id === 'draw-from-deck');
         expect(step?.allowedCommands).toEqual(['DRAW_FROM_DECK']);
+        expect(step?.highlightTarget).toBe('fantasyrealms-live-action-draw');
         expect(step?.advanceOnEvents).toContainEqual({
             type: 'CARDS_DRAWN',
             match: { playerId: '0' },
@@ -75,6 +76,7 @@ describe('FantasyRealms 教程配置', () => {
         expect(zhCNLocale.tutorial.steps.welcome).toContain('从中央公开弃牌里拿一张牌，再弃一张牌');
         expect(zhCNLocale.tutorial.steps.centerRowIntro).toContain('第二种行动');
         expect(zhCNLocale.tutorial.steps.centerRowIntro).toContain('再弃一张牌');
+        expect(zhCNLocale.tutorial.steps.drawFromDeck).toContain('摸牌按钮');
         expect(zhCNLocale.tutorial.steps.turnLoop).toContain('摸牌并弃牌');
         expect(zhCNLocale.tutorial.steps.turnLoop).toContain('拿中央公开弃牌并弃牌');
         expect(zhCNLocale.tutorial.steps.finish).toContain('两种核心行动');
