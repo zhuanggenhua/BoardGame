@@ -279,12 +279,12 @@
   },
   "tutorial": {
     "steps": {
-      "welcome": "This tutorial demonstrates one minimal Seven Hatreds turn slice in a fixed order: first resolve a faction action, then resolve a wheel action. In a normal turn, the current player chooses the order of those two actions.",
-      "selectRegion": "First click Pidao on the map to lock the starting region for this action window.",
-      "pickAction": "Now do one thing only: click Grant Pardon on the right to enter discard payment.",
-      "payCards": "Select 3 cards from the hand at the bottom, then click Confirm Action. This payment belongs to Grant Pardon, not to the wheel action.",
-      "wheelMove": "This tutorial continues with the wheel after resolving the faction action. In a normal turn, the wheel action is already its own directly selectable action and does not require extra payment. In the current screen, click Free Move 1 on the upper-left wheel once to select it, then click again to execute and pass the wheel to the next faction.",
-      "finish": "You have now completed the most basic Seven Hatreds loop segment: map selection, discard action, and wheel advancement. A normal match keeps cycling through this rhythm."
+      "welcome": "In Seven Hatreds, you win by expanding your control, taking a capital, or reaching 3 prestige first. This demo turn only teaches the basic loop: take one action, then move the wheel once.",
+      "selectRegion": "This example starts from Pidao. Set the action's starting region here first.",
+      "pickAction": "There is a nearby enemy troop that can be pardoned from Pidao, so use Grant Pardon this time.",
+      "payCards": "Grant Pardon costs 3 cards. Pay them first, then click Confirm Action.",
+      "wheelMove": "After the action, this turn still needs one wheel move. Click Free Move 1 once, then click it again to execute.",
+      "finish": "You have now completed one basic turn: resolve one action, then use the wheel to pass the turn on."
     }
   },
   "devtools": {

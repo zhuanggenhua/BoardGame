@@ -14,6 +14,7 @@ import { FANTASY_REALMS_AUDIO_EVENT_KEYS } from '../domain/events';
 import type { FantasyRealmsCore } from '../domain';
 import zhCNLocale from '../../../../public/locales/zh-CN/game-fantasyrealms.json';
 import {
+    FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD,
     FANTASY_REALMS_DUEL_DISCARD_END_THRESHOLD,
     FANTASY_REALMS_HAND_CARD_SLOTS,
     HAND_CARDS,
@@ -1581,6 +1582,39 @@ describe('FantasyRealms Board foundation', () => {
             expect(Math.abs((secondRowPositions[2]!.left - secondRowPositions[1]!.left) - (secondRowPositions[3]!.left - secondRowPositions[2]!.left))).toBeLessThanOrEqual(2);
             expect(Math.abs((secondRowPositions[3]!.left - secondRowPositions[2]!.left) - (secondRowPositions[4]!.left - secondRowPositions[3]!.left))).toBeLessThanOrEqual(2);
             expect(Math.abs((secondRowPositions[4]!.left - secondRowPositions[3]!.left) - (secondRowPositions[5]!.left - secondRowPositions[4]!.left))).toBeLessThanOrEqual(2);
+        });
+    });
+
+    it('双人诅咒宝藏局达到 14 张阈值时，公开区仍按同一套两排槽位承载', () => {
+        withViewport(1440, 1024, () => {
+            const sourceCards = HAND_CARDS
+                .concat(PUBLIC_CARDS)
+                .concat(HAND_CARDS)
+                .slice(0, FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD)
+                .map((card, index) => ({ ...card, id: `${card.id}-14-${index}` }));
+            renderBoard(makeCore({
+                playerIds: ['0', '1'],
+                setupConfig: {
+                    variant: 'duel',
+                    expansion: 'cursedHoardSuits',
+                    cursedHoardSuitsEnabled: true,
+                } as any,
+                discardPile: sourceCards,
+            }));
+
+            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
+            const topRowPositions = discardButtons.slice(0, 7).map(getLiveCenterButtonPosition);
+            const secondRowPositions = discardButtons.slice(7).map(getLiveCenterButtonPosition);
+            const topRowButtons = discardButtons.slice(0, 7);
+            const secondRowButtons = discardButtons.slice(7);
+
+            expect(discardButtons).toHaveLength(FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD);
+            expect(topRowPositions).toHaveLength(7);
+            expect(secondRowPositions).toHaveLength(7);
+            expect(topRowButtons.every((button) => button.style.top === '8px')).toBe(true);
+            expect(secondRowButtons.every((button) => button.style.top === 'var(--fr-live-center-second-row-top)')).toBe(true);
+            expect(Math.abs((topRowPositions[1]!.left - topRowPositions[0]!.left) - (topRowPositions[2]!.left - topRowPositions[1]!.left))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowPositions[1]!.left - secondRowPositions[0]!.left) - (secondRowPositions[2]!.left - secondRowPositions[1]!.left))).toBeLessThanOrEqual(2);
         });
     });
 

@@ -129,6 +129,8 @@ test.describe('FantasyRealms tutorial flow', () => {
 
             await clickNext(page);
             await waitForTutorialStep(page, 'score-card-details');
+            await expect(page.locator('[data-tutorial-id="fantasyrealms-card-hand-flame-candle"]')).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('[data-tutorial-id="fantasyrealms-live-hand-zone"]')).not.toHaveCSS('outline-style', 'solid');
             const scoreCardDetailsPath = getEvidenceScreenshotPath(testInfo, '06-查看单张牌的基础分与加分效果');
             await mkdir(dirname(scoreCardDetailsPath), { recursive: true });
             await page.screenshot({ path: scoreCardDetailsPath, fullPage: true });

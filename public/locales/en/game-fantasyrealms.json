@@ -137,7 +137,7 @@
       "scoreIntro": "Your total score is the base score of every active card, plus bonuses, minus penalties.",
       "scoreCardDetails": "Hover or tap a card to inspect its base score and bonus effects.",
       "scoreTotalReview": "Check the total score in the upper right to see how many points this hand earned.",
-      "endgameReview": "Hover or tap a card to keep checking how each card scored in the final hand.",
+      "endgameReview": "The final score is settled from this exact hand. Inspect a card to see how many points it actually contributes inside the finished combo.",
       "finish": "That is the basic flow of Fantasy Realms. Try building an even higher-scoring hand."
     }
   },

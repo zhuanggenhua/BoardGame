@@ -81,24 +81,24 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-tutorial-step="welcome"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('最基本的七大恨回合片段');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('要靠扩地、攻下首都，或先拿到 3 个威望取胜');
         await saveScreenshot(page, TUTORIAL_STEP_01);
 
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="select-region"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-action-hint"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先点地图上的皮岛');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('这次示范先从皮岛出手');
         await saveScreenshot(page, TUTORIAL_STEP_02);
 
         await clickMapRegion(page, 'songjin');
         await expect(page.locator('[data-tutorial-step="pick-action"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点右侧的“赐印招安”');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('皮岛旁边正好有能被招安的敌军');
         await saveScreenshot(page, TUTORIAL_STEP_03);
 
         await page.getByRole('button', { name: /赐印招安/ }).click();
         await expect(page.locator('[data-tutorial-step="pay-cards"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('选满 3 张牌');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('赐印招安要弃 3 张牌');
         await saveScreenshot(page, TUTORIAL_STEP_04);
 
         const handCards = page.locator('[data-testid^="qidahen-hand-card-"]');
@@ -113,8 +113,8 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘行动本来就是独立可选的一笔');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先点左上轮盘里的“免费走 1”选中');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('这回合还要走一次轮盘');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先点“免费走 1”');
         await saveScreenshot(page, TUTORIAL_STEP_05);
 
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
@@ -123,7 +123,7 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('地图选区、弃牌行动、轮盘推进');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('做完一次行动，再用轮盘把回合交给下一家');
         await saveScreenshot(page, TUTORIAL_STEP_06);
 
         await page.locator('[data-testid="tutorial-next-button"]').click();

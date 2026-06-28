@@ -54,18 +54,21 @@ describe('FantasyRealms 教程配置', () => {
         expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('奖励分');
         expect(zhCNLocale.tutorial.steps.scoreCardDetails).toContain('点击或悬浮卡牌');
         expect(zhCNLocale.tutorial.steps.scoreTotalReview).toContain('右上角总分');
-        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('每张牌在终局是怎么计分的');
+        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('最终留牌结算');
+        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('实际算了多少分');
         expect(zhCNLocale.tutorial.steps.finish).toContain('尝试组出更高分的手牌');
     });
 
     it('计分步骤会把分数带与终局区都纳入教学锚点', () => {
         const scoreIntro = tutorial.steps.find((step) => step.id === 'score-intro');
+        const scoreCardDetails = tutorial.steps.find((step) => step.id === 'score-card-details');
         const scoreTotalReview = tutorial.steps.find((step) => step.id === 'score-total-review');
         const endgameReview = tutorial.steps.find((step) => step.id === 'endgame-review');
 
         expect(scoreIntro?.highlightTarget).toBe('fantasyrealms-live-score-band');
+        expect(scoreCardDetails?.highlightTarget).toBe('fantasyrealms-card-hand-flame-candle');
         expect(scoreTotalReview?.highlightTarget).toBe('fantasyrealms-live-score-band');
-        expect(endgameReview?.highlightTarget).toBe('fantasyrealms-live-endgame');
+        expect(endgameReview?.highlightTarget).toBe('fantasyrealms-card-hand-flame-candle');
     });
 
     it('拿中央牌案例会强制拿钟塔并弃掉暴风雨，保证玩家看到真实组合收益', () => {
@@ -76,6 +79,9 @@ describe('FantasyRealms 教程配置', () => {
         expect(takeCenterCard?.allowedTargets).toEqual(['land-bell-tower']);
         expect(discardAfterDraw?.allowedTargets).toEqual(['leader-queen']);
         expect(discardAfterCenter?.allowedTargets).toEqual(['weather-rainstorm']);
+        expect(takeCenterCard?.highlightTarget).toBe('fantasyrealms-card-discard-land-bell-tower');
+        expect(discardAfterDraw?.highlightTarget).toBe('fantasyrealms-card-hand-leader-queen');
+        expect(discardAfterCenter?.highlightTarget).toBe('fantasyrealms-card-hand-weather-rainstorm');
     });
 
     it('终局案例步骤会直接切到标准局终局评分态，而不是只留一段口头说明', () => {
@@ -98,7 +104,7 @@ describe('FantasyRealms 教程配置', () => {
         expect(payload?.fields?.players?.['0']?.score).toBe(198);
         expect(payload?.fields?.players?.['1']?.score).toBe(154);
         expect(payload?.fields?.players?.['2']?.score).toBe(0);
-        expect(payload?.fields?.discardPile).toHaveLength(12);
+        expect(payload?.fields?.discardPile).toHaveLength(10);
         expect(payload?.fields?.focusCardId).toBe('flame-candle');
         expect(payload?.fields?.players?.['0']?.hand?.map((card) => card.id)).toEqual([
             'artifact-book-of-changes',

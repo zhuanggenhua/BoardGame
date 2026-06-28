@@ -271,7 +271,7 @@ function useFantasyRealmsEndgameScoreSequence(
 }
 
 const LIVE_CENTER_ROW_ROW_TOP = 8;
-const LIVE_CENTER_TOP_ROW_CARD_COUNT = 6;
+const LIVE_CENTER_DEFAULT_TOP_ROW_CARD_COUNT = 6;
 const LIVE_CENTER_CARD_WIDTH_FIT_UNITS = 9.15;
 const LIVE_CENTER_CARD_STRIDE_MULTIPLIER = 1.18;
 const LIVE_CENTER_SECOND_ROW_COLUMN_OFFSET_MULTIPLIER = -0.5;
@@ -284,7 +284,7 @@ const LIVE_CENTER_CARD_WIDTH_CSS_VAR = 'var(--fr-live-center-card-width)';
 const LIVE_CENTER_CARD_STRIDE_CSS_VAR = 'var(--fr-live-center-card-stride)';
 
 function buildMinimalLiveCenterColumnOffset(columnIndex: number, rowIndex: number): string {
-    const rowWidthExpression = `${LIVE_CENTER_CARD_WIDTH_CSS_VAR} + ((${LIVE_CENTER_TOP_ROW_CARD_COUNT - 1}) * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`;
+    const rowWidthExpression = `${LIVE_CENTER_CARD_WIDTH_CSS_VAR} + ((${LIVE_CENTER_DEFAULT_TOP_ROW_CARD_COUNT - 1}) * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`;
     const startExpression = `(${rowWidthExpression}) / -2`;
     const rowOffsetExpression = rowIndex === 1
         ? ` + (${LIVE_CENTER_SECOND_ROW_COLUMN_OFFSET_MULTIPLIER} * ${LIVE_CENTER_CARD_WIDTH_CSS_VAR})`
@@ -348,11 +348,18 @@ function isFantasyRealmsCore(value: unknown): value is FantasyRealmsCore {
         && Object.values(candidate.players).every(isFantasyRealmsPlayerState);
 }
 
-function buildMinimalLiveCenterCardStyles(cardCount: number, topRowCardCount = LIVE_CENTER_TOP_ROW_CARD_COUNT): React.CSSProperties[] {
-    if (cardCount <= 0) return [];
+function buildMinimalLiveCenterTopRowCardCount(totalSlotCount: number): number {
+    if (totalSlotCount <= 10) {
+        return Math.ceil(totalSlotCount / 2);
+    }
+    return Math.min(LIVE_CENTER_DEFAULT_TOP_ROW_CARD_COUNT + 1, Math.ceil(totalSlotCount / 2));
+}
+
+function buildMinimalLiveCenterCardStyles(slotCount: number, topRowCardCount = LIVE_CENTER_DEFAULT_TOP_ROW_CARD_COUNT): React.CSSProperties[] {
+    if (slotCount <= 0) return [];
 
     const fixedSlotStyles: React.CSSProperties[] = [];
-    const topRowCount = Math.min(cardCount, topRowCardCount);
+    const topRowCount = Math.min(slotCount, topRowCardCount);
     const pushAbsoluteRow = (rowCount: number, rowIndex: number) => {
         const rowBaseZIndex = rowIndex * LIVE_CENTER_ROW_Z_STRIDE;
         Array.from({ length: rowCount }, (_unused, columnIndex) => {
@@ -371,20 +378,20 @@ function buildMinimalLiveCenterCardStyles(cardCount: number, topRowCardCount = L
             });
         });
     };
-    if (cardCount <= topRowCardCount) {
+    if (slotCount <= topRowCardCount) {
         pushAbsoluteRow(topRowCount, 0);
         return fixedSlotStyles;
     }
 
-    const secondRowCount = Math.min(cardCount - topRowCardCount, topRowCardCount);
+    const secondRowCount = Math.min(slotCount - topRowCardCount, topRowCardCount);
     pushAbsoluteRow(topRowCount, 0);
     pushAbsoluteRow(secondRowCount, 1);
     return fixedSlotStyles;
 }
 
 function buildMinimalLiveCenterSlots(cards: TableCard[], totalSlotCount: number): LiveCenterSlot[] {
+    const slotStyles = buildMinimalLiveCenterCardStyles(totalSlotCount, buildMinimalLiveCenterTopRowCardCount(totalSlotCount));
     if (cards.length === 0) {
-        const slotStyles = buildMinimalLiveCenterCardStyles(totalSlotCount, Math.ceil(totalSlotCount / 2));
         return Array.from({ length: totalSlotCount }, (_unused, index) => ({
             key: `live-center-slot-${index}`,
             card: null,
@@ -392,7 +399,6 @@ function buildMinimalLiveCenterSlots(cards: TableCard[], totalSlotCount: number)
         }));
     }
 
-    const slotStyles = buildMinimalLiveCenterCardStyles(cards.length, Math.ceil(totalSlotCount / 2));
     return cards.map((card, index) => ({
         key: card.id,
         card,
@@ -1339,6 +1345,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                             onClick={() => handleDiscardPileClick(slot.card!)}
                             style={slot.style}
                             data-action-state={canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? 'take' : 'inspect'}
+                            data-tutorial-id={`fantasyrealms-card-discard-${slot.card.id}`}
                             aria-label={canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id)
                                 ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(slot.card) })
                                 : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(slot.card) })}
@@ -1404,6 +1411,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                             }}
                             style={minimalLiveHandCardStyles[index]}
                             data-action-state={canDiscard ? 'discard' : 'inspect'}
+                            data-tutorial-id={`fantasyrealms-card-hand-${card.id}`}
                             data-score-settling={isGameOver && endgameScoreSequence.activeStep?.cardId === card.id ? 'true' : 'false'}
                             aria-label={canDiscard
                                 ? t('actions.discardHandAria', { name: getFantasyRealmsCardDisplayName(card) })

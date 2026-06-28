@@ -75,8 +75,6 @@ const SCORE_CASE_DISCARD = [
     byId('weapon-sword-of-keth'),
     byId('beast-hydra'),
     byId('flood-island'),
-    byId('weather-rainstorm'),
-    byId('flame-lightning'),
 ];
 
 const SCORE_CASE_OPPONENT_HAND = [
@@ -159,7 +157,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
         {
             id: 'discard-after-draw',
             content: 'game-fantasyrealms:tutorial.steps.discardAfterDraw',
-            highlightTarget: 'fantasyrealms-live-hand-zone',
+            highlightTarget: 'fantasyrealms-card-hand-leader-queen',
             position: 'top',
             requireAction: true,
             viewAs: '0',
@@ -215,7 +213,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
         {
             id: 'take-center-card',
             content: 'game-fantasyrealms:tutorial.steps.takeCenterCard',
-            highlightTarget: 'fantasyrealms-live-center-row',
+            highlightTarget: 'fantasyrealms-card-discard-land-bell-tower',
             position: 'top',
             requireAction: true,
             viewAs: '0',
@@ -226,7 +224,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
         {
             id: 'discard-after-center',
             content: 'game-fantasyrealms:tutorial.steps.discardAfterCenter',
-            highlightTarget: 'fantasyrealms-live-hand-zone',
+            highlightTarget: 'fantasyrealms-card-hand-weather-rainstorm',
             position: 'top',
             requireAction: true,
             viewAs: '0',
@@ -315,7 +313,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
         {
             id: 'score-card-details',
             content: 'game-fantasyrealms:tutorial.steps.scoreCardDetails',
-            highlightTarget: 'fantasyrealms-live-hand-zone',
+            highlightTarget: 'fantasyrealms-card-hand-flame-candle',
             position: 'top',
             infoStep: true,
             viewAs: '0',
@@ -331,7 +329,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
         {
             id: 'endgame-review',
             content: 'game-fantasyrealms:tutorial.steps.endgameReview',
-            highlightTarget: 'fantasyrealms-live-endgame',
+            highlightTarget: 'fantasyrealms-card-hand-flame-candle',
             position: 'left',
             infoStep: true,
             viewAs: '0',
