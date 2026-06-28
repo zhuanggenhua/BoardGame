@@ -618,6 +618,7 @@ export default defineConfig(({ mode }) => {
   const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
   const apiServerPort = Number(env.API_SERVER_PORT) || 18001
   const suppressE2EProxyNoise = env.E2E_PROXY_QUIET === 'true'
+  const useStableE2EOptimizeDeps = forceInlineVite || suppressE2EProxyNoise
   const devApiDisabled = isTruthyFlag(env.VITE_DEV_SKIP_API || process.env.VITE_DEV_SKIP_API)
   const backendUrl = env.VITE_BACKEND_URL || ''
 
@@ -716,10 +717,10 @@ export default defineConfig(({ mode }) => {
       ],
     },
     optimizeDeps: {
-      ...(forceInlineVite
+      ...(useStableE2EOptimizeDeps
         ? {
-            // In constrained environments, keep discovery off but still prebundle a tiny set of
-            // critical CJS-heavy deps; otherwise inline mode falls back to raw node_modules files.
+            // E2E 托管前端只会命中固定入口；关闭依赖自动扫描，避免冷启动时在扫描/预构建阶段把
+            // esbuild service 先打死。显式保留关键 CJS-heavy 依赖，避免浏览器直接吃裸 CJS。
             noDiscovery: true,
             include: [
               'react',
@@ -728,10 +729,13 @@ export default defineConfig(({ mode }) => {
               'react-dom',
               'react-dom/client',
               'react-i18next',
+              'react-easy-crop',
               'framer-motion',
               'cookie',
               'set-cookie-parser',
               'debug',
+              'howler',
+              'normalize-wheel',
               'socket.io-msgpack-parser',
             ],
             entries: undefined,

@@ -2,7 +2,7 @@
   "overlay": {
     "finish": "Finish and return",
     "next": "Next",
-    "clickToContinue": "Click the highlighted area to continue"
+    "clickToContinue": "Complete the current action to continue"
   },
   "default": {
     "welcome": "Welcome to Tic-Tac-Toe! The goal is to align three marks.",

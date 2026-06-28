@@ -221,6 +221,8 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘成为唯一下一步时，横幅只做提示，真正交互继续由轮盘本体热区承接', () => {
         expect(boardSource).toContain('showTopWheelPrompt');
+        expect(boardSource).toContain('emphasized={wheelStageAvailable}');
+        expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
         expect(boardSource).toContain('选择轮盘行动');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
@@ -268,7 +270,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
         expect(boardSource).toContain('qidahen-action-state-${action.id}');
         expect(boardSource).toContain("t('board.actions.state.current', { defaultValue: '当前' })");
-        expect(boardSource).toContain("t('board.actions.state.available', { defaultValue: '可选' })");
+        expect(boardSource).not.toContain("t('board.actions.state.available', { defaultValue: '可选' })");
         expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
         expect(boardSource).not.toContain('qidahen-primary-action-next-step');
         expect(boardSource).not.toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
@@ -277,6 +279,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('地图可点');
         expect(boardSource).not.toContain('当前主入口');
         expect(boardSource).not.toContain('所有绿色底部都可点击');
+        expect(boardSource).not.toContain("defaultValue: '可选' })");
         expect(boardSource).not.toContain('先选中下方一级势力行动');
         expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
         expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');

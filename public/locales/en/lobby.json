@@ -624,10 +624,10 @@
     }
   },
   "testMatchRoom": {
-    "missing_game_config": "Game configuration not found",
-    "loading": "Loading...",
-    "loading_with_game": "Loading {{game}}...",
-    "game_load_failed": "Failed to load game",
+    "gameConfigMissing": "Game configuration not found",
+    "loadingWithGame": "Loading {{game}}...",
+    "loadingFallback": "Loading...",
+    "gameLoadFailed": "Failed to load game",
     "seo_title": "{{game}} - Test Mode",
     "seo_description": "{{game}} E2E test mode"
   },
@@ -2321,11 +2321,5 @@
     "steps": {
       "setup": "Preparing tutorial scenario..."
     }
-  },
-  "testMatchRoom": {
-    "gameConfigMissing": "Game configuration not found",
-    "loadingWithGame": "Loading {{game}}...",
-    "loadingFallback": "Loading...",
-    "gameLoadFailed": "Failed to load game"
   }
 }

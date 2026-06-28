@@ -624,10 +624,10 @@
     }
   },
   "testMatchRoom": {
-    "missing_game_config": "未找到游戏配置",
-    "loading": "正在加载…",
-    "loading_with_game": "正在加载 {{game}}…",
-    "game_load_failed": "游戏加载失败",
+    "gameConfigMissing": "未找到游戏配置",
+    "loadingWithGame": "正在加载 {{game}}...",
+    "loadingFallback": "正在加载...",
+    "gameLoadFailed": "游戏加载失败",
     "seo_title": "{{game}} - 测试模式",
     "seo_description": "{{game}} E2E 测试模式"
   },
@@ -2321,11 +2321,5 @@
     "steps": {
       "setup": "正在准备教学场景…"
     }
-  },
-  "testMatchRoom": {
-    "gameConfigMissing": "未找到游戏配置",
-    "loadingWithGame": "正在加载 {{game}}...",
-    "loadingFallback": "正在加载...",
-    "gameLoadFailed": "游戏加载失败"
   }
 }

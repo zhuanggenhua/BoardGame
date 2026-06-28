@@ -13,6 +13,8 @@ import { createDiceThroneEventSystem } from '../domain/systems';
 import { RESOURCE_IDS } from '../domain/resources';
 import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { getPlayerDieFace } from '../domain/rules';
+import { checkPlayCard } from '../domain/rules';
+import { shouldOpenTokenResponse } from '../domain/tokenResponse';
 import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
@@ -609,6 +611,20 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.pendingDamage?.currentDamage).toBe(6);
         expect(eventsOfType(events, 'BONUS_DIE_ROLLED')[0]?.payload.face).toBe('gear');
         expect(next.players['1'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]?.activationsUsedThisTurn).toBe(1);
+    });
+
+    it('治疗机器人满足受击条件时，应触发防御方 token 响应窗口而不是被系统跳过', () => {
+        const state = createHeroMatchup('monk', 'artificer')(['0', '1'], fixedRandom);
+        setArtificerBot(state.core, '1', TOKEN_IDS.HEAL_BOT);
+        state.core.players['1'].tokens[TOKEN_IDS.SYNTH] = 2;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'fist-technique',
+            isDefendable: true,
+        } as DiceThroneCore['pendingAttack'];
+
+        expect(shouldOpenTokenResponse(state.core, '0', '1', 6, false, 'attack')).toBe('defenderMitigation');
     });
 
     it('高级治疗机器人激活时只花费 1 合成器', () => {
@@ -1546,9 +1562,10 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(secondRequest?.payload.titleKey).toBe('choices.artificerBotActivation.titleSingle');
         expect(secondRequest?.payload.options.map(option => option.labelKey)).toEqual([
             'choices.artificerBotActivation.activateShockBot',
+            'choices.artificerBotActivation.skip',
         ]);
 
-        const shockOption = secondRequest!.payload.options[0]!;
+        const shockOption = secondRequest!.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateShockBot')!;
         const secondResolution = resolveChoiceWithFollowups(firstResolution.nextState, {
             playerId: '0',
             customId: shockOption.customId!,
@@ -1569,6 +1586,80 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(secondResolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
         expect(secondResolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
         expect(secondResolution.nextState.pendingAttack?.settlementStage).toBe('readyToResolve');
+    });
+
+    it('单次机器人激活窗口也应允许跳过，并在跳过后直接收口攻击链', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
+        setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shock-bot',
+            damageResolved: true,
+            resolvedDamage: 9,
+            settlementStage: 'postDamagePending',
+        } as DiceThroneCore['pendingAttack'];
+
+        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 312);
+        const requestedState = applyEvents(state.core, requestEvents);
+        const request = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
+
+        expect(request?.payload.options.map(option => option.labelKey)).toEqual([
+            'choices.artificerBotActivation.activateShockBot',
+            'choices.artificerBotActivation.skip',
+        ]);
+
+        const skipOption = request!.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.skip')!;
+        const resolution = resolveChoiceWithFollowups(requestedState, {
+            playerId: '0',
+            customId: skipOption.customId!,
+            sourceAbilityId: 'shock-bot',
+            value: skipOption.value!,
+            timestamp: 313,
+            random: fixedRandom,
+        });
+
+        expect(eventsOfType(resolution.followupEvents, 'CHOICE_REQUESTED')).toHaveLength(0);
+        expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SHOCK_BOT]).toBe(1);
+        expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
+        expect(resolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
+        expect(resolution.nextState.pendingAttack?.settlementStage).toBe('readyToResolve');
+    });
+
+    it('工匠 upkeep 存在可点纳米机器人时不应被 autoContinue 直接跳过', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT);
+
+        const auto = diceThroneFlowHooks.onAutoContinueCheck?.({
+            state: { ...state, sys: { ...state.sys, phase: 'upkeep' } },
+            events: [{
+                type: 'SYS_PHASE_CHANGED',
+                payload: { from: 'discard', to: 'upkeep' },
+            }],
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onAutoContinueCheck>>[0]);
+
+        expect(auto).toBeUndefined();
+    });
+
+    it('工匠受击响应牌在不可防御攻击的防御阶段仍应允许打出', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['0'].hand = [
+            getArtificerCard('card-artificer-mechanical-strike'),
+            getArtificerCard('upgrade-artificer-shock-bot-2'),
+        ];
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'overclock',
+            isDefendable: false,
+        } as DiceThroneCore['pendingAttack'];
+
+        expect(checkPlayCard(state.core, '0', getArtificerCard('card-artificer-mechanical-strike'), 'defensiveRoll')).toEqual({ ok: true });
+        expect(checkPlayCard(state.core, '0', getArtificerCard('upgrade-artificer-shock-bot-2'), 'defensiveRoll')).toEqual({ ok: true });
     });
 
     it('电能脉冲选择治疗机器人时会按工匠骰面真实治疗并收口攻击链', () => {

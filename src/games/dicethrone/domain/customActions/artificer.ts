@@ -288,7 +288,7 @@ function buildArtificerBotActivationChoiceRequest(
     usedMask: number,
     timestamp: number,
 ): ChoiceRequestedEvent | undefined {
-    const allowSkip = remainingActivations > 1;
+    const allowSkip = true;
     const options = buildArtificerBotActivationOptions(state, playerId, remainingActivations, usedMask, allowSkip);
     if (options.length <= 0) return undefined;
 

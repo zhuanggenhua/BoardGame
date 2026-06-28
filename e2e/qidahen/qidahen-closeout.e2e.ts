@@ -113,7 +113,8 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="wheel-move"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点“免费走 1”');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘行动本来就是独立可选的一笔');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先点左上轮盘里的“免费走 1”选中');
         await saveScreenshot(page, TUTORIAL_STEP_05);
 
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');

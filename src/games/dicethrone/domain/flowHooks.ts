@@ -62,7 +62,7 @@ import { getPlayerAbilityBaseDamage, playerAbilityHasDamage, playerAbilityNeedsS
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
-import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import { hasSpentTreantTreeSpiritThisTurn, hasUsablePassiveAction } from './passiveAbility';
 import {
     POWDER_KEG_TRANSFER_CHOICE_ID,
     POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
@@ -1683,6 +1683,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
             const hasPendingDamage = core.pendingDamage !== null && core.pendingDamage !== undefined;
             const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core);
+            const hasUsableUpkeepPassiveAction = phase === 'upkeep'
+                && hasUsablePassiveAction(core, core.activePlayerId, 'upkeep');
 
             if (
                 justEnteredPhase
@@ -1691,6 +1693,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && !hasActiveResponseWindow
                 && !hasPendingDamage
                 && !hasPendingBonusDice
+                && !hasUsableUpkeepPassiveAction
             ) {
                 return { autoContinue: true, playerId: core.activePlayerId };
             }

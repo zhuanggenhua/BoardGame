@@ -74,7 +74,7 @@ export function getUsableTokenAmountForTiming(
     playerId: PlayerId,
     tokenId: string,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
-    options?: { damageScope?: 'attack' | 'direct' }
+    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number }
 ): number {
     const player = state.players[playerId];
     if (!player) return 0;
@@ -91,7 +91,7 @@ export function getUsableTokenAmountForTiming(
     }
     if (
         typeof tokenDef.activeUse.minimumAttackDamage === 'number'
-        && ((state.pendingDamage?.originalDamage ?? 0) < tokenDef.activeUse.minimumAttackDamage)
+        && ((options?.originalDamageOverride ?? state.pendingDamage?.originalDamage ?? 0) < tokenDef.activeUse.minimumAttackDamage)
     ) {
         return 0;
     }
@@ -134,7 +134,7 @@ export function getUsableTokensForTiming(
     state: DiceThroneCore,
     playerId: PlayerId,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
-    options?: { damageScope?: 'attack' | 'direct' }
+    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number }
 ): TokenDef[] {
     const player = state.players[playerId];
     if (!player) return [];
@@ -189,9 +189,13 @@ export function hasOffensiveRollEndTokens(
 export function hasDefensiveTokens(
     state: DiceThroneCore,
     playerId: PlayerId,
-    damageScope?: 'attack' | 'direct'
+    damageScope?: 'attack' | 'direct',
+    originalDamageOverride?: number,
 ): boolean {
-    return getUsableTokensForTiming(state, playerId, 'beforeDamageReceived', { damageScope }).length > 0;
+    return getUsableTokensForTiming(state, playerId, 'beforeDamageReceived', {
+        damageScope,
+        originalDamageOverride,
+    }).length > 0;
 }
 
 /**
@@ -200,9 +204,13 @@ export function hasDefensiveTokens(
 export function hasOffensiveTokens(
     state: DiceThroneCore,
     playerId: PlayerId,
-    damageScope?: 'attack' | 'direct'
+    damageScope?: 'attack' | 'direct',
+    originalDamageOverride?: number,
 ): boolean {
-    return getUsableTokensForTiming(state, playerId, 'beforeDamageDealt', { damageScope }).length > 0;
+    return getUsableTokensForTiming(state, playerId, 'beforeDamageDealt', {
+        damageScope,
+        originalDamageOverride,
+    }).length > 0;
 }
 
 /**
@@ -692,30 +700,17 @@ export function shouldOpenTokenResponse(
     isDefensiveContext?: boolean,
     damageScope?: 'attack' | 'direct'
 ): 'attackerBoost' | 'defenderMitigation' | null {
-    console.log('[DT-TokenResponse] shouldOpenTokenResponse 调用', {
-        attackerId,
-        defenderId,
-        damage,
-        isDefensiveContext,
-        damageScope,
-        hasPendingDamage: !!state.pendingDamage,
-        isUltimate: state.pendingAttack?.isUltimate,
-    });
-
     if (damage <= 0) {
-        console.log('[DT-TokenResponse] 伤害 <= 0，不打开窗口');
         return null;
     }
     
     // 检查是否已有待处理伤害（避免重复打开）
     if (state.pendingDamage) {
-        console.log('[DT-TokenResponse] 已有 pendingDamage，不打开窗口');
         return null;
     }
 
     // 防御技能的反击伤害不是"攻击"（规则 §7.2），不触发 Token 响应窗口
     if (isDefensiveContext) {
-        console.log('[DT-TokenResponse] 防御技能上下文，不打开窗口');
         return null;
     }
 
@@ -725,33 +720,21 @@ export function shouldOpenTokenResponse(
     // 先检查攻击方是否有太极可用于加伤
     // 注意：规则说"本回合获得的太极不可用于本回合增强伤害"
     // 这个限制需要额外的状态追踪，暂时先不实现
-    const hasOffensiveTokensResult = hasOffensiveTokens(state, attackerId, damageScope);
-    console.log('[DT-TokenResponse] 检查攻击方 Token', {
-        attackerId,
-        hasOffensiveTokens: hasOffensiveTokensResult,
-    });
+    const hasOffensiveTokensResult = hasOffensiveTokens(state, attackerId, damageScope, damage);
     if (hasOffensiveTokensResult) {
-        console.log('[DT-TokenResponse] 返回 attackerBoost');
         return 'attackerBoost';
     }
     
     // 终极技能跳过防御方 Token 响应（规则 §4.4：不可被降低/忽略/回避）
     if (isUltimate) {
-        console.log('[DT-TokenResponse] 终极技能，跳过防御方响应');
         return null;
     }
     
     // 检查防御方是否有可用的防御 Token
-    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId, damageScope);
-    console.log('[DT-TokenResponse] 检查防御方 Token', {
-        defenderId,
-        hasDefensiveTokens: hasDefensiveTokensResult,
-    });
+    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId, damageScope, damage);
     if (hasDefensiveTokensResult) {
-        console.log('[DT-TokenResponse] 返回 defenderMitigation');
         return 'defenderMitigation';
     }
     
-    console.log('[DT-TokenResponse] 无可用 Token，返回 null');
     return null;
 }

@@ -307,18 +307,25 @@ const setupArtificerBeforeDamageResponseScene = async (
     game: GameTestContext,
     cardId: string,
     synth = 0,
+    options?: {
+        healBot?: boolean;
+        damage?: number;
+        hp?: number;
+        randomQueue?: number[];
+    },
 ): Promise<void> => {
     await game.openTestGame('dicethrone', { playerID: '0' });
     await game.setupScene({
         gameId: 'dicethrone',
+        randomQueue: options?.randomQueue,
         player0: {
             hand: [cardId],
-            resources: { [RESOURCE_IDS.CP]: 10, [RESOURCE_IDS.HP]: 50 },
+            resources: { [RESOURCE_IDS.CP]: 10, [RESOURCE_IDS.HP]: options?.hp ?? 50 },
             tokens: {
                 [TOKEN_IDS.SYNTH]: synth,
                 [TOKEN_IDS.NANOBOT]: 0,
                 [TOKEN_IDS.SHOCK_BOT]: 0,
-                [TOKEN_IDS.HEAL_BOT]: 0,
+                [TOKEN_IDS.HEAL_BOT]: options?.healBot ? 1 : 0,
             },
         },
         player1: {
@@ -327,6 +334,17 @@ const setupArtificerBeforeDamageResponseScene = async (
         currentPlayer: '1',
         phase: 'defensiveRoll',
         sys: {
+            interaction: options?.healBot ? {
+                current: {
+                    id: 'dt-token-response-artificer-before-damage',
+                    kind: 'dt:token-response',
+                    playerId: '0',
+                    data: {
+                        pendingDamageId: 'artificer-before-damage',
+                    },
+                },
+                queue: [],
+            } : undefined,
             responseWindow: {
                 current: {
                     id: 'artificer-before-damage-response-window',
@@ -351,8 +369,8 @@ const setupArtificerBeforeDamageResponseScene = async (
                 id: 'artificer-before-damage',
                 sourcePlayerId: '1',
                 targetPlayerId: '0',
-                originalDamage: 5,
-                currentDamage: 5,
+                originalDamage: options?.damage ?? 5,
+                currentDamage: options?.damage ?? 5,
                 sourceAbilityId: 'fist-technique',
                 damageScope: 'attack',
                 responseType: 'beforeDamageReceived',
@@ -361,6 +379,52 @@ const setupArtificerBeforeDamageResponseScene = async (
             },
         },
     });
+
+    if (options?.healBot) {
+        await game.page.evaluate((healBotId) => {
+            const harness = (window as Window & {
+                __BG_TEST_HARNESS__?: {
+                    state?: {
+                        get?: () => JsonRecord;
+                        set?: (state: JsonRecord) => void | Promise<void>;
+                    };
+                };
+            }).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.();
+            if (!state || !harness?.state?.set) {
+                throw new Error('TestHarness state 不可用');
+            }
+
+            const core = state.core as JsonRecord;
+            const players = core.players as Record<string, JsonRecord>;
+            const artificer = players['0'];
+
+            return harness.state.set({
+                ...state,
+                core: {
+                    ...core,
+                    players: {
+                        ...players,
+                        '0': {
+                            ...artificer,
+                            tokenStackLimits: {
+                                ...(artificer.tokenStackLimits ?? {}),
+                                [healBotId]: 1,
+                            },
+                            artificerBotState: {
+                                ...(artificer.artificerBotState ?? {}),
+                                [healBotId]: {
+                                    built: true,
+                                    upgraded: false,
+                                    activationsUsedThisTurn: 0,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        }, TOKEN_IDS.HEAL_BOT);
+    }
 
     await game.waitForPhase('defensiveRoll', 10000);
     await expect.poll(async () => {
@@ -2195,6 +2259,44 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         });
 
         await game.screenshot('artificer-arc-shield-after-choice', testInfo);
+    });
+
+    test('治疗机器人应在真实受伤前响应窗口可见并可点击使用', async ({ page, game }, testInfo) => {
+        await setupArtificerBeforeDamageResponseScene(game, 'card-artificer-mechanical-strike', 2, {
+            healBot: true,
+            damage: 6,
+            hp: 40,
+            randomQueue: [1],
+        });
+        await dismissAttackShowcaseIfVisible(page);
+
+        const tokenResponseModal = page.getByTestId('token-response-modal');
+        await expect(tokenResponseModal).toBeVisible({ timeout: 10000 });
+        await expect(tokenResponseModal.getByText('治疗机器人')).toBeVisible({ timeout: 10000 });
+        await game.screenshot('artificer-heal-bot-before-damage-window-open', testInfo);
+
+        await tokenResponseModal.getByRole('button', { name: /^使用/ }).first().click();
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const entries = (state?.sys?.eventStream?.entries ?? []) as JsonRecord[];
+            return {
+                synth: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                healBot: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.HEAL_BOT] ?? null,
+                healBotUsed: state?.core?.players?.['0']?.artificerBotState?.[TOKEN_IDS.HEAL_BOT]?.activationsUsedThisTurn ?? null,
+                bonusDieFaces: entries
+                    .map((entry) => entry?.event)
+                    .filter((event) => event?.type === 'BONUS_DIE_ROLLED')
+                    .map((event) => event?.payload?.face),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            synth: 0,
+            healBot: 1,
+            healBotUsed: 1,
+            bonusDieFaces: ['wrench'],
+        });
+
+        await game.screenshot('artificer-heal-bot-before-damage-used', testInfo);
     });
 
     test('稍作调整 II 打出后应可在真实防御阶段进入 5 骰防御并结算反击、合成器与纳米爆弹', async ({ page, game }, testInfo) => {

@@ -2571,19 +2571,19 @@ const ActionButton: React.FC<{
             <span className="pointer-events-none absolute inset-y-0 left-0 w-[8px]" style={{ background: visuallySelected ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.76)' }} />
             <span className="pointer-events-none absolute inset-x-[14px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.3)' }} />
             <span className="min-w-0 whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">{action.label}</span>
-            <span
-                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black tracking-[0.08em]"
-                data-testid={`qidahen-action-state-${action.id}`}
-                style={{
-                    background: visuallySelected ? 'rgba(246,213,168,0.18)' : 'rgba(210,183,117,0.14)',
-                    color: visuallySelected ? '#f6d5a8' : UI_STYLE.mapGold,
-                    boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
-                }}
-            >
-                {visuallySelected
-                    ? t('board.actions.state.current', { defaultValue: '当前' })
-                    : t('board.actions.state.available', { defaultValue: '可选' })}
-            </span>
+            {visuallySelected ? (
+                <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black tracking-[0.08em]"
+                    data-testid={`qidahen-action-state-${action.id}`}
+                    style={{
+                        background: 'rgba(246,213,168,0.18)',
+                        color: '#f6d5a8',
+                        boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+                    }}
+                >
+                    {t('board.actions.state.current', { defaultValue: '当前' })}
+                </span>
+            ) : null}
             <span
                 className="pointer-events-none absolute right-[calc(100%+12px)] top-1/2 z-30 hidden w-[248px] -translate-y-1/2 border-[3px] px-3 py-2 text-[11px] font-black leading-5 tracking-normal text-[#f6e8c9] shadow-[0_8px_18px_rgba(0,0,0,0.28)] group-hover:block group-focus:block"
                 data-testid={`qidahen-action-tooltip-${action.id}`}
@@ -4795,7 +4795,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 moveChoices={core.wheelMoveChoices}
                 moveSummary={core.wheelMoveSummary}
                 disabled={setupStagePending || core.wheelActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null}
-                emphasized={!setupStagePending && primaryStageMode === 'wheel' && wheelDispatchSelection == null && pendingTargetAction == null && postBattleSelection == null}
+                emphasized={wheelStageAvailable}
                 canActivateMove={(moveId, selected) => {
                     return selected
                         ? isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)
