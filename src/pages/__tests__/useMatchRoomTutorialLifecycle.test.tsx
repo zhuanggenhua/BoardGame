@@ -49,8 +49,8 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const navigate = vi.fn();
         const openModal = vi.fn(() => 'modal-1');
         const closeModal = vi.fn();
-        const firstManifest = makeManifest('field-battle', ['battle-overview', 'field-finish']);
-        const secondManifest = makeManifest('season-flow', ['overview', 'season-finish']);
+        const firstManifest = makeManifest('attack-and-battle', ['overview', 'finish']);
+        const secondManifest = makeManifest('year-and-characters', ['overview', 'finish']);
 
         tutorialState.isActive = true;
         tutorialState.currentStep = firstManifest.steps[1] ?? null;
@@ -83,7 +83,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const navigate = vi.fn();
         const openModal = vi.fn(() => 'modal-1');
         const closeModal = vi.fn();
-        const manifest = makeManifest('field-battle', ['battle-overview', 'field-finish']);
+        const manifest = makeManifest('attack-and-battle', ['overview', 'finish']);
 
         tutorialState.isActive = true;
         tutorialState.currentStep = manifest.steps[1] ?? null;
@@ -115,7 +115,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const navigate = vi.fn();
         const openModal = vi.fn(() => 'modal-1');
         const closeModal = vi.fn();
-        const manifest = makeManifest('season-flow', ['overview', 'season-finish']);
+        const manifest = makeManifest('year-and-characters', ['overview', 'finish']);
 
         tutorialState.isActive = true;
         tutorialState.currentStep = manifest.steps[1] ?? null;

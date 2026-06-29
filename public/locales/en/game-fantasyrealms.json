@@ -83,7 +83,8 @@
     "inspectHandAria": "Inspect hand card {{name}}",
     "openMagnifyAria": "Magnify {{name}}",
     "closePreview": "Close Preview",
-    "selected": "Selected"
+    "selected": "Selected",
+    "centerSelectedNotice": "{{player}} selected"
   },
   "focus": {
     "panelTitle": "Focus",

@@ -1,4 +1,5 @@
 import type { GameSetupSelections } from '../setupOptions';
+import { buildWheelDispatchSelectionFromWheel } from './domain/dispatchSelectionBuilders';
 import type {
     QidahenBattleRolls,
     QidahenCore,
@@ -72,7 +73,7 @@ const buildBattleRolls = (): QidahenBattleRolls => ({
 const createFieldBattlePendingAction = (): QidahenPendingTargetAction => ({
     actionId: 'raid',
     battleMode: 'field',
-    title: '突袭作战待结算',
+    title: '调度进攻待结算',
     attackerFactionId: 'ming',
     sourceRegionId: 'city-region-16',
     sourceRegionName: '克什克腾部',
@@ -153,22 +154,70 @@ const createDefaultSelections = (scenarioId: QidahenScenarioId): GameSetupSelect
 const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
     numPlayers: 3,
     setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        const mingCardIds = core.handCards
+            .filter((card) => card.faction === 'ming')
+            .slice(0, 4)
+            .map((card) => card.id);
+
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 行动窗口';
+        core.handCards = core.handCards.map((card) => {
+            if (card.id === mingCardIds[0]) {
+                return {
+                    ...card,
+                    label: '大明事件牌',
+                    cardKind: 'event' as const,
+                    cardDefId: 'tutorial-ming-event',
+                };
+            }
+            if (card.id === mingCardIds[1]) {
+                return {
+                    ...card,
+                    label: '火炮技术',
+                    cardKind: 'armament' as const,
+                    armamentId: 'artillery-tech',
+                    cardDefId: 'tutorial-ming-artillery-tech',
+                };
+            }
+            if (card.id === mingCardIds[2]) {
+                return {
+                    ...card,
+                    label: '大明战术牌',
+                    cardKind: 'tactic' as const,
+                    cardDefId: 'tutorial-ming-tactic',
+                };
+            }
+            if (card.id === mingCardIds[3]) {
+                return {
+                    ...card,
+                    label: '银两牌',
+                    cardKind: 'silver' as const,
+                    cardDefId: 'tutorial-ming-silver',
+                };
+            }
+            return card;
+        });
+        return core;
+    },
 });
 
-const createFieldBattleTutorialSetup = (): QidahenTutorialPreset => ({
+const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
     numPlayers: 3,
     setupSelections: createDefaultSelections('post-sarhu-1619'),
     coreTransform: (initialCore) => {
         const core = cloneCore(initialCore);
         core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 野战待结算';
-        core.turnPhase = 'resolve-pending';
+        core.turnLabel = '第 1 轮 · 大明 · 进攻调度';
+        core.turnPhase = 'dispatch-targeting';
         core.wheelActionUsed = true;
-        core.factionActionUsed = false;
-        core.selectedRegionId = 'city-region-14';
-        core.selectedActionId = 'raid';
-        core.pendingTargetAction = createFieldBattlePendingAction();
-        core.wheelDispatchSelection = null;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-hire';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-16';
+        core.selectedActionId = '';
+        core.pendingTargetAction = null;
         core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
@@ -207,6 +256,12 @@ const createFieldBattleTutorialSetup = (): QidahenTutorialPreset => ({
             }
             return region;
         });
+        core.wheelDispatchProgress = buildWheelDispatchSelectionFromWheel(
+            core,
+            'ming',
+            core.actionWheelPosition,
+            core.selectedRegionId,
+        );
         return core;
     },
 });
@@ -318,7 +373,7 @@ const createDiplomacyTutorialSetup = (): QidahenTutorialPreset => ({
     },
 });
 
-const createSeasonFlowTutorialSetup = (): QidahenTutorialPreset => ({
+const createYearAndCharactersTutorialSetup = (): QidahenTutorialPreset => ({
     numPlayers: 3,
     setupSelections: createDefaultSelections('post-sarhu-1619'),
     coreTransform: (initialCore) => {
@@ -372,13 +427,50 @@ const createSeasonFlowTutorialSetup = (): QidahenTutorialPreset => ({
     },
 });
 
+const createKoreaSpecialMapTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('shanhaiguan-1622'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 朝鲜与地图特例';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = false;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-25';
+        core.selectedActionId = '';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.koreaDeckCount = 9;
+        core.koreaDiscardCount = 3;
+        core.factions.ming.prestige = 1;
+        core.hanseongPrestigeUnlocked = true;
+        return core;
+    },
+});
+
 const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     'qidahen-basic': createBasicTutorialSetup(),
     'basic-opening': createBasicTutorialSetup(),
-    'field-battle': createFieldBattleTutorialSetup(),
+    'attack-and-battle': createAttackAndBattleTutorialSetup(),
     'diplomacy-and-hire': createDiplomacyTutorialSetup(),
     'siege-and-occupation': createSiegeTutorialSetup(),
-    'season-flow': createSeasonFlowTutorialSetup(),
+    'year-and-characters': createYearAndCharactersTutorialSetup(),
+    'korea-and-special-map-rules': createKoreaSpecialMapTutorialSetup(),
+    'field-battle': createAttackAndBattleTutorialSetup(),
+    'season-flow': createYearAndCharactersTutorialSetup(),
 };
 
 export function buildQidahenTutorialSetupData(tutorialId?: string): QidahenTutorialSetupData | null {

@@ -1361,6 +1361,68 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
+    test('3人标准局开局静置后，手牌布局不再反复横移或重排', async ({ browser }, testInfo) => {
+        test.setTimeout(90000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const context = await browser.newContext();
+        await initContext(context, {
+            gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+            apiServerBaseURL: process.env.PW_API_SERVER_URL,
+            skipImageGate: true,
+        });
+        const page = await context.newPage();
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await openFantasyRealmsTestPage(page, baseURL, '?playerID=0&players=3&seat1=human&seat2=human');
+            await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
+
+            const openingCore = multiplayerOpeningCore();
+            openingCore.players['0']!.hand = openingCore.players['0']!.hand.slice(0, 2);
+            openingCore.stage = 'discard';
+            await injectCore(page, openingCore);
+
+            const liveTable = page.getByTestId('fantasyrealms-live-table');
+            const liveHandZone = page.getByTestId('fantasyrealms-live-hand-zone');
+            const liveCenterRow = page.getByTestId('fantasyrealms-live-center-row');
+            await expect(liveTable).not.toHaveClass(/fr-live-table--opening/);
+            await expect(liveTable).not.toHaveClass(/fr-live-table--early-draw/);
+            await expect(liveHandZone).toHaveAttribute('data-motion', 'idle', { timeout: 2000 });
+            await expect(liveCenterRow).toHaveAttribute('data-motion', 'idle');
+
+            const sampleRects = async () => {
+                const handRects = await getLocatorRects(page, '.fr-card-button--live-hand');
+                const centerRects = await getLocatorRects(page, '.fr-card-button--live-center');
+                return { handRects, centerRects };
+            };
+
+            const firstSample = await sampleRects();
+            await page.waitForTimeout(900);
+            await expect(liveHandZone).toHaveAttribute('data-motion', 'idle');
+            await expect(liveCenterRow).toHaveAttribute('data-motion', 'idle');
+            const secondSample = await sampleRects();
+
+            expect(firstSample.handRects).toHaveLength(2);
+            expect(secondSample.handRects).toHaveLength(2);
+            expect(firstSample.centerRects).toHaveLength(0);
+            expect(secondSample.centerRects).toHaveLength(0);
+
+            firstSample.handRects.forEach((firstRect, index) => {
+                const secondRect = secondSample.handRects[index]!;
+                expect(Math.abs(firstRect.x - secondRect.x)).toBeLessThanOrEqual(1);
+                expect(Math.abs(firstRect.y - secondRect.y)).toBeLessThanOrEqual(1);
+                expect(Math.abs(firstRect.width - secondRect.width)).toBeLessThanOrEqual(1);
+                expect(Math.abs(firstRect.height - secondRect.height)).toBeLessThanOrEqual(1);
+            });
+
+            const evidencePath = getEvidenceScreenshotPath(testInfo, '3p-opening-idle-layout-stable');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await page.screenshot({ path: evidencePath, fullPage: false });
+        } finally {
+            await context.close().catch(() => {});
+        }
+    });
+
     test('3人基础版临近结束时，最后一次真实弃牌会按 10 张阈值自动结算', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;

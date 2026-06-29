@@ -55,6 +55,7 @@ export function MatchRoomTutorialBoardRuntime({ runtime }: { runtime: MatchRoomT
             <QidahenPregameScenarioGate
                 searchParams={searchParams}
                 tutorialId={runtime.tutorialId}
+                tutorialMode
                 onSearchParamsChange={(nextSearchParams) => {
                     navigate(
                         {

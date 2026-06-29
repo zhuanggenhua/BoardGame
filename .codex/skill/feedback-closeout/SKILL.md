@@ -8,6 +8,7 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 ## 单一真相（强制）
 
 - 本文件是 **BoardGame 反馈收口 workflow 的唯一规范真相源**。
+- **正式留档只允许一个地方：线上真实反馈记录本身。**
 - 只要涉及：
   - 处理线上反馈
   - `open / in_progress / resolved / closed`
@@ -19,6 +20,7 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 - 其他相关文档只允许承担两类职责：
   - `references/feedback-open-api.md`：描述 HTTP 接口路径、认证方式、字段形状
   - `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md`：提供 SSH / Mongo 入口和最小操作路径
+- 本地 `temp/feedback-closeout/**`、`evidence/feedback-closeout/**`、截图、诊断包、导出文本都只能算**临时诊断材料**，不是正式留档。
 - 禁止在其他文档再写一套等价的反馈收口规则、状态时机、字段要求或双写口径；若发现冲突，一律以本文件为准，并回头删掉重复规则。
 
 ## 概览
@@ -36,7 +38,7 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 3. **分诊与结论**：判定是真 bug / 误报 / 建议 / 已修复待回写 / 证据不足等。
 4. **若是真 bug：修复 + 验证 + 证据**（测试、截图或日志证据），不得只改状态。
 5. **状态回写**：把正式状态与关闭/解决理由回写到远端真实反馈记录。
-6. **更新记录/文档**：补充证据或说明本轮使用的真实写入口。
+6. **更新正式留档**：默认只更新线上真实反馈记录本身；若需要说明真实写入口或阻塞，只写最小临时诊断材料，不额外产出第二份正式收口档。
 
 **注意**：仅回写状态 ≠ 修复完成；仅本地验证但未回写 ≠ 已收口。对外汇报时必须清楚说明本轮到底完成了哪些步骤。
 
@@ -82,21 +84,20 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
   - 暂缓理由是“按默认优先级”，还是“已确认只是伴随线索”
 - 禁止只汇报“已开始修反馈”，却不说明系统单其实仍未处理，造成用户误以为所有 open 项都在同一轮被覆盖。
 
-## 本地分诊板（可选）
+## 本地临时产物（默认不留档）
 
-- `temp/feedback-closeout/status-board.json` 现在只作为**本地分诊/并行认领/临时备注板**，不再是正式收口结果的强制真相源。
-- 正式状态、`closedReason`（关闭理由）、`resolvedMethod`（解决方式）的最终查看入口，统一以**线上真实反馈记录**为准。
-- 允许使用本地分诊板的场景：
-  - 批量 triage 时先做代表项认领
-  - 需要给并行 agent 分派边界
-  - HTTP/Mongo 正式回写暂时阻塞时，先记临时备注
-- 不允许把“本地已经写了 `closedReason/resolvedMethod`”当成正式回写完成；只要远端真实记录还没写，就不能对外宣称“已正式收口”。
-- 如果本轮没有并行分派、也不需要临时阻塞备注，可以完全不写本地状态板。
-- 若使用本地分诊板，推荐顺序：
-  1. 先用 `sync-feedback-status-board.mjs` 从最新 `summary.json` 初始化/刷新分诊板
-  2. 需要并行认领时，再用 `update-local-feedback-board.mjs` 标记 `in_progress`
-  3. 如远端正式回写失败，再在本地补阻塞说明
-  4. 需要交接时，再跑 `scripts/verify/verify-feedback-status.mjs` 做一次本地校验
+- `temp/feedback-closeout/**`、`evidence/feedback-closeout/**`、本地截图、导出文本、诊断包，默认都只算**临时工作材料**，不是正式留档。
+- 正式状态、`closedReason`（关闭理由）、`resolvedMethod`（解决方式）的唯一留档入口，统一以**线上真实反馈记录**为准。
+- 默认动作：
+  - 不创建本地 `status-board`
+  - 不额外写本地 feedback closeout 文档
+  - 不把本地 evidence 当成“收口已完成”的依据
+- 允许例外：
+  - 远端真实写入口阻塞，必须临时记阻塞证据
+  - 需要并行分派，且远端状态不足以支撑分工
+  - 用户当轮明确要求保留本地文档/截图/复盘材料
+- 即使出现这些例外，本地材料也仍然只是临时诊断，不升级为第二正式留档点。
+- 旧的 `status-board`、历史 `evidence` 文档若已存在，只按历史辅助材料看待；**不得继续把它们当默认入口或必经留档步骤**。
 
 ### 同轮流程缺口回填（强制，2026-06-10 新增）
 
@@ -121,7 +122,7 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 - 默认动作应是：
   1. 立刻执行远端正式状态回写，并同时写入 `closedReason/resolvedMethod`
   2. 立刻复核远端状态与剩余未收口数量
-  3. 只有在需要交接、并行认领或阻塞备注时，才补本地分诊板
+  3. 默认不再补本地留档；只有在需要临时阻塞说明、并行认领或用户明确要求时，才生成最小本地诊断材料
 - 只有在以下场景才允许暂不回写，并且必须在当轮汇报里显式写明阻塞：
   - 真实写入口不可用；
   - 用户明确要求“先别回写”；
@@ -130,23 +131,11 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 - 对外汇报时若修复尚未部署，必须直说“反馈状态已回写，但部署状态未完成/未核对”；禁止把两件事混成一句“还不能回写”。
 - 禁止把“先记到本地，等攒几条一起回写”当作默认流程；除非用户明确要求批量统一回写。
 
-初始化/刷新状态板：
+旧的本地状态板脚本仅保留为阻塞场景 fallback，不再是默认流程：
 
 ```bash
 node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/feedback-closeout/<timestamp>/summary.json
-```
-
-更新单条本地状态：
-
-```bash
-node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status resolved --owner codex --resolved-method "<解决方式>" --evidence evidence/<file>.md --verification "<验证命令>" --screenshot <绝对路径截图>
-
-node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status closed --owner codex --closed-reason "<关闭理由>" --evidence evidence/<file>.md
-```
-
-校验状态板：
-
-```bash
+node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status in_progress --owner codex --notes "<仅在阻塞/并行分派时使用>"
 node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json
 ```
 
@@ -205,7 +194,7 @@ node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url 
 - 选出一组 `parallelCandidates`，用于后续并行分派
 - 可选把 `parallelCandidates` 立即改成 `in_progress`
 
-拉取完成后，如本轮需要本地认领/并行分派/临时备注，再把本批 `summary.json` 同步到本地分诊板：
+拉取完成后，默认直接进入分诊与远端回写；只有在本轮确实需要本地并行认领/阻塞备注时，才允许把本批 `summary.json` 同步到本地分诊板：
 
 ```bash
 node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/feedback-closeout/<timestamp>/summary.json
@@ -247,7 +236,7 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
   - 图上已经出现明确牌面/按钮/数值/状态证据，仍跳过图面只按旧实现判断真伪。
   - 已经发现图面与录入冲突，还把反馈按误报关闭。
 
-只要结论已确认，就先回写远端正式状态与理由，再继续处理下一条反馈；本地分诊板仅在需要交接或记录阻塞时同步。
+只要结论已确认，就先回写远端正式状态与理由，再继续处理下一条反馈；默认不要再额外补本地收口文档。
 
 ### 2.1 真实反馈真相门禁（强制）
 
@@ -321,9 +310,10 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
    - 若线上已经收口，禁止再次当成待修 bug 派单
 2. **必要时再看本地分诊板**
    - `temp/feedback-closeout/status-board.json`
-   - 只把它当交接/并行认领线索，不得覆盖线上正式状态
+   - 只把它当交接/并行认领线索，不得覆盖线上正式状态；若本轮没显式使用它，默认跳过
 3. **再看最近证据与最近改动**
-   - 优先搜索 `evidence/` 中最近 1~3 天新增/更新的反馈文档
+   - 优先看线上真实反馈记录里的 `closedReason / resolvedMethod / status`
+   - 如仓库里已有历史 `evidence/`，只把它当辅助参考，不再要求新建同类文档
    - 再按反馈关键词、卡牌名、错误文案、游戏模块 grep 最近改过的源码/测试
 4. **最后才决定是否真的进入“修复”**
    - 若代码与证据已经覆盖用户描述，只差状态没回写：应走“补验证/补证据/回写状态”流程，而不是重新改实现
@@ -331,7 +321,7 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 
 推荐核对项：
 
-- 最近新增的 `evidence/*.md`
+- 线上真实反馈记录里的最新 `status / closedReason / resolvedMethod`
 - 最近修改的目标模块、测试、E2E 文件
 - 当前反馈关键词是否已出现在最近提交说明、审计文档、状态板 notes 中
 - 是否存在“同根因已修”的其他反馈条目，可直接复用证据或沿同一修复链收口
@@ -447,11 +437,11 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 5. 不得出现“代码已经改完、测试已经跑过、但线上状态还停在 `open/in_progress`”的长时间滞留
 6. 若因为远端回写阻塞导致无法同步正式状态，必须当场记录阻塞；需要交接时可补到本地分诊板，不得静默留待下一轮
 
-本地分诊板不是强制双写目标：
+本地分诊板不是默认双写目标：
 
-1. 默认先回写线上真实状态
-2. 只有远端回写阻塞、需要并行认领或需要交接时，才补 `temp/feedback-closeout/status-board.json`
-3. 若远端回写失败且要继续交接，必须在本地分诊板补 `notes` 说明阻塞原因，必要时改成 `blocked`
+1. 默认只回写线上真实状态，不再同步第二份本地留档
+2. 只有远端回写阻塞、需要并行认领或需要交接时，才临时补 `temp/feedback-closeout/status-board.json`
+3. 若远端回写失败且要继续交接，必须在本地分诊板补 `notes` 说明阻塞原因，任务结束后仍不得把它当正式留档
 
 使用：
 
@@ -511,9 +501,9 @@ node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/fee
 - `finalize-feedback-group.mjs`
   - 按 `summary.json` 收口代表项，并默认关闭同组重复项。
 - `sync-feedback-status-board.mjs`
-  - 从 `summary.json` 初始化/刷新本地状态板，并保留已写入的本地证据/备注。
+  - 仅在阻塞/并行认领时，从 `summary.json` 初始化临时本地状态板。
 - `update-local-feedback-board.mjs`
-  - 即时更新单条反馈的本地状态、证据、验证命令和截图路径。
+  - 仅在阻塞/并行认领时，临时更新单条反馈的本地备注。
 
 ### references/
 

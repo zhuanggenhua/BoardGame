@@ -1,5 +1,6 @@
 import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import clsx from 'clsx';
+import { assetsPath } from '../../../core/AssetLoader';
 
 interface HomeV2PaperModalFrameProps {
     title: ReactNode;
@@ -37,6 +38,8 @@ const cornerSpecs = {
         innerPath: 'M30 10.5V26.5C30 28.3 28.3 30 26.5 30H10.5',
     },
 } as const;
+
+const PAPER_MODAL_NOISE_URL = assetsPath('common/images/noise.svg');
 
 const CornerOrnament = ({ position }: { position: keyof typeof cornerSpecs }) => (
     <svg
@@ -91,9 +94,9 @@ export const HomeV2PaperModalFrame = ({
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 opacity-[0.09] mix-blend-multiply"
             style={{
-            backgroundImage: 'url(/assets/common/images/noise.svg)',
-            backgroundSize: '74px 74px',
-        }}
+                backgroundImage: `url(${PAPER_MODAL_NOISE_URL})`,
+                backgroundSize: '74px 74px',
+            }}
         />
         <div className="pointer-events-none absolute inset-0 opacity-[0.08] mix-blend-multiply [background-image:radial-gradient(circle_at_23%_28%,rgba(99,58,25,0.07)_0%,transparent_18%),radial-gradient(circle_at_78%_62%,rgba(108,65,30,0.05)_0%,transparent_22%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_43%,rgba(255,240,199,0)_0%,rgba(116,71,32,0.035)_72%,rgba(57,32,13,0.13)_100%)]" />

@@ -14,7 +14,7 @@ export type HomeV2SceneState =
 
 const ARTBOARD_WIDTH = 896;
 const ARTBOARD_HEIGHT = 720;
-const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_ASSET_ROOT = 'common/images/home-v2';
 const HOME_V2_OVERVIEW_SPREAD = `${HOME_V2_ASSET_ROOT}/overview-homepage/1.png`;
 
 const fullArtboardTransform: LayoutTransform = {

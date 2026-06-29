@@ -36,7 +36,6 @@ afterEach(() => {
     }).__FR_LIVE_MOTION_LAST_SNAPSHOT__;
     clearGameAssetsCache('fantasyrealms');
 });
-
 function resolveTranslation(tree: TranslationTree, key: string): string | undefined {
     return key.split('.').reduce<string | TranslationTree | undefined>((value, segment) => {
         if (!value || typeof value === 'string') {

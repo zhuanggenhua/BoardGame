@@ -33,30 +33,11 @@ const command = process.argv[2];
 const distDir = path.join(rootDir, 'dist');
 const distLocalesDir = path.join(distDir, 'locales');
 const distLocalizedAssetsDir = path.join(distDir, 'assets', 'i18n');
-const androidEmbeddedBlockedPrefixes = [
-    'assets/common/audio/',
-    'assets/common/images/mascot/',
-    'assets/common/images/home-v2/book-close/',
-    'assets/common/images/home-v2/catalog-thumbnails/',
-    'assets/common/images/home-v2/generated-reference-homepage/',
-    'assets/common/images/home-v2/overview-spread/',
-    'assets/common/images/home-v2/reference-homepage/',
-    'assets/common/images/home-v2/reference-thumbnails/',
-];
-const androidEmbeddedPrunedPaths = [
-    path.join(distDir, 'assets', 'common', 'audio'),
-    path.join(distDir, 'assets', 'common', 'images', 'mascot'),
-    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'book-close'),
-    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'catalog-thumbnails'),
-    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'generated-reference-homepage'),
-    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'overview-spread'),
-    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'reference-homepage'),
-    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'reference-thumbnails'),
-];
 const androidPublicDir = path.join(androidDir, 'app', 'src', 'main', 'assets', 'public');
 const androidBuildMetaFileName = 'android-build-meta.json';
 const gameManifestGeneratorPath = path.join(rootDir, 'scripts', 'game', 'generate_game_manifests.js');
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
+const webDistPruneScriptPath = path.join(rootDir, 'scripts', 'deploy', 'prune-web-dist-assets.mjs');
 
 const envFiles = ['.env', '.env.android', '.env.android.local'];
 for (const file of envFiles) {
@@ -115,6 +96,7 @@ const runCapacitor = async (args) => {
 
 const runAndroidWebBuild = async () => {
     await runNodeScript(viteSafeCliPath, ['build', '--mode', 'android', '--configLoader', 'bundle', '--config', 'vite.config.ts']);
+    await runNodeScript(webDistPruneScriptPath, ['--target', 'android-embedded']);
 };
 
 const runGradle = async (args) => {
@@ -377,7 +359,12 @@ const collectBlockedRelativePaths = (baseDir, blockedPrefixes) => {
 };
 
 const ensureNoBlockedEmbeddedAssets = (baseDir, label) => {
-    const blockedPaths = collectBlockedRelativePaths(baseDir, androidEmbeddedBlockedPrefixes);
+    const blockedPaths = collectBlockedRelativePaths(baseDir, [
+        'assets/common/audio/',
+        'assets/common/images/',
+        'assets/common/logos/',
+        'assets/i18n/',
+    ]);
     if (blockedPaths.length === 0) {
         return;
     }
@@ -391,19 +378,6 @@ const ensureNoBlockedEmbeddedAssets = (baseDir, label) => {
 };
 
 const pruneAndroidEmbeddedDist = () => {
-    clearDirectoryChildren(distLocalesDir, {
-        preserve: [path.join(distLocalesDir, 'zh-CN')],
-    });
-
-    if (existsSync(distLocalizedAssetsDir)) {
-        rmSync(distLocalizedAssetsDir, { recursive: true, force: true });
-    }
-
-    for (const targetPath of androidEmbeddedPrunedPaths) {
-        if (!existsSync(targetPath)) continue;
-        rmSync(targetPath, { recursive: true, force: true });
-    }
-
     ensureNoBlockedEmbeddedAssets(distDir, 'dist');
 };
 
