@@ -252,6 +252,63 @@ describe('qidahen tutorial flow', () => {
         expect((state.core as any).selectedRegionId).toBe('city-region-24');
     });
 
+    it('升级军备教程会从真实手牌行动入口进入，并把火炮技术升到 2 级', () => {
+        const manifest = QIDAHEN_TUTORIALS.tutorials['armament-upgrade']?.manifest;
+        expect(manifest).toBeTruthy();
+
+        let state = buildStateForTutorial('armament-upgrade');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.START,
+            playerId: '0',
+            payload: { manifest },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('overview');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-action');
+        expect((state.core as any).factions.ming.armaments.find((armament: any) => armament.id === 'artillery-tech')?.level).toBe(1);
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'upgrade-armament' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('pay-cards');
+        expect((state.core as any).payment.required).toBe(2);
+
+        const mingCards = (state.core as any).handCards.filter((card: any) => card.faction === 'ming');
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: mingCards[0].id },
+        });
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: mingCards[1].id },
+        });
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('result');
+        expect((state.core as any).lastSeasonSummary?.title).toBe('升级军备');
+        expect((state.core as any).factions.ming.armaments.find((armament: any) => armament.id === 'artillery-tech')?.level).toBe(2);
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('finish');
+    });
+
     it('外交雇佣教程在友好标记后选择仅雇佣会推进到 finish', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['diplomacy-and-hire']?.manifest;
         expect(manifest).toBeTruthy();

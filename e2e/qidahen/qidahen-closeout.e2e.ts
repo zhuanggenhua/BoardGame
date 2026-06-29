@@ -24,26 +24,29 @@ const TUTORIAL_STEP_10 = `${TUTORIAL_DIR}/10-教程第10步-点击完成关闭�
 const WHEEL_COST_STEP_01 = `${TUTORIAL_DIR}/11-轮盘第1步-先看走3会让两家对手摸牌.png`;
 const WHEEL_COST_STEP_02 = `${TUTORIAL_DIR}/12-轮盘第2步-看蒙古后金手牌同时增加.png`;
 const WHEEL_COST_STEP_03 = `${TUTORIAL_DIR}/13-轮盘第3步-进入进攻调度入口.png`;
-const FIELD_BATTLE_STEP_01 = `${TUTORIAL_DIR}/14-进攻第1步-先看可攻目标.png`;
-const FIELD_BATTLE_STEP_02 = `${TUTORIAL_DIR}/15-进攻第2步-进入战斗并决定承伤顺序.png`;
-const FIELD_BATTLE_STEP_03 = `${TUTORIAL_DIR}/16-进攻第3步-看战败标记与战后选择.png`;
-const ROUT_STEP_01 = `${TUTORIAL_DIR}/17-撤退第1步-先看断后和溃退入口.png`;
-const ROUT_STEP_02 = `${TUTORIAL_DIR}/18-撤退第2步-看溃退后的残部清空与战败标记.png`;
-const SIEGE_STEP_01 = `${TUTORIAL_DIR}/19-攻城第1步-先看城战待结算入口.png`;
-const SIEGE_STEP_02 = `${TUTORIAL_DIR}/20-攻城第2步-选择围城该区.png`;
-const DIPLOMACY_STEP_01 = `${TUTORIAL_DIR}/21-外交第1步-从轮盘进入外交雇佣.png`;
-const DIPLOMACY_STEP_02 = `${TUTORIAL_DIR}/22-外交第2步-先放置友好标记.png`;
-const DIPLOMACY_STEP_03 = `${TUTORIAL_DIR}/23-外交第3步-结束并结算雇佣军.png`;
-const DIPLOMACY_STEP_04 = `${TUTORIAL_DIR}/24-外交第4步-看完外交与雇佣的合并收益.png`;
-const SEASON_STEP_01 = `${TUTORIAL_DIR}/25-跨年第1步-推进到年中并查看税赋与人物.png`;
-const SEASON_STEP_02 = `${TUTORIAL_DIR}/26-跨年第2步-进入新年防线维护.png`;
-const SEASON_STEP_03 = `${TUTORIAL_DIR}/27-跨年第3步-看纪年卡与争分结果.png`;
-const SEASON_STEP_04 = `${TUTORIAL_DIR}/28-跨年第4步-看新顺位与人物刷新.png`;
-const SEASON_STEP_05 = `${TUTORIAL_DIR}/29-跨年第5步-看到新年结算与新年份.png`;
-const KOREA_STEP_01 = `${TUTORIAL_DIR}/30-朝鲜第1步-先看朝鲜牌库与弃牌堆.png`;
-const KOREA_STEP_02 = `${TUTORIAL_DIR}/31-朝鲜第2步-看汉城威望已进入玩家条.png`;
-const KOREA_STEP_03 = `${TUTORIAL_DIR}/32-朝鲜第3步-看海路与船锚区域关系.png`;
-const KOREA_STEP_04 = `${TUTORIAL_DIR}/33-朝鲜第4步-看山海关特殊边界.png`;
+const ARMAMENT_STEP_01 = `${TUTORIAL_DIR}/14-军备第1步-先点升级军备.png`;
+const ARMAMENT_STEP_02 = `${TUTORIAL_DIR}/15-军备第2步-点击底部手牌支付2张.png`;
+const ARMAMENT_STEP_03 = `${TUTORIAL_DIR}/16-军备第3步-看火炮技术升到2级.png`;
+const FIELD_BATTLE_STEP_01 = `${TUTORIAL_DIR}/17-进攻第1步-先看可攻目标.png`;
+const FIELD_BATTLE_STEP_02 = `${TUTORIAL_DIR}/18-进攻第2步-进入战斗并决定承伤顺序.png`;
+const FIELD_BATTLE_STEP_03 = `${TUTORIAL_DIR}/19-进攻第3步-看战败标记与战后选择.png`;
+const ROUT_STEP_01 = `${TUTORIAL_DIR}/20-撤退第1步-先看断后和溃退入口.png`;
+const ROUT_STEP_02 = `${TUTORIAL_DIR}/21-撤退第2步-看溃退后的残部清空与战败标记.png`;
+const SIEGE_STEP_01 = `${TUTORIAL_DIR}/22-攻城第1步-先看城战待结算入口.png`;
+const SIEGE_STEP_02 = `${TUTORIAL_DIR}/23-攻城第2步-选择围城该区.png`;
+const DIPLOMACY_STEP_01 = `${TUTORIAL_DIR}/24-外交第1步-从轮盘进入外交雇佣.png`;
+const DIPLOMACY_STEP_02 = `${TUTORIAL_DIR}/25-外交第2步-先放置友好标记.png`;
+const DIPLOMACY_STEP_03 = `${TUTORIAL_DIR}/26-外交第3步-结束并结算雇佣军.png`;
+const DIPLOMACY_STEP_04 = `${TUTORIAL_DIR}/27-外交第4步-看完外交与雇佣的合并收益.png`;
+const SEASON_STEP_01 = `${TUTORIAL_DIR}/28-跨年第1步-推进到年中并查看税赋与人物.png`;
+const SEASON_STEP_02 = `${TUTORIAL_DIR}/29-跨年第2步-进入新年防线维护.png`;
+const SEASON_STEP_03 = `${TUTORIAL_DIR}/30-跨年第3步-看纪年卡与争分结果.png`;
+const SEASON_STEP_04 = `${TUTORIAL_DIR}/31-跨年第4步-看新顺位与人物刷新.png`;
+const SEASON_STEP_05 = `${TUTORIAL_DIR}/32-跨年第5步-看到新年结算与新年份.png`;
+const KOREA_STEP_01 = `${TUTORIAL_DIR}/33-朝鲜第1步-先看朝鲜牌库与弃牌堆.png`;
+const KOREA_STEP_02 = `${TUTORIAL_DIR}/34-朝鲜第2步-看汉城威望已进入玩家条.png`;
+const KOREA_STEP_03 = `${TUTORIAL_DIR}/35-朝鲜第3步-看海路与船锚区域关系.png`;
+const KOREA_STEP_04 = `${TUTORIAL_DIR}/36-朝鲜第4步-看山海关特殊边界.png`;
 const ENDGAME_SCREENSHOT = `${CLOSEOUT_DIR}/02-终局遮罩-注入胜利后显示.png`;
 
 type HarnessWindow = Window & {
@@ -280,6 +283,48 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('决定对手拿回多少手牌');
+        await page.locator('[data-testid="tutorial-next-button"]').click();
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveCount(0, { timeout: 10000 });
+    });
+
+    test('升级军备教程会从真实手牌行动入口进入，并看到军备等级提升', async ({ page }) => {
+        await setChineseLocale(page);
+        await disableAudio(page);
+        await page.addInitScript(() => {
+            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
+        });
+
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await page.goto('/play/qidahen/tutorial/armament-upgrade', { waitUntil: 'domcontentloaded' });
+
+        await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
+        await expect(page.locator('[data-tutorial-step="overview"]')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('军备不是常驻被动词条');
+        await page.locator('[data-testid="tutorial-next-button"]').click();
+
+        await expect(page.locator('[data-tutorial-step="choose-action"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-action-upgrade-armament"]')).toContainText('升级军备');
+        await saveScreenshot(page, ARMAMENT_STEP_01);
+        await page.locator('[data-testid="qidahen-action-upgrade-armament"]').click();
+
+        await expect(page.locator('[data-tutorial-step="pay-cards"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('需弃 2');
+        await saveScreenshot(page, ARMAMENT_STEP_02);
+
+        const handCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
+        await handCards.nth(0).click();
+        await handCards.nth(1).click();
+        await expect(page.locator('[data-testid="qidahen-action-payment-confirm"]')).toBeEnabled();
+        await page.locator('[data-testid="qidahen-action-payment-confirm"]').click();
+
+        await expect(page.locator('[data-tutorial-step="result"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-armaments-ming"]')).toContainText('火炮技术2');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
+        await saveScreenshot(page, ARMAMENT_STEP_03);
+        await page.locator('[data-testid="tutorial-next-button"]').click();
+
+        await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('后面战斗会继续吃到的军备等级');
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveCount(0, { timeout: 10000 });
     });

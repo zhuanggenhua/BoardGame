@@ -332,6 +332,17 @@
         "finish": "The wheel decides both which system you enter and how many cards your opponents regain."
       }
     },
+    "armamentUpgrade": {
+      "title": "Armament Upgrade",
+      "description": "Enter from a real hand-action choice, upgrade one armament, and see both the discard cost and the new level land on the live board.",
+      "steps": {
+        "overview": "Armaments do not grow for free. You still spend hand cards to push them higher.",
+        "chooseAction": "Choose Armament Upgrade first. This action discards 2 cards, then raises one developed armament by 1 level.",
+        "payCards": "Pick 2 cards from the hand at the bottom, then confirm the action.",
+        "result": "The upgrade is now live: Ming Artillery Technology has gone from level 1 to level 2, and the armament summary in the player strip updates with it.",
+        "finish": "This hand action does not change the map directly. It improves the armament level that later battles will use."
+      }
+    },
     "diplomacy": {
       "title": "Diplomacy And Hire",
       "description": "Enter a real wheel diplomacy step and see control markers and hired troops resolve together.",
