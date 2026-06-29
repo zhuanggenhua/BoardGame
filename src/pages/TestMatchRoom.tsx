@@ -20,6 +20,7 @@ import { GameModeProvider } from '../contexts/GameModeContext';
 import { getGameById } from '../config/games.config';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { GameCursorProvider } from '../core/cursor/GameCursorProvider';
+import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
 import { LocalGameProvider, BoardBridge } from '../engine/transport/react';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
@@ -306,46 +307,48 @@ export const TestMatchRoom: React.FC = () => {
                     background: gameConfig.theme?.background || 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
                 } as React.CSSProperties}
             >
-                <SmashUpOverlayProvider>
-                    <GameModeProvider mode="test">
-                        <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
-                            <MobileBoardShell>
-                                {engineConfig && WrappedBoard ? (
-                                    <LocalGameProvider
-                                        config={engineConfig}
-                                        numPlayers={testConfig.numPlayers}
-                                        seed={testConfig.randomSeed}
-                                        playerId={testConfig.playerId}
-                                        setupData={testConfig.setupData}
-                                        onCommandRejected={handleCommandRejected}
-                                        seatControllers={testConfig.seatControllers}
-                                        followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
-                                    >
-                                        {shouldRenderTestHud ? <GameHUD gameId={gameId} mode="test" /> : null}
-                                        <BoardBridge
-                                            board={WrappedBoard}
-                                            loading={(
-                                                <LoadingScreen
-                                                    anchor="container"
-                                                    title={gameConfig
-                                                        ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
-                                                        : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
-                                                />
-                                            )}
+                <GamePageRuntimeProvider gameId={gameId}>
+                    <SmashUpOverlayProvider>
+                        <GameModeProvider mode="test">
+                            <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
+                                <MobileBoardShell>
+                                    {engineConfig && WrappedBoard ? (
+                                        <LocalGameProvider
+                                            config={engineConfig}
+                                            numPlayers={testConfig.numPlayers}
+                                            seed={testConfig.randomSeed}
+                                            playerId={testConfig.playerId}
+                                            setupData={testConfig.setupData}
+                                            onCommandRejected={handleCommandRejected}
+                                            seatControllers={testConfig.seatControllers}
+                                            followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
+                                        >
+                                            {shouldRenderTestHud ? <GameHUD gameId={gameId} mode="test" /> : null}
+                                            <BoardBridge
+                                                board={WrappedBoard}
+                                                loading={(
+                                                    <LoadingScreen
+                                                        anchor="container"
+                                                        title={gameConfig
+                                                            ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                                            : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+                                                    />
+                                                )}
+                                            />
+                                        </LocalGameProvider>
+                                    ) : (
+                                        <LoadingScreen
+                                            anchor="container"
+                                            title={gameConfig
+                                                ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                                : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
                                         />
-                                    </LocalGameProvider>
-                                ) : (
-                                    <LoadingScreen
-                                        anchor="container"
-                                        title={gameConfig
-                                            ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
-                                            : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
-                                    />
-                                )}
-                            </MobileBoardShell>
-                        </GameCursorProvider>
-                    </GameModeProvider>
-                </SmashUpOverlayProvider>
+                                    )}
+                                </MobileBoardShell>
+                            </GameCursorProvider>
+                        </GameModeProvider>
+                    </SmashUpOverlayProvider>
+                </GamePageRuntimeProvider>
             </div>
         </>
     );

@@ -1,13 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { Check } from 'lucide-react';
+import { Check, Dices, RotateCcw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { GameButton } from './components/GameButton';
 import type { Die, PlayerId, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
-import { Dice3D } from './Dice3D';
+import { Dice3D, DiceField3D, type ProjectedDiceLayout } from './Dice3D';
+import { UI_Z_INDEX } from '../../../core';
 
 // ============================================================================
 // DiceThrone 骰子交互元数据类型
@@ -61,10 +63,36 @@ const DESKTOP_DICE_ACTION_TOKENS = {
     dotsContainerClassName: 'flex flex-col flex-wrap gap-[0.15vw] justify-center items-center h-[1.8vw] ml-[0.3vw] shrink-0 content-center',
 };
 
+const CENTER_DICE_ACTION_TOKENS = {
+    containerClassName: 'pointer-events-auto flex items-center justify-center gap-[0.6vw] h-[3.2vw] min-h-[44px]',
+    buttonClassName: '!min-h-[44px] h-[3vw] !rounded-[0.7vw] !px-[1vw] min-w-[6.8vw] shadow-[0_5px_0_rgba(0,0,0,0.45)]',
+    interactionTextClassName: '!text-[0.84vw]',
+    rollTextClassName: '!text-[0.82vw]',
+    confirmTextClassName: '!text-[0.82vw]',
+    dotClassName: 'w-[0.48vw] h-[0.48vw] min-w-[5px] min-h-[5px]',
+    dotsContainerClassName: 'flex items-center gap-[0.2vw] ml-[0.35vw] shrink-0',
+};
+
+const CENTER_DICE_SCATTER_SLOTS = [
+    { left: '50%', top: '30%', rotate: '10deg', zIndex: 5, world: { x: 0.08, y: -1.12, z: -0.52 } },
+    { left: '26%', top: '50%', rotate: '-24deg', zIndex: 4, world: { x: -1.68, y: -1.12, z: 0.06 } },
+    { left: '74%', top: '45%', rotate: '20deg', zIndex: 3, world: { x: 1.72, y: -1.12, z: -0.08 } },
+    { left: '62%', top: '61%', rotate: '-12deg', zIndex: 2, world: { x: 0.98, y: -1.12, z: 0.42 } },
+    { left: '38%', top: '63%', rotate: '28deg', zIndex: 1, world: { x: -0.9, y: -1.12, z: 0.34 } },
+];
+
+const BOARD_DICE_SCATTER_SLOTS = [
+    { left: '15%', top: '71%', rotate: '-22deg', zIndex: 5, world: { x: -2.08, y: -1.07, z: 1.1 } },
+    { left: '32%', top: '27%', rotate: '16deg', zIndex: 2, world: { x: -0.88, y: -1.07, z: -1.4 } },
+    { left: '51%', top: '61%', rotate: '-8deg', zIndex: 4, world: { x: 0.04, y: -1.07, z: 1.14 } },
+    { left: '70%', top: '25%', rotate: '20deg', zIndex: 1, world: { x: 1.28, y: -1.07, z: -1.24 } },
+    { left: '85%', top: '54%', rotate: '-17deg', zIndex: 3, world: { x: 2.08, y: -1.07, z: 0.9 } },
+];
+
 /** 从 multistep-choice interaction 中提取 DiceThrone 元数据 */
-export function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
+function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
     if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
-    const meta = (interaction.data as any)?.meta as DtDiceMeta | undefined;
+    const meta = (interaction.data as { meta?: DtDiceMeta } | undefined)?.meta;
     if (!meta?.dtType) return undefined;
     return meta;
 }
@@ -85,6 +113,7 @@ export const DiceTray = ({
     interaction,
     multistepInteraction,
     isPassiveRerollMode,
+    presentation = 'rail',
 }: {
     dice: Die[];
     rollCount: number;
@@ -100,8 +129,14 @@ export const DiceTray = ({
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
     /** 被动重掷选择模式（翡翠色高亮） */
     isPassiveRerollMode?: boolean;
+    /** rail 用于右侧栏，center 用于中场散落舞台，board 用于玩家面板骰盘 */
+    presentation?: 'rail' | 'center' | 'board';
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const isCenterPresentation = presentation === 'center';
+    const isBoardPresentation = presentation === 'board';
+    const isOverlayPresentation = isCenterPresentation || isBoardPresentation;
+    const railTokens = DESKTOP_DICE_TRAY_TOKENS;
     const {
         diceSize,
         containerClassName,
@@ -115,7 +150,21 @@ export const DiceTray = ({
         lockedLabelClassName,
         selectedBadgeClassName,
         selectedBadgeIconClassName,
-    } = DESKTOP_DICE_TRAY_TOKENS;
+    } = railTokens;
+    const resolvedDiceSize = isOverlayPresentation
+        ? (isBoardPresentation ? 'clamp(48px, 4.8vw, 88px)' : 'clamp(42px, 4.3vw, 82px)')
+        : diceSize;
+    const resolvedContainerClassName = isOverlayPresentation
+        ? (isBoardPresentation
+            ? 'relative h-full w-full pointer-events-auto'
+            : 'relative w-[clamp(420px,38vw,620px)] h-[clamp(360px,43vw,660px)] pointer-events-auto')
+        : containerClassName;
+    const resolvedTrayInnerClassName = isOverlayPresentation
+        ? 'relative h-full w-full'
+        : trayInnerClassName;
+    const resolvedSelectedBadgeClassName = isOverlayPresentation
+        ? 'w-[1.25rem] h-[1.25rem] -top-[0.25rem] -right-[0.25rem]'
+        : selectedBadgeClassName;
 
     const dtMeta = getDtMeta(interaction);
     const isInteractionMode = Boolean(dtMeta);
@@ -146,19 +195,50 @@ export const DiceTray = ({
         : (modifyResult?.modCount ?? 0);
     const canSelectMore = currentSelectCount < maxSelectCount;
     const canToggleDieLock = canInteract && rollCount > 0;
+    const [centerDiceLayout, setCenterDiceLayout] = React.useState<Record<number, ProjectedDiceLayout>>({});
+    const fieldDice = React.useMemo(
+        () => dice.map((die) => ({
+            id: die.id,
+            value: die.value,
+            definitionId: die.definitionId,
+        })),
+        [dice],
+    );
+    const selectedDieIds = React.useMemo(() => {
+        if (isSelectMode) return selectResult?.selectedDiceIds ?? [];
+        if (isModifyMode) {
+            return Object.keys(modifyResult?.modifications ?? {}).map((dieId) => Number(dieId));
+        }
+        return [];
+    }, [isModifyMode, isSelectMode, modifyResult, selectResult]);
 
     const handleDieClick = (dieId: number) => {
         // 掷骰结果已进入权威状态后，允许玩家立刻锁骰，
         // 不要让本地最短动画窗口吞掉真实点击。
         if (isRolling && !isInteractionMode && rollCount === 0) return;
 
-        if (isInteractionMode && !isAnyMode && multistepInteraction) {
+        if (isInteractionMode && multistepInteraction) {
             // set / copy / selectDie 模式：点击骰子 = step(select/toggle)
             if (isSelectMode) {
                 multistepInteraction.step({ action: 'toggle', dieId } as DiceSelectStep);
             } else if (isModifyMode) {
                 const die = dice.find(d => d.id === dieId);
                 if (!die) return;
+                if (isAnyMode) {
+                    const currentPreview = modifyResult?.modifications[dieId] ?? die.value;
+                    const nextValue = currentPreview >= 6 ? 1 : currentPreview + 1;
+                    multistepInteraction.step({ action: 'setAny', dieId, newValue: nextValue } as DiceModifyStep);
+                    return;
+                }
+                if (isAdjustMode) {
+                    const currentPreview = modifyResult?.modifications[dieId] ?? die.value;
+                    if (canAdjustUp && currentPreview < 6) {
+                        multistepInteraction.step({ action: 'adjust', dieId, delta: 1, currentValue: die.value } as DiceModifyStep);
+                    } else if (canAdjustDown && currentPreview > 1) {
+                        multistepInteraction.step({ action: 'adjust', dieId, delta: -1, currentValue: die.value } as DiceModifyStep);
+                    }
+                    return;
+                }
                 const alreadySelected = isSelected(dieId);
                 if (alreadySelected) {
                     // 取消选择：重置该骰子（通过 select 覆盖为原始值）
@@ -191,8 +271,8 @@ export const DiceTray = ({
 
     return (
         <div
-            className={`
-            ${containerClassName}
+            className={isOverlayPresentation ? resolvedContainerClassName : `
+            ${resolvedContainerClassName}
             border-t-[0.12vw] border-l-[0.1vw] border-b-[0.2vw] border-r-[0.12vw]
             ${isInteractionMode
                 ? 'bg-slate-950 border-transparent ring-[0.2vw] ring-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.3)]'
@@ -200,36 +280,126 @@ export const DiceTray = ({
                     ? 'bg-slate-950 border-transparent ring-[0.2vw] ring-emerald-500 shadow-[0_0_30px_rgba(52,211,153,0.3)]'
                     : 'bg-gradient-to-b from-[#1a1e36] via-[#0d0e1a] to-[#05060a] border-indigo-300/30 border-black/80 shadow-[inset_0_5px_12px_rgba(0,0,0,0.9),0_15px_30px_rgba(0,0,0,0.4)]'}
         `}
-            data-tutorial-id="dice-tray"
+            data-tutorial-id={isOverlayPresentation ? undefined : 'dice-tray'}
         >
             {/* Glossy overlay for metallic feel without expensive blur */}
-            <div className={glossClassName} />
+            {!isOverlayPresentation && <div className={glossClassName} />}
             {/* Internal rim highlight */}
-            <div className={`${rimClassName} ${isInteractionMode ? 'border-amber-400/20' : 'border-t-white/20 border-l-white/10 border-transparent'} `} />
+            {!isOverlayPresentation && <div className={`${rimClassName} ${isInteractionMode ? 'border-amber-400/20' : 'border-t-white/20 border-l-white/10 border-transparent'} `} />}
             {/* Deep recess shadow at the top */}
-            <div className={shadowClassName} />
+            {!isOverlayPresentation && <div className={shadowClassName} />}
 
-            <div className={trayInnerClassName}>
+            <div className={resolvedTrayInnerClassName}>
+                {isOverlayPresentation && (
+                    <DiceField3D
+                        dice={fieldDice}
+                        selectedDieIds={selectedDieIds}
+                        isRolling={isRolling}
+                        rerollingDiceIds={rerollingDiceIds}
+                        locale={locale}
+                        characterId={dice[0]?.definitionId?.replace('-dice', '')}
+                        slots={isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS}
+                        onDieClick={handleDieClick}
+                        scenePreset={isBoardPresentation ? 'board-topdown' : 'spotlight'}
+                        onProjectedDiceUpdate={(layouts) => {
+                            setCenterDiceLayout((prev) => {
+                                const next: Record<number, ProjectedDiceLayout> = {};
+                                let changed = layouts.length !== Object.keys(prev).length;
+                                for (const layout of layouts) {
+                                    next[layout.id] = layout;
+                                    const prevLayout = prev[layout.id];
+                                    if (!prevLayout
+                                        || Math.abs(prevLayout.x - layout.x) > 1
+                                        || Math.abs(prevLayout.y - layout.y) > 1
+                                        || Math.abs(prevLayout.width - layout.width) > 1
+                                        || Math.abs(prevLayout.height - layout.height) > 1
+                                        || prevLayout.selected !== layout.selected
+                                        || Math.abs(prevLayout.minY - layout.minY) > 1
+                                        || Math.abs(prevLayout.maxY - layout.maxY) > 1) {
+                                        changed = true;
+                                    }
+                                }
+                                return changed ? next : prev;
+                            });
+                        }}
+                    />
+                )}
                 {dice.map((d, i) => {
                     const selected = isSelected(d.id);
                     const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
                     // 锁定只影响重投保留，不应阻止卡牌/效果对骰子的修改。
                     // 因此 modifyDie 的所有模式（set/copy/any/adjust）都允许选中已锁定骰子。
                     const canModifyDie = true;
-                    const showAdjustButtons = isInteractionMode && isAdjustMode && canModifyDie;
-                    const showAnyModeButtons = isInteractionMode && isAnyMode && canModifyDie &&
+                    const useDirectDieClicks = isOverlayPresentation;
+                    const showAdjustButtons = !useDirectDieClicks && isInteractionMode && isAdjustMode && canModifyDie;
+                    const showAnyModeButtons = !useDirectDieClicks && isInteractionMode && isAnyMode && canModifyDie &&
                         (isModified || currentSelectCount < maxSelectCount);
                     const isInactiveDie = isInteractionMode && !canModifyDie;
                     const clickable = isInteractionMode
-                        ? (isAnyMode ? false : (!isInactiveDie && (canSelectMore || selected)))
+                        ? ((isAnyMode || isAdjustMode)
+                            ? !isInactiveDie && (canSelectMore || selected || isModified)
+                            : (!isInactiveDie && (canSelectMore || selected)))
                         : canToggleDieLock;
                     // any/adjust 模式下使用本地预览值
                     const displayValue = (isAnyMode || isAdjustMode)
                         ? (modifyResult?.modifications[d.id] ?? d.value)
                         : d.value;
+                    const scatterSlots = isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS;
+                    const scatterSlot = scatterSlots[i % scatterSlots.length];
+                    const projectedLayout = centerDiceLayout[d.id];
+                    const centerX = projectedLayout?.x ?? 0;
+                    const centerY = projectedLayout?.y ?? 0;
+                    const projectedScale = isBoardPresentation ? 0.92 : 0.78;
+                    const centerWidth = projectedLayout ? Math.max(60, projectedLayout.width * projectedScale) : 88;
+                    const centerHeight = projectedLayout ? Math.max(60, projectedLayout.height * projectedScale) : 88;
+
+                    if (isOverlayPresentation) {
+                        return (
+                            <div
+                                key={d.id}
+                                onClick={() => clickable && handleDieClick(d.id)}
+                                data-testid={`die-button-${d.id}`}
+                                data-selected={selected ? 'true' : 'false'}
+                                data-clickable={clickable ? 'true' : 'false'}
+                                data-display-value={displayValue}
+                                className={clsx(
+                                    'absolute rounded-2xl transition-[left,top,width,height,transform,filter] duration-75 ease-out',
+                                    'ring-0'
+                                )}
+                                style={{
+                                    left: projectedLayout ? `${centerX}px` : scatterSlot.left,
+                                    top: projectedLayout ? `${centerY}px` : scatterSlot.top,
+                                    zIndex: (scatterSlot.zIndex ?? 1) + 20,
+                                    width: projectedLayout ? `${centerWidth}px` : resolvedDiceSize,
+                                    height: projectedLayout ? `${centerHeight}px` : resolvedDiceSize,
+                                    transform: 'translate(-50%, -50%)',
+                                }}
+                            >
+                                {selected && !isBoardPresentation && (
+                                    <div
+                                        className={clsx(
+                                            'pointer-events-none absolute z-[8] border-[#f2c14e]',
+                                            'inset-[7%] rounded-[23%]',
+                                        )}
+                                        style={{ borderWidth: 'clamp(4px, 0.34vw, 6px)' }}
+                                    />
+                                )}
+                                {!isInteractionMode && d.isKept && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="max-w-[4.2rem] overflow-hidden text-ellipsis whitespace-nowrap rounded bg-black/55 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20">
+                                            {t('dice.locked')}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
 
                     return (
-                        <div key={d.id} className={`relative flex items-center ${rowGapClassName}`}>
+                        <div
+                            key={d.id}
+                            className={`relative flex items-center ${rowGapClassName}`}
+                        >
                             {/* 左侧 - 减号按钮 */}
                             {(showAdjustButtons || showAnyModeButtons) && (
                                 <button
@@ -257,20 +427,29 @@ export const DiceTray = ({
                                         ${!isInteractionMode && d.isKept ? 'opacity-80' : ''}
                                         ${!clickable && !showAdjustButtons && !showAnyModeButtons ? 'cursor-not-allowed opacity-50' : ''}
                                         ${clickable ? 'cursor-pointer hover:scale-110' : ''}
-                                        ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-lg scale-105' : ''}
+                                        ${selected && !isOverlayPresentation ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-lg scale-105' : ''}
                                     `}
+                                    style={isOverlayPresentation
+                                        ? {
+                                            width: resolvedDiceSize,
+                                            height: resolvedDiceSize,
+                                        }
+                                        : undefined}
                                 >
-                                    <div className="pointer-events-none">
-                                        <Dice3D
-                                            value={displayValue}
-                                            isRolling={(isRolling && !d.isKept) || (rerollingDiceIds?.includes(d.id) ?? false)}
-                                            index={i}
-                                            size={diceSize}
-                                            locale={locale}
-                                            characterId={d.definitionId?.replace('-dice', '')}
-                                            definitionId={d.definitionId}
-                                        />
-                                    </div>
+                                    {!isOverlayPresentation && (
+                                        <div className="pointer-events-none">
+                                            <Dice3D
+                                                value={displayValue}
+                                                isRolling={(isRolling && !d.isKept) || (rerollingDiceIds?.includes(d.id) ?? false)}
+                                                index={i}
+                                                size={resolvedDiceSize}
+                                                locale={locale}
+                                                variant="default"
+                                                characterId={d.definitionId?.replace('-dice', '')}
+                                                definitionId={d.definitionId}
+                                            />
+                                        </div>
+                                    )}
                                     {!isInteractionMode && d.isKept && (
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                                             <div className={`${lockedLabelClassName} font-black text-white bg-black/50 rounded uppercase tracking-wider shadow-sm border border-white/20`}>
@@ -278,8 +457,8 @@ export const DiceTray = ({
                                             </div>
                                         </div>
                                     )}
-                                    {selected && !showAdjustButtons && !showAnyModeButtons && (
-                                        <div className={`absolute ${selectedBadgeClassName} bg-amber-500 rounded-full flex items-center justify-center z-30`}>
+                                    {selected && !showAdjustButtons && !showAnyModeButtons && !isOverlayPresentation && (
+                                        <div className={`absolute ${resolvedSelectedBadgeClassName} bg-amber-500 rounded-full flex items-center justify-center z-30`}>
                                             <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
                                         </div>
                                     )}
@@ -324,6 +503,7 @@ export const DiceActions = ({
     interaction,
     multistepInteraction,
     setRerollingDiceIds,
+    presentation = 'rail',
 }: {
     rollCount: number;
     rollLimit: number;
@@ -340,9 +520,12 @@ export const DiceActions = ({
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
     /** 设置重掷动画骰子 ID */
     setRerollingDiceIds: (ids: number[]) => void;
+    /** rail 用于右侧栏，center 用于中场舞台 */
+    presentation?: 'rail' | 'center';
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const actionTokens = DESKTOP_DICE_ACTION_TOKENS;
+    const isCenterPresentation = presentation === 'center';
+    const actionTokens = isCenterPresentation ? CENTER_DICE_ACTION_TOKENS : DESKTOP_DICE_ACTION_TOKENS;
     const isRollPhase = currentPhase === 'offensiveRoll' || currentPhase === 'targetingRoll' || currentPhase === 'defensiveRoll';
     const dtMeta = getDtMeta(interaction);
     const isInteractionMode = Boolean(dtMeta);
@@ -458,6 +641,16 @@ export const DiceActions = ({
         ? 'primary' as const
         : (rollConfirmed ? 'glass' as const : 'secondary' as const);
 
+    const showSingleRollButton = !isInteractionMode && rollCount === 0;
+    const rollLabel = isRolling
+        ? t('dice.rolling')
+        : rollCount > 0
+            ? t('dice.reroll_action')
+            : t('dice.roll_action');
+    const rollIcon = rollCount > 0
+        ? <RotateCcw className="h-[1em] w-[1em] shrink-0" />
+        : <Dices className="h-[1em] w-[1em] shrink-0" />;
+
     return (
         <div className={actionTokens.containerClassName}>
             <GameButton
@@ -465,9 +658,11 @@ export const DiceActions = ({
                 disabled={leftDisabled}
                 variant={leftVariant}
                 size="sm"
+                icon={rollIcon}
                 clickSoundKey={isInteractionMode ? undefined : null}
                 className={clsx(
-                    `!py-0 flex items-center justify-between h-full whitespace-nowrap overflow-hidden ${actionTokens.buttonClassName}`,
+                    `!py-0 flex items-center justify-center h-full whitespace-nowrap overflow-hidden ${actionTokens.buttonClassName}`,
+                    showSingleRollButton && (isCenterPresentation ? 'min-w-[8.5vw]' : 'col-span-2 w-full'),
                     !isInteractionMode && isRolling && 'animate-pulse'
                 )}
                 data-tutorial-id={isInteractionMode ? undefined : 'dice-roll-button'}
@@ -476,30 +671,158 @@ export const DiceActions = ({
                     <span className={`flex-1 text-center font-black ${actionTokens.interactionTextClassName}`}>{t('common.cancel')}</span>
                 ) : (
                     <>
-                        <div className={`truncate flex-1 text-center font-black ${actionTokens.rollTextClassName}`}>
-                            {isRolling ? t('dice.rolling') : t('dice.roll_action')}
+                        <div className={`truncate text-center font-black ${actionTokens.rollTextClassName}`}>
+                            {rollLabel}
                         </div>
-                        {!isRolling && renderRollDots()}
+                        {!showSingleRollButton && !isRolling && renderRollDots()}
                     </>
                 )}
             </GameButton>
 
-            <GameButton
-                onClick={handleConfirmClick}
-                disabled={rightDisabled}
-                variant={rightVariant}
-                size="sm"
-                clickSoundKey={isInteractionMode ? undefined : null}
-                className={clsx(
-                    `flex items-center justify-center h-full whitespace-nowrap overflow-hidden font-black !py-0 ${actionTokens.buttonClassName} ${actionTokens.confirmTextClassName}`,
-                    !isInteractionMode && rollConfirmed && '!text-white/60'
-                )}
-                data-tutorial-id={isInteractionMode ? undefined : 'dice-confirm-button'}
+            {!showSingleRollButton && (
+                <GameButton
+                    onClick={handleConfirmClick}
+                    disabled={rightDisabled}
+                    variant={rightVariant}
+                    size="sm"
+                    icon={<Check className="h-[1em] w-[1em] shrink-0" />}
+                    clickSoundKey={isInteractionMode ? undefined : null}
+                    className={clsx(
+                        `flex items-center justify-center h-full whitespace-nowrap overflow-hidden font-black !py-0 ${actionTokens.buttonClassName} ${actionTokens.confirmTextClassName}`,
+                        !isInteractionMode && rollConfirmed && '!text-white/60'
+                    )}
+                    data-tutorial-id={isInteractionMode ? undefined : 'dice-confirm-button'}
+                >
+                    {isInteractionMode
+                        ? t('common.confirm')
+                        : (rollConfirmed ? t('dice.confirmed') : t('dice.confirm'))}
+                </GameButton>
+            )}
+        </div>
+    );
+};
+
+export const CenterDiceStage = ({
+    dice,
+    rollCount,
+    onToggleLock,
+    currentPhase,
+    canInteract,
+    isRolling,
+    rerollingDiceIds,
+    locale,
+    interaction,
+    multistepInteraction,
+    isPassiveRerollMode,
+}: {
+    dice: Die[];
+    rollCount: number;
+    onToggleLock: (id: number) => void;
+    currentPhase: TurnPhase;
+    canInteract: boolean;
+    isRolling: boolean;
+    rerollingDiceIds?: number[];
+    locale?: string;
+    interaction?: InteractionDescriptor;
+    multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
+    isPassiveRerollMode?: boolean;
+}) => {
+    const dtMeta = getDtMeta(interaction);
+    const isInteractionMode = Boolean(dtMeta);
+    const shouldShowDice = rollCount > 0 || isRolling || isInteractionMode || isPassiveRerollMode;
+
+    return (
+        <div
+            className="pointer-events-none absolute left-[24vw] right-[24vw] top-[5vh] bottom-[33vh] flex items-start justify-center max-[900px]:left-[16vw] max-[900px]:right-[18vw] max-[900px]:top-[-1vh] max-[900px]:bottom-[40vh]"
+            style={{ zIndex: UI_Z_INDEX.overlay }}
+        >
+            <motion.div
+                className="relative flex h-full w-full max-w-[760px] flex-col items-center justify-start"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 0.24, ease: 'easeOut' }}
+                data-testid="dicethrone-center-dice-stage"
             >
-                {isInteractionMode
-                    ? t('common.confirm')
-                    : (rollConfirmed ? t('dice.confirmed') : t('dice.confirm'))}
-            </GameButton>
+                {shouldShowDice && (
+                    <>
+                        <div className="pointer-events-none absolute left-1/2 top-[52%] h-[clamp(96px,11vw,150px)] w-[clamp(330px,31vw,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/34 blur-2xl" />
+                        <div className="pointer-events-none absolute left-1/2 top-[54%] h-[2px] w-[clamp(330px,32vw,520px)] -translate-x-1/2 rounded-full bg-gradient-to-r from-transparent via-amber-300/55 to-transparent" />
+                        <DiceTray
+                            dice={dice}
+                            rollCount={rollCount}
+                            onToggleLock={onToggleLock}
+                            currentPhase={currentPhase}
+                            canInteract={canInteract}
+                            isRolling={isRolling}
+                            rerollingDiceIds={rerollingDiceIds}
+                            locale={locale}
+                            interaction={interaction}
+                            multistepInteraction={multistepInteraction}
+                            isPassiveRerollMode={isPassiveRerollMode}
+                            presentation="center"
+                        />
+                    </>
+                )}
+            </motion.div>
+        </div>
+    );
+};
+
+export const BoardDiceStage = ({
+    dice,
+    rollCount,
+    onToggleLock,
+    currentPhase,
+    canInteract,
+    isRolling,
+    rerollingDiceIds,
+    locale,
+    interaction,
+    multistepInteraction,
+    isPassiveRerollMode,
+}: {
+    dice: Die[];
+    rollCount: number;
+    onToggleLock: (id: number) => void;
+    currentPhase: TurnPhase;
+    canInteract: boolean;
+    isRolling: boolean;
+    rerollingDiceIds?: number[];
+    locale?: string;
+    interaction?: InteractionDescriptor;
+    multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
+    isPassiveRerollMode?: boolean;
+}) => {
+    const dtMeta = getDtMeta(interaction);
+    const isInteractionMode = Boolean(dtMeta);
+    const shouldShowDice = rollCount > 0 || isRolling || isInteractionMode || isPassiveRerollMode;
+
+    if (!shouldShowDice) return null;
+
+    return (
+        <div
+            className="pointer-events-auto absolute inset-x-[7%] top-[16%] bottom-[8%]"
+            style={{ zIndex: UI_Z_INDEX.hud + 5 }}
+            data-testid="dicethrone-board-dice-stage"
+            data-board-magnify-ignore="true"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+        >
+            <DiceTray
+                dice={dice}
+                rollCount={rollCount}
+                onToggleLock={onToggleLock}
+                currentPhase={currentPhase}
+                canInteract={canInteract}
+                isRolling={isRolling}
+                rerollingDiceIds={rerollingDiceIds}
+                locale={locale}
+                interaction={interaction}
+                multistepInteraction={multistepInteraction}
+                isPassiveRerollMode={isPassiveRerollMode}
+                presentation="board"
+            />
         </div>
     );
 };

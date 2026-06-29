@@ -506,7 +506,15 @@
     "autoResponseEnabled": "Manual Response Enabled",
     "autoResponseDisabled": "Auto Skip Enabled",
     "autoResponse": "Auto Skip",
-    "manualResponse": "Manual Response"
+    "manualResponse": "Manual Response",
+    "diceDisplay": {
+      "title": "Dice Display",
+      "hint": "Switch the in-match dice presentation without changing the actual roll result.",
+      "board3d": "Board 3D Dice",
+      "board3dHint": "Use the in-board 3D dice presentation during rolls. Off by default.",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
   },
   "hero": {
     "monk": "Monk",
@@ -1166,6 +1174,9 @@
       "activateNanobot": "Activate Nanobot (cost {{synth}} Synth)",
       "activateShockBot": "Activate Shock Bot (cost {{synth}} Synth)",
       "activateHealBot": "Activate Heal Bot (cost {{synth}} Synth)",
+      "activateNanobotFree": "Activate Nanobot for free",
+      "activateShockBotFree": "Activate Shock Bot for free",
+      "activateHealBotFree": "Activate Heal Bot for free",
       "skip": "Do not activate another bot"
     },
     "pyroSpendCpForFM": {
@@ -3801,9 +3812,9 @@
     },
     "tinker": {
       "name": "Tinker",
-      "description": "Defensive roll 4: gain Synth; if you roll Electricity, inflict Nanobomb.",
+      "description": "Defensive roll 4: gain 1 Synth per Gear; if you roll Electricity, inflict Nanobomb.",
       "effects": {
-        "defense4": "Defensive roll 4: gain Synth; if you roll Electricity, inflict Nanobomb."
+        "defense4": "Defensive roll 4: gain 1 Synth per Gear; if you roll Electricity, inflict Nanobomb."
       }
     },
     "tinker-2": {
@@ -4223,7 +4234,7 @@
     },
     "upgrade-artificer-tinker-2": {
       "name": "Tinker II",
-      "description": "Upgrade Tinker: defensive roll 5; Wrench deals 1 damage; gain 1 Synth; inflict 1 Nanobomb.",
+      "description": "Upgrade Tinker: defensive roll 5; if you roll 2 Wrench, deal 1 damage; gain 1 Synth per Gear; inflict 1 Nanobomb per Electricity.",
       "effects": {
         "upgrade": "Upgrade Tinker to level II."
       }

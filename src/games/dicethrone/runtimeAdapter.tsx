@@ -1,7 +1,10 @@
 import type { MatchState } from '../../engine/types';
 import type { GameRuntimeAdapter } from '../gameRuntimeAdapter';
+import { DiceThroneDisplayPreferenceProvider } from './ui/DiceDisplayPreferenceProvider';
+import { DiceDisplaySettingsSection } from './ui/DiceDisplaySettingsSection';
 
 export const diceThroneGameRuntimeAdapter: GameRuntimeAdapter = {
+    PageProvider: DiceThroneDisplayPreferenceProvider,
     forceDismissHud: ({ state, playerId, dispatch }) => {
         const pendingBonusDiceSettlement = (state as MatchState<{
             pendingBonusDiceSettlement?: { attackerId?: string | number };
@@ -17,6 +20,7 @@ export const diceThroneGameRuntimeAdapter: GameRuntimeAdapter = {
         dispatch('SKIP_BONUS_DICE_REROLL', {});
         return true;
     },
+    HudSettingsSection: DiceDisplaySettingsSection,
     seatSwap: {
         mode: 'request',
         requestCommandType: 'REQUEST_SEAT_SWAP',

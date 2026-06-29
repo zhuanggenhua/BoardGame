@@ -4,20 +4,33 @@ import { useTranslation } from 'react-i18next';
 import { MousePointerClick } from 'lucide-react';
 import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
-import { useMultistepInteraction } from '../../../engine/systems/useMultistepInteraction';
-import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
-import {
-    diceModifyReducer, diceModifyToCommands,
-    diceSelectReducer, diceSelectToCommands,
-} from '../domain/systems';
-import { DiceActions, DiceTray, getDtMeta } from './DiceTray';
+import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
+import type { DiceModifyResult, DiceSelectResult } from '../domain/systems';
+import { DiceActions, DiceTray } from './DiceTray';
 import { DiscardPile } from './DiscardPile';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
 import { ActiveModifierBadge } from './ActiveModifierBadge';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
 import { PassiveAbilityPanel, type PassiveAbilityPanelProps } from './PassiveAbilityPanel';
+
+type SidebarDiceMeta = {
+    dtType?: 'modifyDie' | 'selectDie';
+    selectCount?: number;
+    diceOwnerId?: PlayerId;
+    targetOpponentDice?: boolean;
+    dieModifyConfig?: {
+        mode?: 'set' | 'adjust' | 'copy' | 'any';
+        targetValue?: number;
+    };
+};
+
+const getSidebarDiceMeta = (interaction?: InteractionDescriptor): SidebarDiceMeta | undefined => {
+    if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
+    const meta = (interaction.data as { meta?: SidebarDiceMeta } | undefined)?.meta;
+    if (!meta?.dtType) return undefined;
+    return meta;
+};
 
 export const RightSidebar = ({
     dice,
@@ -46,7 +59,9 @@ export const RightSidebar = ({
     discardHighlighted,
     sellButtonVisible,
     interaction,
-    dispatch,
+    multistepInteraction,
+    showDiceTray = true,
+    showDiceActions = true,
     activeModifiers,
     attackModifierBonusDamage,
     passiveAbilityProps,
@@ -79,7 +94,9 @@ export const RightSidebar = ({
     discardHighlighted: boolean;
     sellButtonVisible: boolean;
     interaction?: InteractionDescriptor;
-    dispatch: (type: string, payload?: unknown) => void;
+    multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
+    showDiceTray?: boolean;
+    showDiceActions?: boolean;
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
@@ -87,46 +104,7 @@ export const RightSidebar = ({
     teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
     const diceTrayWidthClassName = 'w-[5.8vw]';
-    const isDiceMultistep = interaction?.kind === 'multistep-choice' &&
-        ((interaction.data as any)?.meta?.dtType === 'modifyDie' ||
-         (interaction.data as any)?.meta?.dtType === 'selectDie');
-
-    const diceInteraction = useMemo(() => {
-        if (!isDiceMultistep || !interaction) return undefined;
-        const data = interaction.data as MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>;
-        if (typeof data?.localReducer === 'function' && typeof data?.toCommands === 'function') {
-            return interaction as InteractionDescriptor<MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>>;
-        }
-        const meta = (data as any)?.meta;
-        if (!meta) return undefined;
-        let hydratedData: MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>;
-        if (meta.dtType === 'modifyDie') {
-            const config = meta.dieModifyConfig;
-            const isManualConfirmMode = config?.mode === 'any' || config?.mode === 'adjust';
-            const selectCount = typeof meta.selectCount === 'number' ? meta.selectCount : 1;
-            hydratedData = {
-                ...data,
-                initialResult: data.initialResult ?? { modifications: {}, modCount: 0, totalAdjustment: 0 },
-                localReducer: (current: any, step: any) => diceModifyReducer(current, step, config, selectCount),
-                toCommands: ((result: any) => diceModifyToCommands(result, selectCount)) as any,
-                maxSteps: isManualConfirmMode ? undefined : data.maxSteps,
-                minSteps: isManualConfirmMode ? 1 : data.minSteps,
-            };
-        } else {
-            hydratedData = {
-                ...data,
-                initialResult: data.initialResult ?? { selectedDiceIds: [] },
-                localReducer: diceSelectReducer as any,
-                toCommands: diceSelectToCommands as any,
-            };
-        }
-        return {
-            ...interaction,
-            data: hydratedData,
-        } as InteractionDescriptor<MultistepChoiceData<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>>;
-    }, [isDiceMultistep, interaction]);
-
-    const multistepInteraction = useMultistepInteraction(diceInteraction, dispatch);
+    const isDiceMultistep = Boolean(getSidebarDiceMeta(interaction));
 
     const { t } = useTranslation('game-dicethrone');
     const actionRailWidthClassName = 'w-[10.2vw]';
@@ -141,24 +119,25 @@ export const RightSidebar = ({
 
     const interactionHint = useMemo(() => {
         if (!isDiceMultistep || !interaction) return null;
-        const dtMeta = getDtMeta(interaction);
+        const dtMeta = getSidebarDiceMeta(interaction);
         if (!dtMeta) return null;
 
         const isModifyMode = dtMeta.dtType === 'modifyDie';
         const isSelectMode = dtMeta.dtType === 'selectDie';
-        const config = isModifyMode ? (dtMeta as any).dieModifyConfig : undefined;
-        const mode = config?.mode as string | undefined;
+        const config = isModifyMode ? dtMeta.dieModifyConfig : undefined;
+        const mode = config?.mode;
 
-        const result = multistepInteraction?.result as any;
-        const modCount = result?.modCount ?? 0;
-        const selectCount = result?.selectedDiceIds?.length ?? 0;
+        const modifyResult = multistepInteraction?.result as DiceModifyResult | undefined;
+        const selectResult = multistepInteraction?.result as DiceSelectResult | undefined;
+        const modCount = modifyResult?.modCount ?? 0;
+        const selectCount = selectResult?.selectedDiceIds?.length ?? 0;
         const currentCount = isSelectMode ? selectCount : modCount;
         const maxCount = dtMeta.selectCount ?? 1;
 
         if (isModifyMode && mode === 'copy') {
             if (currentCount === 0) return t('interaction.hint_copy_step1');
             if (currentCount === 1) {
-                const sourceValue = Object.values(result?.modifications ?? {})[0];
+                const sourceValue = Object.values(modifyResult?.modifications ?? {})[0];
                 return t('interaction.hint_copy_step2', { value: sourceValue });
             }
             return t('interaction.hint_done');
@@ -199,6 +178,7 @@ export const RightSidebar = ({
         >
             <div className="flex-grow" />
             <div className={`relative w-full flex flex-col items-center ${stackGapClassName}`}>
+                {showDiceTray && (
                 <div className={`relative ${diceTrayWidthClassName}`}>
                     {(activeModifiers && activeModifiers.length > 0) || (attackModifierBonusDamage && attackModifierBonusDamage > 0) ? (
                         <div
@@ -240,20 +220,23 @@ export const RightSidebar = ({
                         isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
                     />
                 </div>
-                <DiceActions
-                    rollCount={rollCount}
-                    rollLimit={rollLimit}
-                    rollConfirmed={rollConfirmed}
-                    onRoll={onRoll}
-                    onConfirm={onConfirm}
-                    currentPhase={currentPhase}
-                    canInteract={canInteractDice}
-                    isRolling={isRolling}
-                    setIsRolling={setIsRolling}
-                    interaction={isDiceMultistep ? interaction : undefined}
-                    multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
-                    setRerollingDiceIds={setRerollingDiceIds}
-                />
+                )}
+                {showDiceActions && (
+                    <DiceActions
+                        rollCount={rollCount}
+                        rollLimit={rollLimit}
+                        rollConfirmed={rollConfirmed}
+                        onRoll={onRoll}
+                        onConfirm={onConfirm}
+                        currentPhase={currentPhase}
+                        canInteract={canInteractDice}
+                        isRolling={isRolling}
+                        setIsRolling={setIsRolling}
+                        interaction={isDiceMultistep ? interaction : undefined}
+                        multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
+                        setRerollingDiceIds={setRerollingDiceIds}
+                    />
+                )}
                 <div className={`w-full flex justify-center ${showAdvancePhaseButton ? '' : 'invisible pointer-events-none'}`}>
                     <GameButton
                         onClick={onAdvance}

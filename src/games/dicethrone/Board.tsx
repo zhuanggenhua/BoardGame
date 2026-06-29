@@ -40,13 +40,15 @@ import { LeftSidebar } from './ui/LeftSidebar';
 import { CenterBoard } from './ui/CenterBoard';
 import { playSound as playSoundFn } from '../../lib/audio/useGameAudio';
 import { RightSidebar } from './ui/RightSidebar';
+import { BoardDiceStage } from './ui/DiceTray';
 import { BoardOverlays } from './ui/BoardOverlays';
 import { GameHints } from './ui/GameHints';
 import { useGameMode } from '../../contexts/GameModeContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useCurrentChoice, useCurrentDefenderChoice, useDiceThroneState } from './hooks/useDiceThroneState';
 import { INTERACTION_COMMANDS, asCompareRollChoice } from '../../engine/systems/InteractionSystem';
-import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands, type DiceModifyStep, type DiceSelectStep } from './domain/systems';
+import { useMultistepInteraction } from '../../engine/systems/useMultistepInteraction';
+import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands, type DiceModifyResult, type DiceModifyStep, type DiceSelectResult, type DiceSelectStep } from './domain/systems';
 // 引擎层 Hooks
 import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks
@@ -77,6 +79,7 @@ import { useDieRerollAnimationConsumer } from './hooks/useDieRerollAnimationCons
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
+import { useDiceThroneDisplayPreference } from './ui/useDiceThroneDisplayPreference';
 import { useSyncedModalStackEntry } from '../../hooks/ui/useSyncedModalStackEntry';
 import { TokenResponseModal } from './ui/TokenResponseModal';
 import { InteractionOverlay } from './ui/InteractionOverlay';
@@ -153,6 +156,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         { logPrefix: 'Spectate[DiceThrone]' }
     ) as DiceThroneMoveMap;
     const { t, i18n } = useTranslation('game-dicethrone');
+    const { boardDice3dEnabled } = useDiceThroneDisplayPreference();
     useTutorialBridge(rawG.sys.tutorial, dispatch);
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep: nextTutorialStep } = useTutorial();
     const toast = useToast();
@@ -504,9 +508,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 ...sysInteraction,
                 data: {
                     ...sysInteraction.data,
+                    initialResult: (originalData.initialResult as DiceModifyResult | undefined)
+                        ?? { modifications: {}, modCount: 0, totalAdjustment: 0 },
                     localReducer: (current: unknown, step: unknown) =>
-                        diceModifyReducer(current as DiceModifyState, step as DiceModifyStep, config, selectCount),
-                    toCommands: (result: DiceModifyState) => diceModifyToCommands(result, selectCount),
+                        diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, selectCount),
+                    toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, selectCount),
                     // any/adjust 模式：手动确认，禁用 auto-confirm
                     maxSteps: isManualConfirmMode ? undefined : originalData.maxSteps,
                     minSteps: isManualConfirmMode ? 1 : originalData.minSteps,
@@ -519,8 +525,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 ...sysInteraction,
                 data: {
                     ...sysInteraction.data,
+                    initialResult: { selectedDiceIds: [] } as DiceSelectResult,
                     localReducer: (current: unknown, step: unknown) =>
-                        diceSelectReducer(current as DiceSelectState, step as DiceSelectStep),
+                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep),
                     toCommands: diceSelectToCommands,
                 },
             };
@@ -528,6 +535,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
         return undefined;
     }, [sysInteraction]);
+    const diceMultistepState = useMultistepInteraction<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>(
+        diceMultistepInteraction,
+        dispatch,
+    );
 
     // 追踪取消交互时返回的卡牌ID
     const prevInteractionRef = React.useRef<typeof pendingInteraction>(undefined);
@@ -1037,6 +1048,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             onCancelRerollSelect: () => setRerollSelectingAction(null),
         };
     }, [playerPassives, passiveActionUsability, player.resources, rerollSelectingAction, handlePassiveActionClick]);
+    const useBoardDiceStage = boardDice3dEnabled && ((
+        isRollPhase
+        && isViewRolling
+        && (G.rollCount > 0 || isRolling || !!rerollSelectingAction)
+    ) || !!diceMultistepInteraction);
 
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
@@ -1899,6 +1915,27 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
+                        diceStage={useBoardDiceStage ? (
+                            <BoardDiceStage
+                                dice={G.dice}
+                                rollCount={G.rollCount}
+                                currentPhase={currentPhase}
+                                canInteract={canInteractDice || !!rerollSelectingAction}
+                                isRolling={isRolling}
+                                rerollingDiceIds={rerollingDiceIds}
+                                locale={locale}
+                                onToggleLock={(id) => {
+                                    if (rerollSelectingAction) {
+                                        handlePassiveRerollDieSelect(id);
+                                        return;
+                                    }
+                                    engineMoves.toggleDieLock(id);
+                                }}
+                                interaction={diceMultistepInteraction}
+                                multistepInteraction={diceMultistepState}
+                                isPassiveRerollMode={!!rerollSelectingAction}
+                            />
+                        ) : null}
                     />
 
                     <RightSidebar
@@ -1949,6 +1986,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         sellButtonVisible={sellButtonVisible}
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         dispatch={dispatch}
+                        multistepInteraction={diceMultistepState}
+                        showDiceTray={!useBoardDiceStage}
                         activeModifiers={activeModifiers}
                         attackModifierBonusDamage={
                             G.pendingAttack?.attackModifierBonusDamage ?? G.players[G.activePlayerId]?.pendingBonusDamage

@@ -1,6 +1,11 @@
 // @asset-pipeline-allow
 // @asset-pipeline-allow
 import React from 'react';
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { createScopedLogger } from '../../../lib/logger';
 import { SHIMMER_BG } from '../../../components/common/media/OptimizedImage';
 import { getDieFaceByValue } from '../domain/diceRegistry';
@@ -9,6 +14,7 @@ import {
     getDiceSpritePosition,
     getDiceSpriteAssetPath,
 } from './assets';
+import { prioritizeWebglSpriteCandidates } from './dice3dSpriteSafety';
 import {
     getLocalizedImageCandidateUrls,
     getPreloadedImageElement,
@@ -16,22 +22,55 @@ import {
 } from '../../../core';
 
 export interface Dice3DProps {
-    /** 骰子值 (1-6) */
     value: number;
-    /** 是否正在播放滚动动画 */
     isRolling: boolean;
-    /** 骰子大小 (CSS 单位) */
     size?: string;
-    /** 语言 */
     locale?: string;
-    /** 动画序号，用于错峰滚动 */
     index?: number;
-    /** 变体：default 用于骰盘，spotlight 用于特写 */
-    variant?: 'default' | 'spotlight';
-    /** 角色 ID，用于回退路径和兜底字形 */
+    variant?: 'default' | 'spotlight' | 'board-topdown';
     characterId?: string;
-    /** 骰子定义 ID，优先从定义读取 spriteSheet */
     definitionId?: string;
+}
+
+export interface DiceField3DProps {
+    dice: Array<{
+        id: number;
+        value: number;
+        definitionId?: string;
+    }>;
+    selectedDieIds?: number[];
+    isRolling: boolean;
+    rerollingDiceIds?: number[];
+    locale?: string;
+    characterId?: string;
+    slots: Array<{
+        left: string;
+        top: string;
+        rotate: string;
+        zIndex?: number;
+        world?: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    }>;
+    onDieClick?: (dieId: number) => void;
+    onProjectedDiceUpdate?: (layouts: ProjectedDiceLayout[]) => void;
+    scenePreset?: 'spotlight' | 'board-topdown';
+    canvasClassName?: string;
+}
+
+export interface ProjectedDiceLayout {
+    id: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    selected: boolean;
 }
 
 const dice3DLogger = createScopedLogger('dicethrone:dice3d');
@@ -80,8 +119,152 @@ const DICE_FACE_FALLBACK_LABELS: Record<string, string> = {
     bullseye: 'BE',
 };
 
+const SPOTLIGHT_SETTLED_TILTS = [
+    [ -0.28,  0.33, -0.05 ],
+    [ -0.21, -0.30,  0.07 ],
+    [ -0.31,  0.24,  0.03 ],
+    [ -0.18, -0.35, -0.09 ],
+    [ -0.26,  0.28,  0.08 ],
+] as const;
+
+const BOARD_TOPDOWN_SETTLED_TILTS = [
+    [ -1.08,  0.92, -0.18 ],
+    [ -0.94, -0.76,  0.14 ],
+    [ -1.14,  0.52,  0.22 ],
+    [ -0.9,  -0.96, -0.19 ],
+    [ -1.1,   0.72,  0.12 ],
+] as const;
+
+let sharedBoardShadowTexture: THREE.CanvasTexture | null = null;
+type OutlineShaderMaterial = THREE.ShaderMaterial & {
+    uniforms: {
+        uColor: { value: THREE.Color };
+        uOpacity: { value: number };
+        uPower: { value: number };
+        uIntensity: { value: number };
+        uSolid: { value: number };
+        uEdgeOnly: { value: number };
+    };
+};
+
+function getBoardShadowTexture(): THREE.CanvasTexture {
+    if (sharedBoardShadowTexture) {
+        return sharedBoardShadowTexture;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        sharedBoardShadowTexture = new THREE.CanvasTexture(canvas);
+        return sharedBoardShadowTexture;
+    }
+
+    const gradient = ctx.createRadialGradient(128, 128, 12, 128, 128, 128);
+    gradient.addColorStop(0, 'rgba(0,0,0,0.96)');
+    gradient.addColorStop(0.28, 'rgba(0,0,0,0.72)');
+    gradient.addColorStop(0.56, 'rgba(0,0,0,0.22)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+
+    sharedBoardShadowTexture = new THREE.CanvasTexture(canvas);
+    sharedBoardShadowTexture.needsUpdate = true;
+    return sharedBoardShadowTexture;
+}
+
+function createSelectionSmileGeometry(
+    width: number,
+    innerHeight: number,
+    outerHeight: number,
+): THREE.ShapeGeometry {
+    const halfWidth = width / 2;
+    const shape = new THREE.Shape();
+    shape.moveTo(-halfWidth, 0);
+    shape.quadraticCurveTo(0, outerHeight, halfWidth, 0);
+    shape.lineTo(halfWidth, -0.012);
+    shape.quadraticCurveTo(0, innerHeight, -halfWidth, -0.012);
+    shape.closePath();
+    return new THREE.ShapeGeometry(shape, 96);
+}
+
+function createOutlineShaderMaterial({
+    color,
+    opacity,
+    power,
+    intensity,
+    edgeOnly = false,
+    blending = THREE.NormalBlending,
+}: {
+    color: THREE.ColorRepresentation;
+    opacity: number;
+    power: number;
+    intensity: number;
+    edgeOnly?: boolean;
+    blending?: THREE.Blending;
+}): OutlineShaderMaterial {
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            uColor: { value: new THREE.Color(color) },
+            uOpacity: { value: opacity },
+            uPower: { value: power },
+            uIntensity: { value: intensity },
+            uSolid: { value: 0 },
+            uEdgeOnly: { value: edgeOnly ? 1 : 0 },
+        },
+        vertexShader: `
+            varying vec3 vNormal;
+            varying vec3 vObjectNormal;
+            varying vec3 vViewPosition;
+
+            void main() {
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                vViewPosition = -mvPosition.xyz;
+                vNormal = normalize(normalMatrix * normal);
+                vObjectNormal = normalize(normal);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            uniform vec3 uColor;
+            uniform float uOpacity;
+            uniform float uPower;
+            uniform float uIntensity;
+            uniform float uSolid;
+            uniform float uEdgeOnly;
+            varying vec3 vNormal;
+            varying vec3 vObjectNormal;
+            varying vec3 vViewPosition;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                vec3 objectNormal = abs(normalize(vObjectNormal));
+                vec3 viewDir = normalize(vViewPosition);
+                float rim = pow(1.0 - clamp(abs(dot(normal, viewDir)), 0.0, 1.0), uPower) * uIntensity;
+                float maxAxis = max(max(objectNormal.x, objectNormal.y), objectNormal.z);
+                float bevelMask = smoothstep(0.1, 0.3, 1.0 - maxAxis);
+                float surfaceMask = mix(1.0, bevelMask, clamp(uEdgeOnly, 0.0, 1.0));
+                float rimAlpha = clamp(rim, 0.0, 1.0) * surfaceMask * uOpacity;
+                float alpha = mix(rimAlpha, uOpacity, clamp(uSolid, 0.0, 1.0));
+                if (alpha < 0.02) discard;
+                gl_FragColor = vec4(uColor, alpha);
+            }
+        `,
+        side: THREE.BackSide,
+        transparent: true,
+        depthTest: true,
+        depthWrite: false,
+        toneMapped: false,
+        blending,
+    }) as OutlineShaderMaterial;
+}
+
 type DiceSpriteLoadResult = { url: string; img: HTMLImageElement } | null;
+type DiceAtlasImageLoadResult = { url: string; img: HTMLImageElement } | null;
 const diceSpriteInFlightLoads = new Map<string, Promise<DiceSpriteLoadResult>>();
+const diceAtlasImageInFlightLoads = new Map<string, Promise<DiceAtlasImageLoadResult>>();
+const diceAtlasImageCache = new Map<string, HTMLImageElement>();
 
 const hasUsableSpriteImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
     img != null && img.naturalWidth > 0;
@@ -185,6 +368,58 @@ const loadDiceSpriteCandidatesShared = (candidateUrls: string[]): Promise<DiceSp
     return promise;
 };
 
+const loadDiceAtlasImageShared = (candidateUrls: string[]): Promise<DiceAtlasImageLoadResult> => {
+    if (candidateUrls.length === 0) {
+        return Promise.resolve(null);
+    }
+
+    const orderedCandidates = prioritizeWebglSpriteCandidates(candidateUrls);
+    if (orderedCandidates.length === 0) {
+        return Promise.resolve(null);
+    }
+    for (const candidateUrl of orderedCandidates) {
+        const cached = diceAtlasImageCache.get(candidateUrl);
+        if (cached) {
+            return Promise.resolve({ url: candidateUrl, img: cached });
+        }
+    }
+
+    const inFlightKey = orderedCandidates.join('|');
+    const inFlight = diceAtlasImageInFlightLoads.get(inFlightKey);
+    if (inFlight) {
+        return inFlight;
+    }
+
+    const promise = new Promise<DiceAtlasImageLoadResult>((resolve) => {
+        const tryLoad = (index: number) => {
+            if (index >= orderedCandidates.length) {
+                resolve(null);
+                return;
+            }
+
+            const url = orderedCandidates[index];
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                diceAtlasImageCache.set(url, img);
+                markImageLoaded(url, undefined, img);
+                resolve({ url, img });
+            };
+            img.onerror = () => {
+                tryLoad(index + 1);
+            };
+            img.src = url;
+        };
+
+        tryLoad(0);
+    }).finally(() => {
+        diceAtlasImageInFlightLoads.delete(inFlightKey);
+    });
+
+    diceAtlasImageInFlightLoads.set(inFlightKey, promise);
+    return promise;
+};
+
 const resolveFallbackLabel = (faceValue: number, definitionId?: string) => {
     const symbol = definitionId
         ? getDieFaceByValue(definitionId, faceValue)?.symbols?.[0]
@@ -196,6 +431,1582 @@ const resolveFallbackLabel = (faceValue: number, definitionId?: string) => {
         label: label ?? String(faceValue),
     };
 };
+
+const isWebglCapable = () => {
+    if (typeof document === 'undefined') return false;
+    try {
+        const canvas = document.createElement('canvas');
+        return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+    } catch {
+        return false;
+    }
+};
+
+const FACE_MATERIAL_ORDER = [3, 4, 2, 5, 1, 6] as const;
+const PROTOTYPE_FACE_MATERIAL_ORDER = [1, 6, 3, 4, 2, 5] as const;
+
+const FACE_TEXTURE_ROTATION: Partial<Record<number, number>> = {
+    1: Math.PI,
+    6: Math.PI,
+};
+
+const FACE_ATLAS_COORDS: Record<number, { col: number; row: number }> = {
+    1: { col: 0, row: 2 },
+    2: { col: 0, row: 1 },
+    3: { col: 1, row: 2 },
+    4: { col: 1, row: 1 },
+    5: { col: 2, row: 1 },
+    6: { col: 2, row: 2 },
+};
+
+const FACE_DECAL_TRANSFORMS: Record<number, {
+    position: [number, number, number];
+    rotation: [number, number, number];
+}> = {
+    1: { position: [0, 0, 0.516], rotation: [0, 0, 0] },
+    6: { position: [0, 0, -0.516], rotation: [0, Math.PI, 0] },
+    3: { position: [0.516, 0, 0], rotation: [0, -Math.PI / 2, 0] },
+    4: { position: [-0.516, 0, 0], rotation: [0, Math.PI / 2, 0] },
+    2: { position: [0, 0.516, 0], rotation: [-Math.PI / 2, 0, 0] },
+    5: { position: [0, -0.516, 0], rotation: [Math.PI / 2, 0, 0] },
+};
+
+function drawRoundedRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number,
+) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+}
+
+function drawFallbackDieFace(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    fallbackMeta: { label: string; symbol: string },
+    isSpotlight: boolean,
+) {
+    const outerRadius = size * (isSpotlight ? 0.18 : 0.16);
+    const innerPadding = size * (isSpotlight ? 0.10 : 0.12);
+    const symbolPadding = size * (isSpotlight ? 0.14 : 0.16);
+
+    const shimmerGradient = ctx.createLinearGradient(0, 0, size, size);
+    shimmerGradient.addColorStop(0, '#fff7e9');
+    shimmerGradient.addColorStop(0.45, '#f0e2c7');
+    shimmerGradient.addColorStop(1, '#c9b08e');
+    ctx.fillStyle = shimmerGradient;
+    drawRoundedRect(ctx, 0, 0, size, size, outerRadius);
+    ctx.fill();
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(88,64,35,0.25)';
+    ctx.shadowBlur = size * 0.03;
+    ctx.shadowOffsetY = size * 0.01;
+    ctx.fillStyle = 'rgba(255,248,234,0.85)';
+    drawRoundedRect(ctx, innerPadding, innerPadding, size - innerPadding * 2, size - innerPadding * 2, size * 0.11);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(111,100,80,0.95)';
+    ctx.fillRect(symbolPadding, symbolPadding, size - symbolPadding * 2, size - symbolPadding * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.font = `900 ${size * 0.23}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fallbackMeta.label, size / 2, size / 2);
+
+    const edge = ctx.createLinearGradient(0, 0, size, size);
+    edge.addColorStop(0, 'rgba(255,255,255,0.22)');
+    edge.addColorStop(0.5, 'rgba(0,0,0,0)');
+    edge.addColorStop(1, 'rgba(0,0,0,0.14)');
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = size * 0.02;
+    drawRoundedRect(ctx, size * 0.012, size * 0.012, size - size * 0.024, size - size * 0.024, outerRadius);
+    ctx.stroke();
+}
+
+function drawSpriteDieFace(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    faceId: number,
+    spriteImage: HTMLImageElement,
+    isSpotlight: boolean,
+) {
+    const face = FACE_ATLAS_COORDS[faceId] ?? FACE_ATLAS_COORDS[1];
+    const cellWidth = spriteImage.naturalWidth / 3;
+    const cellHeight = spriteImage.naturalHeight / 3;
+    const inset = Math.max(1, Math.min(cellWidth, cellHeight) * 0.018);
+    const radius = size * (isSpotlight ? 0.16 : 0.14);
+
+    ctx.save();
+    drawRoundedRect(ctx, 0, 0, size, size, radius);
+    ctx.clip();
+
+    if (FACE_TEXTURE_ROTATION[faceId]) {
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(FACE_TEXTURE_ROTATION[faceId]);
+        ctx.drawImage(
+            spriteImage,
+            face.col * cellWidth + inset,
+            face.row * cellHeight + inset,
+            cellWidth - inset * 2,
+            cellHeight - inset * 2,
+            -size / 2,
+            -size / 2,
+            size,
+            size,
+        );
+    } else {
+        ctx.drawImage(
+            spriteImage,
+            face.col * cellWidth + inset,
+            face.row * cellHeight + inset,
+            cellWidth - inset * 2,
+            cellHeight - inset * 2,
+            0,
+            0,
+            size,
+            size,
+        );
+    }
+
+    ctx.restore();
+
+    const edge = ctx.createLinearGradient(0, 0, size, size);
+    edge.addColorStop(0, 'rgba(255,255,255,0.25)');
+    edge.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+    edge.addColorStop(1, 'rgba(46,30,12,0.22)');
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = size * 0.018;
+    drawRoundedRect(ctx, size * 0.01, size * 0.01, size - size * 0.02, size - size * 0.02, radius);
+    ctx.stroke();
+}
+
+function createFaceTexture(
+    faceId: number,
+    spriteImage: HTMLImageElement | null,
+    fallbackMeta: { label: string; symbol: string },
+    isSpotlight: boolean,
+): THREE.Texture {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    ctx.clearRect(0, 0, size, size);
+    if (spriteImage) {
+        try {
+            drawSpriteDieFace(ctx, size, faceId, spriteImage, isSpotlight);
+        } catch (error) {
+            dice3DLogger.warn('draw-sprite-face-failed', {
+                faceId,
+                message: error instanceof Error ? error.message : String(error),
+            });
+            ctx.clearRect(0, 0, size, size);
+            drawFallbackDieFace(ctx, size, fallbackMeta, isSpotlight);
+        }
+    } else {
+        drawFallbackDieFace(ctx, size, fallbackMeta, isSpotlight);
+    }
+
+    const texture = new THREE.Texture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.flipY = false;
+    texture.premultiplyAlpha = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function getSpotlightTilt(index: number): THREE.Euler {
+    const [x, y, z] = SPOTLIGHT_SETTLED_TILTS[index % SPOTLIGHT_SETTLED_TILTS.length];
+    return new THREE.Euler(x, y, z, 'XYZ');
+}
+
+function getBoardTopdownTilt(index: number): THREE.Euler {
+    const [x, y, z] = BOARD_TOPDOWN_SETTLED_TILTS[index % BOARD_TOPDOWN_SETTLED_TILTS.length];
+    return new THREE.Euler(x, y, z, 'XYZ');
+}
+
+function getSettledEuler(value: number): THREE.Euler {
+    switch (value) {
+        case 1: return new THREE.Euler(0, 0, 0, 'XYZ');
+        case 6: return new THREE.Euler(Math.PI, 0, 0, 'XYZ');
+        case 2: return new THREE.Euler(-Math.PI / 2, 0, 0, 'XYZ');
+        case 5: return new THREE.Euler(Math.PI / 2, 0, 0, 'XYZ');
+        case 3: return new THREE.Euler(0, -Math.PI / 2, 0, 'XYZ');
+        case 4: return new THREE.Euler(0, Math.PI / 2, 0, 'XYZ');
+        default: return new THREE.Euler(0, 0, 0, 'XYZ');
+    }
+}
+
+function buildTargetQuaternion(
+    value: number,
+    index: number,
+    variant: 'default' | 'spotlight' | 'board-topdown',
+): THREE.Quaternion {
+    const base = new THREE.Quaternion().setFromEuler(getSettledEuler(value));
+    if (variant === 'spotlight') {
+        const tilt = new THREE.Quaternion().setFromEuler(getSpotlightTilt(index));
+        return base.multiply(tilt);
+    }
+    if (variant === 'board-topdown') {
+        const tilt = new THREE.Quaternion().setFromEuler(getBoardTopdownTilt(index));
+        return base.multiply(tilt);
+    }
+    return base;
+}
+
+const parseDegValue = (value: string, fallback = 0) => {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? (parsed * Math.PI) / 180 : fallback;
+};
+
+function createPrototypeFaceTexture(
+    faceId: number,
+    spriteImage: HTMLImageElement | null,
+    fallbackMeta: { label: string; symbol: string },
+): THREE.CanvasTexture {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    ctx.fillStyle = '#171e2b';
+    ctx.fillRect(0, 0, size, size);
+
+    if (spriteImage) {
+        try {
+            const face = FACE_ATLAS_COORDS[faceId] ?? FACE_ATLAS_COORDS[1];
+            const cellWidth = spriteImage.naturalWidth / 3;
+            const cellHeight = spriteImage.naturalHeight / 3;
+            const pad = Math.max(1, Math.floor(Math.min(cellWidth, cellHeight) * 0.015));
+            ctx.drawImage(
+                spriteImage,
+                face.col * cellWidth + pad,
+                face.row * cellHeight + pad,
+                cellWidth - pad * 2,
+                cellHeight - pad * 2,
+                0,
+                0,
+                size,
+                size,
+            );
+        } catch (error) {
+            dice3DLogger.warn('draw-prototype-face-failed', {
+                faceId,
+                message: error instanceof Error ? error.message : String(error),
+            });
+            drawFallbackDieFace(ctx, size, fallbackMeta, true);
+        }
+    } else {
+        drawFallbackDieFace(ctx, size, fallbackMeta, true);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function createPrototypeDiceMesh({
+    value,
+    index,
+    definitionId,
+    atlasImage,
+    slotRotate,
+    isSelected,
+    variant,
+}: {
+    value: number;
+    index: number;
+    definitionId?: string;
+    atlasImage: HTMLImageElement | null;
+    slotRotate: number;
+    isSelected?: boolean;
+    variant: 'spotlight' | 'board-topdown';
+}) {
+    const geometry = new RoundedBoxGeometry(
+        1.12,
+        1.12,
+        1.12,
+        8,
+        variant === 'board-topdown' ? 0.26 : 0.16,
+    );
+    const materials = PROTOTYPE_FACE_MATERIAL_ORDER.map((faceId) => {
+        const texture = createPrototypeFaceTexture(
+            faceId,
+            atlasImage,
+            resolveFallbackLabel(faceId, definitionId),
+        );
+        return new THREE.MeshStandardMaterial({
+            map: texture,
+            color: variant === 'board-topdown' ? 0xf7f9fd : 0xffffff,
+            roughness: variant === 'board-topdown' ? 0.46 : 0.46,
+            metalness: variant === 'board-topdown' ? 0.06 : 0.18,
+            emissive: new THREE.Color('#8fd8ff').multiplyScalar(variant === 'board-topdown' ? 0.004 : 0.045),
+            envMapIntensity: variant === 'board-topdown' ? 0.34 : 0.8,
+        });
+    });
+    const mesh = new THREE.Mesh(geometry, materials);
+    if (variant === 'board-topdown') {
+        materials.forEach((material) => {
+            material.emissiveIntensity = 0.004;
+            material.color.set(0xf7f9fd);
+            material.envMapIntensity = 0.34;
+            material.needsUpdate = true;
+        });
+    }
+    const outlineMaterial = createOutlineShaderMaterial({
+        color: 0x2c170d,
+        opacity: isSelected ? 0.82 : 0.74,
+        power: isSelected ? 1.52 : 1.72,
+        intensity: isSelected ? 1.86 : 1.42,
+        edgeOnly: variant === 'board-topdown',
+    });
+    const outlineShell = new THREE.Mesh(geometry, outlineMaterial);
+    outlineShell.scale.setScalar(isSelected ? 1.07 : 1.058);
+    const highlightMaterial = createOutlineShaderMaterial({
+        color: 0xffc15a,
+        opacity: variant === 'board-topdown' ? (isSelected ? 0.58 : 0) : (isSelected ? 0.66 : 0),
+        power: variant === 'board-topdown' ? 1.24 : 2.12,
+        intensity: variant === 'board-topdown' ? 1.18 : 1.78,
+        edgeOnly: variant === 'board-topdown',
+        blending: THREE.AdditiveBlending,
+    });
+    const highlightShell = new THREE.Mesh(geometry, highlightMaterial);
+    highlightShell.scale.setScalar(variant === 'board-topdown'
+        ? (isSelected ? 1.108 : 1.082)
+        : (isSelected ? 1.122 : 1.076));
+    outlineShell.visible = variant !== 'board-topdown';
+    highlightShell.visible = variant !== 'board-topdown';
+    mesh.add(outlineShell);
+    mesh.add(highlightShell);
+    const shadowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        map: getBoardShadowTexture(),
+        transparent: true,
+        opacity: 0.58,
+        depthWrite: false,
+        toneMapped: false,
+    });
+    const shadowMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.52, 1.02), shadowMaterial);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.renderOrder = 1;
+    shadowMesh.visible = true;
+    const selectionRingMaterial = new THREE.MeshBasicMaterial({
+        color: 0xe3ae38,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        toneMapped: false,
+        side: THREE.DoubleSide,
+        depthTest: true,
+        blending: THREE.NormalBlending,
+    });
+    const selectionRingMesh = new THREE.Mesh(
+        createSelectionSmileGeometry(1.3, 0.092, 0.18),
+        selectionRingMaterial,
+    );
+    selectionRingMesh.renderOrder = 0;
+    selectionRingMesh.visible = variant === 'board-topdown' && Boolean(isSelected);
+    const selectionRingGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x170d05,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        toneMapped: false,
+        side: THREE.DoubleSide,
+        depthTest: true,
+        blending: THREE.NormalBlending,
+    });
+    const selectionRingGlowMesh = new THREE.Mesh(
+        createSelectionSmileGeometry(1.38, 0.104, 0.208),
+        selectionRingGlowMaterial,
+    );
+    selectionRingGlowMesh.renderOrder = -1;
+    selectionRingGlowMesh.visible = variant === 'board-topdown' && Boolean(isSelected);
+    const slotQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, slotRotate, 'XYZ'));
+    mesh.quaternion.copy(
+        variant === 'board-topdown'
+            ? buildTargetQuaternion(value, index, 'board-topdown')
+            : buildTargetQuaternion(value, index, 'spotlight').multiply(slotQuat),
+    );
+
+    return {
+        mesh,
+        shadowMesh,
+        selectionRingMesh,
+        selectionRingGlowMesh,
+        geometry,
+        materials,
+        outlineShell,
+        outlineMaterial,
+        highlightShell,
+        highlightMaterial,
+        shadowMaterial,
+        selectionRingMaterial,
+        selectionRingGlowMaterial,
+        faceValue: value,
+        targetQuat: mesh.quaternion.clone(),
+        baseY: 0,
+    };
+}
+
+export const DiceField3D = ({
+    dice,
+    selectedDieIds = [],
+    isRolling,
+    rerollingDiceIds,
+    locale,
+    characterId = 'monk',
+    slots,
+    onDieClick,
+    onProjectedDiceUpdate,
+    scenePreset = 'spotlight',
+    canvasClassName,
+}: DiceField3DProps) => {
+    const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+    const underlayCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
+    const onDieClickRef = React.useRef(onDieClick);
+    const onProjectedDiceUpdateRef = React.useRef(onProjectedDiceUpdate);
+    const stateRef = React.useRef<{
+        renderer: THREE.WebGLRenderer;
+        composer?: EffectComposer;
+        outlinePass?: OutlinePass;
+        scene: THREE.Scene;
+        camera: THREE.PerspectiveCamera;
+        resizeObserver?: ResizeObserver;
+        rafId?: number;
+        diceItems: Array<ReturnType<typeof createPrototypeDiceMesh> & {
+            dieId: number;
+            targetX: number;
+            targetZ: number;
+            posX: number;
+            posZ: number;
+            velocityX: number;
+            velocityZ: number;
+            bouncePhase: number;
+            bounceAmplitude: number;
+            spinX: number;
+            spinY: number;
+            spinZ: number;
+            wasRolling: boolean;
+        }>;
+        raycaster: THREE.Raycaster;
+        pointer: THREE.Vector2;
+        disposed: boolean;
+    } | null>(null);
+    const rollingRef = React.useRef({ isRolling, rerollingDiceIds });
+    const selectedDieIdsRef = React.useRef(new Set<number>(selectedDieIds));
+    const signature = React.useMemo(
+        () => dice.map((die) => `${die.id}:${die.value}:${die.definitionId ?? ''}`).join('|'),
+        [dice],
+    );
+    const firstDefinitionId = dice[0]?.definitionId;
+    const spriteAssetPath = React.useMemo(
+        () => getDiceSpriteAssetPath(firstDefinitionId, characterId),
+        [characterId, firstDefinitionId],
+    );
+    const effectiveLocale = locale ?? 'zh-CN';
+    const spriteCandidates = React.useMemo(
+        () => (spriteAssetPath ? getLocalizedImageCandidateUrls(spriteAssetPath, effectiveLocale) : []),
+        [effectiveLocale, spriteAssetPath],
+    );
+
+    React.useEffect(() => {
+        rollingRef.current = { isRolling, rerollingDiceIds };
+    }, [isRolling, rerollingDiceIds]);
+
+    React.useEffect(() => {
+        selectedDieIdsRef.current = new Set(selectedDieIds);
+        const state = stateRef.current;
+        if (!state) return;
+        const isBoardTopdown = scenePreset === 'board-topdown';
+        state.diceItems.forEach((item) => {
+            const selected = selectedDieIdsRef.current.has(item.dieId);
+            item.materials.forEach((material) => {
+                if (!isBoardTopdown) return;
+                material.emissiveIntensity = 0.004;
+                material.color.set(0xf7f9fd);
+                material.envMapIntensity = 0.34;
+            });
+            item.outlineMaterial.uniforms.uColor.value.set(
+                0x2c170d,
+            );
+            item.outlineMaterial.uniforms.uOpacity.value = selected && isBoardTopdown ? 0 : 0.74;
+            item.outlineMaterial.uniforms.uPower.value = 1.72;
+            item.outlineMaterial.uniforms.uIntensity.value = selected && isBoardTopdown ? 0 : 1.42;
+            item.outlineMaterial.uniforms.uSolid.value = 0;
+            item.outlineMaterial.uniforms.uEdgeOnly.value = isBoardTopdown ? 1 : 0;
+            item.outlineShell.renderOrder = 0;
+            item.outlineShell.scale.setScalar(selected && isBoardTopdown ? 1.038 : 1.058);
+            item.outlineShell.visible = !isBoardTopdown;
+            item.highlightMaterial.uniforms.uColor.value.set(0xffc15a);
+            item.highlightMaterial.uniforms.uOpacity.value = selected && isBoardTopdown ? 0 : 0;
+            item.highlightMaterial.uniforms.uPower.value = 2.12;
+            item.highlightMaterial.uniforms.uIntensity.value = selected && isBoardTopdown ? 0 : 1.12;
+            item.highlightMaterial.uniforms.uSolid.value = 0;
+            item.highlightMaterial.uniforms.uEdgeOnly.value = isBoardTopdown ? 1 : 0;
+            item.highlightShell.renderOrder = 0;
+            item.highlightShell.scale.setScalar(selected && isBoardTopdown ? 1.052 : 1.076);
+            item.highlightShell.visible = !isBoardTopdown;
+            item.mesh.scale.setScalar(0.96);
+            item.shadowMaterial.opacity = isBoardTopdown ? 0.34 : 0.58;
+            item.shadowMesh.visible = true;
+            item.shadowMesh.scale.set(1.06, 0.76, 1);
+            item.selectionRingMaterial.opacity = 0;
+            item.selectionRingMesh.visible = false;
+            item.selectionRingGlowMaterial.opacity = 0;
+            item.selectionRingGlowMesh.visible = false;
+        });
+        if (isBoardTopdown && state.outlinePass) {
+            state.outlinePass.selectedObjects = [];
+        }
+        if (isBoardTopdown && state.composer) {
+            state.composer.render();
+        } else {
+            state.renderer.render(state.scene, state.camera);
+        }
+    }, [scenePreset, selectedDieIds]);
+
+    React.useEffect(() => {
+        onDieClickRef.current = onDieClick;
+    }, [onDieClick]);
+
+    React.useEffect(() => {
+        onProjectedDiceUpdateRef.current = onProjectedDiceUpdate;
+    }, [onProjectedDiceUpdate]);
+
+    React.useEffect(() => {
+        const canvas = canvasRef.current;
+        const underlayCanvas = underlayCanvasRef.current;
+        if (!canvas || !underlayCanvas || !isWebglCapable() || dice.length === 0) return;
+
+        let renderer: THREE.WebGLRenderer;
+        try {
+            renderer = new THREE.WebGLRenderer({
+                canvas,
+                alpha: true,
+                antialias: true,
+                powerPreference: 'high-performance',
+            });
+        } catch (error) {
+            dice3DLogger.warn('field-webgl-renderer-unavailable', {
+                message: error instanceof Error ? error.message : String(error),
+            });
+            return;
+        }
+
+        renderer.setClearColor(0x000000, 0);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.92;
+        renderer.shadowMap.enabled = false;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x070b10, scenePreset === 'board-topdown' ? 0.022 : 0.038);
+        const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+        if (scenePreset === 'board-topdown') {
+            camera.position.set(-0.38, 8.52, 4.08);
+            camera.lookAt(0.12, -1.02, 0.1);
+        } else {
+            camera.position.set(0, 2.05, 8.15);
+            camera.lookAt(0, -0.88, 0);
+        }
+
+        const keyLight = new THREE.SpotLight(0xf7fbff, scenePreset === 'board-topdown' ? 170 : 260, 24, Math.PI / 5.6, 0.52, 1.1);
+        keyLight.position.set(scenePreset === 'board-topdown' ? -1.45 : -3.6, scenePreset === 'board-topdown' ? 11.2 : 7.2, scenePreset === 'board-topdown' ? 0.62 : 5.2);
+        scene.add(keyLight);
+        scene.add(new THREE.HemisphereLight(0xe4efff, 0x17131a, scenePreset === 'board-topdown' ? 0.94 : 1.45));
+        const shadowLight = scenePreset === 'board-topdown'
+            ? new THREE.DirectionalLight(0xfafcff, 1.42)
+            : null;
+        if (shadowLight) {
+            shadowLight.position.set(-0.38, 10.6, 0.22);
+            shadowLight.target.position.set(0, -1.2, 0.03);
+            shadowLight.castShadow = true;
+            shadowLight.shadow.mapSize.set(2048, 2048);
+            shadowLight.shadow.bias = -0.0003;
+            shadowLight.shadow.normalBias = 0.014;
+            shadowLight.shadow.camera.near = 1;
+            shadowLight.shadow.camera.far = 14;
+            shadowLight.shadow.camera.left = -4.2;
+            shadowLight.shadow.camera.right = 4.2;
+            shadowLight.shadow.camera.top = 4.2;
+            shadowLight.shadow.camera.bottom = -4.2;
+            scene.add(shadowLight);
+            scene.add(shadowLight.target);
+        }
+
+        const rimLight = new THREE.PointLight(0x4ecfff, scenePreset === 'board-topdown' ? 54 : 120, 15);
+        rimLight.position.set(scenePreset === 'board-topdown' ? 2.8 : 4.8, scenePreset === 'board-topdown' ? 4.8 : 3.2, scenePreset === 'board-topdown' ? 1.1 : 2.6);
+        scene.add(rimLight);
+
+        const floor = new THREE.Mesh(
+            new THREE.CircleGeometry(scenePreset === 'board-topdown' ? 2.85 : 3.45, 96),
+            new THREE.MeshStandardMaterial({
+                color: scenePreset === 'board-topdown' ? 0x141b28 : 0x0d1720,
+                roughness: scenePreset === 'board-topdown' ? 0.84 : 0.72,
+                metalness: 0.12,
+                transparent: true,
+                opacity: scenePreset === 'board-topdown' ? 0.08 : 0.58,
+            }),
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = scenePreset === 'board-topdown' ? -1.55 : -1.72;
+        floor.receiveShadow = false;
+        scene.add(floor);
+
+        const halo = scenePreset === 'board-topdown'
+            ? null
+            : new THREE.Mesh(
+                new THREE.TorusGeometry(2.45, 0.018, 12, 160),
+                new THREE.MeshBasicMaterial({ color: 0xffc44f, transparent: true, opacity: 0.55 }),
+            );
+        if (halo) {
+            halo.rotation.x = -Math.PI / 2;
+            halo.position.y = -1.62;
+            scene.add(halo);
+        }
+
+        const composer = scenePreset === 'board-topdown' ? new EffectComposer(renderer) : undefined;
+        const outlinePass = composer
+            ? new OutlinePass(new THREE.Vector2(1, 1), scene, camera)
+            : undefined;
+        if (composer && outlinePass) {
+            composer.addPass(new RenderPass(scene, camera));
+            outlinePass.edgeStrength = 0;
+            outlinePass.edgeGlow = 0;
+            outlinePass.edgeThickness = 1;
+            outlinePass.pulsePeriod = 0;
+            outlinePass.visibleEdgeColor.set('#9a6517');
+            outlinePass.hiddenEdgeColor.set('#2d1606');
+            composer.addPass(outlinePass);
+        }
+
+        const diceGroup = new THREE.Group();
+        scene.add(diceGroup);
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        const diceItems = dice.map((die, index) => {
+            const slot = slots[index % slots.length];
+            const item = createPrototypeDiceMesh({
+                value: die.value,
+                index,
+                definitionId: die.definitionId,
+                atlasImage: null,
+                slotRotate: parseDegValue(slot.rotate),
+                isSelected: selectedDieIdsRef.current.has(die.id),
+                variant: scenePreset === 'board-topdown' ? 'board-topdown' : 'spotlight',
+            });
+            const worldX = slot.world?.x ?? 0;
+            const worldZ = slot.world?.z ?? 0;
+            const worldY = slot.world?.y ?? -1.08;
+            item.baseY = scenePreset === 'board-topdown' ? worldY - 0.035 : worldY;
+            item.mesh.position.set(
+                worldX,
+                item.baseY,
+                worldZ,
+            );
+            item.mesh.castShadow = false;
+            item.mesh.receiveShadow = false;
+            item.shadowMesh.position.set(worldX, floor.position.y + 0.01, worldZ);
+            item.shadowMesh.scale.set(1.06, 0.76, 1);
+            item.mesh.scale.setScalar(scenePreset === 'board-topdown' ? 0.96 : 1.04);
+            item.mesh.userData.dieId = die.id;
+            item.mesh.userData.index = index;
+            diceGroup.add(item.shadowMesh);
+            diceGroup.add(item.selectionRingGlowMesh);
+            diceGroup.add(item.selectionRingMesh);
+            diceGroup.add(item.mesh);
+            return {
+                ...item,
+                dieId: die.id,
+                targetX: worldX,
+                targetZ: worldZ,
+                posX: worldX,
+                posZ: worldZ,
+                velocityX: 0,
+                velocityZ: 0,
+                bouncePhase: index * 0.75,
+                bounceAmplitude: 0,
+                spinX: 0.14 + (index * 0.01),
+                spinY: 0.17 + (index * 0.012),
+                spinZ: 0.05 + (index * 0.008),
+                wasRolling: false,
+            };
+        });
+
+        const resize = () => {
+            const rect = canvas.getBoundingClientRect();
+            const width = Math.max(1, rect.width);
+            const height = Math.max(1, rect.height);
+            const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            renderer.setSize(width, height, false);
+            underlayCanvas.width = Math.max(1, Math.round(width * pixelRatio));
+            underlayCanvas.height = Math.max(1, Math.round(height * pixelRatio));
+            underlayCanvas.style.width = `${width}px`;
+            underlayCanvas.style.height = `${height}px`;
+            camera.aspect = width / height;
+            if (scenePreset === 'board-topdown') {
+                camera.position.x = width < 760 ? -0.28 : -0.38;
+                camera.position.z = width < 760 ? 4.22 : 4.08;
+                camera.position.y = width < 760 ? 8.72 : 8.52;
+            } else {
+                camera.position.z = width < 760 ? 8.9 : 8.15;
+                camera.position.y = width < 760 ? 2.35 : 2.05;
+            }
+            if (scenePreset === 'board-topdown') {
+                camera.lookAt(0.12, -1.02, 0.1);
+            }
+            camera.updateProjectionMatrix();
+            if (scenePreset === 'board-topdown' && composer && outlinePass) {
+                composer.setSize(width, height);
+                outlinePass.setSize(width, height);
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+        };
+
+        const observer = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(resize)
+            : undefined;
+        observer?.observe(canvas);
+
+        stateRef.current = {
+            renderer,
+            composer,
+            outlinePass,
+            scene,
+            camera,
+            resizeObserver: observer,
+            diceItems,
+            raycaster,
+            pointer,
+            disposed: false,
+        };
+
+        const replaceTextures = (atlasImage: HTMLImageElement | null) => {
+            diceItems.forEach((item, dieIndex) => {
+                const die = dice[dieIndex];
+                PROTOTYPE_FACE_MATERIAL_ORDER.forEach((faceId, materialIndex) => {
+                    const material = item.materials[materialIndex];
+                    material.map?.dispose();
+                    material.map = createPrototypeFaceTexture(
+                        faceId,
+                        atlasImage,
+                        resolveFallbackLabel(faceId, die?.definitionId),
+                    );
+                    material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                    material.needsUpdate = true;
+                });
+            });
+            renderer.render(scene, camera);
+        };
+
+        const xBounds: [number, number] = scenePreset === 'board-topdown' ? [-2.26, 2.26] : [-2.35, 2.35];
+        const zBounds: [number, number] = scenePreset === 'board-topdown' ? [-1.62, 1.5] : [-0.88, 0.88];
+        const collisionRadius = scenePreset === 'board-topdown' ? 0.9 : 0.78;
+
+        const resolveDiceSeparation = () => {
+            for (let i = 0; i < diceItems.length; i += 1) {
+                for (let j = i + 1; j < diceItems.length; j += 1) {
+                    const a = diceItems[i];
+                    const b = diceItems[j];
+                    const dx = b.posX - a.posX;
+                    const dz = b.posZ - a.posZ;
+                    let distance = Math.hypot(dx, dz);
+                    if (distance < 0.0001) {
+                        distance = 0.0001;
+                    }
+                    const minDistance = collisionRadius * 2;
+                    if (distance >= minDistance) continue;
+
+                    const overlap = minDistance - distance;
+                    const nx = dx / distance;
+                    const nz = dz / distance;
+                    const pushX = nx * overlap * 0.5;
+                    const pushZ = nz * overlap * 0.5;
+
+                    a.posX = THREE.MathUtils.clamp(a.posX - pushX, xBounds[0], xBounds[1]);
+                    a.posZ = THREE.MathUtils.clamp(a.posZ - pushZ, zBounds[0], zBounds[1]);
+                    b.posX = THREE.MathUtils.clamp(b.posX + pushX, xBounds[0], xBounds[1]);
+                    b.posZ = THREE.MathUtils.clamp(b.posZ + pushZ, zBounds[0], zBounds[1]);
+
+                    a.velocityX -= pushX * 0.06;
+                    a.velocityZ -= pushZ * 0.06;
+                    b.velocityX += pushX * 0.06;
+                    b.velocityZ += pushZ * 0.06;
+                }
+            }
+        };
+
+        const projectDiceLayouts = () => {
+            const callback = onProjectedDiceUpdateRef.current;
+            if (!callback) return;
+            const rect = canvas.getBoundingClientRect();
+            const localHalfExtent = 0.59;
+            const localCorners = [
+                new THREE.Vector3(-localHalfExtent, -localHalfExtent, -localHalfExtent),
+                new THREE.Vector3(localHalfExtent, -localHalfExtent, -localHalfExtent),
+                new THREE.Vector3(-localHalfExtent, localHalfExtent, -localHalfExtent),
+                new THREE.Vector3(localHalfExtent, localHalfExtent, -localHalfExtent),
+                new THREE.Vector3(-localHalfExtent, -localHalfExtent, localHalfExtent),
+                new THREE.Vector3(localHalfExtent, -localHalfExtent, localHalfExtent),
+                new THREE.Vector3(-localHalfExtent, localHalfExtent, localHalfExtent),
+                new THREE.Vector3(localHalfExtent, localHalfExtent, localHalfExtent),
+            ];
+            const layouts = diceItems.map((item) => {
+                item.mesh.updateWorldMatrix(true, false);
+                let minX = Number.POSITIVE_INFINITY;
+                let maxX = Number.NEGATIVE_INFINITY;
+                let minY = Number.POSITIVE_INFINITY;
+                let maxY = Number.NEGATIVE_INFINITY;
+
+                for (const localCorner of localCorners) {
+                    const projectedCorner = localCorner.clone().applyMatrix4(item.mesh.matrixWorld).project(camera);
+                    const pixelX = ((projectedCorner.x * 0.5) + 0.5) * rect.width;
+                    const pixelY = ((-projectedCorner.y * 0.5) + 0.5) * rect.height;
+                    minX = Math.min(minX, pixelX);
+                    maxX = Math.max(maxX, pixelX);
+                    minY = Math.min(minY, pixelY);
+                    maxY = Math.max(maxY, pixelY);
+                }
+
+                const width = Math.max(46, (maxX - minX) * 0.94);
+                const height = Math.max(46, (maxY - minY) * 0.88);
+                const halfWidth = (width / 2) + (scenePreset === 'board-topdown' ? 18 : 6);
+                const halfHeight = (height / 2) + (scenePreset === 'board-topdown' ? 18 : 6);
+                const centerX = THREE.MathUtils.clamp((minX + maxX) / 2, halfWidth, Math.max(halfWidth, rect.width - halfWidth));
+                const centerY = THREE.MathUtils.clamp((minY + maxY) / 2, halfHeight, Math.max(halfHeight, rect.height - halfHeight));
+                return {
+                    id: item.dieId,
+                    x: centerX,
+                    y: centerY,
+                    width,
+                    height,
+                    minX,
+                    maxX,
+                    minY,
+                    maxY,
+                    selected: selectedDieIdsRef.current.has(item.dieId),
+                };
+            });
+            callback(layouts);
+        };
+
+        const tick = () => {
+            const state = stateRef.current;
+            if (!state || state.disposed) return;
+            const rolling = rollingRef.current;
+            const underlayCtx = underlayCanvas.getContext('2d');
+            const stageRect = canvas.getBoundingClientRect();
+            const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            diceItems.forEach((item, dieIndex) => {
+                const die = dice[dieIndex];
+                const dieRolling = rolling.isRolling || Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
+                const wasRolling = item.wasRolling;
+                if (dieRolling) {
+                    if (!wasRolling) {
+                        if (scenePreset === 'board-topdown') {
+                            const launchAngle = (-Math.PI * 0.9)
+                                + ((dieIndex / Math.max(1, diceItems.length - 1)) * Math.PI * 1.72)
+                                + ((Math.random() - 0.5) * 0.34);
+                            const launchSpeedX = 0.22 + (Math.random() * 0.06);
+                            const launchSpeedZ = 0.18 + (Math.random() * 0.05);
+                            item.velocityX = Math.cos(launchAngle) * launchSpeedX;
+                            item.velocityZ = Math.sin(launchAngle) * launchSpeedZ;
+                            item.bounceAmplitude = 0.22 + (Math.random() * 0.06);
+                            item.spinX = 0.13 + (Math.random() * 0.04);
+                            item.spinY = 0.15 + (Math.random() * 0.05);
+                            item.spinZ = 0.05 + (Math.random() * 0.03);
+                        } else {
+                            item.velocityX = (Math.random() - 0.5) * 0.18;
+                            item.velocityZ = (Math.random() - 0.5) * 0.11;
+                            item.bounceAmplitude = 0.58 + (Math.random() * 0.12);
+                            item.spinX = 0.16 + (Math.random() * 0.06);
+                            item.spinY = 0.18 + (Math.random() * 0.08);
+                            item.spinZ = 0.06 + (Math.random() * 0.04);
+                        }
+                    }
+                    item.wasRolling = true;
+                    item.posX += item.velocityX;
+                    item.posZ += item.velocityZ;
+                    if (item.posX < xBounds[0] || item.posX > xBounds[1]) {
+                        item.posX = THREE.MathUtils.clamp(item.posX, xBounds[0], xBounds[1]);
+                        item.velocityX *= -0.82;
+                    }
+                    if (item.posZ < zBounds[0] || item.posZ > zBounds[1]) {
+                        item.posZ = THREE.MathUtils.clamp(item.posZ, zBounds[0], zBounds[1]);
+                        item.velocityZ *= -0.82;
+                    }
+                    item.velocityX *= scenePreset === 'board-topdown' ? 0.989 : 0.992;
+                    item.velocityZ *= scenePreset === 'board-topdown' ? 0.989 : 0.992;
+                    item.bounceAmplitude *= scenePreset === 'board-topdown' ? 0.976 : 0.985;
+                    item.mesh.rotation.x += item.spinX;
+                    item.mesh.rotation.y += item.spinY;
+                    item.mesh.rotation.z += item.spinZ;
+                    item.mesh.position.x = item.posX;
+                    item.mesh.position.z = item.posZ;
+                    item.mesh.position.y = item.baseY + Math.abs(Math.sin((performance.now() * 0.0105) + item.bouncePhase)) * item.bounceAmplitude;
+                } else {
+                    if (wasRolling) {
+                        item.targetX = THREE.MathUtils.clamp(item.posX, xBounds[0], xBounds[1]);
+                        item.targetZ = THREE.MathUtils.clamp(item.posZ, zBounds[0], zBounds[1]);
+                        item.posX = item.targetX;
+                        item.posZ = item.targetZ;
+                        item.velocityX = 0;
+                        item.velocityZ = 0;
+                        item.bounceAmplitude = 0;
+                    }
+                    item.wasRolling = false;
+                    item.posX += (item.targetX - item.posX) * 0.16;
+                    item.posZ += (item.targetZ - item.posZ) * 0.16;
+                    if (scenePreset === 'board-topdown') {
+                        item.mesh.quaternion.copy(item.targetQuat);
+                    } else {
+                        item.mesh.quaternion.rotateTowards(item.targetQuat, 0.1);
+                    }
+                    item.mesh.position.x = item.posX;
+                    item.mesh.position.z = item.posZ;
+                    item.mesh.position.y += (item.baseY - item.mesh.position.y) * (scenePreset === 'board-topdown' ? 0.34 : 0.18);
+                }
+            });
+            resolveDiceSeparation();
+            const debugWindow = window as Window & {
+                __DT_RING_DEBUG__?: Array<{
+                    dieId: number;
+                    selected: boolean;
+                    centerPixelY: number;
+                    ringPixelY: number;
+                    glowPixelY: number;
+                    ringTopPixelY: number;
+                    ringBottomPixelY: number;
+                    glowTopPixelY: number;
+                    glowBottomPixelY: number;
+                    upperBias: number;
+                    lowerBias: number;
+                    ringTargetZ: number;
+                    glowTargetZ: number;
+                    ringScale: number;
+                    glowScale: number;
+                }>;
+            };
+            if (scenePreset === 'board-topdown') {
+                debugWindow.__DT_RING_DEBUG__ = [];
+            }
+            diceItems.forEach((item) => {
+                item.mesh.position.x = item.posX;
+                item.mesh.position.z = item.posZ;
+                const lift = Math.max(0, item.mesh.position.y - item.baseY);
+                const shadowSpread = scenePreset === 'board-topdown'
+                ? THREE.MathUtils.clamp(1.02 - (lift * 0.42), 0.76, 1.02)
+                : THREE.MathUtils.clamp(1 - (lift * 0.26), 0.78, 1);
+            item.shadowMesh.position.x = item.posX + (scenePreset === 'board-topdown' ? 0.012 : 0);
+            item.shadowMesh.position.z = item.posZ + (scenePreset === 'board-topdown' ? 0.004 : 0);
+            if (scenePreset === 'board-topdown') {
+                item.selectionRingMaterial.opacity = 0;
+                item.selectionRingGlowMaterial.opacity = 0;
+                item.selectionRingMesh.visible = false;
+                item.selectionRingGlowMesh.visible = false;
+            } else {
+                item.selectionRingGlowMesh.position.x = item.posX;
+                item.selectionRingGlowMesh.position.z = item.posZ;
+                item.selectionRingMesh.position.x = item.posX;
+                item.selectionRingMesh.position.z = item.posZ;
+                item.selectionRingGlowMesh.position.y = floor.position.y + 0.014;
+                item.selectionRingMesh.position.y = floor.position.y + 0.017;
+                item.selectionRingMesh.scale.setScalar(1);
+                item.selectionRingGlowMesh.scale.setScalar(1);
+            }
+            item.shadowMesh.scale.set(
+                shadowSpread * (scenePreset === 'board-topdown' ? 0.88 : 1),
+                shadowSpread * (scenePreset === 'board-topdown' ? 0.64 : 0.8),
+                1,
+                );
+                item.shadowMaterial.opacity = scenePreset === 'board-topdown'
+                    ? THREE.MathUtils.clamp(0.26 - (lift * 0.28), 0.12, 0.26)
+                    : THREE.MathUtils.clamp(0.18 - (lift * 0.18), 0.06, 0.18);
+            });
+            if (scenePreset === 'board-topdown' && underlayCtx) {
+                underlayCtx.setTransform(1, 0, 0, 1, 0, 0);
+                underlayCtx.clearRect(0, 0, underlayCanvas.width, underlayCanvas.height);
+                underlayCtx.scale(pixelRatio, pixelRatio);
+                const localHalfExtent = 0.59;
+                const localCorners = [
+                    new THREE.Vector3(-localHalfExtent, -localHalfExtent, -localHalfExtent),
+                    new THREE.Vector3(localHalfExtent, -localHalfExtent, -localHalfExtent),
+                    new THREE.Vector3(-localHalfExtent, localHalfExtent, -localHalfExtent),
+                    new THREE.Vector3(localHalfExtent, localHalfExtent, -localHalfExtent),
+                    new THREE.Vector3(-localHalfExtent, -localHalfExtent, localHalfExtent),
+                    new THREE.Vector3(localHalfExtent, -localHalfExtent, localHalfExtent),
+                    new THREE.Vector3(-localHalfExtent, localHalfExtent, localHalfExtent),
+                    new THREE.Vector3(localHalfExtent, localHalfExtent, localHalfExtent),
+                ];
+                for (const item of diceItems) {
+                    if (!selectedDieIdsRef.current.has(item.dieId)) continue;
+                    item.mesh.updateWorldMatrix(true, false);
+                    let minPixelX = Number.POSITIVE_INFINITY;
+                    let maxPixelX = Number.NEGATIVE_INFINITY;
+                    let minPixelY = Number.POSITIVE_INFINITY;
+                    let maxPixelY = Number.NEGATIVE_INFINITY;
+                    for (const localCorner of localCorners) {
+                        const projectedCorner = localCorner.clone().applyMatrix4(item.mesh.matrixWorld).project(camera);
+                        const pixelX = ((projectedCorner.x * 0.5) + 0.5) * stageRect.width;
+                        const pixelY = ((-projectedCorner.y * 0.5) + 0.5) * stageRect.height;
+                        minPixelX = Math.min(minPixelX, pixelX);
+                        maxPixelX = Math.max(maxPixelX, pixelX);
+                        minPixelY = Math.min(minPixelY, pixelY);
+                        maxPixelY = Math.max(maxPixelY, pixelY);
+                    }
+                    const bboxWidth = maxPixelX - minPixelX;
+                    const bboxHeight = maxPixelY - minPixelY;
+                    const depthProgress = THREE.MathUtils.clamp(
+                        (item.posZ - zBounds[0]) / (zBounds[1] - zBounds[0]),
+                        0,
+                        1,
+                    );
+                    const centerX = (minPixelX + maxPixelX) * 0.5;
+                    const centerY = (minPixelY + maxPixelY) * 0.5;
+                    const radius = Math.max(
+                        Math.max(bboxWidth, bboxHeight) * THREE.MathUtils.lerp(0.5, 0.47, depthProgress),
+                        22,
+                    );
+                    const shadowLineWidth = Math.max(2.7, radius * 0.06);
+                    const mainLineWidth = Math.max(1.6, radius * 0.034);
+                    underlayCtx.beginPath();
+                    underlayCtx.lineCap = 'round';
+                    underlayCtx.lineWidth = shadowLineWidth;
+                    underlayCtx.strokeStyle = `rgba(96, 48, 10, ${THREE.MathUtils.lerp(0.22, 0.16, depthProgress).toFixed(3)})`;
+                    underlayCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    underlayCtx.stroke();
+                    underlayCtx.beginPath();
+                    underlayCtx.lineCap = 'round';
+                    underlayCtx.lineWidth = mainLineWidth;
+                    underlayCtx.strokeStyle = `rgba(243, 190, 74, ${THREE.MathUtils.lerp(0.94, 0.82, depthProgress).toFixed(3)})`;
+                    underlayCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    underlayCtx.stroke();
+                }
+            }
+            const maxLift = diceItems.reduce(
+                (max, item) => Math.max(max, Math.abs(item.mesh.position.y - item.baseY)),
+                0,
+            );
+            const maxTravel = diceItems.reduce(
+                (max, item) => Math.max(
+                    max,
+                    Math.abs(item.targetX - item.posX),
+                    Math.abs(item.targetZ - item.posZ),
+                ),
+                0,
+            );
+            const diceSettled = !rolling.isRolling
+                && maxLift <= 0.012
+                && maxTravel <= 0.012
+                && diceItems.every((item) => !item.wasRolling);
+            canvas.dataset.diceSettled = diceSettled ? 'true' : 'false';
+            canvas.dataset.diceMaxLift = maxLift.toFixed(4);
+            diceGroup.rotation.y = Math.sin(performance.now() * 0.00024) * 0.02;
+            diceGroup.position.y = 0;
+            if (halo) {
+                halo.rotation.z += 0.0022;
+            }
+            if (scenePreset === 'board-topdown' && composer) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+            projectDiceLayouts();
+            state.rafId = requestAnimationFrame(tick);
+        };
+
+        const handlePointerUp = (event: PointerEvent) => {
+            const clickHandler = onDieClickRef.current;
+            if (!clickHandler) return;
+            const rect = canvas.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+            const hits = raycaster.intersectObjects(diceItems.map((item) => item.mesh));
+            const dieId = hits[0]?.object?.userData?.dieId;
+            if (typeof dieId === 'number') {
+                clickHandler(dieId);
+            }
+        };
+
+        canvas.addEventListener('pointerup', handlePointerUp);
+        resize();
+        projectDiceLayouts();
+        stateRef.current.rafId = requestAnimationFrame(tick);
+
+        void loadDiceAtlasImageShared(spriteCandidates).then((result) => {
+            if (stateRef.current?.disposed) return;
+            replaceTextures(result?.img ?? null);
+        });
+
+        return () => {
+            const state = stateRef.current;
+            if (state) {
+                state.disposed = true;
+                if (state.rafId) cancelAnimationFrame(state.rafId);
+                state.resizeObserver?.disconnect();
+                state.outlinePass?.dispose();
+                state.composer?.dispose();
+                state.diceItems.forEach((item) => {
+                    item.materials.forEach((material) => {
+                        material.map?.dispose();
+                        material.dispose();
+                    });
+                    item.outlineMaterial.dispose();
+                    item.highlightMaterial.dispose();
+                    item.shadowMaterial.dispose();
+                    item.selectionRingMaterial.dispose();
+                    item.selectionRingGlowMaterial.dispose();
+                    item.shadowMesh.geometry.dispose();
+                    item.selectionRingGlowMesh.geometry.dispose();
+                    item.selectionRingMesh.geometry.dispose();
+                    item.geometry.dispose();
+                });
+                floor.geometry.dispose();
+                if (Array.isArray(floor.material)) {
+                    floor.material.forEach((material) => material.dispose());
+                } else {
+                    floor.material.dispose();
+                }
+                if (halo) {
+                    halo.geometry.dispose();
+                    if (Array.isArray(halo.material)) {
+                        halo.material.forEach((material) => material.dispose());
+                    } else {
+                        halo.material.dispose();
+                    }
+                }
+                if (shadowLight?.shadow?.map) {
+                    shadowLight.shadow.map.dispose();
+                }
+                shadowLight?.dispose();
+            }
+            canvas.removeEventListener('pointerup', handlePointerUp);
+            delete canvas.dataset.diceSettled;
+            delete canvas.dataset.diceMaxLift;
+            renderer.dispose();
+            stateRef.current = null;
+        };
+    }, [dice, scenePreset, signature, slots, spriteCandidates]);
+
+    return (
+        <>
+            <canvas
+                ref={underlayCanvasRef}
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                data-testid="dice-field-3d-underlay"
+                aria-hidden="true"
+            />
+            <canvas
+                ref={canvasRef}
+                className={`absolute inset-0 h-full w-full cursor-pointer ${canvasClassName ?? ''}`}
+                data-testid="dice-field-3d-canvas"
+                aria-hidden="true"
+            />
+        </>
+    );
+};
+
+function FallbackFaces({
+    faces,
+    isRolling,
+    animationClass,
+    index,
+    isSpotlight,
+    isBoardTopdown,
+    settledTransform,
+    spriteReady,
+    resolvedSpriteUrl,
+    definitionId,
+}: {
+    faces: Array<{ id: number; trans: string }>;
+    isRolling: boolean;
+    animationClass: string;
+    index: number;
+    isSpotlight: boolean;
+    isBoardTopdown: boolean;
+    settledTransform: string;
+    spriteReady: boolean;
+    resolvedSpriteUrl: string | null;
+    definitionId?: string;
+}) {
+    const shellRadius = isSpotlight ? 'rounded-[0.34vw]' : (isBoardTopdown ? 'rounded-[0.28vw]' : 'rounded-[0.2vw]');
+    const faceRadius = isSpotlight ? 'rounded-[0.7vw]' : (isBoardTopdown ? 'rounded-[0.52vw]' : 'rounded-[0.38vw]');
+    const shellFaceInset = isSpotlight ? '-3.5%' : (isBoardTopdown ? '-3%' : '-2.5%');
+    const decalInset = isSpotlight ? '12.5%' : (isBoardTopdown ? '12%' : '11.5%');
+    const shellFaceStyle = {
+        background: 'linear-gradient(145deg, #fff8eb 0%, #f0e4cd 54%, #d8c7aa 100%)',
+        boxShadow: isSpotlight
+            ? 'inset -0.12rem -0.12rem 0.28rem rgba(134,104,61,0.12), inset 0.08rem 0.08rem 0.2rem rgba(255,255,255,0.28)'
+            : 'inset -0.08rem -0.08rem 0.18rem rgba(134,104,61,0.1), inset 0.05rem 0.05rem 0.12rem rgba(255,255,255,0.2)',
+    } as const;
+
+    return (
+        <div
+            className={`relative w-full h-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
+            style={{
+                transform: isRolling
+                    ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
+                    : settledTransform,
+                transition: isRolling ? 'none' : 'transform 1000ms ease-out',
+            }}
+        >
+            {faces.map((face) => {
+                const { xPos, yPos } = getDiceSpritePosition(face.id);
+                const needsFlip = face.id === 1 || face.id === 6;
+                const faceTransform = needsFlip ? `${face.trans} rotateZ(180deg)` : face.trans;
+                const hasSprite = Boolean(spriteReady && resolvedSpriteUrl);
+                const fallbackMeta = resolveFallbackLabel(face.id, definitionId);
+
+                return (
+                    <div
+                        key={face.id}
+                        className={`absolute dice3d-backface-hidden ${shellRadius} overflow-hidden`}
+                        style={{
+                            inset: shellFaceInset,
+                            transform: faceTransform,
+                            ...shellFaceStyle,
+                        }}
+                        data-face-id={face.id}
+                        data-face-fallback={hasSprite ? 'false' : 'glyph'}
+                        data-face-symbol={fallbackMeta.symbol}
+                    >
+                        <div
+                            className={`absolute ${faceRadius} overflow-hidden flex items-center justify-center`}
+                            style={{
+                                inset: decalInset,
+                                ...(hasSprite && resolvedSpriteUrl ? {
+                                    backgroundImage: `url("${resolvedSpriteUrl}")`,
+                                    backgroundSize: DICE_BG_SIZE,
+                                    backgroundPosition: `${xPos}% ${yPos}%`,
+                                    backgroundRepeat: 'no-repeat',
+                                } : {
+                                    backgroundColor: SHIMMER_BG.backgroundColor,
+                                    backgroundImage: SHIMMER_BG.backgroundImage,
+                                    backgroundSize: SHIMMER_BG.backgroundSize,
+                                    backgroundPosition: SHIMMER_BG.backgroundPosition,
+                                    backgroundRepeat: 'no-repeat',
+                                    animation: SHIMMER_BG.animation,
+                                }),
+                                boxShadow: isSpotlight
+                                    ? 'inset -0.2rem -0.25rem 0.5rem rgba(0,0,0,0.2), inset 0.15rem 0.12rem 0.25rem rgba(255,255,255,0.3)'
+                                    : 'inset -0.12rem -0.12rem 0.22rem rgba(0,0,0,0.18), inset 0.08rem 0.08rem 0.16rem rgba(255,255,255,0.24)',
+                                imageRendering: 'auto',
+                            }}
+                        >
+                            {!hasSprite && (
+                                <span
+                                    className="pointer-events-none select-none text-slate-100 font-black uppercase tracking-[0.08em]"
+                                    style={{
+                                        fontSize: isSpotlight ? '1.5vw' : '1.1vw',
+                                        textShadow: '0 0 0.4vw rgba(0, 0, 0, 0.75)',
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    {fallbackMeta.label}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+function WebglDice({
+    value,
+    isRolling,
+    index,
+    isSpotlight,
+    isBoardTopdown,
+    spriteCandidates,
+    definitionId,
+    onUnavailable,
+}: {
+    value: number;
+    isRolling: boolean;
+    index: number;
+    isSpotlight: boolean;
+    isBoardTopdown: boolean;
+    spriteCandidates: string[];
+    definitionId?: string;
+    onUnavailable: () => void;
+}) {
+    const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+    const stateRef = React.useRef<{
+        renderer: THREE.WebGLRenderer;
+        scene: THREE.Scene;
+        camera: THREE.PerspectiveCamera;
+        cube: THREE.Group;
+        cubeGeometry: RoundedBoxGeometry;
+        cubeMaterial: THREE.MeshStandardMaterial;
+        outlineMaterial: OutlineShaderMaterial;
+        decalGeometry: THREE.PlaneGeometry;
+        faceMaterials: THREE.MeshBasicMaterial[];
+        resizeObserver?: ResizeObserver;
+        rafId?: number;
+        disposed: boolean;
+    } | null>(null);
+    const rollingRef = React.useRef(isRolling);
+    const targetQuatRef = React.useRef(
+        buildTargetQuaternion(value, index, isSpotlight ? 'spotlight' : (isBoardTopdown ? 'board-topdown' : 'default')),
+    );
+
+    const applyFaceTextures = React.useCallback((spriteImage: HTMLImageElement | null) => {
+        const state = stateRef.current;
+        if (!state) return;
+
+        FACE_MATERIAL_ORDER.forEach((faceId, materialIndex) => {
+            const material = state.faceMaterials[materialIndex];
+            material.map?.dispose();
+            material.map = createFaceTexture(
+                faceId,
+                spriteImage,
+                resolveFallbackLabel(faceId, definitionId),
+                isSpotlight,
+            );
+            material.opacity = 1;
+            material.needsUpdate = true;
+        });
+
+        state.renderer.render(state.scene, state.camera);
+    }, [definitionId, isSpotlight]);
+
+    React.useEffect(() => {
+        rollingRef.current = isRolling;
+        targetQuatRef.current = buildTargetQuaternion(
+            value,
+            index,
+            isSpotlight ? 'spotlight' : (isBoardTopdown ? 'board-topdown' : 'default'),
+        );
+    }, [index, isBoardTopdown, isRolling, isSpotlight, value]);
+
+    React.useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !isWebglCapable()) return;
+
+        let renderer: THREE.WebGLRenderer;
+        try {
+            renderer = new THREE.WebGLRenderer({
+                canvas,
+                alpha: true,
+                antialias: true,
+                powerPreference: 'high-performance',
+            });
+        } catch (error) {
+            dice3DLogger.warn('webgl-renderer-unavailable', {
+                message: error instanceof Error ? error.message : String(error),
+            });
+            onUnavailable();
+            return;
+        }
+        renderer.setClearColor(0x000000, 0);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(isSpotlight ? 28 : (isBoardTopdown ? 27 : 31), 1, 0.1, 20);
+        camera.position.set(
+            isSpotlight ? 1.55 : (isBoardTopdown ? 0.18 : 1.42),
+            isSpotlight ? 1.22 : (isBoardTopdown ? 2.34 : 1.08),
+            isSpotlight ? 2.65 : (isBoardTopdown ? 1.64 : 2.82),
+        );
+        camera.lookAt(0, 0, 0);
+
+        const ambient = new THREE.AmbientLight(0xffffff, isSpotlight ? 1.8 : (isBoardTopdown ? 1.58 : 1.45));
+        const hemi = new THREE.HemisphereLight(0xfff2dd, 0x5d4a2f, isSpotlight ? 1.55 : (isBoardTopdown ? 1.26 : 1.1));
+        const key = new THREE.DirectionalLight(0xffffff, isSpotlight ? 2.6 : (isBoardTopdown ? 2.15 : 1.9));
+        key.position.set(isBoardTopdown ? -1.2 : -1.7, isBoardTopdown ? 2.6 : 2.2, isBoardTopdown ? 1.7 : 2.8);
+        const fill = new THREE.DirectionalLight(0xffe8c6, isSpotlight ? 1.1 : (isBoardTopdown ? 0.88 : 0.75));
+        fill.position.set(isBoardTopdown ? 1.8 : 2.1, isBoardTopdown ? 1.2 : 0.6, isBoardTopdown ? 1.1 : 1.2);
+        scene.add(ambient, hemi, key, fill);
+
+        const cubeGeometry = new RoundedBoxGeometry(1, 1, 1, 7, isSpotlight ? 0.15 : (isBoardTopdown ? 0.145 : 0.135));
+        const cubeMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#f2e3c8'),
+            roughness: 0.7,
+            metalness: 0.02,
+        });
+        const cubeShell = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        const outlineMaterial = createOutlineShaderMaterial({
+            color: isBoardTopdown ? 0x4a2b14 : 0x4a3726,
+            opacity: isBoardTopdown ? 0.9 : 0.72,
+            power: isBoardTopdown ? 1.58 : 1.78,
+            intensity: isBoardTopdown ? 1.9 : 1.2,
+        });
+        const outlineShell = new THREE.Mesh(cubeGeometry, outlineMaterial);
+        outlineShell.scale.setScalar(isBoardTopdown ? 1.075 : 1.045);
+
+        const decalGeometry = new THREE.PlaneGeometry(isSpotlight ? 0.88 : 0.9, isSpotlight ? 0.88 : 0.9);
+        const faceMaterials = FACE_MATERIAL_ORDER.map(() => new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 0,
+            alphaTest: 0.02,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        }));
+        const cube = new THREE.Group();
+        cube.add(outlineShell);
+        cube.add(cubeShell);
+
+        FACE_MATERIAL_ORDER.forEach((faceId, materialIndex) => {
+            const transform = FACE_DECAL_TRANSFORMS[faceId];
+            const decal = new THREE.Mesh(decalGeometry, faceMaterials[materialIndex]);
+            decal.position.set(...transform.position);
+            decal.rotation.set(...transform.rotation);
+            decal.renderOrder = 3;
+            cube.add(decal);
+        });
+        scene.add(cube);
+        cube.quaternion.copy(targetQuatRef.current);
+
+        const render = () => {
+            renderer.render(scene, camera);
+        };
+
+        const resize = () => {
+            const rect = canvas.getBoundingClientRect();
+            const width = Math.max(1, rect.width);
+            const height = Math.max(1, rect.height);
+            renderer.setSize(width, height, false);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            render();
+        };
+
+        const observer = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(resize)
+            : undefined;
+        observer?.observe(canvas);
+        resize();
+
+        stateRef.current = {
+            renderer,
+            scene,
+            camera,
+            cube,
+            cubeGeometry,
+            cubeMaterial,
+            outlineMaterial,
+            decalGeometry,
+            faceMaterials,
+            resizeObserver: observer,
+            disposed: false,
+        };
+
+        const tick = () => {
+            const state = stateRef.current;
+            if (!state || state.disposed) return;
+
+            if (rollingRef.current) {
+                const spin = isSpotlight ? 3.9 : (isBoardTopdown ? 4.1 : 4.8);
+                const rollIndexBoost = index * 0.18;
+                cube.rotation.x += (spin + rollIndexBoost) * 0.018;
+                cube.rotation.y += (spin * 1.08 + rollIndexBoost) * 0.018;
+                cube.rotation.z += (spin * 0.24) * 0.012;
+            } else {
+                cube.quaternion.rotateTowards(targetQuatRef.current, isSpotlight ? 0.09 : (isBoardTopdown ? 0.085 : 0.11));
+                if (cube.quaternion.angleTo(targetQuatRef.current) < 0.003) {
+                    cube.quaternion.copy(targetQuatRef.current);
+                }
+            }
+
+            renderer.render(scene, camera);
+            state.rafId = requestAnimationFrame(() => tick());
+        };
+
+        applyFaceTextures(null);
+        render();
+        stateRef.current.rafId = requestAnimationFrame(() => tick());
+
+        return () => {
+            const state = stateRef.current;
+            if (state) {
+                state.disposed = true;
+                if (state.rafId) cancelAnimationFrame(state.rafId);
+                state.resizeObserver?.disconnect();
+                state.faceMaterials.forEach((material) => {
+                    material.map?.dispose();
+                    material.dispose();
+                });
+                state.decalGeometry.dispose();
+                state.cubeGeometry.dispose();
+                state.cubeMaterial.dispose();
+                state.outlineMaterial.dispose();
+            }
+            renderer.dispose();
+            stateRef.current = null;
+        };
+    }, [applyFaceTextures, index, isBoardTopdown, isSpotlight, onUnavailable]);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        const webglSpriteCandidates = prioritizeWebglSpriteCandidates(spriteCandidates);
+        const immediateImage = webglSpriteCandidates
+            .map((candidateUrl) => getPreloadedImageElement(candidateUrl))
+            .find(hasUsableSpriteImage) ?? null;
+        if (immediateImage) {
+            applyFaceTextures(immediateImage);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        void loadDiceAtlasImageShared(webglSpriteCandidates).then((result) => {
+            if (cancelled) return;
+            applyFaceTextures(result?.img ?? null);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [applyFaceTextures, spriteCandidates]);
+
+    return (
+        <div className="relative h-full w-full">
+            <canvas
+                ref={canvasRef}
+                className="block h-full w-full"
+                data-testid="dice-3d-canvas"
+                aria-hidden="true"
+            />
+        </div>
+    );
+}
 
 /** 3D 骰子组件 */
 export const Dice3D = ({
@@ -226,14 +2037,14 @@ export const Dice3D = ({
     );
     const spriteStateKey = `${spriteAssetPath ?? ''}|${effectiveLocale}`;
 
-    const faces = [
+    const faces = React.useMemo(() => ([
         { id: 1, trans: `translateZ(${translateZ})` },
         { id: 6, trans: `rotateY(180deg) rotateZ(180deg) translateZ(${translateZ})` },
         { id: 3, trans: `rotateY(90deg) translateZ(${translateZ})` },
         { id: 4, trans: `rotateY(-90deg) translateZ(${translateZ})` },
         { id: 2, trans: `rotateX(90deg) translateZ(${translateZ})` },
         { id: 5, trans: `rotateX(-90deg) translateZ(${translateZ})` },
-    ];
+    ]), [translateZ]);
 
     const [spriteState, setSpriteState] = React.useState(() => ({
         key: spriteStateKey,
@@ -248,6 +2059,10 @@ export const Dice3D = ({
             isSpriteReady: Boolean(loadedSpriteUrl),
         };
     const { resolvedSpriteUrl, isSpriteReady } = currentSpriteState;
+    const [webglUnavailable, setWebglUnavailable] = React.useState(false);
+    const handleWebglUnavailable = React.useCallback(() => {
+        setWebglUnavailable(true);
+    }, []);
 
     React.useEffect(() => {
         if (typeof document === 'undefined') return;
@@ -279,25 +2094,21 @@ export const Dice3D = ({
         }
 
         if (spriteCandidates.length === 0) {
-            setSpriteState((current) => {
-                return {
-                    key: spriteStateKey,
-                    resolvedSpriteUrl: null,
-                    isSpriteReady: false,
-                };
-            });
+            setSpriteState(() => ({
+                key: spriteStateKey,
+                resolvedSpriteUrl: null,
+                isSpriteReady: false,
+            }));
             return () => {
                 cancelled = true;
             };
         }
 
-        setSpriteState((current) => {
-            return {
-                key: spriteStateKey,
-                resolvedSpriteUrl: current.resolvedSpriteUrl ?? spriteCandidates[0] ?? null,
-                isSpriteReady: false,
-            };
-        });
+        setSpriteState((current) => ({
+            key: spriteStateKey,
+            resolvedSpriteUrl: current.resolvedSpriteUrl ?? spriteCandidates[0] ?? null,
+            isSpriteReady: false,
+        }));
 
         void loadDiceSpriteCandidatesShared(spriteCandidates).then((result) => {
             if (cancelled || !result) {
@@ -305,13 +2116,11 @@ export const Dice3D = ({
             }
 
             markImageLoaded(spriteAssetPath, effectiveLocale, result.img);
-            setSpriteState((current) => {
-                return {
-                    key: spriteStateKey,
-                    resolvedSpriteUrl: result.url,
-                    isSpriteReady: true,
-                };
-            });
+            setSpriteState(() => ({
+                key: spriteStateKey,
+                resolvedSpriteUrl: result.url,
+                isSpriteReady: true,
+            }));
         });
 
         return () => {
@@ -331,6 +2140,8 @@ export const Dice3D = ({
     }, [characterId, definitionId, effectiveLocale, isSpriteReady, resolvedSpriteUrl, spriteAssetPath]);
 
     const isSpotlight = variant === 'spotlight';
+    const isBoardTopdown = variant === 'board-topdown';
+    const hasWebgl = !webglUnavailable && isWebglCapable();
 
     React.useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -375,91 +2186,83 @@ export const Dice3D = ({
         });
     }, [characterId, definitionId, isSpriteReady, locale, resolvedSpriteUrl, size, value]);
 
-    const getFinalTransform = (val: number) => {
-        switch (val) {
-            case 1: return 'rotateX(0deg) rotateY(0deg)';
-            case 6: return 'rotateX(180deg) rotateY(0deg)';
-            case 2: return 'rotateX(-90deg) rotateY(0deg)';
-            case 5: return 'rotateX(90deg) rotateY(0deg)';
-            case 3: return 'rotateX(0deg) rotateY(-90deg)';
-            case 4: return 'rotateX(0deg) rotateY(90deg)';
-            default: return 'rotateY(0deg)';
-        }
-    };
-
     const animationClass = isSpotlight ? 'animate-dice3d-bonus-tumble' : 'animate-dice3d-tumble';
-    const borderRadius = isSpotlight ? 'rounded-[1vw]' : 'rounded-[0.5vw]';
-    const borderStyle = isSpotlight ? 'border-2 border-slate-600/50' : 'border border-slate-700/50';
-    const boxShadow = isSpotlight ? 'inset 0 0 2vw rgba(0,0,0,0.8)' : 'inset 0 0 1vw rgba(0,0,0,0.8)';
-    const transitionDuration = isSpotlight ? '600ms' : '1000ms';
+    const settledTransform = isSpotlight
+        ? `rotateX(-0.28rad) rotateY(0.33rad) rotateZ(-0.05rad)`
+        : (isBoardTopdown
+            ? `rotateX(-1.18rad) rotateY(${0.38 + (index * 0.07)}rad) rotateZ(${(-0.1 + (index * 0.035)).toFixed(2)}rad)`
+            : `rotateX(0deg) rotateY(0deg)`);
 
     return (
         <div
             ref={rootRef}
             className="relative dice3d-perspective"
-            style={{ width: size, height: size }}
+            style={{
+                width: size,
+                height: size,
+                perspective: isSpotlight ? '1400px' : (isBoardTopdown ? '1800px' : undefined),
+                filter: isSpotlight
+                    ? 'drop-shadow(0 18px 18px rgba(0,0,0,0.45))'
+                    : (isBoardTopdown
+                        ? 'drop-shadow(0 0 1.25px rgba(255,248,232,0.72)) drop-shadow(0 0 0.85px rgba(8,16,28,0.94)) drop-shadow(0 14px 16px rgba(0,0,0,0.34))'
+                        : undefined),
+            }}
             data-testid="dice-3d"
             data-sprite-ready={isSpriteReady ? 'true' : 'false'}
             data-definition-id={definitionId ?? ''}
             data-sprite-url={resolvedSpriteUrl ?? ''}
         >
+            {hasWebgl ? (
+                <WebglDice
+                    value={value}
+                    isRolling={isRolling}
+                    index={index}
+                    isSpotlight={isSpotlight}
+                    isBoardTopdown={isBoardTopdown}
+                    spriteCandidates={spriteCandidates}
+                    definitionId={definitionId}
+                    onUnavailable={handleWebglUnavailable}
+                />
+            ) : (
+                <div
+                    className={`relative h-full w-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
+                    style={{
+                        transform: isRolling
+                            ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
+                            : settledTransform,
+                        transition: isRolling ? 'none' : 'transform 1000ms ease-out',
+                    }}
+                >
+                    <FallbackFaces
+                        faces={faces}
+                        isRolling={isRolling}
+                        animationClass={animationClass}
+                        index={index}
+                        isSpotlight={isSpotlight}
+                        isBoardTopdown={isBoardTopdown}
+                        settledTransform={settledTransform}
+                        spriteReady={isSpriteReady}
+                        resolvedSpriteUrl={resolvedSpriteUrl}
+                        definitionId={definitionId}
+                    />
+                </div>
+            )}
             <div
-                className={`relative w-full h-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
-                style={{
-                    transform: isRolling
-                        ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
-                        : getFinalTransform(value),
-                    transition: isRolling ? 'none' : `transform ${transitionDuration} ease-out`,
-                }}
+                className="pointer-events-none absolute inset-0 opacity-0"
+                aria-hidden="true"
             >
-                {faces.map((face) => {
-                    const { xPos, yPos } = getDiceSpritePosition(face.id);
-                    const needsFlip = face.id === 1 || face.id === 6;
-                    const faceTransform = needsFlip ? `${face.trans} rotateZ(180deg)` : face.trans;
-                    const hasSprite = Boolean(isSpriteReady && resolvedSpriteUrl);
-                    const fallbackMeta = resolveFallbackLabel(face.id, definitionId);
-
-                    return (
-                        <div
-                            key={face.id}
-                            className={`absolute inset-0 flex items-center justify-center bg-slate-900 ${borderRadius} dice3d-backface-hidden ${borderStyle} shadow-inner overflow-hidden`}
-                            style={{
-                                transform: faceTransform,
-                                ...(hasSprite && resolvedSpriteUrl ? {
-                                    backgroundImage: `url("${resolvedSpriteUrl}")`,
-                                    backgroundSize: DICE_BG_SIZE,
-                                    backgroundPosition: `${xPos}% ${yPos}%`,
-                                    backgroundRepeat: 'no-repeat',
-                                } : {
-                                    backgroundColor: SHIMMER_BG.backgroundColor,
-                                    backgroundImage: SHIMMER_BG.backgroundImage,
-                                    backgroundSize: SHIMMER_BG.backgroundSize,
-                                    backgroundPosition: SHIMMER_BG.backgroundPosition,
-                                    backgroundRepeat: 'no-repeat',
-                                    animation: SHIMMER_BG.animation,
-                                }),
-                                boxShadow,
-                                imageRendering: 'auto',
-                            }}
-                            data-face-id={face.id}
-                            data-face-fallback={hasSprite ? 'false' : 'glyph'}
-                            data-face-symbol={fallbackMeta.symbol}
-                        >
-                            {!hasSprite && (
-                                <span
-                                    className="pointer-events-none select-none text-slate-100 font-black uppercase tracking-[0.08em]"
-                                    style={{
-                                        fontSize: isSpotlight ? '1.5vw' : '1.1vw',
-                                        textShadow: '0 0 0.4vw rgba(0, 0, 0, 0.75)',
-                                        lineHeight: 1,
-                                    }}
-                                >
-                                    {fallbackMeta.label}
-                                </span>
-                            )}
-                        </div>
-                    );
-                })}
+                <FallbackFaces
+                    faces={faces}
+                    isRolling={isRolling}
+                    animationClass={animationClass}
+                    index={index}
+                    isSpotlight={isSpotlight}
+                    isBoardTopdown={isBoardTopdown}
+                    settledTransform={settledTransform}
+                    spriteReady={isSpriteReady}
+                    resolvedSpriteUrl={resolvedSpriteUrl}
+                    definitionId={definitionId}
+                />
             </div>
         </div>
     );

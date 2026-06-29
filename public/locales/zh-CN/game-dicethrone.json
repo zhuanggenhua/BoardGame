@@ -505,7 +505,15 @@
     "autoResponseEnabled": "手动响应已启用",
     "autoResponseDisabled": "自动跳过已启用",
     "autoResponse": "自动跳过",
-    "manualResponse": "手动响应"
+    "manualResponse": "手动响应",
+    "diceDisplay": {
+      "title": "骰子显示",
+      "hint": "切换局内骰子的展示方式，不改变真实掷骰结果。",
+      "board3d": "棋盘内 3D 骰子",
+      "board3dHint": "开启后在局内中央使用 3D 骰子投掷演出；默认关闭。",
+      "enabled": "已开启",
+      "disabled": "已关闭"
+    }
   },
   "hero": {
     "monk": "僧侣",
@@ -1211,6 +1219,9 @@
       "activateNanobot": "激活纳米机器人（花费 {{synth}} 合成器）",
       "activateShockBot": "激活电能机器人（花费 {{synth}} 合成器）",
       "activateHealBot": "激活治疗机器人（花费 {{synth}} 合成器）",
+      "activateNanobotFree": "免费激活纳米机器人",
+      "activateShockBotFree": "免费激活电能机器人",
+      "activateHealBotFree": "免费激活治疗机器人",
       "skip": "不再激活机器人"
     },
     "pyroSpendCpForFM": {
@@ -3910,9 +3921,9 @@
     },
     "tinker": {
       "name": "稍作调整",
-      "description": "防御掷 4：获得合成器；如果投出电能，施加纳米爆弹。",
+      "description": "防御掷 4：每个齿轮获得 1 合成器；如果投出电能，施加纳米爆弹。",
       "effects": {
-        "defense4": "防御掷 4：获得合成器；如果投出电能，施加纳米爆弹。"
+        "defense4": "防御掷 4：每个齿轮获得 1 合成器；如果投出电能，施加纳米爆弹。"
       }
     },
     "tinker-2": {

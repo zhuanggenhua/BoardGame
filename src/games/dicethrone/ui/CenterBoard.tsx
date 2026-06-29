@@ -32,6 +32,7 @@ export interface CenterBoardProps {
     onMagnifyCard: (card: AbilityCard) => void;
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
+    diceStage?: React.ReactNode;
 }
 
 export const CenterBoard = ({
@@ -55,6 +56,7 @@ export const CenterBoard = ({
     onMagnifyCard,
     abilityOverlaysRef,
     playerTokens,
+    diceStage,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
     const showTouchMagnifyButton = useCoarsePointer();
@@ -126,7 +128,7 @@ export const CenterBoard = ({
                 style={{ gap: `${boardUiTuning.centerBoardGapVw}vw` }}
             >
                 <div
-                    className={`relative w-auto shadow-2xl z-10 group transition-[outline] duration-300 rounded-[0.8vw] overflow-hidden ${isLayoutEditing ? '' : 'cursor-zoom-in'} ${coreAreaHighlighted ? 'outline outline-4 outline-dashed outline-amber-400 outline-offset-[0.1vw]' : ''}`}
+                    className={`relative w-auto shadow-2xl z-0 group transition-[outline] duration-300 rounded-[0.8vw] overflow-visible ${isLayoutEditing ? '' : 'cursor-zoom-in'} ${coreAreaHighlighted ? 'outline outline-4 outline-dashed outline-amber-400 outline-offset-[0.1vw]' : ''}`}
                     style={{
                         height: `${playerBoardHeightVw}vw`,
                         ...(boardUiTuning.playerBoardTranslateY === 0
@@ -163,7 +165,7 @@ export const CenterBoard = ({
                                 animate={true3DBoardFlipMotion}
                             >
                                 <div
-                                    className="absolute inset-0"
+                                    className="absolute inset-0 overflow-hidden rounded-[0.8vw]"
                                     style={{
                                         backfaceVisibility: 'hidden',
                                         WebkitBackfaceVisibility: 'hidden',
@@ -206,7 +208,7 @@ export const CenterBoard = ({
                                     )}
                                 </div>
                                 <div
-                                    className="absolute inset-0"
+                                    className="absolute inset-0 overflow-hidden rounded-[0.8vw]"
                                     style={{
                                         backfaceVisibility: 'hidden',
                                         WebkitBackfaceVisibility: 'hidden',
@@ -252,7 +254,7 @@ export const CenterBoard = ({
                         </div>
                     ) : (
                         <motion.div
-                            className="relative h-full"
+                            className="relative h-full overflow-hidden rounded-[0.8vw]"
                             data-testid="player-board-face-shell"
                             data-player-board-face={playerBoardFace ?? 'default'}
                             style={{
@@ -295,6 +297,7 @@ export const CenterBoard = ({
                             />
                         </motion.div>
                     )}
+                    {diceStage}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}

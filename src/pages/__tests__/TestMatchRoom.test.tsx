@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let mockSearchParams = new URLSearchParams();
 const localGameProviderSpy = vi.fn();
+const gamePageRuntimeProviderSpy = vi.fn();
 
 const PassThrough = ({ children }: PropsWithChildren) => <>{children}</>;
 
@@ -153,10 +154,18 @@ vi.mock('../../games/smashup/ui/SmashUpOverlayContext', () => ({
     SmashUpOverlayProvider: PassThrough,
 }));
 
+vi.mock('../../games/pageRuntimeAdapter', () => ({
+    GamePageRuntimeProvider: (props: PropsWithChildren<{ gameId?: string | null }>) => {
+        gamePageRuntimeProviderSpy(props);
+        return <>{props.children}</>;
+    },
+}));
+
 describe('TestMatchRoom', () => {
     beforeEach(() => {
         mockSearchParams = new URLSearchParams();
         localGameProviderSpy.mockClear();
+        gamePageRuntimeProviderSpy.mockClear();
     });
 
     afterEach(() => {
@@ -239,5 +248,20 @@ describe('TestMatchRoom', () => {
                 expansion: 'base',
             },
         });
+    });
+
+    it('应通过 GamePageRuntimeProvider 挂上游戏页面运行时 provider', async () => {
+        mockSearchParams = new URLSearchParams('players=2');
+        const { TestMatchRoom } = await import('../TestMatchRoom');
+
+        render(<TestMatchRoom />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        expect(gamePageRuntimeProviderSpy).toHaveBeenCalled();
+        const latestCall = gamePageRuntimeProviderSpy.mock.calls.at(-1)?.[0] as { gameId?: string | null };
+        expect(latestCall.gameId).toBe('fantasyrealms');
     });
 });
