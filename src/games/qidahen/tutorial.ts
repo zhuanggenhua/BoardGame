@@ -16,7 +16,7 @@ const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: st
         case 'battle-damage':
             return Boolean(core.pendingTargetAction);
         case 'retreat-and-defeat':
-            return Boolean(core.pendingTargetAction);
+            return Boolean(core.postBattleSelection);
         case 'battle-result':
             return Boolean(core.postBattleSelection);
         case 'battle-finish':
@@ -26,11 +26,50 @@ const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: st
     }
 };
 
+const retreatAndRoutStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const sourceRegion = core.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-16');
+    switch (step.id) {
+        case 'choose-rout':
+            return Boolean(core.pendingTargetAction);
+        case 'rout-result':
+            return Boolean(core.lastSeasonSummary)
+                && (core.factions.ming.defeatMarkers ?? 0) > 0
+                && (sourceRegion?.troops ?? 0) === 0;
+        case 'finish':
+            return Boolean(core.lastSeasonSummary);
+        default:
+            return true;
+    }
+};
+
+const wheelSharedCostStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    switch (step.id) {
+        case 'choose-move':
+            return core.turnPhase === 'action-window'
+                && core.actionWheelPosition === 'wheel-military-farm'
+                && core.wheelActionUsed === false;
+        case 'draw-result':
+        case 'dispatch-ready':
+            return core.turnPhase === 'dispatch-targeting'
+                && core.actionWheelPosition === 'wheel-hire'
+                && core.selectedRegionId === 'city-region-24'
+                && core.factions.mongol.handCount >= 8
+                && core.factions.jin.handCount >= 12;
+        default:
+            return true;
+    }
+};
+
 const siegeStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
+        case 'defend-city':
         case 'city-battle':
+            return Boolean(core.pendingTargetAction);
         case 'city-result':
+        case 'besiege-choice':
         case 'occupy-choice':
             return Boolean(core.postBattleSelection);
         case 'finish':
@@ -265,16 +304,18 @@ const QIDAHEN_SIEGE_TUTORIAL: TutorialManifest = {
         {
             id: 'defend-city',
             content: 'game-qidahen:tutorial.siege.steps.defendCity',
-            highlightTarget: 'qidahen-map-layer',
-            position: 'top',
+            highlightTarget: 'qidahen-raid-intent',
+            position: 'left',
             infoStep: true,
         },
         {
             id: 'city-battle',
             content: 'game-qidahen:tutorial.siege.steps.cityBattle',
-            highlightTarget: 'qidahen-post-battle-selection',
+            highlightTarget: 'qidahen-pending-casualty-priority',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            advanceOnEvents: [{ type: 'PENDING_ACTION_RESOLVED' }],
         },
         {
             id: 'city-result',
@@ -306,6 +347,88 @@ const QIDAHEN_SIEGE_TUTORIAL: TutorialManifest = {
             highlightTarget: 'qidahen-season-summary',
             position: 'top',
             infoStep: true,
+        },
+    ],
+};
+
+const QIDAHEN_RETREAT_AND_ROUT_TUTORIAL: TutorialManifest = {
+    id: 'retreat-and-rout',
+    stepValidator: retreatAndRoutStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.retreatAndRout.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-rout',
+            content: 'game-qidahen:tutorial.retreatAndRout.steps.chooseRout',
+            highlightTarget: 'qidahen-resolve-pending-action-rout',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            advanceOnEvents: [{ type: 'PENDING_ACTION_RESOLVED', match: { retreatLossMode: 'rout' } }],
+        },
+        {
+            id: 'rout-result',
+            content: 'game-qidahen:tutorial.retreatAndRout.steps.routResult',
+            highlightTarget: 'qidahen-player-ming',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.retreatAndRout.steps.finish',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+    ],
+};
+
+const QIDAHEN_WHEEL_SHARED_COST_TUTORIAL: TutorialManifest = {
+    id: 'wheel-shared-cost',
+    stepValidator: wheelSharedCostStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.wheelSharedCost.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-move',
+            content: 'game-qidahen:tutorial.wheelSharedCost.steps.chooseMove',
+            highlightTarget: 'qidahen-wheel-move-move-3-all-opponents',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
+            allowedTargets: ['move-3-all-opponents'],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-3-all-opponents' } }],
+        },
+        {
+            id: 'draw-result',
+            content: 'game-qidahen:tutorial.wheelSharedCost.steps.drawResult',
+            highlightTarget: 'qidahen-player-float',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'dispatch-ready',
+            content: 'game-qidahen:tutorial.wheelSharedCost.steps.dispatchReady',
+            highlightTarget: 'qidahen-wheel-dispatch-selection',
+            position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.wheelSharedCost.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
         },
     ],
 };
@@ -371,7 +494,6 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
             allowManualSkip: true,
             allowedCommands: [INTERACTION_COMMANDS.RESPOND],
             allowedTargets: ['hire-only'],
-            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'hire-only' } }],
         },
         {
             id: 'finish',
@@ -540,6 +662,16 @@ const QIDAHEN_TUTORIALS: TutorialCollection = {
             titleKey: 'tutorial.siege.title',
             descriptionKey: 'tutorial.siege.description',
             manifest: QIDAHEN_SIEGE_TUTORIAL,
+        },
+        'retreat-and-rout': {
+            titleKey: 'tutorial.retreatAndRout.title',
+            descriptionKey: 'tutorial.retreatAndRout.description',
+            manifest: QIDAHEN_RETREAT_AND_ROUT_TUTORIAL,
+        },
+        'wheel-shared-cost': {
+            titleKey: 'tutorial.wheelSharedCost.title',
+            descriptionKey: 'tutorial.wheelSharedCost.description',
+            manifest: QIDAHEN_WHEEL_SHARED_COST_TUTORIAL,
         },
         'diplomacy-and-hire': {
             titleKey: 'tutorial.diplomacy.title',

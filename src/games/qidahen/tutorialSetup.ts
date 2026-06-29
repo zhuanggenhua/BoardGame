@@ -1,11 +1,10 @@
 import type { GameSetupSelections } from '../setupOptions';
+import { applyQidahenPregameChoiceDefaults } from './roomSetup';
 import { buildWheelDispatchSelectionFromWheel } from './domain/dispatchSelectionBuilders';
 import type {
-    QidahenBattleRolls,
     QidahenCore,
     QidahenFactionId,
     QidahenPendingTargetAction,
-    QidahenPostBattleSelection,
     QidahenScenarioId,
     QidahenSpecialTroopStack,
 } from './domain/types';
@@ -47,29 +46,6 @@ const createTroop = (
     level,
 });
 
-const buildBattleRolls = (): QidahenBattleRolls => ({
-    cityBattle: false,
-    attackerDamage: 2,
-    defenderDamage: 1,
-    summary: '骑兵冲击：攻方伤害 2，守方伤害 1',
-    stages: [
-        {
-            phase: 'cavalry',
-            attackerRolls: [
-                { troopKind: 'cavalry', level: 3, dieSides: 8, raw: 6, value: 6 },
-                { troopKind: 'cavalry', level: 2, dieSides: 8, raw: 4, value: 4 },
-            ],
-            defenderRolls: [
-                { troopKind: 'infantry', level: 3, dieSides: 10, raw: 8, value: 8 },
-            ],
-            attackerTotal: 10,
-            defenderTotal: 8,
-            attackerDamage: 2,
-            defenderDamage: 1,
-        },
-    ],
-});
-
 const createFieldBattlePendingAction = (): QidahenPendingTargetAction => ({
     actionId: 'raid',
     battleMode: 'field',
@@ -94,61 +70,30 @@ const createFieldBattlePendingAction = (): QidahenPendingTargetAction => ({
 });
 void createFieldBattlePendingAction;
 
-const createSiegePostBattleSelection = (): QidahenPostBattleSelection => ({
+const createSiegePendingAction = (): QidahenPendingTargetAction => ({
     actionId: 'raid',
     battleMode: 'city',
+    title: '山海关 城战待结算',
     attackerFactionId: 'ming',
     sourceRegionId: 'city-region-24',
     sourceRegionName: '辽西',
     targetRegionId: 'city-region-25',
     targetRegionName: '山海关',
     targetRuntimeRegionId: 'city-region-25',
-    committedTroops: 3,
-    survivingTroops: 2,
-    attackerLosses: 1,
-    movementProfileId: null,
-    attackerCasualtyPriority: 'highest-level',
-    originalController: 'jin',
-    originalControlLabel: '后金',
-    title: '战后处理',
-    summary: '山海关已被突破，攻方损失 1，幸存 2，决定是否占领、围城或回退。',
-    battleRollSummary: '骑兵冲击：攻方伤害 2，守方伤害 1',
-    battleRolls: {
-        ...buildBattleRolls(),
-        cityBattle: true,
-    },
-    choices: [
-        {
-            id: 'besiege',
-            mode: 'besiege',
-            regionId: 'city-region-25',
-            plunderPopulation: 0,
-            plunderSource: null,
-            label: '围城该区',
-            detail: '2 个幸存部队留在山海关外围围城，区域仍由守方控制。',
-        },
-        {
-            id: 'occupy',
-            mode: 'occupy',
-            regionId: 'city-region-25',
-            plunderPopulation: 0,
-            plunderSource: null,
-            label: '占领该区',
-            detail: '2 个幸存部队留在山海关。',
-        },
-        {
-            id: 'withdraw',
-            mode: 'withdraw',
-            regionId: 'city-region-24',
-            plunderPopulation: 0,
-            plunderSource: null,
-            label: '撤回辽西',
-            detail: '2 个幸存部队撤回辽西，山海关不改控制。',
-        },
-    ],
+    defenderFactionId: 'jin',
+    defenderLabel: '后金',
+    restriction: '教程样本 · 守城避战后直接攻城',
+    battleWidth: 3,
+    boundaryUnitCap: null,
+    sourceAvailableTroops: 4,
+    committedTroops: 4,
+    attackPressure: 3,
+    attackBoundaryType: 'plain',
+    resolutionHint: '山海关守军已退入城中，先结算这次城战，再决定是占领还是围城。',
+    defenderPayCost: null,
 });
 
-const createDefaultSelections = (scenarioId: QidahenScenarioId): GameSetupSelections => ({
+const createDefaultSelections = (scenarioId: QidahenScenarioId): GameSetupSelections => applyQidahenPregameChoiceDefaults({
     scenario: scenarioId,
 });
 
@@ -273,16 +218,16 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
     coreTransform: (initialCore) => {
         const core = cloneCore(initialCore);
         core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 城战战后处理';
-        core.turnPhase = 'post-battle-decision';
+        core.turnLabel = '第 1 轮 · 大明 · 城战待结算';
+        core.turnPhase = 'resolve-pending';
         core.wheelActionUsed = true;
         core.factionActionUsed = true;
         core.selectedRegionId = 'city-region-25';
         core.selectedActionId = 'raid';
-        core.pendingTargetAction = null;
+        core.pendingTargetAction = createSiegePendingAction();
         core.wheelDispatchSelection = null;
         core.driveTigerConsentSelection = null;
-        core.postBattleSelection = createSiegePostBattleSelection();
+        core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         core.regions = updateRegions(core, (region) => {
             if (region.isLogicalRegion) return region;
@@ -302,10 +247,136 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
                     ...region,
                     controller: 'jin',
                     controlLabel: '后金',
-                    troops: 4,
+                    troops: 0,
                     population: 2,
                     siegeState: null,
                     specialTroops: [],
+                    cityState: {
+                        troops: 2,
+                        population: 2,
+                        specialTroops: [],
+                    },
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
+const createRetreatAndRoutTutorialPendingAction = (): QidahenPendingTargetAction => ({
+    actionId: 'raid',
+    battleMode: 'field',
+    title: '突袭作战待结算',
+    attackerFactionId: 'ming',
+    sourceRegionId: 'city-region-16',
+    sourceRegionName: '克什克腾部',
+    targetRegionId: 'city-region-14',
+    targetRegionName: '察哈尔部',
+    targetRuntimeRegionId: 'city-region-14',
+    defenderFactionId: 'jin',
+    defenderLabel: '后金',
+    restriction: '教程样本 · 战败撤退',
+    battleWidth: 3,
+    boundaryUnitCap: null,
+    sourceAvailableTroops: 5,
+    committedTroops: 5,
+    attackPressure: 1,
+    attackBoundaryType: 'plain',
+    resolutionHint: '这次不会打穿守军。先看断后和溃退这两个撤退选项，再比较它们留下的代价。',
+    defenderPayCost: null,
+});
+
+const createRetreatAndRoutTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 野战待结算';
+        core.turnPhase = 'resolve-pending';
+        core.wheelActionUsed = true;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-14';
+        core.selectedActionId = 'raid';
+        core.pendingTargetAction = createRetreatAndRoutTutorialPendingAction();
+        core.wheelDispatchProgress = null;
+        core.driveTigerConsentSelection = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 5,
+                    population: 2,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 5,
+                    population: 0,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+        core.factions.ming.defeatMarkers = 0;
+        core.factions.jin.defeatMarkers = 0;
+        return core;
+    },
+});
+
+const createWheelSharedCostTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-military-farm';
+        core.selectedWheelMoveId = 'move-3-all-opponents';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = '';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    population: 6,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('ming-wheel-cavalry-lv1', '大明骑兵', 'ming', 'cavalry', 2, 1),
+                    ],
                 };
             }
             return region;
@@ -466,6 +537,8 @@ const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     'qidahen-basic': createBasicTutorialSetup(),
     'basic-opening': createBasicTutorialSetup(),
     'attack-and-battle': createAttackAndBattleTutorialSetup(),
+    'retreat-and-rout': createRetreatAndRoutTutorialSetup(),
+    'wheel-shared-cost': createWheelSharedCostTutorialSetup(),
     'diplomacy-and-hire': createDiplomacyTutorialSetup(),
     'siege-and-occupation': createSiegeTutorialSetup(),
     'year-and-characters': createYearAndCharactersTutorialSetup(),

@@ -284,83 +284,94 @@
       "steps": {
         "welcome": "Seven Hatreds has three victory paths: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige first.",
         "handLimit": "At the start of every turn, check hand limit first. Ming may keep 15 cards; Later Jin and the Mongols may keep 10.",
-        "openingEntry": "After that, look at the live turn entry. This turn still needs two things: one hand action and one wheel action, and the current player decides which comes first.",
-        "handResource": "Cards are the main resource. Events resolve when played, armaments need one extra discard after being played, tactics stay for battle, and silver cards are pure payment.",
-        "selectRegion": "Not every action starts with a region pick. Grant Pardon needs a target, so choose Pidao now and you will immediately see control change on the map.",
-        "pickAction": "Grant Pardon pulls a neighboring enemy troop into Ming control and directly changes ownership on the board.",
-        "payCards": "Most faction actions require payment before resolution. Discard 3 cards first, then resolve Grant Pardon.",
+        "openingEntry": "This turn has two parts: one hand action and one wheel action. The current player chooses the order.",
+        "handResource": "Cards are your resource: events resolve when played, armaments need one extra discard, tactics stay for battle, and silver only pays costs.",
+        "selectRegion": "This action needs a region first. Click Pidao, then choose Grant Pardon.",
+        "pickAction": "Choose Grant Pardon. It changes a neighboring enemy troop into Ming control.",
+        "payCards": "Discard 3 cards first, then resolve Grant Pardon.",
         "actionResult": "The board has already changed. The cards you spent have become real map control.",
-        "moraleLevel": "The number on top of each troop block is both level and morale. Higher levels roll stronger dice, and a unit only collapses when that level reaches zero.",
-        "wheelMove": "After the hand action, finish this turn's wheel action. The wheel is what pushes later turns toward diplomacy, attacks, recruitment, Midyear, and New Year.",
-        "finish": "That is the basic turn structure in Seven Hatreds: convert cards into board pressure, then finish the shared wheel action."
+        "moraleLevel": "The number on each troop is both level and morale.",
+        "wheelMove": "The hand action is done. Now choose one wheel action.",
+        "finish": "That turn is done: cards changed the map, and the wheel pushed play forward."
       }
     },
     "attackAndBattle": {
       "title": "Attack And Battle",
       "description": "Enter from a real dispatch target state, then see a live battle settlement and post-battle result.",
       "steps": {
-        "overview": "Attack dispatch is not just choosing one target. Troops have to move into place first, and only then is the battle truly settled.",
-        "moveEntry": "Start from the live attack dispatch state. The highlighted targets are the real places this force can attack right now.",
-        "battleOpen": "Once the target is set, read the battle first: how many troops were committed, who is defending, and how wide this battlefield can open.",
-        "battleDamage": "Battle damage depends on troop type and level. Choose casualty order here, then let the field battle resolve for real.",
-        "battleResult": "After resolution, read the result first: rolled points, damage dealt, and how many troops survived on each side.",
-        "retreatAndDefeat": "A battle is not just about winning. Retreat losses, casualty priority, and leftover pressure all matter for what happens next.",
-        "finish": "A real attack chain means choosing the target, fighting, absorbing losses, reading the outcome, and then deciding how the battle closes."
+        "overview": "An attack moves first, then settles the battle.",
+        "moveEntry": "Pick one of the real attack targets.",
+        "battleOpen": "Read the committed troops, defender, and battle width.",
+        "battleDamage": "Set casualty order here.",
+        "battleResult": "Read the result and surviving troops.",
+        "retreatAndDefeat": "The defeat marker is already up. The loser still has to pay a retreat cost.",
+        "finish": "This attack is done: target, battle, then post-battle handling."
       }
     },
     "siege": {
       "title": "Siege And Occupation",
       "description": "See why winning a city battle still leaves a decision between occupation, siege, and withdrawal.",
       "steps": {
-        "overview": "City battles are not the same as field battles. Even after winning, you still decide what state the city enters next.",
-        "defendCity": "Read the city's current position first. The defenders have been broken, but that does not automatically mean the city has changed hands.",
-        "cityBattle": "The city-battle result is already here. First read the surviving force and the summary before deciding what happens next.",
-        "cityResult": "Winning the city fight is not the same as completing occupation. The key question is the state of the city after the battle.",
-        "besiegeChoice": "Besieging means leaving troops outside to keep pressure on the city. Control does not change yet, but the region enters a siege state.",
-        "occupyChoice": "Only a true occupation changes control. City warfare is about the post-battle state, not only the fight itself.",
-        "finish": "The key difference from field battles is that a city battle ends with a state choice: occupation, siege, or stepping back."
+        "overview": "Winning a city battle still leaves a state choice.",
+        "defendCity": "Settle the city battle first. This is not occupation yet.",
+        "cityBattle": "Read the committed force, casualties, and remaining defenders.",
+        "cityResult": "After the battle, decide whether to occupy, besiege, or step back.",
+        "besiegeChoice": "Besieging keeps pressure on the city but does not change control yet.",
+        "occupyChoice": "Occupation is what changes control.",
+        "finish": "A city battle closes with the city's new state."
+      }
+    },
+    "wheelSharedCost": {
+      "title": "Wheel Cost",
+      "description": "See what happens when you move 3 spaces: both opponents draw, and the wheel pushes you into the next system.",
+      "steps": {
+        "overview": "Wheel movement is never free. The farther you move, the more cards your opponents recover.",
+        "chooseMove": "Pick \"All opponents draw 2, move 3.\"",
+        "drawResult": "After moving 3 spaces, both the Mongols and Later Jin each drew 2 cards.",
+        "dispatchReady": "Once that cost is paid, the wheel also pushes this turn into the attack / dispatch entry.",
+        "finish": "The wheel decides both which system you enter and how many cards your opponents regain."
       }
     },
     "diplomacy": {
       "title": "Diplomacy And Hire",
       "description": "Enter a real wheel diplomacy step and see control markers and hired troops resolve together.",
       "steps": {
-        "overview": "Diplomacy decides regional relationships, not just marker flipping; hiring decides where new troops can actually appear.",
-        "wheelEntry": "Push the wheel into Diplomacy / Hire first. This action is about map relationship and stationing space, not battle.",
-        "chooseTarget": "Now read which friendly region is projecting influence outward before deciding how the neighboring control marker changes.",
-        "friendlyMark": "A friendly marker creates a region you may pass through and station in. Only after that can it be pushed further into tribute or control.",
-        "tributeMark": "Once it turns into tribute, it becomes a true controlled region. Tribute and friendly areas do not behave the same way.",
-        "removeMark": "Diplomacy is not only about placing your own marker. It can also roll back someone else's presence.",
-        "hireOnly": "After the relationship is set, resolve the hired troops. Hiring puts fresh force directly into your controlled area.",
-        "finish": "Diplomacy changes who the region answers to; hiring changes where force appears. Together they are the real reward of this wheel action."
+        "overview": "Diplomacy changes relations. Hiring changes where new troops appear.",
+        "wheelEntry": "Push the wheel into Diplomacy / Hire.",
+        "chooseTarget": "Read which friendly region is projecting influence.",
+        "friendlyMark": "Place the friendly marker first.",
+        "tributeMark": "The next step can turn friendly into tribute.",
+        "removeMark": "Diplomacy can also remove someone else's marker.",
+        "hireOnly": "After relations are set, place hired troops in a controlled area.",
+        "finish": "This wheel action changes relations and adds force."
       }
     },
     "yearAndCharacters": {
       "title": "Midyear, Characters, And Chronology",
       "description": "See Midyear checks, New Year maintenance, chronology scoring, and how a new year reshuffles the game.",
       "steps": {
-        "overview": "When the shared wheel reaches Midyear and New Year, the whole year catches up at once. Seven Hatreds is not only about the move in front of you.",
-        "advanceMidyear": "Push the wheel into Midyear first. As soon as it crosses, taxes and character checks start resolving immediately.",
-        "midyearTax": "Read the Midyear summary for taxes first: which controlled regions fed cards back into hand, and which failed to do so.",
-        "midyearCharacters": "Then read the character and defeat-pressure result. Character checks and defeat markers are where earlier battles come back into the game state.",
-        "advanceNewYear": "After Midyear, continue into New Year. Crossing into New Year immediately starts maintenance and year-end settlement.",
-        "newYearMaintenance": "New Year begins with fortification maintenance. Whether you can hold the Great Wall line and frontier fortifications directly shapes the next year's defense.",
-        "newYearAttrition": "After maintenance comes attrition. Troops that local population cannot support must be paid for or cut back.",
-        "chronologyScore": "Chronology cards are not just year markers. The leading player must pay cards to take the prestige for that year.",
-        "turnOrderRefresh": "Once chronology resolves, turn order and available characters refresh together, changing next year's tempo.",
-        "finish": "A year passing in Seven Hatreds does not only change the date. It reshuffles resources, characters, order, and strategic pressure."
+        "overview": "When the wheel reaches Midyear and New Year, the year's results settle together.",
+        "advanceMidyear": "Push the wheel into Midyear.",
+        "midyearTax": "Read taxes first: which controlled regions gave cards back.",
+        "midyearCharacters": "Then read character checks and defeat pressure.",
+        "advanceNewYear": "After Midyear, push on into New Year.",
+        "newYearMaintenance": "Read fortification maintenance first.",
+        "newYearAttrition": "Then read attrition.",
+        "chronologyScore": "To take prestige from chronology, the leader must pay cards.",
+        "turnOrderRefresh": "After chronology, turn order and characters refresh together.",
+        "finish": "A year end reshuffles resources, characters, and order."
       }
     },
     "koreaSpecial": {
       "title": "Korea And Special Map Rules",
       "description": "Read the map-specific rules around Korea, Hanseong, sea routes, and Shanhaiguan.",
       "steps": {
-        "overview": "Korea, Hanseong, sea routes, and Shanhaiguan are not side notes. They directly change scoring, movement, and defense.",
-        "koreaRegion": "Read the Korea area first. It has no population, does not supply troops, and does not count for hegemony control, but it does produce Korea cards.",
-        "hanseongVp": "Hanseong is more than a region. Once Ming loses its starting hold there, whoever controls Hanseong effectively gains 1 prestige.",
-        "waterLimit": "Sea routes between anchor regions can move at most 2 troops at a time, and troops that use sea movement cannot keep moving over land in the same action.",
-        "shanhaiguan": "Shanhaiguan is both a city and a special border between Liaoxi and Jizhen. If it stands, the border stays narrow; if it is ruined, that border collapses into plain ground.",
-        "finish": "These are not optional reminders. They are formal map rules that directly change whether you can defend, break through, or seize key prestige."
+        "overview": "Korea, Hanseong, sea routes, and Shanhaiguan all change the rules directly.",
+        "koreaRegion": "Read Korea first: no population, no hegemony control, but it does produce Korea cards.",
+        "hanseongVp": "Whoever controls Hanseong gains 1 prestige.",
+        "waterLimit": "Sea routes between anchor regions move at most 2 troops.",
+        "shanhaiguan": "If Shanhaiguan stands, the border stays narrow; if ruined, it collapses into plain ground.",
+        "finish": "These map rules directly change scoring, movement, and defense."
       }
     }
   },
