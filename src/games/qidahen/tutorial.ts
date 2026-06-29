@@ -62,6 +62,27 @@ const wheelSharedCostStepValidator = (state: MatchState<unknown>, step: { id: st
     }
 };
 
+const armamentUpgradeStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const artilleryTech = core.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech');
+    switch (step.id) {
+        case 'choose-action':
+            return core.turnPhase === 'action-window'
+                && core.factionActionUsed === false
+                && (artilleryTech?.level ?? 0) === 1;
+        case 'pay-cards':
+            return core.selectedActionId === 'upgrade-armament'
+                && core.factionActionUsed === false
+                && (artilleryTech?.level ?? 0) === 1;
+        case 'result':
+        case 'finish':
+            return core.lastSeasonSummary?.title === '升级军备'
+                && (artilleryTech?.level ?? 0) === 2;
+        default:
+            return true;
+    }
+};
+
 const siegeStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
@@ -433,6 +454,53 @@ const QIDAHEN_WHEEL_SHARED_COST_TUTORIAL: TutorialManifest = {
     ],
 };
 
+const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
+    id: 'armament-upgrade',
+    stepValidator: armamentUpgradeStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.armamentUpgrade.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-action',
+            content: 'game-qidahen:tutorial.armamentUpgrade.steps.chooseAction',
+            highlightTarget: 'qidahen-action-upgrade-armament',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
+            allowedTargets: ['upgrade-armament'],
+            advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'upgrade-armament' } }],
+        },
+        {
+            id: 'pay-cards',
+            content: 'game-qidahen:tutorial.armamentUpgrade.steps.payCards',
+            highlightTarget: 'qidahen-hand-zone',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
+            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'upgrade-armament' } }],
+        },
+        {
+            id: 'result',
+            content: 'game-qidahen:tutorial.armamentUpgrade.steps.result',
+            highlightTarget: 'qidahen-armaments-ming',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.armamentUpgrade.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+        },
+    ],
+};
+
 const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
     id: 'diplomacy-and-hire',
     stepValidator: diplomacyHireStepValidator,
@@ -672,6 +740,11 @@ const QIDAHEN_TUTORIALS: TutorialCollection = {
             titleKey: 'tutorial.wheelSharedCost.title',
             descriptionKey: 'tutorial.wheelSharedCost.description',
             manifest: QIDAHEN_WHEEL_SHARED_COST_TUTORIAL,
+        },
+        'armament-upgrade': {
+            titleKey: 'tutorial.armamentUpgrade.title',
+            descriptionKey: 'tutorial.armamentUpgrade.description',
+            manifest: QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL,
         },
         'diplomacy-and-hire': {
             titleKey: 'tutorial.diplomacy.title',

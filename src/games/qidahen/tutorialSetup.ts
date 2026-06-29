@@ -385,6 +385,72 @@ const createWheelSharedCostTutorialSetup = (): QidahenTutorialPreset => ({
     },
 });
 
+const createArmamentUpgradeTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        const mingCardIds = core.handCards
+            .filter((card) => card.faction === 'ming')
+            .slice(0, 3)
+            .map((card) => card.id);
+
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 行动窗口';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = false;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = 'upgrade-armament';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.payment = { required: 2, selected: 0, prompt: '需弃 2 / 已选 0' };
+        core.handCards = core.handCards.map((card) => {
+            if (card.id === mingCardIds[0]) {
+                return {
+                    ...card,
+                    label: '火炮技术',
+                    cardKind: 'armament' as const,
+                    armamentId: 'artillery-tech',
+                    cardDefId: 'tutorial-ming-artillery-tech-upgrade',
+                };
+            }
+            if (card.id === mingCardIds[1]) {
+                return {
+                    ...card,
+                    label: '军饷银两',
+                    cardKind: 'silver' as const,
+                    armamentId: null,
+                    cardDefId: 'tutorial-ming-silver-upgrade',
+                };
+            }
+            if (card.id === mingCardIds[2]) {
+                return {
+                    ...card,
+                    label: '大明事件牌',
+                    cardKind: 'event' as const,
+                    armamentId: null,
+                    cardDefId: 'tutorial-ming-event-upgrade',
+                };
+            }
+            return card;
+        });
+        return core;
+    },
+});
+
 const createDiplomacyTutorialSetup = (): QidahenTutorialPreset => ({
     numPlayers: 3,
     setupSelections: createDefaultSelections('post-sarhu-1619'),
@@ -539,6 +605,7 @@ const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     'attack-and-battle': createAttackAndBattleTutorialSetup(),
     'retreat-and-rout': createRetreatAndRoutTutorialSetup(),
     'wheel-shared-cost': createWheelSharedCostTutorialSetup(),
+    'armament-upgrade': createArmamentUpgradeTutorialSetup(),
     'diplomacy-and-hire': createDiplomacyTutorialSetup(),
     'siege-and-occupation': createSiegeTutorialSetup(),
     'year-and-characters': createYearAndCharactersTutorialSetup(),
