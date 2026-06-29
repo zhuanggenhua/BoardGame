@@ -10,12 +10,13 @@
 - `betrayal` 相关实现、证据、规则、资源合同、E2E 和 OpenSpec 变更，默认以这棵专项 worktree 为真相源。
 - 共享框架、共享文档、共享脚本、共享语言包和生成产物，不允许直接“选 ours/theirs”；必须逐项看现实语义后再归并。
 - 当前从分支历史看，`feat/game-betrayal -> main` 已不再需要再做一轮内容级冲突归并；若 `main` 在此之后没有新增提交，回主线将是快进合并。
-- 现在真正没锁定的不是 `betrayal` 专项正文，而是根目录 `main` 工作区现场还带着别的游戏未提交改动；在那个现场未清干净前，不应直接在根目录执行回主线动作。
+- 之前阻塞回主线的那组 `qidahen` 教程脏改，已在根目录 `main` 收口为提交 `8a2e972a 收口七大恨教程扩章与 closeout 验证`，并已实际 merge 进当前专项树。
+- 因此当前 blocker 已不再是“根目录 `main` 现场不干净”，而是只剩最后一个动作判断：是否现在就执行 `feat/game-betrayal -> main` 的正式回主线。
 
 ## 当前专项收口就绪度
 
 > 结论时间：`2026-06-29`
-> 结论范围：只针对当前 `betrayal` 专项 worktree 是否已经具备回主线前提，以及真正还卡在哪个执行现场。
+> 结论范围：只针对当前 `betrayal` 专项 worktree 是否已经具备回主线前提，以及当前还剩哪一步未执行。
 
 ### 已通过的门禁
 
@@ -77,17 +78,17 @@
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/games/betrayal/__tests__/Board.foundation.test.tsx src/engine/systems/__tests__/CheatSystem.test.ts --configLoader native`
   - 结果：`4 passed / 34 passed`
 
-### 当前还不能在根目录 `main` 直接落 merge 动作的真正原因
+### 之前阻塞回主线的现场问题已被消除
 
 - `feat/game-betrayal` 这棵专项树本身已经完成：
   - 专项收口提交；
   - `main -> feat/game-betrayal` 的内容级归并；
   - 归并后的最小真实回归。
-- 当前真正未锁定的是**根目录 `main` 的执行现场**，不是 `betrayal` 分支内容：
-  - 根目录 `main` 工作区仍有 `qidahen` 相关未提交改动；
-  - 这些脏改不属于 `main` 已提交历史，但会直接影响“你到底在一个什么现场上执行回主线动作”；
-  - 在用户未明确授权清理、提交、迁移或切换这些改动前，不应直接在根目录 `main` 上做合并/快进操作。
-- 换句话说，当前 blocker 已从“专项树还没收完”切换成“回主线动作的目标现场还不干净”。
+- 已实际发生的新事实有两件：
+  - 根目录 `main` 上那组 `qidahen` / 教程 / Sentry 最小修复，已收口为提交 `8a2e972a 收口七大恨教程扩章与 closeout 验证`；
+  - 当前专项树已实际执行 `git merge main`，生成提交 `62b0e14e Merge branch 'main' into feat/game-betrayal`，且没有文本冲突。
+- 因此当前已不再存在“根目录 `main` 现场不干净导致不能继续”的 blocker。
+- 当前剩余工作只剩：在用户仍要继续回主线的前提下，选择何时正式执行 `feat/game-betrayal -> main` 的最终合并动作。
 
 ### 当前专项收口提交建议
 
@@ -154,11 +155,15 @@
     - 说明文档与证据目录已同步更新。
 - 在这之后已经实际发生的事情还有一件：
   - `53d362ab 归并 main 到山屋惊魂专项分支并保留教程生命周期双语义`
+- 以及本轮新增的两件事：
+  - `8a2e972a 收口七大恨教程扩章与 closeout 验证`
+  - `62b0e14e Merge branch 'main' into feat/game-betrayal`
 - 因此当前最准确的口径应更新为：
   - **专项收口已提交；**
-  - **`main` 已吸收到专项树；**
-  - **从分支历史看，当前已具备回主线的快进前提；**
-  - **下一步不是再做一轮内容归并，而是等一个干净的 `main` 执行现场来落回主线动作。**
+  - **最新 `main` 已再次吸收到专项树；**
+  - **从分支历史看，当前 `feat/game-betrayal` 相对 `main` 为领先 `14`、落后 `0`；**
+  - **共享层冲突已经在专项树内实际处理完；**
+  - **下一步不再是等待现场清理，而是决定是否立即执行回主线。**
 
 ### 当前共享层特别说明
 
@@ -190,9 +195,9 @@
   - `vite.config.ts` 已保住 Android/iOS 裁剪插件与 `three-stdlib` alias。
 - 当前分支关系的直接事实是：
   - `main` 已经是 `feat/game-betrayal` 的祖先提交；
-  - `feat/game-betrayal` 相对 `main` 领先 `12`、落后 `0`；
+  - `feat/game-betrayal` 相对 `main` 领先 `14`、落后 `0`；
   - 因此若 `main` 不再新增提交，后续不会再出现这一轮同级别的内容冲突。
-- 仍需注意的不是历史冲突本身，而是根目录 `main` 工作区里的未提交脏改会污染执行现场；这是现场问题，不是分支图问题。
+- 当前需要注意的已不是历史冲突或现场脏改，而是：若正式回主线前 `main` 又新增共享提交，就必须重新做一轮内容级比对。
 
 ## 当前这次两处共享重叠的现实含义
 
@@ -270,11 +275,11 @@
 
 ## 当前剩余风险分级
 
-- **高优先级现场风险**：
-  - 根目录 `main` 工作区仍有 `qidahen` 相关未提交改动。
+- **高优先级时效风险**：
+  - 当前结论建立在 `62b0e14e` 之后、且 `main` 尚未继续前进的前提上。
 - 结论依据：
-  - 这些改动不会改变 `main...feat/game-betrayal` 的分支图，却会直接影响你在哪个现场执行回主线动作；
-  - 在用户未明确授权处理它们前，不应直接在根目录落合并动作。
+  - 现在根目录 `main` 已干净，旧的现场 blocker 已消失；
+  - 但只要 `main` 在正式回主线前再次新增共享提交，就要重新核对共享层差异。
 - **中优先级未来漂移风险**：
   - `main` 若在回主线前又新增共享提交，可能重新打开 `docs/ai-rules/`、`src/pages/`、`src/engine/`、`scripts/infra/` 一带的内容级归并。
 - 结论依据：
@@ -324,7 +329,7 @@
 ## 当前这次最小风险 merge 顺序
 
 1. 先在 `feat/game-betrayal` 里把专项未提交改动收口并提交。
-2. 不要在当前根目录 `main` 的脏工作区上直接 merge；要先保证执行 merge 的那棵树本身没有无关未提交改动干扰。
+2. 现在根目录 `main` 与当前专项树都已干净；若要执行正式回主线，仍应先确认执行 merge 的那棵树在动作发生当下没有新增无关未提交改动。
 3. 合并时把注意力至少放在三类对象：
    - `betrayal` 专项正文：默认以 `feat/game-betrayal` 为真相源；
    - `ui-ux.md` 与 `vite.config.ts`：按上面的现实语义做双保留归并；
@@ -346,7 +351,7 @@
   - `vite.config.ts`：保留 `main` 的 Android/iOS 裁剪与 `three-stdlib` alias，同时保留 `betrayal` 所需接线，不回退任何一边的现实能力。
   - `useMatchRoomTutorialLifecycle.tsx`：保留 `main` 的教程切换完成态判断，同时保留 `betrayal` 这边的旧实例延迟清理隔离。
 - 共享层一旦出现同文件冲突，不能只看冲突标记选 `ours/theirs`；必须先回答“这边修的是哪个现实语义、另一边修的是哪个现实语义、最终保留后回哪个真实入口验证”。
-- 当前不建议直接在根目录 `main` 上手工消冲突；正确顺序仍然是：先在 `betrayal` 专项树里收口并提交，再基于已提交真相去做分支级归并。
+- 当前不再需要为这轮已知共享主题做手工消冲突；它们已经在 `62b0e14e` 之前后完成吸收。后续若再有冲突，只可能来自 `main` 的新增提交。
 
 ## 回主分支前的最小检查
 
@@ -354,9 +359,9 @@
    - `basic-flow`、`first-scenario`、`betrayal-tutorial` 三条真实 E2E 都还是通过态；
    - `docs/games/betrayal/README.md`、教程覆盖矩阵和截图证据一致；
    - `openspec validate add-betrayal-basic-tutorial --strict --no-interactive` 仍通过。
-2. 再看你准备落回主线动作的那个 `main` 现场是否干净：
-   - 当前根目录 `main` 若仍带未提交改动，先不要在那个现场执行 merge / fast-forward；
-   - 必须先锁定这些改动是要提交、迁移、保留原地，还是等待用户明确处置。
+2. 再看你准备落回主线动作的那个 `main` 现场是否仍保持干净：
+   - 本轮此刻根目录 `main` 已干净；
+   - 真正需要重复确认的是“正式执行回主线动作的那一刻”有没有新脏改或新提交插入。
 3. 最后再看 `main` 在你准备回主线的那一刻，是否又新增了共享提交：
    - `src/components/game/framework/`
    - `src/engine/`
@@ -474,7 +479,7 @@
 ## 建议的实际合并顺序
 
 1. 维持 `feat/game-betrayal` 当前已提交、已回归通过的状态，不要再在回主线前顺手混入新需求。
-2. 先把准备执行回主线动作的 `main` 现场锁定干净；如果根目录 `main` 仍有无关脏改，先停在现场问题上，不要直接操作。
+2. 先把准备执行回主线动作的 `main` 现场再次锁定为干净状态；本轮当前时刻已经满足这一点。
 3. 如果 `main` 自上次吸收后没有新增提交，则直接走快进回主线；如果有新增共享提交，再补做一轮内容级比对。
 4. 回主线动作完成后先跑最小回归：
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
