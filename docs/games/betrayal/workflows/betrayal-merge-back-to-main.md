@@ -321,6 +321,40 @@
   - `first-scenario`
   - 若这 3 条都通过，再决定是否补跑其余 4 条边界 E2E。
 
+## 两处真冲突的手工解法
+
+### 1. `src/pages/useMatchRoomTutorialLifecycle.tsx`
+
+- 不要选 `main` 单边，也不要回退成当前专项树早期版本。
+- 目标落点就是当前 `feat/game-betrayal` 里的现状：
+  - 保留 `TutorialProgressSnapshot` 与 `lastTutorialProgressRef`；
+  - 保留 `currentManifestId + currentManifestLastStepId` 的完成态判断；
+  - 同时保留 `latestTutorialLifecycleMountId` 与 `lifecycleMountIdRef`；
+  - 在卸载延迟清理里继续用 `capturedMountId !== latestTutorialLifecycleMountId` 隔离旧实例误清理。
+- 手工解完后，这个文件至少要满足 4 个现实语义：
+  - 子教程切换后不会误复用“上一条教程已完成”；
+  - 旧实例的延迟清理不会误关新教程；
+  - 当前教程最后一步即使不叫 `finish`，结束后仍能返回上一页；
+  - 同一教程已经走到最后一步时，不会重复自动启动。
+
+### 2. `src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx`
+
+- 这里不能只留 `main` 的 3 条测试，也不能只留专项树后补的第 4 条测试。
+- 目标落点是当前 `feat/game-betrayal` 的 4 条测试全集：
+  - `子教程切换后...重新启动`
+  - `当前教程最后一步不是 finish 时...返回上一页`
+  - `同一条教程已经走到最后一步...不会重复自动启动`
+  - `旧实例的延迟清理不能把新教程误关掉`
+- 其中前三条里使用的 manifest id 当前已经故意改成 `field-battle / season-flow` 这类彼此不同、但 step id 仍相同的组合；不要再回退成会弱化断言强度的写法。
+
+### 3. 手工解完后的最低验证
+
+- `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx --configLoader native`
+- `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomStageRuntimeModelBuilders.test.ts src/games/__tests__/betrayalManifestIntegration.test.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/components/game/framework/__tests__/ActionBarSkeleton.test.tsx src/engine/systems/__tests__/CheatSystem.test.ts --configLoader native`
+- `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts`
+- `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
+- `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
+
 ## 当前这次最小风险 merge 顺序
 
 1. 先在 `feat/game-betrayal` 里把专项未提交改动收口并提交。
