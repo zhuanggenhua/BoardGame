@@ -17,6 +17,7 @@ import {
     readQidahenScenarioId,
     type QidahenPregameChoiceField,
 } from './roomSetup';
+import { buildQidahenTutorialSetupData } from './tutorialSetup';
 
 type QidahenPregameScenarioGateReadyState = {
     numPlayers: number;
@@ -26,6 +27,7 @@ type QidahenPregameScenarioGateReadyState = {
 
 type QidahenPregameScenarioGateProps = {
     searchParams: URLSearchParams;
+    tutorialId?: string;
     onSearchParamsChange: (nextSearchParams: URLSearchParams) => void;
     children: (readyState: QidahenPregameScenarioGateReadyState) => React.ReactNode;
 };
@@ -103,10 +105,15 @@ const resolveScenarioLabel = (
 
 export function QidahenPregameScenarioGate({
     searchParams,
+    tutorialId,
     onSearchParamsChange,
     children,
 }: QidahenPregameScenarioGateProps) {
     const { t } = useTranslation('game-qidahen');
+    const tutorialSetupData = React.useMemo(
+        () => buildQidahenTutorialSetupData(tutorialId),
+        [tutorialId],
+    );
     const routeSelections = React.useMemo(
         () => readRouteSelectionsFromSearchParams(searchParams),
         [searchParams],
@@ -134,6 +141,18 @@ export function QidahenPregameScenarioGate({
         () => resolvePregamePlayerCount(searchParams, routeScenarioId),
         [routeScenarioId, searchParams],
     );
+
+    if (tutorialSetupData) {
+        return (
+            <>
+                {children({
+                    numPlayers: tutorialSetupData.numPlayers,
+                    setupSelections: tutorialSetupData.setupSelections,
+                    setupData: tutorialSetupData.setupData,
+                })}
+            </>
+        );
+    }
 
     if (hasCompletePregameSelections(routeSelections)) {
         return (

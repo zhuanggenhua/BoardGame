@@ -1403,6 +1403,7 @@ const resolvePendingBattleTargetAction = (
                 attackerCasualtyPriority,
                 defenderCasualtyPriority,
                 structuredBattleText,
+                battleRolls,
                 dependencies,
             );
             continuedPendingTargetAction = genericBattleOutcome.continuedPendingTargetAction;
@@ -1868,6 +1869,7 @@ const resolvePendingGenericBattleOutcome = (
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
     defenderCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
     structuredBattleText = '',
+    battleRolls: QidahenBattleRolls | null | undefined,
     dependencies: QidahenPendingTargetResolutionDependencies,
 ): QidahenPendingGenericBattleOutcomeResolution => {
     const survivingAttackers = Math.max(0, pendingTargetAction.committedTroops - attackerLoss);

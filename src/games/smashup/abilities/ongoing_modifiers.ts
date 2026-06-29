@@ -59,7 +59,6 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'mermaids_shipwreck_cove', location: 'base', target: 'ownerMinions', delta: 1 },
     { defId: 'world_champs_bewitched', location: 'minion', target: 'self', delta: 2 },
     { defId: 'fairies_leaf_armor', location: 'minion', target: 'self', delta: 1 },
-    { defId: 'princesses_heirloom', location: 'minion', target: 'self', delta: 1 },
     { defId: 'shapeshifters_splice_as_nice', location: 'minion', target: 'self', delta: 2 },
     { defId: 'cyborg_apes_cyberevolution', location: 'minion', target: 'self', delta: 3 },
     { defId: 'werewolf_full_moon', location: 'base', target: 'ownerMinions', delta: 1 },
@@ -317,6 +316,16 @@ function registerFairiesModifiers(): void {
 }
 
 function registerPrincessesModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'princesses_heirloom',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => {
+                const heirloomCount = helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'princesses_heirloom');
+                return heirloomCount === 0 ? 0 : heirloomCount * heirloomCount;
+            },
+        },
+    ]);
 }
 
 function registerYuanhouModifiers(): void {

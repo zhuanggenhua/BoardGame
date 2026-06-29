@@ -195,6 +195,7 @@ function renderBoard(
         matchData?: Array<{ id: number | string; name: string; isConnected?: boolean }>;
         strictMode?: boolean;
         gameMode?: GameMode;
+        sys?: Record<string, unknown>;
     },
 ) {
     const board = (
@@ -202,7 +203,7 @@ function renderBoard(
             <TutorialProvider>
                 <GameModeProvider mode={options?.gameMode ?? 'local'}>
                     <Board
-                        G={{ core, sys: {} } as MatchState<Record<string, unknown>>}
+                        G={{ core, sys: options?.sys ?? {} } as MatchState<Record<string, unknown>>}
                         dispatch={options?.dispatch ?? (() => {})}
                         playerID={options && 'playerID' in options ? options.playerID ?? undefined : '0'}
                         matchData={options?.matchData ?? [{ id: 0, name: '测试玩家', isConnected: true }]}
@@ -1637,6 +1638,69 @@ describe('FantasyRealms Board foundation', () => {
             expect(magnifyOverlay).toHaveAttribute('aria-hidden', 'false');
             expect(within(magnifyOverlay).getByRole('button', { name: '关闭预览' })).toBeInTheDocument();
             expect(within(magnifyOverlay).getByTestId('fantasyrealms-card')).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[2]!.id);
+        });
+    });
+
+    it('教程步骤切到新目标后，上一张目标牌不再保留 selected 描边', () => {
+        withViewport(1440, 1024, () => {
+            const core = makeCore({
+                stage: 'discard',
+                focusCardId: 'leader-queen',
+                players: {
+                    '0': {
+                        id: '0',
+                        name: '玩家1',
+                        hand: [
+                            { ...HAND_CARDS[0]! },
+                            { ...HAND_CARDS[1]!, id: 'leader-queen', name: 'Queen', displayNameZh: '王后' },
+                            { ...HAND_CARDS[2]! },
+                            { ...HAND_CARDS[3]! },
+                        ],
+                        score: 29,
+                        scoreBreakdown: [
+                            { label: '有效基础分', value: 14 },
+                            { label: '总加分', value: 15 },
+                            { label: '总减分', value: 0 },
+                        ],
+                    },
+                    '1': {
+                        id: '1',
+                        name: '玩家2',
+                        hand: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                        score: 17,
+                        scoreBreakdown: [
+                            { label: '有效基础分', value: 17 },
+                            { label: '总加分', value: 0 },
+                            { label: '总减分', value: 0 },
+                        ],
+                    },
+                } as FantasyRealmsCore['players'],
+            });
+            renderBoard(core, {
+                gameMode: 'tutorial',
+                sys: {
+                    tutorial: {
+                        active: true,
+                        stepIndex: 0,
+                        steps: [],
+                        manifestId: 'fantasyrealms-basic',
+                        step: {
+                            id: 'discard-after-center',
+                            content: 'game-fantasyrealms:tutorial.steps.discardAfterCenter',
+                            highlightTarget: 'fantasyrealms-card-hand-weather-rainstorm',
+                            allowedCommands: ['DISCARD_CARD'],
+                            allowedTargets: ['weather-rainstorm'],
+                            requireAction: true,
+                        },
+                        allowManualSkip: false,
+                        pendingAnimationAdvance: false,
+                    },
+                },
+            });
+
+            const queenButton = document.querySelector('[data-tutorial-id="fantasyrealms-card-hand-leader-queen"]') as HTMLElement | null;
+            expect(queenButton).not.toBeNull();
+            expect(queenButton.className).not.toContain('fr-card-button--selected');
         });
     });
 

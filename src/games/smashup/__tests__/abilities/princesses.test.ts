@@ -5,6 +5,7 @@ import { clearRegistry, resolveSpecial } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reduce';
 import { validate } from '../../domain/commands';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
@@ -490,6 +491,31 @@ describe('Princesses abilities', () => {
                 (action) => action.uid === 'heirloom-1' && action.defId === 'princesses_heirloom',
             ),
         ).toBe(true);
+    });
+
+    it('同一随从附着两张传家宝时，每张传家宝都会继续给该随从 +1 力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    ...makeMinion('griselda-1', 'princesses_griselda', '0', 5),
+                    attachedActions: [
+                        { uid: 'heirloom-1', defId: 'princesses_heirloom', ownerId: '0' },
+                        { uid: 'heirloom-2', defId: 'princesses_heirloom', ownerId: '0' },
+                    ],
+                }],
+                ongoingActions: [],
+            }],
+        });
+
+        const griselda = core.bases[0].minions[0]!;
+        expect(griselda.attachedActions).toHaveLength(2);
+        expect(core.bases[0].minions[0]?.attachedActions.filter(action => action.defId === 'princesses_heirloom')).toHaveLength(2);
+        expect(getEffectivePower(core, griselda, 0)).toBe(9);
     });
 
     it('princesses_happily_ever_after 会在你于该基地得分时额外给 1 VP', () => {

@@ -24,6 +24,9 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
         const rawSetupData = (setupData && typeof setupData === 'object' && !Array.isArray(setupData))
             ? setupData as Record<string, unknown>
             : undefined;
+        const tutorialCoreTransform = typeof rawSetupData?.qidahenTutorialCoreTransform === 'function'
+            ? rawSetupData.qidahenTutorialCoreTransform as (core: QidahenCore) => QidahenCore
+            : null;
         const hasExplicitScenario = rawSetupData != null
             && (
                 typeof rawSetupData.scenario === 'string'
@@ -31,14 +34,16 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
                 || typeof rawSetupData.scenarioId === 'string'
             );
         if (!hasExplicitScenario && shouldUseQidahenInMatchScenarioVote(rawSetupData)) {
-            return createInitialCoreForInMatchScenarioVote(playerIds);
+            const initialCore = createInitialCoreForInMatchScenarioVote(playerIds);
+            return tutorialCoreTransform ? tutorialCoreTransform(initialCore) : initialCore;
         }
-        return createInitialCore(
+        const initialCore = createInitialCore(
             playerIds,
             readQidahenScenarioId(rawSetupData),
             shouldResolveQidahenScenarioChoiceGroups(rawSetupData),
             readQidahenScenarioChoiceSelections(rawSetupData),
         );
+        return tutorialCoreTransform ? tutorialCoreTransform(initialCore) : initialCore;
     },
 
     validate,

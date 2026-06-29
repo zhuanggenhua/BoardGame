@@ -4554,14 +4554,21 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     }, [activeDriveTigerConsentInteractionId, dispatch, driveTigerConsentSelection]);
 
     const resolveFortificationMaintenance = React.useCallback((choiceId: 'auto-pay' | 'skip-all', attritionPriority: QidahenCasualtyPriority) => {
-        if (!activeFortificationMaintenanceInteractionId || !fortificationMaintenanceSelection) {
+        if (!fortificationMaintenanceSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
-            interactionId: activeFortificationMaintenanceInteractionId,
-            optionId: choiceId,
-            mergedValue: { attritionPriority },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
+        if (activeFortificationMaintenanceInteractionId) {
+            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+                interactionId: activeFortificationMaintenanceInteractionId,
+                optionId: choiceId,
+                mergedValue: { attritionPriority },
+            } as QidahenCommandMap[keyof QidahenCommandMap]);
+            return;
+        }
+        dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE, {
+            choiceId,
+            attritionPriority,
+        });
     }, [activeFortificationMaintenanceInteractionId, dispatch, fortificationMaintenanceSelection]);
 
     const toggleHandLimitDiscardCard = React.useCallback((cardId: string) => {

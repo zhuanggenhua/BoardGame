@@ -278,13 +278,68 @@
     }
   },
   "tutorial": {
-    "steps": {
-      "welcome": "In Seven Hatreds, you win by expanding your control, taking a capital, or reaching 3 prestige first. This demo turn only teaches the basic loop: take one action, then move the wheel once.",
-      "selectRegion": "This example starts from Pidao. Set the action's starting region here first.",
-      "pickAction": "There is a nearby enemy troop that can be pardoned from Pidao, so use Grant Pardon this time.",
-      "payCards": "Grant Pardon costs 3 cards. Pay them first, then click Confirm Action.",
-      "wheelMove": "After the action, this turn still needs one wheel move. Click Free Move 1 once, then click it again to execute.",
-      "finish": "You have now completed one basic turn: resolve one action, then use the wheel to pass the turn on."
+    "basic": {
+      "title": "Basic Turn",
+      "description": "Walk through the real opening entry, one hand action, and one wheel action.",
+      "steps": {
+        "welcome": "In Seven Hatreds, you win by expanding control, taking a capital, or reaching 3 prestige first. Each turn includes one hand action and one wheel action, and this chapter walks one full basic loop.",
+        "openingEntry": "Start with the action rail on the right. In live play, both the hand action and the wheel action enter from here, and the current player chooses the order.",
+        "handResource": "The cards at the bottom are your main resource. Event cards are played directly, armaments cost an extra discard to play, and this step shows the most common pattern: discarding cards to pay for an action.",
+        "selectRegion": "Click Pidao on the map first. There is a nearby troop that can be pardoned here, so the result shows up on the map immediately.",
+        "pickAction": "Now click Grant Pardon. This is a faction action that directly changes the board position.",
+        "payCards": "Grant Pardon costs 3 cards. Click any 3 cards in your hand, then click Confirm Action.",
+        "actionResult": "After it resolves, 1 enemy troop beside Pidao becomes a Ming troop. The cards you just discarded have already turned into board control.",
+        "moraleLevel": "The number on top of each troop block is both its level and its morale. Damage usually lowers that level first, and a troop is only destroyed when it drops to zero. Higher levels also roll stronger dice.",
+        "wheelMove": "After the hand action, this turn still has one wheel action left. Click Free Move 1 on the wheel now.",
+        "finish": "You have completed one basic turn: pay cards for a faction action, then finish one wheel action. The next lesson is what happens when these troops actually fight."
+      }
+    },
+    "fieldBattle": {
+      "title": "Field Battle",
+      "description": "See one full field battle with casualty order, dice, and post-battle occupation.",
+      "steps": {
+        "battleOverview": "This chapter starts from a field battle that is already engaged. A field battle is about troop level, dice results, casualty order, and what you do after winning.",
+        "battleTarget": "The current battlefield is Chahar. Read the map and the pending panel first: both sides, committed troops, and the target are already shown here.",
+        "casualtyPriority": "You must choose casualty order first. Click Lowest Level First now so the weaker troops lose level first, then resolve the battle.",
+        "battleResult": "After resolution, read the dice summary and the outcome first. You can directly see both rolls, the damage dealt, and how many troops survived.",
+        "occupyRegion": "This field battle is won. Click Occupy This Region now and leave the surviving troops in Chahar.",
+        "finish": "That is the core loop of a field battle: compare troop level and dice, decide casualties, then resolve occupation or withdrawal."
+      }
+    },
+    "diplomacy": {
+      "title": "Diplomacy And Hire",
+      "description": "Enter one real wheel diplomacy/hire step and see map control plus mercenaries resolve together.",
+      "steps": {
+        "overview": "This chapter focuses on diplomacy and hiring. It is not only about flipping map markers; it also decides where you can station troops and which regions become your vassals.",
+        "wheelEntry": "The wheel has not moved yet. Click Free Move 1 first to advance into Diplomacy / Hire.",
+        "chooseTarget": "Now the game is in Diplomacy / Hire. Read the prompt first: this action starts from Shanhai Pass, handles a neighboring control marker, then settles the hired troops.",
+        "placeFriendly": "Click the neighboring target first, then click Place Friendly Marker. A friendly region gives you passage and stationing now, and it can be flipped into a vassal later.",
+        "hireOnly": "After the marker change, click End And Hire. That will place 2 level-2 mercenary troops directly in your source region.",
+        "finish": "You have now seen both halves of the system: diplomacy changes map control markers, and hiring adds troops to your controlled region."
+      }
+    },
+    "siege": {
+      "title": "Siege And Occupation",
+      "description": "See why winning a city battle is not the same as immediately taking control.",
+      "steps": {
+        "overview": "This chapter starts from the post-battle decision after Shanhaiguan has been breached. After a city battle, you still decide whether to occupy, besiege, or withdraw.",
+        "target": "Look at Shanhaiguan first. It has been breached, but it is still controlled by Jin, so the post-battle choice decides the city's next state.",
+        "result": "The panel already shows the city battle result. Read the summary first: 2 attacking troops survived, and now you decide whether they enter the city or stay outside as a siege.",
+        "besiegeChoice": "Click Besiege This Region now. Besieging leaves the surviving troops outside the city and does not change control yet.",
+        "finish": "That is one key difference between city battles and field battles: even after winning, you may besiege first instead of taking control immediately."
+      }
+    },
+    "season": {
+      "title": "Midyear And New Year",
+      "description": "Understand midyear checks, new-year maintenance, and why the game rhythm changes when the year turns.",
+      "steps": {
+        "overview": "This chapter is about seasonal resolution. Seven Hatreds is not only about the immediate move; when the wheel reaches Midyear and New Year, taxes, character checks, fortification maintenance, and year rollover all matter.",
+        "advanceMidyear": "Click Advance 2 while giving one opponent 2 cards first. As soon as the wheel enters Midyear, taxes and character checks resolve immediately.",
+        "midyearSummary": "Now read the Midyear summary. It lists the tax result, defeat markers, and character checks in one place.",
+        "advanceNewYear": "After reading Midyear, click Free Move 1. As soon as the wheel enters New Year, fortification maintenance begins.",
+        "newYearMaintenance": "Start with the maintenance choice. Click Auto Maintain now and let the system pay for every fortification it can still keep.",
+        "finish": "After the year turns, you will see the New Year summary and the next year title. That is the basic rhythm of one year moving from Midyear into New Year."
+      }
     }
   },
   "devtools": {

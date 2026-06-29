@@ -38,6 +38,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const tutorialStartedRef = useRef(false);
     const lastTutorialStepIdRef = useRef<string | null>(null);
     const tutorialModalIdRef = useRef<string | null>(null);
+    const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
 
     // 教程启动 effect
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
@@ -82,12 +83,18 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!gameImplReady) return;
         if (!isGameNamespaceReady) return;
         if (isActive) return;
-        if (lastTutorialStepIdRef.current === 'finish') return;
+        if (
+            lastTutorialStepIdRef.current != null
+            && lastTutorialStepIdRef.current === currentManifestLastStepId
+        ) {
+            return;
+        }
         if (!resolvedTutorialManifest) return;
 
         tutorialStartedRef.current = true;
         startTutorial(resolvedTutorialManifest);
     }, [
+        currentManifestLastStepId,
         gameImplReady,
         isActive,
         isBoardMounted,
@@ -131,10 +138,11 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
 
     useEffect(() => {
         if (!isTutorialRoute) return;
+        lastTutorialStepIdRef.current = null;
         if (currentStep?.id) {
             lastTutorialStepIdRef.current = currentStep.id;
         }
-    }, [currentStep?.id, isTutorialRoute]);
+    }, [currentStep?.id, isTutorialRoute, resolvedTutorialManifest?.id]);
 
     // 教程视角自动切换：步骤指定 viewAs 时切换到对应玩家视角，步骤结束后恢复到 '0'
     useEffect(() => {
@@ -153,13 +161,13 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             const timer = window.setTimeout(() => {
                 if (!tutorialStartedRef.current) return;
                 // 二次确认仍未激活，且已进入完成步骤时才认为教程结束并返回。
-                if (!isActive && lastTutorialStepIdRef.current === 'finish') {
+                if (!isActive && lastTutorialStepIdRef.current === currentManifestLastStepId) {
                     navigate(-1);
                 }
             }, 600);
             return () => window.clearTimeout(timer);
         }
-    }, [isTutorialRoute, isActive, navigate]);
+    }, [currentManifestLastStepId, isTutorialRoute, isActive, navigate]);
 
     useEffect(() => {
         // 关键约束：教程提示层只允许在 /tutorial 路由出现。

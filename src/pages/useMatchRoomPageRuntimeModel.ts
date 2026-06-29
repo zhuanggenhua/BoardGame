@@ -95,6 +95,7 @@ export type MatchRoomPageShellAdapter = {
 };
 
 export type MatchRoomTutorialStageAdapter = {
+    tutorialId?: string;
     board: MatchRoomPageRuntimeSetupModel['tutorialBoard'];
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
     onCommandRejected: MatchRoomPageStageControllersModel['handleCommandRejected'];
@@ -183,12 +184,14 @@ function buildMatchRoomPageShellAdapter(args: {
 }
 
 function buildMatchRoomTutorialStageAdapter(args: {
+    tutorialId?: string;
     runtimeSetup: MatchRoomPageRuntimeSetupModel;
     stageControllers: MatchRoomPageStageControllersModel;
 }): MatchRoomTutorialStageAdapter {
-    const { runtimeSetup, stageControllers } = args;
+    const { tutorialId, runtimeSetup, stageControllers } = args;
 
     return {
+        tutorialId,
         board: runtimeSetup.tutorialBoard,
         engineConfig: runtimeSetup.engineConfig,
         onCommandRejected: stageControllers.handleCommandRejected,
@@ -474,6 +477,7 @@ export function useMatchRoomPageRuntimeModel(args: {
         }),
         stages: {
             tutorial: buildMatchRoomTutorialStageAdapter({
+                tutorialId,
                 runtimeSetup,
                 stageControllers,
             }),

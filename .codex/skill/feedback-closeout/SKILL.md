@@ -407,6 +407,16 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - 预计要持续处理较久，且已经明确接手
   - 可先改 `in_progress`
 
+状态语义补强：
+
+- **只要本轮结论是“这条真实 bug 已经修复”，默认只能回写 `resolved`，不得改成 `closed`。**
+- `closed` 只用于：误报、建议、重复、旧样本已失效、当前树已恢复但本轮没有再次做该 bug 的正式修复。
+- `resolved` 的现实含义必须是：
+  - 这条反馈本体是 bug；
+  - 本轮已经完成根因定位、代码修复、匹配验证和 evidence；
+  - 因此正式标记为“已修复”。
+- **禁止**把“修过了但顺手关掉”“真实 bug 已修好但写成 closed”“因为想减少 open 数量就用 closed 代替 resolved”当成可接受口径。
+
 字段要求：
 
 - `closed`
@@ -414,11 +424,25 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - `resolved`
   - 必填 `resolvedMethod`（解决方式）
 
+字段必填补强：
+
+- **`resolvedMethod` 与 `closedReason` 都视为正式收口理由字段，默认必须填写完整。**
+- 当目标状态是 `resolved` 时：
+  - 必须填写 `resolvedMethod`
+  - 若当前真实库/接口支持 `closedReason`，也应同步填写一句面向人能读懂的收口结论；不得只写状态不写结论
+- 当目标状态是 `closed` 时：
+  - 必须填写 `closedReason`
+- 这里的“完整”至少要回答：
+  - 这条反馈为什么被判成 `resolved` 或 `closed`
+  - 若是 `resolved`，修的是哪条现实规则/链路、用了什么验证
+  - 若是 `closed`，为什么它不是现存 bug（如重复、误报、当前树已恢复、证据不足、已失效）
+- 禁止只写空字符串、占位词、只写“已处理”“已修复”“当前正常”“close”这类无信息密度文本。
+
 执行顺序硬规则：
 
 1. 决定接手该条反馈的当下，就把线上真实记录改成 `in_progress`
 2. 一旦结论变成“已修好”或“确认不是 bug”，立刻把线上真实记录推进到 `resolved/closed`
-3. 推进到 `resolved/closed` 时，必须同时回写 `resolvedMethod/closedReason`
+3. 推进到 `resolved/closed` 时，必须同时回写对应理由字段；若真实写入口支持两种理由字段并且不会引入歧义，默认补齐结论字段，不得留空
 4. 不得等“这一批都看完再一起改状态”
 5. 不得出现“代码已经改完、测试已经跑过、但线上状态还停在 `open/in_progress`”的长时间滞留
 6. 若因为远端回写阻塞导致无法同步正式状态，必须当场记录阻塞；需要交接时可补到本地分诊板，不得静默留待下一轮

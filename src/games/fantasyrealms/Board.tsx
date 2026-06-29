@@ -964,6 +964,24 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         },
     });
     const shouldShowInlineMagnifyButton = !isCoarsePointer;
+    const tutorialHighlightTarget = isTutorialMode ? currentTutorialStep?.highlightTarget ?? null : null;
+    const tutorialHighlightedCardId = React.useMemo(() => {
+        if (!tutorialHighlightTarget) return null;
+        const handPrefix = 'fantasyrealms-card-hand-';
+        const discardPrefix = 'fantasyrealms-card-discard-';
+        if (tutorialHighlightTarget.startsWith(handPrefix)) {
+            return tutorialHighlightTarget.slice(handPrefix.length);
+        }
+        if (tutorialHighlightTarget.startsWith(discardPrefix)) {
+            return tutorialHighlightTarget.slice(discardPrefix.length);
+        }
+        return null;
+    }, [tutorialHighlightTarget]);
+    const shouldShowTutorialSelectedCard = React.useCallback((cardId: string) => {
+        if (!isTutorialMode) return true;
+        if (!tutorialHighlightedCardId) return false;
+        return tutorialHighlightedCardId === cardId;
+    }, [isTutorialMode, tutorialHighlightedCardId]);
 
     const handleDiscardPileClick = React.useCallback((card: TableCard) => {
         const inspectKey = `discard:${card.id}`;
@@ -1341,7 +1359,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             key={slot.key}
                             type="button"
-                            className={`fr-card-button fr-card-button--live-center${core.focusCardId === slot.card.id ? ' fr-card-button--selected' : ''}${canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? ' fr-card-button--actionable' : ''}${liveMotionCue?.type === 'hand-to-center' && liveMotionCue.cardIds.includes(slot.card.id) ? ' fr-card-button--motion-center-receive' : ''}`}
+                            className={`fr-card-button fr-card-button--live-center${core.focusCardId === slot.card.id && shouldShowTutorialSelectedCard(slot.card.id) ? ' fr-card-button--selected' : ''}${canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? ' fr-card-button--actionable' : ''}${liveMotionCue?.type === 'hand-to-center' && liveMotionCue.cardIds.includes(slot.card.id) ? ' fr-card-button--motion-center-receive' : ''}`}
                             onClick={() => handleDiscardPileClick(slot.card!)}
                             style={slot.style}
                             data-action-state={canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? 'take' : 'inspect'}
@@ -1397,7 +1415,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         <button
                             key={`live-hand-${card.id}`}
                             type="button"
-                            className={`fr-card-button fr-card-button--live-hand${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canTutorialDiscard && isTutorialTargetAllowed(card.id) ? ' fr-card-button--actionable' : ''}${liveMotionCue?.type === 'draw-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-draw' : ''}${liveMotionCue?.type === 'center-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-take' : ''}${liveMotionCue?.type === 'opening-deal' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-opening' : ''}${isGameOver && endgameScoreSequence.activeStep?.cardId === card.id ? ' fr-card-button--score-settling' : ''}`}
+                            className={`fr-card-button fr-card-button--live-hand${core.focusCardId === card.id && shouldShowTutorialSelectedCard(card.id) ? ' fr-card-button--selected' : ''}${canTutorialDiscard && isTutorialTargetAllowed(card.id) ? ' fr-card-button--actionable' : ''}${liveMotionCue?.type === 'draw-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-draw' : ''}${liveMotionCue?.type === 'center-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-take' : ''}${liveMotionCue?.type === 'opening-deal' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-opening' : ''}${isGameOver && endgameScoreSequence.activeStep?.cardId === card.id ? ' fr-card-button--score-settling' : ''}`}
                             onClick={() => handleHandCardClick(card)}
                             onMouseEnter={() => {
                                 if (isGameOver && !isCoarsePointer) {
