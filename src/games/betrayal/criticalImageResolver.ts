@@ -13,7 +13,6 @@ const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     'betrayal/cards/back-item',
     'betrayal/cards/back-event',
     'betrayal/cards/back-traitor',
-    'betrayal/cards/omen-front-atlas',
     'betrayal/tokens/explorers/jaden-jones',
     'betrayal/tokens/explorers/father-warren-leung',
     'betrayal/tokens/explorers/rebecca-allen',

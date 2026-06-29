@@ -38,6 +38,7 @@ export const MagnifyOverlay = ({
                 zIndex: UI_Z_INDEX.magnify,
                 opacity: isOpen ? 1 : 0,
                 pointerEvents: isOpen && interactive ? 'auto' : 'none',
+                visibility: isOpen ? 'visible' : 'hidden',
             }}
             onClick={onClose}
             data-interaction-allow

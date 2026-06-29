@@ -78,7 +78,12 @@
 
 ## 下一步建议
 
-1. 当前优先完成首剧本真实页面截图验收：角色选择、`v4` 运行时、终局三态。
-2. 后续再从大拼版房间图里裁出房间板块与楼层板，补 `rooms/`、`boards/` 资源合同。
-3. 再处理扫描 PDF 的 OCR 或人工录入，把规则文本沉淀成可实现的结构化文档。
-4. 最后进入 haunt / 叛徒 / 剧本的正式玩法实现。
+1. 第一剧本 `Crimson Jack Returns` 当前已跑通正式 runtime 主链：起始显式拓扑、多开放探索位、真实 `haunt roll`、叛徒揭示、杰克之灵释放、驱魔胜利和叛徒团灭结算，已经通过定向 Vitest 验证。
+2. 当前规则真相已明确三条：恶兆前正式 domain setup 以 `Entrance Hall` 为探索者共同起点；起始 ground 拓扑必须显式保留 `Ground Floor Staircase / Hallway / Entrance Hall` 三个房间节点，且 `Basement Landing <-> Ground Floor Staircase <-> Upper Landing` 的特殊连接必须按规则存在；`haunt roll` 必须按“所有玩家当前持有的恶兆总数”掷骰，而不是按历史抽牌次数偷算。
+3. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合。
+4. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
+5. 教程仍未开始；进入教程前，`betrayal` 必须继续先补齐剩余 runtime 真规则，不能再建立在折叠拓扑、单探索槽 helper 或终局注入链路上。
+6. 当前仍未收真的部分主要是更细的首剧本行为细节，例如 `Stalk the Prey` 还只是最小可用版，没有把完整 line-of-sight / 未攻击前 special action 的所有边界做完；后续教程若触到这些边界，要继续补正式规则，不允许用提示层或注入绕过。
+7. 后续再从大拼版房间图里裁出房间板块与楼层板，补 `rooms/`、`boards/` 资源合同。
+8. 再处理扫描 PDF 的 OCR 或人工录入，把规则文本沉淀成可实现的结构化文档。
+9. 最后进入更多 haunt / 多剧本的正式玩法实现。

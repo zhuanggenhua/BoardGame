@@ -1,0 +1,150 @@
+import { expect, test } from '@playwright/test';
+import {
+    assertNoFatalFrontendErrors,
+    attachPageDiagnostics,
+} from '../helpers/common';
+import type { BetrayalCore, BetrayalInventoryCard } from '../../src/games/betrayal/game';
+import {
+    createRuntimeCore,
+    initBetrayalContext,
+    injectCore,
+    saveScreenshot,
+    waitForBetrayalPageReady,
+    warmBetrayalFrontend,
+} from './betrayalTestHelpers';
+
+const EVIDENCE_DIR = 'evidence/betrayal-inventory-density';
+const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-高密度持有区-运行时.png`;
+const PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-高密度持有区-放大.png`;
+const EXTREME_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-极限持有区-运行时.png`;
+const EXTREME_INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-极限持有区-局部.png`;
+
+function createDenseInventoryCore(): BetrayalCore {
+    const core = createRuntimeCore();
+    const denseInventory: BetrayalInventoryCard[] = [
+        { id: 'rope', name: '绳索', kind: 'item' },
+        { id: 'flashlight', name: '手电筒', kind: 'item' },
+        { id: 'medical-kit', name: '急救包', kind: 'item' },
+        { id: 'camera', name: '相机', kind: 'item' },
+        { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
+        { id: 'hunting-knife', name: '狩猎短刀', kind: 'item' },
+        { id: 'omen-book', name: '预兆书', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+    ];
+
+    core.currentExplorer.inventory = denseInventory.map((card) => ({ ...card }));
+    core.currentExplorerInventory = denseInventory.map((card) => ({ ...card }));
+    core.usedCardIdsThisTurn = [];
+    core.recommendedAction = 'use';
+
+    return core;
+}
+
+function createExtremeInventoryCore(): BetrayalCore {
+    const core = createRuntimeCore();
+    const extremeInventory: BetrayalInventoryCard[] = [
+        { id: 'rope', name: '绳索', kind: 'item' },
+        { id: 'flashlight', name: '手电筒', kind: 'item' },
+        { id: 'medical-kit', name: '急救包', kind: 'item' },
+        { id: 'camera', name: '相机', kind: 'item' },
+        { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
+        { id: 'hunting-knife', name: '狩猎短刀', kind: 'item' },
+        { id: 'omen-book', name: '预兆书', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'armor', name: '盔甲', kind: 'omen' },
+        { id: 'idol', name: '雕像', kind: 'omen' },
+    ];
+
+    core.currentExplorer.inventory = extremeInventory.map((card) => ({ ...card }));
+    core.currentExplorerInventory = extremeInventory.map((card) => ({ ...card }));
+    core.usedCardIdsThisTurn = [];
+    core.recommendedAction = 'use';
+
+    return core;
+}
+
+test.describe('山屋惊魂持有区高密度证据', () => {
+    test('运行时能承载高密度物品与预兆', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-inventory-density');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await injectCore(page, createDenseInventoryCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+
+        const itemRow = page.getByTestId('betrayal-inventory-row-item');
+        const omenRow = page.getByTestId('betrayal-inventory-row-omen');
+        await expect(itemRow.getByTestId('betrayal-inventory-rope')).toBeVisible();
+        await expect(itemRow.getByTestId('betrayal-inventory-hunting-knife')).toBeVisible();
+        await expect(omenRow.getByTestId('betrayal-inventory-dog')).toBeVisible();
+        await saveScreenshot(page, RUNTIME_SCREENSHOT);
+
+        const huntingKnifeCard = itemRow.getByTestId('betrayal-inventory-hunting-knife');
+        await huntingKnifeCard.scrollIntoViewIfNeeded();
+        await huntingKnifeCard.evaluate((element) => {
+            (element as HTMLButtonElement).click();
+        });
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveText('狩猎短刀');
+        await expect(page.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
+        await saveScreenshot(page, PREVIEW_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-inventory-density', diagnostics }]);
+    });
+
+    test('运行时能承载极限持有区样本', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-inventory-density-extreme');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await injectCore(page, createExtremeInventoryCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+
+        const itemRow = page.getByTestId('betrayal-inventory-row-item');
+        const omenRow = page.getByTestId('betrayal-inventory-row-omen');
+        await expect(itemRow.getByTestId('betrayal-inventory-hunting-knife')).toBeVisible();
+        await expect(omenRow.getByTestId('betrayal-inventory-dog')).toBeVisible();
+        await expect(omenRow.getByTestId('betrayal-inventory-idol')).toBeVisible();
+        const rowMetrics = await page.evaluate(() => {
+            const byId = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+            const itemRowEl = byId('betrayal-inventory-row-item');
+            const omenRowEl = byId('betrayal-inventory-row-omen');
+            const traitsEl = byId('betrayal-current-traits');
+            const inventorySectionEl = document.querySelector<HTMLElement>('#betrayal-inventory-section');
+            if (!itemRowEl || !omenRowEl) {
+                return null;
+            }
+            const itemRect = itemRowEl.getBoundingClientRect();
+            const omenRect = omenRowEl.getBoundingClientRect();
+            return {
+                itemBottom: itemRect.bottom,
+                itemClientWidth: itemRowEl.clientWidth,
+                itemScrollWidth: itemRowEl.scrollWidth,
+                inventoryWidth: inventorySectionEl?.getBoundingClientRect().width ?? 0,
+                omenTop: omenRect.top,
+                omenHeight: omenRect.height,
+                omenClientWidth: omenRowEl.clientWidth,
+                omenScrollWidth: omenRowEl.scrollWidth,
+                traitsWidth: traitsEl?.getBoundingClientRect().width ?? 0,
+            };
+        });
+        expect(rowMetrics).not.toBeNull();
+        expect(rowMetrics!.omenHeight).toBeGreaterThan(56);
+        expect(rowMetrics!.omenTop).toBeGreaterThanOrEqual(rowMetrics!.itemBottom - 2);
+        expect(rowMetrics!.inventoryWidth).toBeGreaterThan(rowMetrics!.traitsWidth + 120);
+        expect(rowMetrics!.itemScrollWidth).toBeGreaterThan(rowMetrics!.itemClientWidth);
+        await saveScreenshot(page, EXTREME_RUNTIME_SCREENSHOT);
+        await page.locator('#betrayal-inventory-section').screenshot({ path: EXTREME_INVENTORY_SECTION_SCREENSHOT });
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-inventory-density-extreme', diagnostics }]);
+    });
+});

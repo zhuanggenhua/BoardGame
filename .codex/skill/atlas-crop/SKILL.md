@@ -16,6 +16,8 @@ description: 通用图集裁切与抽样验收流程；支持不规则网格配�
 ## 先决条件
 - Python 3
 - Pillow（若缺失：`pip install pillow`）
+- 裁切输入必须是原始图集、原始单图或同等清晰度源文件；`contact-*`、`all-by-size-*`、截图总览、缩略索引页只允许用于定位和索引，禁止作为运行时主素材裁切源。
+- 如果目标产物会进入 `public/assets/**` 并被正式页面引用，必须先在资源映射里记录原始 atlas 文件、裁剪坐标、导出尺寸和验收截图；从低清索引图导出的产物只能标记为临时占位，不能标为正式 runtime。
 
 ## 脚本
 ```
@@ -23,6 +25,9 @@ description: 通用图集裁切与抽样验收流程；支持不规则网格配�
 ```
 
 ## 快速流程
+0. **锁定源图真相**
+   - 先确认 `--image` 指向原始 atlas / 原始单图，而不是联系表、索引总览或截图缩略图。
+   - 如果只有低清索引图，先停止正式裁切；只能生成临时目检产物或明确标注为 `temporary-runtime-placeholder`。
 1. **准备配置 JSON（或规则网格参数）**
    - **SpriteAtlasConfig（网格）**：`imageW`/`imageH`/`cols`/`rows`/`colStarts`/`colWidths`/`rowStarts`/`rowHeights`
    - **SpriteAtlasConfig（frames 列表）**：`imageW`/`imageH` + `frames: [{x,y,width,height}]`

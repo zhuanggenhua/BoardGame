@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
+import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import {
     ActionBarSkeleton,
     PhaseHudSkeleton,
@@ -28,11 +29,19 @@ import type {
     BetrayalExplorerSummary,
     BetrayalInventoryCard,
     BetrayalMonsterSummary,
+    BetrayalRoomVisualId,
     BetrayalRoomNode,
     BetrayalTraitKey,
 } from './game';
-import { BETRAYAL_COMMANDS, EXPLORER_CATALOG, createBetrayalCharacterSelectCore } from './game';
 import {
+    BETRAYAL_COMMANDS,
+    EXPLORER_CATALOG,
+    createBetrayalCharacterSelectCore,
+    getBetrayalScenarioConfig,
+    resolveExplorableRoomSlots,
+} from './game';
+import {
+    BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
     buildPossessionAtlasImageStyle,
     resolvePossessionAtlasVisual,
     type BetrayalPossessionAtlasVisual,
@@ -59,23 +68,9 @@ type PreviewLogEntry = {
 };
 
 type PreviewState = {
-    core: BetrayalCore;
     selectedInventoryCardId: string | null;
     selectedTradeTargetPlayerId: string | null;
-    usedCardIdsThisTurn: string[];
-    latestDiscovery: PreviewDiscoveryResult | null;
-    latestDiscoveryOwnerPlayerId: string | null;
-    roomNotes: Partial<Record<string, string>>;
-    logEntries: PreviewLogEntry[];
-    exploreIndex: number;
-    highlightedDeckKind: BetrayalDeckKind | null;
-    interactionMode: 'default' | 'move';
-};
-
-type PreviewRoomTemplate = {
-    name: string;
-    hint: string;
-    tags: string[];
+    interactionMode: 'default' | 'move' | 'explore';
 };
 
 type PreviewUseEffectProfile = {
@@ -88,21 +83,6 @@ type PreviewUseEffectProfile = {
 type PreviewEventTemplate = {
     name: string;
     effect: PreviewUseEffectProfile;
-};
-
-type PreviewDiscoveryResult = {
-    kind: BetrayalDeckKind;
-    title: string;
-    summary: string;
-    detail: string;
-    tone: PreviewLogEntry['tone'];
-};
-
-type RoomConnectionDirection = 'north' | 'east' | 'south' | 'west';
-
-type RoomConnectionEdge = {
-    targetRoomId: string;
-    direction: RoomConnectionDirection;
 };
 
 type RoomGridDragState = {
@@ -126,17 +106,6 @@ const EXPLORER_BOARD_MARKER_RANGE: Record<BetrayalTraitKey, { from: { x: number;
     speed: { from: { x: 18.5, y: 79.5 }, to: { x: 18.5, y: 54.5 } },
     knowledge: { from: { x: 85.5, y: 44.5 }, to: { x: 64.5, y: 23.5 } },
     sanity: { from: { x: 81.5, y: 79.5 }, to: { x: 81.5, y: 54.5 } },
-};
-
-const ROOM_VISUAL_LAYOUT: Record<string, { x: number; y: number }> = {
-    'upper-north': { x: 2, y: 0 },
-    'upper-west': { x: 0, y: 1 },
-    'upper-landing': { x: 1, y: 1 },
-    'grand-staircase': { x: 2, y: 1 },
-    'ground-east': { x: 3, y: 1 },
-    'entrance-hall': { x: 2, y: 2 },
-    'basement-landing': { x: 3, y: 2 },
-    'basement-east': { x: 4, y: 2 },
 };
 
 const ASSETS = {
@@ -197,6 +166,9 @@ const ACTION_ICON_BY_ID = {
 } as const;
 
 const ENDGAME_MEDALLION_CLIP_PATH = 'polygon(50% 0%, 85% 11%, 100% 42%, 83% 85%, 50% 100%, 17% 85%, 0% 42%, 15% 11%)';
+const REFERENCE_CARD_FRAME_WIDTH = `min(92vw, calc(86vh * ${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO}))`;
+const INVENTORY_PREVIEW_FRAME_WIDTH = 'min(84vw, 360px)';
+const COMPACT_INVENTORY_CARD_WIDTH = 62;
 
 const FLOOR_TONE: Record<BetrayalCore['rooms'][number]['floor'], { label: string; accent: string; glow: string }> = {
     ground: { label: '一层', accent: '#c5a56c', glow: 'rgba(197,165,108,0.32)' },
@@ -241,28 +213,12 @@ const PREVIEW_DRAW_POOL: Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInve
         { id: 'manuscript', name: '旧手稿', kind: 'item' },
     ],
     omen: [
-        { id: 'amulet', name: '青铜护符', kind: 'omen' },
-        { id: 'feathers', name: '乌鸦羽束', kind: 'omen' },
-        { id: 'mirror-shard', name: '碎镜片', kind: 'omen' },
-        { id: 'watch', name: '诡异怀表', kind: 'omen' },
-    ],
-};
-
-const PREVIEW_ROOM_DISCOVERY_POOL: Record<BetrayalRoomNode['floor'], PreviewRoomTemplate[]> = {
-    ground: [
-        { name: '舞厅', hint: '宽敞的一层房间，适合会合与周旋', tags: ['会合', '开阔'] },
-        { name: '餐厅', hint: '旧式长桌还在，像有人刚离席', tags: ['搜寻', '线索'] },
-        { name: '礼拜堂', hint: '冷清肃穆，像在等待一件不该发生的事', tags: ['神秘', '静压'] },
-    ],
-    upper: [
-        { name: '长廊', hint: '细长上层通道，容易观察别处动静', tags: ['视野', '走位'] },
-        { name: '图书馆', hint: '成排旧书和破纸页，是找知识的地方', tags: ['知识', '调查'] },
-        { name: '塔楼', hint: '高处带来距离感，也更容易孤立无援', tags: ['高处', '风险'] },
-    ],
-    basement: [
-        { name: '储物间', hint: '堆满旧箱和杂物，翻找起来最像物品点', tags: ['物资', '翻找'] },
-        { name: '墓穴', hint: '地下最压抑的角落，预兆感很强', tags: ['预兆', '阴森'] },
-        { name: '仪式室', hint: '看得出有人在这里做过不该做的准备', tags: ['仪式', '危险'] },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'skull', name: '头骨', kind: 'omen' },
+        { id: 'holy-symbol', name: '圣符', kind: 'omen' },
+        { id: 'armor', name: '盔甲', kind: 'omen' },
+        { id: 'idol', name: '雕像', kind: 'omen' },
+        { id: 'dagger', name: '匕首', kind: 'omen' },
     ],
 };
 
@@ -276,23 +232,22 @@ const PREVIEW_USE_EFFECTS: Record<string, PreviewUseEffectProfile> = {
     'medical-kit': { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
     camera: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
     mask: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+    dog: { mode: 'move', amount: 1, recommendedAction: 'move' },
+    skull: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+    'holy-symbol': { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+    dagger: { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+    armor: { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+    idol: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
     map: { mode: 'move', amount: 1, recommendedAction: 'move' },
     lantern: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
-    pendant: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
     journal: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
     radio: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'move' },
-    coin: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
     'holy-water': { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
     cross: { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
-    bell: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
     'lockpick-tool': { mode: 'move', amount: 1, recommendedAction: 'move' },
     'hunting-knife': { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
     matches: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'move' },
     manuscript: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
-    amulet: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
-    feathers: { mode: 'move', amount: 1, recommendedAction: 'move' },
-    'mirror-shard': { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
-    watch: { mode: 'move', amount: 1, recommendedAction: 'move' },
 };
 
 const INVENTORY_FACE_TONE = {
@@ -370,7 +325,7 @@ function isMonsterSummary(value: unknown): value is BetrayalMonsterSummary {
 function isBetrayalCore(value: unknown): value is BetrayalCore {
     if (!value || typeof value !== 'object') return false;
     const candidate = value as Partial<BetrayalCore>;
-    return (candidate.phase === 'characterSelect' || candidate.phase === 'preHaunt' || candidate.phase === 'endgame')
+    return (candidate.phase === 'characterSelect' || candidate.phase === 'preHaunt' || candidate.phase === 'haunt' || candidate.phase === 'endgame')
         && typeof candidate.currentPlayer === 'string'
         && typeof candidate.movesRemaining === 'number'
         && typeof candidate.activeRoomId === 'string'
@@ -409,62 +364,13 @@ function cloneMonster(monster: BetrayalMonsterSummary): BetrayalMonsterSummary {
     return { ...monster };
 }
 
-function cloneCore(core: BetrayalCore): BetrayalCore {
-    return {
-        ...core,
-        currentExplorer: cloneExplorer(core.currentExplorer),
-        currentExplorerTraits: { ...core.currentExplorerTraits },
-        currentExplorerInventory: core.currentExplorerInventory.map(cloneInventoryCard),
-        otherExplorers: core.otherExplorers.map(cloneExplorer),
-        monsters: core.monsters.map(cloneMonster),
-        deckCounts: { ...core.deckCounts },
-        discardCounts: { ...core.discardCounts },
-        rooms: core.rooms.map(cloneRoom),
-    };
-}
-
-function syncCurrentExplorerProjection(core: BetrayalCore): BetrayalCore {
-    return {
-        ...core,
-        currentPlayer: core.currentExplorer.playerId,
-        activeRoomId: core.currentExplorer.roomId,
-        currentExplorerTraits: { ...core.currentExplorer.traits },
-        currentExplorerInventory: core.currentExplorer.inventory.map(cloneInventoryCard),
-    };
-}
-
-function appendPreviewLog(
-    entries: PreviewLogEntry[],
-    text: string,
-    tone: PreviewLogEntry['tone'],
-): PreviewLogEntry[] {
-    return [
-        {
-            id: `${Date.now()}-${entries.length}`,
-            text,
-            tone,
-        },
-        ...entries,
-    ].slice(0, 4);
-}
-
 function createInitialPreviewState(core: BetrayalCore): PreviewState {
     const latestDrawnCardId = core.latestDiscovery && core.latestDiscovery.kind !== 'event'
         ? core.currentExplorerInventory[core.currentExplorerInventory.length - 1]?.id ?? null
         : null;
     return {
-        core: cloneCore(core),
         selectedInventoryCardId: latestDrawnCardId ?? core.currentExplorerInventory[0]?.id ?? null,
         selectedTradeTargetPlayerId: resolveTradeTargets(core)[0]?.playerId ?? null,
-        usedCardIdsThisTurn: [...core.usedCardIdsThisTurn],
-        latestDiscovery: core.latestDiscovery ? { ...core.latestDiscovery } : null,
-        latestDiscoveryOwnerPlayerId: core.latestDiscoveryOwnerPlayerId,
-        roomNotes: {
-            [core.activeRoomId]: core.rooms.find((room) => room.id === core.activeRoomId)?.hint ?? '待探索',
-        },
-        logEntries: core.activityLog.slice(0, 4).map((entry) => ({ ...entry })),
-        exploreIndex: core.exploreIndex,
-        highlightedDeckKind: core.highlightedDeckKind,
         interactionMode: 'default',
     };
 }
@@ -483,7 +389,7 @@ function resolveEndgameExplorerName(
     matchData?: MatchPlayerInfo[],
 ) {
     const displayName = explorer.displayName.trim();
-    return displayName || resolvePlayerName(explorer.playerId, '玩家', matchData);
+    return resolvePlayerName(explorer.playerId, displayName || '玩家', matchData);
 }
 
 function buildDeckItems(core: BetrayalCore, t: ReturnType<typeof useTranslation>['t']): DeckTrayItem[] {
@@ -704,12 +610,24 @@ function buildRoomMonsters(core: BetrayalCore): Record<string, BetrayalMonsterSu
     return monsters;
 }
 
+function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set<string> {
+    const room = rooms.find((item) => item.id === roomId);
+    if (!room) {
+        return new Set();
+    }
+    return new Set(
+        room.doorways
+            .map((doorway) => doorway.connectsToRoomId)
+            .filter((targetRoomId): targetRoomId is string => Boolean(targetRoomId)),
+    );
+}
+
 function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
     const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
     if (!activeRoom) {
         return [];
     }
-    const connectedIds = new Set(activeRoom.connectedRoomIds);
+    const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
     return core.rooms.filter((room) => room.state === 'discovered' && connectedIds.has(room.id));
 }
 
@@ -722,85 +640,40 @@ function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomNode | n
     if (!activeRoom) {
         return null;
     }
-    const connectedIds = new Set(activeRoom.connectedRoomIds);
+    const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
     return core.rooms.find((room) => room.state === 'unexplored' && connectedIds.has(room.id)) ?? null;
 }
 
 function resolveRoomVisualPosition(room: BetrayalRoomNode): { x: number; y: number } {
-    return ROOM_VISUAL_LAYOUT[room.id] ?? { x: room.x, y: room.y };
+    return { x: room.x, y: room.y };
 }
+
+const ROOM_VISUAL_BY_ID: Partial<Record<BetrayalRoomVisualId, BetrayalRoomTileVisual>> = {
+    startTriple: BETRAYAL_ROOM_TILE_VISUALS.startTripleRoom,
+    startHallway: BETRAYAL_ROOM_TILE_VISUALS.startHallway,
+    upperLanding: BETRAYAL_ROOM_TILE_VISUALS.startUpperLanding,
+    basementLanding: BETRAYAL_ROOM_TILE_VISUALS.startBasementLanding,
+    conservatory: BETRAYAL_ROOM_TILE_VISUALS.conservatory,
+    bedroom: BETRAYAL_ROOM_TILE_VISUALS.bedroom,
+    attic: BETRAYAL_ROOM_TILE_VISUALS.attic,
+    study: BETRAYAL_ROOM_TILE_VISUALS.study,
+    gallery: BETRAYAL_ROOM_TILE_VISUALS.gallery,
+    entranceHall: BETRAYAL_ROOM_TILE_VISUALS.startEntranceHall,
+    diningRoom: BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
+    foyer: BETRAYAL_ROOM_TILE_VISUALS.startGroundFloorStaircase,
+    ballroom: BETRAYAL_ROOM_TILE_VISUALS.ballroom,
+    chapel: BETRAYAL_ROOM_TILE_VISUALS.chapel,
+    larder: BETRAYAL_ROOM_TILE_VISUALS.larder,
+    library: BETRAYAL_ROOM_TILE_VISUALS.library,
+    ritualRoom: BETRAYAL_ROOM_TILE_VISUALS.ritualRoom,
+    backUpper: BETRAYAL_ROOM_TILE_VISUALS.backUpper,
+    backGround: BETRAYAL_ROOM_TILE_VISUALS.backGround,
+    backBasement: BETRAYAL_ROOM_TILE_VISUALS.backBasement,
+};
 
 function resolveRoomTileVisual(room: BetrayalRoomNode, isDiscovered: boolean): BetrayalRoomTileVisual {
-    if (!isDiscovered) {
-        return room.floor === 'basement'
-            ? BETRAYAL_ROOM_TILE_VISUALS.backBasement
-            : room.floor === 'upper'
-                ? BETRAYAL_ROOM_TILE_VISUALS.backUpper
-                : BETRAYAL_ROOM_TILE_VISUALS.backGround;
-    }
-
-    const roomIdVisualMap: Partial<Record<BetrayalRoomNode['id'], BetrayalRoomTileVisual>> = {
-        'upper-landing': BETRAYAL_ROOM_TILE_VISUALS.upperLanding,
-        'upper-west': BETRAYAL_ROOM_TILE_VISUALS.bedroom,
-        'upper-north': BETRAYAL_ROOM_TILE_VISUALS.attic,
-        'grand-staircase': BETRAYAL_ROOM_TILE_VISUALS.foyer,
-        'entrance-hall': BETRAYAL_ROOM_TILE_VISUALS.entranceHall,
-        'ground-east': BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
-        'basement-landing': BETRAYAL_ROOM_TILE_VISUALS.study,
-        'basement-east': BETRAYAL_ROOM_TILE_VISUALS.trophyRoom,
-    };
-    const mappedById = roomIdVisualMap[room.id];
-    if (mappedById) {
-        return mappedById;
-    }
-
-    const mappedByName: Partial<Record<string, BetrayalRoomTileVisual>> = {
-        门厅: BETRAYAL_ROOM_TILE_VISUALS.entranceHall,
-        大楼梯: BETRAYAL_ROOM_TILE_VISUALS.foyer,
-        地下平台: BETRAYAL_ROOM_TILE_VISUALS.study,
-        二层平台: BETRAYAL_ROOM_TILE_VISUALS.upperLanding,
-        餐厅: BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
-        舞厅: BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
-        长廊: BETRAYAL_ROOM_TILE_VISUALS.bedroom,
-        图书馆: BETRAYAL_ROOM_TILE_VISUALS.study,
-        塔楼: BETRAYAL_ROOM_TILE_VISUALS.attic,
-        储物间: BETRAYAL_ROOM_TILE_VISUALS.foyer,
-        墓穴: BETRAYAL_ROOM_TILE_VISUALS.trophyRoom,
-        仪式室: BETRAYAL_ROOM_TILE_VISUALS.trophyRoom,
-        礼拜堂: BETRAYAL_ROOM_TILE_VISUALS.study,
-    };
-    return mappedByName[room.name] ?? BETRAYAL_ROOM_TILE_VISUALS.conservatory;
-}
-
-function resolveRoomConnectionEdges(
-    room: BetrayalRoomNode,
-    roomLookup: Map<string, BetrayalRoomNode>,
-): RoomConnectionEdge[] {
-    const edges: RoomConnectionEdge[] = [];
-    const roomPosition = resolveRoomVisualPosition(room);
-    for (const targetRoomId of room.connectedRoomIds) {
-        const targetRoom = roomLookup.get(targetRoomId);
-        if (!targetRoom) {
-            continue;
-        }
-        const targetPosition = resolveRoomVisualPosition(targetRoom);
-        const deltaX = targetPosition.x - roomPosition.x;
-        const deltaY = targetPosition.y - roomPosition.y;
-        let direction: RoomConnectionDirection | null = null;
-        if (deltaX === 1 && deltaY === 0) {
-            direction = 'east';
-        } else if (deltaX === -1 && deltaY === 0) {
-            direction = 'west';
-        } else if (deltaX === 0 && deltaY === 1) {
-            direction = 'south';
-        } else if (deltaX === 0 && deltaY === -1) {
-            direction = 'north';
-        }
-        if (direction) {
-            edges.push({ targetRoomId, direction });
-        }
-    }
-    return edges;
+    const visualId = isDiscovered ? room.visualId : room.backVisualId;
+    return ROOM_VISUAL_BY_ID[visualId] ?? BETRAYAL_ROOM_TILE_VISUALS.conservatory;
 }
 
 function resolveRoomCanvasStyle(rooms: BetrayalRoomNode[]): React.CSSProperties {
@@ -828,11 +701,9 @@ function resolveRoomCanvasStyle(rooms: BetrayalRoomNode[]): React.CSSProperties 
 
 function resolveRoomTileStyle(room: BetrayalRoomNode): React.CSSProperties {
     const roomPosition = resolveRoomVisualPosition(room);
-    const minX = Math.min(...Object.values(ROOM_VISUAL_LAYOUT).map((position) => position.x), 1);
-    const minY = Math.min(...Object.values(ROOM_VISUAL_LAYOUT).map((position) => position.y), 0);
     return {
-        left: ROOM_CANVAS_PADDING + (roomPosition.x - minX) * ROOM_TILE_STEP_X,
-        top: ROOM_CANVAS_PADDING + (roomPosition.y - minY) * ROOM_TILE_STEP_Y,
+        left: ROOM_CANVAS_PADDING + roomPosition.x * ROOM_TILE_STEP_X,
+        top: ROOM_CANVAS_PADDING + roomPosition.y * ROOM_TILE_STEP_Y,
         width: ROOM_TILE_SIZE,
         height: ROOM_TILE_SIZE,
     };
@@ -840,13 +711,6 @@ function resolveRoomTileStyle(room: BetrayalRoomNode): React.CSSProperties {
 
 function resolveTradeTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
     return core.otherExplorers.filter((explorer) => explorer.roomId === core.activeRoomId);
-}
-
-function resolveCompactInventoryAspectRatio(card: BetrayalInventoryCard, frontVisual: BetrayalPossessionAtlasVisual | null): number {
-    if (frontVisual) {
-        return buildPossessionAtlasImageStyle(frontVisual).aspectRatio;
-    }
-    return 621 / 1217;
 }
 
 function resolveContextualRecommendedAction(
@@ -929,12 +793,6 @@ function resolveSelectedTradeTargetPlayerId(
         return selectedTradeTargetPlayerId;
     }
     return tradeTargets[0]?.playerId ?? null;
-}
-
-function resolvePreviewRoomTemplate(core: BetrayalCore, floor: BetrayalRoomNode['floor'], exploreIndex: number): PreviewRoomTemplate {
-    const pool = PREVIEW_ROOM_DISCOVERY_POOL[floor];
-    const discoveredCount = core.rooms.filter((room) => room.floor === floor && room.state === 'discovered' && !room.startingTile).length;
-    return pool[(exploreIndex + discoveredCount) % pool.length]!;
 }
 
 function ExplorerPentagonCard({
@@ -1409,7 +1267,7 @@ function EndgameScreen({
                                 </div>
                                 <div className="relative flex flex-col justify-center px-4 py-3">
                                     <div className="text-xs uppercase tracking-[0.26em] text-[#ddb774]">剧本</div>
-                                    <div className="mt-1 text-[28px] font-semibold tracking-[0.08em] text-[#f3e1bd]">{result?.hauntTitle ?? '饥饿'}</div>
+                                    <div className="mt-1 text-[28px] font-semibold tracking-[0.08em] text-[#f3e1bd]">{result?.hauntTitle ?? scenarioConfig.hauntTitle}</div>
                                 </div>
                             </div>
                         </div>
@@ -1547,7 +1405,7 @@ function EndgameScreen({
                                     <div className="relative text-center">
                                         <div className="pointer-events-none absolute left-[13%] top-1/2 h-px w-16 -translate-y-1/2 bg-[linear-gradient(90deg,transparent,rgba(73,49,24,0.9))]" />
                                         <div className="pointer-events-none absolute right-[13%] top-1/2 h-px w-16 -translate-y-1/2 bg-[linear-gradient(90deg,rgba(73,49,24,0.9),transparent)]" />
-                                        <div className="text-[36px] font-bold tracking-[0.14em] text-[#302315] drop-shadow-[0_1px_0_rgba(229,207,159,0.32)]">{result?.hauntTitle ?? '饥饿'}</div>
+                                        <div className="text-[36px] font-bold tracking-[0.14em] text-[#302315] drop-shadow-[0_1px_0_rgba(229,207,159,0.32)]">{result?.hauntTitle ?? scenarioConfig.hauntTitle}</div>
                                         <div className="pointer-events-none mt-2 flex items-center justify-center gap-2">
                                             <span className="h-px w-20 bg-[linear-gradient(90deg,transparent,rgba(73,49,24,0.78))]" />
                                             <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(73,49,24,0.78)] bg-[rgba(133,108,68,0.24)]" />
@@ -1663,7 +1521,7 @@ function EndgameScreen({
                                             <div className="min-h-[18px] whitespace-normal pr-2 text-[11px] font-semibold leading-[1.08] tracking-[0.04em] text-[#f3e6c9]" style={{ wordBreak: 'break-word' }}>
                                                 {resolveEndgameExplorerName(traitor, matchData)}
                                             </div>
-                                            <div className="mt-1 text-[11px] uppercase tracking-[0.12em] text-[#d9a27f]">{result?.hauntTitle ?? '饥饿'}</div>
+                                        <div className="mt-1 text-[11px] uppercase tracking-[0.12em] text-[#d9a27f]">{result?.hauntTitle ?? scenarioConfig.hauntTitle}</div>
                                         </div>
                                         <div className="grid place-items-center">
                                             <div className="grid h-8 w-8 place-items-center rounded-full border border-[rgba(212,100,82,0.42)] bg-[radial-gradient(circle_at_35%_30%,rgba(214,112,87,0.14),rgba(36,12,11,0.8)_72%)] text-[16px] text-[#ea7659] shadow-[inset_0_0_0_1px_rgba(214,191,129,0.06)]">
@@ -1747,6 +1605,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         setSelectedExplorerId(baseCore.selectedExplorerByPlayerId[viewerPlayerId] ?? EXPLORER_CATALOG[0]!.explorerId);
     }, [baseCore, viewerPlayerId]);
 
+    const scenarioConfig = React.useMemo(() => getBetrayalScenarioConfig(baseCore.scenarioId), [baseCore.scenarioId]);
     const dispatchCommand = React.useCallback(<Type extends keyof BetrayalCommandMap>(
         type: Type,
         payload: BetrayalCommandMap[Type],
@@ -1767,9 +1626,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     }, [baseCore.selectedExplorerByPlayerId, dispatchCommand, selectedExplorerId, viewerPlayerId]);
 
     const handleStartScenario = React.useCallback(() => {
-        dispatchCommand(BETRAYAL_COMMANDS.START_FIRST_SCENARIO, {});
-    }, [dispatchCommand]);
-    const core = previewState.core;
+        dispatchCommand(BETRAYAL_COMMANDS.START_SCENARIO, { scenarioId: baseCore.scenarioId });
+    }, [baseCore.scenarioId, dispatchCommand]);
+    const core = baseCore;
     const roomOccupants = React.useMemo(() => buildRoomOccupants(core), [core]);
     const roomMonsters = React.useMemo(() => buildRoomMonsters(core), [core]);
     const roomLookup = React.useMemo(
@@ -1827,8 +1686,16 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     }, [core.activeRoomId, core.phase, focusActiveRoomInView]);
 
     const phaseItems = React.useMemo(
-        () => [{ id: 'preHaunt', label: t('board.phase.preHaunt') }],
+        () => [
+            { id: 'preHaunt', label: t('board.phase.preHaunt') },
+            { id: 'haunt', label: t('board.phase.haunt') },
+            { id: 'endgame', label: t('board.phase.endgame') },
+        ],
         [t],
+    );
+    const phaseLabel = React.useMemo(
+        () => phaseItems.find((item) => item.id === core.phase)?.label ?? t('board.phase.preHaunt'),
+        [core.phase, phaseItems, t],
     );
     const currentPlayerLabel = t('board.status.currentTurn', {
         player: resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData),
@@ -1846,11 +1713,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         }),
         [core.currentExplorerInventory],
     );
-    const latestLogEntry = previewState.logEntries[0] ?? null;
-    const earlierLogEntries = React.useMemo(() => previewState.logEntries.slice(1), [previewState.logEntries]);
+    const latestLogEntry = core.activityLog[0] ?? null;
+    const earlierLogEntries = React.useMemo(() => core.activityLog.slice(1, 4), [core.activityLog]);
     const moveTargetRooms = React.useMemo(() => resolveMoveTargetRooms(core), [core]);
     const moveTargetRoomIds = React.useMemo(() => new Set(moveTargetRooms.map((room) => room.id)), [moveTargetRooms]);
     const nextExplorableSlot = React.useMemo(() => resolveNextExplorableRoomSlot(core), [core]);
+    const explorableRoomSlots = React.useMemo(() => resolveExplorableRoomSlots(core), [core]);
+    const explorableRoomSlotIds = React.useMemo(() => new Set(explorableRoomSlots.map((room) => room.id)), [explorableRoomSlots]);
     const tradeTargets = React.useMemo(() => resolveTradeTargets(core), [core]);
     const selectedTradeTargetPlayerId = React.useMemo(
         () => resolveSelectedTradeTargetPlayerId(tradeTargets, previewState.selectedTradeTargetPlayerId),
@@ -1867,7 +1736,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         [selectedTradeTargetPlayerId, tradeTargets],
     );
     const selectedCardUsedThisTurn = selectedInventoryCard
-        ? previewState.usedCardIdsThisTurn.includes(selectedInventoryCard.id)
+        ? core.usedCardIdsThisTurn.includes(selectedInventoryCard.id)
         : false;
     const tradeStatusText = selectedTradeTarget
         ? t('board.status.tradeTarget', {
@@ -1885,18 +1754,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 effect: resolvePreviewUseEffectLabel(selectedInventoryCard, t),
             })
         : t('board.status.noSelectedCard');
-    const shouldShowLatestDiscovery = previewState.latestDiscovery
-        && previewState.latestDiscoveryOwnerPlayerId === core.currentExplorer.playerId;
-    const latestDiscoveryTitle = previewState.latestDiscovery?.title;
+    const shouldShowLatestDiscovery = Boolean(
+        core.latestDiscovery
+        && core.latestDiscoveryOwnerPlayerId === core.currentExplorer.playerId,
+    );
+    const latestDiscoveryTitle = core.latestDiscovery?.title;
     const turnHintText = previewState.interactionMode === 'move'
         ? t('board.activity.chooseMoveTarget')
+        : previewState.interactionMode === 'explore'
+            ? t('board.activity.chooseExploreTarget')
         : moveTargetRooms.length > 0
             ? t('board.status.turnHintMove', {
                 targets: formatRoomTargetList(moveTargetRooms),
             })
-            : nextExplorableSlot
+            : explorableRoomSlots.length > 0
                 ? t('board.status.turnHintExplore', {
-                    floor: resolveFloorLabel(nextExplorableSlot.floor),
+                    floor: resolveFloorLabel(explorableRoomSlots[0]!.floor),
                 })
                 : t('board.status.turnHintHold');
     const roomFocusState = React.useMemo(() => {
@@ -1977,6 +1850,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             }
             return t('board.status.actionCueMoveMode');
         }
+        if (previewState.interactionMode === 'explore') {
+            return explorableRoomSlots.length > 0
+                ? t('board.status.actionCueExploreSelect')
+                : t('board.status.actionCueExplore', {
+                    floor: t('board.rooms.unknown'),
+                });
+        }
         switch (core.recommendedAction) {
             case 'move':
                 if (moveTargetRooms.length === 1) {
@@ -1984,9 +1864,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 }
                 return t('board.status.actionCueMoveMany');
             case 'explore':
-                return nextExplorableSlot
+                return explorableRoomSlots.length > 0
                     ? t('board.status.actionCueExplore', {
-                        floor: resolveFloorLabel(nextExplorableSlot.floor),
+                        floor: resolveFloorLabel(explorableRoomSlots[0]!.floor),
                     })
                     : t('board.status.actionCueExplore', {
                         floor: t('board.rooms.unknown'),
@@ -2014,7 +1894,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         core.recommendedAction,
         matchData,
         moveTargetRooms,
-        nextExplorableSlot,
+        explorableRoomSlots,
         previewState.interactionMode,
         selectedCardUsedThisTurn,
         selectedInventoryCard,
@@ -2114,46 +1994,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     const handleMoveToRoom = React.useCallback((roomId: string) => {
         dispatchCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, { roomId });
-        setPreviewState((previousState) => {
-            if (previousState.core.movesRemaining <= 0 || roomId === previousState.core.activeRoomId) {
-                return previousState;
-            }
-            const allowedMoveTargetIds = new Set(resolveMoveTargetRooms(previousState.core).map((room) => room.id));
-            const nextCore = cloneCore(previousState.core);
-            const targetRoom = nextCore.rooms.find((room) => room.id === roomId);
-            if (!targetRoom || targetRoom.state !== 'discovered' || !allowedMoveTargetIds.has(roomId)) {
-                return previousState;
-            }
-            const currentExplorerLabel = resolvePlayerName(
-                nextCore.currentExplorer.playerId,
-                nextCore.currentExplorer.displayName,
-                matchData,
-            );
-
-            nextCore.currentExplorer.roomId = roomId;
-            nextCore.movesRemaining = Math.max(0, nextCore.movesRemaining - 1);
-            nextCore.recommendedAction = resolveContextualRecommendedAction(nextCore);
-
-            return {
-                ...previousState,
-                core: syncCurrentExplorerProjection(nextCore),
-                roomNotes: {
-                    ...previousState.roomNotes,
-                    [roomId]: previousState.roomNotes[roomId] ?? targetRoom.hint,
-                },
-                highlightedDeckKind: null,
-                interactionMode: 'default',
-                logEntries: appendPreviewLog(
-                    previousState.logEntries,
-                    t('board.activity.moveToRoom', {
-                        explorer: currentExplorerLabel,
-                        room: targetRoom.name,
-                    }),
-                    'neutral',
-                ),
-            };
-        });
-    }, [dispatchCommand, matchData, t]);
+        setPreviewState((previousState) => ({
+            ...previousState,
+            interactionMode: 'default',
+        }));
+    }, [dispatchCommand]);
 
     const handleMoveAction = React.useCallback(() => {
         setPreviewState((previousState) => {
@@ -2161,215 +2006,60 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 return {
                     ...previousState,
                     interactionMode: 'default',
-                    logEntries: appendPreviewLog(
-                        previousState.logEntries,
-                        t('board.activity.cancelMoveTarget'),
-                        'neutral',
-                    ),
                 };
             }
-            if (previousState.core.movesRemaining <= 0 || resolveMoveTargetRooms(previousState.core).length === 0) {
-                return {
-                    ...previousState,
-                    logEntries: appendPreviewLog(
-                        previousState.logEntries,
-                        t('board.activity.noMoveTargets'),
-                        'warning',
-                    ),
-                };
-            }
-            return {
-                ...previousState,
-                highlightedDeckKind: null,
-                interactionMode: 'move',
-                logEntries: appendPreviewLog(
-                    previousState.logEntries,
-                    t('board.activity.chooseMoveTarget'),
-                    'neutral',
-                ),
-            };
-        });
-    }, [t]);
-
-    const handleExploreAction = React.useCallback(() => {
-        dispatchCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, {});
-        setPreviewState((previousState) => {
-            const nextDeckKind = resolveNextPreviewDeckKind(previousState.core, previousState.exploreIndex);
-            if (!nextDeckKind) {
-                return {
-                    ...previousState,
-                    logEntries: appendPreviewLog(
-                        previousState.logEntries,
-                        t('board.activity.decksEmpty'),
-                        'warning',
-                    ),
-                };
-            }
-            const nextRoomSlot = resolveNextExplorableRoomSlot(previousState.core);
-            if (!nextRoomSlot) {
-                return {
-                    ...previousState,
-                    logEntries: appendPreviewLog(
-                        previousState.logEntries,
-                        t('board.activity.noExploreSlots'),
-                        'warning',
-                    ),
-                };
-            }
-
-            const nextCore = cloneCore(previousState.core);
-            const currentExplorerLabel = resolvePlayerName(
-                nextCore.currentExplorer.playerId,
-                nextCore.currentExplorer.displayName,
-                matchData,
-            );
-            const targetRoom = nextCore.rooms.find((room) => room.id === nextRoomSlot.id);
-            if (!targetRoom) {
+            if (core.movesRemaining <= 0 || resolveMoveTargetRooms(core).length === 0) {
                 return previousState;
             }
-            const roomTemplate = resolvePreviewRoomTemplate(previousState.core, targetRoom.floor, previousState.exploreIndex);
-            targetRoom.name = roomTemplate.name;
-            targetRoom.state = 'discovered';
-            targetRoom.hint = roomTemplate.hint;
-            targetRoom.tags = [...roomTemplate.tags];
-            targetRoom.discoveryReward = nextDeckKind;
-            nextCore.currentExplorer.roomId = targetRoom.id;
-            nextCore.deckCounts[nextDeckKind] = Math.max(0, nextCore.deckCounts[nextDeckKind] - 1);
-
-            let nextSelectedInventoryCardId = previousState.selectedInventoryCardId;
-            let nextLog = '';
-            let nextTone: PreviewLogEntry['tone'] = 'accent';
-            let nextDiscovery: PreviewDiscoveryResult | null = null;
-
-            if (nextDeckKind === 'event') {
-                const eventCard = resolvePreviewEvent(previousState.exploreIndex);
-                const eventEffectLabel = resolvePreviewUseEffectLabel(eventCard.effect, t);
-                nextCore.discardCounts.event += 1;
-                if (eventCard.effect.mode === 'move') {
-                    nextCore.movesRemaining = Math.min(5, Math.max(0, nextCore.movesRemaining + eventCard.effect.amount));
-                } else {
-                    nextCore.currentExplorer.traits[eventCard.effect.trait!] += eventCard.effect.amount;
-                }
-                nextTone = eventCard.effect.amount < 0 ? 'warning' : 'accent';
-                nextLog = t('board.activity.exploreRoomEventResolved', {
-                    explorer: currentExplorerLabel,
-                    room: targetRoom.name,
-                    card: eventCard.name,
-                    effect: eventEffectLabel,
-                });
-                nextDiscovery = {
-                    kind: 'event',
-                    title: eventCard.name,
-                    summary: t('board.discovery.eventResolved'),
-                    detail: eventEffectLabel,
-                    tone: nextTone,
-                };
-            } else {
-                const drawnCard = createPreviewDrawCard(nextDeckKind, previousState.exploreIndex);
-                nextCore.currentExplorer.inventory = [...nextCore.currentExplorer.inventory, drawnCard];
-                nextSelectedInventoryCardId = drawnCard.id;
-                nextLog = t('board.activity.exploreRoomCard', {
-                    explorer: currentExplorerLabel,
-                    room: targetRoom.name,
-                    card: drawnCard.name,
-                });
-                nextDiscovery = {
-                    kind: nextDeckKind,
-                    title: drawnCard.name,
-                    summary: t('board.discovery.readyToUse'),
-                    detail: resolvePreviewUseEffectLabel(drawnCard, t),
-                    tone: 'accent',
-                };
-            }
-            nextCore.recommendedAction = resolveContextualRecommendedAction(nextCore, {
-                canUseSelectedCard: nextDeckKind !== 'event',
-                preferUse: nextDeckKind !== 'event',
-            });
-
             return {
                 ...previousState,
-                core: syncCurrentExplorerProjection(nextCore),
-                selectedInventoryCardId: nextSelectedInventoryCardId,
-                latestDiscovery: nextDiscovery,
-                latestDiscoveryOwnerPlayerId: nextCore.currentExplorer.playerId,
-                roomNotes: {
-                    ...previousState.roomNotes,
-                    [targetRoom.id]: roomTemplate.hint,
-                },
-                exploreIndex: previousState.exploreIndex + 1,
-                highlightedDeckKind: nextDeckKind,
-                interactionMode: 'default',
-                logEntries: appendPreviewLog(previousState.logEntries, nextLog, nextTone),
+                interactionMode: 'move',
             };
         });
-    }, [dispatchCommand, matchData, t]);
+    }, [core]);
+
+    const handleExploreAction = React.useCallback(() => {
+        setPreviewState((previousState) => {
+            if (previousState.interactionMode === 'explore') {
+                return {
+                    ...previousState,
+                    interactionMode: 'default',
+                };
+            }
+            if (explorableRoomSlots.length === 0) {
+                return previousState;
+            }
+            if (explorableRoomSlots.length === 1) {
+                dispatchCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, { roomId: explorableRoomSlots[0]!.id });
+                return {
+                    ...previousState,
+                    interactionMode: 'default',
+                };
+            }
+            return {
+                ...previousState,
+                interactionMode: 'explore',
+            };
+        });
+    }, [dispatchCommand, explorableRoomSlots]);
+
+    const handleExploreRoom = React.useCallback((roomId: string) => {
+        dispatchCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, { roomId });
+        setPreviewState((previousState) => ({
+            ...previousState,
+            interactionMode: 'default',
+        }));
+    }, [dispatchCommand]);
 
     const handleUseAction = React.useCallback(() => {
         const cardId = selectedInventoryCard?.id;
         dispatchCommand(BETRAYAL_COMMANDS.USE_POSSESSION, cardId ? { cardId } : {});
         setInventoryPreviewCardId(null);
-        setPreviewState((previousState) => {
-            const card = previousState.core.currentExplorerInventory.find((item) => item.id === previousState.selectedInventoryCardId)
-                ?? previousState.core.currentExplorerInventory[0]
-                ?? null;
-            if (!card) {
-                return previousState;
-            }
-            if (previousState.usedCardIdsThisTurn.includes(card.id)) {
-                return {
-                    ...previousState,
-                    logEntries: appendPreviewLog(
-                        previousState.logEntries,
-                        t('board.activity.cardAlreadyUsed', {
-                            card: card.name,
-                        }),
-                        'warning',
-                    ),
-                };
-            }
-
-            const nextCore = cloneCore(previousState.core);
-            const currentExplorerLabel = resolvePlayerName(
-                nextCore.currentExplorer.playerId,
-                nextCore.currentExplorer.displayName,
-                matchData,
-            );
-            const useProfile = resolvePreviewUseEffectProfile(card);
-            let nextLog: string;
-
-            if (useProfile.mode === 'move') {
-                nextCore.movesRemaining = Math.min(5, Math.max(0, nextCore.movesRemaining + useProfile.amount));
-                nextLog = t('board.activity.useCardMove', {
-                    explorer: currentExplorerLabel,
-                    card: card.name,
-                    value: useProfile.amount,
-                });
-            } else {
-                nextCore.currentExplorer.traits[useProfile.trait!] += useProfile.amount;
-                nextLog = t('board.activity.useCardTrait', {
-                    explorer: currentExplorerLabel,
-                    card: card.name,
-                    trait: t(`board.traits.${useProfile.trait}`),
-                    value: useProfile.amount,
-                });
-            }
-            nextCore.recommendedAction = resolveContextualRecommendedAction(nextCore);
-
-            return {
-                ...previousState,
-                core: syncCurrentExplorerProjection(nextCore),
-                selectedInventoryCardId: card.id,
-                usedCardIdsThisTurn: [...previousState.usedCardIdsThisTurn, card.id],
-                highlightedDeckKind: null,
-                interactionMode: 'default',
-                logEntries: appendPreviewLog(
-                    previousState.logEntries,
-                    nextLog,
-                    'accent',
-                ),
-            };
-        });
-    }, [dispatchCommand, matchData, selectedInventoryCard?.id, t]);
+        setPreviewState((previousState) => ({
+            ...previousState,
+            interactionMode: 'default',
+        }));
+    }, [dispatchCommand, selectedInventoryCard?.id]);
 
     const handleTradeAction = React.useCallback(() => {
         const cardId = selectedInventoryCard?.id;
@@ -2378,124 +2068,20 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ...(selectedTradeTargetPlayerId ? { targetPlayerId: selectedTradeTargetPlayerId } : {}),
         });
         setInventoryPreviewCardId(null);
-        setPreviewState((previousState) => {
-            const card = previousState.core.currentExplorerInventory.find((item) => item.id === previousState.selectedInventoryCardId)
-                ?? previousState.core.currentExplorerInventory[0]
-                ?? null;
-            if (!card) {
-                return previousState;
-            }
-            const tradeTargetsInRoom = resolveTradeTargets(previousState.core);
-            const tradeTargetPlayerId = resolveSelectedTradeTargetPlayerId(
-                tradeTargetsInRoom,
-                previousState.selectedTradeTargetPlayerId,
-            );
-            const tradeTarget = tradeTargetsInRoom.find((item) => item.playerId === tradeTargetPlayerId) ?? null;
-            if (!tradeTarget) {
-                return {
-                    ...previousState,
-                    interactionMode: 'default',
-                    logEntries: appendPreviewLog(
-                        previousState.logEntries,
-                        t('board.activity.noTradeTargets'),
-                        'warning',
-                    ),
-                };
-            }
-
-            const nextCore = cloneCore(previousState.core);
-            const nextTarget = nextCore.otherExplorers.find((item) => item.playerId === tradeTarget.playerId);
-            if (!nextTarget) {
-                return previousState;
-            }
-            const currentExplorerLabel = resolvePlayerName(
-                nextCore.currentExplorer.playerId,
-                nextCore.currentExplorer.displayName,
-                matchData,
-            );
-            const targetExplorerLabel = resolvePlayerName(
-                nextTarget.playerId,
-                nextTarget.displayName,
-                matchData,
-            );
-
-            nextCore.currentExplorer.inventory = nextCore.currentExplorer.inventory.filter((item) => item.id !== card.id);
-            nextTarget.inventory = [...nextTarget.inventory, card];
-            nextCore.recommendedAction = resolveContextualRecommendedAction(nextCore, {
-                canUseSelectedCard: Boolean(nextCore.currentExplorer.inventory[0]),
-            });
-
-            return {
-                ...previousState,
-                core: syncCurrentExplorerProjection(nextCore),
-                selectedInventoryCardId: nextCore.currentExplorer.inventory[0]?.id ?? null,
-                selectedTradeTargetPlayerId: tradeTarget.playerId,
-                highlightedDeckKind: null,
-                interactionMode: 'default',
-                logEntries: appendPreviewLog(
-                    previousState.logEntries,
-                    t('board.activity.tradeCard', {
-                        from: currentExplorerLabel,
-                        to: targetExplorerLabel,
-                        card: card.name,
-                    }),
-                    'neutral',
-                ),
-            };
-        });
-    }, [dispatchCommand, matchData, selectedInventoryCard?.id, selectedTradeTargetPlayerId, t]);
+        setPreviewState((previousState) => ({
+            ...previousState,
+            interactionMode: 'default',
+        }));
+    }, [dispatchCommand, selectedInventoryCard?.id, selectedTradeTargetPlayerId]);
 
     const handleEndTurnAction = React.useCallback(() => {
         dispatchCommand(BETRAYAL_COMMANDS.END_TURN, {});
         setInventoryPreviewCardId(null);
-        setPreviewState((previousState) => {
-            const nextCore = cloneCore(previousState.core);
-            const rotatedExplorers = [...nextCore.otherExplorers, nextCore.currentExplorer];
-            if (rotatedExplorers.length === 0) {
-                return previousState;
-            }
-
-            nextCore.currentExplorer = cloneExplorer(rotatedExplorers[0]!);
-            nextCore.otherExplorers = rotatedExplorers.slice(1).map(cloneExplorer);
-            nextCore.movesRemaining = 4;
-            nextCore.recommendedAction = 'move';
-
-            const syncedCore = syncCurrentExplorerProjection(nextCore);
-            const nextExplorerLabel = resolvePlayerName(
-                syncedCore.currentExplorer.playerId,
-                syncedCore.currentExplorer.displayName,
-                matchData,
-            );
-            const nextMoveTargets = resolveMoveTargetRooms(syncedCore);
-            const nextTurnLog = nextMoveTargets.length > 0
-                ? t('board.activity.nextExplorerWithTargets', {
-                    explorer: nextExplorerLabel,
-                    targets: formatRoomTargetList(nextMoveTargets),
-                })
-                : t('board.activity.nextExplorer', {
-                    explorer: nextExplorerLabel,
-                });
-            return {
-                ...previousState,
-                core: syncedCore,
-                selectedInventoryCardId: syncedCore.currentExplorerInventory[0]?.id ?? null,
-                selectedTradeTargetPlayerId: null,
-                usedCardIdsThisTurn: [],
-                latestDiscovery: null,
-                latestDiscoveryOwnerPlayerId: null,
-                highlightedDeckKind: null,
-                interactionMode: 'default',
-                logEntries: appendPreviewLog(
-                    previousState.logEntries,
-                    nextTurnLog,
-                    'accent',
-                ),
-            };
-        });
-    }, [dispatchCommand, matchData, t]);
-
-    const handleCompleteFirstScenario = React.useCallback(() => {
-        dispatchCommand(BETRAYAL_COMMANDS.COMPLETE_FIRST_SCENARIO, {});
+        setPreviewState((previousState) => ({
+            ...previousState,
+            selectedTradeTargetPlayerId: null,
+            interactionMode: 'default',
+        }));
     }, [dispatchCommand]);
 
     const handleRoomFocusAction = React.useCallback(() => {
@@ -2525,13 +2111,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         {
             id: 'explore',
             label: t('board.actions.explore'),
-            disabled: !resolveNextPreviewDeckKind(core, previewState.exploreIndex) || !nextExplorableSlot,
+            disabled: explorableRoomSlots.length === 0,
             variant: 'primary',
         },
         { id: 'trade', label: t('board.actions.trade'), disabled: core.currentExplorerInventory.length === 0 || tradeTargets.length === 0, variant: 'secondary' },
         { id: 'use', label: t('board.actions.use'), disabled: core.currentExplorerInventory.length === 0 || selectedCardUsedThisTurn, variant: 'secondary' },
         { id: 'endTurn', label: t('board.actions.endTurn'), disabled: false, variant: 'ghost' },
-    ]), [core, nextExplorableSlot, previewState.exploreIndex, previewState.interactionMode, selectedCardUsedThisTurn, t, tradeTargets.length]);
+    ]), [core, explorableRoomSlots.length, previewState.interactionMode, selectedCardUsedThisTurn, t, tradeTargets.length]);
 
     const actionHandlerMap: Record<ActionBarAction['id'], () => void> = {
         move: handleMoveAction,
@@ -2545,10 +2131,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         options: {
             layout: 'focus' | 'compact' | 'preview';
             testId?: string;
+            compactDenseNoFront?: boolean;
         },
     ) => {
         const isSelected = item.id === selectedInventoryCard?.id;
-        const isUsedThisTurn = previewState.usedCardIdsThisTurn.includes(item.id);
+        const isUsedThisTurn = core.usedCardIdsThisTurn.includes(item.id);
         const tone = INVENTORY_FACE_TONE[item.kind];
         const frontVisual = resolvePossessionAtlasVisual(item);
         const backAsset = INVENTORY_CARD_BACK_ASSET[item.kind];
@@ -2556,20 +2143,35 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         const isFocus = options.layout === 'focus';
         const isPreview = options.layout === 'preview';
         const isCompact = options.layout === 'compact';
-        const compactAspectRatio = resolveCompactInventoryAspectRatio(item, frontVisual);
-        const shellHeightClass = isPreview ? 'h-[280px]' : isFocus ? 'h-[148px]' : 'h-[156px]';
-        const shellRadiusClass = isPreview ? 'rounded-[12px]' : isFocus ? 'rounded-[6px]' : 'rounded-[3px]';
+        const isDenseNoFrontCompact = isCompact && !frontVisual && Boolean(options.compactDenseNoFront);
+        const isCompactDenseOmen = isDenseNoFrontCompact && item.kind === 'omen';
+        const shellRadiusClass = isPreview ? 'rounded-[16px]' : isFocus ? 'rounded-[10px]' : 'rounded-[6px]';
+        const cardWidthStyle = isPreview
+            ? { width: '100%' }
+            : isCompact
+                ? { width: `${COMPACT_INVENTORY_CARD_WIDTH}px` }
+                : undefined;
+        const showSelectedState = !isPreview && isSelected;
         const titleClass = isPreview
             ? `min-h-[52px] text-[18px] font-semibold leading-[22px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`
             : isFocus
                 ? `min-h-[34px] text-[13px] font-semibold leading-[16px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`
                 : `min-h-[16px] text-[8px] font-semibold leading-[9px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`;
 
+        const compactStackStyle = isCompact
+            ? {
+                zIndex: showSelectedState ? 12 : 2,
+            }
+            : undefined;
+
         return (
             <button
                 key={`${options.layout}-${item.id}`}
                 type="button"
                 onClick={() => {
+                    if (isPreview) {
+                        return;
+                    }
                     setPreviewState((previousState) => ({
                         ...previousState,
                         selectedInventoryCardId: item.id,
@@ -2581,12 +2183,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 data-testid={options.testId}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击放大`}
                 className={`relative overflow-hidden text-left transition ${
-                    isSelected
+                    showSelectedState
                         ? 'z-20 -translate-y-0.5 shadow-[0_0_0_1px_rgba(210,171,97,0.5),0_0_18px_rgba(210,171,97,0.16)]'
-                        : 'z-10 hover:-translate-y-0.5'
-                }`}
-                aria-pressed={isSelected}
-                style={isCompact ? { aspectRatio: compactAspectRatio } : undefined}
+                        : isPreview
+                            ? 'z-10'
+                            : 'z-10 hover:-translate-y-0.5'
+                } ${isCompact ? 'shrink-0' : 'w-full'}`}
+                aria-pressed={isPreview ? undefined : isSelected}
+                style={{ ...cardWidthStyle, ...compactStackStyle }}
             >
                 {isUsedThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
@@ -2594,7 +2198,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </div>
                 ) : null}
                 <div
-                    className={`relative flex ${shellHeightClass} flex-col overflow-hidden ${shellRadiusClass} border ${
+                    className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} border ${
                         frontVisual
                             ? isCompact
                                 ? 'border-[rgba(120,105,76,0.18)] bg-[rgba(10,8,6,0.18)]'
@@ -2603,44 +2207,80 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
                                 : tone.cardSurfaceClass
                     } ${isUsedThisTurn ? 'opacity-60' : ''}`}
+                    style={{ aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO }}
                 >
                     {frontVisual ? (
                         <>
-                            <div className={`pointer-events-none absolute inset-0 ${isCompact ? 'bg-[rgba(11,9,7,0.08)]' : 'bg-[rgba(11,9,7,0.94)]'}`} />
-                            <PossessionAtlasFrame
-                                visual={frontVisual}
-                                locale={effectiveLocale}
-                                alt={item.name}
-                            />
-                            <div className={`pointer-events-none absolute inset-0 ${
+                            <div className={`absolute overflow-hidden ${
                                 isCompact
-                                    ? 'bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0)_62%,rgba(7,6,5,0.03)_82%,rgba(7,6,5,0.12))]'
-                                    : 'bg-[linear-gradient(180deg,rgba(0,0,0,0.04),rgba(0,0,0,0.02)_30%,rgba(0,0,0,0.08)_66%,rgba(7,6,5,0.72))]'
-                            }`} />
+                                    ? 'inset-[3px] rounded-[5px] bg-[rgba(10,8,6,0.96)]'
+                                    : 'inset-0 bg-[rgba(10,8,6,0.96)]'
+                            }`}>
+                                <PossessionAtlasFrame
+                                    visual={frontVisual}
+                                    locale={effectiveLocale}
+                                    alt={item.name}
+                                />
+                                <div className={`pointer-events-none absolute inset-0 ${
+                                    isCompact
+                                        ? 'bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(0,0,0,0.02)_50%,rgba(7,6,5,0.1)_78%,rgba(7,6,5,0.54))]'
+                                        : 'bg-[linear-gradient(180deg,rgba(0,0,0,0.04),rgba(0,0,0,0.02)_30%,rgba(0,0,0,0.08)_66%,rgba(7,6,5,0.72))]'
+                                }`} />
+                            </div>
                             <div className={`pointer-events-none absolute inset-0 ring-1 ring-inset ${
                                 isCompact ? 'ring-[rgba(227,206,170,0.04)]' : 'ring-[rgba(227,206,170,0.14)]'
                             }`} />
                         </>
                     ) : (
                         <>
-                            <OptimizedImage
-                                src={backAsset}
-                                locale={effectiveLocale}
-                                alt=""
-                                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.14]"
-                                draggable={false}
-                            />
-                            <div
-                                className={`pointer-events-none absolute inset-0 ${
-                                    isCompact
-                                        ? 'bg-[linear-gradient(180deg,rgba(15,17,13,0.18),rgba(8,10,8,0.34)_58%,rgba(7,7,6,0.56))]'
-                                        : 'bg-[radial-gradient(circle_at_50%_20%,rgba(239,226,188,0.1),transparent_34%),linear-gradient(180deg,rgba(14,15,11,0.5),rgba(8,10,7,0.82)_54%,rgba(7,6,5,0.94))]'
-                                }`}
-                            />
+                            <div className={`absolute overflow-hidden ${
+                                isCompact
+                                    ? 'inset-[3px] rounded-[5px]'
+                                    : 'inset-0'
+                            }`}>
+                                {isCompact ? (
+                                    <>
+                                        <OptimizedImage
+                                            src={backAsset}
+                                            locale={effectiveLocale}
+                                            alt=""
+                                            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.16]"
+                                            draggable={false}
+                                        />
+                                        <div className={`pointer-events-none absolute inset-0 ${
+                                            item.kind === 'item'
+                                                ? 'bg-[radial-gradient(circle_at_50%_24%,rgba(230,186,159,0.12),transparent_34%),linear-gradient(180deg,rgba(42,22,18,0.94),rgba(17,11,10,0.98))]'
+                                                : 'bg-[radial-gradient(circle_at_50%_24%,rgba(194,232,178,0.1),transparent_34%),linear-gradient(180deg,rgba(24,40,25,0.94),rgba(12,20,13,0.98))]'
+                                        }`} />
+                                        <div className="pointer-events-none absolute inset-x-0 top-[10%] flex justify-center">
+                                            <span className={`rounded-full border px-2 py-0.5 text-[8px] font-semibold tracking-[0.08em] ${
+                                                item.kind === 'item'
+                                                    ? 'border-[rgba(215,162,134,0.24)] bg-[rgba(43,24,20,0.78)] text-[#f0ccb9]'
+                                                    : 'border-[rgba(173,212,161,0.2)] bg-[rgba(20,34,22,0.82)] text-[#d6ebd1]'
+                                            }`}>
+                                                {t('board.status.frontMissing')}
+                                            </span>
+                                        </div>
+                                        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.01)_40%,rgba(7,7,6,0.16)_58%,rgba(7,7,6,0.78))]" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="pointer-events-none absolute inset-0 bg-[rgba(11,12,10,0.96)]" />
+                                        <OptimizedImage
+                                            src={backAsset}
+                                            locale={effectiveLocale}
+                                            alt=""
+                                            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.18]"
+                                            draggable={false}
+                                        />
+                                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(239,226,188,0.1),transparent_34%),linear-gradient(180deg,rgba(14,15,11,0.5),rgba(8,10,7,0.82)_54%,rgba(7,6,5,0.94))]" />
+                                    </>
+                                )}
+                            </div>
                             <div
                                 className={`pointer-events-none absolute border ${tone.frameClass} ${
                                     isCompact
-                                        ? 'inset-[4px] rounded-[4px] opacity-30'
+                                        ? 'inset-[3px] rounded-[5px] opacity-36'
                                         : 'inset-[8px] rounded-[8px] opacity-90'
                                 }`}
                             />
@@ -2650,9 +2290,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
                             {isCompact ? (
-                                <div className="pointer-events-none absolute right-1 top-1 rounded-full border border-[rgba(111,140,102,0.2)] bg-[rgba(20,30,21,0.5)] px-1 py-0 text-[6px] font-semibold tracking-[0.04em] text-[#bed0b8]">
-                                    缺图
-                                </div>
+                                null
                             ) : (
                                 <div className={`pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border ${tone.badgeClass} ${isPreview ? 'bottom-16 px-3 py-1 text-[10px]' : isFocus ? 'bottom-11 px-2 py-0.5 text-[9px]' : 'bottom-8 px-1.5 py-0.5 text-[8px]'} uppercase tracking-[0.12em]`}>
                                     {t('board.status.frontMissing')}
@@ -2663,13 +2301,27 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     {isCompact ? (
                         <>
                             <div className="relative flex-1" />
-                            <div className={`relative mt-auto px-1.5 pb-1 ${frontVisual ? 'pt-1' : 'pt-1.5'} ${
+                            <div className={`relative mt-auto ${isCompactDenseOmen ? 'px-1 pb-1' : 'px-2 pb-2'} ${
                                 frontVisual
-                                    ? 'bg-[linear-gradient(180deg,rgba(8,7,6,0),rgba(8,7,6,0)_76%,rgba(8,7,6,0.06)_90%,rgba(8,7,6,0.12))]'
-                                    : 'bg-[linear-gradient(180deg,rgba(8,7,6,0),rgba(8,7,6,0.14)_56%,rgba(8,7,6,0.3))]'
+                                    ? 'pt-2'
+                                    : isCompactDenseOmen
+                                        ? 'pt-0.5'
+                                        : isDenseNoFrontCompact
+                                            ? 'pt-1.5'
+                                            : 'pt-2.5'
+                            } ${
+                                frontVisual
+                                    ? 'bg-[linear-gradient(180deg,rgba(8,7,6,0),rgba(8,7,6,0.08)_56%,rgba(8,7,6,0.7))]'
+                                    : 'bg-[linear-gradient(180deg,rgba(8,7,6,0),rgba(8,7,6,0.18)_46%,rgba(8,7,6,0.82))]'
                             }`}>
                                 <div className="min-w-0">
-                                    <div className="truncate text-[9px] font-medium leading-[10px] text-[#ede2c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.62)]">
+                                    <div className={`${
+                                        isCompactDenseOmen
+                                            ? 'min-h-[26px] rounded-[4px] border border-[rgba(177,201,161,0.14)] bg-[rgba(234,226,206,0.92)] px-1 py-[3px] text-[8px] leading-[9px] line-clamp-2 text-[#2f291e] drop-shadow-none'
+                                            : isDenseNoFrontCompact
+                                                ? 'min-h-[18px] truncate whitespace-nowrap text-[9px] leading-[10px]'
+                                                : 'min-h-[26px] text-[11px] leading-[12px]'
+                                    } font-semibold ${isCompactDenseOmen ? '' : 'text-[#ede2c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.62)]'}`}>
                                         {item.name}
                                     </div>
                                 </div>
@@ -2678,10 +2330,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     ) : (
                         <>
                             <div className={`relative flex items-center justify-between ${isPreview ? 'px-4 pt-4' : 'px-3 pt-3'}`}>
-                                <span className={`inline-flex rounded-full border ${isPreview ? 'px-2.5 py-1 text-[10px]' : 'px-2 py-0.5 text-[9px]'} uppercase tracking-[0.12em] ${tone.badgeClass}`}>
+                                <span className={`inline-flex rounded-full border ${isPreview ? 'px-2.5 py-1 text-[10px]' : isFocus ? 'px-2.5 py-1 text-[10px]' : 'px-2 py-0.5 text-[9px]'} uppercase tracking-[0.12em] ${tone.badgeClass}`}>
                                     {item.kind === 'item' ? t('board.inventory.item') : t('board.inventory.omen')}
                                 </span>
-                                <span className={`inline-flex ${isPreview ? 'h-8 w-8' : 'h-6 w-6'} items-center justify-center rounded-full border ${
+                                <span className={`inline-flex ${isPreview ? 'h-8 w-8' : isFocus ? 'h-7 w-7' : 'h-6 w-6'} items-center justify-center rounded-full border ${
                                     frontVisual
                                         ? 'border-[rgba(227,206,170,0.28)] bg-[rgba(14,12,10,0.78)]'
                                         : tone.frameClass
@@ -2690,20 +2342,27 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         src={accentAsset}
                                         locale={effectiveLocale}
                                         alt=""
-                                        className={isPreview ? 'h-5 w-5 object-contain opacity-90' : 'h-4 w-4 object-contain opacity-90'}
+                                        className={isPreview ? 'h-5 w-5 object-contain opacity-90' : isFocus ? 'h-[18px] w-[18px] object-contain opacity-90' : 'h-4 w-4 object-contain opacity-90'}
                                         draggable={false}
                                     />
                                 </span>
                             </div>
-                            <div className={`relative flex flex-1 items-end justify-start ${isPreview ? 'px-6 py-5' : 'px-4 py-3'}`} />
-                            <div className={`${isPreview ? 'px-4 pb-4 pt-2' : 'px-3 pb-3 pt-1.5'} relative`}>
+                            <div className={`relative flex flex-1 items-end justify-start ${isPreview ? 'px-6 py-5' : isFocus ? 'px-4 py-4' : 'px-4 py-3'}`} />
+                            <div className={`${isPreview ? 'px-4 pb-4 pt-2' : isFocus ? 'px-4 pb-4 pt-2.5' : 'px-3 pb-3 pt-1.5'} relative`}>
                                 <div className={titleClass}>
                                     {item.name}
                                 </div>
                                 {frontVisual ? null : (
-                                    <div className={`${isPreview ? 'mt-2 text-[11px]' : 'mt-1.5 text-[10px]'} uppercase tracking-[0.1em] ${tone.accentClass}`}>
-                                        {item.kind === 'item' ? t('board.inventory.item') : t('board.inventory.omen')}
-                                    </div>
+                                    <>
+                                        <div className={`${isPreview ? 'mt-2 text-[11px]' : isFocus ? 'mt-2 text-[11px]' : 'mt-1.5 text-[10px]'} uppercase tracking-[0.1em] ${tone.accentClass}`}>
+                                            {item.kind === 'item' ? t('board.inventory.item') : t('board.inventory.omen')}
+                                        </div>
+                                        {isFocus ? (
+                                            <div className="mt-2 inline-flex rounded-full border border-[rgba(111,140,102,0.26)] bg-[rgba(20,30,21,0.72)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] text-[#d4e5cf]">
+                                                {t('board.status.frontMissing')}
+                                            </div>
+                                        ) : null}
+                                    </>
                                 )}
                             </div>
                         </>
@@ -2773,7 +2432,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
                             <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">PHASE</span>
                             <span className="mt-1 text-[28px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
-                                {t('board.phase.preHaunt')}
+                                {phaseLabel}
                             </span>
                         </div>
                         <div className="relative flex items-center justify-end gap-4 px-5" data-testid="betrayal-status-chip">
@@ -2810,17 +2469,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     />
                 </header>
 
-                <main className="grid min-h-0 flex-1 gap-3 overflow-y-auto pb-[12rem] xl:grid-cols-[286px_minmax(0,1fr)_216px] xl:overflow-hidden xl:pb-0">
-                    <section className="relative z-10 order-2 grid min-h-0 content-start gap-2 xl:order-1 xl:overflow-y-auto">
-                        <article className="relative overflow-visible bg-transparent px-1 py-1">
-                                <div className="mx-auto flex w-full max-w-[248px] flex-col gap-2 pb-3 pt-2">
-                                <div className="relative mx-auto w-full max-w-[224px]">
+                <main className="relative grid min-h-0 flex-1 gap-3 overflow-y-auto pb-[12rem] xl:grid-cols-[286px_minmax(0,1fr)_216px] xl:overflow-hidden xl:pb-0">
+                    <section className="relative z-10 order-2 grid min-h-0 content-start gap-2 xl:order-1 xl:overflow-visible">
+                        <article className="relative overflow-visible bg-transparent px-1 py-1 xl:min-h-[860px]">
+                            <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1 xl:mx-0">
+                                <div className="relative mx-auto w-full max-w-[188px]">
                                     <div className="pointer-events-none absolute inset-[12%] rounded-full bg-[rgba(77,138,92,0.18)] blur-3xl" />
                                     <OptimizedImage
                                         src={core.currentExplorer.portraitAsset}
                                         locale={effectiveLocale}
                                         alt={core.currentExplorer.displayName}
-                                        className="relative z-10 aspect-[1/1.05] h-auto w-full object-contain drop-shadow-[0_18px_36px_rgba(0,0,0,0.42)]"
+                                        className="relative z-10 aspect-[1/1.05] h-auto w-full object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.38)]"
                                         draggable={false}
                                     />
                                     {(Object.entries(core.currentExplorer.traits) as [BetrayalTraitKey, number][]).map(([key, value]) => {
@@ -2842,39 +2501,39 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         );
                                     })}
                                 </div>
-                                <div className="-mt-6 flex justify-center px-2">
-                                    <div className="relative inline-flex min-w-[184px] max-w-[206px] items-center justify-between gap-3 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-3 py-1.5 shadow-[0_10px_18px_rgba(0,0,0,0.16)]">
+                                <div className="-mt-4 flex justify-center px-2">
+                                    <div className="relative inline-flex min-w-[174px] max-w-[194px] items-center justify-between gap-2 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-2.5 py-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.14)]">
                                         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                         <div className="min-w-0">
                                             <div className="text-[8px] uppercase tracking-[0.18em] text-[#95876d]">
                                                 位置
                                             </div>
-                                            <div className="mt-0.5 truncate text-[11px] font-medium uppercase tracking-[0.12em] text-[#efe2c4]">
+                                            <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.12em] text-[#efe2c4]">
                                                 {core.rooms.find((room) => room.id === core.currentExplorer.roomId)?.name || t('board.rooms.unknown')}
                                             </div>
                                         </div>
-                                        <div className="shrink-0 self-center rounded-full border border-[rgba(105,83,47,0.58)] bg-[radial-gradient(circle_at_35%_25%,rgba(227,211,168,0.12),rgba(18,15,12,0.95))] px-2.5 py-1 text-center shadow-[0_4px_10px_rgba(0,0,0,0.14)]">
+                                        <div className="shrink-0 self-center rounded-full border border-[rgba(105,83,47,0.58)] bg-[radial-gradient(circle_at_35%_25%,rgba(227,211,168,0.12),rgba(18,15,12,0.95))] px-2 py-0.5 text-center shadow-[0_4px_10px_rgba(0,0,0,0.14)]">
                                             <div className="text-[7px] uppercase tracking-[0.16em] text-[#98886a]">持有</div>
-                                            <div className="text-[16px] font-semibold leading-none text-[#f0e2c0]">{core.currentExplorerInventory.length}</div>
+                                            <div className="text-[15px] font-semibold leading-none text-[#f0e2c0]">{core.currentExplorerInventory.length}</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="px-2">
+                                <div className="px-1.5">
                                     <div
-                                        className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-3 py-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
+                                        className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-3 py-2 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
                                         data-testid="betrayal-current-traits"
                                     >
                                         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-                                        <div className="mb-2 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-2">
+                                        <div className="mb-1 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-1">
                                             <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">当前属性</span>
                                             <span className="rounded-full border border-[rgba(181,239,66,0.28)] bg-[rgba(40,58,21,0.52)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#d9ff97]">
                                                 {resolvePlayerName(core.currentExplorer.playerId, core.currentExplorer.displayName, matchData)}
                                             </span>
                                         </div>
-                                        <div className="grid gap-2">
+                                        <div className="grid gap-0.5">
                                             {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
-                                                <div key={trait} className="grid grid-cols-[72px_minmax(0,1fr)_24px] items-center gap-2 text-[12px]">
+                                                <div key={trait} className="grid grid-cols-[66px_minmax(0,1fr)_24px] items-center gap-1.5 text-[12px]">
                                                     <span className="inline-flex items-center gap-1.5 font-semibold text-[#d8bf81]">
                                                         <OptimizedImage src={ASSETS.trait[trait]} locale={effectiveLocale} alt="" className="h-4 w-4 object-contain opacity-86" draggable={false} />
                                                         <span className="truncate">{TRAIT_LABEL_LOCAL[trait]}</span>
@@ -2905,39 +2564,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </span>
                                                 </div>
                                             ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div id="betrayal-inventory-section" className="mt-0.5 px-2">
-                                    <div className="mb-2 flex items-center justify-between gap-3 px-1">
-                                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
-                                            <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
-                                            {t('board.sections.inventory')}
-                                            <span className="h-px w-8 bg-[rgba(214,191,129,0.12)]" />
-                                        </div>
-                                        <div className="sr-only">
-                                            {selectedInventoryCard
-                                                ? t('board.status.selectedCard', { card: selectedInventoryCard.name })
-                                                : t('board.status.noSelectedCard')}
-                                        </div>
-                                        <div
-                                            className="sr-only"
-                                            data-testid="betrayal-use-status"
-                                        >
-                                            {useStatusText}
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 overflow-x-auto overflow-y-hidden pb-1 pr-1 [scrollbar-color:#7a6240_rgba(8,12,10,0.72)]">
-                                        <div className="px-1">
-                                        <section data-testid="betrayal-inventory-group-all">
-                                            <div className="flex min-w-max gap-2.5">
-                                                {core.currentExplorerInventory.map((item) => renderInventoryCard(item, {
-                                                    layout: 'compact',
-                                                    testId: `betrayal-inventory-${item.id}`,
-                                                }))}
-                                            </div>
-                                        </section>
                                         </div>
                                     </div>
                                 </div>
@@ -3031,6 +2657,59 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </div>
                         </article>
                     </section>
+                    <div
+                        id="betrayal-inventory-section"
+                        className="order-4 mt-1 px-0.5 xl:absolute xl:bottom-0 xl:left-1 xl:z-20 xl:mt-0 xl:w-fit xl:max-w-[calc(62px*4.35+0.5rem*3+0.5rem)] xl:px-0"
+                    >
+                        <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:max-w-[max-content] xl:min-w-[22rem] xl:pr-4">
+                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
+                                <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
+                                {t('board.sections.inventory')}
+                                <span className="h-px w-8 bg-[rgba(214,191,129,0.12)]" />
+                            </div>
+                            <div className="sr-only">
+                                {selectedInventoryCard
+                                    ? t('board.status.selectedCard', { card: selectedInventoryCard.name })
+                                    : t('board.status.noSelectedCard')}
+                            </div>
+                            <div
+                                className="sr-only"
+                                data-testid="betrayal-use-status"
+                            >
+                                {useStatusText}
+                            </div>
+                        </div>
+                        <div className="grid gap-2 px-1 xl:px-0 xl:pr-2">
+                            <section data-testid="betrayal-inventory-group-item">
+                                <div
+                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*4.35+0.5rem*3)] xl:gap-2"
+                                    data-testid="betrayal-inventory-row-item"
+                                >
+                                    {inventoryGroups.item.map((item) => renderInventoryCard(item, {
+                                        layout: 'compact',
+                                        testId: `betrayal-inventory-${item.id}`,
+                                    }))}
+                                </div>
+                            </section>
+                            <section data-testid="betrayal-inventory-group-omen">
+                                <div
+                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*4.35+0.5rem*3)] xl:gap-2"
+                                    data-testid="betrayal-inventory-row-omen"
+                                >
+                                    {inventoryGroups.omen.map((item) => renderInventoryCard(item, {
+                                        layout: 'compact',
+                                        testId: `betrayal-inventory-${item.id}`,
+                                        compactDenseNoFront: true,
+                                    }))}
+                                </div>
+                            </section>
+                        </div>
+                        {selectedInventoryCard ? (
+                            <div className="sr-only" data-testid="betrayal-selected-inventory-card-name">
+                                {selectedInventoryCard.name}
+                            </div>
+                        ) : null}
+                    </div>
 
                     <section className="relative z-0 order-1 grid content-start gap-3 xl:order-2 xl:min-h-0 xl:grid-rows-[minmax(0,1fr)_auto]">
                         <div className="sr-only">
@@ -3051,12 +2730,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     <span data-testid="betrayal-discovery-panel">
                                         {t('board.discovery.label')}
                                         {' '}
-                                        {previewState.latestDiscovery!.title}
+                                        {core.latestDiscovery!.title}
                                         {' '}
-                                        {previewState.latestDiscovery!.summary}
+                                        {core.latestDiscovery!.summary}
                                         {' '}
                                         <span data-testid="betrayal-discovery-detail">
-                                            {previewState.latestDiscovery!.detail}
+                                            {core.latestDiscovery!.detail}
                                         </span>
                                     </span>
                                 ) : null}
@@ -3101,11 +2780,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     const occupants = roomOccupants[room.id] ?? [];
                                     const monsters = roomMonsters[room.id] ?? [];
                                     const isDiscovered = room.state === 'discovered';
-                                    const isExplorableSlot = nextExplorableSlot?.id === room.id;
+                                    const isExplorableSlot = explorableRoomSlotIds.has(room.id);
                                     const isReachableRoom = moveTargetRoomIds.has(room.id);
                                     const isMoveTarget = previewState.interactionMode === 'move' && moveTargetRoomIds.has(room.id);
+                                    const isExploreTarget = previewState.interactionMode === 'explore' && explorableRoomSlotIds.has(room.id);
                                     const roomTileVisual = resolveRoomTileVisual(room, isDiscovered);
-                                    const connectionEdges = resolveRoomConnectionEdges(room, roomLookup);
                                     const identityKey = room.discoveryReward
                                         ? room.discoveryReward
                                         : room.startingTile
@@ -3126,7 +2805,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     : null;
                                     const identityTone = identityKey ? ROOM_IDENTITY_TONE[identityKey] : null;
                                     const note = isDiscovered
-                                        ? previewState.roomNotes[room.id] ?? room.hint
+                                        ? room.hint
                                         : isExplorableSlot
                                             ? t('board.rooms.slotReady')
                                             : t('board.rooms.slotUndiscovered');
@@ -3137,7 +2816,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             className="group absolute overflow-visible"
                                             style={{
                                                 ...resolveRoomTileStyle(room),
-                                                zIndex: isMoveTarget ? 30 : isActive ? 25 : isReachableRoom ? 20 : 1,
+                                                zIndex: isMoveTarget || isExploreTarget ? 30 : isActive ? 25 : isReachableRoom ? 20 : 1,
                                             }}
                                         >
                                             <button
@@ -3157,7 +2836,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     ? 'rgba(118, 189, 153, 0.22)'
                                                     : isReachableRoom
                                                         ? 'rgba(96, 155, 125, 0.12)'
-                                                        : isExplorableSlot
+                                                        : isExploreTarget || isExplorableSlot
                                                             ? 'rgba(164, 141, 84, 0.16)'
                                                             : 'rgba(0, 0, 0, 0)',
                                                 backgroundColor: 'transparent',
@@ -3165,14 +2844,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     ? '0 0 16px rgba(105,174,128,0.14), 0 12px 22px rgba(0,0,0,0.22)'
                                                     : isMoveTarget
                                                         ? '0 0 0 1px rgba(118,189,153,0.14), 0 8px 16px rgba(0,0,0,0.18)'
-                                                    : isReachableRoom
-                                                        ? '0 0 0 1px rgba(96,155,125,0.08), 0 8px 16px rgba(0,0,0,0.16)'
-                                                    : isExplorableSlot
-                                                        ? '0 0 0 1px rgba(164,141,84,0.12), 0 8px 16px rgba(0,0,0,0.16)'
-                                                        : '0 8px 16px rgba(0,0,0,0.14)',
+                                                        : isReachableRoom
+                                                            ? '0 0 0 1px rgba(96,155,125,0.08), 0 8px 16px rgba(0,0,0,0.16)'
+                                                            : isExploreTarget || isExplorableSlot
+                                                                ? '0 0 0 1px rgba(164,141,84,0.12), 0 8px 16px rgba(0,0,0,0.16)'
+                                                                : '0 8px 16px rgba(0,0,0,0.14)',
                                                 opacity: !isDiscovered
                                                     ? 1
-                                                    : isActive || isMoveTarget || isReachableRoom || isExplorableSlot
+                                                    : isActive || isMoveTarget || isReachableRoom || isExplorableSlot || isExploreTarget
                                                         ? 1
                                                         : 0.92,
                                             }}
@@ -3203,34 +2882,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     className={`absolute left-2 top-2 h-2 w-2 rounded-full border border-white/10 ${identityTone.stripe}`}
                                                 />
                                             ) : null}
-                                            {connectionEdges.map((edge) => {
-                                                const isEdgeToActive = edge.targetRoomId === core.activeRoomId;
-                                                const isEdgeToMoveTarget = moveTargetRoomIds.has(edge.targetRoomId);
-                                                const isEdgeToExplorable = nextExplorableSlot?.id === edge.targetRoomId;
-                                                const isHighlightedMoveEdge = (isActive && isEdgeToMoveTarget)
-                                                    || (isReachableRoom && isEdgeToActive);
-                                                const isHighlightedExploreEdge = (isActive && isEdgeToExplorable)
-                                                    || (isExplorableSlot && isEdgeToActive);
-                                                const connectorStyle = edge.direction === 'north'
-                                                    ? 'left-1/2 top-0 h-2.5 w-11 -translate-x-1/2 rounded-b-[4px]'
-                                                    : edge.direction === 'south'
-                                                        ? 'bottom-0 left-1/2 h-2.5 w-11 -translate-x-1/2 rounded-t-[4px]'
-                                                        : edge.direction === 'east'
-                                                            ? 'right-0 top-1/2 h-11 w-2.5 -translate-y-1/2 rounded-l-[4px]'
-                                                            : 'left-0 top-1/2 h-11 w-2.5 -translate-y-1/2 rounded-r-[4px]';
-                                                const connectorTone = isHighlightedMoveEdge
-                                                    ? 'border-[#76bd99] bg-[rgba(33,65,51,0.9)]'
-                                                    : isHighlightedExploreEdge
-                                                        ? 'border-[#c7a96a] bg-[rgba(77,61,28,0.92)]'
-                                                        : 'border-[rgba(148,117,71,0.4)] bg-[rgba(91,69,39,0.68)]';
-                                                return (
-                                                    <span
-                                                        key={`${room.id}-${edge.targetRoomId}`}
-                                                        data-testid={`betrayal-room-connector-${room.id}-${edge.targetRoomId}`}
-                                                        className={`pointer-events-none absolute border ${connectorStyle} ${connectorTone} shadow-[0_3px_8px_rgba(0,0,0,0.18)]`}
-                                                    />
-                                                );
-                                            })}
                                             <div className="pointer-events-none absolute inset-0 rounded-[3px] ring-1 ring-inset ring-[rgba(222,192,133,0.05)]" />
                                             <div className="sr-only">
                                                 <span>{room.name}</span>
@@ -3314,6 +2965,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         className="pointer-events-none h-2.5 w-2.5 rounded-full border border-[#6aa986] bg-[rgba(106,169,134,0.58)]"
                                                         title={t('board.rooms.moveTarget')}
                                                     />
+                                                ) : isExploreTarget ? (
+                                                    <button
+                                                        type="button"
+                                                        onPointerDown={(event) => {
+                                                            event.stopPropagation();
+                                                        }}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            handleExploreRoom(room.id);
+                                                        }}
+                                                        data-testid={`betrayal-room-explore-target-${room.id}`}
+                                                        className="grid h-4 w-4 place-items-center rounded-full border border-[#d3b36d] bg-[#d3b36d] shadow-[0_0_14px_rgba(211,179,109,0.76)]"
+                                                        title={t('board.rooms.explorable')}
+                                                    >
+                                                        <span className="sr-only">{t('board.rooms.explorable')}</span>
+                                                    </button>
                                                 ) : null}
                                             </div>
                                             <button
@@ -3339,7 +3006,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </div>
                         </article>
 
-                        <article className="order-2 mx-auto w-full max-w-[700px] bg-transparent p-0 pt-0">
+                        <article className="relative z-30 order-2 mx-auto w-full max-w-[700px] bg-transparent p-0 pt-0">
                             <div className="relative mx-auto max-w-[676px] px-2 pt-0 pb-1">
                                 <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.18),transparent)]" />
                                 <ActionBarSkeleton
@@ -3396,7 +3063,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 layout="column"
                                 className="mt-3 grid grid-cols-3 gap-2.5"
                                 renderItem={(item) => {
-                                    const isHighlighted = item.id === `deck-${previewState.highlightedDeckKind}`;
+                                    const isHighlighted = item.id === `deck-${core.highlightedDeckKind}`;
                                     const deckTiltClass = item.kind === 'omen'
                                         ? '-rotate-[1.25deg]'
                                         : item.kind === 'item'
@@ -3466,44 +3133,28 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         </article>
 
                         <article className="bg-transparent pt-1">
+                            <div className="mt-0.5 flex justify-start gap-1.5">
                             <button
                                 type="button"
-                                onClick={handleCompleteFirstScenario}
-                                data-testid="betrayal-complete-first-scenario"
-                                title="结算剧本"
-                                className="sr-only"
+                                onClick={() => setReferenceOpen(true)}
+                                data-testid="betrayal-open-scenario"
+                                className="inline-flex h-[40px] min-w-[84px] items-center gap-1.5 rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] px-2.5 text-[#d8bf81] transition hover:border-[#8b744d]"
+                                title={scenarioConfig.presentation.referenceTitle}
                             >
-                                结算剧本
+                                <BookOpen size={15} />
+                                <span className="text-[11px] font-semibold tracking-[0.06em]">{scenarioConfig.presentation.referenceTitle}</span>
                             </button>
-                            <div className="flex justify-end gap-2.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setReferenceOpen(true)}
-                                    data-testid="betrayal-open-scenario"
-                                    className="grid h-[52px] w-[52px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
-                                    title={t('board.reference.button')}
-                                >
-                                    <BookOpen size={22} />
-                                </button>
                                 <button
                                     type="button"
                                     onClick={() => setRoomPreviewId(core.activeRoomId)}
                                     data-testid="betrayal-open-active-room-preview"
-                                    className="grid h-[52px] w-[52px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
+                                    className="grid h-[40px] w-[40px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
                                     title={t('board.rooms.preview')}
                                 >
-                                    <House size={22} />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleCompleteFirstScenario}
-                                    className="grid h-[52px] w-[52px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
-                                    title="结算剧本"
-                                >
-                                    <Hourglass size={22} />
+                                    <House size={16} />
                                 </button>
                             </div>
-                            <div className="mt-4 hidden xl:block">
+                            <div className="mt-3 hidden xl:block">
                                 <div className="flex items-center gap-2">
                                     <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.18))]" />
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-[#a89d84]">
@@ -3596,55 +3247,48 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </section>
                 </main>
 
-                {referenceOpen ? (
+                <MagnifyOverlay
+                    isOpen={referenceOpen}
+                    onClose={() => setReferenceOpen(false)}
+                    overlayTestId="betrayal-reference-overlay"
+                    overlayClassName="bg-[rgba(3,6,5,0.82)] p-3 md:p-6"
+                    containerClassName="rounded-none overflow-visible bg-transparent"
+                >
                     <div
-                        className="absolute inset-0 z-30 flex items-end justify-center bg-[rgba(3,6,5,0.72)] p-3 md:items-center md:p-6"
-                        data-testid="betrayal-reference-overlay"
+                        className="pointer-events-auto relative"
+                        style={{
+                            width: REFERENCE_CARD_FRAME_WIDTH,
+                            aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
+                        }}
                     >
-                        <div className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-[980px] flex-col overflow-hidden rounded-[22px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] shadow-[0_24px_60px_rgba(0,0,0,0.46)]">
-                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#4d3f2b] bg-[rgba(16,23,20,0.98)] px-4 py-3 md:px-5">
-                                <div>
-                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
-                                        {t('board.reference.button')}
-                                    </div>
-                                    <div className="mt-1 text-sm text-[#e7dcc3]">
-                                        {t(`board.reference.${referenceSide}`)}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={toggleReferenceSide}
-                                        data-testid="betrayal-reference-toggle"
-                                        className="inline-flex items-center gap-1 rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
-                                    >
-                                        {referenceSide === 'front' ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-                                        <span>{t('board.reference.toggle')}</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setReferenceOpen(false)}
-                                        data-testid="betrayal-reference-close"
-                                        className="rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
-                                    >
-                                        {t('board.reference.close')}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="overflow-auto p-3 md:p-5">
-                                <div className="flex items-center justify-center overflow-hidden rounded-[18px] border border-[#5a4a33] bg-[rgba(10,14,12,0.82)]">
-                                    <OptimizedImage
-                                        src={referenceSide === 'front' ? ASSETS.playerReference.front : ASSETS.playerReference.back}
-                                        locale={effectiveLocale}
-                                        alt={t(`board.reference.${referenceSide}`)}
-                                        className="h-auto max-h-[72vh] w-full object-contain md:max-h-[78vh]"
-                                        draggable={false}
-                                    />
-                                </div>
-                            </div>
+                        <div className="absolute left-3 top-3 z-10 flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={toggleReferenceSide}
+                                data-testid="betrayal-reference-toggle"
+                                className="inline-flex items-center gap-1 rounded-full bg-[rgba(9,13,12,0.84)] px-3 py-1.5 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
+                            >
+                                {referenceSide === 'front' ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                                <span>{t('board.reference.toggle')}</span>
+                            </button>
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => setReferenceOpen(false)}
+                            data-testid="betrayal-reference-close"
+                            className="absolute right-3 top-3 z-10 rounded-full bg-[rgba(9,13,12,0.84)] px-3 py-1.5 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
+                        >
+                            {t('board.reference.close')}
+                        </button>
+                        <OptimizedImage
+                            src={referenceSide === 'front' ? ASSETS.playerReference.front : ASSETS.playerReference.back}
+                            locale={effectiveLocale}
+                            alt={t(`board.reference.${referenceSide}`)}
+                            className="h-full w-full object-contain shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
+                            draggable={false}
+                        />
                     </div>
-                ) : null}
+                </MagnifyOverlay>
 
                 {previewRoom && previewRoomVisual ? (
                     <div
@@ -3684,36 +3328,35 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </div>
                 ) : null}
 
-                {previewInventoryCard ? (
-                    <div
-                        className="pointer-events-none absolute left-4 top-28 z-30 w-[238px] max-w-[calc(100vw-2rem)]"
-                        data-testid="betrayal-inventory-preview-overlay"
-                    >
-                        <div className="pointer-events-auto rounded-[18px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
-                            <div className="mb-2 flex items-center justify-between gap-3">
-                                <div>
-                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
-                                        {t('board.rooms.preview')}
-                                    </div>
-                                    <div className="mt-1 text-sm text-[#e7dcc3]">
-                                        {previewInventoryCard.name}
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setInventoryPreviewCardId(null)}
-                                    data-testid="betrayal-inventory-preview-close"
-                                    className="rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
-                                >
-                                    {t('board.reference.close')}
-                                </button>
-                            </div>
-                            <div className="overflow-hidden rounded-[18px] border border-[#5a4a33] bg-[rgba(10,14,12,0.82)]">
+                <MagnifyOverlay
+                    isOpen={Boolean(previewInventoryCard)}
+                    onClose={() => setInventoryPreviewCardId(null)}
+                    overlayTestId="betrayal-inventory-preview-overlay"
+                    overlayClassName="bg-[rgba(3,6,5,0.74)] p-4 md:p-6"
+                    containerClassName="rounded-none overflow-visible bg-transparent"
+                >
+                    {previewInventoryCard ? (
+                        <div
+                            className="pointer-events-auto relative"
+                            style={{
+                                width: INVENTORY_PREVIEW_FRAME_WIDTH,
+                                aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
+                            }}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => setInventoryPreviewCardId(null)}
+                                data-testid="betrayal-inventory-preview-close"
+                                className="absolute -right-3 -top-3 z-10 rounded-full bg-[rgba(9,13,12,0.88)] px-3 py-1.5 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
+                            >
+                                {t('board.reference.close')}
+                            </button>
+                            <div className="pointer-events-none">
                                 {renderInventoryCard(previewInventoryCard, { layout: 'preview', testId: 'betrayal-inventory-preview-card' })}
                             </div>
                         </div>
-                    </div>
-                ) : null}
+                    ) : null}
+                </MagnifyOverlay>
 
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-[calc(var(--safe-area-bottom)+0.75rem)] md:hidden">
                     <div className="pointer-events-auto rounded-[18px] border border-[#5f4d31] bg-[rgba(14,20,18,0.92)] p-2 shadow-[0_16px_32px_rgba(0,0,0,0.34)] backdrop-blur-sm">

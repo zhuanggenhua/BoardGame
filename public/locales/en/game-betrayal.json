@@ -4,7 +4,9 @@
   "players": "3-6 Players",
   "board": {
     "phase": {
-      "preHaunt": "Pre-Haunt"
+      "preHaunt": "Pre-Haunt",
+      "haunt": "Haunt",
+      "endgame": "Endgame"
     },
     "sections": {
       "currentExplorer": "Current Explorer",
@@ -24,7 +26,6 @@
       "movesRemaining": "Moves {{count}}",
       "recommendedAction": "Recommended: {{action}}",
       "activeExplorer": "Active Explorer: {{name}}",
-      "previewMode": "Clickable preview",
       "selectedCard": "Selected: {{card}}",
       "noSelectedCard": "No card selected",
       "exploreTarget": "Next reveal goes to {{room}}",
@@ -41,6 +42,7 @@
       "actionCueMoveSingle": "Now: tap {{room}}",
       "actionCueMoveMany": "Now: tap a green room",
       "actionCueExplore": "Now: tap Explore for {{floor}}",
+      "actionCueExploreSelect": "Now: tap a gold doorway slot",
       "actionCueUse": "Now: tap Use",
       "actionCueUseCard": "Now: use {{card}}",
       "actionCueTrade": "Now: tap Trade",
@@ -66,10 +68,10 @@
       "button": "Scenario",
       "title": "First Scenario",
       "objectiveLabel": "Objective",
-      "objective": "Before the haunt, keep exploring rooms, draw Event/Item/Omen cards, and advance the first scenario demo to the survivor ending.",
+      "objective": "Explore before the haunt; after it begins, defeat the traitor, place two exorcism circles, and banish Jack's Spirit.",
       "statusLabel": "Current State",
       "haunt": "Haunt",
-      "hauntValue": "The Hunger",
+      "hauntValue": "Crimson Jack Returns",
       "rooms": "Discovered rooms",
       "omens": "Discarded omens"
     },
@@ -126,7 +128,7 @@
     },
     "summary": {
       "objective": "Current Objective",
-      "objectiveValue": "Pre-haunt scouting",
+      "objectiveValue": "Advance the first scenario",
       "next": "Next Step",
       "nextValue": "Prioritize {{action}}"
     },
@@ -142,7 +144,7 @@
     },
     "activity": {
       "earlierEmpty": "No earlier actions yet",
-      "idle": "Click a room or action to walk through one preview turn.",
+      "idle": "Waiting for the first action this turn.",
       "moveToRoom": "{{explorer}} moved to {{room}}",
       "exploreEvent": "{{explorer}} triggered an event card",
       "exploreCard": "{{explorer}} picked up {{card}}",
@@ -155,6 +157,7 @@
       "cardAlreadyUsed": "{{card}} has already been used this turn",
       "tradeCard": "{{from}} handed {{card}} to {{to}}",
       "chooseMoveTarget": "Choose a discovered room to move into",
+      "chooseExploreTarget": "Choose an open doorway slot to reveal a room",
       "cancelMoveTarget": "Move targeting cancelled",
       "noMoveTargets": "There is no discovered room you can move to right now",
       "noTradeTargets": "There is no teammate in the same room to trade with",

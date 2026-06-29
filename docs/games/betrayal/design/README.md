@@ -241,13 +241,19 @@
   - `v8-v12` 虽有局部收敛，但已经不再是本轮实现目标，统一只保留为过程参考。
 - 当前实现状态：
   - `src/games/betrayal/game.ts` 已接入角色选择、恶兆前运行时、终局三阶段；
+  - `src/games/betrayal/scenarioConfig.ts` 已开始承接共享 `pre-haunt` setup、首剧本配置和随机池；`game.ts` 不再把这些真相全部散写在同一层常量里；
+  - 当前剧本启动/结算命令已从首剧本专名收成通用 `START_SCENARIO / COMPLETE_SCENARIO`；这一步只完成了“多剧本骨架通道”，还不代表第二个剧本规则已经接入；
+  - 正式 domain `setup()` 当前已回到规则口径：恶兆前探索者共同从 `Entrance Hall` 起步；`createBetrayalFoundationCore()` 保留为运行时预览/测试代表态 helper，不再代表正式规则开局；
+  - 第一剧本当前已经跑通真实 `haunt`：`A Splash of Crimson` 会切到 `Haunt` 阶段，叛徒揭示、杰克之灵释放、驱魔胜利与叛徒团灭结算都已进入正式领域状态机；
   - `src/games/betrayal/Board.tsx` 已接入角色选择、运行时、终局三屏，并已把运行时从旧的抽象条形房间列表纠回 `v4` 五区结构；
-  - 运行时房间牌已经接入 `public/assets/i18n/zh-CN/betrayal/rooms/` 的真实裁片，不再用 CSS 渐变/程序纹理冒充房间牌；
+  - 运行时顶部阶段标题已改为按 `core.phase` 动态显示，首剧本 `haunt` 截图不再误写成“恶兆前”；
+  - 运行时房间牌已经改为从 `public/assets/i18n/zh-CN/betrayal/rooms/room-front-atlas.jpg`、`room-back-atlas.jpg`、`trophy-oubliette-atlas.png` 三张原始图集取图，并通过统一图片链路裁剪显示；不再使用低清索引图裁片；
   - 终局页的目标、结果、奖励、统计和叛徒败退图标已经换成探索者牌、房间牌、牌背和参考卡等真实素材，不再使用 emoji 假图标；
   - `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已覆盖首剧本命令链路；
-  - `e2e/betrayal-first-scenario.e2e.ts` 已生成三阶段真实页面截图，位置在 `evidence/betrayal-first-scenario/`；
-  - 当前截图只能证明首剧本流程可跑通、运行时方向已回到 `v4` 且核心图像不再是纯假前端；角色选择、运行时、终局均尚未达到对应设计稿的高保真最终验收。
-- 当前素材缺口：完整 `6300x5400` 房间拼版原图远端已 404，本地只剩 `contact-11-1425-1426.jpg` 缩略拼图；因此当前房间裁片清晰度和房间唯一性仍不足，后续拿到高清房间源图后应按同名资源替换。
+  - E2E 已按分段合同拆到 `e2e/betrayal/basic-flow.e2e.ts` 与 `e2e/betrayal/first-scenario.e2e.ts`；基本流程证据在 `evidence/betrayal-basic-flow/`，第一剧本证据在 `evidence/betrayal-first-scenario/`；
+  - 当前截图已经证明基本流程与第一剧本分段可跑通、运行时方向已回到 `v4` 且核心图像不再是纯假前端；角色选择、运行时、终局均尚未达到对应设计稿的高保真最终验收；
+  - 教程提案尚未开始，下一阶段再单独进入教程方案线。
+- 当前素材口径：低清索引图裁片问题已修正；后续如继续增加房间，必须继续从原始房间 atlas / 原始单图建立裁剪合同，不得回退到 `contact-*` 或其他联系表裁片。
 
 ## 当前 Step 2 自检结论
 

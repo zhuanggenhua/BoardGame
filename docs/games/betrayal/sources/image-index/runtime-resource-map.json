@@ -114,6 +114,12 @@
     "status": "runtime"
   },
   {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/omen-front-atlas.jpg",
+    "sourceFile": "temp/betrayal-omen-source-audit/copies/candidate-06.jpg",
+    "meaning": "预兆正面 atlas：3376x2550，2x5 排列；当前已按整张 atlas 接入运行时，前 9 格为真实预兆正面、右下最后 1 格为预兆牌背。当前视觉读图映射为：0 预兆书、1 狗、2 面具、3 头骨、4 圣符、5 匕首、6 指环、7 盔甲、8 雕像、9 牌背；src/games/betrayal/possessionAtlas.ts 已据此接线 omen-book / dog / mask / skull / holy-symbol / dagger / ring / armor / idol",
+    "status": "runtime"
+  },
+  {
     "target": "public/assets/i18n/zh-CN/betrayal/explorers/stephanie-richter.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993834949E013A5C2D7C03DC98E7FAFC04D9A2BFC3D414398.png",
     "meaning": "探索者：Stephanie Richter / 斯蒂芬妮·里希特",

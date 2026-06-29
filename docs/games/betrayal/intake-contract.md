@@ -63,6 +63,8 @@
 | `cards` | 12 | 牌背、玩家参考卡、中文参考卡 |
 | `explorers` | 13 | 已识别探索者角色牌 |
 | `monsters` | 3 | 已识别怪物/特殊角色卡 |
+| `tokens/explorers` | 2 | 已确认地图玩家指示物，来自 `384x336` 组 |
+| `tokens/monsters` | 2 | 已确认地图怪物 token，来自 `384x336` 组 |
 | `markers` | 28 | 数字、状态、资源标记 |
 
 资源映射真相源：`docs/games/betrayal/sources/image-index/runtime-resource-map.json`
@@ -74,6 +76,18 @@
   - 缩略图：`public/assets/i18n/zh-CN/betrayal/thumbnails/cover.png`
   - 运行时图片：`public/assets/i18n/zh-CN/betrayal/<category>/...`
 - 依据来自项目现有 `create-new-game` skill 6.6、`ManifestGameThumbnail` 测试和 `AssetLoader` 的本地化资源解析合同。
+- 当前本地素材包里已确认 `Item` 正面 atlas 与 `Omen` 正面 atlas；此前把一张无关拼页误登记成 `Omen` 正面 atlas，这个判断已撤销，并已被 `candidate-06` 真图替换：
+  - `public/assets/i18n/zh-CN/betrayal/cards/item-front-atlas.jpg` 来自原始大图 `httpssteamusercontentaakamaihdnetugc1925869443038951545DB35BA7304F2999D84979FFC9FDC379603C70853.jpg`；
+  - 当前已确认 `rope / 绳索` 使用该 atlas 第 `21` 格，运行时持有区必须显示该正面裁片；
+  - 旧的 `public/assets/i18n/zh-CN/betrayal/cards/omen-front-atlas.png` 已核图确认不是预兆牌正面拼页，不能继续使用；
+  - 现已确认真正的预兆正面 atlas 为 `public/assets/i18n/zh-CN/betrayal/cards/omen-front-atlas.jpg`，来源是 `temp/betrayal-omen-source-audit/copies/candidate-06.jpg`；
+  - 该 atlas 当前可明确识别为 `2x5` 排列，其中 `9` 格是预兆正面，右下最后 `1` 格是预兆牌背；
+  - 该 atlas 现已可按格位明确读出 `9` 张真实预兆：`omen-book / 预兆书`、`dog / 狗`、`mask / 面具`、`skull / 头骨`、`holy-symbol / 圣符`、`dagger / 匕首`、`ring / 指环`、`armor / 盔甲`、`idol / 雕像`；
+  - 当前运行时默认预兆对象族必须收敛到这 `9` 张，禁止继续保留 `watch / amulet / pendant / coin / bell / feathers / mirror-shard` 这类不属于真 atlas 的伪对象名。
+  - `contact-03-675-1275.jpg` 这组只包含牌背、玩家/叛徒/怪物参考卡；
+  - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
+  - 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 仍必须诚实显示“缺正面”，不得误接错误拼页、marker 或牌背主视觉。
+- 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替。
 
 ## 6. 明确不进运行时的素材
 
@@ -84,23 +98,38 @@
 - 含大面积黑底的拼接参考页
 - 扫描页 JPG
 - 32x32、512x512 这类当前无明确业务语义的小图
+- `contact-*`、`all-by-size-*` 这类联系表 / 索引总览图
 
 原因：这些文件还不能唯一映射到“后续代码里会直接引用的单对象资源”，混入运行时目录会污染资源真相源。
+
+补充门禁：
+
+- 大拼版原图本身不直接放入 `public/assets/**`，但可以作为正式裁切源；从它裁出的房间牌 / 楼层板必须记录原始图集、裁剪坐标和导出尺寸。
+- `contact-*`、`all-by-size-*` 只允许用于识别图面和定位候选，禁止裁成正式运行时房间牌、卡牌、角色板或地图板块。
+- 如果为了跑通流程临时引用低清索引裁片，必须在 `runtime-resource-map.json` 标成 `temporary-runtime-placeholder`，不得标为正式 `runtime`；当前运行时房间牌已换成原始图集裁剪，不能再新增低清联系表裁片。
 
 ## 7. 已确认对象
 
 - 探索者角色牌：已确认 13 张
 - 怪物/特殊角色卡：已确认 3 张
+- 探索者 / 怪物 token：当前确认 4 张，来自 `384x336` 组
+  - `tokens/explorers/jaden-jones.png`
+  - `tokens/explorers/father-warren-leung.png`
+  - `tokens/monsters/werewolf.png`
+  - `tokens/monsters/ghost.png`
 - 牌背：已确认 5 张
 - 玩家/叛徒/怪物参考卡：已确认 6 张
 - 标记：已确认 28 张
+- 物品正面 atlas：已确认 1 张；`rope / 绳索` 已确认第 `21` 格
 
 ## 8. 待确认对象
 
 - 大拼版中的房间板块
 - 楼层总览图与房屋楼层板
+- 预兆正面 atlas 已确认，且当前运行时默认预兆对象族已收敛到 atlas 对应的 9 张真实预兆
 - 扫描 PDF 对应的规则书、剧本书、参考书具体分工
-- 尚未进入白名单的头像/模型/局部标记图
+- 剩余探索者 token、其它怪物 token、状态 token 仍需逐类审查；不得再笼统写成“头像/模型/局部标记图待确认”
+- 其它物品正面与预兆正面仍需逐格确认；未确认前只允许显示对象名 + 类别 + `缺正面` 短状态
 
 ## 9. 后续实施入口
 

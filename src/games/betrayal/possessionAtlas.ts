@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react';
 import {
     computeSpriteImgStyle,
-    generateUniformAtlasConfig,
     type SpriteAtlasConfig,
 } from '../../engine/primitives/spriteAtlas';
 import type { BetrayalInventoryCard } from './game';
@@ -17,6 +16,8 @@ export const BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS = [
     'betrayal/cards/omen-front-atlas',
 ];
 
+export const BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO = 675 / 1275;
+
 const ITEM_FRONT_ATLAS: SpriteAtlasConfig = {
     imageW: 5400,
     imageH: 3826,
@@ -28,7 +29,22 @@ const ITEM_FRONT_ATLAS: SpriteAtlasConfig = {
     rowHeights: [1217, 1217, 1212],
 };
 
-const OMEN_FRONT_ATLAS = generateUniformAtlasConfig(3084, 3072, 2, 5);
+const OMEN_FRONT_ATLAS: SpriteAtlasConfig = {
+    imageW: 3376,
+    imageH: 2550,
+    frames: [
+        { x: 0, y: 0, width: 675, height: 1275 },
+        { x: 675, y: 0, width: 675, height: 1275 },
+        { x: 1350, y: 0, width: 675, height: 1275 },
+        { x: 2025, y: 0, width: 675, height: 1275 },
+        { x: 2700, y: 0, width: 676, height: 1275 },
+        { x: 0, y: 1275, width: 675, height: 1275 },
+        { x: 675, y: 1275, width: 675, height: 1275 },
+        { x: 1350, y: 1275, width: 675, height: 1275 },
+        { x: 2025, y: 1275, width: 675, height: 1275 },
+        { x: 2700, y: 1275, width: 676, height: 1275 },
+    ],
+};
 
 const buildItemVisual = (frameIndex: number): BetrayalPossessionAtlasVisual => ({
     image: 'betrayal/cards/item-front-atlas',
@@ -57,9 +73,20 @@ const POSSESSION_FRONT_VISUALS: Record<string, BetrayalPossessionAtlasVisual> = 
     'holy-water': buildItemVisual(2),
     radio: buildItemVisual(9),
     'omen-book': buildOmenVisual(0),
+    dog: buildOmenVisual(1),
     mask: buildOmenVisual(2),
+    skull: buildOmenVisual(3),
+    'holy-symbol': buildOmenVisual(4),
+    dagger: buildOmenVisual(5),
     ring: buildOmenVisual(6),
+    armor: buildOmenVisual(7),
+    idol: buildOmenVisual(8),
 };
+
+// 当前已确认两张正式正面 atlas：
+// - item-front-atlas：物品正面
+// - omen-front-atlas：预兆正面 candidate-06，对应 9 张正面 + 1 张牌背
+//   0 书本、1 狗、2 面具、3 头骨、4 圣符、5 匕首、6 指环、7 盔甲、8 雕像、9 牌背
 
 export function resolvePossessionAtlasVisual(card: BetrayalInventoryCard): BetrayalPossessionAtlasVisual | null {
     const normalizedCardId = card.id

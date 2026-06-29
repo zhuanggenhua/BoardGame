@@ -513,6 +513,12 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - `reference`：只作为规则、帮助、剧本或人工核对资料，允许进入明确的 `aids/` 或留在 `rule/` / `evidence/`，但不得被当成运行时对象。
    - `candidate`：可能有用但规则依据不足，只能登记到 `temp/<gameId>-intake/` 或清单里，禁止进正式运行时目录。
    - `excluded`：TTS/Workshop 材质色块、编辑器占位图、无规则对象对应的贴图、重复导出、下载站装饰图等，必须写排除原因，禁止压缩、上传和引用。
+   - 若源文件本身是**大拼版图、扫描页、整页说明卡、整版房间板块、整版楼层板或多对象 atlas 原图**，默认只能先判为 `candidate` 或 `reference`；只有裁成“代码会直接引用的单对象运行时资源”后，才允许升格为 `runtime`。
+   - 若素材盘点中出现成组的小图、头像、棋子图、怪物圆片、人物立绘裁片、状态 token 或 `384x336 / 450x450` 这类高频 token 尺寸组，必须把该尺寸组单独做一轮视觉联系表审查；不能只把大角色板、怪物卡、牌背列进白名单后，把这些小图笼统写成“尚未确认”。
+   - 若用户后续补充或点名某个素材文件、文件名哈希或素材目录，必须回到该文件所在的尺寸组 / 同族素材重新做 intake；不得继续沿用旧的“未确认 / 未找到”结论。
+   - 只要规则或剧本里出现 `figure / pawn / standee / monster token / hero token / small monster token / stunned token / 状态 token` 等进入地图、棋盘、角色板或怪物卡的承载物，对应头像/token 小图默认进入 `runtime` 候选审查；若不接入，必须逐类写明规则不需要、MVP 不需要或素材无法对应的原因。
+   - 玩家在地图上的位置、怪物在房间里的位置、状态 token 在角色板/怪物卡上的位置，属于运行时主体验承载；不得只接入角色整板/怪物整卡，然后在 UI 里用文字缩写、无关 marker 或临时圆点代替这些头像/token。
+   - 持有区、手牌区、装备区里的卡牌必须能让玩家直接识别对象；若存在正式正面图或正面 atlas，必须优先接正面图。若当前确实缺正面，只允许显示弱化牌背底纹 + 大号对象名 + 短状态（如“缺正面”），并在资源缺口文档中记录；禁止把统一牌背当成主画面后再靠小字让玩家猜。
 3. **正式目录只接收白名单资源**
    - 进入 `public/assets/i18n/<locale>/<gameId>` 的文件，必须在准入表中有 `runtime` 或明确的 `reference` 状态。
    - 新游戏不得默认把正式图片放入顶层 `public/assets/<gameId>`；确需使用历史兼容落点时，必须先说明 `asset-pipeline` 依据和运行时加载链路。
@@ -528,9 +534,10 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 
 ### 准入表最低字段
 
-`sourceFile | sourceSize | visualLabel | ruleRef | requiredComponent | intakeStatus | targetPath | canonicalName | decisionReason | reviewerNotes`
+`sourceFile | sourceSize | dimensionGroup | visualLabel | ruleRef | requiredComponent | carrierRole | intakeStatus | targetPath | canonicalName | decisionReason | reviewerNotes`
 
 其中 `intakeStatus` 只能是 `runtime`、`reference`、`candidate`、`excluded`。缺少 `ruleRef` 或 `decisionReason` 的文件，默认不能进入正式运行时目录。
+`carrierRole` 用来记录该素材的现实承载角色，例如 `card-front`、`card-back`、`character-board`、`figure-avatar`、`monster-token`、`status-token`、`room-tile`、`reference-card`；如果无法判断，必须先留在 `candidate`。
 
 ## 前置 1.4：规则 PDF 转 Markdown 与可行性评估（强制前置）
 
@@ -546,6 +553,8 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - 生成 `temp/<gameId>-intake/image-inventory.tsv` 或等价清单，至少包含原文件名、尺寸、类型、疑似用途。
    - 先按 `前置 1.3` 生成正式资源准入白名单；只有 `runtime` 或明确 `reference` 的图片，才允许按本 skill 的资源目录与语义命名落正式目录。
    - 不能可靠识别、不能对应规则配件表或当前 MVP 不需要的图片，只登记为 `candidate` / `excluded`，不强行命名，不移动到正式资源树。
+   - 若当前图片是房间拼版、楼层拼版、扫描页或多对象整版，必须先写“单对象裁切合同”；在未裁到单对象前，不得把该整版图片直接宣称为“正式素材已齐”。
+   - 若盘点摘要发现某个尺寸组数量异常高，或肉眼可见包含头像/token/怪物圆片/状态圆片，必须生成并打开该尺寸组的联系表或分块图；准入表里要逐类记录哪些进入 `runtime`，哪些降为 `candidate/excluded`，不得只写“主要是小图，待确认”。
 3. **资源闭环**
    - 正式图片落盘后运行最小必要压缩命令。
    - 压缩前再次确认正式目录没有 `candidate/excluded` 文件。

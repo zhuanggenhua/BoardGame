@@ -3705,10 +3705,10 @@
     },
     "zh-CN/betrayal/cards/omen-front-atlas": {
       "variants": {
-        "png": {
-          "sha256": "2d9ce3fdd511b290370fed02f1adb221955cda7717ab2ef6ef0ae7bd99b014a0",
-          "bytes": 9873144,
-          "mime": "image/png"
+        "jpg": {
+          "sha256": "c09e88ad93036f59022bdffa00ffcc1f21609a599bbfd95add26ceab6325573f",
+          "bytes": 9403532,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -4630,6 +4630,15 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/explorers/compressed/darryl-highla": {
+      "variants": {
+        "webp": {
+          "sha256": "5bfd4523a43ef7296b7fa4ea2875407453e51bd1906589cc06ffea08efbd268f",
+          "bytes": 32362,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung": {
       "variants": {
         "webp": {
@@ -4648,6 +4657,24 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/explorers/compressed/rebecca-allen": {
+      "variants": {
+        "webp": {
+          "sha256": "839f6f5e6f18c128d8b811c36251f1509e5d5a80e9f5209a1033400f4ae4e4c9",
+          "bytes": 28626,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/darryl-highla": {
+      "variants": {
+        "png": {
+          "sha256": "01ae314b17d9e4171f383157d25035754259ca291a9a6148e3f5ff204011bd7f",
+          "bytes": 172547,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/explorers/father-warren-leung": {
       "variants": {
         "png": {
@@ -4662,6 +4689,15 @@
         "png": {
           "sha256": "ea8107afca3938d5eaeb1f19b5069cc3c2f057a064b295571c744b23df986c65",
           "bytes": 176084,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/rebecca-allen": {
+      "variants": {
+        "png": {
+          "sha256": "6d81a0f09e6a882d01d34cb29447de714996046a91c5a25e2fbc2f8d6aedfd2f",
+          "bytes": 163003,
           "mime": "image/png"
         }
       }
