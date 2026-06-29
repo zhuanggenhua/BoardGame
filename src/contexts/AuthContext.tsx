@@ -234,6 +234,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 联动监控服务：标识用户信息（Sentry 异步加载，不阻塞首屏）
     useEffect(() => {
+        if (!import.meta.env.PROD) {
+            return;
+        }
         void import('@sentry/react').then((Sentry) => {
             if (user) {
                 Sentry.setUser({

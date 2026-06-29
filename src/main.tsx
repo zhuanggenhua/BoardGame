@@ -88,7 +88,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-if (SENTRY_DSN) {
+if (import.meta.env.PROD && SENTRY_DSN) {
   void import('@sentry/react').then((Sentry) => {
     Sentry.init({
       dsn: SENTRY_DSN,
