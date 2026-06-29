@@ -160,19 +160,20 @@
 
 ### 当前收口判定
 
-- 以当前证据看，`feat/game-betrayal` 已经满足“形成一笔专项收口提交”的前提：
-  - `OpenSpec` 通过；
-  - 第一剧本规则 / 板级单测通过；
-  - 教程 / manifest / 生命周期 / 动作条相关单测通过；
-  - 7 条真实 E2E 串行通过；
-  - 说明文档与证据目录已同步更新。
-- 还没发生的事情只有两件：
-  - 还没有正式执行 `git add / git commit`；
-  - 还没有进入 `main` 分支级内容归并。
-- 因此当前最准确的口径是：
-  - **已经可提交；**
-  - **尚未提交；**
-  - **更未 merge。**
+- 以当前证据看，`feat/game-betrayal` 的专项收口提交已经形成：
+  - 提交：`ddfd7e03 完成山屋惊魂第一剧本运行时与基础教程收口`
+  - 这笔提交之前已经确认：
+    - `OpenSpec` 通过；
+    - 第一剧本规则 / 板级单测通过；
+    - 教程 / manifest / 生命周期 / 动作条相关单测通过；
+    - 7 条真实 E2E 串行通过；
+    - 说明文档与证据目录已同步更新。
+- 还没发生的事情现在只剩一件：
+  - **还没有进入 `main` 的分支级内容归并。**
+- 因此当前最准确的口径应更新为：
+  - **专项收口已提交；**
+  - **尚未 merge；**
+  - **下一步是内容级归并，而不是继续补收口提交。**
 
 ### 当前共享层特别说明
 
@@ -182,8 +183,8 @@
 ### 当前可以直接下的结论
 
 - 如果只问“这棵专项树现在是不是已经证明了第一剧本 + 首轮教程能跑”，答案是：**是，证据已经足够。**
-- 如果只问“现在离提交还差的是不是业务 bug”，答案是：**不是。当前差的是把已证明通过的专项改动整理成清晰可提交集合。**
-- 如果问“现在能不能直接在 `main` 上开始手工消冲突”，答案是：**不能。要先在专项树里形成一笔可回看的收口提交，再做分支级归并。**
+- 如果只问“现在离提交还差的是不是业务 bug”，答案是：**不是。专项收口提交已经完成。**
+- 如果问“现在能不能直接在 `main` 上开始手工消冲突”，答案是：**可以开始做分支级内容归并预备，但仍不应直接在根目录 `main` 脏工作区上动手 merge。**
 
 ## 当前这次分支级实际冲突面
 
@@ -194,10 +195,20 @@
   - `d95d6066`：以 `qidahen / fantasyrealms / HomeV2 / 移动发布脚本` 为主
   - `a88352c2`：以 `qidahen / fantasyrealms` 的推送门禁修复为主
 - 当前 `feat/game-betrayal` 相对 merge-base 的专项提交，主要都在 `betrayal` 目录、自身 E2E、资源、OpenSpec 和少量共享接线。
-- 真正需要做**双边内容归并**的分支级重叠文件，目前只有 2 个：
+- 从 `merge-tree` 预检结果看，当前至少有 3 处共享主题必须重点归并：
   - `docs/ai-rules/ui-ux.md`
   - `vite.config.ts`
+  - `src/pages/useMatchRoomTutorialLifecycle.tsx`
 - 当前根目录 `main` 工作区里看到的 `qidahen` 脏改，只是当前工作区未提交修改，不属于 `main` 已提交历史；它们会影响“你在哪棵树上实际执行 merge 命令”，但**不是**这次 `main <-> feat/game-betrayal` 的分支级文本冲突主体。
+- `merge-tree` 还显示若干共享文件会进入“双方都改”的自动归并路径，例如：
+  - `src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx`
+  - `src/components/game/framework/ActionBarSkeleton.tsx`
+  - `src/components/game/framework/types.ts`
+  - `src/engine/types.ts`
+  - `src/engine/systems/CheatSystem.ts`
+  - `src/engine/transport/onlineAiRecovery.ts`
+  - `public/locales/{en,zh-CN}/game-betrayal.json`
+- 这些文件不一定都会形成手工冲突块，但已经证明“实际归并面”比最初两处更宽，不能再按“两文件收口”来低估 merge 工作量。
 
 ## 当前这次两处共享重叠的现实含义
 
@@ -234,13 +245,30 @@
     - `betrayal` 的最小 E2E 还能正常起服务；
     - Android/iOS build 相关路径没有被 `betrayal` 的旧配置打掉。
 
+### 3. `src/pages/useMatchRoomTutorialLifecycle.tsx`
+
+- `main` 这边已有的语义是：
+  - 用 `lastTutorialProgressRef` 记录 `manifestId + stepId`；
+  - 防止子教程切换后错误复用“上一条教程已完成”的状态；
+  - 对应测试已经覆盖“子教程切换后应重新启动”“完成后返回上一页”等行为。
+- `feat/game-betrayal` 这边新增的语义是：
+  - 引入 `latestTutorialLifecycleMountId` 与 `lifecycleMountIdRef`；
+  - 防止 StrictMode / 路由切换时，旧实例的延迟清理把新教程误关掉；
+  - 对应新增测试覆盖“旧实例延迟清理不能误关新教程”。
+- `merge-tree` 已显示这里存在真实文本冲突苗头，而不是单纯的自动无痛归并。
+- 现实判断：
+  - 两边修的不是同一件小事，而是教程生命周期的两种不同错误面；
+  - 真 merge 时必须双保留：既保住 `manifestId + stepId` 的跨教程判断，也保住 `mountId` 的延迟清理隔离；
+  - 验收位点必须回到 `useMatchRoomTutorialLifecycle.test.tsx` 与 `betrayal-tutorial.e2e.ts`，不能只看代码编译通过。
+
 ## 当前这次最小风险 merge 顺序
 
 1. 先在 `feat/game-betrayal` 里把专项未提交改动收口并提交。
 2. 不要在当前根目录 `main` 的脏工作区上直接 merge；要先保证执行 merge 的那棵树本身没有无关未提交改动干扰。
-3. 合并时把注意力只放在两类对象：
+3. 合并时把注意力至少放在三类对象：
    - `betrayal` 专项正文：默认以 `feat/game-betrayal` 为真相源；
-   - `ui-ux.md` 与 `vite.config.ts`：按上面的现实语义做双保留归并。
+   - `ui-ux.md` 与 `vite.config.ts`：按上面的现实语义做双保留归并；
+   - `useMatchRoomTutorialLifecycle.tsx`：双保留“教程切换判定”与“旧实例延迟清理隔离”。
 4. 归并后先跑 `betrayal` 最小真实回归，不要上来就全仓大回归：
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
@@ -253,9 +281,10 @@
 ## 当前对“合并冲突怎么处理”的直接结论
 
 - `docs/games/betrayal/**`、`src/games/betrayal/**`、`e2e/betrayal/**`、`evidence/betrayal**/**` 这类 `betrayal` 专项正文，如果和 `main` 冲突，默认先保专项 worktree 的业务真相，再看 `main` 是否有额外独有信息要补带。
-- `docs/ai-rules/ui-ux.md` 与 `vite.config.ts` 已确认不是二选一冲突，默认动作是双边内容归并：
+- `docs/ai-rules/ui-ux.md`、`vite.config.ts`、`src/pages/useMatchRoomTutorialLifecycle.tsx` 都不能二选一，默认动作都是双边内容归并：
   - `ui-ux.md`：两边新增的是不同门禁，默认双保留并重排，不选单边覆盖；
   - `vite.config.ts`：保留 `main` 的 Android/iOS 裁剪与 `three-stdlib` alias，同时保留 `betrayal` 所需接线，不回退任何一边的现实能力。
+  - `useMatchRoomTutorialLifecycle.tsx`：保留 `main` 的教程切换完成态判断，同时保留 `betrayal` 这边的旧实例延迟清理隔离。
 - 共享层一旦出现同文件冲突，不能只看冲突标记选 `ours/theirs`；必须先回答“这边修的是哪个现实语义、另一边修的是哪个现实语义、最终保留后回哪个真实入口验证”。
 - 当前不建议直接在根目录 `main` 上手工消冲突；正确顺序仍然是：先在 `betrayal` 专项树里收口并提交，再基于已提交真相去做分支级归并。
 
