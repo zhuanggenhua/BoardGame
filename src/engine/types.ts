@@ -385,6 +385,12 @@ export interface TutorialManifest {
     allowManualSkip?: boolean;
     randomPolicy?: TutorialRandomPolicy;
     /**
+     * 教程运行时需要的真实玩家人数。
+     *
+     * 默认不填时回退到引擎最小人数；像 3 人教程这种不能再靠页面层硬编码猜测。
+     */
+    numPlayers?: number;
+    /**
      * 步骤前置条件校验器（通用防卡住机制）
      *
      * 引擎在两个时机调用：

@@ -146,7 +146,9 @@ export function buildMatchRoomTutorialBoardRuntimeModel(args: {
         tutorialId: stage.tutorialId,
         board: stage.board,
         engineConfig: stage.engineConfig,
-        numPlayers: gameId === 'fantasyrealms' ? 3 : 2,
+        numPlayers: stage.tutorialManifest?.numPlayers
+            ?? stage.engineConfig.minPlayers
+            ?? 2,
         onCommandRejected: stage.onCommandRejected,
         title: tLobby('matchRoom.title.tutorial'),
         preparingDescription: tLobby('matchRoom.preparingMatch'),

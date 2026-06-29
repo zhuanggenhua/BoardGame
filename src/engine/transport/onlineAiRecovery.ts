@@ -461,37 +461,6 @@ export function buildMultistepChoiceMetaSemanticSignature(meta: unknown): string
     });
 }
 
-export function buildPendingDamageSemanticSignature(pendingDamage: unknown): string {
-    if (!pendingDamage || typeof pendingDamage !== 'object') {
-        return '';
-    }
-
-    const raw = pendingDamage as Record<string, unknown>;
-    return JSON.stringify({
-        id: typeof raw.id === 'string' ? raw.id : null,
-        responderId: typeof raw.responderId === 'string' ? raw.responderId : null,
-        responseType: typeof raw.responseType === 'string' ? raw.responseType : null,
-        currentDamage: typeof raw.currentDamage === 'number' ? raw.currentDamage : null,
-        sourceAbilityId: typeof raw.sourceAbilityId === 'string' ? raw.sourceAbilityId : null,
-        tokenUsageTotals: raw.tokenUsageTotals ?? null,
-    });
-}
-
-export function buildPendingBonusDiceSettlementSemanticSignature(settlement: unknown): string {
-    if (!settlement || typeof settlement !== 'object') {
-        return '';
-    }
-
-    const raw = settlement as Record<string, unknown>;
-    return JSON.stringify({
-        id: typeof raw.id === 'string' ? raw.id : null,
-        attackerId: typeof raw.attackerId === 'string' ? raw.attackerId : null,
-        displayOnly: raw.displayOnly === true ? true : null,
-        rerollCount: typeof raw.rerollCount === 'number' ? raw.rerollCount : null,
-        dice: raw.dice ?? null,
-    });
-}
-
 export function buildInteractionRecoveryFingerprintHint(
     state: MatchState<unknown>,
     interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction | null | undefined,

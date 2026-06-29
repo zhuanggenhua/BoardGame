@@ -30,6 +30,7 @@
       "noSelectedCard": "No card selected",
       "exploreTarget": "Next reveal goes to {{room}}",
       "tradeTarget": "Trade with: {{player}}",
+      "lootTarget": "Loot {{player}}'s corpse",
       "noTradeTargets": "No teammate is in the same room",
       "turnHintMove": "Reach: {{targets}}",
       "turnHintExplore": "Reveal: {{floor}}",
@@ -37,6 +38,11 @@
       "focusMoveTarget": "Next: {{room}}",
       "focusMoveMode": "Only left: {{room}}",
       "focusTradeTarget": "Trade with: {{player}}",
+      "focusLearnAboutJack": "Study Jack",
+      "focusStudyExorcism": "Study circle",
+      "focusExorciseJack": "Exorcise Jack",
+      "focusAttackTraitor": "Attack traitor",
+      "focusAttackHero": "Attack {{player}}",
       "focusUseCard": "Use: {{card}}",
       "actionCueMoveMode": "Now: tap a green room",
       "actionCueMoveSingle": "Now: tap {{room}}",
@@ -47,6 +53,11 @@
       "actionCueUseCard": "Now: use {{card}}",
       "actionCueTrade": "Now: tap Trade",
       "actionCueTradePlayer": "Now: trade with {{player}}",
+      "actionCueLearnAboutJack": "Now: study Jack",
+      "actionCueStudyExorcism": "Now: study the circle",
+      "actionCueExorciseJack": "Now: exorcise Jack",
+      "actionCueAttackTraitor": "Now: attack the traitor",
+      "actionCueAttackHero": "Now: attack {{player}}",
       "actionCueEndTurn": "Now: tap End Turn",
       "usePreview": "Use: {{effect}}",
       "cardUsedThisTurn": "Used this turn",
@@ -80,7 +91,12 @@
       "cancelMove": "Cancel Move",
       "explore": "Explore",
       "trade": "Trade",
+      "loot": "Loot",
       "use": "Use",
+      "learnAboutJack": "Study Jack",
+      "studyExorcism": "Study Circle",
+      "exorciseJack": "Exorcise",
+      "attack": "Attack",
       "endTurn": "End Turn"
     },
     "traits": {
@@ -124,7 +140,8 @@
     "players": {
       "inventoryCount": "Holding {{count}}",
       "sameRoom": "Same room",
-      "tradeTarget": "Trade target"
+      "tradeTarget": "Trade target",
+      "corpse": "Corpse"
     },
     "summary": {
       "objective": "Current Objective",
@@ -169,5 +186,53 @@
   },
   "errors": {
     "readOnly": "This is a read-only foundation skeleton. Gameplay commands are not enabled yet."
+  },
+  "tutorial": {
+    "basicSetup": {
+      "title": "Setup and Core Loop",
+      "description": "Start from the real character select screen and learn the basic pre-haunt entry points.",
+      "steps": {
+        "selectExplorer": "Start by choosing an explorer on the real character select screen. This is not a tutorial-only page.",
+        "confirmStart": "Use this button to confirm your explorer. Once confirmed, the match continues through the normal opening flow.",
+        "startScenario": "When everyone is ready, start the real first scenario from the same entry point.",
+        "runtimeOverview": "These five buttons are the core runtime actions: move, explore, trade, use, and end turn.",
+        "inventoryAndHelp": "The lower-left area is your real inventory. Tap a card to zoom it. The reference card is only a help entry, not the main UI.",
+        "roomBoard": "The central room board is the main play area. Read this first, then decide where to move or explore.",
+        "finish": "This chapter only locks the real entry points. The next short chapters cover move, explore, use, and the first haunt goal."
+      }
+    },
+    "moveExploreUse": {
+      "title": "Move, Explore, and Use",
+      "description": "Walk through one real pre-haunt sequence of using an item, moving, and exploring.",
+      "steps": {
+        "setupRuntime": "The next steps jump into a real pre-haunt runtime state for the first scenario.",
+        "useRope": "Use the rope first. It grants extra movement so you can keep the room exploration going.",
+        "moveToGrandStaircase": "Now move to the Grand Staircase. Green targets are real reachable rooms, not tutorial overlays.",
+        "exploreUpper": "Then use Explore to reveal the next room. Exploration really triggers an event, item, or omen.",
+        "finish": "You have now walked through a real use -> move -> explore sequence. That is the normal runtime rhythm."
+      }
+    },
+    "crimsonJack": {
+      "title": "Crimson Jack Objective",
+      "description": "Explain what the heroes and the traitor are trying to do once the first haunt begins.",
+      "steps": {
+        "setupHaunt": "This chapter jumps directly into a real haunt state for the first scenario.",
+        "hauntReveal": "The first haunt is Crimson Jack Returns. Once the haunt starts, the revealer becomes the traitor.",
+        "heroGoal": "The hero line has three goals: learn about Jack, study two exorcism circles, then banish Jack's Spirit.",
+        "traitorGoal": "The traitor wants to kill the heroes, or return to life through Jack's Spirit. The board and actions stay on the same real page.",
+        "finish": "You should now understand that this haunt is driven by investigation, circles, and Jack's Spirit, not just combat."
+      }
+    },
+    "hauntActions": {
+      "title": "Haunt Actions and Finish",
+      "description": "Use a real endgame-ready haunt state to review help, haunt actions, and the true finish.",
+      "steps": {
+        "setupReadyToExorcise": "This chapter jumps to a real state where the heroes are ready to finish the exorcism.",
+        "helpEntry": "If you need to re-read the printed aid, open it here. The help entry stays lightweight and does not replace the action bar.",
+        "hauntActions": "The haunt-specific actions still live in the real bottom action row: learn, study, exorcise, and attack when needed.",
+        "exorciseJack": "Execute the real exorcise action now. A success leads straight into the actual endgame screen.",
+        "endgameReview": "This is the real hero-side finish for the first scenario, not a tutorial-only end screen."
+      }
+    }
   }
 }

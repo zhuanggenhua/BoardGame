@@ -31,6 +31,7 @@
       "noSelectedCard": "未选卡牌",
       "exploreTarget": "下一块会翻到 {{room}}",
       "tradeTarget": "可交易给：{{player}}",
+      "lootTarget": "可搜刮：{{player}}的尸体",
       "noTradeTargets": "当前没有同房间队友",
       "turnHintMove": "可前往：{{targets}}",
       "turnHintExplore": "可翻：{{floor}}",
@@ -38,6 +39,11 @@
       "focusMoveTarget": "下一站：{{room}}",
       "focusMoveMode": "只剩：{{room}}",
       "focusTradeTarget": "交易给：{{player}}",
+      "focusLearnAboutJack": "调查杰克",
+      "focusStudyExorcism": "研究法阵",
+      "focusExorciseJack": "驱散杰克之灵",
+      "focusAttackTraitor": "攻击叛徒",
+      "focusAttackHero": "攻击{{player}}",
       "focusUseCard": "使用：{{card}}",
       "actionCueMoveMode": "现在：点绿色房间",
       "actionCueMoveSingle": "现在：点{{room}}",
@@ -48,6 +54,11 @@
       "actionCueUseCard": "现在：点使用{{card}}",
       "actionCueTrade": "现在：点交易",
       "actionCueTradePlayer": "现在：点交易给{{player}}",
+      "actionCueLearnAboutJack": "现在：点调查杰克",
+      "actionCueStudyExorcism": "现在：点研究法阵",
+      "actionCueExorciseJack": "现在：点驱散杰克之灵",
+      "actionCueAttackTraitor": "现在：点攻击叛徒",
+      "actionCueAttackHero": "现在：点攻击{{player}}",
       "actionCueEndTurn": "现在：点结束回合",
       "usePreview": "使用：{{effect}}",
       "cardUsedThisTurn": "本回合已用",
@@ -81,7 +92,12 @@
       "cancelMove": "取消移动",
       "explore": "探索",
       "trade": "交易",
+      "loot": "搜尸",
       "use": "使用",
+      "learnAboutJack": "调查杰克",
+      "studyExorcism": "研究法阵",
+      "exorciseJack": "驱魔",
+      "attack": "攻击",
       "endTurn": "结束回合"
     },
     "traits": {
@@ -125,7 +141,8 @@
     "players": {
       "inventoryCount": "持有 {{count}}",
       "sameRoom": "同房间",
-      "tradeTarget": "交易对象"
+      "tradeTarget": "交易对象",
+      "corpse": "尸体"
     },
     "summary": {
       "objective": "当前目标",
@@ -170,5 +187,53 @@
   },
   "errors": {
     "readOnly": "当前是只读 foundation skeleton，尚未开放正式玩法命令。"
+  },
+  "tutorial": {
+    "basicSetup": {
+      "title": "开局与主循环",
+      "description": "从真实角色选择进入恶兆前牌桌，先看懂这局最基本的入口。",
+      "steps": {
+        "selectExplorer": "先在真实角色选择页挑一个探索者。这里不是教程假页，后面正式开局时也是从这里进。",
+        "confirmStart": "点这里确认当前探索者。确认后这名角色就会锁给你，本局会按正式开局继续。",
+        "startScenario": "所有人准备好后，还是在同一个真实入口点开始，进入第一剧本的恶兆前运行时。",
+        "runtimeOverview": "进入牌桌后，底部 5 个主动作就是这局的常用入口：移动、探索、交易、使用、结束回合。",
+        "inventoryAndHelp": "左下是真实持有区，点卡可以放大；右侧的参考卡入口只负责查看帮助，不替代主界面信息。",
+        "roomBoard": "中间这块房间牌桌才是主视区。你先看这里，再决定移动、探索或和同房间队友互动。",
+        "finish": "这一章只先锁定真实入口。接下来再用短章分别讲移动、探索、使用，以及第一剧本的 haunt 目标。"
+      }
+    },
+    "moveExploreUse": {
+      "title": "移动、探索与使用",
+      "description": "直接在真实恶兆前运行时里走完一次使用物品、移动和探索。",
+      "steps": {
+        "setupRuntime": "下面这几步会直接落在第一剧本的真实恶兆前局面，不额外造教程专用牌桌。",
+        "useRope": "先用绳索。它会给你额外移动，让你能更顺地继续推进房间探索。",
+        "moveToGrandStaircase": "现在走到楼梯间。绿色目标代表当前真实可达房间，不是说明图层。",
+        "exploreUpper": "接着点探索，让房间继续翻开。探索会真的触发事件、物品或预兆，而不是只播一段教学动画。",
+        "finish": "你现在已经走过一次真实的“使用物品 -> 移动 -> 探索”链路。后面正式游玩时，基本节奏也是这样推进。"
+      }
+    },
+    "crimsonJack": {
+      "title": "Crimson Jack 剧本目标",
+      "description": "讲清第一剧本从 haunt 开始后，英雄和叛徒各自要做什么。",
+      "steps": {
+        "setupHaunt": "这一章直接切到第一剧本已经进入 haunt 的真实局面，这样不用靠口头假设来讲规则。",
+        "hauntReveal": "第一剧本是 Crimson Jack Returns。触发 haunt 后，揭示者会成为叛徒，后面的目标也会按剧本分流。",
+        "heroGoal": "英雄线的目标是三件事：先调查杰克，再研究两处驱魔法阵，最后去驱散杰克之灵。",
+        "traitorGoal": "叛徒线则想杀光英雄，或者借杰克之灵重新恢复肉身。房间、移动和攻击都还是同一张真实牌桌。",
+        "finish": "到这里你应该已经知道这剧本不是单纯互殴，而是围绕调查、法阵与杰克之灵展开的双线目标。"
+      }
+    },
+    "hauntActions": {
+      "title": "Haunt 动作与收尾",
+      "description": "从真实的第一剧本收官局面，看到帮助入口、haunt 动作和终局收尾。",
+      "steps": {
+        "setupReadyToExorcise": "现在直接跳到英雄已经准备好驱魔的真实局面。这样能聚焦最后一段关键动作，而不是重复前置步骤。",
+        "helpEntry": "需要复查术语时，从这里打开参考卡。帮助入口只是轻量查看，不会替代底部真实动作按钮。",
+        "hauntActions": "haunt 后真正关键的动作都还在底部：调查杰克、研究法阵、驱魔，以及必要时的攻击。",
+        "exorciseJack": "现在执行真实的驱魔动作。成功后会直接进入正式终局，而不是跳到教程专用结算页。",
+        "endgameReview": "这就是第一剧本英雄线的真实收尾。你看到的终局页，就是后续正式跑通首剧本时会落到的结果页。"
+      }
+    }
   }
 }

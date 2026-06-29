@@ -116,7 +116,9 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const fallbackTimerRef = useRef<number | undefined>(undefined);
     const toast = useToast();
     const toastRef = useRef(toast);
-    toastRef.current = toast;
+    useEffect(() => {
+        toastRef.current = toast;
+    }, [toast]);
 
     const bindDispatch = useCallback((dispatch: DispatchFn) => {
         // 清除兜底 timer（正常路径：bindDispatch 被调用）
@@ -163,8 +165,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         executedAiStepsRef.current = new Set();
         
-        // 如果 controller 已就绪（Board 已挂载且 bindDispatch 已执行），直接启动。
-        if (controllerRef.current) {
+        // 只有当前 Board 已真正挂载时，才允许直接使用现成 controller。
+        // 路由切换瞬间可能仍残留上一页的 controller，此时必须转为 pending，
+        // 等新的 TutorialDispatchBridge / Board 重新接线后再启动。
+        if (controllerRef.current && isBoardMounted) {
             controllerRef.current.start(manifest);
             pendingStartRef.current = null;
             return;
@@ -186,7 +190,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 toastRef.current.error('教程加载超时，请刷新页面重试');
             }
         }, 10000);
-    }, []);
+    }, [isBoardMounted]);
 
     const nextStep = useCallback((reason?: TutorialNextReason) => {
         controllerRef.current?.next(reason);
@@ -224,6 +228,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     useEffect(() => {
         if (!tutorial.active || !tutorial.step || !hasAiActions(tutorial.step)) return;
         if (!isControllerReady) return;
+        if (!isBoardMounted) return;
 
         const stepId = tutorial.step.id;
         if (executedAiStepsRef.current.has(stepId)) return;
@@ -279,7 +284,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // 不返回 cleanup 函数 — timer 通过 aiTimerRef 管理
         // 只在新步骤的 AI actions 需要执行时才清除旧 timer
-    }, [tutorial, isControllerReady]);
+    }, [tutorial, isControllerReady, isBoardMounted]);
 
     const value = useMemo<TutorialContextType>(() => {
         const currentStep = tutorial.step ?? tutorial.steps[tutorial.stepIndex] ?? null;
@@ -329,8 +334,12 @@ export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: stri
     // 用 ref 保持最新的 context 和 dispatch，供挂载时的 effect 使用
     const contextRef = useRef(context);
     const dispatchRef = useRef(dispatch);
-    contextRef.current = context;
-    dispatchRef.current = dispatch;
+    useEffect(() => {
+        contextRef.current = context;
+    }, [context]);
+    useEffect(() => {
+        dispatchRef.current = dispatch;
+    }, [dispatch]);
 
     useEffect(() => {
         if (!context) return;

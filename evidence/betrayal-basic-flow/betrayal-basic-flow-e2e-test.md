@@ -2,7 +2,7 @@
 
 ## 命令
 
-- `CODEX_MANAGED_BY_NPM=1 node --max-old-space-size=4096 scripts/infra/run-e2e-single.mjs isolated e2e/betrayal/basic-flow.e2e.ts`
+- `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
 - 结果：`1 passed`
 
 ## 截图核对

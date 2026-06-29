@@ -54,6 +54,11 @@ const loadRuntime3 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
+const loadTutorial3 = async () => {
+    const tutorialModule = await import('./betrayal/tutorial');
+    return tutorialModule.default;
+};
+
 const loadCriticalImageResolver3 = async () => {
     const resolverModule = await import('./betrayal/criticalImageResolver');
     return resolverModule.default ?? resolverModule.betrayalCriticalImageResolver;
@@ -263,6 +268,7 @@ const entry3: GameClientManifestEntry = {
     manifest: manifest3,
     thumbnail: <Thumbnail3 />,
     loadRuntime: loadRuntime3,
+    loadTutorial: loadTutorial3,
     loadCriticalImageResolver: loadCriticalImageResolver3,
 };
 

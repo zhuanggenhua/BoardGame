@@ -2,19 +2,22 @@ import { mkdirSync } from 'fs';
 import { dirname } from 'path';
 import type { BrowserContext, Page } from '@playwright/test';
 import {
-    BETRAYAL_COMMANDS,
-    BetrayalDomain,
     type BetrayalCommand,
     type BetrayalCommandMap,
     type BetrayalCore,
     createBetrayalMonsterEncounterCore,
 } from '../../src/games/betrayal/game';
 import {
+    createCorpseLootReadyCore,
     createFirstScenarioHauntCore,
+    createJackSpiritReviveReadyCore,
+    createJackSpiritPostReviveAttackReadyCore,
+    createFirstScenarioReadyToExorciseCore,
+    createFirstScenarioReadyToTraitorVictoryCore,
     createStartedFirstScenarioCore,
     playFirstScenarioToSurvivorVictory,
 } from '../../src/games/betrayal/testing/firstScenarioTestUtils';
-import type { Command, MatchState, RandomFn } from '../../src/engine/types';
+import type { Command, MatchState } from '../../src/engine/types';
 import {
     disableAudio,
     disableTutorial,
@@ -37,16 +40,14 @@ type BetrayalHarnessWindow = Window & {
     };
 };
 
-const fixedRandom: RandomFn = {
-    random: () => 0.42,
-    d: (max) => Math.max(1, Math.min(max, 1)),
-    range: (min) => min,
-    shuffle: (array) => [...array],
-};
-
-export const initBetrayalContext = async (context: BrowserContext) => {
+export const initBetrayalContext = async (
+    context: BrowserContext,
+    options?: { skipTutorial?: boolean },
+) => {
     await setChineseLocale(context);
-    await disableTutorial(context);
+    if (options?.skipTutorial !== false) {
+        await disableTutorial(context);
+    }
     await disableAudio(context);
     await context.addInitScript(() => {
         (window as BetrayalHarnessWindow).__E2E_TEST_MODE__ = true;
@@ -56,6 +57,13 @@ export const initBetrayalContext = async (context: BrowserContext) => {
 export const waitForBetrayalHarnessState = async (page: Page, timeout = 30000) => {
     await page.waitForFunction(
         () => Boolean((window as BetrayalHarnessWindow).__BG_TEST_HARNESS__?.state?.isRegistered?.()),
+        { timeout },
+    );
+};
+
+export const waitForBetrayalHarnessCommand = async (page: Page, timeout = 30000) => {
+    await page.waitForFunction(
+        () => Boolean((window as BetrayalHarnessWindow).__BG_TEST_HARNESS__?.command?.isRegistered?.()),
         { timeout },
     );
 };
@@ -109,10 +117,6 @@ export const saveScreenshot = async (page: Page, path: string) => {
     await page.screenshot({ path, fullPage: false });
 };
 
-function stateOf(core: BetrayalCore): MatchState<BetrayalCore> {
-    return { core, sys: {} as MatchState<BetrayalCore>['sys'] };
-}
-
 function command<Type extends keyof BetrayalCommandMap>(
     type: Type,
     playerId: string,
@@ -124,21 +128,6 @@ function command<Type extends keyof BetrayalCommandMap>(
         payload,
         timestamp: 100,
     } as Command<Type & string, BetrayalCommandMap[Type]> as BetrayalCommand;
-}
-
-function applyCommand<Type extends keyof BetrayalCommandMap>(
-    core: BetrayalCore,
-    type: Type,
-    playerId: string,
-    payload: BetrayalCommandMap[Type],
-): BetrayalCore {
-    const nextCommand = command(type, playerId, payload);
-    const validation = BetrayalDomain.validate(stateOf(core), nextCommand);
-    if (!validation.valid) {
-        throw new Error(validation.error ?? `invalid betrayal command: ${String(type)}`);
-    }
-    return BetrayalDomain.execute(stateOf(core), nextCommand, fixedRandom)
-        .reduce((nextCore, event) => BetrayalDomain.reduce(nextCore, event), core);
 }
 
 export function createRuntimeCore(): BetrayalCore {
@@ -157,6 +146,26 @@ export function createFirstScenarioSurvivorEndgameCore(): BetrayalCore {
     return playFirstScenarioToSurvivorVictory();
 }
 
+export function createFirstScenarioReadyToExorciseRuntimeCore(): BetrayalCore {
+    return createFirstScenarioReadyToExorciseCore();
+}
+
+export function createFirstScenarioReadyToTraitorVictoryRuntimeCore(): BetrayalCore {
+    return createFirstScenarioReadyToTraitorVictoryCore();
+}
+
+export function createCorpseLootReadyRuntimeCore(): BetrayalCore {
+    return createCorpseLootReadyCore();
+}
+
+export function createJackSpiritReviveReadyRuntimeCore(): BetrayalCore {
+    return createJackSpiritReviveReadyCore();
+}
+
+export function createJackSpiritPostReviveAttackReadyRuntimeCore(): BetrayalCore {
+    return createJackSpiritPostReviveAttackReadyCore();
+}
+
 export const injectCore = async (page: Page, core: BetrayalCore) => {
     await page.evaluate((nextCore) => {
         const harness = (window as BetrayalHarnessWindow).__BG_TEST_HARNESS__;
@@ -167,4 +176,32 @@ export const injectCore = async (page: Page, core: BetrayalCore) => {
         }
         return state.set({ ...snapshot, core: nextCore });
     }, core);
+};
+
+export const dispatchHarnessCommand = async <Type extends keyof BetrayalCommandMap>(
+    page: Page,
+    type: Type,
+    playerId: string,
+    payload: BetrayalCommandMap[Type],
+) => {
+    await waitForBetrayalHarnessCommand(page);
+    await page.evaluate(async ({ nextCommand }) => {
+        const harness = (window as BetrayalHarnessWindow).__BG_TEST_HARNESS__;
+        if (!harness?.command?.dispatch) {
+            throw new Error('betrayal test harness command dispatcher unavailable');
+        }
+        await harness.command.dispatch(nextCommand);
+    }, {
+        nextCommand: command(type, playerId, payload),
+    });
+};
+
+export const setHarnessRandomQueue = async (page: Page, values: number[]) => {
+    await page.evaluate((queueValues) => {
+        const harness = (window as BetrayalHarnessWindow).__BG_TEST_HARNESS__;
+        if (!harness?.random?.setQueue) {
+            throw new Error('betrayal test harness random queue unavailable');
+        }
+        harness.random.setQueue(queueValues);
+    }, values);
 };

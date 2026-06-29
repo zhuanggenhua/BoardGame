@@ -5,10 +5,11 @@ import {
 } from '../helpers/common';
 import {
     createFirstScenarioHauntRuntimeCore,
-    createFirstScenarioSurvivorEndgameCore,
+    createFirstScenarioReadyToExorciseRuntimeCore,
     initBetrayalContext,
     injectCore,
     saveScreenshot,
+    setHarnessRandomQueue,
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
 } from './betrayalTestHelpers';
@@ -43,7 +44,11 @@ test.describe('山屋惊魂第一剧本', () => {
         await expect(page.getByTestId('betrayal-reference-overlay')).toBeHidden();
         await saveScreenshot(page, RUNTIME_SCREENSHOT);
 
-        await injectCore(page, createFirstScenarioSurvivorEndgameCore());
+        await injectCore(page, createFirstScenarioReadyToExorciseRuntimeCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-action-use')).toContainText(/驱魔|Exorcise/i);
+        await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
+        await page.getByTestId('betrayal-action-use').click();
         const endgameScreen = page.getByTestId('betrayal-endgame-screen');
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });
         await expect(endgameScreen.getByRole('main').getByText('幸存者逃脱', { exact: true }).first()).toBeVisible();

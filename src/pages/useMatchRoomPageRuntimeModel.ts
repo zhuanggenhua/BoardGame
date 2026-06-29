@@ -13,6 +13,7 @@ import { useMatchRoomSessionState } from './useMatchRoomSessionState';
 import { useMatchRoomStageControllers } from './useMatchRoomStageControllers';
 import { useMatchRoomTutorialLifecycle } from './useMatchRoomTutorialLifecycle';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
+import type { TutorialManifest } from '../engine/types';
 
 export type MatchRoomPageRuntimeSetupModel = Pick<
     ReturnType<typeof useMatchRoomRuntimeSetup>,
@@ -96,6 +97,7 @@ export type MatchRoomPageShellAdapter = {
 
 export type MatchRoomTutorialStageAdapter = {
     tutorialId?: string;
+    tutorialManifest: TutorialManifest | null;
     board: MatchRoomPageRuntimeSetupModel['tutorialBoard'];
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
     onCommandRejected: MatchRoomPageStageControllersModel['handleCommandRejected'];
@@ -192,6 +194,7 @@ function buildMatchRoomTutorialStageAdapter(args: {
 
     return {
         tutorialId,
+        tutorialManifest: runtimeSetup.resolvedTutorialManifest,
         board: runtimeSetup.tutorialBoard,
         engineConfig: runtimeSetup.engineConfig,
         onCommandRejected: stageControllers.handleCommandRejected,

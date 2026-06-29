@@ -3,6 +3,9 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
+import { TutorialProvider } from '../../../contexts/TutorialContext';
+import { GameModeProvider } from '../../../contexts/GameModeContext';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import Board from '../Board';
 import {
     BETRAYAL_COMMANDS,
@@ -14,6 +17,7 @@ import {
     BETRAYAL_FIXED_RANDOM,
     createBetrayalCommand,
     createFirstScenarioHauntCore,
+    createJackSpiritPostReviveAttackReadyCore,
     playFirstScenarioToSurvivorVictory,
 } from '../testing/firstScenarioTestUtils';
 import gameLocale from '../../../../public/locales/zh-CN/game-betrayal.json';
@@ -89,16 +93,49 @@ function HarnessBoard({ initialCore, playerID = '0', matchData }: BoardHarnessPr
     }, [core, playerID]);
 
     return (
-        <Board
-            G={{
-                core,
-                sys: {} as MatchState<unknown>['sys'],
-            } as MatchState<Record<string, unknown>>}
-            dispatch={dispatch as never}
-            playerID={playerID}
-            matchData={matchData}
-            isConnected
-        />
+        <ToastProvider>
+            <TutorialProvider>
+                <GameModeProvider mode="local">
+                    <Board
+                        G={{
+                            core,
+                            sys: {} as MatchState<unknown>['sys'],
+                        } as MatchState<Record<string, unknown>>}
+                        dispatch={dispatch as never}
+                        playerID={playerID}
+                        matchData={matchData}
+                        isConnected
+                    />
+                </GameModeProvider>
+            </TutorialProvider>
+        </ToastProvider>
+    );
+}
+
+function renderBoard(
+    core: MatchState<Record<string, unknown>>['core'],
+    options?: {
+        playerID?: string;
+        matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
+    },
+) {
+    return render(
+        <ToastProvider>
+            <TutorialProvider>
+                <GameModeProvider mode="local">
+                    <Board
+                        G={{
+                            core,
+                            sys: {} as MatchState<unknown>['sys'],
+                        } as MatchState<Record<string, unknown>>}
+                        dispatch={() => {}}
+                        playerID={options?.playerID ?? '0'}
+                        matchData={options?.matchData}
+                        isConnected
+                    />
+                </GameModeProvider>
+            </TutorialProvider>
+        </ToastProvider>,
     );
 }
 
@@ -111,18 +148,10 @@ const defaultMatchData = [
 
 describe('Betrayal Board foundation', () => {
     it('能渲染角色选择屏并提供确认入口', () => {
-        render(
-            <Board
-                G={{
-                    core: createBetrayalCharacterSelectCore(['0', '1', '2']),
-                    sys: {} as MatchState<unknown>['sys'],
-                } as MatchState<Record<string, unknown>>}
-                dispatch={() => {}}
-                playerID="0"
-                matchData={defaultMatchData.slice(0, 3)}
-                isConnected
-            />,
-        );
+        renderBoard(createBetrayalCharacterSelectCore(['0', '1', '2']), {
+            playerID: '0',
+            matchData: defaultMatchData.slice(0, 3),
+        });
 
         expect(screen.getByTestId('betrayal-character-select-screen')).toBeInTheDocument();
         expect(screen.getByText('选择探索者')).toBeInTheDocument();
@@ -130,18 +159,10 @@ describe('Betrayal Board foundation', () => {
     });
 
     it('能渲染真实运行时基础布局', () => {
-        render(
-            <Board
-                G={{
-                    core: createBetrayalFoundationCore(['0', '1', '2', '3']),
-                    sys: {} as MatchState<unknown>['sys'],
-                } as MatchState<Record<string, unknown>>}
-                dispatch={() => {}}
-                playerID="0"
-                matchData={defaultMatchData}
-                isConnected
-            />,
-        );
+        renderBoard(createBetrayalFoundationCore(['0', '1', '2', '3']), {
+            playerID: '0',
+            matchData: defaultMatchData,
+        });
 
         expect(screen.getByTestId('betrayal-board')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-grid')).toBeInTheDocument();
@@ -198,18 +219,10 @@ describe('Betrayal Board foundation', () => {
     });
 
     it('能渲染首剧本真实 haunt 态的关键入口', () => {
-        render(
-            <Board
-                G={{
-                    core: createFirstScenarioHauntCore(),
-                    sys: {} as MatchState<unknown>['sys'],
-                } as MatchState<Record<string, unknown>>}
-                dispatch={() => {}}
-                playerID="0"
-                matchData={defaultMatchData.slice(0, 3)}
-                isConnected
-            />,
-        );
+        renderBoard(createFirstScenarioHauntCore(), {
+            playerID: '0',
+            matchData: defaultMatchData.slice(0, 3),
+        });
 
         expect(within(screen.getByTestId('betrayal-runtime-header-grid')).getByText('Haunt')).toBeInTheDocument();
         expect(screen.getAllByText('推荐动作：移动').length).toBeGreaterThan(0);
@@ -218,18 +231,10 @@ describe('Betrayal Board foundation', () => {
     });
 
     it('能渲染首剧本真实终局屏', () => {
-        render(
-            <Board
-                G={{
-                    core: playFirstScenarioToSurvivorVictory(),
-                    sys: {} as MatchState<unknown>['sys'],
-                } as MatchState<Record<string, unknown>>}
-                dispatch={() => {}}
-                playerID="0"
-                matchData={defaultMatchData.slice(0, 3)}
-                isConnected
-            />,
-        );
+        renderBoard(playFirstScenarioToSurvivorVictory(), {
+            playerID: '0',
+            matchData: defaultMatchData.slice(0, 3),
+        });
 
         expect(screen.getByTestId('betrayal-endgame-screen')).toBeInTheDocument();
         expect(screen.getAllByText('幸存者逃脱').length).toBeGreaterThan(0);
@@ -237,5 +242,15 @@ describe('Betrayal Board foundation', () => {
         const endgameMain = screen.getByTestId('betrayal-endgame-screen');
         expect(within(endgameMain).getByText('测试玩家')).toBeInTheDocument();
         expect(within(endgameMain).getByText('队友一')).toBeInTheDocument();
+    });
+
+    it('叛徒复活后若同房间已有英雄，房间焦点应优先给攻击英雄而不是单一移动目标', () => {
+        renderBoard(createJackSpiritPostReviveAttackReadyCore(), {
+            playerID: '2',
+            matchData: defaultMatchData.slice(0, 3),
+        });
+
+        expect(screen.getByTestId('betrayal-room-focus-target')).toHaveTextContent('攻击测试玩家');
+        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('现在：点攻击测试玩家');
     });
 });

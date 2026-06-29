@@ -12,6 +12,7 @@ import {
     Search,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
@@ -61,12 +62,6 @@ type DeckTrayItem = {
     asset: string;
 };
 
-type PreviewLogEntry = {
-    id: string;
-    text: string;
-    tone: 'neutral' | 'accent' | 'warning';
-};
-
 type PreviewState = {
     selectedInventoryCardId: string | null;
     selectedTradeTargetPlayerId: string | null;
@@ -78,11 +73,6 @@ type PreviewUseEffectProfile = {
     amount: number;
     trait?: BetrayalTraitKey;
     recommendedAction: BetrayalCore['recommendedAction'];
-};
-
-type PreviewEventTemplate = {
-    name: string;
-    effect: PreviewUseEffectProfile;
 };
 
 type RoomGridDragState = {
@@ -203,25 +193,6 @@ const ROOM_IDENTITY_TONE = {
     },
 } as const;
 
-const PREVIEW_DRAW_ORDER: BetrayalDeckKind[] = ['event', 'item', 'omen'];
-
-const PREVIEW_DRAW_POOL: Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInventoryCard[]> = {
-    item: [
-        { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
-        { id: 'hunting-knife', name: '狩猎短刀', kind: 'item' },
-        { id: 'matches', name: '火柴盒', kind: 'item' },
-        { id: 'manuscript', name: '旧手稿', kind: 'item' },
-    ],
-    omen: [
-        { id: 'dog', name: '狗', kind: 'omen' },
-        { id: 'skull', name: '头骨', kind: 'omen' },
-        { id: 'holy-symbol', name: '圣符', kind: 'omen' },
-        { id: 'armor', name: '盔甲', kind: 'omen' },
-        { id: 'idol', name: '雕像', kind: 'omen' },
-        { id: 'dagger', name: '匕首', kind: 'omen' },
-    ],
-};
-
 const PREVIEW_USE_EFFECTS: Record<string, PreviewUseEffectProfile> = {
     rope: { mode: 'move', amount: 1, recommendedAction: 'move' },
     flashlight: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
@@ -273,13 +244,6 @@ const INVENTORY_CARD_BACK_ASSET: Record<BetrayalInventoryCard['kind'], string> =
     item: ASSETS.deck.item,
     omen: ASSETS.deck.omen,
 };
-
-const PREVIEW_EVENT_POOL: PreviewEventTemplate[] = [
-    { name: '回廊顺风', effect: { mode: 'move', amount: 1, recommendedAction: 'move' } },
-    { name: '窃窃低语', effect: { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' } },
-    { name: '旧日手记', effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' } },
-    { name: '滑落阶梯', effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' } },
-];
 
 function isTraitMap(value: unknown): value is Record<BetrayalTraitKey, number> {
     if (!value || typeof value !== 'object') return false;
@@ -338,30 +302,6 @@ function isBetrayalCore(value: unknown): value is BetrayalCore {
         && Array.isArray(candidate.monsters)
         && candidate.monsters.every(isMonsterSummary)
         && Array.isArray(candidate.rooms);
-}
-
-function cloneInventoryCard(card: BetrayalInventoryCard): BetrayalInventoryCard {
-    return { ...card };
-}
-
-function cloneRoom(room: BetrayalRoomNode): BetrayalRoomNode {
-    return {
-        ...room,
-        connectedRoomIds: [...room.connectedRoomIds],
-        tags: [...room.tags],
-    };
-}
-
-function cloneExplorer(explorer: BetrayalExplorerSummary): BetrayalExplorerSummary {
-    return {
-        ...explorer,
-        traits: { ...explorer.traits },
-        inventory: explorer.inventory.map(cloneInventoryCard),
-    };
-}
-
-function cloneMonster(monster: BetrayalMonsterSummary): BetrayalMonsterSummary {
-    return { ...monster };
 }
 
 function createInitialPreviewState(core: BetrayalCore): PreviewState {
@@ -573,25 +513,6 @@ function resolveExplorerBoardMarkerPosition(trait: BetrayalTraitKey, value: numb
     };
 }
 
-function resolveNextPreviewDeckKind(core: BetrayalCore, exploreIndex: number): BetrayalDeckKind | null {
-    for (let index = 0; index < PREVIEW_DRAW_ORDER.length; index += 1) {
-        const kind = PREVIEW_DRAW_ORDER[(exploreIndex + index) % PREVIEW_DRAW_ORDER.length]!;
-        if (core.deckCounts[kind] > 0) {
-            return kind;
-        }
-    }
-    return null;
-}
-
-function createPreviewDrawCard(kind: Exclude<BetrayalDeckKind, 'event'>, exploreIndex: number): BetrayalInventoryCard {
-    const template = PREVIEW_DRAW_POOL[kind][exploreIndex % PREVIEW_DRAW_POOL[kind].length]!;
-    return {
-        id: `${template.id}-preview-${exploreIndex}`,
-        name: template.name,
-        kind: template.kind,
-    };
-}
-
 function buildRoomOccupants(core: BetrayalCore): Record<string, BetrayalExplorerSummary[]> {
     const occupants: Record<string, BetrayalExplorerSummary[]> = {};
     for (const explorer of [core.currentExplorer, ...core.otherExplorers]) {
@@ -633,15 +554,6 @@ function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
 
 function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
     return Array.from(new Set(rooms.map((room) => room.name))).join(' / ');
-}
-
-function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomNode | null {
-    const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    if (!activeRoom) {
-        return null;
-    }
-    const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
-    return core.rooms.find((room) => room.state === 'unexplored' && connectedIds.has(room.id)) ?? null;
 }
 
 function resolveRoomVisualPosition(room: BetrayalRoomNode): { x: number; y: number } {
@@ -710,37 +622,19 @@ function resolveRoomTileStyle(room: BetrayalRoomNode): React.CSSProperties {
 }
 
 function resolveTradeTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return core.otherExplorers.filter((explorer) => explorer.roomId === core.activeRoomId);
+    return core.otherExplorers.filter((explorer) => (
+        explorer.roomId === core.activeRoomId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
 }
 
-function resolveContextualRecommendedAction(
-    core: BetrayalCore,
-    options: {
-        canUseSelectedCard?: boolean;
-        preferUse?: boolean;
-    } = {},
-): BetrayalCore['recommendedAction'] {
-    const canMove = core.movesRemaining > 0 && resolveMoveTargetRooms(core).length > 0;
-    const canExplore = Boolean(resolveNextExplorableRoomSlot(core));
-    const canTrade = core.currentExplorerInventory.length > 0 && resolveTradeTargets(core).length > 0;
-    const canUseSelectedCard = options.canUseSelectedCard ?? false;
-
-    if (options.preferUse && canUseSelectedCard) {
-        return 'use';
-    }
-    if (canMove) {
-        return 'move';
-    }
-    if (canExplore) {
-        return 'explore';
-    }
-    if (canTrade) {
-        return 'trade';
-    }
-    if (canUseSelectedCard) {
-        return 'use';
-    }
-    return 'endTurn';
+function resolveCorpseLootTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
+    return core.otherExplorers.filter((explorer) => (
+        explorer.roomId === core.activeRoomId
+        && core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+        && explorer.inventory.length > 0
+        && !core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn.includes(explorer.playerId)
+    ));
 }
 
 function resolvePreviewUseEffectProfile(card: BetrayalInventoryCard): PreviewUseEffectProfile {
@@ -779,10 +673,6 @@ function resolvePreviewUseEffectLabel(
         trait: t(`board.traits.${profile.trait}`),
         value: formatSignedDelta(profile.amount),
     });
-}
-
-function resolvePreviewEvent(exploreIndex: number): PreviewEventTemplate {
-    return PREVIEW_EVENT_POOL[exploreIndex % PREVIEW_EVENT_POOL.length]!;
 }
 
 function resolveSelectedTradeTargetPlayerId(
@@ -893,6 +783,7 @@ function CharacterSelectScreen({
     return (
         <div
             data-testid="betrayal-character-select-screen"
+            data-tutorial-id="betrayal-character-select-screen"
             className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#09110f] text-[#f1e8d4]"
             style={{
                 backgroundImage: [
@@ -1030,7 +921,10 @@ function CharacterSelectScreen({
                         <section className="relative flex min-h-0 items-center justify-center px-5">
                             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
                             <div className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
-                            <div className="grid min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 py-4">
+                            <div
+                                className="grid min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 py-4"
+                                data-tutorial-id="betrayal-character-selection-grid"
+                            >
                                 {EXPLORER_CATALOG.slice(1).map((explorer) => {
                                     const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
                                     const selected = explorer.explorerId === selectedExplorerId;
@@ -1125,6 +1019,7 @@ function CharacterSelectScreen({
                                 type="button"
                                 onClick={isReady ? onStartScenario : onConfirmExplorer}
                                 data-testid="betrayal-character-confirm"
+                                data-tutorial-id="betrayal-character-confirm"
                                 className="relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] bg-[linear-gradient(180deg,rgba(95,135,44,0.24),rgba(54,81,22,0.76))] text-[26px] font-semibold uppercase tracking-[0.18em] text-[#dfff8f] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.3),rgba(61,91,25,0.82))]"
                             >
                                 <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
@@ -1206,6 +1101,7 @@ function EndgameScreen({
     return (
         <div
             data-testid="betrayal-endgame-screen"
+            data-tutorial-id="betrayal-endgame-screen"
             className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#08110f] text-[#f1e8d4]"
             style={{
                 backgroundImage: [
@@ -1572,6 +1468,8 @@ function EndgameScreen({
 
 export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale }: Props) {
     const { t } = useTranslation(['game-betrayal', 'common']);
+    const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
+    useTutorialBridge(G?.sys?.tutorial, dispatch as (type: string, payload?: unknown) => void);
     const effectiveLocale = locale || 'zh-CN';
     const baseCore = React.useMemo(
         () => (isBetrayalCore(G?.core) ? G.core : createBetrayalCharacterSelectCore()),
@@ -1631,10 +1529,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const core = baseCore;
     const roomOccupants = React.useMemo(() => buildRoomOccupants(core), [core]);
     const roomMonsters = React.useMemo(() => buildRoomMonsters(core), [core]);
-    const roomLookup = React.useMemo(
-        () => new Map(core.rooms.map((room) => [room.id, room])),
-        [core.rooms],
-    );
     const roomCanvasStyle = React.useMemo(() => resolveRoomCanvasStyle(core.rooms), [core.rooms]);
     const previewRoom = React.useMemo(
         () => core.rooms.find((room) => room.id === roomPreviewId) ?? null,
@@ -1717,10 +1611,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const earlierLogEntries = React.useMemo(() => core.activityLog.slice(1, 4), [core.activityLog]);
     const moveTargetRooms = React.useMemo(() => resolveMoveTargetRooms(core), [core]);
     const moveTargetRoomIds = React.useMemo(() => new Set(moveTargetRooms.map((room) => room.id)), [moveTargetRooms]);
-    const nextExplorableSlot = React.useMemo(() => resolveNextExplorableRoomSlot(core), [core]);
     const explorableRoomSlots = React.useMemo(() => resolveExplorableRoomSlots(core), [core]);
     const explorableRoomSlotIds = React.useMemo(() => new Set(explorableRoomSlots.map((room) => room.id)), [explorableRoomSlots]);
     const tradeTargets = React.useMemo(() => resolveTradeTargets(core), [core]);
+    const corpseLootTargets = React.useMemo(() => resolveCorpseLootTargets(core), [core]);
     const selectedTradeTargetPlayerId = React.useMemo(
         () => resolveSelectedTradeTargetPlayerId(tradeTargets, previewState.selectedTradeTargetPlayerId),
         [previewState.selectedTradeTargetPlayerId, tradeTargets],
@@ -1735,6 +1629,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         () => tradeTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? null,
         [selectedTradeTargetPlayerId, tradeTargets],
     );
+    const selectedCorpseLootTarget = React.useMemo(
+        () => corpseLootTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? corpseLootTargets[0] ?? null,
+        [corpseLootTargets, selectedTradeTargetPlayerId],
+    );
     const selectedCardUsedThisTurn = selectedInventoryCard
         ? core.usedCardIdsThisTurn.includes(selectedInventoryCard.id)
         : false;
@@ -1746,7 +1644,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 matchData,
             ),
         })
-        : t('board.status.noTradeTargets');
+        : selectedCorpseLootTarget
+            ? t('board.status.lootTarget', {
+                player: resolvePlayerName(
+                    selectedCorpseLootTarget.playerId,
+                    selectedCorpseLootTarget.displayName,
+                    matchData,
+                ),
+            })
+            : t('board.status.noTradeTargets');
     const useStatusText = selectedInventoryCard
         ? selectedCardUsedThisTurn
             ? t('board.status.cardUsedThisTurn')
@@ -1754,6 +1660,84 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 effect: resolvePreviewUseEffectLabel(selectedInventoryCard, t),
             })
         : t('board.status.noSelectedCard');
+    const hauntActionContext = React.useMemo(() => {
+        if (core.phase !== 'haunt') {
+            return null;
+        }
+        const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
+        const isTraitor = core.scenarioRuntime.traitorPlayerId === core.currentExplorer.playerId;
+        const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(core.currentExplorer.playerId);
+        const canLearnAboutJack = !isTraitor
+            && !isDead
+            && core.activeRoomId === 'upper-west'
+            && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)
+            && !core.usedCardIdsThisTurn.includes('learn-about-jack');
+        const canStudyExorcism = !isTraitor
+            && !isDead
+            && activeRoom?.discoveryReward === 'event'
+            && !core.usedCardIdsThisTurn.includes('study-exorcism');
+        const canExorciseJack = !isTraitor
+            && !isDead
+            && Boolean(core.scenarioRuntime.jackSpiritReleased)
+            && core.activeRoomId === core.scenarioRuntime.jackSpiritRoomId
+            && core.scenarioRuntime.exorcismCircleRoomIds.length >= 2
+            && !core.usedCardIdsThisTurn.includes('exorcise-jack');
+        const canAttackTraitor = !isTraitor
+            && !isDead
+            && core.otherExplorers.some((explorer) => (
+                explorer.playerId === core.scenarioRuntime.traitorPlayerId
+                && explorer.roomId === core.activeRoomId
+            ));
+        const heroAttackTargets = isTraitor
+            ? core.otherExplorers.filter((explorer) => (
+                !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                && explorer.roomId === core.activeRoomId
+            ))
+            : [];
+
+        if (canExorciseJack) {
+            return {
+                actionKind: 'use' as const,
+                label: t('board.status.focusExorciseJack'),
+                cue: t('board.status.actionCueExorciseJack'),
+            };
+        }
+        if (canLearnAboutJack) {
+            return {
+                actionKind: 'use' as const,
+                label: t('board.status.focusLearnAboutJack'),
+                cue: t('board.status.actionCueLearnAboutJack'),
+            };
+        }
+        if (canStudyExorcism) {
+            return {
+                actionKind: 'use' as const,
+                label: t('board.status.focusStudyExorcism'),
+                cue: t('board.status.actionCueStudyExorcism'),
+            };
+        }
+        if (canAttackTraitor) {
+            return {
+                actionKind: 'attack-traitor' as const,
+                label: t('board.status.focusAttackTraitor'),
+                cue: t('board.status.actionCueAttackTraitor'),
+            };
+        }
+        if (heroAttackTargets.length > 0) {
+            const heroTarget = heroAttackTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? heroAttackTargets[0]!;
+            return {
+                actionKind: 'attack-hero' as const,
+                label: t('board.status.focusAttackHero', {
+                    player: resolvePlayerName(heroTarget.playerId, heroTarget.displayName, matchData),
+                }),
+                cue: t('board.status.actionCueAttackHero', {
+                    player: resolvePlayerName(heroTarget.playerId, heroTarget.displayName, matchData),
+                }),
+                targetPlayerId: heroTarget.playerId,
+            };
+        }
+        return null;
+    }, [core, matchData, selectedTradeTargetPlayerId, t]);
     const shouldShowLatestDiscovery = Boolean(
         core.latestDiscovery
         && core.latestDiscoveryOwnerPlayerId === core.currentExplorer.playerId,
@@ -1778,6 +1762,28 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 label: t('board.status.focusMoveMode', { room: moveTargetRooms[0]!.name }),
                 actionKind: 'move' as const,
                 roomId: moveTargetRooms[0]!.id,
+            };
+        }
+        if (hauntActionContext?.actionKind === 'use') {
+            return {
+                label: hauntActionContext.label,
+                actionKind: 'use' as const,
+                roomId: null,
+            };
+        }
+        if (hauntActionContext?.actionKind === 'attack-traitor') {
+            return {
+                label: hauntActionContext.label,
+                actionKind: 'attack-traitor' as const,
+                roomId: null,
+            };
+        }
+        if (hauntActionContext?.actionKind === 'attack-hero') {
+            return {
+                label: hauntActionContext.label,
+                actionKind: 'attack-hero' as const,
+                roomId: null,
+                targetPlayerId: hauntActionContext.targetPlayerId ?? null,
             };
         }
         if (core.recommendedAction === 'move' && moveTargetRooms.length === 1) {
@@ -1816,6 +1822,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         selectedCardUsedThisTurn,
         selectedInventoryCard,
         selectedTradeTarget,
+        hauntActionContext,
         t,
         tradeTargets.length,
     ]);
@@ -1844,6 +1851,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         tradeTargets.length,
     ]);
     const actionCueText = React.useMemo(() => {
+        if (hauntActionContext?.cue) {
+            return hauntActionContext.cue;
+        }
         if (previewState.interactionMode === 'move') {
             if (moveTargetRooms.length === 1) {
                 return t('board.status.actionCueMoveSingle', { room: moveTargetRooms[0]!.name });
@@ -1895,6 +1905,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         matchData,
         moveTargetRooms,
         explorableRoomSlots,
+        hauntActionContext,
         previewState.interactionMode,
         selectedCardUsedThisTurn,
         selectedInventoryCard,
@@ -2052,6 +2063,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     }, [dispatchCommand]);
 
     const handleUseAction = React.useCallback(() => {
+        if (core.phase === 'haunt' && hauntActionContext?.actionKind === 'use') {
+            if (core.activeRoomId === 'upper-west' && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)) {
+                dispatchCommand(BETRAYAL_COMMANDS.LEARN_ABOUT_JACK, {});
+            } else if (
+                core.scenarioRuntime.jackSpiritReleased
+                && core.activeRoomId === core.scenarioRuntime.jackSpiritRoomId
+                && core.scenarioRuntime.exorcismCircleRoomIds.length >= 2
+            ) {
+                dispatchCommand(BETRAYAL_COMMANDS.EXORCISE_JACK, {});
+            } else {
+                dispatchCommand(BETRAYAL_COMMANDS.STUDY_EXORCISM, {});
+            }
+            setInventoryPreviewCardId(null);
+            setPreviewState((previousState) => ({
+                ...previousState,
+                interactionMode: 'default',
+            }));
+            return;
+        }
         const cardId = selectedInventoryCard?.id;
         dispatchCommand(BETRAYAL_COMMANDS.USE_POSSESSION, cardId ? { cardId } : {});
         setInventoryPreviewCardId(null);
@@ -2059,9 +2089,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ...previousState,
             interactionMode: 'default',
         }));
-    }, [dispatchCommand, selectedInventoryCard?.id]);
+    }, [core, dispatchCommand, hauntActionContext, selectedInventoryCard?.id]);
 
     const handleTradeAction = React.useCallback(() => {
+        if (selectedCorpseLootTarget) {
+            const cardId = selectedCorpseLootTarget.inventory[0]?.id;
+            dispatchCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, {
+                sourcePlayerId: selectedCorpseLootTarget.playerId,
+                ...(cardId ? { cardId } : {}),
+            });
+            setInventoryPreviewCardId(null);
+            setPreviewState((previousState) => ({
+                ...previousState,
+                interactionMode: 'default',
+            }));
+            return;
+        }
         const cardId = selectedInventoryCard?.id;
         dispatchCommand(BETRAYAL_COMMANDS.TRADE_POSSESSION, {
             ...(cardId ? { cardId } : {}),
@@ -2072,7 +2115,19 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ...previousState,
             interactionMode: 'default',
         }));
-    }, [dispatchCommand, selectedInventoryCard?.id, selectedTradeTargetPlayerId]);
+    }, [dispatchCommand, selectedCorpseLootTarget, selectedInventoryCard?.id, selectedTradeTargetPlayerId]);
+
+    const handleAttackAction = React.useCallback((target: 'traitor' | 'hero' | 'jack-spirit', targetPlayerId?: string | null) => {
+        dispatchCommand(BETRAYAL_COMMANDS.HAUNT_ATTACK, {
+            target,
+            ...(targetPlayerId ? { targetPlayerId } : {}),
+        });
+        setInventoryPreviewCardId(null);
+        setPreviewState((previousState) => ({
+            ...previousState,
+            interactionMode: 'default',
+        }));
+    }, [dispatchCommand]);
 
     const handleEndTurnAction = React.useCallback(() => {
         dispatchCommand(BETRAYAL_COMMANDS.END_TURN, {});
@@ -2096,10 +2151,18 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             handleTradeAction();
             return;
         }
+        if (roomFocusState.actionKind === 'attack-traitor') {
+            handleAttackAction('traitor');
+            return;
+        }
+        if (roomFocusState.actionKind === 'attack-hero') {
+            handleAttackAction('hero', roomFocusState.targetPlayerId ?? undefined);
+            return;
+        }
         if (roomFocusState.actionKind === 'use') {
             handleUseAction();
         }
-    }, [handleMoveToRoom, handleTradeAction, handleUseAction, roomFocusState]);
+    }, [handleAttackAction, handleMoveToRoom, handleTradeAction, handleUseAction, roomFocusState]);
 
     const actionItems = React.useMemo<ActionBarAction[]>(() => ([
         {
@@ -2114,10 +2177,45 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             disabled: explorableRoomSlots.length === 0,
             variant: 'primary',
         },
-        { id: 'trade', label: t('board.actions.trade'), disabled: core.currentExplorerInventory.length === 0 || tradeTargets.length === 0, variant: 'secondary' },
-        { id: 'use', label: t('board.actions.use'), disabled: core.currentExplorerInventory.length === 0 || selectedCardUsedThisTurn, variant: 'secondary' },
+        {
+            id: 'trade',
+            label: selectedCorpseLootTarget ? t('board.actions.loot') : t('board.actions.trade'),
+            disabled: selectedCorpseLootTarget
+                ? false
+                : core.currentExplorerInventory.length === 0 || tradeTargets.length === 0,
+            variant: 'secondary',
+        },
+        {
+            id: 'use',
+            label: hauntActionContext?.actionKind === 'use'
+                ? (
+                    core.activeRoomId === 'upper-west'
+                        ? t('board.actions.learnAboutJack')
+                        : core.scenarioRuntime.jackSpiritReleased
+                            && core.activeRoomId === core.scenarioRuntime.jackSpiritRoomId
+                            && core.scenarioRuntime.exorcismCircleRoomIds.length >= 2
+                            ? t('board.actions.exorciseJack')
+                            : t('board.actions.studyExorcism')
+                )
+                : t('board.actions.use'),
+            disabled: hauntActionContext?.actionKind === 'use'
+                ? false
+                : core.currentExplorerInventory.length === 0 || selectedCardUsedThisTurn,
+            variant: 'secondary',
+        },
         { id: 'endTurn', label: t('board.actions.endTurn'), disabled: false, variant: 'ghost' },
-    ]), [core, explorableRoomSlots.length, previewState.interactionMode, selectedCardUsedThisTurn, t, tradeTargets.length]);
+    ]), [core, explorableRoomSlots.length, hauntActionContext, previewState.interactionMode, selectedCardUsedThisTurn, selectedCorpseLootTarget, t, tradeTargets.length]);
+
+    const tutorialMapTargetRoomId = React.useMemo(() => {
+        const target = tutorialStep?.highlightTarget;
+        if (!isTutorialActive || !target) {
+            return null;
+        }
+        if (target.startsWith('betrayal-room-move-target-')) {
+            return target.replace('betrayal-room-move-target-', '');
+        }
+        return null;
+    }, [isTutorialActive, tutorialStep?.highlightTarget]);
 
     const actionHandlerMap: Record<ActionBarAction['id'], () => void> = {
         move: handleMoveAction,
@@ -2659,6 +2757,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </section>
                     <div
                         id="betrayal-inventory-section"
+                        data-tutorial-id="betrayal-inventory-zone"
                         className="order-4 mt-1 px-0.5 xl:absolute xl:bottom-0 xl:left-1 xl:z-20 xl:mt-0 xl:w-fit xl:max-w-[calc(62px*4.35+0.5rem*3+0.5rem)] xl:px-0"
                     >
                         <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:max-w-[max-content] xl:min-w-[22rem] xl:pr-4">
@@ -2720,6 +2819,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                         <article
                             id="betrayal-room-panel"
+                            data-tutorial-id="betrayal-room-board"
                             className="order-1 flex min-h-[500px] flex-col bg-transparent p-0 md:min-h-[580px] xl:min-h-0"
                         >
                             <div className="sr-only">
@@ -2727,7 +2827,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     {latestLogEntry?.text || t('board.feedback.idle')}
                                 </span>
                                 {shouldShowLatestDiscovery ? (
-                                    <span data-testid="betrayal-discovery-panel">
+                                    <span
+                                        data-testid="betrayal-discovery-panel"
+                                        data-tutorial-id="betrayal-latest-discovery"
+                                    >
                                         {t('board.discovery.label')}
                                         {' '}
                                         {core.latestDiscovery!.title}
@@ -2743,7 +2846,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     <button
                                         type="button"
                                         onClick={handleRoomFocusAction}
-                                        data-testid="betrayal-room-focus-target"
                                     >
                                         {roomFocusState.label}
                                     </button>
@@ -2752,12 +2854,41 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     <button
                                         type="button"
                                         onClick={handleTradeAction}
-                                        data-testid="betrayal-room-trade-shortcut"
                                     >
                                         {tradeShortcutState.label}
                                     </button>
                                 ) : null}
                             </div>
+
+                            {(latestLogEntry || roomFocusState || tradeShortcutState) ? (
+                                <div className="relative z-30 mb-2 flex flex-wrap items-center gap-2 px-2 pb-1 pt-1">
+                                    {latestLogEntry ? (
+                                        <div className="min-w-[16rem] flex-1 rounded-[8px] border border-[rgba(93,77,53,0.52)] bg-[rgba(18,24,21,0.82)] px-3 py-2 text-[12px] leading-[1.45] text-[#d9ccb0] shadow-[0_8px_22px_rgba(0,0,0,0.22)]">
+                                            {latestLogEntry.text}
+                                        </div>
+                                    ) : null}
+                                    {roomFocusState ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleRoomFocusAction}
+                                            data-testid="betrayal-room-focus-target"
+                                            className="rounded-[8px] border border-[#c9a35e] bg-[linear-gradient(180deg,rgba(93,112,24,0.66),rgba(46,58,15,0.92))] px-3 py-2 text-[12px] font-semibold text-[#eef4a8] shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition hover:bg-[linear-gradient(180deg,rgba(108,131,31,0.76),rgba(53,66,18,0.94))]"
+                                        >
+                                            {roomFocusState.label}
+                                        </button>
+                                    ) : null}
+                                    {tradeShortcutState ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleTradeAction}
+                                            data-testid="betrayal-room-trade-shortcut"
+                                            className="rounded-[8px] border border-[#5f7b66] bg-[rgba(30,44,36,0.86)] px-3 py-2 text-[12px] font-medium text-[#d4ead0] shadow-[0_10px_24px_rgba(0,0,0,0.2)] transition hover:bg-[rgba(40,58,47,0.92)]"
+                                        >
+                                            {tradeShortcutState.label}
+                                        </button>
+                                    ) : null}
+                                </div>
+                            ) : null}
 
                             <div
                                 ref={roomGridRef}
@@ -2950,14 +3081,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         onPointerDown={(event) => {
                                                             event.stopPropagation();
                                                         }}
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            handleMoveToRoom(room.id);
-                                                        }}
-                                                        data-testid={`betrayal-room-move-target-${room.id}`}
-                                                        className="grid h-4 w-4 place-items-center rounded-full border border-[#76bd99] bg-[#76bd99] shadow-[0_0_14px_rgba(118,189,153,0.8)]"
-                                                        title={t('board.rooms.moveTarget')}
-                                                    >
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    handleMoveToRoom(room.id);
+                                                }}
+                                                data-testid={`betrayal-room-move-target-${room.id}`}
+                                                data-tutorial-id={tutorialMapTargetRoomId === room.id ? tutorialStep?.highlightTarget : undefined}
+                                                className="grid h-4 w-4 place-items-center rounded-full border border-[#76bd99] bg-[#76bd99] shadow-[0_0_14px_rgba(118,189,153,0.8)]"
+                                                title={t('board.rooms.moveTarget')}
+                                            >
                                                         <span className="sr-only">{t('board.rooms.moveTarget')}</span>
                                                     </button>
                                                 ) : isReachableRoom ? (
@@ -3013,6 +3145,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     actions={actionItems}
                                     layout="row"
                                     align="space-between"
+                                    containerProps={{ 'data-tutorial-id': 'betrayal-actions-zone' }}
                                     className="flex flex-wrap items-center justify-center gap-1.5"
                                     renderAction={(action) => {
                                         const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
@@ -3024,6 +3157,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 onClick={actionHandlerMap[action.id]}
                                                 disabled={action.disabled}
                                                 data-testid={`betrayal-action-${action.id}`}
+                                                data-tutorial-id={`betrayal-action-${action.id}`}
                                                 title={actionCueText}
                                                 className={`relative flex min-h-[72px] min-w-[108px] flex-col items-center justify-center gap-1 overflow-hidden rounded-[5px] border px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] transition ${
                                                     action.disabled
@@ -3138,6 +3272,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 type="button"
                                 onClick={() => setReferenceOpen(true)}
                                 data-testid="betrayal-open-scenario"
+                                data-tutorial-id="betrayal-reference-entry"
                                 className="inline-flex h-[40px] min-w-[84px] items-center gap-1.5 rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] px-2.5 text-[#d8bf81] transition hover:border-[#8b744d]"
                                 title={scenarioConfig.presentation.referenceTitle}
                             >

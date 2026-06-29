@@ -1,0 +1,279 @@
+import type { TutorialCollection, TutorialManifest } from '../../engine/types';
+import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
+import { BETRAYAL_COMMANDS } from './game';
+import {
+    createFirstScenarioHauntCore,
+    createFirstScenarioReadyToExorciseCore,
+    createStartedFirstScenarioCore,
+} from './testing/firstScenarioTestUtils';
+
+const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
+    id: 'basic-setup-and-turn',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'select-explorer',
+            content: 'game-betrayal:tutorial.basicSetup.steps.selectExplorer',
+            highlightTarget: 'betrayal-character-selection-grid',
+            position: 'bottom',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'confirm-start',
+            content: 'game-betrayal:tutorial.basicSetup.steps.confirmStart',
+            highlightTarget: 'betrayal-character-confirm',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.CONFIRM_EXPLORER],
+            advanceOnEvents: [{ type: 'EXPLORER_CONFIRMED', match: { playerId: '0' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'start-scenario',
+            content: 'game-betrayal:tutorial.basicSetup.steps.startScenario',
+            highlightTarget: 'betrayal-character-confirm',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.START_SCENARIO],
+            advanceOnEvents: [{ type: 'SCENARIO_STARTED', match: { scenarioId: 'first-scenario' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'runtime-overview',
+            content: 'game-betrayal:tutorial.basicSetup.steps.runtimeOverview',
+            highlightTarget: 'betrayal-actions-zone',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'inventory-and-help',
+            content: 'game-betrayal:tutorial.basicSetup.steps.inventoryAndHelp',
+            highlightTarget: 'betrayal-inventory-zone',
+            position: 'right',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'room-board',
+            content: 'game-betrayal:tutorial.basicSetup.steps.roomBoard',
+            highlightTarget: 'betrayal-room-board',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'finish',
+            content: 'game-betrayal:tutorial.basicSetup.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+            viewAs: '0',
+        },
+    ],
+};
+
+const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
+    id: 'move-explore-use',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-runtime',
+            content: 'game-betrayal:tutorial.moveExploreUse.steps.setupRuntime',
+            position: 'center',
+            showMask: true,
+            viewAs: '0',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createStartedFirstScenarioCore().core ?? createStartedFirstScenarioCore(),
+                    },
+                },
+            ],
+        },
+        {
+            id: 'use-rope',
+            content: 'game-betrayal:tutorial.moveExploreUse.steps.useRope',
+            highlightTarget: 'betrayal-inventory-rope',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.USE_POSSESSION],
+            allowedTargets: ['rope'],
+            advanceOnEvents: [{ type: 'POSSESSION_USED', match: { playerId: '0', cardId: 'rope' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'move-to-grand-staircase',
+            content: 'game-betrayal:tutorial.moveExploreUse.steps.moveToGrandStaircase',
+            highlightTarget: 'betrayal-room-move-target-grand-staircase',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.MOVE_TO_ROOM],
+            allowedTargets: ['grand-staircase'],
+            advanceOnEvents: [{ type: 'EXPLORER_MOVED', match: { playerId: '0', roomId: 'grand-staircase' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'explore-upper',
+            content: 'game-betrayal:tutorial.moveExploreUse.steps.exploreUpper',
+            highlightTarget: 'betrayal-action-explore',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.EXPLORE_ROOM],
+            advanceOnEvents: [{ type: 'ROOM_EXPLORED', match: { playerId: '0' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'finish',
+            content: 'game-betrayal:tutorial.moveExploreUse.steps.finish',
+            highlightTarget: 'betrayal-latest-discovery',
+            position: 'right',
+            infoStep: true,
+            viewAs: '0',
+        },
+    ],
+};
+
+const BETRAYAL_CRIMSON_JACK_OBJECTIVE: TutorialManifest = {
+    id: 'crimson-jack-objective',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-haunt',
+            content: 'game-betrayal:tutorial.crimsonJack.steps.setupHaunt',
+            position: 'center',
+            showMask: true,
+            viewAs: '0',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createFirstScenarioHauntCore().core ?? createFirstScenarioHauntCore(),
+                    },
+                },
+            ],
+        },
+        {
+            id: 'haunt-reveal',
+            content: 'game-betrayal:tutorial.crimsonJack.steps.hauntReveal',
+            highlightTarget: 'betrayal-scenario-reference',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'hero-goal',
+            content: 'game-betrayal:tutorial.crimsonJack.steps.heroGoal',
+            highlightTarget: 'betrayal-actions-zone',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'traitor-goal',
+            content: 'game-betrayal:tutorial.crimsonJack.steps.traitorGoal',
+            highlightTarget: 'betrayal-room-board',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'finish',
+            content: 'game-betrayal:tutorial.crimsonJack.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+            viewAs: '0',
+        },
+    ],
+};
+
+const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
+    id: 'haunt-actions-and-finish',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-ready-to-exorcise',
+            content: 'game-betrayal:tutorial.hauntActions.steps.setupReadyToExorcise',
+            position: 'center',
+            showMask: true,
+            viewAs: '0',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createFirstScenarioReadyToExorciseCore().core ?? createFirstScenarioReadyToExorciseCore(),
+                    },
+                },
+            ],
+        },
+        {
+            id: 'help-entry',
+            content: 'game-betrayal:tutorial.hauntActions.steps.helpEntry',
+            highlightTarget: 'betrayal-reference-entry',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'haunt-actions',
+            content: 'game-betrayal:tutorial.hauntActions.steps.hauntActions',
+            highlightTarget: 'betrayal-action-use',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'exorcise-jack',
+            content: 'game-betrayal:tutorial.hauntActions.steps.exorciseJack',
+            highlightTarget: 'betrayal-action-use',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.EXORCISE_JACK],
+            advanceOnEvents: [{ type: 'JACK_EXORCISED', match: { playerId: '0', success: true } }],
+            viewAs: '0',
+        },
+        {
+            id: 'endgame-review',
+            content: 'game-betrayal:tutorial.hauntActions.steps.endgameReview',
+            highlightTarget: 'betrayal-endgame-screen',
+            position: 'center',
+            infoStep: true,
+            viewAs: '0',
+        },
+    ],
+};
+
+const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
+    defaultTutorialId: 'basic-setup-and-turn',
+    tutorials: {
+        'basic-setup-and-turn': {
+            titleKey: 'tutorial.basicSetup.title',
+            descriptionKey: 'tutorial.basicSetup.description',
+            manifest: BETRAYAL_BASIC_SETUP_AND_TURN,
+        },
+        'move-explore-use': {
+            titleKey: 'tutorial.moveExploreUse.title',
+            descriptionKey: 'tutorial.moveExploreUse.description',
+            manifest: BETRAYAL_MOVE_EXPLORE_USE,
+        },
+        'crimson-jack-objective': {
+            titleKey: 'tutorial.crimsonJack.title',
+            descriptionKey: 'tutorial.crimsonJack.description',
+            manifest: BETRAYAL_CRIMSON_JACK_OBJECTIVE,
+        },
+        'haunt-actions-and-finish': {
+            titleKey: 'tutorial.hauntActions.title',
+            descriptionKey: 'tutorial.hauntActions.description',
+            manifest: BETRAYAL_HAUNT_ACTIONS_AND_FINISH,
+        },
+    },
+};
+
+export default BETRAYAL_TUTORIAL_CATALOG;

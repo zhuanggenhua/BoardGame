@@ -20,6 +20,7 @@ export const ActionBarSkeleton = memo(function ActionBarSkeleton({
     align = 'center',
     gap = 8,
     className,
+    containerProps,
     renderAction,
     onAction,
 }: ActionBarSkeletonProps) {
@@ -46,8 +47,12 @@ export const ActionBarSkeleton = memo(function ActionBarSkeleton({
 
     return (
         <div
+            {...containerProps}
             className={className}
-            style={style}
+            style={{
+                ...style,
+                ...containerProps?.style,
+            }}
             data-component="action-bar"
             data-layout={layout}
         >

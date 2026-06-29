@@ -209,6 +209,35 @@ export function createCheatSystem<TCore>(
         priority: 1, // 最高优先级，确保作弊命令最先处理
 
         beforeCommand: ({ state, command }): HookResult<TCore> | void => {
+            // 通用状态注入命令不依赖游戏专用 modifier。
+            if (command.type === CHEAT_COMMANDS.SET_STATE) {
+                const payload = command.payload as SetStatePayload<TCore>;
+                const hasSystemFields = payload.state && typeof payload.state === 'object' && 'sys' in payload.state;
+
+                if (hasSystemFields) {
+                    return {
+                        halt: true,
+                        state: payload.state as MatchState<TCore>,
+                    };
+                }
+
+                return {
+                    halt: true,
+                    state: { ...state, core: payload.state },
+                };
+            }
+
+            if (command.type === CHEAT_COMMANDS.MERGE_STATE) {
+                const payload = command.payload as MergeStatePayload;
+                return {
+                    halt: true,
+                    state: {
+                        ...state,
+                        core: deepMerge(state.core as Record<string, unknown>, payload.fields) as TCore,
+                    },
+                };
+            }
+
             if (!modifier) return;
 
             // 处理设置资源命令
@@ -395,39 +424,6 @@ export function createCheatSystem<TCore>(
                 };
             }
 
-            // 处理直接设置状态命令
-            if (command.type === CHEAT_COMMANDS.SET_STATE) {
-                const payload = command.payload as SetStatePayload<TCore>;
-                // 检查 payload.state 是否包含 sys 字段（完整 state）还是只有 core
-                const hasSystemFields = payload.state && typeof payload.state === 'object' && 'sys' in payload.state;
-                
-                if (hasSystemFields) {
-                    // 完整 state 对象，直接替换整个 state
-                    return {
-                        halt: true,
-                        state: payload.state as any,
-                    };
-                } else {
-                    // 只有 core，保留现有 sys 字段
-                    return {
-                        halt: true,
-                        state: { ...state, core: payload.state },
-                    };
-                }
-            }
-
-            // 处理合并部分字段到状态命令（教程注入 pendingDamage / 手牌等场景）
-            // 使用深度合并，确保嵌套对象（如 players['0']）不会被浅覆盖
-            if (command.type === CHEAT_COMMANDS.MERGE_STATE) {
-                const payload = command.payload as MergeStatePayload;
-                return {
-                    halt: true,
-                    state: {
-                        ...state,
-                        core: deepMerge(state.core as Record<string, unknown>, payload.fields) as TCore,
-                    },
-                };
-            }
         },
     };
 }

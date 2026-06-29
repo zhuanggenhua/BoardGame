@@ -5,6 +5,8 @@ import { useTutorial } from '../contexts/TutorialContext';
 import type { ModalEntry } from '../contexts/ModalStackContext';
 import type { TutorialManifest } from '../engine/types';
 
+let latestTutorialLifecycleMountId = 0;
+
 type UseMatchRoomTutorialLifecycleArgs = {
     isTutorialRoute: boolean;
     isGameNamespaceReady: boolean;
@@ -36,9 +38,15 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     } = useTutorial();
 
     const tutorialStartedRef = useRef(false);
+    const lifecycleMountIdRef = useRef(0);
     const lastTutorialStepIdRef = useRef<string | null>(null);
     const tutorialModalIdRef = useRef<string | null>(null);
     const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
+
+    useEffect(() => {
+        latestTutorialLifecycleMountId += 1;
+        lifecycleMountIdRef.current = latestTutorialLifecycleMountId;
+    }, []);
 
     // 教程启动 effect
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
@@ -117,9 +125,13 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         }
         return () => {
             if (tutorialStartedRef.current) {
+                const capturedMountId = lifecycleMountIdRef.current;
                 // 延迟清理：给 StrictMode remount 一个取消的机会
                 cleanupTimerRef.current = window.setTimeout(() => {
                     cleanupTimerRef.current = undefined;
+                    if (capturedMountId !== latestTutorialLifecycleMountId) {
+                        return;
+                    }
                     if (tutorialStartedRef.current) {
                         tutorialStartedRef.current = false;
                         closeTutorial();

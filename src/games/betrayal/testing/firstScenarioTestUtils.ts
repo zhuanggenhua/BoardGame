@@ -98,6 +98,8 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     let core = createFirstScenarioHauntCore();
     const hauntSuccessRandom = createBetrayalScriptedRandom(
         3, 3, 3, 3, // 图书馆成功
+        3, 3, 1, 1, 1, 1, 1, 1, // 对攻击倒叛徒：英雄 12(+2) vs 叛徒 6
+        2, 2, 2, // 杰克之灵移动到 basement-landing
         3, 3, 3, 3, // 驱魔法阵成功
         3, 3, 3, 3, // 第二次驱魔法阵成功
         3, 3, 3, 3, 3, 3, // 最终驱魔成功
@@ -115,8 +117,9 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0', { target: 'traitor' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0', { target: 'traitor' }, 100, hauntSuccessRandom);
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
@@ -133,8 +136,52 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXORCISE_JACK, '0', {}, 100, hauntSuccessRandom);
+
+    return core;
+}
+
+export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
+    let core = createFirstScenarioHauntCore();
+    const hauntProgressRandom = createBetrayalScriptedRandom(
+        3, 3, 3, 3, // 图书馆成功
+        3, 3, 1, 1, 1, 1, 1, 1, // 对攻击倒叛徒：英雄 12(+2) vs 叛徒 6
+        2, 2, 2, // 杰克之灵移动到 basement-landing
+        3, 3, 3, 3, // 第一处驱魔法阵成功
+        3, 3, 3, 3, // 第二处驱魔法阵成功
+    );
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-west' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.LEARN_ABOUT_JACK, '0', {}, 100, hauntProgressRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '0', { target: 'traitor' }, 100, hauntProgressRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-north' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'rope' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
 
     return core;
 }
@@ -142,8 +189,8 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
 export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     let core = createFirstScenarioHauntCore();
     const traitorWinRandom = createBetrayalScriptedRandom(
-        3, 3, 3, 3, 3, 3, // 第一次击倒英雄
-        3, 3, 3, 3, 3, 3, // 第二次击倒英雄
+        3, 3, 3, 3, 1, 1, 1, 1, 1, 1, // 第一次对攻击倒英雄：叛徒 18 vs 英雄 6
+        3, 3, 3, 3, 1, 1, 1, 1, 1, 1, // 第二次对攻击倒英雄
     );
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
@@ -165,5 +212,102 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero' }, 100, traitorWinRandom);
 
+    return core;
+}
+
+export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
+    let core = createFirstScenarioHauntCore();
+    const traitorWinRandom = createBetrayalScriptedRandom(
+        3, 3, 3, 3, 1, 1, 1, 1, 1, 1, // 第一次对攻击倒英雄：叛徒 18 vs 英雄 6
+        3, 3, 3, 3, 1, 1, 1, 1, 1, 1, // 第二次对攻击倒英雄
+    );
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'ground-north' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'ground-north' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'grand-staircase' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'ground-north' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero' }, 100, traitorWinRandom);
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+
+    return core;
+}
+
+export function createCorpseLootReadyCore(): BetrayalCore {
+    const core = createFirstScenarioHauntCore();
+    const current = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
+    const corpse = core.currentExplorer;
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+
+    core.currentPlayer = '1';
+    core.currentExplorer = {
+        ...current,
+        roomId: 'hallway',
+    };
+    core.otherExplorers = [
+        {
+            ...corpse,
+            roomId: 'hallway',
+            inventory: [
+                { id: 'corpse-item-1', name: '匕首', kind: 'item' },
+                { id: 'corpse-omen-1', name: '黑暗预兆', kind: 'omen' },
+            ],
+        },
+        {
+            ...traitor,
+            roomId: 'basement-east',
+        },
+    ];
+    core.activeRoomId = 'hallway';
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+    core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = [];
+    core.movesRemaining = 4;
+    core.recommendedAction = 'trade';
+    core.usedCardIdsThisTurn = [];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+
+    return core;
+}
+
+export function createJackSpiritReviveReadyCore(): BetrayalCore {
+    let core = createFirstScenarioHauntCore();
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
+    core = applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.HAUNT_ATTACK,
+        '0',
+        { target: 'traitor' },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
+    );
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-east' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+
+    return core;
+}
+
+export function createJackSpiritPostReviveAttackReadyCore(): BetrayalCore {
+    let core = createJackSpiritReviveReadyCore();
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     return core;
 }

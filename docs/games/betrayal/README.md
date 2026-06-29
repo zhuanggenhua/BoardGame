@@ -27,6 +27,8 @@
 - 架构审查：`evidence/betrayal/betrayal-architecture-review-2026-06-16.md`
 - UI 设计规范：`design-system/games/betrayal.md`
 - 位图设计稿索引：`docs/games/betrayal/design/README.md`
+- 第一剧本完成度审计：`docs/games/betrayal/workflows/betrayal-first-scenario-completion.md`
+- 回主分支合并口径：`docs/games/betrayal/workflows/betrayal-merge-back-to-main.md`
 - 运行时页面级布局合同：`docs/games/betrayal/style-b-screen-contract.md`（历史文件名保留，当前记录的是 `v4` 实现合同，不再代表独立风格分叉）
 - 当前运行时实现基线：`docs/games/betrayal/design/generated/betrayal-runtime-prehaunt-board-v4.png`
 - `v8-v12`：历史继续稿，统一记录为过程参考；当前不再视为候选，因为用户本轮已要求回到 `v4` 实施
@@ -78,12 +80,42 @@
 
 ## 下一步建议
 
-1. 第一剧本 `Crimson Jack Returns` 当前已跑通正式 runtime 主链：起始显式拓扑、多开放探索位、真实 `haunt roll`、叛徒揭示、杰克之灵释放、驱魔胜利和叛徒团灭结算，已经通过定向 Vitest 验证。
-2. 当前规则真相已明确三条：恶兆前正式 domain setup 以 `Entrance Hall` 为探索者共同起点；起始 ground 拓扑必须显式保留 `Ground Floor Staircase / Hallway / Entrance Hall` 三个房间节点，且 `Basement Landing <-> Ground Floor Staircase <-> Upper Landing` 的特殊连接必须按规则存在；`haunt roll` 必须按“所有玩家当前持有的恶兆总数”掷骰，而不是按历史抽牌次数偷算。
-3. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合。
-4. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
-5. 教程仍未开始；进入教程前，`betrayal` 必须继续先补齐剩余 runtime 真规则，不能再建立在折叠拓扑、单探索槽 helper 或终局注入链路上。
-6. 当前仍未收真的部分主要是更细的首剧本行为细节，例如 `Stalk the Prey` 还只是最小可用版，没有把完整 line-of-sight / 未攻击前 special action 的所有边界做完；后续教程若触到这些边界，要继续补正式规则，不允许用提示层或注入绕过。
-7. 后续再从大拼版房间图里裁出房间板块与楼层板，补 `rooms/`、`boards/` 资源合同。
-8. 再处理扫描 PDF 的 OCR 或人工录入，把规则文本沉淀成可实现的结构化文档。
-9. 最后进入更多 haunt / 多剧本的正式玩法实现。
+1. 当前七条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，且已在这轮 `Board.tsx` 焦点修正后重新串行回归通过：
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-traitor-victory.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-corpse-loot.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-jack-spirit-revive.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-jack-spirit-post-revive-attack.e2e.ts`
+   其中：
+   - `basic-flow` 覆盖“角色选择确认到恶兆前运行时”；
+   - `first-scenario` 覆盖“真实 haunt 运行时到幸存者终局收尾”；
+   - `first-scenario-traitor-victory` 覆盖“真实 haunt 运行时到叛徒终局收尾”；
+   - `betrayal-tutorial` 覆盖“真实角色选择 -> 真实教程章节 -> 第一剧本英雄线收尾 -> 真实终局”。
+2. 第一剧本三条关键边界真实页面证据也已经成立：
+   其中：
+   - `first-scenario-corpse-loot` 覆盖“同房间尸体搜刮”的正式动作入口与回合内消耗；
+   - `first-scenario-jack-spirit-revive` 覆盖“Jack's Spirit 回尸体房间后通过正式结束回合触发叛徒复活”；
+   - `first-scenario-jack-spirit-post-revive-attack` 覆盖“叛徒复活后通过正式房间焦点入口继续攻击同房间英雄”。
+3. 当前规则真相已明确三条：恶兆前正式 domain setup 以 `Entrance Hall` 为探索者共同起点；起始 ground 拓扑必须显式保留 `Ground Floor Staircase / Hallway / Entrance Hall` 三个房间节点，且 `Basement Landing <-> Ground Floor Staircase <-> Upper Landing` 的特殊连接必须按规则存在；`haunt roll` 必须按“所有玩家当前持有的恶兆总数”掷骰，而不是按历史抽牌次数偷算。
+4. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合，且此后攻击英雄时会按 `Jack's Spirit` 的房间与 `Might 5` 结算；当 `Jack's Spirit` 回到尸体所在房间时，叛徒会恢复肉身并移除 spirit。
+5. `HAUNT_ATTACK` 也已经从“命中即秒杀”改成正式对攻：英雄打叛徒、叛徒打英雄都按 `Might` 对掷，按点差造成 `Physical damage`，平手不受伤；`Knowledge of Jack` 的 `+2` 只在英雄攻击叛徒时生效。
+6. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
+7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E：
+   - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
+   - 默认教程是 `basic-setup-and-turn`
+   - 当前已补 4 个短章：`basic-setup-and-turn`、`move-explore-use`、`crimson-jack-objective`、`haunt-actions-and-finish`
+   - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`
+   - `Board.tsx` 已把角色选择、动作区、持有区、房间区、帮助入口和终局挂上真实 `data-tutorial-id`
+   - `e2e/betrayal/betrayal-tutorial.e2e.ts` 已通过，截图证据位于 `evidence/betrayal-tutorial/`
+   - 教程 / manifest / 生命周期 / 动作条相关单测也已重新通过：
+     - `node scripts/infra/vitest-cli-safe.mjs run src/components/game/framework/__tests__/ActionBarSkeleton.test.tsx src/engine/systems/__tests__/CheatSystem.test.ts src/games/__tests__/betrayalManifestIntegration.test.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/matchRoomStageRuntimeModelBuilders.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx --configLoader native`
+     - 结果：`7 passed / 31 passed`
+8. 当前教程仍是“首轮基础教程”，不是完整规则书：
+   - 已覆盖真实角色选择、恶兆前主循环、第一剧本英雄目标与英雄线收尾
+   - 叛徒视角、更复杂 haunt 分支和更多剧本仍留待后续子教程
+9. 首剧本里的 `Stalk the Prey` 已按规则补到“本回合未攻击前才能用、每回合只能用一次、且不消耗普通移动”；后续若别的剧本继续复用更复杂的 line-of-sight 语义，再继续抽成共享正式规则，不允许回退到提示层或注入绕过。
+10. 后续再从大拼版房间图里裁出房间板块与楼层板，补 `rooms/`、`boards/` 资源合同。
+11. 再处理扫描 PDF 的 OCR 或人工录入，把规则文本沉淀成可实现的结构化文档。
+12. 最后进入更多 haunt / 多剧本的正式玩法实现。

@@ -9,6 +9,7 @@ import type {
     RandomFn,
     ValidationResult,
 } from '../../engine/types';
+import { createCheatSystem } from '../../engine/systems';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import {
     BETRAYAL_DISCOVERY_POOLS,
@@ -143,10 +144,12 @@ export interface BetrayalScenarioRuntimeStatus {
     hauntTriggerLabel: string | null;
     jackSpiritReleased: boolean;
     jackSpiritRoomId: string | null;
+    jackSpiritHasMovedSinceRelease: boolean;
     exorcismCircleRoomIds: string[];
     knowledgeOfJackPlayerIds: string[];
     deadExplorerPlayerIds: string[];
     traitorCorpseRoomId: string | null;
+    corpseLootedByPlayerIdsThisTurn: string[];
 }
 
 export interface BetrayalCore {
@@ -185,6 +188,7 @@ export const BETRAYAL_COMMANDS = {
     EXPLORE_ROOM: 'EXPLORE_ROOM',
     USE_POSSESSION: 'USE_POSSESSION',
     TRADE_POSSESSION: 'TRADE_POSSESSION',
+    LOOT_CORPSE: 'LOOT_CORPSE',
     END_TURN: 'END_TURN',
     HAUNT_ATTACK: 'HAUNT_ATTACK',
     LEARN_ABOUT_JACK: 'LEARN_ABOUT_JACK',
@@ -207,8 +211,9 @@ export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.EXPLORE_ROOM]: { roomId?: string };
     [BETRAYAL_COMMANDS.USE_POSSESSION]: { cardId?: string };
     [BETRAYAL_COMMANDS.TRADE_POSSESSION]: { cardId?: string; targetPlayerId?: string };
+    [BETRAYAL_COMMANDS.LOOT_CORPSE]: { sourcePlayerId?: string; cardId?: string };
     [BETRAYAL_COMMANDS.END_TURN]: Record<string, never>;
-    [BETRAYAL_COMMANDS.HAUNT_ATTACK]: { target: 'traitor' | 'hero' | 'jack-spirit' };
+    [BETRAYAL_COMMANDS.HAUNT_ATTACK]: { target: 'traitor' | 'hero' | 'jack-spirit'; targetPlayerId?: string };
     [BETRAYAL_COMMANDS.LEARN_ABOUT_JACK]: Record<string, never>;
     [BETRAYAL_COMMANDS.STUDY_EXORCISM]: Record<string, never>;
     [BETRAYAL_COMMANDS.EXORCISE_JACK]: Record<string, never>;
@@ -227,6 +232,7 @@ const EVENTS = {
     ROOM_EXPLORED: 'ROOM_EXPLORED',
     POSSESSION_USED: 'POSSESSION_USED',
     POSSESSION_TRADED: 'POSSESSION_TRADED',
+    CORPSE_LOOTED: 'CORPSE_LOOTED',
     TURN_ENDED: 'TURN_ENDED',
     HAUNT_TRIGGERED: 'HAUNT_TRIGGERED',
     HAUNT_ATTACK_RESOLVED: 'HAUNT_ATTACK_RESOLVED',
@@ -240,7 +246,14 @@ type BetrayalEvent =
     | GameEvent<typeof EVENTS.EXPLORER_SELECTED, { playerId: string; explorerId: string }>
     | GameEvent<typeof EVENTS.EXPLORER_CONFIRMED, { playerId: string }>
     | GameEvent<typeof EVENTS.SCENARIO_STARTED, { playerIds: string[]; scenarioId: BetrayalScenarioId }>
-    | GameEvent<typeof EVENTS.EXPLORER_MOVED, { playerId: string; roomId: string; logText: string }>
+    | GameEvent<typeof EVENTS.EXPLORER_MOVED, {
+        playerId: string;
+        roomId: string;
+        logText: string;
+        consumeMove?: boolean;
+        usedActionId?: string;
+        controlledToken?: 'jack-spirit';
+    }>
     | GameEvent<typeof EVENTS.ROOM_EXPLORED, {
         playerId: string;
         roomId: string;
@@ -254,6 +267,7 @@ type BetrayalEvent =
     }>
     | GameEvent<typeof EVENTS.POSSESSION_USED, { playerId: string; cardId: string; effect: UseEffectProfile; logText: string }>
     | GameEvent<typeof EVENTS.POSSESSION_TRADED, { playerId: string; targetPlayerId: string; cardId: string; logText: string }>
+    | GameEvent<typeof EVENTS.CORPSE_LOOTED, { playerId: string; sourcePlayerId: string; cardId: string; logText: string }>
     | GameEvent<typeof EVENTS.TURN_ENDED, { previousPlayerId: string; nextPlayerId: string; logText: string }>
     | GameEvent<typeof EVENTS.HAUNT_TRIGGERED, {
         traitorPlayerId: string;
@@ -264,11 +278,14 @@ type BetrayalEvent =
     | GameEvent<typeof EVENTS.HAUNT_ATTACK_RESOLVED, {
         attackerPlayerId: string;
         target: 'traitor' | 'hero' | 'jack-spirit';
+        defenderPlayerId?: string;
         defeatedPlayerId?: string;
         releasedJackSpiritRoomId?: string;
-        outcome: 'wound' | 'traitor-defeated' | 'hero-defeated' | 'jack-damaged';
+        outcome: 'wound' | 'traitor-defeated' | 'hero-defeated' | 'jack-damaged' | 'no-damage';
         attackerRoll?: number;
         defenderRoll?: number;
+        damageToAttacker?: number;
+        damageToDefender?: number;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.JACK_LEARNED, {
@@ -455,11 +472,18 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
     };
 }
 
+function resolveControlledRoomId(core: BetrayalCore, explorer: BetrayalExplorerSummary): string {
+    if (shouldDeadTraitorControlJackSpirit(core, explorer.playerId) && core.scenarioRuntime.jackSpiritRoomId) {
+        return core.scenarioRuntime.jackSpiritRoomId;
+    }
+    return explorer.roomId;
+}
+
 function syncCurrentExplorerProjection(core: BetrayalCore): BetrayalCore {
     return {
         ...core,
         currentPlayer: core.currentExplorer.playerId,
-        activeRoomId: core.currentExplorer.roomId,
+        activeRoomId: resolveControlledRoomId(core, core.currentExplorer),
         currentExplorerTraits: { ...core.currentExplorer.traits },
         currentExplorerInventory: core.currentExplorer.inventory.map(cloneInventoryCard),
     };
@@ -476,10 +500,12 @@ function createInitialScenarioRuntimeStatus(): BetrayalScenarioRuntimeStatus {
         hauntTriggerLabel: null,
         jackSpiritReleased: false,
         jackSpiritRoomId: null,
+        jackSpiritHasMovedSinceRelease: false,
         exorcismCircleRoomIds: [],
         knowledgeOfJackPlayerIds: [],
         deadExplorerPlayerIds: [],
         traitorCorpseRoomId: null,
+        corpseLootedByPlayerIdsThisTurn: [],
     };
 }
 
@@ -679,6 +705,12 @@ function healExplorerToTemplate(explorer: BetrayalExplorerSummary): void {
     explorer.traits = { ...template.traits };
 }
 
+function healTraitorForHaunt(explorer: BetrayalExplorerSummary): void {
+    healExplorerToTemplate(explorer);
+    explorer.traits.might += 2;
+    explorer.traits.speed += 2;
+}
+
 function shouldDeadTraitorControlJackSpirit(core: BetrayalCore, playerId: string): boolean {
     return (
         core.scenarioRuntime.traitorPlayerId === playerId
@@ -686,6 +718,19 @@ function shouldDeadTraitorControlJackSpirit(core: BetrayalCore, playerId: string
         && core.scenarioRuntime.jackSpiritReleased
         && Boolean(core.scenarioRuntime.jackSpiritRoomId)
     );
+}
+
+function findJackSpirit(core: BetrayalCore): BetrayalMonsterSummary | null {
+    return core.monsters.find((monster) => monster.id === 'jack-spirit') ?? null;
+}
+
+function wouldExplorerDieFromPhysicalDamage(explorer: BetrayalExplorerSummary, amount: number): boolean {
+    if (amount <= 0) {
+        return false;
+    }
+    const preview = cloneExplorer(explorer);
+    applyPhysicalDamage(preview, amount);
+    return isExplorerDead(preview);
 }
 
 function rotateToNextLivingPlayer(core: BetrayalCore, currentPlayerId: string): string {
@@ -884,6 +929,13 @@ export function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
     if (!activeRoom) {
         return [];
     }
+    if (shouldDeadTraitorControlJackSpirit(core, core.currentExplorer.playerId)) {
+        return core.rooms.filter((room) => (
+            room.state === 'discovered'
+            && room.id !== activeRoom.id
+            && roomDistanceByLayout(room, activeRoom) === 1
+        ));
+    }
     const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
     return core.rooms.filter((room) => room.state === 'discovered' && connectedIds.has(room.id));
 }
@@ -907,7 +959,19 @@ export function resolveExplorableRoomSlots(core: BetrayalCore): BetrayalRoomNode
 }
 
 export function resolveTradeTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return core.otherExplorers.filter((explorer) => explorer.roomId === core.activeRoomId);
+    return core.otherExplorers.filter((explorer) => (
+        explorer.roomId === core.activeRoomId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+}
+
+export function resolveCorpseLootTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
+    return core.otherExplorers.filter((explorer) => (
+        explorer.roomId === core.activeRoomId
+        && core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+        && explorer.inventory.length > 0
+        && !core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn.includes(explorer.playerId)
+    ));
 }
 
 function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
@@ -956,23 +1020,24 @@ function formatEffectLabel(effect: UseEffectProfile): string {
 
 function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boolean; cardId?: string } = {}): BetrayalRecommendedAction {
     if (core.phase === 'haunt') {
-        if (core.scenarioRuntime.jackSpiritReleased && core.scenarioRuntime.jackSpiritRoomId === core.currentExplorer.roomId) {
+        if (core.scenarioRuntime.jackSpiritReleased && core.scenarioRuntime.jackSpiritRoomId === core.activeRoomId) {
             return core.scenarioRuntime.exorcismCircleRoomIds.length >= 2 ? 'use' : 'move';
         }
         if (
-            core.currentExplorer.roomId === 'upper-west'
+            core.activeRoomId === 'upper-west'
             && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)
         ) {
             return 'use';
         }
-        if (core.rooms.find((room) => room.id === core.currentExplorer.roomId)?.discoveryReward === 'event') {
+        if (core.rooms.find((room) => room.id === core.activeRoomId)?.discoveryReward === 'event') {
             return 'use';
         }
     }
 
     const canMove = core.movesRemaining > 0 && resolveMoveTargetRooms(core).length > 0;
     const canExplore = Boolean(resolveNextExplorableRoomSlot(core) && resolveNextDeckKind(core));
-    const canTrade = core.currentExplorer.inventory.length > 0 && resolveTradeTargets(core).length > 0;
+    const canTrade = core.currentExplorer.inventory.length > 0
+        && (resolveTradeTargets(core).length > 0 || resolveCorpseLootTargets(core).length > 0);
     const cardId = options.cardId ?? core.currentExplorer.inventory[0]?.id;
     const canUse = Boolean(cardId && !core.usedCardIdsThisTurn.includes(cardId));
 
@@ -984,12 +1049,41 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
     return 'endTurn';
 }
 
+function tryReviveTraitorAtMonsterTurnStart(core: BetrayalCore, nextPlayerId: string): { core: BetrayalCore; revived: boolean } {
+    if (
+        nextPlayerId !== core.scenarioRuntime.traitorPlayerId
+        || !core.scenarioRuntime.deadExplorerPlayerIds.includes(nextPlayerId)
+        || !core.scenarioRuntime.jackSpiritReleased
+        || !core.scenarioRuntime.jackSpiritRoomId
+        || !core.scenarioRuntime.jackSpiritHasMovedSinceRelease
+        || !core.scenarioRuntime.traitorCorpseRoomId
+        || core.scenarioRuntime.jackSpiritRoomId !== core.scenarioRuntime.traitorCorpseRoomId
+    ) {
+        return { core, revived: false };
+    }
+    const traitor = findExplorerByPlayerId(core, nextPlayerId);
+    if (!traitor) {
+        return { core, revived: false };
+    }
+    healTraitorForHaunt(traitor);
+    core.scenarioRuntime.deadExplorerPlayerIds = core.scenarioRuntime.deadExplorerPlayerIds.filter((playerId) => playerId !== nextPlayerId);
+    core.scenarioRuntime.jackSpiritReleased = false;
+    core.scenarioRuntime.jackSpiritRoomId = null;
+    core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
+    core.scenarioRuntime.traitorCorpseRoomId = null;
+    core.monsters = core.monsters.filter((monster) => monster.id !== 'jack-spirit');
+    return { core: syncCurrentExplorerProjection(core), revived: true };
+}
+
 function canUseStalkThePrey(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
     if (core.scenarioRuntime.traitorPlayerId !== actor.playerId || core.scenarioRuntime.jackSpiritReleased) {
         return false;
     }
+    if (core.usedCardIdsThisTurn.includes('haunt-attack') || core.usedCardIdsThisTurn.includes('stalk-the-prey')) {
+        return false;
+    }
     const room = core.rooms.find((item) => item.id === actor.roomId);
-    if (!room || room.floor === 'basement') {
+    if (!room) {
         return false;
     }
     const livingHeroes = getAllExplorers(core).filter((explorer) => (
@@ -1002,13 +1096,13 @@ function canUseStalkThePrey(core: BetrayalCore, actor: BetrayalExplorerSummary):
     });
 }
 
-function resolveStalkThePreyTargets(core: BetrayalCore): BetrayalRoomNode[] {
+function resolveStalkThePreyTargets(core: BetrayalCore, actor: BetrayalExplorerSummary): BetrayalRoomNode[] {
     const livingHeroes = getAllExplorers(core).filter((explorer) => (
         explorer.playerId !== core.scenarioRuntime.traitorPlayerId
         && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
     ));
     return core.rooms.filter((room) => {
-        if (room.state !== 'discovered' || room.floor === 'basement') {
+        if (room.id === actor.roomId || room.state !== 'discovered' || room.floor === 'basement') {
             return false;
         }
         return !livingHeroes.some((hero) => {
@@ -1075,6 +1169,19 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             }
             return { valid: true };
         }
+        case BETRAYAL_COMMANDS.LOOT_CORPSE: {
+            const corpseTargets = resolveCorpseLootTargets(core);
+            const sourcePlayerId = command.payload.sourcePlayerId ?? corpseTargets[0]?.playerId;
+            const sourceExplorer = corpseTargets.find((explorer) => explorer.playerId === sourcePlayerId) ?? corpseTargets[0];
+            const cardId = command.payload.cardId ?? sourceExplorer?.inventory[0]?.id;
+            if (!sourcePlayerId || !sourceExplorer || !cardId) {
+                return { valid: false, error: '当前没有可搜刮的同房间尸体。' };
+            }
+            if (!sourceExplorer.inventory.some((card) => card.id === cardId)) {
+                return { valid: false, error: '该尸体上没有这件物品或预兆。' };
+            }
+            return { valid: true };
+        }
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
         case BETRAYAL_COMMANDS.HAUNT_ATTACK:
@@ -1102,6 +1209,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (!actor) {
         return { valid: false, error: '当前行动者不存在。' };
     }
+    const actorRoomId = resolveControlledRoomId(core, actor);
     const isTraitor = core.scenarioRuntime.traitorPlayerId === command.playerId;
     const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(command.playerId);
 
@@ -1115,21 +1223,18 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 if (!targetRoom || targetRoom.state !== 'discovered') {
                     return { valid: false, error: '目标房间不可移动。' };
                 }
-                const currentRoom = core.rooms.find((room) => room.id === actor.roomId);
-                if (
-                    targetRoom.id !== actor.roomId
-                    && (
-                        currentRoom?.floor !== targetRoom.floor
-                        || roomDistanceByLayout(currentRoom, targetRoom) !== 1
-                    )
-                ) {
+                const currentRoom = core.rooms.find((room) => room.id === actorRoomId);
+                if (targetRoom.id === actorRoomId) {
+                    return { valid: false, error: '杰克之灵必须移动到相邻房间。' };
+                }
+                if (roomDistanceByLayout(currentRoom, targetRoom) !== 1) {
                     return { valid: false, error: '杰克之灵只能移动到相邻房间。' };
                 }
                 return { valid: true };
             }
             if (isTraitor && canUseStalkThePrey(core, actor)) {
                 const target = core.rooms.find((room) => room.id === command.payload.roomId);
-                if (target && resolveStalkThePreyTargets(core).some((room) => room.id === target.id)) {
+                if (target && resolveStalkThePreyTargets(core, actor).some((room) => room.id === target.id)) {
                     return { valid: true };
                 }
             }
@@ -1138,6 +1243,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return { valid: false, error: 'haunt 阶段不能继续探索新房间。' };
         case BETRAYAL_COMMANDS.USE_POSSESSION:
         case BETRAYAL_COMMANDS.TRADE_POSSESSION:
+        case BETRAYAL_COMMANDS.LOOT_CORPSE:
             return validatePreHauntAction({ ...state, core: { ...core, phase: 'preHaunt' } }, command);
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
@@ -1146,18 +1252,24 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 const traitor = core.scenarioRuntime.traitorPlayerId
                     ? findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId)
                     : null;
-                if (!traitor || traitor.roomId !== actor.roomId) {
+                if (!traitor || traitor.roomId !== actorRoomId) {
                     return { valid: false, error: '必须和叛徒处于同一房间才能攻击。' };
                 }
             }
             if (command.payload.target === 'hero') {
-                const livingHeroInRoom = getAllExplorers(core).some((explorer) => (
+                const livingHeroesInRoom = getAllExplorers(core).filter((explorer) => (
                     explorer.playerId !== core.scenarioRuntime.traitorPlayerId
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && explorer.roomId === actor.roomId
+                    && explorer.roomId === actorRoomId
                 ));
-                if (!livingHeroInRoom) {
+                if (livingHeroesInRoom.length === 0) {
                     return { valid: false, error: '当前房间没有可攻击的英雄。' };
+                }
+                if (
+                    command.payload.targetPlayerId
+                    && !livingHeroesInRoom.some((explorer) => explorer.playerId === command.payload.targetPlayerId)
+                ) {
+                    return { valid: false, error: '指定的英雄不在当前房间。' };
                 }
             }
             if (command.payload.target === 'traitor' && isTraitor) {
@@ -1276,6 +1388,30 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         case BETRAYAL_COMMANDS.MOVE_TO_ROOM: {
             const room = core.rooms.find((item) => item.id === command.payload.roomId)!;
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const isTraitor = core.phase === 'haunt' && core.scenarioRuntime.traitorPlayerId === command.playerId;
+            const isDeadTraitorSpiritTurn = shouldDeadTraitorControlJackSpirit(core, actor.playerId);
+            if (
+                isTraitor
+                && canUseStalkThePrey(core, actor)
+                && resolveStalkThePreyTargets(core, actor).some((target) => target.id === room.id)
+            ) {
+                return [nowEvent(EVENTS.EXPLORER_MOVED, {
+                    playerId: command.playerId,
+                    roomId: room.id,
+                    consumeMove: false,
+                    usedActionId: 'stalk-the-prey',
+                    logText: `${actor.displayName}发动“Stalk the Prey”，潜行到了${room.name}`,
+                }, timestamp)];
+            }
+            if (isDeadTraitorSpiritTurn) {
+                return [nowEvent(EVENTS.EXPLORER_MOVED, {
+                    playerId: command.playerId,
+                    roomId: room.id,
+                    controlledToken: 'jack-spirit',
+                    logText: `杰克之灵游荡到了${room.name}`,
+                }, timestamp)];
+            }
             return [nowEvent(EVENTS.EXPLORER_MOVED, {
                 playerId: command.playerId,
                 roomId: room.id,
@@ -1398,6 +1534,19 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 logText: `${core.currentExplorer.displayName}把${card.name}交给了${target.displayName}`,
             }, timestamp)];
         }
+        case BETRAYAL_COMMANDS.LOOT_CORPSE: {
+            const corpseTargets = resolveCorpseLootTargets(core);
+            const source = corpseTargets.find((item) => item.playerId === command.payload.sourcePlayerId)
+                ?? corpseTargets[0]!;
+            const card = source.inventory.find((item) => item.id === command.payload.cardId)
+                ?? source.inventory[0]!;
+            return [nowEvent(EVENTS.CORPSE_LOOTED, {
+                playerId: command.playerId,
+                sourcePlayerId: source.playerId,
+                cardId: card.id,
+                logText: `${core.currentExplorer.displayName}从${source.displayName}的尸体上拿走了${card.name}`,
+            }, timestamp)];
+        }
         case BETRAYAL_COMMANDS.END_TURN: {
             const nextPlayerId = core.phase === 'haunt'
                 ? rotateToNextLivingPlayer(core, core.currentPlayer)
@@ -1421,36 +1570,101 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
             const isTraitor = core.scenarioRuntime.traitorPlayerId === command.playerId;
             const attacker = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const attackerRoomId = resolveControlledRoomId(core, attacker);
+            const attackingWithJackSpirit = shouldDeadTraitorControlJackSpirit(core, attacker.playerId);
+            const jackSpirit = attackingWithJackSpirit ? findJackSpirit(core) : null;
             if (!isTraitor && command.payload.target === 'traitor') {
+                const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? '') ?? core.otherExplorers[0];
+                const heroBonus = core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(attacker.playerId) ? 2 : 0;
+                const attackerRoll = rollTrait(random, attacker.traits.might) + heroBonus;
+                const defenderRoll = traitor ? rollTrait(random, traitor.traits.might) : 0;
+                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
+                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const traitorDefeated = Boolean(traitor) && wouldExplorerDieFromPhysicalDamage(traitor, damageToDefender);
+                const attackerDefeated = wouldExplorerDieFromPhysicalDamage(attacker, damageToAttacker);
                 const releasedJackSpiritRoomId = resolveJackSpiritSpawnRoomId(core, attacker.roomId);
                 return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
                     attackerPlayerId: attacker.playerId,
                     target: 'traitor',
-                    defeatedPlayerId: core.scenarioRuntime.traitorPlayerId ?? undefined,
-                    releasedJackSpiritRoomId,
-                    outcome: 'traitor-defeated',
-                    logText: `${attacker.displayName}击倒了叛徒，杰克之灵被释放到远处房间`,
+                    defenderPlayerId: traitor?.playerId,
+                    defeatedPlayerId: traitorDefeated
+                        ? traitor?.playerId
+                        : attackerDefeated
+                            ? attacker.playerId
+                            : undefined,
+                    releasedJackSpiritRoomId: traitorDefeated ? releasedJackSpiritRoomId : undefined,
+                    outcome: attackerRoll === defenderRoll
+                        ? 'no-damage'
+                        : traitorDefeated
+                            ? 'traitor-defeated'
+                            : attackerDefeated
+                                ? 'hero-defeated'
+                                : 'wound',
+                    attackerRoll,
+                    defenderRoll,
+                    damageToAttacker: damageToAttacker || undefined,
+                    damageToDefender: damageToDefender || undefined,
+                    logText: attackerRoll === defenderRoll
+                        ? `${attacker.displayName}与叛徒正面对攻，双方都没有受伤`
+                        : traitorDefeated
+                            ? `${attacker.displayName}在对攻中击倒了叛徒，杰克之灵被释放到远处房间`
+                            : attackerDefeated
+                                ? `${attacker.displayName}在对攻中落败并被叛徒击倒`
+                                : damageToDefender > 0
+                                    ? `${attacker.displayName}在对攻中压制了叛徒，造成 ${damageToDefender} 点 physical damage`
+                                    : `${attacker.displayName}攻击叛徒失败，反受 ${damageToAttacker} 点 physical damage`,
                 }, timestamp)];
             }
             if (isTraitor && command.payload.target === 'hero') {
-                const targetHero = getAllExplorers(core).find((explorer) => (
+                const heroTargets = getAllExplorers(core).filter((explorer) => (
                     explorer.playerId !== core.scenarioRuntime.traitorPlayerId
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && explorer.roomId === attacker.roomId
-                )) ?? core.otherExplorers[0];
-                const attackerRoll = rollTrait(random, attacker.traits.might);
-                const defenderRoll = targetHero ? rollTrait(random, targetHero.traits.might) : 0;
-                const inflicted = attackerRoll > defenderRoll;
+                    && explorer.roomId === attackerRoomId
+                ));
+                const targetHero = heroTargets.find((explorer) => explorer.playerId === command.payload.targetPlayerId)
+                    ?? heroTargets[0];
+                const attackerRoll = jackSpirit
+                    ? rollTrait(random, jackSpirit.might)
+                    : rollTrait(random, attacker.traits.might);
+                const defenderBonus = jackSpirit && targetHero && core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(targetHero.playerId)
+                    ? 2
+                    : 0;
+                const defenderRoll = targetHero ? rollTrait(random, targetHero.traits.might) + defenderBonus : 0;
+                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
+                const damageToAttacker = jackSpirit ? 0 : Math.max(0, defenderRoll - attackerRoll);
+                const heroDefeated = Boolean(targetHero) && wouldExplorerDieFromPhysicalDamage(targetHero, damageToDefender);
+                const traitorDefeated = !jackSpirit && wouldExplorerDieFromPhysicalDamage(attacker, damageToAttacker);
+                const releasedJackSpiritRoomId = resolveJackSpiritSpawnRoomId(core, attacker.roomId);
                 return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
                     attackerPlayerId: attacker.playerId,
                     target: 'hero',
-                    defeatedPlayerId: inflicted ? targetHero?.playerId : undefined,
-                    outcome: inflicted ? 'hero-defeated' : 'wound',
+                    defenderPlayerId: targetHero?.playerId,
+                    defeatedPlayerId: heroDefeated
+                        ? targetHero?.playerId
+                        : traitorDefeated
+                            ? attacker.playerId
+                            : undefined,
+                    releasedJackSpiritRoomId: traitorDefeated ? releasedJackSpiritRoomId : undefined,
+                    outcome: attackerRoll === defenderRoll
+                        ? 'no-damage'
+                        : heroDefeated
+                            ? 'hero-defeated'
+                            : traitorDefeated
+                                ? 'traitor-defeated'
+                                : 'wound',
                     attackerRoll,
                     defenderRoll,
-                    logText: inflicted
-                        ? `${attacker.displayName}击败了一名英雄`
-                        : `${attacker.displayName}发起了攻击，但英雄挡住了这一击`,
+                    damageToAttacker: damageToAttacker || undefined,
+                    damageToDefender: damageToDefender || undefined,
+                    logText: attackerRoll === defenderRoll
+                        ? `${jackSpirit ? '杰克之灵' : attacker.displayName}扑向英雄，但双方对攻后都没有受伤`
+                        : heroDefeated
+                            ? `${jackSpirit ? '杰克之灵' : attacker.displayName}在对攻中击倒了一名英雄`
+                            : traitorDefeated
+                                ? `${attacker.displayName}攻击失手，反而在对攻中被英雄击倒`
+                                : damageToDefender > 0
+                                    ? `${jackSpirit ? '杰克之灵' : attacker.displayName}在对攻中压制了英雄，造成 ${damageToDefender} 点 physical damage`
+                                    : `${attacker.displayName}发起攻击失败，反受 ${damageToAttacker} 点 physical damage`,
                 }, timestamp)];
             }
             const heroBonus = core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(attacker.playerId) ? 2 : 0;
@@ -1559,8 +1773,23 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             }, explorers, explorers[0]?.playerId);
         }
         case EVENTS.EXPLORER_MOVED: {
-            core.currentExplorer.roomId = event.payload.roomId;
-            core.movesRemaining = Math.max(0, core.movesRemaining - 1);
+            if (event.payload.controlledToken === 'jack-spirit') {
+                core.scenarioRuntime.jackSpiritRoomId = event.payload.roomId;
+                core.scenarioRuntime.jackSpiritHasMovedSinceRelease = true;
+                core.monsters = core.monsters.map((monster) => (
+                    monster.id === 'jack-spirit'
+                        ? { ...monster, roomId: event.payload.roomId }
+                        : monster
+                ));
+            } else {
+                core.currentExplorer.roomId = event.payload.roomId;
+            }
+            if (event.payload.consumeMove !== false) {
+                core.movesRemaining = Math.max(0, core.movesRemaining - 1);
+            }
+            if (event.payload.usedActionId) {
+                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.usedActionId];
+            }
             core.highlightedDeckKind = null;
             core.latestDiscovery = null;
             core.latestDiscoveryOwnerPlayerId = null;
@@ -1680,18 +1909,56 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 activityLog: appendActivity(synced, event.payload.logText, 'neutral'),
             };
         }
+        case EVENTS.CORPSE_LOOTED: {
+            const source = core.otherExplorers.find((explorer) => explorer.playerId === event.payload.sourcePlayerId);
+            const card = source?.inventory.find((item) => item.id === event.payload.cardId);
+            if (!source || !card) {
+                return core;
+            }
+            source.inventory = source.inventory.filter((item) => item.id !== card.id);
+            core.currentExplorer.inventory = [...core.currentExplorer.inventory, cloneInventoryCard(card)];
+            core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = Array.from(new Set([
+                ...core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn,
+                source.playerId,
+            ]));
+            const synced = syncCurrentExplorerProjection(core);
+            return {
+                ...synced,
+                recommendedAction: resolveRecommendedAction(synced),
+                activityLog: appendActivity(synced, event.payload.logText, 'neutral'),
+            };
+        }
         case EVENTS.TURN_ENDED: {
             const explorers = getAllExplorers(core);
             const next = replaceExplorers(core, explorers, event.payload.nextPlayerId);
+            const revived = tryReviveTraitorAtMonsterTurnStart(next, event.payload.nextPlayerId);
+            const nextCore = revived.core;
             return {
-                ...next,
+                ...nextCore,
                 movesRemaining: 4,
-                recommendedAction: resolveRecommendedAction({ ...next, movesRemaining: 4 }),
+                recommendedAction: resolveRecommendedAction({ ...nextCore, movesRemaining: 4 }),
                 usedCardIdsThisTurn: [],
+                scenarioRuntime: {
+                    ...nextCore.scenarioRuntime,
+                    corpseLootedByPlayerIdsThisTurn: [],
+                },
                 latestDiscovery: null,
                 latestDiscoveryOwnerPlayerId: null,
                 highlightedDeckKind: null,
-                activityLog: appendActivity(next, event.payload.logText, 'accent'),
+                activityLog: revived.revived
+                    ? appendActivity(
+                        {
+                            ...nextCore,
+                            scenarioRuntime: {
+                                ...nextCore.scenarioRuntime,
+                                corpseLootedByPlayerIdsThisTurn: [],
+                            },
+                            activityLog: appendActivity(nextCore, event.payload.logText, 'accent'),
+                        },
+                        '杰克之灵回到了尸体所在房间，叛徒恢复肉身并重新回到宅邸中。',
+                        'warning',
+                    )
+                    : appendActivity(nextCore, event.payload.logText, 'accent'),
             };
         }
         case EVENTS.HAUNT_TRIGGERED: {
@@ -1705,11 +1972,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.usedCardIdsThisTurn = [];
             const traitor = findExplorerByPlayerId(core, event.payload.traitorPlayerId);
             if (traitor) {
-                healExplorerToTemplate(traitor);
-                traitor.traits.might += 1;
-                traitor.traits.speed += 1;
-                traitor.traits.might += 1;
-                traitor.traits.speed += 1;
+                healTraitorForHaunt(traitor);
             }
             const nextCore = replaceExplorers(core, getAllExplorers(core), event.payload.nextPlayerId);
             return {
@@ -1720,6 +1983,17 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.HAUNT_ATTACK_RESOLVED: {
+            core.usedCardIdsThisTurn = Array.from(new Set([...core.usedCardIdsThisTurn, 'haunt-attack']));
+            const attacker = findExplorerByPlayerId(core, event.payload.attackerPlayerId);
+            const defender = event.payload.defenderPlayerId
+                ? findExplorerByPlayerId(core, event.payload.defenderPlayerId)
+                : null;
+            if (attacker && event.payload.damageToAttacker) {
+                applyPhysicalDamage(attacker, event.payload.damageToAttacker);
+            }
+            if (defender && event.payload.damageToDefender) {
+                applyPhysicalDamage(defender, event.payload.damageToDefender);
+            }
             if (event.payload.outcome === 'traitor-defeated' && event.payload.defeatedPlayerId) {
                 core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
                     ...core.scenarioRuntime.deadExplorerPlayerIds,
@@ -1730,6 +2004,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 core.scenarioRuntime.jackSpiritReleased = true;
                 core.scenarioRuntime.jackSpiritRoomId = event.payload.releasedJackSpiritRoomId
                     ?? resolveJackSpiritSpawnRoomId(core, core.scenarioRuntime.traitorCorpseRoomId ?? core.activeRoomId);
+                core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
                 core.monsters = [{
                     id: 'jack-spirit',
                     name: '杰克之灵',
@@ -1925,9 +2200,14 @@ export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalE
     },
 };
 
+const systems = [
+    ...createBaseSystems<BetrayalCore>(),
+    createCheatSystem<BetrayalCore>(),
+];
+
 export const engineConfig = createGameEngine<BetrayalCore, BetrayalCommand, BetrayalEvent>({
     domain: BetrayalDomain,
-    systems: createBaseSystems<BetrayalCore>(),
+    systems,
     minPlayers: 3,
     maxPlayers: 6,
     commandTypes: Object.values(BETRAYAL_COMMANDS),

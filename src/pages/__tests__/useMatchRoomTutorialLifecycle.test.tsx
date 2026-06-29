@@ -137,4 +137,52 @@ describe('useMatchRoomTutorialLifecycle', () => {
 
         expect(tutorialState.startTutorial).not.toHaveBeenCalled();
     });
+
+    it('从一个教程路由切到另一个教程路由时，旧实例的延迟清理不能把新教程误关掉', async () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const firstManifest = makeManifest('basic-setup-and-turn', ['finish']);
+        const secondManifest = makeManifest('haunt-actions-and-finish', ['setup-ready-to-exorcise', 'endgame-review']);
+
+        tutorialState.isActive = true;
+        tutorialState.currentStep = firstManifest.steps[0] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const firstHook = renderHook(() => useMatchRoomTutorialLifecycle({
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: firstManifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        firstHook.unmount();
+
+        tutorialState.isActive = false;
+        tutorialState.currentStep = null;
+        tutorialState.isBoardMounted = true;
+
+        renderHook(() => useMatchRoomTutorialLifecycle({
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: secondManifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(secondManifest);
+        expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
 });

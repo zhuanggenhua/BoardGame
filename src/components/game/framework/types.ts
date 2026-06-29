@@ -5,7 +5,7 @@
  * 骨架组件无默认样式，通过 className 和 render 函数注入样式。
  */
 
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import type {
     PhaseInfo,
     ActionBarAction,
@@ -89,6 +89,8 @@ export interface PlayerPanelSkeletonProps {
 export interface ActionBarSkeletonProps extends ActionBarConfig {
     /** 容器样式 */
     className?: string;
+    /** 容器额外属性（如教程锚点、测试 id） */
+    containerProps?: HTMLAttributes<HTMLDivElement>;
     /** 动作渲染函数 */
     renderAction?: (action: ActionBarAction, onClick: () => void, index: number) => ReactNode;
     /** 动作点击回调 */

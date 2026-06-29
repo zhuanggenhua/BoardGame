@@ -89,6 +89,7 @@ const SCORE_CASE_OPPONENT_HAND = [
 
 export const FantasyRealmsTutorial: TutorialManifest = {
     id: 'fantasyrealms-basic',
+    numPlayers: 3,
     allowManualSkip: true,
     steps: [
         {
