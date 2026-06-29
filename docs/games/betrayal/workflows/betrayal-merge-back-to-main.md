@@ -282,6 +282,11 @@
 - `vite.config.ts`：
   - 已确认当前专项树正文中存在 Android/iOS prune plugin 与 `three-stdlib` alias；
   - 因此本轮不再对该文件做重复编辑。
+- 本轮真实回归补充：
+  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts`
+  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
+  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
+  - 结论：教程链路、恶兆前基础运行时、第一剧本英雄线终局在当前专项树里都仍然通过。
 
 ## 当前剩余冲突分级
 
@@ -310,6 +315,11 @@
 - 结论依据：
   - `merge-tree` 对这些文件已经给出了 `result` 结果，没有展示显式文本冲突块；
   - 但它们都属于共享接线或生成物，merge 后仍需靠 `vitest + betrayal 最小 E2E` 证明没有语义回退。
+- 当前建议的 merge 后最小真实回归顺序：
+  - `betrayal-tutorial`
+  - `basic-flow`
+  - `first-scenario`
+  - 若这 3 条都通过，再决定是否补跑其余 4 条边界 E2E。
 
 ## 当前这次最小风险 merge 顺序
 
