@@ -283,6 +283,34 @@
   - 已确认当前专项树正文中存在 Android/iOS prune plugin 与 `three-stdlib` alias；
   - 因此本轮不再对该文件做重复编辑。
 
+## 当前剩余冲突分级
+
+- **高优先级手工冲突候选**：
+  - `src/pages/useMatchRoomTutorialLifecycle.tsx`
+  - `src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx`
+- 结论依据：
+  - `merge-tree` 里这两处已经出现明确的 `<<<<<<< / ======= / >>>>>>>` 冲突标记；
+  - 它们分别对应教程生命周期正文和教程生命周期测试，仍然是 merge 时最需要手工双保留的共享点。
+- **中优先级 changed-in-both，但当前更像“自动合并后做语义复核”**：
+  - `docs/ai-rules/ui-ux.md`
+  - `vite.config.ts`
+- 结论依据：
+  - 这两处在 `merge-tree` 中属于双方都改，但当前看到的是并排 diff 与 merged result，没有出现同等级的显式冲突标记；
+  - `ui-ux.md` 重点是确认通用分层与本轮新增门禁都还在；
+  - `vite.config.ts` 重点是确认 Android/iOS prune plugin 与 `three-stdlib` alias 没被后续共享改动打掉。
+- **低优先级 auto-merge 候选，但 merge 后仍要定向回归**：
+  - `src/components/game/framework/ActionBarSkeleton.tsx`
+  - `src/components/game/framework/__tests__/ActionBarSkeleton.test.tsx`
+  - `src/components/game/framework/types.ts`
+  - `src/engine/systems/CheatSystem.ts`
+  - `src/engine/systems/__tests__/CheatSystem.test.ts`
+  - `src/engine/types.ts`
+  - `public/locales/{en,zh-CN}/game-betrayal.json`
+  - `src/games/manifest.client.generated.tsx`
+- 结论依据：
+  - `merge-tree` 对这些文件已经给出了 `result` 结果，没有展示显式文本冲突块；
+  - 但它们都属于共享接线或生成物，merge 后仍需靠 `vitest + betrayal 最小 E2E` 证明没有语义回退。
+
 ## 当前这次最小风险 merge 顺序
 
 1. 先在 `feat/game-betrayal` 里把专项未提交改动收口并提交。
