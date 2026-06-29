@@ -1,7 +1,6 @@
 import type { MatchState, TutorialCollection, TutorialManifest } from '../../engine/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { QIDAHEN_COMMANDS } from './domain/commands';
-import { QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID } from './domain/interactionSources';
 import type { QidahenCore } from './domain/types';
 
 export const QIDAHEN_DEFAULT_TUTORIAL_ID = 'basic-opening';

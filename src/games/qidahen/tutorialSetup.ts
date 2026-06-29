@@ -92,6 +92,7 @@ const createFieldBattlePendingAction = (): QidahenPendingTargetAction => ({
     resolutionHint: '先决定承伤顺序，再结算这场野战。',
     defenderPayCost: null,
 });
+void createFieldBattlePendingAction;
 
 const createSiegePostBattleSelection = (): QidahenPostBattleSelection => ({
     actionId: 'raid',
