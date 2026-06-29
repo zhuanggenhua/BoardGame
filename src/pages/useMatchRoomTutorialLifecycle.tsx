@@ -7,6 +7,11 @@ import type { TutorialManifest } from '../engine/types';
 
 let latestTutorialLifecycleMountId = 0;
 
+type TutorialProgressSnapshot = {
+    manifestId: string | null;
+    stepId: string | null;
+};
+
 type UseMatchRoomTutorialLifecycleArgs = {
     isTutorialRoute: boolean;
     isGameNamespaceReady: boolean;
@@ -39,8 +44,12 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
 
     const tutorialStartedRef = useRef(false);
     const lifecycleMountIdRef = useRef(0);
-    const lastTutorialStepIdRef = useRef<string | null>(null);
+    const lastTutorialProgressRef = useRef<TutorialProgressSnapshot>({
+        manifestId: null,
+        stepId: null,
+    });
     const tutorialModalIdRef = useRef<string | null>(null);
+    const currentManifestId = resolvedTutorialManifest?.id ?? null;
     const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
 
     useEffect(() => {
@@ -92,8 +101,9 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!isGameNamespaceReady) return;
         if (isActive) return;
         if (
-            lastTutorialStepIdRef.current != null
-            && lastTutorialStepIdRef.current === currentManifestLastStepId
+            lastTutorialProgressRef.current.manifestId === currentManifestId
+            && lastTutorialProgressRef.current.stepId != null
+            && lastTutorialProgressRef.current.stepId === currentManifestLastStepId
         ) {
             return;
         }
@@ -102,6 +112,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         tutorialStartedRef.current = true;
         startTutorial(resolvedTutorialManifest);
     }, [
+        currentManifestId,
         currentManifestLastStepId,
         gameImplReady,
         isActive,
@@ -150,11 +161,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
 
     useEffect(() => {
         if (!isTutorialRoute) return;
-        lastTutorialStepIdRef.current = null;
+        lastTutorialProgressRef.current = {
+            manifestId: currentManifestId,
+            stepId: null,
+        };
         if (currentStep?.id) {
-            lastTutorialStepIdRef.current = currentStep.id;
+            lastTutorialProgressRef.current = {
+                manifestId: currentManifestId,
+                stepId: currentStep.id,
+            };
         }
-    }, [currentStep?.id, isTutorialRoute, resolvedTutorialManifest?.id]);
+    }, [currentManifestId, currentStep?.id, isTutorialRoute]);
 
     // 教程视角自动切换：步骤指定 viewAs 时切换到对应玩家视角，步骤结束后恢复到 '0'
     useEffect(() => {
@@ -173,13 +190,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             const timer = window.setTimeout(() => {
                 if (!tutorialStartedRef.current) return;
                 // 二次确认仍未激活，且已进入完成步骤时才认为教程结束并返回。
-                if (!isActive && lastTutorialStepIdRef.current === currentManifestLastStepId) {
+                if (
+                    !isActive
+                    && lastTutorialProgressRef.current.manifestId === currentManifestId
+                    && lastTutorialProgressRef.current.stepId === currentManifestLastStepId
+                ) {
                     navigate(-1);
                 }
             }, 600);
             return () => window.clearTimeout(timer);
         }
-    }, [currentManifestLastStepId, isTutorialRoute, isActive, navigate]);
+    }, [currentManifestId, currentManifestLastStepId, isTutorialRoute, isActive, navigate]);
 
     useEffect(() => {
         // 关键约束：教程提示层只允许在 /tutorial 路由出现。

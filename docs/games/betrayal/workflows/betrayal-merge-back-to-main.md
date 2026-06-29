@@ -199,6 +199,10 @@
   - `docs/ai-rules/ui-ux.md`
   - `vite.config.ts`
   - `src/pages/useMatchRoomTutorialLifecycle.tsx`
+- 截至 `2026-06-29` 当前这轮内容级吸收后，状态已经更新为：
+  - `src/pages/useMatchRoomTutorialLifecycle.tsx` 与对应测试已在专项树内完成双保留吸收；
+  - `docs/ai-rules/ui-ux.md` 已补回通用分层门禁，并把误落到全局层的单游戏专名收回通用表述；
+  - `vite.config.ts` 经正文比对确认当前专项树已包含 `main` 的 Android/iOS 裁剪插件与 `three-stdlib` alias，这一项不再是待吸收 blocker。
 - 当前根目录 `main` 工作区里看到的 `qidahen` 脏改，只是当前工作区未提交修改，不属于 `main` 已提交历史；它们会影响“你在哪棵树上实际执行 merge 命令”，但**不是**这次 `main <-> feat/game-betrayal` 的分支级文本冲突主体。
 - `merge-tree` 还显示若干共享文件会进入“双方都改”的自动归并路径，例如：
   - `src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx`
@@ -241,9 +245,10 @@
   - 没有对上述 Android/iOS prune 和 `three-stdlib` alias 做反向删除。
 - 现实判断：
   - 这里也不是语义互斥，而是 `main` 新增了发布/预构建兜底能力；
-  - 真 merge 时默认应以“**两边都保留**”为目标，重点回归：
+  - 本轮正文比对结果显示，当前专项树里的 `vite.config.ts` 已经包含这批能力；
+  - 因此它当前不再是“还要手工吸收”的 blocker，真正 merge 时只需要保住现状并做最小回归：
     - `betrayal` 的最小 E2E 还能正常起服务；
-    - Android/iOS build 相关路径没有被 `betrayal` 的旧配置打掉。
+    - Android/iOS build 相关路径没有被后续共享改动打掉。
 
 ### 3. `src/pages/useMatchRoomTutorialLifecycle.tsx`
 
@@ -258,8 +263,25 @@
 - `merge-tree` 已显示这里存在真实文本冲突苗头，而不是单纯的自动无痛归并。
 - 现实判断：
   - 两边修的不是同一件小事，而是教程生命周期的两种不同错误面；
-  - 真 merge 时必须双保留：既保住 `manifestId + stepId` 的跨教程判断，也保住 `mountId` 的延迟清理隔离；
+  - 本轮已在专项树里完成双保留：既保住 `manifestId + stepId` 的跨教程判断，也保住 `mountId` 的延迟清理隔离；
   - 验收位点必须回到 `useMatchRoomTutorialLifecycle.test.tsx` 与 `betrayal-tutorial.e2e.ts`，不能只看代码编译通过。
+
+## 本轮已完成的共享语义吸收
+
+- 教程生命周期：
+  - `src/pages/useMatchRoomTutorialLifecycle.tsx` 已同时保留 `manifestId + stepId` 的完成态判断，以及 `mountId` 的延迟清理隔离。
+  - `src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx` 已覆盖：
+    - 子教程切换后重新启动；
+    - 非 `finish` 命名的最后一步结束后仍返回上一页；
+    - 同一教程走到最后一步后不重复自动启动；
+    - 旧实例延迟清理不会误关新教程。
+- 通用 UI 规范：
+  - `docs/ai-rules/ui-ux.md` 已补回 `0.0a 通用规范与单游戏专名分层`；
+  - 共享层里的席位截图规则已从单游戏专名恢复成 `玩家 A/B/C` 这类跨游戏表述；
+  - `betrayal` 这轮沉淀出的持有区 / 放大查看 / 商业成品参考等门禁仍保留在通用层。
+- `vite.config.ts`：
+  - 已确认当前专项树正文中存在 Android/iOS prune plugin 与 `three-stdlib` alias；
+  - 因此本轮不再对该文件做重复编辑。
 
 ## 当前这次最小风险 merge 顺序
 
