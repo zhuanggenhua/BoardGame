@@ -4,9 +4,10 @@ import { Flame } from 'lucide-react';
 import type { GameConfig } from '../../config/games.config';
 import { ImplementationStatusRibbon } from '../game/framework';
 import { resolveGameDescription, resolveGameDisplayName } from './gameDetailsContent';
+import { assetsPath } from '../../core/AssetLoader';
 
-const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
-const HOME_V2_HOLDER_BG = `${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`;
+const HOME_V2_ASSET_ROOT = 'common/images/home-v2';
+const HOME_V2_HOLDER_BG = assetsPath(`${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`);
 const SQUARE_RATIO_PADDING = '100%';
 const LANDSCAPE_4X3_PADDING = '75%';
 

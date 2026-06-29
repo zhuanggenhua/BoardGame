@@ -341,6 +341,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
     for (let round = 0; round < maxRounds; round++) {
         ctx.afterEventsRound = round;
         let hasNewEvents = false;
+        let hasStateChange = false;
         const roundEvents: GameEvent[] = [];
 
 
@@ -352,6 +353,9 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
             const result = system.afterEvents(ctx);
             if (!result) continue;
             if (result.state) {
+                if (result.state !== currentState) {
+                    hasStateChange = true;
+                }
                 currentState = result.state;
                 ctx.state = currentState;
             }
@@ -418,7 +422,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
         currentState = applyGameoverCheck(currentState);
         ctx.state = currentState;
 
-        if (!hasNewEvents) break;
+        if (!hasNewEvents && !hasStateChange) break;
 
         // 下一轮只看本轮产生的新事件（已应用拦截/替换）
     }

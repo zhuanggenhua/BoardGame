@@ -3477,6 +3477,14 @@ const HandCard: React.FC<{
 }> = ({ card, locale, selected = false, stackIndex, totalCards, onClick }) => {
     const disabled = card.status === 'disabled';
     const overlapPx = getQidahenHandCardOverlapPx(totalCards);
+    const cardKindBadge = card.cardKind && card.cardKind !== 'unknown'
+        ? ({
+            event: '事件',
+            armament: '军备',
+            tactic: '战术',
+            silver: '银两',
+        } satisfies Record<'event' | 'armament' | 'tactic' | 'silver', string>)[card.cardKind]
+        : null;
 
     return (
         <button
@@ -3506,6 +3514,20 @@ const HandCard: React.FC<{
                 rawWidth={CARD_DIMENSIONS.hand.rawWidth}
                 rawHeight={CARD_DIMENSIONS.hand.rawHeight}
             />
+            {cardKindBadge ? (
+                <span
+                    className="pointer-events-none absolute left-2 top-2 rounded border-[2px] px-2 py-0.5 text-[11px] font-black"
+                    data-testid={`qidahen-hand-card-kind-${card.id}`}
+                    style={{
+                        borderColor: '#4d3620',
+                        background: 'rgba(245, 231, 206, 0.92)',
+                        color: '#402a18',
+                        boxShadow: '0 3px 8px rgba(56,35,15,0.18)',
+                    }}
+                >
+                    {cardKindBadge}
+                </span>
+            ) : null}
         </button>
     );
 };

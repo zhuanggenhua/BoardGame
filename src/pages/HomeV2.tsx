@@ -20,9 +20,10 @@ import { useToast } from '../contexts/ToastContext';
 import { getGuestName, getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
 import { useLobbyStats } from '../hooks/useLobbyStats';
+import { assetsPath } from '../core/AssetLoader';
 
-const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
-const HOME_V2_OVERVIEW_BACKGROUND = `${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`;
+const HOME_V2_ASSET_ROOT = 'common/images/home-v2';
+const HOME_V2_OVERVIEW_BACKGROUND = assetsPath(`${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`);
 const HOME_V2_MOBILE_LANDSCAPE_MAX_HEIGHT = 520;
 const HOME_V2_MOBILE_LANDSCAPE_MAX_WIDTH = 1100;
 const HOME_V2_OVERVIEW_STAGE_WIDTH = 1864;

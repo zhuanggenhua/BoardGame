@@ -7,16 +7,26 @@ import { zipSync } from 'fflate';
 import {
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
+import {
+    DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS,
+    DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
+    DIST_LOGOS_RETAIN_RELATIVE_PATHS,
+} from '../deploy/prune-web-dist-assets.mjs';
 
 const rootDir = process.cwd();
-const OTA_BLOCKED_PREFIXES = [
-    'assets/i18n/',
-];
-const OTA_OPTIONAL_EXCLUDED_PREFIXES = [
+const OTA_REMOTE_EXCLUDED_PREFIXES = [
     'assets/common/audio/',
 ];
 const OTA_ALLOWED_LOCALE_PREFIX = 'locales/zh-CN/';
 const MAX_IOS_OTA_ZIP_BYTES = 20 * 1024 * 1024;
+const OTA_ALLOWED_EMBEDDED_ASSET_FILES = new Set([
+    ...DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS.map((relativePath) => `assets/common/${relativePath}`),
+    ...DIST_I18N_JSON_RETAIN_RELATIVE_PATHS.map((relativePath) => `assets/i18n/${relativePath}`),
+    ...DIST_LOGOS_RETAIN_RELATIVE_PATHS.map((relativePath) => `logos/${relativePath}`),
+]);
+const OTA_ALLOWED_EMBEDDED_ASSET_PREFIXES = [
+    'assets/region-mask-',
+];
 
 for (const file of ['.env', '.env.ios', '.env.ios.local', '.env.example']) {
     const fullPath = path.join(rootDir, file);
@@ -244,16 +254,22 @@ const s3Client = new S3Client({
 });
 
 const classifyOtaFile = (relativePath) => {
-    if (OTA_OPTIONAL_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
+    if (OTA_REMOTE_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
         return 'optional-skip';
-    }
-
-    if (OTA_BLOCKED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
-        return 'blocked-skip';
     }
 
     if (relativePath.startsWith('locales/')) {
         return relativePath.startsWith(OTA_ALLOWED_LOCALE_PREFIX) ? 'include' : 'blocked-skip';
+    }
+
+    if (relativePath.startsWith('assets/common/') || relativePath.startsWith('assets/i18n/') || relativePath.startsWith('logos/')) {
+        if (OTA_ALLOWED_EMBEDDED_ASSET_FILES.has(relativePath)) {
+            return 'include';
+        }
+        if (OTA_ALLOWED_EMBEDDED_ASSET_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
+            return 'include';
+        }
+        return 'blocked-skip';
     }
 
     return 'include';
@@ -303,8 +319,8 @@ if (otaCollectionStats.blockedSkippedFiles > 0) {
     throw new Error(
         `检测到当前 dist 含有不允许进入 OTA 的文件：skippedFiles=${otaCollectionStats.blockedSkippedFiles}, `
         + `skippedBytes=${otaCollectionStats.blockedSkippedBytes}。`
-        + ' 这通常说明你没有走 `npm run build:ios:web` 这条 iOS 专用构建链路，'
-        + ' 或 dist 混入了 `assets/i18n/**` / 非 `locales/zh-CN/**` 资源。'
+        + ' 这通常说明你没有走最新的 iOS 专用构建裁剪链路，'
+        + ' 或 dist 混入了本该继续走本地的非法资源。'
         + ' 为避免打出整包，发布已强制中止。',
     );
 }
@@ -312,7 +328,7 @@ const zipBuffer = Buffer.from(zipSync(otaEntries, { level: 9 }));
 if (zipBuffer.length > MAX_IOS_OTA_ZIP_BYTES) {
     throw new Error(
         `iOS OTA 包体异常过大：${zipBuffer.length} bytes。`
-        + ' 当前发布链路会自动排除 dist/assets/i18n/**，并只保留 dist/locales/zh-CN/**。'
+        + ' 当前发布链路会自动排除默认走 R2 的图片/音频资源，并只保留本地必需文件。'
         + ' 请检查 dist 是否混入了不应进入 OTA 的大资源，禁止继续发布。',
     );
 }

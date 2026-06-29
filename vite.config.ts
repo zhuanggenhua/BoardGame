@@ -35,11 +35,6 @@ const MANUAL_CHUNK_PATTERNS: Array<[string, string[]]> = [
   ['vendor-query', ['/node_modules/@tanstack/react-query/']],
   ['vendor-howler', ['/node_modules/howler/']],
 ]
-const ANDROID_BUILD_PRUNE_PATHS = [
-  'assets/atlas-configs/smashup/2833984701.json',
-  'assets/common/audio/registry.json',
-  'assets/common/audio/phrase-mappings.zh-CN.json',
-]
 const QIDAHEN_REGION_MASK_SAVE_ROUTE = '/devtools/qidahen-region-mask/save'
 const QIDAHEN_REGION_MASK_LOAD_ROUTE = '/devtools/qidahen-region-mask/load'
 const QIDAHEN_REGION_MASK_DEFAULT_OUTPUT_DIR = path.resolve(configDir, 'src/games/qidahen/data')
@@ -58,17 +53,6 @@ const QIDAHEN_REGION_MASK_INTERNAL_FILES = {
   authoritativeWorkspaceMeta: 'region-authoritative-guides.workspace.json',
 } as const
 const QIDAHEN_REGION_MASK_FORMAL_AUTHORITATIVE_GUIDE_FILE = 'region-authoritative-guides.json'
-const IOS_EMBEDDED_PRUNE_PATHS = [
-  'assets/i18n',
-  'assets/common/audio',
-  'assets/common/images/mascot',
-  'assets/common/images/home-v2/book-close',
-  'assets/common/images/home-v2/catalog-thumbnails',
-  'assets/common/images/home-v2/generated-reference-homepage',
-  'assets/common/images/home-v2/overview-spread',
-  'assets/common/images/home-v2/reference-homepage',
-  'assets/common/images/home-v2/reference-thumbnails',
-]
 const API_DISABLED_PREFIXES = [
   '/auth',
   '/feedback',
@@ -235,21 +219,6 @@ const createInlineTypeScriptFallbackPlugin = (enabled: boolean) => ({
     return {
       code: transpiled.outputText,
       map: transpiled.sourceMapText ? JSON.parse(transpiled.sourceMapText) : null,
-    }
-  },
-})
-
-const createAndroidDistPrunePlugin = (mode: string) => ({
-  name: 'android-dist-prune',
-  apply: 'build' as const,
-  closeBundle() {
-    if (mode !== 'android') return
-
-    const distDir = path.resolve(configDir, 'dist')
-    for (const relativePath of ANDROID_BUILD_PRUNE_PATHS) {
-      const targetPath = path.join(distDir, relativePath)
-      if (!fs.existsSync(targetPath)) continue
-      fs.rmSync(targetPath, { force: true })
     }
   },
 })
@@ -513,29 +482,6 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
   },
 })
 
-const createIosEmbeddedDistPrunePlugin = (mode: string) => ({
-  name: 'ios-embedded-dist-prune',
-  apply: 'build' as const,
-  closeBundle() {
-    if (mode !== 'ios') return
-
-    const distDir = path.resolve(configDir, 'dist')
-    const localesDir = path.join(distDir, 'locales')
-    if (fs.existsSync(localesDir)) {
-      for (const entry of fs.readdirSync(localesDir, { withFileTypes: true })) {
-        if (entry.name === 'zh-CN') continue
-        fs.rmSync(path.join(localesDir, entry.name), { recursive: true, force: true })
-      }
-    }
-
-    for (const relativePath of IOS_EMBEDDED_PRUNE_PATHS) {
-      const targetPath = path.join(distDir, relativePath)
-      if (!fs.existsSync(targetPath)) continue
-      fs.rmSync(targetPath, { recursive: true, force: true })
-    }
-  },
-})
-
 const createDevApiDisabledPlugin = (enabled: boolean) => ({
   name: 'dev-api-disabled-guard',
   enforce: 'pre' as const,
@@ -676,8 +622,6 @@ export default defineConfig(({ mode }) => {
       createQidahenRegionMaskDevtoolsPlugin(),
       createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
       createIosBuildMetaPlugin(mode, backendUrl, env),
-      createAndroidDistPrunePlugin(mode),
-      createIosEmbeddedDistPrunePlugin(mode),
     ],
     esbuild: forceInlineVite ? false : undefined,
     build: {

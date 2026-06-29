@@ -76,4 +76,25 @@ describe('QidahenPregameScenarioGate', () => {
         expect(screen.getByTestId('qidahen-ready-board')).toHaveTextContent('3|shanhaiguan-1622');
         expect(onSearchParamsChange).not.toHaveBeenCalled();
     });
+
+    it('教程默认路由未显式带子教程 id 时，也会落到基础教程预设', () => {
+        const onSearchParamsChange = vi.fn();
+        render(
+            <QidahenPregameScenarioGate
+                searchParams={new URLSearchParams('')}
+                tutorialMode
+                onSearchParamsChange={onSearchParamsChange}
+            >
+                {({ numPlayers, setupData }) => (
+                    <div data-testid="qidahen-tutorial-ready-board">
+                        {String(numPlayers)}|{typeof setupData.qidahenTutorialCoreTransform}
+                    </div>
+                )}
+            </QidahenPregameScenarioGate>,
+        );
+
+        expect(screen.queryByTestId('qidahen-scenario-pregame-screen')).not.toBeInTheDocument();
+        expect(screen.getByTestId('qidahen-tutorial-ready-board')).toHaveTextContent('3|function');
+        expect(onSearchParamsChange).not.toHaveBeenCalled();
+    });
 });

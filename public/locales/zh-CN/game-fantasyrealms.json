@@ -83,7 +83,8 @@
     "inspectHandAria": "查看手牌 {{name}}",
     "openMagnifyAria": "放大查看 {{name}}",
     "closePreview": "关闭预览",
-    "selected": "已选"
+    "selected": "已选",
+    "centerSelectedNotice": "{{player}}已选中"
   },
   "focus": {
     "panelTitle": "当前焦点",

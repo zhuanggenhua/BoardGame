@@ -18,6 +18,7 @@ import {
     type QidahenPregameChoiceField,
 } from './roomSetup';
 import { buildQidahenTutorialSetupData } from './tutorialSetup';
+import { QIDAHEN_DEFAULT_TUTORIAL_ID } from './tutorial';
 
 type QidahenPregameScenarioGateReadyState = {
     numPlayers: number;
@@ -28,6 +29,7 @@ type QidahenPregameScenarioGateReadyState = {
 type QidahenPregameScenarioGateProps = {
     searchParams: URLSearchParams;
     tutorialId?: string;
+    tutorialMode?: boolean;
     onSearchParamsChange: (nextSearchParams: URLSearchParams) => void;
     children: (readyState: QidahenPregameScenarioGateReadyState) => React.ReactNode;
 };
@@ -106,13 +108,17 @@ const resolveScenarioLabel = (
 export function QidahenPregameScenarioGate({
     searchParams,
     tutorialId,
+    tutorialMode = false,
     onSearchParamsChange,
     children,
 }: QidahenPregameScenarioGateProps) {
     const { t } = useTranslation('game-qidahen');
+    const effectiveTutorialId = tutorialMode
+        ? (tutorialId ?? QIDAHEN_DEFAULT_TUTORIAL_ID)
+        : tutorialId;
     const tutorialSetupData = React.useMemo(
-        () => buildQidahenTutorialSetupData(tutorialId),
-        [tutorialId],
+        () => buildQidahenTutorialSetupData(effectiveTutorialId),
+        [effectiveTutorialId],
     );
     const routeSelections = React.useMemo(
         () => readRouteSelectionsFromSearchParams(searchParams),

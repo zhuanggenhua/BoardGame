@@ -41,7 +41,6 @@ import { useLobbyStats } from '../hooks/useLobbyStats';
 import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
 import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
-import { versionedPublicFileUrl } from '../lib/publicFileUrl';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
 import { reportClientAutoFeedbackOnce } from '../lib/feedback/clientAutoReport';
@@ -54,6 +53,20 @@ const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_WARMUP_DELAY_MS = 120;
 const loadGameDetailsModalModule = () => import('../components/lobby/GameDetailsModal');
 const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((m) => ({ default: m.GameDetailsModal })));
+
+const HomeGridLogo = () => (
+    <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className="w-8 md:w-10 opacity-90"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path
+            fill="#433422"
+            d="M4 4h16v16H4V4zm2 2v4h4V6H6zm6 0v4h4V6h-4zm6 0v4h4V6h-4zM6 12v4h4v-4H6zm6 0v4h4v-4h-4zm6 0v4h4v-4h-4zM6 18v4h4v-4H6zm6 0v4h4v-4h-4zm6 0v4h4v-4h-4z"
+        />
+    </svg>
+);
 
 type IdleSchedulerHost = Pick<Window, 'setTimeout' | 'clearTimeout'> & Partial<Pick<Window, 'requestIdleCallback' | 'cancelIdleCallback'>>;
 
@@ -1048,11 +1061,7 @@ export const Home = () => {
                 <div className="flex flex-col items-center justify-center mb-1 md:mb-4">
                     {/* 标题行：Logo + H1 */}
                     <div className="flex items-center justify-center gap-3 md:gap-4 mb-2">
-                        <img
-                            src={versionedPublicFileUrl('/logos/logo_1_grid.svg')}
-                            alt={t('home.logoAlt')}
-                            className="w-8 md:w-10 opacity-90"
-                        />
+                        <HomeGridLogo />
                         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[0.1em] text-parchment-base-text leading-none pt-1">
                             {t('lobby:home.title')}
                         </h1>
