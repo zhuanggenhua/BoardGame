@@ -41,7 +41,6 @@ import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageC
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
 import { resolveRoomExpansionLabel, resolveRoomScenarioLabel } from '../lobby/roomActions';
 import { PasswordField } from '../common/PasswordField';
-import { ImplementationStatusRibbon } from '../game/framework';
 import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
 import {
@@ -88,10 +87,7 @@ function getPlayerLabel(game: GameConfig, t: HomeV2Translate) {
 }
 
 function getDetailBadgeLabels(game: GameConfig, t: HomeV2Translate) {
-    const badgeLabels = [
-        getCategoryLabel(game, t),
-        getPlayerLabel(game, t),
-    ];
+    const badgeLabels = [getCategoryLabel(game, t), getPlayerLabel(game, t)];
     const tagKeys = game.tags ?? [];
     const supportedTagKeys = ['card_driven', 'dice_driven', 'combat', 'tactical', 'casual', 'ugc'];
 
@@ -214,13 +210,13 @@ function HomeV2LeaderboardPanel({
     const entries = leaderboardData?.leaderboard ?? [];
 
     return (
-        <HomeV2PaperPanel eyebrow={t('lobby:leaderboard.title')}>
+        <HomeV2PaperPanel eyebrow={t('lobby:leaderboard.title', { defaultValue: '胜场排行' })}>
             {error ? (
-                <HomeV2EmptyNote>{t('lobby:leaderboard.error')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:leaderboard.error', { defaultValue: '排行榜加载失败' })}</HomeV2EmptyNote>
             ) : !leaderboardData ? (
-                <HomeV2EmptyNote>{t('lobby:leaderboard.loading')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:leaderboard.loading', { defaultValue: '加载排行榜中...' })}</HomeV2EmptyNote>
             ) : entries.length === 0 ? (
-                <HomeV2EmptyNote>{t('lobby:leaderboard.empty')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:leaderboard.empty', { defaultValue: '暂无数据' })}</HomeV2EmptyNote>
             ) : (
                 <div className="border-b border-[rgba(105,66,37,0.28)]">
                     {entries.map((player, index) => {
@@ -292,13 +288,13 @@ function HomeV2ChangelogPanel({
     t: HomeV2Translate;
 }) {
     return (
-        <HomeV2PaperPanel eyebrow={t('lobby:changelog.title')}>
+        <HomeV2PaperPanel eyebrow={t('lobby:changelog.title', { defaultValue: '最近更新' })}>
             {error ? (
-                <HomeV2EmptyNote>{t('lobby:changelog.error')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:changelog.error', { defaultValue: '更新日志加载失败' })}</HomeV2EmptyNote>
             ) : loading ? (
-                <HomeV2EmptyNote>{t('lobby:changelog.loading')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:changelog.loading', { defaultValue: '加载更新日志中...' })}</HomeV2EmptyNote>
             ) : items.length === 0 ? (
-                <HomeV2EmptyNote>{t('lobby:leaderboard.changelogEmpty')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:leaderboard.changelogEmpty', { defaultValue: '暂无日志' })}</HomeV2EmptyNote>
             ) : (
                 <div className="space-y-[10px]">
                     {items.map((item) => (
@@ -334,11 +330,11 @@ function HomeV2ReviewsPanel({
     compact?: boolean;
 }) {
     return (
-        <HomeV2PaperPanel eyebrow={t('lobby:tabs.reviews')}>
+        <HomeV2PaperPanel eyebrow={t('lobby:tabs.reviews', { defaultValue: '评价' })}>
             {error ? (
-                <HomeV2EmptyNote>{t('lobby:homeV2.reviews.error')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('lobby:homeV2.reviews.error', { defaultValue: '加载评价失败，请稍后重试' })}</HomeV2EmptyNote>
             ) : loading ? (
-                <HomeV2EmptyNote>{t('common:loading')}</HomeV2EmptyNote>
+                <HomeV2EmptyNote>{t('common:loading', { defaultValue: '加载中...' })}</HomeV2EmptyNote>
             ) : (
                 <div className={compact ? 'space-y-[8px]' : 'space-y-[14px]'}>
                     <div className={`border-y border-[rgba(105,66,37,0.28)] ${compact ? 'py-[8px]' : 'py-[14px]'}`}>
@@ -347,7 +343,7 @@ function HomeV2ReviewsPanel({
                                 {stats ? `${stats.rate}%` : '--'}
                             </div>
                             <div className={compact ? 'text-right text-[8.8px] font-semibold leading-[1.1] text-[#6e4a32]' : 'text-right text-[clamp(12px,0.9vw,14px)] font-semibold text-[#6e4a32]'}>
-                                {stats ? `${stats.positive}/${stats.total}` : t('lobby:homeV2.reviews.empty')}
+                                {stats ? `${stats.positive}/${stats.total}` : t('lobby:homeV2.reviews.empty', { defaultValue: '暂无评论' })}
                             </div>
                         </div>
                         <div className={compact ? 'mt-[6px] h-[5px] overflow-hidden rounded-full bg-[rgba(105,66,37,0.16)]' : 'mt-[10px] h-[7px] overflow-hidden rounded-full bg-[rgba(105,66,37,0.16)]'}>
@@ -355,14 +351,16 @@ function HomeV2ReviewsPanel({
                         </div>
                     </div>
                     {reviews.length === 0 ? (
-                        <HomeV2EmptyNote>{t('lobby:homeV2.reviews.empty')}</HomeV2EmptyNote>
+                        <HomeV2EmptyNote>{t('lobby:homeV2.reviews.empty', { defaultValue: '暂无评论' })}</HomeV2EmptyNote>
                     ) : (
                         reviews.map((review) => (
                             <article key={review._id} className={`border-b border-[rgba(105,66,37,0.24)] ${compact ? 'pb-[8px]' : 'pb-[12px]'}`}>
                                 <div className={`flex items-center justify-between ${compact ? 'gap-[10px]' : 'gap-[16px]'}`}>
                                     <div className={compact ? 'truncate text-[10px] font-bold text-[#3f2718]' : 'truncate text-[clamp(15px,1.06vw,18px)] font-bold text-[#3f2718]'}>{review.user.username}</div>
                                     <div className={`${compact ? 'text-[8.5px]' : 'text-[clamp(12px,0.88vw,14px)]'} shrink-0 font-semibold ${review.isPositive ? 'text-[#315c27]' : 'text-[#8a3f2a]'}`}>
-                                        {review.isPositive ? t('lobby:homeV2.reviews.recommend') : t('lobby:homeV2.reviews.not_recommend')}
+                                        {review.isPositive
+                                            ? t('lobby:homeV2.reviews.recommend', { defaultValue: '推荐' })
+                                            : t('lobby:homeV2.reviews.not_recommend', { defaultValue: '不推荐' })}
                                     </div>
                                 </div>
                                 {review.content ? (
@@ -580,15 +578,11 @@ function getRoomSearchHaystack(
     const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
         resolveRoomExpansionLabel(t, room.gameName, expansionId)
     )) ?? [];
-    const scenarioLabel = room.publicSetupSummary?.scenarioId
-        ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
-        : '';
 
     return [
         fallbackTitle,
         room.roomName ?? '',
         room.matchID,
-        scenarioLabel,
         ...enabledExpansionLabels,
         ...room.players.map((player) => player.name ?? ''),
     ].join(' ').toLowerCase();
@@ -608,7 +602,6 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
     const categoryLabel = getCategoryLabel(game, t);
     const playerLabel = getPlayerLabel(game, t);
     const detailBadges = getDetailBadgeLabels(game, t);
-    const detailStatusLabel = game.statusTag ? t(`common:status_tags.${game.statusTag}`) : null;
     const recommendedPlayerCounts = getRecommendedPlayerCounts(game);
     const bestPlayerCountSet = new Set(
         (game.bestPlayers ?? [])
@@ -641,7 +634,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                 <button
                     type="button"
                     data-testid="home-v2-detail-back-button"
-                aria-label={t('lobby:actions.backToDirectory')}
+                    aria-label={t('lobby:actions.backToDirectory', '返回目录')}
                     className={`inline-flex items-center justify-center border border-transparent bg-transparent font-bold leading-none text-[#2f1b10] shadow-none transition-colors hover:text-[#6b4328] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/25 ${
                         isCompactLandscape
                             ? 'h-[28px] min-w-[86px] rounded-full text-[10.5px] tracking-[0.02em]'
@@ -650,8 +643,8 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                     onClick={onBack}
                 >
                     <span aria-hidden="true" className={`${isCompactLandscape ? 'mr-[5px]' : 'mr-[10px]'} leading-none`}>←</span>
-                    <span aria-hidden="true">{t('lobby:actions.backToDirectory')}</span>
-                    <span className="sr-only">{t('lobby:actions.backToDirectory')}</span>
+                    <span aria-hidden="true">{t('lobby:actions.backToDirectory', '返回目录')}</span>
+                    <span className="sr-only">{t('lobby:actions.backToDirectory', '返回目录')}</span>
                 </button>
             </div>
 
@@ -666,16 +659,10 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                 >
                     <div
                         data-testid="home-v2-detail-thumbnail"
-                        className={`${isCompactLandscape
+                        className={isCompactLandscape
                             ? 'h-[78px] w-[78px] max-w-full'
-                            : 'h-[clamp(210px,12.4vw,294px)] w-[clamp(210px,12.4vw,294px)]'} relative overflow-hidden`}
+                            : 'h-[clamp(210px,12.4vw,294px)] w-[clamp(210px,12.4vw,294px)]'}
                     >
-                        {detailStatusLabel ? (
-                            <ImplementationStatusRibbon
-                                label={detailStatusLabel}
-                                testId="home-v2-detail-status-ribbon"
-                            />
-                        ) : null}
                         <DetailGameThumbnail game={game} title={displayName} framed />
                     </div>
                     <div className="min-w-0">
@@ -717,7 +704,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                         </div>
                         <div className="mb-[5px] flex items-center gap-[8px] text-[10px] font-bold tracking-[0.08em] text-[#4b2d1a]">
                             <span className="text-[#8b6a3f]">◆</span>
-                            <span>{t('common:game_details.description')}</span>
+                            <span>{t('common:game_details.description', '游戏简介')}</span>
                             <span className="text-[#8b6a3f]">◆</span>
                         </div>
                         <p className="line-clamp-3 text-[10.5px] leading-[1.38]">
@@ -733,7 +720,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                     >
                         <div className="mb-[3.0%] flex items-center gap-[8px] text-[clamp(14px,0.96vw,16px)] font-bold tracking-[0.08em] text-[#4b2d1a]">
                             <span className="text-[#8b6a3f]">◆</span>
-                            <span>{t('common:game_details.description')}</span>
+                            <span>{t('common:game_details.description', '游戏简介')}</span>
                             <span className="text-[#8b6a3f]">◆</span>
                         </div>
                         <p className="text-[clamp(14px,1.02vw,16px)] leading-[1.82] text-[#54341f]">
@@ -1316,6 +1303,7 @@ export const Right = ({ game }: RightProps) => {
         try {
             writeLocalMatchPreferences(game, stripAiSeatsFromLocalMatchPreferences({
                 numPlayers: config.numPlayers,
+                minimumActionDelayMs: config.minimumActionDelayMs,
                 seatControllers: config.seatControllers,
                 setupSelections: config.setupSelections,
             }));
@@ -1615,12 +1603,12 @@ export const Right = ({ game }: RightProps) => {
     const destroyRoomModal = (
         <HomeV2DangerConfirmModal
             open={activeTab === 'lobby' && Boolean(pendingDestroyRoom)}
-                title={t('lobby:confirm.destroy.title')}
-                description={t('lobby:homeV2.confirm.destroyDescription')}
+            title={t('lobby:confirm.destroy.title', { defaultValue: '销毁房间' })}
+            description={t('lobby:homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
             subject={pendingDestroyRoom ? getRoomTitle(pendingDestroyRoom.matchID, t, pendingDestroyRoom.roomName) : ''}
             cancelLabel={t('common:button.cancel')}
-                confirmLabel={t('lobby:actions.destroy')}
-                processingLabel={t('common:button.processing')}
+            confirmLabel={t('lobby:actions.destroy', { defaultValue: '销毁' })}
+            processingLabel={t('common:button.processing', { defaultValue: '处理中' })}
             isProcessing={isDestroyingRoom}
             onCancel={() => setPendingDestroyRoom(null)}
             onConfirm={() => void handleDestroyRoomConfirm()}
@@ -1633,10 +1621,10 @@ export const Right = ({ game }: RightProps) => {
 
     const hasVisibleRooms = filteredRoomPreviewItems.length > 0;
     const detailTabs: Array<{ id: HomeV2DetailTab; label: string; compactLabel: string }> = [
-            { id: 'lobby', label: t('lobby:homeV2.details.onlineLobbyLabel'), compactLabel: t('lobby:homeV2.details.onlineLobbyCompactLabel') },
-            { id: 'changelog', label: t('lobby:homeV2.detailTabs.updates'), compactLabel: t('lobby:homeV2.detailTabs.updatesCompact') },
-            { id: 'reviews', label: t('lobby:homeV2.detailTabs.reviews'), compactLabel: t('lobby:homeV2.detailTabs.reviewsCompact') },
-            { id: 'leaderboard', label: t('lobby:homeV2.detailTabs.ranking'), compactLabel: t('lobby:homeV2.detailTabs.rankingCompact') },
+        { id: 'lobby', label: t('lobby:homeV2.details.onlineLobbyLabel'), compactLabel: t('lobby:homeV2.details.onlineLobbyCompactLabel', { defaultValue: '大厅' }) },
+        { id: 'changelog', label: t('lobby:homeV2.detailTabs.updates', { defaultValue: '更新' }), compactLabel: t('lobby:homeV2.detailTabs.updatesCompact', { defaultValue: '更新' }) },
+        { id: 'reviews', label: t('lobby:homeV2.detailTabs.reviews', { defaultValue: '评价' }), compactLabel: t('lobby:homeV2.detailTabs.reviewsCompact', { defaultValue: '评价' }) },
+        { id: 'leaderboard', label: t('lobby:homeV2.detailTabs.ranking', { defaultValue: '排行榜' }), compactLabel: t('lobby:homeV2.detailTabs.rankingCompact', { defaultValue: '排行' }) },
     ];
     const roomLedgerGridClassName = isCompactLandscape
         ? 'grid-cols-[minmax(0,3.06fr)_44px_60px]'
@@ -1772,7 +1760,7 @@ export const Right = ({ game }: RightProps) => {
                         >
                             {ownerActiveRoom
                                 ? t('lobby:activeMatch.return', { id: ownerActiveRoom.matchID.slice(0, 4) })
-                        : t('lobby:actions.createRoom')}
+                                : t('lobby:actions.createRoom', '创建房间')}
                         </BookFrameButton>
                     </div>
 
@@ -1798,7 +1786,7 @@ export const Right = ({ game }: RightProps) => {
                                 })}
                                 testId="home-v2-active-room-destroy-button"
                             >
-                                    {t('lobby:actions.destroy')}
+                                {t('lobby:actions.destroy', { defaultValue: '销毁' })}
                             </BookLineButton>
                         </div>
                     ) : null}
@@ -1843,11 +1831,11 @@ export const Right = ({ game }: RightProps) => {
                                             const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
                                                 resolveRoomExpansionLabel(t, room.gameName, expansionId)
                                             )) ?? [];
+                                            const roomExpansionSummary = enabledExpansionLabels.length > 0
+                                                ? `${t('lobby:rooms.enabledExpansions', { defaultValue: '扩展' })}：${enabledExpansionLabels.join(' / ')}`
+                                                : '';
                                             const scenarioLabel = room.publicSetupSummary?.scenarioId
                                                 ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
-                                                : '';
-                                            const roomExpansionSummary = enabledExpansionLabels.length > 0
-                                        ? `${t('lobby:rooms.enabledExpansions')}：${enabledExpansionLabels.join(' / ')}`
                                                 : '';
                                             const roomScenarioSummary = scenarioLabel
                                                 ? `${t('lobby:rooms.scenario', { defaultValue: '剧本' })}：${scenarioLabel}`
@@ -1855,8 +1843,8 @@ export const Right = ({ game }: RightProps) => {
                                             const actionLabel = roomState.key === 'locked'
                                                 ? t('lobby:homeV2.lockedRoomLabel')
                                                 : roomState.key === 'full'
-                                    ? t('lobby:actions.spectate')
-                                    : t('lobby:actions.join');
+                                                    ? t('lobby:actions.spectate', { defaultValue: '观战' })
+                                                    : t('lobby:actions.join', { defaultValue: '加入' });
                                             const roomButtonDisabled = isLoading || isDestroyingRoom;
 
                                             return (
@@ -1889,24 +1877,24 @@ export const Right = ({ game }: RightProps) => {
                                                                     {getRoomTitle(room.matchID, t, room.roomName)}
                                                                 </div>
                                                                 <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} truncate leading-[1.2] text-[#5e3d27]`}>
-                                                                    {isCompactLandscape && (roomScenarioSummary || roomExpansionSummary)
-                                                                        ? `${getRoomSeatLine(room, t)} · ${[roomScenarioSummary, roomExpansionSummary].filter(Boolean).join(' · ')}`
+                                                                    {isCompactLandscape && roomExpansionSummary
+                                                                        ? `${getRoomSeatLine(room, t)} · ${roomExpansionSummary}`
                                                                         : getRoomSeatLine(room, t)}
                                                                 </div>
-                                                                {!isCompactLandscape && roomScenarioSummary ? (
-                                                                    <div
-                                                                        data-testid={`home-v2-room-scenario-summary-${room.matchID}`}
-                                                                        className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
-                                                                    >
-                                                                        {roomScenarioSummary}
-                                                                    </div>
-                                                                ) : null}
                                                                 {!isCompactLandscape && roomExpansionSummary ? (
                                                                     <div
                                                                         data-testid={`home-v2-room-expansion-summary-${room.matchID}`}
                                                                         className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
                                                                     >
                                                                         {roomExpansionSummary}
+                                                                    </div>
+                                                                ) : null}
+                                                                {!isCompactLandscape && roomScenarioSummary ? (
+                                                                    <div
+                                                                        data-testid={`home-v2-room-scenario-summary-${room.matchID}`}
+                                                                        className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
+                                                                    >
+                                                                        {roomScenarioSummary}
                                                                     </div>
                                                                 ) : null}
                                                             </div>

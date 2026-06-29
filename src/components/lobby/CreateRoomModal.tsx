@@ -8,7 +8,7 @@
  * - manifest 声明的 setupOptions（单选 / 多选）
  */
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -18,8 +18,10 @@ import { UI_Z_INDEX } from '../../core';
 import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import type { AiDifficultyLevel, AiSeatController } from '../../engine/ai';
 import {
+    DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
     DEFAULT_LOCAL_AI_DIFFICULTY,
     isManualSetupSelectionEnabledForSeat,
+    normalizeAiMinimumActionDelayMs,
     createDefaultLocalMatchPreferences,
     normalizeLocalMatchPreferences,
     type LocalMatchPreferences,
@@ -29,10 +31,12 @@ import {
     type GameSetupSelections,
 } from '../../games/setupOptions';
 import {
-    applyQidahenPregameChoiceDefaults,
-    getQidahenAllowedPlayerCounts,
-    getQidahenPregameChoiceFields,
-    readQidahenScenarioId,
+    applyCreateRoomSetupDefaultsForGame,
+    resolveAllowedPlayerCountsForGame,
+} from '../../games/roomSetupRegistry';
+import {
+    QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
+    QIDAHEN_PREGAME_CHOICE_FIELDS,
 } from '../../games/qidahen/roomSetup';
 import { SetupOptionsFields } from './SetupOptionsFields';
 import { PasswordField } from '../common/PasswordField';
@@ -59,6 +63,7 @@ const RETENTION_OPTIONS = [
 ] as const;
 
 const LOCAL_AI_DIFFICULTY_OPTIONS: AiDifficultyLevel[] = ['easy', 'normal', 'hard', 'expert'];
+const AI_MINIMUM_ACTION_DELAY_OPTIONS_MS = [0, 1000, 2000, 3000] as const;
 
 type CreateRoomVisualStyle = 'default' | 'home-v2';
 
@@ -68,6 +73,7 @@ export interface RoomConfig {
     ttlSeconds: number;
     password?: string;
     enableAi: boolean;
+    minimumActionDelayMs: number;
     seatControllers: Record<string, AiSeatController>;
     setupSelections: GameSetupSelections;
 }
@@ -88,11 +94,13 @@ function getEnabledAiController(
     gameManifest: GameManifestEntry,
     difficulty: AiDifficultyLevel,
     manualFactionSelection: boolean,
+    minimumActionDelayMs: number,
 ): AiSeatController {
     if (gameManifest.ai?.localAi) {
         return {
             type: 'local-ai',
             difficulty,
+            minimumActionDelayMs,
             ...(manualFactionSelection
                 ? {
                     manualSetupSelection: true,
@@ -105,6 +113,7 @@ function getEnabledAiController(
         return {
             type: 'remote-ai',
             providerId: 'astrbot',
+            minimumActionDelayMs,
             ...(manualFactionSelection
                 ? {
                     manualSetupSelection: true,
@@ -177,6 +186,32 @@ function applyManualFactionSelection(
             })();
     }
     return nextControllers;
+}
+
+function applyAiMinimumActionDelay(
+    seatControllers: Record<string, AiSeatController>,
+    numPlayers: number,
+    minimumActionDelayMs: number,
+): Record<string, AiSeatController> {
+    const nextControllers = forceHumanOwnerSeat({ ...seatControllers });
+    const normalizedDelayMs = normalizeAiMinimumActionDelayMs(minimumActionDelayMs)
+        ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
+    for (let index = 1; index < numPlayers; index += 1) {
+        const playerId = String(index);
+        const controller = nextControllers[playerId];
+        if (!controller || controller.type === 'human') {
+            continue;
+        }
+        nextControllers[playerId] = {
+            ...controller,
+            minimumActionDelayMs: normalizedDelayMs,
+        };
+    }
+    return nextControllers;
+}
+
+function formatAiThinkingDelayLabel(seconds: number): string {
+    return `${seconds}`;
 }
 
 export const resolveSetupFieldOptions = (
@@ -253,9 +288,39 @@ const normalizeExtendedSetupSelections = (
     isQidahenRoom: boolean,
 ): GameSetupSelections => (
     isQidahenRoom
-        ? applyQidahenPregameChoiceDefaults(selections)
+        ? {
+            ...Object.fromEntries(
+                Object.entries(selections).filter(([key]) => (
+                    key !== 'scenario'
+                    && !QIDAHEN_PREGAME_CHOICE_FIELDS.some((field) => field.key === key)
+                )),
+            ),
+            [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+        }
         : selections
 );
+
+const normalizeCreateRoomSetupSelections = (args: {
+    gameManifest: GameManifestEntry;
+    setupFields: ReadonlyArray<readonly [string, GameSetupField]>;
+    numPlayers: number;
+    setupSelections: GameSetupSelections;
+    isQidahenRoom: boolean;
+}): GameSetupSelections => {
+    const setupWithDefaults = applyCreateRoomSetupDefaultsForGame({
+        gameManifest: args.gameManifest,
+        numPlayers: args.numPlayers,
+        setupSelections: args.setupSelections,
+    });
+    return normalizeExtendedSetupSelections({
+        ...setupWithDefaults,
+        ...normalizeSetupValuesForFields(
+            args.setupFields,
+            args.numPlayers,
+            toSelectValueRecord(setupWithDefaults),
+        ),
+    }, args.isQidahenRoom);
+};
 
 export const CreateRoomModal = ({
     isOpen,
@@ -268,12 +333,33 @@ export const CreateRoomModal = ({
 }: CreateRoomModalProps) => {
     const gameNamespace = `game-${gameManifest.id}`;
     const { t } = useTranslation(['lobby', gameNamespace]);
-    const playerOptions = useMemo(() => gameManifest.playerOptions ?? [2], [gameManifest.playerOptions]);
     const setupFields = useMemo(
         () => Object.entries(gameManifest.setupOptions ?? {}),
         [gameManifest.setupOptions],
     );
     const isQidahenRoom = gameManifest.id === 'qidahen';
+    const rawDefaultSetupSelections = useMemo(
+        () => getDefaultSetupSelections(gameManifest),
+        [gameManifest],
+    );
+    const playerOptions = useMemo(
+        () => resolveAllowedPlayerCountsForGame({
+            gameManifest,
+            setupData: rawDefaultSetupSelections,
+        }),
+        [gameManifest, rawDefaultSetupSelections],
+    );
+    const defaultNumPlayers = useMemo(() => (
+        gameManifest.bestPlayers?.find((count) => playerOptions.includes(count))
+        ?? playerOptions[0]
+    ), [gameManifest.bestPlayers, playerOptions]);
+    const defaultSetupSelections = useMemo(() => normalizeCreateRoomSetupSelections({
+        gameManifest,
+        setupFields,
+        numPlayers: defaultNumPlayers,
+        setupSelections: rawDefaultSetupSelections,
+        isQidahenRoom,
+    }), [defaultNumPlayers, gameManifest, isQidahenRoom, rawDefaultSetupSelections, setupFields]);
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
@@ -283,52 +369,23 @@ export const CreateRoomModal = ({
     const primaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactPrimaryButtonClassName : homeV2PaperPrimaryButtonClassName;
     const secondaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactSecondaryButtonClassName : homeV2PaperSecondaryButtonClassName;
 
-    const resolveSetupLabel = (labelKey: string): string => {
-        const gamePrefix = `games.${gameManifest.id}.`;
-        if (labelKey.startsWith(gamePrefix)) {
-            return t(labelKey.slice(gamePrefix.length), {
-                ns: gameNamespace,
-                defaultValue: labelKey,
-            });
-        }
-        return t(labelKey, { defaultValue: labelKey });
-    };
-
     const [roomName, setRoomName] = useState('');
-    const [numPlayers, setNumPlayers] = useState(playerOptions[0]);
+    const [numPlayers, setNumPlayers] = useState(defaultNumPlayers);
     const [ttlSeconds, setTtlSeconds] = useState(0);
     const [password, setPassword] = useState('');
     const [enableAi, setEnableAi] = useState(false);
     const [aiDifficulty, setAiDifficulty] = useState<AiDifficultyLevel>(DEFAULT_LOCAL_AI_DIFFICULTY);
+    const [aiMinimumActionDelayMs, setAiMinimumActionDelayMs] = useState(DEFAULT_AI_MINIMUM_ACTION_DELAY_MS);
     const [manualFactionSelection, setManualFactionSelection] = useState(false);
     const [seatControllers, setSeatControllers] = useState<Record<string, AiSeatController>>({});
-    const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => {
-        const defaults = getDefaultSetupSelections(gameManifest);
-        return normalizeExtendedSetupSelections({
-            ...defaults,
-            ...normalizeSetupValuesForFields(setupFields, playerOptions[0], toSelectValueRecord(defaults)),
-        }, isQidahenRoom);
-    });
+    const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => defaultSetupSelections);
 
-    const currentQidahenScenarioId = useMemo(
-        () => (isQidahenRoom
-            ? readQidahenScenarioId(setupSelections as Record<string, unknown>)
-            : null),
-        [isQidahenRoom, setupSelections],
-    );
-    const qidahenPregameChoiceFields = useMemo(
-        () => (currentQidahenScenarioId
-            ? getQidahenPregameChoiceFields(currentQidahenScenarioId)
-            : []),
-        [currentQidahenScenarioId],
-    );
     const currentPlayerOptions = useMemo(
-        () => (
-            isQidahenRoom && currentQidahenScenarioId
-                ? [...getQidahenAllowedPlayerCounts(currentQidahenScenarioId)]
-                : playerOptions
-        ),
-        [currentQidahenScenarioId, isQidahenRoom, playerOptions],
+        () => resolveAllowedPlayerCountsForGame({
+            gameManifest,
+            setupData: setupSelections,
+        }),
+        [gameManifest, setupSelections],
     );
     const hasPlayerOptions = currentPlayerOptions.length > 1;
 
@@ -339,7 +396,10 @@ export const CreateRoomModal = ({
                 gameManifest,
                 initialPreferences as unknown as Record<string, unknown>,
             )
-            : createDefaultLocalMatchPreferences(gameManifest);
+            : {
+                ...createDefaultLocalMatchPreferences(gameManifest),
+                numPlayers: defaultNumPlayers,
+            };
         const nextSeatControllers = initialPreferences
             ? forceHumanOwnerSeat({ ...nextPreferences.seatControllers })
             : forceHumanOwnerSeat(
@@ -358,6 +418,8 @@ export const CreateRoomModal = ({
         const shouldEnableAi = initialPreferences
             ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0
             : false;
+        const nextMinimumActionDelayMs = normalizeAiMinimumActionDelayMs(nextPreferences.minimumActionDelayMs)
+            ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
 
         setRoomName('');
         setNumPlayers(nextPreferences.numPlayers);
@@ -365,17 +427,21 @@ export const CreateRoomModal = ({
         setPassword('');
         setEnableAi(shouldEnableAi);
         setAiDifficulty(inferredDifficulty);
+        setAiMinimumActionDelayMs(nextMinimumActionDelayMs);
         setManualFactionSelection(shouldManualFactionSelection);
-        setSeatControllers(nextSeatControllers);
-        setSetupSelections(normalizeExtendedSetupSelections({
-            ...nextPreferences.setupSelections,
-            ...normalizeSetupValuesForFields(
-                setupFields,
-                nextPreferences.numPlayers,
-                toSelectValueRecord(nextPreferences.setupSelections),
-            ),
-        }, isQidahenRoom));
-    }, [gameManifest, initialPreferences, isOpen, isQidahenRoom, playerOptions, setupFields]);
+        setSeatControllers(applyAiMinimumActionDelay(
+            nextSeatControllers,
+            nextPreferences.numPlayers,
+            nextMinimumActionDelayMs,
+        ));
+        setSetupSelections(normalizeCreateRoomSetupSelections({
+            gameManifest,
+            setupFields,
+            numPlayers: nextPreferences.numPlayers,
+            setupSelections: nextPreferences.setupSelections,
+            isQidahenRoom,
+        }));
+    }, [defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, isQidahenRoom, setupFields]);
 
     useEffect(() => {
         const fallbackPlayerCount = currentPlayerOptions[0];
@@ -416,21 +482,30 @@ export const CreateRoomModal = ({
             const normalized = normalizeLocalMatchPreferences(gameManifest, {
                 numPlayers,
                 seatControllers: current,
+                minimumActionDelayMs: aiMinimumActionDelayMs,
                 setupSelections,
             }).seatControllers;
-            return forceHumanOwnerSeat(normalized);
+            return applyAiMinimumActionDelay(
+                forceHumanOwnerSeat(normalized),
+                numPlayers,
+                aiMinimumActionDelayMs,
+            );
         });
-    }, [gameManifest, numPlayers, setupSelections]);
+    }, [aiMinimumActionDelayMs, gameManifest, numPlayers, setupSelections]);
 
     const handleSetupSelectionsChange = (nextSelections: GameSetupSelections) => {
         setSetupSelections(normalizeExtendedSetupSelections(nextSelections, isQidahenRoom));
     };
 
-    const handleQidahenPregameChoiceChange = (fieldKey: string, value: string) => {
-        setSetupSelections((current) => normalizeExtendedSetupSelections({
-            ...current,
-            [fieldKey]: value,
-        }, isQidahenRoom));
+    const handlePlayerCountChange = (nextNumPlayers: number) => {
+        setNumPlayers(nextNumPlayers);
+        setSetupSelections((current) => normalizeCreateRoomSetupSelections({
+            gameManifest,
+            setupFields,
+            numPlayers: nextNumPlayers,
+            setupSelections: current,
+            isQidahenRoom,
+        }));
     };
 
     const handleToggleAiEnabled = () => {
@@ -445,7 +520,12 @@ export const CreateRoomModal = ({
                     const nextControllers = forceHumanOwnerSeat({ ...existing });
                     const hasAiSeat = countAiSeats(nextControllers, numPlayers) > 0;
                     if (!hasAiSeat && numPlayers > 1) {
-                        nextControllers['1'] = getEnabledAiController(gameManifest, aiDifficulty, manualFactionSelection);
+                        nextControllers['1'] = getEnabledAiController(
+                            gameManifest,
+                            aiDifficulty,
+                            manualFactionSelection,
+                            aiMinimumActionDelayMs,
+                        );
                     }
                     return nextControllers;
                 });
@@ -469,7 +549,12 @@ export const CreateRoomModal = ({
             const nextControllers = forceHumanOwnerSeat({ ...current });
             const currentController = nextControllers[playerId];
             nextControllers[playerId] = currentController?.type === 'human'
-                ? getEnabledAiController(gameManifest, aiDifficulty, manualFactionSelection)
+                ? getEnabledAiController(
+                    gameManifest,
+                    aiDifficulty,
+                    manualFactionSelection,
+                    aiMinimumActionDelayMs,
+                )
                 : { type: 'human' };
             return nextControllers;
         });
@@ -485,12 +570,19 @@ export const CreateRoomModal = ({
         setSeatControllers((current) => applyManualFactionSelection(current, numPlayers, checked));
     };
 
+    const handleAiMinimumActionDelayChange = (value: number) => {
+        const nextDelayMs = normalizeAiMinimumActionDelayMs(value) ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
+        setAiMinimumActionDelayMs(nextDelayMs);
+        setSeatControllers((current) => applyAiMinimumActionDelay(current, numPlayers, nextDelayMs));
+    };
+
     const handleConfirm = () => {
         const normalizedSeatControllers = enableAi
             ? forceHumanOwnerSeat(
                 normalizeLocalMatchPreferences(gameManifest, {
                     numPlayers,
                     seatControllers,
+                    minimumActionDelayMs: aiMinimumActionDelayMs,
                     setupSelections,
                 }).seatControllers,
             )
@@ -505,6 +597,7 @@ export const CreateRoomModal = ({
             ttlSeconds,
             password: password.trim(),
             enableAi,
+            minimumActionDelayMs: aiMinimumActionDelayMs,
             seatControllers: normalizedSeatControllers,
             setupSelections,
         });
@@ -521,11 +614,8 @@ export const CreateRoomModal = ({
         titleClassName: string,
         descriptionClassName: string,
         fieldListClassName: string,
-        choiceLabelClassName: string,
-        selectClassName: string,
-        selectStyle?: CSSProperties,
     ) => {
-        if (!isQidahenRoom || qidahenPregameChoiceFields.length === 0) {
+        if (!isQidahenRoom) {
             return null;
         }
 
@@ -533,44 +623,22 @@ export const CreateRoomModal = ({
             <div className={containerClassName} data-testid="qidahen-pregame-choice-fields">
                 <div className="space-y-1">
                     <div className={titleClassName}>
-                        {resolveSetupLabel('games.qidahen.setup.pregameChoices.title')}
+                        {t('createRoom.qidahenInMatchSetupTitle', {
+                            defaultValue: '局内完成剧本投票与前置项',
+                        })}
                     </div>
                     <div className={descriptionClassName}>
-                        {resolveSetupLabel('games.qidahen.setup.pregameChoices.description')}
+                        {t('createRoom.qidahenInMatchSetupDescription', {
+                            defaultValue: '创建房间时只决定人数与 AI。进入棋盘后，再按联机席位完成剧本介绍、投票、人物与军备前置。',
+                        })}
                     </div>
                 </div>
                 <div className={fieldListClassName}>
-                    {qidahenPregameChoiceFields.map((field) => {
-                        const options = field.field.options ?? [];
-                        const fallbackValue = field.field.default ?? options[0]?.value ?? '';
-                        const currentValue = setupSelections[field.key];
-                        const selectedValue = typeof currentValue === 'string'
-                            && options.some((option) => option.value === currentValue)
-                            ? currentValue
-                            : fallbackValue;
-
-                        return (
-                            <div key={field.key} className="space-y-1">
-                                <label className={choiceLabelClassName} htmlFor={`qidahen-pregame-choice-${field.key}`}>
-                                    {resolveSetupLabel(field.field.labelKey)}
-                                </label>
-                                <select
-                                    id={`qidahen-pregame-choice-${field.key}`}
-                                    value={selectedValue}
-                                    onChange={(event) => handleQidahenPregameChoiceChange(field.key, event.target.value)}
-                                    className={selectClassName}
-                                    style={selectStyle}
-                                    data-testid={`qidahen-pregame-choice-${field.key}`}
-                                >
-                                    {options.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {resolveSetupLabel(option.labelKey)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        );
-                    })}
+                    <div className={descriptionClassName} data-testid="qidahen-pregame-choice-inline-note">
+                        {t('createRoom.qidahenPregameMovedInMatch', {
+                            defaultValue: '这里不再预设剧本，也不会代投。正式联机房间会先进入局内剧本介绍与投票页，再继续人物、军备前置。',
+                        })}
+                    </div>
                 </div>
             </div>
         );
@@ -715,7 +783,7 @@ export const CreateRoomModal = ({
                                                     <button
                                                         key={count}
                                                         type="button"
-                                                        onClick={() => setNumPlayers(count)}
+                                                        onClick={() => handlePlayerCountChange(count)}
                                                         className={`${isCompactHomeV2Layout ? 'min-w-[52px] rounded-[5px] px-[9px] py-[5px] text-[8.1px]' : 'rounded-[8px] px-4 py-2 text-sm'} cursor-pointer font-bold transition-all ${
                                                             numPlayers === count
                                                                 ? 'border border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]'
@@ -774,13 +842,6 @@ export const CreateRoomModal = ({
                                             ? 'text-[7px] leading-[1.45] text-[#7a573d]'
                                             : 'text-xs leading-5 text-[#7a573d]',
                                         isCompactHomeV2Layout ? 'grid gap-[7px]' : 'grid gap-3',
-                                        isCompactHomeV2Layout
-                                            ? 'block text-[7.6px] font-bold text-[#5b3822]'
-                                            : 'block text-xs font-bold text-[#5b3822]',
-                                        clsx(inputClassName, 'cursor-pointer appearance-none bg-[right_12px_center] bg-no-repeat'),
-                                        {
-                                            backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
-                                        },
                                     )}
 
                                     {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
@@ -836,6 +897,42 @@ export const CreateRoomModal = ({
                                                             })}
                                                         </div>
                                                     )}
+
+                                                    <div className={isCompactHomeV2Layout ? 'space-y-[4px]' : 'space-y-1.5'}>
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
+                                                                {t('createRoom.aiThinkingTime')}
+                                                            </span>
+                                                            <span className={fieldHintClassName}>
+                                                                {t('createRoom.aiThinkingTimeHint')}
+                                                            </span>
+                                                        </div>
+                                                        <select
+                                                            value={aiMinimumActionDelayMs}
+                                                            onChange={(event) => handleAiMinimumActionDelayChange(Number(event.target.value))}
+                                                            className={clsx(
+                                                                inputClassName,
+                                                                'cursor-pointer appearance-none bg-[right_12px_center] bg-no-repeat',
+                                                                isCompactHomeV2Layout && 'min-h-[24px] px-[8px] py-[4px] text-[7.5px]',
+                                                            )}
+                                                            style={{
+                                                                backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
+                                                            }}
+                                                            data-testid="create-room-ai-thinking-time-select"
+                                                        >
+                                                            {AI_MINIMUM_ACTION_DELAY_OPTIONS_MS.map((delayMs) => {
+                                                                const seconds = delayMs / 1000;
+                                                                return (
+                                                                    <option key={delayMs} value={delayMs}>
+                                                                        {t('createRoom.aiThinkingTimeSeconds', {
+                                                                            count: seconds,
+                                                                            defaultValue: `${formatAiThinkingDelayLabel(seconds)} 秒`,
+                                                                        })}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </div>
 
                                                     <div className={isCompactHomeV2Layout ? 'flex flex-wrap items-center gap-[6px]' : 'flex flex-wrap items-center gap-2'}>
                                                         <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
@@ -989,7 +1086,7 @@ export const CreateRoomModal = ({
                                                 <button
                                                     key={count}
                                                     type="button"
-                                                    onClick={() => setNumPlayers(count)}
+                                                    onClick={() => handlePlayerCountChange(count)}
                                                     className={`cursor-pointer rounded-[6px] px-4 py-2 text-sm font-bold transition-all ${
                                                         numPlayers === count
                                                             ? 'bg-parchment-base-text text-parchment-card-bg border border-parchment-base-text'
@@ -1039,8 +1136,6 @@ export const CreateRoomModal = ({
                                     'text-xs font-bold uppercase tracking-[0.08em] text-parchment-base-text',
                                     'text-xs leading-5 text-parchment-light-text',
                                     'grid gap-3',
-                                    'block text-xs font-bold text-parchment-base-text',
-                                    "w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm",
                                 )}
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
@@ -1096,6 +1191,35 @@ export const CreateRoomModal = ({
                                                         })}
                                                     </div>
                                                 )}
+
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <span className="text-xs font-bold text-parchment-base-text">
+                                                            {t('createRoom.aiThinkingTime')}
+                                                        </span>
+                                                        <span className="text-xs italic text-parchment-light-text">
+                                                            {t('createRoom.aiThinkingTimeHint')}
+                                                        </span>
+                                                    </div>
+                                                    <select
+                                                        value={aiMinimumActionDelayMs}
+                                                        onChange={(event) => handleAiMinimumActionDelayChange(Number(event.target.value))}
+                                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
+                                                        data-testid="create-room-ai-thinking-time-select"
+                                                    >
+                                                        {AI_MINIMUM_ACTION_DELAY_OPTIONS_MS.map((delayMs) => {
+                                                            const seconds = delayMs / 1000;
+                                                            return (
+                                                                <option key={delayMs} value={delayMs}>
+                                                                    {t('createRoom.aiThinkingTimeSeconds', {
+                                                                        count: seconds,
+                                                                        defaultValue: `${formatAiThinkingDelayLabel(seconds)} sec`,
+                                                                    })}
+                                                                </option>
+                                                            );
+                                                        })}
+                                                    </select>
+                                                </div>
 
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className="text-xs font-bold text-parchment-base-text">

@@ -266,6 +266,7 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
             lines.push(`    return {`);
             lines.push(`        engineConfig: gameModule.engineConfig,`);
             lines.push(`        board: boardModule.default,`);
+            lines.push(`        audioConfig: gameModule.audioConfig,`);
             if (entry.latencyConfigImport) {
                 lines.push(`        latencyConfig: latencyModule.${entry.latencyConfigExportName},`);
             }

@@ -5,6 +5,7 @@ import {
     resolveStableViewportSize,
     type RuntimeViewportSize,
 } from '../../games/mobileSupport';
+import { FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX } from '../../games/fantasyrealms/manifest';
 import { isTextEntrySessionElement } from '../../lib/textEntry';
 
 export interface RuntimeSafeAreaInsets {
@@ -26,8 +27,15 @@ const DEFAULT_ROOT_DESIGN_WIDTH = 1280;
 const DEFAULT_BOARD_SHELL_DESIGN_WIDTH = 1280;
 const BOARD_SHELL_DESIGN_WIDTH_BY_GAME: Record<string, number> = {
     dicethrone: 940,
+    fantasyrealms: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
     smashup: 1160,
     summonerwars: 900,
+};
+const BOARD_SHELL_MIN_LOGICAL_HEIGHT_BY_GAME: Record<string, number> = {
+    fantasyrealms: 800,
+};
+const BOARD_SHELL_MIN_READABLE_SCALE_BY_GAME: Record<string, number> = {
+    fantasyrealms: 0.52,
 };
 
 const parseCssPixels = (value: string) => {
@@ -183,6 +191,37 @@ const clearBoardShellVars = (root: HTMLElement) => {
     root.style.removeProperty('--mobile-board-shell-logical-height');
     root.style.removeProperty('--mobile-board-shell-inline-unit');
     root.style.removeProperty('--mobile-board-shell-block-unit');
+    root.style.removeProperty('--mobile-board-shell-offset-x');
+    root.style.removeProperty('--mobile-board-shell-offset-y');
+};
+
+const resolveBoardShellScaleMetrics = (
+    viewport: RuntimeViewportSize,
+    designWidth: number,
+    gameId: string,
+) => {
+    const widthMetrics = resolveRuntimeLayoutScaleMetrics(viewport, designWidth);
+    const minLogicalHeight = BOARD_SHELL_MIN_LOGICAL_HEIGHT_BY_GAME[gameId];
+    if (!minLogicalHeight) {
+        return { ...widthMetrics, offsetX: 0, offsetY: 0 };
+    }
+
+    const heightScale = Math.max(0.01, viewport.height / minLogicalHeight);
+    const minReadableScale = BOARD_SHELL_MIN_READABLE_SCALE_BY_GAME[gameId] ?? 0.01;
+    const scale = Math.min(widthMetrics.scale, Math.max(minReadableScale, heightScale));
+    const inverseScale = 1 / scale;
+    const renderedWidth = widthMetrics.designWidth * scale;
+    const renderedHeight = viewport.height;
+
+    return {
+        ...widthMetrics,
+        scale,
+        inverseScale,
+        logicalHeight: viewport.height * inverseScale,
+        blockUnit: (viewport.height * inverseScale) / 100,
+        offsetX: Math.max(0, (viewport.width - renderedWidth) / 2),
+        offsetY: Math.max(0, (viewport.height - renderedHeight) / 2),
+    };
 };
 
 export const applyRuntimeViewportCssVars = (
@@ -244,13 +283,15 @@ export const applyRuntimeViewportCssVars = (
     }
 
     const designWidth = BOARD_SHELL_DESIGN_WIDTH_BY_GAME[gameId] ?? DEFAULT_BOARD_SHELL_DESIGN_WIDTH;
-    const shellScaleMetrics = resolveRuntimeLayoutScaleMetrics(viewport, designWidth);
+    const shellScaleMetrics = resolveBoardShellScaleMetrics(viewport, designWidth, gameId);
     root.style.setProperty('--mobile-board-shell-design-width', `${shellScaleMetrics.designWidth}px`);
     root.style.setProperty('--mobile-board-shell-scale', shellScaleMetrics.scale.toFixed(6));
     root.style.setProperty('--mobile-board-shell-inverse-scale', shellScaleMetrics.inverseScale.toFixed(6));
     root.style.setProperty('--mobile-board-shell-logical-height', `${shellScaleMetrics.logicalHeight.toFixed(3)}px`);
     root.style.setProperty('--mobile-board-shell-inline-unit', `${shellScaleMetrics.inlineUnit.toFixed(4)}px`);
     root.style.setProperty('--mobile-board-shell-block-unit', `${shellScaleMetrics.blockUnit.toFixed(4)}px`);
+    root.style.setProperty('--mobile-board-shell-offset-x', `${shellScaleMetrics.offsetX.toFixed(3)}px`);
+    root.style.setProperty('--mobile-board-shell-offset-y', `${shellScaleMetrics.offsetY.toFixed(3)}px`);
     root.style.setProperty('--mobile-layout-inline-unit', `${shellScaleMetrics.inlineUnit.toFixed(4)}px`);
     root.style.setProperty('--mobile-layout-block-unit', `${shellScaleMetrics.blockUnit.toFixed(4)}px`);
 };

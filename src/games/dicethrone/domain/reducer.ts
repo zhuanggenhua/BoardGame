@@ -538,6 +538,27 @@ const handleDefenderSelectionRequested: EventHandler<Extract<DiceThroneEvent, { 
     };
 };
 
+const handleArtificerBotStateUpdated: EventHandler<Extract<DiceThroneEvent, { type: 'ARTIFICER_BOT_STATE_UPDATED' }>> = (
+    state,
+    event,
+) => {
+    const player = state.players[event.payload.playerId];
+    if (!player) return state;
+    return {
+        ...state,
+        players: {
+            ...state.players,
+            [event.payload.playerId]: {
+                ...player,
+                artificerBotState: {
+                    ...player.artificerBotState,
+                    ...event.payload.patch,
+                },
+            },
+        },
+    };
+};
+
 const handleDefenderSelectionResolved: EventHandler<Extract<DiceThroneEvent, { type: 'DEFENDER_SELECTION_RESOLVED' }>> = (
     state,
     event,
@@ -630,13 +651,14 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
             tokenActiveUseTiming === 'onOffensiveRollEnd'
             || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
         );
+    const shouldAutoResolveOffensiveRollEndChoice = isOffensiveRollEndChoice && customId !== 'use-ninjutsu';
 
     if (
         sourceAbilityId
         && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
-        && isOffensiveRollEndChoice
+        && shouldAutoResolveOffensiveRollEndChoice
     ) {
         resultState = {
             ...resultState,
@@ -683,13 +705,25 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
 
     for (const playerId of Object.keys(state.players)) {
         const player = state.players[playerId];
-        if (player?.pendingBonusDamage === undefined) continue;
+        const hasPendingBonusDamage = player?.pendingBonusDamage !== undefined;
+        const hasArtificerBotState = !!player?.artificerBotState;
+        if (!hasPendingBonusDamage && !hasArtificerBotState) continue;
         if (players === state.players) {
             players = { ...state.players };
         }
         players[playerId] = {
             ...player,
             pendingBonusDamage: undefined,
+            artificerBotState: player?.artificerBotState
+                ? Object.fromEntries(
+                    Object.entries(player.artificerBotState).map(([tokenId, botState]) => [
+                        tokenId,
+                        botState
+                            ? { ...botState, activationsUsedThisTurn: 0 }
+                            : botState,
+                    ]),
+                )
+                : player?.artificerBotState,
         };
     }
 
@@ -1131,6 +1165,8 @@ export const reduce = (
             return handleBonusDieRerolled(state, event);
         case 'BONUS_DICE_SETTLED':
             return handleBonusDiceSettled(state, event);
+        case 'ARTIFICER_BOT_STATE_UPDATED':
+            return handleArtificerBotStateUpdated(state, event);
         case 'EXTRA_ATTACK_TRIGGERED':
             return handleExtraAttackTriggered(state, event);
         case 'CHARACTER_SELECTED':

@@ -16,3 +16,5 @@ import './summonerwars/cursor';
 import './tictactoe/cursor';
 import './cardia/cursor';
 import './splendor/cursor';
+import './fantasyrealms/cursor';
+import './qidahen/cursor';

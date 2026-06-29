@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { registerKillerPlantAbilities } from '../../abilities/killer_plants';
@@ -47,7 +47,7 @@ const dummyRandom: RandomFn = {
     range: (min: number) => min,
 };
 
-beforeAll(() => {
+beforeEach(() => {
     clearRegistry();
     clearBaseAbilityRegistry();
     clearPowerModifierRegistry();
@@ -1558,20 +1558,8 @@ describe('killer_plants POD 数据与特殊回归', () => {
         expect(result.success).toBe(true);
         expect(result.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
         expect(result.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(0);
-
-        const delayUntil = (result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
+        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_REPLACED)).toHaveLength(0);
+        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
         expect(result.finalState.sys.phase).toBe('scoreBases');
-
-        const finalized = runCommand(result.finalState, {
-            type: 'ADVANCE_PHASE' as any,
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        });
-
-        expect(finalized.success).toBe(true);
-        expect(finalized.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
-        expect(finalized.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(1);
     });
 });

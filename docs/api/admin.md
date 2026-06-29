@@ -863,12 +863,37 @@ Authorization: Bearer <admin_token>
         "mode": "online",
         "matchId": "abc",
         "playerId": "0",
-        "gameId": "smashup"
+        "gameId": "smashup",
+        "appVersion": "0.6.1",
+        "appCommitSha": "abc123def456",
+        "appBuildTime": "2026-06-19T10:00:00.000Z",
+        "appReleaseChannel": "production",
+        "lastUserAction": {
+          "type": "click",
+          "at": "2026-06-20T08:00:00.000Z",
+          "target": { "tagName": "button", "testId": "confirm-play" }
+        },
+        "recentUserActions": [
+          { "type": "pointerdown", "at": "2026-06-20T07:59:59.000Z" },
+          { "type": "click", "at": "2026-06-20T08:00:00.000Z" }
+        ],
+        "lastRouteChange": {
+          "from": "/play/smashup/match/abc?seat=0",
+          "to": "/play/smashup/match/abc?seat=0&step=confirm",
+          "trigger": "pushState",
+          "at": "2026-06-20T08:00:01.000Z"
+        },
+        "pageFlags": {
+          "isGamePage": true,
+          "gameId": "smashup"
+        }
       },
       "errorContext": {
         "name": "TypeError",
         "message": "Cannot read properties of undefined",
-        "source": "react.error_boundary"
+        "source": "react.error_boundary",
+        "jsStack": "TypeError: ...",
+        "componentStack": "at CardPanel"
       },
       "createdAt": "2026-03-14T10:00:00.000Z"
     }

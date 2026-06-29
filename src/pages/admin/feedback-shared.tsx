@@ -20,6 +20,7 @@ export interface FeedbackItem {
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     closedReason?: string | null;
+    resolvedMethod?: string | null;
     gameName?: string;
     contactInfo?: string;
     actionLog?: string;
@@ -304,11 +305,38 @@ function formatLastUserAction(context: FeedbackClientContext): string {
     return parts.join(', ');
 }
 
+function formatRecentUserActions(context: FeedbackClientContext): string {
+    const actions = context.recentUserActions;
+    if (!actions?.length) return '-';
+    return actions
+        .map((action, index) => {
+            const parts = [
+                `${index + 1}.${action.type}`,
+                action.key ? `key=${action.key}` : '',
+                action.at ? `at=${action.at}` : '',
+                action.target ? `target=${formatElementSummary(action.target)}` : '',
+            ].filter(Boolean);
+            return parts.join(', ');
+        })
+        .join(' | ');
+}
+
 function formatRouteChange(context: FeedbackClientContext): string {
     const routeChange = context.lastRouteChange;
     if (!routeChange) return '-';
     const from = routeChange.from || '-';
     return `${from} -> ${routeChange.to} (${routeChange.trigger} @ ${routeChange.at})`;
+}
+
+function formatRecentRouteChanges(context: FeedbackClientContext): string {
+    const routeChanges = context.recentRouteChanges;
+    if (!routeChanges?.length) return '-';
+    return routeChanges
+        .map((routeChange, index) => {
+            const from = routeChange.from || '-';
+            return `${index + 1}.${from} -> ${routeChange.to} (${routeChange.trigger} @ ${routeChange.at})`;
+        })
+        .join(' | ');
 }
 
 function formatPageFlags(context: FeedbackClientContext): string {
@@ -335,12 +363,17 @@ function buildClientContextLines(context: FeedbackClientContext | null | undefin
         `- playerId: ${context.playerId || '-'}`,
         `- gameId: ${context.gameId || '-'}`,
         `- appVersion: ${context.appVersion || '-'}`,
+        `- appCommitSha: ${context.appCommitSha || '-'}`,
+        `- appBuildTime: ${context.appBuildTime || '-'}`,
+        `- appReleaseChannel: ${context.appReleaseChannel || '-'}`,
         `- language: ${context.language || '-'}`,
         `- timezone: ${context.timezone || '-'}`,
         `- viewport: ${context.viewport ? `${context.viewport.width}x${context.viewport.height}` : '-'}`,
         `- activeElement: ${formatElementSummary(context.activeElement)}`,
         `- lastUserAction: ${formatLastUserAction(context)}`,
+        `- recentUserActions: ${formatRecentUserActions(context)}`,
         `- lastRouteChange: ${formatRouteChange(context)}`,
+        `- recentRouteChanges: ${formatRecentRouteChanges(context)}`,
         `- pageFlags: ${formatPageFlags(context)}`,
         `- userAgent: ${context.userAgent || '-'}`,
     ];
@@ -390,6 +423,7 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
         `- 严重度: ${t(`feedback.severity.${item.severity}`)}`,
         `- 状态: ${t(`feedback.status.${item.status}`)}`,
         item.closedReason ? `- 关闭理由: ${item.closedReason}` : '',
+        item.resolvedMethod ? `- 解决方式: ${item.resolvedMethod}` : '',
         gameLabel ? `- 游戏: ${gameLabel}` : '',
         `- 提交人: ${reporter}`,
         item.contactInfo ? `- 联系方式: ${item.contactInfo}` : '',

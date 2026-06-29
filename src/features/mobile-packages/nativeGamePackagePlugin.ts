@@ -11,6 +11,7 @@ import { normalizeGamePackageAssetBaseUrl, normalizeNativeAssetRootPath } from '
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { resolveAssetsBaseUrlFromEnv } from '../../core/AssetLoader';
 import { SHARED_AUDIO_PACK_GAME_ID } from './sharedAudioPack';
+import { resolveMissingAssetPackErrorCode } from './errorMessages';
 
 type PluginListenerHandle = {
     remove(): Promise<void>;
@@ -220,6 +221,7 @@ const isGamePackageInstallErrorCode = (value: string): value is GamePackageInsta
     || value === 'file-io'
     || value === 'cancelled'
     || value === 'task-conflict'
+    || value === 'manifest-fetch-failed'
     || value === 'manifest-missing'
     || value === 'notification-permission-required'
     || value === 'unsupported-runtime'
@@ -688,7 +690,7 @@ export const cancelNativeGamePackageInstall = async (gameId: string): Promise<bo
 
 const createNativeFailureHandle = (
     manifest: ResolvedGamePackageManifest,
-    errorMessage: string,
+    errorMessage: string | undefined,
     errorCode: GamePackageInstallErrorCode | undefined,
     options: NativeInstallRunnerOptions,
 ): GamePackageInstallHandle => {
@@ -738,7 +740,12 @@ export const createNativeGamePackageInstallHandle = async (
             assetPackVersion: manifest.assetPackVersion,
             hasModulePackUrl: Boolean(manifest.modulePackUrl),
         });
-        return createNativeFailureHandle(manifest, '当前还没有可下载的游戏包，请先发布一版。', 'manifest-missing', options);
+        return createNativeFailureHandle(
+            manifest,
+            undefined,
+            resolveMissingAssetPackErrorCode(manifest),
+            options,
+        );
     }
 
     const notificationPermission = await ensureNativeDownloadNotificationPermission();

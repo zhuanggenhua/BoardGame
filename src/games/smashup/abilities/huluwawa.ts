@@ -32,6 +32,7 @@ import {
     playTitan,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
 import { registerBaseAbility } from '../domain/baseAbilities';
 import { registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
@@ -50,7 +51,6 @@ import {
     type CardsDrawnEvent,
     type DeckReorderedEvent,
     type MinionPlayedEvent,
-    type OngoingDetachedEvent,
     type SmashUpCore,
     type SmashUpCommand,
     type SmashUpEvent,
@@ -96,6 +96,9 @@ type HuluwawaPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+    sourceCardUid?: string;
+    sourceBaseIndex?: number;
+    sourceKind?: 'action' | 'nonAction';
     titleKey?: string;
     titleParams?: Record<string, string | number>;
 };
@@ -262,6 +265,13 @@ function buildShuffleCardIntoDeckEvents(
     now: number,
     random: RandomFn,
     expectedLocation: 'discard' | 'bases' | 'any' = 'discard',
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): SmashUpEvent[] {
     const owner = core.players[ownerId];
     if (!owner) return [];
@@ -269,6 +279,11 @@ function buildShuffleCardIntoDeckEvents(
         cardUid,
         defId,
         ownerId,
+        ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+        ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+        ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+        ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+        ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
         reason,
         now,
         expectedLocation,
@@ -504,7 +519,10 @@ function huluwawaWuWaTalent(ctx: AbilityContext): AbilityResult {
         });
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const result = executeAbilityProgram(huluwawaMoveToSourceBaseProgram, createHuluwawaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        sourceCardUid: ctx.cardUid,
         sourceDefId: ctx.defId,
+        sourceBaseIndex: ctx.baseIndex,
+        sourceKind: 'nonAction',
         title: '五娃：选择一个力量 3 或更小的仆从移动到这里',
         titleKey: 'ui.huluwawa_wu_wa_title',
         targets,
@@ -577,6 +595,9 @@ function huluwawaWhereDoYouThinkYoureGoing(ctx: AbilityContext): AbilityResult {
     const moveTargets = collectAllMinions(ctx.state);
     if (destroyTargets.length === 0 && moveTargets.length === 0) return { events: [] };
     const result = executeAbilityProgram(huluwawaWhereDoYouThinkProgram, createHuluwawaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        sourceCardUid: ctx.cardUid,
+        sourceBaseIndex: ctx.baseIndex,
+        sourceKind: 'action',
         sourceDefId: ctx.defId,
         destroyTargets,
         moveTargets,
@@ -621,8 +642,10 @@ function huluwawaPangolinTalent(ctx: AbilityContext): AbilityResult {
         .filter(target => target.baseIndex !== undefined);
     if (movable.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const result = executeAbilityProgram(huluwawaPangolinProgram, createHuluwawaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        sourceCardUid: ctx.cardUid,
         sourceDefId: ctx.defId,
         sourceBaseIndex,
+        sourceKind: 'nonAction',
         targets: movable,
     }));
     return { events: result.events, matchState: result.matchState };
@@ -643,6 +666,11 @@ function huluwawaReleaseMyGrandpa(ctx: AbilityContext): AbilityResult {
                 cardUid: ctx.cardUid,
                 defId: ctx.defId,
                 ownerId: ctx.playerId,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
                 reason: 'huluwawa_release_my_grandpa',
                 now: ctx.now,
                 expectedLocation: 'any',
@@ -748,6 +776,13 @@ function huluwawaSanWaReplacement(ctx: TriggerContext): TriggerResult | SmashUpE
         ctx.now,
         ctx.random,
         'bases',
+        {
+            sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceCardUid: ctx.sourceCardUid ?? ctx.triggerMinionUid,
+            sourceDefId: ctx.sourceDefId ?? ctx.triggerMinionDefId,
+            sourceControllerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        },
     );
 }
 
@@ -800,6 +835,13 @@ function huluwawaNoPresenceScoringRedirect(ctx: TriggerContext): TriggerResult |
         ctx.now,
         ctx.random,
         'bases',
+        {
+            sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceCardUid: ctx.sourceCardUid ?? ctx.triggerMinionUid,
+            sourceDefId: ctx.sourceDefId ?? ctx.triggerMinionDefId,
+            sourceControllerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        },
     );
 }
 
@@ -934,6 +976,11 @@ const huluwawaDestroyForCounterProgram = createPromptProgram<
                     minionDefId: selected.defId,
                     fromBaseIndex: selected.baseIndex,
                     destroyerId: context.playerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.sourceMinionUid,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
                     reason: 'huluwawa_si_wa',
                     now: timestamp,
                 }),
@@ -988,6 +1035,12 @@ const huluwawaMoveToSourceBaseProgram = createPromptProgram<
                 toBaseDefId: state.core.bases[context.targetBaseIndex]?.defId,
                 reason: context.reason,
                 now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.sourceBaseIndex ?? context.targetBaseIndex,
+                sourceKind: context.sourceKind,
             }),
         };
     },
@@ -1147,6 +1200,9 @@ const huluwawaDestroyAnyProgram = createPromptProgram<
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: context.playerId,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
                 reason: context.reason,
                 now: timestamp,
             }),
@@ -1228,6 +1284,12 @@ const huluwawaMoveAnyBaseProgram = createPromptProgram<
                 toBaseDefId: selected.baseDefId,
                 reason: context.reason,
                 now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.sourceBaseIndex,
+                sourceKind: context.sourceKind,
             }),
         };
     },
@@ -1271,6 +1333,12 @@ const huluwawaPangolinProgram = createPromptProgram<
                     toBaseDefId: state.core.bases[context.sourceBaseIndex]?.defId,
                     reason: 'huluwawa_pangolin',
                     now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: context.sourceCardUid,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                    sourceKind: context.sourceKind,
                 }),
             };
         }
@@ -2036,16 +2104,13 @@ export function registerHuluwawaAbilities(): void {
     });
     registerTrigger('huluwawa_butterfly_sisters_help', 'onMinionDestroyed', (ctx) => {
         if (!ctx.sourceCardUid) return [];
-        return [{
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: ctx.sourceCardUid,
-                defId: 'huluwawa_butterfly_sisters_help',
-                ownerId: ctx.playerId,
-                reason: 'huluwawa_butterfly_sisters_help',
-            },
-            timestamp: ctx.now,
-        } as OngoingDetachedEvent];
+        return [buildOngoingDetachedEvent({
+            cardUid: ctx.sourceCardUid,
+            defId: 'huluwawa_butterfly_sisters_help',
+            ownerId: ctx.playerId,
+            reason: 'huluwawa_butterfly_sisters_help',
+            now: ctx.now,
+        })];
     }, {
         phase: 'replacement',
         perInstance: true,

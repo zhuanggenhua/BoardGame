@@ -1,11 +1,14 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
     bridgeMixedRoomToSecondHumanDrawTurn,
     clearEvidenceScreenshotsForTest,
+    completeNaturalHumanDeckTurn,
+    createAiTakeDiscardBranchCore,
+    createOnlineAiNearReviewCore,
     createPlayerContext,
     createSixPlayerMixedWaitingToReviewCore,
     expectFantasyRealmsSpectatorLiveNoLeak,
@@ -14,19 +17,164 @@ import {
     GAME_NAME,
     expectWaitingPageKeepsOpponentFocusHidden,
     getEvidenceScreenshotPath,
+    injectOnlineAiCore,
     injectMatchState,
     openFantasyRealmsOnlineAiMixedRoom,
     openFantasyRealmsOnlineAiRoom,
     readOnlineAiCore,
     readOnlineAiMatchState,
     readOnlineAiStateSummary,
-    switchFantasyRealmsPageToStackedLayout,
+    switchFantasyRealmsPageToCompactLandscapeLayout,
     waitForFantasyRealmsBoard,
+    waitForSingleOnlineAiRoundtrip,
     waitForFantasyRealmsPlayerReviewBoard,
     waitForFantasyRealmsSpectatorBoard,
 } from './helpers/fantasyrealmsOnlineAi';
+import { initContext } from '../helpers/common';
+import { seedMatchCredentials } from '../helpers/common';
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
+const LIVE_CENTER_CARD_WIDTH_PX = 206;
+const LIVE_CENTER_CARD_MIN_WIDTH_PX = 96;
+const LIVE_DESKTOP_CONTENT_INLINE_PADDING_PX = 16;
+const LIVE_CENTER_CARD_WIDTH_FIT_UNITS = 9.15;
+const getFantasyRealmsDeckDrawButton = (page: Page) => page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
+const getFantasyRealmsFocusName = (page: Page) => page.locator('.fr-focus-name, .fr-compact-focus-name').first();
+
+async function clickFantasyRealmsDeckDrawButtonIfVisible(page: Page) {
+    const deckButton = getFantasyRealmsDeckDrawButton(page);
+    if (await deckButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await deckButton.click();
+    }
+}
+
+async function getLocatorRects(page: Page, selector: string) {
+    return page.locator(selector).evaluateAll((elements) => elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        };
+    }));
+}
+
+async function getLocatorRect(page: Page, selector: string) {
+    return page.locator(selector).first().evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        };
+    });
+}
+
+async function getViewportMetrics(page: Page) {
+    return page.evaluate(() => ({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+    }));
+}
+
+async function getComputedGap(page: Page, selector: string) {
+    return page.locator(selector).first().evaluate((element) => Number.parseFloat(getComputedStyle(element).gap || '0'));
+}
+
+function getMinimumHorizontalGap(rects: Array<{ x: number; width: number }>) {
+    if (rects.length <= 1) return Infinity;
+    let minimumGap = Number.POSITIVE_INFINITY;
+    for (let index = 1; index < rects.length; index += 1) {
+        const previous = rects[index - 1]!;
+        const current = rects[index]!;
+        minimumGap = Math.min(minimumGap, current.x - (previous.x + previous.width));
+    }
+    return minimumGap;
+}
+
+function getExpectedLiveCenterCardWidth(viewportWidth: number) {
+    const liveContentWidth = viewportWidth - (LIVE_DESKTOP_CONTENT_INLINE_PADDING_PX * 2);
+    return Math.min(
+        LIVE_CENTER_CARD_WIDTH_PX,
+        Math.max(LIVE_CENTER_CARD_MIN_WIDTH_PX, liveContentWidth / LIVE_CENTER_CARD_WIDTH_FIT_UNITS),
+    );
+}
+
+function getRectGroupCenter(rects: Array<{ x: number; width: number }>) {
+    const left = Math.min(...rects.map((rect) => rect.x));
+    const right = Math.max(...rects.map((rect) => rect.x + rect.width));
+    return left + ((right - left) / 2);
+}
+
+async function waitForLocatorRectsToSettle(page: Page, selector: string, timeoutMs = 3000) {
+    const deadline = Date.now() + timeoutMs;
+    let previousSignature: string | null = null;
+    while (Date.now() < deadline) {
+        const rects = await getLocatorRects(page, selector);
+        const signature = JSON.stringify(rects);
+        if (rects.length > 0 && signature === previousSignature) {
+            return rects;
+        }
+        previousSignature = signature;
+        await page.waitForTimeout(120);
+    }
+    return getLocatorRects(page, selector);
+}
+
+async function readLiveCenterLayoutMetrics(page: Page) {
+    return page.evaluate(() => {
+        const root = document.querySelector('.fr-root');
+        const row = document.querySelector('[data-testid="fantasyrealms-live-center-row"]');
+        const grid = document.querySelector('[data-testid="fantasyrealms-discard-slot-grid"]');
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('.fr-card-button--live-center'));
+        const placeholders = Array.from(document.querySelectorAll<HTMLElement>('.fr-card-slot--live-center-placeholder'));
+        const rootStyle = root ? getComputedStyle(root) : null;
+        const rowStyle = row ? getComputedStyle(row) : null;
+        const rowRect = row?.getBoundingClientRect();
+        const gridRect = grid?.getBoundingClientRect();
+
+        return {
+            rowRect: rowRect ? {
+                x: Math.round(rowRect.x),
+                y: Math.round(rowRect.y),
+                width: Math.round(rowRect.width),
+                height: Math.round(rowRect.height),
+            } : null,
+            gridRect: gridRect ? {
+                x: Math.round(gridRect.x),
+                y: Math.round(gridRect.y),
+                width: Math.round(gridRect.width),
+                height: Math.round(gridRect.height),
+            } : null,
+            rowComputedWidth: rowStyle?.width?.trim() ?? null,
+            placeholderCount: placeholders.length,
+            cssVars: rootStyle ? {
+                centerRowWidth: rootStyle.getPropertyValue('--fr-live-center-row-width').trim(),
+                centerCardWidth: rootStyle.getPropertyValue('--fr-live-center-card-width').trim(),
+                centerStride: rootStyle.getPropertyValue('--fr-live-center-card-stride').trim(),
+                secondRowTop: rootStyle.getPropertyValue('--fr-live-center-second-row-top').trim(),
+            } : null,
+            cards: cards.map((element, index) => {
+                const rect = element.getBoundingClientRect();
+                return {
+                    index,
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                    left: element.style.left,
+                    top: element.style.top,
+                    zIndex: getComputedStyle(element).zIndex,
+                    preview: (element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80),
+                };
+            }),
+        };
+    });
+}
 
 test.describe('FantasyRealms online AI flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
@@ -47,76 +195,374 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             await clearEvidenceScreenshotsForTest(testInfo);
 
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
-            const initialHand0 = initialSummary.handCounts['0'] ?? 0;
-            const initialDiscardCount = initialSummary.discardCount;
-            const initialTurn = initialSummary.turn ?? 1;
             expect(initialSummary.currentPlayer).toBe('0');
             expect(initialSummary.turn).toBe(1);
-            expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
-
-            await expect.poll(async () => {
-                const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '0'
-                    && summary.turn === 1
-                    && summary.stage === 'discard'
-                    && (summary.handCounts['0'] ?? 0) > initialHand0;
-            }, {
-                timeout: 10000,
-                message: '等待 human 从 draw 进入 discard',
-            }).toBe(true);
-
-            const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
-
-            const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).nth(1);
-            await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
-
-            await expect.poll(async () => {
-                const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '1'
-                    && summary.discardCount >= initialDiscardCount + 1
-                    && (summary.handCounts['0'] ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
-                    && (summary.stage === 'draw' || summary.stage === 'discard')
-                    && (summary.turn ?? 0) >= initialTurn;
-            }, {
-                timeout: 10000,
-                message: '等待 human 结束首轮后真实轮到 AI 接管回合',
-            }).toBe(true);
-
-            const aiTurnSummary = await readOnlineAiStateSummary(matchId, page);
-            await expect.poll(async () => {
-                const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '0'
-                    && summary.stage === 'draw'
-                    && (summary.handCounts['0'] ?? 0) === (aiTurnSummary.handCounts['0'] ?? 0)
-                    && (summary.turn ?? 0) > (aiTurnSummary.turn ?? 0);
-            }, {
-                timeout: 35000,
-                message: '等待 seat1 local AI 自动完成一轮并把回合交回 human',
-            }).toBe(true);
-
-            const afterAiSummary = await readOnlineAiStateSummary(matchId, page);
-            expect(afterAiSummary.eventStreamNextId).not.toBeNull();
-            expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
-            expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
-            expect(
-                afterAiSummary.drawPileCount !== aiTurnSummary.drawPileCount
-                || afterAiSummary.discardSignature !== aiTurnSummary.discardSignature,
-            ).toBe(true);
-            await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            const aiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '2人在线 AI 房间首轮 human',
+            });
+            await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary,
+                roundLabel: '2人在线 AI 房间首轮',
+            });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-human-roundtrip');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
 
             assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-ai', diagnostics }]);
+        } finally {
+            await context.close().catch(() => {});
+        }
+    });
+
+    test('真实在线房间低张数公开弃牌保持前缀槽位一致，并使用更大的重叠双排牌河', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await openFantasyRealmsOnlineAiRoom(browser, baseURL, {
+            viewport: { width: 1920, height: 1080 },
+        });
+        if (!match) {
+            test.skip(true, 'Game server unavailable for Fantasy Realms online center layout test.');
+        }
+
+        const { context, page, matchId, hostPlayerId, hostCredentials, aiCredentialsBySeat } = match!;
+        const diagnostics = attachPageDiagnostics(page);
+        const centerCardsSelector = '.fr-card-button--live-center';
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await injectOnlineAiCore(matchId, page, createOnlineAiNearReviewCore(['0', '1'], '0', 6));
+            await expect(page.locator(centerCardsSelector)).toHaveCount(9, { timeout: 10000 });
+            const fullRowRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
+            expect(fullRowRects).toHaveLength(9);
+            const topRowRects = fullRowRects.slice(0, 5);
+            const secondRowRects = fullRowRects.slice(5);
+            const topRowStride = topRowRects[1]!.x - topRowRects[0]!.x;
+            const secondRowStride = secondRowRects[1]!.x - secondRowRects[0]!.x;
+            const secondRowOffset = secondRowRects[0]!.x - topRowRects[0]!.x;
+            const rowTopDelta = secondRowRects[0]!.y - topRowRects[0]!.y;
+            expect(topRowStride).toBeGreaterThan(topRowRects[0]!.width);
+            expect(topRowStride).toBeLessThan(topRowRects[0]!.width * 1.3);
+            expect(Math.abs(topRowStride - secondRowStride)).toBeLessThanOrEqual(2);
+            expect(secondRowOffset).toBeLessThan(0);
+            expect(Math.abs(secondRowOffset)).toBeGreaterThanOrEqual(Math.round(topRowRects[0]!.width * 0.35));
+            expect(Math.abs(secondRowOffset)).toBeLessThanOrEqual(Math.round(topRowRects[0]!.width * 0.65));
+            expect(rowTopDelta).toBeGreaterThan(Math.round(topRowRects[0]!.height * 0.45));
+            expect(rowTopDelta).toBeLessThan(Math.round(topRowRects[0]!.height * 0.8));
+            const fullLayoutMetrics = await readLiveCenterLayoutMetrics(page);
+            const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-nine-cards');
+            await mkdir(dirname(fullEvidencePath), { recursive: true });
+            await page.screenshot({ path: fullEvidencePath, fullPage: false });
+
+            const oneCardCore = createAiTakeDiscardBranchCore();
+            await injectOnlineAiCore(matchId, page, {
+                ...oneCardCore,
+                currentPlayer: '0',
+                discardPile: oneCardCore.discardPile.slice(0, 1),
+            });
+            await expect(page.locator(centerCardsSelector)).toHaveCount(1, { timeout: 10000 });
+            const oneCardRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
+            expect(oneCardRects).toHaveLength(1);
+            expect(Math.abs(oneCardRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            const oneCardLayoutMetrics = await readLiveCenterLayoutMetrics(page);
+            expect(oneCardLayoutMetrics.placeholderCount).toBe(0);
+            const oneEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-one-card');
+            await mkdir(dirname(oneEvidencePath), { recursive: true });
+            await page.screenshot({ path: oneEvidencePath, fullPage: false });
+
+            await injectOnlineAiCore(matchId, page, {
+                ...createAiTakeDiscardBranchCore(),
+                currentPlayer: '0',
+            });
+            await expect(page.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
+            const lowCountRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
+            expect(lowCountRects).toHaveLength(2);
+
+            expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
+            const wideTwoCardWidth = lowCountRects[0]!.width;
+            const twoCardLayoutMetrics = await readLiveCenterLayoutMetrics(page);
+            expect(twoCardLayoutMetrics.placeholderCount).toBe(0);
+
+            const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-cards');
+            await mkdir(dirname(lowEvidencePath), { recursive: true });
+            await page.screenshot({ path: lowEvidencePath, fullPage: false });
+            const wideDeckRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-deck"] .fr-live-deck-stack');
+            const wideScoreRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-score-strip"]');
+            const wideActionRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-action-draw"]');
+            const wideTopbarRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-topbar"]');
+            const wideViewport = await getViewportMetrics(page);
+
+            const narrowContext = await browser.newContext({
+                baseURL,
+                viewport: { width: 1281, height: 754 },
+                deviceScaleFactor: 1.75,
+            });
+            await initContext(narrowContext, {
+                storageKey: '__fantasyrealms_online_ai_narrow__',
+                skipImageGate: true,
+                gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+                apiServerBaseURL: process.env.PW_API_SERVER_URL,
+            });
+            await seedMatchCredentials(narrowContext, GAME_NAME, matchId, hostPlayerId, hostCredentials);
+            await narrowContext.addInitScript(({ targetMatchId, targetCredentials }) => {
+                localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetCredentials));
+            }, { targetMatchId: matchId, targetCredentials: aiCredentialsBySeat });
+            const narrowPage = await narrowContext.newPage();
+            try {
+                await narrowPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=${hostPlayerId}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+                await waitForFantasyRealmsBoard(narrowPage, hostPlayerId);
+                await narrowPage.waitForTimeout(500);
+                await expect(narrowPage.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
+                const narrowRects = await waitForLocatorRectsToSettle(narrowPage, centerCardsSelector);
+                const narrowViewport = await getViewportMetrics(narrowPage);
+                const narrowViewportWidth = narrowViewport.innerWidth;
+                const expectedNarrowCardWidth = getExpectedLiveCenterCardWidth(narrowViewportWidth);
+                const narrowDeckRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-deck"] .fr-live-deck-stack');
+                const narrowScoreRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-score-strip"]');
+                const narrowActionRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-action-draw"]');
+                const narrowTopbarRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-topbar"]');
+
+                expect(narrowRects[0]!.width).toBeLessThan(wideTwoCardWidth);
+                expect(Math.abs(narrowRects[0]!.width - expectedNarrowCardWidth)).toBeLessThanOrEqual(3);
+                expect(Math.abs(narrowRects[0]!.height - narrowRects[1]!.height)).toBeLessThanOrEqual(2);
+                expect(Math.abs(narrowRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+                expect(Math.abs(narrowRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
+                expect(narrowDeckRect.width).toBeLessThanOrEqual(wideDeckRect.width);
+                expect(narrowScoreRect.width).toBeLessThanOrEqual(wideScoreRect.width);
+                expect(narrowActionRect.width).toBeLessThanOrEqual(wideActionRect.width);
+                expect(narrowTopbarRect.width).toBeLessThanOrEqual(wideTopbarRect.width);
+                const narrowLayoutMetrics = await readLiveCenterLayoutMetrics(narrowPage);
+
+                const narrowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-cards-1281w');
+                await mkdir(dirname(narrowEvidencePath), { recursive: true });
+                await narrowPage.screenshot({ path: narrowEvidencePath, fullPage: false });
+                const metricsPath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-card-widths').replace(/\.png$/i, '.json');
+                const metricsPayload: Record<string, unknown> = {
+                    wide: {
+                        viewportWidth: wideViewport.innerWidth,
+                        deviceScaleFactor: wideViewport.devicePixelRatio,
+                        cardWidth: wideTwoCardWidth,
+                        cardHeight: lowCountRects[0]!.height,
+                        firstSlotX: lowCountRects[0]!.x,
+                        firstSlotY: lowCountRects[0]!.y,
+                        deckWidth: wideDeckRect.width,
+                        scoreStripWidth: wideScoreRect.width,
+                        actionWidth: wideActionRect.width,
+                        topbarWidth: wideTopbarRect.width,
+                        centerLayout: twoCardLayoutMetrics,
+                        oneCardLayout: oneCardLayoutMetrics,
+                        nineCardLayout: fullLayoutMetrics,
+                    },
+                    narrow: {
+                        viewportWidth: narrowViewportWidth,
+                        deviceScaleFactor: narrowViewport.devicePixelRatio,
+                        expectedCardWidth: expectedNarrowCardWidth,
+                        cardWidth: narrowRects[0]!.width,
+                        cardHeight: narrowRects[0]!.height,
+                        firstSlotX: narrowRects[0]!.x,
+                        firstSlotY: narrowRects[0]!.y,
+                        deckWidth: narrowDeckRect.width,
+                        scoreStripWidth: narrowScoreRect.width,
+                        actionWidth: narrowActionRect.width,
+                        topbarWidth: narrowTopbarRect.width,
+                        centerLayout: narrowLayoutMetrics,
+                    },
+                };
+
+                const tightHandCore = createAiTakeDiscardBranchCore();
+                await injectOnlineAiCore(matchId, page, {
+                    ...tightHandCore,
+                    currentPlayer: '0',
+                    stage: 'discard',
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: '你',
+                            hand: [
+                                ...tightHandCore.players['0']!.hand,
+                                { ...tightHandCore.discardPile[0]! },
+                            ],
+                            score: tightHandCore.players['0']!.score,
+                            scoreBreakdown: tightHandCore.players['0']!.scoreBreakdown,
+                        },
+                        '1': tightHandCore.players['1']!,
+                    },
+                });
+                await expect(page.locator('.fr-card-button--live-hand')).toHaveCount(8, { timeout: 10000 });
+
+                const tightContext = await browser.newContext({
+                    baseURL,
+                    viewport: { width: 1037, height: 754 },
+                    deviceScaleFactor: 1.75,
+                });
+                await initContext(tightContext, {
+                    storageKey: '__fantasyrealms_online_ai_tight__',
+                    skipImageGate: true,
+                    gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+                    apiServerBaseURL: process.env.PW_API_SERVER_URL,
+                });
+                await seedMatchCredentials(tightContext, GAME_NAME, matchId, hostPlayerId, hostCredentials);
+                await tightContext.addInitScript(({ targetMatchId, targetCredentials }) => {
+                    localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetCredentials));
+                }, { targetMatchId: matchId, targetCredentials: aiCredentialsBySeat });
+                const tightPage = await tightContext.newPage();
+                try {
+                    await tightPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=${hostPlayerId}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+                    await waitForFantasyRealmsBoard(tightPage, hostPlayerId);
+                    await tightPage.waitForTimeout(500);
+
+                    await injectOnlineAiCore(matchId, tightPage, createOnlineAiNearReviewCore(['0', '1'], '0', 6));
+                    await expect(tightPage.locator(centerCardsSelector)).toHaveCount(9, { timeout: 10000 });
+                    const tightFullRowRects = await waitForLocatorRectsToSettle(tightPage, centerCardsSelector);
+                    const tightTopRowRects = tightFullRowRects.slice(0, 5);
+
+                    await injectOnlineAiCore(matchId, tightPage, {
+                        ...tightHandCore,
+                        currentPlayer: '0',
+                        stage: 'discard',
+                        players: {
+                            '0': {
+                                id: '0',
+                                name: '你',
+                                hand: [
+                                    ...tightHandCore.players['0']!.hand,
+                                    { ...tightHandCore.discardPile[0]! },
+                                ],
+                                score: tightHandCore.players['0']!.score,
+                                scoreBreakdown: tightHandCore.players['0']!.scoreBreakdown,
+                            },
+                            '1': tightHandCore.players['1']!,
+                        },
+                    });
+                    await expect(tightPage.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
+                    await expect(tightPage.locator('.fr-card-button--live-hand')).toHaveCount(8, { timeout: 10000 });
+
+                    const tightViewport = await getViewportMetrics(tightPage);
+                    const tightTopbarRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-topbar"]');
+                    const tightScoreRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-score-strip"]');
+                    const tightCenterRowRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-center-row"]');
+                    const tightActionRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-action-discard"]');
+                    const tightHandRowRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-hand-row"]');
+                    const tightCenterRects = await waitForLocatorRectsToSettle(tightPage, centerCardsSelector);
+                    const tightHandRects = await waitForLocatorRectsToSettle(tightPage, '.fr-card-button--live-hand');
+                    const tightHandGap = await getComputedGap(tightPage, '[data-testid="fantasyrealms-hand-row"]');
+                    const tightMinGap = getMinimumHorizontalGap(tightHandRects);
+                    const tightCenterRowCenter = tightCenterRowRect.x + (tightCenterRowRect.width / 2);
+                    const tightTopbarCenter = tightTopbarRect.x + (tightTopbarRect.width / 2);
+                    const tightHandRowCenter = tightHandRowRect.x + (tightHandRowRect.width / 2);
+                    const tightExpectedCenterCardWidth = getExpectedLiveCenterCardWidth(tightViewport.innerWidth);
+
+                    expect(tightViewport.innerWidth).toBe(1037);
+                    expect(tightTopbarRect.x + tightTopbarRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(tightScoreRect.x + tightScoreRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(tightActionRect.x + tightActionRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(tightHandRowRect.x + tightHandRowRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(Math.abs(tightTopbarCenter - tightCenterRowCenter)).toBeLessThanOrEqual(1);
+                    expect(Math.abs(tightHandRowCenter - tightCenterRowCenter)).toBeLessThanOrEqual(1);
+                    expect(tightCenterRects).toHaveLength(2);
+                    expect(Math.abs(tightCenterRects[0]!.width - tightExpectedCenterCardWidth)).toBeLessThanOrEqual(3);
+                    expect(Math.abs(tightCenterRects[0]!.width - tightCenterRects[1]!.width)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[0]!.x - tightTopRowRects[0]!.x)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[0]!.y - tightTopRowRects[0]!.y)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[1]!.x - tightTopRowRects[1]!.x)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[1]!.y - tightTopRowRects[1]!.y)).toBeLessThanOrEqual(2);
+                    const tightLayoutMetrics = await readLiveCenterLayoutMetrics(tightPage);
+                    expect(tightHandRects).toHaveLength(8);
+                    expect(tightHandRects[0]!.width).toBeGreaterThanOrEqual(114);
+                    expect(Math.abs(tightHandRects[0]!.width - tightHandRects[1]!.width)).toBeLessThanOrEqual(2);
+                    expect(tightMinGap).toBeGreaterThanOrEqual(0);
+                    expect(tightHandGap).toBeGreaterThan(0);
+
+                    const earlyDiscardCore = {
+                        ...tightHandCore,
+                        currentPlayer: '0',
+                        turn: 1,
+                        stage: 'discard' as const,
+                        discardPile: [],
+                        players: {
+                            '0': {
+                                ...tightHandCore.players['0']!,
+                                hand: tightHandCore.players['0']!.hand.slice(0, 2),
+                            },
+                            '1': {
+                                ...tightHandCore.players['1']!,
+                                hand: tightHandCore.players['1']!.hand.slice(0, 2),
+                            },
+                        },
+                        focusCardId: tightHandCore.players['0']!.hand[0]!.id,
+                    };
+                    await injectOnlineAiCore(matchId, page, earlyDiscardCore);
+                    await tightPage.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
+                    await waitForFantasyRealmsBoard(tightPage, hostPlayerId);
+                    await tightPage.waitForTimeout(500);
+
+                    const earlyDiscardHandRow = tightPage.getByTestId('fantasyrealms-hand-row');
+                    await expect(earlyDiscardHandRow).toHaveAttribute('data-visible-count', '2');
+                    await expect(earlyDiscardHandRow).toHaveAttribute('data-slot-count', '8');
+                    const earlyDiscardHandRects = await waitForLocatorRectsToSettle(tightPage, '.fr-card-button--live-hand');
+                    expect(earlyDiscardHandRects).toHaveLength(2);
+                    expect(Math.abs(earlyDiscardHandRects[0]!.width - tightHandRects[0]!.width)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(earlyDiscardHandRects[0]!.height - tightHandRects[0]!.height)).toBeLessThanOrEqual(2);
+
+                    const tightEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-hand-row-1037w');
+                    await mkdir(dirname(tightEvidencePath), { recursive: true });
+                    await tightPage.screenshot({ path: tightEvidencePath, fullPage: false });
+                    const earlyDiscardEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-hand-row-1037w-two-hand-discard');
+                    await mkdir(dirname(earlyDiscardEvidencePath), { recursive: true });
+                    await tightPage.screenshot({ path: earlyDiscardEvidencePath, fullPage: false });
+                    metricsPayload.tight = {
+                        viewportWidth: tightViewport.innerWidth,
+                        viewportHeight: tightViewport.innerHeight,
+                        deviceScaleFactor: tightViewport.devicePixelRatio,
+                        centerRowWidth: tightCenterRowRect.width,
+                        centerCardWidth: tightCenterRects[0]!.width,
+                        centerCardHeight: tightCenterRects[0]!.height,
+                        centerFirstSlotX: tightCenterRects[0]!.x,
+                        centerFirstSlotY: tightCenterRects[0]!.y,
+                        fullRowFirstSlotX: tightTopRowRects[0]!.x,
+                        fullRowFirstSlotY: tightTopRowRects[0]!.y,
+                        topbarCenterDelta: Math.abs(tightTopbarCenter - tightCenterRowCenter),
+                        handCenterDelta: Math.abs(tightHandRowCenter - tightCenterRowCenter),
+                        handRowWidth: tightHandRowRect.width,
+                        handCardWidth: tightHandRects[0]!.width,
+                        handCardHeight: tightHandRects[0]!.height,
+                        minHorizontalGap: tightMinGap,
+                        cssGap: tightHandGap,
+                        topbarWidth: tightTopbarRect.width,
+                        scoreStripWidth: tightScoreRect.width,
+                        actionWidth: tightActionRect.width,
+                        twoHandDiscardWidth: earlyDiscardHandRects[0]!.width,
+                        twoHandDiscardHeight: earlyDiscardHandRects[0]!.height,
+                        centerLayout: tightLayoutMetrics,
+                    };
+                } finally {
+                    await tightContext.close().catch(() => {});
+                }
+
+                await writeFile(metricsPath, JSON.stringify(metricsPayload, null, 2), 'utf8');
+            } finally {
+                await narrowContext.close().catch(() => {});
+            }
+
+            assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-center-layout', diagnostics }]);
         } finally {
             await context.close().catch(() => {});
         }
@@ -140,7 +586,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -150,8 +595,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.discardCount).toBe(0);
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -167,8 +611,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -190,7 +632,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(initialSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
             await expect(page.getByText(aiPlayerNames['1']!)).toHaveCount(0);
             await expect(page.getByText(aiPlayerNames['2']!)).toHaveCount(0);
 
@@ -223,7 +665,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -232,8 +673,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -249,8 +689,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -285,7 +723,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(seat2TurnSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(seat2TurnSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-three-player-refresh-during-seat2-turn');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -318,7 +756,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -327,8 +764,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -344,8 +780,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -370,11 +804,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             await waitForFantasyRealmsSpectatorBoard(spectator.page, matchId);
             await expectFantasyRealmsSpectatorLiveNoLeak(spectator.page);
 
-            await switchFantasyRealmsPageToStackedLayout(spectator.page);
-            await expect(spectator.page.getByText('你当前正在旁观。这里不会展开任何玩家的隐藏手牌，只保留公开弃牌与终局结果。')).toHaveCount(0);
-            await expect(spectator.page.getByText('多人局进行中：旁观视角不会展示任何玩家的实时总分，所有结果会在终局统一揭示。')).toHaveCount(0);
-            await expect(spectator.page.getByText('隐藏手牌区')).toBeVisible();
-            await expect(spectator.page.getByText('暂无手牌')).toBeVisible();
+            await switchFantasyRealmsPageToCompactLandscapeLayout(spectator.page);
+            await expect(spectator.page.getByTestId('fantasyrealms-compact-focus-rail')).toBeVisible();
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('??');
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('终局揭示');
+            await expect(spectator.page.locator('.fr-card-button--live-hand:visible')).toHaveCount(0);
             await expect(spectator.page.getByText(hiddenCardName)).toHaveCount(0);
 
             await expect.poll(async () => {
@@ -426,7 +860,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -435,8 +868,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -452,8 +884,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -481,11 +911,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             await waitForFantasyRealmsSpectatorBoard(spectator.page, matchId);
             await expectFantasyRealmsSpectatorLiveNoLeak(spectator.page);
 
-            await switchFantasyRealmsPageToStackedLayout(spectator.page);
-            await expect(spectator.page.getByText('你当前正在旁观。这里不会展开任何玩家的隐藏手牌，只保留公开弃牌与终局结果。')).toHaveCount(0);
-            await expect(spectator.page.getByText('多人局进行中：旁观视角不会展示任何玩家的实时总分，所有结果会在终局统一揭示。')).toHaveCount(0);
-            await expect(spectator.page.getByText('隐藏手牌区')).toBeVisible();
-            await expect(spectator.page.getByText('暂无手牌')).toBeVisible();
+            await switchFantasyRealmsPageToCompactLandscapeLayout(spectator.page);
+            await expect(spectator.page.getByTestId('fantasyrealms-compact-focus-rail')).toBeVisible();
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('??');
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('终局揭示');
+            await expect(spectator.page.locator('.fr-card-button--live-hand:visible')).toHaveCount(0);
             await expect(spectator.page.getByText(hiddenCardName)).toHaveCount(0);
 
             await expect.poll(async () => {
@@ -536,7 +966,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -545,8 +974,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -562,8 +990,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -601,7 +1027,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(seat5TurnSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(seat5TurnSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-six-player-refresh-during-seat5-turn');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -635,7 +1061,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, host.page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
             const initialDiscardCount = initialSummary.discardCount;
@@ -646,8 +1071,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(host.page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -663,8 +1087,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, host.page);
             const discardHandButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -681,15 +1103,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const waitingCore = await readOnlineAiCore(matchId, host.page);
             const waitingPlayerScore = waitingCore.players['2']?.score ?? 0;
             const hostScore = waitingCore.players['0']?.score ?? 0;
-            const playerScores = Object.entries(waitingCore.players).map(([playerId, player]) => ({
-                playerId,
-                score: player?.score ?? 0,
-            }));
-            const getRank = (playerId: string) => {
-                const currentScore = waitingCore.players[playerId]?.score ?? 0;
-                return playerScores.filter((entry) => entry.score > currentScore).length + 1;
-            };
-
             await expect(host.page.getByText('你的回合')).toHaveCount(0);
             await expect(waitingPlayer.page.getByText('你的回合')).toHaveCount(0);
 
@@ -717,8 +1130,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expectedScore: waitingPlayerScore,
             });
 
-            await switchFantasyRealmsPageToStackedLayout(host.page);
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(host.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
 
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
             const ownHandInspectLabel = await ownHandInspectButton.getAttribute('aria-label');
@@ -726,7 +1139,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(hiddenCardName).not.toBe('');
 
             await ownHandInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
             await expectWaitingPageKeepsOpponentFocusHidden({
@@ -746,15 +1159,14 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             await waitingPlayer.page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsBoard(waitingPlayer.page, '2');
-            await expect(waitingPlayer.page.getByText(/你当前正在等待/)).toHaveCount(0);
 
             const reloadedLiveActionButton = waitingPlayer.page.getByTestId('fantasyrealms-live-action-button');
             if (await reloadedLiveActionButton.count() > 0) {
                 await expect(waitingPlayer.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(reloadedLiveActionButton).toContainText('抓一张牌');
+                await expect(getFantasyRealmsDeckDrawButton(waitingPlayer.page)).toBeVisible({ timeout: 10000 });
             } else {
-                await expect(waitingPlayer.page.locator('.fr-stage-banner')).toContainText('你的回合');
-                await expect(waitingPlayer.page.getByRole('button', { name: /从牌库摸/ })).toBeVisible({ timeout: 10000 });
+                await expect(waitingPlayer.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
+                await expect(getFantasyRealmsDeckDrawButton(waitingPlayer.page)).toBeVisible({ timeout: 10000 });
             }
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-six-player-mixed-waiting-page-no-leak-during-ai-chain');
@@ -771,7 +1183,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('6人混合房里 waiting 人类在 stacked inspect 壳中刷新后，仍保持 waiting 身份、可继续查看自己的隐藏手牌且不向 host 泄露', async ({ browser }, testInfo) => {
+    test('6人混合房里 waiting 人类在紧凑横屏 inspect 壳中刷新后，仍保持 waiting 身份、可继续查看自己的隐藏手牌且不向 host 泄露', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -793,7 +1205,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, host.page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
             const initialDiscardCount = initialSummary.discardCount;
@@ -804,8 +1215,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await clickFantasyRealmsDeckDrawButtonIfVisible(host.page);
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -821,8 +1231,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, host.page);
             const discardHandButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -838,14 +1246,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             const waitingCore = await readOnlineAiCore(matchId, waitingPlayer.page);
             const waitingPlayerScore = waitingCore.players['2']?.score ?? 0;
-            const playerScores = Object.entries(waitingCore.players).map(([playerId, player]) => ({
-                playerId,
-                score: player?.score ?? 0,
-            }));
-            const getRank = (playerId: string) => {
-                const currentScore = waitingCore.players[playerId]?.score ?? 0;
-                return playerScores.filter((entry) => entry.score > currentScore).length + 1;
-            };
             const getCurrentPlayerName = async (page = waitingPlayer.page) => {
                 const core = await readOnlineAiCore(matchId, page);
                 const playerId = core.currentPlayer;
@@ -866,15 +1266,15 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expectedScore: waitingPlayerScore,
             });
 
-            await switchFantasyRealmsPageToStackedLayout(host.page);
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(host.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
             const ownHandInspectLabel = await ownHandInspectButton.getAttribute('aria-label');
             const hiddenCardName = ownHandInspectLabel?.replace(/^查看手牌\s*/, '').trim() ?? '';
             expect(hiddenCardName).not.toBe('');
 
             await ownHandInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expectWaitingPageKeepsOpponentFocusHidden({
                 page: host.page,
@@ -892,13 +1292,13 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expectedScore: waitingPlayerScore,
             });
 
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             const reloadedInspectButton = waitingPlayer.page
                 .getByRole('button', { name: new RegExp(`查看手牌\\s*${escapeRegExp(hiddenCardName)}`) })
                 .first();
             await expect(reloadedInspectButton).toBeVisible({ timeout: 10000 });
             await reloadedInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expectWaitingPageKeepsOpponentFocusHidden({
                 page: host.page,
@@ -919,7 +1319,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('6人混合房里 waiting 人类若在 stacked inspect 壳里遇到高人数 AI 链直接打进终局，仍会切到 review 并在刷新后保持最终排名与公开焦点', async ({ browser }, testInfo) => {
+    test('6人混合房里 waiting 人类若在紧凑横屏 inspect 壳里遇到高人数 AI 链直接打进终局，仍会切到 review 并在刷新后保持最终排名与公开焦点', async ({ browser }, testInfo) => {
         test.setTimeout(420000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -967,9 +1367,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 message: '等待 mixed-room 的 waiting 人类页进入 seat4 local AI 终局前最后一弃的代表态',
             }).toBe(true);
 
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
-            await expect(waitingPlayer.page.locator('.fr-stage-banner')).toContainText('等待');
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByText('你的回合')).toHaveCount(0);
+            await expect(waitingPlayer.page.getByText(aiPlayerNames['4']!)).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
             await expect(waitingPlayer.page.getByText('终局复盘')).toHaveCount(0);
 
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
@@ -981,11 +1383,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 return Boolean(state.sys?.gameover);
             }, {
                 timeout: 90000,
-                message: '等待高人数 AI 链在 waiting 人类的 stacked inspect 壳期间直接打进终局',
+                message: '等待高人数 AI 链在 waiting 人类的紧凑横屏 inspect 壳期间直接打进终局',
             }).toBe(true);
 
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expect(waitingPlayer.page.getByText('终局复盘').first()).toBeVisible({ timeout: 10000 });
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
@@ -1016,7 +1418,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             await waitingPlayer.page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expectFinalStandingsVisible(waitingPlayer.page, sortedStandings);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-atlas-card-id', focusAtlasCardIdBeforeReload);
@@ -1031,7 +1433,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('6人混合房里 waiting 人类可从真实开局进入第二轮，再在 stacked inspect 壳里接续终局前代表态并打进终局 review', async ({ browser }, testInfo) => {
+    test('6人混合房里 waiting 人类可从真实开局进入第二轮，再在紧凑横屏 inspect 壳里接续终局前代表态并打进终局 review', async ({ browser }, testInfo) => {
         test.setTimeout(420000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -1086,9 +1488,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 message: '等待 mixed-room 第二轮后的 waiting 人类页接到 seat4 终局前最后一弃代表态',
             }).toBe(true);
 
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
-            await expect(waitingPlayer.page.locator('.fr-stage-banner')).toContainText('等待');
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByText('你的回合')).toHaveCount(0);
+            await expect(waitingPlayer.page.getByText(aiPlayerNames['4']!)).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
             await expect(waitingPlayer.page.getByText('终局复盘')).toHaveCount(0);
 
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
@@ -1097,7 +1501,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(hiddenCardName).not.toBe('');
 
             await ownHandInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
             await expect.poll(async () => {
@@ -1105,12 +1509,12 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 return Boolean(state.sys?.gameover);
             }, {
                 timeout: 90000,
-                message: '等待高人数 AI 链在第二轮 waiting human 的 stacked inspect 壳期间完成最后一弃并打进终局',
+                message: '等待高人数 AI 链在第二轮 waiting human 的紧凑横屏 inspect 壳期间完成最后一弃并打进终局',
             }).toBe(true);
 
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveCount(0);
 
             const finalState = await readOnlineAiMatchState(matchId, waitingPlayer.page);
             const finalCore = await readOnlineAiCore(matchId, waitingPlayer.page);
@@ -1132,19 +1536,15 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 }));
             await expectFinalStandingsVisible(waitingPlayer.page, sortedStandings);
 
-            const focusAtlasCardIdBeforeReload = await waitingPlayer.page.getByTestId('fantasyrealms-focus-preview').getAttribute('data-atlas-card-id') ?? '';
-            expect(focusAtlasCardIdBeforeReload).not.toBe('');
-
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-six-player-mixed-second-round-waiting-review-after-gameover');
             await mkdir(dirname(evidencePath), { recursive: true });
             await waitingPlayer.page.screenshot({ path: evidencePath, fullPage: false });
 
             await waitingPlayer.page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expectFinalStandingsVisible(waitingPlayer.page, sortedStandings);
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-atlas-card-id', focusAtlasCardIdBeforeReload);
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveCount(0);
 
             assertNoFatalFrontendErrors([
                 { label: 'fantasyrealms-online-ai-six-player-mixed-second-round-waiting-review-host', diagnostics: hostDiagnostics },

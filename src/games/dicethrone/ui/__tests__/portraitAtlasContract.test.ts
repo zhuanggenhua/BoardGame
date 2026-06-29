@@ -19,7 +19,7 @@ describe('DiceThrone portrait atlas contract', () => {
             expect(style.backgroundImage).not.toContain('characterhead2');
         }
 
-        for (const characterId of ['treant', 'ninja'] as const) {
+        for (const characterId of ['treant', 'ninja', 'zhanshujia', 'cursed_pirate'] as const) {
             const style = getPortraitStyle(characterId, 'zh-CN');
             expect(style.backgroundImage).toContain('characterhead2');
             expect(style.backgroundImage).not.toContain('character-portraits');

@@ -11,7 +11,7 @@ const hasImplementationInProgressBadge = (characterId: string) => (
 
 describe('DiceThrone 角色目录实施中状态合同', () => {
     it('已完成 closeout 的近批新英雄不应继续保留 implementation_in_progress 徽标', () => {
-        for (const characterId of ['gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate']) {
+        for (const characterId of ['gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'artificer']) {
             expect(
                 hasImplementationInProgressBadge(characterId),
                 `${characterId} 不应继续保留 implementation_in_progress`,

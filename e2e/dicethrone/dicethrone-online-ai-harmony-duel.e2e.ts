@@ -218,10 +218,7 @@ const dispatchHarnessCommand = async (
         await harness.command.dispatch({
             type: commandType,
             playerId: commandPlayerId,
-            payload: {
-                ...commandPayload,
-                __tutorialPlayerId: commandPlayerId,
-            },
+            payload: commandPayload,
         });
     }, {
         commandType: type,

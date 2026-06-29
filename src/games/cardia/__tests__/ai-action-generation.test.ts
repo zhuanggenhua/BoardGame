@@ -202,6 +202,103 @@ describe('Cardia AI - 动作生成', () => {
 
             expect(actions.filter(a => a.kind === 'play-card')).toHaveLength(0);
         });
+
+        it('线上反馈 6a3517a3：占卜师要求对手先出牌时，不应给错误座位暴露打牌动作', () => {
+            const state: MatchState<CardiaCore> = {
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: 'Player 1',
+                            hand: [
+                                {
+                                    uid: 'card-1',
+                                    defId: 'card-def-1',
+                                    ownerId: '0',
+                                    baseInfluence: 10,
+                                    faction: 'military',
+                                    abilityIds: [],
+                                    difficulty: 1,
+                                    modifiers: createModifierStack(),
+                                    tags: createTagContainer(),
+                                    signets: 0,
+                                    ongoingMarkers: [],
+                                },
+                            ],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: false,
+                            cardRevealed: false,
+                        },
+                        '1': {
+                            id: '1',
+                            name: 'Player 2',
+                            hand: [
+                                {
+                                    uid: 'card-2',
+                                    defId: 'card-def-2',
+                                    ownerId: '1',
+                                    baseInfluence: 12,
+                                    faction: 'religious',
+                                    abilityIds: [],
+                                    difficulty: 1,
+                                    modifiers: createModifierStack(),
+                                    tags: createTagContainer(),
+                                    signets: 0,
+                                    ongoingMarkers: [],
+                                },
+                            ],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: false,
+                            cardRevealed: false,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                    currentPlayerId: '0',
+                    turnNumber: 1,
+                    phase: 'play',
+                    encounterHistory: [],
+                    ongoingAbilities: [],
+                    modifierTokens: [],
+                    delayedEffects: [],
+                    revealFirstNextEncounter: null,
+                    forcedPlayOrderNextEncounter: '1',
+                    mechanicalSpiritActive: null,
+                    deckVariant: 'deck1',
+                    targetSignets: 5,
+                },
+                sys: {
+                    flow: { phase: 'play' },
+                    interaction: null,
+                    actionLog: { entries: [] },
+                    undo: { snapshots: [], aiSeatIds: [] },
+                    rematch: { requests: {} },
+                    responseWindow: null,
+                    tutorial: null,
+                    eventStream: { entries: [] },
+                    gameover: null,
+                },
+            };
+
+            const wrongSeatActions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+            const forcedSeatActions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '1',
+            });
+
+            expect(wrongSeatActions.filter(a => a.kind === 'play-card')).toHaveLength(0);
+            expect(forcedSeatActions.filter(a => a.kind === 'play-card')).toHaveLength(1);
+        });
     });
 
     describe('策略标签附加', () => {

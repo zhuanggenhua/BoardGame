@@ -11,7 +11,6 @@ import {
     drawMadnessCards,
     grantContextualExtraAction,
     grantContextualExtraMinion,
-    destroyMinion,
     buildValidatedDestroyEvents,
     getMinionPower,
     buildBaseTargetOptions,
@@ -39,8 +38,7 @@ import type { TriggerContext, ProtectionCheckContext } from '../domain/ongoingEf
 import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
 import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import { isMinionProtectedNonConsumable } from '../domain/ongoingEffects';
-import { filterProtectedDestroyEvents, reduce } from '../domain/reducer';
+import { reduce } from '../domain/reducer';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -663,18 +661,20 @@ const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnf
 
         if (opponentMinions.length === 1) {
             const target = opponentMinions[0];
-            events.push(
-                destroyMinion(
-                    target.uid,
-                    target.defId,
-                    target.baseIndex,
-                    target.owner,
-                    context.playerId,
-                    'elder_thing_unfathomable_goals',
-                    context.now,
-                    'action',
-                ),
-            );
+            events.push(...buildValidatedDestroyEvents(context.matchState, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: target.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_unfathomable_goals',
+                now: context.now,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'elder_thing_unfathomable_goals',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: target.baseIndex,
+                sourceKind: 'action',
+            }));
             nextIdx += 1;
             continue;
         }
@@ -725,18 +725,20 @@ const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingU
         }
 
         return {
-            events: [
-                destroyMinion(
-                    target.uid,
-                    target.defId,
-                    selected.baseIndex,
-                    target.owner,
-                    context.playerId,
-                    'elder_thing_unfathomable_goals',
-                    timestamp,
-                    'action',
-                ),
-            ],
+            events: buildValidatedDestroyEvents(context.matchState, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_unfathomable_goals',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'elder_thing_unfathomable_goals',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: selected.baseIndex,
+                sourceKind: 'action',
+            }),
             context: {
                 ...context,
                 opponentIdx: context.opponentIdx + 1,
@@ -1156,25 +1158,27 @@ const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThi
         }
 
         const sourceOwnerId = findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId;
-        let destroyableCount = 0;
         const destroyEvents: SmashUpEvent[] = [];
         for (const pick of picks) {
             const minion = state.core.bases[pick.baseIndex]?.minions.find((candidate) => candidate.uid === pick.minionUid);
             if (!minion) continue;
-            if (!isMinionProtectedNonConsumable(state.core, minion, pick.baseIndex, context.playerId, 'destroy')) {
-                destroyableCount += 1;
-            }
             destroyEvents.push(...buildValidatedDestroyEvents(state, {
                 minionUid: pick.minionUid,
                 minionDefId: pick.defId,
                 fromBaseIndex: pick.baseIndex,
                 destroyerId: context.playerId,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'elder_thing_elder_thing_pod',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'elder_thing_elder_thing_pod',
                 now: timestamp,
             }));
         }
 
-        if (destroyableCount < 2) {
+        const destroyCount = destroyEvents.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
+        if (destroyCount < 2) {
             return {
                 events: [
                     ...destroyEvents,
@@ -1182,6 +1186,11 @@ const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThi
                         cardUid: context.cardUid,
                         defId: 'elder_thing_elder_thing_pod',
                         ownerId: sourceOwnerId,
+                        sourcePlayerId: context.playerId,
+                        sourceCardUid: context.cardUid,
+                        sourceDefId: 'elder_thing_elder_thing_pod',
+                        sourceControllerId: context.playerId,
+                        sourceBaseIndex: context.baseIndex,
                         reason: 'elder_thing_elder_thing_pod_fallback',
                         now: timestamp,
                         expectedLocation: 'bases',
@@ -1240,6 +1249,11 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
                     cardUid: context.cardUid,
                     defId: 'elder_thing_elder_thing_pod',
                     ownerId: sourceOwnerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: 'elder_thing_elder_thing_pod',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_elder_thing_pod',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -1254,6 +1268,11 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
                     cardUid: context.cardUid,
                     defId: 'elder_thing_elder_thing_pod',
                     ownerId: sourceOwnerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: 'elder_thing_elder_thing_pod',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_elder_thing_pod_forced',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -1354,6 +1373,11 @@ const elderThingShoggothPodDestroyPromptProgram = createPromptProgram<ElderThing
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: context.casterPlayerId,
+                sourcePlayerId: context.casterPlayerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'elder_thing_shoggoth_pod',
+                sourceControllerId: context.casterPlayerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'elder_thing_shoggoth_pod',
                 now: timestamp,
             })
@@ -2020,15 +2044,19 @@ const elderThingDunwichHorrorPodChoicePromptProgram = createPromptProgram<ElderT
             return { events: evt ? [evt] : [] };
         }
         return {
-            events: [destroyMinion(
-                context.minionUid,
-                context.minionDefId,
-                context.baseIndex,
-                context.ownerId,
-                context.playerId,
-                'elder_thing_dunwich_horror_pod',
-                timestamp,
-            )],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: context.minionUid,
+                minionDefId: context.minionDefId,
+                fromBaseIndex: context.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_dunwich_horror_pod',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'elder_thing_dunwich_horror_pod',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.baseIndex,
+            }),
         };
     },
 });
@@ -2109,6 +2137,11 @@ const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestr
                 minionDefId: firstTarget.defId,
                 fromBaseIndex: firstTarget.baseIndex,
                 destroyerId: context.playerId,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: context.elderThingDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'elder_thing_elder_thing',
                 now: timestamp,
             }),
@@ -2117,18 +2150,27 @@ const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestr
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: context.playerId,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: context.elderThingDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'elder_thing_elder_thing',
                 now: timestamp,
             }),
         ];
-        const filtered = filterProtectedDestroyEvents(proposed, state.core, context.playerId);
-        const destroyCount = filtered.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
+        const destroyCount = proposed.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
         if (destroyCount < 2) {
             return {
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
                     ownerId: sourceOwnerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: context.elderThingDefId,
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_elder_thing_failed_destroy',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2182,6 +2224,11 @@ const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlay
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
                     ownerId: sourceOwnerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: context.elderThingDefId,
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_elder_thing_failed_destroy',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2248,6 +2295,11 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
                     ownerId: sourceOwnerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: context.elderThingDefId,
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_elder_thing',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2262,6 +2314,11 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
                     ownerId: sourceOwnerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: context.elderThingDefId,
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_elder_thing_failed_destroy',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2275,17 +2332,26 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                 minionDefId: candidate.defId,
                 fromBaseIndex: candidate.baseIndex,
                 destroyerId: context.playerId,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: context.elderThingDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'elder_thing_elder_thing',
                 now: timestamp,
             }));
-            const filtered = filterProtectedDestroyEvents(proposed, state.core, context.playerId);
-            const destroyCount = filtered.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
+            const destroyCount = proposed.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
             if (destroyCount < 2) {
                 return {
                     events: buildValidatedCardToDeckBottomEvents(state, {
                         cardUid: context.cardUid,
                         defId: context.elderThingDefId,
                         ownerId: sourceOwnerId,
+                        sourcePlayerId: context.playerId,
+                        sourceCardUid: context.cardUid,
+                        sourceDefId: context.elderThingDefId,
+                        sourceControllerId: context.playerId,
+                        sourceBaseIndex: context.baseIndex,
                         reason: 'elder_thing_elder_thing_failed_destroy',
                         now: timestamp,
                         expectedLocation: 'bases',
@@ -2368,6 +2434,11 @@ const elderThingShoggothDestroyPromptProgram = createPromptProgram<ElderThingSho
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: context.casterPlayerId,
+                sourcePlayerId: context.casterPlayerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'elder_thing_shoggoth',
+                sourceControllerId: context.casterPlayerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'elder_thing_shoggoth',
                 now: timestamp,
             })
@@ -2426,6 +2497,11 @@ const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPr
                     minionDefId: onlyOption.defId,
                     fromBaseIndex: onlyOption.baseIndex,
                     destroyerId: context.casterPlayerId,
+                    sourcePlayerId: context.casterPlayerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: 'elder_thing_shoggoth',
+                    sourceControllerId: context.casterPlayerId,
+                    sourceBaseIndex: context.baseIndex,
                     reason: 'elder_thing_shoggoth',
                     now: timestamp,
                 })
@@ -2663,17 +2739,19 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
             if (!horror) return [];
             const destroyerId = (horror.metadata?.sourceControllerId as PlayerId | undefined) ?? horror.ownerId;
             if (destroyerId !== ctx.playerId) return [];
-            return [destroyMinion(
-                host.uid,
-                host.defId,
-                baseIndex,
-                host.owner,
+            return buildValidatedDestroyEvents(ctx.state, {
+                minionUid: host.uid,
+                minionDefId: host.defId,
+                fromBaseIndex: baseIndex,
                 destroyerId,
-                'elder_thing_dunwich_horror',
-                ctx.now,
-                undefined,
-                host.controller,
-            )];
+                reason: 'elder_thing_dunwich_horror',
+                now: ctx.now,
+                sourcePlayerId: destroyerId,
+                sourceCardUid: horror.uid,
+                sourceDefId: horror.defId,
+                sourceControllerId: destroyerId,
+                sourceBaseIndex: baseIndex,
+            });
         }
         return [];
     }
@@ -2687,7 +2765,19 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
             );
             if (!horror) continue;
             const destroyerId = horror.metadata?.sourceControllerId ?? horror.ownerId;
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, destroyerId, 'elder_thing_dunwich_horror', ctx.now, undefined, m.controller));
+            events.push(...buildValidatedDestroyEvents(ctx.state, {
+                minionUid: m.uid,
+                minionDefId: m.defId,
+                fromBaseIndex: i,
+                destroyerId,
+                reason: 'elder_thing_dunwich_horror',
+                now: ctx.now,
+                sourcePlayerId: destroyerId,
+                sourceCardUid: horror.uid,
+                sourceDefId: horror.defId,
+                sourceControllerId: destroyerId,
+                sourceBaseIndex: i,
+            }));
         }
     }
     return events;

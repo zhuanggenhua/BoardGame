@@ -17,7 +17,7 @@ import {
     evaluateRollSumGreaterThan,
     evaluateDiceCountAtLeast,
     evaluateThreeOfAKind,
-} from './domain/combat';
+} from './domain/combat/conditions';
 
 let registered = false;
 

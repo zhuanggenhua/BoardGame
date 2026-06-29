@@ -104,7 +104,10 @@
       "regionSpecialTroops": "Special {{summary}}",
       "regionPassages": "Borders {{summary}}",
       "regionReachable": "Dispatch reach {{summary}}",
-      "sharedPrintedRegion": "Shared print"
+      "sharedPrintedRegion": "Shared print",
+      "selectionGuideSource": "Start",
+      "selectionContinueHint": "Choose target",
+      "clickableRegionSummary": "Targets: {{summary}}"
     },
     "wheel": {
       "aria": "Qidahen action wheel",
@@ -120,14 +123,41 @@
       "discardPile": "Korea discard pile"
     },
     "actions": {
+      "state": {
+        "current": "Current",
+        "available": "Available"
+      },
+      "tooltipHeader": "Action Details",
+      "tooltipCost": "Cost {{cost}}",
+      "primaryStageTagWheel": "Wheel Action",
+      "primaryStageTagFaction": "Discard Action",
+      "primaryStageFactionTitle": "Discard to Act",
+      "primaryStageWheelTitle": "Execute Wheel Action",
+      "primaryStageAvailable": "Available Now",
+      "primaryStageUnavailable": "Unavailable Now",
+      "primaryStageFactionCurrentDetail": "Current secondary action: {{label}}",
+      "primaryStageFactionDetail": "Discard first, then continue.",
+      "primaryStageWheelDone": "This seat has already finished its wheel action.",
+      "primaryStageWheelDetail": "Current wheel action: {{summary}}.",
+      "clickable": "Available",
+      "mapDirectClick": "Map target",
+      "mapClickable": "Choose target",
+      "mapDirectClickHint": "Choose a target to finish this step.",
+      "currentClickableRegions": "Available regions",
       "status": {
         "used": "used",
         "unused": "unused"
       },
-      "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Faction action {{factionStatus}}",
+      "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Discard action {{factionStatus}}",
       "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
-      "wheelNextStepTitle": "Next: click a wheel button to advance the turn",
-      "wheelNextStepHint": "Do not click the painted wheel directly. Use the explicit button below.",
+      "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
+      "primaryActionLabel": "Current step",
+      "primaryActionEmpty": "Not selected",
+      "primaryActionSelectPrompt": "Choose an action",
+      "wheelNextStepBadge": "Next",
+      "wheelNextStepTitle": "Take a wheel action",
+      "wheelNextStepHint": "Wheel action pending",
+      "wheelExecutePrompt": "Choose wheel action",
       "directExecute": "Execute",
       "victoryAchieved": "{{winnerName}} has achieved {{condition}}",
       "victory": {
@@ -145,10 +175,12 @@
         "highestFirst": "High first",
         "lowestFirst": "Low first"
       },
+      "fallbackChoices": "Fallback Buttons",
+      "fallbackChoiceList": "Fallback Button List",
       "targetUnlocked": "Unlocked",
       "gaoDi": {
         "summary": "Source {{sourceRegionName}} · Troops up to {{maxTroops}} · Population up to {{maxPopulation}}",
-        "hint": "Select the discard card from your hand first, then choose the dispatch target below. You can also skip.",
+        "hint": "Discard 1 card, then choose a target.",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "Troops",
         "typePopulation": "Population",
@@ -184,7 +216,7 @@
         "summary": "Will {{targetFactionName}} accept Ming command? If accepted, they will draw 6 cards and enter dispatch attack."
       },
       "wheelDispatch": {
-        "summary": "Source {{sourceRegionName}} · {{count}} target(s) · Click a highlighted map region directly",
+        "summary": "Source {{sourceRegionName}} · {{count}} target(s)",
         "targetSummary": "{{targetRegionName}} · Defend {{defenderLabel}}",
         "stats": "Source troops {{sourceAvailableTroops}} · Commit {{committedTroops}} · Pressure {{attackPressure}}",
         "travelCost": "Cost {{totalTravelCost}}"
@@ -201,6 +233,40 @@
       "postBattle": {
         "summary": "{{summary}} · Commit {{committedTroops}}"
       }
+    },
+    "setup": {
+      "eyebrow": "In-match setup",
+      "title": "Finish scenario character, armament, and faction setup first",
+      "description": "This step is completed inside the match. Confirm your faction's setup items first, then proceed to the live board.",
+      "characterLabel": "Characters",
+      "pickCount": "Choose {{count}} item(s)",
+      "confirmCharacter": "Confirm characters",
+      "armamentLabel": "Armaments",
+      "confirmArmament": "Confirm armaments",
+      "waiting": "Waiting for other players to finish the setup items for their factions."
+    },
+    "scenarioVote": {
+      "eyebrow": "In-match scenario vote",
+      "title": "Read the scenario briefing, then vote for this match",
+      "description": "Online rooms no longer preset a scenario during room creation. All seats must finish the in-match briefing and vote before character and armament setup begins.",
+      "playerCount": "{{count}}-player room",
+      "unavailableForPlayerCount": "Unavailable for the current {{count}}-player room; supports {{supported}} players",
+      "voteCount": "{{count}} vote(s)",
+      "supportedPlayers": "Supports {{count}} players",
+      "orderBadge": "Scenario {{orderNo}}",
+      "myVote": "Your vote is in",
+      "seatStatusTitle": "Current vote by seat",
+      "you": "You",
+      "host": "Host",
+      "pendingVote": "No vote yet",
+      "tiebreakNote": "Resolution happens as soon as every seat confirms. If votes tie, the host vote of {{hostFactionName}} breaks the tie.",
+      "actionTitle": "This seat",
+      "changeableHint": "You have already submitted a vote. Until every seat has voted, you can still change or withdraw it.",
+      "selectHint": "Select one scenario briefing card first, then confirm your vote.",
+      "spectatorHint": "Spectator view only shows the current vote shape and does not provide a proxy voting entry.",
+      "noDraft": "No scenario selected yet",
+      "confirm": "Confirm vote",
+      "clear": "Withdraw vote"
     }
   },
   "battle": {
@@ -209,6 +275,71 @@
       "rout": "Rout resolution",
       "cavalryPlunderAttacker": "Cavalry plunder own deck",
       "cavalryPlunderDefender": "Cavalry plunder defender deck"
+    }
+  },
+  "tutorial": {
+    "basic": {
+      "title": "Basic Turn",
+      "description": "Walk through the real opening entry, one hand action, and one wheel action.",
+      "steps": {
+        "welcome": "In Seven Hatreds, you win by expanding control, taking a capital, or reaching 3 prestige first. Each turn includes one hand action and one wheel action, and this chapter walks one full basic loop.",
+        "openingEntry": "Start with the action rail on the right. In live play, both the hand action and the wheel action enter from here, and the current player chooses the order.",
+        "handResource": "The cards at the bottom are your main resource. Event cards are played directly, armaments cost an extra discard to play, and this step shows the most common pattern: discarding cards to pay for an action.",
+        "selectRegion": "Click Pidao on the map first. There is a nearby troop that can be pardoned here, so the result shows up on the map immediately.",
+        "pickAction": "Now click Grant Pardon. This is a faction action that directly changes the board position.",
+        "payCards": "Grant Pardon costs 3 cards. Click any 3 cards in your hand, then click Confirm Action.",
+        "actionResult": "After it resolves, 1 enemy troop beside Pidao becomes a Ming troop. The cards you just discarded have already turned into board control.",
+        "moraleLevel": "The number on top of each troop block is both its level and its morale. Damage usually lowers that level first, and a troop is only destroyed when it drops to zero. Higher levels also roll stronger dice.",
+        "wheelMove": "After the hand action, this turn still has one wheel action left. Click Free Move 1 on the wheel now.",
+        "finish": "You have completed one basic turn: pay cards for a faction action, then finish one wheel action. The next lesson is what happens when these troops actually fight."
+      }
+    },
+    "fieldBattle": {
+      "title": "Field Battle",
+      "description": "See one full field battle with casualty order, dice, and post-battle occupation.",
+      "steps": {
+        "battleOverview": "This chapter starts from a field battle that is already engaged. A field battle is about troop level, dice results, casualty order, and what you do after winning.",
+        "battleTarget": "The current battlefield is Chahar. Read the map and the pending panel first: both sides, committed troops, and the target are already shown here.",
+        "casualtyPriority": "You must choose casualty order first. Click Lowest Level First now so the weaker troops lose level first, then resolve the battle.",
+        "battleResult": "After resolution, read the dice summary and the outcome first. You can directly see both rolls, the damage dealt, and how many troops survived.",
+        "occupyRegion": "This field battle is won. Click Occupy This Region now and leave the surviving troops in Chahar.",
+        "finish": "That is the core loop of a field battle: compare troop level and dice, decide casualties, then resolve occupation or withdrawal."
+      }
+    },
+    "diplomacy": {
+      "title": "Diplomacy And Hire",
+      "description": "Enter one real wheel diplomacy/hire step and see map control plus mercenaries resolve together.",
+      "steps": {
+        "overview": "This chapter focuses on diplomacy and hiring. It is not only about flipping map markers; it also decides where you can station troops and which regions become your vassals.",
+        "wheelEntry": "The wheel has not moved yet. Click Free Move 1 first to advance into Diplomacy / Hire.",
+        "chooseTarget": "Now the game is in Diplomacy / Hire. Read the prompt first: this action starts from Shanhai Pass, handles a neighboring control marker, then settles the hired troops.",
+        "placeFriendly": "Click the neighboring target first, then click Place Friendly Marker. A friendly region gives you passage and stationing now, and it can be flipped into a vassal later.",
+        "hireOnly": "After the marker change, click End And Hire. That will place 2 level-2 mercenary troops directly in your source region.",
+        "finish": "You have now seen both halves of the system: diplomacy changes map control markers, and hiring adds troops to your controlled region."
+      }
+    },
+    "siege": {
+      "title": "Siege And Occupation",
+      "description": "See why winning a city battle is not the same as immediately taking control.",
+      "steps": {
+        "overview": "This chapter starts from the post-battle decision after Shanhaiguan has been breached. After a city battle, you still decide whether to occupy, besiege, or withdraw.",
+        "target": "Look at Shanhaiguan first. It has been breached, but it is still controlled by Jin, so the post-battle choice decides the city's next state.",
+        "result": "The panel already shows the city battle result. Read the summary first: 2 attacking troops survived, and now you decide whether they enter the city or stay outside as a siege.",
+        "besiegeChoice": "Click Besiege This Region now. Besieging leaves the surviving troops outside the city and does not change control yet.",
+        "finish": "That is one key difference between city battles and field battles: even after winning, you may besiege first instead of taking control immediately."
+      }
+    },
+    "season": {
+      "title": "Midyear And New Year",
+      "description": "Understand midyear checks, new-year maintenance, and why the game rhythm changes when the year turns.",
+      "steps": {
+        "overview": "This chapter is about seasonal resolution. Seven Hatreds is not only about the immediate move; when the wheel reaches Midyear and New Year, taxes, character checks, fortification maintenance, and year rollover all matter.",
+        "advanceMidyear": "Click Advance 2 while giving one opponent 2 cards first. As soon as the wheel enters Midyear, taxes and character checks resolve immediately.",
+        "midyearSummary": "Now read the Midyear summary. It lists the tax result, defeat markers, and character checks in one place.",
+        "advanceNewYear": "After reading Midyear, click Free Move 1. As soon as the wheel enters New Year, fortification maintenance begins.",
+        "newYearMaintenance": "Start with the maintenance choice. Click Auto Maintain now and let the system pay for every fortification it can still keep.",
+        "finish": "After the year turns, you will see the New Year summary and the next year title. That is the basic rhythm of one year moving from Midyear into New Year."
+      }
     }
   },
   "devtools": {
@@ -244,6 +375,7 @@
         "title": "Shared Printed Regions",
         "description": "If one printed region hits multiple runtime regions in the current workspace, it is listed here directly.",
         "note": "This reflects runtime/printed layering truth and does not mean the formal printed data has already been split.",
+        "previewHint": "This thumbnail only shows how runtime ownership splits one printed region into multiple subregions. It does not mean the formal printed data has already been split.",
         "candidateSummary": "Recorded runtime-only guide candidates in this workspace: {{count}}.",
         "empty": "No multi-runtime shared printed samples are loaded in the current workspace.",
         "runtime": "Runtime: {{names}}",
@@ -332,7 +464,8 @@
         "manualAdditionsLabel": "Manual edge additions: ",
         "denoiseRemovedLabel": "Noise removed: ",
         "brushWidth": "Brush width about {{width}}px",
-        "zoom": "Zoom {{scale}}x"
+        "zoom": "Zoom {{scale}}x",
+        "reset": "Reset"
       },
       "compactPassages": {
         "summary": "Centers {{centers}} / Auto-linked {{passages}}",

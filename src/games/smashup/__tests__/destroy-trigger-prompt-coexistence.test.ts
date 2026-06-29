@@ -7,7 +7,16 @@
  * - 两类 prompt 可以并存，但不能被重复处理伪装成双触发
  */
 
-import { getPromptsBySourceId, makeState, makeBase, makeMinion, makeMatchState, makePlayer, resolveDestroyedMinions } from './helpers';
+import {
+    getPromptsBySourceId,
+    makeState,
+    makeBase,
+    makeMinion,
+    makeMatchState,
+    makePlayer,
+    resolveDestroyedMinions,
+    respondToPromptOption,
+} from './helpers';
 import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { defaultTestRandom } from './testRunner';
@@ -58,11 +67,21 @@ describe('destroy trigger prompt 并存', () => {
         expect(result.matchState).toBeDefined();
 
         const igorInteractions = getPromptsBySourceId(result.matchState!, 'frankenstein_igor');
-        const cryptInteractions = getPromptsBySourceId(result.matchState!, 'base_crypt');
+        const queuedSourceIds = result.matchState!.core.triggerQueue?.map(trigger => trigger.sourceDefId) ?? [];
 
-        // 预期：Igor 触发一次，base_crypt 触发一次
+        // 预期：Igor 先展开为当前 prompt，base_crypt 仍保留在同一触发队列中等待后续执行
         expect(igorInteractions.length).toBe(1);
+        expect(queuedSourceIds).toContain('base_crypt');
+
+        const afterIgor = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'monster1',
+            'Igor target',
+            '0',
+            defaultTestRandom,
+        );
+        expect(afterIgor.success, afterIgor.error).toBe(true);
+        const cryptInteractions = getPromptsBySourceId(afterIgor.finalState, 'base_crypt');
         expect(cryptInteractions.length).toBe(1);
-        expect(igorInteractions.length + cryptInteractions.length).toBe(2);
     });
 });

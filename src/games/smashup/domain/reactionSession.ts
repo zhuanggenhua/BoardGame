@@ -759,6 +759,17 @@ export function buildReactionOptions(
     ]);
 }
 
+export function hasSmashUpResponderDrivenReactionOptions(
+    state: MatchState<SmashUpCore>,
+    session: SmashUpReactionSession,
+    now: number,
+): boolean {
+    if (session.phase !== 'optional') {
+        return false;
+    }
+    return buildPlayableCardOptions(state, session, session.activePlayerId, now).length > 0;
+}
+
 function isSameReactionChoiceValue(left: ReactionChoiceValue, right: ReactionChoiceValue): boolean {
     if (left.kind !== right.kind) return false;
 
@@ -884,6 +895,10 @@ function executeQueuedTrigger(
         triggerMinionUid: trigger.triggerMinionUid,
         triggerMinionDefId: trigger.triggerMinionDefId,
         triggerMinionPower: trigger.triggerMinionPower,
+        triggerCardUid: trigger.triggerCardUid,
+        triggerCardDefId: trigger.triggerCardDefId,
+        triggerCardOwnerId: trigger.triggerCardOwnerId,
+        triggerCardKind: trigger.triggerCardKind,
         destroyerId: trigger.destroyerId,
         controllerId: trigger.controllerId,
         triggerMinion: trigger.lkiMinion
@@ -1372,6 +1387,7 @@ export function resolveSmashUpReactionChoice(
             activePlayerId: getNextUnpassedResponder(state.core, session, session.activePlayerId)
                 ?? session.activePlayerId,
             consecutivePasses: 0,
+            passedPlayerIds: session.responseWindowType ? (session.passedPlayerIds ?? []) : [],
         };
     const continuationSession = liveValue.kind === 'activate_special'
         ? withConsumedSpecialCardUid(baseContinuationSession, liveValue.minionUid ?? liveValue.titanUid)

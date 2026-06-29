@@ -40,6 +40,7 @@ export const MagnifyOverlay = ({
                 pointerEvents: isOpen && interactive ? 'auto' : 'none',
                 visibility: isOpen ? 'visible' : 'hidden',
             }}
+            aria-hidden={!isOpen}
             onClick={onClose}
             data-interaction-allow
             data-testid={overlayTestId}
@@ -49,8 +50,9 @@ export const MagnifyOverlay = ({
                 className="relative"
                 onClick={(e) => e.stopPropagation()}
             >
-                {closeLabel && (
+                {isOpen && closeLabel && (
                     <button
+                        type="button"
                         className={`absolute -top-12 right-0 whitespace-nowrap text-white/50 hover:text-white text-sm flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full transition-colors z-10 ${closeButtonClassName}`}
                         onClick={onClose}
                     >

@@ -36,6 +36,7 @@ export interface GameSetupSelectField {
     options?: GameSetupSelectOption[];
     optionsByPlayerCount?: Partial<Record<number, GameSetupSelectOption[]>>;
     default?: string;
+    presentation?: 'select' | 'segmented';
 }
 
 export interface GameSetupMultiSelectField {

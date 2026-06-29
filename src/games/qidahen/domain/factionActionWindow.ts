@@ -15,7 +15,7 @@ const upgradeArmamentActionChoice: QidahenActionChoice = {
     id: 'upgrade-armament',
     label: '升级军备',
     cost: 2,
-    detail: '打出军备牌并弃 1 张手牌，当前低保真先升级己方已开发军备。',
+    detail: '弃 1 张手牌，选择一项已开发军备进行升级。',
 };
 
 const defaultActionIdByFaction: Record<QidahenFactionId, string> = {

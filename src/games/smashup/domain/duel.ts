@@ -78,6 +78,23 @@ type DeputyTargetContinuation = {
     deputyCardUid: string;
 };
 
+function buildDuelEffectSource(
+    duel: ActiveDuel,
+    options?: {
+        sourceDefId?: string;
+        sourceKind?: 'action' | 'nonAction';
+        sourceBaseIndex?: number;
+    },
+) {
+    return {
+        sourcePlayerId: duel.sourcePlayerId,
+        sourceDefId: options?.sourceDefId ?? duel.sourceId,
+        sourceControllerId: duel.sourcePlayerId,
+        sourceBaseIndex: options?.sourceBaseIndex ?? duel.baseIndex,
+        ...(options?.sourceKind !== undefined ? { sourceKind: options.sourceKind } : {}),
+    };
+}
+
 function withActiveDuel(
     state: MatchState<SmashUpCore>,
     duel: ActiveDuel | undefined,
@@ -615,6 +632,7 @@ function buildRunEmOffTieMovePrompts(
             .filter(candidate => candidate.baseIndex !== found.baseIndex);
         if (destinationOptions.length === 0) continue;
         if (destinationOptions.length === 1) {
+            const moveSource = buildDuelEffectSource(duel);
             const moveEvents = buildValidatedMoveEvents(nextState, {
                 minionUid: moveUid,
                 minionDefId: found.minion.defId,
@@ -623,6 +641,10 @@ function buildRunEmOffTieMovePrompts(
                 toBaseDefId: destinationOptions[0].baseDefId,
                 reason: 'cowboys_run_em_off',
                 now,
+                sourcePlayerId: moveSource.sourcePlayerId,
+                sourceDefId: moveSource.sourceDefId,
+                sourceControllerId: moveSource.sourceControllerId,
+                sourceBaseIndex: moveSource.sourceBaseIndex,
             });
             nextState = { ...nextState, core: simulateCore(nextState.core, moveEvents) };
             continue;
@@ -669,6 +691,11 @@ function resolveDuelResult(
     const destroySourceKind = getCardDef(destroySourceId)?.type === 'action' ? 'action' : 'nonAction';
 
     if (duel.outcome === 'destroy_loser') {
+        const destroySource = buildDuelEffectSource(duel, {
+            sourceDefId: destroySourceId,
+            sourceKind: destroySourceKind,
+            sourceBaseIndex: baseIndex,
+        });
         if (isTie) {
             events.push(...buildValidatedDestroyEvents(state, {
                 minionUid: challengerFound.minion.uid,
@@ -677,7 +704,11 @@ function resolveDuelResult(
                 destroyerId: duel.sourcePlayerId,
                 reason: destroySourceId,
                 now,
-                sourceKind: destroySourceKind,
+                sourcePlayerId: destroySource.sourcePlayerId,
+                sourceDefId: destroySource.sourceDefId,
+                sourceControllerId: destroySource.sourceControllerId,
+                sourceBaseIndex: destroySource.sourceBaseIndex,
+                sourceKind: destroySource.sourceKind,
             }));
             events.push(...buildValidatedDestroyEvents(state, {
                 minionUid: challengedFound.minion.uid,
@@ -686,7 +717,11 @@ function resolveDuelResult(
                 destroyerId: duel.sourcePlayerId,
                 reason: destroySourceId,
                 now,
-                sourceKind: destroySourceKind,
+                sourcePlayerId: destroySource.sourcePlayerId,
+                sourceDefId: destroySource.sourceDefId,
+                sourceControllerId: destroySource.sourceControllerId,
+                sourceBaseIndex: destroySource.sourceBaseIndex,
+                sourceKind: destroySource.sourceKind,
             }));
         } else if (loser) {
             events.push(...buildValidatedDestroyEvents(state, {
@@ -696,7 +731,11 @@ function resolveDuelResult(
                 destroyerId: duel.sourcePlayerId,
                 reason: destroySourceId,
                 now,
-                sourceKind: destroySourceKind,
+                sourcePlayerId: destroySource.sourcePlayerId,
+                sourceDefId: destroySource.sourceDefId,
+                sourceControllerId: destroySource.sourceControllerId,
+                sourceBaseIndex: destroySource.sourceBaseIndex,
+                sourceKind: destroySource.sourceKind,
             }));
         }
     } else if (duel.outcome === 'vp_to_winner') {
@@ -727,6 +766,11 @@ function resolveDuelResult(
             events.push(...buildStandardDrawEvents(state.core, winner.controller, 2, random, now));
         }
     } else if (duel.outcome === 'high_noon') {
+        const highNoonSource = buildDuelEffectSource(duel, {
+            sourceDefId: destroySourceId,
+            sourceKind: destroySourceKind,
+            sourceBaseIndex: baseIndex,
+        });
         if (isTie) {
             events.push(...buildValidatedDestroyEvents(state, {
                 minionUid: challengerFound.minion.uid,
@@ -735,6 +779,11 @@ function resolveDuelResult(
                 destroyerId: duel.sourcePlayerId,
                 reason: 'cowboys_high_noon',
                 now,
+                sourcePlayerId: highNoonSource.sourcePlayerId,
+                sourceDefId: highNoonSource.sourceDefId,
+                sourceControllerId: highNoonSource.sourceControllerId,
+                sourceBaseIndex: highNoonSource.sourceBaseIndex,
+                sourceKind: highNoonSource.sourceKind,
             }));
             events.push(...buildValidatedDestroyEvents(state, {
                 minionUid: challengedFound.minion.uid,
@@ -743,6 +792,11 @@ function resolveDuelResult(
                 destroyerId: duel.sourcePlayerId,
                 reason: 'cowboys_high_noon',
                 now,
+                sourcePlayerId: highNoonSource.sourcePlayerId,
+                sourceDefId: highNoonSource.sourceDefId,
+                sourceControllerId: highNoonSource.sourceControllerId,
+                sourceBaseIndex: highNoonSource.sourceBaseIndex,
+                sourceKind: highNoonSource.sourceKind,
             }));
         } else if (loser) {
             events.push(...buildValidatedDestroyEvents(state, {
@@ -752,6 +806,11 @@ function resolveDuelResult(
                 destroyerId: duel.sourcePlayerId,
                 reason: 'cowboys_high_noon',
                 now,
+                sourcePlayerId: highNoonSource.sourcePlayerId,
+                sourceDefId: highNoonSource.sourceDefId,
+                sourceControllerId: highNoonSource.sourceControllerId,
+                sourceBaseIndex: highNoonSource.sourceBaseIndex,
+                sourceKind: highNoonSource.sourceKind,
             }));
         }
         if (winner?.uid === duel.challengerMinionUid && duel.sourcePlayerId === duel.challengerPlayerId) {
@@ -777,6 +836,7 @@ function resolveDuelResult(
                 }))
                 .filter(candidate => candidate.baseIndex !== baseIndex);
             if (destinationOptions.length === 1) {
+                const moveSource = buildDuelEffectSource(duel, { sourceBaseIndex: baseIndex });
                 events.push(...buildValidatedMoveEvents(state, {
                     minionUid: loser.uid,
                     minionDefId: loser.defId,
@@ -785,6 +845,10 @@ function resolveDuelResult(
                     toBaseDefId: destinationOptions[0].baseDefId,
                     reason: 'cowboys_run_em_off',
                     now,
+                    sourcePlayerId: moveSource.sourcePlayerId,
+                    sourceDefId: moveSource.sourceDefId,
+                    sourceControllerId: moveSource.sourceControllerId,
+                    sourceBaseIndex: moveSource.sourceBaseIndex,
                 }));
             } else if (destinationOptions.length > 1) {
                 const mover = loser.controller;
@@ -1032,6 +1096,7 @@ export function registerDuelInteractionHandlers(): void {
         if (!ctx?.loserUid || !ctx.loserDefId || ctx.fromBaseIndex === undefined || selected?.baseIndex === undefined) {
             return { state, events: [] };
         }
+        const moveSource = buildDuelEffectSource(ctx.duel, { sourceBaseIndex: ctx.fromBaseIndex });
         return {
             state,
             events: buildValidatedMoveEvents(state, {
@@ -1042,6 +1107,10 @@ export function registerDuelInteractionHandlers(): void {
                 toBaseDefId: state.core.bases[selected.baseIndex]?.defId,
                 reason: 'cowboys_run_em_off',
                 now,
+                sourcePlayerId: moveSource.sourcePlayerId,
+                sourceDefId: moveSource.sourceDefId,
+                sourceControllerId: moveSource.sourceControllerId,
+                sourceBaseIndex: moveSource.sourceBaseIndex,
             }),
         };
     });

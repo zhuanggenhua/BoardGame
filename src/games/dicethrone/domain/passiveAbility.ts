@@ -25,6 +25,7 @@ export type PassiveActionType = 'rerollDie' | 'drawCard' | 'custom';
 export type PassiveActionTiming =
     | 'anytime'           // 任意时刻（自己回合的投掷阶段 + 响应窗口）
     | 'ownRollPhase'      // 仅自己的投掷阶段
+    | 'ownUpkeepPhase'    // 仅自己的维持阶段
     | 'responseWindow'    // 仅响应窗口
     | 'ownMainPhase';     // 仅自己的 main1/main2 主阶段
 
@@ -50,6 +51,16 @@ export interface PassiveActionDef {
     cpCost: number;
     /** 可选 Token 消耗，用于树精等主阶段消耗资源动作 */
     tokenCost?: { tokenId: string; amount: number };
+    /** 可选多个 Token 消耗，用于同时花费同类或异类资源的动作 */
+    tokenCosts?: Array<{ tokenId: string; amount: number }>;
+    /** 非消耗 Token 前置条件，用于“必须已有某机器人”等动作 */
+    requiresTokens?: Array<{ tokenId: string; amount: number }>;
+    /** 要求某 Token 当前数量仍未达到堆叠上限，避免满额时误扣成本 */
+    requiresTokenBelowLimit?: { tokenId: string };
+    /** 要求某 Token 当前堆叠上限低于指定值，用于升级类动作 */
+    requiresTokenLimitBelow?: { tokenId: string; limit: number };
+    /** 要求某 Token 当前堆叠上限至少达到指定值，用于高级形态动作 */
+    requiresTokenLimitAtLeast?: { tokenId: string; limit: number };
     /** 使用时机 */
     timing: PassiveActionTiming;
     /** 描述 i18n key */
@@ -105,6 +116,31 @@ export function hasSpentTreantTreeSpiritThisTurn(
         && state.treantSpiritSpentThisTurn?.[playerId]?.[tokenId] === true;
 }
 
+export function getPassiveActionTokenCosts(action: PassiveActionDef): Array<{ tokenId: string; amount: number }> {
+    return [
+        ...(action.tokenCost ? [action.tokenCost] : []),
+        ...(action.tokenCosts ?? []),
+    ];
+}
+
+const isArtificerNanobotPassiveActivation = (
+    passiveId: string,
+    actionIndex: number,
+): boolean => passiveId === 'artificer-workshop' && (actionIndex === 0 || actionIndex === 1);
+
+function getPassiveTokenStackLimit(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    tokenId: string,
+): number {
+    const player = state.players[playerId];
+    const override = player?.tokenStackLimits?.[tokenId];
+    if (typeof override === 'number') return override === 0 ? Infinity : override;
+    const base = state.tokenDefinitions?.find(def => def.id === tokenId)?.stackLimit;
+    if (base === 0) return Infinity;
+    return base ?? 99;
+}
+
 /**
  * 检查被动动作在当前阶段是否可用
  */
@@ -127,8 +163,42 @@ export function isPassiveActionUsable(
     if (!player) return false;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
-    if (action.tokenCost && (player.tokens[action.tokenCost.tokenId] ?? 0) < action.tokenCost.amount) return false;
-    if (action.tokenCost && hasSpentTreantTreeSpiritThisTurn(state, playerId, action.tokenCost.tokenId)) return false;
+    if (isArtificerNanobotPassiveActivation(passiveId, actionIndex)) {
+        const botState = player.artificerBotState?.[TOKEN_IDS.NANOBOT];
+        const activationsUsed = botState?.activationsUsedThisTurn ?? 0;
+        if (!botState?.built || activationsUsed >= 1) return false;
+    }
+    const passiveTokenCosts = getPassiveActionTokenCosts(action).filter((cost) => (
+        !isArtificerNanobotPassiveActivation(passiveId, actionIndex) || cost.tokenId !== TOKEN_IDS.NANOBOT
+    ));
+    for (const cost of passiveTokenCosts) {
+        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) return false;
+        if (hasSpentTreantTreeSpiritThisTurn(state, playerId, cost.tokenId)) return false;
+    }
+    for (const requirement of action.requiresTokens ?? []) {
+        if (
+            isArtificerNanobotPassiveActivation(passiveId, actionIndex)
+            && requirement.tokenId === TOKEN_IDS.NANOBOT
+        ) {
+            const botState = player.artificerBotState?.[TOKEN_IDS.NANOBOT];
+            const activationsUsed = botState?.activationsUsedThisTurn ?? 0;
+            if (!botState?.built || activationsUsed >= 1) return false;
+            continue;
+        }
+        if ((player.tokens[requirement.tokenId] ?? 0) < requirement.amount) return false;
+    }
+    if (action.requiresTokenBelowLimit) {
+        const tokenId = action.requiresTokenBelowLimit.tokenId;
+        if ((player.tokens[tokenId] ?? 0) >= getPassiveTokenStackLimit(state, playerId, tokenId)) return false;
+    }
+    if (action.requiresTokenLimitBelow) {
+        const { tokenId, limit } = action.requiresTokenLimitBelow;
+        if (getPassiveTokenStackLimit(state, playerId, tokenId) >= limit) return false;
+    }
+    if (action.requiresTokenLimitAtLeast) {
+        const { tokenId, limit } = action.requiresTokenLimitAtLeast;
+        if (getPassiveTokenStackLimit(state, playerId, tokenId) < limit) return false;
+    }
 
     // rerollDie 额外检查：只能在投掷阶段重掷"自己的骰子"（和 roll 手牌一致）
     if (action.type === 'rerollDie') {
@@ -155,6 +225,9 @@ export function isPassiveActionUsable(
     if (action.timing === 'ownRollPhase') {
         return playerId === state.activePlayerId &&
             (phase === 'offensiveRoll' || phase === 'defensiveRoll');
+    }
+    if (action.timing === 'ownUpkeepPhase') {
+        return playerId === state.activePlayerId && phase === 'upkeep';
     }
     if (action.timing === 'ownMainPhase') {
         return playerId === state.activePlayerId && (phase === 'main1' || phase === 'main2');

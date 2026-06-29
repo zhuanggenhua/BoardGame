@@ -41,20 +41,24 @@ let mockOwnerActiveMatch: null | {
     ownerType?: 'user' | 'guest';
 } = null;
 
-vi.mock('react-i18next', () => ({
-    useTranslation: () => ({
-        t: (key: string, options?: Record<string, unknown>) => {
-            if (key === 'setup.expansions.titans') return '泰坦';
-            if (key === 'setup.expansions.diy') return 'DIY';
-            if (key === 'setup.deckQuery.label') return '余牌查询';
-            if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
-            if (key === 'lobby:rooms.enabledExpansions' || key === 'rooms.enabledExpansions') return '扩展';
-            if (key === 'lobby:rooms.scenario' || key === 'rooms.scenario') return '剧本';
-            return options?.defaultValue ?? key;
-        },
-        i18n: { language: 'zh-CN' },
-    }),
-}));
+vi.mock('react-i18next', async () => {
+    const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
+    return {
+        ...actual,
+        useTranslation: () => ({
+            t: (key: string, options?: Record<string, unknown>) => {
+                if (key === 'setup.expansions.titans') return '泰坦';
+                if (key === 'setup.expansions.diy') return 'DIY';
+                if (key === 'setup.deckQuery.label') return '余牌查询';
+                if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
+                if (key === 'lobby:rooms.enabledExpansions' || key === 'rooms.enabledExpansions') return '扩展';
+                if (key === 'lobby:rooms.scenario' || key === 'rooms.scenario') return '剧本';
+                return options?.defaultValue ?? key;
+            },
+            i18n: { language: 'zh-CN' },
+        }),
+    };
+});
 
 vi.mock('react-router-dom', () => ({
     useNavigate: () => navigateMock,

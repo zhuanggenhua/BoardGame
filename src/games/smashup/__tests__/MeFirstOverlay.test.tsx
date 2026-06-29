@@ -4,8 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MeFirstOverlay } from '../ui/MeFirstOverlay';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
-
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: { defaultValue?: string; player?: string }) => {
@@ -159,8 +157,70 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.queryByTestId('me-first-progress')).not.toBeInTheDocument();
     });
 
-    it('当前响应者页面应显示让过按钮', () => {
-        const state = createState();
+    it('当前响应者确实有可打响应牌时，应显示让过按钮', () => {
+        const base = createState();
+        const state = createState({
+            core: {
+                ...base.core,
+                bases: [{
+                    defId: 'base_pirate_cove',
+                    minions: [{
+                        uid: 'host-minion-1',
+                        defId: 'dino_war_raptor',
+                        controller: '0',
+                        owner: '0',
+                        basePower: 2,
+                        powerCounters: 1,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        talentUsed: false,
+                        attachedActions: [],
+                    }],
+                    ongoingActions: [],
+                }],
+                players: {
+                    ...base.core.players,
+                    '0': {
+                        ...base.core.players['0'],
+                        hand: [{
+                            uid: 'before-card-1',
+                            defId: 'pirate_full_sail',
+                            type: 'action',
+                            owner: '0',
+                        }],
+                    },
+                },
+            },
+            sys: {
+                ...base.sys,
+                responseWindow: {
+                    current: {
+                        ...base.sys.responseWindow!.current!,
+                        windowType: 'meFirst',
+                    },
+                },
+                resolution: {
+                    activeFrameId: 'frame-1',
+                    frames: [{
+                        ...(base.sys.resolution!.frames![0] as any),
+                        kind: 'smashup:reaction:score-before',
+                        step: 'optional',
+                        metadata: {
+                            smashupReactionSession: {
+                                frameId: 'frame-1',
+                                frameKind: 'score-before',
+                                phase: 'optional',
+                                activePlayerId: '0',
+                                currentPlayerId: '0',
+                                consecutivePasses: 0,
+                                responseWindowType: 'meFirst',
+                                sourceBaseIndex: 0,
+                            },
+                        },
+                    }],
+                },
+            },
+        });
 
         render(
             <MeFirstOverlay
@@ -176,7 +236,7 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.getByTestId('me-first-overlay')).toBeInTheDocument();
         expect(screen.queryByTestId('me-first-waiting-shell')).not.toBeInTheDocument();
         expect(screen.getByTestId('me-first-pass-button')).toBeInTheDocument();
-        expect(screen.getByText('计分后响应')).toBeInTheDocument();
+        expect(screen.getByText('Me First!')).toBeInTheDocument();
         expect(screen.getByTestId('me-first-progress')).toBeInTheDocument();
     });
 
@@ -215,11 +275,18 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
     });
 
-    it('smashup_reaction_choose 作为计分响应承载时仍应显示中间弹窗', () => {
+    it('统一响应交互已承接当前玩家操作时，应完全隐藏中间弹窗，避免双主交互', () => {
         const base = createState();
         const state = createState({
             sys: {
                 ...base.sys,
+                responseWindow: {
+                    current: {
+                        ...base.sys.responseWindow!.current!,
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                },
                 interaction: {
                     current: {
                         id: 'reaction-choose',
@@ -250,12 +317,10 @@ describe('SmashUp MeFirstOverlay regressions', () => {
             />,
         );
 
-        expect(screen.getByTestId('me-first-overlay')).toBeInTheDocument();
-        expect(screen.getByText('计分后响应')).toBeInTheDocument();
-        expect(screen.getByTestId('me-first-pass-button')).toBeInTheDocument();
+        expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
     });
 
-    it('统一响应交互存在 pass 选项时，中间让过按钮应响应当前交互而不是发送旧 RESPONSE_PASS', () => {
+    it('统一响应交互存在 pass 选项时，中间层不应再暴露自己的让过按钮', () => {
         const base = createState();
         const state = createState({
             sys: {
@@ -292,17 +357,12 @@ describe('SmashUp MeFirstOverlay regressions', () => {
             />,
         );
 
-        fireEvent.click(screen.getByTestId('me-first-pass-button'));
-
-        expect(onSelectCard).toHaveBeenCalledWith(null);
-        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, {
-            interactionId: 'reaction-choose',
-            optionId: 'pass',
-        });
-        expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
+        expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
+        expect(onSelectCard).not.toHaveBeenCalled();
+        expect(dispatch).not.toHaveBeenCalled();
     });
 
-    it('统一响应交互只剩紧急跳过时，中间让过按钮也应收口当前交互', () => {
+    it('统一响应交互只剩紧急跳过时，中间层也不应再出现第二个让过入口', () => {
         const base = createState();
         const state = createState({
             sys: {
@@ -341,13 +401,161 @@ describe('SmashUp MeFirstOverlay regressions', () => {
             />,
         );
 
-        fireEvent.click(screen.getByTestId('me-first-pass-button'));
+        expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
+        expect(dispatch).not.toHaveBeenCalled();
+    });
 
-        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, {
-            interactionId: 'reaction-choose',
-            optionId: '__emergency_skip__',
+    it('统一响应交互已有 live optionsGenerator 时，中间层仍应完全退场', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                interaction: {
+                    current: {
+                        id: 'reaction-choose',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个响应动作',
+                            options: [
+                                { id: 'stale-pass', label: '旧让过', value: { kind: 'pass' } },
+                            ],
+                            optionsGenerator: () => [
+                                { id: 'play-live', label: '打出当前卡牌', value: { kind: 'play_action', cardUid: 'card-live' } },
+                                { id: 'live-pass', label: '当前让过', value: { kind: 'pass' } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+            },
         });
-        expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
+        const dispatch = vi.fn();
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={dispatch}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('mandatory 统一响应交互存在时，中间层也必须退场，不能和真实交互并列', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                responseWindow: {
+                    current: {
+                        ...base.sys.responseWindow!.current!,
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                },
+                resolution: {
+                    activeFrameId: 'frame-1',
+                    frames: [{
+                        ...(base.sys.resolution!.frames![0] as any),
+                        step: 'mandatory',
+                        metadata: {
+                            smashupReactionSession: {
+                                frameId: 'frame-1',
+                                frameKind: 'score-after',
+                                phase: 'mandatory',
+                                activePlayerId: '0',
+                                currentPlayerId: '0',
+                                consecutivePasses: 0,
+                                responseWindowType: 'afterScoring',
+                            },
+                        },
+                    }],
+                },
+                interaction: {
+                    current: {
+                        id: 'reaction-choose',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个响应动作',
+                            options: [
+                                { id: 'trigger-a', label: '基地效果', value: { kind: 'trigger', triggerId: 'trigger-a' } },
+                                { id: 'trigger-b', label: '大副效果', value: { kind: 'trigger', triggerId: 'trigger-b' } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+            },
+        });
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={vi.fn()}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
+    });
+
+    it('afterScoring 强制二选一且没有可打响应牌时，不应弹出让过窗', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                responseWindow: {
+                    current: {
+                        ...base.sys.responseWindow!.current!,
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                },
+                resolution: {
+                    activeFrameId: 'frame-1',
+                    frames: [{
+                        ...(base.sys.resolution!.frames![0] as any),
+                        step: 'mandatory',
+                        metadata: {
+                            smashupReactionSession: {
+                                frameId: 'frame-1',
+                                frameKind: 'score-after',
+                                phase: 'mandatory',
+                                activePlayerId: '0',
+                                currentPlayerId: '0',
+                                consecutivePasses: 0,
+                                responseWindowType: 'afterScoring',
+                            },
+                        },
+                    }],
+                },
+            },
+        });
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={vi.fn()}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
     });
 
     it('hides when response window is locked by another hidden interaction', () => {

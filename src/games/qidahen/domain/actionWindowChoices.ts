@@ -292,7 +292,7 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('驱虎吞狼', timestamp, [
             `${state.factions[selection.targetFactionId].name} 同意接受大明指挥，并获得 ${drawResult.drawnCards} 张手牌。`,
-            `当前源区 ${acceptedSelection.sourceRegionName}，由大明指挥其执行调度进攻。`,
+            `从 ${acceptedSelection.sourceRegionName} 出发，由大明指挥其执行调度进攻。`,
         ]),
         actionLog: [
             {
@@ -454,7 +454,7 @@ export const resolveQidahenKhanEdictInteractionChoice = (
                 {
                     id: `log-khan-edict-${timestamp}`,
                     faction: currentFactionId,
-                    text: `${state.factions[currentFactionId].name} 选择大汗令箭的外交雇佣，当前源区 ${diplomacySelection.sourceRegionName ?? '未锁定'}，等待选择外交目标。`,
+                    text: `${state.factions[currentFactionId].name} 选择大汗令箭的外交雇佣，从 ${diplomacySelection.sourceRegionName ?? '待选地区'} 出发，等待选择外交目标。`,
                 },
                 ...state.actionLog,
             ].slice(0, 6),

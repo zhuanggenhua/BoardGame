@@ -66,7 +66,7 @@ describe('睡眠印记可以选择自己', () => {
         // 验证交互存在
         const prompt = getSimpleChoicePrompt(result.finalState);
         expect(prompt).toBeDefined();
-        expect(getPromptTitle(prompt)).toContain('选择一个玩家');
+        expect(getPromptTitle(prompt)).toBe('ui.trickster_mark_of_sleep_title');
 
         // 验证选项包含所有玩家（包括自己）
         const options = getPromptOptions(prompt);
@@ -75,7 +75,7 @@ describe('睡眠印记可以选择自己', () => {
         // 验证包含自己（P0）
         const selfOption = options.find((opt: any) => opt.value?.pid === '0');
         expect(selfOption).toBeDefined();
-        expect(selfOption.label).toContain('你自己');
+        expect(selfOption.label).toBe('ui.you');
 
         // 验证包含对手（P1）
         const opponentOption = options.find((opt: any) => opt.value?.pid === '1');

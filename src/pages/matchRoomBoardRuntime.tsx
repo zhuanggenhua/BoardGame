@@ -2,17 +2,21 @@ import {
     createContext,
     useContext,
     useMemo,
+    useRef,
     type ComponentType,
+    type MutableRefObject,
     type ReactNode,
 } from 'react';
 import { getGameImplementation } from '../games/registry';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import { CriticalImageGate } from '../components/game/framework';
+import type { SoundKey } from '../lib/audio/types';
 
 type MatchRoomBoardGateRuntime = {
     locale: string;
     loadingDescription: string;
     shouldBlockBoardOnImagePreload: boolean;
+    blockingAudioKeys: SoundKey[];
     onReady: () => void;
 };
 
@@ -20,7 +24,7 @@ export type MatchRoomBoardShell = {
     Provider: ComponentType<{ children?: ReactNode }>;
 };
 
-export const MatchRoomBoardGateRuntimeContext = createContext<MatchRoomBoardGateRuntime | null>(null);
+export const MatchRoomBoardGateRuntimeContext = createContext<MutableRefObject<MatchRoomBoardGateRuntime> | null>(null);
 
 export function useMatchRoomBoardRuntime(args: {
     gameId?: string;
@@ -34,6 +38,7 @@ export function useMatchRoomBoardRuntime(args: {
         locale: args.locale,
         loadingDescription: args.loadingDescription,
         shouldBlockBoardOnImagePreload: args.shouldBlockBoardOnImagePreload,
+        blockingAudioKeys: [],
         onReady: args.onInitialOnlinePreloadReady,
     }), [
         args.locale,
@@ -41,15 +46,17 @@ export function useMatchRoomBoardRuntime(args: {
         args.onInitialOnlinePreloadReady,
         args.shouldBlockBoardOnImagePreload,
     ]);
+    const boardGateRuntimeRef = useRef(boardGateRuntime);
+    boardGateRuntimeRef.current = boardGateRuntime;
     const boardShell = useMemo<MatchRoomBoardShell>(() => ({
         Provider: function MatchRoomBoardRuntimeProvider({ children }) {
             return (
-                <MatchRoomBoardGateRuntimeContext.Provider value={boardGateRuntime}>
+                <MatchRoomBoardGateRuntimeContext.Provider value={boardGateRuntimeRef}>
                     {children}
                 </MatchRoomBoardGateRuntimeContext.Provider>
             );
         },
-    }), [boardGateRuntime]);
+    }), []);
 
     const wrappedBoardComponent = useMemo<ComponentType<GameBoardProps> | null>(() => {
         if (!args.gameId || !args.gameImplReady) {
@@ -60,22 +67,41 @@ export function useMatchRoomBoardRuntime(args: {
             return null;
         }
         const Board = impl.board as unknown as ComponentType<GameBoardProps>;
+        const blockingAudioKeys = Array.from(new Set(impl.audioConfig?.blockingSounds ?? []));
 
         const WrappedBoardWithGate = (props: GameBoardProps) => {
-            const runtime = useContext(MatchRoomBoardGateRuntimeContext);
-            if (!runtime) {
-                return <Board {...props} />;
+            const runtimeRef = useContext(MatchRoomBoardGateRuntimeContext);
+            const effectiveRuntime: MatchRoomBoardGateRuntime = runtimeRef
+                ? { ...runtimeRef.current, blockingAudioKeys }
+                : { ...boardGateRuntimeRef.current, blockingAudioKeys };
+            if (!runtimeRef) {
+                return (
+                    <CriticalImageGate
+                        gameId={args.gameId}
+                        gameState={props?.G}
+                        locale={effectiveRuntime.locale}
+                        playerID={props?.playerID}
+                        enabled={true}
+                        blockRendering={effectiveRuntime.shouldBlockBoardOnImagePreload}
+                        loadingDescription={effectiveRuntime.loadingDescription}
+                        blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
+                        onReady={effectiveRuntime.onReady}
+                    >
+                        <Board {...props} />
+                    </CriticalImageGate>
+                );
             }
             return (
                 <CriticalImageGate
                     gameId={args.gameId}
                     gameState={props?.G}
-                    locale={runtime.locale}
+                    locale={effectiveRuntime.locale}
                     playerID={props?.playerID}
                     enabled={true}
-                    blockRendering={runtime.shouldBlockBoardOnImagePreload}
-                    loadingDescription={runtime.loadingDescription}
-                    onReady={runtime.onReady}
+                    blockRendering={effectiveRuntime.shouldBlockBoardOnImagePreload}
+                    loadingDescription={effectiveRuntime.loadingDescription}
+                    blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
+                    onReady={effectiveRuntime.onReady}
                 >
                     <Board {...props} />
                 </CriticalImageGate>

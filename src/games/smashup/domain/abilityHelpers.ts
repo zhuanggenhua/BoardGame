@@ -16,12 +16,14 @@ import type {
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
+import { buildOngoingDetachedEvent } from './ongoingDetach';
 import { getSmashUpRelationToPlayer } from './teamMode';
 import type { ProtectionType } from './ongoingEffects';
 import { collectBaseAbilityTriggers } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import {
     buildProtectionSelfDestructEvent,
+    filterSemanticProtectedAffectEvents,
     inferSemanticSourceKind,
     isMinionTargetAllowed,
     type MinionSemanticEffectType,
@@ -244,10 +246,31 @@ export function destroyMinion(
     now: number,
     sourceKind?: 'action' | 'nonAction',
     controllerId?: PlayerId,
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): MinionDestroyedEvent {
     return {
         type: SU_EVENTS.MINION_DESTROYED,
-        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, controllerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
+        payload: {
+            minionUid,
+            minionDefId,
+            fromBaseIndex,
+            ownerId,
+            controllerId,
+            destroyerId,
+            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
+            ...(sourceKind !== undefined ? { sourceKind } : {}),
+            reason,
+        },
         timestamp: now,
     };
 }
@@ -265,10 +288,31 @@ export function moveMinion(
     reason: string,
     now: number,
     toBaseDefId?: string,
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
+    batchId?: string,
 ): MinionMovedEvent {
     return {
         type: SU_EVENTS.MINION_MOVED,
-        payload: { minionUid, minionDefId, fromBaseIndex, toBaseIndex, ...(toBaseDefId ? { toBaseDefId } : {}), reason },
+        payload: {
+            minionUid,
+            minionDefId,
+            fromBaseIndex,
+            toBaseIndex,
+            ...(toBaseDefId ? { toBaseDefId } : {}),
+            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
+            ...(batchId !== undefined ? { batchId } : {}),
+            reason,
+        },
         timestamp: now,
     };
 }
@@ -284,6 +328,12 @@ export function changeMinionController(
     sourcePlayerId: PlayerId,
     reason: string,
     now: number,
+    source?: {
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): MinionControlChangedEvent {
     return {
         type: SU_EVENTS.MINION_CONTROL_CHANGED,
@@ -296,6 +346,10 @@ export function changeMinionController(
             toControllerId,
             sourcePlayerId,
             reason,
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
         },
         timestamp: now,
     };
@@ -413,8 +467,22 @@ export function buildValidatedMoveEvents(
         toBaseDefId?: string;
         reason: string;
         now: number;
+        sourcePlayerId: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        sourceKind?: 'action' | 'nonAction';
+        batchId?: string;
+        targetSnapshot?: {
+            ownerId?: PlayerId;
+            controllerId?: PlayerId;
+            attachedActions?: MinionOnBase['attachedActions'];
+            metadata?: MinionOnBase['metadata'];
+            playedThisTurn?: boolean;
+        };
     },
-): MinionMovedEvent[] {
+): SmashUpEvent[] {
     const core = 'core' in state ? state.core : state;
     const sourceBase = core.bases[params.fromBaseIndex];
     if (!sourceBase) return [];
@@ -422,11 +490,25 @@ export function buildValidatedMoveEvents(
     const targetBase = core.bases[resolvedToBaseIndex];
     if (!targetBase) return [];
 
-    const minion = sourceBase.minions.find(candidate => candidate.uid === params.minionUid);
+    const minion = sourceBase.minions.find(candidate => candidate.uid === params.minionUid)
+        ?? buildFallbackMinionOnBase(params.minionUid, params.minionDefId, params.targetSnapshot);
     if (!minion) return [];
 
-    return [
-        moveMinion(
+    return buildSemanticSingleMinionEffectEvents(
+        state,
+        { minion, baseIndex: params.fromBaseIndex },
+        {
+            sourcePlayerId: params.sourcePlayerId,
+            actionProtectionSourcePlayerId: params.sourceControllerId ?? params.sourcePlayerId,
+            sourceDefId: params.sourceDefId,
+            sourceKind: inferSemanticSourceKind(params.sourceKind, params.sourceDefId),
+            effectType: 'move',
+            mode: 'apply',
+            feedbackPlayerId: params.sourcePlayerId,
+            now: params.now,
+            allBlockedMessageKey: 'feedback.target_protected',
+        },
+        () => [moveMinion(
             params.minionUid,
             minion.defId ?? params.minionDefId,
             params.fromBaseIndex,
@@ -434,8 +516,70 @@ export function buildValidatedMoveEvents(
             params.reason,
             params.now,
             params.toBaseDefId,
-        ),
-    ];
+            {
+                sourcePlayerId: params.sourcePlayerId,
+                sourceCardUid: params.sourceCardUid,
+                sourceDefId: params.sourceDefId,
+                sourceControllerId: params.sourceControllerId,
+                sourceBaseIndex: params.sourceBaseIndex,
+            },
+            params.batchId,
+        )],
+    );
+}
+
+export function buildValidatedBaseMoveEvents(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    params: {
+        minionUid: string;
+        minionDefId: string;
+        fromBaseIndex: number;
+        toBaseIndex: number;
+        toBaseDefId?: string;
+        reason: string;
+        now: number;
+        sourcePlayerId: PlayerId;
+        sourceDefId: string;
+        sourceBaseIndex: number;
+    },
+): SmashUpEvent[] {
+    return buildValidatedMoveEvents(state, {
+        minionUid: params.minionUid,
+        minionDefId: params.minionDefId,
+        fromBaseIndex: params.fromBaseIndex,
+        toBaseIndex: params.toBaseIndex,
+        toBaseDefId: params.toBaseDefId,
+        reason: params.reason,
+        now: params.now,
+        sourcePlayerId: params.sourcePlayerId,
+        sourceDefId: params.sourceDefId,
+        sourceControllerId: params.sourcePlayerId,
+        sourceBaseIndex: params.sourceBaseIndex,
+        sourceKind: 'nonAction',
+    });
+}
+
+export function buildReplayMoveEvent(params: {
+    minionUid: string;
+    minionDefId: string;
+    fromBaseIndex: number;
+    toBaseIndex: number;
+    toBaseDefId?: string;
+    reason: string;
+    now: number;
+    batchId?: string;
+}): MinionMovedEvent {
+    return moveMinion(
+        params.minionUid,
+        params.minionDefId,
+        params.fromBaseIndex,
+        params.toBaseIndex,
+        params.reason,
+        params.now,
+        params.toBaseDefId,
+        undefined,
+        params.batchId,
+    );
 }
 
 export function findMinionOnBase(
@@ -449,6 +593,38 @@ export function findMinionOnBase(
     return base.minions.find(candidate => candidate.uid === minionUid);
 }
 
+function buildFallbackMinionOnBase(
+    minionUid: string,
+    minionDefId: string,
+    targetSnapshot?: {
+        ownerId?: PlayerId;
+        controllerId?: PlayerId;
+        attachedActions?: MinionOnBase['attachedActions'];
+        metadata?: MinionOnBase['metadata'];
+        playedThisTurn?: boolean;
+    },
+): MinionOnBase | undefined {
+    const ownerId = targetSnapshot?.ownerId;
+    const controllerId = targetSnapshot?.controllerId ?? ownerId;
+    if (!ownerId || !controllerId) return undefined;
+
+    const minionDef = getMinionDef(minionDefId);
+    return {
+        uid: minionUid,
+        defId: minionDefId,
+        owner: ownerId,
+        controller: controllerId,
+        basePower: minionDef?.power ?? 0,
+        powerCounters: 0,
+        powerModifier: 0,
+        tempPowerModifier: 0,
+        talentUsed: false,
+        playedThisTurn: targetSnapshot?.playedThisTurn,
+        attachedActions: [...(targetSnapshot?.attachedActions ?? [])],
+        metadata: targetSnapshot?.metadata ? { ...targetSnapshot.metadata } : undefined,
+    };
+}
+
 export function buildValidatedDestroyEvents(
     state: SmashUpCore | MatchState<SmashUpCore>,
     params: {
@@ -458,25 +634,60 @@ export function buildValidatedDestroyEvents(
         destroyerId?: PlayerId;
         reason: string;
         now: number;
+        sourcePlayerId: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
         sourceKind?: 'action' | 'nonAction';
+        targetSnapshot?: {
+            ownerId?: PlayerId;
+            controllerId?: PlayerId;
+            attachedActions?: MinionOnBase['attachedActions'];
+            metadata?: MinionOnBase['metadata'];
+            playedThisTurn?: boolean;
+        };
     },
-): MinionDestroyedEvent[] {
-    const minion = findMinionOnBase(state, params.fromBaseIndex, params.minionUid);
+): SmashUpEvent[] {
+    const minion = findMinionOnBase(state, params.fromBaseIndex, params.minionUid)
+        ?? buildFallbackMinionOnBase(params.minionUid, params.minionDefId, params.targetSnapshot);
     if (!minion) return [];
 
-    return [
-        destroyMinion(
-            params.minionUid,
-            minion.defId ?? params.minionDefId,
-            params.fromBaseIndex,
-            minion.owner,
-            params.destroyerId,
-            params.reason,
-            params.now,
-            params.sourceKind,
-            minion.controller,
-        ),
-    ];
+    return buildSemanticSingleMinionEffectEvents(
+        state,
+        { minion, baseIndex: params.fromBaseIndex },
+        {
+            sourcePlayerId: params.sourcePlayerId,
+            actionProtectionSourcePlayerId: params.sourceControllerId ?? params.sourcePlayerId,
+            sourceDefId: params.sourceDefId,
+            sourceKind: inferSemanticSourceKind(params.sourceKind, params.sourceDefId),
+            effectType: 'destroy',
+            mode: 'apply',
+            feedbackPlayerId: params.sourcePlayerId,
+            now: params.now,
+            allBlockedMessageKey: 'feedback.target_protected',
+        },
+        () => [
+            destroyMinion(
+                params.minionUid,
+                minion.defId ?? params.minionDefId,
+                params.fromBaseIndex,
+                minion.owner,
+                params.destroyerId,
+                params.reason,
+                params.now,
+                inferSemanticSourceKind(params.sourceKind, params.sourceDefId),
+                minion.controller,
+                {
+                    sourcePlayerId: params.sourcePlayerId,
+                    sourceCardUid: params.sourceCardUid,
+                    sourceDefId: params.sourceDefId,
+                    sourceControllerId: params.sourceControllerId,
+                    sourceBaseIndex: params.sourceBaseIndex,
+                },
+            ),
+        ],
+    );
 }
 
 export function buildValidatedReturnEvents(
@@ -488,24 +699,110 @@ export function buildValidatedReturnEvents(
         toPlayerId?: PlayerId;
         reason: string;
         now: number;
-        sourcePlayerId?: PlayerId;
+        sourcePlayerId: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        sourceKind?: 'action' | 'nonAction';
+        targetSnapshot?: {
+            ownerId?: PlayerId;
+            controllerId?: PlayerId;
+            attachedActions?: MinionOnBase['attachedActions'];
+            metadata?: MinionOnBase['metadata'];
+            playedThisTurn?: boolean;
+        };
     },
-): MinionReturnedEvent[] {
-    const minion = findMinionOnBase(state, params.fromBaseIndex, params.minionUid);
+): SmashUpEvent[] {
+    const minion = findMinionOnBase(state, params.fromBaseIndex, params.minionUid)
+        ?? buildFallbackMinionOnBase(params.minionUid, params.minionDefId, params.targetSnapshot);
     if (!minion) return [];
 
-    return [{
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: {
-            minionUid: params.minionUid,
-            minionDefId: minion.defId ?? params.minionDefId,
-            fromBaseIndex: params.fromBaseIndex,
-            toPlayerId: params.toPlayerId ?? minion.owner,
-            reason: params.reason,
-            ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
+    return buildSemanticSingleMinionEffectEvents(
+        state,
+        { minion, baseIndex: params.fromBaseIndex },
+        {
+            sourcePlayerId: params.sourcePlayerId,
+            actionProtectionSourcePlayerId: params.sourceControllerId ?? params.sourcePlayerId,
+            sourceDefId: params.sourceDefId,
+            sourceKind: inferSemanticSourceKind(params.sourceKind, params.sourceDefId),
+            effectType: 'return',
+            mode: 'apply',
+            feedbackPlayerId: params.sourcePlayerId,
+            now: params.now,
+            allBlockedMessageKey: 'feedback.target_protected',
         },
-        timestamp: params.now,
-    }];
+        () => [{
+            type: SU_EVENTS.MINION_RETURNED,
+            payload: {
+                minionUid: params.minionUid,
+                minionDefId: minion.defId ?? params.minionDefId,
+                fromBaseIndex: params.fromBaseIndex,
+                toPlayerId: params.toPlayerId ?? minion.owner,
+                reason: params.reason,
+                sourcePlayerId: params.sourcePlayerId,
+                ...(params.sourceCardUid !== undefined ? { sourceCardUid: params.sourceCardUid } : {}),
+                ...(params.sourceDefId !== undefined ? { sourceDefId: params.sourceDefId } : {}),
+                ...(params.sourceControllerId !== undefined ? { sourceControllerId: params.sourceControllerId } : {}),
+                ...(params.sourceBaseIndex !== undefined ? { sourceBaseIndex: params.sourceBaseIndex } : {}),
+            },
+            timestamp: params.now,
+        }],
+    );
+}
+
+export function buildValidatedControlChangeEvents(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    params: {
+        minionUid: string;
+        minionDefId: string;
+        baseIndex: number;
+        toControllerId: PlayerId;
+        sourcePlayerId: PlayerId;
+        reason: string;
+        now: number;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        sourceKind?: 'action' | 'nonAction';
+    },
+): SmashUpEvent[] {
+    const minion = findMinionOnBase(state, params.baseIndex, params.minionUid);
+    if (!minion || minion.controller === params.toControllerId) return [];
+
+    return buildSemanticSingleMinionEffectEvents(
+        state,
+        { minion, baseIndex: params.baseIndex },
+        {
+            sourcePlayerId: params.sourcePlayerId,
+            actionProtectionSourcePlayerId: params.sourceControllerId ?? params.sourcePlayerId,
+            sourceDefId: params.sourceDefId,
+            sourceKind: inferSemanticSourceKind(params.sourceKind, params.sourceDefId),
+            effectType: 'control',
+            mode: 'apply',
+            feedbackPlayerId: params.sourcePlayerId,
+            now: params.now,
+            allBlockedMessageKey: 'feedback.target_protected',
+        },
+        () => [changeMinionController(
+            params.minionUid,
+            minion.defId ?? params.minionDefId,
+            params.baseIndex,
+            minion.owner,
+            minion.controller,
+            params.toControllerId,
+            params.sourcePlayerId,
+            params.reason,
+            params.now,
+            {
+                sourceCardUid: params.sourceCardUid,
+                sourceDefId: params.sourceDefId,
+                sourceControllerId: params.sourceControllerId,
+                sourceBaseIndex: params.sourceBaseIndex,
+            },
+        )],
+    );
 }
 
 export function buildValidatedCardToDeckBottomEvents(
@@ -514,25 +811,30 @@ export function buildValidatedCardToDeckBottomEvents(
         cardUid: string;
         defId: string;
         ownerId: PlayerId;
-        sourcePlayerId?: PlayerId;
+        sourcePlayerId: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        locationPlayerId?: PlayerId;
         reason: string;
         now: number;
         expectedLocation?: 'discard' | 'hand' | 'deck' | 'bases' | 'any';
     },
-): CardToDeckBottomEvent[] {
+    ): SmashUpEvent[] {
     const core = 'core' in state ? state.core : state;
     const owner = core.players[params.ownerId];
     if (!owner) return [];
-    const sourcePlayer = params.sourcePlayerId ? core.players[params.sourcePlayerId] : undefined;
+    const zonePlayer = core.players[params.locationPlayerId ?? params.ownerId] ?? owner;
 
     const exists = (() => {
         switch (params.expectedLocation ?? 'any') {
             case 'discard':
-                return (sourcePlayer ?? owner).discard.some(card => card.uid === params.cardUid);
+                return zonePlayer.discard.some(card => card.uid === params.cardUid);
             case 'hand':
-                return (sourcePlayer ?? owner).hand.some(card => card.uid === params.cardUid);
+                return zonePlayer.hand.some(card => card.uid === params.cardUid);
             case 'deck':
-                return (sourcePlayer ?? owner).deck.some(card => card.uid === params.cardUid);
+                return zonePlayer.deck.some(card => card.uid === params.cardUid);
             case 'bases':
                 return core.bases.some(
                     base => base.minions.some(minion => minion.uid === params.cardUid)
@@ -541,9 +843,9 @@ export function buildValidatedCardToDeckBottomEvents(
                 );
             case 'any':
             default:
-                return (sourcePlayer ?? owner).hand.some(card => card.uid === params.cardUid)
-                    || (sourcePlayer ?? owner).deck.some(card => card.uid === params.cardUid)
-                    || (sourcePlayer ?? owner).discard.some(card => card.uid === params.cardUid)
+                return owner.hand.some(card => card.uid === params.cardUid)
+                    || owner.deck.some(card => card.uid === params.cardUid)
+                    || owner.discard.some(card => card.uid === params.cardUid)
                     || core.bases.some(
                         base => base.minions.some(minion => minion.uid === params.cardUid)
                             || base.ongoingActions.some(action => action.uid === params.cardUid)
@@ -554,17 +856,62 @@ export function buildValidatedCardToDeckBottomEvents(
 
     if (!exists) return [];
 
-    return [{
+    const minionOnBase = core.bases.flatMap((base, baseIndex) => (
+        base.minions
+            .filter((candidate) => candidate.uid === params.cardUid)
+            .map((minion) => ({ minion, baseIndex }))
+    ))[0];
+
+    if (minionOnBase) {
+        return buildSemanticSingleMinionEffectEvents(
+            state,
+            minionOnBase,
+            {
+                sourcePlayerId: params.sourcePlayerId,
+                actionProtectionSourcePlayerId: params.sourceControllerId ?? params.sourcePlayerId,
+                sourceDefId: params.sourceDefId,
+                sourceKind: inferSemanticSourceKind(undefined, params.sourceDefId),
+                effectType: 'return',
+                mode: 'apply',
+                feedbackPlayerId: params.sourcePlayerId,
+                now: params.now,
+                allBlockedMessageKey: 'feedback.target_protected',
+            },
+            () => [{
+                type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                payload: {
+                    cardUid: params.cardUid,
+                    defId: params.defId,
+                    ownerId: params.ownerId,
+                    reason: params.reason,
+                    sourcePlayerId: params.sourcePlayerId,
+                    ...(params.sourceCardUid !== undefined ? { sourceCardUid: params.sourceCardUid } : {}),
+                    ...(params.sourceDefId !== undefined ? { sourceDefId: params.sourceDefId } : {}),
+                    ...(params.sourceControllerId !== undefined ? { sourceControllerId: params.sourceControllerId } : {}),
+                    ...(params.sourceBaseIndex !== undefined ? { sourceBaseIndex: params.sourceBaseIndex } : {}),
+                },
+                timestamp: params.now,
+            }],
+        );
+    }
+
+    const proposedEvent: CardToDeckBottomEvent = {
         type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
         payload: {
             cardUid: params.cardUid,
             defId: params.defId,
             ownerId: params.ownerId,
             reason: params.reason,
-            ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
+            sourcePlayerId: params.sourcePlayerId,
+            ...(params.sourceCardUid !== undefined ? { sourceCardUid: params.sourceCardUid } : {}),
+            ...(params.sourceDefId !== undefined ? { sourceDefId: params.sourceDefId } : {}),
+            ...(params.sourceControllerId !== undefined ? { sourceControllerId: params.sourceControllerId } : {}),
+            ...(params.sourceBaseIndex !== undefined ? { sourceBaseIndex: params.sourceBaseIndex } : {}),
         },
         timestamp: params.now,
-    }];
+    };
+
+    return filterSemanticProtectedAffectEvents([proposedEvent], core, params.sourcePlayerId);
 }
 
 // ============================================================================
@@ -609,11 +956,22 @@ export function addOngoingCardCounter(
     baseIndex: number,
     delta: number,
     reason: string,
-    now: number
+    now: number,
+    options?: {
+        metadataUpdate?: Record<string, unknown>;
+        replaceMode?: boolean;
+    },
 ): OngoingCardCounterChangedEvent {
     return {
         type: SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED,
-        payload: { cardUid, baseIndex, delta, reason },
+        payload: {
+            cardUid,
+            baseIndex,
+            delta,
+            reason,
+            ...(options?.metadataUpdate ? { metadataUpdate: options.metadataUpdate } : {}),
+            ...(options?.replaceMode ? { replaceMode: true } : {}),
+        },
         timestamp: now,
     };
 }
@@ -1879,6 +2237,7 @@ export function buildActionMinionTargetOptions(
     context: {
         state: SmashUpCore;
         sourcePlayerId: PlayerId;
+        sourceDefId?: string;
         effectType?: MinionTargetEffectType;
     },
 ): EnginePromptOption<{ minionUid: string; baseIndex: number; defId: string }>[] {
@@ -2002,6 +2361,44 @@ export function buildSemanticProtectionFeedback(
     ];
 }
 
+function buildSemanticSingleMinionEffectEvents<TMinion extends MinionOnBase>(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    candidate: SemanticMinionTargetCandidate<TMinion>,
+    options: MinionTargetSemanticOptions & {
+        feedbackPlayerId?: PlayerId;
+        now: number;
+        allBlockedMessageKey?: 'feedback.all_protected' | 'feedback.target_protected';
+    },
+    buildEvents: (candidate: SemanticMinionTargetCandidate<TMinion>) => SmashUpEvent[],
+): SmashUpEvent[] {
+    const core = 'core' in state ? state.core : state;
+    const partitioned = partitionMinionTargetsBySemantics(core, [candidate], options);
+    if (partitioned.allowed.length > 0) {
+        return buildEvents(partitioned.allowed[0]);
+    }
+
+    const events = options.feedbackPlayerId
+        ? buildSemanticProtectionFeedback(
+            options.feedbackPlayerId,
+            partitioned.blocked.length,
+            0,
+            options.now,
+            { allBlockedMessageKey: options.allBlockedMessageKey },
+        )
+        : [];
+
+    for (const blocked of partitioned.blocked) {
+        if (!blocked.blockInfo.consumableSource) continue;
+        events.push(buildProtectionSelfDestructEvent(
+            blocked.blockInfo.consumableSource,
+            blocked.baseIndex,
+            options.now,
+        ));
+    }
+
+    return events;
+}
+
 export function applySemanticMinionEffectBatch<TMinion extends MinionOnBase>(
     state: SmashUpCore | MatchState<SmashUpCore>,
     candidates: readonly SemanticMinionTargetCandidate<TMinion>[],
@@ -2051,6 +2448,7 @@ export function buildSemanticOngoingAttachEvents(
         targetMinionUid?: string;
         metadata?: Record<string, unknown>;
         talentUsed?: boolean;
+        removeFromDiscard?: boolean;
         onBlockedSourceDestination?: 'discard' | 'hand';
         now: number;
     },
@@ -2068,6 +2466,7 @@ export function buildSemanticOngoingAttachEvents(
                 targetBaseIndex: params.targetBaseIndex,
                 ...(params.metadata ? { metadata: params.metadata } : {}),
                 ...(params.talentUsed !== undefined ? { talentUsed: params.talentUsed } : {}),
+                ...(params.removeFromDiscard !== undefined ? { removeFromDiscard: params.removeFromDiscard } : {}),
             },
             timestamp: params.now,
         } as OngoingAttachedEvent];
@@ -2084,6 +2483,7 @@ export function buildSemanticOngoingAttachEvents(
         [{ minion, baseIndex: params.targetBaseIndex }],
         {
             sourcePlayerId,
+            sourceDefId: params.defId,
             sourceKind: params.sourceKind ?? inferSemanticSourceKind(undefined, params.defId),
             effectType: 'affect',
             respectActionProtection: true,
@@ -2101,18 +2501,15 @@ export function buildSemanticOngoingAttachEvents(
                 { allBlockedMessageKey: 'feedback.target_protected' },
             ),
             ...(params.onBlockedSourceDestination
-                ? [{
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: {
-                        cardUid: params.cardUid,
-                        defId: params.defId,
-                        ownerId: params.ownerId,
-                        reason: `${params.defId}_blocked_attach`,
-                        destination: params.onBlockedSourceDestination,
-                        ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
-                    },
-                    timestamp: params.now,
-                } as OngoingDetachedEvent]
+                ? [buildOngoingDetachedEvent({
+                    cardUid: params.cardUid,
+                    defId: params.defId,
+                    ownerId: params.ownerId,
+                    reason: `${params.defId}_blocked_attach`,
+                    destination: params.onBlockedSourceDestination,
+                    sourcePlayerId: params.sourcePlayerId,
+                    now: params.now,
+                })]
                 : []),
             ...partitioned.blocked.flatMap(({ blockInfo }) => (
                 blockInfo.consumableSource
@@ -2134,6 +2531,7 @@ export function buildSemanticOngoingAttachEvents(
             targetMinionUid: params.targetMinionUid,
             ...(params.metadata ? { metadata: params.metadata } : {}),
             ...(params.talentUsed !== undefined ? { talentUsed: params.talentUsed } : {}),
+            ...(params.removeFromDiscard !== undefined ? { removeFromDiscard: params.removeFromDiscard } : {}),
         },
         timestamp: params.now,
     } as OngoingAttachedEvent];

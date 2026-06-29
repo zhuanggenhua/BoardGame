@@ -14,8 +14,18 @@ import { QueryUsersDto } from './dtos/query-users.dto';
 import { QueryUgcPackagesDto } from './dtos/query-ugc-packages.dto';
 import { UpdateAdminTestLatencyDto } from './dtos/update-admin-test-latency.dto';
 import { UpdateUserRoleDto } from './dtos/update-user-role.dto';
+import {
+    AndroidGamePackageReleaseDto,
+    AndroidNativeReleaseDto,
+    AndroidOtaReleaseDto,
+    DeployRollbackExecuteDto,
+    DeployRollbackPreviewDto,
+    DeployUpdateExecuteDto,
+    DeployUpdatePreviewDto,
+} from './dtos/mobile-release.dto';
 import { AdminGuard } from './guards/admin.guard';
 import { Roles } from './guards/roles.decorator';
+import { AdminMobileReleaseService } from './admin-mobile-release.service';
 import { AdminTestLatencyService } from './admin-test-latency.service';
 import { AdminService } from './admin.service';
 
@@ -23,6 +33,7 @@ import { AdminService } from './admin.service';
 export class AdminController {
     constructor(
         @Inject(AdminService) private readonly adminService: AdminService,
+        @Inject(AdminMobileReleaseService) private readonly adminMobileReleaseService: AdminMobileReleaseService,
         @Inject(AdminTestLatencyService) private readonly adminTestLatencyService: AdminTestLatencyService,
         @Inject(AdminUserRoleService) private readonly adminUserRoleService: AdminUserRoleService,
     ) {}
@@ -45,6 +56,71 @@ export class AdminController {
     updateTestLatency(@Body() body: UpdateAdminTestLatencyDto, @Res() res: Response) {
         const state = this.adminTestLatencyService.update(body);
         return res.json(state);
+    }
+
+    @Get('mobile-release/android/ota/status')
+    @AdminController.AdminOnly()
+    async getAndroidOtaStatus(@Query('channel') channel: string | undefined, @Res() res: Response) {
+        const normalizedChannel = channel === 'gray' || channel === 'edge' ? channel : 'stable';
+        const status = await this.adminMobileReleaseService.getAndroidOtaStatus(normalizedChannel);
+        return res.json(status);
+    }
+
+    @Get('mobile-release/android/status')
+    @AdminController.AdminOnly()
+    async getAndroidReleaseStatus(@Query('channel') channel: string | undefined, @Res() res: Response) {
+        const normalizedChannel = channel === 'gray' || channel === 'edge' ? channel : 'stable';
+        const status = await this.adminMobileReleaseService.getAndroidReleaseStatus(normalizedChannel);
+        return res.json(status);
+    }
+
+    @Post('mobile-release/android/ota/publish')
+    @AdminController.AdminOnly()
+    async publishAndroidOta(@Body() body: AndroidOtaReleaseDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.publishAndroidOta(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/android/native/publish')
+    @AdminController.AdminOnly()
+    async publishAndroidNative(@Body() body: AndroidNativeReleaseDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.publishAndroidNative(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/android/packages/publish')
+    @AdminController.AdminOnly()
+    async publishAndroidGamePackage(@Body() body: AndroidGamePackageReleaseDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.publishAndroidGamePackage(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/deploy/rollback/preview')
+    @AdminController.AdminOnly()
+    async previewDeployRollback(@Body() body: DeployRollbackPreviewDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.previewDeployRollback(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/deploy/rollback/execute')
+    @AdminController.AdminOnly()
+    async executeDeployRollback(@Body() body: DeployRollbackExecuteDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.executeDeployRollback(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/deploy/update/preview')
+    @AdminController.AdminOnly()
+    async previewDeployUpdate(@Body() body: DeployUpdatePreviewDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.previewDeployUpdate(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/deploy/update/execute')
+    @AdminController.AdminOnly()
+    async executeDeployUpdate(@Body() body: DeployUpdateExecuteDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.executeDeployUpdate(body);
+        return res.status(200).json(result);
     }
 
     @Get('stats')

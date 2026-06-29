@@ -7,19 +7,21 @@
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
-    grantContextualExtraMinion, grantExtraMinion, destroyMinion,
+    grantContextualExtraMinion, grantExtraMinion, buildValidatedDestroyEvents,
     buildMinionTargetOptions, buildAbilityFeedback,
     buildStandardDrawEvents,
     addTempPower,
 } from '../domain/abilityHelpers';
+import { getMinionTargetBlockInfo } from '../domain/effectSemantics';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
 import type {
     SmashUpEvent, CardsDrawnEvent, SmashUpCore,
-    DeckReorderedEvent, MinionCardDef, OngoingDetachedEvent,
+    DeckReorderedEvent, MinionCardDef,
     MinionPlayedEvent, BreakpointModifiedEvent, MinionMetadataUpdatedEvent, CardInstance,
 } from '../domain/types';
 import { registerPowerModifier } from '../domain/ongoingModifiers';
-import { isMinionProtectedNonConsumable, registerProtection, registerTrigger } from '../domain/ongoingEffects';
+import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
 import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
@@ -321,7 +323,20 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             if (!targetSprout || targetSprout.controller !== ctx.playerId) continue;
 
             const sproutBaseIndex = i;
-            events.push(destroyMinion(targetSprout.uid, targetSprout.defId, sproutBaseIndex, targetSprout.owner, targetSprout.controller, 'killer_plant_sprout', ctx.now));
+            events.push(...buildValidatedDestroyEvents(ctx.state, {
+                minionUid: targetSprout.uid,
+                minionDefId: targetSprout.defId,
+                fromBaseIndex: sproutBaseIndex,
+                destroyerId: targetSprout.controller,
+                reason: 'killer_plant_sprout',
+                now: ctx.now,
+                sourcePlayerId: targetSprout.controller,
+                sourceCardUid: targetSprout.uid,
+                sourceDefId: targetSprout.defId,
+                sourceControllerId: targetSprout.controller,
+                sourceBaseIndex: sproutBaseIndex,
+                sourceKind: 'nonAction',
+            }));
             const player = ctx.state.players[targetSprout.controller];
             if (!player) return { events, matchState };
             const deck = simulatedDecks.get(targetSprout.controller) ?? [...player.deck];
@@ -369,7 +384,20 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             // 记住 sprout 所在基地索引（消灭前）
             const sproutBaseIndex = i;
             // 消灭自身
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, m.controller, 'killer_plant_sprout', ctx.now));
+            events.push(...buildValidatedDestroyEvents(ctx.state, {
+                minionUid: m.uid,
+                minionDefId: m.defId,
+                fromBaseIndex: i,
+                destroyerId: m.controller,
+                reason: 'killer_plant_sprout',
+                now: ctx.now,
+                sourcePlayerId: m.controller,
+                sourceCardUid: m.uid,
+                sourceDefId: m.defId,
+                sourceControllerId: m.controller,
+                sourceBaseIndex: i,
+                sourceKind: 'nonAction',
+            }));
             // 搜索牌库中力量≤3的随从
             const player = ctx.state.players[m.controller];
             if (!player) continue;
@@ -424,15 +452,19 @@ function killerPlantChokingVinesTrigger(ctx: TriggerContext): SmashUpEvent[] {
                 if (!attached) continue;
                 const attachedControllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
                 if (attachedControllerId !== ctx.playerId) return [];
-                return [destroyMinion(
-                    m.uid,
-                    m.defId,
-                    i,
-                    m.owner,
-                    attachedControllerId,
-                    'killer_plant_choking_vines',
-                    ctx.now,
-                )];
+                return buildValidatedDestroyEvents(ctx.state, {
+                    minionUid: m.uid,
+                    minionDefId: m.defId,
+                    fromBaseIndex: i,
+                    destroyerId: attachedControllerId,
+                    reason: 'killer_plant_choking_vines',
+                    now: ctx.now,
+                    sourcePlayerId: attachedControllerId,
+                    sourceCardUid: attached.uid,
+                    sourceDefId: attached.defId,
+                    sourceControllerId: attachedControllerId,
+                    sourceBaseIndex: i,
+                });
             }
         }
         return [];
@@ -447,7 +479,19 @@ function killerPlantChokingVinesTrigger(ctx: TriggerContext): SmashUpEvent[] {
             const attachedControllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
             if (attachedControllerId !== ctx.playerId) continue;
             // 消灭附着的随从
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, attachedControllerId, 'killer_plant_choking_vines', ctx.now));
+            events.push(...buildValidatedDestroyEvents(ctx.state, {
+                minionUid: m.uid,
+                minionDefId: m.defId,
+                fromBaseIndex: i,
+                destroyerId: attachedControllerId,
+                reason: 'killer_plant_choking_vines',
+                now: ctx.now,
+                sourcePlayerId: attachedControllerId,
+                sourceCardUid: attached.uid,
+                sourceDefId: attached.defId,
+                sourceControllerId: attachedControllerId,
+                sourceBaseIndex: i,
+            }));
         }
     }
     return events;
@@ -982,13 +1026,12 @@ function killerPlantEntangledChecker(ctx: ProtectionCheckContext): boolean {
 
         // 一目了然：力量≤2的己方随从不受其他玩家卡牌影响。
         // borrowed ongoing 仍应按当前控制者判断“是否来自其他玩家”。
-        return !isMinionProtectedNonConsumable(
-            ctx.state,
-            ctx.targetMinion,
-            ctx.targetBaseIndex,
-            controllerId,
-            'affect',
-        );
+        return !getMinionTargetBlockInfo(ctx.state, ctx.targetMinion, ctx.targetBaseIndex, {
+            sourcePlayerId: controllerId,
+            sourceKind: 'nonAction',
+            effectType: 'affect',
+            mode: 'preview',
+        }).blocked;
     });
 }
 
@@ -1003,16 +1046,13 @@ function killerPlantEntangledDestroyTrigger(ctx: TriggerContext): SmashUpEvent[]
         if (!entangled) continue;
         const controllerId = (entangled.metadata?.sourceControllerId as PlayerId | undefined) ?? entangled.ownerId;
         if (controllerId !== ctx.playerId) continue;
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: entangled.uid,
-                defId: entangled.defId,
-                ownerId: entangled.ownerId,
-                reason: 'killer_plant_entangled_self_destruct',
-            },
-            timestamp: ctx.now,
-        } as OngoingDetachedEvent);
+        events.push(buildOngoingDetachedEvent({
+            cardUid: entangled.uid,
+            defId: entangled.defId,
+            ownerId: entangled.ownerId,
+            reason: 'killer_plant_entangled_self_destruct',
+            now: ctx.now,
+        }));
     }
     return events;
 }

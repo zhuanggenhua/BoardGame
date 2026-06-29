@@ -17,7 +17,7 @@ import { createSimpleChoice, INTERACTION_EVENTS } from '../../../engine/systems/
 import { executePipeline } from '../../../engine/pipeline';
 import type { CardsDrawnEvent, SmashUpCore, SmashUpCommand, SmashUpEvent, SmashUpReactionSession } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS, TEAM_VP_TO_WIN_2V2, getCurrentPlayerId } from '../domain/types';
-import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { isSmashUpFactionImplementationInProgress, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { getBaseDef, getCardDef, getFactionCards, getTitanDef } from '../data/cards';
 import { TITAN_CARD_DEFS } from '../data/titans';
 import { getPlayerEffectivePowerOnBase, getRegisteredModifierIds, getTitanPowerContribution } from '../domain/ongoingModifiers';
@@ -164,6 +164,23 @@ describe('smashup', () => {
             expect(core.players[pid].vp).toBe(0);
         }
         expect(core.bases.length).toBe(PLAYER_IDS.length + 1);
+    });
+
+    it('setup 基础牌堆不会包含实施中派系基地', () => {
+        const runner = createRunner();
+        const result = runner.run({ name: 'setup 基础牌堆过滤实施中派系', commands: [] });
+        const allRuntimeBaseIds = [
+            ...result.finalState.core.bases.map((base) => base.defId),
+            ...result.finalState.core.baseDeck,
+            ...result.finalState.core.baseDiscard,
+        ];
+
+        const leakedBaseIds = allRuntimeBaseIds.filter((baseId) => {
+            const factionId = getBaseDef(baseId)?.faction;
+            return factionId ? isSmashUpFactionImplementationInProgress(factionId) : false;
+        });
+
+        expect(leakedBaseIds).toEqual([]);
     });
 
     it('混合人机座位且未显式指定先手时，factionSelect 默认由真人先手', () => {
@@ -2420,8 +2437,7 @@ describe('smashup', () => {
             .map((action) => String(action.metadata?.factionId ?? ''));
 
         expect(factionIds.length).toBeGreaterThan(0);
-        expect(factionIds).not.toContain(SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS);
-        expect(factionIds).not.toContain(SMASHUP_FACTION_IDS.GRANNIES);
+        expect(factionIds.filter((factionId) => isSmashUpFactionImplementationInProgress(factionId))).toEqual([]);
         expect(factionIds.every((factionId) => getFactionCards(factionId as any).length > 0)).toBe(true);
     });
 

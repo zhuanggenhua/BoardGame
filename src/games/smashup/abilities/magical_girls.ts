@@ -22,6 +22,7 @@ import { registerInteractionHandler } from '../domain/abilityInteractionHandlers
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { registerOngoingPowerModifier } from '../domain/ongoingModifiers';
 import { registerInterceptor, registerProtection, type ProtectionCheckContext } from '../domain/ongoingEffects';
 import type {
@@ -58,6 +59,9 @@ type MoveChoice = {
     minionUid: string;
     minionDefId: string;
     fromBaseIndex: number;
+    sourceCardUid?: string;
+    sourceDefId?: string;
+    sourceBaseIndex?: number;
 };
 
 type QPointCardChoice = {
@@ -209,6 +213,17 @@ function queueMinionPrompt(
         optional ? [createSkipOption(), ...options] : options,
         { sourceId, targetType: 'minion', autoResolveIfSingle: !optional, titleKey, titleParams },
     );
+    (interaction.data as {
+        continuationContext?: {
+            sourceCardUid?: string;
+            sourceDefId?: string;
+            sourceBaseIndex?: number;
+        };
+    }).continuationContext = {
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceBaseIndex: ctx.targetBaseIndex ?? ctx.baseIndex,
+    };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -231,6 +246,11 @@ function coronetAttack(ctx: AbilityContext): AbilityResult {
                 destroyerId: ctx.playerId,
                 reason: 'magical_girls_coronet_attack',
                 now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: baseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -719,18 +739,19 @@ function qPointDestroyUnkept(state: SmashUpCore, playerId: PlayerId, keepUid: st
             fromBaseIndex: baseIndex,
             reason: 'base_q_point',
             now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'base_q_point',
+            sourceControllerId: playerId,
+            sourceBaseIndex: baseIndex,
             sourceKind: 'nonAction',
         })),
-        ...detachActions.map(choice => ({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: choice.uid,
-                defId: choice.defId,
-                ownerId: choice.ownerId,
-                reason: 'base_q_point',
-            },
-            timestamp,
-        } as OngoingDetachedEvent)),
+        ...detachActions.flatMap(choice => buildValidatedOngoingDetachEvents(state, {
+            cardUid: choice.uid,
+            defId: choice.defId,
+            ownerId: choice.ownerId,
+            reason: 'base_q_point',
+            now: timestamp,
+        })),
     ];
 }
 
@@ -748,6 +769,11 @@ function queueMoveDestination(ctx: AbilityContext, sourceId: string, selected: M
                 toBaseIndex: destinations[0].baseIndex,
                 reason: sourceId,
                 now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.targetBaseIndex ?? ctx.baseIndex,
             }),
         };
     }
@@ -762,6 +788,9 @@ function queueMoveDestination(ctx: AbilityContext, sourceId: string, selected: M
         minionUid: selected.uid,
         minionDefId: selected.defId,
         fromBaseIndex: selected.baseIndex,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceBaseIndex: ctx.targetBaseIndex ?? ctx.baseIndex,
     } satisfies MoveChoice;
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -809,7 +838,14 @@ export function registerMagicalGirlsAbilities(): void {
 }
 
 export function registerMagicalGirlsInteractionHandlers(): void {
-    registerInteractionHandler('magical_girls_coronet_attack', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('magical_girls_coronet_attack', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = (data as {
+            continuationContext?: {
+                sourceCardUid?: string;
+                sourceDefId?: string;
+                sourceBaseIndex?: number;
+            };
+        } | undefined)?.continuationContext;
         const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number; skip?: boolean };
         if (selected.skip || !selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         return {
@@ -821,6 +857,11 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'magical_girls_coronet_attack',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -855,11 +896,13 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         if (selected.mode === 'detach_action' && selected.cardUid && selected.defId && selected.ownerId) {
             return {
                 state,
-                events: [{
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'magical_girls_purge_the_demon' },
-                    timestamp,
-                } as OngoingDetachedEvent],
+                events: buildValidatedOngoingDetachEvents(state, {
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    reason: 'magical_girls_purge_the_demon',
+                    now: timestamp,
+                }),
             };
         }
         if (selected.mode === 'remove_counters' && selected.minionUid && selected.baseIndex !== undefined) {
@@ -873,11 +916,16 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         return { state, events: [] };
     });
 
-    registerInteractionHandler('magical_girls_celestial_teleport', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('magical_girls_celestial_teleport', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number };
         if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         const found = findMinion(state.core, selected.minionUid);
         if (!found || found.minion.controller !== playerId) return { state, events: [] };
+        const continuation = (data?.continuationContext as {
+            sourceCardUid?: string;
+            sourceDefId?: string;
+            sourceBaseIndex?: number;
+        } | undefined);
         const destinations = state.core.bases
             .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(state.core, baseIndex) }))
             .filter(destination => destination.baseIndex !== found.baseIndex);
@@ -891,6 +939,11 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                     toBaseIndex: destinations[0].baseIndex,
                     reason: 'magical_girls_celestial_teleport',
                     now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: continuation?.sourceCardUid,
+                    sourceDefId: continuation?.sourceDefId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation?.sourceBaseIndex,
                 }),
             };
         }
@@ -905,6 +958,9 @@ export function registerMagicalGirlsInteractionHandlers(): void {
             minionUid: found.minion.uid,
             minionDefId: found.minion.defId,
             fromBaseIndex: found.baseIndex,
+            sourceCardUid: continuation?.sourceCardUid,
+            sourceDefId: continuation?.sourceDefId,
+            sourceBaseIndex: continuation?.sourceBaseIndex,
         } satisfies MoveChoice;
         return { state: queueInteraction(state, interaction), events: [] };
     });
@@ -922,6 +978,11 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                 toBaseIndex: selected.baseIndex,
                 reason: 'magical_girls_celestial_teleport',
                 now: timestamp,
+                sourcePlayerId: _playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: _playerId,
+                sourceBaseIndex: context.sourceBaseIndex,
             }),
         };
     });
@@ -989,7 +1050,14 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         };
     });
 
-    registerInteractionHandler('magical_girls_technomagical_lass', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('magical_girls_technomagical_lass', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = (data as {
+            continuationContext?: {
+                sourceCardUid?: string;
+                sourceDefId?: string;
+                sourceBaseIndex?: number;
+            };
+        } | undefined)?.continuationContext;
         const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number };
         if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         return {
@@ -1001,6 +1069,11 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'magical_girls_technomagical_lass',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
                 sourceKind: 'nonAction',
             }),
         };
@@ -1019,12 +1092,17 @@ export function registerMagicalGirlsInteractionHandlers(): void {
     registerInteractionHandler('magical_girls_white_magicat', resolveMagicatSearch('magical_girls_white_magicat'));
     registerInteractionHandler('magical_girls_black_magicat', resolveMagicatSearch('magical_girls_black_magicat'));
 
-    registerInteractionHandler('magical_girls_power_maid', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('magical_girls_power_maid', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number };
         if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         const source = findMinion(state.core, state.core.bases.flatMap(base => base.minions).find(minion => minion.defId === POWER_MAID && minion.controller === playerId)?.uid ?? '');
         const target = findMinion(state.core, selected.minionUid);
         if (!source || !target) return { state, events: [] };
+        const continuation = (data?.continuationContext as {
+            sourceCardUid?: string;
+            sourceDefId?: string;
+            sourceBaseIndex?: number;
+        } | undefined);
         const destinations = state.core.bases
             .map((_base, baseIndex) => baseIndex)
             .filter(baseIndex => target.baseIndex === source.baseIndex ? baseIndex !== source.baseIndex : baseIndex === source.baseIndex);
@@ -1038,6 +1116,12 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                 toBaseIndex: destinations[0],
                 reason: 'magical_girls_power_maid',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
+                sourceKind: 'nonAction',
             }),
         };
     });

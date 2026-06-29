@@ -35,6 +35,9 @@ export interface FeedbackClientContext {
     playerId?: string;
     gameId?: string;
     appVersion?: string;
+    appCommitSha?: string;
+    appBuildTime?: string;
+    appReleaseChannel?: string;
     userAgent?: string;
     viewport?: {
         width: number;
@@ -42,6 +45,12 @@ export interface FeedbackClientContext {
     };
     language?: string;
     timezone?: string;
+    activeElement?: FeedbackElementSummary;
+    lastUserAction?: FeedbackUserActionSummary;
+    recentUserActions?: FeedbackUserActionSummary[];
+    lastRouteChange?: FeedbackRouteChangeSummary;
+    recentRouteChanges?: FeedbackRouteChangeSummary[];
+    pageFlags?: FeedbackPageFlags;
 }
 
 export interface FeedbackErrorContext {
@@ -49,6 +58,42 @@ export interface FeedbackErrorContext {
     name?: string;
     stack?: string;
     source?: string;
+    jsStack?: string;
+    componentStack?: string;
+}
+
+export interface FeedbackElementSummary {
+    tagName?: string;
+    testId?: string;
+    role?: string;
+    id?: string;
+    name?: string;
+    type?: string;
+    ariaLabel?: string;
+    text?: string;
+}
+
+export interface FeedbackUserActionSummary {
+    type: string;
+    at: string;
+    key?: string;
+    target?: FeedbackElementSummary;
+}
+
+export interface FeedbackRouteChangeSummary {
+    from?: string;
+    to: string;
+    trigger: 'init' | 'pushState' | 'replaceState' | 'popstate' | 'hashchange';
+    at: string;
+}
+
+export interface FeedbackPageFlags {
+    isGamePage?: boolean;
+    hasModalOpen?: boolean;
+    gameId?: string;
+    homeStyle?: string;
+    mobileLayoutPreset?: string;
+    mobileProfile?: string;
 }
 
 @Schema({ timestamps: true })
@@ -70,6 +115,9 @@ export class Feedback {
 
     @Prop({ type: String, default: null, trim: true })
     closedReason?: string | null;
+
+    @Prop({ type: String, default: null, trim: true })
+    resolvedMethod?: string | null;
 
     @Prop({ type: String, enum: FeedbackReporterType, default: FeedbackReporterType.USER })
     reporterType!: FeedbackReporterType;

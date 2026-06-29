@@ -32,6 +32,72 @@ export function normalizePersistedLocalStateForGame(
     return normalizeStateForConfig(config, state);
 }
 
+function isStringArray(value: unknown): value is string[] {
+    return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
+export function isPersistedLocalStateCompatible(args: {
+    state: MatchState<unknown>;
+    expectedPlayerIds: string[];
+}): boolean {
+    const { state, expectedPlayerIds } = args;
+    if (!state || typeof state !== 'object') {
+        return false;
+    }
+
+    const core = state.core as Record<string, unknown> | undefined;
+    const sys = state.sys as Record<string, unknown> | undefined;
+    if (!core || !sys) {
+        return false;
+    }
+
+    const corePlayerIds = core.playerIds;
+    if (corePlayerIds !== undefined) {
+        if (!isStringArray(corePlayerIds)) {
+            return false;
+        }
+        if (corePlayerIds.length !== expectedPlayerIds.length) {
+            return false;
+        }
+        if (corePlayerIds.some((playerId, index) => playerId !== expectedPlayerIds[index])) {
+            return false;
+        }
+    }
+
+    const playersRecord = core.players;
+    if (!playersRecord || typeof playersRecord !== 'object' || Array.isArray(playersRecord)) {
+        return false;
+    }
+    const persistedPlayerIds = Object.keys(playersRecord);
+    if (persistedPlayerIds.length !== expectedPlayerIds.length) {
+        return false;
+    }
+    if (expectedPlayerIds.some((playerId) => !persistedPlayerIds.includes(playerId))) {
+        return false;
+    }
+
+    if (typeof core.currentPlayer === 'string' && !expectedPlayerIds.includes(core.currentPlayer)) {
+        return false;
+    }
+
+    const turnOrder = sys.turnOrder;
+    if (!isStringArray(turnOrder)) {
+        return false;
+    }
+    if (turnOrder.length !== expectedPlayerIds.length) {
+        return false;
+    }
+    if (turnOrder.some((playerId, index) => playerId !== expectedPlayerIds[index])) {
+        return false;
+    }
+
+    const currentPlayerIndex = sys.currentPlayerIndex;
+    return typeof currentPlayerIndex === 'number'
+        && Number.isInteger(currentPlayerIndex)
+        && currentPlayerIndex >= 0
+        && currentPlayerIndex < expectedPlayerIds.length;
+}
+
 export function normalizeReceivedStateForGame(
     config: GameEngineConfig | undefined,
     state: MatchState<unknown>,

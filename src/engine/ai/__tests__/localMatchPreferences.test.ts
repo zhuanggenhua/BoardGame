@@ -41,6 +41,7 @@ describe('localMatchPreferences create-room sanitization', () => {
     it('会移除 AI 座位与 manualFactionSelection，只保留人数和 setup 选择', () => {
         const preferences: LocalMatchPreferences = {
             numPlayers: 4,
+            minimumActionDelayMs: 3000,
             setupSelections: {
                 expansions: ['titans'],
             },
@@ -56,6 +57,7 @@ describe('localMatchPreferences create-room sanitization', () => {
 
         expect(sanitized).toEqual({
             numPlayers: 4,
+            minimumActionDelayMs: 3000,
             setupSelections: {
                 expansions: ['titans'],
             },
@@ -76,6 +78,7 @@ describe('localMatchPreferences create-room sanitization', () => {
     it('Smash Up 首次创建默认开启 diy 与余牌查询', () => {
         const normalized = createDefaultLocalMatchPreferences(smashupManifest);
 
+        expect(normalized.minimumActionDelayMs).toBe(1000);
         expect(normalized.setupSelections).toEqual({
             expansions: ['titans', 'deckQuery', 'diy'],
         });
@@ -84,6 +87,7 @@ describe('localMatchPreferences create-room sanitization', () => {
     it('Smash Up 手动关闭 diy 后，不会在后续归一化时被重新打开', () => {
         const normalized = normalizeLocalMatchPreferences(smashupManifest, {
             numPlayers: 2,
+            minimumActionDelayMs: 2000,
             setupSelections: {
                 expansions: ['titans'],
             },
@@ -93,6 +97,7 @@ describe('localMatchPreferences create-room sanitization', () => {
             },
         });
 
+        expect(normalized.minimumActionDelayMs).toBe(2000);
         expect(normalized.setupSelections).toEqual({
             expansions: ['titans'],
         });

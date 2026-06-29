@@ -1,5 +1,8 @@
 # 反馈开放接口与状态约定
 
+> 这份文档只描述 **HTTP 接口形状**。
+> 反馈收口的正式流程、状态推进时机、`closedReason / resolvedMethod` 是否必须回写、是否需要写本地分诊板，一律以 `.codex/skill/feedback-closeout/SKILL.md` 为唯一规范真相源。
+
 ## 使用边界
 
 - 本文档描述的是“真实反馈接口”的约定，不代表任意返回相同路径的环境都可以直接当成正式收口目标。
@@ -12,28 +15,22 @@
 
 ## 接口
 
-- 列表：`GET /feedback/open?status=<status>&page=<n>&limit=<n>`
-- 详情：`GET /feedback/open/:id`
-- 改状态：`PATCH /feedback/open/:id/status`
+- 列表：`GET /admin/feedback?status=<status>&page=<n>&limit=<n>`
+- 改状态：`PATCH /admin/feedback/:id/status`
 
-## 状态含义
+### 认证要求
 
-- `open`
-  - 新进入待处理队列，还没有明确有人接手。
-- `in_progress`
-  - 已经确认由当前轮分析或某个子 agent 接手。
-- `resolved`
-  - 已确认是真 bug，且代码与验证已经完成。
-  - 不要求等待生产部署或未来不复发；部署/观察是后续发布状态，不是反馈状态。
-- `closed`
-  - 不是真 bug、重复反馈、已失效、或无需代码修复。
+- `GET /admin/feedback`
+  - 当前线上允许无凭证读取列表，但这只证明“能看见线上真实反馈”，**不等于**有正式回写权限。
+- `PATCH /admin/feedback/:id/status`
+  - 必须携带 `Authorization: Bearer <token>`。
+  - 当前项目脚本统一使用 `BOARDGAME_FEEDBACK_TOKEN` 或 `--token` 传入。
+  - 如果线上返回 `401 缺少登录凭证`，说明问题是“没有正式写凭证”，不是接口不存在。
+  - `closed` 时应同时提交 `closedReason`（关闭理由）。
+  - `resolved` 时应同时提交 `resolvedMethod`（解决方式）。
+  - `closedReason/resolvedMethod` 是正式收口记录的一部分，默认应直接写到线上真实反馈记录，不要只停在本地分诊板。
 
-## 本 skill 默认策略
+## 备注
 
-1. 默认只拉 `open,in_progress`，不把已 `resolved` 的历史项重新塞回待处理队列。
-2. 先按重复组收敛到代表项，再决定是否并行。
-3. 只有在确认代表项是真 bug 且修复完成后，才把代表项改成 `resolved`。
-4. 如果代表项不是 bug，或确认只是重复项，则改成 `closed`。
-5. 重复项不要和代表项并行开工，先等代表项结论，再统一收口。
-6. 默认只处理线上真实反馈；任何本地环境返回的数据都只能视为演练或诊断材料，除非用户明确要求处理本地测试反馈。
-7. 正式回写前至少抽查 1 条目标反馈 ID，确认它在当前接口里的状态和用户给的任务上下文一致，再执行批量写回。
+- 本文不再重复写反馈收口策略、状态语义解释、分诊顺序、双写口径或交付要求。
+- 若旧的 `/feedback/open` 路由返回 `404`，说明你没有命中当前真实接口；具体如何切换、是否改走 Mongo、何时允许这样做，以 `.codex/skill/feedback-closeout/SKILL.md` 为准。

@@ -36,7 +36,9 @@ curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts
 bash deploy-image.sh
 ```
 
-脚本会自动完成：下载 compose 文件 → 引导生成 .env → 配置 Docker 镜像加速 → 安装/配置 Nginx → 拉取镜像 → 启动服务。
+脚本会自动完成：下载 compose 文件 → 引导生成 `.env` → 检查宿主机 Docker 基础条件 → 拉取镜像 → 启动服务。
+
+> **强制边界**：`deploy-image.sh deploy/update/rollback` 只负责业务镜像发布，不负责替宿主机修改 Docker daemon 配置。像 `/etc/docker/daemon.json`、`registry-mirrors`、daemon 重载/重启 这类宿主机基础设施动作，必须作为独立运维动作处理，不能混进正式部署链。
 
 > **架构**：Cloudflare (HTTPS + CDN) → 服务器 80 端口 → Docker web 容器 (NestJS monolith) → 内部 game-server
 > 无 Nginx，NestJS 直接监听 80 端口。Cloudflare 代理提供 SSL 和 CDN。
@@ -51,7 +53,46 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 **强制规则**：生产环境更新必须**等待 CI 镜像构建完成**后再执行（对应 commit/tag 的镜像已推送到仓库）。  
 未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
 
-**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，必须执行 `bash deploy-image.sh update`，也就是部署 `latest`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，默认应执行两步：① 服务器执行 `bash deploy-image.sh update`，也就是部署 `latest`；② 本地发布 Android `stable` OTA。推荐统一入口：
+
+```bash
+node scripts/release/deploy-and-ota.mjs --skip-wait
+```
+
+如果用户明确说“只更新服务器”或“这次不发 OTA”，才允许缩小为只执行 `bash deploy-image.sh update`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+
+**镜像拉取等待口径（强制）**：`docker pull` / `deploy-image.sh update` 正在下载镜像层时，只要能看到层进度、已下载字节数或阶段变化，就默认继续等待，不得把“下载慢”直接判定为失败并改走补救链路。只有满足以下任一条件，才允许进入 fallback：连续多次超时且同一层无新增进度；明确报网络/认证/磁盘错误；服务器或本机/CI 对同一镜像均无法完成拉取；或用户明确要求停止等待。切换 fallback 时，必须说明这是“镜像分发补救”，不是正式镜像拉取链路已成功。
+
+**正式 fallback（当服务器直拉 GHCR 大层失败时）**：先在网络更好的机器或 CI 上执行：
+
+```bash
+node scripts/deploy/stream-images-to-server.mjs --tag <tag> --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
+```
+
+这条链路会先在本地导出镜像 tar、上传到生产机、再在服务器本地导入镜像，然后执行：
+
+```bash
+bash scripts/deploy/deploy-image.sh update-local <tag>
+```
+
+`update-local` 仍然会复用同一套 `post-deploy smoke + 自动回退`；变化的只是镜像分发方式，不是部署门禁。
+
+### 宿主机 Docker 镜像源配置（独立动作）
+
+如需显式写入项目默认镜像源，请在宿主机单独执行：
+
+```bash
+bash deploy-image.sh configure-mirror
+```
+
+约束：
+
+- 这是**宿主机基础设施维护**，不是业务部署步骤。
+- `configure-mirror` 只会更新 `/etc/docker/daemon.json` 里的 `registry-mirrors` 字段，并尝试向 `dockerd` 发送 `SIGHUP` 重新加载配置。
+- `configure-mirror` 不会自动跟 `deploy/update/rollback` 绑定执行，也不应把“镜像源治理”当成每次发版的一部分。
+- 如果生产机已有运维维护的 Docker daemon 配置，应继续以运维配置为真相源，不要依赖业务部署脚本覆盖。
+- `deploy/update/rollback` 拉取范围默认只包含应用服务 `game-server` 与 `web`；`mongodb`、`redis` 这类基础依赖应以宿主机现有缓存/既有镜像为准，不应把每次业务发版绑定到 Docker Hub 可用性。
+- 公网入口资源一致性门禁默认关闭；只有显式设置 `PUBLIC_WEB_URL` 时才会检查。当前正式根域名走 Pages，服务器部署默认不应拿 `http://127.0.0.1/` 与 `https://easyboardgame.top/` 比入口资源。
 
 ### 回滚 / 状态 / 日志
 
@@ -61,6 +102,45 @@ bash deploy-image.sh rollback-last     # 回滚到上次成功部署版本
 bash deploy-image.sh status             # 查看状态
 bash deploy-image.sh logs [service]     # 查看日志
 ```
+
+### 后台部署回滚执行器
+
+发布中心里的“执行回滚”不应由 `boardgame-web` 容器自己执行，否则回滚过程中可能重启或替换当前容器，导致控制请求中断、结果不可知。
+
+生产环境应在宿主机安装独立 systemd 服务：
+
+```bash
+cd /home/admin/BoardGame
+bash scripts/deploy/install-deploy-runner.sh
+```
+
+安装脚本会创建并启动 `boardgame-deploy-runner.service`，默认以 `root` 运行，确保它能执行 Docker 部署 / 回滚命令。若确认某个非 root 用户已经具备 Docker 权限，也可以安装时传 `RUNNER_USER=admin`。脚本会输出一串 `BG_DEPLOY_RUNNER_TOKEN`，把这串 token 写入服务器 `.env`：
+
+```bash
+BG_DEPLOY_RUNNER_URL=http://host.docker.internal:18761
+BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
+```
+
+然后按正常部署链路更新 `boardgame-web` 容器，让环境变量进入容器：
+
+```bash
+bash scripts/deploy/deploy-image.sh update
+```
+
+验证：
+
+```bash
+systemctl status boardgame-deploy-runner
+curl http://127.0.0.1:18761/health
+```
+
+约束：
+
+- runner 是宿主机服务，不放进 `docker-compose.prod.yml` 管理的服务列表。
+- runner 默认优先监听 Docker 网桥地址，供 `web` 容器通过 `host.docker.internal` 访问；不要把它当公网 HTTP 入口使用。
+- `docker-compose.prod.yml` 只给 `web` 容器注入 `BG_DEPLOY_RUNNER_URL` / `BG_DEPLOY_RUNNER_TOKEN`，让后台调用 runner。
+- runner 默认执行 `scripts/deploy/deploy-image.sh rollback-last` 或 `rollback <tag>`，并要求确认文案与 token。
+- 如果未配置 token 或 runner 不可达，后台只能生成回滚命令预览，不能执行回滚。
 
 ### 固定版本部署（仅明确指定 / 回滚排障）
 
@@ -86,6 +166,8 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
 - **部署注意**：上面的版本标签以 CI 实际输出和 GHCR 实际存在为准；日常生产“最新”部署不需要也不应指定 commit tag，直接使用 `update` 拉取 `latest`。
 
 > **当前自动部署脚本的真实入口**：`boardgame-web` 是基于 `docker/Dockerfile.monolith` 构建的单体镜像，负责静态资源、`/auth`、`/notifications`、`/social-socket` 等 API / WebSocket 入口；`deploy-image.sh` 不会部署独立的 `auth-server`，也不会使用 `docker/Dockerfile.web` / `docker/nginx.conf` 作为生产主链路。
+>
+> **当服务器直拉 GHCR 不稳定时**：正式 fallback 不是“在服务器本地重建一遍前端”，而是先用 `node scripts/deploy/stream-images-to-server.mjs --tag <tag> --deploy` 把镜像送到生产机，再在服务器上走 `update-local`。
 
 > **注意**：镜像构建由 GitHub Actions 自动完成，服务器脚本只负责拉取镜像。
 > 私有镜像需要登录（脚本会提示是否登录 ghcr.io）。
@@ -119,24 +201,18 @@ curl -I http://127.0.0.1/
 ### 可选环境变量
 
 ```bash
-REPO_URL=https://github.com/zhuanggenhua/BoardGame.git \   # 仓库地址
-APP_DIR=BoardGame \                                       # 代码目录
 JWT_SECRET=your-secret \                                  # JWT 密钥（不填则自动生成）
-MONGO_URI=mongodb://mongodb:27017/boardgame \            # Mongo 连接
 WEB_ORIGINS=https://your-domain.com \                    # CORS 白名单
-MIRROR_PROVIDER=multi \                                  # 镜像源方案（默认 multi）
-XUANYUAN_DOMAIN=docker.xuanyuan.me \                      # 轩辕镜像域名
-CUSTOM_MIRRORS=https://mirror1,https://mirror2 \         # 自定义镜像列表（优先级最高）
-SKIP_MIRROR=1 \                                          # 跳过镜像源配置
-FORCE_ENV=1 \                                            # 强制覆盖 .env
-bash deploy-auto.sh
+SKIP_MIRROR=1 \                                          # 跳过镜像源检查提示
+bash deploy-image.sh update
 ```
 
-### 镜像源说明（多源 HTTPS）
+### 镜像源说明（宿主机运维）
 
-- 默认使用多源 HTTPS 镜像列表（阿里云、USTC、SJTUG、DaoCloud、dockerproxy）。
-- 若你想使用轩辕镜像：设置 `MIRROR_PROVIDER=xuanyuan`，可选 `XUANYUAN_DOMAIN=你的专属域名`。
-- 若你想完全自定义：设置 `CUSTOM_MIRRORS` 为逗号分隔的镜像列表（优先级最高）。
+- 项目脚本内置的默认镜像源列表是：阿里云、USTC、SJTUG、DaoCloud、dockerproxy。
+- 这些镜像源只在你**显式执行** `bash deploy-image.sh configure-mirror` 时才会写入宿主机。
+- `deploy/update/rollback` 不会自动写入、覆盖或重建宿主机的 `registry-mirrors`。
+- 若生产机已有自定义镜像源、代理或私有 registry 配置，应继续以宿主机现有运维配置为准。
 
 ## Pages 部署（前后端分离）
 
@@ -249,12 +325,11 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 GitHub Actions 自动化：
 
-- 自动正式发版 workflow：`.github/workflows/android-push-release.yml`
 - 手动 OTA workflow：`.github/workflows/android-ota-publish.yml`
-- `main` 自动发版：命中 Android H5 相关路径后，自动发布 **stable OTA**；**原生壳仍需手动发包**
-- 自动版本管理：默认会在自动发版成功后把 `package.json` / `package-lock.json` 自动递增到下一个 patch 版本，并回推一个带 `[skip android release]` 的 bot commit，避免发版循环；如需临时关闭，可把仓库变量 `ANDROID_AUTO_BUMP_VERSION` 设为 `false`
-- 手动触发：仍可手动选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`
-- 正式门禁：如需人工审批，可在**手动** OTA workflow 上绑定 `android-ota-production` Environment
+- 普通 `push main` 不得自动发布 **stable OTA**，也不得自动回写版本号。
+- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`、`ota_version_base`。
+- 正式门禁：`stable` 应绑定 `android-ota-production` Environment 审批。
+- OTA 内部游标：客户端按 bundle `version` 这个单调递增游标判断新旧；`publishedAt` 只用于审计和展示。若旧客户端曾记住错误大版本，例如 `5.9.0`，可用 `ota_version_base=6.0.0` 发桥接包。
 - 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本默认都必须收到 OTA。若误传这些参数，发布脚本必须直接失败。
 
 约束：
@@ -293,7 +368,11 @@ GitHub Actions 自动化：
 
 > **生产环境更新必须使用部署脚本**：`bash scripts/deploy/deploy-image.sh update [tag]`
 >
+> 如果目标镜像已经通过正式 fallback 预先导入到服务器本地，可改用：`bash scripts/deploy/deploy-image.sh update-local [tag]`
+>
 > 禁止在生产服务器上直接运行 `docker compose up -d`，因为默认使用 `docker-compose.yml` 而非 `docker-compose.prod.yml`，两者的端口映射和环境变量配置不同。
+>
+> **部署回滚执行边界**：后台发布中心不直接在 `boardgame-web` 容器内执行部署 / 回滚脚本。实际执行者必须是宿主机上的 `boardgame-deploy-runner` systemd 服务；这样 `deploy-image.sh` 重启或替换 `boardgame-web` 时，控制部署回滚的进程不会一起被停掉。
 >
 > **当前部署脚本已内建 post-deploy smoke + 自动回退**：更新后会自动等待关键容器 ready，并检查首页、`/health`、`/notifications`。若新版本 smoke 失败，脚本会自动回退到部署前实际运行的 `web` / `game-server` 镜像引用，并再次执行 smoke。即使自动回退成功，本次更新命令仍会以失败状态退出，用于明确提示“服务已恢复，但升级未成功”。
 
@@ -309,7 +388,8 @@ GitHub Actions 自动化：
   - 镜像部署：`docker-compose.prod.yml`（服务器不需要源码，推荐生产环境）
   - 本地开发：`docker-compose.yml`（同样使用 ghcr 预构建镜像）
   - 对外仅暴露 `web`（单体），`game-server` 仅容器网络内通信
-  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
+  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]` 或 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
+  - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
 ## 资源 /assets 与对象存储映射（官方）
 
@@ -347,20 +427,21 @@ GitHub Actions 自动化：
 
 Android OTA 产物也走同一个对象存储桶，但前缀独立：
 
-1. 日常主线：直接 `push main`，GitHub Actions **自动发布 stable OTA（原生壳手动）**
-2. 自动发版成功后，bot 会把仓库版本号自动 bump 到下一个 patch，作为下一次发版基线
+1. 日常主线：`push main` 只触发常规 CI，不自动切换 Android OTA 最新入口。
+2. OTA 发布必须由人工/后台触发，`stable` 需要走正式审批。
 3. 若只想单独操作 OTA 灰度/预演，继续手动执行：
    - `node scripts/mobile/release-android.mjs ota --channel gray --dry-run`
    - `node scripts/mobile/release-android.mjs ota --channel gray --skip-latest`
    - `node scripts/mobile/release-android.mjs ota --channel gray`
-4. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`
+4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0 --force-update`
+5. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`
 
 当前默认发布节奏：
 
-1. 开发者把待发版版本号写进 `package.json`
-2. `push main`
-3. CI 直接发布该版本到 stable
-4. CI 自动把仓库版本号 bump 到下一个 patch，等待下一次 push
+1. 开发者把产品版本号写进 `package.json`，例如 `0.6.0`。
+2. 合入 `main` 后等待常规 CI 通过。
+3. 在后台或 GitHub Actions 手动触发 OTA 发布，显式确认 `expected_base_version`。
+4. 发布脚本生成或接收单调递增的 OTA 内部游标；桥接场景可临时使用 `6.0.0-ota-...`，但产品版本仍保持 `0.6.0`。
 
 ## UGC 资源前缀预留（未实现）
 

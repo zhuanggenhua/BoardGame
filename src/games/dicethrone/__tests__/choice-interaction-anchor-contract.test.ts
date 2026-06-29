@@ -405,6 +405,53 @@ describe('DiceThrone choice handler anchor contract', () => {
         expect(nextEvents.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.DELAYED_POISON)).toBe(true);
     });
 
+    it('ninja choice followup 在真实 simple-choice 交互快照存在时可不依赖 core 锚点生效', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash',
+            isDefendable: true,
+            damage: 6,
+        };
+        state.core.pendingDamage = {
+            id: 'ninja-choice-interaction-backed',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 6,
+            currentDamage: 6,
+            sourceAbilityId: 'slash',
+            responseType: 'beforeDamageDealt',
+            responderId: '0',
+            isFullyEvaded: false,
+        };
+
+        const nextEvents = extractNextEvents(state, [{
+            type: 'SYS_INTERACTION_RESOLVED',
+            payload: {
+                interactionId: 'choice-slash-101a',
+                playerId: '0',
+                optionId: 'option-0',
+                value: { value: 1, customId: 'ninja-ninjutsu-poison' },
+                sourceId: 'slash',
+                interactionData: {
+                    sourceId: 'slash',
+                    options: [
+                        {
+                            id: 'option-0',
+                            value: { value: 1, customId: 'ninja-ninjutsu-poison' },
+                        },
+                    ],
+                },
+            },
+            timestamp: 101,
+        } as unknown as DiceThroneEvent]);
+
+        expect(nextEvents.some(event => event.type === 'CHOICE_RESOLVED')).toBe(true);
+        expect(nextEvents.some(event => event.type === 'BONUS_DAMAGE_ADDED')).toBe(true);
+        expect(nextEvents.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.DELAYED_POISON)).toBe(true);
+    });
+
     it('ninja undefendable followup 应拒绝 source 正确但没有当前 choice 锚点的 SYS_INTERACTION_RESOLVED', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.pendingAttack = {

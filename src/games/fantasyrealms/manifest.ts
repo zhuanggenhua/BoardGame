@@ -1,18 +1,22 @@
 import type { GameManifestEntry } from '../manifest.types';
+import { buildFantasyRealmsSetupOptions } from './roomSetup';
+
+export const FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX = 1520;
 
 const entry: GameManifestEntry = {
     id: 'fantasyrealms',
     type: 'game',
     enabled: true,
-    statusTag: 'under_construction',
     titleKey: 'games.fantasyrealms.title',
     descriptionKey: 'games.fantasyrealms.description',
     category: 'card',
     playersKey: 'games.fantasyrealms.players',
     icon: '🏰',
     thumbnailPath: 'fantasyrealms/thumbnails/cover',
+    cursorTheme: 'fantasyrealms-parchment',
     allowLocalMode: true,
     playerOptions: [2, 3, 4, 5, 6],
+    setupOptions: buildFantasyRealmsSetupOptions(),
     bestPlayers: [3, 4],
     tags: ['card_driven', 'set_collection', 'fantasy'],
     mobileProfile: 'landscape-adapted',

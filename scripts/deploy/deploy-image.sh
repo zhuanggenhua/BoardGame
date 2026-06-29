@@ -7,8 +7,10 @@ set -euo pipefail
 #   首次部署：  bash deploy-image.sh
 #   首次部署指定 tag：bash deploy-image.sh deploy v1.2.3
 #   更新版本：  bash deploy-image.sh update [tag]
+#   使用本地已导入镜像更新：bash deploy-image.sh update-local [tag]
 #   回滚版本：  bash deploy-image.sh rollback <tag>
 #   回滚到上次部署：bash deploy-image.sh rollback-last
+#   配置镜像源：bash deploy-image.sh configure-mirror
 #   初始化管理员：bash deploy-image.sh init-admin
 #   查看状态：  bash deploy-image.sh status
 #   查看日志：  bash deploy-image.sh logs [service]
@@ -43,10 +45,11 @@ WEB_CONTAINER_NAME="boardgame-web"
 GAME_CONTAINER_NAME="boardgame-game-server"
 MONGODB_CONTAINER_NAME="boardgame-mongodb"
 REDIS_CONTAINER_NAME="boardgame-redis"
+APP_SERVICES=(game-server web)
 COMPOSE_PROJECT_NAME_EFFECTIVE="${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')}"
 DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-.deploy-last-success.env}"
 DEPLOY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PUBLIC_WEB_URL="${PUBLIC_WEB_URL:-https://easyboardgame.top}"
+PUBLIC_WEB_URL="${PUBLIC_WEB_URL:-off}"
 PUBLIC_ENTRY_SYNC_SOURCE_URL="${PUBLIC_ENTRY_SYNC_SOURCE_URL:-http://127.0.0.1/}"
 PUBLIC_ENTRY_SYNC_RETRY="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
 PUBLIC_ENTRY_SYNC_DELAY="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
@@ -56,6 +59,8 @@ CLOUDFLARE_PURGE_MODE="${CLOUDFLARE_PURGE_MODE:-auto}"
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
 ROLLBACK_READY="0"
+TARGET_WEB_IMAGE_REF=""
+TARGET_GAME_IMAGE_REF=""
 
 # 检查 Docker
 if ! command -v docker &>/dev/null; then
@@ -76,55 +81,111 @@ fi
 # Docker 镜像加速
 # ============================================================
 
+has_docker_mirror_config() {
+  local daemon_file="${1:-/etc/docker/daemon.json}"
+
+  if [ ! -f "$daemon_file" ]; then
+    return 1
+  fi
+
+  grep -q "registry-mirrors" "$daemon_file" 2>/dev/null
+}
+
+check_docker_mirror_config() {
+  if [ "${SKIP_MIRROR:-0}" = "1" ]; then
+    log "已跳过镜像源检查（SKIP_MIRROR=1）"
+    return
+  fi
+
+  local daemon_file="/etc/docker/daemon.json"
+
+  if has_docker_mirror_config "$daemon_file"; then
+    log "检测到已有镜像配置"
+    return
+  fi
+
+  log "⚠️  未检测到 Docker 镜像加速配置"
+  log "⚠️  生产部署默认不会修改 Docker daemon；如需显式写入镜像源，请执行: bash deploy-image.sh configure-mirror"
+}
+
 configure_docker_mirror() {
   if [ "${SKIP_MIRROR:-0}" = "1" ]; then
     log "已跳过镜像源配置（SKIP_MIRROR=1）"
     return
   fi
 
-  local daemon_file="/etc/docker/daemon.json"
+  if has_docker_mirror_config "/etc/docker/daemon.json"; then
+    log "检测到已有镜像配置，跳过"
+    return
+  fi
 
-  if [ -f "$daemon_file" ]; then
-    if grep -q "registry-mirrors" "$daemon_file" 2>/dev/null; then
-      log "检测到已有镜像配置，跳过"
+  if [ -t 0 ]; then
+    echo -n "${LOG_PREFIX} 将写入 Docker 镜像源并对 dockerd 发送 SIGHUP，不会自动重启 Docker。是否继续？[Y/n] "
+    local choice
+    read -r choice || choice="y"
+    if [[ "$choice" =~ ^[nN] ]]; then
+      log "跳过镜像配置"
       return
     fi
   fi
 
-  log "⚠️  未检测到 Docker 镜像加速配置"
-
-  # 非交互环境自动配置
-  if [ ! -t 0 ]; then
-    log "非交互终端，自动配置镜像加速"
-    apply_docker_mirror
-    return
-  fi
-
-  echo -n "${LOG_PREFIX} 是否配置镜像加速？[Y/n] "
-  local choice
-  read -r choice || choice="y"
-  if [[ ! "$choice" =~ ^[nN] ]]; then
-    apply_docker_mirror
-  else
-    log "跳过镜像配置"
-  fi
+  apply_docker_mirror
 }
 
 apply_docker_mirror() {
   local daemon_file="/etc/docker/daemon.json"
   local mirrors_json='["https://mirror.aliyuncs.com","https://docker.mirrors.ustc.edu.cn","https://docker.mirrors.sjtug.sjtu.edu.cn","https://docker.m.daocloud.io","https://dockerproxy.com"]'
+  local python_bin tmp_file
+
+  python_bin="$(command -v python3 || command -v python || true)"
+  if [ -z "$python_bin" ]; then
+    die "配置镜像源需要 python3 或 python，以便保留现有 Docker daemon 配置"
+  fi
 
   log "配置 Docker 镜像源"
   $SUDO mkdir -p /etc/docker
 
+  tmp_file="$(mktemp)"
   if [ -f "$daemon_file" ]; then
     $SUDO cp "$daemon_file" "${daemon_file}.bak.$(date +%s)"
   fi
 
-  echo "{\"registry-mirrors\": ${mirrors_json}}" | $SUDO tee "$daemon_file" > /dev/null
-  $SUDO systemctl daemon-reload
-  $SUDO systemctl restart docker
-  log "✅ 镜像加速配置完成"
+  if ! "$python_bin" - "$daemon_file" "$mirrors_json" > "$tmp_file" <<'PY'
+import json
+import pathlib
+import sys
+
+daemon_path = pathlib.Path(sys.argv[1])
+mirrors = json.loads(sys.argv[2])
+
+if daemon_path.exists():
+    raw = daemon_path.read_text(encoding="utf-8").strip()
+    data = json.loads(raw) if raw else {}
+else:
+    data = {}
+
+if not isinstance(data, dict):
+    raise SystemExit("Docker daemon.json 必须是 JSON 对象")
+
+data["registry-mirrors"] = mirrors
+json.dump(data, sys.stdout, ensure_ascii=False, indent=2)
+sys.stdout.write("\n")
+PY
+  then
+    rm -f "$tmp_file"
+    die "生成新的 Docker daemon.json 失败"
+  fi
+
+  $SUDO tee "$daemon_file" < "$tmp_file" > /dev/null
+  rm -f "$tmp_file"
+
+  if pidof dockerd >/dev/null 2>&1; then
+    $SUDO kill -SIGHUP "$(pidof dockerd)"
+    log "已向 dockerd 发送 SIGHUP 重新加载配置"
+    log "若 docker info 仍显示旧 registry mirrors，请在维护窗口手动重启 Docker"
+  fi
+
+  log "✅ 镜像加速配置已写入"
 }
 
 # ============================================================
@@ -188,6 +249,8 @@ set_compose_image_refs() {
   local escaped_game_ref escaped_web_ref
   escaped_game_ref="$(escape_sed_replacement "$game_ref")"
   escaped_web_ref="$(escape_sed_replacement "$web_ref")"
+  TARGET_GAME_IMAGE_REF="$game_ref"
+  TARGET_WEB_IMAGE_REF="$web_ref"
 
   sed -i.bak \
     -e "s|${GAME_IMAGE_REPO}[^[:space:]]*|${escaped_game_ref}|g" \
@@ -714,7 +777,7 @@ rollback_to_snapshot() {
   set_compose_image_refs "$PREVIOUS_GAME_IMAGE_REF" "$PREVIOUS_WEB_IMAGE_REF"
 
   log "拉取回退镜像（如本地缺失）"
-  docker compose -f "$COMPOSE_FILE" pull || true
+  docker compose -f "$COMPOSE_FILE" pull "${APP_SERVICES[@]}" || true
 
   log "启动回退后的服务"
   docker compose -f "$COMPOSE_FILE" up -d
@@ -901,6 +964,8 @@ ensure_port_available() {
         $SUDO systemctl stop nginx 2>/dev/null || true
         $SUDO systemctl disable nginx 2>/dev/null || true
         log "✅ 已停止并禁用宿主机 Nginx（不再需要，web 容器直接监听 80）"
+      elif [[ "$proc_name" == "docker-proxy" ]] && docker container inspect "$WEB_CONTAINER_NAME" >/dev/null 2>&1; then
+        log "检测到当前 web 容器正在占用 80 端口，允许继续更新部署"
       else
         die "端口 ${port} 被 ${proc_name}(PID=${pid}) 占用，请先释放"
       fi
@@ -1014,9 +1079,10 @@ EOF
 
 deploy() {
   local tag="${1:-latest}"
+  local image_source="${2:-remote}"
   ensure_compose_file
   ensure_env_file
-  configure_docker_mirror
+  check_docker_mirror_config
   ensure_port_available
   snapshot_current_runtime_refs
   set_compose_image_tag "$tag"
@@ -1026,8 +1092,12 @@ deploy() {
   docker image prune -f > /dev/null 2>&1 || true
   docker builder prune -f > /dev/null 2>&1 || true
 
-  log "拉取镜像（tag: ${tag}）"
-  docker compose -f "$COMPOSE_FILE" pull
+  if [ "$image_source" = "local" ]; then
+    log "使用服务器本地已存在镜像（tag: ${tag}）"
+  else
+    log "拉取镜像（tag: ${tag}）"
+  fi
+  pull_app_images "$image_source"
 
   log "停止旧服务"
   if ! docker compose -f "$COMPOSE_FILE" down --remove-orphans; then
@@ -1098,7 +1168,7 @@ rollback() {
   set_compose_image_tag "$tag"
 
   log "拉取指定版本镜像"
-  docker compose -f "$COMPOSE_FILE" pull
+  pull_app_images
 
   log "重启服务"
   docker compose -f "$COMPOSE_FILE" up -d
@@ -1130,7 +1200,7 @@ rollback_last() {
   set_compose_image_refs "$DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF" "$DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF"
 
   log "拉取上次部署镜像（如本地缺失）"
-  docker compose -f "$COMPOSE_FILE" pull || true
+  docker compose -f "$COMPOSE_FILE" pull "${APP_SERVICES[@]}" || true
 
   log "重启服务"
   docker compose -f "$COMPOSE_FILE" up -d
@@ -1165,19 +1235,58 @@ logs() {
   docker compose -f "$COMPOSE_FILE" logs -f "${1:-}"
 }
 
+ensure_local_target_image() {
+  local image_ref="${1:-}"
+  if [ -z "$image_ref" ]; then
+    die "本地镜像检查缺少镜像引用"
+  fi
+
+  if ! docker image inspect "$image_ref" >/dev/null 2>&1; then
+    die "目标镜像未在本地就绪：${image_ref}。请先导入镜像，再执行 update-local"
+  fi
+}
+
+pull_app_images() {
+  local image_source="${1:-remote}"
+  if [ -z "$TARGET_GAME_IMAGE_REF" ] || [ -z "$TARGET_WEB_IMAGE_REF" ]; then
+    die "未锁定目标应用镜像引用，无法执行定向拉取"
+  fi
+
+  if [ "$image_source" = "local" ]; then
+    log "跳过远端拉取，检查服务器本地目标镜像"
+    log "  - game-server: ${TARGET_GAME_IMAGE_REF}"
+    log "  - web: ${TARGET_WEB_IMAGE_REF}"
+    ensure_local_target_image "$TARGET_GAME_IMAGE_REF"
+    ensure_local_target_image "$TARGET_WEB_IMAGE_REF"
+    return 0
+  fi
+
+  log "拉取应用镜像引用"
+  log "  - game-server: ${TARGET_GAME_IMAGE_REF}"
+  log "  - web: ${TARGET_WEB_IMAGE_REF}"
+  docker pull "$TARGET_GAME_IMAGE_REF"
+  docker pull "$TARGET_WEB_IMAGE_REF"
+}
+
 # ============================================================
 # 主入口
 # ============================================================
 
 case "${1:-deploy}" in
   deploy|update)
-    deploy "${2:-latest}"
+    deploy "${2:-latest}" "remote"
+    ;;
+  deploy-local|update-local)
+    deploy "${2:-latest}" "local"
     ;;
   rollback)
     rollback "${2:-}"
     ;;
   rollback-last)
     rollback_last
+    ;;
+  configure-mirror)
+    configure_docker_mirror
     ;;
   init-admin)
     init_admin
@@ -1189,7 +1298,7 @@ case "${1:-deploy}" in
     logs "${2:-}"
     ;;
   *)
-    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|rollback-last|init-admin|status|logs [service]]"
+    echo "用法: $0 [deploy [tag]|update [tag]|deploy-local [tag]|update-local [tag]|rollback <tag>|rollback-last|configure-mirror|init-admin|status|logs [service]]"
     exit 1
     ;;
 esac

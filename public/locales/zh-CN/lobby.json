@@ -331,6 +331,8 @@
     "runtimeUnsupported": "当前运行环境暂不支持下载游戏包，请在 Android App 内重试。",
     "failedTitle": "下载失败",
     "failedHint": "游戏包下载、校验或激活失败，请稍后重试。",
+    "manifestFetchFailedHint": "拉取下载清单失败，请检查网络后重试。若多次失败，请联系管理员确认发布状态。",
+    "manifestMissingHint": "当前下载清单里还没有可下载的游戏包，请先发布一版。",
     "notificationSettingsAction": "打开通知设置",
     "retryAction": "重新发起",
     "cancelAction": "取消下载",
@@ -630,10 +632,10 @@
     }
   },
   "testMatchRoom": {
-    "missing_game_config": "未找到游戏配置",
-    "loading": "正在加载…",
-    "loading_with_game": "正在加载 {{game}}…",
-    "game_load_failed": "游戏加载失败",
+    "gameConfigMissing": "未找到游戏配置",
+    "loadingWithGame": "正在加载 {{game}}...",
+    "loadingFallback": "正在加载...",
+    "gameLoadFailed": "游戏加载失败",
     "seo_title": "{{game}} - 测试模式",
     "seo_description": "{{game}} E2E 测试模式"
   },
@@ -667,6 +669,7 @@
         "rooms": "房间管理",
         "sponsors": "赞助管理",
         "notifications": "系统通知",
+        "mobile_release": "发布中心",
         "health": "系统健康"
       },
       "role": {
@@ -1021,6 +1024,111 @@
         "toggle_publish_failed": "切换发布状态失败",
         "unpublish_success": "已撤回发布",
         "publish_success": "已发布更新日志"
+      }
+    },
+    "mobileReleasePage": {
+      "title": "发布中心",
+      "description": "集中处理 Android OTA、原生包、移动游戏包、更新部署和部署回滚。",
+      "cards": {
+        "product_version": "产品版本",
+        "latest_ota": "最新 OTA 游标",
+        "latest_native": "最新原生包",
+        "release_ready": "发布环境"
+      },
+      "ota": {
+        "title": "Android OTA"
+      },
+      "packages": {
+        "title": "Android 游戏包"
+      },
+      "form": {
+        "channel": "发布渠道",
+        "ota_version_base": "OTA 内部游标基线",
+        "force_update": "强制客户端下载后切换",
+        "skip_latest": "只上传包，不覆盖当前入口清单",
+        "skip_build": "跳过原生构建，使用现有 APK",
+        "bump": "版本递增",
+        "notes": "发布说明",
+        "notes_placeholder": "留空使用脚本默认说明",
+        "game_id": "游戏 ID",
+        "game_id_placeholder": "留空发布全部可管理游戏包",
+        "manifest_only": "只更新清单"
+      },
+      "bump": {
+        "none": "不递增",
+        "patch": "修订版本",
+        "minor": "小版本",
+        "major": "大版本"
+      },
+      "actions": {
+        "refresh": "刷新",
+        "dry_run": "预演发布",
+        "publish": "正式发布",
+        "publish_native": "发布原生包",
+        "publish_packages": "发布游戏包",
+        "preview_command": "生成命令预览",
+        "execute_deploy_update": "执行更新部署",
+        "execute_rollback": "执行回滚",
+        "running": "执行中…"
+      },
+      "manifest": {
+        "ota_title": "当前 OTA 清单",
+        "native_title": "当前原生包清单",
+        "version": "版本",
+        "published_at": "发布时间",
+        "size": "包体大小",
+        "force_update": "强制更新"
+      },
+      "native": {
+        "title": "Android 原生包"
+      },
+      "deployUpdate": {
+        "title": "更新部署",
+        "tag": "镜像 tag",
+        "tag_placeholder": "留空部署最新镜像",
+        "confirm_label": "执行确认",
+        "confirm_placeholder": "输入“确认部署”后才可执行",
+        "description": "更新部署会执行服务器宿主机上的更新部署脚本。留空镜像标签时部署最新镜像；填写镜像标签时部署指定镜像。实际执行必须通过独立部署执行器，避免网页服务容器更新自己时中断控制入口。"
+      },
+      "rollback": {
+        "title": "部署回滚",
+        "action": "回滚方式",
+        "rollback_last": "回滚到上次成功部署",
+        "rollback_tag": "按镜像 tag 回滚",
+        "tag": "镜像 tag",
+        "target_title": "回滚目标",
+        "tag_hint": "先生成命令预览，后台会读取该 tag 对应的提交标题。",
+        "last_target_empty": "服务器还没有上次成功部署记录，暂时不能判断回滚上次部署的目标。",
+        "target_web": "Web 镜像",
+        "target_game": "游戏服务镜像",
+        "confirm_label": "执行确认",
+        "confirm_placeholder": "输入“确认回滚”后才可执行"
+      },
+      "safety": {
+        "title": "操作边界",
+        "description": "发布、更新部署与回滚都改为后台显式操作。更新部署和部署回滚只能交给服务器宿主机上的独立部署执行器执行；未配置独立部署执行器时后台只生成命令预览。"
+      },
+      "result": {
+        "title": "最近执行结果",
+        "kind": "类型",
+        "mode": "模式",
+        "bundle_version": "Bundle 游标",
+        "zip_bytes": "ZIP 字节数"
+      },
+      "status": {
+        "ready": "已配置",
+        "not_ready": "未就绪",
+        "yes": "是",
+        "no": "否"
+      },
+      "toast": {
+        "status_failed": "读取发布状态失败",
+        "publish_failed": "发布失败",
+        "dry_run_success": "预演完成",
+        "publish_success": "发布完成",
+        "preview_success": "命令预览已生成",
+        "deploy_update_success": "更新部署命令已提交",
+        "rollback_success": "回滚命令已执行"
       }
     },
     "notificationsPage": {
@@ -1398,6 +1506,9 @@
         "sfx": "音效",
         "bgm": "音乐"
       },
+      "playback": {
+        "loading_short": "加载中"
+      },
       "history": {
         "title": "历史播放",
         "clear": "清空",
@@ -1430,6 +1541,16 @@
         "phrase_map_loaded": "短语映射表加载成功，{{count}} 条",
         "phrase_map_failed": "短语映射表加载失败，改用原文",
         "registry_failed": "加载音频注册表失败"
+      }
+    },
+    "audioRuntime": {
+      "toast": {
+        "playback_failed_title": "音频播放失败",
+        "preload_failed_title": "音频预加载失败",
+        "missing_key": "找不到音频资源：{{key}}",
+        "load_failed": "音频加载失败：{{key}}",
+        "known_failed": "该音频此前已加载失败：{{key}}",
+        "invalid_source": "音频资源地址无效：{{key}}"
       }
     },
     "architectureView": {
@@ -1834,6 +1955,21 @@
             "show_ring": "显示绿框"
           },
           "preview": "单位卡"
+        },
+        "settlement_score": {
+          "title": "结算计分",
+          "description": "牌面上跳 + 分值飘字 + 总分脉冲累加",
+          "buttons": {
+            "small": "小分值（8）",
+            "medium": "中分值（22）",
+            "big": "大分值（102）",
+            "reset": "重置"
+          },
+          "preview": {
+            "total_label": "累计总分",
+            "rank": "第 1 名",
+            "card": "计分对象"
+          }
         }
       },
       "loading": {
@@ -2009,6 +2145,10 @@
           "abilityready": {
             "label": "技能就绪波纹",
             "usage": "召唤师战争·可激活技能单位青色波纹"
+          },
+          "settlementscore": {
+            "label": "结算计分",
+            "usage": "幻想国度·终局逐张计分时的牌面跳分与总分累加"
           }
         },
         "loading": {
@@ -2150,7 +2290,13 @@
     "ownerSeatUnit": "{{seat}} 号位（房主）",
     "occupiedSeatUnit": "{{seat}} 号位",
     "aiPlayerName": "AI {{seat}} 号位",
+    "aiThinkingTime": "AI 思考时长",
+    "aiThinkingTimeHint": "按当前游戏单独记住",
+    "aiThinkingTimeSeconds": "{{count}} 秒",
     "aiManualFactionSelection": "玩家选择 AI 派系",
+    "qidahenInMatchSetupTitle": "局内完成剧本投票与前置项",
+    "qidahenInMatchSetupDescription": "创建房间时只决定人数与 AI。进入棋盘后，再按联机席位完成剧本介绍、投票、人物与军备前置。",
+    "qidahenPregameMovedInMatch": "这里不再预设剧本，也不会代投。正式联机房间会先进入局内剧本介绍与投票页，再继续人物、军备前置。",
     "confirm": "确认创建"
   },
   "socket": {

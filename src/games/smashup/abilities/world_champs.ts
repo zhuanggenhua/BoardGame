@@ -16,7 +16,9 @@ import {
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildSemanticOngoingAttachEvents,
+    buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
+    buildValidatedReturnEvents,
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     createSkipOption,
@@ -50,6 +52,7 @@ import {
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type PlayerChoice = { targetPlayerId?: PlayerId; skip?: boolean };
@@ -75,6 +78,7 @@ type HighSpeedChaseContinuation = {
     sourceBaseIndex: number;
     minionUid: string;
     minionDefId: string;
+    sourceControllerId: PlayerId;
 };
 
 type MouseBirdAndSausageContinuation = {
@@ -580,20 +584,22 @@ const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldCham
             toBaseIndex: selected.baseIndex,
             reason: 'world_champs_high_speed_chase',
             now: timestamp,
+            sourcePlayerId: context.sourceControllerId,
+            sourceDefId: 'world_champs_high_speed_chase',
+            sourceControllerId: context.sourceControllerId,
+            sourceBaseIndex: context.sourceBaseIndex,
+            sourceKind: 'action',
         });
 
         return {
             events: [
-                {
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: {
-                        cardUid: ongoing.uid,
-                        defId: ongoing.defId,
-                        ownerId: ongoing.ownerId,
-                        reason: 'world_champs_high_speed_chase',
-                    },
-                    timestamp,
-                } as SmashUpEvent,
+                buildOngoingDetachedEvent({
+                    cardUid: ongoing.uid,
+                    defId: ongoing.defId,
+                    ownerId: ongoing.ownerId,
+                    reason: 'world_champs_high_speed_chase',
+                    now: timestamp,
+                }),
                 {
                     type: SU_EVENTS.ONGOING_ATTACHED,
                     payload: {
@@ -657,6 +663,7 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
                 sourceBaseIndex: selected.baseIndex,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
+                sourceControllerId: context.playerId,
             } satisfies HighSpeedChaseContinuation),
             nextProgram: worldChampsHighSpeedChaseBasePromptProgram,
         };
@@ -900,6 +907,7 @@ const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChamp
                 ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                 targetBaseIndex: selected.baseIndex,
                 targetMinionUid: selected.minionUid,
+                removeFromDiscard: true,
                 now: timestamp,
             }),
         };
@@ -1209,14 +1217,16 @@ function worldChampsDivaOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
     if (usedTurn === ctx.state.turnNumber) return [];
 
     const mirroredEvent = buildDivaMirroredEvent(
+        ctx.state,
         ctx.affectEvent,
         sourceMinion.uid,
         sourceMinion.defId,
         ctx.sourceBaseIndex,
         sourceMinion.owner,
         ctx.sourceControllerId,
+        ctx.now,
     );
-    if (!mirroredEvent) return [];
+    if (mirroredEvent.length === 0) return [];
 
     return [
         buildMinionMetadataUpdatedEvent(
@@ -1226,7 +1236,7 @@ function worldChampsDivaOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
             'world_champs_diva_once_per_turn',
             ctx.now,
         ),
-        mirroredEvent,
+        ...mirroredEvent,
     ];
 }
 
@@ -1308,17 +1318,19 @@ function resolveSourceDefIdFromEvent(event: SmashUpEvent): string | undefined {
 }
 
 function buildDivaMirroredEvent(
+    state: SmashUpCore,
     event: SmashUpEvent,
     divaUid: string,
     divaDefId: string,
     divaBaseIndex: number,
     divaOwnerId: PlayerId,
     divaControllerId: PlayerId,
-): SmashUpEvent | undefined {
+    now: number,
+): SmashUpEvent[] {
     switch (event.type) {
         case SU_EVENTS.POWER_COUNTER_ADDED: {
             const payload = (event as PowerCounterAddedEvent).payload;
-            return addPowerCounter(
+            return [addPowerCounter(
                 divaUid,
                 divaBaseIndex,
                 payload.amount,
@@ -1331,11 +1343,11 @@ function buildDivaMirroredEvent(
                     sourceControllerId: divaControllerId,
                     sourceBaseIndex: divaBaseIndex,
                 },
-            ) as PowerCounterAddedEvent;
+            ) as PowerCounterAddedEvent];
         }
         case SU_EVENTS.POWER_COUNTER_REMOVED: {
             const payload = (event as PowerCounterRemovedEvent).payload;
-            return removePowerCounter(
+            return [removePowerCounter(
                 divaUid,
                 divaBaseIndex,
                 payload.amount,
@@ -1348,11 +1360,11 @@ function buildDivaMirroredEvent(
                     sourceControllerId: divaControllerId,
                     sourceBaseIndex: divaBaseIndex,
                 },
-            ) as PowerCounterRemovedEvent;
+            ) as PowerCounterRemovedEvent];
         }
         case SU_EVENTS.TEMP_POWER_ADDED: {
             const payload = (event as TempPowerAddedEvent).payload;
-            return addTempPower(
+            return [addTempPower(
                 divaUid,
                 divaBaseIndex,
                 payload.amount,
@@ -1365,11 +1377,11 @@ function buildDivaMirroredEvent(
                     sourceControllerId: payload.sourceControllerId,
                     sourceBaseIndex: payload.sourceBaseIndex,
                 },
-            ) as TempPowerAddedEvent;
+            ) as TempPowerAddedEvent];
         }
         case SU_EVENTS.PERMANENT_POWER_ADDED: {
             const payload = (event as PermanentPowerAddedEvent).payload;
-            return addPermanentPower(
+            return [addPermanentPower(
                 divaUid,
                 divaBaseIndex,
                 payload.amount,
@@ -1383,65 +1395,75 @@ function buildDivaMirroredEvent(
                     sourceControllerId: payload.sourceControllerId,
                     sourceBaseIndex: payload.sourceBaseIndex,
                 },
-            ) as PermanentPowerAddedEvent;
+            ) as PermanentPowerAddedEvent];
         }
-        case SU_EVENTS.MINION_DESTROYED: {
-            const payload = (event as MinionDestroyedEvent).payload;
-            return {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: divaUid,
-                    minionDefId: divaDefId,
-                    fromBaseIndex: divaBaseIndex,
+        case SU_EVENTS.MINION_DESTROYED:
+            return buildValidatedDestroyEvents(state, {
+                minionUid: divaUid,
+                minionDefId: divaDefId,
+                fromBaseIndex: divaBaseIndex,
+                destroyerId: (event as MinionDestroyedEvent).payload.destroyerId,
+                reason: 'world_champs_diva_copy_destroyed',
+                now: event.timestamp ?? now,
+                sourcePlayerId: divaControllerId,
+                sourceCardUid: divaUid,
+                sourceDefId: 'world_champs_diva',
+                sourceControllerId: divaControllerId,
+                sourceBaseIndex: divaBaseIndex,
+                sourceKind: 'nonAction',
+                targetSnapshot: {
                     ownerId: divaOwnerId,
                     controllerId: divaControllerId,
-                    destroyerId: payload.destroyerId,
-                    reason: 'world_champs_diva_copy_destroyed',
                 },
-                timestamp: event.timestamp,
-            } as MinionDestroyedEvent;
-        }
+            });
         case SU_EVENTS.MINION_MOVED: {
             const payload = (event as MinionMovedEvent).payload;
-            return {
-                type: SU_EVENTS.MINION_MOVED,
-                payload: {
-                    ...payload,
-                    minionUid: divaUid,
-                    minionDefId: divaDefId,
-                    fromBaseIndex: divaBaseIndex,
-                    toBaseIndex: payload.toBaseIndex,
-                    toBaseDefId: payload.toBaseDefId,
-                    reason: 'world_champs_diva_copy_moved',
+            return buildValidatedMoveEvents(state, {
+                minionUid: divaUid,
+                minionDefId: divaDefId,
+                fromBaseIndex: divaBaseIndex,
+                toBaseIndex: payload.toBaseIndex,
+                toBaseDefId: payload.toBaseDefId,
+                reason: 'world_champs_diva_copy_moved',
+                now: event.timestamp ?? now,
+                sourcePlayerId: divaControllerId,
+                sourceCardUid: divaUid,
+                sourceDefId: 'world_champs_diva',
+                sourceControllerId: divaControllerId,
+                sourceBaseIndex: divaBaseIndex,
+                sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: divaOwnerId,
+                    controllerId: divaControllerId,
                 },
-                timestamp: event.timestamp,
-            } as MinionMovedEvent;
+            });
         }
         case SU_EVENTS.MINION_RETURNED: {
             const payload = (event as MinionReturnedEvent).payload;
-            return {
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: {
-                    minionUid: divaUid,
-                    minionDefId: divaDefId,
-                    fromBaseIndex: divaBaseIndex,
-                    toPlayerId: divaControllerId,
-                    reason: 'world_champs_diva_copy_returned',
-                    sourcePlayerId: payload.sourcePlayerId ?? divaControllerId,
-                    sourceDefId: 'world_champs_diva',
-                    sourceCardUid: divaUid,
-                    sourceControllerId: divaControllerId,
-                    sourceBaseIndex: divaBaseIndex,
+            return buildValidatedReturnEvents(state, {
+                minionUid: divaUid,
+                minionDefId: divaDefId,
+                fromBaseIndex: divaBaseIndex,
+                toPlayerId: divaControllerId,
+                reason: 'world_champs_diva_copy_returned',
+                sourcePlayerId: payload.sourcePlayerId ?? divaControllerId,
+                sourceDefId: 'world_champs_diva',
+                sourceCardUid: divaUid,
+                sourceControllerId: divaControllerId,
+                sourceBaseIndex: divaBaseIndex,
+                now: event.timestamp ?? now,
+                targetSnapshot: {
+                    ownerId: divaOwnerId,
+                    controllerId: divaControllerId,
                 },
-                timestamp: event.timestamp,
-            } as MinionReturnedEvent;
+            });
         }
         case SU_EVENTS.ONGOING_ATTACHED: {
             // 标准行动通常不会附着；避免复用同一行动 uid 导致状态冲突
-            return undefined;
+            return [];
         }
         default:
-            return undefined;
+            return [];
     }
 }
 

@@ -61,6 +61,7 @@ export function useLocalProviderViewModel(args: {
             return;
         }
 
+        // 仅本地 Provider 用它表达“当前本地视角玩家”，不能当成跨 transport 的业务执行者真相。
         args.dispatch(type, {
             ...payloadRecord,
             __internalPlayerId: localBoardPlayerId,

@@ -121,13 +121,13 @@ export const buildPendingTargetChoiceOptions = (
     const options: QidahenPendingTargetChoiceOption[] = [
         {
             id: 'rear-guard',
-            label: '断后结算',
+            label: '断后',
             labelKey: 'battle.pendingTargetChoice.rearGuard',
             value: buildPendingTargetRearGuardChoiceValue(),
         },
         {
             id: 'rout',
-            label: '溃败结算',
+            label: '溃退',
             labelKey: 'battle.pendingTargetChoice.rout',
             value: buildPendingTargetRoutChoiceValue(),
         },

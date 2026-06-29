@@ -13,6 +13,7 @@ import { getDiceDefinition, getDieFaceByValue } from '../domain/diceRegistry';
 
 const CHARACTER_ASSET_DIR: Record<string, string> = {
     cursed_pirate: 'cursed',
+    artificer: 'artificial',
 };
 
 const getCharacterAssetBase = (charId: string = 'monk') => (
@@ -247,6 +248,8 @@ const CHARACTER_PORTRAIT_INDEX: Record<string, number> = {
 
 const NEW_CHARACTER_PORTRAIT_INDEX: Partial<Record<HeroState['characterId'], number>> = {
     ninja: 2,
+    zhanshujia: 5,
+    cursed_pirate: 6,
     treant: 13,
 };
 

@@ -24,7 +24,6 @@ import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
 import { UI_Z_INDEX, HudPortal } from '../../../../core';
 import { FabMenu, type FabAction } from '../../../system/FabMenu';
 import { UNDO_COMMANDS } from '../../../../engine';
-import type { MatchState } from '../../../../engine/types';
 import { AudioControlSection } from './AudioControlSection';
 import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
@@ -47,6 +46,10 @@ import { GameHudRuntimeSettingsSection } from '../../../../games/gameHudRuntimeA
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 import { EmotePicker } from './EmotePicker';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
+import {
+    buildGameFeedbackActionLog,
+    buildGameFeedbackStateSnapshot,
+} from '../../../../lib/feedback/gameFeedbackDiagnostics';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -127,102 +130,10 @@ export const trimChatMessages = (
     return messages.slice(messages.length - maxMessages);
 };
 
+export const buildGameHudFeedbackActionLog = buildGameFeedbackActionLog;
+export const buildGameHudFeedbackStateSnapshot = buildGameFeedbackStateSnapshot;
+
 export const GAME_HUD_FAB_Z_INDEX = UI_Z_INDEX.emergencyHud;
-
-const FEEDBACK_ACTION_LOG_TAIL_LIMIT = 12;
-const FEEDBACK_EVENT_STREAM_TAIL_LIMIT = 12;
-const FEEDBACK_UNDO_SNAPSHOT_LIMIT = 3;
-
-type FeedbackActionLogRow = {
-    timeLabel: string;
-    playerLabel: string;
-    text: string;
-};
-
-const sanitizeFeedbackCore = (core: unknown): unknown => {
-    if (!core || typeof core !== 'object') return core;
-    const obj = core as Record<string, unknown>;
-    const result: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(obj)) {
-        if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
-            const first = val[0] as Record<string, unknown>;
-            const isStaticDef = 'description' in first || 'effects' in first || 'i18n' in first || 'colorTheme' in first;
-            if (isStaticDef) {
-                result[key] = val.map((item: Record<string, unknown>) => item.id ?? item.name ?? '?');
-                continue;
-            }
-        }
-        if (val && typeof val === 'object' && !Array.isArray(val)) {
-            result[key] = sanitizeFeedbackCore(val);
-        } else {
-            result[key] = val;
-        }
-    }
-    return result;
-};
-
-const cloneJsonValue = <T,>(value: T): T | undefined => {
-    if (value === undefined) return undefined;
-    try {
-        return JSON.parse(JSON.stringify(value)) as T;
-    } catch {
-        return undefined;
-    }
-};
-
-export const buildGameHudFeedbackActionLog = (
-    state: MatchState<unknown>,
-    actionLogRows: FeedbackActionLogRow[],
-): string => {
-    const actionLogEntries = Array.isArray(state.sys?.actionLog?.entries)
-        ? state.sys.actionLog.entries
-        : [];
-    const eventStreamEntries = Array.isArray(state.sys?.eventStream?.entries)
-        ? state.sys.eventStream.entries
-        : [];
-    const undoSnapshots = Array.isArray(state.sys?.undo?.snapshots)
-        ? state.sys.undo.snapshots
-        : [];
-    const interaction = cloneJsonValue(state.sys?.interaction?.current);
-    const responseWindow = cloneJsonValue(state.sys?.responseWindow?.current);
-    const humanReadableLog = actionLogRows.length > 0
-        ? actionLogRows.map((row) => `[${row.timeLabel}] ${row.playerLabel}: ${row.text}`).join('\n')
-        : '';
-
-    return JSON.stringify({
-        kind: 'user-feedback-diagnostic',
-        phase: state.sys?.phase,
-        turnNumber: state.sys?.turnNumber,
-        humanReadableLog,
-        actionLogTail: actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT).map((entry) => ({
-            text: typeof entry?.text === 'string' ? entry.text : undefined,
-            type: entry?.event?.type,
-            timestamp: entry?.timestamp,
-        })),
-        eventStreamTail: eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT).map((entry) => ({
-            type: entry?.type,
-            timestamp: entry?.timestamp,
-            payload: cloneJsonValue(entry?.payload),
-        })),
-        interaction,
-        responseWindow,
-        undoSnapshots: undoSnapshots.slice(-FEEDBACK_UNDO_SNAPSHOT_LIMIT).map((snapshot, index) => ({
-            index: undoSnapshots.length - Math.min(undoSnapshots.length, FEEDBACK_UNDO_SNAPSHOT_LIMIT) + index,
-            turnNumber: snapshot?.sys?.turnNumber,
-            phase: snapshot?.sys?.phase,
-            core: sanitizeFeedbackCore(snapshot?.core),
-        })),
-        currentStateSummary: {
-            turnNumber: state.sys?.turnNumber,
-            phase: state.sys?.phase,
-            core: sanitizeFeedbackCore(state.core),
-        },
-    }, null, 2);
-};
-
-export const buildGameHudFeedbackStateSnapshot = (state: MatchState<unknown>): string => (
-    JSON.stringify(state, null, 2)
-);
 
 export const GameHUD = ({
     mode,
@@ -1249,21 +1160,19 @@ export const GameHUD = ({
     return (
         <HudPortal>
             {/* 对手状态提示（仅联机模式，加载完成后） */}
-            {isOnline && !isSpectator && opponentConnected !== undefined && (
+            {isOnline && !isSpectator && opponentConnected !== undefined && isSetupPhase && (
                 <OpponentOfflineBanner
                     connected={opponentConnected}
                     name={opponentName}
                 />
             )}
             <SeatEmoteOverlay events={seatEmoteEvents} />
-            {!suppressGlobalFab ? (
-                <FabMenu
-                    isDark={true}
-                    items={items}
-                    position="bottom-right"
-                    zIndex={GAME_HUD_FAB_Z_INDEX}
-                />
-            ) : null}
+            <FabMenu
+                isDark={true}
+                items={items}
+                position="bottom-right"
+                zIndex={GAME_HUD_FAB_Z_INDEX}
+            />
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (
@@ -1278,12 +1187,12 @@ export const GameHUD = ({
                     actionLogText={(() => {
                         const G = undoState?.G;
                         if (!G) return undefined;
-                        return buildGameHudFeedbackActionLog(G, actionLogRows);
+                        return buildGameFeedbackActionLog(G, actionLogRows);
                     })()}
                     stateSnapshot={(() => {
                         const G = undoState?.G;
                         if (!G) return undefined;
-                        return buildGameHudFeedbackStateSnapshot(G);
+                        return buildGameFeedbackStateSnapshot(G);
                     })()}
                 />
             )}

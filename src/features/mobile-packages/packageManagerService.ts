@@ -22,6 +22,7 @@ import {
 } from './storage';
 import type { GamePackageInstallHandle, ResolvedGamePackageManifest, StoredGamePackageState } from './types';
 import { hasUsableInstalledGamePackageState, mergeGamePackageState } from './types';
+import { resolveMissingAssetPackErrorCode } from './errorMessages';
 
 type GamePackageStateListener = (state: StoredGamePackageState) => void;
 
@@ -135,7 +136,7 @@ const applyCommonAudioOverride = (assetBaseUrl?: string, installedVersion?: stri
     setCommonAudioAssetBaseOverride(normalizedAssetBaseUrl);
 };
 
-const buildSharedAudioDependencyState = (
+export const buildSharedAudioDependencyState = (
     baseState: StoredGamePackageState,
     sharedState: StoredGamePackageState,
 ): StoredGamePackageState => {
@@ -151,8 +152,9 @@ const buildSharedAudioDependencyState = (
 
     return mergeGamePackageState(baseState, {
         status: sharedState.status,
-        progressMode: sharedState.progressMode,
-        progressPercent: sharedState.progressPercent,
+        // 公共音频包是当前游戏包的前置依赖，不应把它的百分比伪装成当前游戏自己的下载进度。
+        progressMode: sharedState.status === 'failed' ? sharedState.progressMode : 'indeterminate',
+        progressPercent: sharedState.status === 'failed' ? sharedState.progressPercent : undefined,
         errorCode: sharedState.status === 'failed' ? sharedState.errorCode : undefined,
         errorMessage: sharedState.status === 'failed'
             ? `公共音频包安装失败：${sharedState.errorMessage ?? '未知错误'}`
@@ -583,8 +585,8 @@ export const startGamePackageInstall = (
             status: 'failed',
             progressMode: undefined,
             progressPercent: undefined,
-            errorCode: 'manifest-missing',
-            errorMessage: '当前还没有可下载的游戏包，请先发布一版。',
+            errorCode: resolveMissingAssetPackErrorCode(manifest),
+            errorMessage: undefined,
         });
         logMobileRuntimeCritical('PackageManagerService', 'start-install-missing-asset-pack-url', {
             gameId: manifest.gameId,

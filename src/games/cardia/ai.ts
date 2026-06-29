@@ -200,6 +200,14 @@ function buildPlayCardActions(
     if (player.hasPlayed) {
         return actions;
     }
+
+    const forcedPlayer = core.forcedPlayOrderNextEncounter;
+    if (forcedPlayer) {
+        const forcedPlayerState = core.players[forcedPlayer];
+        if (forcedPlayerState && !forcedPlayerState.hasPlayed && playerId !== forcedPlayer) {
+            return actions;
+        }
+    }
     
     // 枚举手牌中所有卡牌
     for (const card of player.hand) {

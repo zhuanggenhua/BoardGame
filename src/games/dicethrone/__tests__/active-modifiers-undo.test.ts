@@ -295,5 +295,134 @@ describe('攻击修正指示器撤回测试', () => {
 
         expect(html).toContain('interaction.hint_select_ally:current=0,max=1');
     });
+
+    it('反馈 6a3a97e8 的 any 改骰交互快照应能正常渲染右侧骰区', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [
+                    { id: 0, value: 4, symbol: 'helm', symbols: ['helm'], isKept: false, definitionId: 'paladin-dice' },
+                    { id: 1, value: 6, symbol: 'pray', symbols: ['pray'], isKept: true, definitionId: 'paladin-dice' },
+                    { id: 2, value: 6, symbol: 'pray', symbols: ['pray'], isKept: true, definitionId: 'paladin-dice' },
+                    { id: 3, value: 6, symbol: 'pray', symbols: ['pray'], isKept: true, definitionId: 'paladin-dice' },
+                    { id: 4, value: 5, symbol: 'heart', symbols: ['heart'], isKept: false, definitionId: 'paladin-dice' },
+                ] as any,
+                rollCount: 3,
+                rollLimit: 3,
+                rollConfirmed: false,
+                currentPhase: 'offensiveRoll',
+                canInteractDice: true,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B' },
+                interaction: {
+                    id: 'dt-dice-modify-card-surprise-1782224859890',
+                    kind: 'multistep-choice',
+                    playerId: '0',
+                    title: 'interaction.selectDieToChange',
+                    description: null,
+                    options: [],
+                    data: {
+                        title: 'interaction.selectDieToChange',
+                        sourceId: 'card-surprise',
+                        minSteps: 1,
+                        allowedDieIds: [0, 1, 2, 3, 4],
+                        completedDieIds: [],
+                        meta: {
+                            dtType: 'modifyDie',
+                            dieModifyConfig: { mode: 'any' },
+                            selectCount: 1,
+                            diceOwnerId: '0',
+                            targetOpponentDice: false,
+                        },
+                    },
+                } as any,
+            })
+        );
+
+        expect(html).toContain('interaction.hint_any');
+        expect(html).toContain('data-player-seat-anchor="0"');
+    });
+
+    it('反馈 6a3cb53f 的对手重掷交互快照缺少 initialResult 时也不应渲染崩溃', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [
+                    { id: 0, value: 3, symbol: 'branch', symbols: ['branch'], isKept: false, definitionId: 'treant-dice' },
+                    { id: 1, value: 6, symbol: 'spirit', symbols: ['spirit'], isKept: false, definitionId: 'treant-dice' },
+                    { id: 2, value: 5, symbol: 'leaf', symbols: ['leaf'], isKept: false, definitionId: 'treant-dice' },
+                    { id: 3, value: 4, symbol: 'leaf', symbols: ['leaf'], isKept: false, definitionId: 'treant-dice' },
+                    { id: 4, value: 2, symbol: 'branch', symbols: ['branch'], isKept: false, definitionId: 'treant-dice' },
+                ] as any,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                currentPhase: 'offensiveRoll',
+                canInteractDice: false,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B', '2': 'A', '3': 'B' },
+                interaction: {
+                    id: 'dt-dice-select-card-give-hand-1782363441041',
+                    kind: 'multistep-choice',
+                    playerId: '0',
+                    title: 'interaction.selectOpponentDieToReroll',
+                    description: null,
+                    options: [],
+                    data: {
+                        title: 'interaction.selectOpponentDieToReroll',
+                        sourceId: 'card-give-hand',
+                        maxSteps: 1,
+                        minSteps: 1,
+                        allowedDieIds: [0, 1, 2, 3, 4],
+                        completedDieIds: [],
+                        meta: {
+                            dtType: 'selectDie',
+                            selectCount: 1,
+                            diceOwnerId: '1',
+                            targetOpponentDice: true,
+                            skipAbilityReselection: false,
+                        },
+                    },
+                } as any,
+            })
+        );
+
+        expect(html).toContain('interaction.hint_select_opponent:current=0,max=1');
+        expect(html).toContain('data-player-seat-anchor="0"');
+    });
 });
 

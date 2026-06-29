@@ -65,8 +65,7 @@ import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
-import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
-import { isSmashUpDiyFaction } from './ids';
+import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
 import { drawCards } from './utils';
 import {
     countMadnessCards,
@@ -523,7 +522,6 @@ function beginPostScoringBaseRevealDelay(
     now: number,
 ): MatchState<SmashUpCore> {
     const delayStart = now > 0 ? now : Date.now();
-    const delayUntil = delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS;
     const delayedState = updateScoringSession(state, (session) => session
         ? {
             ...session,
@@ -535,7 +533,7 @@ function beginPostScoringBaseRevealDelay(
         ...delayedState,
         sys: {
             ...delayedState.sys,
-            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayUntil,
+            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS,
         } as typeof delayedState.sys,
     };
 }
@@ -1231,6 +1229,23 @@ function processImmediateStartTurnMinionTriggers(
         : { events: finalEvents };
 }
 
+function getPlayCardsContextForBuriedPlay(
+    matchState: MatchState<SmashUpCore>,
+    fromBuried: boolean | undefined,
+): MatchState<SmashUpCore> {
+    if (!fromBuried) return matchState;
+    if (matchState.sys.phase !== 'startTurn' && !(matchState.sys as any)._smashupStartTurnWindowActive) {
+        return matchState;
+    }
+    return {
+        ...matchState,
+        sys: {
+            ...matchState.sys,
+            phase: 'playCards',
+        },
+    };
+}
+
 // ============================================================================
 // Setup
 // ============================================================================
@@ -1240,10 +1255,7 @@ function isAiSeatControllerType(type: unknown): boolean {
 }
 
 function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
-    return getAllBaseDefIds().filter((defId) => {
-        const baseDef = getBaseDef(defId);
-        return !isSmashUpDiyFaction(baseDef?.faction) || enabledExpansions.includes('diy');
-    });
+    return getAllBaseDefIds().filter((defId) => isBaseDefAvailableForRuntimeBasePool(defId, enabledExpansions));
 }
 
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
@@ -1621,6 +1633,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
                 const delayedState = beginPostScoringBaseRevealDelay(currentState, now);
+                if (!isPostScoringBaseRevealDelayActive(delayedState, now)) {
+                    const finalized = finalizeCurrentScoringBase(clearPostScoringBaseRevealDelay(delayedState), now);
+                    return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
+                }
                 return { events: [], halt: true, updatedState: delayedState } as PhaseExitResult;
             }
 
@@ -2002,10 +2018,13 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         const phase = state.sys.phase as GamePhase;
         const isFactionDraftReadyToStart = core.turnOrder.length > 0 && core.turnOrder.every((playerId) => {
             const player = core.players[playerId];
+            const factions = Array.isArray(player?.factions) ? player.factions : [];
+            const hand = Array.isArray(player?.hand) ? player.hand : [];
+            const deck = Array.isArray(player?.deck) ? player.deck : [];
             return Boolean(
                 player
-                && player.factions.length === 2
-                && (player.hand.length > 0 || player.deck.length > 0),
+                && factions.length === 2
+                && (hand.length > 0 || deck.length > 0),
             );
         });
         const justResolvedSmashUpReactionChoice = events.some((event) => {
@@ -2041,7 +2060,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if ((state.sys as any)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
-            if (justResolvedSmashUpReactionChoice) {
+            if (justResolvedSmashUpReactionChoice && (state.sys as any)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
             if (hasPendingPhaseReactionFrame(core, phase, state)) {
@@ -2619,7 +2638,7 @@ function postProcessSystemEvents(
             
             const triggers = fireMinionPlayedTriggers({
                 core: tempCore,
-                matchState: ms,
+                matchState: getPlayCardsContextForBuriedPlay(ms, playedEvt.payload.fromBuried),
                 playerId: payload.playerId,
                 cardUid: payload.cardUid,
                 defId: payload.defId,
@@ -2709,7 +2728,7 @@ function postProcessSystemEvents(
 
             const queuedActionTriggers = collectTriggers(tempCore, 'onActionPlayed', {
                 state: tempCore,
-                matchState: tempMatchState,
+                matchState: getPlayCardsContextForBuriedPlay(tempMatchState, playedEvt.payload.fromBuried),
                 playerId: playedEvt.payload.playerId,
                 baseIndex: playedEvt.payload.targetBaseIndex,
                 actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,

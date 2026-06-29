@@ -12,7 +12,9 @@ describe('QidahenRegionMaskTool compatibility source guards', () => {
 
         expect(source).toContain('buildQidahenSharedPrintedRegionMappings');
         expect(source).toContain('const sharedPrintedGuideAuditRows = React.useMemo(() => {');
-        expect(source).toContain('visibleRuntimeRegionIds: visiblePrintedRegionIds');
+        expect(source).toContain('const visibleRuntimeRegionIds = [...new Set(');
+        expect(source).toContain('getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId)');
+        expect(source).toContain('visibleRuntimeRegionIds,');
         expect(source).toContain('missingRuntimeOnlyGuideIds');
         expect(source).toContain('data-testid="qidahen-shared-printed-guide-audit-panel"');
         expect(source).toContain('data-testid="qidahen-shared-printed-guide-audit-summary"');
@@ -48,5 +50,21 @@ describe('QidahenRegionMaskTool compatibility source guards', () => {
         expect(source).toContain('createQidahenRegionMaskSavePayload');
         expect(source).toContain('const postWorkspaceSavePayload = async (payload: QidahenRegionMaskSavePayload) => {');
         expect(source).toContain('const normalizedPayload = createQidahenRegionMaskSavePayload(payload);');
+        expect(source).toContain('getQidahenRegionMaskSaveBlockedReason');
+        expect(source).toContain('const blockSaveUntilWorkspaceLoaded = () => {');
+        expect(source).toContain('workspaceLoadState');
+    });
+
+    it('按边界生成正式区时以自动填充后的闭合块为来源，再把闭合块匹配到已有正式区名称', () => {
+        const source = readSource();
+
+        expect(source).toContain('const generatedComponents: GeneratedBoundaryComponent[] = [];');
+        expect(source).toContain('const nextGeneratedRegions: PainterRegion[] = [];');
+        expect(source).toContain('generatedComponents.push({');
+        expect(source).toContain('const fallbackId = `generated-region-${componentIndex + 1}`;');
+        expect(source).toContain('name: existingRegion?.name ?? `区域 ${componentIndex + 1}`');
+        expect(source).toContain('setRegions(nextGeneratedRegions);');
+        expect(source).toContain('setLastBoundaryComponentDiagnostics({');
+        expect(source).toContain('ignored:no-anchor');
     });
 });

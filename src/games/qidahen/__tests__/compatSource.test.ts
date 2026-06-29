@@ -1379,7 +1379,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(directInputEventReducersSource).toContain('event.payload.qidahenWheelDispatchSelection ?? null,');
         expect(regionSelectionReducerSource).not.toContain('export interface QidahenRegionSelectedDependencies {');
         expect(regionSelectionReducerSource).toContain('interface QidahenRegionSelectedDependencies {');
-        expect(regionSelectionReducerSource).toContain("import { resolveQidahenWheelDispatchInteractionChoice } from './actionWindowDispatch';");
+        expect(regionSelectionReducerSource).toContain('resolveQidahenWheelDispatchInteractionChoice,');
+        expect(regionSelectionReducerSource).toContain("} from './actionWindowDispatch';");
         expect(regionSelectionReducerSource).toContain("import { applyQidahenCharacterActionWindowEffectsWithFocus } from './characterActionWindow';");
         expect(regionSelectionReducerSource).toContain("import { updateQidahenTurnLabel } from './turnLabelState';");
         expect(regionSelectionReducerSource).not.toContain('export const QIDAHEN_REGION_SELECTED_DEPENDENCIES: QidahenRegionSelectedDependencies = {');
@@ -3347,7 +3348,7 @@ describe('Qidahen compatibility source guards', () => {
         const initialCoreSetupSource = readInitialCoreSetupSource();
         const scenarioRuntimeRegionPresetsSource = readScenarioRuntimeRegionPresetsSource();
 
-        expect(indexSource).toContain("import { createInitialCore } from './initialCoreSetup';");
+        expect(indexSource).toContain('createInitialCore,');
         expect(indexSource).toContain("} from './initialCoreSetup';");
         expect(indexSource).not.toContain('createQidahenCoreForScenario,');
         expect(indexSource).not.toContain('createQidahenCoreForScenarioWithSelections,');
@@ -4636,8 +4637,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(optionsSource).toContain("} from './pendingTargetChoicePayload';");
         expect(optionsSource).toContain('value: buildPendingTargetRearGuardChoiceValue(),');
         expect(optionsSource).toContain('value: buildPendingTargetRoutChoiceValue(),');
-        expect(optionsSource).toContain("buildPendingTargetCavalryPlunderChoiceOption('cavalry-plunder-attacker', '骑兵劫掠己方牌堆', 'attacker')");
-        expect(optionsSource).toContain("buildPendingTargetCavalryPlunderChoiceOption('cavalry-plunder-defender', '骑兵劫掠守方牌堆', 'defender')");
+        expect(optionsSource).toContain("'cavalry-plunder-attacker',\r\n            '骑兵劫掠己方牌堆',\r\n            'battle.pendingTargetChoice.cavalryPlunderAttacker',\r\n            'attacker',");
+        expect(optionsSource).toContain("'cavalry-plunder-defender',\r\n                '骑兵劫掠守方牌堆',\r\n                'battle.pendingTargetChoice.cavalryPlunderDefender',\r\n                'defender',");
         expect(optionsSource).toContain('value: buildPendingTargetDefenderCavalryEvasionChoiceValue(choice.id),');
         expect(payloadSource).toContain('export const buildPendingTargetRearGuardChoiceValue = (): QidahenPendingTargetChoiceValue => ({');
         expect(payloadSource).toContain('export const buildPendingTargetAttackerCavalryPlunderChoiceValue = (');

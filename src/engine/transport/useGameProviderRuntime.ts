@@ -73,16 +73,13 @@ export function useGameProviderRuntime(args: {
     const hasReportedStateReadyRef = useRef(false);
 
     const resetOptimisticProviderRuntime = useCallback((): boolean => {
-        if (!optimisticEngineRef.current) {
-            return false;
-        }
-        optimisticEngineRef.current.reset();
+        optimisticEngineRef.current?.reset();
         setRollbackSignal((prev) => ({
             watermark: null,
             seq: prev.seq + 1,
             reconcileSeq: prev.reconcileSeq,
         }));
-        return true;
+        return Boolean(optimisticEngineRef.current);
     }, []);
 
     const requestProviderResync = useCallback(() => {

@@ -90,6 +90,13 @@ export function executeTokenCommand(
                 console.warn('[DiceThrone] USE_TOKEN: missing attack context');
                 break;
             }
+            if (
+                typeof tokenDef.activeUse.minimumAttackDamage === 'number'
+                && pendingDamage.originalDamage < tokenDef.activeUse.minimumAttackDamage
+            ) {
+                console.warn('[DiceThrone] USE_TOKEN: insufficient attack damage');
+                break;
+            }
             const availableAmount = getUsableTokenAmountForTiming(
                 state,
                 playerId,

@@ -17,6 +17,7 @@ import type {
     CardsDiscardedEvent,
     CardOrTitanChoiceValue,
 } from '../domain/types';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     buildActionMinionTargetOptions, buildBaseTargetOptions, buildMinionTargetOptions, buildPlayerTargetOptions, getMinionPower,
     grantContextualExtraMinion, grantExtraMinion, shuffleBaseDeck,
@@ -398,11 +399,12 @@ function buildAlienTerraformReplacementEvents(
 
     const events: SmashUpEvent[] = [];
     for (const action of base.ongoingActions) {
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, reason: 'alien_terraform' },
-            timestamp,
-        } as OngoingDetachedEvent);
+        events.push(...buildValidatedOngoingDetachEvents(core, {
+            cardUid: action.uid,
+            reason: 'alien_terraform',
+            now: timestamp,
+            expectedLocation: 'base',
+        }));
     }
 
     events.push({
@@ -484,23 +486,14 @@ function buildAlienMinionReturnEvent(
     if (baseIndex === undefined || !minionUid) {
         return undefined;
     }
-    const base = core.bases[baseIndex];
-    const minion = base?.minions.find(candidate => candidate.uid === minionUid);
-    if (!minion) {
-        return undefined;
-    }
-    return {
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: {
-            minionUid: minion.uid,
-            minionDefId: minion.defId,
-            fromBaseIndex: baseIndex,
-            toPlayerId: minion.owner,
-            reason,
-            sourcePlayerId,
-        },
-        timestamp,
-    } as MinionReturnedEvent;
+    return buildValidatedReturnEvents(core, {
+        minionUid,
+        minionDefId: target?.defId ?? '',
+        fromBaseIndex: baseIndex,
+        reason,
+        sourcePlayerId: sourcePlayerId,
+        now: timestamp,
+    })[0];
 }
 
 /** 注册外星人派系所有能力 */
@@ -775,18 +768,15 @@ const alienScoutReturnPromptProgram = createPromptProgram<
 
         return {
             matchState: state,
-            events: [{
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: {
-                    minionUid: scout.uid,
-                    minionDefId: scout.defId,
-                    fromBaseIndex: scout.baseIndex,
-                    toPlayerId: scout.owner,
-                    reason: 'alien_scout',
-                    sourcePlayerId: scout.controller,
-                },
-                timestamp,
-            } as MinionReturnedEvent],
+            events: buildValidatedReturnEvents(state.core, {
+                minionUid: scout.uid,
+                minionDefId: scout.defId,
+                fromBaseIndex: scout.baseIndex,
+                toPlayerId: scout.owner,
+                reason: 'alien_scout',
+                sourcePlayerId: scout.controller,
+                now: timestamp,
+            }),
         };
     },
 });
@@ -804,18 +794,15 @@ function alienScoutAfterScoringPerInstance(ctx: TriggerContext): SmashUpEvent[] 
     }
 
     if (!ctx.matchState) {
-        return [{
-            type: SU_EVENTS.MINION_RETURNED,
-            payload: {
-                minionUid: scout.uid,
-                minionDefId: scout.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toPlayerId: scout.owner,
-                reason: 'alien_scout',
-                sourcePlayerId: scout.controller,
-            },
-            timestamp: ctx.now,
-        } as MinionReturnedEvent];
+        return buildValidatedReturnEvents(ctx.state, {
+            minionUid: scout.uid,
+            minionDefId: scout.defId,
+            fromBaseIndex: ctx.baseIndex,
+            toPlayerId: scout.owner,
+            reason: 'alien_scout',
+            sourcePlayerId: scout.controller,
+            now: ctx.now,
+        });
     }
 
     const result = executeAbilityProgram(alienScoutReturnPromptProgram, {
@@ -883,6 +870,10 @@ const alienInvasionDestinationPromptProgram = createPromptProgram<
                 fromBaseIndex: selectedTarget.fromBaseIndex,
                 toBaseIndex: selected.baseIndex,
                 toBaseDefId: selected.baseDefId,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'alien_invasion',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: selectedTarget.fromBaseIndex,
                 reason: 'alien_invasion',
                 now: timestamp,
             }),
@@ -1304,18 +1295,15 @@ const alienBeamUpPromptProgram = createPromptProgram<
         }
         return {
             matchState: state,
-            events: [{
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: {
-                    minionUid: target.uid,
-                    minionDefId: target.defId,
-                    fromBaseIndex: baseIndex,
-                    toPlayerId: target.owner,
-                    reason: 'alien_beam_up',
-                    sourcePlayerId: playerId,
-                },
-                timestamp,
-            } as MinionReturnedEvent],
+            events: buildValidatedReturnEvents(state.core, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: baseIndex,
+                toPlayerId: target.owner,
+                reason: 'alien_beam_up',
+                sourcePlayerId: playerId,
+                now: timestamp,
+            }),
         };
     },
 });
@@ -1338,18 +1326,15 @@ const alienBeamUpProgram = createBranchProgram<
             const minion = base?.minions.find(candidate => candidate.uid === target.minionUid);
             if (!minion) return { events: [] };
             return {
-                events: [{
-                    type: SU_EVENTS.MINION_RETURNED,
-                    payload: {
-                        minionUid: minion.uid,
-                        minionDefId: minion.defId,
-                        fromBaseIndex: target.baseIndex,
-                        toPlayerId: minion.owner,
-                        reason: 'alien_beam_up',
-                        sourcePlayerId: context.playerId,
-                    },
-                    timestamp: context.now,
-                } as MinionReturnedEvent],
+                events: buildValidatedReturnEvents(context.matchState.core, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: target.baseIndex,
+                    toPlayerId: minion.owner,
+                    reason: 'alien_beam_up',
+                    sourcePlayerId: context.playerId,
+                    now: context.now,
+                }),
             };
         }),
         else: alienBeamUpPromptProgram,
@@ -1590,18 +1575,15 @@ const alienAbductionPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [
-                {
-                    type: SU_EVENTS.MINION_RETURNED,
-                    payload: {
-                        minionUid: target.uid,
-                        minionDefId: target.defId,
-                        fromBaseIndex: baseIndex,
-                        toPlayerId: target.owner,
-                        reason: 'alien_abduction',
-                        sourcePlayerId: playerId,
-                    },
-                    timestamp,
-                } as MinionReturnedEvent,
+                ...buildValidatedReturnEvents(state.core, {
+                    minionUid: target.uid,
+                    minionDefId: target.defId,
+                    fromBaseIndex: baseIndex,
+                    toPlayerId: target.owner,
+                    reason: 'alien_abduction',
+                    sourcePlayerId: playerId,
+                    now: timestamp,
+                }),
                 grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'alien_abduction'),
             ],
         };
@@ -1627,18 +1609,15 @@ const alienAbductionProgram = createBranchProgram<
             if (!minion) return { events: [] };
             return {
                 events: [
-                    {
-                        type: SU_EVENTS.MINION_RETURNED,
-                        payload: {
-                            minionUid: minion.uid,
-                            minionDefId: minion.defId,
-                            fromBaseIndex: target.baseIndex,
-                            toPlayerId: minion.owner,
-                            reason: 'alien_abduction',
-                            sourcePlayerId: context.playerId,
-                        },
-                        timestamp: context.now,
-                    } as MinionReturnedEvent,
+                    ...buildValidatedReturnEvents(context.matchState.core, {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        fromBaseIndex: target.baseIndex,
+                        toPlayerId: minion.owner,
+                        reason: 'alien_abduction',
+                        sourcePlayerId: context.playerId,
+                        now: context.now,
+                    }),
                     grantContextualExtraMinion({ playerId: context.playerId, now: context.now, matchState: context.matchState }, 'alien_abduction'),
                 ],
             };
@@ -1667,7 +1646,7 @@ function buildCropCirclesReturnEvents(
             minionDefId: minion.defId,
             fromBaseIndex: baseIndex,
             toPlayerId: minion.owner,
-            sourcePlayerId,
+            sourcePlayerId: sourcePlayerId,
             reason: 'alien_crop_circles',
             now: timestamp,
         }) as MinionReturnedEvent[]);
@@ -1688,7 +1667,7 @@ function buildCropCirclesReturnEvents(
                 minionDefId: minion.defId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: minion.owner,
-                sourcePlayerId,
+                sourcePlayerId: sourcePlayerId,
                 reason: 'alien_crop_circles',
                 now: timestamp,
             }) as MinionReturnedEvent[],

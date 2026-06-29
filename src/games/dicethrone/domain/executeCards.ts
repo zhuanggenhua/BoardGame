@@ -9,7 +9,6 @@ import type {
     TurnPhase,
     DiceThroneCommand,
     DiceThroneEvent,
-    AbilityCard,
     CardDiscardedEvent,
     CardSoldEvent,
     SellUndoneEvent,
@@ -113,14 +112,15 @@ export function executeCardCommand(
             const actingPlayerId = (command.playerId || state.activePlayerId);
             const player = state.players[actingPlayerId];
             const card = player?.hand.find(c => c.id === (command.payload as { cardId: string }).cardId);
+            const upgradeTargetAbilityId = card ? getUpgradeTargetAbilityId(card) : null;
             
             if (!card || !player) {
                 break;
             }
             
             // 升级卡：自动提取目标技能并执行升级逻辑
-            if (card.type === 'upgrade') {
-                const targetAbilityId = getUpgradeTargetAbilityId(card);
+            if (card.type === 'upgrade' && upgradeTargetAbilityId) {
+                const targetAbilityId = upgradeTargetAbilityId;
                 if (!targetAbilityId || !card.effects || card.effects.length === 0) {
                     console.warn(`[DiceThrone] 升级卡 ${card.id} 缺少 targetAbilityId 或 effects`);
                     break;

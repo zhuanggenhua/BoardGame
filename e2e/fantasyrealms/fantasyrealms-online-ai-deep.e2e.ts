@@ -5,6 +5,7 @@ import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
     clearEvidenceScreenshotsForTest,
+    completeNaturalHumanDeckTurn,
     createAiTakeDiscardBranchCore,
     getEvidenceScreenshotPath,
     injectMatchState,
@@ -12,7 +13,10 @@ import {
     readOnlineAiMatchState,
     readOnlineAiStateSummary,
     waitForFantasyRealmsBoard,
+    waitForSingleOnlineAiRoundtrip,
 } from './helpers/fantasyrealmsOnlineAi';
+
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
 
 test.describe('FantasyRealms online AI flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
@@ -36,40 +40,22 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
-            const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
             expect(initialSummary.currentPlayer).toBe('0');
             expect(initialSummary.turn).toBe(1);
-            expect(initialSummary.stage).toBe('draw');
-
-            await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
-
-            await expect.poll(async () => {
-                const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '0'
-                    && summary.turn === 1
-                    && summary.stage === 'discard'
-                    && (summary.handCounts['0'] ?? 0) > initialHand0;
-            }, {
-                timeout: 10000,
-                message: '等待 6 人在线 AI 房间里 host 从 draw 进入 discard，再准备交给高人数 AI 链',
-            }).toBe(true);
-
-            const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
-            const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
-            await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
+            const afterHostTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '6人在线 AI 房间首轮 human',
+            });
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
                 return summary.currentPlayer === '2'
                     && (summary.turn ?? 0) >= 3
-                    && (summary.handCounts['0'] ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
+                    && (summary.handCounts['0'] ?? 0) === (afterHostTurnSummary.handCounts['0'] ?? 0)
                     && (summary.stage === 'draw' || summary.stage === 'discard');
             }, {
                 timeout: 45000,
@@ -119,7 +105,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(finalSummary.eventStreamNextId).not.toBeNull();
             expect(finalSummary.eventStreamNextId!).toBeGreaterThan(seat5TurnSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-six-player-two-refreshes-same-round');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -217,7 +203,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(afterAiSummary.eventStreamNextId).not.toBeNull();
             expect(currentState.sys?.eventStream?.nextId ?? 0).toBeLessThan(afterAiSummary.eventStreamNextId ?? 0);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-take-discard-branch');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -244,38 +230,22 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
-            const initialHand0 = initialSummary.handCounts['0'] ?? 0;
             const initialDiscardCount = initialSummary.discardCount;
             const initialTurn = initialSummary.turn ?? 1;
 
-            await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
-
-            await expect.poll(async () => {
-                const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '0'
-                    && summary.turn === initialTurn
-                    && summary.stage === 'discard'
-                    && (summary.handCounts['0'] ?? 0) > initialHand0;
-            }, {
-                timeout: 10000,
-                message: '等待 human 从 draw 进入 discard，再准备把回合交给 AI',
-            }).toBe(true);
-
-            const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
-            const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
-            await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃置');
-            await liveActionButton.click();
+            const aiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '在线 AI 刷新前首轮 human',
+            });
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
                 return summary.currentPlayer === '1'
                     && summary.discardCount >= initialDiscardCount + 1
-                    && (summary.handCounts['0'] ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
+                    && (summary.handCounts['0'] ?? 0) === (aiTurnSummary.handCounts['0'] ?? 0)
                     && (summary.stage === 'draw' || summary.stage === 'discard')
                     && (summary.turn ?? 0) >= initialTurn;
             }, {
@@ -283,31 +253,17 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 message: '等待 human 结束首轮后真实轮到 AI，再在 AI 回合中刷新',
             }).toBe(true);
 
-            const aiTurnSummary = await readOnlineAiStateSummary(matchId, page);
+            const aiTurnReloadSummary = await readOnlineAiStateSummary(matchId, page);
             await page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsBoard(page, '0');
 
-            await expect.poll(async () => {
-                const summary = await readOnlineAiStateSummary(matchId, page);
-                return summary.currentPlayer === '0'
-                    && summary.stage === 'draw'
-                    && (summary.turn ?? 0) > (aiTurnSummary.turn ?? 0)
-                    && (summary.handCounts['0'] ?? 0) === (aiTurnSummary.handCounts['0'] ?? 0);
-            }, {
-                timeout: 35000,
-                message: '等待刷新后的 host 页面看到 seat1 local AI 继续推进并把回合交回 human',
-            }).toBe(true);
-
-            const afterAiSummary = await readOnlineAiStateSummary(matchId, page);
-            expect(afterAiSummary.eventStreamNextId).not.toBeNull();
-            expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
-            expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
-            expect(
-                afterAiSummary.drawPileCount !== aiTurnSummary.drawPileCount
-                || afterAiSummary.discardSignature !== aiTurnSummary.discardSignature,
-            ).toBe(true);
-            await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary: aiTurnReloadSummary,
+                roundLabel: '刷新后的 host 页面',
+            });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-during-ai-turn');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -395,7 +351,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(afterAiSummary.eventStreamNextId).not.toBeNull();
             expect(currentState.sys?.eventStream?.nextId ?? 0).toBeLessThan(afterAiSummary.eventStreamNextId ?? 0);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-during-take-discard-branch');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -422,80 +378,33 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
+            const firstAiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '第1轮',
+            });
+            const afterFirstAiSummary = await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary: firstAiTurnSummary,
+                roundLabel: '第1轮',
+            });
 
-            const completeHumanDeckTurn = async (roundLabel: string) => {
-                const beforeSummary = await readOnlineAiStateSummary(matchId, page);
-                const beforeHandCount = beforeSummary.handCounts['0'] ?? 0;
-                const beforeDiscardCount = beforeSummary.discardCount;
-                const beforeTurn = beforeSummary.turn ?? 0;
-
-                await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                await liveActionButton.click();
-
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '0'
-                        && summary.stage === 'discard'
-                        && (summary.turn ?? 0) === beforeTurn
-                        && (summary.handCounts['0'] ?? 0) > beforeHandCount;
-                }, {
-                    timeout: 10000,
-                    message: `${roundLabel}: 等待 human 从 draw 进入 discard`,
-                }).toBe(true);
-
-                const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
-                const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
-                await discardHandButton.click();
-                await expect(liveActionButton).toContainText('确认弃置');
-                await liveActionButton.click();
-
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '1'
-                        && summary.discardCount >= beforeDiscardCount + 1
-                        && (summary.handCounts['0'] ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
-                        && (summary.stage === 'draw' || summary.stage === 'discard')
-                        && (summary.turn ?? 0) >= beforeTurn;
-                }, {
-                    timeout: 12000,
-                    message: `${roundLabel}: 等待 human 结束回合并真实轮到 AI`,
-                }).toBe(true);
-
-                return readOnlineAiStateSummary(matchId, page);
-            };
-
-            const waitForAiRoundtrip = async (roundLabel: string, aiTurnSummary: OnlineAiSummary) => {
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '0'
-                        && summary.stage === 'draw'
-                        && (summary.turn ?? 0) > (aiTurnSummary.turn ?? 0)
-                        && (summary.handCounts['0'] ?? 0) === (aiTurnSummary.handCounts['0'] ?? 0);
-                }, {
-                    timeout: 35000,
-                    message: `${roundLabel}: 等待 seat1 local AI 完成一轮并把回合交回 human`,
-                }).toBe(true);
-
-                const afterAiSummary = await readOnlineAiStateSummary(matchId, page);
-                expect(afterAiSummary.eventStreamNextId).not.toBeNull();
-                expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
-                expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
-                expect(
-                    afterAiSummary.drawPileCount !== aiTurnSummary.drawPileCount
-                    || afterAiSummary.discardSignature !== aiTurnSummary.discardSignature,
-                ).toBe(true);
-                await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                return afterAiSummary;
-            };
-
-            const firstAiTurnSummary = await completeHumanDeckTurn('第1轮');
-            const afterFirstAiSummary = await waitForAiRoundtrip('第1轮', firstAiTurnSummary);
-
-            const secondAiTurnSummary = await completeHumanDeckTurn('第2轮');
-            const afterSecondAiSummary = await waitForAiRoundtrip('第2轮', secondAiTurnSummary);
+            const secondAiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '第2轮',
+            });
+            const afterSecondAiSummary = await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary: secondAiTurnSummary,
+                roundLabel: '第2轮',
+            });
 
             expect(afterSecondAiSummary.turn).not.toBeNull();
             expect(afterFirstAiSummary.turn).not.toBeNull();
@@ -529,73 +438,19 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
-
-            const completeHumanDeckTurn = async (roundLabel: string) => {
-                const beforeSummary = await readOnlineAiStateSummary(matchId, page);
-                const beforeHandCount = beforeSummary.handCounts['0'] ?? 0;
-                const beforeDiscardCount = beforeSummary.discardCount;
-                const beforeTurn = beforeSummary.turn ?? 0;
-
-                await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                await liveActionButton.click();
-
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '0'
-                        && summary.stage === 'discard'
-                        && (summary.turn ?? 0) === beforeTurn
-                        && (summary.handCounts['0'] ?? 0) > beforeHandCount;
-                }, {
-                    timeout: 10000,
-                    message: `${roundLabel}: 等待 human 从 draw 进入 discard`,
-                }).toBe(true);
-
-                const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
-                const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
-                await discardHandButton.click();
-                await expect(liveActionButton).toContainText('确认弃置');
-                await liveActionButton.click();
-
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '1'
-                        && summary.discardCount >= beforeDiscardCount + 1
-                        && (summary.handCounts['0'] ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
-                        && (summary.stage === 'draw' || summary.stage === 'discard')
-                        && (summary.turn ?? 0) >= beforeTurn;
-                }, {
-                    timeout: 12000,
-                    message: `${roundLabel}: 等待 human 结束回合并真实轮到 AI`,
-                }).toBe(true);
-
-                return readOnlineAiStateSummary(matchId, page);
-            };
-
-            const waitForAiRoundtrip = async (roundLabel: string, aiTurnSummary: OnlineAiSummary) => {
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '0'
-                        && summary.stage === 'draw'
-                        && (summary.turn ?? 0) > (aiTurnSummary.turn ?? 0)
-                        && (summary.handCounts['0'] ?? 0) === (aiTurnSummary.handCounts['0'] ?? 0);
-                }, {
-                    timeout: 35000,
-                    message: `${roundLabel}: 等待 seat1 local AI 完成一轮并把回合交回 human`,
-                }).toBe(true);
-
-                const afterAiSummary = await readOnlineAiStateSummary(matchId, page);
-                expect(afterAiSummary.eventStreamNextId).not.toBeNull();
-                expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
-                expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
-                await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                return afterAiSummary;
-            };
-
-            const firstAiTurnSummary = await completeHumanDeckTurn('预备轮');
-            const afterFirstAiSummary = await waitForAiRoundtrip('预备轮', firstAiTurnSummary);
+            const firstAiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '预备轮',
+            });
+            const afterFirstAiSummary = await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary: firstAiTurnSummary,
+                roundLabel: '预备轮',
+            });
 
             const currentState = await readOnlineAiMatchState(matchId, page);
             const injectedCore = {
@@ -662,7 +517,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(afterFirstAiSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(afterFirstAiSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-during-second-take-discard-branch');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -691,76 +546,33 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
+            const firstAiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '第1轮',
+            });
+            await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary: firstAiTurnSummary,
+                roundLabel: '第1轮',
+            });
 
-            const completeHumanDeckTurn = async (roundLabel: string) => {
-                const beforeSummary = await readOnlineAiStateSummary(matchId, page);
-                const beforeHandCount = beforeSummary.handCounts['0'] ?? 0;
-                const beforeDiscardCount = beforeSummary.discardCount;
-                const beforeTurn = beforeSummary.turn ?? 0;
-
-                await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                await liveActionButton.click();
-
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '0'
-                        && summary.stage === 'discard'
-                        && (summary.turn ?? 0) === beforeTurn
-                        && (summary.handCounts['0'] ?? 0) > beforeHandCount;
-                }, {
-                    timeout: 10000,
-                    message: `${roundLabel}: 等待 human 从 draw 进入 discard`,
-                }).toBe(true);
-
-                const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
-                const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
-                await discardHandButton.click();
-                await expect(liveActionButton).toContainText('确认弃置');
-                await liveActionButton.click();
-
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '1'
-                        && summary.discardCount >= beforeDiscardCount + 1
-                        && (summary.handCounts['0'] ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
-                        && (summary.stage === 'draw' || summary.stage === 'discard')
-                        && (summary.turn ?? 0) >= beforeTurn;
-                }, {
-                    timeout: 12000,
-                    message: `${roundLabel}: 等待 human 结束回合并真实轮到 AI`,
-                }).toBe(true);
-
-                return readOnlineAiStateSummary(matchId, page);
-            };
-
-            const waitForAiRoundtrip = async (roundLabel: string, aiTurnSummary: OnlineAiSummary) => {
-                await expect.poll(async () => {
-                    const summary = await readOnlineAiStateSummary(matchId, page);
-                    return summary.currentPlayer === '0'
-                        && summary.stage === 'draw'
-                        && (summary.turn ?? 0) > (aiTurnSummary.turn ?? 0)
-                        && (summary.handCounts['0'] ?? 0) === (aiTurnSummary.handCounts['0'] ?? 0);
-                }, {
-                    timeout: 35000,
-                    message: `${roundLabel}: 等待 seat1 local AI 完成一轮并把回合交回 human`,
-                }).toBe(true);
-
-                const afterAiSummary = await readOnlineAiStateSummary(matchId, page);
-                expect(afterAiSummary.eventStreamNextId).not.toBeNull();
-                expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
-                expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
-                await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                return afterAiSummary;
-            };
-
-            const firstAiTurnSummary = await completeHumanDeckTurn('第1轮');
-            await waitForAiRoundtrip('第1轮', firstAiTurnSummary);
-
-            const secondAiTurnSummary = await completeHumanDeckTurn('第2轮');
-            const afterSecondAiSummary = await waitForAiRoundtrip('第2轮', secondAiTurnSummary);
+            const secondAiTurnSummary = await completeNaturalHumanDeckTurn({
+                matchId,
+                page,
+                playerId: '0',
+                roundLabel: '第2轮',
+            });
+            const afterSecondAiSummary = await waitForSingleOnlineAiRoundtrip({
+                matchId,
+                page,
+                humanPlayerId: '0',
+                aiTurnSummary: secondAiTurnSummary,
+                roundLabel: '第2轮',
+            });
 
             const currentState = await readOnlineAiMatchState(matchId, page);
             const injectedCore = {
@@ -833,7 +645,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(beforeDeepCompleteSummary.eventStreamNextId).not.toBeNull();
             expect(finalSummary.eventStreamNextId!).toBeGreaterThanOrEqual(beforeDeepCompleteSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-after-two-rounds-second-branch');
             await mkdir(dirname(evidencePath), { recursive: true });

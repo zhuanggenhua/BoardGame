@@ -28,17 +28,53 @@ import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import { getTokenStackLimit } from './rules';
+import { isPurifiableDebuffId } from './statusRemoval';
+
+const ARTIFICER_BOT_ACTIVATION_LIMITS: Partial<Record<string, number>> = {
+    [TOKEN_IDS.NANOBOT]: 1,
+    [TOKEN_IDS.SHOCK_BOT]: 1,
+    [TOKEN_IDS.HEAL_BOT]: 2,
+};
+
+function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerId, tokenId: string): number | undefined {
+    const maxUses = ARTIFICER_BOT_ACTIVATION_LIMITS[tokenId];
+    if (!maxUses) return undefined;
+    const botState = state.players[playerId]?.artificerBotState?.[tokenId];
+    if (!botState?.built) return 0;
+    return Math.max(0, maxUses - (botState.activationsUsedThisTurn ?? 0));
+}
 
 // ============================================================================
 // Token 可用性检查
 // ============================================================================
+
+function resolveAdditionalTokenCosts(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    tokenDef: TokenDef,
+): Array<{ tokenId: string; amount: number }> {
+    return (tokenDef.activeUse?.additionalTokenCosts ?? [])
+        .map((cost) => {
+            const override = cost.overrideWhenOwnerTokenLimitAtLeast;
+            if (override) {
+                const ownerTokenId = override.tokenId ?? tokenDef.id;
+                const ownerLimit = getTokenStackLimit(state, playerId, ownerTokenId);
+                if (ownerLimit >= override.limit) {
+                    return { tokenId: cost.tokenId, amount: override.amount };
+                }
+            }
+            return { tokenId: cost.tokenId, amount: cost.amount };
+        })
+        .filter((cost) => Number.isInteger(cost.amount) && cost.amount > 0);
+}
 
 export function getUsableTokenAmountForTiming(
     state: DiceThroneCore,
     playerId: PlayerId,
     tokenId: string,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
-    options?: { damageScope?: 'attack' | 'direct' }
+    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number }
 ): number {
     const player = state.players[playerId];
     if (!player) return 0;
@@ -53,8 +89,25 @@ export function getUsableTokenAmountForTiming(
         if (!hasAttackContext) return 0;
         if (damageScope !== 'attack') return 0;
     }
+    if (
+        typeof tokenDef.activeUse.minimumAttackDamage === 'number'
+        && ((options?.originalDamageOverride ?? state.pendingDamage?.originalDamage ?? 0) < tokenDef.activeUse.minimumAttackDamage)
+    ) {
+        return 0;
+    }
 
-    let availableAmount = player.tokens[tokenDef.id] ?? 0;
+    let availableAmount = getArtificerBotAvailableAmount(state, playerId, tokenDef.id) ?? (player.tokens[tokenDef.id] ?? 0);
+    if (availableAmount <= 0) return 0;
+    const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
+    const sameTokenAdditionalCost = additionalCosts
+        .filter(cost => cost.tokenId === tokenDef.id)
+        .reduce((sum, cost) => sum + cost.amount, 0);
+    if (sameTokenAdditionalCost > 0) {
+        availableAmount = Math.max(0, availableAmount - sameTokenAdditionalCost);
+    }
+    for (const cost of additionalCosts) {
+        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) return 0;
+    }
     if (availableAmount <= 0) return 0;
 
     // 规则：本回合获得的太极不可用于本回合增强伤害（beforeDamageDealt）。
@@ -81,7 +134,7 @@ export function getUsableTokensForTiming(
     state: DiceThroneCore,
     playerId: PlayerId,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
-    options?: { damageScope?: 'attack' | 'direct' }
+    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number }
 ): TokenDef[] {
     const player = state.players[playerId];
     if (!player) return [];
@@ -136,9 +189,13 @@ export function hasOffensiveRollEndTokens(
 export function hasDefensiveTokens(
     state: DiceThroneCore,
     playerId: PlayerId,
-    damageScope?: 'attack' | 'direct'
+    damageScope?: 'attack' | 'direct',
+    originalDamageOverride?: number,
 ): boolean {
-    return getUsableTokensForTiming(state, playerId, 'beforeDamageReceived', { damageScope }).length > 0;
+    return getUsableTokensForTiming(state, playerId, 'beforeDamageReceived', {
+        damageScope,
+        originalDamageOverride,
+    }).length > 0;
 }
 
 /**
@@ -147,9 +204,13 @@ export function hasDefensiveTokens(
 export function hasOffensiveTokens(
     state: DiceThroneCore,
     playerId: PlayerId,
-    damageScope?: 'attack' | 'direct'
+    damageScope?: 'attack' | 'direct',
+    originalDamageOverride?: number,
 ): boolean {
-    return getUsableTokensForTiming(state, playerId, 'beforeDamageDealt', { damageScope }).length > 0;
+    return getUsableTokensForTiming(state, playerId, 'beforeDamageDealt', {
+        damageScope,
+        originalDamageOverride,
+    }).length > 0;
 }
 
 /**
@@ -173,7 +234,7 @@ export function hasDebuffs(state: DiceThroneCore, playerId: PlayerId): boolean {
 
     // 可被净化移除的负面状态：由状态定义驱动（支持未来扩展）
     const removableDebuffIds = (state.tokenDefinitions ?? [])
-        .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
+        .filter(def => isPurifiableDebuffId(state, def.id))
         .map(def => def.id);
 
     return removableDebuffIds.some(id => (playerStatusEffects[id] ?? 0) > 0 || (playerTokens[id] ?? 0) > 0);
@@ -443,14 +504,30 @@ export function processTokenUsage(
     const remainingWindowUsage = hasExplicitWindowCap
         ? Math.max(0, maxWindowUsage - usedInWindow)
         : currentAmount;
-    const actualAmount = Math.min(amount, currentAmount, remainingWindowUsage);
+    const availableAmount = getArtificerBotAvailableAmount(state, playerId, tokenDef.id) ?? currentAmount;
+    const actualAmount = Math.min(amount, availableAmount, remainingWindowUsage);
+    const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
+    const sameTokenAdditionalCost = additionalCosts
+        .filter(cost => cost.tokenId === tokenDef.id)
+        .reduce((sum, cost) => sum + cost.amount, 0);
+    const affordablePrimaryAmount = Math.max(0, currentAmount - sameTokenAdditionalCost);
+    const actualAffordableAmount = Math.min(actualAmount, affordablePrimaryAmount);
 
-    if (amount <= 0 || actualAmount <= 0) {
+    if (amount <= 0 || actualAffordableAmount <= 0) {
         return {
             events,
             result: { success: false },
             newTokenAmount: currentAmount,
         };
+    }
+    for (const cost of additionalCosts) {
+        if ((player?.tokens[cost.tokenId] ?? 0) < cost.amount) {
+            return {
+                events,
+                result: { success: false },
+                newTokenAmount: currentAmount,
+            };
+        }
     }
     
     // 构建处理上下文
@@ -458,7 +535,7 @@ export function processTokenUsage(
         state,
         tokenDef,
         playerId,
-        amount: actualAmount,
+        amount: actualAffordableAmount,
         random,
         pendingDamage: state.pendingDamage ? {
             originalDamage: state.pendingDamage.originalDamage,
@@ -481,7 +558,28 @@ export function processTokenUsage(
     }
     const result = processor(ctx);
     
-    const newTokenAmount = currentAmount - actualAmount;
+    const newTokenAmount = currentAmount - actualAffordableAmount;
+
+    if (result.success) {
+        const runningTotals = new Map<string, number>();
+        for (const cost of additionalCosts) {
+            const spentSoFar = runningTotals.get(cost.tokenId) ?? 0;
+            runningTotals.set(cost.tokenId, spentSoFar + cost.amount);
+            const currentCostAmount = player?.tokens[cost.tokenId] ?? 0;
+            events.push({
+                type: 'TOKEN_CONSUMED',
+                payload: {
+                    playerId,
+                    tokenId: cost.tokenId,
+                    amount: cost.amount,
+                    newTotal: Math.max(0, currentCostAmount - spentSoFar - cost.amount),
+                    sourceAbilityId: tokenDef.id,
+                },
+                sourceCommandType: 'USE_TOKEN',
+                timestamp,
+            } as DiceThroneEvent);
+        }
+    }
     
     // 生成 TOKEN_USED 事件
     const resolvedResponseType = responseType ?? state.pendingDamage?.responseType;
@@ -500,7 +598,7 @@ export function processTokenUsage(
         payload: {
             playerId,
             tokenId: tokenDef.id,
-            amount: actualAmount,
+            amount: actualAffordableAmount,
             effectType: resolvedEffectType,
             damageModifier: result.damageModifier,
             evasionRoll: result.rollResult,
@@ -602,30 +700,17 @@ export function shouldOpenTokenResponse(
     isDefensiveContext?: boolean,
     damageScope?: 'attack' | 'direct'
 ): 'attackerBoost' | 'defenderMitigation' | null {
-    console.log('[DT-TokenResponse] shouldOpenTokenResponse 调用', {
-        attackerId,
-        defenderId,
-        damage,
-        isDefensiveContext,
-        damageScope,
-        hasPendingDamage: !!state.pendingDamage,
-        isUltimate: state.pendingAttack?.isUltimate,
-    });
-
     if (damage <= 0) {
-        console.log('[DT-TokenResponse] 伤害 <= 0，不打开窗口');
         return null;
     }
     
     // 检查是否已有待处理伤害（避免重复打开）
     if (state.pendingDamage) {
-        console.log('[DT-TokenResponse] 已有 pendingDamage，不打开窗口');
         return null;
     }
 
     // 防御技能的反击伤害不是"攻击"（规则 §7.2），不触发 Token 响应窗口
     if (isDefensiveContext) {
-        console.log('[DT-TokenResponse] 防御技能上下文，不打开窗口');
         return null;
     }
 
@@ -635,33 +720,21 @@ export function shouldOpenTokenResponse(
     // 先检查攻击方是否有太极可用于加伤
     // 注意：规则说"本回合获得的太极不可用于本回合增强伤害"
     // 这个限制需要额外的状态追踪，暂时先不实现
-    const hasOffensiveTokensResult = hasOffensiveTokens(state, attackerId, damageScope);
-    console.log('[DT-TokenResponse] 检查攻击方 Token', {
-        attackerId,
-        hasOffensiveTokens: hasOffensiveTokensResult,
-    });
+    const hasOffensiveTokensResult = hasOffensiveTokens(state, attackerId, damageScope, damage);
     if (hasOffensiveTokensResult) {
-        console.log('[DT-TokenResponse] 返回 attackerBoost');
         return 'attackerBoost';
     }
     
     // 终极技能跳过防御方 Token 响应（规则 §4.4：不可被降低/忽略/回避）
     if (isUltimate) {
-        console.log('[DT-TokenResponse] 终极技能，跳过防御方响应');
         return null;
     }
     
     // 检查防御方是否有可用的防御 Token
-    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId, damageScope);
-    console.log('[DT-TokenResponse] 检查防御方 Token', {
-        defenderId,
-        hasDefensiveTokens: hasDefensiveTokensResult,
-    });
+    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId, damageScope, damage);
     if (hasDefensiveTokensResult) {
-        console.log('[DT-TokenResponse] 返回 defenderMitigation');
         return 'defenderMitigation';
     }
     
-    console.log('[DT-TokenResponse] 无可用 Token，返回 null');
     return null;
 }

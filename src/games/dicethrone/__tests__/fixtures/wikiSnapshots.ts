@@ -1,12 +1,22 @@
 /**
- * Dice Throne Wiki 描述快照数据
+ * Dice Throne 外部对照描述快照数据（历史手工 fixture）
  *
- * 数据来源：Dice Throne Season 1 Rerolled 官方 Wiki (https://dice-throne.fandom.com/)
- * 用途：作为审计基准，与代码中的能力/Token/卡牌定义进行比对
+ * 当前状态说明：
+ * - 这是仓库内的历史静态对照数据文件，不是运行时实时抓取结果。
+ * - 该文件当前缺少“逐条可回访来源链接 / 页面定位 / 采集方式”回填，不能再被表述为官方权威真相源。
+ * - 用户结论、数据录入裁定、卡费/文本真值判断，必须回到主真相源图片、规则书、官方 PDF
+ *   或已在真相源表中登记的可访问来源链接。
+ *
+ * 历史来源声明：
+ * - 文件创建时的头注释声明来源为 Dice Throne Season 1 Rerolled Fandom Wiki
+ *   (https://dice-throne.fandom.com/)
+ * - 但在逐条来源未补齐前，本文件只允许作为“待核对的历史对照 fixture”。
+ *
+ * 用途：供测试与审计基础设施消费历史对照条目。
  *
  * 注意：
  * - 所有描述使用英文（Wiki 原文）
- * - 数值以 Wiki 为权威来源
+ * - 数值字段必须以后续真相源回访为准，不能仅凭本文件断言为真
  * - heroId 与代码中的角色目录名一致
  */
 
@@ -342,7 +352,7 @@ export const PYROMANCER_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
   { heroId: 'pyromancer', tokenId: 'fire_mastery', wikiName: 'Fire Mastery', wikiDescription: 'Used by abilities to increase fire damage. Consumed by abilities automatically.', wikiStackLimit: 5, wikiCategory: 'consumable' },
   { heroId: 'pyromancer', tokenId: 'knockdown', wikiName: 'Knockdown', wikiDescription: 'Skip your next Offensive Roll Phase. You may spend 2 CP to remove this instead.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
   { heroId: 'pyromancer', tokenId: 'burn', wikiName: 'Burn', wikiDescription: 'Persistent. Does not stack. During Upkeep, take 2 damage.', wikiTiming: 'upkeep', wikiStackLimit: 1, wikiCategory: 'debuff' },
-  { heroId: 'pyromancer', tokenId: 'daze', wikiName: 'Stun', wikiDescription: 'Skip your next Offensive Roll Phase. Then remove this token.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
+  { heroId: 'pyromancer', tokenId: 'daze', wikiName: 'Stun', wikiDescription: 'After the current attack ends, remove this token and the current attacker attacks again immediately.', wikiTiming: 'onAttackEnd', wikiStackLimit: 1, wikiCategory: 'debuff' },
 ];
 
 export const MOON_ELF_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
@@ -428,7 +438,7 @@ export const MONK_CARD_SNAPSHOTS: WikiCardSnapshot[] = [
 
 export const PYROMANCER_CARD_SNAPSHOTS: WikiCardSnapshot[] = [
   { cardId: 'card-turning-up-the-heat', heroId: 'pyromancer', wikiName: 'Turning Up the Heat', wikiCpCost: 0, wikiTiming: 'main', wikiDescription: 'Gain 1 FM. You may spend CP to gain additional FM (1 CP per FM).', wikiType: 'action' },
-  { cardId: 'card-infernal-embrace', heroId: 'pyromancer', wikiName: 'Infernal Embrace', wikiCpCost: 0, wikiTiming: 'main', wikiDescription: 'Roll 1 die: Fire - gain 2 FM; otherwise draw 1 card.', wikiType: 'action' },
+  { cardId: 'card-infernal-embrace', heroId: 'pyromancer', wikiName: 'Infernal Embrace', wikiCpCost: 0, wikiTiming: 'main', wikiDescription: 'Roll 1 die: Meteor - gain Fire Mastery to the cap; otherwise draw 1 card.', wikiType: 'action' },
   { cardId: 'card-fan-the-flames', heroId: 'pyromancer', wikiName: 'Fan the Flames', wikiCpCost: 3, wikiTiming: 'main', wikiDescription: 'FM cap +1. Gain 2 FM.', wikiType: 'action' },
   { cardId: 'card-red-hot', heroId: 'pyromancer', wikiName: 'Red Hot', wikiCpCost: 1, wikiTiming: 'roll', wikiDescription: 'Deal 1 damage per FM you have.', wikiType: 'action' },
   { cardId: 'card-get-fired-up', heroId: 'pyromancer', wikiName: 'Get Fired Up', wikiCpCost: 1, wikiTiming: 'roll', wikiDescription: 'Roll dice for bonus fire effects.', wikiType: 'action' },

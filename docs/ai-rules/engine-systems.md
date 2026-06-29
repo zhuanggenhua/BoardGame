@@ -29,6 +29,16 @@
 | `CommandBatcher` | `src/engine/transport/latency/commandBatcher.ts` | 命令批处理（合并高频命令减少网络往返） |
 | `LatencyOptimizationConfig` | `src/engine/transport/latency/types.ts` | 延迟优化配置类型（每个游戏的 `latencyConfig.ts`） |
 
+传输层有一个必须守住的边界：
+
+- `当前本地视角玩家`：只表示本地页面正在代谁看/代谁点，属于 `LocalGameProvider` 壳层语义。
+- `命令执行者`：真正写进 command 的执行玩家，是 transport 命令解析语义。
+- `教程指定执行者`：教程 AI 为了替某个座位发命令时的显式指定来源。
+
+这三者不能混成同一个字段，更不能在 `provider`、`local transport`、`server transport` 各自维护一套不同优先级。凡是修改这层逻辑，必须先锁唯一解析入口，再决定哪些来源有资格参与解析。
+
+测试桥 / TestHarness 也适用同一原则：测试页面默认起局、URL 参数自动建局、`LocalGameProvider` 壳层自动推进，都只能算“测试壳现场”，不能直接当业务真相源。凡是断言某个初始 core、起手牌数、当前阶段、自动摸牌结果的 E2E，用例必须显式注入 `domain.setup(...)` 或明确状态构造器，不能一条用例吃默认现场、另一条用例又吃手工注入现场。测试桥如果需要指定“由谁发命令”，应优先走 `command.playerId` 或等价正式入口；`__tutorialPlayerId` 只允许留给教程 AI 命令，不得再拿它充当普通测试/调试覆盖字段。
+
 #### 乐观更新引擎（Optimistic Engine）
 
 客户端延迟优化子系统，通过本地预测 + 服务端调和实现低延迟交互体验。

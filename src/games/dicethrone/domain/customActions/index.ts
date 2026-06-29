@@ -1,3 +1,4 @@
+import { registerArtificerCustomActions } from './artificer';
 import { registerBarbarianCustomActions } from './barbarian';
 import { registerCommonCustomActions } from './common';
 import { registerGunslingerCustomActions } from './gunslinger';
@@ -24,6 +25,7 @@ export function initializeCustomActions(): void {
     }
 
     registerCommonCustomActions();
+    registerArtificerCustomActions();
     registerMonkCustomActions();
     registerBarbarianCustomActions();
     registerPyromancerCustomActions();
@@ -40,6 +42,7 @@ export function initializeCustomActions(): void {
     initialized = true;
 }
 
+export { registerArtificerCustomActions } from './artificer';
 export { registerCommonCustomActions } from './common';
 export { registerMonkCustomActions } from './monk';
 export { registerBarbarianCustomActions } from './barbarian';

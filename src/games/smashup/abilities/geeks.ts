@@ -6,6 +6,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildValidatedCardToDeckBottomEvents,
+    buildValidatedMoveEvents,
     buildMinionTargetOptions,
     buildSemanticOngoingAttachEvents,
     buildStandardDrawEvents,
@@ -38,6 +39,7 @@ import {
     createCardObjectRefFromInstance,
     createCardTransferEvent,
 } from '../domain/objectProvenance';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -383,6 +385,8 @@ function buildGeeksBannedListNameOptions(
 
 function buildGeeksFeliciaDayMoveEvents(
     state: SmashUpCore,
+    sourcePlayerId: PlayerId,
+    sourceCardUid: string,
     targetBaseIndex: number,
     now: number,
 ): SmashUpEvent[] {
@@ -393,18 +397,21 @@ function buildGeeksFeliciaDayMoveEvents(
         if (fromBaseIndex === targetBaseIndex) continue;
         const base = state.bases[fromBaseIndex];
         for (const minion of base.minions) {
-            events.push({
-                type: SU_EVENTS.MINION_MOVED,
-                payload: {
-                    minionUid: minion.uid,
-                    minionDefId: minion.defId,
-                    fromBaseIndex,
-                    toBaseIndex: targetBaseIndex,
-                    batchId,
-                    reason: 'geeks_felicia_day',
-                },
-                timestamp: now,
-            });
+            events.push(...buildValidatedMoveEvents(state, {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
+                fromBaseIndex,
+                toBaseIndex: targetBaseIndex,
+                batchId,
+                sourcePlayerId: sourcePlayerId,
+                sourceCardUid: sourceCardUid,
+                sourceDefId: 'geeks_felicia_day',
+                sourceControllerId: sourcePlayerId,
+                sourceBaseIndex: targetBaseIndex,
+                sourceKind: 'nonAction',
+                reason: 'geeks_felicia_day',
+                now,
+            }));
         }
     }
 
@@ -1328,6 +1335,10 @@ const geeksGrieferDestroyPromptProgram = createPromptProgram<GeeksGrieferPromptC
                 minionDefId: choice.defId!,
                 fromBaseIndex: choice.baseIndex!,
                 destroyerId: context.targetPlayerId,
+                sourcePlayerId: context.targetPlayerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'geeks_griefer',
+                sourceControllerId: context.targetPlayerId,
                 reason: 'geeks_griefer',
                 now: timestamp,
                 sourceKind: 'action',
@@ -1392,6 +1403,10 @@ const geeksGrieferModePromptProgram = createPromptProgram<GeeksGrieferPromptCont
                         minionDefId: choice.defId!,
                         fromBaseIndex: choice.baseIndex!,
                         destroyerId: context.targetPlayerId,
+                        sourcePlayerId: context.targetPlayerId,
+                        sourceCardUid: context.cardUid,
+                        sourceDefId: 'geeks_griefer',
+                        sourceControllerId: context.targetPlayerId,
                         reason: 'geeks_griefer',
                         now: timestamp,
                         sourceKind: 'action',
@@ -1452,6 +1467,10 @@ const geeksGrieferStepProgram = createEffectProgram<GeeksGrieferPromptContext, S
                 minionDefId: choice.defId!,
                 fromBaseIndex: choice.baseIndex!,
                 destroyerId: targetState.targetPlayerId,
+                sourcePlayerId: targetState.targetPlayerId,
+                sourceCardUid: effectiveContext.cardUid,
+                sourceDefId: 'geeks_griefer',
+                sourceControllerId: targetState.targetPlayerId,
                 reason: 'geeks_griefer',
                 now: context.now,
                 sourceKind: 'action',
@@ -1627,6 +1646,10 @@ const geeksBannedListPromptProgram = createPromptProgram<GeeksBannedListPromptCo
                     cardUid: card.uid,
                     defId: card.defId,
                     ownerId: context.targetPlayerId,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.cardUid,
+                    sourceDefId: 'geeks_banned_list',
+                    sourceControllerId: context.playerId,
                     reason: 'geeks_banned_list',
                     now: timestamp,
                     expectedLocation: 'hand',
@@ -2161,16 +2184,14 @@ const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyer
     },
     onResolve: ({ context, state, value, timestamp }) => {
         const sourceAction = getGeeksRulesLawyerSourceAction(state.core, context);
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: context.movedCardUid,
-                defId: context.movedDefId,
-                ownerId: context.movedOwnerId,
-                reason: 'geeks_rules_lawyer',
-            },
-            timestamp,
-        } as any];
+        const events: SmashUpEvent[] = buildValidatedOngoingDetachEvents(state, {
+            cardUid: context.movedCardUid,
+            defId: context.movedDefId,
+            ownerId: context.movedOwnerId,
+            reason: 'geeks_rules_lawyer',
+            now: timestamp,
+        });
+        if (events.length === 0) return { events: [] };
 
         if (context.targetType === 'base') {
             const choice = value as GeeksRulesLawyerBaseChoice | undefined;
@@ -2254,7 +2275,7 @@ const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyer
 });
 
 const geeksFeliciaDayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
-    events: buildGeeksFeliciaDayMoveEvents(ctx.state, ctx.baseIndex, ctx.now),
+    events: buildGeeksFeliciaDayMoveEvents(ctx.state, ctx.playerId, ctx.cardUid, ctx.baseIndex, ctx.now),
 }));
 
 const geeksBannedListProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {

@@ -38,6 +38,7 @@ const isValidErrorCode = (value: unknown): value is GamePackageInstallErrorCode 
     || value === 'file-io'
     || value === 'cancelled'
     || value === 'task-conflict'
+    || value === 'manifest-fetch-failed'
     || value === 'manifest-missing'
     || value === 'notification-permission-required'
     || value === 'unsupported-runtime'

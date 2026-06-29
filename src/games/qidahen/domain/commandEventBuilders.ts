@@ -10,6 +10,7 @@ import { getCurrentFactionId } from './factionTurnAccessors';
 import {
     getQidahenDiplomacySelectionFromInteraction,
     getQidahenDriveTigerConsentSelectionFromInteraction,
+    getQidahenInternalDispatchSelectionFromInteraction,
     getQidahenWheelDispatchSelectionFromInteraction,
 } from './interactionSelectionAccessors';
 import { buildQidahenResolvedCommandEvents } from './resolvedCommandEventBuilders';
@@ -100,6 +101,7 @@ const buildQidahenRegionSelectedEvent = (
             regionId: command.payload.regionId,
             playerId: command.playerId,
             qidahenDiplomacySelection: getQidahenDiplomacySelectionFromInteraction(currentInteraction),
+            qidahenInternalDispatchSelection: getQidahenInternalDispatchSelectionFromInteraction(currentInteraction),
             qidahenWheelDispatchSelection: getQidahenWheelDispatchSelectionFromInteraction(currentInteraction)
                 ?? driveTigerConsentSelection?.dispatchSelection
                 ?? null,
@@ -212,6 +214,7 @@ const buildSingleCommandEvents = <TCommand>(
 const QIDAHEN_COMMAND_EVENT_BUILDERS: readonly QidahenCommandEventBuilderSpec[] = [
     {
         commandTypes: [
+            QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
             QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD,
             QIDAHEN_COMMANDS.RESOLVE_SUN_YUANHUA_TECH,
             QIDAHEN_COMMANDS.RESOLVE_GAO_DI_DISPATCH,

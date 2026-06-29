@@ -18,7 +18,7 @@ function matchesActiveCategory(
         return game.type === 'game';
     }
     if (activeCategory === 'tools') {
-        return game.type === 'tool' || game.category === activeCategory || game.tags?.includes(activeCategory);
+        return game.type === 'tool';
     }
     return game.type === 'game' && (game.category === activeCategory || game.tags?.includes(activeCategory));
 }
@@ -31,8 +31,9 @@ export function sortGamesForLobbyDirectory(
     games: GameConfig[],
     activeCategory: LobbyCategory,
     popularityByGameId: Record<string, number> = {},
+    featuredGameOrder: string[] = FEATURED_GAME_ORDER,
 ) {
-    const priorityById = new Map(FEATURED_GAME_ORDER.map((gameId, index) => [gameId, index]));
+    const priorityById = new Map(featuredGameOrder.map((gameId, index) => [gameId, index]));
     const originalIndexById = new Map(games.map((game, index) => [game.id, index]));
     const normalizedPopularityByGameId = Object.fromEntries(
         Object.entries(popularityByGameId).map(([gameId, duration]) => [gameId.toLowerCase(), duration]),

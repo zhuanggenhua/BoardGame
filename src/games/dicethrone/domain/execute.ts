@@ -43,15 +43,16 @@ import { applyEvents } from './utils';
 import { reduce } from './reducer';
 import type { InteractionDescriptor as PendingInteraction } from './core-types';
 
-import { DICETHRONE_COMMANDS, STATUS_IDS } from './ids';
+import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { executeTokenCommand } from './executeTokens';
-import { getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
+import { getPassiveActionTokenCosts, getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
 import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
+import { isRemovableStatusId } from './statusRemoval';
 import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
@@ -64,6 +65,11 @@ import {
 const resolveTimestamp = (command?: DiceThroneCommand): number => {
     return typeof command?.timestamp === 'number' ? command.timestamp : 0;
 };
+
+const isArtificerNanobotPassiveActivation = (
+    passiveId: string,
+    actionIndex: number,
+): boolean => passiveId === 'artificer-workshop' && (actionIndex === 0 || actionIndex === 1);
 
 const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
     if (!playerId) return false;
@@ -675,9 +681,7 @@ export function execute(
                     const currentStacks = targetPlayer.statusEffects[statusId] ?? 0;
                     if (currentStacks > 0) {
                         // 检查状态是否可被移除
-                        const statusDef = (state.tokenDefinitions ?? []).find(def => def.id === statusId);
-                        const isRemovable = statusDef?.passiveTrigger?.removable ?? true;
-                        if (isRemovable) {
+                        if (isRemovableStatusId(state, statusId)) {
                             const event: StatusRemovedEvent = {
                                 type: 'STATUS_REMOVED',
                                 payload: { targetId: targetPlayerId, statusId, stacks: currentStacks },
@@ -691,9 +695,7 @@ export function execute(
                     const tokenAmount = targetPlayer.tokens[statusId] ?? 0;
                     if (tokenAmount > 0) {
                         // 检查 token 是否可被移除
-                        const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === statusId);
-                        const isRemovable = tokenDef?.passiveTrigger?.removable ?? true;
-                        if (isRemovable) {
+                        if (isRemovableStatusId(state, statusId)) {
                             events.push({
                                 type: 'TOKEN_CONSUMED',
                                 payload: { playerId: targetPlayerId, tokenId: statusId, amount: tokenAmount, newTotal: 0 },
@@ -706,9 +708,7 @@ export function execute(
                     // 移除所有状态（只移除可被移除的）
                     Object.entries(targetPlayer.statusEffects).forEach(([sid, stacks]) => {
                         if (stacks > 0) {
-                            const statusDef = (state.tokenDefinitions ?? []).find(def => def.id === sid);
-                            const isRemovable = statusDef?.passiveTrigger?.removable ?? true;
-                            if (isRemovable) {
+                            if (isRemovableStatusId(state, sid)) {
                                 events.push({
                                     type: 'STATUS_REMOVED',
                                     payload: { targetId: targetPlayerId, statusId: sid, stacks },
@@ -720,9 +720,7 @@ export function execute(
                     });
                     Object.entries(targetPlayer.tokens).forEach(([tid, amount]) => {
                         if (amount > 0) {
-                            const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tid);
-                            const isRemovable = tokenDef?.passiveTrigger?.removable ?? true;
-                            if (isRemovable) {
+                            if (isRemovableStatusId(state, tid)) {
                                 events.push({
                                     type: 'TOKEN_CONSUMED',
                                     payload: { playerId: targetPlayerId, tokenId: tid, amount, newTotal: 0 },
@@ -751,10 +749,7 @@ export function execute(
                 const fromTokens = fromPlayer.tokens[statusId] ?? 0;
                 
                 // 检查是否可被转移（不可移除的 token 也不能被转移）
-                const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === statusId);
-                const isRemovable = tokenDef?.passiveTrigger?.removable ?? true;
-                
-                if (!isRemovable) {
+                if (!isRemovableStatusId(state, statusId)) {
                     // 不可移除的 token 不能被转移，跳过
                     break;
                 }
@@ -959,9 +954,7 @@ export function execute(
                 const targetPlayer = state.players[targetPlayerId];
                 Object.entries(targetPlayer.statusEffects).forEach(([statusId, stacks], statusIndex) => {
                     if (stacks <= 0) return;
-                    const statusDef = (state.tokenDefinitions ?? []).find(def => def.id === statusId);
-                    const isRemovable = statusDef?.passiveTrigger?.removable ?? true;
-                    if (!isRemovable) return;
+                    if (!isRemovableStatusId(state, statusId)) return;
                     events.push({
                         type: 'STATUS_REMOVED',
                         payload: { targetId: targetPlayerId, statusId, stacks },
@@ -972,9 +965,7 @@ export function execute(
 
                 Object.entries(targetPlayer.tokens).forEach(([tokenId, amount], tokenIndex) => {
                     if (amount <= 0) return;
-                    const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
-                    const isRemovable = tokenDef?.passiveTrigger?.removable ?? true;
-                    if (!isRemovable) return;
+                    if (!isRemovableStatusId(state, tokenId)) return;
                     events.push({
                         type: 'TOKEN_CONSUMED',
                         payload: { playerId: targetPlayerId, tokenId, amount, newTotal: 0 },
@@ -1053,16 +1044,19 @@ export function execute(
                 });
             }
 
-            // 扣除 Token 成本（如树精的幼种/木苗树灵/生命源泉）
-            if (action.tokenCost) {
-                const currentTokenAmount = player.tokens[action.tokenCost.tokenId] ?? 0;
+            // 扣除 Token 成本（如树精的幼种/木苗树灵/生命源泉、工匠合成器）
+            const passiveTokenCosts = getPassiveActionTokenCosts(action).filter((tokenCost) => (
+                !isArtificerNanobotPassiveActivation(passiveId, actionIndex) || tokenCost.tokenId !== TOKEN_IDS.NANOBOT
+            ));
+            for (const tokenCost of passiveTokenCosts) {
+                const currentTokenAmount = player.tokens[tokenCost.tokenId] ?? 0;
                 events.push({
                     type: 'TOKEN_CONSUMED',
                     payload: {
                         playerId: command.playerId,
-                        tokenId: action.tokenCost.tokenId,
-                        amount: action.tokenCost.amount,
-                        newTotal: Math.max(0, currentTokenAmount - action.tokenCost.amount),
+                        tokenId: tokenCost.tokenId,
+                        amount: tokenCost.amount,
+                        newTotal: Math.max(0, currentTokenAmount - tokenCost.amount),
                         sourceAbilityId: passiveId,
                     },
                     sourceCommandType: command.type,

@@ -391,29 +391,6 @@ describe('脑震荡 (Concussion) 跳过收入', () => {
 });
 
 // ============================================================================
-// 眩晕 (Stun) — 进入 offensiveRoll 时跳过并自动移除
-// ============================================================================
-
-describe('眩晕 (Stun) 进入 offensiveRoll', () => {
-    it('有 stun 时进入 offensiveRoll 阶段会被跳过并自动移除', () => {
-        const runner = createRunner(fixedRandom);
-        const result = runner.run({
-            name: 'stun 跳过 offensiveRoll',
-            commands: [
-                cmd('ADVANCE_PHASE', '1'), // upkeep -> income
-                cmd('ADVANCE_PHASE', '1'), // income -> main1
-                cmd('ADVANCE_PHASE', '1'), // main1 -> offensiveRoll（被 stun 跳过）
-            ],
-            setup: createSetupAtPlayer1Upkeep([
-                { playerId: '1', statusId: STATUS_IDS.STUN, stacks: 1 },
-            ]),
-        });
-        const core = result.finalState.core;
-        expect(core.players['1'].statusEffects[STATUS_IDS.STUN] ?? 0).toBe(0);
-    });
-});
-
-// ============================================================================
 // 圣骑士 神圣祝福 (Blessing of Divinity) — custom action
 // ============================================================================
 

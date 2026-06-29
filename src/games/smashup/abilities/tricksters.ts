@@ -8,7 +8,7 @@ import { registerAbility, registerAbilityProgram } from '../domain/abilityRegist
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter,
-    destroyMinion,
+    buildValidatedDestroyEvents,
     getMinionPower,
     buildMinionTargetOptions,
     grantContextualExtraMinion,
@@ -22,7 +22,6 @@ import { SU_EVENTS } from '../domain/types';
 import type {
     CardInstance,
     CardsDiscardedEvent,
-    OngoingDetachedEvent,
     SmashUpEvent,
     PowerCounterAddedEvent,
     BreakpointModifiedEvent,
@@ -36,6 +35,7 @@ import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { reduce } from '../domain/reduce';
+import { buildOngoingDetachedEvent, buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -188,20 +188,17 @@ const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptCont
             },
         );
     },
-    onResolve: ({ value, timestamp }) => {
+    onResolve: ({ state, value, timestamp }) => {
         const selected = value as { cardUid?: string; defId?: string; ownerId?: string } | undefined;
         if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: selected.cardUid,
-                    defId: selected.defId,
-                    ownerId: selected.ownerId,
-                    reason: 'trickster_disenchant',
-                },
-                timestamp,
-            } as OngoingDetachedEvent],
+            events: buildValidatedOngoingDetachEvents(state, {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: selected.ownerId,
+                reason: 'trickster_disenchant',
+                now: timestamp,
+            }),
         };
     },
 });
@@ -564,7 +561,17 @@ const tricksterHideoutPodDestroyPromptProgram = createPromptProgram<TricksterHid
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [destroyMinion(target.uid, target.defId, selected.baseIndex, target.owner, playerId, 'trickster_hideout_pod', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: playerId,
+                reason: 'trickster_hideout_pod',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'trickster_hideout_pod',
+                sourceControllerId: playerId,
+            }),
         };
     },
 });
@@ -778,11 +785,13 @@ const tricksterPixiePodActionDestroyPromptProgram = createPromptProgram<Trickste
         const selected = value as { cardUid?: string; defId?: string; ownerId?: string } | undefined;
         if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
 
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'trickster_pixie_pod_action' },
-            timestamp,
-        } as OngoingDetachedEvent];
+        const events: SmashUpEvent[] = buildValidatedOngoingDetachEvents(state, {
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: selected.ownerId,
+            reason: 'trickster_pixie_pod_action',
+            now: timestamp,
+        });
 
         const nextOptions = buildTricksterControlledMinionOptions(state.core, playerId);
         if (nextOptions.length === 0) {
@@ -917,7 +926,19 @@ const tricksterGnomePromptProgram = createPromptProgram<TricksterGnomePromptCont
         if (!target) return { events: [] };
 
         return {
-            events: [destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'trickster_gnome', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: context.baseIndex,
+                destroyerId: playerId,
+                reason: 'trickster_gnome',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'trickster_gnome',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.baseIndex,
+            }),
         };
     },
 });
@@ -958,7 +979,19 @@ const tricksterGnomePodPromptProgram = createPromptProgram<TricksterGnomePromptC
         if (!target) return { events: [] };
 
         return {
-            events: [destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'trickster_gnome_pod', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: context.baseIndex,
+                destroyerId: playerId,
+                reason: 'trickster_gnome_pod',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'trickster_gnome_pod',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.baseIndex,
+            }),
         };
     },
 });
@@ -1320,19 +1353,19 @@ function registerTricksterOngoingEffects(): void {
             // 检查打出的随从力量是否低于 leprechaun
             const leprechaunPower = getMinionPower(trigCtx.state, leprechaun, baseIndex);
             if (triggerPower < leprechaunPower) {
-                return [{
-                    type: SU_EVENTS.MINION_DESTROYED,
-                    payload: {
-                        minionUid: trigCtx.triggerMinionUid,
-                        minionDefId: trigCtx.triggerMinionDefId,
-                        fromBaseIndex: baseIndex,
-                        ownerId: triggerMinion.owner,
-                        controllerId: triggerMinion.controller,
-                        destroyerId: leprechaun.controller,
-                        reason: 'trickster_leprechaun',
-                    },
-                    timestamp: trigCtx.now,
-                }];
+                return buildValidatedDestroyEvents(trigCtx.state, {
+                    minionUid: trigCtx.triggerMinionUid,
+                    minionDefId: trigCtx.triggerMinionDefId,
+                    fromBaseIndex: baseIndex,
+                    destroyerId: leprechaun.controller,
+                    reason: 'trickster_leprechaun',
+                    now: trigCtx.now,
+                    sourcePlayerId: leprechaun.controller,
+                    sourceCardUid: leprechaun.uid,
+                    sourceDefId: leprechaun.defId,
+                    sourceControllerId: leprechaun.controller,
+                    sourceBaseIndex: baseIndex,
+                });
             }
         }
         return [];
@@ -1404,30 +1437,35 @@ function registerTricksterOngoingEffects(): void {
         if (!trap) return [];
         const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
         if (controllerId === trigCtx.playerId) return [];
-        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
         return [
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: trigCtx.triggerMinionUid,
-                    minionDefId: trigCtx.triggerMinionDefId,
-                    fromBaseIndex: trigCtx.baseIndex,
-                    ownerId: triggerMinion?.owner ?? trigCtx.playerId,
-                    controllerId: triggerMinion?.controller ?? trigCtx.playerId,
-                    destroyerId: controllerId,
-                    reason: 'trickster_flame_trap',
+            ...buildValidatedDestroyEvents(trigCtx.state, {
+                minionUid: trigCtx.triggerMinionUid,
+                minionDefId: trigCtx.triggerMinionDefId,
+                fromBaseIndex: trigCtx.baseIndex,
+                destroyerId: controllerId,
+                reason: 'trickster_flame_trap',
+                now: trigCtx.now,
+                sourcePlayerId: controllerId,
+                sourceCardUid: trap.uid,
+                sourceDefId: trap.defId,
+                sourceControllerId: controllerId,
+                sourceBaseIndex: trigCtx.baseIndex,
+                targetSnapshot: {
+                    ownerId: trigCtx.triggerMinion?.owner ?? trigCtx.playerId,
+                    controllerId: trigCtx.triggerMinion?.controller ?? trigCtx.playerId,
+                    attachedActions: trigCtx.triggerMinion?.attachedActions,
+                    metadata: trigCtx.triggerMinion?.metadata,
+                    playedThisTurn: trigCtx.triggerMinion?.playedThisTurn ?? true,
                 },
-                timestamp: trigCtx.now,
-            },
+            }),
             {
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
+                ...buildOngoingDetachedEvent({
                     cardUid: trap.uid,
                     defId: trap.defId,
                     ownerId: trap.ownerId,
                     reason: 'trickster_flame_trap_self_destruct',
-                },
-                timestamp: trigCtx.now,
+                    now: trigCtx.now,
+                }),
             },
         ];
     }, {
@@ -1532,19 +1570,19 @@ function registerTricksterPodOngoingEffects(): void {
             const playedPower = getMinionPower(trigCtx.state, playedMinion, baseIndex);
             if (playedPower >= lepPower) continue;
 
-            events.push({
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: playedMinion.uid,
-                    minionDefId: playedMinion.defId,
-                    fromBaseIndex: baseIndex,
-                    ownerId: playedMinion.owner,
-                    controllerId: playedMinion.controller,
-                    destroyerId: lep.controller,
-                    reason: 'trickster_leprechaun_pod',
-                },
-                timestamp: trigCtx.now,
-            });
+            events.push(...buildValidatedDestroyEvents(trigCtx.state, {
+                minionUid: playedMinion.uid,
+                minionDefId: playedMinion.defId,
+                fromBaseIndex: baseIndex,
+                destroyerId: lep.controller,
+                reason: 'trickster_leprechaun_pod',
+                now: trigCtx.now,
+                sourcePlayerId: lep.controller,
+                sourceCardUid: lep.uid,
+                sourceDefId: lep.defId,
+                sourceControllerId: lep.controller,
+                sourceBaseIndex: baseIndex,
+            }));
             events.push({
                 type: SU_EVENTS.MINION_METADATA_UPDATED,
                 payload: {
@@ -1652,26 +1690,34 @@ function registerTricksterPodOngoingEffects(): void {
         if (!trap) return [];
         const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
         if (controllerId === trigCtx.playerId) return [];
-        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
         return [
-            {
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: trap.uid, defId: trap.defId, ownerId: trap.ownerId, reason: 'trickster_flame_trap_pod' },
-                timestamp: trigCtx.now,
-            } as OngoingDetachedEvent,
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: trigCtx.triggerMinionUid,
-                    minionDefId: trigCtx.triggerMinionDefId,
-                    fromBaseIndex: bi,
-                    ownerId: triggerMinion?.owner ?? trigCtx.playerId,
-                    controllerId: triggerMinion?.controller ?? trigCtx.playerId,
-                    destroyerId: controllerId,
-                    reason: 'trickster_flame_trap_pod',
+            buildOngoingDetachedEvent({
+                cardUid: trap.uid,
+                defId: trap.defId,
+                ownerId: trap.ownerId,
+                reason: 'trickster_flame_trap_pod',
+                now: trigCtx.now,
+            }),
+            ...buildValidatedDestroyEvents(trigCtx.state, {
+                minionUid: trigCtx.triggerMinionUid,
+                minionDefId: trigCtx.triggerMinionDefId,
+                fromBaseIndex: bi,
+                destroyerId: controllerId,
+                reason: 'trickster_flame_trap_pod',
+                now: trigCtx.now,
+                sourcePlayerId: controllerId,
+                sourceCardUid: trap.uid,
+                sourceDefId: trap.defId,
+                sourceControllerId: controllerId,
+                sourceBaseIndex: bi,
+                targetSnapshot: {
+                    ownerId: trigCtx.triggerMinion?.owner ?? trigCtx.playerId,
+                    controllerId: trigCtx.triggerMinion?.controller ?? trigCtx.playerId,
+                    attachedActions: trigCtx.triggerMinion?.attachedActions,
+                    metadata: trigCtx.triggerMinion?.metadata,
+                    playedThisTurn: trigCtx.triggerMinion?.playedThisTurn ?? true,
                 },
-                timestamp: trigCtx.now,
-            },
+            }),
         ];
     }, {
         canTrigger: (ctx) => canTriggerTricksterBaseOngoingAgainstOtherPlayer(ctx, 'trickster_flame_trap_pod', {

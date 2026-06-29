@@ -6,7 +6,7 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, addTempPower, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedMoveEvents } from '../domain/abilityHelpers';
+import { addTempPower, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedDestroyEvents, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import type { SmashUpEvent, MinionCardDef, SmashUpCore } from '../domain/types';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
@@ -69,6 +69,8 @@ type PirateBuccaneerMovePromptContext = PiratePromptContext & {
     minionUid: string;
     minionDefId: string;
     fromBaseIndex: number;
+    ownerId?: string;
+    controllerId?: string;
 };
 
 type PirateKingMoveEntry = {
@@ -89,6 +91,8 @@ type PirateFirstMateChooseBasePromptContext = PiratePromptContext & {
     mateDefId: string;
     mateBaseIndex?: number;
     scoringBaseIndex: number;
+    ownerId?: string;
+    controllerId?: string;
 };
 
 function createPiratePromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
@@ -331,29 +335,57 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
     }
     // 无其他基地可移→正常消灭
     if (candidates.length === 0) return [];
+    const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
+    const ownerId = minion?.owner ?? ctx.triggerMinion?.owner ?? ctx.playerId;
+    const controllerId = minion?.controller ?? ctx.triggerMinion?.controller ?? ctx.playerId;
 
     // 只有一个基地时自动移动（无需交互）
     if (candidates.length === 1) {
         const reason = isPod ? 'pirate_buccaneer_pod' : 'pirate_buccaneer';
-        return [moveMinion(triggerMinionUid, triggerMinionDefId, baseIndex, candidates[0].baseIndex, reason, ctx.now)];
+        return buildValidatedMoveEvents(state, {
+            minionUid: triggerMinionUid,
+            minionDefId: triggerMinionDefId,
+            fromBaseIndex: baseIndex,
+            toBaseIndex: candidates[0].baseIndex,
+            reason,
+            now: ctx.now,
+            sourcePlayerId: controllerId,
+            sourceDefId: triggerMinionDefId,
+            sourceControllerId: controllerId,
+            sourceBaseIndex: baseIndex,
+            sourceKind: 'nonAction',
+            targetSnapshot: { ownerId, controllerId },
+        });
     }
 
     // 多个基地→创建玩家选择交互
     if (!ctx.matchState) {
         // 无 matchState 降级：自动选第一个
         const reason = isPod ? 'pirate_buccaneer_pod' : 'pirate_buccaneer';
-        return [moveMinion(triggerMinionUid, triggerMinionDefId, baseIndex, candidates[0].baseIndex, reason, ctx.now)];
-    }
-
-    const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
-    const ownerId = minion?.controller ?? ctx.playerId;
-
-    const result = executeAbilityProgram(
-        pirateBuccaneerMovePromptProgram,
-        createPiratePromptContext(ctx.matchState, ownerId, ctx.now, {
+        return buildValidatedMoveEvents(state, {
             minionUid: triggerMinionUid,
             minionDefId: triggerMinionDefId,
             fromBaseIndex: baseIndex,
+            toBaseIndex: candidates[0].baseIndex,
+            reason,
+            now: ctx.now,
+            sourcePlayerId: controllerId,
+            sourceDefId: triggerMinionDefId,
+            sourceControllerId: controllerId,
+            sourceBaseIndex: baseIndex,
+            sourceKind: 'nonAction',
+            targetSnapshot: { ownerId, controllerId },
+        });
+    }
+
+    const result = executeAbilityProgram(
+        pirateBuccaneerMovePromptProgram,
+        createPiratePromptContext(ctx.matchState, controllerId, ctx.now, {
+            minionUid: triggerMinionUid,
+            minionDefId: triggerMinionDefId,
+            fromBaseIndex: baseIndex,
+            ownerId,
+            controllerId,
         }),
     );
     return { events: result.events, matchState: result.matchState ?? ctx.matchState };
@@ -395,14 +427,19 @@ function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerR
 
     // 无 matchState 时回退自动移动
     if (!ctx.matchState) {
-        return orderedKings.map(k => moveMinion(
-            k.uid,
-            k.defId,
-            k.fromBaseIndex,
-            scoringBaseIndex,
-            k.defId === 'pirate_king_pod' ? 'pirate_king_pod' : 'pirate_king',
-            ctx.now
-        ));
+        return orderedKings.flatMap((k) => buildValidatedMoveEvents(ctx.state, {
+            minionUid: k.uid,
+            minionDefId: k.defId,
+            fromBaseIndex: k.fromBaseIndex,
+            toBaseIndex: scoringBaseIndex,
+            reason: k.defId === 'pirate_king_pod' ? 'pirate_king_pod' : 'pirate_king',
+            now: ctx.now,
+            sourcePlayerId: k.controller,
+            sourceDefId: k.defId,
+            sourceControllerId: k.controller,
+            sourceBaseIndex: k.fromBaseIndex,
+            sourceKind: 'nonAction',
+        }));
     }
 
     // 链式处理每个海盗王：创建确认交互（发送给各 king 的 controller）
@@ -446,17 +483,24 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
     if (otherBases.length === 0) return [];
 
     const controllerId = mate?.controller ?? ctx.sourceControllerId ?? ctx.playerId;
+    const ownerId = mate?.owner ?? ctx.triggerMinion?.owner ?? controllerId;
 
     // 无 matchState 时回退自动移动 first_mate 自身到第一个可用基地
     if (!ctx.matchState) {
-        return [moveMinion(
-            mateUid,
-            mateDefId,
-            mateBaseIndex,
-            otherBases[0].index,
-            mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
-            ctx.now
-        )];
+        return buildValidatedMoveEvents(ctx.state, {
+            minionUid: mateUid,
+            minionDefId: mateDefId,
+            fromBaseIndex: mateBaseIndex,
+            toBaseIndex: otherBases[0].index,
+            reason: mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
+            now: ctx.now,
+            sourcePlayerId: controllerId,
+            sourceDefId: mateDefId,
+            sourceControllerId: controllerId,
+            sourceBaseIndex: mateBaseIndex,
+            sourceKind: 'nonAction',
+            targetSnapshot: { ownerId, controllerId },
+        });
     }
 
     const result = executeAbilityProgram(
@@ -466,6 +510,8 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
             mateDefId,
             mateBaseIndex,
             scoringBaseIndex,
+            ownerId,
+            controllerId,
         }),
     );
     return { events: result.events, matchState: result.matchState ?? ctx.matchState };
@@ -589,7 +635,20 @@ const pirateSaucyWenchPromptProgram = createPromptProgram<PiratePromptContext & 
         const base = state.core.bases[selected.baseIndex];
         const target = base?.minions.find(m => m.uid === selected.minionUid);
         if (!target) return { events: [] };
-        return { events: [destroyMinion(target.uid, target.defId, selected.baseIndex, target.owner, playerId, 'pirate_saucy_wench', timestamp)] };
+        return {
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: playerId,
+                reason: 'pirate_saucy_wench',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'pirate_saucy_wench',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
+            }),
+        };
     },
 });
 
@@ -618,7 +677,7 @@ const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroad
             { sourceId: 'pirate_broadside_choose_player', targetType: 'player', autoResolveIfSingle: false, titleKey: 'ui.pirate_broadside_choose_player_title' },
         );
     },
-    onResolve: ({ state, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, timestamp }) => {
         const { baseIndex, targetPlayerId } = value as { baseIndex?: number; targetPlayerId?: string };
         if (baseIndex === undefined || !targetPlayerId) return { events: [] };
         const base = state.core.bases[baseIndex];
@@ -626,7 +685,18 @@ const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroad
         const events: SmashUpEvent[] = [];
         for (const minion of base.minions) {
             if (minion.controller === targetPlayerId && getMinionPower(state.core, minion, baseIndex) <= 2) {
-                events.push(destroyMinion(minion.uid, minion.defId, baseIndex, minion.owner, targetPlayerId, 'pirate_broadside', timestamp));
+                events.push(...buildValidatedDestroyEvents(state, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: baseIndex,
+                    destroyerId: targetPlayerId,
+                    reason: 'pirate_broadside',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'pirate_broadside',
+                    sourceControllerId: playerId,
+                    sourceKind: 'action',
+                }));
             }
         }
         return { events };
@@ -643,13 +713,21 @@ const pirateBroadsideChooseBasePromptProgram = createPromptProgram<PiratePromptC
             const baseDef = getBaseDef(context.matchState.core.bases[i].defId);
             candidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
         }
-        return createAbilityRuntimeSimpleChoice(
+        const title = '选择一个你有随从的基地';
+        const interaction = createAbilityRuntimeSimpleChoice(
             `pirate_broadside_choose_base_${context.now}`,
             context.playerId,
-            '选择一个你有随从的基地',
+            title,
             buildBaseTargetOptions(candidates, context.matchState.core),
             { sourceId: 'pirate_broadside_choose_base', targetType: 'base', autoResolveIfSingle: false, titleKey: 'ui.pirate_broadside_choose_base_title' },
         );
+        return {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                title,
+            },
+        };
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
         const { baseIndex } = value as { baseIndex?: number };
@@ -698,7 +776,20 @@ const pirateCannonChooseSecondPromptProgram = createPromptProgram<PirateCannonSe
         const base = state.core.bases[selected.baseIndex];
         const target = base?.minions.find(m => m.uid === selected.minionUid);
         if (!target) return { events: [] };
-        return { events: [destroyMinion(target.uid, target.defId, selected.baseIndex, target.owner, playerId, 'pirate_cannon', timestamp)] };
+        return {
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: playerId,
+                reason: 'pirate_cannon',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'pirate_cannon',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
+            }),
+        };
     },
 });
 
@@ -733,7 +824,18 @@ const pirateCannonChooseFirstPromptProgram = createPromptProgram<PiratePromptCon
         const target = base?.minions.find(m => m.uid === minionUid);
         if (!target) return { events: [] };
 
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'pirate_cannon', timestamp)];
+        const events: SmashUpEvent[] = buildValidatedDestroyEvents(state, {
+            minionUid: target.uid,
+            minionDefId: target.defId,
+            fromBaseIndex: baseIndex,
+            destroyerId: playerId,
+            reason: 'pirate_cannon',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'pirate_cannon',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
+        });
         let remainingCount = 0;
         for (let i = 0; i < state.core.bases.length; i += 1) {
             for (const minion of state.core.bases[i].minions) {
@@ -770,7 +872,20 @@ const pirateShanghaiChooseBasePromptProgram = createPromptProgram<PirateMoveBase
     onResolve: ({ context, value, timestamp }) => {
         const { baseIndex } = value as { baseIndex?: number };
         if (baseIndex === undefined) return { events: [] };
-        return { events: [moveMinion(context.minionUid, context.minionDefId, context.fromBaseIndex, baseIndex, 'pirate_shanghai', timestamp)] };
+        return {
+            events: buildValidatedMoveEvents(context.matchState, {
+                minionUid: context.minionUid,
+                minionDefId: context.minionDefId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: baseIndex,
+                reason: 'pirate_shanghai',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'pirate_shanghai',
+                sourceControllerId: context.playerId,
+                sourceKind: 'action',
+            }),
+        };
     },
 });
 
@@ -868,6 +983,11 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
                         toBaseIndex: destBase,
                         reason: 'pirate_sea_dogs',
                         now: timestamp,
+                        sourcePlayerId: context.playerId,
+                        sourceDefId: 'pirate_sea_dogs',
+                        sourceControllerId: context.playerId,
+                        sourceBaseIndex: context.fromBase,
+                        sourceKind: 'action',
                     }),
                 },
             ).events,
@@ -990,7 +1110,20 @@ const pirateDinghySecondChooseBasePromptProgram = createPromptProgram<PirateMove
     onResolve: ({ context, value, timestamp }) => {
         const { baseIndex } = value as { baseIndex?: number };
         if (baseIndex === undefined) return { events: [] };
-        return { events: [moveMinion(context.minionUid, context.minionDefId, context.fromBaseIndex, baseIndex, 'pirate_dinghy', timestamp)] };
+        return {
+            events: buildValidatedMoveEvents(context.matchState, {
+                minionUid: context.minionUid,
+                minionDefId: context.minionDefId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: baseIndex,
+                reason: 'pirate_dinghy',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'pirate_dinghy',
+                sourceControllerId: context.playerId,
+                sourceKind: 'action',
+            }),
+        };
     },
 });
 
@@ -1059,7 +1192,18 @@ const pirateDinghyFirstChooseBasePromptProgram = createPromptProgram<PirateMoveB
     onResolve: ({ state, playerId, context, value, timestamp }) => {
         const { baseIndex } = value as { baseIndex?: number };
         if (baseIndex === undefined) return { events: [] };
-        const events: SmashUpEvent[] = [moveMinion(context.minionUid, context.minionDefId, context.fromBaseIndex, baseIndex, 'pirate_dinghy', timestamp)];
+        const events: SmashUpEvent[] = buildValidatedMoveEvents(state, {
+            minionUid: context.minionUid,
+            minionDefId: context.minionDefId,
+            fromBaseIndex: context.fromBaseIndex,
+            toBaseIndex: baseIndex,
+            reason: 'pirate_dinghy',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'pirate_dinghy',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
+        });
         let remainingCount = 0;
         for (let i = 0; i < state.core.bases.length; i += 1) {
             for (const minion of state.core.bases[i].minions) {
@@ -1147,11 +1291,33 @@ const piratePowderkegPromptProgram = createPromptProgram<PiratePromptContext, Sm
         const minion = base?.minions.find(m => m.uid === minionUid);
         if (!minion) return { events: [] };
         const power = getMinionPower(state.core, minion, baseIndex);
-        const events: SmashUpEvent[] = [destroyMinion(minion.uid, minion.defId, baseIndex, minion.owner, playerId, 'pirate_powderkeg', timestamp)];
+        const events: SmashUpEvent[] = buildValidatedDestroyEvents(state, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: baseIndex,
+            destroyerId: playerId,
+            reason: 'pirate_powderkeg',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'pirate_powderkeg',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
+        });
         for (const other of base.minions) {
             if (other.uid === minionUid) continue;
             if (getMinionPower(state.core, other, baseIndex) <= power) {
-                events.push(destroyMinion(other.uid, other.defId, baseIndex, other.owner, playerId, 'pirate_powderkeg', timestamp));
+                events.push(...buildValidatedDestroyEvents(state, {
+                    minionUid: other.uid,
+                    minionDefId: other.defId,
+                    fromBaseIndex: baseIndex,
+                    destroyerId: playerId,
+                    reason: 'pirate_powderkeg',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'pirate_powderkeg',
+                    sourceControllerId: playerId,
+                    sourceKind: 'action',
+                }));
             }
         }
         return { events };
@@ -1178,9 +1344,18 @@ const pirateFullSailChooseBasePromptProgram = createPromptProgram<PirateFullSail
     onResolve: ({ state, context, value, playerId, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
         if (selected?.baseIndex === undefined) return { events: [] };
-        const events: SmashUpEvent[] = [
-            moveMinion(context.minionUid, context.minionDefId, context.fromBaseIndex, selected.baseIndex, 'pirate_full_sail', timestamp),
-        ];
+        const events: SmashUpEvent[] = buildValidatedMoveEvents(state, {
+            minionUid: context.minionUid,
+            minionDefId: context.minionDefId,
+            fromBaseIndex: context.fromBaseIndex,
+            toBaseIndex: selected.baseIndex,
+            reason: 'pirate_full_sail',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'pirate_full_sail',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
+        });
         const newMovedUids = [...context.movedUids, context.minionUid];
         const nextInteraction = buildFullSailChooseMinionInteraction(state.core, playerId, timestamp, newMovedUids);
         if (!nextInteraction) return { events };
@@ -1265,18 +1440,26 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
         const minionUid = context?.minionUid ?? selected?.minionUid;
         const minionDefId = context?.minionDefId ?? selected?.minionDefId;
         const fromBaseIndex = context?.fromBaseIndex ?? selected?.fromBaseIndex;
+        const fallbackPlayerId = context?.playerId ?? state.sys.interaction?.current?.playerId;
         if (!minionUid || !minionDefId || fromBaseIndex === undefined) return { events: [] };
         return {
-            events: [
-                moveMinion(
-                    minionUid,
-                    minionDefId,
-                    fromBaseIndex,
-                    resolvedToBaseIndex,
-                    minionDefId === 'pirate_buccaneer_pod' ? 'pirate_buccaneer_pod' : 'pirate_buccaneer',
-                    timestamp,
-                ),
-            ],
+            events: buildValidatedMoveEvents(state, {
+                minionUid,
+                minionDefId,
+                fromBaseIndex,
+                toBaseIndex: resolvedToBaseIndex,
+                reason: minionDefId === 'pirate_buccaneer_pod' ? 'pirate_buccaneer_pod' : 'pirate_buccaneer',
+                now: timestamp,
+                sourcePlayerId: fallbackPlayerId ?? '',
+                sourceDefId: minionDefId,
+                sourceControllerId: fallbackPlayerId ?? '',
+                sourceBaseIndex: fromBaseIndex,
+                sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: context?.ownerId ?? fallbackPlayerId,
+                    controllerId: context?.controllerId ?? fallbackPlayerId,
+                },
+            }),
         };
     },
 });
@@ -1317,14 +1500,19 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
         );
         if (selected?.move) {
             if (!current) return { events: [] };
-            events.push(moveMinion(
-                current.uid,
-                current.defId,
-                current.fromBaseIndex,
-                context.scoringBaseIndex,
-                current.defId === 'pirate_king_pod' ? 'pirate_king_pod' : 'pirate_king',
-                timestamp,
-            ));
+            events.push(...buildValidatedMoveEvents(state, {
+                minionUid: current.uid,
+                minionDefId: current.defId,
+                fromBaseIndex: current.fromBaseIndex,
+                toBaseIndex: context.scoringBaseIndex,
+                reason: current.defId === 'pirate_king_pod' ? 'pirate_king_pod' : 'pirate_king',
+                now: timestamp,
+                sourcePlayerId: current.controller,
+                sourceDefId: current.defId,
+                sourceControllerId: current.controller,
+                sourceBaseIndex: current.fromBaseIndex,
+                sourceKind: 'nonAction',
+            }));
         }
         if (context.remaining.length === 0) return { events };
         return {
@@ -1390,14 +1578,23 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
         const mateDefId = locatedMate?.minion.defId ?? context.mateDefId;
 
         if (fromBaseIndex !== undefined && fromBaseIndex !== destBase) {
-            events.push(moveMinion(
-                context.mateUid,
-                mateDefId,
+            events.push(...buildValidatedMoveEvents(state, {
+                minionUid: context.mateUid,
+                minionDefId: mateDefId,
                 fromBaseIndex,
-                destBase,
-                context.mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
-                timestamp,
-            ));
+                toBaseIndex: destBase,
+                reason: context.mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.mateDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: fromBaseIndex,
+                sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: context.ownerId ?? context.playerId,
+                    controllerId: context.controllerId ?? context.playerId,
+                },
+            }));
         }
 
         return { events };

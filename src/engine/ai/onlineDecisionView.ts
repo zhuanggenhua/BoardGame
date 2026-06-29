@@ -192,6 +192,51 @@ function hasSharedHiddenInteractionBlocker(state: MatchState<unknown> | null | u
         && interaction?.isBlocked === true;
 }
 
+function buildCurrentInteractionOptionSignature(
+    state: MatchState<unknown> | null | undefined,
+): string | null {
+    const current = (state?.sys?.interaction as {
+        current?: {
+            data?: {
+                options?: unknown;
+            } | null;
+        } | null;
+    } | undefined)?.current;
+    const options = Array.isArray(current?.data?.options)
+        ? current.data.options
+        : null;
+    if (!options) {
+        return null;
+    }
+
+    return options
+        .map((option) => {
+            const optionId = typeof (option as { id?: unknown } | null | undefined)?.id === 'string'
+                ? (option as { id: string }).id
+                : '';
+            const disabledFlag = (option as { disabled?: unknown } | null | undefined)?.disabled === true
+                ? '1'
+                : '0';
+            return `${optionId}:${disabledFlag}`;
+        })
+        .join(',');
+}
+
+function hasCompatibleCurrentInteractionOptions(args: {
+    sharedState: MatchState<unknown>;
+    privateOverlay: MatchState<unknown>;
+}): boolean {
+    const sharedSignature = buildCurrentInteractionOptionSignature(args.sharedState);
+    const privateSignature = buildCurrentInteractionOptionSignature(args.privateOverlay);
+    if (sharedSignature === null && privateSignature === null) {
+        return true;
+    }
+    if (sharedSignature === null || privateSignature === null) {
+        return false;
+    }
+    return sharedSignature === privateSignature;
+}
+
 function resolveResponseWindowCurrent(state: MatchState<unknown> | null | undefined): {
     id: string | null;
     windowType: string | null;
@@ -297,7 +342,7 @@ function isPrivateOverlayFreshEnough(args: {
 
     const sharedPhase = resolveStatePhase(args.sharedState);
     const privatePhase = resolveStatePhase(args.privateOverlay);
-    if (!sharedPhase || !privatePhase || sharedPhase !== privatePhase) {
+    if (sharedPhase !== privatePhase) {
         return false;
     }
 
@@ -322,6 +367,12 @@ function shouldPreferSeatSnapshotForSharedVisibility(args: {
     const sharedInteractionId = resolveInteractionId(args.sharedState);
     const seatInteractionId = resolveInteractionId(args.privateOverlay);
     if (!sharedInteractionId || !seatInteractionId || sharedInteractionId !== seatInteractionId) {
+        return false;
+    }
+    if (!hasCompatibleCurrentInteractionOptions({
+        sharedState: args.sharedState,
+        privateOverlay: args.privateOverlay,
+    })) {
         return false;
     }
 

@@ -5,6 +5,7 @@
 ## 结论先说
 
 - OTA：默认不改 `package.json.version`
+- OTA 新旧判断：客户端按单调递增的 OTA 内部游标判断；`publishedAt` 只用于审计和展示
 - 所有 OTA channel 默认面向**所有已安装版本**；不再按原生版本写 `target/min/max` 门禁
 - 如果需要客户端拿到更新后立即切换新 bundle，显式传 `--force-update`
 - 原生 APK：建议发版时用 `--bump patch|minor|major` 自动更新版本
@@ -30,6 +31,7 @@ node scripts/mobile/release-android.mjs ota --channel stable
 说明：
 - OTA manifest 不再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`
 - 当前项目规则是“所有版本都必须更新”，禁止再发“只给某个原生版本”的 OTA
+- 如需修复曾经误发过高 bundle 版本号的旧客户端，使用桥接游标，例如 `--ota-version-base 6.0.0` 或显式 `--version 6.0.0-ota-bridge-...`
 - 如需更新后立即切换 bundle，可显式传 `--force-update`
 - 若误传原生版本兼容参数，脚本会直接失败，防止再次误发
 
@@ -87,10 +89,12 @@ node scripts/mobile/release-android.mjs full --channel stable --with-packages --
 
 OTA：
 
-- 默认版本形如 `0.5.1-ota-2026-04-05T08-28-06-621Z`
-- 无论走本地脚本还是 GitHub Actions，这个正式命名口径都必须保持一致；未经明确要求，不得擅自改成 `gha-*`、run number 或其他临时别名
-- 这是 bundle 版本，不回写仓库版本文件
-- 这样做的目的，是避免每次发一个 H5 热更新都污染原生版本号
+- `version` 是 bundle 内部游标，不回写仓库版本文件；默认形如 `0.6.0-ota-2026-06-16T01-22-25-293Z`。
+- `publishedAt` 是发布时间元数据，只用于审计和展示，不作为客户端升级主判断。
+- `--expected-base-version` 仍必须等于 `package.json.version`，用于防止拿错 ref 或拿错产品基线。
+- `--ota-version-base` 只影响内部游标生成，可与产品版本解耦。遇到旧客户端已经记住 `5.9.0` 这类错误大版本时，发一次 `6.0.0-ota-...` 桥接包，旧逻辑才能收到；后续发布继续让内部游标单调递增。
+- 无论走本地脚本还是 GitHub Actions，正式命名口径都必须是 `<ota-version-base>-ota-UTC时间戳` 或人工显式 `--version`；不得改成 `gha-*`、run number 或其他临时别名。
+- 这样做的目的，是避免 H5 热更新污染原生产品版本，同时给旧客户端留一个可控桥接出口。
 
 原生 APK：
 
@@ -107,7 +111,8 @@ OTA：
 
 - `edge`：日常自测或刚合并后的快速验证
 - `gray`：给测试机、小范围用户先吃
-- `stable`：正式渠道；与其他 channel 一样，默认面向所有已安装版本
+- `stable`：正式渠道；与其他 channel 一样，默认面向所有已安装版本，但只能由人工/后台发布动作切换最新包，不能由普通 push 自动触发
+- 发布中心里的部署回滚只做控制面，实际执行依赖宿主机上的独立 `boardgame-deploy-runner`；没配 runner 时只能预览，不能执行
 
 ## 常见注意点
 

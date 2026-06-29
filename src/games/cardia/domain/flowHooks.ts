@@ -10,6 +10,7 @@ import { PHASE_ORDER } from './core-types';
 import { CARDIA_EVENTS } from './events';
 import { ABILITY_IDS } from './ids';
 import { getOpponentId } from './utils';
+import { getCardiaPlayerActiveOngoingAbilitiesByAbilityId } from './effectHost';
 
 /**
  * Cardia 回合流程钩子
@@ -74,21 +75,9 @@ export const cardiaFlowHooks: FlowHooks<CardiaCore> = {
         if (to === 'play') {
             for (const playerId of state.core.playerOrder) {
                 const player = state.core.players[playerId];
-                
-                // 大法师：每回合抽1张
-                if (player.tags.tags[`Ongoing.${ABILITY_IDS.ARCHMAGE}`]) {
-                    events.push({
-                        type: CARDIA_EVENTS.CARD_DRAWN.type,
-                        timestamp,
-                        payload: {
-                            playerId,
-                            count: 1,
-                        },
-                    });
-                }
-                
+
                 // 顾问：如果上一次遭遇你获胜且对手失败，你获得1个印戒
-                if (player.tags.tags[`Ongoing.${ABILITY_IDS.ADVISOR}`]) {
+                if (getCardiaPlayerActiveOngoingAbilitiesByAbilityId(state.core, playerId, ABILITY_IDS.ADVISOR).length > 0) {
                     const prev = state.core.previousEncounter;
                     if (prev && prev.winnerId === playerId && prev.loserId) {
                         // 上一次遭遇该玩家获胜且对手失败（不是平局）

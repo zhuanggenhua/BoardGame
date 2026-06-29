@@ -7,6 +7,7 @@ const VALID_STATUSES = new Set(['resolved', 'closed']);
 function parseArgs(argv) {
     const options = {
         baseUrl: process.env.BOARDGAME_FEEDBACK_BASE_URL || 'http://127.0.0.1:3000',
+        token: process.env.BOARDGAME_FEEDBACK_TOKEN || '',
         summaryPath: '',
         feedbackId: '',
         status: '',
@@ -18,6 +19,10 @@ function parseArgs(argv) {
         const arg = argv[index];
         if (arg === '--base-url') {
             options.baseUrl = argv[++index] || options.baseUrl;
+            continue;
+        }
+        if (arg === '--token') {
+            options.token = argv[++index] || options.token;
             continue;
         }
         if (arg === '--keep-duplicates-open') {
@@ -48,11 +53,12 @@ function normalizeBaseUrl(baseUrl) {
     return baseUrl.replace(/\/+$/, '');
 }
 
-async function updateFeedbackStatus(baseUrl, id, status) {
-    const response = await fetch(`${baseUrl}/feedback/open/${id}/status`, {
+async function updateFeedbackStatus(baseUrl, token, id, status) {
+    const response = await fetch(`${baseUrl}/admin/feedback/${id}/status`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ status }),
     });
@@ -68,6 +74,9 @@ async function updateFeedbackStatus(baseUrl, id, status) {
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     const baseUrl = normalizeBaseUrl(options.baseUrl);
+    if (!options.token) {
+        throw new Error('缺少反馈管理 Bearer 凭证；请通过 --token 或 BOARDGAME_FEEDBACK_TOKEN 提供');
+    }
     const resolvedSummaryPath = path.resolve(options.summaryPath);
     const raw = await fs.readFile(resolvedSummaryPath, 'utf8');
     const summary = JSON.parse(raw);
@@ -78,13 +87,13 @@ async function main() {
         throw new Error(`summary.json 中找不到代表项: ${options.feedbackId}`);
     }
 
-    const primary = await updateFeedbackStatus(baseUrl, options.feedbackId, options.status);
+    const primary = await updateFeedbackStatus(baseUrl, options.token, options.feedbackId, options.status);
     const duplicateResults = [];
 
     if (options.closeDuplicates) {
         const duplicateIds = Array.isArray(group.duplicateIds) ? group.duplicateIds : [];
         for (const duplicateId of duplicateIds) {
-            const updated = await updateFeedbackStatus(baseUrl, duplicateId, 'closed');
+            const updated = await updateFeedbackStatus(baseUrl, options.token, duplicateId, 'closed');
             duplicateResults.push({
                 feedbackId: duplicateId,
                 status: updated.status,

@@ -73,7 +73,7 @@ const TUTORIAL_ERROR_CODES = [
 ] as const;
 
 // 已启用教程的游戏（game-<id>.json 中需要有教程 error 翻译）
-const TUTORIAL_GAME_IDS = ['dicethrone', 'summonerwars', 'smashup'] as const;
+const TUTORIAL_GAME_IDS = ['dicethrone', 'summonerwars', 'smashup', 'fantasyrealms'] as const;
 
 // ── 游戏专属 error code（对应各游戏 game-<id>.json）──────────────────────────
 //

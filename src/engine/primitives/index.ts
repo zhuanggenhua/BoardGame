@@ -9,6 +9,7 @@ export * from './expression';
 export * from './condition';
 export * from './target';
 export * from './effects';
+export * from './effectApplication';
 export * from './zones';
 export * from './dice';
 export * from './resources';

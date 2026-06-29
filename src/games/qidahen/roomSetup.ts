@@ -9,6 +9,7 @@ import type {
 } from './domain/types';
 
 export const QIDAHEN_SCENARIO_SETUP_FIELD = 'scenario' as const;
+export const QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD = 'qidahenInMatchScenarioVote' as const;
 export const DEFAULT_QIDAHEN_SCENARIO_ID: QidahenScenarioId = 'post-sarhu-1619';
 
 export const QIDAHEN_SCENARIO_SETUP_OPTIONS = [
@@ -48,6 +49,38 @@ const QIDAHEN_PLAYABLE_FACTIONS_BY_SCENARIO: Record<QidahenScenarioId, readonly 
     'post-sarhu-1619': ['ming', 'mongol', 'jin'],
     'shanhaiguan-1622': ['ming', 'mongol', 'jin'],
     'dingmao-rebellion-1627': ['ming', 'jin'],
+};
+
+export interface QidahenScenarioVoteMeta {
+    scenarioId: QidahenScenarioId;
+    label: string;
+    supportedPlayerCounts: readonly number[];
+    intro: string;
+    overview: string;
+}
+
+const QIDAHEN_SCENARIO_VOTE_META_BY_ID: Record<QidahenScenarioId, QidahenScenarioVoteMeta> = {
+    'post-sarhu-1619': {
+        scenarioId: 'post-sarhu-1619',
+        label: '剧本一：萨尔浒战后（1619）',
+        supportedPlayerCounts: [3],
+        intro: '三方都还在起势阶段。大明资源紧、蒙古机动强、后金手牌最厚，适合从最基础的三方节奏开始。',
+        overview: '早期三方标准局，重点体验行动轮盘、区域牵制与后金手牌压力。',
+    },
+    'shanhaiguan-1622': {
+        scenarioId: 'shanhaiguan-1622',
+        label: '剧本二：山海关之议（1622）',
+        supportedPlayerCounts: [3],
+        intro: '三方势力都已进入更复杂的中盘。人物与军备前置抉择更多，适合作为标准三人联机剧本。',
+        overview: '标准三人对局，人物和军备前置更多，中盘压迫感更强。',
+    },
+    'dingmao-rebellion-1627': {
+        scenarioId: 'dingmao-rebellion-1627',
+        label: '二人剧本：丁卯胡乱（1627）',
+        supportedPlayerCounts: [2],
+        intro: '二人正面对抗剧本。蒙古退场，大明与后金直接碰撞，整体节奏更快、更凶。',
+        overview: '二人快节奏对抗，直接进入大明与后金的正面压力测试。',
+    },
 };
 
 export interface QidahenPregameChoiceField {
@@ -220,6 +253,18 @@ export function readQidahenScenarioId(setupData?: Record<string, unknown>): Qida
     return DEFAULT_QIDAHEN_SCENARIO_ID;
 }
 
+export function shouldUseQidahenInMatchScenarioVote(
+    setupData?: Record<string, unknown>,
+): boolean {
+    const topLevelFlag = setupData?.[QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD];
+    if (topLevelFlag === true || topLevelFlag === 'enabled') {
+        return true;
+    }
+    const setupSelections = asRecord(setupData?.setupSelections);
+    const nestedFlag = setupSelections?.[QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD];
+    return nestedFlag === true || nestedFlag === 'enabled';
+}
+
 export function shouldResolveQidahenScenarioChoiceGroups(
     setupData?: Record<string, unknown>,
 ): boolean {
@@ -242,6 +287,25 @@ export function getQidahenPlayableFactions(
     scenarioId: QidahenScenarioId,
 ): readonly QidahenFactionId[] {
     return QIDAHEN_PLAYABLE_FACTIONS_BY_SCENARIO[scenarioId];
+}
+
+export function getQidahenScenarioVoteMeta(
+    scenarioId: QidahenScenarioId,
+): QidahenScenarioVoteMeta {
+    return {
+        ...QIDAHEN_SCENARIO_VOTE_META_BY_ID[scenarioId],
+        supportedPlayerCounts: [...QIDAHEN_SCENARIO_VOTE_META_BY_ID[scenarioId].supportedPlayerCounts],
+    };
+}
+
+export function getQidahenScenarioIdsForPlayerCount(
+    playerCount: number,
+): QidahenScenarioId[] {
+    return QIDAHEN_SCENARIO_SETUP_OPTIONS
+        .map((option) => option.value)
+        .filter((scenarioId): scenarioId is QidahenScenarioId => (
+            QIDAHEN_ALLOWED_PLAYER_COUNTS_BY_SCENARIO[scenarioId as QidahenScenarioId]?.includes(playerCount)
+        ));
 }
 
 export function applyQidahenPregameChoiceDefaults(
@@ -301,6 +365,9 @@ export function readQidahenScenarioChoiceSelections(
 export function buildQidahenPublicRoomSummary(
     setupData?: Record<string, unknown>,
 ): PublicSetupSummary {
+    if (shouldUseQidahenInMatchScenarioVote(setupData)) {
+        return {};
+    }
     return {
         scenarioId: readQidahenScenarioId(setupData),
     };

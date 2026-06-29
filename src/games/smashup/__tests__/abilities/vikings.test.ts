@@ -29,6 +29,48 @@ beforeAll(() => {
 });
 
 describe('Vikings abilities', () => {
+    it('线上反馈 6a36cbe60bd730b192833d8e：vikings_ransack 选择附着行动时不应抛出 state is not defined', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('r1', 'vikings_ransack', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('enemy-1', 'frankenstein_the_monster', '1', 4, {
+                        attachedActions: [{ uid: 'attach-1', defId: 'frankenstein_uberserum', ownerId: '1' }] as any,
+                    }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'r1' } } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vikings_ransack');
+        const attachedOption = getPromptOption(prompt, option => option.value?.cardUid === 'attach-1', 'vikings ransack attached ongoing');
+        const resolved = respondToPrompt(played.finalState, attachedOption.id, '0', defaultTestRandom);
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: expect.objectContaining({
+                cardUid: 'attach-1',
+                defId: 'frankenstein_uberserum',
+                toPlayerId: '0',
+                reason: 'vikings_ransack',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'attach-1')).toBe(true);
+    });
+
     it('vikings_viking_funeral 在宿主进入弃牌堆后仍会通过 queued discard trigger 结算 VP 与移出游戏', () => {
         const preDiscardCore = makeState({
             players: {

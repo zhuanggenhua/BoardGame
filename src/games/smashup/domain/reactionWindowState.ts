@@ -1,5 +1,6 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { getCurrentScoringBaseIndex } from './scoringSession';
+import { hasSmashUpResponderDrivenReactionOptions } from './reactionSession';
 import type { SmashUpCore, SmashUpReactionSession } from './types';
 
 function getReactionSessionFromResolution(
@@ -37,7 +38,16 @@ export interface SmashUpReactionWindowPresentation extends SmashUpReactionWindow
     responderQueue: PlayerId[];
     currentResponderIndex: number;
     passedPlayers: PlayerId[];
+    showsPassWindow: boolean;
 }
+
+type LegacyReactionWindowState = {
+    windowType?: 'meFirst' | 'afterScoring';
+    responderQueue?: PlayerId[];
+    currentResponderIndex?: number;
+    sourceBaseIndex?: number;
+    passedPlayers?: PlayerId[];
+};
 
 function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): PlayerId[] {
     const idx = turnOrder.indexOf(startingPlayerId);
@@ -98,7 +108,6 @@ function getNormalizedLegacyReactionWindow(
     const turnOrder = state.core.turnOrder ?? [];
     if (turnOrder.length === 0) return undefined;
 
-    const filteredQueue = (legacyWindow.responderQueue ?? []).filter(playerId => turnOrder.includes(playerId));
     const liveCurrentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
     const currentPlayerId = liveCurrentPlayerId && turnOrder.includes(liveCurrentPlayerId)
         ? liveCurrentPlayerId
@@ -117,6 +126,7 @@ function getNormalizedLegacyReactionWindow(
         responderQueue,
         currentResponderIndex: Math.max(0, responderQueue.indexOf(activePlayerId)),
         passedPlayers: (legacyWindow.passedPlayers ?? []).filter(playerId => responderQueue.includes(playerId)),
+        showsPassWindow: true,
     };
 }
 
@@ -187,6 +197,11 @@ export function getSmashUpReactionWindowPresentation(
             responderQueue,
             currentResponderIndex,
             passedPlayers: mirroredPassedPlayers,
+            showsPassWindow: hasSmashUpResponderDrivenReactionOptions(
+                state,
+                normalizedSession,
+                state.core.turnNumber ?? 0,
+            ),
         };
     }
 
@@ -195,7 +210,7 @@ export function getSmashUpReactionWindowPresentation(
         return undefined;
     }
 
-    const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, responseWindow as any);
+    const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, responseWindow as LegacyReactionWindowState);
     if (normalizedLegacyWindow) {
         return normalizedLegacyWindow;
     }
@@ -205,6 +220,7 @@ export function getSmashUpReactionWindowPresentation(
         responderQueue: responseWindow.responderQueue,
         currentResponderIndex: responseWindow.currentResponderIndex,
         passedPlayers: responseWindow.passedPlayers ?? [],
+        showsPassWindow: true,
     };
 }
 

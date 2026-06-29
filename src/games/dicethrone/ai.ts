@@ -1960,6 +1960,7 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
 
     if (phase === 'offensiveRoll' || phase === 'defensiveRoll') {
         const offensiveAttackAlreadyInitiated = phase === 'offensiveRoll' && Boolean(state.core.pendingAttack);
+        const canPlayRollCardsInPhase = phase === 'defensiveRoll' || !offensiveAttackAlreadyInitiated;
         if (phase === 'offensiveRoll'
             && state.core.rollCount > 0
             && !state.core.rollConfirmed
@@ -1980,6 +1981,23 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
                         dieValue: die.value,
                         dieSymbol: die.symbol,
                     }, ['dice-setup']),
+                });
+            }
+        }
+
+        if (canPlayRollCardsInPhase) {
+            for (const card of player.hand) {
+                const check = checkPlayCard(state.core, playerId, card, phase);
+                if (!check.ok) continue;
+                appendAction(actions, state, playerId, {
+                    actionId: createAiLegalActionId('play-card', card.id),
+                    kind: 'play-card',
+                    label: `打出 ${card.id}`,
+                    commands: [{
+                        type: 'PLAY_CARD',
+                        payload: { cardId: card.id },
+                    }],
+                    metadata: withAiActionStrategyTags({ cardId: card.id }, buildCardStrategyTags(card, 'play-card')),
                 });
             }
         }

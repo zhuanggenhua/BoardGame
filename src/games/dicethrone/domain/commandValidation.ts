@@ -61,12 +61,13 @@ import {
 } from './rules';
 import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
-import { isPassiveActionUsable } from './passiveAbility';
+import { getPassiveActionTokenCosts, isPassiveActionUsable } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getGameMode } from './utils';
+import { isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 
 // ============================================================================
 // 验证函数
@@ -75,6 +76,32 @@ import { getGameMode } from './utils';
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
 const SELECTABLE_CHARACTER_ID_SET = new Set<string>(DICETHRONE_CHARACTER_CATALOG.map(character => character.id));
+
+const getActionBlockedByStunLikeStatus = (
+    state: DiceThroneCore,
+    playerId: PlayerId,
+): string | null => {
+    if (!isMoveAllowed(playerId, state.activePlayerId)) {
+        return null;
+    }
+
+    const player = state.players[playerId];
+    if (!player) {
+        return null;
+    }
+
+    const dazeStacks = player.statusEffects[STATUS_IDS.DAZE] ?? 0;
+    if (dazeStacks > 0) {
+        return 'player_is_dazed';
+    }
+
+    const stunStacks = player.statusEffects[STATUS_IDS.STUN] ?? 0;
+    if (stunStacks > 0) {
+        return 'player_is_stunned';
+    }
+
+    return null;
+};
 
 const isCommandType = <TType extends DiceThroneCommand['type']>(
     command: DiceThroneCommand,
@@ -97,16 +124,6 @@ const getInteractionTargetPlayerIds = (
     ? pendingInteraction.targetPlayerIds
     : Object.keys(state.players);
 
-const isRemovableStatusId = (state: DiceThroneCore, statusId: string): boolean => {
-    const def = (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
-    return def?.passiveTrigger?.removable ?? true;
-};
-
-const isPurifiableDebuffId = (state: DiceThroneCore, statusId: string): boolean => {
-    const def = (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
-    return def?.category === 'debuff' && (def.passiveTrigger?.removable ?? true);
-};
-
 const playerHasStatusOrToken = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -122,6 +139,22 @@ const playerHasStatusOrToken = (
     }
     return Object.entries(player.statusEffects).some(([effectId, value]) => value > 0 && isRemovableStatusId(state, effectId))
         || Object.entries(player.tokens).some(([effectId, value]) => value > 0 && isRemovableStatusId(state, effectId));
+};
+
+const getRemainingDieInteractionSlots = (
+    pendingInteraction: InteractionDescriptor | undefined,
+): number | undefined => {
+    const interaction = getValidationInteraction(pendingInteraction);
+    if (!interaction) return undefined;
+    const allowedDieIds = interaction.allowedDieIds?.length
+        ? interaction.allowedDieIds
+        : undefined;
+    const selectCount = interaction.selectCount ?? allowedDieIds?.length;
+    if (typeof selectCount !== 'number' || !Number.isFinite(selectCount)) {
+        return undefined;
+    }
+    const completedDieIds = Array.from(new Set((interaction.completedDieIds ?? []).filter(id => typeof id === 'number')));
+    return Math.max(0, selectCount - completedDieIds.length);
 };
 
 const validateInteractionOwnership = (
@@ -735,6 +768,11 @@ const validateSellCard = (
     if (phase !== 'main1' && phase !== 'main2' && phase !== 'discard') {
         return fail('invalid_phase');
     }
+
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
+    }
     
     const player = state.players[state.activePlayerId];
     if (!player) {
@@ -769,6 +807,11 @@ const validateUndoSellCard = (
     }
     if (phase !== 'main1' && phase !== 'main2' && phase !== 'discard') {
         return fail('invalid_phase');
+    }
+
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
     }
     
     if (!state.lastSoldCardId) {
@@ -846,15 +889,9 @@ const validatePlayCard = (
         return fail('card_not_in_hand');
     }
 
-    if (isMoveAllowed(playerId, state.activePlayerId)) {
-        const dazeStacks = player.statusEffects[STATUS_IDS.DAZE] ?? 0;
-        if (dazeStacks > 0) {
-            return fail('player_is_dazed');
-        }
-        const stunStacks = player.statusEffects[STATUS_IDS.STUN] ?? 0;
-        if (stunStacks > 0) {
-            return fail('player_is_stunned');
-        }
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
     }
 
     // 主要阶段牌：仅允许当前回合玩家
@@ -916,6 +953,11 @@ const validatePlayUpgradeCard = (
             handCardIds: player.hand.map(c => c.id),
         });
         return fail('card_not_in_hand');
+    }
+
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
     }
     
     // 使用 checkPlayUpgradeCard 获取详细原因
@@ -1011,6 +1053,10 @@ const validateRerollDie = (
 ): ValidationResult => {
     const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, 'reroll_die_limit_reached');
     if ('valid' in validation) return validation;
+    const remainingSlots = getRemainingDieInteractionSlots(pendingInteraction);
+    if (remainingSlots !== undefined && remainingSlots <= 0) {
+        return fail('reroll_die_limit_reached');
+    }
     return ok();
 };
 
@@ -1192,7 +1238,12 @@ const validateUseToken = (
         return fail('unknown_token');
     }
 
-    const currentAmount = p?.tokens[cmd.payload.tokenId] ?? 0;
+    const isArtificerBot = cmd.payload.tokenId === TOKEN_IDS.NANOBOT
+        || cmd.payload.tokenId === TOKEN_IDS.SHOCK_BOT
+        || cmd.payload.tokenId === TOKEN_IDS.HEAL_BOT;
+    const currentAmount = isArtificerBot
+        ? getUsableTokenAmountForTiming(state, playerId, cmd.payload.tokenId, pendingDamage.responseType)
+        : (p?.tokens[cmd.payload.tokenId] ?? 0);
     if (currentAmount <= 0) {
         return fail('no_token');
     }
@@ -1406,8 +1457,10 @@ const validateUsePassiveAbility = (
     // CP / Token / 时机检查
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return fail('not_enough_cp');
-    if (action.tokenCost && (player.tokens[action.tokenCost.tokenId] ?? 0) < action.tokenCost.amount) {
-        return fail('not_enough_token');
+    for (const cost of getPassiveActionTokenCosts(action)) {
+        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) {
+            return fail('not_enough_token');
+        }
     }
     if (!isPassiveActionUsable(state, playerId, cmd.payload.passiveId, cmd.payload.actionIndex, phase)) {
         return fail('passive_action_unusable');

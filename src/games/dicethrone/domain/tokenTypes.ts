@@ -285,8 +285,21 @@ export interface ActiveUseConfig {
     /** 使用时消耗的数量（默认 1） */
     consumeAmount: number;
     allowedConsumeAmounts?: number[];
+    /** 激活时额外花费的 Token 资源（如工匠机器人激活要再花合成器） */
+    additionalTokenCosts?: Array<{
+        tokenId: string;
+        amount: number;
+        /** 当某个 token 上限达到指定值时，改用另一档成本（如高级机器人） */
+        overrideWhenOwnerTokenLimitAtLeast?: {
+            tokenId?: string;
+            limit: number;
+            amount: number;
+        };
+    }>;
     /** 仅允许在攻击伤害窗口使用（如 Back Strike） */
     requiresAttackDamage?: boolean;
+    /** 仅允许原始攻击伤害至少达到该值时使用 */
+    minimumAttackDamage?: number;
     /** 主动使用时需要额外触发的 custom action */
     customActionId?: string;
     /** 使用效果 */

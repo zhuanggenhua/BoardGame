@@ -18,6 +18,7 @@ import {
     grantContextualExtraAction,
 } from '../domain/abilityHelpers';
 import { isMinionTargetAllowed } from '../domain/effectSemantics';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import type {
     MinionMetadataUpdatedEvent,
     MinionOnBase,
@@ -193,19 +194,16 @@ function buildHangInThereDetachEvent(
     sourceOwnerId: PlayerId,
     timestamp: number,
 ): SmashUpEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: sourceCardUid,
-            defId: 'kitty_cats_hang_in_there',
-            ownerId: sourceOwnerId,
-            reason: 'kitty_cats_hang_in_there',
-            sourcePlayerId: sourceOwnerId,
-            sourceCardUid,
-            sourceDefId: 'kitty_cats_hang_in_there',
-        },
-        timestamp,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid: sourceCardUid,
+        defId: 'kitty_cats_hang_in_there',
+        ownerId: sourceOwnerId,
+        reason: 'kitty_cats_hang_in_there',
+        sourcePlayerId: sourceOwnerId,
+        sourceCardUid,
+        sourceDefId: 'kitty_cats_hang_in_there',
+        now: timestamp,
+    });
 }
 
 function buildHangInThereSaveEvents(
@@ -229,6 +227,10 @@ function buildHangInThereSaveEvents(
             minionDefId: selected.minionDefId,
             fromBaseIndex: selected.fromBaseIndex,
             toBaseIndex: selected.baseIndex,
+            sourcePlayerId: selected.sourceOwnerId,
+            sourceDefId: 'kitty_cats_hang_in_there',
+            sourceControllerId: selected.sourceOwnerId,
+            sourceBaseIndex: selected.fromBaseIndex,
             reason: 'kitty_cats_hang_in_there',
             now: timestamp,
         }),
@@ -449,6 +451,10 @@ function handleCatFight(
                 minionDefId: minion.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: playerId,
+                sourcePlayerId: playerId,
+                sourceDefId: 'kitty_cats_cat_fight',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex,
                 reason: 'kitty_cats_cat_fight',
                 now: timestamp,
                 sourceKind: 'action',
@@ -457,13 +463,18 @@ function handleCatFight(
     };
 }
 
-function handleDestroyForExtraAction(
+function handleDestroyOwnMinion(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
     value: unknown,
     _data: Record<string, unknown> | undefined,
     _random: RandomFn,
     timestamp: number,
+    context: {
+        sourceDefId: string;
+        sourceKind: 'action' | 'nonAction';
+        reason: string;
+    },
 ) {
     const selected = value as MinionChoice;
     if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
@@ -471,16 +482,54 @@ function handleDestroyForExtraAction(
     if (!minion || minion.controller !== playerId) return { state, events: [] };
     return {
         state,
+        events: buildValidatedDestroyEvents(state, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: playerId,
+            sourcePlayerId: playerId,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: playerId,
+            sourceBaseIndex: selected.baseIndex,
+            reason: context.reason,
+            now: timestamp,
+            sourceKind: context.sourceKind,
+        }),
+    };
+}
+
+function handleWhiskersDestroy(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    value: unknown,
+    data: Record<string, unknown> | undefined,
+    random: RandomFn,
+    timestamp: number,
+) {
+    return handleDestroyOwnMinion(state, playerId, value, data, random, timestamp, {
+        sourceDefId: 'kitty_cats_whiskers',
+        sourceKind: 'nonAction',
+        reason: 'kitty_cats_whiskers',
+    });
+}
+
+function handleNineLivesDestroy(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    value: unknown,
+    data: Record<string, unknown> | undefined,
+    random: RandomFn,
+    timestamp: number,
+) {
+    const result = handleDestroyOwnMinion(state, playerId, value, data, random, timestamp, {
+        sourceDefId: 'kitty_cats_nine_lives',
+        sourceKind: 'action',
+        reason: 'kitty_cats_nine_lives',
+    });
+    return {
+        state: result.state,
         events: [
-            ...buildValidatedDestroyEvents(state, {
-                minionUid: minion.uid,
-                minionDefId: minion.defId,
-                fromBaseIndex: selected.baseIndex,
-                destroyerId: playerId,
-                reason: 'kitty_cats_nine_lives',
-                now: timestamp,
-                sourceKind: 'action',
-            }),
+            ...result.events,
             grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'kitty_cats_nine_lives'),
         ],
     };
@@ -520,7 +569,7 @@ function handleInvisibleBicycleMinions(
 
 function handleInvisibleBicycleBase(
     state: MatchState<SmashUpCore>,
-    _playerId: PlayerId,
+    playerId: PlayerId,
     value: unknown,
     _data: Record<string, unknown> | undefined,
     _random: RandomFn,
@@ -535,6 +584,10 @@ function handleInvisibleBicycleBase(
             minionDefId: minion.defId,
             fromBaseIndex: minion.baseIndex,
             toBaseIndex: selected.baseIndex!,
+            sourcePlayerId: playerId,
+            sourceDefId: 'kitty_cats_invisible_bicycle',
+            sourceControllerId: playerId,
+            sourceBaseIndex: minion.baseIndex,
             reason: 'kitty_cats_invisible_bicycle',
             now: timestamp,
         });
@@ -593,13 +646,13 @@ export function registerKittyCatsAbilities(): void {
 
     registerInteractionHandler('kitty_cats_mr_grumpers', (state, playerId, value, data, random, timestamp) =>
         handleTempPower(state, playerId, value, data, random, timestamp, -2, 'kitty_cats_mr_grumpers'));
-    registerInteractionHandler('kitty_cats_whiskers', handleDestroyForExtraAction);
+    registerInteractionHandler('kitty_cats_whiskers', handleWhiskersDestroy);
     registerInteractionHandler('kitty_cats_muffin', handleTemporaryControl('kitty_cats_muffin'));
     registerInteractionHandler('kitty_cats_queen_fluffy', handleTemporaryControl('kitty_cats_queen_fluffy'));
     registerInteractionHandler('kitty_cats_cats_paw', handleTemporaryControl('kitty_cats_cats_paw'));
     registerInteractionHandler('kitty_cats_can_has_cheeseburger', handleTemporaryControl('kitty_cats_can_has_cheeseburger'));
     registerInteractionHandler('kitty_cats_cat_fight', handleCatFight);
-    registerInteractionHandler('kitty_cats_nine_lives', handleDestroyForExtraAction);
+    registerInteractionHandler('kitty_cats_nine_lives', handleNineLivesDestroy);
     registerInteractionHandler('kitty_cats_invisible_bicycle_minions', handleInvisibleBicycleMinions);
     registerInteractionHandler('kitty_cats_invisible_bicycle_base', handleInvisibleBicycleBase);
     registerInteractionHandler('kitty_cats_hang_in_there', handleHangInThere);

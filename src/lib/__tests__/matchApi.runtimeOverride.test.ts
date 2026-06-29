@@ -22,7 +22,10 @@ describe('matchApi runtime server override', () => {
 
         await getMatch('tictactoe', 'match-1');
 
-        expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:20100/games/tictactoe/match-1');
+        expect(fetchMock).toHaveBeenCalledWith(
+            'http://127.0.0.1:20100/games/tictactoe/match-1',
+            expect.objectContaining({ cache: 'no-store' }),
+        );
     });
 
     it('joinMatch 会优先使用运行时注入的 game server 地址', async () => {

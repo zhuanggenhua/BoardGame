@@ -17,6 +17,10 @@ import {
     type QidahenRegionGraphNode,
 } from '../../games/qidahen/ui/mapGraph';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../games/qidahen/ui/mapRegions';
+import {
+    buildQidahenSharedPrintedRuntimePreviews,
+    type QidahenSharedPrintedRuntimePreview,
+} from '../../games/qidahen/ui/sharedPrintedRuntimePreview';
 
 const DEFAULT_WORKSPACE = 'best-available-move-cost-ready';
 const DEFAULT_MAP_PATH = getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png');
@@ -62,6 +66,12 @@ const workspaceAssetUrl = (workspace: string, fileName: string, nonce: number) =
 );
 
 type RuntimeGuideCandidate = QidahenRegionMaskRuntimeGuideCandidate;
+
+type SharedPrintedRuntimePreviewCard = {
+    printedRegionId: string;
+    imageUrl: string;
+    preview: QidahenSharedPrintedRuntimePreview;
+};
 
 const normalizeLoadedRuntimeGuideCandidates = (value: unknown) => {
     return normalizeQidahenRegionMaskRuntimeGuideCandidates(value);
@@ -132,6 +142,7 @@ const QidahenRuntimePreview: React.FC = () => {
         loading: true,
         loadedAtLabel: '',
     });
+    const [sharedPrintedPreviewCards, setSharedPrintedPreviewCards] = React.useState<SharedPrintedRuntimePreviewCard[]>([]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -218,6 +229,77 @@ const QidahenRuntimePreview: React.FC = () => {
             runtimeRegionNameById: nodeNameById,
         })
     ), [nodeNameById, state.graph, state.runtimeGuideCandidates]);
+    const maskUrl = React.useMemo(() => (
+        workspaceAssetUrl(workspace, 'region-mask.png', reloadNonce)
+    ), [reloadNonce, workspace]);
+    React.useEffect(() => {
+        let cancelled = false;
+        const activeObjectUrls: string[] = [];
+        if (typeof window === 'undefined' || sharedPrintedMappings.length === 0) {
+            setSharedPrintedPreviewCards([]);
+            return () => {
+                activeObjectUrls.splice(0).forEach((url) => URL.revokeObjectURL(url));
+            };
+        }
+
+        const loadPreviewCards = async () => {
+            try {
+                const image = new Image();
+                image.src = maskUrl;
+                await image.decode();
+                if (cancelled) {
+                    return;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = QIDAHEN_MAP_WIDTH;
+                canvas.height = QIDAHEN_MAP_HEIGHT;
+                const context = canvas.getContext('2d', { willReadFrequently: true });
+                if (!context) {
+                    setSharedPrintedPreviewCards([]);
+                    return;
+                }
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const previews = buildQidahenSharedPrintedRuntimePreviews(
+                    imageData.data,
+                    canvas.width,
+                    canvas.height,
+                    sharedPrintedMappings.map((mapping) => mapping.printedRegionId),
+                );
+                const nextCards = previews.map((preview) => {
+                    const previewCanvas = document.createElement('canvas');
+                    previewCanvas.width = preview.width;
+                    previewCanvas.height = preview.height;
+                    const previewContext = previewCanvas.getContext('2d');
+                    if (!previewContext) {
+                        return null;
+                    }
+                    previewContext.putImageData(new ImageData(preview.pixels, preview.width, preview.height), 0, 0);
+                    const imageUrl = previewCanvas.toDataURL('image/png');
+                    return {
+                        printedRegionId: preview.printedRegionId,
+                        imageUrl,
+                        preview,
+                    } satisfies SharedPrintedRuntimePreviewCard;
+                }).filter((card): card is SharedPrintedRuntimePreviewCard => card != null);
+                if (!cancelled) {
+                    setSharedPrintedPreviewCards(nextCards);
+                }
+            } catch {
+                if (!cancelled) {
+                    setSharedPrintedPreviewCards([]);
+                }
+            }
+        };
+
+        void loadPreviewCards();
+        return () => {
+            cancelled = true;
+            activeObjectUrls.splice(0).forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, [maskUrl, sharedPrintedMappings]);
     const formalSharedPrintedMappings = React.useMemo(() => (
         buildQidahenSharedPrintedRegionMappings()
     ), []);
@@ -287,10 +369,6 @@ const QidahenRuntimePreview: React.FC = () => {
             }
         };
     }, [debugSnapshot]);
-
-    const maskUrl = React.useMemo(() => (
-        workspaceAssetUrl(workspace, 'region-mask.png', reloadNonce)
-    ), [reloadNonce, workspace]);
 
     const openWorkspaceEditor = React.useCallback(() => {
         window.location.assign(`/dev/qidahen-region-mask?workspace=${encodeURIComponent(workspace)}`);
@@ -666,6 +744,50 @@ const QidahenRuntimePreview: React.FC = () => {
                                                         }).join(' / '),
                                                     })}
                                                 </div>
+                                            ) : null}
+                                            {sharedPrintedPreviewCards.find((card) => card.printedRegionId === mapping.printedRegionId) ? (
+                                                (() => {
+                                                    const card = sharedPrintedPreviewCards.find((item) => item.printedRegionId === mapping.printedRegionId)!;
+                                                    return (
+                                                        <div
+                                                            className="mt-3 rounded-lg border border-stone-800 bg-stone-950/55 p-2"
+                                                            data-testid={`qidahen-runtime-preview-shared-printed-preview-${mapping.printedRegionId}`}
+                                                        >
+                                                            <div className="mb-2 text-[11px] leading-5 text-stone-400">
+                                                                {t('devtools.runtimePreview.sharedPrinted.previewHint', {
+                                                                    defaultValue: '这张小图只展示运行时 ownership 如何把同一印刷区切成多个子区，不代表正式印刷数据已经拆开。',
+                                                                })}
+                                                            </div>
+                                                            <img
+                                                                src={card.imageUrl}
+                                                                alt={`${mapping.printedRegionName} runtime split preview`}
+                                                                className="block max-h-52 w-full rounded border border-stone-800 bg-black/70 object-contain"
+                                                            />
+                                                            <div className="mt-2 space-y-1 text-[11px] leading-5 text-stone-300">
+                                                                {mapping.runtimeRegionIds.map((runtimeRegionId) => {
+                                                                    const runtimeRegionName = nodeNameById.get(runtimeRegionId)
+                                                                        ?? QIDAHEN_RUNTIME_REGION_DEFINITIONS.find((region) => region.id === runtimeRegionId)?.name
+                                                                        ?? runtimeRegionId;
+                                                                    const pixelCount = card.preview.pixelCountByRuntimeRegionId[runtimeRegionId] ?? 0;
+                                                                    const anchor = card.preview.anchors.find((item) => item.runtimeRegionId === runtimeRegionId);
+                                                                    return (
+                                                                        <div
+                                                                            key={runtimeRegionId}
+                                                                            data-testid={`qidahen-runtime-preview-shared-printed-preview-row-${runtimeRegionId}`}
+                                                                            className="flex items-center justify-between gap-3"
+                                                                        >
+                                                                            <span>{runtimeRegionName}</span>
+                                                                            <span className="font-mono text-stone-500">
+                                                                                {pixelCount.toLocaleString()} px
+                                                                                {anchor ? ` · ${anchor.point.x},${anchor.point.y}` : ''}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()
                                             ) : null}
                                         </div>
                                     ))}

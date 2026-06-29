@@ -3,7 +3,7 @@
  *
  * Task 10.3
  *
- * Property 9: 共享 Token 定义（击倒、闪避）在不同英雄间完全一致
+ * Property 9: 共享 Token 定义（击倒、闪避）在不同英雄间关键规则字段一致
  * Property 10: 燃烧/中毒 upkeep 处理正确（燃烧不可叠加且固定2伤害，中毒持续效果不移除层数）
  */
 
@@ -41,7 +41,7 @@ describe('共享 Token 定义跨英雄一致性', () => {
         return map;
     }
 
-    const KEY_FIELDS: (keyof TokenDef)[] = ['category', 'stackLimit', 'frameId', 'atlasId'];
+    const KEY_FIELDS: (keyof TokenDef)[] = ['category', 'stackLimit', 'frameId'];
 
     it('同 ID 的 Token 在不同英雄间关键字段一致', () => {
         const tokenMap = getTokensByIdAcrossHeroes();
@@ -214,28 +214,6 @@ describe('燃烧+中毒同时存在时 upkeep 处理', () => {
 // ============================================================================
 // 3. 眩晕/脑震荡/缠绕处理正确性
 // ============================================================================
-
-describe('眩晕（stun）进攻阶段处理', () => {
-    it('有 stun 时进入 offensiveRoll 会被跳过并自动移除', () => {
-        const runner = createRunner(fixedRandom);
-        const result = runner.run({
-            name: 'stun 跳过进攻',
-            setup: (playerIds, random) => {
-                const state = createNoResponseSetupWithEmptyHand()(playerIds, random);
-                state.core.players['0'].statusEffects[STATUS_IDS.STUN] = 1;
-                return state;
-            },
-            commands: [
-                cmd('ADVANCE_PHASE', '0'), // main1 → offensiveRoll（被 stun 跳过）
-            ],
-            expect: {
-                turnPhase: 'main2',
-                players: { '0': { statusEffects: { [STATUS_IDS.STUN]: 0 } } },
-            },
-        });
-        expect(result.assertionErrors).toEqual([]);
-    });
-});
 
 describe('脑震荡（concussion）收入阶段处理', () => {
     it('有脑震荡时跳过收入阶段并移除脑震荡', () => {

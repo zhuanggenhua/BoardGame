@@ -12,6 +12,7 @@ export type GamePackageInstallErrorCode =
     | 'file-io'
     | 'cancelled'
     | 'task-conflict'
+    | 'manifest-fetch-failed'
     | 'manifest-missing'
     | 'notification-permission-required'
     | 'unsupported-runtime'

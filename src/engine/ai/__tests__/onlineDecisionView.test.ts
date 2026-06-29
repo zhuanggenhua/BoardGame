@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../types';
 import { registerGameAiRuntime, resolveNextAiDispatch } from '../index';
 import { resolveOnlineAiDecisionView } from '../onlineDecisionView';
+import { smashUpAiRuntime } from '../../../games/smashup/ai';
 
 function buildCompareRollSharedState(): MatchState<unknown> {
     return {
@@ -122,7 +123,137 @@ function buildCompareRollVisibleState(args?: {
     } as MatchState<unknown>;
 }
 
+function buildSmashUpReactionChoiceState(args: {
+    currentPlayerId?: string;
+    interactionPlayerId?: string;
+    eventStreamNextId?: number;
+    optionSpecs: Array<{ id: string; kind: 'trigger' | 'pass'; disabled?: boolean }>;
+}): MatchState<unknown> {
+    return {
+        core: {
+            currentPlayerId: args.currentPlayerId ?? '1',
+        },
+        sys: {
+            phase: 'afterScoring',
+            turnNumber: 8,
+            eventStream: {
+                nextId: args.eventStreamNextId ?? 88,
+                entries: [],
+            },
+            interaction: {
+                current: {
+                    id: 'smashup-reaction-1',
+                    kind: 'simple-choice',
+                    playerId: args.interactionPlayerId ?? '1',
+                    data: {
+                        sourceId: 'smashup_reaction_choose',
+                        options: args.optionSpecs.map((spec) => ({
+                            id: spec.id,
+                            label: spec.id,
+                            disabled: spec.disabled ?? false,
+                            value: { kind: spec.kind },
+                        })),
+                    },
+                },
+                queue: [],
+                isBlocked: false,
+            },
+            responseWindow: {},
+        },
+    } as MatchState<unknown>;
+}
+
 describe('resolveOnlineAiDecisionView', () => {
+    it('phase 为空但 event/currentPlayer 对齐时，不应把私有视角误判为过期', async () => {
+        const gameId = '__test_online_ai_phase_less_private_overlay__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                const core = state.core as {
+                    currentPlayer?: string;
+                    stage?: string;
+                } | undefined;
+                if (core?.currentPlayer !== playerId || core?.stage !== 'draw') {
+                    return [];
+                }
+                return [{
+                    actionId: `draw-${playerId}`,
+                    kind: 'draw-card',
+                    label: `draw-${playerId}`,
+                    commands: [{ type: 'DRAW_FROM_DECK', payload: {} }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: (context) => (
+                        context.legalActions[0]
+                            ? { actionId: context.legalActions[0].actionId }
+                            : null
+                    ),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const sharedState = {
+            sys: {
+                phase: '',
+                turnNumber: 0,
+                eventStream: {
+                    nextId: 4,
+                    entries: [],
+                },
+                interaction: { current: null, queue: [], isBlocked: false },
+                responseWindow: { current: null },
+            },
+            core: {
+                currentPlayer: '1',
+                turn: 2,
+                stage: 'draw',
+            },
+        } as MatchState<unknown>;
+        const seatState = structuredClone(sharedState);
+
+        const resolved = resolveOnlineAiDecisionView({
+            sharedState,
+            privateOverlay: seatState,
+            playerId: '1',
+        });
+
+        expect(resolved.visibility).toBe('private-required');
+        expect(resolved.canDecide).toBe(true);
+        expect(resolved.blockedReason).toBeNull();
+        expect(resolved.visibleState).toBe(seatState);
+
+        const dispatch = await resolveNextAiDispatch({
+            engineConfig: {
+                gameId,
+                domain: {} as never,
+                systems: [],
+            },
+            state: sharedState,
+            matchId: 'match-phase-less-private-overlay',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
+                sharedState,
+                privateOverlay: seatState,
+                playerId,
+            }),
+        });
+
+        expect(dispatch.kind).toBe('action');
+        if (dispatch.kind !== 'action') {
+            return;
+        }
+        expect(dispatch.resolution.playerId).toBe('1');
+        expect(dispatch.resolution.action.commands).toEqual([
+            { type: 'DRAW_FROM_DECK', payload: {} },
+        ]);
+    });
+
     it('compare-roll 公开可见但仍 blocked 的 contestant，应优先使用新鲜 seat snapshot 作为 visibleState', () => {
         const sharedState = buildCompareRollSharedState();
         const seatState = buildCompareRollSeatState();
@@ -221,6 +352,37 @@ describe('resolveOnlineAiDecisionView', () => {
             return;
         }
         expect(dispatch.idleReason).toBe('no-action');
+    });
+
+    it('smashup_reaction_choose 在 shared 可见时，若 seat 选项集漂移，不应继续复用 seat snapshot', () => {
+        const sharedState = buildSmashUpReactionChoiceState({
+            optionSpecs: [
+                { id: 'time_travelers_jumper', kind: 'trigger' },
+                { id: 'pass', kind: 'pass' },
+            ],
+        });
+        const staleSeatState = buildSmashUpReactionChoiceState({
+            optionSpecs: [
+                { id: 'time_travelers_jumper', kind: 'trigger' },
+                { id: 'shapeshifters_doppelganger', kind: 'trigger' },
+                { id: 'pass', kind: 'pass' },
+            ],
+        });
+
+        const resolved = resolveOnlineAiDecisionView({
+            runtime: smashUpAiRuntime,
+            sharedState,
+            privateOverlay: staleSeatState,
+            playerId: '1',
+        });
+
+        expect(resolved.visibility).toBe('shared');
+        expect(resolved.canDecide).toBe(true);
+        expect(resolved.blockedReason).toBeNull();
+        expect(resolved.visibleState).toBe(sharedState);
+        expect(
+            resolved.visibleState.sys?.interaction?.current?.data?.options,
+        ).toHaveLength(2);
     });
 
     it('compare-roll contestants 变化时，离开可见集合的 seat 必须清掉旧 current，新进入者必须拿到新 current', () => {

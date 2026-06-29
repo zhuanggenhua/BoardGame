@@ -2,7 +2,7 @@
   "version": 1,
   "generatedAt": "2026-04-25T09:39:50.7913934+08:00",
   "source": "public/assets/common/audio (legacy-registry + imported-candidate-b)",
-  "total": 11641,
+  "total": 11639,
   "entries": [
     {
       "key": "ambient.khron_studio_sound_of_survival_vol_1_assets.character.character_drink.fooddrnk_character_drink_01_krst",
@@ -92606,15 +92606,6 @@
       }
     },
     {
-      "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_lose_reaction",
-      "src": "sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/STGR_Lose_Reaction.ogg",
-      "type": "sfx",
-      "category": {
-        "group": "stinger",
-        "sub": "mini_games_sound_effects_and_music_pack"
-      }
-    },
-    {
       "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_lose_retro",
       "src": "sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/STGR_Lose_Retro.ogg",
       "type": "sfx",
@@ -92653,15 +92644,6 @@
     {
       "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_win_puzzle",
       "src": "sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/STGR_Win_Puzzle.ogg",
-      "type": "sfx",
-      "category": {
-        "group": "stinger",
-        "sub": "mini_games_sound_effects_and_music_pack"
-      }
-    },
-    {
-      "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_win_reaction",
-      "src": "sfx/stinger/Mini Games Sound Effects and Music Pack/STINGER/STGR_Win_Reaction.ogg",
       "type": "sfx",
       "category": {
         "group": "stinger",

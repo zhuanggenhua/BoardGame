@@ -30,6 +30,12 @@ vi.mock('../../../hooks/ui/useCoarsePointer', () => ({
     useCoarsePointer: () => coarsePointerMock(),
 }));
 
+vi.mock('../../../contexts/ModalStackContext', () => ({
+    useModalStack: () => ({
+        closeAll: vi.fn(),
+    }),
+}));
+
 describe('ConnectionLoadingScreen', () => {
     beforeEach(() => {
         vi.useFakeTimers();

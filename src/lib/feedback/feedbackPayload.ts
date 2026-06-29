@@ -39,6 +39,9 @@ export interface FeedbackClientContext {
     playerId?: string;
     gameId?: string;
     appVersion?: string;
+    appCommitSha?: string;
+    appBuildTime?: string;
+    appReleaseChannel?: string;
     userAgent?: string;
     viewport?: {
         width: number;
@@ -48,7 +51,9 @@ export interface FeedbackClientContext {
     timezone?: string;
     activeElement?: FeedbackElementSummary;
     lastUserAction?: FeedbackUserActionSummary;
+    recentUserActions?: FeedbackUserActionSummary[];
     lastRouteChange?: FeedbackRouteChangeSummary;
+    recentRouteChanges?: FeedbackRouteChangeSummary[];
     pageFlags?: FeedbackPageFlags;
 }
 

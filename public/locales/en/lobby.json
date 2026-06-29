@@ -331,6 +331,8 @@
     "runtimeUnsupported": "This runtime does not support downloading game packages yet. Please retry inside the Android app.",
     "failedTitle": "Download Failed",
     "failedHint": "Downloading, verifying, or activating the game package failed. Please try again later.",
+    "manifestFetchFailedHint": "Failed to load the download manifest. Check the network and try again. If it keeps failing, ask an administrator to verify the publication state.",
+    "manifestMissingHint": "The current download manifest does not include a downloadable game package yet. Please publish a build first.",
     "notificationSettingsAction": "Open notification settings",
     "retryAction": "Retry",
     "cancelAction": "Cancel Download",
@@ -630,10 +632,10 @@
     }
   },
   "testMatchRoom": {
-    "missing_game_config": "Game configuration not found",
-    "loading": "Loading...",
-    "loading_with_game": "Loading {{game}}...",
-    "game_load_failed": "Failed to load game",
+    "gameConfigMissing": "Game configuration not found",
+    "loadingWithGame": "Loading {{game}}...",
+    "loadingFallback": "Loading...",
+    "gameLoadFailed": "Failed to load game",
     "seo_title": "{{game}} - Test Mode",
     "seo_description": "{{game}} E2E test mode"
   },
@@ -667,6 +669,7 @@
         "rooms": "Rooms",
         "sponsors": "Sponsors",
         "notifications": "Notifications",
+        "mobile_release": "Release Center",
         "health": "System Health"
       },
       "role": {
@@ -1021,6 +1024,111 @@
         "toggle_publish_failed": "Failed to toggle publish state",
         "unpublish_success": "Publication withdrawn",
         "publish_success": "Changelog published"
+      }
+    },
+    "mobileReleasePage": {
+      "title": "Release Center",
+      "description": "Manage Android OTA, native app packages, mobile game packages, deployment updates, and deployment rollback.",
+      "cards": {
+        "product_version": "Product Version",
+        "latest_ota": "Latest OTA Cursor",
+        "latest_native": "Latest Native Package",
+        "release_ready": "Release Environment"
+      },
+      "ota": {
+        "title": "Android OTA"
+      },
+      "packages": {
+        "title": "Android Game Packages"
+      },
+      "form": {
+        "channel": "Channel",
+        "ota_version_base": "OTA Cursor Base",
+        "force_update": "Force switch after download",
+        "skip_latest": "Upload only, do not update latest",
+        "skip_build": "Skip native build and use existing APK",
+        "bump": "Version Bump",
+        "notes": "Release Notes",
+        "notes_placeholder": "Leave empty to use script defaults",
+        "game_id": "Game ID",
+        "game_id_placeholder": "Leave empty to publish every managed package",
+        "manifest_only": "Manifest only"
+      },
+      "bump": {
+        "none": "No bump",
+        "patch": "patch",
+        "minor": "minor",
+        "major": "major"
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "dry_run": "Dry Run",
+        "publish": "Publish",
+        "publish_native": "Publish Native Package",
+        "publish_packages": "Publish Game Packages",
+        "preview_command": "Preview Command",
+        "execute_deploy_update": "Execute Deploy Update",
+        "execute_rollback": "Execute Rollback",
+        "running": "Running..."
+      },
+      "manifest": {
+        "ota_title": "Current OTA latest.json",
+        "native_title": "Current Native latest.json",
+        "version": "Version",
+        "published_at": "Published At",
+        "size": "Bundle Size",
+        "force_update": "Force Update"
+      },
+      "native": {
+        "title": "Android Native Package"
+      },
+      "deployUpdate": {
+        "title": "Deployment Update",
+        "tag": "Image tag",
+        "tag_placeholder": "Leave empty to deploy latest",
+        "confirm_label": "Execution confirmation",
+        "confirm_placeholder": "Type 确认部署 to execute",
+        "description": "Deployment update runs the server host deploy script with update. Leaving the tag empty deploys latest; entering a tag deploys that image. Execution must go through the independent deploy runner so the web container does not interrupt its own control entry while updating."
+      },
+      "rollback": {
+        "title": "Deployment Rollback",
+        "action": "Rollback Mode",
+        "rollback_last": "Rollback to previous successful deployment",
+        "rollback_tag": "Rollback by image tag",
+        "tag": "Image tag",
+        "target_title": "Rollback Target",
+        "tag_hint": "Preview first. The server will read the commit title for this tag.",
+        "last_target_empty": "No previous successful deployment state was found, so rollback-last cannot be resolved yet.",
+        "target_web": "Web image",
+        "target_game": "Game service image",
+        "confirm_label": "Execution confirmation",
+        "confirm_placeholder": "Type 确认回滚 to execute"
+      },
+      "safety": {
+        "title": "Operation Boundary",
+        "description": "Release, deployment update, and rollback are explicit admin operations. Deployment update and rollback are executed only by the independent deploy runner on the server host; without the runner, the admin page only previews commands."
+      },
+      "result": {
+        "title": "Latest Execution",
+        "kind": "Kind",
+        "mode": "Mode",
+        "bundle_version": "Bundle Cursor",
+        "zip_bytes": "ZIP Bytes"
+      },
+      "status": {
+        "ready": "Configured",
+        "not_ready": "Not Ready",
+        "yes": "Yes",
+        "no": "No"
+      },
+      "toast": {
+        "status_failed": "Failed to load release status",
+        "publish_failed": "Release failed",
+        "dry_run_success": "Dry run completed",
+        "publish_success": "Published",
+        "preview_success": "Command preview generated",
+        "deploy_update_success": "Deployment update command submitted",
+        "rollback_success": "Rollback command executed"
       }
     },
     "notificationsPage": {
@@ -1398,6 +1506,9 @@
         "sfx": "SFX",
         "bgm": "Music"
       },
+      "playback": {
+        "loading_short": "Loading"
+      },
       "history": {
         "title": "Playback History",
         "clear": "Clear",
@@ -1430,6 +1541,16 @@
         "phrase_map_loaded": "[AudioBrowser] Phrase map loaded: {{count}} entries",
         "phrase_map_failed": "[AudioBrowser] Failed to load phrase map, fallback to English",
         "registry_failed": "Failed to load audio registry"
+      }
+    },
+    "audioRuntime": {
+      "toast": {
+        "playback_failed_title": "Audio Playback Failed",
+        "preload_failed_title": "Audio Preload Failed",
+        "missing_key": "Audio resource not found: {{key}}",
+        "load_failed": "Audio failed to load: {{key}}",
+        "known_failed": "This audio has already failed to load: {{key}}",
+        "invalid_source": "Audio source is invalid: {{key}}"
       }
     },
     "architectureView": {
@@ -1834,6 +1955,21 @@
             "show_ring": "Show Ring"
           },
           "preview": "Unit Card"
+        },
+        "settlement_score": {
+          "title": "Settlement Score",
+          "description": "Card score pop-up + floating value text + pulsing total score accumulation",
+          "buttons": {
+            "small": "Small Score (8)",
+            "medium": "Medium Score (22)",
+            "big": "Big Score (102)",
+            "reset": "Reset"
+          },
+          "preview": {
+            "total_label": "Total Score",
+            "rank": "Rank 1",
+            "card": "Scored Card"
+          }
         }
       },
       "loading": {
@@ -2009,6 +2145,10 @@
           "abilityready": {
             "label": "Ability Ready Ripple",
             "usage": "Summoner Wars activatable unit cyan ripple"
+          },
+          "settlementscore": {
+            "label": "Settlement Score",
+            "usage": "Fantasy Realms endgame card-by-card score pop-up and total score accumulation"
           }
         },
         "loading": {
@@ -2150,7 +2290,13 @@
     "ownerSeatUnit": "Seat {{seat}} (Host)",
     "occupiedSeatUnit": "Seat {{seat}}",
     "aiPlayerName": "AI Seat {{seat}}",
+    "aiThinkingTime": "AI Thinking Time",
+    "aiThinkingTimeHint": "Saved separately for this game",
+    "aiThinkingTimeSeconds": "{{count}} sec",
     "aiManualFactionSelection": "Player chooses AI factions",
+    "qidahenInMatchSetupTitle": "Finish scenario voting and setup in match",
+    "qidahenInMatchSetupDescription": "Room creation now only decides player count and AI seats. After entering the board, each online seat completes scenario briefing, voting, character setup, and armament setup in match.",
+    "qidahenPregameMovedInMatch": "This screen no longer presets a scenario or votes on anyone's behalf. Formal online rooms first enter the in-match scenario briefing and voting page, then continue to character and armament setup.",
     "confirm": "Create Room"
   },
   "socket": {

@@ -94,6 +94,9 @@ public/**/*.jpg
 public/**/*.jpeg
 public/**/*.gif
 public/**/*.webp
+!public/assets/i18n/zh-CN/fantasyrealms/cards/faces/
+!public/assets/i18n/zh-CN/fantasyrealms/cards/faces/compressed/
+!public/assets/i18n/zh-CN/fantasyrealms/cards/faces/compressed/*.webp
 public/**/*.avif
 public/**/*.tiff
 public/**/*.bmp

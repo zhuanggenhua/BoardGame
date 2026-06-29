@@ -13,7 +13,9 @@ import { checkPlayCard, getAvailableAbilityIds } from '../domain/rules';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { BLINK_2, DEATH_BLOSSOM_2, GOING_FORWARD_2, POISON_BLADE_2, SHADOW_FANG_2, SHADOW_STEP_2, SLASH_2, SMOKE_SCREEN_2 } from '../heroes/ninja/abilities';
-import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { DiceThroneDomain } from '../domain';
+import { executePipeline } from '../../../engine/pipeline';
+import { createHeroMatchup, createQueuedRandom, getSimpleChoicePrompt, respondToPrompt, testSystems } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -487,7 +489,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(forgedKujiEvents).toEqual([]);
     });
 
-    it('Blink 基础版应按防御投已出的骰面结算固定反击与烟雾弹，而不是额外奖励骰累计', () => {
+    it('Blink 基础版应按防御投已出的骰面结算固定反击，且只有两个面具才给烟雾弹', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
         state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
@@ -507,7 +509,80 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
         expect(events.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(true);
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(27);
-        expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(0);
+
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.dice = [1, 6, 6].map(createNinjaDie);
+
+        const twoMaskEvents = resolveAttack(state.core, createQueuedRandom([1]), undefined, 200);
+        const twoMaskNext = applyEvents(state.core, twoMaskEvents);
+
+        expect(twoMaskNext.players['0'].resources[RESOURCE_IDS.HP]).toBe(29);
+        expect(twoMaskNext.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+    });
+
+    it('Blink 基础版被选为防御技能后应允许再掷 1 次，且第二次至多只重掷 1 颗', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.rollCount = 0;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist',
+            defenseAbilityId: undefined,
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const activated = reduce(state.core, {
+            type: 'ABILITY_ACTIVATED',
+            payload: {
+                abilityId: 'blink',
+                playerId: '1',
+                isDefense: true,
+            },
+            sourceCommandType: 'TEST',
+            timestamp: 100,
+        } as DiceThroneEvent);
+
+        expect(activated.pendingAttack?.defenseAbilityId).toBe('blink');
+        expect(activated.rollDiceCount).toBe(3);
+        expect(activated.rollLimit).toBe(2);
+
+        const firstRollEvents = execute(
+            { core: activated, sys: { phase: 'defensiveRoll' } },
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([1, 4, 6]),
+        );
+        const afterFirstRoll = applyEvents(activated, firstRollEvents);
+
+        expect(validateCommand(afterFirstRoll, command('ROLL_DICE', '1'), 'defensiveRoll')).toEqual({
+            valid: false,
+            error: 'defense_reroll_die_limit_exceeded',
+        });
+
+        const lockEvents = execute(
+            { core: afterFirstRoll, sys: { phase: 'defensiveRoll' } },
+            command('TOGGLE_DIE_LOCK', '1', { dieId: afterFirstRoll.dice[0].id }),
+            createQueuedRandom([1]),
+        );
+        const afterOneLock = applyEvents(afterFirstRoll, lockEvents);
+
+        expect(validateCommand(afterOneLock, command('ROLL_DICE', '1'), 'defensiveRoll')).toEqual({
+            valid: false,
+            error: 'defense_reroll_die_limit_exceeded',
+        });
+
+        const secondLockEvents = execute(
+            { core: afterOneLock, sys: { phase: 'defensiveRoll' } },
+            command('TOGGLE_DIE_LOCK', '1', { dieId: afterOneLock.dice[1].id }),
+            createQueuedRandom([1]),
+        );
+        const afterTwoLocks = applyEvents(afterOneLock, secondLockEvents);
+
+        expect(validateCommand(afterTwoLocks, command('ROLL_DICE', '1'), 'defensiveRoll')).toEqual({ valid: true });
     });
 
     it('Blink II 应按忍刀数量结算伤害，手里剑固定 +2，且只有两个面具才给烟雾弹', () => {
@@ -912,7 +987,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(nonTripletNext.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
     });
 
-    it('影牙 II 主分支应获得 1 烟雾弹、2 忍术并造成 8 点伤害', () => {
+    it('影牙 II 主分支会先获得烟雾弹与 2 忍术，并可接入忍术后续选择链', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
             ability.id === 'shadow-fang' ? SHADOW_FANG_2 : ability
@@ -921,6 +996,8 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
         state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.activePlayerId = '0';
+        state.core.rollConfirmed = true;
         state.core.pendingAttack = {
             attackerId: '0',
             defenderId: '1',
@@ -928,32 +1005,37 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             isDefendable: true,
             damage: 0,
         };
+        state.sys.phase = 'offensiveRoll';
 
-        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 167);
-        let next = applyEvents(state.core, events);
-
-        expect(events.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(true);
-        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
-        expect(next.pendingDamage?.responseType).toBe('beforeDamageDealt');
-        expect(next.pendingDamage?.currentDamage).toBe(8);
-        expect(next.pendingDamage?.responderId).toBe('0');
-
-        const skipEvents = execute(
-            { core: next, sys: { phase: 'offensiveRoll' } },
-            command('SKIP_TOKEN_RESPONSE', '0'),
+        const advanceResult = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
             createQueuedRandom([1]),
+            ['0', '1'],
         );
-        next = applyEvents(next, skipEvents);
 
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(22);
-        expect(next.pendingDamage).toBeUndefined();
-        expect(next.pendingAttack).toMatchObject({
-            sourceAbilityId: 'shadow-fang-2-main',
-            damageResolved: true,
-            resolvedDamage: 8,
-        });
+        expect(advanceResult.success).toBe(true);
+        if (!advanceResult.success) return;
+
+        const next = advanceResult.state;
+        expect(next.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
+        expect(next.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
+        const tokenPrompt = getSimpleChoicePrompt(next, 'shadow-fang-2-main');
+        expect(tokenPrompt.options.map(option => option.value?.customId)).toContain('use-ninjutsu');
+
+        const useOption = tokenPrompt.options.find(option => option.value?.customId === 'use-ninjutsu');
+        expect(useOption).toBeTruthy();
+
+        const useResult = respondToPrompt(next, useOption!.id, '0', createQueuedRandom([6]), ['0', '1']);
+        expect(useResult.success).toBe(true);
+        if (!useResult.success) return;
+
+        expect(useResult.events.some(event => event.type === 'CHOICE_REQUESTED')).toBe(true);
+        expect(useResult.state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(1);
+        const ninjutsuPrompt = getSimpleChoicePrompt(useResult.state, 'shadow-fang-2-main');
+        expect(ninjutsuPrompt.options.map(option => option.value?.customId)).toContain('ninja-ninjutsu-undefendable');
     });
 
     it('影牙 II 的诳惑分支应获得 1 烟雾弹并造成 2 点不可防御伤害', () => {
@@ -1260,6 +1342,27 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             ok: false,
             reason: 'wrongPhaseForMain',
         });
+    });
+
+    it('毒镖应为 2CP 的主要阶段行动牌，且只施加 1 个慢性中毒', () => {
+        const card = NINJA_CARDS.find(item => item.id === 'ninja-card-poison-dart');
+        expect(card).toBeDefined();
+        expect(card?.cpCost).toBe(2);
+        expect(card?.timing).toBe('main');
+        expect(card?.isAttackModifier).not.toBe(true);
+
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+
+        const events = resolveEffectsToEvents(
+            card?.effects ?? [],
+            'immediate',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'ninja-card-poison-dart', state: state.core, damageDealt: 0, timestamp: 150 },
+            { random: createQueuedRandom([1]) },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
     });
 
     it('道场应按卡图投 1 骰：面具获得烟雾弹和 2 忍术，否则抽 1', () => {

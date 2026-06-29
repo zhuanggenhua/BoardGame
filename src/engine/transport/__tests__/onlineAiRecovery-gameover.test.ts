@@ -456,6 +456,62 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         });
     });
 
+    it('可见 simple-choice 的让过选项 id 已漂移时，watchdog 必须命中当前 live optionId', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'scoreBases',
+                interaction: {
+                    current: {
+                        id: 'reaction-order-choice',
+                        playerId: '1',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个反应动作',
+                            options: [
+                                {
+                                    id: 'stale-pass',
+                                    label: '旧让过',
+                                    value: { kind: 'pass' },
+                                },
+                            ],
+                            optionsGenerator: () => [
+                                {
+                                    id: 'live-pass',
+                                    label: '当前让过',
+                                    value: { kind: 'pass' },
+                                },
+                            ],
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            engineConfig: diceThroneEngineConfig,
+        });
+
+        expect(result?.reason).toBe('visible-interaction');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { interactionId: 'reaction-order-choice', optionId: 'live-pass' },
+        });
+    });
+
     it('隐藏 simple-choice 只有 Pass 控制项时，watchdog 应把 Pass 视为可跳过控制项', () => {
         const sharedState: MatchState<unknown> = {
             core: {

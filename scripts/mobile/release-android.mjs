@@ -39,6 +39,12 @@ Android 统一发布入口
 ota / native / full 额外选项:
   --bump <patch|minor|major>   自动更新 package.json / package-lock.json 版本
 
+ota 额外选项:
+  --version <bundleVersion>     显式指定 OTA 内部游标
+
+ota / full 额外选项:
+  --ota-version-base <semver>   未显式 --version 时的 OTA 游标基线，可与产品版本解耦
+
 native / full 额外选项:
   --skip-build                 跳过 native build:release, 直接发布现有 APK
 
@@ -48,6 +54,7 @@ full 额外选项:
 
 说明:
   - OTA 发布已禁止隐式版本；发布时会强制传 --expected-base-version=<package.json.version>
+  - OTA 客户端按 bundle version 这个内部游标判断新旧；publishedAt 只用于审计和展示
   - OTA / native / full 可使用 --bump 自动递增版本后再发布
   - full 的顺序固定为: OTA -> packages(可选) -> native
   - native / full 不接受 --version 覆盖原生版本, 原生版本以 package.json 为单一真实来源
@@ -218,6 +225,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
         'version',
+        'ota-version-base',
         'native-version',
         'expected-base-version',
         'force-update-title',

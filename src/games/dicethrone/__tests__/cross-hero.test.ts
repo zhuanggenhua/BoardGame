@@ -766,7 +766,7 @@ describe('cross hero battles', () => {
                         { '0': 'gunslinger', '1': 'monk' }
                     );
                     state.core.players['0'].tokens.loaded = 1;
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     state.core.players['0'].hand = [{ ...wildWestCard! }];
                     state.core.players['0'].deck = [];
                     return state;
@@ -1519,7 +1519,7 @@ describe('cross hero battles', () => {
                     turnPhase: 'main1',
                     pendingInteraction: null,
                     players: {
-                        '0': { hp: 50, cp: 0, discardSize: 1 },
+                        '0': { hp: 50, cp: 1, discardSize: 1 },
                         '1': { hp: 50 },
                     },
                 },
@@ -1544,7 +1544,7 @@ describe('cross hero battles', () => {
                         random,
                         { '0': 'gunslinger', '1': 'monk' }
                     );
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     state.core.players['0'].hand = [{ ...wantedCard! }];
                     state.core.players['0'].deck = [];
                     return state;
@@ -1562,7 +1562,7 @@ describe('cross hero battles', () => {
                     turnPhase: 'main1',
                     pendingInteraction: null,
                     players: {
-                        '0': { hp: 50, cp: 0, discardSize: 1 },
+                        '0': { hp: 50, cp: 1, discardSize: 1 },
                         '1': { hp: 50 },
                     },
                 },
@@ -1652,7 +1652,7 @@ describe('cross hero battles', () => {
                     turnPhase: 'main1',
                     pendingInteraction: null,
                     players: {
-                        '0': { hp: 50, cp: 0, discardSize: 1 },
+                        '0': { hp: 50, cp: 1, discardSize: 1 },
                         '1': { hp: 50 },
                     },
                 },
@@ -1697,7 +1697,7 @@ describe('cross hero battles', () => {
                     turnPhase: 'main1',
                     pendingInteraction: null,
                     players: {
-                        '0': { hp: 50, cp: 0, discardSize: 1 },
+                        '0': { hp: 50, cp: 1, discardSize: 1 },
                         '1': { hp: 48 },
                     },
                 },
@@ -1724,7 +1724,7 @@ describe('cross hero battles', () => {
                         random,
                         { '0': 'gunslinger', '1': 'monk' }
                     );
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     state.core.players['0'].hand = [{ ...upgradeCard! }];
                     state.core.players['0'].deck = [];
                     state.core.players['1'].tokens.bounty = 1;
@@ -1796,7 +1796,7 @@ describe('cross hero battles', () => {
                     turnPhase: 'main1',
                     pendingInteraction: null,
                     players: {
-                        '0': { hp: 50, cp: 0, discardSize: 1 },
+                        '0': { hp: 50, cp: 1, discardSize: 1 },
                         '1': { hp: 50 },
                     },
                 },
@@ -1822,7 +1822,7 @@ describe('cross hero battles', () => {
                         random,
                         { '0': 'gunslinger', '1': 'monk' }
                     );
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     state.core.players['0'].hand = [{ ...revolverUpgradeCard! }];
                     state.core.players['0'].deck = [];
                     return state;
@@ -1908,7 +1908,7 @@ describe('cross hero battles', () => {
                         random,
                         { '0': 'gunslinger', '1': 'monk' }
                     );
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     return state;
                 },
                 assertFn: assertState,
@@ -2424,7 +2424,7 @@ describe('cross hero battles', () => {
                     turnPhase: 'offensiveRoll',
                     pendingInteraction: null,
                     players: {
-                        '0': { hp: 50, cp: 0, discardSize: 1 },
+                        '0': { hp: 50, cp: 1, discardSize: 1 },
                         '1': { hp: 50 },
                     },
                 },
@@ -2455,7 +2455,7 @@ describe('cross hero battles', () => {
                         random,
                         { '0': 'samurai', '1': 'monk' }
                     );
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     state.core.players['0'].hand = [{ ...righteousnessCard! }];
                     state.core.players['0'].deck = [];
                     return state;
@@ -2510,7 +2510,7 @@ describe('cross hero battles', () => {
                         random,
                         { '0': 'samurai', '1': 'monk' }
                     );
-                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['0'].resources.cp = 1;
                     state.core.players['0'].hand = [{ ...zanshinCard! }];
                     state.core.players['0'].deck = [];
                     return state;

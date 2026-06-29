@@ -92,6 +92,50 @@
     "card_search_placeholder": "Search cards",
     "card_search_clear": "Clear search",
     "card_filter_result_count": "Showing {{visible}} / {{total}}",
+    "kung_fu_fighters_counter_transfer_confirm_option": "Confirm Transfer",
+    "kung_fu_fighters_ancient_chinese_art_mode_add_option": "Place 1 Counter",
+    "kung_fu_fighters_ancient_chinese_art_mode_transfer_option": "Transfer Counters",
+    "kung_fu_fighters_ancient_chinese_art_mode_title": "Ancient Chinese Art: choose an effect",
+    "kung_fu_fighters_everybody_knew_their_part_title": "Everybody Knew Their Part: choose one of your minions",
+    "kung_fu_fighters_fast_as_lightning_title": "Fast as Lightning: choose a minion",
+    "kung_fu_fighters_everybody_was_base_title": "Everybody Was Kung Fu Fighting: choose a base",
+    "kung_fu_fighters_everybody_was_target_title": "Everybody Was Kung Fu Fighting: choose another player's minion to destroy",
+    "kung_fu_fighters_expert_timing_mode_title": "Expert Timing: choose an effect",
+    "kung_fu_fighters_expert_timing_talent_title": "Expert Timing: choose a minion to use an extra talent",
+    "kung_fu_fighters_expert_timing_source_title": "Expert Timing: choose a minion to move all +1 counters from",
+    "kung_fu_fighters_expert_timing_target_title": "Expert Timing: choose another minion to receive all +1 counters",
+    "kung_fu_fighters_expert_timing_transfer_option": "Move all +1 counters",
+    "kung_fu_fighters_expert_timing_talent_option": "Use an extra talent",
+    "kung_fu_fighters_expert_timing_both_option": "Do both",
+    "kung_fu_fighters_a_little_bit_frightening_reward_title": "A Little Bit Frightening: choose one of your minions here to place 2 counters",
+    "kung_fu_fighters_a_little_bit_frightening_destroy_title": "A Little Bit Frightening: choose a lower-power minion here to destroy",
+    "kung_fu_fighters_a_little_bit_frightening_reference_title": "A Little Bit Frightening: choose a minion as reference",
+    "kung_fu_fighters_lets_get_it_on_targets_title": "Let's Get It On: choose one or more minions to destroy",
+    "kung_fu_fighters_lets_get_it_on_source_title": "Let's Get It On: choose one of your minions",
+    "kung_fu_fighters_oh_hoh_hoh_hoah_title": "Oh-hoh-hoh-hoah: choose one of your minions to place 1 counter",
+    "kung_fu_fighters_lady_whirlwind_title": "Lady Whirlwind: choose a lower-power minion to destroy",
+    "truckers_action_mode_transfer_option": "Transfer Only",
+    "truckers_action_mode_control_option": "Take Control Only",
+    "truckers_action_mode_transfer_and_control_option": "Transfer and Take Control",
+    "truckers_action_mode_extra_action_option": "Extra Action",
+    "truckers_high_speed_chase_base_title": "High-Speed Chase: choose a destination base",
+    "truckers_high_speed_chase_minion_title": "High-Speed Chase: choose one of your minions here",
+    "truckers_dekotora_minions_title": "Dekotora: choose up to 3 of your minions to move",
+    "truckers_dekotora_base_title": "Dekotora: choose a destination base",
+    "truckers_cab_over_pete_base_title": "Cab-Over Pete: choose a destination base",
+    "truckers_cab_over_pete_card_title": "Cab-Over Pete: choose another card you control here",
+    "truckers_hotwire_base_title": "Hotwire: choose a destination base",
+    "truckers_hotwire_mode_title": "Hotwire: choose an effect",
+    "truckers_hotwire_action_title": "Hotwire: choose a base action",
+    "truckers_el_bandido_take_control_title": "El Bandido: you may take control of a base action",
+    "truckers_el_bandido_transfer_base_title": "El Bandido: choose a destination base",
+    "truckers_el_bandido_transfer_action_title": "El Bandido: choose a base action to transfer",
+    "truckers_el_bandido_talent_mode_title": "El Bandido: choose a talent effect",
+    "truckers_skinny_minnie_action_title": "Skinny Minnie: choose a base action to move with her",
+    "truckers_skinny_minnie_base_title": "Skinny Minnie: choose a destination base",
+    "vigilantes_brojak_follow_option": "Move and gain +1 power",
+    "disco_dancers_dancing_king_title": "Dancing King: choose another minion here to copy this standard action effect",
+    "disco_dancers_i_will_survive_title": "I Will Survive: return one of your minions there to its owner's hand",
     "card_search_empty": "No matching cards",
     "faction_filter_empty_title": "No matching factions",
     "faction_filter_empty_desc": "Try a different filter or clear the search to focus on factions you can actually pick.",
@@ -131,6 +175,7 @@
     "you_short": "YOU",
     "you_badge": "YOU",
     "talent_used": "Used",
+    "extra_talent_ready": "Extra Talent",
     "ongoing_short": "Ongoing",
     "talent_short": "Talent",
     "base_ability": "Base Ability",
@@ -1498,6 +1543,22 @@
     "time_travelers": {
       "name": "Time Travelers",
       "description": "Recycle discards, return cards to hand, alter base replacement, and replay key turns."
+    },
+    "kung_fu_fighters": {
+      "name": "Kung Fu Fighters",
+      "description": "Use +1 power counters, precise timing, and movement tricks to explode at key bases."
+    },
+    "vigilantes": {
+      "name": "Vigilantes",
+      "description": "Hard-boiled heroes and street justice protect your board while punishing opposing plays."
+    },
+    "truckers": {
+      "name": "Truckers",
+      "description": "Move cards, actions, and minions across bases with convoy-style tempo swings."
+    },
+    "disco_dancers": {
+      "name": "Disco Dancers",
+      "description": "Chain extra actions, movement, and power counters into scoring-floor momentum."
     }
   },
   "tutorial": {
@@ -1548,6 +1609,426 @@
     }
   },
   "cards": {
+    "dragons_great_wyrm": {
+      "name": "Great Wyrm",
+      "abilityText": "Ongoing: When this minion's base scores, other players gain 1 less VP."
+    },
+    "dragons_wyvern": {
+      "name": "Wyvern",
+      "abilityText": "On play: Destroy a minion here of power 3 or less. Talent: Reduce this base's breakpoint by 3 until the end of the turn."
+    },
+    "dragons_imperial_dragon": {
+      "name": "Imperial Dragon",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, draw 1 card."
+    },
+    "dragons_hatchling": {
+      "name": "Hatchling",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, that minion gets -1 power until the end of the turn."
+    },
+    "dragons_dangerous_ground": {
+      "name": "Dangerous Ground",
+      "effectText": "Play on a base. Ongoing: After another player plays a minion here, that player discards 1 card."
+    },
+    "dragons_ruins": {
+      "name": "Ruins",
+      "effectText": "Play on a base. Ongoing: When this base scores, other players gain 1 less VP."
+    },
+    "dragons_burn_it_down": {
+      "name": "Burn it Down",
+      "effectText": "Choose a base. Replace it with the top card of the base deck or a base from the base discard pile."
+    },
+    "dragons_raze": {
+      "name": "Raze",
+      "effectText": "Play on a base. Ongoing: This base's ability is canceled."
+    },
+    "dragons_bring_down_the_walls": {
+      "name": "Bring Down the Walls",
+      "effectText": "Play on a base. Ongoing: Before this base scores, you may play an extra minion here."
+    },
+    "dragons_dragon_lands": {
+      "name": "Dragon Lands",
+      "effectText": "Special: You may play this on a base before it scores. Ongoing: Your minions here each have +1 power."
+    },
+    "dragons_intimidating_presence": {
+      "name": "Intimidating Presence",
+      "effectText": "Special: You may play this on a base before it scores. Ongoing: Other players' minions here each have -1 power."
+    },
+    "dragons_flank_attack": {
+      "name": "Flank Attack",
+      "effectText": "Choose an action in your deck and/or discard pile that can be played on a base and play it as an extra action."
+    },
+    "superheroes_awesome_guy": {
+      "name": "Awesome Guy"
+    },
+    "superheroes_mild_mannered_citizen": {
+      "name": "Mild Mannered Citizen"
+    },
+    "superheroes_mind_lady": {
+      "name": "Mind Lady",
+      "abilityText": "Choose another player's minion. Its ability is canceled until the start of your next turn."
+    },
+    "superheroes_captain_amazing": {
+      "name": "Captain Amazing",
+      "abilityText": "Talent: Search your deck for a minion of power 5 or more, play it as an extra minion, then shuffle your deck."
+    },
+    "superheroes_the_burst": {
+      "name": "The Burst"
+    },
+    "superheroes_not_really_dead": {
+      "name": "Not Really Dead",
+      "effectText": "Choose up to two minions of power 2 or less in any discard pile and return them to their owners' hands."
+    },
+    "superheroes_justice_friends": {
+      "name": "Justice Friends",
+      "effectText": "Choose a base. Draw 1 card for each of your minions of power 5 or more there."
+    },
+    "superheroes_golden_age": {
+      "name": "Golden Age",
+      "effectText": "Choose up to three minions and place them on the bottoms of their owners' decks."
+    },
+    "superheroes_sidekick": {
+      "name": "Sidekick",
+      "effectText": "Play an extra minion of power 2 or less."
+    },
+    "superheroes_expanded_power": {
+      "name": "Expanded Power",
+      "effectText": "Play on one of your minions. Ongoing: This minion has +2 power."
+    },
+    "superheroes_radioactive_exposure": {
+      "name": "Radioactive Exposure",
+      "effectText": "Choose a minion. Until the end of the turn, it has +2 power and is not affected by other players' cards."
+    },
+    "superheroes_secret_base": {
+      "name": "Secret Base",
+      "effectText": "Play on a base. Ongoing: Other players cannot play actions on this base."
+    },
+    "superheroes_my_only_weakness": {
+      "name": "My Only Weakness!",
+      "effectText": "Play on a minion. Ongoing: This minion has -3 power."
+    },
+    "geeks_felicia_day": {
+      "name": "Felicia Day"
+    },
+    "geeks_wil_wheaton": {
+      "name": "Wil Wheaton"
+    },
+    "geeks_game_guru": {
+      "name": "Game Guru",
+      "abilityText": "Ongoing: This minion is not affected by other players' non-action cards."
+    },
+    "geeks_fan": {
+      "name": "Fan"
+    },
+    "geeks_cosplay": {
+      "name": "Cosplay",
+      "effectText": "Special: After you gain VP, you may play this card. If you do, gain 1 VP."
+    },
+    "geeks_force_of_wil": {
+      "name": "Force of Wil",
+      "effectText": "Special: Cancel the just-played action card."
+    },
+    "geeks_rules_lawyer": {
+      "name": "Rules Lawyer",
+      "effectText": "Move an ongoing action to another legal target."
+    },
+    "geeks_banned_list": {
+      "name": "Banned List",
+      "effectText": "Name a card. Each other player must discard all cards with that name from their hand."
+    },
+    "geeks_griefer": {
+      "name": "Griefer",
+      "effectText": "Choose another player. That player chooses to discard 1 card or let you destroy one of their minions."
+    },
+    "geeks_mulligan": {
+      "name": "Mulligan",
+      "effectText": "Look at cards from the top of your deck. You may put all of them into your hand, or leave them as they are."
+    },
+    "geeks_control_minion": {
+      "name": "Control Minion",
+      "effectText": "Choose a minion just played by another player. You control it until the end of the turn."
+    },
+    "geeks_non_infinite_loop": {
+      "name": "Non-Infinite Loop",
+      "effectText": "Play an action from the discard pile as an extra action. After it resolves, you may return it to your hand."
+    },
+    "geeks_min_maxing": {
+      "name": "Min-Maxing",
+      "effectText": "Look at another player's hand. You may choose an action from it and play it as an extra action."
+    },
+    "base_tabletop": {
+      "name": "TableTop"
+    },
+    "base_wyrms_desolation": {
+      "name": "Wyrm's Desolation"
+    },
+    "base_the_con": {
+      "name": "The Con"
+    },
+    "base_dragons_lair": {
+      "name": "Dragon's Lair"
+    },
+    "base_converted_cave": {
+      "name": "Converted Cave"
+    },
+    "base_crystal_fortress": {
+      "name": "Crystal Fortress"
+    },
+    "kung_fu_fighters_fast_as_lightning": {
+      "name": "Fast as Lightning",
+      "effectText": "Choose a minion. Until the end of the turn, it has +2 power, and if it would go to the discard pile, return it to its owner's hand instead."
+    },
+    "kung_fu_fighters_dragon_warrior": {
+      "name": "Dragon Warrior",
+      "abilityText": "Ongoing: This minion cannot be destroyed. Talent: Transfer any number of +1 power counters from one minion to another minion."
+    },
+    "kung_fu_fighters_cricket": {
+      "name": "Cricket",
+      "abilityText": "You may transfer one +1 power counter from one minion to another minion."
+    },
+    "kung_fu_fighters_oh_hoh_hoh_hoah": {
+      "name": "Oh-hoh-hoh-hoah",
+      "effectText": "Play on a base. Ongoing: After another player plays a minion here, place a +1 power counter on one of your minions."
+    },
+    "kung_fu_fighters_everybody_knew_their_part": {
+      "name": "Everybody Knew Their Part",
+      "effectText": "Choose one of your minions. Play an extra minion of lower power on that base."
+    },
+    "kung_fu_fighters_everybody_was_kung_fu_fighting": {
+      "name": "Everybody was Kung Fu Fighting",
+      "effectText": "Choose a base. Each player with a minion there destroys another player's minion there."
+    },
+    "kung_fu_fighters_expert_timing": {
+      "name": "Expert Timing",
+      "effectText": "Choose a card. Transfer all +1 power counters from it to another card, and/or use its Talent one extra time. Special: You may play this before a base scores."
+    },
+    "kung_fu_fighters_ancient_chinese_art": {
+      "name": "Ancient Chinese Art",
+      "effectText": "Talent: Place a +1 power counter on a minion here, or transfer any number of +1 power counters from one minion to another."
+    },
+    "kung_fu_fighters_a_little_bit_frightening": {
+      "name": "A Little Bit Frightening",
+      "effectText": "Choose a minion. Destroy a lower-power minion on its base to place two +1 power counters on one of your minions there."
+    },
+    "kung_fu_fighters_drunken_master": {
+      "name": "Drunken Master",
+      "abilityText": "Talent: If this minion has no +1 power counters, place a +1 power counter on it."
+    },
+    "kung_fu_fighters_lady_whirlwind": {
+      "name": "Lady Whirlwind",
+      "abilityText": "Talent: If this minion has no +1 power counters, destroy a lower-power minion here to place a +1 power counter on this minion."
+    },
+    "kung_fu_fighters_lets_get_it_on": {
+      "name": "Let's Get It On",
+      "effectText": "Choose one of your minions. Destroy one or more minions on its base with power no greater than that minion's power."
+    },
+    "vigilantes_shrug_it_off": {
+      "name": "Shrug it Off",
+      "effectText": "Play on a base. Talent: Cancel this base's ability until the start of your next turn."
+    },
+    "vigilantes_scared_straight": {
+      "name": "Scared Straight",
+      "effectText": "Move another player's minion from a base where you have a minion to another base. Play an extra action."
+    },
+    "vigilantes_who_loves_ya_baby": {
+      "name": "Who Loves Ya, Baby?",
+      "effectText": "Draw a card for each minion you control with power 4 or higher."
+    },
+    "vigilantes_a_whole_lot_meaner": {
+      "name": "A Whole Lot Meaner",
+      "effectText": "A minion has +3 power until the end of the turn."
+    },
+    "vigilantes_death_wisher": {
+      "name": "Death Wisher",
+      "abilityText": "Ongoing: Once per turn, after another player destroys another player's minion here, you may destroy one of that player's minions."
+    },
+    "vigilantes_tough_it_out": {
+      "name": "Tough It Out",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power and cannot be destroyed."
+    },
+    "vigilantes_the_revenge": {
+      "name": "The Revenge",
+      "effectText": "Special: Play after a base scores if you are not the winner. Move one of your minions there to another base instead of the discard pile."
+    },
+    "vigilantes_brojak": {
+      "name": "Brojak",
+      "abilityText": "Ongoing: After a minion moves, you may move this minion to the same base and give it +1 power until the end of the turn."
+    },
+    "vigilantes_stoneford": {
+      "name": "Stoneford",
+      "abilityText": "Search your deck for an action and place it into your hand."
+    },
+    "vigilantes_jacky_bill": {
+      "name": "Jacky Bill",
+      "abilityText": "Ongoing: After another player plays an action, you may give this minion +2 power until the end of the turn."
+    },
+    "vigilantes_make_my_day": {
+      "name": "Make My Day",
+      "effectText": "Destroy a minion of power 3 or less on a base where you have a minion. Draw a card."
+    },
+    "vigilantes_street_justice": {
+      "name": "Street Justice",
+      "effectText": "Play on a base. Ongoing: Your minions here are not affected by other players' cards."
+    },
+    "vigilantes_shift": {
+      "name": "Shift",
+      "abilityText": "Place up to two minions from your discard pile on top of your deck."
+    },
+    "vigilantes_dusty_henry": {
+      "name": "Dusty Henry",
+      "abilityText": "You may shuffle a minion here into its owner's deck."
+    },
+    "vigilantes_knocked_into_next_week": {
+      "name": "Knocked into Next Week",
+      "effectText": "Choose a minion. Shuffle it into its owner's deck."
+    },
+    "vigilantes_feeling_lucky": {
+      "name": "Feeling Lucky?",
+      "effectText": "Play on a minion. Ongoing: After this minion's controller plays an action, destroy this minion if this card is still on it."
+    },
+    "vigilantes_lets_finish_this": {
+      "name": "Let's Finish This",
+      "effectText": "Play on a base. Ongoing: At the start of your turn, if you have a minion here and another player has a minion here, reduce this base's breakpoint to 0 until the end of the turn."
+    },
+    "vigilantes_foxy_green": {
+      "name": "Foxy Green",
+      "abilityText": "Ongoing: After another player plays a card or uses a Talent that directly affects a minion here, place a +1 power counter on this minion."
+    },
+    "truckers_fixin_to_fix_it": {
+      "name": "Fixin' to Fix It",
+      "effectText": "Choose an action in a discard pile that can be played on a base and play it as an extra action."
+    },
+    "truckers_dekotora": {
+      "name": "Dekotora",
+      "effectText": "Play on a base. Talent: Transfer this action to another base to move up to three of your minions from here to that base."
+    },
+    "truckers_high_speed_chase": {
+      "name": "High-Speed Chase",
+      "effectText": "Play on a base. Talent: Transfer this action to another base to move one of your minions from here to that base. It has +3 power until the end of the turn."
+    },
+    "truckers_rubber_chicken": {
+      "name": "Rubber Chicken",
+      "abilityText": "Ongoing: This minion has +1 power for each of your actions on this base."
+    },
+    "truckers_hotwire": {
+      "name": "Hotwire",
+      "effectText": "Choose an action on a base. Transfer it to another base and/or take control of it."
+    },
+    "truckers_skinny_minnie": {
+      "name": "Skinny Minnie",
+      "abilityText": "Talent: If there is an action on this base, move this minion to another base to transfer an action from this base to that base."
+    },
+    "truckers_el_bandido": {
+      "name": "El Bandido",
+      "abilityText": "You may take control of an action on a base. Talent: Play an extra action, or transfer an action on a base to another base."
+    },
+    "truckers_rally": {
+      "name": "Rally",
+      "effectText": "Special: Before a base scores, choose a minion there. It has +2 power until the end of the turn for each action you control on that base."
+    },
+    "truckers_good_buddy": {
+      "name": "Good Buddy",
+      "abilityText": "If there is one of your actions on this base, draw a card."
+    },
+    "truckers_convoy": {
+      "name": "Convoy",
+      "effectText": "Play on a base. Ongoing: You gain +1 power here for each of your actions on this base, including this one."
+    },
+    "truckers_cab_over_pete": {
+      "name": "Cab-over Pete",
+      "effectText": "Play on a base. Talent: Transfer this action to another base to move another card you control here to the same base."
+    },
+    "truckers_armored_truck": {
+      "name": "Armored Truck",
+      "effectText": "Play on a base. Ongoing: Your minions here cannot be destroyed or moved by other players' cards."
+    },
+    "truckers_turn_the_beat_around": {
+      "name": "Turn The Beat Around",
+      "effectText": "Give a minion +1 power until the end of the turn. For each minion affected, choose a minion there to get -1 power until the end of the turn. Special: You may play this before a base scores."
+    },
+    "disco_dancers_diva": {
+      "name": "Diva",
+      "abilityText": "Ongoing: Once per turn, after a standard action directly affects one of your other minions here, you may have this minion be affected the same way."
+    },
+    "disco_dancers_get_down_tonight": {
+      "name": "Get Down Tonight",
+      "effectText": "A minion has +2 power until the end of the turn. Draw a card."
+    },
+    "disco_dancers_ul_disco_lou": {
+      "name": "UL Disco Lou",
+      "abilityText": "Play an extra action, or place an action from your discard pile on top of your deck."
+    },
+    "disco_dancers_we_are_family": {
+      "name": "We Are Family",
+      "effectText": "Play on a minion. Ongoing: Once per turn, after a standard action directly affects another minion here, you may have this minion be affected the same way."
+    },
+    "disco_dancers_disco_inferno": {
+      "name": "Disco Inferno",
+      "effectText": "Each player may place a +1 power counter on a minion. Draw a card for each minion affected."
+    },
+    "disco_dancers_roller": {
+      "name": "Roller",
+      "abilityText": "Ongoing: After this minion is directly affected by a standard action, if it did not already have a +1 power counter, place one on it."
+    },
+    "disco_dancers_celebration": {
+      "name": "Celebration",
+      "effectText": "Play two extra actions."
+    },
+    "disco_dancers_i_will_survive": {
+      "name": "I Will Survive",
+      "effectText": "Special: After a base scores, return one of your minions there to its owner's hand instead of the discard pile."
+    },
+    "disco_dancers_its_raining_men": {
+      "name": "It's Raining Men",
+      "effectText": "Play an extra minion."
+    },
+    "disco_dancers_dancing_king": {
+      "name": "Dancing King",
+      "abilityText": "Ongoing: After a standard action directly affects a minion here, you may have another minion here be affected the same way."
+    },
+    "disco_dancers_im_so_excited": {
+      "name": "I'm So Excited",
+      "effectText": "Move one of your minions. Draw a card."
+    },
+    "disco_dancers_last_dance": {
+      "name": "Last Dance",
+      "effectText": "Each player may destroy one of their own minions. Each minion actually destroyed this way gives its controller 1 VP."
+    },
+    "disco_dancers_stayin_alive": {
+      "name": "Stayin' Alive",
+      "effectText": "Choose one of your minions in play. Place a card with the same name from your discard pile into your hand."
+    },
+    "base_funky_town": {
+      "name": "Funky Town",
+      "abilityText": "Once per turn, after your action directly affects one of your minions here, you may have another minion here be affected the same way."
+    },
+    "base_the_greasy_spoon": {
+      "name": "The Greasy Spoon",
+      "abilityText": "When an action on this base would go to the discard pile, shuffle it into its owner's deck instead."
+    },
+    "base_truck_stop": {
+      "name": "Truck Stop",
+      "abilityText": "At the start of your turn, you may transfer an action on a base from here to another base, or from another base to here."
+    },
+    "base_boogie_wonderland": {
+      "name": "Boogie Wonderland",
+      "abilityText": "After a player plays an action that affects a minion here, draw a card."
+    },
+    "base_hideout": {
+      "name": "Hideout",
+      "abilityText": "Minions here are not affected by other players' cards."
+    },
+    "base_the_mean_streets": {
+      "name": "The Mean Streets",
+      "abilityText": "After a player plays a card that affects cards here, each other player may place a +1 power counter on a minion here."
+    },
+    "base_ancient_dojo": {
+      "name": "Ancient Dojo",
+      "abilityText": "After you play a minion here, place a +1 power counter on each of your minions here with lower power than that minion."
+    },
+    "base_tournament_site": {
+      "name": "Tournament Site",
+      "abilityText": "When this base scores, for each player with no power here, the winner gains +1 VP."
+    },
     "alien_supreme_overlord": {
       "name": "Supreme Overlord",
       "abilityText": "You may return a minion to its owner's hand."

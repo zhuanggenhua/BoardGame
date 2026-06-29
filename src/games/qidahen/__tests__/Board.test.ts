@@ -6,6 +6,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-board"',
     'data-testid="qidahen-desktop-stage"',
     'data-testid="qidahen-map-layer"',
+    'data-tutorial-id="qidahen-map-layer"',
     'data-testid="qidahen-map-hitmap-canvas"',
     'data-testid="qidahen-map-overlay"',
     'data-testid="qidahen-map-region-mask-overlay"',
@@ -16,15 +17,17 @@ const REQUIRED_TEST_IDS = [
     'data-testid={`qidahen-runtime-region-edge-${edge.id}`}',
     "import qidahenRegionMaskUrl from './data/region-mask.png?url'",
     'QIDAHEN_REGION_GRAPH_EDGES',
-    'QIDAHEN_REGION_ID_BY_MASK_COLOR',
     'getQidahenDirectedPassage',
-    'getQidahenPrintedRegionIdsForRuntimeRegionId',
     'getQidahenRuntimeRegionIdsForPrintedRegionId',
-    'resolveQidahenRuntimeRegionIdFromPrintedRegionId',
+    'QIDAHEN_REGION_ID_BY_MASK_COLOR',
+    'qidahenRegionColorKey',
+    'buildQidahenRuntimeRegionIdByPixel',
+    'renderRegionOwnershipOverlay',
     "mainMap: 'qidahen/board/qidahen-main-map'",
     'data-testid="qidahen-player-float"',
     'data-testid={`qidahen-armaments-${faction.id}`}',
     'data-testid="qidahen-action-wheel"',
+    'data-tutorial-id="qidahen-action-wheel"',
     'data-testid="qidahen-action-wheel-asset"',
     'data-testid={`qidahen-year-card-slot-${card.id}`}',
     'data-testid="qidahen-chronology-zone"',
@@ -34,11 +37,9 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-move-layer"',
     'data-testid={`qidahen-wheel-move-target-${choice.id}`}',
     'data-testid="qidahen-wheel-tip"',
-    'data-testid="qidahen-wheel-next-step-banner"',
-    'data-testid="qidahen-wheel-next-step-title"',
-    'data-testid="qidahen-wheel-next-step-hint"',
-    'data-testid="qidahen-wheel-next-step-choices"',
-    'data-testid={`qidahen-wheel-next-step-choice-${choice.id}`}',
+    'testId="qidahen-wheel-next-step-banner"',
+    "'qidahen-wheel-next-step-title'",
+    "'qidahen-wheel-next-step-hint'",
     '开垦',
     '军屯',
     '征兵',
@@ -51,10 +52,12 @@ const REQUIRED_TEST_IDS = [
     '年中',
     'data-testid="qidahen-raid-intent"',
     'data-testid="qidahen-post-battle-selection"',
+    'data-testid="qidahen-post-battle-dice-summary"',
     'data-testid={`qidahen-post-battle-choice-${choice.id}`}',
     'data-testid="qidahen-wheel-dispatch-selection"',
     'data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}',
     'data-testid="qidahen-actions-zone"',
+    'data-tutorial-id="qidahen-actions-zone"',
     'data-testid="qidahen-action-slot"',
     'data-testid="qidahen-action-rail"',
     'data-testid={`qidahen-action-${action.id}`}',
@@ -65,10 +68,14 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-action-payment-confirm"',
     'data-testid="qidahen-action-payment-cancel"',
     'data-testid="qidahen-turn-banner"',
+    'data-tutorial-id="qidahen-turn-banner"',
+    'testId="qidahen-top-action-banner"',
+    'data-testid={`qidahen-action-state-${action.id}`}',
     'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
     'data-testid="qidahen-hand-zone"',
+    'data-tutorial-id="qidahen-hand-zone"',
     'data-ui-role="qidahen-hand-dock"',
     'data-testid="qidahen-hand-row"',
     'onExecuteAction',
@@ -94,7 +101,6 @@ const FORBIDDEN_LEGACY_TITLES = [
     '结束行动',
     '当前年度',
     '势力状态',
-    '战斗',
     '待处理',
     '地图缩放',
     '行动记录',
@@ -108,12 +114,8 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'style={{ transform: `rotate(',
     'marginLeft: index === 0 ? 0 : -62',
     'data-testid="qidahen-wheel-move-choices"',
-    'qidahen-wheel-move-${choice.id}',
+    'data-testid={`qidahen-wheel-move-${choice.id}`}',
     'data-testid="qidahen-wheel-summary"',
-    'qidahen-scenario-character-option-',
-    'qidahen-scenario-character-confirm-',
-    'qidahen-scenario-armament-option-',
-    'qidahen-scenario-armament-confirm-',
     '?? core.postBattleSelection',
     '?? core.recruitSelection',
     '?? core.diplomacySelection',
@@ -135,7 +137,7 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE',
     'dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: choiceId })',
     'WheelMoveChoiceButton',
-    'QIDAHEN_MAP_REGION_SHAPES',
+    'QIDAHEN_MAP_REGION_SHAPES =',
     'mapPath(shape)',
     'data-testid="qidahen-wheel-step-controls"',
     'data-testid="qidahen-payment-panel"',
@@ -183,29 +185,156 @@ describe('Qidahen Board 结构门禁', () => {
         expect(cardAtlasSource).toMatch(/export const qidahenJinHandPreview = \(index: number\): CardPreviewRef => \(\{[\s\S]*?type: 'atlas',[\s\S]*?atlasId: QIDAHEN_JIN_ATLAS_ID,[\s\S]*?index,/);
     });
 
-    it('Board 不再把剧本待决项重复渲染成局内面板，只保留动作区阻断提示', () => {
+    it('Board 会把剧本待决项收口到局内 setup 页，而不是继续塞回建房页或主 HUD', () => {
+        expect(boardSource).toContain('qidahen-scenario-vote-screen');
+        expect(boardSource).toContain('qidahen-scenario-vote-title');
+        expect(boardSource).toContain('qidahen-scenario-vote-confirm');
+        expect(boardSource).toContain('qidahen-scenario-vote-clear');
+        expect(boardSource).toContain('CAST_SCENARIO_VOTE');
         expect(boardSource).toContain('core.pendingScenarioCharacterChoices');
         expect(boardSource).toContain('core.pendingScenarioArmamentChoices');
+        expect(boardSource).toContain('qidahen-inmatch-setup-overlay');
+        expect(boardSource).toContain('qidahen-inmatch-setup-title');
+        expect(boardSource).toContain('qidahen-inmatch-setup-scenario');
+        expect(boardSource).toContain('qidahen-inmatch-setup-character-confirm-');
+        expect(boardSource).toContain('qidahen-inmatch-setup-armament-confirm-');
         expect(boardSource).toContain('qidahen-actions-blocked-by-scenario');
-        expect(boardSource).not.toContain('qidahen-scenario-panel');
-        expect(boardSource).not.toContain('qidahen-scenario-compact-summary');
-        expect(boardSource).not.toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
-        expect(boardSource).not.toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
+        expect(boardSource).toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
+        expect(boardSource).toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
     });
 
-    it('剧本待决项若异常残留，会在动作区提示必须先回前置页，而不是再占地图区', () => {
+    it('剧本待决项出现时，动作区只保留阻断提示，真正交互在单独 setup 覆层里完成', () => {
+        expect(boardSource).toContain('局内剧本投票尚未完成');
+        expect(boardSource).toContain('当前只可处理剧本介绍与投票');
+        expect(boardSource).toContain('先选一张剧本介绍卡，再点确认投票');
         expect(boardSource).toContain('剧本待决项尚未确认');
         expect(boardSource).toContain('当前只可处理剧本选择');
-        expect(boardSource).not.toContain('待选人物');
-        expect(boardSource).not.toContain('待选军备');
+        expect(boardSource).toContain('确认人物');
+        expect(boardSource).toContain('确认军备');
+        expect(boardSource).toContain('等待其他玩家完成其所属阵营的前置项');
     });
 
-    it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
-        expect(boardSource).toContain('showWheelNextStepBanner');
-        expect(boardSource).toContain('下一步：点击轮盘按钮推进回合');
-        expect(boardSource).toContain('不用点左侧轮盘盘面，直接点下面的明文按钮即可');
-        expect(boardSource).toContain('直接执行');
-        expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
+    it('正式联机手牌区只允许本地模式保留 currentFaction fallback，在线 seat 不再退回别人的当前手牌', () => {
+        expect(boardSource).toContain('const currentFactionId = playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId;');
+        expect(boardSource).not.toContain('const currentFactionId = viewerFactionId ?? getCurrentFactionId(core);');
+    });
+
+    it('轮盘成为唯一下一步时，横幅只做提示，真正交互继续由轮盘本体热区承接', () => {
+        expect(boardSource).toContain('showTopWheelPrompt');
+        expect(boardSource).toContain('emphasized={wheelStageAvailable}');
+        expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
+        expect(boardSource).toContain('选择轮盘行动');
+        expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
+        expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
+        expect(boardSource).toContain("defaultValue: '本次轮盘行动待执行'");
+        expect(boardSource).toContain('data-testid={`qidahen-wheel-move-target-${choice.id}`}');
+        expect(boardSource).toContain('data-tutorial-id={`qidahen-wheel-move-${choice.id}`}');
+        expect(boardSource).toContain('canActivateMove={(moveId, selected) => {');
+        expect(boardSource).toContain('? isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)');
+        expect(boardSource).toContain(': isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);');
+        expect(boardSource).not.toContain('qidahen-wheel-next-step-choice-${choice.id}');
+        expect(boardSource).not.toContain('onSelectChoice={executeWheelMove}');
+        expect(boardSource).not.toContain('发亮的绿色格就是下一步');
+        expect(boardSource).not.toContain('点左上发亮的绿色格');
+    });
+
+    it('教程高亮锚点会真实挂到棋盘主区域，而不是只留 tutorial manifest', () => {
+        expect(boardSource).toContain('data-tutorial-id="qidahen-map-layer"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-action-wheel"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-actions-zone"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-hand-zone"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-turn-banner"');
+    });
+
+    it('Board 会接教程桥、终局遮罩和游戏音频，而不是继续缺少新游戏共用壳层能力', () => {
+        expect(boardSource).toContain("import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';");
+        expect(boardSource).toContain("import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';");
+        expect(boardSource).toContain("import { useEndgame } from '../../hooks/game/useEndgame';");
+        expect(boardSource).toContain("import { useGameAudio } from '../../lib/audio/useGameAudio';");
+        expect(boardSource).toContain('useTutorialBridge(G.sys.tutorial');
+        expect(boardSource).toContain('const { overlayProps: endgameProps } = useEndgame({');
+        expect(boardSource).toContain('useGameAudio({');
+        expect(boardSource).toContain('<EndgameOverlay {...endgameProps} />');
+    });
+
+    it('一级行动入口会收口为顶部横幅与直达动作按钮，不再保留右侧说明式步骤卡', () => {
+        expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
+        expect(boardSource).toContain("return selectedAction ? selectedAction.label : '选择一项行动';");
+        expect(boardSource).toContain("return '选择一项行动';");
+        expect(boardSource).toContain("return '选择行动目标';");
+        expect(boardSource).toContain(": '选择轮盘行动';");
+        expect(boardSource).toContain('showTopFactionPrompt');
+        expect(boardSource).toContain('qidahen-top-action-banner');
+        expect(boardSource).toContain("t('board.actions.primaryActionSelectPrompt', { defaultValue: '选择一项行动' })");
+        expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
+        expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
+        expect(boardSource).toContain('qidahen-action-state-${action.id}');
+        expect(boardSource).toContain("t('board.actions.state.current', { defaultValue: '当前' })");
+        expect(boardSource).not.toContain("t('board.actions.state.available', { defaultValue: '可选' })");
+        expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
+        expect(boardSource).not.toContain('qidahen-primary-action-next-step');
+        expect(boardSource).not.toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
+        expect(boardSource).not.toContain("return '先从右侧选一项行动';");
+        expect(boardSource).not.toContain('点亮起的绿色区域继续');
+        expect(boardSource).not.toContain('地图可点');
+        expect(boardSource).not.toContain('当前主入口');
+        expect(boardSource).not.toContain('所有绿色底部都可点击');
+        expect(boardSource).not.toContain("defaultValue: '可选' })");
+        expect(boardSource).not.toContain('先选中下方一级势力行动');
+        expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
+        expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');
+    });
+
+    it('右侧动作按钮在 hover 或 focus 时必须显示可见功能提示，而不是只依赖原生 title', () => {
+        expect(boardSource).toContain('title={action.detail}');
+        expect(boardSource).toContain('data-testid={`qidahen-action-tooltip-${action.id}`}');
+        expect(boardSource).toContain("role=\"tooltip\"");
+        expect(boardSource).toContain('group-hover:block group-focus:block');
+        expect(boardSource).toContain('right-[calc(100%+12px)] top-1/2');
+        expect(boardSource).toContain("t('board.actions.tooltipHeader', { defaultValue: '功能说明' })");
+        expect(boardSource).toContain("t('board.actions.tooltipCost', {");
+        expect(boardSource).toContain('{action.label}');
+        expect(boardSource).toContain('{action.detail}');
+    });
+
+    it('战后处理必须展示本次掷骰本体，而不是只剩文字摘要', () => {
+        expect(boardSource).toContain('const formatQidahenBattleRollPhaseLabel = (phase: QidahenBattleRollPhase): string => {');
+        expect(boardSource).toContain('const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (');
+        expect(boardSource).toContain('const QidahenBattleRollDiceSummary: React.FC<');
+        expect(boardSource).toContain('data-testid="qidahen-post-battle-dice-summary"');
+        expect(boardSource).toContain('{postBattleSelection.battleRolls ? (');
+        expect(boardSource).toContain('<QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />');
+        expect(boardSource).toContain("defaultValue: '{{summary}} · 幸存 {{survivingTroops}}'");
+    });
+
+    it('地图必须共享缩放拖动视口，并让高亮路线与顶层点击点一起跟随同一套投影', () => {
+        expect(boardSource).toContain('type QidahenMapViewport = {');
+        expect(boardSource).toContain('const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {');
+        expect(boardSource).toContain('const projectQidahenMapPointToStage = (');
+        expect(boardSource).toContain('data-testid="qidahen-map-viewport-controls"');
+        expect(boardSource).toContain('data-testid="qidahen-map-content"');
+        expect(boardSource).toContain('data-map-zoom={viewport.zoom}');
+        expect(boardSource).toContain('data-map-pan-x={viewport.panX}');
+        expect(boardSource).toContain('data-map-pan-y={viewport.panY}');
+        expect(boardSource).toContain('data-testid="qidahen-map-zoom-in"');
+        expect(boardSource).toContain('data-testid="qidahen-map-zoom-out"');
+        expect(boardSource).toContain('data-testid="qidahen-map-zoom-reset"');
+        expect(boardSource).toContain('onWheel={handleMapWheel}');
+        expect(boardSource).toContain('onPointerDown={handlePointerDown}');
+        expect(boardSource).toContain('onPointerUp={handlePointerUp}');
+        expect(boardSource).toContain('viewport={mapViewport}');
+        expect(boardSource).toContain('onViewportChange={setMapViewport}');
+        expect(boardSource).toContain("markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
+        expect(boardSource).toContain("markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
+    });
+
+    it('地图文案不得再把 region id 直接漏给用户，可见区域名优先走中文规则名', () => {
+        expect(boardSource).toContain("import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';");
+        expect(boardSource).toContain("import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';");
+        expect(boardSource).toContain("regionName: targetRegion");
+        expect(boardSource).toContain("? getActionRuleDisplayRegionName(targetRegion, targetRegion.name)");
+        expect(boardSource).toContain(": getQidahenStatefulRegionDisplayName(regionId)");
+        expect(boardSource).not.toContain('regionName: targetRegion?.name ?? regionId');
     });
 
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
@@ -236,11 +365,36 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('height: ACTIONS_DOCK_HEIGHT,');
     });
 
+    it('主交互槽位激活时，被动状态块必须让位，不再跟主交互面板争抢右侧动作槽位', () => {
+        expect(boardSource).toContain('const suppressPassiveActionContext = showWheelNextStepBanner');
+        expect(boardSource).toContain('|| pendingTargetAction != null');
+        expect(boardSource).toContain('|| postBattleSelection != null;');
+        expect(boardSource).toContain("const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';");
+        expect(boardSource).toContain('{showFortificationStrip ? (');
+        expect(boardSource).toContain('data-testid="qidahen-fortification-strip"');
+        expect(boardSource).toContain('!suppressPassiveActionContext && core.lastSeasonSummary ? (');
+        expect(boardSource).toContain('data-testid="qidahen-season-summary"');
+    });
+
     it('地图区域提示必须避开右侧交互槽位，不能再盖到动作区上', () => {
         expect(boardSource).toContain('const MAP_REGION_TIP_WIDTH = 252;');
         expect(boardSource).toContain('const MAP_REGION_TIP_ACTION_GAP = 20;');
         expect(boardSource).toContain('ACTIONS_DOCK_LEFT - MAP_REGION_TIP_WIDTH - MAP_REGION_TIP_ACTION_GAP');
         expect(boardSource).toContain('width: MAP_REGION_TIP_WIDTH,');
+    });
+
+    it('主交互进行中时，地图区域 tip 必须收成简版，不再把接边摘要和同图块切换条摊成第二焦点', () => {
+        expect(boardSource).toContain('compactRegionTip: boolean;');
+        expect(boardSource).toContain('const compactMapRegionTip = setupStagePending');
+        expect(boardSource).toContain('|| khanEdictSelection != null');
+        expect(boardSource).toContain('|| diplomacySelection != null');
+        expect(boardSource).toContain('compactRegionTip={compactMapRegionTip}');
+        expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;");
+        expect(boardSource).toContain("const focusedRegion = hoveredRegion ?? displaySelectedRegion;");
+        expect(boardSource).toContain('if (compactRegionTip && core.selectedRegionId) {');
+        expect(boardSource).toContain('{!compactRegionTip && activePassageSummary ? (');
+        expect(boardSource).toContain('{!compactRegionTip && activeMovementPreview ? (');
+        expect(boardSource).toContain('{!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (');
     });
 
     it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {
@@ -251,7 +405,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
         expect(boardSource).toContain('className="absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible"');
         expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
-        expect(boardSource).toContain("maxWidth: 'calc(100vw - 300px)'");
+        expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('hover:-translate-y-[18px]');

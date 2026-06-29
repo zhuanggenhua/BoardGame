@@ -151,6 +151,36 @@ const buildScenarioChoiceActions = (
     return actions;
 };
 
+const buildScenarioVoteActions = (
+    state: QidahenState,
+    playerId: string,
+): AiLegalAction[] => {
+    const scenarioVote = state.core.scenarioVote;
+    if (!scenarioVote || !state.core.playerIds.includes(playerId)) {
+        return [];
+    }
+    if (scenarioVote.votes[playerId] != null) {
+        return [];
+    }
+
+    const actions: AiLegalAction[] = [];
+    for (const option of scenarioVote.options) {
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('scenario-vote', option.scenarioId),
+            kind: 'scenario-vote',
+            label: `投票剧本：${option.label}`,
+            commandType: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
+            payload: {
+                scenarioId: option.scenarioId,
+            },
+            metadata: {
+                scenarioId: option.scenarioId,
+            },
+        }));
+    }
+    return actions;
+};
+
 const buildCurrentInteractionActions = (
     state: QidahenState,
     playerId: string,
@@ -755,6 +785,14 @@ export function buildQidahenAiLegalActions(args: {
     const core = state.core;
 
     if (core.victoryStatus) {
+        return [];
+    }
+
+    const scenarioVoteActions = buildScenarioVoteActions(state, args.playerId);
+    if (scenarioVoteActions.length > 0) {
+        return scenarioVoteActions;
+    }
+    if (core.scenarioVote) {
         return [];
     }
 

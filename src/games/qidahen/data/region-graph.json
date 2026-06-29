@@ -63,14 +63,14 @@
       "id": "city-region-1",
       "name": "大同",
       "seed": {
-        "x": 188,
-        "y": 186
+        "x": 301,
+        "y": 615
       },
       "center": {
-        "x": 188,
-        "y": 186
+        "x": 292,
+        "y": 612
       },
-      "pixelCount": 3923
+      "pixelCount": 12373
     },
     {
       "id": "city-region-2",
@@ -314,10 +314,10 @@
         "y": 471
       },
       "center": {
-        "x": 175,
-        "y": 471
+        "x": 152,
+        "y": 463
       },
-      "pixelCount": 44505
+      "pixelCount": 35373
     },
     {
       "id": "city-region-21",
@@ -327,10 +327,10 @@
         "y": 455
       },
       "center": {
-        "x": 306,
-        "y": 455
+        "x": 262,
+        "y": 501
       },
-      "pixelCount": 12649
+      "pixelCount": 9132
     },
     {
       "id": "jinzhou",
@@ -418,10 +418,10 @@
         "y": 718
       },
       "center": {
-        "x": 424,
-        "y": 718
+        "x": 473,
+        "y": 756
       },
-      "pixelCount": 44113
+      "pixelCount": 32308
     },
     {
       "id": "city-region-28",
@@ -444,8 +444,8 @@
         "y": 871
       },
       "center": {
-        "x": 1239,
-        "y": 871
+        "x": 1252,
+        "y": 820
       },
       "pixelCount": 5445
     },

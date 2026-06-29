@@ -1,8 +1,15 @@
+// @asset-pipeline-allow
+// 区域命中蒙版需要直接读静态 png 像素生成运行时命中表，不走玩家可见贴图渲染链路。
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import type { CardPreviewRef } from '../../core/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import type { GameBoardProps } from '../../engine/transport/protocol';
+import { UndoProvider } from '../../contexts/UndoContext';
+import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
+import { useEndgame } from '../../hooks/game/useEndgame';
+import { useGameAudio } from '../../lib/audio/useGameAudio';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { getCardAtlasSource } from '../../components/common/media/cardAtlasRegistry';
@@ -10,6 +17,8 @@ import { getLocalizedAssetPath, getOptimizedImageUrls } from '../../core/AssetLo
 import type { SpriteAtlasConfig, SpriteAtlasFrame } from '../../engine/primitives/spriteAtlas';
 import type {
     QidahenActionChoice,
+    QidahenBattleRoll,
+    QidahenBattleRollPhase,
     QidahenCasualtyPriority,
     QidahenCommandMap,
     QidahenCore,
@@ -22,6 +31,7 @@ import type {
     QidahenInternalDispatchSelection,
     QidahenMapToken,
     QidahenRecruitChoice,
+    QidahenScenarioId,
     QidahenWheelDispatchSelection,
     QidahenWheelMoveChoice,
 } from './domain';
@@ -55,6 +65,8 @@ import {
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './domain/interactionSelectionAccessors';
+import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';
+import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';
 
 type QidahenYearCardSlot = QidahenCore['yearCards'][number];
 import { getCurrentFactionId } from './domain/factionTurnAccessors';
@@ -71,12 +83,18 @@ import {
     QIDAHEN_REGION_GRAPH_EDGES,
     QIDAHEN_REGION_GRAPH_NODE_BY_ID,
     QIDAHEN_REGION_ID_BY_MASK_COLOR,
-    resolveQidahenRuntimeRegionIdFromPrintedRegionId,
     getQidahenBoundaryTypeMeta,
     qidahenRegionColorKey,
 } from './ui/mapGraph';
-import { renderRegionMaskOverlay, type RegionMaskOverlayToneKey } from './ui/regionMaskOverlay';
+import { renderRegionOwnershipOverlay, type RegionMaskOverlayToneKey } from './ui/regionMaskOverlay';
+import { buildQidahenRuntimeRegionIdByPixel } from './ui/runtimeRegionOwnership';
 import qidahenRegionMaskUrl from './data/region-mask.png?url';
+import {
+    QIDAHEN_SCENARIO_SETUP_OPTIONS,
+    getQidahenScenarioVoteMeta,
+} from './roomSetup';
+import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
+import { QIDAHEN_MANIFEST } from './manifest';
 
 type Props = GameBoardProps<QidahenCore, QidahenCommandMap>;
 
@@ -98,7 +116,11 @@ const ASSETS = {
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
 const MAP_COVER_LEFT = (STAGE_WIDTH - QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE) / 2;
 const MAP_COVER_TOP = (STAGE_HEIGHT - QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE) / 2;
+const MAP_COVER_WIDTH = QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE;
+const MAP_COVER_HEIGHT = QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE;
 const QIDAHEN_FACTION_ORDER: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
+const QIDAHEN_MAP_MIN_ZOOM = 1;
+const QIDAHEN_MAP_MAX_ZOOM = 2.25;
 
 const CARD_BACK_BY_FACTION: Record<QidahenFactionId, string> = {
     ming: ASSETS.mingCard,
@@ -197,14 +219,14 @@ const ACTIONS_DOCK_HEIGHT = 470;
 const ACTIONS_DOCK_LEFT = STAGE_WIDTH - ACTIONS_DOCK_RIGHT - ACTIONS_DOCK_WIDTH;
 const MAP_REGION_TIP_WIDTH = 252;
 const MAP_REGION_TIP_ACTION_GAP = 20;
+const MAP_SELECTION_BANNER_WIDTH = 388;
+const MAP_SELECTION_BANNER_TOP = 122;
 
 const factionTone: Record<QidahenFactionId, { bg: string; border: string; text: string; chip: string }> = {
     ming: { bg: UI_STYLE.paper, border: UI_STYLE.cinnabar, text: UI_STYLE.ink, chip: ASSETS.mingMarker },
     mongol: { bg: UI_STYLE.paper, border: UI_STYLE.oldGold, text: UI_STYLE.ink, chip: ASSETS.mongolMarker },
     jin: { bg: UI_STYLE.paper, border: UI_STYLE.bronze, text: UI_STYLE.ink, chip: ASSETS.jinMarker },
 };
-
-const REGION_BY_COLOR = QIDAHEN_REGION_ID_BY_MASK_COLOR;
 
 const BOUNDARY_TYPE_RUNTIME_COLORS: Record<string, string> = {
     plain: 'rgba(218,175,83,0.82)',
@@ -231,6 +253,288 @@ const getQidahenHandCardOverlapPx = (handCount: number): number => {
     }
     return -Math.min(18 + Math.max(0, handCount - 7) * 12, 60);
 };
+
+const resolveViewerFactionId = (
+    core: QidahenCore,
+    playerID: string | null,
+): QidahenFactionId | null => (
+    (playerID
+        ? (Object.entries(core.factions).find(([, faction]) => faction.playerId === playerID)?.[0] as QidahenFactionId | undefined)
+        : undefined)
+    ?? null
+);
+
+type QidahenPrimaryStageMode = 'faction' | 'wheel';
+type QidahenMapViewport = {
+    zoom: number;
+    panX: number;
+    panY: number;
+};
+
+const DEFAULT_QIDAHEN_MAP_VIEWPORT: QidahenMapViewport = {
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+};
+
+const clampNumber = (value: number, min: number, max: number): number => (
+    Math.min(max, Math.max(min, value))
+);
+
+const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {
+    const zoom = clampNumber(viewport.zoom, QIDAHEN_MAP_MIN_ZOOM, QIDAHEN_MAP_MAX_ZOOM);
+    const scaledWidth = MAP_COVER_WIDTH * zoom;
+    const scaledHeight = MAP_COVER_HEIGHT * zoom;
+    const minPanX = STAGE_WIDTH - scaledWidth - MAP_COVER_LEFT;
+    const maxPanX = -MAP_COVER_LEFT;
+    const minPanY = STAGE_HEIGHT - scaledHeight - MAP_COVER_TOP;
+    const maxPanY = -MAP_COVER_TOP;
+    return {
+        zoom,
+        panX: clampNumber(viewport.panX, minPanX, maxPanX),
+        panY: clampNumber(viewport.panY, minPanY, maxPanY),
+    };
+};
+
+const projectQidahenMapPointToStage = (
+    point: { x: number; y: number },
+    viewport: QidahenMapViewport,
+) => ({
+    x: MAP_COVER_LEFT + viewport.panX + point.x * MAP_COVER_SCALE * viewport.zoom,
+    y: MAP_COVER_TOP + viewport.panY + point.y * MAP_COVER_SCALE * viewport.zoom,
+});
+
+const formatQidahenCandidateRegionSummary = (regionNames: string[]): string => {
+    const uniqueNames = Array.from(new Set(regionNames.filter((name) => name.trim().length > 0)));
+    if (uniqueNames.length <= 0) {
+        return '暂无可选地区';
+    }
+    if (uniqueNames.length <= 4) {
+        return uniqueNames.join('、');
+    }
+    return `${uniqueNames.slice(0, 4).join('、')} 等 ${uniqueNames.length} 处`;
+};
+
+const buildQidahenPrimaryStageHeadline = (
+    core: QidahenCore,
+    primaryStageMode: QidahenPrimaryStageMode | null,
+    selectedAction: QidahenActionChoice | null,
+): string => {
+    if (primaryStageMode === 'wheel') {
+        if (core.wheelActionUsed) {
+            return '轮盘已完成';
+        }
+        return '选择轮盘行动';
+    }
+    if (primaryStageMode === 'faction') {
+        if (core.factionActionUsed) {
+            return '行动已完成';
+        }
+        return selectedAction ? selectedAction.label : '选择一项行动';
+    }
+    return '等待中';
+};
+
+const buildQidahenPrimaryStageHint = (
+    core: QidahenCore,
+    primaryStageMode: QidahenPrimaryStageMode | null,
+    selectedAction: QidahenActionChoice | null,
+): string => {
+    if (primaryStageMode === 'wheel') {
+        return core.wheelActionUsed
+            ? '等待结算'
+            : '选择轮盘行动';
+    }
+    if (primaryStageMode === 'faction') {
+        if (!selectedAction) {
+            return '选择一项行动';
+        }
+        if (selectedAction.id === 'upgrade-armament') {
+            return '弃牌后执行';
+        }
+        return '选择行动目标';
+    }
+    return '等待中';
+};
+
+const buildQidahenPrimaryActionEntryText = (
+    core: QidahenCore,
+    selectedAction: QidahenActionChoice | null,
+): string => {
+    if (!selectedAction) {
+        return '选择一项行动';
+    }
+    if (core.factionActionUsed) {
+        return core.wheelActionUsed
+            ? '等待结算'
+            : '选择轮盘行动';
+    }
+    switch (selectedAction.id) {
+        case 'raid':
+        case 'marriage-subjugation':
+        case 'grant-pardon':
+        case 'drive-tiger':
+        case 'khan-edict':
+        case 'recruit':
+        case 'ma-shi-trade':
+            return '选择行动目标';
+        case 'upgrade-armament':
+            return '弃牌后执行';
+        default:
+            return selectedAction ? selectedAction.label : '选择一项行动';
+    }
+};
+
+const formatQidahenVisibleTurnLabel = (turnLabel: string): string => (
+    turnLabel
+        .replace('势力行动', '行动窗口')
+        .replace('待结算', '处理中')
+);
+
+const normalizeQidahenBattleRollSummary = (summary?: string | null): string | null => {
+    if (!summary) {
+        return null;
+    }
+    return summary
+        .replace(/^[^：]+：/, '掷骰结果：')
+        .replace(/。$/, '');
+};
+
+const formatQidahenBattleRollPhaseLabel = (phase: QidahenBattleRollPhase): string => {
+    switch (phase) {
+        case 'artillery':
+            return '火炮齐射';
+        case 'cavalry':
+            return '骑兵冲击';
+        case 'infantry':
+            return '步兵推进';
+        case 'melee':
+            return '近身混战';
+        default:
+            return '战斗';
+    }
+};
+
+const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (
+    roll.raw === roll.value ? `${roll.raw}` : `${roll.raw}→${roll.value}`
+);
+
+const QIDAHEN_BATTLE_ROLL_COPY = {
+    attackerLabel: '攻方',
+    defenderLabel: '守方',
+    totalLabel: '合计',
+    noRollsLabel: '未掷骰',
+    summaryTitle: '本次掷骰',
+    attackerDamageLabel: '攻方伤害',
+    defenderDamageLabel: '守方伤害',
+} as const;
+
+const renderQidahenBattleRollDiceGroup = (
+    sideLabel: string,
+    rolls: QidahenBattleRoll[],
+    total: number,
+    tone: 'attacker' | 'defender',
+) => {
+    const borderColor = tone === 'attacker' ? 'rgba(232, 160, 124, 0.55)' : 'rgba(160, 188, 234, 0.55)';
+    const background = tone === 'attacker' ? 'rgba(104, 34, 22, 0.32)' : 'rgba(23, 49, 88, 0.28)';
+    const chipBackground = tone === 'attacker' ? 'rgba(138, 41, 28, 0.8)' : 'rgba(45, 82, 136, 0.84)';
+    const chipText = tone === 'attacker' ? '#fff0e7' : '#edf5ff';
+
+    return (
+        <div className="rounded-[3px] border px-2 py-2" style={{ borderColor, background }}>
+            <div className="flex items-center justify-between gap-3 text-[10px] font-black" style={{ color: '#f6d5a8' }}>
+                <span>{sideLabel}</span>
+                <span>{`${QIDAHEN_BATTLE_ROLL_COPY.totalLabel} ${total}`}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+                {rolls.map((roll, index) => (
+                    <div
+                        key={`${sideLabel}-${roll.troopKind}-${roll.level}-${roll.raw}-${roll.value}-${index}`}
+                        className="grid h-[34px] min-w-[34px] place-items-center border text-[12px] font-black leading-none"
+                        style={{ borderColor, background: chipBackground, color: chipText, borderRadius: 3, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
+                        title={`${roll.troopKind} Lv${roll.level} d${roll.dieSides}`}
+                    >
+                        {formatQidahenBattleRollFace(roll)}
+                    </div>
+                ))}
+                {rolls.length <= 0 ? (
+                    <div className="px-1 text-[10px]" style={{ color: '#d8c7ab' }}>{QIDAHEN_BATTLE_ROLL_COPY.noRollsLabel}</div>
+                ) : null}
+            </div>
+        </div>
+    );
+};
+
+const QidahenBattleRollDiceSummary: React.FC<{
+    battleRolls: NonNullable<QidahenPostBattleSelection['battleRolls']>;
+}> = ({ battleRolls }) => (
+    <div className="mt-2 rounded-[3px] border border-[#d8b36e]/40 bg-[rgba(44,20,11,0.24)] px-2.5 py-2" data-testid="qidahen-post-battle-dice-summary">
+        <div className="text-[10px] font-black tracking-[0.08em]" style={{ color: '#f6d5a8' }}>{QIDAHEN_BATTLE_ROLL_COPY.summaryTitle}</div>
+        <div className="mt-2 flex flex-col gap-2">
+            {battleRolls.stages.map((stage, index) => (
+                <div
+                    key={`${stage.phase}-${index}`}
+                    className="rounded-[3px] border border-[#d8b36e]/25 bg-[rgba(0,0,0,0.12)] px-2 py-2"
+                >
+                    <div className="text-[10px] font-black" style={{ color: '#ffe5b3' }}>{`${formatQidahenBattleRollPhaseLabel(stage.phase)} · ${QIDAHEN_BATTLE_ROLL_COPY.attackerDamageLabel} ${stage.attackerDamage} · ${QIDAHEN_BATTLE_ROLL_COPY.defenderDamageLabel} ${stage.defenderDamage}`}</div>
+                    <div className="mt-2 grid gap-2 md:grid-cols-2">
+                        {renderQidahenBattleRollDiceGroup(QIDAHEN_BATTLE_ROLL_COPY.attackerLabel, stage.attackerRolls, stage.attackerTotal, 'attacker')}
+                        {renderQidahenBattleRollDiceGroup(QIDAHEN_BATTLE_ROLL_COPY.defenderLabel, stage.defenderRolls, stage.defenderTotal, 'defender')}
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const getQidahenFriendlyPendingTargetTitle = (pendingTargetAction: QidahenCore['pendingTargetAction']): string => {
+    if (!pendingTargetAction) {
+        return '';
+    }
+    if (pendingTargetAction.targetKind === 'siege-attacker') {
+        return `解围 ${pendingTargetAction.targetRegionName}`;
+    }
+    if ((pendingTargetAction.battleMode ?? 'field') === 'city' || pendingTargetAction.title.includes('城战')) {
+        return `${pendingTargetAction.targetRegionName} 城战`;
+    }
+    switch (pendingTargetAction.actionId) {
+        case 'raid':
+            return `突袭 ${pendingTargetAction.targetRegionName}`;
+        case 'wheel-dispatch':
+            return `进攻 ${pendingTargetAction.targetRegionName}`;
+        case 'drive-tiger':
+            return `驱虎吞狼：进攻 ${pendingTargetAction.targetRegionName}`;
+        case 'marriage-subjugation':
+            return `联姻诱降 ${pendingTargetAction.targetRegionName}`;
+        default:
+            return pendingTargetAction.targetRegionName;
+    }
+};
+
+const getQidahenFriendlyPendingChoiceLabel = (choice: { id: string; label: string }): string => {
+    if (choice.id === 'rear-guard') {
+        return '断后';
+    }
+    if (choice.id === 'rout') {
+        return '溃退';
+    }
+    if (choice.id === 'cavalry-plunder-attacker') {
+        return '抽己方牌堆';
+    }
+    if (choice.id === 'cavalry-plunder-defender') {
+        return '抽守方牌堆';
+    }
+    if (choice.id.startsWith('cavalry-evasion:')) {
+        return choice.label.replace('骑兵避战至', '骑兵撤往 ');
+    }
+    return choice.label;
+};
+
+const getQidahenFriendlyPostBattleTitle = (postBattleSelection: QidahenPostBattleSelection): string => (
+    postBattleSelection.targetKind === 'siege-attacker'
+        ? '解围后进驻'
+        : '战后选择'
+);
 
 const getAtlasFrame = (index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame => {
     if ('frames' in atlas) {
@@ -318,6 +622,8 @@ const HandInteractionTray: React.FC<{
     actionPaymentPreviewVisible: boolean;
     handLimitDiscardSelection: QidahenHandLimitDiscardSelection | null;
     selectedHandLimitCardIds: string[];
+    confirmTutorialLocked?: boolean;
+    cancelTutorialLocked?: boolean;
     onResolveHandLimitDiscard: () => void;
     onConfirmSelectedAction: () => void;
     onCancelSelectedActionPreview: () => void;
@@ -327,6 +633,8 @@ const HandInteractionTray: React.FC<{
     actionPaymentPreviewVisible,
     handLimitDiscardSelection,
     selectedHandLimitCardIds,
+    confirmTutorialLocked = false,
+    cancelTutorialLocked = false,
     onResolveHandLimitDiscard,
     onConfirmSelectedAction,
     onCancelSelectedActionPreview,
@@ -381,7 +689,7 @@ const HandInteractionTray: React.FC<{
                         <button
                             type="button"
                             data-testid="qidahen-action-payment-confirm"
-                            disabled={core.selectedPaymentCardIds.length < selectedAction.cost}
+                            disabled={confirmTutorialLocked || core.selectedPaymentCardIds.length < selectedAction.cost}
                             className="inline-flex min-h-[40px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
                             onClick={onConfirmSelectedAction}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
@@ -391,6 +699,7 @@ const HandInteractionTray: React.FC<{
                         <button
                             type="button"
                             data-testid="qidahen-action-payment-cancel"
+                            disabled={cancelTutorialLocked}
                             className="inline-flex min-h-[40px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                             onClick={onCancelSelectedActionPreview}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
@@ -883,17 +1192,34 @@ const MapToken: React.FC<{ token: QidahenMapToken }> = ({ token }) => {
 
 const MapSceneLayer: React.FC<{
     core: QidahenCore;
+    perspectiveFactionId: QidahenFactionId | null;
     wheelDispatchSelection: QidahenWheelDispatchSelection | null;
     internalDispatchSelection: QidahenInternalDispatchSelection | null;
     pendingTargetAction: QidahenCore['pendingTargetAction'];
+    tutorialStepId?: string | null;
+    compactRegionTip: boolean;
+    viewport: QidahenMapViewport;
+    onViewportChange: (viewport: QidahenMapViewport) => void;
     locale?: string;
     onSelectRegion: (regionId: string) => void;
-}> = ({ core, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, locale, onSelectRegion }) => {
+}> = ({ core, perspectiveFactionId, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, tutorialStepId, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
-    const currentFactionId = QIDAHEN_FACTION_ORDER.find((factionId) => core.factions[factionId].playerId === core.currentPlayer) ?? 'ming';
+    const currentFactionId = perspectiveFactionId
+        ?? QIDAHEN_FACTION_ORDER.find((factionId) => core.factions[factionId].playerId === core.currentPlayer)
+        ?? 'ming';
+    const mapLayerRef = React.useRef<HTMLDivElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const hitmapRef = React.useRef<Uint8ClampedArray | null>(null);
+    const runtimeRegionIdByPixelRef = React.useRef<Array<string | null> | null>(null);
+    const dragStateRef = React.useRef<{
+        pointerId: number;
+        startClientX: number;
+        startClientY: number;
+        startPanX: number;
+        startPanY: number;
+        moved: boolean;
+    } | null>(null);
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const [maskVersion, setMaskVersion] = React.useState(0);
 
@@ -906,6 +1232,11 @@ const MapSceneLayer: React.FC<{
             const formalHitmap = buildRegionMaskHitmap(image);
             if (!cancelled && formalHitmap) {
                 hitmapRef.current = formalHitmap;
+                runtimeRegionIdByPixelRef.current = buildQidahenRuntimeRegionIdByPixel(
+                    formalHitmap,
+                    QIDAHEN_MAP_WIDTH,
+                    QIDAHEN_MAP_HEIGHT,
+                );
                 setMaskVersion((value) => value + 1);
             }
         };
@@ -915,34 +1246,41 @@ const MapSceneLayer: React.FC<{
         };
     }, []);
 
+    const tutorialMapTargetRegionId = tutorialStepId === 'select-region'
+        ? 'song-jin'
+        : null;
+
     React.useEffect(() => {
         const canvas = overlayCanvasRef.current;
-        const hitmap = hitmapRef.current;
-        if (!canvas || !hitmap) {
+        const runtimeRegionIdByPixel = runtimeRegionIdByPixelRef.current;
+        if (!canvas || !runtimeRegionIdByPixel) {
             return;
         }
 
-        const expandMaskRegionIds = (regionId: string | null | undefined): string[] => {
+        const expandRuntimeRegionIds = (regionId: string | null | undefined): string[] => {
             if (!regionId) {
                 return [];
             }
             const region = core.regions.find((item) => item.id === regionId);
             if (region) {
                 const runtimeRegionIds = region.isLogicalRegion ? region.runtimeRegionIds : [region.id];
-                const printedRegionIds = runtimeRegionIds.flatMap((runtimeRegionId) => getQidahenPrintedRegionIdsForRuntimeRegionId(runtimeRegionId));
-                const uniquePrintedRegionIds = Array.from(new Set(printedRegionIds.filter(Boolean)));
-                return uniquePrintedRegionIds.length > 0 ? uniquePrintedRegionIds : [regionId];
+                const uniqueRuntimeRegionIds = Array.from(new Set(runtimeRegionIds.filter(Boolean)));
+                return uniqueRuntimeRegionIds.length > 0 ? uniqueRuntimeRegionIds : [regionId];
             }
-            const runtimePrintedRegionIds = getQidahenPrintedRegionIdsForRuntimeRegionId(regionId);
-            return runtimePrintedRegionIds.length > 0 ? runtimePrintedRegionIds : [regionId];
+            const runtimeRegionIds = getQidahenRuntimeRegionIdsForPrintedRegionId(regionId);
+            return runtimeRegionIds.length > 0 ? runtimeRegionIds : [regionId];
         };
 
         const toneByRegionId = new Map<string, RegionMaskOverlayToneKey>();
         const applyTone = (regionId: string | null | undefined, tone: RegionMaskOverlayToneKey) => {
-            for (const maskRegionId of expandMaskRegionIds(regionId)) {
-                toneByRegionId.set(maskRegionId, tone);
+            for (const runtimeRegionId of expandRuntimeRegionIds(regionId)) {
+                toneByRegionId.set(runtimeRegionId, tone);
             }
         };
+        applyTone(wheelDispatchSelection?.sourceRegionId, 'source');
+        applyTone(core.gaoDiDispatchSelection?.sourceRegionId, 'source');
+        applyTone(internalDispatchSelection?.sourceRegionId, 'source');
+        applyTone(pendingTargetAction?.sourceRegionId, 'source');
         for (const candidate of wheelDispatchSelection?.candidates ?? []) {
             applyTone(candidate.targetRuntimeRegionId, 'dispatch');
         }
@@ -955,20 +1293,29 @@ const MapSceneLayer: React.FC<{
         if (pendingTargetAction?.targetRuntimeRegionId || pendingTargetAction?.targetRegionId) {
             applyTone(pendingTargetAction.targetRuntimeRegionId ?? pendingTargetAction.targetRegionId, 'pending');
         }
+        if (tutorialMapTargetRegionId) {
+            applyTone(tutorialMapTargetRegionId, 'dispatch');
+        }
         if (hoveredRegionId) {
             applyTone(hoveredRegionId, 'hovered');
         }
-        if (core.selectedRegionId) {
+        if (compactRegionTip && core.selectedRegionId) {
             applyTone(core.selectedRegionId, 'selected');
         }
-        renderRegionMaskOverlay(canvas, hitmap, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, toneByRegionId);
+        renderRegionOwnershipOverlay(canvas, runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, toneByRegionId);
     }, [
+        core.gaoDiDispatchSelection?.sourceRegionId,
         core.gaoDiDispatchSelection?.candidates,
         internalDispatchSelection?.candidates,
+        internalDispatchSelection?.sourceRegionId,
+        pendingTargetAction?.sourceRegionId,
         pendingTargetAction?.targetRegionId,
         pendingTargetAction?.targetRuntimeRegionId,
+        compactRegionTip,
         core.regions,
         core.selectedRegionId,
+        tutorialMapTargetRegionId,
+        wheelDispatchSelection?.sourceRegionId,
         wheelDispatchSelection?.candidates,
         hoveredRegionId,
         maskVersion,
@@ -976,64 +1323,149 @@ const MapSceneLayer: React.FC<{
 
     const selectedRegion = core.regions.find((region) => region.id === core.selectedRegionId);
     const hoveredRegion = hoveredRegionId ? core.regions.find((region) => region.id === hoveredRegionId) : undefined;
-    const activeRegion = hoveredRegion ?? selectedRegion;
-    const activeSpecialTroopsSummary = activeRegion && activeRegion.specialTroops.length > 0
-        ? formatSpecialTroops(activeRegion.specialTroops)
+    const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;
+    const focusedRegion = hoveredRegion ?? displaySelectedRegion;
+    const focusedSpecialTroopsSummary = focusedRegion && focusedRegion.specialTroops.length > 0
+        ? formatSpecialTroops(focusedRegion.specialTroops)
         : null;
 
     const getRegionFromPointer = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
-        const hitmap = hitmapRef.current;
-        if (!canvas || !hitmap) return null;
+        const runtimeRegionIdByPixel = runtimeRegionIdByPixelRef.current;
+        if (!canvas || !runtimeRegionIdByPixel) return null;
 
         const rect = canvas.getBoundingClientRect();
         const x = Math.floor(((event.clientX - rect.left) / rect.width) * QIDAHEN_MAP_WIDTH);
         const y = Math.floor(((event.clientY - rect.top) / rect.height) * QIDAHEN_MAP_HEIGHT);
         if (x < 0 || y < 0 || x >= QIDAHEN_MAP_WIDTH || y >= QIDAHEN_MAP_HEIGHT) return null;
 
-        const offset = (y * QIDAHEN_MAP_WIDTH + x) * 4;
-        if (hitmap[offset + 3] === 0) return null;
-        const colorKey = qidahenRegionColorKey(hitmap[offset], hitmap[offset + 1], hitmap[offset + 2]);
-        const printedRegionId = REGION_BY_COLOR[colorKey] ?? null;
-        if (!printedRegionId) {
-            return null;
-        }
-        const preferredRuntimeRegionIds = core.selectedRegionId
-            ? (core.regions.find((region) => region.id === core.selectedRegionId)?.runtimeRegionIds ?? [])
-            : [];
-        return resolveQidahenRuntimeRegionIdFromPrintedRegionId(printedRegionId, preferredRuntimeRegionIds);
-    }, [core.regions, core.selectedRegionId]);
+        return runtimeRegionIdByPixel[(y * QIDAHEN_MAP_WIDTH) + x] ?? null;
+    }, []);
 
-    const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const handlePointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         setHoveredRegionId(getRegionFromPointer(event));
-    };
+    }, [getRegionFromPointer]);
 
-    const handleClick = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    const handleMapWheel = React.useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        const layer = mapLayerRef.current;
+        if (!layer) {
+            return;
+        }
+        const rect = layer.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            return;
+        }
+        const stageX = ((event.clientX - rect.left) / rect.width) * STAGE_WIDTH;
+        const stageY = ((event.clientY - rect.top) / rect.height) * STAGE_HEIGHT;
+        const nextZoom = clampNumber(
+            viewport.zoom * (event.deltaY < 0 ? 1.14 : 0.88),
+            QIDAHEN_MAP_MIN_ZOOM,
+            QIDAHEN_MAP_MAX_ZOOM,
+        );
+        if (Math.abs(nextZoom - viewport.zoom) < 0.001) {
+            return;
+        }
+        const mapX = (stageX - MAP_COVER_LEFT - viewport.panX) / (MAP_COVER_SCALE * viewport.zoom);
+        const mapY = (stageY - MAP_COVER_TOP - viewport.panY) / (MAP_COVER_SCALE * viewport.zoom);
+        onViewportChange(clampQidahenMapViewport({
+            zoom: nextZoom,
+            panX: stageX - MAP_COVER_LEFT - mapX * MAP_COVER_SCALE * nextZoom,
+            panY: stageY - MAP_COVER_TOP - mapY * MAP_COVER_SCALE * nextZoom,
+        }));
+    }, [onViewportChange, viewport.panX, viewport.panY, viewport.zoom]);
+
+    const handlePointerDown = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (event.button !== 0) {
+            return;
+        }
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        dragStateRef.current = {
+            pointerId: event.pointerId,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            startPanX: viewport.panX,
+            startPanY: viewport.panY,
+            moved: false,
+        };
+    }, [viewport.panX, viewport.panY]);
+
+    const handleCanvasPointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        const dragState = dragStateRef.current;
+        if (dragState && dragState.pointerId === event.pointerId) {
+            const layer = mapLayerRef.current;
+            if (!layer) {
+                return;
+            }
+            const rect = layer.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return;
+            }
+            const deltaX = ((event.clientX - dragState.startClientX) / rect.width) * STAGE_WIDTH;
+            const deltaY = ((event.clientY - dragState.startClientY) / rect.height) * STAGE_HEIGHT;
+            if (!dragState.moved && Math.abs(deltaX) + Math.abs(deltaY) >= 6) {
+                dragState.moved = true;
+            }
+            if (dragState.moved) {
+                setHoveredRegionId(null);
+                onViewportChange(clampQidahenMapViewport({
+                    zoom: viewport.zoom,
+                    panX: dragState.startPanX + deltaX,
+                    panY: dragState.startPanY + deltaY,
+                }));
+                return;
+            }
+        }
+        handlePointerMove(event);
+    }, [handlePointerMove, onViewportChange, viewport.zoom]);
+
+    const handlePointerUp = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        const dragState = dragStateRef.current;
+        if (!dragState || dragState.pointerId !== event.pointerId) {
+            return;
+        }
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+        dragStateRef.current = null;
+        if (dragState.moved) {
+            return;
+        }
         const regionId = getRegionFromPointer(event);
         if (regionId) {
             onSelectRegion(regionId);
         }
     }, [getRegionFromPointer, onSelectRegion]);
 
-    const tipLeft = activeRegion
+    const handlePointerCancel = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (dragStateRef.current?.pointerId === event.pointerId) {
+            dragStateRef.current = null;
+        }
+    }, []);
+
+    const tipLeft = focusedRegion
         ? Math.min(
             Math.min(STAGE_WIDTH - MAP_REGION_TIP_WIDTH - 18, ACTIONS_DOCK_LEFT - MAP_REGION_TIP_WIDTH - MAP_REGION_TIP_ACTION_GAP),
-            Math.max(18, MAP_COVER_LEFT + activeRegion.x * QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE + 18),
+            Math.max(18, projectQidahenMapPointToStage({
+                x: focusedRegion.x * QIDAHEN_MAP_WIDTH,
+                y: focusedRegion.y * QIDAHEN_MAP_HEIGHT,
+            }, viewport).x + 18),
         )
         : 0;
-    const tipTop = activeRegion
-        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, MAP_COVER_TOP + activeRegion.y * QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE - 34))
+    const tipTop = focusedRegion
+        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, projectQidahenMapPointToStage({
+            x: focusedRegion.x * QIDAHEN_MAP_WIDTH,
+            y: focusedRegion.y * QIDAHEN_MAP_HEIGHT,
+        }, viewport).y - 34))
         : 0;
-    const focusRuntimeRegionIds = new Set(activeRegion?.runtimeRegionIds ?? selectedRegion?.runtimeRegionIds ?? [core.selectedRegionId]);
+    const focusRuntimeRegionIds = new Set(focusedRegion?.runtimeRegionIds ?? []);
     const runtimeRegionsById = new Map(
         core.regions
             .filter((region) => !region.isLogicalRegion)
             .map((region) => [region.id, region]),
     );
-    const selectedRuntimeRegionIds = new Set(selectedRegion?.runtimeRegionIds ?? (core.selectedRegionId ? [core.selectedRegionId] : []));
-    const sharedPrintedRuntimeOptions = activeRegion
+    const selectedRuntimeRegionIds = new Set(displaySelectedRegion?.runtimeRegionIds ?? (displaySelectedRegion?.id ? [displaySelectedRegion.id] : []));
+    const sharedPrintedRuntimeOptions = focusedRegion
         ? Array.from(new Set(
-            (activeRegion.isLogicalRegion ? activeRegion.runtimeRegionIds : [activeRegion.id])
+            (focusedRegion.isLogicalRegion ? focusedRegion.runtimeRegionIds : [focusedRegion.id])
                 .flatMap((runtimeRegionId) => getQidahenPrintedRegionIdsForRuntimeRegionId(runtimeRegionId))
                 .flatMap((printedRegionId) => getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId)),
         ))
@@ -1067,17 +1499,19 @@ const MapSceneLayer: React.FC<{
             return from && to ? { edge, from, to, directedPassage: statePassage ?? directedPassage } : null;
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
-    const activePassageSummary = activeRegion
-        ? Object.entries(activeRegion.travelCostByRegionId)
+    const activePassageSummary = focusedRegion
+        ? Object.entries(focusedRegion.travelCostByRegionId)
             .map(([regionId, travelCost]) => {
                 const targetRegion = core.regions.find((region) => region.id === regionId);
-                const boundaryType = activeRegion.boundaryTypeByRegionId[regionId];
-                const battleWidth = activeRegion.movementCostByRegionId[regionId];
+                const boundaryType = focusedRegion.boundaryTypeByRegionId[regionId];
+                const battleWidth = focusedRegion.movementCostByRegionId[regionId];
                 const boundaryMeta = boundaryType ? getQidahenBoundaryTypeMeta(boundaryType) : getQidahenBoundaryTypeMeta('plain');
                 const boundaryLabel = boundaryMeta.label;
                 return {
                     regionId,
-                    regionName: targetRegion?.name ?? regionId,
+                    regionName: targetRegion
+                        ? getActionRuleDisplayRegionName(targetRegion, targetRegion.name)
+                        : getQidahenStatefulRegionDisplayName(regionId),
                     travelCost,
                     battleWidth,
                     boundaryLabel,
@@ -1089,12 +1523,12 @@ const MapSceneLayer: React.FC<{
             .map((entry) => `${entry.regionName} ${entry.boundaryLabel} 移${entry.travelCost}/宽${entry.battleWidth ?? '-'}${entry.unitCap ? `/限${entry.unitCap}` : ''}`)
             .join(' · ')
         : '';
-    const activeMovementPreview = activeRegion && activeRegion.controller === currentFactionId
+    const activeMovementPreview = focusedRegion && focusedRegion.controller === currentFactionId
         ? (() => {
             const previewText = (['dispatch-infantry', 'dispatch-cavalry'] as const)
                 .map((profileId) => {
                     const profile = getQidahenMovementProfile(profileId);
-                    const reachable = findQidahenReachableRuntimeRegions(core, activeRegion.id, currentFactionId, profile.movementBudget)
+                    const reachable = findQidahenReachableRuntimeRegions(core, focusedRegion.id, currentFactionId, profile.movementBudget)
                         .slice(0, 3)
                         .map((region) => `${region.regionName}${region.usesCoast ? ' 水' : ''}`)
                         .join(' / ');
@@ -1105,25 +1539,140 @@ const MapSceneLayer: React.FC<{
             return previewText || '暂无';
         })()
         : '';
+    const getRegionPoint = (regionId: string | null | undefined) => {
+        if (!regionId) {
+            return null;
+        }
+        const region = runtimeRegionsById.get(regionId) ?? core.regions.find((item) => item.id === regionId);
+        if (region && typeof region.x === 'number' && typeof region.y === 'number') {
+            return {
+                x: region.x * QIDAHEN_MAP_WIDTH,
+                y: region.y * QIDAHEN_MAP_HEIGHT,
+            };
+        }
+        const graphNode = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(regionId);
+        return graphNode?.center ?? graphNode?.seed ?? null;
+    };
+    const buildGuidePathPoints = (
+        pathRegionIds: string[],
+        fallbackSourceRegionId: string | null | undefined,
+        fallbackTargetRegionId: string | null | undefined,
+    ) => {
+        const mergedRegionIds = [
+            fallbackSourceRegionId,
+            ...pathRegionIds,
+            fallbackTargetRegionId,
+        ].filter((regionId, index, list): regionId is string => Boolean(regionId) && list.indexOf(regionId) === index);
+        const points = mergedRegionIds
+            .map((regionId) => getRegionPoint(regionId))
+            .filter((point): point is NonNullable<typeof point> => point != null);
+        return points.length >= 2 ? points : [];
+    };
+    const mapSelectionGuide = (() => {
+        if (wheelDispatchSelection) {
+            return {
+                sourceRegionId: wheelDispatchSelection.sourceRegionId,
+                title: '点一个进攻目标',
+                hint: `${wheelDispatchSelection.sourceRegionName} 出发`,
+                badgeLabel: '选择目标',
+                candidates: wheelDispatchSelection.candidates.map((candidate) => ({
+                    id: candidate.targetRuntimeRegionId,
+                    targetRegionId: candidate.targetRuntimeRegionId,
+                    targetRegionName: candidate.targetRegionName,
+                    resolutionHint: candidate.resolutionHint,
+                    pathPoints: buildGuidePathPoints(candidate.pathRegionIds, wheelDispatchSelection.sourceRegionId, candidate.targetRuntimeRegionId),
+                })),
+                candidateSummary: formatQidahenCandidateRegionSummary(wheelDispatchSelection.candidates.map((candidate) => candidate.targetRegionName)),
+            };
+        }
+        if (core.gaoDiDispatchSelection) {
+            return {
+                sourceRegionId: core.gaoDiDispatchSelection.sourceRegionId,
+                title: core.gaoDiDispatchSelection.selectedCardId
+                    ? '点一个调度目标'
+                    : '先弃 1 张牌',
+                hint: `${core.gaoDiDispatchSelection.sourceRegionName} 出发`,
+                badgeLabel: '选择目标',
+                candidates: core.gaoDiDispatchSelection.candidates.map((candidate) => ({
+                    id: candidate.id,
+                    targetRegionId: candidate.targetRegionId,
+                    targetRegionName: candidate.targetRegionName,
+                    resolutionHint: candidate.resolutionHint,
+                    pathPoints: buildGuidePathPoints(candidate.pathRegionIds, core.gaoDiDispatchSelection?.sourceRegionId, candidate.targetRegionId),
+                })),
+                candidateSummary: formatQidahenCandidateRegionSummary(core.gaoDiDispatchSelection.candidates.map((candidate) => candidate.targetRegionName)),
+            };
+        }
+        if (internalDispatchSelection) {
+            return {
+                sourceRegionId: internalDispatchSelection.sourceRegionId,
+                title: '点一个调度目标',
+                hint: `${internalDispatchSelection.sourceRegionName} 出发`,
+                badgeLabel: '选择目标',
+                candidates: internalDispatchSelection.candidates.map((candidate) => ({
+                    id: candidate.id,
+                    targetRegionId: candidate.targetRegionId,
+                    targetRegionName: candidate.targetRegionName,
+                    resolutionHint: candidate.resolutionHint,
+                    pathPoints: buildGuidePathPoints(candidate.pathRegionIds, internalDispatchSelection.sourceRegionId, candidate.targetRegionId),
+                })),
+                candidateSummary: formatQidahenCandidateRegionSummary(internalDispatchSelection.candidates.map((candidate) => candidate.targetRegionName)),
+            };
+        }
+        if (pendingTargetAction?.sourceRegionId) {
+            return {
+                sourceRegionId: pendingTargetAction.sourceRegionId,
+                title: `处理中：${pendingTargetAction.targetRegionName}`,
+                hint: '处理中',
+                badgeLabel: '已锁定',
+                candidates: [
+                    {
+                        id: pendingTargetAction.targetRuntimeRegionId,
+                        targetRegionId: pendingTargetAction.targetRuntimeRegionId,
+                        targetRegionName: pendingTargetAction.targetRegionName,
+                        resolutionHint: pendingTargetAction.resolutionHint,
+                        pathPoints: buildGuidePathPoints([], pendingTargetAction.sourceRegionId, pendingTargetAction.targetRuntimeRegionId),
+                    },
+                ],
+                candidateSummary: pendingTargetAction.targetRegionName,
+            };
+        }
+        return null;
+    })();
+    const mapSelectionCandidateRegionIds = new Set(mapSelectionGuide?.candidates.map((candidate) => candidate.targetRegionId) ?? []);
+    const activeGuideTargetRegionId = hoveredRegionId && mapSelectionCandidateRegionIds.has(hoveredRegionId)
+        ? hoveredRegionId
+        : core.selectedRegionId && mapSelectionCandidateRegionIds.has(core.selectedRegionId)
+            ? core.selectedRegionId
+            : null;
+    const mapSelectionBannerLeft = (STAGE_WIDTH - MAP_SELECTION_BANNER_WIDTH) / 2;
+    const mapSelectionBannerInteractive = mapSelectionGuide != null && pendingTargetAction == null;
 
     return (
         <div
+            ref={mapLayerRef}
             className="pointer-events-auto absolute inset-0 z-10 overflow-hidden"
             data-testid="qidahen-map-layer"
+            data-tutorial-id="qidahen-map-layer"
             data-map-layout="full-bleed-cover"
             data-map-selected={core.selectedRegionId}
+            data-map-zoom={viewport.zoom}
+            data-map-pan-x={viewport.panX}
+            data-map-pan-y={viewport.panY}
+            onWheel={handleMapWheel}
             style={{
                 background: '#c8a970',
             }}
         >
             <div
                 className="absolute"
+                data-testid="qidahen-map-content"
                 style={{
-                    left: MAP_COVER_LEFT,
-                    top: MAP_COVER_TOP,
+                    left: MAP_COVER_LEFT + viewport.panX,
+                    top: MAP_COVER_TOP + viewport.panY,
                     width: QIDAHEN_MAP_WIDTH,
                     height: QIDAHEN_MAP_HEIGHT,
-                    transform: `scale(${MAP_COVER_SCALE})`,
+                    transform: `scale(${MAP_COVER_SCALE * viewport.zoom})`,
                     transformOrigin: 'top left',
                 }}
             >
@@ -1150,13 +1699,24 @@ const MapSceneLayer: React.FC<{
                         <filter id="qidahen-map-province-hover" x="-10%" y="-10%" width="120%" height="120%">
                             <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(255,220,146,0.44)" />
                         </filter>
+                        <marker id="qidahen-map-guide-arrow" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+                            <path d="M 0 1 L 16 9 L 0 17 L 5 9 z" fill="rgba(118, 214, 138, 0.98)" />
+                        </marker>
+                        <marker id="qidahen-map-guide-arrow-active" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+                            <path d="M 0 1 L 16 9 L 0 17 L 5 9 z" fill="rgba(255, 230, 167, 0.98)" />
+                        </marker>
+                        <filter id="qidahen-map-guide-glow" x="-18%" y="-18%" width="136%" height="136%">
+                            <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(106,214,139,0.42)" />
+                        </filter>
                     </defs>
                     {core.routeLines.map((route) => (
                         <polyline
                             key={route.id}
                             points={route.points.map((point) => `${point.x * QIDAHEN_MAP_WIDTH},${point.y * QIDAHEN_MAP_HEIGHT}`).join(' ')}
                             fill="none"
-                            stroke={route.tone === 'red' ? 'rgba(184,59,39,0.72)' : 'rgba(43,101,145,0.74)'}
+                            stroke={route.tone === 'red'
+                                ? (mapSelectionGuide ? 'rgba(184,59,39,0.24)' : 'rgba(184,59,39,0.72)')
+                                : (mapSelectionGuide ? 'rgba(43,101,145,0.22)' : 'rgba(43,101,145,0.74)')}
                             strokeWidth="4"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1188,25 +1748,107 @@ const MapSceneLayer: React.FC<{
                                         strokeWidth={5}
                                         strokeLinecap="round"
                                         strokeDasharray={boundaryType === 'coast' ? '9 9' : undefined}
+                                        opacity={mapSelectionGuide ? 0.22 : 0.9}
                                         vectorEffect="non-scaling-stroke"
                                     />
-                                    <text
-                                        x={midX}
-                                        y={midY - 8}
-                                        fill={color}
-                                        stroke="rgba(32,21,13,0.78)"
-                                        strokeWidth={3}
-                                        paintOrder="stroke fill"
-                                        textAnchor="middle"
-                                        fontSize={18}
-                                        fontWeight={900}
-                                    >
-                                        {boundaryLabel || boundaryMeta.label}
-                                    </text>
+                                    {!mapSelectionGuide ? (
+                                        <text
+                                            x={midX}
+                                            y={midY - 8}
+                                            fill={color}
+                                            stroke="rgba(32,21,13,0.78)"
+                                            strokeWidth={3}
+                                            paintOrder="stroke fill"
+                                            textAnchor="middle"
+                                            fontSize={18}
+                                            fontWeight={900}
+                                        >
+                                            {boundaryLabel || boundaryMeta.label}
+                                        </text>
+                                    ) : null}
                                 </g>
                             );
                         })}
                     </g>
+                    {mapSelectionGuide ? (
+                        <g data-testid="qidahen-map-selection-guide">
+                            {mapSelectionGuide.candidates.map((candidate, index) => {
+                                const pathPoints = candidate.pathPoints;
+                                const activeCandidate = activeGuideTargetRegionId === candidate.targetRegionId;
+                                const targetPoint = pathPoints[pathPoints.length - 1] ?? getRegionPoint(candidate.targetRegionId);
+                                if (pathPoints.length < 2 || !targetPoint) {
+                                    return null;
+                                }
+                                const pointLabel = pathPoints.map((point) => `${point.x},${point.y}`).join(' ');
+                                return (
+                                    <g key={candidate.id} data-testid={`qidahen-map-guide-route-${candidate.targetRegionId}`}>
+                                        <polyline
+                                            points={pointLabel}
+                                            fill="none"
+                                            stroke={activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.96)'}
+                                            strokeWidth={activeCandidate ? 11 : 8}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
+                                            markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
+                                            filter="url(#qidahen-map-guide-glow)"
+                                            opacity={1}
+                                        />
+                                        <circle
+                                            cx={targetPoint.x}
+                                            cy={targetPoint.y}
+                                            r={activeCandidate ? 18 : 15}
+                                            fill={activeCandidate ? 'rgba(43,105,57,0.98)' : 'rgba(53,143,75,0.96)'}
+                                            stroke={activeCandidate ? 'rgba(255,236,190,0.98)' : 'rgba(224,255,217,0.96)'}
+                                            strokeWidth={activeCandidate ? 4 : 3}
+                                            filter="url(#qidahen-map-guide-glow)"
+                                        />
+                                        <text
+                                            x={targetPoint.x}
+                                            y={targetPoint.y + 0.5}
+                                            fill="#f7ffef"
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            fontSize={activeCandidate ? 14 : 12}
+                                            fontWeight={900}
+                                        >
+                                            {index + 1}
+                                        </text>
+                                    </g>
+                                );
+                            })}
+                            {(() => {
+                                const sourcePoint = getRegionPoint(mapSelectionGuide.sourceRegionId);
+                                if (!sourcePoint) {
+                                    return null;
+                                }
+                                return (
+                                    <g data-testid="qidahen-map-selection-guide-source">
+                                        <circle
+                                            cx={sourcePoint.x}
+                                            cy={sourcePoint.y}
+                                            r={16}
+                                            fill="rgba(111,74,23,0.9)"
+                                            stroke="rgba(255,227,151,0.98)"
+                                            strokeWidth={4}
+                                            filter="url(#qidahen-map-guide-glow)"
+                                        />
+                                        <text
+                                            x={sourcePoint.x}
+                                            y={sourcePoint.y}
+                                            fill="#fff6df"
+                                            textAnchor="middle"
+                                            dominantBaseline="middle"
+                                            fontSize={12}
+                                            fontWeight={900}
+                                        >
+                                            {t('board.map.selectionGuideSource', { defaultValue: '起' })}
+                                        </text>
+                                    </g>
+                                );
+                            })()}
+                        </g>
+                    ) : null}
                 </svg>
                 <canvas
                     ref={overlayCanvasRef}
@@ -1225,13 +1867,98 @@ const MapSceneLayer: React.FC<{
                     height={QIDAHEN_MAP_HEIGHT}
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     data-testid="qidahen-map-hitmap-canvas"
-                    onPointerMove={handlePointerMove}
-                    onPointerLeave={() => setHoveredRegionId(null)}
-                    onPointerDown={handleClick}
+                    data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
+                    onPointerMove={handleCanvasPointerMove}
+                    onPointerLeave={() => {
+                        if (!dragStateRef.current) {
+                            setHoveredRegionId(null);
+                        }
+                    }}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerCancel}
                     aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
                 />
             </div>
-            {activeRegion ? (
+            <div
+                className="pointer-events-auto absolute bottom-[132px] left-[26px] z-30 flex flex-col gap-2"
+                data-testid="qidahen-map-viewport-controls"
+                data-ui-anchor="left-bottom"
+            >
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        data-testid="qidahen-map-zoom-out"
+                        className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        onClick={() => onViewportChange(clampQidahenMapViewport({
+                            zoom: viewport.zoom / 1.14,
+                            panX: viewport.panX,
+                            panY: viewport.panY,
+                        }))}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                    >
+                        -
+                    </button>
+                    <button
+                        type="button"
+                        data-testid="qidahen-map-zoom-reset"
+                        className="inline-flex h-[38px] min-w-[74px] items-center justify-center border-[3px] px-3 text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        onClick={() => onViewportChange(DEFAULT_QIDAHEN_MAP_VIEWPORT)}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                    >
+                        {t('devtools.regionMaskTool.compactBoundaryStats.reset', { defaultValue: '复位' })}
+                    </button>
+                    <button
+                        type="button"
+                        data-testid="qidahen-map-zoom-in"
+                        className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        onClick={() => onViewportChange(clampQidahenMapViewport({
+                            zoom: viewport.zoom * 1.14,
+                            panX: viewport.panX,
+                            panY: viewport.panY,
+                        }))}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                    >
+                        +
+                    </button>
+                </div>
+            </div>
+            {mapSelectionGuide && pendingTargetAction == null ? (
+                <div
+                    className="pointer-events-none absolute z-50 border-[3px] px-4 py-3"
+                    data-testid="qidahen-map-selection-banner"
+                    style={{
+                        left: mapSelectionBannerLeft,
+                        top: MAP_SELECTION_BANNER_TOP,
+                        width: MAP_SELECTION_BANNER_WIDTH,
+                        borderColor: mapSelectionBannerInteractive ? '#5fb772' : UI_STYLE.oldGold,
+                        background: mapSelectionBannerInteractive ? 'rgba(20, 63, 34, 0.94)' : UI_SURFACE.mapPanelSelected,
+                        color: UI_STYLE.mapIvory,
+                        boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                        borderRadius: 3,
+                    }}
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <div
+                            className="inline-flex items-center border px-2 py-1 text-[10px] font-black tracking-[0.18em]"
+                            style={{
+                                borderColor: mapSelectionBannerInteractive ? '#a7e6b4' : '#f6d5a8',
+                                color: mapSelectionBannerInteractive ? '#e7ffd8' : '#f6d5a8',
+                                background: mapSelectionBannerInteractive ? 'rgba(76, 142, 88, 0.18)' : 'rgba(109,74,23,0.18)',
+                            }}
+                        >
+                            {mapSelectionGuide.badgeLabel}
+                        </div>
+                    </div>
+                    <div className="mt-2 text-[18px] font-black leading-6 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]">
+                        {mapSelectionGuide.title}
+                    </div>
+                    <div className="mt-1 text-[12px] font-black leading-5" style={{ color: mapSelectionBannerInteractive ? '#dbf5cf' : '#f3d1a5' }}>
+                        {mapSelectionGuide.hint}
+                    </div>
+                </div>
+            ) : null}
+            {focusedRegion ? (
                 <div
                     className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"
                     data-testid="qidahen-map-region-tip"
@@ -1239,30 +1966,30 @@ const MapSceneLayer: React.FC<{
                         left: tipLeft,
                         top: tipTop,
                         width: MAP_REGION_TIP_WIDTH,
-                        borderColor: activeRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
-                        background: activeRegion.id === core.selectedRegionId ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                        borderColor: focusedRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
+                        background: focusedRegion.id === core.selectedRegionId ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
                         color: UI_STYLE.mapIvory,
                         boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
                         borderRadius: 3,
                     }}
                 >
-                    <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{activeRegion.name} · {activeRegion.controlLabel}</div>
+                    <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{focusedRegion.name} · {focusedRegion.controlLabel}</div>
                     <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.map.regionTroopsPopulation', {
-                            troops: activeRegion.troops,
-                            population: activeRegion.population,
+                            troops: focusedRegion.troops,
+                            population: focusedRegion.population,
                             defaultValue: '兵力 {{troops}} · 人口 {{population}}',
                         })}
                     </div>
-                    {activeSpecialTroopsSummary ? (
+                    {focusedSpecialTroopsSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                             {t('board.map.regionSpecialTroops', {
-                                summary: activeSpecialTroopsSummary,
+                                summary: focusedSpecialTroopsSummary,
                                 defaultValue: '特殊 {{summary}}',
                             })}
                         </div>
                     ) : null}
-                    {activePassageSummary ? (
+                    {!compactRegionTip && activePassageSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                             {t('board.map.regionPassages', {
                                 summary: activePassageSummary,
@@ -1270,7 +1997,7 @@ const MapSceneLayer: React.FC<{
                             })}
                         </div>
                     ) : null}
-                    {activeMovementPreview ? (
+                    {!compactRegionTip && activeMovementPreview ? (
                         <div
                             className="mt-1 text-[11px]"
                             data-testid="qidahen-map-region-movement-preview"
@@ -1282,7 +2009,7 @@ const MapSceneLayer: React.FC<{
                             })}
                         </div>
                     ) : null}
-                    {sharedPrintedRuntimeOptions.length > 1 ? (
+                    {!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (
                         <div
                             className="pointer-events-auto mt-2 flex flex-wrap items-center gap-2"
                             data-testid="qidahen-shared-printed-runtime-switcher"
@@ -1379,9 +2106,11 @@ const WheelPanel: React.FC<{
     moveChoices: QidahenWheelMoveChoice[];
     moveSummary: string;
     disabled: boolean;
+    emphasized?: boolean;
+    canActivateMove?: (moveId: string, selected: boolean) => boolean;
     onSelectMove: (moveId: string) => void;
     onExecuteMove: (moveId: string) => void;
-}> = ({ selectedId, selectedMoveId, moveChoices, moveSummary, disabled, onSelectMove, onExecuteMove }) => {
+}> = ({ selectedId, selectedMoveId, moveChoices, moveSummary, disabled, emphasized = false, canActivateMove, onSelectMove, onExecuteMove }) => {
     const { t } = useTranslation('game-qidahen');
     const [activeMoveId, setActiveMoveId] = React.useState(selectedMoveId);
     const selectedIndex = Math.max(0, WHEEL_SECTORS.findIndex((sector) => sector.id === selectedId));
@@ -1390,6 +2119,10 @@ const WheelPanel: React.FC<{
         ?? moveChoices.find((choice) => choice.id === selectedMoveId)
         ?? moveChoices[0];
     const activeSummary = activeMove ? `${activeMove.label}：${activeMove.drawText}` : moveSummary;
+    const activeMoveTargetIndex = activeMove ? (selectedIndex + activeMove.steps) % WHEEL_SECTORS.length : selectedIndex;
+    const moveTargetIndices = new Set(
+        moveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length),
+    );
 
     React.useEffect(() => {
         setActiveMoveId(selectedMoveId);
@@ -1414,6 +2147,7 @@ const WheelPanel: React.FC<{
         <div
             className="pointer-events-auto group absolute left-[136px] top-[-35px] z-30 h-[438px] w-[438px]"
             data-testid="qidahen-action-wheel"
+            data-tutorial-id="qidahen-action-wheel"
             data-ui-anchor="left-top"
         >
             <div
@@ -1430,6 +2164,10 @@ const WheelPanel: React.FC<{
                     <defs>
                         <filter id="qidahen-wheel-current" x="-20%" y="-20%" width="140%" height="140%">
                             <feDropShadow dx="0" dy="1.4" stdDeviation="0.9" floodColor="rgba(72,54,31,0.18)" />
+                        </filter>
+                        <filter id="qidahen-wheel-selected" x="-24%" y="-24%" width="148%" height="148%">
+                            <feDropShadow dx="0" dy="0" stdDeviation="3.8" floodColor="rgba(255,218,126,0.42)" />
+                            <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="rgba(127,29,22,0.3)" />
                         </filter>
                         <filter id="qidahen-wheel-grain" x="-10%" y="-10%" width="120%" height="120%">
                             <feTurbulence type="fractalNoise" baseFrequency="0.92" numOctaves="2" seed="21" />
@@ -1463,21 +2201,40 @@ const WheelPanel: React.FC<{
                     />
                     {sectorRenderOrder.map(({ sector, index }) => {
                         const current = index === selectedIndex;
+                        const candidateTarget = moveTargetIndices.has(index);
                         const selectedTarget = selectedMove ? index === selectedMoveTargetIndex : false;
+                        const activeTarget = index === activeMoveTargetIndex;
                         const labelPoint = polarToPoint(WHEEL_CENTER, WHEEL_LABEL_RADIUS, sector.angle);
                         return (
                             <g
                                 key={sector.id}
                                 data-testid="qidahen-wheel-sector"
                                 data-wheel-sector-id={sector.id}
+                                data-wheel-candidate={candidateTarget ? 'true' : undefined}
                                 data-wheel-selected={selectedTarget ? 'true' : undefined}
-                                filter={current ? 'url(#qidahen-wheel-current)' : undefined}
+                                filter={selectedTarget ? 'url(#qidahen-wheel-selected)' : current ? 'url(#qidahen-wheel-current)' : undefined}
                             >
                                 <path
                                     d={describeAnnularSlice(WHEEL_CENTER, WHEEL_INNER_RADIUS, WHEEL_OUTER_RADIUS - 16, sector.angle - 22.5, sector.angle + 22.5)}
-                                    fill={selectedTarget ? 'rgba(150,45,32,0.44)' : current ? 'rgba(182,145,76,0.18)' : index % 2 === 0 ? 'rgba(54,52,43,0.18)' : 'rgba(105,93,68,0.14)'}
-                                    stroke={selectedTarget ? 'rgba(99,27,20,1)' : 'rgba(32,23,15,0.56)'}
-                                    strokeWidth={selectedTarget ? 3 : 0.9}
+                                    fill={selectedTarget
+                                        ? 'rgba(168,41,31,0.72)'
+                                        : candidateTarget && emphasized
+                                            ? activeTarget
+                                                ? 'rgba(78, 156, 83, 0.52)'
+                                                : 'rgba(53, 124, 65, 0.42)'
+                                            : current
+                                                ? 'rgba(182,145,76,0.18)'
+                                                : index % 2 === 0
+                                                    ? 'rgba(54,52,43,0.18)'
+                                                    : 'rgba(105,93,68,0.14)'}
+                                    stroke={selectedTarget
+                                        ? 'rgba(246,214,149,0.98)'
+                                        : candidateTarget && emphasized
+                                            ? activeTarget
+                                                ? 'rgba(241, 255, 208, 0.98)'
+                                                : 'rgba(140, 230, 153, 0.94)'
+                                            : 'rgba(32,23,15,0.56)'}
+                                    strokeWidth={selectedTarget ? 4 : candidateTarget && emphasized ? (activeTarget ? 4 : 3) : 0.9}
                                     strokeLinejoin="round"
                                 />
                                 <text
@@ -1485,8 +2242,8 @@ const WheelPanel: React.FC<{
                                     y={labelPoint.y}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    className="fill-[#241b14]"
-                                    style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: selectedTarget ? '13px' : '12px', fontWeight: 650, writingMode: 'vertical-rl', textOrientation: 'upright', letterSpacing: '0.6px' }}
+                                    className={candidateTarget && emphasized ? 'fill-[#f5f2df]' : 'fill-[#241b14]'}
+                                    style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: selectedTarget || activeTarget ? '13px' : '12px', fontWeight: candidateTarget && emphasized ? 900 : 650, writingMode: 'vertical-rl', textOrientation: 'upright', letterSpacing: '0.6px' }}
                                 >
                                     {sector.label[0]}
                                 </text>
@@ -1495,8 +2252,8 @@ const WheelPanel: React.FC<{
                                     y={labelPoint.y}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    className="fill-[#241b14]"
-                                    style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: selectedTarget ? '13px' : '12px', fontWeight: 650, writingMode: 'vertical-rl', textOrientation: 'upright', letterSpacing: '0.6px' }}
+                                    className={candidateTarget && emphasized ? 'fill-[#f5f2df]' : 'fill-[#241b14]'}
+                                    style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: selectedTarget || activeTarget ? '13px' : '12px', fontWeight: candidateTarget && emphasized ? 900 : 650, writingMode: 'vertical-rl', textOrientation: 'upright', letterSpacing: '0.6px' }}
                                 >
                                     {sector.label[1]}
                                 </text>
@@ -1567,11 +2324,14 @@ const WheelPanel: React.FC<{
                     <g data-testid="qidahen-wheel-move-layer">
                         {moveChoices.map((choice) => {
                             const targetAngle = getMoveTargetAngle(choice.steps);
+                            const selected = choice.id === selectedMoveId;
+                            const tutorialLocked = !canActivateMove?.(choice.id, selected);
+                            const moveDisabled = disabled || tutorialLocked;
                             const activateMove = () => {
-                                if (disabled) {
+                                if (moveDisabled) {
                                     return;
                                 }
-                                if (choice.id === selectedMoveId) {
+                                if (selected) {
                                     onExecuteMove(choice.id);
                                     return;
                                 }
@@ -1584,12 +2344,13 @@ const WheelPanel: React.FC<{
                                     tabIndex={0}
                                     aria-label={choice.label}
                                     data-testid={`qidahen-wheel-move-target-${choice.id}`}
+                                    data-tutorial-id={`qidahen-wheel-move-${choice.id}`}
                                     d={describeAnnularSlice(WHEEL_CENTER, WHEEL_INNER_RADIUS - 8, WHEEL_OUTER_RADIUS - 8, targetAngle - 23.5, targetAngle + 23.5)}
                                     fill="rgba(255,248,233,0.001)"
                                     stroke="transparent"
                                     strokeWidth="1"
-                                    className={`outline-none transition-[fill,stroke] ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                                    aria-disabled={disabled}
+                                    className={`outline-none transition-[fill,stroke] ${moveDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                    aria-disabled={moveDisabled}
                                     onClick={activateMove}
                                     onKeyDown={(event) => {
                                         if (event.key === 'Enter' || event.key === ' ') {
@@ -1622,6 +2383,21 @@ const WheelPanel: React.FC<{
             >
                 {activeSummary}
             </div>
+            {emphasized && moveChoices.length > 0 ? (
+                <div
+                    className="pointer-events-none absolute left-[106px] top-[-42px] z-20 border-[3px] px-4 py-2 text-[12px] font-black tracking-[0.08em]"
+                    data-testid="qidahen-wheel-stage-banner"
+                    style={{
+                        borderColor: '#76d68a',
+                        background: 'linear-gradient(180deg, rgba(17, 65, 31, 0.96) 0%, rgba(14, 35, 20, 0.94) 100%)',
+                        color: '#efffe2',
+                        boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                        borderRadius: 3,
+                    }}
+                >
+                    {t('board.actions.wheelExecutePrompt', { defaultValue: '选择轮盘行动' })}
+                </div>
+            ) : null}
         </div>
     );
 };
@@ -1704,35 +2480,150 @@ const KoreaZone: React.FC<{
     );
 };
 
+const TopPromptBanner: React.FC<{
+    title: string;
+    badgeLabel: string;
+    hint?: string | null;
+    tone: 'wheel' | 'faction';
+    testId: string;
+}> = ({
+    title,
+    badgeLabel,
+    hint,
+    tone,
+    testId,
+}) => {
+    const isWheel = tone === 'wheel';
+    const width = MAP_SELECTION_BANNER_WIDTH;
+    const left = (STAGE_WIDTH - width) / 2;
+
+    return (
+        <div
+            className="pointer-events-none absolute z-50 border-[3px] px-4 py-3"
+            data-testid={testId}
+            style={{
+                left,
+                top: MAP_SELECTION_BANNER_TOP,
+                width,
+                borderColor: isWheel ? '#5fb772' : UI_STYLE.oldGold,
+                background: isWheel ? 'rgba(20, 63, 34, 0.94)' : UI_SURFACE.mapPanelSelected,
+                color: UI_STYLE.mapIvory,
+                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                borderRadius: 3,
+            }}
+        >
+            <div
+                className="inline-flex items-center border px-2 py-1 text-[10px] font-black tracking-[0.18em]"
+                style={{
+                    borderColor: isWheel ? '#a7e6b4' : '#f6d5a8',
+                    color: isWheel ? '#e7ffd8' : '#f6d5a8',
+                    background: isWheel ? 'rgba(76, 142, 88, 0.18)' : 'rgba(109,74,23,0.18)',
+                }}
+            >
+                {badgeLabel}
+            </div>
+            <div
+                className="mt-2 text-[18px] font-black leading-6 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]"
+                data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-title' : undefined}
+            >
+                {title}
+            </div>
+            {hint ? (
+                <div
+                    className="mt-1 text-[12px] font-black leading-5"
+                    data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-hint' : undefined}
+                    style={{ color: isWheel ? '#dbf5cf' : '#f3d1a5' }}
+                >
+                    {hint}
+                </div>
+            ) : null}
+        </div>
+    );
+};
+
 const ActionButton: React.FC<{
     action: QidahenActionChoice;
     selected: boolean;
+    engaged?: boolean;
     disabled?: boolean;
     onClick: () => void;
-}> = ({ action, selected, disabled = false, onClick }) => (
-    <button
-        type="button"
-        data-testid={`qidahen-action-${action.id}`}
-        title={action.detail}
-        disabled={disabled}
-        className="relative inline-flex h-[52px] min-w-[146px] items-center justify-start overflow-hidden border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
-        onClick={onClick}
-        style={{
-            borderColor: UI_STYLE.mapInk,
-            background: selected ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
-            color: selected ? '#f6d5a8' : UI_STYLE.mapIvory,
-            boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
-            borderRadius: 3,
-        }}
-    >
-        <span className="pointer-events-none absolute inset-y-0 left-0 w-[8px]" style={{ background: selected ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.76)' }} />
-        <span className="pointer-events-none absolute inset-x-[14px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.3)' }} />
-        <span className="min-w-0 whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">{action.label}</span>
-    </button>
-);
+}> = ({ action, selected, engaged = false, disabled = false, onClick }) => {
+    const { t } = useTranslation('game-qidahen');
+    const visuallySelected = selected && engaged;
+
+    return (
+        <button
+            type="button"
+            data-testid={`qidahen-action-${action.id}`}
+            data-tutorial-id={`qidahen-action-${action.id}`}
+            title={action.detail}
+            disabled={disabled}
+            className="group relative inline-flex h-[52px] min-w-[146px] items-center justify-between gap-3 overflow-visible border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
+            onClick={onClick}
+            style={{
+                borderColor: UI_STYLE.mapInk,
+                background: visuallySelected ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                color: visuallySelected ? '#f6d5a8' : UI_STYLE.mapIvory,
+                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                borderRadius: 3,
+            }}
+        >
+            <span className="pointer-events-none absolute inset-y-0 left-0 w-[8px]" style={{ background: visuallySelected ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.76)' }} />
+            <span className="pointer-events-none absolute inset-x-[14px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.3)' }} />
+            <span className="min-w-0 whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">{action.label}</span>
+            {visuallySelected ? (
+                <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black tracking-[0.08em]"
+                    data-testid={`qidahen-action-state-${action.id}`}
+                    style={{
+                        background: 'rgba(246,213,168,0.18)',
+                        color: '#f6d5a8',
+                        boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+                    }}
+                >
+                    {t('board.actions.state.current', { defaultValue: '当前' })}
+                </span>
+            ) : null}
+            <span
+                className="pointer-events-none absolute right-[calc(100%+12px)] top-1/2 z-30 hidden w-[248px] -translate-y-1/2 border-[3px] px-3 py-2 text-[11px] font-black leading-5 tracking-normal text-[#f6e8c9] shadow-[0_8px_18px_rgba(0,0,0,0.28)] group-hover:block group-focus:block"
+                data-testid={`qidahen-action-tooltip-${action.id}`}
+                role="tooltip"
+                style={{
+                    borderColor: UI_STYLE.mapInk,
+                    background: UI_SURFACE.mapPanel,
+                    boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                    borderRadius: 3,
+                    textShadow: 'none',
+                    whiteSpace: 'normal',
+                }}
+            >
+                <span className="flex items-center justify-between gap-3 text-[10px] tracking-[0.08em] text-[#d2b775]">
+                    <span>{t('board.actions.tooltipHeader', { defaultValue: '功能说明' })}</span>
+                    <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-black"
+                        style={{
+                            background: 'rgba(210,183,117,0.14)',
+                            color: UI_STYLE.mapGold,
+                            boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+                        }}
+                    >
+                        {t('board.actions.tooltipCost', {
+                            cost: action.cost,
+                            defaultValue: '花费 {{cost}}',
+                        })}
+                    </span>
+                </span>
+                <span className="mt-1 block text-[13px] text-[#f6d5a8]">{action.label}</span>
+                <span className="mt-1 block">{action.detail}</span>
+            </span>
+        </button>
+    );
+};
 
 const ActionsZone: React.FC<{
     core: QidahenCore;
+    primaryStageMode: QidahenPrimaryStageMode | null;
+    actionPaymentPreviewVisible: boolean;
     handLimitDiscardSelection: QidahenHandLimitDiscardSelection | null;
     internalDispatchSelection: QidahenInternalDispatchSelection | null;
     recruitSelection: QidahenCore['recruitSelection'];
@@ -1748,7 +2639,6 @@ const ActionsZone: React.FC<{
     onSelectRegion: (regionId: string) => void;
     onResolveRecruitChoice: (choiceId: QidahenRecruitChoice['id']) => void;
     onResolveGaoDiDispatch: (choiceId: string) => void;
-    onResolveInternalDispatch: (choiceId: string) => void;
     onResolveMaShiTradeChoice: (troopCount: 1 | 2 | 3) => void;
     onResolveKhanEdictChoice: (choiceId: 'recruit-train' | 'hire-dispatch') => void;
     onResolveDiplomacyChoice: (choiceId: 'hire-only' | 'place-friendly' | 'flip-vassal' | 'remove-marker') => void;
@@ -1764,34 +2654,70 @@ const ActionsZone: React.FC<{
     onSelectPendingDefenderCasualtyPriority: (priority: QidahenCasualtyPriority) => void;
     onResolvePendingAction: (choiceValue: QidahenPendingTargetChoiceValue, attackerCasualtyPriority?: QidahenCasualtyPriority, defenderCasualtyPriority?: QidahenCasualtyPriority, committedTroops?: number) => void;
     onResolvePostBattleDecision: (choiceId: string) => void;
-    onResolveWheelDispatchChoice: (choiceId: string) => void;
-    onExecuteWheelMove: (moveId: string) => void;
-}> = ({ core, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
+    isTutorialCommandAllowed?: (commandType: string) => boolean;
+    isTutorialTargetAllowed?: (targetId: string | null | undefined) => boolean;
+}> = ({ core, primaryStageMode, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-qidahen');
+    const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
-    const pendingScenarioChoices = core.pendingScenarioCharacterChoices.length > 0 || core.pendingScenarioArmamentChoices.length > 0;
+    const pendingScenarioChoices = core.scenarioVote != null
+        || core.pendingScenarioCharacterChoices.length > 0
+        || core.pendingScenarioArmamentChoices.length > 0;
+    const selectedAction = core.actionChoices.find((action) => action.id === core.selectedActionId) ?? core.actionChoices[0] ?? null;
+    const primaryStageHeadline = buildQidahenPrimaryStageHeadline(core, primaryStageMode, selectedAction);
+    const primaryStageHint = buildQidahenPrimaryStageHint(core, primaryStageMode, selectedAction);
+    const factionStageActiveSelection = core.gaoDiDispatchSelection != null
+        || internalDispatchSelection != null
+        || recruitSelection != null
+        || maShiTradeSelection != null
+        || khanEdictSelection != null
+        || diplomacySelection != null
+        || driveTigerConsentSelection != null
+        || fortificationMaintenanceSelection != null
+        || handLimitDiscardSelection != null;
+    const wheelStageActiveSelection = wheelDispatchSelection != null
+        || pendingTargetAction != null
+        || postBattleSelection != null;
+    const engagedActionId = actionPaymentPreviewVisible ? core.selectedActionId : null;
     const showWheelNextStepBanner = !pendingScenarioChoices
-        && core.factionActionUsed
+        && primaryStageMode === 'wheel'
         && !core.wheelActionUsed
-        && recruitSelection == null
-        && core.sunYuanhuaTechSelection == null
-        && core.gaoDiDispatchSelection == null
-        && internalDispatchSelection == null
-        && maShiTradeSelection == null
-        && khanEdictSelection == null
-        && diplomacySelection == null
-        && driveTigerConsentSelection == null
-        && fortificationMaintenanceSelection == null
-        && handLimitDiscardSelection == null
-        && wheelDispatchSelection == null
-        && pendingTargetAction == null
-        && postBattleSelection == null
+        && !factionStageActiveSelection
+        && !wheelStageActiveSelection
         && core.wheelMoveChoices.length > 0;
+    const suppressPassiveActionContext = showWheelNextStepBanner
+        || factionStageActiveSelection
+        || wheelStageActiveSelection
+        || wheelDispatchSelection != null
+        || pendingTargetAction != null
+        || postBattleSelection != null;
+    const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
+    const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';
+    const actionSurfaceKey = handLimitDiscardSelection ? 'hand-limit-discard'
+        : internalDispatchSelection ? 'internal-dispatch'
+            : recruitSelection ? 'recruit'
+                : maShiTradeSelection ? 'ma-shi-trade'
+                    : khanEdictSelection ? 'khan-edict'
+                        : diplomacySelection ? 'diplomacy'
+                            : driveTigerConsentSelection ? 'drive-tiger-consent'
+                                : fortificationMaintenanceSelection ? 'fortification-maintenance'
+                                    : wheelDispatchSelection ? 'wheel-dispatch'
+                                        : pendingTargetAction ? `pending:${pendingTargetAction.actionId}`
+                                            : postBattleSelection ? `post-battle:${postBattleSelection.actionId}`
+                                                : primaryStageMode ? `primary-stage:${primaryStageMode}`
+                                                    : selectedAction ? `action-rail:${selectedAction.id}` : 'action-rail:none';
+
+    React.useEffect(() => {
+        if (actionSlotRef.current) {
+            actionSlotRef.current.scrollTop = 0;
+        }
+    }, [actionSurfaceKey]);
 
     return (
         <div
             className="pointer-events-auto absolute z-40 flex flex-col"
             data-testid="qidahen-actions-zone"
+            data-tutorial-id="qidahen-actions-zone"
             data-ui-anchor="right-middle"
             style={{
                 left: ACTIONS_DOCK_LEFT,
@@ -1803,9 +2729,10 @@ const ActionsZone: React.FC<{
             <div
                 className="mb-3 shrink-0 border-[3px] px-3 py-2 text-[13px] font-black leading-5"
                 data-testid="qidahen-turn-banner"
+                data-tutorial-id="qidahen-turn-banner"
                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
             >
-                <div>{core.turnLabel}</div>
+                <div>{formatQidahenVisibleTurnLabel(core.turnLabel)}</div>
                 <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                     {t('board.actions.turnStatus', {
                         year: core.currentYear,
@@ -1815,58 +2742,27 @@ const ActionsZone: React.FC<{
                         factionStatus: core.factionActionUsed
                             ? t('board.actions.status.used', { defaultValue: '已用' })
                             : t('board.actions.status.unused', { defaultValue: '未用' }),
-                        defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 势力行动 {{factionStatus}}',
+                        defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}',
                     })}
                 </div>
+                {!pendingScenarioChoices && primaryStageMode ? (
+                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                        {`${primaryStageHeadline} · ${primaryStageHint}`}
+                    </div>
+                ) : null}
                 {pendingScenarioChoices ? (
                     <div className="mt-1 text-[11px]" data-testid="qidahen-actions-blocked-by-scenario" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.scenarioBlocked', {
-                            defaultValue: '剧本待决项尚未确认，当前只可处理剧本选择。',
-                        })}
+                        {core.scenarioVote
+                            ? t('board.actions.scenarioVoteBlocked', {
+                                defaultValue: '局内剧本投票尚未完成，当前只可处理剧本介绍与投票。',
+                            })
+                            : t('board.actions.scenarioBlocked', {
+                                defaultValue: '剧本待决项尚未确认，当前只可处理剧本选择。',
+                            })}
                     </div>
                 ) : null}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
-            {showWheelNextStepBanner ? (
-                <div
-                    className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[13px] font-black leading-5"
-                    data-testid="qidahen-wheel-next-step-banner"
-                    style={{ borderColor: UI_STYLE.oldGold, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
-                >
-                    <div data-testid="qidahen-wheel-next-step-title">
-                        {t('board.actions.wheelNextStepTitle', {
-                            defaultValue: '下一步：点击轮盘按钮推进回合',
-                        })}
-                    </div>
-                    <div className="mt-1 text-[11px]" data-testid="qidahen-wheel-next-step-hint" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.wheelNextStepHint', {
-                            defaultValue: '不用点左侧轮盘盘面，直接点下面的明文按钮即可。',
-                        })}
-                    </div>
-                    <div className="mt-2 flex flex-col gap-2" data-testid="qidahen-wheel-next-step-choices">
-                        {core.wheelMoveChoices.map((choice) => (
-                            <button
-                                key={choice.id}
-                                type="button"
-                                data-testid={`qidahen-wheel-next-step-choice-${choice.id}`}
-                                className="inline-flex min-h-[48px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                onClick={() => onExecuteWheelMove(choice.id)}
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {choice.drawText}
-                                    </span>
-                                </span>
-                                <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                    {t('board.actions.directExecute', { defaultValue: '直接执行' })}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            ) : null}
+            <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {core.victoryStatus ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
@@ -1887,35 +2783,37 @@ const ActionsZone: React.FC<{
                     </div>
                 </div>
             ) : null}
-            <div
-                className="mb-3 flex flex-wrap items-center justify-end gap-2"
-                data-testid="qidahen-fortification-strip"
-            >
-                {core.fortifications.map((fortification) => (
-                    <div
-                        key={fortification.id}
-                        className="border-[2px] px-2 py-1 text-[11px] font-black leading-4"
-                        title={fortification.ruleNote}
-                        data-testid={`qidahen-fortification-${fortification.id}`}
-                        style={{
-                            borderColor: UI_STYLE.mapInk,
-                            background: fortification.ruined ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
-                            color: fortification.ruined ? '#f6d5a8' : UI_STYLE.mapIvory,
-                            boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
-                            borderRadius: 3,
-                        }}
-                    >
-                        {t('board.actions.fortificationStatus', {
-                            label: fortification.label,
-                            status: fortification.ruined
-                                ? t('board.actions.fortification.ruined', { defaultValue: '破败' })
-                                : t('board.actions.fortification.intact', { defaultValue: '完整' }),
-                            defaultValue: '{{label}} · {{status}}',
-                        })}
-                    </div>
-                ))}
-            </div>
-            {core.lastSeasonSummary ? (
+            {showFortificationStrip ? (
+                <div
+                    className="mb-3 flex flex-wrap items-center justify-end gap-2"
+                    data-testid="qidahen-fortification-strip"
+                >
+                    {core.fortifications.map((fortification) => (
+                        <div
+                            key={fortification.id}
+                            className="border-[2px] px-2 py-1 text-[11px] font-black leading-4"
+                            title={fortification.ruleNote}
+                            data-testid={`qidahen-fortification-${fortification.id}`}
+                            style={{
+                                borderColor: UI_STYLE.mapInk,
+                                background: fortification.ruined ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                                color: fortification.ruined ? '#f6d5a8' : UI_STYLE.mapIvory,
+                                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                                borderRadius: 3,
+                            }}
+                        >
+                            {t('board.actions.fortificationStatus', {
+                                label: fortification.label,
+                                status: fortification.ruined
+                                    ? t('board.actions.fortification.ruined', { defaultValue: '破败' })
+                                    : t('board.actions.fortification.intact', { defaultValue: '完整' }),
+                                defaultValue: '{{label}} · {{status}}',
+                            })}
+                        </div>
+                    ))}
+                </div>
+            ) : null}
+            {!suppressPassiveActionContext && core.lastSeasonSummary ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
                     data-testid="qidahen-season-summary"
@@ -2007,51 +2905,35 @@ const ActionsZone: React.FC<{
                             sourceRegionName: core.gaoDiDispatchSelection.sourceRegionName,
                             maxTroops: core.gaoDiDispatchSelection.maxTroops,
                             maxPopulation: core.gaoDiDispatchSelection.maxPopulation,
-                            defaultValue: '源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}',
+                            defaultValue: '从 {{sourceRegionName}} 出发 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口',
                         })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {core.gaoDiDispatchSelection.summary}
                     </div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.gaoDi.hint', {
-                            defaultValue: '先点击底部手牌选择要弃掉的牌，再点击下面的调度目标；也可以直接跳过。',
-                        })}
-                    </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {core.gaoDiDispatchSelection.candidates.map((candidate) => {
                             const amount = candidate.committedTroops + candidate.committedPopulation;
                             return (
-                                <button
+                                <div
                                     key={candidate.id}
-                                    type="button"
                                     data-testid={`qidahen-gao-di-dispatch-choice-${candidate.id}`}
-                                    disabled={core.gaoDiDispatchSelection?.selectedCardId == null}
-                                    className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
-                                    onClick={() => onResolveGaoDiDispatch(candidate.id)}
+                                    className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black"
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
                                     <span className="min-w-0">
                                         <span className="block text-[13px]">
-                                            {t('board.actions.gaoDi.target', {
-                                                targetRegionName: candidate.targetRegionName,
-                                                type: candidate.mode === 'troops'
+                                        {t('board.actions.gaoDi.target', {
+                                            targetRegionName: candidate.targetRegionName,
+                                            type: candidate.mode === 'troops'
                                                     ? t('board.actions.gaoDi.typeTroops', { defaultValue: '部队' })
                                                     : t('board.actions.gaoDi.typePopulation', { defaultValue: '人口' }),
                                                 amount,
                                                 defaultValue: '{{targetRegionName}} · {{type}} {{amount}}',
                                             })}
                                         </span>
-                                        <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                            {candidate.resolutionHint}
-                                        </span>
                                     </span>
-                                    <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {candidate.mode === 'troops'
-                                            ? t('board.actions.gaoDi.amountTroops', { amount, defaultValue: '{{amount}} 个部队' })
-                                            : t('board.actions.gaoDi.amountPopulation', { amount, defaultValue: '{{amount}} 个人口' })}
-                                    </span>
-                                </button>
+                                </div>
                             );
                         })}
                     </div>
@@ -2077,35 +2959,27 @@ const ActionsZone: React.FC<{
                         {t('board.actions.internalDispatch.summary', {
                             sourceRegionName: internalDispatchSelection.sourceRegionName,
                             maxTroops: internalDispatchSelection.maxTroops,
-                            defaultValue: '源区 {{sourceRegionName}} · 最多调度 {{maxTroops}} 部队',
+                            defaultValue: '从 {{sourceRegionName}} 出发 · 最多调 {{maxTroops}} 个部队',
                         })}
-                    </div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        {internalDispatchSelection.summary}
                     </div>
                     <div className="mt-2 flex max-h-[240px] flex-col gap-2 overflow-y-auto pr-1">
                         {internalDispatchSelection.candidates.map((candidate) => (
-                            <button
+                            <div
                                 key={candidate.id}
-                                type="button"
                                 data-testid={`qidahen-internal-dispatch-choice-${candidate.targetRegionId}`}
-                                className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                onClick={() => onResolveInternalDispatch(candidate.id)}
+                                className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black"
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="min-w-0">
                                     <span className="block text-[13px]">{candidate.targetRegionName}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {candidate.resolutionHint}
-                                    </span>
                                 </span>
-                                <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
+                                <span className="shrink-0 text-[11px]" style={{ color: '#2f7a40' }}>
                                     {t('board.actions.internalDispatch.committedTroops', {
                                         troops: candidate.committedTroops,
                                         defaultValue: '调 {{troops}}',
                                     })}
                                 </span>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -2119,8 +2993,8 @@ const ActionsZone: React.FC<{
                     <div>{t('board.actions.recruit.title', { defaultValue: '征召军队' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.recruit.summary', {
-                            targetRegionName: recruitSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
-                            defaultValue: '当前目标 {{targetRegionName}} · 可切换到其他己方控制区后再决定建军方式',
+                            targetRegionName: recruitSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '先点地图选地区' }),
+                            defaultValue: '准备在 {{targetRegionName}} 建军，可先换别的己方区域',
                         })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
@@ -2153,8 +3027,8 @@ const ActionsZone: React.FC<{
                     <div>{t('board.actions.maShiTrade.title', { defaultValue: '马市贸易' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.maShiTrade.summary', {
-                            targetRegionName: maShiTradeSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
-                            defaultValue: '当前目标 {{targetRegionName}} · 可切换到其他大明控制区后再决定建立数量',
+                            targetRegionName: maShiTradeSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '先点地图选地区' }),
+                            defaultValue: '准备在 {{targetRegionName}} 建军，可先换别的大明区域',
                         })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
@@ -2187,8 +3061,8 @@ const ActionsZone: React.FC<{
                     <div>{t('board.actions.khanEdict.title', { defaultValue: '大汗令箭' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.khanEdict.summary', {
-                            sourceRegionName: khanEdictSelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
-                            defaultValue: '当前区域 {{sourceRegionName}} · 可切换地图选中区后再决定',
+                            sourceRegionName: khanEdictSelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '先点地图选地区' }),
+                            defaultValue: '准备在 {{sourceRegionName}} 执行，可先换别的地区',
                         })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
@@ -2221,9 +3095,9 @@ const ActionsZone: React.FC<{
                     <div>{diplomacySelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.sourceSummary', {
-                            sourceRegionName: diplomacySelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            sourceRegionName: diplomacySelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '先点地图选地区' }),
                             hireRegionName: diplomacySelection.hireRegionName ?? t('board.actions.diplomacy.currentControlRegion', { defaultValue: '当前控制区' }),
-                            defaultValue: '源区 {{sourceRegionName}} · 雇佣落在 {{hireRegionName}}',
+                            defaultValue: '从 {{sourceRegionName}} 出发 · 雇佣落在 {{hireRegionName}}',
                         })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
@@ -2236,9 +3110,9 @@ const ActionsZone: React.FC<{
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.targetSummary', {
-                            targetRegionName: diplomacySelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            targetRegionName: diplomacySelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '先点地图选地区' }),
                             targetHint: diplomacySelection.targetHint,
-                            defaultValue: '当前目标 {{targetRegionName}} · {{targetHint}}',
+                            defaultValue: '正在查看 {{targetRegionName}} · {{targetHint}}',
                         })}
                     </div>
                     {diplomacySelection.resolvedSteps.length > 0 ? (
@@ -2313,7 +3187,7 @@ const ActionsZone: React.FC<{
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.driveTiger.summary', {
                             targetFactionName: driveTigerConsentSelection.targetFactionName,
-                            defaultValue: '{{targetFactionName}} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。',
+                            defaultValue: '先问 {{targetFactionName}} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻。',
                         })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
@@ -2348,17 +3222,16 @@ const ActionsZone: React.FC<{
                         {t('board.actions.wheelDispatch.summary', {
                             sourceRegionName: wheelDispatchSelection.sourceRegionName,
                             count: wheelDispatchSelection.candidates.length,
-                            defaultValue: '源区 {{sourceRegionName}} · 可选目标 {{count}} · 可直接点击地图高亮区',
+                            defaultValue: '从 {{sourceRegionName}} 出发 · 可攻 {{count}} 处',
                         })}
                     </div>
-                    <div className="mt-2 flex flex-col gap-2">
+                    <div className="mt-2 max-h-[236px] overflow-y-auto pr-1">
+                        <div className="flex flex-col gap-2">
                         {wheelDispatchSelection.candidates.map((candidate) => (
-                            <button
+                            <div
                                 key={candidate.targetRuntimeRegionId}
-                                type="button"
                                 data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}
-                                className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                onClick={() => onResolveWheelDispatchChoice(candidate.targetRuntimeRegionId)}
+                                className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black"
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="min-w-0">
@@ -2366,29 +3239,27 @@ const ActionsZone: React.FC<{
                                         {t('board.actions.wheelDispatch.targetSummary', {
                                             targetRegionName: candidate.targetRegionName,
                                             defenderLabel: candidate.defenderLabel,
-                                            defaultValue: '{{targetRegionName}} · 防守 {{defenderLabel}}',
+                                            defaultValue: '进攻 {{targetRegionName}} · 守方 {{defenderLabel}}',
                                         })}
-                                    </span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {candidate.resolutionHint}
                                     </span>
                                     <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
                                         {t('board.actions.wheelDispatch.stats', {
                                             sourceAvailableTroops: candidate.sourceAvailableTroops,
                                             committedTroops: candidate.committedTroops,
                                             attackPressure: candidate.attackPressure,
-                                            defaultValue: '源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}',
+                                            defaultValue: '本次出兵 {{committedTroops}}',
                                         })}
                                     </span>
                                 </span>
-                                <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
+                                <span className="shrink-0 text-[11px]" style={{ color: '#2f7a40' }}>
                                     {t('board.actions.wheelDispatch.travelCost', {
                                         totalTravelCost: candidate.totalTravelCost,
                                         defaultValue: '耗 {{totalTravelCost}}',
                                     })}
                                 </span>
-                            </button>
+                            </div>
                         ))}
+                        </div>
                     </div>
                 </div>
             ) : null}
@@ -2398,12 +3269,17 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-raid-intent"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>{t('board.actions.pendingTarget.header', {
-                        title: pendingTargetAction.title,
-                        targetRegionName: pendingTargetAction.targetRegionName,
-                        defenderLabel: pendingTargetAction.defenderLabel,
-                        defaultValue: '{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}',
-                    })}</div>
+                    <div>
+                        {getQidahenFriendlyPendingTargetTitle(pendingTargetAction)}
+                        <span className="sr-only">
+                            {t('board.actions.pendingTarget.header', {
+                                title: pendingTargetAction.title,
+                                targetRegionName: pendingTargetAction.targetRegionName,
+                                defenderLabel: pendingTargetAction.defenderLabel,
+                                defaultValue: '{{title}} · {{targetRegionName}} · 守方 {{defenderLabel}}',
+                            })}
+                        </span>
+                    </div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {pendingTargetAction.resolutionHint}
                         {pendingTargetAction.defenderPayCost != null
@@ -2419,7 +3295,7 @@ const ActionsZone: React.FC<{
                                 sourceAvailableTroops: pendingTargetAction.sourceAvailableTroops,
                                 committedTroops: pendingTargetAction.committedTroops,
                                 attackPressure: pendingTargetAction.attackPressure,
-                                defaultValue: '源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}',
+                                defaultValue: '本次出兵 {{committedTroops}}',
                             })}
                             {pendingTargetAction.boundaryUnitCap
                                 ? t('board.actions.pendingTarget.boundaryUnitCap', {
@@ -2513,7 +3389,7 @@ const ActionsZone: React.FC<{
                                 onClick={() => onResolvePendingAction(choice.value, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, pendingCommittedTroops)}
                                 style={{ minWidth: getPendingTargetChoiceMinWidth(choice.id), borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
-                                {choice.label}
+                                {getQidahenFriendlyPendingChoiceLabel(choice)}
                             </button>
                         ))}
                     </div>
@@ -2525,12 +3401,23 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-post-battle-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>{postBattleSelection.title} · {postBattleSelection.targetRegionName}</div>
+                    <div>
+                        {getQidahenFriendlyPostBattleTitle(postBattleSelection)} · {postBattleSelection.targetRegionName}
+                        <span className="sr-only">{postBattleSelection.title}</span>
+                    </div>
+                    {postBattleSelection.battleRollSummary ? (
+                        <div className="mt-1 text-[11px]" style={{ color: '#ffe5b3' }} data-testid="qidahen-post-battle-roll-summary">
+                            {normalizeQidahenBattleRollSummary(postBattleSelection.battleRollSummary)}
+                        </div>
+                    ) : null}
+                    {postBattleSelection.battleRolls ? (
+                        <QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />
+                    ) : null}
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.postBattle.summary', {
                             summary: postBattleSelection.summary,
-                            committedTroops: postBattleSelection.committedTroops,
-                            defaultValue: '{{summary}} · 投入 {{committedTroops}}',
+                            survivingTroops: postBattleSelection.survivingTroops,
+                            defaultValue: '{{summary}} · 幸存 {{survivingTroops}}',
                         })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
@@ -2555,19 +3442,27 @@ const ActionsZone: React.FC<{
                 </div>
             ) : null}
             </div>
-            <div className="mt-3 shrink-0">
-                <div className="flex flex-col items-end gap-2" data-testid="qidahen-action-rail">
-                    {core.actionChoices.map((action) => (
-                        <ActionButton
-                            key={action.id}
-                            action={action}
-                            selected={core.selectedActionId === action.id}
-                            disabled={pendingScenarioChoices || core.factionActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null || wheelDispatchSelection != null}
-                            onClick={() => onExecuteAction(action.id)}
-                        />
-                    ))}
+            {showActionRail ? (
+                <div className="mt-3 shrink-0">
+                    <div className="flex flex-col items-end gap-2" data-testid="qidahen-action-rail">
+                        {core.actionChoices.map((action) => (
+                            <ActionButton
+                                key={action.id}
+                                action={action}
+                                selected={core.selectedActionId === action.id}
+                                engaged={engagedActionId === action.id}
+                                disabled={
+                                    pendingScenarioChoices
+                                    || core.factionActionUsed
+                                    || !(isTutorialTargetAllowed?.(action.id) ?? true)
+                                    || !(isTutorialCommandAllowed?.(action.cost > 0 ? QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION : QIDAHEN_COMMANDS.EXECUTE_ACTION) ?? true)
+                                }
+                                onClick={() => onExecuteAction(action.id)}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            ) : null}
         </div>
     );
 };
@@ -2617,6 +3512,8 @@ const HandCard: React.FC<{
 
 const HandZone: React.FC<{
     core: QidahenCore;
+    viewerFactionId: QidahenFactionId | null;
+    playerID: string | null;
     locale?: string;
     actionPaymentPreviewVisible: boolean;
     selectedPaymentCardIds: string[];
@@ -2626,8 +3523,11 @@ const HandZone: React.FC<{
     onToggleHandLimitDiscardCard: (cardId: string) => void;
     onSelectSunYuanhuaTechCard: (cardId: string) => void;
     onSelectGaoDiDispatchCard: (cardId: string) => void;
+    isTutorialTargetAllowed?: (targetId: string | null | undefined) => boolean;
 }> = ({
     core,
+    viewerFactionId,
+    playerID,
     locale,
     actionPaymentPreviewVisible,
     selectedPaymentCardIds,
@@ -2637,8 +3537,12 @@ const HandZone: React.FC<{
     onToggleHandLimitDiscardCard,
     onSelectSunYuanhuaTechCard,
     onSelectGaoDiDispatchCard,
+    isTutorialTargetAllowed,
 }) => {
-    const currentFactionId = getCurrentFactionId(core);
+    const currentFactionId = playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId;
+    if (!currentFactionId) {
+        return null;
+    }
     const currentFaction = core.factions[currentFactionId];
     const currentHandCards = core.handCards.filter((card) => card.faction === currentFactionId);
 
@@ -2659,13 +3563,14 @@ const HandZone: React.FC<{
             <div
                 className="absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible"
                 data-testid="qidahen-hand-zone"
+                data-tutorial-id="qidahen-hand-zone"
                 data-ui-role="qidahen-hand-dock"
                 style={{
                     bottom: BOTTOM_DOCK_INSET,
                     transform: 'translateX(-50%)',
                     height: BOTTOM_DOCK_HEIGHT,
                     width: 1310,
-                    maxWidth: 'calc(100vw - 300px)',
+                    maxWidth: 'calc(100vw - 320px)',
                 }}
             >
                 <div className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row">
@@ -2675,7 +3580,8 @@ const HandZone: React.FC<{
                         const selectableForSunYuanhua = sunYuanhuaSelection?.candidateCardIds.includes(card.id) ?? false;
                         const gaoDiSelection = core.gaoDiDispatchSelection;
                         const selectableForGaoDi = gaoDiSelection?.candidateCardIds.includes(card.id) ?? false;
-                        const selectableForActionPayment = actionPaymentPreviewVisible && card.status !== 'disabled';
+                        const tutorialAllowed = isTutorialTargetAllowed?.(card.id) ?? true;
+                        const selectableForActionPayment = actionPaymentPreviewVisible && card.status !== 'disabled' && tutorialAllowed;
                         return (
                             <HandCard
                                 key={card.id}
@@ -2711,9 +3617,626 @@ const HandZone: React.FC<{
     );
 };
 
-export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
+const QidahenInMatchSetupOverlay: React.FC<{
+    core: QidahenCore;
+    viewerFactionId: QidahenFactionId | null;
+    playerID: string | null;
+    onResolveScenarioCharacterChoice: (groupId: string, characterIds: string[]) => void;
+    onResolveScenarioArmamentChoice: (groupId: string, armamentIds: QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds']) => void;
+}> = ({
+    core,
+    viewerFactionId,
+    playerID,
+    onResolveScenarioCharacterChoice,
+    onResolveScenarioArmamentChoice,
+}) => {
+    const { t } = useTranslation('game-qidahen');
+    const pendingCharacterChoices = core.pendingScenarioCharacterChoices;
+    const pendingArmamentChoices = core.pendingScenarioArmamentChoices;
+    const isViewerScoped = playerID != null && viewerFactionId != null;
+    const interactiveCharacterChoices = pendingCharacterChoices.filter((group) => !isViewerScoped || group.factionId === viewerFactionId);
+    const waitingCharacterChoices = pendingCharacterChoices.filter((group) => isViewerScoped && group.factionId !== viewerFactionId);
+    const interactiveArmamentChoices = pendingArmamentChoices.filter((group) => !isViewerScoped || group.factionId === viewerFactionId);
+    const waitingArmamentChoices = pendingArmamentChoices.filter((group) => isViewerScoped && group.factionId !== viewerFactionId);
+    const [selectedCharacterIdsByGroup, setSelectedCharacterIdsByGroup] = React.useState<Record<string, string[]>>({});
+    const [selectedArmamentIdsByGroup, setSelectedArmamentIdsByGroup] = React.useState<Record<string, string[]>>({});
+    const waitingSummaryLines = React.useMemo(() => {
+        const waitingSummaries = new Map<string, {
+            factionName: string;
+            characterGroupCount: number;
+            armamentGroupCount: number;
+        }>();
+
+        for (const group of waitingCharacterChoices) {
+            const current = waitingSummaries.get(group.factionId) ?? {
+                factionName: group.factionName,
+                characterGroupCount: 0,
+                armamentGroupCount: 0,
+            };
+            current.characterGroupCount += 1;
+            waitingSummaries.set(group.factionId, current);
+        }
+
+        for (const group of waitingArmamentChoices) {
+            const current = waitingSummaries.get(group.factionId) ?? {
+                factionName: group.factionName,
+                characterGroupCount: 0,
+                armamentGroupCount: 0,
+            };
+            current.armamentGroupCount += 1;
+            waitingSummaries.set(group.factionId, current);
+        }
+
+        return Array.from(waitingSummaries.values()).map((summary) => {
+            const parts: string[] = [];
+            if (summary.characterGroupCount > 0) {
+                parts.push(`人物 ${summary.characterGroupCount} 项`);
+            }
+            if (summary.armamentGroupCount > 0) {
+                parts.push(`军备 ${summary.armamentGroupCount} 项`);
+            }
+            return `${summary.factionName}：${parts.join('、')}`;
+        });
+    }, [waitingArmamentChoices, waitingCharacterChoices]);
+
+    React.useEffect(() => {
+        setSelectedCharacterIdsByGroup((current) => Object.fromEntries(
+            Object.entries(current).filter(([groupId]) => pendingCharacterChoices.some((group) => group.id === groupId)),
+        ));
+        setSelectedArmamentIdsByGroup((current) => Object.fromEntries(
+            Object.entries(current).filter(([groupId]) => pendingArmamentChoices.some((group) => group.id === groupId)),
+        ));
+    }, [pendingArmamentChoices, pendingCharacterChoices]);
+
+    const toggleChoiceId = React.useCallback((
+        groupId: string,
+        optionId: string,
+        maxCount: number,
+        currentSelections: Record<string, string[]>,
+        setSelections: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
+    ) => {
+        const selectedIds = currentSelections[groupId] ?? [];
+        const alreadySelected = selectedIds.includes(optionId);
+        const nextSelectedIds = alreadySelected
+            ? selectedIds.filter((id) => id !== optionId)
+            : selectedIds.length >= maxCount
+                ? [...selectedIds.slice(0, Math.max(0, maxCount - 1)), optionId]
+                : [...selectedIds, optionId];
+        setSelections((current) => ({
+            ...current,
+            [groupId]: nextSelectedIds,
+        }));
+    }, []);
+
+    return (
+        <div
+            className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(14,10,7,0.78)] px-6 py-8 backdrop-blur-[2px]"
+            data-testid="qidahen-inmatch-setup-overlay"
+        >
+            <div
+                className="max-h-full w-full max-w-[1080px] overflow-auto border-[3px] p-6"
+                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 6 }}
+            >
+                <div className="flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                    <div>
+                        <div className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: UI_STYLE.cinnabar }}>
+                            {t('board.setup.eyebrow', { defaultValue: '局内开局设置' })}
+                        </div>
+                        <div className="mt-2 text-[28px] font-black" data-testid="qidahen-inmatch-setup-title">
+                            {t('board.setup.title', { defaultValue: '先完成剧本人物、军备与阵营前置项' })}
+                        </div>
+                        <div className="mt-2 text-[13px] leading-6" style={{ color: UI_STYLE.mutedInk }}>
+                            {t('board.setup.description', { defaultValue: '这一步在对局内完成。先确认本阵营前置项，完成后再进入正式棋盘操作。' })}
+                        </div>
+                    </div>
+                    <div
+                        className="border-[2px] px-3 py-2 text-[12px] font-black"
+                        data-testid="qidahen-inmatch-setup-scenario"
+                        style={{ borderColor: UI_STYLE.paperEdge, background: UI_STYLE.paperLight, borderRadius: 4 }}
+                    >
+                        {core.scenarioLabel}
+                    </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    {interactiveCharacterChoices.map((group) => {
+                        const selectedIds = selectedCharacterIdsByGroup[group.id] ?? [];
+                        return (
+                            <div
+                                key={group.id}
+                                className="border-[2px] p-4"
+                                data-testid={`qidahen-inmatch-setup-character-${group.id}`}
+                                style={{ borderColor: UI_STYLE.paperEdge, background: UI_STYLE.paperLight, borderRadius: 4 }}
+                            >
+                                <div className="text-[12px] font-black" style={{ color: UI_STYLE.cinnabar }}>
+                                    {group.factionName} · {t('board.setup.characterLabel', { defaultValue: '人物' })}
+                                </div>
+                                <div className="mt-1 text-[16px] font-black">
+                                    {t('board.setup.pickCount', { count: group.count, defaultValue: '请选择 {{count}} 项' })}
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {group.characterIds.map((characterId, index) => {
+                                        const selected = selectedIds.includes(characterId);
+                                        return (
+                                            <button
+                                                key={characterId}
+                                                type="button"
+                                                data-testid={`qidahen-inmatch-setup-character-option-${group.id}-${characterId}`}
+                                                className="min-h-[40px] border-[2px] px-3 text-[13px] font-black transition hover:-translate-y-0.5"
+                                                onClick={() => toggleChoiceId(group.id, characterId, group.count, selectedCharacterIdsByGroup, setSelectedCharacterIdsByGroup)}
+                                                style={{
+                                                    borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.paperEdge,
+                                                    background: selected ? UI_STYLE.cinnabarGlow : 'rgba(255,255,255,0.56)',
+                                                    color: UI_STYLE.ink,
+                                                    borderRadius: 4,
+                                                }}
+                                            >
+                                                {group.characterNames[index] ?? characterId}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    type="button"
+                                    data-testid={`qidahen-inmatch-setup-character-confirm-${group.id}`}
+                                    disabled={selectedIds.length !== group.count}
+                                    className="mt-4 min-h-[42px] min-w-[164px] border-[3px] px-4 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-50"
+                                    onClick={() => onResolveScenarioCharacterChoice(group.id, selectedIds)}
+                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 4 }}
+                                >
+                                    {t('board.setup.confirmCharacter', { defaultValue: '确认人物' })}
+                                </button>
+                            </div>
+                        );
+                    })}
+
+                    {interactiveArmamentChoices.map((group) => {
+                        const selectedIds = selectedArmamentIdsByGroup[group.id] ?? [];
+                        return (
+                            <div
+                                key={group.id}
+                                className="border-[2px] p-4"
+                                data-testid={`qidahen-inmatch-setup-armament-${group.id}`}
+                                style={{ borderColor: UI_STYLE.paperEdge, background: UI_STYLE.paperLight, borderRadius: 4 }}
+                            >
+                                <div className="text-[12px] font-black" style={{ color: UI_STYLE.cinnabar }}>
+                                    {group.factionName} · {t('board.setup.armamentLabel', { defaultValue: '军备' })}
+                                </div>
+                                <div className="mt-1 text-[16px] font-black">
+                                    {t('board.setup.pickCount', { count: group.count, defaultValue: '请选择 {{count}} 项' })}
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {group.armamentIds.map((armamentId, index) => {
+                                        const selected = selectedIds.includes(armamentId);
+                                        return (
+                                            <button
+                                                key={armamentId}
+                                                type="button"
+                                                data-testid={`qidahen-inmatch-setup-armament-option-${group.id}-${armamentId}`}
+                                                className="min-h-[40px] border-[2px] px-3 text-[13px] font-black transition hover:-translate-y-0.5"
+                                                onClick={() => toggleChoiceId(group.id, armamentId, group.count, selectedArmamentIdsByGroup, setSelectedArmamentIdsByGroup)}
+                                                style={{
+                                                    borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.paperEdge,
+                                                    background: selected ? UI_STYLE.cinnabarGlow : 'rgba(255,255,255,0.56)',
+                                                    color: UI_STYLE.ink,
+                                                    borderRadius: 4,
+                                                }}
+                                            >
+                                                {group.armamentNames[index] ?? armamentId}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    type="button"
+                                    data-testid={`qidahen-inmatch-setup-armament-confirm-${group.id}`}
+                                    disabled={selectedIds.length !== group.count}
+                                    className="mt-4 min-h-[42px] min-w-[164px] border-[3px] px-4 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-50"
+                                    onClick={() => onResolveScenarioArmamentChoice(group.id, selectedIds as QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds'])}
+                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 4 }}
+                                >
+                                    {t('board.setup.confirmArmament', { defaultValue: '确认军备' })}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {(waitingCharacterChoices.length > 0 || waitingArmamentChoices.length > 0) ? (
+                    <div
+                        className="mt-5 border-[2px] px-4 py-3 text-[13px] font-black leading-6"
+                        data-testid="qidahen-inmatch-setup-waiting"
+                        style={{ borderColor: UI_STYLE.paperEdge, background: 'rgba(255,255,255,0.48)', borderRadius: 4 }}
+                    >
+                        {t('board.setup.waiting', { defaultValue: '等待其他玩家完成其所属阵营的前置项。' })}
+                        <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mutedInk }}>
+                            {waitingSummaryLines.join(' / ')}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    );
+};
+
+const QidahenScenarioVoteScreen: React.FC<{
+    core: QidahenCore;
+    playerID: string | null;
+    onCastScenarioVote: (scenarioId: QidahenScenarioId | null) => void;
+}> = ({
+    core,
+    playerID,
+    onCastScenarioVote,
+}) => {
+    const { t } = useTranslation('game-qidahen');
+    const scenarioVote = core.scenarioVote;
+    const [draftScenarioId, setDraftScenarioId] = React.useState<QidahenScenarioId | null>(
+        scenarioVote?.options[0]?.scenarioId ?? null,
+    );
+
+    React.useEffect(() => {
+        if (!scenarioVote) {
+            setDraftScenarioId(null);
+            return;
+        }
+        const confirmedVote = playerID ? scenarioVote.votes[playerID] ?? null : null;
+        setDraftScenarioId(confirmedVote ?? scenarioVote.options[0]?.scenarioId ?? null);
+    }, [playerID, scenarioVote]);
+
+    if (!scenarioVote) {
+        return null;
+    }
+
+    const currentVote = playerID ? scenarioVote.votes[playerID] ?? null : null;
+    const playableScenarioIds = new Set(scenarioVote.options.map((option) => option.scenarioId));
+    const allScenarioOptions = QIDAHEN_SCENARIO_SETUP_OPTIONS.map((setupOption, index) => {
+        const scenarioId = setupOption.value as QidahenScenarioId;
+        const meta = getQidahenScenarioVoteMeta(scenarioId);
+        return {
+            ...meta,
+            orderNo: index + 1,
+            isPlayable: playableScenarioIds.has(scenarioId),
+        };
+    });
+    const voteCountByScenarioId = scenarioVote.options.reduce<Record<string, number>>((counts, option) => {
+        counts[option.scenarioId] = Object.values(scenarioVote.votes).filter((vote) => vote === option.scenarioId).length;
+        return counts;
+    }, {});
+    const factionRows = core.currentFactionOrder
+        .map((factionId) => {
+            const faction = core.factions[factionId];
+            if (!Object.prototype.hasOwnProperty.call(scenarioVote.votes, faction.playerId)) {
+                return null;
+            }
+            return {
+                factionId,
+                factionName: faction.name,
+                playerId: faction.playerId,
+                confirmedVote: scenarioVote.votes[faction.playerId] ?? null,
+            };
+        })
+        .filter((row): row is NonNullable<typeof row> => row != null);
+    const hostFactionName = factionRows.find((row) => row.playerId === scenarioVote.hostPlayerId)?.factionName ?? '房主';
+    const canConfirmDraft = Boolean(playerID && draftScenarioId && playableScenarioIds.has(draftScenarioId));
+    const selectedScenarioLabel = draftScenarioId
+        ? allScenarioOptions.find((option) => option.scenarioId === draftScenarioId)?.label ?? null
+        : null;
+
+    return (
+        <div
+            className="absolute inset-0 overflow-hidden px-[66px] py-[46px]"
+            data-testid="qidahen-scenario-vote-screen"
+            style={{
+                background: [
+                    'radial-gradient(circle at 15% 15%, rgba(159,52,38,0.24), transparent 28%)',
+                    'radial-gradient(circle at 72% 68%, rgba(32,21,13,0.26), transparent 36%)',
+                    'linear-gradient(135deg, rgba(62,43,25,0.93) 0%, rgba(211,185,127,0.96) 42%, rgba(44,30,18,0.9) 100%)',
+                ].join(', '),
+                color: UI_STYLE.mapIvory,
+            }}
+        >
+            <div
+                className="absolute inset-[24px] border-[4px] opacity-80"
+                aria-hidden="true"
+                style={{ borderColor: UI_STYLE.mapInk, clipPath: UI_SURFACE.cutCorner }}
+            />
+            <div
+                className="absolute inset-[36px] border opacity-40"
+                aria-hidden="true"
+                style={{ borderColor: UI_STYLE.mapGold, clipPath: UI_SURFACE.cutCorner }}
+            />
+            <div
+                className="absolute left-[62px] top-[46px] h-[68px] w-[430px] border-l-[12px] border-t-[4px]"
+                aria-hidden="true"
+                style={{ borderColor: UI_STYLE.cinnabar }}
+            />
+            <div
+                className="relative grid h-full min-h-0 grid-cols-[1fr_360px] gap-5"
+                data-testid="qidahen-scenario-vote-layout"
+            >
+                <section
+                    className="flex min-h-0 flex-col border-[4px] p-5"
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, boxShadow: UI_SURFACE.mapPanelShadow, clipPath: UI_SURFACE.cutCorner }}
+                >
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: 'rgba(210,183,117,0.4)' }}>
+                        <div>
+                        <div className="text-[12px] font-black uppercase tracking-[0.28em]" style={{ color: UI_STYLE.mapGold }}>
+                            {t('board.scenarioVote.eyebrow', { defaultValue: '局内剧本投票' })}
+                        </div>
+                        <div className="mt-2 text-[31px] font-black tracking-[0.04em]" data-testid="qidahen-scenario-vote-title" style={{ color: UI_STYLE.mapIvory }}>
+                            {t('board.scenarioVote.title', { defaultValue: '先看剧本介绍，再为本局投票' })}
+                        </div>
+                        <div className="mt-2 max-w-[820px] text-[13px] leading-6" style={{ color: 'rgba(234,215,167,0.82)' }}>
+                            {t('board.scenarioVote.description', { defaultValue: '联机房间不再在建房阶段预设剧本。全部席位在局内完成介绍阅读与投票后，才会进入人物、军备前置。' })}
+                        </div>
+                    </div>
+                    <div
+                        className="border-[3px] px-4 py-2 text-[13px] font-black"
+                        data-testid="qidahen-scenario-vote-player-count"
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
+                    >
+                        {t('board.scenarioVote.playerCount', {
+                            count: scenarioVote.playerCount,
+                            defaultValue: '{{count}} 人房间',
+                        })}
+                    </div>
+                </div>
+
+                    <div className="mt-5 grid min-h-0 flex-1 grid-cols-3 items-start gap-4 overflow-y-auto pr-1">
+                    {allScenarioOptions.map((option) => {
+                        const isDraft = draftScenarioId === option.scenarioId;
+                        const isConfirmed = currentVote === option.scenarioId;
+                        const disabledReason = t('board.scenarioVote.unavailableForPlayerCount', {
+                            count: scenarioVote.playerCount,
+                            supported: option.supportedPlayerCounts.join('/'),
+                            defaultValue: `当前 ${scenarioVote.playerCount} 人房不可投，适用 ${option.supportedPlayerCounts.join('/')} 人`,
+                        });
+                        return (
+                            <button
+                                key={option.scenarioId}
+                                type="button"
+                                data-testid={`qidahen-scenario-vote-option-${option.scenarioId}`}
+                                disabled={!option.isPlayable}
+                                aria-label={option.isPlayable ? option.label : `${option.label}，${disabledReason}`}
+                                className="relative flex min-h-[560px] flex-col border-[3px] p-4 text-left transition-[transform,filter,box-shadow] duration-150 hover:-translate-y-1 active:translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                                onClick={() => {
+                                    if (option.isPlayable) {
+                                        setDraftScenarioId(option.scenarioId);
+                                    }
+                                }}
+                                style={{
+                                    borderColor: isDraft ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
+                                    background: option.isPlayable
+                                        ? (isDraft ? UI_SURFACE.mapPanelSelected : UI_SURFACE.paperQuiet)
+                                        : 'linear-gradient(180deg, rgba(72,58,39,0.7) 0%, rgba(42,33,24,0.72) 100%)',
+                                    color: option.isPlayable && !isDraft ? UI_STYLE.ink : UI_STYLE.mapIvory,
+                                    boxShadow: isDraft
+                                        ? '0 0 0 3px rgba(210,183,117,0.5), 0 16px 28px rgba(18,11,6,0.36)'
+                                        : UI_SURFACE.mapPanelShadow,
+                                    clipPath: UI_SURFACE.cutCorner,
+                                    opacity: option.isPlayable ? 1 : 0.78,
+                                }}
+                            >
+                                <div
+                                    className="absolute inset-x-[18px] top-[18px] h-[3px]"
+                                    aria-hidden="true"
+                                    style={{ background: option.isPlayable ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.28)' }}
+                                />
+                                <div
+                                    className="mb-5 mt-4 flex h-[88px] items-center justify-center border-[2px] text-[28px] font-black tracking-[0.18em]"
+                                    aria-hidden="true"
+                                    style={{
+                                        borderColor: isDraft ? UI_STYLE.mapGold : 'rgba(32,21,13,0.62)',
+                                        background: option.isPlayable
+                                            ? 'radial-gradient(circle at 50% 25%, rgba(210,183,117,0.24), transparent 50%), rgba(32,21,13,0.72)'
+                                            : 'rgba(32,21,13,0.68)',
+                                        color: option.isPlayable ? UI_STYLE.mapGold : 'rgba(234,215,167,0.46)',
+                                        clipPath: UI_SURFACE.smallCutCorner,
+                                    }}
+                                >
+                                    {t('board.scenarioVote.orderBadge', {
+                                        orderNo: option.orderNo,
+                                        defaultValue: '战局 {{orderNo}}',
+                                    })}
+                                </div>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="text-[18px] font-black leading-7">{option.label}</div>
+                                    <div
+                                        className="shrink-0 border px-2 py-1 text-[11px] font-black"
+                                        data-testid={`qidahen-scenario-vote-count-${option.scenarioId}`}
+                                        style={{
+                                            borderColor: option.isPlayable ? UI_STYLE.mapInk : 'rgba(234,215,167,0.24)',
+                                            background: option.isPlayable ? UI_STYLE.paperLight : 'rgba(32,21,13,0.5)',
+                                            color: option.isPlayable ? UI_STYLE.ink : 'rgba(234,215,167,0.56)',
+                                            borderRadius: 999,
+                                        }}
+                                    >
+                                        {t('board.scenarioVote.voteCount', {
+                                            count: voteCountByScenarioId[option.scenarioId] ?? 0,
+                                            defaultValue: '{{count}} 票',
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="mt-4 min-h-[116px] text-[14px] leading-7">{option.intro}</div>
+                                <div
+                                    className="mt-4 border-l-[4px] py-2 pl-3 text-[12px] leading-6"
+                                    style={{
+                                        borderColor: option.isPlayable ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.28)',
+                                        color: option.isPlayable && !isDraft ? UI_STYLE.mutedInk : 'rgba(234,215,167,0.74)',
+                                    }}
+                                >
+                                    {option.overview}
+                                </div>
+                                <div className="mt-auto flex flex-wrap items-center gap-2 pt-5 text-[11px] font-black">
+                                    <span
+                                        className="border px-2 py-1"
+                                        style={{
+                                            borderColor: option.isPlayable ? UI_STYLE.mapInk : 'rgba(234,215,167,0.24)',
+                                            background: option.isPlayable ? 'rgba(243,231,196,0.72)' : 'rgba(32,21,13,0.52)',
+                                            color: option.isPlayable ? UI_STYLE.ink : 'rgba(234,215,167,0.62)',
+                                            borderRadius: 999,
+                                        }}
+                                    >
+                                        {t('board.scenarioVote.supportedPlayers', {
+                                            count: option.supportedPlayerCounts.join('/'),
+                                            defaultValue: '适用 {{count}} 人',
+                                        })}
+                                    </span>
+                                    {isConfirmed ? (
+                                        <span
+                                            className="border px-2 py-1"
+                                            data-testid={`qidahen-scenario-vote-confirmed-${option.scenarioId}`}
+                                            style={{ borderColor: UI_STYLE.cinnabar, background: UI_STYLE.cinnabarGlow, borderRadius: 999 }}
+                                        >
+                                            {t('board.scenarioVote.myVote', { defaultValue: '本席已投' })}
+                                        </span>
+                                    ) : null}
+                                    {!option.isPlayable ? (
+                                        <span
+                                            className="border px-2 py-1"
+                                            data-testid={`qidahen-scenario-vote-locked-${option.scenarioId}`}
+                                            style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(32,21,13,0.72)', color: UI_STYLE.mapGold, borderRadius: 999 }}
+                                        >
+                                            {disabledReason}
+                                        </span>
+                                    ) : null}
+                                </div>
+                            </button>
+                        );
+                    })}
+                    </div>
+                </section>
+
+                <aside className="grid min-h-0 grid-rows-[1fr_auto] gap-4">
+                    <div
+                        className="min-h-0 overflow-y-auto border-[4px] px-4 py-4"
+                        data-testid="qidahen-scenario-vote-seat-status"
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, boxShadow: UI_SURFACE.mapPanelShadow, clipPath: UI_SURFACE.cutCorner }}
+                    >
+                        <div className="text-[12px] font-black tracking-[0.14em]" style={{ color: UI_STYLE.mapGold }}>
+                            {t('board.scenarioVote.seatStatusTitle', { defaultValue: '各席位当前投票' })}
+                        </div>
+                        <div className="mt-3 grid gap-2">
+                            {factionRows.map((row) => (
+                                <div
+                                    key={row.playerId}
+                                    className="flex items-center justify-between gap-3 border-b pb-3 text-[13px]"
+                                    data-testid={`qidahen-scenario-vote-status-${row.playerId}`}
+                                    style={{ borderColor: 'rgba(210,183,117,0.22)' }}
+                                >
+                                    <div className="font-black">
+                                        {row.factionName}
+                                        {row.playerId === playerID ? ` · ${t('board.scenarioVote.you', { defaultValue: '你' })}` : ''}
+                                        {row.playerId === scenarioVote.hostPlayerId ? ` · ${t('board.scenarioVote.host', { defaultValue: '房主' })}` : ''}
+                                    </div>
+                                    <div className="text-right leading-5" style={{ color: row.confirmedVote ? UI_STYLE.mapIvory : 'rgba(234,215,167,0.56)' }}>
+                                        {row.confirmedVote
+                                            ? allScenarioOptions.find((option) => option.scenarioId === row.confirmedVote)?.label ?? row.confirmedVote
+                                            : t('board.scenarioVote.pendingVote', { defaultValue: '未投票' })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-3 text-[12px] leading-5" style={{ color: 'rgba(234,215,167,0.68)' }}>
+                            {t('board.scenarioVote.tiebreakNote', {
+                                hostFactionName,
+                                defaultValue: '全部席位确认后立即结算；若票数相同，则按{{hostFactionName}}的房主票裁定。',
+                            })}
+                        </div>
+                    </div>
+
+                    <div
+                        className="border-[4px] px-4 py-4"
+                        data-testid="qidahen-scenario-vote-actions"
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, clipPath: UI_SURFACE.cutCorner }}
+                    >
+                        <div className="text-[12px] font-black" style={{ color: UI_STYLE.mapGold }}>
+                            {t('board.scenarioVote.actionTitle', { defaultValue: '本席操作' })}
+                        </div>
+                        <div className="mt-2 text-[13px] leading-6" style={{ color: UI_STYLE.mapIvory }}>
+                            {playerID
+                                ? currentVote
+                                    ? t('board.scenarioVote.changeableHint', { defaultValue: '你已经提交过一票；在所有席位投完前，仍可改投或撤回。' })
+                                    : t('board.scenarioVote.selectHint', { defaultValue: '先选一张剧本介绍卡，再点确认投票。' })
+                                : t('board.scenarioVote.spectatorHint', { defaultValue: '观战视角只显示当前票型，不提供代投入口。' })}
+                        </div>
+                        <div className="mt-3 border px-3 py-2 text-[12px] font-black" style={{ borderColor: 'rgba(210,183,117,0.34)', background: 'rgba(32,21,13,0.42)', color: UI_STYLE.mapGold, clipPath: UI_SURFACE.smallCutCorner }}>
+                            {selectedScenarioLabel ?? t('board.scenarioVote.noDraft', { defaultValue: '尚未选择剧本' })}
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                data-testid="qidahen-scenario-vote-confirm"
+                                disabled={!canConfirmDraft}
+                                className="min-h-[44px] min-w-[156px] border-[3px] px-4 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                                onClick={() => draftScenarioId && onCastScenarioVote(draftScenarioId)}
+                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
+                            >
+                                {t('board.scenarioVote.confirm', { defaultValue: '确认投票' })}
+                            </button>
+                            <button
+                                type="button"
+                                data-testid="qidahen-scenario-vote-clear"
+                                disabled={!playerID || currentVote == null}
+                                className="min-h-[44px] min-w-[156px] border-[3px] px-4 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                                onClick={() => onCastScenarioVote(null)}
+                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
+                            >
+                                {t('board.scenarioVote.clear', { defaultValue: '撤回本票' })}
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    );
+};
+
+export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, isMultiplayer, reset, matchData }) => {
+    const { t } = useTranslation('game-qidahen');
+    const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
     const core = G.core;
+    const isGameOver = Boolean(G.sys?.gameover);
+    const gameOverResult = G.sys?.gameover;
+    useTutorialBridge(G.sys.tutorial, dispatch as (type: string, payload?: unknown) => void);
+    const { overlayProps: endgameProps } = useEndgame({
+        result: gameOverResult || undefined,
+        playerID,
+        reset,
+        matchData,
+        isMultiplayer,
+    });
+    const winnerPlayerId = gameOverResult?.winner;
+    useGameAudio({
+        config: QIDAHEN_AUDIO_CONFIG,
+        gameId: QIDAHEN_MANIFEST.id,
+        G: core,
+        ctx: {
+            turnPhase: core.turnPhase,
+            isGameOver,
+            isWinner: winnerPlayerId != null ? winnerPlayerId === playerID : undefined,
+        },
+        eventEntries: G.sys.eventStream?.entries,
+    });
+    const viewerFactionId = React.useMemo(() => resolveViewerFactionId(core, playerID), [core, playerID]);
+    const isTutorialCommandAllowed = React.useCallback((commandType: string): boolean => {
+        if (!isTutorialActive || !tutorialStep) {
+            return true;
+        }
+        if (tutorialStep.allowedCommands && tutorialStep.allowedCommands.length > 0) {
+            return tutorialStep.allowedCommands.includes(commandType);
+        }
+        return tutorialStep.infoStep !== true;
+    }, [isTutorialActive, tutorialStep]);
+    const isTutorialTargetAllowed = React.useCallback((targetId: string | null | undefined): boolean => {
+        if (!isTutorialActive || !tutorialStep?.allowedTargets || tutorialStep.allowedTargets.length <= 0) {
+            return true;
+        }
+        return !!targetId && tutorialStep.allowedTargets.includes(targetId);
+    }, [isTutorialActive, tutorialStep]);
+    const scenarioVotePending = core.scenarioVote != null;
     const scenarioChoicesPending = core.pendingScenarioCharacterChoices.length > 0 || core.pendingScenarioArmamentChoices.length > 0;
+    const setupStagePending = scenarioVotePending || scenarioChoicesPending;
     const activeInteraction = G.sys.interaction?.current;
     const handLimitDiscardSelectionFromInteraction = getQidahenHandLimitDiscardSelectionFromInteraction(activeInteraction);
     const recruitSelectionFromInteraction = getQidahenRecruitSelectionFromInteraction(activeInteraction);
@@ -2757,7 +4280,38 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
     const [pendingDefenderCasualtyPriority, setPendingDefenderCasualtyPriority] = React.useState<QidahenCasualtyPriority>('highest-level');
     const [upkeepAttritionPriority, setUpkeepAttritionPriority] = React.useState<QidahenCasualtyPriority>('lowest-level');
     const [actionPaymentPreviewVisible, setActionPaymentPreviewVisible] = React.useState(false);
+    const [mapViewport, setMapViewport] = React.useState<QidahenMapViewport>(DEFAULT_QIDAHEN_MAP_VIEWPORT);
     const [selectedHandLimitCardIds, setSelectedHandLimitCardIds] = React.useState<string[]>(handLimitDiscardSelection?.selectedCardIds ?? []);
+    const factionStageSelectionActive = core.gaoDiDispatchSelection != null
+        || internalDispatchSelection != null
+        || recruitSelection != null
+        || maShiTradeSelection != null
+        || khanEdictSelection != null
+        || diplomacySelection != null
+        || driveTigerConsentSelection != null
+        || fortificationMaintenanceSelection != null
+        || handLimitDiscardSelection != null;
+    const wheelStageSelectionActive = wheelDispatchSelection != null
+        || pendingTargetAction != null
+        || postBattleSelection != null;
+    const factionStageAvailable = !setupStagePending
+        && !core.factionActionUsed
+        && !factionStageSelectionActive
+        && !wheelStageSelectionActive;
+    const wheelStageAvailable = !setupStagePending
+        && !core.wheelActionUsed
+        && !factionStageSelectionActive
+        && !wheelStageSelectionActive
+        && core.wheelMoveChoices.length > 0;
+    const primaryStageMode: QidahenPrimaryStageMode | null = wheelStageSelectionActive
+        ? 'wheel'
+        : factionStageSelectionActive
+            ? 'faction'
+            : factionStageAvailable
+                ? 'faction'
+                : wheelStageAvailable
+                    ? 'wheel'
+                    : null;
     const activeHandLimitInteractionId = handLimitDiscardSelectionFromInteraction ? activeInteraction?.id ?? null : null;
     const activeRecruitInteractionId = recruitSelectionFromInteraction ? activeInteraction?.id ?? null : null;
     const activeDiplomacyInteractionId = diplomacySelectionFromInteraction ? activeInteraction?.id ?? null : null;
@@ -2788,7 +4342,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
     React.useEffect(() => {
         if (
             core.turnPhase !== 'action-window'
-            || scenarioChoicesPending
+            || setupStagePending
             || core.factionActionUsed
             || recruitSelection != null
             || core.sunYuanhuaTechSelection != null
@@ -2821,36 +4375,58 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
         pendingTargetAction,
         postBattleSelection,
         recruitSelection,
-        scenarioChoicesPending,
+        setupStagePending,
         wheelDispatchSelection,
     ]);
 
     const selectWheelMove = React.useCallback((moveId: string) => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) || !isTutorialTargetAllowed(moveId)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, { moveId });
-    }, [dispatch]);
+    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
     const executeWheelMove = React.useCallback((moveId: string) => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) || !isTutorialTargetAllowed(moveId)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE, { moveId });
+    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
+
+    const castScenarioVote = React.useCallback((scenarioId: QidahenScenarioId | null) => {
+        dispatch(QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE, { scenarioId });
     }, [dispatch]);
 
     const previewAction = React.useCallback((actionId: string) => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION) || !isTutorialTargetAllowed(actionId)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId });
         setActionPaymentPreviewVisible(true);
-    }, [dispatch]);
+    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
     const cancelActionPaymentPreview = React.useCallback(() => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId: core.selectedActionId });
         setActionPaymentPreviewVisible(false);
-    }, [core.selectedActionId, dispatch]);
+    }, [core.selectedActionId, dispatch, isTutorialCommandAllowed]);
 
     const confirmSelectedAction = React.useCallback(() => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION, {});
         setActionPaymentPreviewVisible(false);
-    }, [dispatch]);
+    }, [dispatch, isTutorialCommandAllowed]);
 
     const executeAction = React.useCallback((actionId: string) => {
         const action = core.actionChoices.find((choice) => choice.id === actionId);
         if (!action) {
+            return;
+        }
+        if (!isTutorialTargetAllowed(actionId)) {
             return;
         }
         if (action.cost > 0) {
@@ -2860,33 +4436,42 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
             previewAction(actionId);
             return;
         }
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_ACTION)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.EXECUTE_ACTION, { actionId });
         setActionPaymentPreviewVisible(false);
-    }, [actionPaymentPreviewVisible, core.actionChoices, core.selectedActionId, dispatch, previewAction]);
+    }, [actionPaymentPreviewVisible, core.actionChoices, core.selectedActionId, dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, previewAction]);
 
     const togglePaymentCard = React.useCallback((cardId: string) => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD) || !isTutorialTargetAllowed(cardId)) {
+            return;
+        }
         dispatch(QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, { cardId });
-    }, [dispatch]);
+    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
     const resolvePendingAction = React.useCallback((choiceValue: QidahenPendingTargetChoiceValue, attackerCasualtyPriority?: QidahenCasualtyPriority, defenderCasualtyPriority?: QidahenCasualtyPriority, committedTroops?: number) => {
         const { choiceId, ...choicePayload } = choiceValue;
-        const mergedValue = {
-            ...choicePayload,
+        const interactionMergedValue = {
             ...(committedTroops != null ? { committedTroops } : {}),
             ...(attackerCasualtyPriority ? { attackerCasualtyPriority } : {}),
             ...(defenderCasualtyPriority ? { defenderCasualtyPriority } : {}),
+        };
+        const legacyPayload = {
+            ...choicePayload,
+            ...interactionMergedValue,
         };
         if (activePendingTargetInteractionId && pendingTargetAction) {
             dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
                 interactionId: activePendingTargetInteractionId,
                 optionId: choiceId,
-                ...(Object.keys(mergedValue).length > 0 ? { mergedValue } : {}),
+                ...(Object.keys(interactionMergedValue).length > 0 ? { mergedValue: interactionMergedValue } : {}),
             } as QidahenCommandMap[keyof QidahenCommandMap]);
             return;
         }
         dispatch(
             QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
-            Object.keys(mergedValue).length > 0 ? mergedValue : {},
+            Object.keys(legacyPayload).length > 0 ? legacyPayload : {},
         );
     }, [activePendingTargetInteractionId, dispatch, pendingTargetAction]);
 
@@ -2917,13 +4502,15 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
     }, [dispatch]);
 
     const resolveInternalDispatch = React.useCallback((choiceId: string) => {
-        if (!activeInternalDispatchInteractionId || !internalDispatchSelection) {
+        if (!internalDispatchSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
-            interactionId: activeInternalDispatchInteractionId,
-            optionId: choiceId,
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
+        if (activeInternalDispatchInteractionId) {
+            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+                interactionId: activeInternalDispatchInteractionId,
+                optionId: choiceId,
+            } as QidahenCommandMap[keyof QidahenCommandMap]);
+        }
     }, [activeInternalDispatchInteractionId, dispatch, internalDispatchSelection]);
 
     const resolveKhanEdictChoice = React.useCallback((choiceId: 'recruit-train' | 'hire-dispatch') => {
@@ -2967,14 +4554,21 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
     }, [activeDriveTigerConsentInteractionId, dispatch, driveTigerConsentSelection]);
 
     const resolveFortificationMaintenance = React.useCallback((choiceId: 'auto-pay' | 'skip-all', attritionPriority: QidahenCasualtyPriority) => {
-        if (!activeFortificationMaintenanceInteractionId || !fortificationMaintenanceSelection) {
+        if (!fortificationMaintenanceSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
-            interactionId: activeFortificationMaintenanceInteractionId,
-            optionId: choiceId,
-            mergedValue: { attritionPriority },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
+        if (activeFortificationMaintenanceInteractionId) {
+            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+                interactionId: activeFortificationMaintenanceInteractionId,
+                optionId: choiceId,
+                mergedValue: { attritionPriority },
+            } as QidahenCommandMap[keyof QidahenCommandMap]);
+            return;
+        }
+        dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE, {
+            choiceId,
+            attritionPriority,
+        });
     }, [activeFortificationMaintenanceInteractionId, dispatch, fortificationMaintenanceSelection]);
 
     const toggleHandLimitDiscardCard = React.useCallback((cardId: string) => {
@@ -3023,30 +4617,197 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
         } as QidahenCommandMap[keyof QidahenCommandMap]);
     }, [activeWheelDispatchInteractionId, dispatch, wheelDispatchSelection]);
 
+    const resolveScenarioCharacterChoice = React.useCallback((groupId: string, characterIds: string[]) => {
+        dispatch(QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE, { groupId, characterIds });
+    }, [dispatch]);
+
+    const resolveScenarioArmamentChoice = React.useCallback((groupId: string, armamentIds: QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds']) => {
+        dispatch(QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE, { groupId, armamentIds });
+    }, [dispatch]);
+
+    const compactMapRegionTip = setupStagePending
+        || actionPaymentPreviewVisible
+        || handLimitDiscardSelection != null
+        || core.sunYuanhuaTechSelection != null
+        || core.gaoDiDispatchSelection != null
+        || internalDispatchSelection != null
+        || recruitSelection != null
+        || maShiTradeSelection != null
+        || khanEdictSelection != null
+        || diplomacySelection != null
+        || driveTigerConsentSelection != null
+        || fortificationMaintenanceSelection != null
+        || wheelDispatchSelection != null
+        || pendingTargetAction != null
+        || postBattleSelection != null;
+    const showTopWheelPrompt = wheelStageAvailable;
+    const showTopFactionPrompt = factionStageAvailable && !wheelStageAvailable;
+    const selectedPrimaryAction = core.actionChoices.find((action) => action.id === core.selectedActionId) ?? core.actionChoices[0] ?? null;
+    const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedPrimaryAction);
+
     const selectRegion = React.useCallback((regionId: string) => {
-        if (pendingTargetAction != null || postBattleSelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || core.sunYuanhuaTechSelection != null) {
+        if (setupStagePending || pendingTargetAction != null || postBattleSelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || core.sunYuanhuaTechSelection != null) {
+            return;
+        }
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_REGION) || !isTutorialTargetAllowed(regionId)) {
             return;
         }
         dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId });
-    }, [pendingTargetAction, postBattleSelection, driveTigerConsentSelection, fortificationMaintenanceSelection, handLimitDiscardSelection, core.sunYuanhuaTechSelection, dispatch]);
+    }, [setupStagePending, pendingTargetAction, postBattleSelection, driveTigerConsentSelection, fortificationMaintenanceSelection, handLimitDiscardSelection, core.sunYuanhuaTechSelection, dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
+
+    const activateTopLevelGuideTarget = React.useCallback((candidate: {
+        action: 'wheel-dispatch' | 'gao-di' | 'internal-dispatch' | 'select-region';
+        resolutionChoiceId: string;
+        targetRegionId: string;
+    }) => {
+        if (candidate.action === 'wheel-dispatch') {
+            resolveWheelDispatchChoice(candidate.resolutionChoiceId);
+            return;
+        }
+        if (candidate.action === 'gao-di') {
+            resolveGaoDiDispatch(candidate.resolutionChoiceId);
+            return;
+        }
+        if (candidate.action === 'internal-dispatch') {
+            resolveInternalDispatch(candidate.resolutionChoiceId);
+            return;
+        }
+        selectRegion(candidate.targetRegionId);
+    }, [resolveWheelDispatchChoice, resolveGaoDiDispatch, resolveInternalDispatch, selectRegion]);
+
+    const getTopLevelGuideRegionPoint = React.useCallback((regionId: string | null | undefined) => {
+        if (!regionId) {
+            return null;
+        }
+        const region = displayCore.regions.find((item) => item.id === regionId);
+        if (region && typeof region.x === 'number' && typeof region.y === 'number') {
+            return projectQidahenMapPointToStage({
+                x: region.x * QIDAHEN_MAP_WIDTH,
+                y: region.y * QIDAHEN_MAP_HEIGHT,
+            }, mapViewport);
+        }
+        const graphNode = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(regionId);
+        const point = graphNode?.center ?? graphNode?.seed ?? null;
+        return point
+            ? projectQidahenMapPointToStage(point, mapViewport)
+            : null;
+    }, [displayCore.regions, mapViewport]);
+
+    const topLevelMapSelectionGuide = (() => {
+        if (pendingTargetAction != null) {
+            return null;
+        }
+        if (wheelDispatchSelection) {
+            return {
+                title: '选择目标',
+                candidates: wheelDispatchSelection.candidates.map((candidate) => ({
+                    id: candidate.targetRuntimeRegionId,
+                    action: 'wheel-dispatch' as const,
+                    resolutionChoiceId: candidate.targetRuntimeRegionId,
+                    targetRegionId: candidate.targetRuntimeRegionId,
+                    targetRegionName: candidate.targetRegionName,
+                })),
+            };
+        }
+        if (core.gaoDiDispatchSelection) {
+            return {
+                title: core.gaoDiDispatchSelection.selectedCardId
+                    ? '高第调度'
+                    : '先弃 1 张牌',
+                candidates: core.gaoDiDispatchSelection.candidates.map((candidate) => ({
+                    id: candidate.id,
+                    action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const,
+                    resolutionChoiceId: candidate.id,
+                    targetRegionId: candidate.targetRegionId,
+                    targetRegionName: candidate.targetRegionName,
+                })),
+            };
+        }
+        if (internalDispatchSelection) {
+            return {
+                title: '王化贞调度',
+                candidates: internalDispatchSelection.candidates.map((candidate) => ({
+                    id: candidate.id,
+                    action: 'internal-dispatch' as const,
+                    resolutionChoiceId: candidate.id,
+                    targetRegionId: candidate.targetRegionId,
+                    targetRegionName: candidate.targetRegionName,
+                })),
+            };
+        }
+        return null;
+    })();
+
+    if (scenarioVotePending) {
+        return (
+            <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+                <StageRoot>
+                    <QidahenScenarioVoteScreen
+                        core={core}
+                        playerID={playerID}
+                        onCastScenarioVote={castScenarioVote}
+                    />
+                </StageRoot>
+            </UndoProvider>
+        );
+    }
 
     return (
-        <StageRoot>
+        <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+            <StageRoot>
+            {!scenarioVotePending && scenarioChoicesPending ? (
+                <QidahenInMatchSetupOverlay
+                    core={core}
+                    viewerFactionId={viewerFactionId}
+                    playerID={playerID}
+                    onResolveScenarioCharacterChoice={resolveScenarioCharacterChoice}
+                    onResolveScenarioArmamentChoice={resolveScenarioArmamentChoice}
+                />
+            ) : null}
             <MapSceneLayer
                 core={displayCore}
+                perspectiveFactionId={viewerFactionId}
                 wheelDispatchSelection={wheelDispatchSelection}
                 internalDispatchSelection={internalDispatchSelection}
                 pendingTargetAction={pendingTargetAction}
+                tutorialStepId={tutorialStep?.id ?? null}
+                compactRegionTip={compactMapRegionTip}
+                viewport={mapViewport}
+                onViewportChange={setMapViewport}
                 locale={locale}
                 onSelectRegion={selectRegion}
             />
+            {showTopWheelPrompt ? (
+                <TopPromptBanner
+                    testId="qidahen-wheel-next-step-banner"
+                    title={t('board.actions.wheelNextStepTitle', { defaultValue: '选择轮盘行动' })}
+                    hint={t('board.actions.wheelNextStepHint', { defaultValue: '本次轮盘行动待执行' })}
+                    badgeLabel={t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘' })}
+                    tone="wheel"
+                />
+            ) : null}
+            {showTopFactionPrompt ? (
+                <TopPromptBanner
+                    testId="qidahen-top-action-banner"
+                    title={t('board.actions.primaryActionSelectPrompt', { defaultValue: '选择一项行动' })}
+                    hint={primaryActionEntryText}
+                    badgeLabel={t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
+                    tone="faction"
+                />
+            ) : null}
             <PlayerFloat core={core} />
             <WheelPanel
                 selectedId={core.actionWheelPosition}
                 selectedMoveId={core.selectedWheelMoveId}
                 moveChoices={core.wheelMoveChoices}
                 moveSummary={core.wheelMoveSummary}
-                disabled={scenarioChoicesPending || core.wheelActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null}
+                disabled={setupStagePending || core.wheelActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null}
+                emphasized={wheelStageAvailable}
+                canActivateMove={(moveId, selected) => {
+                    return selected
+                        ? isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)
+                        : isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);
+                }}
                 onSelectMove={selectWheelMove}
                 onExecuteMove={executeWheelMove}
             />
@@ -3054,6 +4815,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
             <ChronologyZone cards={core.yearCards} locale={locale} />
             <ActionsZone
                 core={displayCore}
+                primaryStageMode={primaryStageMode}
+                actionPaymentPreviewVisible={actionPaymentPreviewVisible}
                 handLimitDiscardSelection={handLimitDiscardSelection}
                 internalDispatchSelection={internalDispatchSelection}
                 recruitSelection={recruitSelection}
@@ -3068,7 +4831,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
                 onSelectRegion={selectRegion}
                 onResolveRecruitChoice={resolveRecruitChoice}
                 onResolveGaoDiDispatch={resolveGaoDiDispatch}
-                onResolveInternalDispatch={resolveInternalDispatch}
                 onResolveMaShiTradeChoice={resolveMaShiTradeChoice}
                 onResolveKhanEdictChoice={resolveKhanEdictChoice}
                 onResolveDiplomacyChoice={resolveDiplomacyChoice}
@@ -3085,8 +4847,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
                 onResolvePendingAction={resolvePendingAction}
                 onResolvePostBattleDecision={resolvePostBattleDecision}
                 wheelDispatchSelection={wheelDispatchSelection}
-                onResolveWheelDispatchChoice={resolveWheelDispatchChoice}
-                onExecuteWheelMove={executeWheelMove}
             />
             <HandInteractionTray
                 core={core}
@@ -3100,6 +4860,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
             />
             <HandZone
                 core={core}
+                viewerFactionId={viewerFactionId}
+                playerID={playerID}
                 locale={locale}
                 actionPaymentPreviewVisible={actionPaymentPreviewVisible}
                 selectedPaymentCardIds={core.selectedPaymentCardIds}
@@ -3110,7 +4872,37 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
                 onSelectSunYuanhuaTechCard={selectSunYuanhuaTechCard}
                 onSelectGaoDiDispatchCard={selectGaoDiDispatchCard}
             />
-        </StageRoot>
+            {topLevelMapSelectionGuide ? (
+                <div className="pointer-events-none absolute inset-0 z-40">
+                    {topLevelMapSelectionGuide.candidates.map((candidate) => {
+                        const targetPoint = getTopLevelGuideRegionPoint(candidate.targetRegionId);
+                        if (!targetPoint) {
+                            return null;
+                        }
+                        return (
+                            <button
+                                key={`top-level-guide-hit-${candidate.id}`}
+                                type="button"
+                                data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
+                                aria-label={`${topLevelMapSelectionGuide.title}：${candidate.targetRegionName}`}
+                                className="pointer-events-auto absolute cursor-pointer rounded-full border-0 bg-transparent p-0"
+                                style={{
+                                    left: targetPoint.x - 26,
+                                    top: targetPoint.y - 26,
+                                    width: 52,
+                                    height: 52,
+                                    outline: 'none',
+                                    boxShadow: '0 0 0 3px rgba(255,236,190,0.68)',
+                                }}
+                                onClick={() => activateTopLevelGuideTarget(candidate)}
+                            />
+                        );
+                    })}
+                </div>
+            ) : null}
+            <EndgameOverlay {...endgameProps} />
+            </StageRoot>
+        </UndoProvider>
     );
 };
 

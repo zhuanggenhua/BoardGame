@@ -8,6 +8,7 @@ import { Friend, FriendSchema } from '../friend/schemas/friend.schema';
 import { Message, MessageSchema } from '../message/schemas/message.schema';
 import { Review, ReviewSchema } from '../review/schemas/review.schema';
 import { AdminController } from './admin.controller';
+import { AdminMobileReleaseService } from './admin-mobile-release.service';
 import { AdminTestLatencyService } from './admin-test-latency.service';
 import { AdminUserRoleService } from './admin-user-role.service';
 import { AdminService } from './admin.service';
@@ -33,7 +34,16 @@ import { HybridStorageProvider } from '../../shared/providers/hybrid-storage.pro
         ]),
     ],
     controllers: [AdminController],
-    providers: [AdminService, AdminUserRoleService, AdminTestLatencyService, AdminGuard, JwtAuthGuard, Reflector, HybridStorageProvider],
+    providers: [
+        AdminService,
+        AdminUserRoleService,
+        AdminMobileReleaseService,
+        AdminTestLatencyService,
+        AdminGuard,
+        JwtAuthGuard,
+        Reflector,
+        HybridStorageProvider,
+    ],
     exports: [AdminTestLatencyService],
 })
 export class AdminModule {}

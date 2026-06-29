@@ -18,6 +18,7 @@ import type {
 } from '../events';
 
 const GOING_FORWARD_2_SETTLEMENT_ID = 'ninja-going-forward-2';
+const DEATH_BLOSSOM_SETTLEMENT_ID = 'ninja-death-blossom';
 const DEATH_BLOSSOM_2_SETTLEMENT_ID = 'ninja-death-blossom-2';
 const NINJA_SMOKE_SCREEN_2_CHOICE_ID = 'ninja-smoke-screen-2-choice';
 const NINJA_SMOKE_SCREEN_KUJI_KIRI_CHOICE_ID = 'ninja-smoke-screen-kuji-kiri-choice';
@@ -218,7 +219,7 @@ function handleBlinkBase(ctx: CustomActionContext): DiceThroneEvent[] {
     if (shurikenCount > 0) reflectedDamage += 2;
     events.push(...createBlinkDamageEvents(ctx, originalAttackerId, reflectedDamage, ctx.timestamp + 10));
 
-    if (maskCount > 0) {
+    if (maskCount >= 2) {
         const smokeEvent = grantTokenEvent(ctx.state, ctx.sourceAbilityId, ctx.targetId, TOKEN_IDS.SMOKE_BOMB, 1, ctx.timestamp + 20);
         if (smokeEvent) events.push(smokeEvent);
     }
@@ -355,7 +356,7 @@ function handleDeathBlossom2(ctx: CustomActionContext): DiceThroneEvent[] {
         ctx,
         {
             diceCount: 5,
-            rerollCostTokenId: TOKEN_IDS.NINJUTSU,
+            rerollCostTokenId: '',
             rerollCostAmount: 0,
             maxRerollCount: 2,
             dieEffectKey: 'bonusDie.effect.ninjaDeathBlossom2',
@@ -366,6 +367,51 @@ function handleDeathBlossom2(ctx: CustomActionContext): DiceThroneEvent[] {
         },
         () => [],
     );
+}
+
+function handleDeathBlossom(ctx: CustomActionContext): DiceThroneEvent[] {
+    const { attackerId, sourceAbilityId, targetId, state, timestamp, random } = ctx;
+    if (!random) return [];
+
+    const dice = [];
+    const events: DiceThroneEvent[] = [];
+    let katanaCount = 0;
+    let shurikenCount = 0;
+    let maskCount = 0;
+
+    for (let index = 0; index < 5; index += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        if (face === NINJA_DICE_FACE_IDS.KATANA) katanaCount += 1;
+        if (face === NINJA_DICE_FACE_IDS.SHURIKEN) shurikenCount += 1;
+        if (face === NINJA_DICE_FACE_IDS.MASK) maskCount += 1;
+        dice.push({ index, value, face, effectKey: 'bonusDie.effect.ninjaDeathBlossom2', effectParams: { value, index, face } });
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId: targetId,
+                effectKey: 'bonusDie.effect.ninjaDeathBlossom2',
+                effectParams: { value, index, face },
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + index,
+        } as BonusDieRolledEvent);
+    }
+
+    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, targetId, dice, timestamp + 5));
+    events.push(bonusDamageEvent(attackerId, katanaCount + shurikenCount * 2, sourceAbilityId, timestamp + 6));
+    if (maskCount > 0) {
+        const ninjutsuEvent = grantTokenEvent(state, sourceAbilityId, attackerId, TOKEN_IDS.NINJUTSU, maskCount, timestamp + 7);
+        if (ninjutsuEvent) events.push(ninjutsuEvent);
+    }
+    return events;
+}
+
+function handleNinjutsuOffensiveRollEndUse(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleNinjutsuUse(ctx);
 }
 
 function handleNonAttackCloseout(ctx: CustomActionContext): DiceThroneEvent[] {
@@ -462,6 +508,20 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as BonusDieRolledEvent];
+    const remainingNinjutsuAfterUse = Math.max(0, (state.players[attackerId]?.tokens[TOKEN_IDS.NINJUTSU] ?? 0) - 1);
+    const continueOptions = [
+        ...(remainingNinjutsuAfterUse > 0 ? [{
+            tokenId: TOKEN_IDS.NINJUTSU,
+            value: 1,
+            customId: 'use-ninjutsu',
+            labelKey: `tokens.${TOKEN_IDS.NINJUTSU}.name`,
+        }] : []),
+        {
+            value: 0,
+            customId: 'skip',
+            labelKey: 'tokenResponse.skip',
+        },
+    ];
 
     if (value <= 3) {
         events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, targetId, [{ index: 0, value, face, effectKey: 'bonusDie.effect.ninjaNinjutsu', effectParams: { value, bonusDamage: 1 } }], timestamp + 1, {
@@ -469,6 +529,17 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
             summaryEffectParams: { value, bonusDamage: 1 },
         }));
         events.push(bonusDamageEvent(attackerId, 1, sourceAbilityId, timestamp + 2));
+        events.push({
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: attackerId,
+                sourceAbilityId,
+                titleKey: 'offensiveRollEndToken.title',
+                options: continueOptions,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 3,
+        } as ChoiceRequestedEvent);
         return events;
     }
 
@@ -478,6 +549,17 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
             summaryEffectParams: { value, bonusDamage: 2 },
         }));
         events.push(bonusDamageEvent(attackerId, 2, sourceAbilityId, timestamp + 2));
+        events.push({
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: attackerId,
+                sourceAbilityId,
+                titleKey: 'offensiveRollEndToken.title',
+                options: continueOptions,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 3,
+        } as ChoiceRequestedEvent);
         return events;
     }
 
@@ -499,7 +581,65 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
     return events;
 }
 
+function buildNinjutsuContinueChoiceEvents(
+    state: CustomActionContext['state'],
+    playerId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const remainingNinjutsu = state.players[playerId]?.tokens[TOKEN_IDS.NINJUTSU] ?? 0;
+    const pendingAttack = state.pendingAttack;
+    const isAttackAlreadyInDefenseCloseout = pendingAttack?.damageResolved === true || pendingAttack?.defenseResolved === true;
+    if (remainingNinjutsu <= 0 || isAttackAlreadyInDefenseCloseout) {
+        return [];
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId,
+            sourceAbilityId,
+            titleKey: 'offensiveRollEndToken.title',
+            options: [
+                {
+                    tokenId: TOKEN_IDS.NINJUTSU,
+                    value: 1,
+                    customId: 'use-ninjutsu',
+                    labelKey: `tokens.${TOKEN_IDS.NINJUTSU}.name`,
+                },
+                {
+                    value: 0,
+                    customId: 'skip',
+                    labelKey: 'tokenResponse.skip',
+                },
+            ],
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
+}
+
 export function registerNinjaCustomActions(): void {
+    registerBonusDiceSettlementHandler(DEATH_BLOSSOM_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        let katanaCount = 0;
+        let shurikenCount = 0;
+        let maskCount = 0;
+        for (const die of getPendingBonusSettlementDice(settlement)) {
+            if (die.face === NINJA_DICE_FACE_IDS.KATANA) katanaCount += 1;
+            if (die.face === NINJA_DICE_FACE_IDS.SHURIKEN) shurikenCount += 1;
+            if (die.face === NINJA_DICE_FACE_IDS.MASK) maskCount += 1;
+        }
+        const followupEvents: DiceThroneEvent[] = [];
+        if (maskCount > 0) {
+            const ninjutsuEvent = grantTokenEvent(state, settlement.sourceAbilityId, settlement.attackerId, TOKEN_IDS.NINJUTSU, maskCount, timestamp + 1);
+            if (ninjutsuEvent) followupEvents.push(ninjutsuEvent);
+        }
+        return {
+            totalDamage: katanaCount + shurikenCount * 2,
+            followupEvents,
+        };
+    });
+
     registerBonusDiceSettlementHandler(GOING_FORWARD_2_SETTLEMENT_ID, ({ settlement, timestamp }) => {
         const totalDamage = getPendingBonusSettlementDice(settlement).reduce((sum, die) => sum + die.value, 0);
         return {
@@ -557,6 +697,11 @@ export function registerNinjaCustomActions(): void {
         categories: ['dice', 'token'],
         requiresSelectedDefender: true,
     });
+    registerCustomActionHandler('ninja-death-blossom', handleDeathBlossom, {
+        categories: ['dice', 'damage', 'token'],
+        requiresSelectedDefender: true,
+        estimateDamage: () => 1,
+    });
     registerCustomActionHandler('ninja-death-blossom-2', handleDeathBlossom2, {
         categories: ['dice', 'damage', 'token'],
         requiresSelectedDefender: true,
@@ -571,7 +716,7 @@ export function registerNinjaCustomActions(): void {
         categories: ['choice', 'damage'],
         requiresInteraction: true,
     });
-    registerCustomActionHandler('ninja-ninjutsu-use', handleNinjutsuUse, { categories: ['dice', 'damage', 'token', 'choice'], requiresInteraction: true });
+    registerCustomActionHandler('ninja-ninjutsu-use', handleNinjutsuOffensiveRollEndUse, { categories: ['dice', 'damage', 'token', 'choice'], requiresInteraction: true });
 
     registerChoiceResolvedEventHandler('ninja-ninjutsu-poison', ({ state, playerId, sourceAbilityId, timestamp }) => {
         if (!sourceAbilityId) return [];
@@ -581,6 +726,7 @@ export function registerNinjaCustomActions(): void {
         return [
             bonusDamageEvent(playerId, 2, sourceAbilityId, timestamp),
             ...(poisonEvent ? [poisonEvent] : []),
+            ...buildNinjutsuContinueChoiceEvents(state, playerId, sourceAbilityId, timestamp + 2),
         ];
     });
 
@@ -594,8 +740,29 @@ export function registerNinjaCustomActions(): void {
                 sourceCommandType: 'ABILITY_EFFECT',
                 timestamp: timestamp + 1,
             } as AttackMadeUndefendableEvent,
+            ...buildNinjutsuContinueChoiceEvents(state, playerId, sourceAbilityId, timestamp + 2),
         ];
     });
+
+    registerChoiceResolvedEventHandler('use-ninjutsu', ({ state, playerId, sourceAbilityId, timestamp, random }) => (
+        handleNinjutsuUse({
+            ctx: {
+                attackerId: playerId,
+                defenderId: state.pendingAttack?.defenderId ?? playerId,
+                sourceAbilityId: sourceAbilityId ?? state.pendingAttack?.sourceAbilityId ?? 'token-use',
+                state,
+                damageDealt: 0,
+                timestamp,
+            },
+            targetId: state.pendingAttack?.defenderId ?? playerId,
+            attackerId: playerId,
+            sourceAbilityId: sourceAbilityId ?? state.pendingAttack?.sourceAbilityId ?? 'token-use',
+            state,
+            timestamp,
+            random,
+            action: { type: 'custom', target: 'self', customActionId: 'ninja-ninjutsu-use' },
+        })
+    ));
 
     registerChoiceResolvedEventHandler(NINJA_SMOKE_SCREEN_2_CHOICE_ID, ({ state, playerId, sourceAbilityId, value, timestamp }) => {
         if (!isExpectedChoiceSource(sourceAbilityId, SMOKE_SCREEN_2_MAIN_SOURCE_IDS)) return [];

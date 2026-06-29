@@ -20,6 +20,7 @@ import {
     recoverCardsFromDiscard,
     revealDeckTop,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { createEffectProgram } from '../domain/abilityRuntime';
 import {
     registerBaseAbilitySuppression,
@@ -88,6 +89,43 @@ type LocatedInPlayCard = {
     baseIndex: number;
     label: string;
 };
+
+function buildAbilityEffectSource(
+    ctx: AbilityContext,
+    options?: {
+        sourceKind?: 'action' | 'nonAction';
+        sourceBaseIndex?: number;
+    },
+) {
+    return {
+        sourcePlayerId: ctx.playerId,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: options?.sourceBaseIndex ?? ctx.baseIndex,
+        ...(options?.sourceKind !== undefined ? { sourceKind: options.sourceKind } : {}),
+    };
+}
+
+function buildTriggerEffectSource(
+    ctx: TriggerContext,
+    options?: {
+        sourceKind?: 'action' | 'nonAction';
+        fallbackSourceDefId?: string;
+        fallbackSourceBaseIndex?: number;
+    },
+) {
+    return {
+        sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
+        ...(ctx.sourceCardUid !== undefined ? { sourceCardUid: ctx.sourceCardUid } : {}),
+        sourceDefId: ctx.sourceDefId ?? options?.fallbackSourceDefId ?? ctx.triggerMinionDefId,
+        sourceControllerId: ctx.sourceControllerId ?? ctx.playerId,
+        ...(ctx.sourceBaseIndex !== undefined || options?.fallbackSourceBaseIndex !== undefined
+            ? { sourceBaseIndex: ctx.sourceBaseIndex ?? options?.fallbackSourceBaseIndex }
+            : {}),
+        ...(options?.sourceKind !== undefined ? { sourceKind: options.sourceKind } : {}),
+    };
+}
 
 function locateMinion(core: SmashUpCore, minionUid: string | undefined): LocatedMinion | undefined {
     if (!minionUid) return undefined;
@@ -260,11 +298,13 @@ function millFromDeck(playerId: PlayerId, cardUids: string[], reason: string, no
 }
 
 function detachOngoing(cardUid: string, defId: string, ownerId: PlayerId, reason: string, now: number): OngoingDetachedEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: { cardUid, defId, ownerId, reason },
-        timestamp: now,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid,
+        defId,
+        ownerId,
+        reason,
+        now,
+    });
 }
 
 function chooseTargetMinion(ctx: AbilityContext, predicate: (located: LocatedMinion) => boolean): LocatedMinion | undefined {
@@ -276,6 +316,7 @@ function chooseTargetMinion(ctx: AbilityContext, predicate: (located: LocatedMin
 function shapeshiftersBactaTheFuture(ctx: AbilityContext): AbilityResult {
     const target = chooseTargetMinion(ctx, () => true);
     if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    const source = buildAbilityEffectSource(ctx, { sourceKind: 'action' });
     return {
         events: [
             ...buildValidatedDestroyEvents(ctx.state, {
@@ -285,7 +326,12 @@ function shapeshiftersBactaTheFuture(ctx: AbilityContext): AbilityResult {
                 destroyerId: ctx.playerId,
                 reason: 'shapeshifters_bacta_the_future',
                 now: ctx.now,
-                sourceKind: 'action',
+                sourcePlayerId: source.sourcePlayerId,
+                sourceCardUid: source.sourceCardUid,
+                sourceDefId: source.sourceDefId,
+                sourceControllerId: source.sourceControllerId,
+                sourceBaseIndex: source.sourceBaseIndex,
+                sourceKind: source.sourceKind,
             }),
             grantExtraMinion(target.minion.owner, 'shapeshifters_bacta_the_future', ctx.now, undefined, { playTiming: 'immediate' }),
         ],
@@ -348,6 +394,7 @@ function shapeshiftersTransmogrify(ctx: AbilityContext): AbilityResult {
     const target = chooseTargetMinion(ctx, located => located.minion.controller === ctx.playerId);
     if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const targetPower = getMinionPower(ctx.state, target.minion, target.baseIndex);
+    const source = buildAbilityEffectSource(ctx, { sourceKind: 'action' });
     const search = queueDeckMinionSearch(
         ctx,
         'shapeshifters_transmogrify_search',
@@ -368,7 +415,12 @@ function shapeshiftersTransmogrify(ctx: AbilityContext): AbilityResult {
                 destroyerId: ctx.playerId,
                 reason: 'shapeshifters_transmogrify',
                 now: ctx.now,
-                sourceKind: 'action',
+                sourcePlayerId: source.sourcePlayerId,
+                sourceCardUid: source.sourceCardUid,
+                sourceDefId: source.sourceDefId,
+                sourceControllerId: source.sourceControllerId,
+                sourceBaseIndex: source.sourceBaseIndex,
+                sourceKind: source.sourceKind,
             }),
             ...search.events,
         ],
@@ -380,6 +432,7 @@ function shapeshiftersReally(ctx: AbilityContext): AbilityResult {
     const target = chooseTargetMinion(ctx, located => located.minion.controller === ctx.playerId);
     if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const targetPower = getMinionPower(ctx.state, target.minion, target.baseIndex);
+    const source = buildAbilityEffectSource(ctx, { sourceKind: 'action' });
     const search = queueDiscardMinionSearch(
         ctx,
         'shapeshifters_really_search',
@@ -399,7 +452,12 @@ function shapeshiftersReally(ctx: AbilityContext): AbilityResult {
                 destroyerId: ctx.playerId,
                 reason: 'shapeshifters_really',
                 now: ctx.now,
-                sourceKind: 'action',
+                sourcePlayerId: source.sourcePlayerId,
+                sourceCardUid: source.sourceCardUid,
+                sourceDefId: source.sourceDefId,
+                sourceControllerId: source.sourceControllerId,
+                sourceBaseIndex: source.sourceBaseIndex,
+                sourceKind: source.sourceKind,
             }),
             ...search.events,
         ],
@@ -658,6 +716,7 @@ function buildMonkeyOnYourBackEvents(
         .find(candidate => candidate.minion.uid === targetMinionUid);
     if (!target) return [];
     const action = host.minion.attachedActions.find(attached => attached.uid === actionUid);
+    const sourceControllerId = action ? getOngoingActionControllerId(action) : playerId;
     return [
         ...buildValidatedDestroyEvents(state, {
             minionUid: target.minion.uid,
@@ -666,6 +725,11 @@ function buildMonkeyOnYourBackEvents(
             destroyerId: playerId,
             reason: 'cyborg_apes_monkey_on_your_back',
             now,
+            sourcePlayerId: sourceControllerId,
+            sourceCardUid: action?.uid,
+            sourceDefId: action?.defId ?? 'cyborg_apes_monkey_on_your_back',
+            sourceControllerId,
+            sourceBaseIndex: host.baseIndex,
             sourceKind: 'action',
         }),
         ...(action ? buildValidatedCardToDeckBottomEvents(state, {
@@ -992,6 +1056,7 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
     const target = direct && candidates.some(candidate => candidate.minion.uid === direct.minion.uid)
         ? direct
         : candidates[0];
+    const source = buildAbilityEffectSource(ctx, { sourceKind: 'action', sourceBaseIndex: baseIndex });
     if (ctx.matchState && !direct && candidates.length > 1) {
         const interaction = createSimpleChoice(
             `super_spies_live_and_let_chum_choose_${ctx.now}`,
@@ -1017,7 +1082,12 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
             destroyerId: ctx.playerId,
             reason: 'super_spies_live_and_let_chum',
             now: ctx.now,
-            sourceKind: 'action',
+            sourcePlayerId: source.sourcePlayerId,
+            sourceCardUid: source.sourceCardUid,
+            sourceDefId: source.sourceDefId,
+            sourceControllerId: source.sourceControllerId,
+            sourceBaseIndex: source.sourceBaseIndex,
+            sourceKind: source.sourceKind,
         }),
     };
 }
@@ -1310,12 +1380,13 @@ function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
             discard.map(card => ({
                 id: card.uid,
                 label: cardLabel(card),
-                value: { cardUid: card.uid },
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'discard' as const,
                 displayMode: 'card' as const,
             })),
             {
                 sourceId: 'time_travelers_time_raider_choose',
-                targetType: 'generic',
+                targetType: 'discard',
                 titleKey: 'ui.time_travelers_time_raider_choose_title',
             },
         );
@@ -1332,6 +1403,7 @@ function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
             sourcePlayerId: ctx.playerId,
             reason: 'time_travelers_time_raider',
             now: ctx.now,
+            locationPlayerId: ctx.playerId,
             expectedLocation: 'discard',
         }),
     };
@@ -1347,12 +1419,13 @@ function timeTravelersRepeaterPerfect(ctx: AbilityContext): AbilityResult {
             actions.map(card => ({
                 id: card.uid,
                 label: cardLabel(card),
-                value: { cardUid: card.uid },
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'discard' as const,
                 displayMode: 'card' as const,
             })),
             {
                 sourceId: 'time_travelers_repeater_perfect_choose',
-                targetType: 'generic',
+                targetType: 'discard',
                 titleKey: 'ui.time_travelers_repeater_perfect_choose_title',
             },
         );
@@ -1685,6 +1758,7 @@ function recoverDiscardedJumperLikeMinion(ctx: TriggerContext, reason: string): 
     const located = locateMinion(ctx.state, ctx.triggerMinionUid);
     if (!located) return [];
     if (isTempleOfGojuDeckBottomCandidate(ctx, located)) return [];
+    const source = buildTriggerEffectSource(ctx, { fallbackSourceDefId: reason, fallbackSourceBaseIndex: located.baseIndex });
     return buildValidatedReturnEvents(ctx.state, {
         minionUid: ctx.triggerMinionUid,
         minionDefId: located.minion.defId,
@@ -1692,6 +1766,12 @@ function recoverDiscardedJumperLikeMinion(ctx: TriggerContext, reason: string): 
         toPlayerId: ownerId,
         reason,
         now: ctx.now,
+        sourcePlayerId: source.sourcePlayerId,
+        sourceCardUid: source.sourceCardUid,
+        sourceDefId: source.sourceDefId,
+        sourceControllerId: source.sourceControllerId,
+        sourceBaseIndex: source.sourceBaseIndex,
+        sourceKind: source.sourceKind,
     });
 }
 
@@ -3082,22 +3162,19 @@ export function registerYuanhouAbilities(): void {
         const selected = value as ClydeDetachChoice | undefined;
         return {
             state,
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid,
-                    defId,
-                    ownerId,
-                    reason,
-                    clydeReturnToHand: selected?.returnToHand === true,
-                    sourcePlayerId: detached.sourcePlayerId as PlayerId | undefined,
-                    sourceCardUid: detached.sourceCardUid as string | undefined,
-                    sourceDefId: detached.sourceDefId as string | undefined,
-                    sourceControllerId: detached.sourceControllerId as PlayerId | undefined,
-                    sourceBaseIndex: detached.sourceBaseIndex as number | undefined,
-                },
-                timestamp: typeof detached.timestamp === 'number' ? detached.timestamp : timestamp,
-            } as SmashUpEvent],
+            events: [buildOngoingDetachedEvent({
+                cardUid,
+                defId,
+                ownerId,
+                reason,
+                clydeReturnToHand: selected?.returnToHand === true,
+                sourcePlayerId: detached.sourcePlayerId as PlayerId | undefined,
+                sourceCardUid: detached.sourceCardUid as string | undefined,
+                sourceDefId: detached.sourceDefId as string | undefined,
+                sourceControllerId: detached.sourceControllerId as PlayerId | undefined,
+                sourceBaseIndex: detached.sourceBaseIndex as number | undefined,
+                now: typeof detached.timestamp === 'number' ? detached.timestamp : timestamp,
+            })],
         };
     });
 
@@ -3189,6 +3266,7 @@ export function registerYuanhouAbilities(): void {
             return { state, events: [] };
         }
         const reason = selected.reason ?? 'cyborg_apes_flying_monkey';
+        const sourceControllerId = getOngoingActionControllerId(action);
         return {
             state,
             events: [
@@ -3200,6 +3278,10 @@ export function registerYuanhouAbilities(): void {
                     toBaseDefId: state.core.bases[selected.toBaseIndex]?.defId,
                     reason,
                     now: timestamp,
+                    sourcePlayerId: sourceControllerId,
+                    sourceDefId: action.defId,
+                    sourceControllerId,
+                    sourceBaseIndex: selected.fromBaseIndex,
                 }),
                 detachOngoing(action.uid, action.defId, action.ownerId, reason, timestamp),
             ],
@@ -3231,6 +3313,10 @@ export function registerYuanhouAbilities(): void {
                 destroyerId: playerId,
                 reason: 'super_spies_live_and_let_chum',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'super_spies_live_and_let_chum',
+                sourceControllerId: playerId,
+                sourceBaseIndex: baseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -3561,6 +3647,7 @@ export function registerYuanhouAbilities(): void {
                 sourcePlayerId: playerId,
                 reason: 'time_travelers_time_raider',
                 now: timestamp,
+                locationPlayerId: playerId,
                 expectedLocation: 'discard',
             }),
         };

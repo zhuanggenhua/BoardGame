@@ -9,14 +9,12 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string) => {
             if (key === 'rooms.enabledExpansions') return '扩展';
-            if (key === 'rooms.scenario') return '剧本';
             if (key === 'rooms.empty') return '暂无活跃房间';
             if (key === 'rooms.emptySlot') return '空位';
             if (key === 'rooms.seatSeparator') return ' / ';
             if (key === 'setup.expansions.titans') return '泰坦';
             if (key === 'setup.expansions.diy') return 'DIY';
             if (key === 'setup.deckQuery.label') return '余牌查询';
-            if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
             return key;
         },
     }),
@@ -70,42 +68,5 @@ describe('RoomList 扩展摘要', () => {
         expect(screen.getByTestId('room-expansion-tag-room-1-titans')).toHaveTextContent('泰坦');
         expect(screen.getByTestId('room-expansion-tag-room-1-diy')).toHaveTextContent('DIY');
         expect(screen.getByTestId('room-expansion-tag-room-1-deckQuery')).toHaveTextContent('余牌查询');
-    });
-
-    it('七大恨房间卡片展示当前剧本摘要', () => {
-        render(createElement(RoomList, {
-            ...baseProps,
-            gameTranslationNamespace: 'game-qidahen',
-            roomItems: [
-                {
-                    matchID: 'room-qidahen-1',
-                    players: [
-                        { id: 0, name: '房主' },
-                        { id: 1, name: '蒙古' },
-                        { id: 2, name: '后金' },
-                    ],
-                    totalSeats: 3,
-                    gameName: 'qidahen',
-                    roomName: '山海关房间',
-                    isFull: true,
-                    isEmptyRoom: false,
-                    playerCount: 3,
-                    isMyRoom: false,
-                    isOwnerRoom: false,
-                    canReconnect: false,
-                    myPlayerID: null,
-                    myCredentials: null,
-                    isHost: false,
-                    gameKey: 'qidahen',
-                    publicSetupSummary: {
-                        scenarioId: 'shanhaiguan-1622',
-                    },
-                },
-            ],
-        }));
-
-        expect(screen.getByText('剧本')).toBeInTheDocument();
-        expect(screen.getByTestId('room-scenario-tag-room-qidahen-1-shanhaiguan-1622'))
-            .toHaveTextContent('剧本二：山海关之议（1622）');
     });
 });

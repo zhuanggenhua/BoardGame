@@ -449,6 +449,108 @@ describe('Frankenstein abilities', () => {
         ).toBe(true);
     });
 
+    it('线上反馈 6a33a09c5ed87cdca4f71449：The Bride 在起始阶段消灭己方随从并命中身体改造时，应改为回手而不是抛 helper 未定义异常', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['frankenstein', 'giant_ants'],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_secret_volcano_headquarters',
+                    minions: [{
+                        ...makeMinion('worker-1', 'giant_ant_worker', '0', 2),
+                        powerCounters: 2,
+                    }],
+                    ongoingActions: [{
+                        uid: 'grave-1',
+                        defId: 'frankenstein_grave_situation',
+                        ownerId: '0',
+                    }],
+                },
+                { defId: 'base_ninja_dojo', minions: [], ongoingActions: [] },
+                { defId: 'base_isis_swingin_pad', minions: [], ongoingActions: [] },
+            ],
+            titans: [{
+                uid: 'bride-1',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 123,
+        });
+
+        const chooseDestroy = respondToPromptOption(
+            triggerResult.matchState!,
+            option => option.value?.kind === 'destroy',
+            'The Bride first destroy effect',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseDestroy.success, chooseDestroy.error).toBe(true);
+
+        const destroyWorker = respondToPromptOption(
+            chooseDestroy.finalState,
+            option => option.value?.targetUid === 'worker-1',
+            'The Bride destroy worker with grave situation',
+            '0',
+            defaultTestRandom,
+        );
+        expect(destroyWorker.success, destroyWorker.error).toBe(true);
+        expect(destroyWorker.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(true);
+        expect(destroyWorker.finalState.core.players['0'].hand.some(card => card.uid === 'worker-1')).toBe(true);
+    });
+
+    it('frankenstein_grave_situation 在同基地己方随从被消灭时，应改为回手', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['frankenstein', 'aliens'],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    ...makeMinion('igor', 'frankenstein_igor', '0', 2),
+                    powerCounters: 1,
+                }],
+                ongoingActions: [{
+                    uid: 'grave-1',
+                    defId: 'frankenstein_grave_situation',
+                    ownerId: '0',
+                }],
+            }],
+        });
+
+        const triggerMinion = core.bases[0].minions[0];
+        const triggerResult = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: triggerMinion.uid,
+            triggerMinionDefId: triggerMinion.defId,
+            triggerMinion,
+            random: defaultTestRandom,
+            now: 123,
+        });
+        expect(triggerResult.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(true);
+    });
+
     it('frankenstein_german_engineering 在该基地打出随从后给该随从 +1 指示物', () => {
         const core = makeState({
             players: {

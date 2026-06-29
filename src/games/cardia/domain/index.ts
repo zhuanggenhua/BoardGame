@@ -3,6 +3,7 @@ import type { CardiaCore, CardiaCommand, CardiaEvent, PlayerState, PlayedCard } 
 import { ABILITY_IDS } from './ids';
 import { createPlayerState } from './utils';
 import { createInitialDeck, drawCards } from './setupDeck';
+import { getCardiaPlayerActiveOngoingAbilitiesByAbilityId } from './effectHost';
 import validate from './validate';
 import execute from './execute';
 import reduce from './reduce';
@@ -167,9 +168,7 @@ export const CardiaDomain: DomainCore<CardiaCore, CardiaCommand, CardiaEvent> = 
                 const totalSignets = signetsCount[playerId];
                 
                 // 精灵能力：如果激活了精灵能力且有5个印戒，立即获胜
-                const hasElfAbility = core.ongoingAbilities.some(
-                    a => a.abilityId === ABILITY_IDS.ELF && a.playerId === playerId
-                );
+                const hasElfAbility = getCardiaPlayerActiveOngoingAbilitiesByAbilityId(core, playerId, ABILITY_IDS.ELF).length > 0;
                 if (hasElfAbility && totalSignets >= 5) {
                     return {
                         winner: playerId,

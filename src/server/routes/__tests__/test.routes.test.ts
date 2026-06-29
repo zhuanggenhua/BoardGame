@@ -20,6 +20,9 @@ import type { MatchStorage, StoredMatchState, MatchMetadata } from '../../../eng
 import { resolveMatchStatus } from '../../../engine/transport/storage';
 import { GameTransportServer } from '../../../engine/transport/server';
 import type { GameEngineConfig } from '../../../engine/transport/server';
+import { resolveAllowedPlayerCountsForGame } from '../../../games/roomSetupRegistry';
+import type { GameManifestEntry } from '../../../games/manifest.types';
+import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';
 import { createTestRoutes, getConfiguredTestApiToken, isTestRoutesEnabledEnv } from '../test';
 import { ensureSharedTestApiToken, resolveSharedTestApiToken } from '../../testApiToken';
 
@@ -52,8 +55,13 @@ const createMockStorage = (): MatchStorage => {
 };
 
 // Mock game engine
-const createMockGameEngine = (gameId: string): GameEngineConfig => ({
+const createMockGameEngine = (
+    gameId: string,
+    overrides?: Partial<Pick<GameEngineConfig, 'minPlayers' | 'maxPlayers'>>,
+): GameEngineConfig => ({
     gameId,
+    minPlayers: overrides?.minPlayers,
+    maxPlayers: overrides?.maxPlayers,
     domain: {
         setup: (playerIds) => ({
             phase: 'play',
@@ -116,13 +124,16 @@ const createRoomLifecycleRoutes = ({
     storage,
     gameTransport,
     games,
+    gameManifests,
 }: {
     storage: MatchStorage;
     gameTransport: GameTransportServer;
     games: GameEngineConfig[];
+    gameManifests?: Array<Pick<GameManifestEntry, 'id' | 'playerOptions'>>;
 }) => {
     const router = new Router();
     const gameIndex = new Map(games.map((game) => [game.gameId, game]));
+    const gameManifestIndex = new Map((gameManifests ?? []).map((manifest) => [manifest.id, manifest]));
     let nextMatchId = 1;
 
     router.post('/games/:name/create', async (ctx) => {
@@ -135,9 +146,25 @@ const createRoomLifecycleRoutes = ({
 
         const body = ctx.request.body as { numPlayers?: unknown; setupData?: unknown } | undefined;
         const numPlayers = Number(body?.numPlayers ?? 2);
+        const setupData = body?.setupData && typeof body.setupData === 'object'
+            ? (body.setupData as Record<string, unknown>)
+            : {};
+        const gameManifest = gameManifestIndex.get(gameName);
+        const allowedPlayerCounts = resolveAllowedPlayerCountsForGame({
+            gameManifest,
+            setupData,
+            fallbackPlayerOptions: gameManifest
+                ? undefined
+                : Array.from({ length: (gameEngine.maxPlayers ?? 2) - (gameEngine.minPlayers ?? 2) + 1 }, (_, index) => (gameEngine.minPlayers ?? 2) + index),
+        });
         const minPlayers = gameEngine.minPlayers ?? 2;
         const maxPlayers = gameEngine.maxPlayers ?? 2;
-        if (Number.isNaN(numPlayers) || numPlayers < minPlayers || numPlayers > maxPlayers) {
+        if (
+            Number.isNaN(numPlayers)
+            || numPlayers < minPlayers
+            || numPlayers > maxPlayers
+            || !allowedPlayerCounts.includes(numPlayers)
+        ) {
             ctx.throw(400, 'Invalid numPlayers');
             return;
         }
@@ -145,9 +172,6 @@ const createRoomLifecycleRoutes = ({
         const matchID = `lifecycle-match-${nextMatchId++}`;
         const seed = `seed-${matchID}`;
         const playerIds = Array.from({ length: numPlayers }, (_, index) => String(index));
-        const setupData = body?.setupData && typeof body.setupData === 'object'
-            ? (body.setupData as Record<string, unknown>)
-            : {};
         const setupResult = await gameTransport.setupMatch(matchID, gameName, playerIds, seed, setupData);
         if (!setupResult) {
             ctx.throw(500, 'Failed to setup match');
@@ -429,6 +453,10 @@ describe('Test Routes Integration', () => {
         storage = createMockStorage();
         roomLifecycleGames = [
             createMockGameEngine('smashup'),
+            createMockGameEngine('fantasyrealms', {
+                minPlayers: 2,
+                maxPlayers: 6,
+            }),
             createLifecycleGameEngine('lifecycle-game'),
         ];
 
@@ -447,6 +475,7 @@ describe('Test Routes Integration', () => {
             storage,
             gameTransport,
             games: roomLifecycleGames,
+            gameManifests: [FANTASY_REALMS_MANIFEST],
         });
         app.use(roomRouter.routes());
         app.use(roomRouter.allowedMethods());
@@ -923,6 +952,29 @@ describe('Test Routes Integration', () => {
     });
 
     describe('room lifecycle integration', () => {
+        it('幻想国度二人变体传 3 人时应在建房阶段直接拒绝', async () => {
+            const response = await fetch(`${baseURL}/games/fantasyrealms/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    numPlayers: 3,
+                    setupData: {
+                        variant: 'duel',
+                        expansion: 'base',
+                        setupSelections: {
+                            variant: 'duel',
+                            expansion: 'base',
+                        },
+                    },
+                }),
+            });
+
+            expect(response.status).toBe(400);
+            await expect(response.text()).resolves.toContain('Invalid numPlayers');
+        });
+
         it('covers create -> join -> sync -> command -> leave through REST and /game socket', async () => {
             const sockets: ClientSocket[] = [];
             const closeSockets = async () => {

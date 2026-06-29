@@ -6,9 +6,10 @@
 
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { grantContextualExtraMinion, grantContextualExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback, buildStandardDrawEvents } from '../domain/abilityHelpers';
+import { grantContextualExtraMinion, grantContextualExtraAction, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback, buildStandardDrawEvents, buildValidatedControlChangeEvents, buildValidatedDestroyEvents } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
-import type { VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, MinionControlChangedEvent, SmashUpCore, CardInstance } from '../domain/types';
+import type { VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, CardsDiscardedEvent, SmashUpCore, CardInstance } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
@@ -594,7 +595,18 @@ const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmCo
         const target = base?.minions.find((minion) => minion.uid === context.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'ghost_spirit', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: context.baseIndex,
+                destroyerId: playerId,
+                reason: 'ghost_spirit',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'ghost_spirit',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -631,7 +643,18 @@ const ghostSpiritDiscardPromptProgram = createPromptProgram<GhostSpiritDiscardCo
                     payload: { playerId, cardUids },
                     timestamp,
                 } as CardsDiscardedEvent,
-                destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'ghost_spirit', timestamp),
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: target.uid,
+                    minionDefId: target.defId,
+                    fromBaseIndex: context.baseIndex,
+                    destroyerId: playerId,
+                    reason: 'ghost_spirit',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'ghost_spirit',
+                    sourceControllerId: playerId,
+                    sourceKind: 'action',
+                }),
             ],
         };
     },
@@ -983,47 +1006,39 @@ function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
     const ownerId = findCardOwnerAcrossPlayerZones(ctx.state, ctx.cardUid, ctx.defId, ctx.playerId);
     // 行动卡打出后仍有手牌则自毁
     if (handAfterPlay > 0) {
-        const detachEvt: OngoingDetachedEvent = {
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
+        return {
+            events: [buildOngoingDetachedEvent({
                 cardUid: ctx.cardUid,
                 defId: ctx.defId,
                 ownerId,
                 reason: 'ghost_make_contact_pod_has_hand',
-            },
-            timestamp: ctx.now,
+                now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
+            })],
         };
-        return { events: [detachEvt] };
     }
     return { events: buildMakeContactControlChangeEvents(ctx) };
 }
 
 function buildMakeContactControlChangeEvents(ctx: AbilityContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined || !ctx.targetMinionUid) return [];
-    const base = ctx.state.bases[ctx.baseIndex];
-    const targetMinion = base?.minions.find(minion => minion.uid === ctx.targetMinionUid);
-    if (!targetMinion || targetMinion.controller === ctx.playerId) return [];
-
-    const controlChangedEvent: MinionControlChangedEvent = {
-        type: SU_EVENTS.MINION_CONTROL_CHANGED,
-        payload: {
-            minionUid: targetMinion.uid,
-            minionDefId: targetMinion.defId,
-            baseIndex: ctx.baseIndex,
-            ownerId: targetMinion.owner,
-            fromControllerId: targetMinion.controller,
-            toControllerId: ctx.playerId,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            reason: ctx.defId,
-        },
-        timestamp: ctx.now,
-    };
-
-    return [controlChangedEvent];
+    return buildValidatedControlChangeEvents(ctx.state, {
+        minionUid: ctx.targetMinionUid,
+        minionDefId: '',
+        baseIndex: ctx.baseIndex,
+        toControllerId: ctx.playerId,
+        sourcePlayerId: ctx.playerId,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
+        reason: ctx.defId,
+        now: ctx.now,
+    });
 }
 
 

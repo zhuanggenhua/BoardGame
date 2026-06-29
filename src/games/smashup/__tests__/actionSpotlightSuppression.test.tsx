@@ -143,7 +143,7 @@ describe('SmashUp action spotlight suppression', () => {
         );
     });
 
-    it('spotlight 队列应保持非阻塞，不抢全屏点击', async () => {
+    it('spotlight 队列应允许空白背景接管点击，以便关闭当前特写', async () => {
         const eventEntries = [makeActionPlayedEntry(4, '1', 'princesses_heirloom')];
         const { rerender } = render(
             <SpotlightHarness entries={[]} currentPrompt={null} />,
@@ -158,8 +158,10 @@ describe('SmashUp action spotlight suppression', () => {
 
         const queue = await screen.findByTestId('card-spotlight-queue');
         const content = await screen.findByTestId('card-spotlight-content');
+        const backdrop = await screen.findByRole('button', { name: 'cardSpotlightQueue.closeSpotlight' });
 
         expect(queue.className).toContain('pointer-events-none');
         expect(content.className).toContain('pointer-events-auto');
+        expect(backdrop.className).toContain('pointer-events-auto');
     });
 });

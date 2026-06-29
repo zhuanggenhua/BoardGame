@@ -6,23 +6,31 @@
 | :--- | :--- | :--- |
 | **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-systems.md` § ActionLogSystem 使用规范 → 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
 | **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` | 压缩指令、扫描参数、清单校验、图片链路/裁剪规范 |
+| **新增派系 / 新英雄 / 新角色** (从素材做到可玩、含录入/资源/机制/审计/E2E) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 这是新增批次的默认入口；先走项目 skill，再按 `gameId` 进入专项 workflow；默认包含对象级全面审计、evidence 留档与真实入口 E2E，不需要等用户额外提醒 |
 | **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |
-| **录入 DiceThrone 角色** (新英雄/单角色图片 intake、裁图、卡牌/Token/骰面录入) | `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` | 角色真相源表、裁图、卡牌合同、manifest、R2/CDN 回查、规则文档与代码同步 |
+| **录入 DiceThrone 角色** (新英雄/单角色图片 intake、裁图、卡牌/Token/骰面录入) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` + `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` | Dice Throne 新英雄默认先走两个项目 skill，再进入英雄 intake workflow；对象级审计、manifest、R2/CDN 回查、规则文档与代码同步属于同一交付 |
 | **国际化资源架构** (i18n 路径/符号链接/locale) | `docs/i18n-asset-architecture.md` | 方案 B2 架构、符号链接设置、未来迁移计划 |
 | **修改 DiceThrone** (文案/资源) | `docs/games/dicethrone/dicethrone-i18n.md` | 翻译 Key 结构、Scheme A 取图函数 |
 | **环境配置 / 部署** (端口/同域代理) | `docs/deploy.md` | 端口映射、环境变量、Nginx 参数 |
+| **协作者接入 Figma MCP** (Codex / OpenClaw 缺少 Figma 工具、首次授权、凭据失效、重启后仍不可用) | `docs/infra/figma-mcp.md` | 仓库脚本是唯一真相源；默认只补配置，显式 `-Login` 才重授权；`CODEX_HOME` 只存每人自己的配置和凭据 |
 | **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
+| **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
 | **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先建对象清单，再锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
-| **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；E2E 汇报必须附截图路径 |
+| **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；禁止把游戏特化语义退回共享默认 |
+| **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；E2E 汇报必须附截图路径 |
+| **教程 / 新手引导设计** (tutorial/onboarding、教程看不懂、只在教按钮、需要重做教学结构) | `.codex/skill/tutorial-workflow/SKILL.md` + `docs/ai-rules/tutorial-design.md` + `.codex/skill/game-audit-workflow/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先走教程 workflow：先锁文案，再改实现；再核目标、收益、真实案例、计分因果、真实交互与截图证据 |
+| **打开图片 / 给我看图 / 截图真正打开到本机** | `.codex/skill/screenshot-delivery/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先区分 AI 核图和真实开图；固定顺序是 `view_image` 核图 → `npm run verify:open-image` 真开图 → 回复附 `OPENED_IMAGE` 证据和绝对路径 |
+| **首屏关键素材 / 图片预加载** (为什么没素材进度、为什么首帧抖动、atlas/牌背/桌面图是否必须预热) | `docs/ai-rules/critical-image-gate.md` + `docs/ai-rules/asset-pipeline.md` | 只要首屏依赖正式图片就必须配 `criticalImageResolver.ts`；真实房间页要能走到 `loadingAssets`；不要把“有图片资源”误当成“已配置首屏关键素材” |
 | **E2E 太慢 / 长链拆分 / 从主页起跑是否合理** | `docs/ai-rules/e2e-verification.md` | 先看三板斧、入口分层、组合式验证、时长预算；默认不要把主页漏斗和游戏流程绑成一条巨型 E2E |
 | **测试驱动是不是一直在写测试 / 为什么 45 分钟还没推进实现** | `docs/ai-rules/e2e-verification.md` + `docs/automated-testing.md` | 先看“长链不是默认调试循环”“15 分钟定位预算”“先状态注入锁定位点，再做最窄回归” |
 | **开发前端 / 新增游戏** (引擎/组件) | `docs/framework/frontend.md` | 系统复用 (Ability/Status)、动画组件、解耦规范 |
 | **开发后端 / 数据库** (NestJS/Mongo) | `docs/framework/backend.md` | 模块划分、Socket 网关、存储适配器 |
 | **接口调用 / 联调** (REST/WS) | `docs/api/README.md` | 认证方式、分页约定、实时通信事件 |
 | **处理系统反馈 / watchdog 自动反馈** | `docs/ai-rules/engine-systems.md` § 在线 AI 决策视图与 watchdog / 系统反馈闭环 | 先判断 feedback 是否足够定位；能定位就修业务；不能定位先补 reason/fingerprint/stateSnapshot/失败命令；业务无 bug 时改 feedback 链本身 |
+| **AI 接入 / AI 适配 / 自动回合 / watchdog / 自动跳过** | `.codex/skill/game-ai-adaptation/SKILL.md` + `docs/ai-rules/ui-ux.md` | 先区分可见动作与静默动作；不改延迟时也必须补等待归属、唯一下一步入口、最小状态反馈与真实页面证据 |
 | **使用 Undo / Fab 功能** | `docs/components/UndoFab.md` | UndoFab 组件的 Props 要求与环境依赖 |
 | **新增/修改游戏光标主题** (cursor/光标/鼠标样式) | `docs/ai-rules/global-systems.md` § 光标主题系统 | 自注册流程、形态规范（grabbing 必须握拳）、共享样式模板、设置弹窗交互逻辑 |
 | **新增作弊/调试指令** | `docs/debug-tool-refactor.md` | 游戏专属调试配置的解耦注入方式 |
@@ -49,10 +57,15 @@
 | **根 AGENTS 该写到什么粒度** (渐进式披露 / 路由优先 / 只保留触发入口) | `docs/ai-rules/document-consolidation.md` + 本文件 | 根文件只保留“何时触发、先看哪里、哪些红线不能越过”；细节下沉到二级文档 |
 | **向用户索要保留/合并/真相源拍板** (是不是二选一、能不能都保留、哪边先翻正) | `.codex/skill/merge-decision-package/SKILL.md` + `AGENTS.md` §1.1 | 先回答能不能都保留；按正式实现/候选实现/过程材料拆开；结论先行，用户只需决定一句话 |
 | **UI/UX 设计** (配色/组件/动效) | `.codex/skill/ui-ux-pro-max/SKILL.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统与验收口径 |
+| **新游戏位图设计稿 / 设计批准门禁** (先看图、先出 PNG/JPG/WebP、批准后才进骨架/前端) | `.codex/skill/boardgame-ui-imagegen/SKILL.md` + `.codex/skill/create-new-game/SKILL.md` | 设计稿默认是图片不是页面；Step1 结构、Step2 布局分裂、Step3 风格、Step4 分界面逐步批准；Step2 默认 3 张且至少 1 张素材优先；设计稿未批前不得启动服务、不得写运行页；前端实现必须等骨架完成 |
+| **游戏主交互槽位 / 手牌区 / waiting / prompt / rail 抢位** (主交互被挤压、双主焦点、来源家族、交互壳层重排) | `docs/ai-rules/ui-ux.md` + `design-system/game-ui/MASTER.md` + `.codex/skill/ui-ux-pro-max/SKILL.md` | 先写 `主交互槽位五联单`；来源家族必须能回查到真实文件/截图；验收必须证明主交互槽位前中后不漂移、临时 UI 不侵入主槽位、页面没有双主焦点 |
+| **显示游戏实施状态** (`statusTag` / `under_construction` / 实施中横幅) | `docs/framework/frontend.md` § 实施中状态横幅 | 游戏目录、详情缩略图、选角卡面等用户可见入口，只要展示“实施中”，必须复用共享斜条组件 `ImplementationStatusRibbon`，禁止降级成普通标签/小字提示 |
 | **七大恨区域工具 / 红线 truth / 工作区清点** | `docs/games/qidahen/workflows/qidahen-region-mask-truth-sources.md` | 先区分正式边界输入、默认页自动反推红线、`manual-boundary-user` 手工候选、历史 overlay/证据图，再决定截图、修图或清理 |
+| **七大恨区域拓扑 / 正式区与运行时区分层** | `docs/games/qidahen/workflows/qidahen-region-topology-truth-sources.md` | 先区分印刷正式区、运行时逻辑区、`printedRegionIds` 显式映射，再决定该改正式闭合区还是 runtime 拆分 |
 | **生图设计稿 → 实现设计稿** (AI 生成 UI mockup 后按图实现/复刻) | `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | 真实内容盘点、禁止无中生有、目标稿复看、关键几何比例量测、E2E 截图证据 |
 | **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 Skill `--design-system`，再 `design-system/` | 见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |
 | **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` | 交互原则、反馈规范、动画时长、状态清晰 |
+| **选择成熟交互来源家族** (prompt / waiting / 手牌区 / 右侧 rail / setup 壳层) | `design-system/game-ui/source-families.md` | 先从批准家族中选型；复用仓内成熟不变量；找不到家族前不得发明正式交互模式 |
 | **游戏 UI 风格选择** | `design-system/styles/` | arcade-3d（街机立体）、tactical-clean（战术简洁）、classic-parchment（经典羊皮纸） |
 | **创建临时文件 / 清理根目录** (Bug 分析/测试脚本/Wiki 数据) | `docs/temp-files-management.md` | 临时文件分类规则、目录结构、.gitignore 规则、开发规范 |

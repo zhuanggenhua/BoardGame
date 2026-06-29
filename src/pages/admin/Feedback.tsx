@@ -52,6 +52,7 @@ interface FeedbackItem {
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     closedReason?: string | null;
+    resolvedMethod?: string | null;
     rewardPoints?: number;
     reporterType?: 'user' | 'system';
     source?: string;
@@ -513,6 +514,7 @@ export default function AdminFeedbackPage() {
         }
 
         let closedReason: string | undefined;
+        let resolvedMethod: string | undefined;
         if (newStatus === 'closed' && requiresClosedReason(target)) {
             const promptValue = window.prompt(t('feedback.messages.closedReasonPrompt'), target.closedReason ?? '');
             if (promptValue === null) {
@@ -524,6 +526,17 @@ export default function AdminFeedbackPage() {
                 return;
             }
         }
+        if (newStatus === 'resolved' && target.status !== 'resolved') {
+            const promptValue = window.prompt(t('feedback.messages.resolvedMethodPrompt'), target.resolvedMethod ?? '');
+            if (promptValue === null) {
+                return;
+            }
+            resolvedMethod = promptValue.trim();
+            if (!resolvedMethod) {
+                error(t('feedback.messages.resolvedMethodRequired'));
+                return;
+            }
+        }
         try {
             const response = await fetch(`${ADMIN_API_URL}/feedback/${id}/status`, {
                 method: 'PATCH',
@@ -531,7 +544,11 @@ export default function AdminFeedbackPage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status: newStatus, ...(closedReason ? { closedReason } : {}) }),
+                body: JSON.stringify({
+                    status: newStatus,
+                    ...(closedReason ? { closedReason } : {}),
+                    ...(resolvedMethod ? { resolvedMethod } : {}),
+                }),
             });
             if (!response.ok) {
                 const payload = await response.json().catch(() => null) as { error?: string; message?: string } | null;
@@ -998,6 +1015,19 @@ function FeedbackRow({
                                 {item.clientContext.route}
                             </div>
                         )}
+                        {active && (
+                            item.clientContext?.appVersion
+                            || item.clientContext?.appCommitSha
+                            || item.clientContext?.appBuildTime
+                        ) && (
+                            <div className="text-[10px] leading-4 text-zinc-500">
+                                {[
+                                    item.clientContext?.appVersion ? `版本 ${item.clientContext.appVersion}` : null,
+                                    item.clientContext?.appCommitSha ? `提交 ${item.clientContext.appCommitSha}` : null,
+                                    item.clientContext?.appBuildTime ? `构建 ${item.clientContext.appBuildTime}` : null,
+                                ].filter(Boolean).join(' | ')}
+                            </div>
+                        )}
                         {active && item.errorContext && (
                             <div
                                 data-testid="feedback-error-context-panel"
@@ -1355,6 +1385,12 @@ function FeedbackDetailPanel({
                             </MetaField>
                         ) : null}
 
+                        {item.status === 'resolved' ? (
+                            <MetaField label={t('feedback.detail.resolvedMethod')}>
+                                <span className="text-zinc-700">{item.resolvedMethod?.trim() || t('feedback.detail.resolvedMethodEmpty')}</span>
+                            </MetaField>
+                        ) : null}
+
                         {item.rewardPoints ? (
                             <MetaField label={t('feedback.detail.rewardPoints')}>
                                 <RewardPointsBadge points={item.rewardPoints} signed className="text-xs" />
@@ -1381,6 +1417,15 @@ function FeedbackDetailPanel({
                             <p>{item.errorContext.name || '-'}</p>
                             <p>{item.errorContext.message || '-'}</p>
                             <p>{item.errorContext.source || '-'}</p>
+                            {(item.clientContext?.appVersion || item.clientContext?.appCommitSha || item.clientContext?.appBuildTime) && (
+                                <p>
+                                    {[
+                                        item.clientContext?.appVersion ? `版本 ${item.clientContext.appVersion}` : null,
+                                        item.clientContext?.appCommitSha ? `提交 ${item.clientContext.appCommitSha}` : null,
+                                        item.clientContext?.appBuildTime ? `构建 ${item.clientContext.appBuildTime}` : null,
+                                    ].filter(Boolean).join(' | ')}
+                                </p>
+                            )}
                             {item.clientContext?.lastUserAction && (
                                 <p>{t('feedback.detail.recentAction')}: {item.clientContext.lastUserAction.type} / {summarizeFeedbackElement(item.clientContext.lastUserAction.target)}</p>
                             )}

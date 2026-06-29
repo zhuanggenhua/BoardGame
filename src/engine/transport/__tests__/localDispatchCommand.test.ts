@@ -44,7 +44,7 @@ describe('buildLocalDispatchCommand', () => {
         });
     });
 
-    it('内部 override 与教程 override 同时存在时，应优先使用内部 override', () => {
+    it('非教程 AI 命令即使带 __tutorialPlayerId，也不应把它当成通用执行者覆盖', () => {
         const result = buildLocalDispatchCommand({
             commandType: 'ROLL_DICE',
             payload: {
@@ -58,6 +58,24 @@ describe('buildLocalDispatchCommand', () => {
         expect(result.resolvedPlayerId).toBe('1');
         expect(result.command.playerId).toBe('1');
         expect(result.command.payload).toEqual({});
+    });
+
+    it('非教程 AI 命令只有 __tutorialPlayerId 时，应回退到本地现有执行者真相', () => {
+        const result = buildLocalDispatchCommand({
+            commandType: 'ROLL_DICE',
+            payload: {
+                keepIds: [0, 1],
+                __tutorialPlayerId: '1',
+            },
+            state: createState(),
+            localPregameControlledPlayerId: '0',
+        });
+
+        expect(result.resolvedPlayerId).toBe('0');
+        expect(result.command.playerId).toBe('0');
+        expect(result.command.payload).toEqual({
+            keepIds: [0, 1],
+        });
     });
 
     it('教程 AI 命令应自动附带 _noSnapshot，避免占用撤回次数', () => {
@@ -76,6 +94,28 @@ describe('buildLocalDispatchCommand', () => {
         expect(result.command.playerId).toBe('1');
         expect(result.command.payload).toEqual({
             keepIds: [0, 1],
+            _noSnapshot: true,
+        });
+    });
+
+    it('教程 AI 命令带 __internalPlayerId 时，仍应优先按 tutorialOverrideId 执行', () => {
+        const result = buildLocalDispatchCommand({
+            commandType: 'SELECT_CHARACTER',
+            payload: {
+                characterId: 'monk',
+                __internalPlayerId: '0',
+                __tutorialPlayerId: '1',
+                __tutorialAiCommand: true,
+            },
+            state: createState(),
+            localPregameControlledPlayerId: '0',
+        });
+
+        expect(result.resolvedPlayerId).toBe('1');
+        expect(result.command.playerId).toBe('1');
+        expect(result.tutorialOverrideId).toBe('1');
+        expect(result.command.payload).toEqual({
+            characterId: 'monk',
             _noSnapshot: true,
         });
     });

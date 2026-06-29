@@ -26,6 +26,7 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     ninja: 'ninja',
     zhanshujia: 'zhanshujia',
     cursed_pirate: 'cursed',
+    artificer: 'artificial',
 };
 
 const IMPLEMENTED_CHARACTERS: readonly SelectableCharacterId[] = IMPLEMENTED_DICETHRONE_CHARACTER_IDS;

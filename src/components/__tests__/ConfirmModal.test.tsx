@@ -10,6 +10,9 @@ vi.mock('react-i18next', () => ({
         t: (key: string, options?: { defaultValue?: string }) => {
             if (key === 'button.confirm') return 'confirm';
             if (key === 'button.cancel') return 'cancel';
+            if (key === 'admin.roleModal.description') return '管理员拥有完整后台权限；开发者可查看反馈，并管理被分配游戏的更新日志。';
+            if (key === 'admin.roleModal.roles.developer.hint') return '可查看反馈并管理所选游戏更新日志';
+            if (key === 'admin.roleModal.games.description') return '可多选。开发者只能管理这里勾选游戏的更新日志，但可查看全部反馈。';
             return options?.defaultValue ?? key;
         },
     }),

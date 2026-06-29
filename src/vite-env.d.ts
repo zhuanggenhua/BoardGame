@@ -5,6 +5,10 @@ interface ImportMetaEnv {
     readonly VITE_AUTH_API_URL?: string;
     readonly VITE_GAME_SERVER_URL?: string;
     readonly VITE_ASSETS_BASE_URL?: string;
+    readonly VITE_APP_VERSION?: string;
+    readonly VITE_APP_COMMIT_SHA?: string;
+    readonly VITE_APP_BUILD_TIME?: string;
+    readonly VITE_APP_RELEASE_CHANNEL?: string;
     readonly VITE_MOBILE_OTA_ENABLED?: string;
     readonly VITE_MOBILE_OTA_ALLOW_DEBUG_APP?: string;
     readonly VITE_MOBILE_OTA_MANIFEST_URL?: string;

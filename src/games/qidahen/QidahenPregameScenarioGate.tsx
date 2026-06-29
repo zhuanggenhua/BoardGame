@@ -12,10 +12,12 @@ import {
     getQidahenAllowedPlayerCounts,
     getQidahenPregameChoiceFields,
     QIDAHEN_PREGAME_CHOICE_FIELDS,
+    QIDAHEN_SCENARIO_SETUP_OPTIONS,
     QIDAHEN_SCENARIO_SETUP_FIELD,
     readQidahenScenarioId,
     type QidahenPregameChoiceField,
 } from './roomSetup';
+import { buildQidahenTutorialSetupData } from './tutorialSetup';
 
 type QidahenPregameScenarioGateReadyState = {
     numPlayers: number;
@@ -25,6 +27,7 @@ type QidahenPregameScenarioGateReadyState = {
 
 type QidahenPregameScenarioGateProps = {
     searchParams: URLSearchParams;
+    tutorialId?: string;
     onSearchParamsChange: (nextSearchParams: URLSearchParams) => void;
     children: (readyState: QidahenPregameScenarioGateReadyState) => React.ReactNode;
 };
@@ -54,7 +57,10 @@ const readRouteSelectionsFromSearchParams = (searchParams: URLSearchParams): Gam
         gameManifest: QIDAHEN_MANIFEST,
         searchParams,
     });
-    const scenarioId = readQidahenScenarioId(selections as Record<string, unknown>);
+    const scenarioId = readQidahenScenarioId({
+        ...selections,
+        [QIDAHEN_SCENARIO_SETUP_FIELD]: searchParams.get(`setup.${QIDAHEN_SCENARIO_SETUP_FIELD}`) ?? selections[QIDAHEN_SCENARIO_SETUP_FIELD],
+    } as Record<string, unknown>);
     const nextSelections: GameSetupSelections = {
         ...selections,
         [QIDAHEN_SCENARIO_SETUP_FIELD]: scenarioId,
@@ -90,7 +96,7 @@ const resolveScenarioLabel = (
     scenarioId: ReturnType<typeof readQidahenScenarioId>,
     t: (key: string, options?: Record<string, unknown>) => string,
 ): string => {
-    const labelKey = QIDAHEN_MANIFEST.setupOptions?.scenario?.options?.find((option) => option.value === scenarioId)?.labelKey;
+    const labelKey = QIDAHEN_SCENARIO_SETUP_OPTIONS.find((option) => option.value === scenarioId)?.labelKey;
     if (!labelKey) {
         return scenarioId;
     }
@@ -99,10 +105,15 @@ const resolveScenarioLabel = (
 
 export function QidahenPregameScenarioGate({
     searchParams,
+    tutorialId,
     onSearchParamsChange,
     children,
 }: QidahenPregameScenarioGateProps) {
     const { t } = useTranslation('game-qidahen');
+    const tutorialSetupData = React.useMemo(
+        () => buildQidahenTutorialSetupData(tutorialId),
+        [tutorialId],
+    );
     const routeSelections = React.useMemo(
         () => readRouteSelectionsFromSearchParams(searchParams),
         [searchParams],
@@ -130,6 +141,18 @@ export function QidahenPregameScenarioGate({
         () => resolvePregamePlayerCount(searchParams, routeScenarioId),
         [routeScenarioId, searchParams],
     );
+
+    if (tutorialSetupData) {
+        return (
+            <>
+                {children({
+                    numPlayers: tutorialSetupData.numPlayers,
+                    setupSelections: tutorialSetupData.setupSelections,
+                    setupData: tutorialSetupData.setupData,
+                })}
+            </>
+        );
+    }
 
     if (hasCompletePregameSelections(routeSelections)) {
         return (
@@ -223,7 +246,7 @@ export function QidahenPregameScenarioGate({
                                 value={draftScenarioId}
                                 onChange={(event) => handleScenarioChange(event.target.value)}
                             >
-                                {QIDAHEN_MANIFEST.setupOptions?.scenario?.options?.map((option) => (
+                                {QIDAHEN_SCENARIO_SETUP_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {t(option.labelKey.replace('games.qidahen.', ''), { defaultValue: option.value })}
                                     </option>

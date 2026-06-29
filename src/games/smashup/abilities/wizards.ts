@@ -9,7 +9,6 @@ import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
-    destroyMinion,
     shuffleHandIntoDeck,
     getMinionPower,
     buildMinionTargetOptions,
@@ -22,6 +21,7 @@ import {
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     buildSemanticOngoingAttachEvents,
+    buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, SmashUpEvent, DeckReorderedEvent, MinionCardDef, CardToDeckTopEvent, ActionCardDef, SmashUpCore } from '../domain/types';
@@ -1238,7 +1238,18 @@ const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, Sm
         if (power > 0) {
             events.push(...buildStandardDrawEventsFromRuntimeContext(args, context.playerId, power));
         }
-        events.push(destroyMinion(minion.uid, minion.defId, choice.baseIndex, minion.owner, context.playerId, 'wizard_sacrifice', timestamp));
+        events.push(...buildValidatedDestroyEvents(state, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: choice.baseIndex,
+            destroyerId: context.playerId,
+            reason: 'wizard_sacrifice',
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'wizard_sacrifice',
+            sourceControllerId: context.playerId,
+            sourceKind: 'action',
+        }));
         return { events, matchState: state };
     },
 });

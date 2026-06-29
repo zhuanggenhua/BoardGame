@@ -19,6 +19,8 @@
     "reviewChip": "Endgame Review",
     "compact": {
       "draw": "Draw",
+      "drawChoice": "Draw (or take center card)",
+      "drawTwo": "Draw 2",
       "discard": "Discard"
     },
     "drawDeck": {
@@ -29,13 +31,17 @@
       "discardRequired": "Discard 1"
     },
     "short": {
-      "round": "R{{turn}}"
+      "round": "Round {{turn}}"
     },
     "live": {
       "selfTurn": "Your Turn"
     },
     "statusBanner": {
-      "discardSelf": "Confirm Discard",
+      "kicker": "Next",
+      "discardPick": "Discard 1",
+      "discardDirect": "Discard 1 card",
+      "drawChoice": "Draw / Take center card",
+      "takeCenter": "Take center card",
       "waiting": "Waiting for {{player}}"
     }
   },
@@ -48,7 +54,8 @@
     "handCount": "{{count}} cards in hand",
     "badges": {
       "you": "You",
-      "winner": "Winner"
+      "winner": "Winner",
+      "reviewing": "Reviewing"
     },
     "labels": {
       "activeBase": "Active Base",
@@ -64,6 +71,7 @@
     "hand": {
       "ariaLabel": "Hand zone",
       "title": "{{player}}'s hand",
+      "reviewTitle": "{{player}} endgame hand",
       "titleSpectator": "Hidden hand zone",
       "emptyCompact": "No hand"
     }
@@ -73,8 +81,8 @@
     "inspectDiscardAria": "Inspect discard {{name}}",
     "discardHandAria": "Discard hand card {{name}}",
     "inspectHandAria": "Inspect hand card {{name}}",
-    "confirmTake": "Confirm",
-    "confirmDiscard": "Confirm Discard",
+    "openMagnifyAria": "Magnify {{name}}",
+    "closePreview": "Close Preview",
     "selected": "Selected"
   },
   "focus": {
@@ -103,5 +111,47 @@
     "finalStandings": "Final Standings",
     "drawBadge": "Draw",
     "rank": "#{{rank}}"
+  },
+  "setup": {
+    "variant": {
+      "label": "Match Mode",
+      "standard": "Standard Match",
+      "duel": "Duel Variant"
+    },
+    "expansion": {
+      "label": "Deck Scope",
+      "base": "Base Deck",
+      "cursedHoardSuits": "Cursed Hoard: Suit Expansion"
+    }
+  },
+  "tutorial": {
+    "steps": {
+      "setupOverview": "In Fantasy Realms, each player starts with seven cards. On your turn, you draw one card from the deck or take one card from the discard pile, then discard one card. The game ends when the center discard pile reaches 10 cards, and the highest score wins.",
+      "drawOverview": "Draw 1 card from the deck now.",
+      "drawFromDeck": "Click the draw button.",
+      "discardAfterDraw": "After drawing Mirage, this hand's combo becomes clearer, and Queen is not helping right now. Select Queen and discard it.",
+      "setupTakeCenter": "Now look at the other case: if the center already has the card you want, take it directly.",
+      "takeCenterCard": "Bell Tower is in the center now, and it scores with the Candle in your hand. Select Bell Tower to take it.",
+      "discardAfterCenter": "Rainstorm does not help this group. Select Rainstorm and discard it.",
+      "setupScoreShowcase": "Now move into scoring.",
+      "scoreIntro": "Your total score is the base score of every active card, plus bonuses, minus penalties.",
+      "scoreCardDetails": "Hover or tap a card to inspect its base score and bonus effects.",
+      "scoreTotalReview": "Check the total score in the upper right to see how many points this hand earned.",
+      "endgameReview": "The final score is settled from this exact hand. Inspect a card to see how many points it actually contributes inside the finished combo.",
+      "finish": "That is the basic flow of Fantasy Realms. Try building an even higher-scoring hand."
+    }
+  },
+  "error": {
+    "unknownCard": "That card is not visible right now.",
+    "notYourTurn": "It is not your turn.",
+    "notInDrawStage": "You cannot draw right now.",
+    "deckEmpty": "The deck is empty.",
+    "discardCardUnavailable": "That center card is not available.",
+    "notInDiscardStage": "You cannot discard right now.",
+    "handCardUnavailable": "That hand card is not available to discard.",
+    "unknownCommand": "Unknown command.",
+    "tutorial_manifest_invalid": "Tutorial configuration is invalid.",
+    "tutorial_command_blocked": "This action is blocked in the tutorial.",
+    "tutorial_step_locked": "The current tutorial step cannot be skipped."
   }
 }

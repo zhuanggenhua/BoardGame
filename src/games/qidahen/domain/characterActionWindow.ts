@@ -383,7 +383,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             {
                                 id: `log-sun-yuanhua-tech-${triggerKey}`,
                                 faction: 'ming',
-                                text: '孙元化可在行动前弃 2 张手牌，按当前低保真规则打出 1 张科技。',
+                                text: '孙元化可在行动前弃 2 张手牌，推进 1 项科技。',
                             },
                             ...nextState.actionLog,
                         ].slice(0, 6),
@@ -410,7 +410,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             {
                                 id: `log-gao-di-dispatch-${triggerKey}`,
                                 faction: 'ming',
-                                text: `高第可在行动前弃 1 张手牌，调度 1 格内最多 6 个人口或部队；当前源区 ${gaoDiDispatchSelection.sourceRegionName}。`,
+                                text: `高第可在行动前弃 1 张手牌，调度 1 格内最多 6 个人口或部队；从 ${gaoDiDispatchSelection.sourceRegionName} 出发。`,
                             },
                             ...nextState.actionLog,
                         ].slice(0, 6),
@@ -436,7 +436,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             {
                                 id: `log-wang-huazhen-dispatch-${triggerKey}`,
                                 faction: 'ming',
-                                text: `王化贞可在行动前免费调度 2 个部队；当前源区 ${internalDispatchSelection.sourceRegionName}。`,
+                                text: `王化贞可在行动前免费调度 2 个部队；从 ${internalDispatchSelection.sourceRegionName} 出发。`,
                             },
                             ...nextState.actionLog,
                         ].slice(0, 6),

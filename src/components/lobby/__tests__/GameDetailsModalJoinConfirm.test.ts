@@ -708,6 +708,31 @@ describe('AI seat controller helpers', () => {
         expect(search.get('seat2')).toBe('remote-ai:astrbot');
     });
 
+    it('本地对局 URL 会保存并恢复 AI 最小时长', () => {
+        const search = buildLocalMatchSearchParams({
+            numPlayers: 2,
+            playerOptions: [2],
+            aiSupport,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(search.get('seat1Delay')).toBe('0');
+
+        const controllers = resolveSeatControllersFromSearchParams({
+            numPlayers: 2,
+            searchParams: search,
+            aiSupport,
+        });
+        expect(controllers['1']).toEqual({
+            type: 'local-ai',
+            difficulty: 'normal',
+            minimumActionDelayMs: 0,
+        });
+    });
+
     it('本地对局 URL 会保存并恢复 AI 手动选派系标记', () => {
         const search = buildLocalMatchSearchParams({
             numPlayers: 2,
@@ -719,7 +744,6 @@ describe('AI seat controller helpers', () => {
             },
         });
 
-        expect(search.get('seat1ManualSetup')).toBe('1');
         expect(search.get('seat1ManualFaction')).toBe('1');
 
         const controllers = resolveSeatControllersFromSearchParams({
@@ -730,23 +754,8 @@ describe('AI seat controller helpers', () => {
         expect(controllers['1']).toEqual({
             type: 'local-ai',
             difficulty: 'normal',
-            manualSetupSelection: true,
             manualFactionSelection: true,
-        });
-    });
-
-    it('本地对局 URL 解析也应接受通用的 seatNManualSetup 参数别名', () => {
-        const searchParams = new URLSearchParams('seat1=local-ai&seat1ManualSetup=1');
-        const controllers = resolveSeatControllersFromSearchParams({
-            numPlayers: 2,
-            searchParams,
-            aiSupport,
-        });
-
-        expect(controllers['1']).toEqual({
-            type: 'local-ai',
             manualSetupSelection: true,
-            manualFactionSelection: true,
         });
     });
 
@@ -879,6 +888,32 @@ describe('GameDetailsMobilePackageCard', () => {
         fireEvent.click(screen.getByText('packageManager.retryAction'));
 
         expect(retryMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('清单拉取失败时显示明确的清单失败提示', () => {
+        render(createElement(GameDetailsMobilePackageCard, {
+            gameName: 'Tic-Tac-Toe',
+            state: {
+                status: 'failed',
+                errorCode: 'manifest-fetch-failed',
+            },
+            onInstall: vi.fn(),
+        }));
+
+        expect(screen.getByText('packageManager.manifestFetchFailedHint')).toBeInTheDocument();
+    });
+
+    it('远端清单缺少可下载包时显示未发布提示', () => {
+        render(createElement(GameDetailsMobilePackageCard, {
+            gameName: 'Tic-Tac-Toe',
+            state: {
+                status: 'failed',
+                errorCode: 'manifest-missing',
+            },
+            onInstall: vi.fn(),
+        }));
+
+        expect(screen.getByText('packageManager.manifestMissingHint')).toBeInTheDocument();
     });
 
     it('通知权限被系统拒绝时显示打开通知设置按钮', () => {

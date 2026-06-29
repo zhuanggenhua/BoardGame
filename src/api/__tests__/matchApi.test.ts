@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../config/server', () => ({
     GAME_SERVER_URL: 'http://game-server.test',
+    getGameServerUrl: () => 'http://game-server.test',
 }));
 
 import { getMatch } from '../../services/matchApi';

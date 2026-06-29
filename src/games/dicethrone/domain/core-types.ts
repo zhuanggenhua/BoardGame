@@ -66,7 +66,10 @@ export type DieFace =
     | 'medal'
     | 'cutlass'
     | 'loot'
-    | 'skull';
+    | 'skull'
+    | 'wrench'
+    | 'gear'
+    | 'electricity';
 
 // ============================================================================
 // 角色编目
@@ -85,6 +88,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'ninja',
     'zhanshujia',
     'cursed_pirate',
+    'artificer',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -110,6 +114,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'ninja', nameKey: 'characters.ninja' },
     { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
+    { id: 'artificer', nameKey: 'characters.artificer' },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
@@ -259,6 +264,8 @@ export interface PendingAttack {
     attackDiceValues?: number[];
     /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
     offensiveRollEndTokenResolved?: boolean;
+    /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */
+    followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */
     treantDivinePreventDebuffChoice?: 'prevent' | 'skip';
     /**
@@ -550,6 +557,17 @@ export interface HeroState {
     tokens: TokenState;
     /** Token 堆叠上限（可被技能永久提高，如莲花掌） */
     tokenStackLimits: Record<string, number>;
+    /**
+     * 工匠机器人状态。
+     * built: 是否已建造该机器人
+     * upgraded: 是否已升级为高级
+     * activationsUsedThisTurn: 本回合已激活次数
+     */
+    artificerBotState?: Partial<Record<string, {
+        built: boolean;
+        upgraded: boolean;
+        activationsUsedThisTurn: number;
+    }>>;
     /** 伤害护盾（下次受伤时消耗） */
     damageShields: DamageShield[];
     abilities: AbilityDef[];

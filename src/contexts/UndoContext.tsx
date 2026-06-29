@@ -2,6 +2,7 @@ import React, { useEffect, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import type { MatchState } from '../engine/types';
 import { getUndoSnapshotCount } from '../engine/systems/UndoSystem';
+import { clearCurrentGameFeedbackContext, setCurrentGameFeedbackContext } from '../lib/feedback/gameFeedbackContext';
 
 interface UndoContextValue {
     G: MatchState<unknown>;
@@ -54,11 +55,21 @@ export const UndoProvider: React.FC<UndoProviderProps> = ({ children, value }) =
         if (!isSame) {
             lastValueRef.current = value;
             setUndoState(value);
+            setCurrentGameFeedbackContext({
+                state: value.G,
+                playerId: value.playerID,
+                isGameOver: value.isGameOver,
+                isLocalMode: value.isLocalMode,
+            });
         }
     }, [value]);
     useEffect(() => () => {
+        const lastState = lastValueRef.current?.G ?? null;
         lastValueRef.current = null;
         setUndoState(null);
+        if (lastState) {
+            clearCurrentGameFeedbackContext(lastState);
+        }
     }, []);
     return <>{children}</>;
 };

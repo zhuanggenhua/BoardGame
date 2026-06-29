@@ -72,6 +72,50 @@
     "card_search_placeholder": "搜索卡牌",
     "card_search_clear": "清空搜索",
     "card_filter_result_count": "显示 {{visible}} / {{total}}",
+    "kung_fu_fighters_counter_transfer_confirm_option": "确认转移",
+    "kung_fu_fighters_ancient_chinese_art_mode_add_option": "放置 1 枚指示物",
+    "kung_fu_fighters_ancient_chinese_art_mode_transfer_option": "转移指示物",
+    "kung_fu_fighters_ancient_chinese_art_mode_title": "古老的中国艺术：选择要发动的效果",
+    "kung_fu_fighters_everybody_knew_their_part_title": "各尽其责：选择你的一个随从",
+    "kung_fu_fighters_fast_as_lightning_title": "快如闪电：选择一个随从",
+    "kung_fu_fighters_everybody_was_base_title": "人人都是功夫高手：选择一个基地",
+    "kung_fu_fighters_everybody_was_target_title": "人人都是功夫高手：选择要消灭的其他玩家随从",
+    "kung_fu_fighters_expert_timing_mode_title": "掌握时机：选择效果",
+    "kung_fu_fighters_expert_timing_talent_title": "掌握时机：选择额外使用天赋的随从",
+    "kung_fu_fighters_expert_timing_source_title": "掌握时机：选择要转出全部 +1 标记的随从",
+    "kung_fu_fighters_expert_timing_target_title": "掌握时机：选择接收全部 +1 标记的另一个随从",
+    "kung_fu_fighters_expert_timing_transfer_option": "转移全部 +1 标记",
+    "kung_fu_fighters_expert_timing_talent_option": "额外使用一次天赋",
+    "kung_fu_fighters_expert_timing_both_option": "两者都做",
+    "kung_fu_fighters_a_little_bit_frightening_reward_title": "有些胆寒：选择该处你的一个随从放置 2 枚指示物",
+    "kung_fu_fighters_a_little_bit_frightening_destroy_title": "有些胆寒：选择该基地一个更低战力的随从消灭",
+    "kung_fu_fighters_a_little_bit_frightening_reference_title": "有些胆寒：选择一个随从作为参照",
+    "kung_fu_fighters_lets_get_it_on_targets_title": "让我们躁起来：选择一个或多个要消灭的随从",
+    "kung_fu_fighters_lets_get_it_on_source_title": "让我们躁起来：选择你的一个随从",
+    "kung_fu_fighters_oh_hoh_hoh_hoah_title": "哦-厚-厚-厚-厚：选择你的一个随从放置 1 枚指示物",
+    "kung_fu_fighters_lady_whirlwind_title": "旋风女侠：选择要消灭的更低战力随从",
+    "truckers_action_mode_transfer_option": "只转移",
+    "truckers_action_mode_control_option": "只控权",
+    "truckers_action_mode_transfer_and_control_option": "转移并控权",
+    "truckers_action_mode_extra_action_option": "额外行动",
+    "truckers_high_speed_chase_base_title": "高速追逐战：选择目标基地",
+    "truckers_high_speed_chase_minion_title": "高速追逐战：选择你在此基地的一个随从",
+    "truckers_dekotora_minions_title": "暴走卡车：选择至多 3 个你的随从移动",
+    "truckers_dekotora_base_title": "暴走卡车：选择目标基地",
+    "truckers_cab_over_pete_base_title": "平头彼特：选择目标基地",
+    "truckers_cab_over_pete_card_title": "平头彼特：选择此处另一张你控制的牌",
+    "truckers_hotwire_base_title": "短路点火：选择目标基地",
+    "truckers_hotwire_mode_title": "短路点火：选择效果",
+    "truckers_hotwire_action_title": "短路点火：选择基地上的一张战术",
+    "truckers_el_bandido_take_control_title": "埃尔班迪多：你可以获得一张基地战术的控制权",
+    "truckers_el_bandido_transfer_base_title": "埃尔班迪多：选择目标基地",
+    "truckers_el_bandido_transfer_action_title": "埃尔班迪多：选择要转移的基地战术",
+    "truckers_el_bandido_talent_mode_title": "埃尔班迪多：选择天赋效果",
+    "truckers_skinny_minnie_action_title": "皮包骨米妮：选择要一起转移的基地战术",
+    "truckers_skinny_minnie_base_title": "皮包骨米妮：选择目标基地",
+    "vigilantes_brojak_follow_option": "移动并 +1 战力",
+    "disco_dancers_dancing_king_title": "舞王：选择另一个同基地随从复制这次普通战术影响",
+    "disco_dancers_i_will_survive_title": "我会活下去：选择计分基地中的一个己方随从返回拥有者手牌",
     "card_search_empty": "没有匹配的卡牌",
     "faction_filter_empty_title": "没有匹配派系",
     "faction_filter_empty_desc": "试试切换筛选或清空搜索，先聚焦当前真正能选的派系。",
@@ -103,6 +147,7 @@
     "you_short": "你",
     "you_badge": "我",
     "talent_used": "已用",
+    "extra_talent_ready": "额外天赋",
     "ongoing_short": "持续",
     "talent_short": "天赋",
     "base_ability": "基地能力",
@@ -1462,6 +1507,22 @@
     "time_travelers": {
       "name": "时间旅行者",
       "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
+    },
+    "kung_fu_fighters": {
+      "name": "功夫斗士",
+      "description": "依靠 +1 力量标记、时机调整和精准移动，在关键基地爆发。"
+    },
+    "vigilantes": {
+      "name": "侠义义警",
+      "description": "用硬派英雄与街头战术保护自己、打击对手，并在计分前后改变战局。"
+    },
+    "truckers": {
+      "name": "卡车车神",
+      "description": "把卡牌、战术和随从搬来搬去，用高速调度制造基地优势。"
+    },
+    "disco_dancers": {
+      "name": "迪厅舞王",
+      "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
     }
   },
   "tutorial": {
@@ -1512,6 +1573,426 @@
     }
   },
   "cards": {
+    "dragons_great_wyrm": {
+      "name": "巨龙",
+      "abilityText": "持续：在此随从所在基地计分时，其他玩家获得的 VP 减少 1。"
+    },
+    "dragons_wyvern": {
+      "name": "飞龙",
+      "abilityText": "打出时：消灭这里一个力量 3 或以下的随从。天赋：将此基地的摧毁点降低 3，直到回合结束。"
+    },
+    "dragons_imperial_dragon": {
+      "name": "帝国龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，抽 1 张牌。"
+    },
+    "dragons_hatchling": {
+      "name": "幼龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，那个随从直到回合结束 -1 力量。"
+    },
+    "dragons_dangerous_ground": {
+      "name": "险地",
+      "effectText": "对基地打出。持续：其他玩家在此处打出随从后，该玩家弃 1 张牌。"
+    },
+    "dragons_ruins": {
+      "name": "废墟",
+      "effectText": "对基地打出。持续：在此基地计分时，其他玩家获得的 VP 减少 1。"
+    },
+    "dragons_burn_it_down": {
+      "name": "烧毁它",
+      "effectText": "选择一个基地。将其替换为基地牌库顶牌或基地弃牌堆中的一张基地。"
+    },
+    "dragons_raze": {
+      "name": "夷平",
+      "effectText": "对基地打出。持续：此基地的能力无效。"
+    },
+    "dragons_bring_down_the_walls": {
+      "name": "推倒城墙",
+      "effectText": "对基地打出。持续：此基地计分前，你可以额外打出一个随从到这里。"
+    },
+    "dragons_dragon_lands": {
+      "name": "龙之领地",
+      "effectText": "特殊：你可以在基地计分前对基地打出。持续：你在这里的随从各 +1 力量。"
+    },
+    "dragons_intimidating_presence": {
+      "name": "威压",
+      "effectText": "特殊：你可以在基地计分前对基地打出。持续：其他玩家在这里的随从各 -1 力量。"
+    },
+    "dragons_flank_attack": {
+      "name": "侧翼攻击",
+      "effectText": "从你的牌库和/或弃牌堆中选择一张可打在基地上的行动，并将其作为额外行动打出。"
+    },
+    "superheroes_awesome_guy": {
+      "name": "超赞男"
+    },
+    "superheroes_mild_mannered_citizen": {
+      "name": "温和市民"
+    },
+    "superheroes_mind_lady": {
+      "name": "心灵女士",
+      "abilityText": "选择另一名玩家的一个随从。其能力取消，直到你下回合开始。"
+    },
+    "superheroes_captain_amazing": {
+      "name": "惊奇队长",
+      "abilityText": "天赋：从你的牌库搜寻一个力量 5 或以上的随从，将其作为额外随从打出，然后洗牌。"
+    },
+    "superheroes_the_burst": {
+      "name": "爆发"
+    },
+    "superheroes_not_really_dead": {
+      "name": "并没真死",
+      "effectText": "从任意弃牌堆中选择最多 2 个力量 2 或以下的随从，将它们返回其拥有者手牌。"
+    },
+    "superheroes_justice_friends": {
+      "name": "正义伙伴",
+      "effectText": "选择一个基地。你在这里每有一个力量 5 或以上的随从，便抽 1 张牌。"
+    },
+    "superheroes_golden_age": {
+      "name": "黄金时代",
+      "effectText": "选择最多 3 个随从，将它们放到其拥有者牌库底。"
+    },
+    "superheroes_sidekick": {
+      "name": "助手",
+      "effectText": "额外打出一个力量 2 或以下的随从。"
+    },
+    "superheroes_expanded_power": {
+      "name": "强化能力",
+      "effectText": "对你的一个随从打出。持续：此随从 +2 力量。"
+    },
+    "superheroes_radioactive_exposure": {
+      "name": "放射暴露",
+      "effectText": "选择一个随从。直到回合结束，其获得 +2 力量且不受其他玩家卡牌影响。"
+    },
+    "superheroes_secret_base": {
+      "name": "秘密基地",
+      "effectText": "对基地打出。持续：其他玩家不能在此基地上打出行动。"
+    },
+    "superheroes_my_only_weakness": {
+      "name": "我唯一的弱点",
+      "effectText": "对一个随从打出。持续：此随从 -3 力量。"
+    },
+    "geeks_felicia_day": {
+      "name": "菲丽希亚"
+    },
+    "geeks_wil_wheaton": {
+      "name": "维尔"
+    },
+    "geeks_game_guru": {
+      "name": "游戏专家",
+      "abilityText": "持续：此随从不受其他玩家的非行动牌影响。"
+    },
+    "geeks_fan": {
+      "name": "粉丝"
+    },
+    "geeks_cosplay": {
+      "name": "角色扮演",
+      "effectText": "特殊：当你获得 VP 后，你可以打出此牌。若如此做，再获得 1 VP。"
+    },
+    "geeks_force_of_wil": {
+      "name": "维尔的力量",
+      "effectText": "特殊：取消刚打出的行动牌。"
+    },
+    "geeks_rules_lawyer": {
+      "name": "规则咬定者",
+      "effectText": "移动一张持续行动到另一个合法目标。"
+    },
+    "geeks_banned_list": {
+      "name": "禁卡表",
+      "effectText": "说出一个卡牌名称。每位其他玩家必须弃掉手牌中所有同名牌。"
+    },
+    "geeks_griefer": {
+      "name": "嘲讽",
+      "effectText": "选择另一位玩家。该玩家选择弃掉 1 张牌，或由你消灭其一个随从。"
+    },
+    "geeks_mulligan": {
+      "name": "妙力一击",
+      "effectText": "查看你牌库顶若干张牌。你可以将它们全部加入手牌，否则保持原样。"
+    },
+    "geeks_control_minion": {
+      "name": "控制仆从",
+      "effectText": "选择一个刚由其他玩家打出的随从。你控制它直到回合结束。"
+    },
+    "geeks_non_infinite_loop": {
+      "name": "无限循环",
+      "effectText": "从弃牌堆打出一张行动作为额外行动。结算后你可以将其返回手牌。"
+    },
+    "geeks_min_maxing": {
+      "name": "平衡",
+      "effectText": "查看另一位玩家的手牌。你可以从中选择一张行动作为额外行动打出。"
+    },
+    "base_tabletop": {
+      "name": "桌游桌"
+    },
+    "base_wyrms_desolation": {
+      "name": "龙之荒芜"
+    },
+    "base_the_con": {
+      "name": "展会"
+    },
+    "base_dragons_lair": {
+      "name": "龙穴"
+    },
+    "base_converted_cave": {
+      "name": "改造洞穴"
+    },
+    "base_crystal_fortress": {
+      "name": "水晶堡垒"
+    },
+    "kung_fu_fighters_fast_as_lightning": {
+      "name": "快如闪电",
+      "effectText": "选择一个随从。直至回合结束，其 +2 战力，且如果其将进入弃牌堆，则改为返回拥有者的手牌。"
+    },
+    "kung_fu_fighters_dragon_warrior": {
+      "name": "神龙武者",
+      "abilityText": "持续：此随从无法被消灭。天赋：转移一个随从上任意数量的 +1 战力标记至另一个随从。"
+    },
+    "kung_fu_fighters_cricket": {
+      "name": "蟋蟀",
+      "abilityText": "你可以转移一个随从上的 1 枚 +1 战力标记至另一个随从。"
+    },
+    "kung_fu_fighters_oh_hoh_hoh_hoah": {
+      "name": "哦-厚-厚-厚-厚",
+      "effectText": "对基地打出。持续：其他玩家打出随从至此处后，向你的一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "kung_fu_fighters_everybody_knew_their_part": {
+      "name": "各尽其责",
+      "effectText": "选择你的一个随从。额外打出一个战力更低的随从于该基地。"
+    },
+    "kung_fu_fighters_everybody_was_kung_fu_fighting": {
+      "name": "人人都是功夫高手",
+      "effectText": "选择一个基地。每个在此处有随从的玩家消灭此处另一位玩家的一个随从。"
+    },
+    "kung_fu_fighters_expert_timing": {
+      "name": "掌握时机",
+      "effectText": "选择一张牌。转移其全部的 +1 战力标记至另一张牌，并/或额外使用其天赋一次。特殊：可以在基地计分前打出。"
+    },
+    "kung_fu_fighters_ancient_chinese_art": {
+      "name": "古老的中国艺术",
+      "effectText": "天赋：放置 1 枚 +1 战力标记至本基地中的一个随从，或将一个随从上任意数量的 +1 战力标记转移至另一个随从。"
+    },
+    "kung_fu_fighters_a_little_bit_frightening": {
+      "name": "有些胆寒",
+      "effectText": "选择一个随从。消灭其基地中一个战力更低的随从，以放置 2 枚 +1 战力标记于该处你的随从上。"
+    },
+    "kung_fu_fighters_drunken_master": {
+      "name": "醉酒宗师",
+      "abilityText": "天赋：若此随从上没有 +1 战力标记，放置 1 枚 +1 战力标记于其上。"
+    },
+    "kung_fu_fighters_lady_whirlwind": {
+      "name": "旋风女侠",
+      "abilityText": "天赋：若此随从上没有 +1 战力标记，消灭本基地中战力更低的随从，以放置 1 枚 +1 战力标记于其上。"
+    },
+    "kung_fu_fighters_lets_get_it_on": {
+      "name": "让我们躁起来",
+      "effectText": "选择你的一个随从。消灭其基地中战力不大于此随从的一个或多个随从。"
+    },
+    "vigilantes_shrug_it_off": {
+      "name": "不屑一顾",
+      "effectText": "对基地打出。天赋：取消此基地的能力直至你的下个回合开始。"
+    },
+    "vigilantes_scared_straight": {
+      "name": "直面恐惧",
+      "effectText": "将你随从所在基地中一个其他玩家的随从移动至其他基地。额外打出一张战术。"
+    },
+    "vigilantes_who_loves_ya_baby": {
+      "name": "谁爱你，小老弟？",
+      "effectText": "由你控制的每个战力 4 或更高的随从使你抓 1 张牌。"
+    },
+    "vigilantes_a_whole_lot_meaner": {
+      "name": "凶恶百倍",
+      "effectText": "一个随从 +3 战力直至回合结束。"
+    },
+    "vigilantes_death_wisher": {
+      "name": "猛龙怪客",
+      "abilityText": "持续：每回合一次，当另一位玩家消灭本基地其他玩家的随从后，你可以消灭该玩家的一个随从。"
+    },
+    "vigilantes_tough_it_out": {
+      "name": "咬紧牙关",
+      "effectText": "对随从打出。持续：此随从 +2 战力且无法被消灭。"
+    },
+    "vigilantes_the_revenge": {
+      "name": "复仇",
+      "effectText": "特殊：基地计分后你不是第一名时打出。移动该处你的一个随从至其他基地而不进入弃牌堆。"
+    },
+    "vigilantes_brojak": {
+      "name": "神探布洛杰克",
+      "abilityText": "持续：当有随从移动后，你可以移动此随从至同一个基地，并 +1 战力直至回合结束。"
+    },
+    "vigilantes_stoneford": {
+      "name": "破萝飞龙",
+      "abilityText": "从你的牌库中搜索一张战术置于手牌。"
+    },
+    "vigilantes_jacky_bill": {
+      "name": "杰基比尔",
+      "abilityText": "持续：当其他玩家打出战术后，你可以使此随从 +2 战力直至回合结束。"
+    },
+    "vigilantes_make_my_day": {
+      "name": "一天的快乐",
+      "effectText": "消灭有你随从的基地中一个战力 3 或更低的随从。抓一张牌。"
+    },
+    "vigilantes_street_justice": {
+      "name": "街头正义",
+      "effectText": "对基地打出。持续：本基地中的你的随从不会受其他玩家的卡牌影响。"
+    },
+    "vigilantes_shift": {
+      "name": "铁杆神探",
+      "abilityText": "将你弃牌堆中至多 2 张随从置于你的牌库顶。"
+    },
+    "vigilantes_dusty_henry": {
+      "name": "瞌睡的亨利",
+      "abilityText": "你可以将本基地中的一个随从洗回其拥有者的牌库。"
+    },
+    "vigilantes_knocked_into_next_week": {
+      "name": "打到穿越",
+      "effectText": "选择一个随从。将其洗回拥有者的牌库中。"
+    },
+    "vigilantes_feeling_lucky": {
+      "name": "觉得运气不错？",
+      "effectText": "对随从打出。持续：此随从的控制者打出战术后，若此牌仍在其上，消灭该随从。"
+    },
+    "vigilantes_lets_finish_this": {
+      "name": "做个了断吧",
+      "effectText": "对基地打出。持续：在你的回合开始时，若此处有你的随从和其他玩家随从，将本基地的爆破点降为 0 至回合结束。"
+    },
+    "vigilantes_foxy_green": {
+      "name": "狐狸翠",
+      "abilityText": "持续：当另一位玩家打出一张牌或使用天赋直接影响本基地中的随从时，放置 1 枚 +1 战力标记于此随从上。"
+    },
+    "truckers_fixin_to_fix_it": {
+      "name": "修理",
+      "effectText": "选择弃牌堆中一张可以对基地打出的战术，将其额外打出。"
+    },
+    "truckers_dekotora": {
+      "name": "暴走卡车",
+      "effectText": "对基地打出。天赋：转移此战术至另一个基地，以移动此处至多 3 个你的随从至该基地。"
+    },
+    "truckers_high_speed_chase": {
+      "name": "高速追逐战",
+      "effectText": "对基地打出。天赋：转移此战术至另一个基地，以移动此处你的一个随从至该基地。其 +3 战力直至回合结束。"
+    },
+    "truckers_rubber_chicken": {
+      "name": "橡皮鸡",
+      "abilityText": "持续：本基地上每有 1 张你的战术，此随从便 +1 战力。"
+    },
+    "truckers_hotwire": {
+      "name": "短路点火",
+      "effectText": "选择基地上一张战术。转移至另一个基地，并/或获得其控制权。"
+    },
+    "truckers_skinny_minnie": {
+      "name": "皮包骨米妮",
+      "abilityText": "天赋：若本基地上有战术，移动此随从至另一个基地，以转移本基地上一张战术至该基地。"
+    },
+    "truckers_el_bandido": {
+      "name": "埃尔班迪多",
+      "abilityText": "你可以获得基地上一张战术的控制权。天赋：额外打出一张战术，或转移一个基地上的一张战术至另一个基地。"
+    },
+    "truckers_rally": {
+      "name": "车友聚会",
+      "effectText": "特殊：基地计分前，选择该基地中的一个随从。你每控制 1 张该基地上的战术，其便 +2 战力直至回合结束。"
+    },
+    "truckers_good_buddy": {
+      "name": "好伙伴",
+      "abilityText": "若本基地上有你的战术，抓一张牌。"
+    },
+    "truckers_convoy": {
+      "name": "车队",
+      "effectText": "打出到一个基地上。持续：这个基地上每有一张你的行动牌，你在这里 +1 力量（包括这一张）。"
+    },
+    "truckers_cab_over_pete": {
+      "name": "平头彼特",
+      "effectText": "对基地打出。天赋：转移此战术至另一个基地，以移动此处另一张你控制的牌至相同基地。"
+    },
+    "truckers_armored_truck": {
+      "name": "装甲卡车",
+      "effectText": "打出到一个基地上。持续：你在这里的仆从不能被其他玩家的卡牌摧毁或移动。"
+    },
+    "truckers_turn_the_beat_around": {
+      "name": "节拍一转",
+      "effectText": "使一个随从 +1 战力直至回合结束。每有 1 个随从受到影响，你选择该处 1 个随从 -1 战力直至回合结束。特殊：可以在基地计分前打出。"
+    },
+    "disco_dancers_diva": {
+      "name": "主唱",
+      "abilityText": "持续：每回合一次，当有普通战术直接影响本基地中你的其他随从时，你可以使此随从受到同样的影响。"
+    },
+    "disco_dancers_get_down_tonight": {
+      "name": "就在今晚",
+      "effectText": "一个随从 +2 战力直至回合结束。抓一张牌。"
+    },
+    "disco_dancers_ul_disco_lou": {
+      "name": "迪斯科·卢",
+      "abilityText": "额外打出一张战术，或将你弃牌堆中的一张战术置于你的牌库顶。"
+    },
+    "disco_dancers_we_are_family": {
+      "name": "我们是一家人",
+      "effectText": "对随从打出。持续：每回合一次，当有普通战术直接影响本基地中的其他随从时，你可以使此随从受到同样的影响。"
+    },
+    "disco_dancers_disco_inferno": {
+      "name": "迪斯科地狱",
+      "effectText": "每位玩家可以为一个随从放置 1 枚 +1 战力标记。每有 1 个随从受到影响，抓 1 张牌。"
+    },
+    "disco_dancers_roller": {
+      "name": "轮滑舞娘",
+      "abilityText": "持续：当此随从被普通战术直接影响后，若之前此随从上没有 +1 战力标记，则放置 1 枚于其上。"
+    },
+    "disco_dancers_celebration": {
+      "name": "庆祝",
+      "effectText": "额外打出 2 张战术。"
+    },
+    "disco_dancers_i_will_survive": {
+      "name": "我会活下去",
+      "effectText": "特殊：基地计分后，将该处你的一个随从返回其拥有者手牌而不进入弃牌堆。"
+    },
+    "disco_dancers_its_raining_men": {
+      "name": "男人雨",
+      "effectText": "额外打出一个随从。"
+    },
+    "disco_dancers_dancing_king": {
+      "name": "舞王",
+      "abilityText": "持续：当有普通战术直接影响本基地中的随从时，你可以使此处另一个随从受到同样的影响。"
+    },
+    "disco_dancers_im_so_excited": {
+      "name": "我很亢奋",
+      "effectText": "移动你的一个随从。抓 1 张牌。"
+    },
+    "disco_dancers_last_dance": {
+      "name": "最后的舞曲",
+      "effectText": "每位玩家可以消灭自己的一个随从。每一个实际被消灭的随从使其控制者获得 1 VP。"
+    },
+    "disco_dancers_stayin_alive": {
+      "name": "活着",
+      "effectText": "选择你的一个在场随从。将你弃牌堆中的一张同名牌置于手牌。"
+    },
+    "base_funky_town": {
+      "name": "时髦镇",
+      "abilityText": "每回合一次，当你的战术直接影响本基地中你的随从时，你可以使此处的另一个随从受到同样的效果。"
+    },
+    "base_the_greasy_spoon": {
+      "name": "廉价小饭馆",
+      "abilityText": "当本基地上的战术即将进入弃牌堆时，改为将其洗入拥有者的牌库。"
+    },
+    "base_truck_stop": {
+      "name": "卡车服务站",
+      "abilityText": "你的回合开始时，可以将一张基地上的战术从本基地转移到另一个基地，或从另一个基地转移到本基地。"
+    },
+    "base_boogie_wonderland": {
+      "name": "摇摆仙境",
+      "abilityText": "当玩家打出战术影响此处的随从时，抓一张牌。"
+    },
+    "base_hideout": {
+      "name": "藏身处",
+      "abilityText": "本基地的随从不会受到其他玩家卡牌的影响。"
+    },
+    "base_the_mean_streets": {
+      "name": "险恶街区",
+      "abilityText": "当玩家打出法术影响本基地的卡牌时，每位其他玩家可以向此处的一个随从放置 1 枚 +1 战力标记。"
+    },
+    "base_ancient_dojo": {
+      "name": "古道场",
+      "abilityText": "当你向本基地打出随从后，向此处你的每一个战力低于该随从的随从上各加一枚 +1 战力标记。"
+    },
+    "base_tournament_site": {
+      "name": "比武擂台",
+      "abilityText": "本基地计分时，每有一位玩家在此没有战力，第一名便多 +1 VP。"
+    },
     "alien_supreme_overlord": {
       "name": "最高指挥官",
       "abilityText": "你可以将一个随从返回到其拥有者的手上。"
@@ -4057,7 +4538,7 @@
     },
     "ancient_egyptians_mummy_strength_pod": {
       "name": "木乃伊之力",
-      "effectText": "选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 力量；否则其直到回合结束 +2 力量。"
+      "effectText": "选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。"
     },
     "ancient_egyptians_tomb_trap_pod": {
       "name": "墓穴陷阱",
@@ -4177,7 +4658,7 @@
     },
     "samurai_ronin_pod": {
       "name": "浪人",
-      "abilityText": "若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 力量指示物。"
+      "abilityText": "若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 战力指示物。"
     },
     "samurai_bushi_pod": {
       "name": "武士",
@@ -4213,7 +4694,7 @@
     },
     "samurai_final_haiku_pod": {
       "name": "终曲俳句",
-      "effectText": "对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 力量。"
+      "effectText": "对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 战力。"
     },
     "samurai_code_of_bushido_pod": {
       "name": "武士道",
@@ -4321,7 +4802,7 @@
     },
     "cowboys_gunfighter_pod": {
       "name": "枪手",
-      "abilityText": "此随从可以与这里另一位玩家的一个随从决斗。消灭失败的随从。"
+      "abilityText": "此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "cowboys_pinkerton_pod": {
       "name": "平克顿",
@@ -4357,7 +4838,7 @@
     },
     "cowboys_dynamite_surprise_pod": {
       "name": "炸药惊喜",
-      "effectText": "特殊：在一个你有随从且你并非领先的基地计分前，消灭该基地一个力量 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个力量 4 或以下的随从。"
+      "effectText": "特殊：在一个你有随从且你并非领先的基地计分前，消灭该处一个战力 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个战力 4 或以下的随从。"
     },
     "cowboys_gold_strike_pod": {
       "name": "淘到金了",
@@ -4389,7 +4870,7 @@
     },
     "vikings_berserk_pod": {
       "name": "狂战",
-      "effectText": "将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 力量。"
+      "effectText": "将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 战力。"
     },
     "vikings_cast_the_runes_pod": {
       "name": "掷符文",
@@ -4405,7 +4886,7 @@
     },
     "vikings_raiding_party_pod": {
       "name": "突袭队",
-      "effectText": "展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张力量 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。"
+      "effectText": "展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张战力 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。"
     },
     "vikings_ransack_pod": {
       "name": "洗劫",

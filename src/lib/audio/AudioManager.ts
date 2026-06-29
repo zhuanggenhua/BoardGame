@@ -5,6 +5,7 @@
 import { Howl, Howler } from 'howler';
 import type { SoundDefinition, SoundKey, GameAudioConfig, BgmDefinition } from './types';
 import type { AudioRegistryEntry } from './commonRegistry';
+import { notifyAudioRuntimeToast } from './audioRuntimeNotifications';
 import { assetsPath, getOptimizedAudioUrl, waitForCriticalImages, isCriticalImagesReady, resolveAssetsBaseUrlFromEnv } from '../../core/AssetLoader';
 import { readInstalledGamePackageAssetBlobUrl } from '../../features/mobile-packages/nativeGamePackagePlugin';
 
@@ -173,6 +174,24 @@ const extractNameFromSrc = (src: string): string => {
     return fileName.replace(/\.[^.]+$/, '');
 };
 
+export type AudioLoadState = 'missing' | 'failed' | 'idle' | 'loading' | 'loaded' | 'playing';
+
+const notifyAudioPlaybackFailure = (
+    messageKey: string,
+    key: string,
+    dedupeKey: string,
+    titleKey: string = 'audioRuntime.toast.playback_failed_title',
+) => {
+    notifyAudioRuntimeToast({
+        tone: 'error',
+        ns: 'lobby',
+        titleKey,
+        messageKey,
+        params: { key },
+        dedupeKey,
+    });
+};
+
 class AudioManagerClass {
     private sounds: Map<SoundKey, Howl> = new Map();
     private soundDefinitions: Map<SoundKey, SoundDefinition> = new Map();
@@ -202,6 +221,54 @@ class AudioManagerClass {
     private _pendingBgmKey: string | null = null;
     private _loadingCount: number = 0;
 
+    private preloadSoundDefinition(
+        key: SoundKey,
+        definition: SoundDefinition,
+        options?: {
+            volumeMultiplier?: number;
+            onLoaded?: () => void;
+            onError?: (error: unknown) => void;
+            onReplace?: (howl: Howl) => void;
+        },
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const finalizeLoaded = () => {
+                options?.onLoaded?.();
+                resolve();
+            };
+            const finalizeError = (error: unknown) => {
+                options?.onError?.(error);
+                reject(error instanceof Error ? error : new Error(String(error)));
+            };
+
+            const howl = this.createHowlWithFallback(definition.src, {
+                volume: (definition.volume ?? 1.0) * (options?.volumeMultiplier ?? this._sfxVolume),
+                loop: definition.loop ?? false,
+                sprite: definition.sprite,
+                preload: true,
+                onReplace: (nextHowl) => {
+                    this.sounds.set(key, nextHowl);
+                    options?.onReplace?.(nextHowl);
+                },
+                onload: finalizeLoaded,
+                onloaderror: (_id, error) => {
+                    finalizeError(error);
+                },
+            });
+
+            if (!howl) {
+                finalizeError(new Error(`failed to create preload howl for ${key}`));
+                return;
+            }
+            this.sounds.set(key, howl);
+
+            const state = howl.state();
+            if (state === 'loaded') {
+                finalizeLoaded();
+            }
+        });
+    }
+
     private createHowlWithFallback(
         src: string | string[],
         options: Omit<ConstructorParameters<typeof Howl>[0], 'src' | 'onloaderror'> & {
@@ -209,7 +276,7 @@ class AudioManagerClass {
             onReplace?: (howl: Howl) => void;
             onFallbackReady?: (howl: Howl) => void;
         }
-    ): Howl {
+    ): Howl | null {
         const candidates = buildAudioFallbackCandidates(src);
 
         const createUrlHowlAt = (candidateSrc: string, index: number, isFallback: boolean): Howl => {
@@ -264,7 +331,8 @@ class AudioManagerClass {
 
         const firstCandidate = candidates[0];
         if (!firstCandidate || firstCandidate.kind !== 'url') {
-            throw new Error('Audio fallback candidates must start with a URL candidate.');
+            options.onloaderror?.(0, new Error('Audio fallback candidates must start with a URL candidate.'));
+            return null;
         }
         return createUrlHowlAt(firstCandidate.value, 0, false);
     }
@@ -465,6 +533,20 @@ class AudioManagerClass {
         };
     }
 
+    private resolveHowlLoadState(howl: Howl): AudioLoadState {
+        if (howl.playing()) {
+            return 'playing';
+        }
+        const state = howl.state();
+        if (state === 'loading') {
+            return 'loading';
+        }
+        if (state === 'loaded') {
+            return 'loaded';
+        }
+        return 'idle';
+    }
+
     private clearBgmLoopRestart(key: string): void {
         const timer = this.bgmLoopRestartTimers.get(key);
         if (timer !== undefined) {
@@ -632,7 +714,10 @@ class AudioManagerClass {
      */
     play(key: SoundKey, spriteKey?: string, onEnd?: () => void): number | null {
         if (this.isAudioDisabled()) return null;
-        if (this.failedKeys.has(key)) return null;
+        if (this.failedKeys.has(key)) {
+            notifyAudioPlaybackFailure('audioRuntime.toast.known_failed', key, `audio.known-failed.${key}`);
+            return null;
+        }
         let howl = this.sounds.get(key);
         if (!howl) {
             // 限制同时进行的按需加载数，防止浏览器连接拥堵导致延迟
@@ -642,6 +727,7 @@ class AudioManagerClass {
             const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
             if (!definition) {
                 console.warn(`[Audio] missing_sfx key=${key} registryCount=${this.registryEntries.size} definedCount=${this.soundDefinitions.size}`);
+                notifyAudioPlaybackFailure('audioRuntime.toast.missing_key', key, `audio.missing-sfx.${key}`);
                 return null;
             }
             this.soundDefinitions.set(key, definition);
@@ -674,8 +760,18 @@ class AudioManagerClass {
                     this._loadingCount = Math.max(0, this._loadingCount - 1);
                     console.error(`[Audio] load_sfx_failed key=${key} src=${formatSrcForLog(definition.src)} error=${String(error)}`);
                     this.failedKeys.add(key);
+                    notifyAudioPlaybackFailure(
+                        String(error).includes('URL candidate')
+                            ? 'audioRuntime.toast.invalid_source'
+                            : 'audioRuntime.toast.load_failed',
+                        key,
+                        `audio.load-sfx-failed.${key}`,
+                    );
                 }
             });
+            if (!howl) {
+                return null;
+            }
             this.sounds.set(key, howl);
         } else if (howl.state() === 'loading') {
             // 音频仍在加载中，不再重复入队，避免加载完成后延迟播放过时的音效
@@ -717,6 +813,7 @@ class AudioManagerClass {
                 : definition;
             if (!mergedDef) {
                 console.warn(`[Audio] missing_bgm key=${key} registryCount=${this.registryEntries.size} definedCount=${this.bgmDefinitions.size}`);
+                notifyAudioPlaybackFailure('audioRuntime.toast.missing_key', key, `audio.missing-bgm.${key}`);
                 return;
             }
             this.bgmDefinitions.set(key, mergedDef);
@@ -755,6 +852,13 @@ class AudioManagerClass {
                 },
                 onloaderror: (_id, error) => {
                     console.error(`[Audio] load_bgm_failed key=${key} src=${formatSrcForLog(mergedDef.src)} error=${String(error)}`);
+                    notifyAudioPlaybackFailure(
+                        String(error).includes('URL candidate')
+                            ? 'audioRuntime.toast.invalid_source'
+                            : 'audioRuntime.toast.load_failed',
+                        key,
+                        `audio.load-bgm-failed.${key}`,
+                    );
                     // 加载失败也要 resolve，不阻塞音效预加载
                     this._bgmReadyResolve?.();
                     this._bgmReadyResolve = null;
@@ -770,6 +874,9 @@ class AudioManagerClass {
                     this.handleBgmEnded(key, howl!);
                 },
             });
+            if (!howl) {
+                return;
+            }
             this.bgms.set(key, howl);
         }
 
@@ -871,6 +978,27 @@ class AudioManagerClass {
         return this.failedKeys.has(key);
     }
 
+    getSfxLoadState(key: SoundKey): AudioLoadState {
+        if (this.failedKeys.has(key)) {
+            return 'failed';
+        }
+        const howl = this.sounds.get(key);
+        if (howl) {
+            return this.resolveHowlLoadState(howl);
+        }
+        const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
+        return definition ? 'idle' : 'missing';
+    }
+
+    getBgmLoadState(key: string): AudioLoadState {
+        const howl = this.bgms.get(key);
+        if (howl) {
+            return this.resolveHowlLoadState(howl);
+        }
+        const definition = this.bgmDefinitions.get(key) ?? this.resolveRegistryBgmDefinition(key);
+        return definition ? 'idle' : 'missing';
+    }
+
     /**
      * @param persist 是否写入 localStorage（远程同步 apply 时传 false，避免污染游客本地偏好）
      */
@@ -921,20 +1049,20 @@ class AudioManagerClass {
                 const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
                 if (!definition) continue;
                 this.soundDefinitions.set(key, definition);
-                const howl = this.createHowlWithFallback(definition.src, {
-                    volume: (definition.volume ?? 1.0) * this._sfxVolume,
-                    loop: definition.loop ?? false,
-                    sprite: definition.sprite,
-                    preload: true,
-                    onReplace: (nextHowl) => {
-                        this.sounds.set(key, nextHowl);
-                    },
-                    onloaderror: (_id, error) => {
+                void this.preloadSoundDefinition(key, definition, {
+                    onError: (error) => {
                         console.error(`[Audio] preload_failed key=${key} src=${formatSrcForLog(definition.src)} error=${String(error)}`);
                         this.failedKeys.add(key);
+                        notifyAudioPlaybackFailure(
+                            String(error).includes('URL candidate')
+                                ? 'audioRuntime.toast.invalid_source'
+                                : 'audioRuntime.toast.load_failed',
+                            key,
+                            `audio.preload-failed.${key}`,
+                            'audioRuntime.toast.preload_failed_title',
+                        );
                     },
                 });
-                this.sounds.set(key, howl);
             }
             if (index < pending.length) {
                 scheduleAfterImages(() => loadBatch());
@@ -960,6 +1088,76 @@ class AudioManagerClass {
         };
 
         scheduleAfterImages(() => loadBatch());
+    }
+
+    preloadBlockingKeys(
+        keys: SoundKey[],
+        onProgress?: (loaded: number, total: number) => void,
+    ): Promise<void> {
+        if (this.isAudioDisabled() || keys.length === 0) {
+            return Promise.resolve();
+        }
+
+        const uniqueKeys = Array.from(new Set(keys.filter(Boolean)));
+        if (uniqueKeys.length === 0) {
+            return Promise.resolve();
+        }
+
+        let loaded = 0;
+        const total = uniqueKeys.length;
+        onProgress?.(loaded, total);
+
+        const markLoaded = () => {
+            loaded += 1;
+            onProgress?.(loaded, total);
+        };
+
+        const tasks = uniqueKeys.map(async (key) => {
+            const currentState = this.getSfxLoadState(key);
+            if (currentState === 'loaded' || currentState === 'playing') {
+                markLoaded();
+                return;
+            }
+            if (currentState === 'failed' || currentState === 'missing') {
+                markLoaded();
+                return;
+            }
+
+            const existingHowl = this.sounds.get(key);
+            if (existingHowl) {
+                const state = existingHowl.state();
+                if (state === 'loaded') {
+                    markLoaded();
+                    return;
+                }
+                await new Promise<void>((resolve) => {
+                    existingHowl.once('load', () => resolve());
+                    existingHowl.once('loaderror', () => resolve());
+                });
+                markLoaded();
+                return;
+            }
+
+            const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
+            if (!definition) {
+                markLoaded();
+                return;
+            }
+            this.soundDefinitions.set(key, definition);
+            try {
+                await this.preloadSoundDefinition(key, definition, {
+                    onError: (error) => {
+                        console.error(`[Audio] blocking_preload_failed key=${key} src=${formatSrcForLog(definition.src)} error=${String(error)}`);
+                        this.failedKeys.add(key);
+                    },
+                });
+            } catch {
+                // 前台门禁允许失败后放行，避免单个音频源异常卡死进房。
+            }
+            markLoaded();
+        });
+
+        return Promise.all(tasks).then(() => undefined);
     }
 
     /** 等待 BGM 开始播放或超时（3s），不阻塞无 BGM 的场景 */

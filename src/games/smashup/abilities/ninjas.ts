@@ -6,15 +6,16 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedMoveEvents } from '../domain/abilityHelpers';
+import { getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedDestroyEvents, buildValidatedMoveEvents, buildValidatedReturnEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, MinionReturnedEvent, OngoingDetachedEvent, MinionPlayedEvent, PlayerState } from '../domain/types';
+import type { SmashUpEvent, MinionPlayedEvent, PlayerState } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import { matchesDefId } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -202,17 +203,18 @@ const ninjaDestroyMinionPromptProgram = createPromptProgram<NinjaDestroyMinionPr
         const target = base.minions.find((minion) => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [
-                destroyMinion(
-                    target.uid,
-                    target.defId,
-                    selected.baseIndex,
-                    target.owner,
-                    playerId,
-                    context.sourceId,
-                    timestamp,
-                ),
-            ],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: playerId,
+                reason: context.sourceId,
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: context.sourceId,
+                sourceControllerId: playerId,
+                sourceKind: 'nonAction',
+            }),
         };
     },
 });
@@ -313,16 +315,14 @@ function ninjaPoisonOnPlay(ctx: AbilityContext): AbilityResult {
     // 消灭目标随从身上所有附着的行动卡（排除刚附着的 ninja_poison 自身）
     for (const a of target.attachedActions) {
         if (a.uid === ctx.cardUid) continue;
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: a.uid,
-                defId: a.defId,
-                ownerId: a.ownerId,
-                reason: 'ninja_poison_destroy',
-            },
-            timestamp: ctx.now,
-        } as OngoingDetachedEvent);
+        events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
+            cardUid: a.uid,
+            defId: a.defId,
+            ownerId: a.ownerId,
+            reason: 'ninja_poison_destroy',
+            now: ctx.now,
+            expectedLocation: 'minion',
+        }));
     }
 
     return { events };
@@ -350,21 +350,18 @@ const ninjaDestroyOngoingPromptProgram = createPromptProgram<NinjaDestroyOngoing
             { sourceId: context.sourceId, targetType: 'ongoing' },
         );
     },
-    onResolve: ({ value, context, timestamp }) => {
+    onResolve: ({ state, value, context, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as { cardUid?: string; defId?: string; ownerId?: string } | undefined;
         if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: selected.cardUid,
-                    defId: selected.defId,
-                    ownerId: selected.ownerId,
-                    reason: context.sourceId,
-                },
-                timestamp,
-            } as OngoingDetachedEvent],
+            events: buildValidatedOngoingDetachEvents(state, {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: selected.ownerId,
+                reason: context.sourceId,
+                now: timestamp,
+            }),
         };
     },
 });
@@ -381,16 +378,14 @@ const ninjaInfiltrateOnPlayProgram = createEffectProgram<AbilityContext, Ability
     if (targets.length === 0) return { events: [] };
     if (targets.length === 1) {
         return {
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: targets[0].uid,
-                    defId: targets[0].defId,
-                    ownerId: targets[0].ownerId,
-                    reason: 'ninja_infiltrate_destroy',
-                },
-                timestamp: ctx.now,
-            } as OngoingDetachedEvent],
+            events: buildValidatedOngoingDetachEvents(ctx.state, {
+                cardUid: targets[0].uid,
+                defId: targets[0].defId,
+                ownerId: targets[0].ownerId,
+                reason: 'ninja_infiltrate_destroy',
+                now: ctx.now,
+                expectedLocation: 'base',
+            }),
         };
     }
     return {
@@ -459,6 +454,9 @@ const ninjaWayOfDeceptionBasePromptProgram = createPromptProgram<NinjaMovePrompt
                 minionDefId: context.minionDefId,
                 fromBaseIndex: context.fromBaseIndex,
                 toBaseIndex: selected.baseIndex,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'ninja_way_of_deception',
+                sourceControllerId: context.playerId,
                 reason: 'ninja_way_of_deception',
                 now: timestamp,
             }),
@@ -476,6 +474,7 @@ const ninjaWayOfDeceptionMinionPromptProgram = createPromptProgram<NinjaMoveProm
         buildMinionTargetOptions(context.minionCandidates ?? [], {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
+            sourceDefId: 'ninja_way_of_deception',
         }) as any[],
         { sourceId: 'ninja_way_of_deception_choose_minion', targetType: 'minion' },
     ),
@@ -611,18 +610,15 @@ const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityCo
     if (hasPlayedAnyMinionThisTurn(player)) return { events: [] };
     const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_acolyte', ctx.baseIndex, ctx.now);
     const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
-    events.push({
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: {
-            minionUid: ctx.cardUid,
-            minionDefId: 'ninja_acolyte',
-            fromBaseIndex: ctx.baseIndex,
-            toPlayerId: ctx.playerId,
-            sourcePlayerId: ctx.playerId,
-            reason: 'ninja_acolyte',
-        },
-        timestamp: ctx.now,
-    } as MinionReturnedEvent);
+    events.push(...buildValidatedReturnEvents(ctx.matchState, {
+        minionUid: ctx.cardUid,
+        minionDefId: 'ninja_acolyte',
+        fromBaseIndex: ctx.baseIndex,
+        toPlayerId: ctx.playerId,
+        sourcePlayerId: ctx.playerId,
+        reason: 'ninja_acolyte',
+        now: ctx.now,
+    }));
     const acolyteDef = getCardDef('ninja_acolyte') as MinionCardDef | undefined;
     const handOptions = [
         ...buildHandMinionOptions(player.hand),
@@ -652,18 +648,15 @@ const ninjaAcolytePodTalentProgram = createEffectProgram<AbilityContext, Ability
     const player = ctx.state.players[ctx.playerId];
     if (hasPlayedAnyMinionThisTurn(player)) return { events: [] };
 
-    const events: SmashUpEvent[] = [{
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: {
-            minionUid: ctx.cardUid,
-            minionDefId: 'ninja_acolyte_pod',
-            fromBaseIndex: ctx.baseIndex,
-            toPlayerId: ctx.playerId,
-            sourcePlayerId: ctx.playerId,
-            reason: 'ninja_acolyte_pod',
-        },
-        timestamp: ctx.now,
-    } as MinionReturnedEvent];
+    const events: SmashUpEvent[] = buildValidatedReturnEvents(ctx.matchState, {
+        minionUid: ctx.cardUid,
+        minionDefId: 'ninja_acolyte_pod',
+        fromBaseIndex: ctx.baseIndex,
+        toPlayerId: ctx.playerId,
+        sourcePlayerId: ctx.playerId,
+        reason: 'ninja_acolyte_pod',
+        now: ctx.now,
+    });
 
     const acolyteDef = getCardDef('ninja_acolyte_pod') as MinionCardDef | undefined;
     const handOptions = [
@@ -743,26 +736,23 @@ function buildNinjaDisguiseReturnEvents(
     selectedMinionUids: string[],
     sourcePlayerId: PlayerId,
     timestamp: number,
-): MinionReturnedEvent[] {
+): SmashUpEvent[] {
     const base = state.bases[baseIndex];
     if (!base) return [];
 
-    const events: MinionReturnedEvent[] = [];
+    const events: SmashUpEvent[] = [];
     for (const minionUid of selectedMinionUids) {
         const minion = base.minions.find((entry) => entry.uid === minionUid);
         if (!minion) continue;
-        events.push({
-            type: SU_EVENTS.MINION_RETURNED,
-            payload: {
-                minionUid,
-                minionDefId: minion.defId,
-                fromBaseIndex: baseIndex,
-                toPlayerId: minion.owner,
-                sourcePlayerId,
-                reason: 'ninja_disguise',
-            },
-            timestamp,
-        } as MinionReturnedEvent);
+        events.push(...buildValidatedReturnEvents(state, {
+            minionUid,
+            minionDefId: minion.defId,
+            fromBaseIndex: baseIndex,
+            toPlayerId: minion.owner,
+            sourcePlayerId: sourcePlayerId,
+            reason: 'ninja_disguise',
+            now: timestamp,
+        }));
     }
     return events;
 }
@@ -1027,12 +1017,17 @@ const ninjaDisguiseProgram = createEffectProgram<AbilityContext, AbilityContext[
  */
 function ninjaInfiltratePodTalent(ctx: AbilityContext): AbilityResult {
     const ownerId = ctx.playerId;
+    const detachEvent = buildValidatedOngoingDetachEvents(ctx.state, {
+        cardUid: ctx.cardUid,
+        defId: 'ninja_infiltrate_pod',
+        ownerId,
+        reason: 'ninja_infiltrate_pod_talent',
+        now: ctx.now,
+        expectedLocation: 'any',
+    })[0];
+    if (!detachEvent) return { events: [] };
     const events: SmashUpEvent[] = [
-        {
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: ctx.cardUid, defId: 'ninja_infiltrate_pod', ownerId, reason: 'ninja_infiltrate_pod_talent' },
-            timestamp: ctx.now,
-        } as OngoingDetachedEvent,
+        detachEvent,
         {
             type: SU_EVENTS.BASE_ABILITY_SUPPRESSED,
             payload: { baseIndex: ctx.baseIndex, suppressorPlayerId: ownerId, reason: 'ninja_infiltrate_pod_talent' },
@@ -1079,16 +1074,14 @@ function registerNinjaOngoingEffects(): void {
                     if (!attached) continue;
                     const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
                     if (controllerId !== trigCtx.playerId) return [];
-                    return [{
-                        type: SU_EVENTS.ONGOING_DETACHED,
-                        payload: {
-                            cardUid: attached.uid,
-                            defId: attached.defId,
-                            ownerId: attached.ownerId,
-                            reason: 'ninja_smoke_bomb_self_destruct',
-                        },
-                        timestamp: trigCtx.now,
-                    }];
+                    return buildValidatedOngoingDetachEvents(trigCtx.state, {
+                        cardUid: attached.uid,
+                        defId: attached.defId,
+                        ownerId: attached.ownerId,
+                        reason: 'ninja_smoke_bomb_self_destruct',
+                        now: trigCtx.now,
+                        expectedLocation: 'minion',
+                    });
                 }
             }
             return [];
@@ -1101,16 +1094,14 @@ function registerNinjaOngoingEffects(): void {
                     if (!matchesDefId(attached.defId, 'ninja_smoke_bomb')) continue;
                     const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
                     if (controllerId !== trigCtx.playerId) continue;
-                    events.push({
-                        type: SU_EVENTS.ONGOING_DETACHED,
-                        payload: {
-                            cardUid: attached.uid,
-                            defId: attached.defId,
-                            ownerId: attached.ownerId,
-                            reason: 'ninja_smoke_bomb_self_destruct',
-                        },
-                        timestamp: trigCtx.now,
-                    });
+                    events.push(...buildValidatedOngoingDetachEvents(trigCtx.state, {
+                        cardUid: attached.uid,
+                        defId: attached.defId,
+                        ownerId: attached.ownerId,
+                        reason: 'ninja_smoke_bomb_self_destruct',
+                        now: trigCtx.now,
+                        expectedLocation: 'minion',
+                    }));
                 }
             }
         }
@@ -1134,19 +1125,19 @@ function registerNinjaOngoingEffects(): void {
                     if (!assassinationCard) continue;
                     const controllerId = (assassinationCard.metadata?.sourceControllerId as PlayerId | undefined) ?? assassinationCard.ownerId;
                     if (controllerId !== trigCtx.playerId) return [];
-                    return [{
-                        type: SU_EVENTS.MINION_DESTROYED,
-                        payload: {
-                            minionUid: m.uid,
-                            minionDefId: m.defId,
-                            fromBaseIndex: i,
-                            ownerId: m.owner,
-                            controllerId: m.controller,
-                            destroyerId: controllerId,
-                            reason: 'ninja_assassination',
-                        },
-                        timestamp: trigCtx.now,
-                    }];
+                    return buildValidatedDestroyEvents(trigCtx.state, {
+                        minionUid: m.uid,
+                        minionDefId: m.defId,
+                        fromBaseIndex: i,
+                        destroyerId: controllerId,
+                        reason: 'ninja_assassination',
+                        now: trigCtx.now,
+                        sourcePlayerId: controllerId,
+                        sourceCardUid: assassinationCard.uid,
+                        sourceDefId: assassinationCard.defId,
+                        sourceControllerId: controllerId,
+                        sourceBaseIndex: i,
+                    });
                 }
             }
             return [];
@@ -1166,19 +1157,19 @@ function registerNinjaOngoingEffects(): void {
                     ? ((assassinationCard.metadata?.sourceControllerId as PlayerId | undefined) ?? assassinationCard.ownerId)
                     : undefined;
                 if (assassinationCard && controllerId === trigCtx.playerId) {
-                    events.push({
-                        type: SU_EVENTS.MINION_DESTROYED,
-                        payload: {
-                            minionUid: m.uid,
-                            minionDefId: m.defId,
-                            fromBaseIndex: i,
-                            ownerId: m.owner,
-                            controllerId: m.controller,
-                            destroyerId: controllerId,
-                            reason: 'ninja_assassination',
-                        },
-                        timestamp: trigCtx.now,
-                    });
+                    events.push(...buildValidatedDestroyEvents(trigCtx.state, {
+                        minionUid: m.uid,
+                        minionDefId: m.defId,
+                        fromBaseIndex: i,
+                        destroyerId: controllerId,
+                        reason: 'ninja_assassination',
+                        now: trigCtx.now,
+                        sourcePlayerId: controllerId,
+                        sourceCardUid: assassinationCard.uid,
+                        sourceDefId: assassinationCard.defId,
+                        sourceControllerId: controllerId,
+                        sourceBaseIndex: i,
+                    }));
                 }
             }
         }
@@ -1203,16 +1194,14 @@ function registerNinjaOngoingEffects(): void {
                     if (!attached) continue;
                     const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
                     if (controllerId !== trigCtx.playerId) return [];
-                    return [{
-                        type: SU_EVENTS.ONGOING_DETACHED,
-                        payload: {
-                            cardUid: attached.uid,
-                            defId: attached.defId,
-                            ownerId: attached.ownerId,
-                            reason: 'ninja_infiltrate_expired',
-                        },
-                        timestamp: trigCtx.now,
-                    }];
+                    return buildValidatedOngoingDetachEvents(trigCtx.state, {
+                        cardUid: attached.uid,
+                        defId: attached.defId,
+                        ownerId: attached.ownerId,
+                        reason: 'ninja_infiltrate_expired',
+                        now: trigCtx.now,
+                        expectedLocation: 'minion',
+                    });
                 }
             }
             return [];
@@ -1225,16 +1214,14 @@ function registerNinjaOngoingEffects(): void {
                     if (a.defId !== 'ninja_infiltrate') continue;
                     const controllerId = (a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId;
                     if (controllerId !== trigCtx.playerId) continue;
-                    events.push({
-                        type: SU_EVENTS.ONGOING_DETACHED,
-                        payload: {
-                            cardUid: a.uid,
-                            defId: a.defId,
-                            ownerId: a.ownerId,
-                            reason: 'ninja_infiltrate_expired',
-                        },
-                        timestamp: trigCtx.now,
-                    });
+                    events.push(...buildValidatedOngoingDetachEvents(trigCtx.state, {
+                        cardUid: a.uid,
+                        defId: a.defId,
+                        ownerId: a.ownerId,
+                        reason: 'ninja_infiltrate_expired',
+                        now: trigCtx.now,
+                        expectedLocation: 'minion',
+                    }));
                 }
             }
         }

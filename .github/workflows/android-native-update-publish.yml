@@ -7,45 +7,163 @@ on:
         description: '目标原生更新 channel'
         required: true
         default: 'stable'
+        type: choice
+        options:
+          - stable
+          - gray
+          - edge
+      git_ref:
+        description: '要发布的 git ref（分支、tag 或 commit SHA，留空默认当前触发 ref）'
+        required: false
+        type: string
+      expected_version:
+        description: '本次发布的目标 App 版本（必填，例如 0.6.0）；必须与 package.json.version 完全一致'
+        required: true
         type: string
       dry_run:
         description: '只本地构建与生成 manifest，不上传'
-        required: false
+        required: true
         default: false
         type: boolean
       skip_latest:
         description: '上传 APK 与版本 manifest，但不覆盖 latest.json'
-        required: false
+        required: true
         default: false
         type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', inputs.channel) || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   publish-native-update:
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-native-production' || 'android-native-nonprod' }}
 
     steps:
+      - name: Resolve publish parameters
+        id: params
+        shell: bash
+        run: |
+          channel="${{ inputs.channel }}"
+          target_ref="${{ inputs.git_ref }}"
+          expected_version="${{ inputs.expected_version }}"
+          dry_run="${{ inputs.dry_run }}"
+          skip_latest="${{ inputs.skip_latest }}"
+
+          if [[ -z "${target_ref}" ]]; then
+            target_ref="${GITHUB_SHA}"
+          fi
+
+          if [[ -z "${expected_version}" ]]; then
+            echo "::error::禁止隐式原生包发布：expected_version 不能为空。"
+            exit 1
+          fi
+
+          {
+            echo "channel=${channel}"
+            echo "target_ref=${target_ref}"
+            echo "expected_version=${expected_version}"
+            echo "dry_run=${dry_run}"
+            echo "skip_latest=${skip_latest}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Validate native prerequisites
+        id: prereq
+        shell: bash
+        env:
+          ANDROID_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          DRY_RUN: ${{ steps.params.outputs.dry_run }}
+        run: |
+          missing=()
+
+          [[ -n "${ANDROID_BACKEND_URL}" ]] || missing+=("VITE_BACKEND_URL(or ANDROID_VITE_BACKEND_URL)")
+          [[ -n "${ANDROID_KEYSTORE_BASE64}" ]] || missing+=("ANDROID_KEYSTORE_BASE64")
+          [[ -n "${ANDROID_KEYSTORE_PASSWORD}" ]] || missing+=("ANDROID_KEYSTORE_PASSWORD")
+          [[ -n "${ANDROID_KEY_ALIAS}" ]] || missing+=("ANDROID_KEY_ALIAS")
+          [[ -n "${ANDROID_KEY_PASSWORD}" ]] || missing+=("ANDROID_KEY_PASSWORD")
+
+          if [[ "${DRY_RUN}" != "true" ]]; then
+            [[ -n "${R2_ACCOUNT_ID}" ]] || missing+=("R2_ACCOUNT_ID")
+            [[ -n "${R2_ACCESS_KEY_ID}" ]] || missing+=("R2_ACCESS_KEY_ID")
+            [[ -n "${R2_SECRET_ACCESS_KEY}" ]] || missing+=("R2_SECRET_ACCESS_KEY")
+            [[ -n "${R2_BUCKET_NAME}" ]] || missing+=("R2_BUCKET_NAME")
+          fi
+
+          if [[ ${#missing[@]} -eq 0 ]]; then
+            echo "ready=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          missing_csv="$(IFS=,; echo "${missing[*]}")"
+          echo "ready=false" >> "${GITHUB_OUTPUT}"
+          echo "missing=${missing_csv}" >> "${GITHUB_OUTPUT}"
+          echo "::error::Android 原生更新缺少必需配置: ${missing_csv}"
+          exit 1
+
       - name: Checkout repository
+        if: steps.prereq.outputs.ready == 'true'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.params.outputs.target_ref }}
+
+      - name: Resolve native metadata
+        id: native
+        if: steps.prereq.outputs.ready == 'true'
+        shell: bash
+        run: |
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          current_ref="$(git rev-parse HEAD)"
+          package_version="$(node -p "require('./package.json').version")"
+          android_version_code="$(node -p "require('./package.json').androidVersionCode || ''")"
+
+          if [[ "${package_version}" != "${{ steps.params.outputs.expected_version }}" ]]; then
+            echo "::error::Android 原生包版本不匹配：expected_version=${{ steps.params.outputs.expected_version }}，package.json.version=${package_version}"
+            exit 1
+          fi
+
+          {
+            echo "short_sha=${short_sha}"
+            echo "current_ref=${current_ref}"
+            echo "package_version=${package_version}"
+            echo "android_version_code=${android_version_code}"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Setup Node.js
+        if: steps.prereq.outputs.ready == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24.1.0
           cache: npm
 
       - name: Setup Java
+        if: steps.prereq.outputs.ready == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Setup Android SDK
+        if: steps.prereq.outputs.ready == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
+        if: steps.prereq.outputs.ready == 'true'
         run: npm ci
 
       - name: Create Android env file
+        if: steps.prereq.outputs.ready == 'true'
         run: |
           cat <<'EOF' > .env.android
           VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
@@ -54,8 +172,8 @@ jobs:
           CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || '易桌游' }}
           ANDROID_WEBVIEW_MODE=embedded
           VITE_ANDROID_NATIVE_UPDATE_ENABLED=true
-          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/native-app-updates/android/${{ inputs.channel }}/latest.json
-          VITE_ANDROID_NATIVE_UPDATE_CHANNEL=${{ inputs.channel }}
+          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/native-app-updates/android/${{ steps.params.outputs.channel }}/latest.json
+          VITE_ANDROID_NATIVE_UPDATE_CHANNEL=${{ steps.params.outputs.channel }}
           VITE_ANDROID_OTA_ENABLED=true
           VITE_ANDROID_OTA_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/app-updates/android/stable/latest.json
           VITE_ANDROID_OTA_CHANNEL=stable
@@ -75,15 +193,36 @@ jobs:
           EOF
 
       - name: Build signed release APK
+        if: steps.prereq.outputs.ready == 'true'
         run: npm run mobile:android:build:release
 
       - name: Publish native update package
+        if: steps.prereq.outputs.ready == 'true'
         run: |
-          args=(--channel "${{ inputs.channel }}")
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          args=(--channel "${{ steps.params.outputs.channel }}")
+          if [ "${{ steps.params.outputs.dry_run }}" = "true" ]; then
             args+=(--dry-run)
           fi
-          if [ "${{ inputs.skip_latest }}" = "true" ]; then
+          if [ "${{ steps.params.outputs.skip_latest }}" = "true" ]; then
             args+=(--skip-latest)
           fi
           npm run mobile:android:native-update:publish -- "${args[@]}"
+
+      - name: Write workflow summary
+        shell: bash
+        run: |
+          {
+            echo "### Android 原生更新发布结果"
+            echo ""
+            echo "| 字段 | 值 |"
+            echo "|---|---|"
+            echo "| Channel | ${{ steps.params.outputs.channel }} |"
+            echo "| 结果 | ${{ steps.prereq.outputs.ready == 'true' && '已执行' || '已跳过' }} |"
+            echo "| Git Ref | ${{ steps.native.outputs.current_ref || steps.params.outputs.target_ref }} |"
+            echo "| Expected Version | ${{ steps.params.outputs.expected_version || '未提供' }} |"
+            echo "| Package Version | ${{ steps.native.outputs.package_version || '未读取' }} |"
+            echo "| Android Version Code | ${{ steps.native.outputs.android_version_code || '未读取' }} |"
+            echo "| Dry Run | ${{ steps.params.outputs.dry_run }} |"
+            echo "| Skip Latest | ${{ steps.params.outputs.skip_latest }} |"
+            echo "| 缺失配置 | ${{ steps.prereq.outputs.missing || '无' }} |"
+          } >> "${GITHUB_STEP_SUMMARY}"

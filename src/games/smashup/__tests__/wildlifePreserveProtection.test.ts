@@ -542,6 +542,13 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
             event => event.type === SU_EVENTS.MINION_DESTROYED && (event as any).payload?.minionUid === 'enemy-1',
         );
         expect(destroyEvents).toHaveLength(1);
+        expect((destroyEvents[0] as any)?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'cowboys_gunfighter',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+            sourceKind: 'nonAction',
+        });
         expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'enemy-1')).toBe(false);
         expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'gun-1')).toBe(true);
     });

@@ -186,12 +186,12 @@ describe('cthulhu_furthering_the_cause 触发', () => {
 
         expect(next.turnDestroyedMinions).toBeDefined();
         expect(next.turnDestroyedMinions).toHaveLength(1);
-        expect(next.turnDestroyedMinions?.[0]).toEqual({
+        expect(next.turnDestroyedMinions?.[0]).toEqual(expect.objectContaining({
             uid: 'm1',
             defId: 'test_minion',
             baseIndex: 0,
             owner: '1',
-        });
+        }));
     });
 
     it('reducer: MINION_MOVED 不会把本回合刚被消灭的随从从弃牌堆拉回场上', () => {

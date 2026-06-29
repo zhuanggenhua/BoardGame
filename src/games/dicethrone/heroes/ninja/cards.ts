@@ -167,7 +167,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('ninja-card-poison-dart', 'description'),
         sfxKey: NINJA_SFX_POISON,
         ...ninjaCardRef(24),
-        effects: [grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, cardText('ninja-card-poison-dart', 'description'))],
+        effects: [grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, cardText('ninja-card-poison-dart', 'description'))],
     },
     {
         id: 'ninja-card-knife-fan',

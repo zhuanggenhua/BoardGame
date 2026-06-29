@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-25T01:40:17.298Z",
+  "generatedAt": "2026-06-17T00:37:09.765Z",
   "source": "public/assets/common/audio/registry.json",
-  "total": 11641,
+  "total": 11639,
   "entries": [
     {
       "key": "ambient.khron_studio_sound_of_survival_vol_1_assets.character.character_drink.fooddrnk_character_drink_01_krst",
@@ -82317,14 +82317,6 @@
       }
     },
     {
-      "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_lose_reaction",
-      "type": "sfx",
-      "category": {
-        "group": "stinger",
-        "sub": "mini_games_sound_effects_and_music_pack"
-      }
-    },
-    {
       "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_lose_retro",
       "type": "sfx",
       "category": {
@@ -82358,14 +82350,6 @@
     },
     {
       "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_win_puzzle",
-      "type": "sfx",
-      "category": {
-        "group": "stinger",
-        "sub": "mini_games_sound_effects_and_music_pack"
-      }
-    },
-    {
-      "key": "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_win_reaction",
       "type": "sfx",
       "category": {
         "group": "stinger",

@@ -545,7 +545,12 @@ const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
             `ancient_egyptians_tomb_trap_${context.now}`,
             context.playerId,
             '墓穴陷阱：你可以消灭这里一个力量4或以下的随从',
-            [...buildMinionTargetOptions(candidates, { state: context.state, sourcePlayerId: context.playerId, effectType: 'destroy' }), createSkipOption()] as any[],
+            [...buildMinionTargetOptions(candidates, {
+                state: context.state,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'ancient_egyptians_tomb_trap',
+                effectType: 'destroy',
+            }), createSkipOption()] as any[],
             {
                 sourceId: 'ancient_egyptians_tomb_trap',
                 targetType: 'minion',
@@ -564,11 +569,16 @@ const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
                     baseIndex: context.baseIndex,
                     label: `${getCardDef(minion.defId)?.name ?? minion.defId}`,
                 }));
-            return [...buildMinionTargetOptions(liveCandidates, { state: state.core as SmashUpCore, sourcePlayerId: context.playerId, effectType: 'destroy' }), createSkipOption()] as any[];
+            return [...buildMinionTargetOptions(liveCandidates, {
+                state: state.core as SmashUpCore,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'ancient_egyptians_tomb_trap',
+                effectType: 'destroy',
+            }), createSkipOption()] as any[];
         };
         return interaction;
     },
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
         const selected = value as { minionUid?: string; defId?: string; baseIndex?: number; skip?: boolean } | undefined;
         if (!selected || selected.skip || selected.baseIndex === undefined || !selected.minionUid || !selected.defId) return { events: [] };
         return {
@@ -577,6 +587,10 @@ const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: playerId,
+                sourcePlayerId: playerId,
+                sourceDefId: 'ancient_egyptians_tomb_trap',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.baseIndex,
                 reason: 'ancient_egyptians_tomb_trap',
                 now: timestamp,
             }),

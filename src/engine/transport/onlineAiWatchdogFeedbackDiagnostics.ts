@@ -1,5 +1,6 @@
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
-import type { AiInteractionOptionSnapshot, AiInteractionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
+import type { AiInteractionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
+import { isEnabledControlChoiceOption } from '../systems/InteractionSystem';
 import type { MatchState } from '../types';
 import {
     resolveUnsatisfiableReasonFromInteraction,
@@ -78,24 +79,6 @@ const resolveOnlineAiResponseWindowResponderId = (
         : null;
 };
 
-const isRecoverableInteractionOption = (option: AiInteractionOptionSnapshot): boolean => {
-    const value = option.value as {
-        skip?: unknown;
-        __cancel__?: unknown;
-        done?: unknown;
-        __emergency_skip__?: unknown;
-    } | undefined;
-
-    return option.id === 'skip'
-        || option.id === '__cancel__'
-        || option.id === 'done'
-        || option.id === '__emergency_skip__'
-        || value?.skip === true
-        || value?.__cancel__ === true
-        || value?.done === true
-        || value?.__emergency_skip__ === true;
-};
-
 export function buildInteractionSelectabilityDiagnostic(
     snapshot: AiInteractionSnapshot | null | undefined,
 ): InteractionSelectabilityDiagnostic | null {
@@ -110,7 +93,7 @@ export function buildInteractionSelectabilityDiagnostic(
     const minSelectionCount = typeof multi?.min === 'number' ? multi.min : 1;
     const recoverableOptionIds = minSelectionCount === 0
         ? ['__empty_selection__']
-        : enabledOptions.filter(isRecoverableInteractionOption).map((option) => option.id);
+        : enabledOptions.filter((option) => isEnabledControlChoiceOption(option)).map((option) => option.id);
 
     const selectionState: InteractionSelectabilityDiagnostic['selectionState'] = options.length === 0
         ? 'no-options'

@@ -139,7 +139,13 @@ function shuffleCardIntoDeck(
     random: AbilityContext['random'] | TriggerContext['random'],
     now: number,
     reason: string,
-    sourcePlayerId?: PlayerId,
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): SmashUpEvent[] {
     const player = core.players[playerId];
     if (!player) return [];
@@ -158,7 +164,11 @@ function shuffleCardIntoDeck(
             cardUid,
             defId,
             ownerId: playerId,
-            ...(sourcePlayerId !== undefined && sourcePlayerId !== playerId ? { sourcePlayerId } : {}),
+            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
             reason,
             now,
             expectedLocation: 'any',
@@ -168,7 +178,7 @@ function shuffleCardIntoDeck(
             payload: {
                 playerId,
                 deckUids: shuffled.map(card => card.uid),
-                ...(sourcePlayerId !== undefined && sourcePlayerId !== playerId ? { sourcePlayerId } : {}),
+                ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
             },
             timestamp: now,
         } as SmashUpEvent,
@@ -250,6 +260,13 @@ function princessesSleepingBeautyOnDestroyed(ctx: TriggerContext): TriggerResult
         ctx.random,
         ctx.now,
         'princesses_sleeping_beauty',
+        {
+            sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceCardUid: ctx.sourceCardUid ?? ctx.triggerMinion.uid,
+            sourceDefId: ctx.sourceDefId ?? ctx.triggerMinionDefId,
+            sourceControllerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        },
     );
 }
 
@@ -277,7 +294,13 @@ function princessesSleepingBeautyOnDiscarded(ctx: TriggerContext): TriggerResult
         ctx.random,
         ctx.now,
         'princesses_sleeping_beauty',
-        discardSourcePlayerId,
+        {
+            sourcePlayerId: discardSourcePlayerId ?? ctx.sourceControllerId ?? ctx.playerId,
+            sourceCardUid: ctx.sourceCardUid ?? ctx.triggerMinionUid,
+            sourceDefId: ctx.sourceDefId ?? ctx.triggerMinionDefId,
+            sourceControllerId: ctx.sourceControllerId ?? ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        },
     );
 }
 
@@ -307,7 +330,11 @@ function princessesMarieDeGraw(ctx: AbilityContext): AbilityResult {
                 cardUid: peeked.card.uid,
                 defId: peeked.card.defId,
                 ownerId: peeked.card.owner,
-                ...(peeked.card.owner !== ctx.playerId ? { sourcePlayerId: ctx.playerId } : {}),
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
                 reason: 'princesses_marie_degraw',
                 now: ctx.now,
                 expectedLocation: 'deck',
@@ -330,6 +357,9 @@ function princessesTaleAsOldAsTime(ctx: AbilityContext): AbilityResult {
                 fromBaseIndex: target.baseIndex,
                 toBaseIndex: ctx.baseIndex,
                 toBaseDefId: ctx.state.bases[ctx.baseIndex]?.defId,
+                sourcePlayerId: ctx.playerId,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
                 reason: 'princesses_tale_as_old_as_time',
                 now: ctx.now,
             })),
@@ -568,6 +598,9 @@ const princessesDestroyMinionPromptProgram = createPromptProgram<
                     minionDefId: selected.defId,
                     fromBaseIndex: selected.baseIndex,
                     destroyerId: playerId,
+                    sourcePlayerId: playerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: playerId,
                     reason: context.reason,
                     now: timestamp,
                 }),
@@ -800,6 +833,10 @@ const princessesSnowWhitePromptProgram = createPromptProgram<
                 fromBaseIndex: selected.baseIndex,
                 toBaseIndex: context.destinationBaseIndex,
                 toBaseDefId: state.core.bases[context.destinationBaseIndex]?.defId,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.destinationBaseIndex,
                 reason: 'princesses_snow_white',
                 now: timestamp,
             }),
@@ -857,6 +894,10 @@ const princessesWoodlandHelpersPromptProgram = createPromptProgram<
                 cardUid: context.cardUid,
                 defId: context.defId,
                 ownerId: context.ownerId,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'princesses_woodland_helpers',
+                sourceControllerId: context.playerId,
                 reason: 'princesses_woodland_helpers',
                 now: timestamp,
                 expectedLocation: 'discard',
@@ -905,6 +946,9 @@ const princessesMoveDestinationPromptProgram = createPromptProgram<
                 fromBaseIndex: selectedTarget.fromBaseIndex,
                 toBaseIndex: selected.baseIndex,
                 toBaseDefId: selected.baseDefId,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
                 reason: context.reason,
                 now: timestamp,
             }),

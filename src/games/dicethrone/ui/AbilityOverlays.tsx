@@ -48,6 +48,184 @@ const getUpgradeTargetFromCard = (card?: AbilityCard): string | null => {
 
 
 const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
+
+type AbilityHighlightTone = {
+    highlightBorderColor: string;
+    highlightRimColor: string;
+    highlightGlowColor: string;
+    highlightHaloColor: string;
+    selectedBorderColor: string;
+    selectedRimColor: string;
+    selectedGlowColor: string;
+    selectedHaloColor: string;
+    selectedPulseBorderColor: string;
+};
+
+const DEFAULT_ABILITY_HIGHLIGHT_TONE: AbilityHighlightTone = {
+    highlightBorderColor: '#ff3347',
+    highlightRimColor: 'rgba(255,255,255,0.34)',
+    highlightGlowColor: 'rgba(255,51,71,0.94)',
+    highlightHaloColor: 'rgba(255,51,71,0.56)',
+    selectedBorderColor: '#e11d48',
+    selectedRimColor: 'rgba(255,255,255,0.42)',
+    selectedGlowColor: 'rgba(225,29,72,0.98)',
+    selectedHaloColor: 'rgba(225,29,72,0.64)',
+    selectedPulseBorderColor: 'rgba(255,244,246,0.78)',
+};
+
+const ABILITY_HIGHLIGHT_TONES: Partial<Record<string, Partial<AbilityHighlightTone>>> = {
+    monk: {
+        highlightBorderColor: '#f59e0b',
+        highlightRimColor: 'rgba(255,251,235,0.4)',
+        highlightGlowColor: 'rgba(245,158,11,0.92)',
+        highlightHaloColor: 'rgba(251,191,36,0.5)',
+        selectedBorderColor: '#fbbf24',
+        selectedRimColor: 'rgba(255,251,235,0.5)',
+        selectedGlowColor: 'rgba(251,191,36,0.96)',
+        selectedHaloColor: 'rgba(245,158,11,0.58)',
+        selectedPulseBorderColor: 'rgba(255,247,237,0.82)',
+    },
+    barbarian: {
+        highlightBorderColor: '#ef4444',
+        highlightGlowColor: 'rgba(239,68,68,0.94)',
+        highlightHaloColor: 'rgba(251,113,133,0.5)',
+        selectedBorderColor: '#fb7185',
+        selectedGlowColor: 'rgba(251,113,133,0.98)',
+        selectedHaloColor: 'rgba(239,68,68,0.6)',
+    },
+    pyromancer: {
+        highlightBorderColor: '#f97316',
+        highlightGlowColor: 'rgba(249,115,22,0.94)',
+        highlightHaloColor: 'rgba(251,146,60,0.52)',
+        selectedBorderColor: '#fb923c',
+        selectedGlowColor: 'rgba(251,146,60,0.98)',
+        selectedHaloColor: 'rgba(249,115,22,0.62)',
+    },
+    moon_elf: {
+        highlightBorderColor: '#38bdf8',
+        highlightGlowColor: 'rgba(56,189,248,0.92)',
+        highlightHaloColor: 'rgba(125,211,252,0.5)',
+        selectedBorderColor: '#7dd3fc',
+        selectedGlowColor: 'rgba(125,211,252,0.98)',
+        selectedHaloColor: 'rgba(56,189,248,0.6)',
+        selectedPulseBorderColor: 'rgba(224,242,254,0.84)',
+    },
+    shadow_thief: {
+        highlightBorderColor: '#8b5cf6',
+        highlightGlowColor: 'rgba(139,92,246,0.92)',
+        highlightHaloColor: 'rgba(167,139,250,0.52)',
+        selectedBorderColor: '#a78bfa',
+        selectedGlowColor: 'rgba(167,139,250,0.98)',
+        selectedHaloColor: 'rgba(139,92,246,0.6)',
+        selectedPulseBorderColor: 'rgba(245,243,255,0.82)',
+    },
+    paladin: {
+        highlightBorderColor: '#facc15',
+        highlightGlowColor: 'rgba(250,204,21,0.92)',
+        highlightHaloColor: 'rgba(253,224,71,0.5)',
+        selectedBorderColor: '#fde047',
+        selectedGlowColor: 'rgba(253,224,71,0.98)',
+        selectedHaloColor: 'rgba(250,204,21,0.58)',
+        selectedPulseBorderColor: 'rgba(254,252,232,0.84)',
+    },
+    gunslinger: {
+        highlightBorderColor: '#22d3ee',
+        highlightGlowColor: 'rgba(34,211,238,0.92)',
+        highlightHaloColor: 'rgba(103,232,249,0.48)',
+        selectedBorderColor: '#67e8f9',
+        selectedGlowColor: 'rgba(103,232,249,0.98)',
+        selectedHaloColor: 'rgba(34,211,238,0.58)',
+        selectedPulseBorderColor: 'rgba(236,254,255,0.82)',
+    },
+    samurai: {
+        highlightBorderColor: '#22c55e',
+        highlightGlowColor: 'rgba(34,197,94,0.92)',
+        highlightHaloColor: 'rgba(134,239,172,0.48)',
+        selectedBorderColor: '#86efac',
+        selectedGlowColor: 'rgba(134,239,172,0.98)',
+        selectedHaloColor: 'rgba(34,197,94,0.58)',
+        selectedPulseBorderColor: 'rgba(240,253,244,0.82)',
+    },
+    treant: {
+        highlightBorderColor: '#34d399',
+        highlightGlowColor: 'rgba(52,211,153,0.92)',
+        highlightHaloColor: 'rgba(110,231,183,0.48)',
+        selectedBorderColor: '#6ee7b7',
+        selectedGlowColor: 'rgba(110,231,183,0.98)',
+        selectedHaloColor: 'rgba(52,211,153,0.58)',
+        selectedPulseBorderColor: 'rgba(236,253,245,0.82)',
+    },
+    ninja: {
+        highlightBorderColor: '#a3e635',
+        highlightGlowColor: 'rgba(163,230,53,0.92)',
+        highlightHaloColor: 'rgba(190,242,100,0.48)',
+        selectedBorderColor: '#bef264',
+        selectedGlowColor: 'rgba(190,242,100,0.98)',
+        selectedHaloColor: 'rgba(132,204,22,0.58)',
+        selectedPulseBorderColor: 'rgba(247,254,231,0.82)',
+    },
+    zhanshujia: {
+        highlightBorderColor: '#f59e0b',
+        highlightGlowColor: 'rgba(245,158,11,0.92)',
+        highlightHaloColor: 'rgba(252,211,77,0.5)',
+        selectedBorderColor: '#fcd34d',
+        selectedGlowColor: 'rgba(252,211,77,0.98)',
+        selectedHaloColor: 'rgba(245,158,11,0.58)',
+        selectedPulseBorderColor: 'rgba(255,251,235,0.82)',
+    },
+    cursed_pirate: {
+        highlightBorderColor: '#22d3ee',
+        highlightRimColor: 'rgba(236,254,255,0.42)',
+        highlightGlowColor: 'rgba(34,211,238,0.94)',
+        highlightHaloColor: 'rgba(45,212,191,0.54)',
+        selectedBorderColor: '#67e8f9',
+        selectedRimColor: 'rgba(236,254,255,0.54)',
+        selectedGlowColor: 'rgba(103,232,249,0.98)',
+        selectedHaloColor: 'rgba(14,165,233,0.62)',
+        selectedPulseBorderColor: 'rgba(236,254,255,0.86)',
+    },
+    artificer: {
+        highlightBorderColor: '#60a5fa',
+        highlightGlowColor: 'rgba(96,165,250,0.92)',
+        highlightHaloColor: 'rgba(147,197,253,0.5)',
+        selectedBorderColor: '#93c5fd',
+        selectedGlowColor: 'rgba(147,197,253,0.98)',
+        selectedHaloColor: 'rgba(96,165,250,0.58)',
+        selectedPulseBorderColor: 'rgba(239,246,255,0.84)',
+    },
+};
+
+const getAbilityHighlightTone = (characterId?: string): AbilityHighlightTone => ({
+    ...DEFAULT_ABILITY_HIGHLIGHT_TONE,
+    ...(characterId ? ABILITY_HIGHLIGHT_TONES[characterId] : undefined),
+});
+
+const buildAbilityHighlightStyle = (
+    tone: AbilityHighlightTone,
+    variant: 'highlight' | 'selected',
+): React.CSSProperties => {
+    if (variant === 'selected') {
+        return {
+            borderStyle: 'solid',
+            borderWidth: '2.5px',
+            borderColor: tone.selectedBorderColor,
+            boxShadow: `0 0 0 1px ${tone.selectedRimColor}, 0 0 18px ${tone.selectedGlowColor}, 0 0 30px ${tone.selectedHaloColor}`,
+        };
+    }
+    return {
+        borderStyle: 'solid',
+        borderWidth: '2px',
+        borderColor: tone.highlightBorderColor,
+        boxShadow: `0 0 0 1px ${tone.highlightRimColor}, 0 0 16px ${tone.highlightGlowColor}, 0 0 26px ${tone.highlightHaloColor}`,
+    };
+};
+
+const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSProperties => ({
+    borderStyle: 'solid',
+    borderWidth: '1px',
+    borderColor: tone.selectedPulseBorderColor,
+    boxShadow: `inset 0 0 0 1px ${tone.selectedPulseBorderColor}`,
+});
     /** AbilityOverlays 通过 ref 暴露的方法 */
     export interface AbilityOverlaysHandle {
         /** 保存当前布局到服务端 */
@@ -115,7 +293,25 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
         const editingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-slate-950/65 pointer-events-none';
         const activeEditingGuideClassName = 'absolute inset-0 rounded-lg border-[2.5px] border-emerald-300 bg-emerald-400/12 shadow-[0_0_0_1px_rgba(6,95,70,0.95),0_0_18px_rgba(52,211,153,0.55)] pointer-events-none';
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
+        const highlightOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10 animate-pulse';
+        const selectedOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10';
         const inspectButtonClassName = 'absolute right-[0.2vw] top-[0.2vw] z-20 flex h-[1.15vw] w-[1.15vw] min-h-[14px] min-w-[14px] items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_0.18vw_0.42vw_rgba(0,0,0,0.45)] transition-[background-color,border-color,opacity] duration-200 hover:border-amber-300/45 hover:bg-amber-500/78';
+        const abilityHighlightTone = React.useMemo(
+            () => getAbilityHighlightTone(characterId),
+            [characterId],
+        );
+        const highlightOverlayStyle = React.useMemo(
+            () => buildAbilityHighlightStyle(abilityHighlightTone, 'highlight'),
+            [abilityHighlightTone],
+        );
+        const selectedOverlayStyle = React.useMemo(
+            () => buildAbilityHighlightStyle(abilityHighlightTone, 'selected'),
+            [abilityHighlightTone],
+        );
+        const selectedPulseStyle = React.useMemo(
+            () => buildAbilitySelectedPulseStyle(abilityHighlightTone),
+            [abilityHighlightTone],
+        );
 
         // 通过 ref 暴露保存方法，供调试面板调用
         React.useImperativeHandle(ref, () => ({
@@ -283,6 +479,9 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                             data-resolved-ability-id={isResolved ?? ''}
                             data-base-ability-id={baseAbilityId ?? ''}
                             data-can-click={canClick ? 'true' : 'false'}
+                            data-should-highlight={shouldHighlight ? 'true' : 'false'}
+                            data-is-selected={isAbilitySelected ? 'true' : 'false'}
+                            data-is-activating={isActivating ? 'true' : 'false'}
                             data-upgrade-card-interactive={upgradeCard ? 'true' : 'false'}
                             onMouseDown={(e) => handleMouseDown(e, slot.id, 'move')}
                             className={`
@@ -329,11 +528,19 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                                 </div>
                             )}
                             {shouldHighlight && (
-                                <div className="absolute inset-0 rounded-lg border-[2.5px] border-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.8),0_0_40px_rgba(251,113,133,0.4)] pointer-events-none z-10 animate-pulse" />
+                                <div
+                                    data-testid={`dt-ability-highlight-${slot.id}`}
+                                    className={highlightOverlayClassName}
+                                    style={highlightOverlayStyle}
+                                />
                             )}
                             {isAbilitySelected && (
-                                <div className="absolute inset-0 rounded-lg border-[3px] border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.9),0_0_50px_rgba(239,68,68,0.5)] pointer-events-none z-10">
-                                    <div className="absolute -inset-[2px] rounded-lg border-2 border-white/60 animate-pulse" />
+                                <div
+                                    data-testid={`dt-ability-selected-${slot.id}`}
+                                    className={selectedOverlayClassName}
+                                    style={selectedOverlayStyle}
+                                >
+                                    <div className="absolute inset-[1px] rounded-lg animate-pulse" style={selectedPulseStyle} />
                                 </div>
                             )}
                             {upgradeCard && hasPrimarySlotClick && showDesktopInspectButton && !isEditing && (

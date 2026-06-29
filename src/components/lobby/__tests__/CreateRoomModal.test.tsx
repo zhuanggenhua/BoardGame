@@ -6,6 +6,7 @@ import { CreateRoomModal } from '../CreateRoomModal';
 import { PasswordEntryModal } from '../../common/overlays/PasswordEntryModal';
 import type { GameManifestEntry } from '../../../games/manifest.types';
 import type { LocalMatchPreferences } from '../../../engine/ai';
+import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';
 import { QIDAHEN_MANIFEST } from '../../../games/qidahen/manifest';
 
 vi.mock('react-i18next', () => ({
@@ -37,6 +38,9 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.occupiedSeatsHint') return '选择 AI 座位';
             if (key === 'createRoom.ownerSeatUnit') return `seat-${options?.seat}-owner`;
             if (key === 'createRoom.occupiedSeatUnit') return `seat-${options?.seat}`;
+            if (key === 'createRoom.aiThinkingTime') return 'AI 思考时长';
+            if (key === 'createRoom.aiThinkingTimeHint') return '按游戏单独记住';
+            if (key === 'createRoom.aiThinkingTimeSeconds') return `${options?.count} 秒`;
             if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
             if (key === 'setup.scenario.label') return '开局剧本';
             if (key === 'setup.scenario.postSarhu1619') return '剧本一：萨尔浒战后（1619）';
@@ -82,6 +86,7 @@ describe('CreateRoomModal AI default state', () => {
     it('有已保存 AI 偏好时，打开弹窗会恢复为开启', () => {
         const initialPreferences: LocalMatchPreferences = {
             numPlayers: 2,
+            minimumActionDelayMs: 1000,
             setupSelections: {},
             seatControllers: {
                 '0': { type: 'human' },
@@ -157,7 +162,7 @@ describe('CreateRoomModal AI default state', () => {
             enableAi: true,
             seatControllers: expect.objectContaining({
                 '0': { type: 'human' },
-                '1': { type: 'local-ai', difficulty: 'normal' },
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 1000 },
             }),
         }));
     });
@@ -183,6 +188,7 @@ describe('CreateRoomModal AI default state', () => {
                 '1': {
                     type: 'local-ai',
                     difficulty: 'normal',
+                    minimumActionDelayMs: 1000,
                     manualSetupSelection: true,
                     manualFactionSelection: true,
                 },
@@ -198,6 +204,7 @@ describe('CreateRoomModal AI default state', () => {
             gameManifest,
             initialPreferences: {
                 numPlayers: 2,
+                minimumActionDelayMs: 1000,
                 setupSelections: {},
                 seatControllers: {
                     '0': { type: 'human' },
@@ -213,6 +220,7 @@ describe('CreateRoomModal AI default state', () => {
         const onConfirm = vi.fn();
         const initialPreferences: LocalMatchPreferences = {
             numPlayers: 2,
+            minimumActionDelayMs: 1000,
             setupSelections: {},
             seatControllers: {
                 '0': { type: 'human' },
@@ -233,7 +241,42 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             seatControllers: expect.objectContaining({
-                '1': { type: 'local-ai', difficulty: 'hard' },
+                '1': { type: 'local-ai', difficulty: 'hard', minimumActionDelayMs: 1000 },
+            }),
+        }));
+    });
+
+    it('会按当前游戏恢复并提交 AI 思考时长', () => {
+        const onConfirm = vi.fn();
+        const initialPreferences: LocalMatchPreferences = {
+            numPlayers: 2,
+            minimumActionDelayMs: 3000,
+            setupSelections: {},
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+            },
+        };
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest,
+            initialPreferences,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
+        const select = screen.getByTestId('create-room-ai-thinking-time-select');
+        expect(select).toHaveValue('3000');
+
+        fireEvent.change(select, { target: { value: '0' } });
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            minimumActionDelayMs: 0,
+            seatControllers: expect.objectContaining({
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 0 },
             }),
         }));
     });
@@ -263,9 +306,9 @@ describe('CreateRoomModal AI default state', () => {
             numPlayers: 4,
             seatControllers: {
                 '0': { type: 'human' },
-                '1': { type: 'local-ai', difficulty: 'normal' },
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 1000 },
                 '2': { type: 'human' },
-                '3': { type: 'local-ai', difficulty: 'normal' },
+                '3': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 1000 },
             },
         }));
     });
@@ -283,7 +326,151 @@ describe('CreateRoomModal AI default state', () => {
         expect(passwordInput).toHaveAttribute('autocomplete', 'new-password');
     });
 
-    it('七大恨切到剧本二后会显示房间预选字段，并把选择写入 setupSelections', () => {
+    it('幻想国度切到二人变体后，应把人数按钮立即收敛到 2 人并按该 setup 提交', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        const variantSelect = screen.getByTestId('setup-option-select-variant');
+
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        expect(screen.getByRole('button', { name: '3人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '6人' })).toBeInTheDocument();
+
+        fireEvent.change(variantSelect, { target: { value: 'duel' } });
+
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '3人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '4人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '5人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '6人' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 2,
+            setupSelections: expect.objectContaining({
+                variant: 'duel',
+                expansion: 'base',
+            }),
+        }));
+    });
+
+    it('幻想国度标准局建房不应再提供 2 人按钮', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        expect(screen.getByRole('button', { name: '3人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '4人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '5人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '6人' })).toBeInTheDocument();
+    });
+
+    it('幻想国度重新打开建房弹窗时，扩展应默认回到基础卡组，而不是记住上次扩展', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: {
+                numPlayers: 3,
+                minimumActionDelayMs: 1000,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'human' },
+                    '2': { type: 'human' },
+                },
+                setupSelections: {
+                    variant: 'standard',
+                    expansion: 'cursed-hoard-suits',
+                },
+            },
+        }));
+
+        expect(screen.getByTestId('setup-option-select-expansion-base')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits')).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('幻想国度从二人变体切回标准版后，应重新放开更高人数选项', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        const variantSelect = screen.getByTestId('setup-option-select-variant');
+
+        fireEvent.change(variantSelect, { target: { value: 'duel' } });
+        expect(screen.queryByRole('button', { name: '6人' })).toBeNull();
+
+        fireEvent.change(variantSelect, { target: { value: 'standard' } });
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: '6人' }));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 6,
+            setupSelections: expect.objectContaining({
+                variant: 'standard',
+                expansion: 'base',
+            }),
+        }));
+    });
+
+    it('幻想国度可选扩展会通过建房 setupSelections 提交出去', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        expect(screen.queryByTestId('setup-option-select-expansion')).toBeNull();
+        fireEvent.click(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits'));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            setupSelections: expect.objectContaining({
+                variant: 'standard',
+                expansion: 'cursed-hoard-suits',
+            }),
+        }));
+    });
+
+    it('幻想国度扩展入口使用 tag 切片，而不是下拉框', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        expect(screen.queryByTestId('setup-option-select-expansion')).toBeNull();
+        expect(screen.getByTestId('setup-option-select-expansion-base')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits')).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('七大恨建房页不再提供剧本预选，而是只提示局内完成剧本介绍、投票与前置项', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -294,33 +481,19 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        fireEvent.change(screen.getByDisplayValue('剧本一：萨尔浒战后（1619）'), {
-            target: { value: 'shanhaiguan-1622' },
-        });
-
         expect(screen.getByTestId('qidahen-pregame-choice-fields')).toBeInTheDocument();
-
-        fireEvent.change(screen.getByTestId('qidahen-pregame-choice-shanhaiguan-1622:ming:character:0'), {
-            target: { value: 'ming-xiong-tingbi' },
-        });
-        fireEvent.change(screen.getByTestId('qidahen-pregame-choice-shanhaiguan-1622:ming:armament:1'), {
-            target: { value: 'long-barreled-musket' },
-        });
+        expect(screen.getByTestId('qidahen-pregame-choice-inline-note')).toBeInTheDocument();
+        expect(screen.queryByText('开局剧本')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
-            setupSelections: expect.objectContaining({
-                scenario: 'shanhaiguan-1622',
-                'shanhaiguan-1622:ming:character:0': 'ming-xiong-tingbi',
-                'shanhaiguan-1622:jin:character:0': 'jin-eidu',
-                'shanhaiguan-1622:jin:character:1': 'jin-amin',
-                'shanhaiguan-1622:ming:armament:0': 'cavalry-armor',
-                'shanhaiguan-1622:ming:armament:1': 'long-barreled-musket',
-            }),
+            setupSelections: {
+                qidahenInMatchScenarioVote: 'enabled',
+            },
         }));
     });
 
-    it('七大恨默认剧本会自动锁到三人房，而不是沿用 manifest 的最小人数', () => {
+    it('七大恨默认人数会按 bestPlayers 落到三人房，并带局内剧本投票模式提交', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -336,12 +509,12 @@ describe('CreateRoomModal AI default state', () => {
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             numPlayers: 3,
             setupSelections: expect.objectContaining({
-                scenario: 'post-sarhu-1619',
+                qidahenInMatchScenarioVote: 'enabled',
             }),
         }));
     });
 
-    it('七大恨切到丁卯胡乱后会自动收敛到二人房并带着二人配置提交', () => {
+    it('七大恨仍允许手动切到二人房，但不再依赖建房页先选二人剧本', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -352,16 +525,13 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        fireEvent.change(screen.getByDisplayValue('剧本一：萨尔浒战后（1619）'), {
-            target: { value: 'dingmao-rebellion-1627' },
-        });
+        fireEvent.click(screen.getByRole('button', { name: '2人' }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
-        expect(screen.queryByRole('button', { name: '3人' })).toBeNull();
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             numPlayers: 2,
             setupSelections: expect.objectContaining({
-                scenario: 'dingmao-rebellion-1627',
+                qidahenInMatchScenarioVote: 'enabled',
             }),
         }));
     });

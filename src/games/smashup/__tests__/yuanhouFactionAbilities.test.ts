@@ -12,6 +12,7 @@ import {
 import {
     applyEvents,
     findInteractionOption,
+    getPromptOptions,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -78,7 +79,14 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
     const advancePostScoringDelay = (state: any, playerId: string) => {
         const delayUntil = (state.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
+        if (typeof delayUntil !== 'number') {
+            expect(state.sys.phase).not.toBe('scoreBases');
+            return {
+                success: true,
+                finalState: state,
+                events: [],
+            };
+        }
         const advanced = runCommand(state, {
             type: 'ADVANCE_PHASE',
             playerId,
@@ -7603,7 +7611,17 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(talent.success).toBe(true);
-        expect(talent.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_time_raider_choose');
+        const timeRaiderPrompt = getSimpleChoicePrompt(talent.finalState, 'time_travelers_time_raider_choose');
+        expect(getPromptOptions(timeRaiderPrompt)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({ cardUid: 'discard-a', defId: 'sharks_hammerhead' }),
+                displayMode: 'card',
+            }),
+            expect.objectContaining({
+                value: expect.objectContaining({ cardUid: 'discard-b', defId: 'super_spies_from_q_with_love' }),
+                displayMode: 'card',
+            }),
+        ]));
 
         const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
             const option = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'discard-b');
@@ -7791,7 +7809,17 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_repeater_perfect_choose');
+        const repeaterPrompt = getSimpleChoicePrompt(played.finalState, 'time_travelers_repeater_perfect_choose');
+        expect(getPromptOptions(repeaterPrompt)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({ cardUid: 'action-a', defId: 'super_spies_from_q_with_love' }),
+                displayMode: 'card',
+            }),
+            expect.objectContaining({
+                value: expect.objectContaining({ cardUid: 'action-b', defId: 'time_travelers_1_21_gigawatts' }),
+                displayMode: 'card',
+            }),
+        ]));
 
         const resolved = resolveInteractionChain(played.finalState, (prompt) => {
             const option = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'action-b');

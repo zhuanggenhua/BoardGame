@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyPlayerViewToState, resolveNextLocalAiAction } from '../../../engine/ai';
+import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import type { MatchState } from '../../../engine/types';
 import manifest from '../manifest';
 import { fantasyRealmsAiRuntime } from '../ai';
@@ -51,6 +52,38 @@ const summarize = (hand: ReturnType<typeof byId>[], discardPile: ReturnType<type
 const applyCommand = (core: FantasyRealmsCore, command: FantasyRealmsCommand) => {
     const events = FantasyRealmsDomain.execute(stateOf(core), command, random);
     return events.reduce((nextCore, event) => FantasyRealmsDomain.reduce(nextCore, event), core);
+};
+
+const applyHumanDuelTurn = (core: FantasyRealmsCore, playerId: string): FantasyRealmsCore => {
+    let nextCore = applyCommand(core, {
+        type: 'DRAW_FROM_DECK',
+        playerId,
+        payload: {},
+    });
+    if (nextCore.currentPlayer === playerId && nextCore.stage === 'discard') {
+        const discardCardId = nextCore.players[playerId]?.hand[0]?.id;
+        if (!discardCardId) {
+            throw new Error(`玩家${playerId}没有可弃手牌`);
+        }
+        nextCore = applyCommand(nextCore, {
+            type: 'DISCARD_CARD',
+            playerId,
+            payload: { cardId: discardCardId },
+        });
+    }
+    return nextCore;
+};
+
+const applyAiResolutionCommands = (
+    core: FantasyRealmsCore,
+    resolution: NonNullable<Awaited<ReturnType<typeof resolveNextLocalAiAction>>>,
+): FantasyRealmsCore => {
+    return resolution.action.commands.reduce((nextCore, command) => (
+        applyCommand(nextCore, {
+            ...command,
+            playerId: resolution.playerId,
+        } as FantasyRealmsCommand)
+    ), core);
 };
 
 function createDiscardDecisionCore(): FantasyRealmsCore {
@@ -176,7 +209,7 @@ function createDrawDecisionCore(): FantasyRealmsCore {
 
 function createDuelFullHandTakeDiscardDecisionCore(): FantasyRealmsCore {
     const aiLongbow = byId('weapon-elven-longbow');
-    const aiNecromancer = byId('wizard-necromancer');
+    const aiGem = byId('artifact-gem-of-order');
     const aiBellTower = byId('land-bell-tower');
     const aiSword = byId('weapon-sword-of-keth');
     const aiMirage = byId('wild-mirage');
@@ -195,13 +228,18 @@ function createDuelFullHandTakeDiscardDecisionCore(): FantasyRealmsCore {
     const warlockLord = byId('wizard-warlock-lord');
     const warship = byId('weapon-warship');
 
-    const aiHand = [aiLongbow, aiNecromancer, aiBellTower, aiSword, aiMirage, aiCollector, aiRainstorm];
+    const aiHand = [aiLongbow, aiGem, aiBellTower, aiSword, aiMirage, aiCollector, aiRainstorm];
     const hostHand = [hostDragon, hostRangers, hostForge, hostKing, hostQueen, hostUnicorn, hostBellTower];
     const discardPile = [discardAir, discardBook];
     const summaryAi = summarize(aiHand, discardPile);
     const summaryHost = summarize(hostHand, discardPile);
 
     return {
+        setupConfig: {
+            variant: 'duel',
+            expansion: 'base',
+            cursedHoardSuitsEnabled: false,
+        },
         playerIds: ['0', '1'],
         currentPlayer: '1',
         turn: 4,
@@ -595,6 +633,41 @@ describe('FantasyRealms AI runtime', () => {
         expect(alternativeScores.every((score) => chosenScore >= score)).toBe(true);
     });
 
+    it('本地 AI 在双人局进入第二个 AI 回合时仍会生成合法动作', async () => {
+        let core = FantasyRealmsDomain.setup(['0', '1'], random);
+        core = applyHumanDuelTurn(core, '0');
+        expect(core.currentPlayer).toBe('1');
+
+        for (let aiTurnIndex = 0; aiTurnIndex < 2; aiTurnIndex += 1) {
+            const actionKinds: string[] = [];
+            let guard = 0;
+            while (core.currentPlayer === '1' && guard < 4) {
+                const resolution = await resolveNextLocalAiAction({
+                    engineConfig,
+                    state: stateOf(core),
+                    matchId: `local:fantasyrealms-ai-second-turn-${aiTurnIndex}-${guard}`,
+                    seatControllers: {
+                        '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+                    },
+                    decisionBudgetMs: 0,
+                });
+
+                expect(resolution?.playerId).toBe('1');
+                expect(resolution?.action.commands.length).toBeGreaterThan(0);
+                actionKinds.push(resolution!.action.kind);
+                core = applyAiResolutionCommands(core, resolution!);
+                guard += 1;
+            }
+
+            expect(actionKinds.length).toBeGreaterThan(0);
+            expect(core.currentPlayer).toBe('0');
+            if (aiTurnIndex === 0) {
+                core = applyHumanDuelTurn(core, '0');
+                expect(core.currentPlayer).toBe('1');
+            }
+        }
+    });
+
     it('discard 阶段若总分相同，会继续按正式 tiebreak 选择更优弃牌', async () => {
         const core = createDiscardTiebreakDecisionCore();
 
@@ -623,6 +696,28 @@ describe('FantasyRealms AI runtime', () => {
 
         expect(discardProtectionRune.totalScore).toBe(discardLightning.totalScore);
         expect(discardLightning.tiebreakBaseScore).toBeLessThan(discardProtectionRune.tiebreakBaseScore);
+    });
+
+    it('本地 AI 只让摸牌库保留可见延迟，拿中央牌与弃牌都应瞬发', () => {
+        const drawDeckAction = fantasyRealmsAiRuntime.buildLegalActions({
+            playerId: '0',
+            state: stateOf(createDrawDecisionCore()),
+        }).find((action) => action.kind === 'draw-deck');
+        const takeDiscardAction = fantasyRealmsAiRuntime.buildLegalActions({
+            playerId: '0',
+            state: stateOf(createDrawDecisionCore()),
+        }).find((action) => action.kind === 'take-discard');
+        const discardAction = fantasyRealmsAiRuntime.buildLegalActions({
+            playerId: '0',
+            state: stateOf(createDiscardDecisionCore()),
+        }).find((action) => action.kind === 'discard-card');
+
+        expect(drawDeckAction).toBeTruthy();
+        expect(takeDiscardAction).toBeTruthy();
+        expect(discardAction).toBeTruthy();
+        expect(resolveLocalAiActionVisibility(drawDeckAction!, fantasyRealmsAiRuntime)).toBe('visible');
+        expect(resolveLocalAiActionVisibility(takeDiscardAction!, fantasyRealmsAiRuntime)).toBe('hidden');
+        expect(resolveLocalAiActionVisibility(discardAction!, fantasyRealmsAiRuntime)).toBe('hidden');
     });
 });
 

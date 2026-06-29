@@ -16,11 +16,11 @@ import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
 import type {
     MinionMetadataUpdatedEvent,
     OngoingAttachedEvent,
-    OngoingDetachedEvent,
     SmashUpCore,
     SmashUpEvent,
 } from '../domain/types';
@@ -121,6 +121,10 @@ const MERMAIDS_CHARMED_SUPPRESSED_TURN_META = 'mermaidsCharmedSuppressedTurn';
 const MERMAIDS_TEMP_CONTROL_CONTROLLER_META = 'mermaidsTemporaryControlOriginalController';
 const MERMAIDS_TEMP_CONTROL_PLAYER_META = 'mermaidsTemporaryControlPlayerId';
 const MERMAIDS_TEMP_CONTROL_TURN_META = 'mermaidsTemporaryControlTurn';
+const selfDetachOrderingContract = {
+    reads: [],
+    writes: [],
+};
 
 function createMermaidsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: AbilityContext['matchState'],
@@ -255,16 +259,13 @@ function buildMoveOngoingEvents(
     snapshot?: OngoingMoveSnapshot,
 ): SmashUpEvent[] {
     return [
-        {
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid,
-                defId,
-                ownerId,
-                reason,
-            },
-            timestamp,
-        } as OngoingDetachedEvent,
+        buildOngoingDetachedEvent({
+            cardUid,
+            defId,
+            ownerId,
+            reason,
+            now: timestamp,
+        }),
         {
             type: SU_EVENTS.ONGOING_ATTACHED,
             payload: {
@@ -424,6 +425,9 @@ const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTa
                 toBaseIndex: context.targetBaseIndex,
                 reason: 'mermaids_charmer',
                 now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_charmer',
+                sourceControllerId: context.playerId,
             }),
         };
     },
@@ -454,6 +458,11 @@ const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMove
                 toBaseIndex: selected.baseIndex,
                 reason: 'mermaids_charmer',
                 now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.charmerUid,
+                sourceDefId: context.charmerDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.fromBaseIndex,
             })
             : [];
 
@@ -525,6 +534,9 @@ const mermaidsMermaidQueenMovePromptProgram = createPromptDslProgram<MermaidsMer
                 toBaseIndex: context.targetBaseIndex,
                 reason: 'mermaids_mermaid_queen',
                 now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_mermaid_queen',
+                sourceControllerId: context.playerId,
             }),
         };
     },
@@ -827,6 +839,9 @@ const mermaidsSirenSongTargetPromptProgram = createPromptProgram<MermaidsSirenSo
                     toBaseIndex: context.toBaseIndex,
                     reason: 'mermaids_siren_song',
                     now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'mermaids_siren_song',
+                    sourceControllerId: context.playerId,
                 }),
                 ...advanced.events,
             ],
@@ -936,6 +951,9 @@ const mermaidsCharmedDestinationPromptProgram = createPromptProgram<MermaidsChar
                     toBaseIndex: selected.baseIndex,
                     reason: 'mermaids_charmed',
                     now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'mermaids_charmed',
+                    sourceControllerId: context.playerId,
                 }),
                 metadataEvent,
                 grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'mermaids_charmed'),
@@ -1212,16 +1230,13 @@ function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
         }
         return ctx.sourceControllerId;
     })();
-    return [{
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: ctx.sourceCardUid,
-            defId: 'mermaids_desert_island',
-            ownerId,
-            reason: 'mermaids_desert_island',
-        },
-        timestamp: ctx.now,
-    } as OngoingDetachedEvent];
+    return [buildOngoingDetachedEvent({
+        cardUid: ctx.sourceCardUid,
+        defId: 'mermaids_desert_island',
+        ownerId,
+        reason: 'mermaids_desert_island',
+        now: ctx.now,
+    })];
 }
 
 export function registerMermaidsAbilities(): void {
@@ -1246,6 +1261,7 @@ export function registerMermaidsAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        effectContract: selfDetachOrderingContract,
     });
 }
 

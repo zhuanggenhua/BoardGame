@@ -1,11 +1,15 @@
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
-import { createBaseSystems, createGameEngine } from '../../engine';
+import { createBaseSystems, createCheatSystem, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
+import { registerCriticalImageResolver } from '../../core';
 import { FantasyRealmsDomain } from './domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore, FantasyRealmsEvent } from './domain';
-import { isDuelVariant } from './domain/commands';
+import { getDeckDrawCount } from './domain/commands';
+import { fantasyRealmsCheatModifier } from './domain/cheatModifier';
 import { getFantasyRealmsCardDisplayName } from './foundation';
 import { fantasyRealmsAiRuntime } from './ai';
+import { fantasyRealmsCriticalImageResolver } from './criticalImageResolver';
+import { FANTASY_REALMS_AUDIO_CONFIG } from './audio.config';
 
 const ACTION_ALLOWLIST = ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'] as const;
 
@@ -37,16 +41,12 @@ function formatFantasyRealmsActionEntry({
     }
 
     if (command.type === 'DRAW_FROM_DECK') {
-        const currentPlayer = core.players[command.playerId];
-        const drawCount = isDuelVariant(core)
-            ? ((currentPlayer?.hand.length ?? 0) >= 7 ? 1 : 2)
-            : 1;
         return {
             id: `${command.type}-${command.playerId}-${timestamp}`,
             timestamp,
             actorId: command.playerId,
             kind: command.type,
-            segments: [{ type: 'text', text: `从牌库摸 ${drawCount} 张` }],
+            segments: [{ type: 'text', text: `从牌库摸 ${getDeckDrawCount(core)} 张` }],
         };
     }
 
@@ -75,9 +75,8 @@ function formatFantasyRealmsActionEntry({
     return null;
 }
 
-export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent>({
-    domain: FantasyRealmsDomain,
-    systems: createBaseSystems<FantasyRealmsCore>({
+const systems = [
+    ...createBaseSystems<FantasyRealmsCore>({
         actionLog: {
             commandAllowlist: ACTION_ALLOWLIST,
             formatEntry: formatFantasyRealmsActionEntry,
@@ -86,11 +85,19 @@ export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCom
             snapshotCommandAllowlist: ACTION_ALLOWLIST,
         },
     }),
+    createCheatSystem<FantasyRealmsCore>(fantasyRealmsCheatModifier),
+];
+
+export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent>({
+    domain: FantasyRealmsDomain,
+    systems,
     minPlayers: 2,
     maxPlayers: 6,
     commandTypes: ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'],
 });
 
 registerGameAiRuntime(fantasyRealmsAiRuntime);
+registerCriticalImageResolver('fantasyrealms', fantasyRealmsCriticalImageResolver);
 
 export default engineConfig;
+export { FANTASY_REALMS_AUDIO_CONFIG as audioConfig };

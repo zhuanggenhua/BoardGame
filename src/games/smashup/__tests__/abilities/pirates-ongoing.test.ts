@@ -809,6 +809,57 @@ describe('pirate action play flows', () => {
         }));
     });
 
+    it('pirate_sea_dogs: 移动事件会带上统一来源语义字段', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_sea_dogs', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'robot_zapbot', '1', 2),
+                    ],
+                }),
+                makeBase({ defId: 'b2', minions: [] }),
+            ],
+        });
+
+        const resolved = invokeRegisteredRuntimePromptHandlerContract(
+            'pirate_sea_dogs_choose_to',
+            makeMatchState(state),
+            '0',
+            { baseIndex: 1 },
+            {
+                runtimePrompt: {
+                    owner: 'smashup-ability-runtime',
+                    sourceId: 'pirate_sea_dogs_choose_to',
+                    continuation: {
+                        context: { playerId: '0', now: 0, factionId: 'robots', fromBase: 0 },
+                        contextHasMatchState: true,
+                    },
+                },
+            },
+            0,
+            dummyRandom,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_MOVED,
+            payload: expect.objectContaining({
+                minionUid: 'm1',
+                sourcePlayerId: '0',
+                sourceDefId: 'pirate_sea_dogs',
+                sourceControllerId: '0',
+                sourceBaseIndex: 0,
+                reason: 'pirate_sea_dogs',
+            }),
+        }));
+    });
+
     it('pirate_powderkeg: 单个己方随从时创建 Prompt', () => {
         const state = makeState({
             players: {

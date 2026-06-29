@@ -273,7 +273,7 @@ describe('DiceThrone 音效配置', () => {
             };
             const samuraiAttackModifier: AudioEvent = {
                 type: 'CARD_PLAYED',
-                payload: { playerId: '0', cardId: 'card-zanshin', cpCost: 2 },
+                payload: { playerId: '0', cardId: 'card-zanshin', cpCost: 1 },
             };
 
             expect(resolveKey(samuraiHonorCard)).toBe(SAMURAI_TOKEN_SFX_HONOR);

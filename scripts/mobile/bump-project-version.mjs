@@ -1,4 +1,10 @@
-import { bumpSemver, readProjectVersion, updateProjectVersion } from './version-utils.mjs';
+import {
+    bumpSemver,
+    packageJsonPath,
+    readJsonFile,
+    readProjectVersion,
+    updateProjectVersion,
+} from './version-utils.mjs';
 
 const args = process.argv.slice(2);
 
@@ -40,13 +46,30 @@ if (Boolean(bumpType) === Boolean(explicitVersion)) {
 }
 
 const currentVersion = readProjectVersion();
+const currentPackageJson = readJsonFile(packageJsonPath);
+const currentAndroidVersionCode = currentPackageJson.androidVersionCode;
 const nextVersion = explicitVersion || bumpSemver(currentVersion, bumpType);
 
 if (!dryRun) {
     updateProjectVersion(nextVersion);
 }
 
+const nextAndroidVersionCode = dryRun
+    ? (
+        typeof currentAndroidVersionCode === 'number'
+        && Number.isFinite(currentAndroidVersionCode)
+        && currentAndroidVersionCode > 0
+        && currentVersion !== nextVersion
+            ? Math.trunc(currentAndroidVersionCode) + 1
+            : currentAndroidVersionCode
+    )
+    : readJsonFile(packageJsonPath).androidVersionCode;
+
 console.log(dryRun ? '项目版本号预演完成（未写回文件）' : '项目版本号已更新');
 console.log(`currentVersion=${currentVersion}`);
 console.log(`nextVersion=${nextVersion}`);
+if (typeof currentAndroidVersionCode === 'number' && typeof nextAndroidVersionCode === 'number') {
+    console.log(`currentAndroidVersionCode=${currentAndroidVersionCode}`);
+    console.log(`nextAndroidVersionCode=${nextAndroidVersionCode}`);
+}
 console.log(`mode=${dryRun ? 'dry-run' : 'write'}`);

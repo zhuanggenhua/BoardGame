@@ -74,7 +74,9 @@ test.describe('SmashUp - 我们乃最强 afterScoring 回归', () => {
             if (windowType !== 'meFirst') {
                 throw new Error(`推进到 afterScoring 前遇到意外响应窗口: ${windowType}`);
             }
-            await game.passResponseWindow();
+            const meFirstPassButton = page.getByTestId('me-first-pass-button');
+            await expect(meFirstPassButton).toBeVisible({ timeout: 5000 });
+            await meFirstPassButton.click();
         }
 
         await game.waitForResponseWindow('afterScoring', 10000);
@@ -113,7 +115,7 @@ test.describe('SmashUp - 我们乃最强 afterScoring 回归', () => {
         );
 
         await game.waitForInteraction('giant_ant_we_are_the_champions_choose_amount', 10000);
-        const slider = page.getByLabel('slider-choice');
+        const slider = page.getByLabel(/slider-choice|滑杆选择/i);
         await expect(slider).toBeVisible();
         await slider.evaluate((element) => {
             const input = element as HTMLInputElement;
@@ -136,6 +138,33 @@ test.describe('SmashUp - 我们乃最强 afterScoring 回归', () => {
                 payload: { optionId: 'confirm-transfer', mergedValue: { amount: 2, value: 2 } },
             });
         });
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+            const state = await game.getState();
+            if (!state.sys.responseWindow?.current && !state.sys.interaction?.current) {
+                break;
+            }
+            const passButtonCandidates = [
+                page.getByTestId('me-first-pass-button'),
+                page.getByRole('button', { name: /^(让过|Pass)$/i }).first(),
+            ];
+            let clickedPassButton = false;
+            for (const candidate of passButtonCandidates) {
+                if (await candidate.isVisible().catch(() => false)) {
+                    await candidate.click();
+                    await page.waitForTimeout(400);
+                    clickedPassButton = true;
+                    break;
+                }
+            }
+            if (clickedPassButton) {
+                continue;
+            }
+            if (state.sys.responseWindow?.current) {
+                await game.passResponseWindow();
+                continue;
+            }
+            break;
+        }
         await game.waitForNoInteraction(10000);
 
         const player0 = await game.getPlayerState('0');

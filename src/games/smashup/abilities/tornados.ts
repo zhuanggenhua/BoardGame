@@ -10,6 +10,7 @@ import {
     createSkipOption,
     getMinionPower,
 } from '../domain/abilityHelpers';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -18,7 +19,7 @@ import {
 } from '../domain/abilityRuntime';
 import { registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
-import type { BaseAbilityUsedEvent, BaseReplacedEvent, OngoingAttachedEvent, OngoingDetachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { BaseAbilityUsedEvent, BaseReplacedEvent, OngoingAttachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
@@ -40,6 +41,11 @@ type MoveMinionToBaseContext = PromptContext & {
     minionDefId: string;
     fromBaseIndex: number;
     destinationBases: Array<{ baseIndex: number; label: string }>;
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
 };
 
 type ChooseMinionForMoveContext = PromptContext & {
@@ -49,18 +55,84 @@ type ChooseMinionForMoveContext = PromptContext & {
     fixedDestinationBaseIndex?: number;
     anchorBaseIndex?: number;
     optional?: boolean;
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
 };
 
-type TradeWindsFirstContext = PromptContext & { candidates: MinionTarget[] };
-type TradeWindsSecondContext = PromptContext & { first: MinionTarget; candidates: MinionTarget[] };
+type TradeWindsFirstContext = PromptContext & {
+    candidates: MinionTarget[];
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
+};
+type TradeWindsSecondContext = PromptContext & {
+    first: MinionTarget;
+    candidates: MinionTarget[];
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
+};
 type RippedOffContext = PromptContext & { actions: Array<{ cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; baseIndex: number; minionUid?: string; minionDefId?: string; label: string }> };
 type RippedOffTargetContext = PromptContext & { cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; fromBaseIndex: number; fromMinionUid?: string };
-type WhirlwindsContext = PromptContext & { candidates: MinionTarget[] };
-type WhirlwindsTargetContext = PromptContext & { current: MinionTarget; remaining: MinionTarget[] };
-type DustDevilContext = PromptContext & { sourceCardUid: string; sourceDefId: string; sourceBaseIndex: number; scoringBaseIndex: number };
-type TornadoAlleyContext = PromptContext & { baseIndex: number; candidates: MinionTarget[] };
+type WhirlwindsContext = PromptContext & {
+    candidates: MinionTarget[];
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
+};
+type WhirlwindsTargetContext = PromptContext & {
+    current: MinionTarget;
+    remaining: MinionTarget[];
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
+};
+type DustDevilContext = PromptContext & {
+    sourceCardUid: string;
+    sourceDefId: string;
+    sourceBaseIndex: number;
+    scoringBaseIndex: number;
+    sourcePlayerId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+};
+type TornadoAlleyContext = PromptContext & {
+    baseIndex: number;
+    candidates: MinionTarget[];
+    sourcePlayerId: string;
+    sourceDefId: string;
+    sourceKind: 'action' | 'nonAction';
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
+};
 
-function moveEvents(state: SmashUpCore | { core: SmashUpCore }, minionUid: string, minionDefId: string, fromBaseIndex: number, toBaseIndex: number, reason: string, now: number): SmashUpEvent[] {
+function moveEvents(
+    state: SmashUpCore | { core: SmashUpCore },
+    minionUid: string,
+    minionDefId: string,
+    fromBaseIndex: number,
+    toBaseIndex: number,
+    reason: string,
+    now: number,
+    source: {
+        sourcePlayerId: string;
+        sourceDefId: string;
+        sourceKind: 'action' | 'nonAction';
+        sourceControllerId?: string;
+        sourceBaseIndex?: number;
+    },
+): SmashUpEvent[] {
     return buildValidatedMoveEvents(state, {
         minionUid,
         minionDefId,
@@ -68,6 +140,11 @@ function moveEvents(state: SmashUpCore | { core: SmashUpCore }, minionUid: strin
         toBaseIndex,
         reason,
         now,
+        sourcePlayerId: source.sourcePlayerId,
+        sourceDefId: source.sourceDefId,
+        sourceKind: source.sourceKind,
+        sourceControllerId: source.sourceControllerId,
+        sourceBaseIndex: source.sourceBaseIndex,
     });
 }
 
@@ -96,7 +173,24 @@ const moveToBasePromptProgram = createPromptProgram<MoveMinionToBaseContext, Sma
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as BaseChoice;
         if (choice.baseIndex === undefined) return { events: [] };
-        return { events: moveEvents(state, context.minionUid, context.minionDefId, context.fromBaseIndex, choice.baseIndex, context.sourceId, timestamp) };
+        return {
+            events: moveEvents(
+                state,
+                context.minionUid,
+                context.minionDefId,
+                context.fromBaseIndex,
+                choice.baseIndex,
+                context.sourceId,
+                timestamp,
+                {
+                    sourcePlayerId: context.sourcePlayerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceKind: context.sourceKind,
+                    sourceControllerId: context.sourceControllerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                },
+            ),
+        };
     },
 });
 
@@ -111,8 +205,9 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
             ...(context.optional ? [createSkipOption()] : []),
             ...buildMinionTargetOptions(context.candidates, {
                 state: context.matchState.core,
-                sourcePlayerId: context.playerId,
-                sourceKind: 'action',
+                sourcePlayerId: context.sourcePlayerId,
+                sourceDefId: context.sourceDefId,
+                sourceKind: context.sourceKind,
                 effectType: 'move',
             }),
         ],
@@ -127,10 +222,44 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
         if ((choice as { skip?: boolean }).skip) return { events: [] };
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
         if (context.fixedDestinationBaseIndex !== undefined) {
-            return { events: moveEvents(state, choice.minionUid, choice.defId, choice.baseIndex, context.fixedDestinationBaseIndex, context.sourceId, timestamp) };
+            return {
+                events: moveEvents(
+                    state,
+                    choice.minionUid,
+                    choice.defId,
+                    choice.baseIndex,
+                    context.fixedDestinationBaseIndex,
+                    context.sourceId,
+                    timestamp,
+                    {
+                        sourcePlayerId: context.sourcePlayerId,
+                        sourceDefId: context.sourceDefId,
+                        sourceKind: context.sourceKind,
+                        sourceControllerId: context.sourceControllerId,
+                        sourceBaseIndex: context.sourceBaseIndex,
+                    },
+                ),
+            };
         }
         if (context.anchorBaseIndex !== undefined && choice.baseIndex !== context.anchorBaseIndex) {
-            return { events: moveEvents(state, choice.minionUid, choice.defId, choice.baseIndex, context.anchorBaseIndex, context.sourceId, timestamp) };
+            return {
+                events: moveEvents(
+                    state,
+                    choice.minionUid,
+                    choice.defId,
+                    choice.baseIndex,
+                    context.anchorBaseIndex,
+                    context.sourceId,
+                    timestamp,
+                    {
+                        sourcePlayerId: context.sourcePlayerId,
+                        sourceDefId: context.sourceDefId,
+                        sourceKind: context.sourceKind,
+                        sourceControllerId: context.sourceControllerId,
+                        sourceBaseIndex: context.sourceBaseIndex,
+                    },
+                ),
+            };
         }
         const destinations = collectBaseTargets(state.core, baseIndex => baseIndex !== choice.baseIndex);
         if (destinations.length === 0) return { events: [] };
@@ -143,11 +272,31 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
             minionDefId: choice.defId,
             fromBaseIndex: choice.baseIndex,
             destinationBases: destinations,
+            sourcePlayerId: context.sourcePlayerId,
+            sourceDefId: context.sourceDefId,
+            sourceKind: context.sourceKind,
+            sourceControllerId: context.sourceControllerId,
+            sourceBaseIndex: context.sourceBaseIndex,
         });
     },
 });
 
-function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, candidates: MinionTarget[], fixedDestinationBaseIndex?: number, anchorBaseIndex?: number, optional = false): AbilityResult {
+function runChooseMove(
+    ctx: AbilityContext,
+    sourceId: string,
+    title: string,
+    candidates: MinionTarget[],
+    options?: {
+        fixedDestinationBaseIndex?: number;
+        anchorBaseIndex?: number;
+        optional?: boolean;
+        sourceDefId?: string;
+        sourceKind?: 'action' | 'nonAction';
+        sourcePlayerId?: string;
+        sourceControllerId?: string;
+        sourceBaseIndex?: number;
+    },
+): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return runtimeToAbilityResult(executeAbilityProgram(chooseMinionForMovePromptProgram, {
         matchState: ctx.matchState,
@@ -156,9 +305,14 @@ function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, can
         sourceId,
         title,
         candidates,
-        ...(fixedDestinationBaseIndex !== undefined ? { fixedDestinationBaseIndex } : {}),
-        ...(anchorBaseIndex !== undefined ? { anchorBaseIndex } : {}),
-        ...(optional ? { optional } : {}),
+        ...(options?.fixedDestinationBaseIndex !== undefined ? { fixedDestinationBaseIndex: options.fixedDestinationBaseIndex } : {}),
+        ...(options?.anchorBaseIndex !== undefined ? { anchorBaseIndex: options.anchorBaseIndex } : {}),
+        ...(options?.optional ? { optional: options.optional } : {}),
+        sourcePlayerId: options?.sourcePlayerId ?? ctx.playerId,
+        sourceDefId: options?.sourceDefId ?? ctx.defId,
+        sourceKind: options?.sourceKind ?? 'action',
+        sourceControllerId: options?.sourceControllerId ?? options?.sourcePlayerId ?? ctx.playerId,
+        sourceBaseIndex: options?.sourceBaseIndex ?? ctx.baseIndex,
     }));
 }
 
@@ -174,6 +328,11 @@ function tornadosCyclone(ctx: AbilityContext): AbilityResult {
         minionDefId: ctx.defId,
         fromBaseIndex: ctx.baseIndex,
         destinationBases: destinations,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
     }));
 }
 
@@ -184,7 +343,15 @@ function tornadoPushPull(ctx: AbilityContext, sourceId: string, powerMax: number
         if (baseIndex === currentBase) return ctx.state.bases.length > 1;
         return true;
     });
-    return runChooseMove(ctx, sourceId, `${getCardDef(ctx.defId)?.name ?? sourceId}：你可以选择力量≤${powerMax}的随从进行移动`, candidates, undefined, currentBase, true);
+    return runChooseMove(ctx, sourceId, `${getCardDef(ctx.defId)?.name ?? sourceId}：你可以选择力量≤${powerMax}的随从进行移动`, candidates, {
+        anchorBaseIndex: currentBase,
+        optional: true,
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourcePlayerId: ctx.playerId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
+    });
 }
 
 function tornadosMonsterTornado(ctx: AbilityContext): AbilityResult {
@@ -198,7 +365,13 @@ function tornadosTwister(ctx: AbilityContext): AbilityResult {
 function tornadosCarriedAway(ctx: AbilityContext): AbilityResult {
     if (!ctx.targetMinionUid) {
         const candidates = collectMinionTargets(ctx.state, () => true);
-        return runChooseMove(ctx, 'tornados_carried_away', '卷走：选择一个随从移动到另一个基地', candidates);
+        return runChooseMove(ctx, 'tornados_carried_away', '卷走：选择一个随从移动到另一个基地', candidates, {
+            sourceDefId: ctx.defId,
+            sourceKind: 'action',
+            sourcePlayerId: ctx.playerId,
+            sourceControllerId: ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        });
     }
     const located = collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid)[0];
     if (!located) return { events: [] };
@@ -213,25 +386,49 @@ function tornadosCarriedAway(ctx: AbilityContext): AbilityResult {
         minionDefId: located.defId,
         fromBaseIndex: located.baseIndex,
         destinationBases: destinations,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
     }));
 }
 
 function tornadosPickedUp(ctx: AbilityContext): AbilityResult {
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     const candidates = collectMinionTargets(ctx.state, (_minion, index) => index === baseIndex);
-    return runChooseMove(ctx, 'tornados_picked_up', '卷起：选择该基地上一个随从移走', candidates);
+    return runChooseMove(ctx, 'tornados_picked_up', '卷起：选择该基地上一个随从移走', candidates, {
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourcePlayerId: ctx.playerId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
+    });
 }
 
 function tornadosOverTheRainbow(ctx: AbilityContext): AbilityResult {
     const scoringBaseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     const candidates = collectMinionTargets(ctx.state, (minion, index) => minion.controller === ctx.playerId && index !== scoringBaseIndex);
-    return runChooseMove(ctx, 'tornados_over_the_rainbow', '飞越彩虹：选择你的一个随从移入计分基地', candidates, scoringBaseIndex);
+    return runChooseMove(ctx, 'tornados_over_the_rainbow', '飞越彩虹：选择你的一个随从移入计分基地', candidates, {
+        fixedDestinationBaseIndex: scoringBaseIndex,
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourcePlayerId: ctx.playerId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
+    });
 }
 
 function tornadosGoneWithTheWind(ctx: AbilityContext): AbilityResult {
     const scoringBaseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     const candidates = collectMinionTargets(ctx.state, (minion, index) => minion.controller === ctx.playerId && index === scoringBaseIndex);
-    return runChooseMove(ctx, 'tornados_gone_with_the_wind', '随风而逝：选择你的一个随从移到其他基地而非弃牌', candidates);
+    return runChooseMove(ctx, 'tornados_gone_with_the_wind', '随风而逝：选择你的一个随从移到其他基地而非弃牌', candidates, {
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourcePlayerId: ctx.playerId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
+    });
 }
 
 function tornadosWhirlwinds(ctx: AbilityContext): AbilityResult {
@@ -242,6 +439,11 @@ function tornadosWhirlwinds(ctx: AbilityContext): AbilityResult {
         playerId: ctx.playerId,
         now: ctx.now,
         candidates,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
     }));
 }
 
@@ -253,8 +455,9 @@ const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext, SmashUpCo
         '旋风群：选择任意数量你的随从移动至其他基地',
         buildMinionTargetOptions(context.candidates, {
             state: context.matchState.core,
-            sourcePlayerId: context.playerId,
-            sourceKind: 'action',
+            sourcePlayerId: context.sourcePlayerId,
+            sourceDefId: context.sourceDefId,
+            sourceKind: context.sourceKind,
             effectType: 'move',
         }),
         {
@@ -281,6 +484,11 @@ const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext, SmashUpCo
                 now: timestamp,
                 current,
                 remaining,
+                sourcePlayerId: context.sourcePlayerId,
+                sourceDefId: context.sourceDefId,
+                sourceKind: context.sourceKind,
+                sourceControllerId: context.sourceControllerId,
+                sourceBaseIndex: context.sourceBaseIndex,
             },
             nextProgram: whirlwindsTargetPromptProgram,
         };
@@ -311,6 +519,13 @@ const whirlwindsTargetPromptProgram = createPromptProgram<WhirlwindsTargetContex
                 choice.baseIndex,
                 'tornados_whirlwinds',
                 timestamp,
+                {
+                    sourcePlayerId: context.sourcePlayerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceKind: context.sourceKind,
+                    sourceControllerId: context.sourceControllerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                },
             );
         if (context.remaining.length === 0) return { events };
         const [current, ...remaining] = context.remaining;
@@ -334,7 +549,13 @@ const tradeWindsFirstPromptProgram = createPromptProgram<TradeWindsFirstContext,
         `tornados_trade_winds_first_${context.now}`,
         context.playerId,
         '信风：选择第一个力量≤3的随从',
-        buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'move' }),
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.sourcePlayerId,
+            sourceDefId: context.sourceDefId,
+            sourceKind: context.sourceKind,
+            effectType: 'move',
+        }),
         {
             sourceId: 'tornados_trade_winds_first',
             titleKey: 'ui.tornados_trade_winds_first_title',
@@ -347,7 +568,18 @@ const tradeWindsFirstPromptProgram = createPromptProgram<TradeWindsFirstContext,
         if (!first) return { events: [] };
         const candidates = collectMinionTargets(state.core, (minion, baseIndex) => minion.uid !== first.uid && baseIndex !== first.baseIndex && getMinionPower(state.core, minion, baseIndex) <= 3);
         if (candidates.length === 0) return { events: [] };
-        return executeAbilityProgram(tradeWindsSecondPromptProgram, { matchState: state, playerId, now: timestamp, first, candidates });
+        return executeAbilityProgram(tradeWindsSecondPromptProgram, {
+            matchState: state,
+            playerId,
+            now: timestamp,
+            first,
+            candidates,
+            sourcePlayerId: context.sourcePlayerId,
+            sourceDefId: context.sourceDefId,
+            sourceKind: context.sourceKind,
+            sourceControllerId: context.sourceControllerId,
+            sourceBaseIndex: context.sourceBaseIndex,
+        });
     },
 });
 
@@ -357,7 +589,13 @@ const tradeWindsSecondPromptProgram = createPromptProgram<TradeWindsSecondContex
         `tornados_trade_winds_second_${context.now}`,
         context.playerId,
         '信风：选择第二个力量≤3的随从并交换基地',
-        buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'move' }),
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.sourcePlayerId,
+            sourceDefId: context.sourceDefId,
+            sourceKind: context.sourceKind,
+            effectType: 'move',
+        }),
         {
             sourceId: 'tornados_trade_winds_second',
             titleKey: 'ui.tornados_trade_winds_second_title',
@@ -369,8 +607,20 @@ const tradeWindsSecondPromptProgram = createPromptProgram<TradeWindsSecondContex
         const second = context.candidates.find(candidate => candidate.uid === choice.minionUid && candidate.baseIndex === choice.baseIndex);
         if (!second) return { events: [] };
         return { events: [
-            ...moveEvents(state, context.first.uid, context.first.defId, context.first.baseIndex, second.baseIndex, 'tornados_trade_winds', timestamp),
-            ...moveEvents(state, second.uid, second.defId, second.baseIndex, context.first.baseIndex, 'tornados_trade_winds', timestamp),
+            ...moveEvents(state, context.first.uid, context.first.defId, context.first.baseIndex, second.baseIndex, 'tornados_trade_winds', timestamp, {
+                sourcePlayerId: context.sourcePlayerId,
+                sourceDefId: context.sourceDefId,
+                sourceKind: context.sourceKind,
+                sourceControllerId: context.sourceControllerId,
+                sourceBaseIndex: context.sourceBaseIndex,
+            }),
+            ...moveEvents(state, second.uid, second.defId, second.baseIndex, context.first.baseIndex, 'tornados_trade_winds', timestamp, {
+                sourcePlayerId: context.sourcePlayerId,
+                sourceDefId: context.sourceDefId,
+                sourceKind: context.sourceKind,
+                sourceControllerId: context.sourceControllerId,
+                sourceBaseIndex: context.sourceBaseIndex,
+            }),
         ] };
     },
 });
@@ -383,6 +633,11 @@ function tornadosTradeWinds(ctx: AbilityContext): AbilityResult {
         playerId: ctx.playerId,
         now: ctx.now,
         candidates,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: ctx.defId,
+        sourceKind: 'action',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
     }));
 }
 
@@ -481,11 +736,14 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
                 .find(minion => minion.uid === context.fromMinionUid)
                 ?.attachedActions
                 .find(action => action.uid === context.cardUid);
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, reason: 'tornados_ripped_off' },
-            timestamp,
-        } as OngoingDetachedEvent];
+        const events: SmashUpEvent[] = buildValidatedOngoingDetachEvents(context.matchState.core, {
+            cardUid: context.cardUid,
+            defId: context.defId,
+            ownerId: context.ownerId,
+            reason: 'tornados_ripped_off',
+            now: timestamp,
+            expectedLocation: context.targetType,
+        });
         if (context.targetType === 'base') {
             const choice = value as BaseChoice;
             if (choice.baseIndex === undefined) return { events: [] };
@@ -540,11 +798,21 @@ function tornadosNotInKansas(ctx: AbilityContext): AbilityResult {
     if (!oldBase || !newBaseDefId) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.base_deck_empty', ctx.now)] };
     const events: SmashUpEvent[] = [];
     for (const action of oldBase.ongoingActions) {
-        events.push({ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, reason: 'tornados_not_in_kansas' }, timestamp: ctx.now } as OngoingDetachedEvent);
+        events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
+            cardUid: action.uid,
+            reason: 'tornados_not_in_kansas',
+            now: ctx.now,
+            expectedLocation: 'base',
+        }));
     }
     for (const minion of oldBase.minions) {
         for (const action of minion.attachedActions) {
-            events.push({ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, reason: 'tornados_not_in_kansas' }, timestamp: ctx.now } as OngoingDetachedEvent);
+            events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
+                cardUid: action.uid,
+                reason: 'tornados_not_in_kansas',
+                now: ctx.now,
+                expectedLocation: 'minion',
+            }));
         }
     }
     events.push({ type: SU_EVENTS.BASE_REPLACED, payload: { baseIndex, oldBaseDefId: oldBase.defId, newBaseDefId, keepCards: true }, timestamp: ctx.now } as BaseReplacedEvent);
@@ -562,6 +830,9 @@ function tornadosDustDevilBeforeScoring(ctx: TriggerContext) {
         sourceDefId: ctx.triggerMinionDefId ?? 'tornados_dust_devil',
         sourceBaseIndex: ctx.sourceBaseIndex,
         scoringBaseIndex,
+        sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
+        sourceKind: 'nonAction',
+        sourceControllerId: ctx.sourceControllerId ?? ctx.playerId,
     }));
 }
 
@@ -600,6 +871,13 @@ const dustDevilPromptProgram = createPromptProgram<DustDevilContext, SmashUpCore
                 context.scoringBaseIndex,
                 'tornados_dust_devil',
                 timestamp,
+                {
+                    sourcePlayerId: context.sourcePlayerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceKind: context.sourceKind,
+                    sourceControllerId: context.sourceControllerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                },
             ),
         };
     },
@@ -628,6 +906,11 @@ function baseTornadoAlley(ctx: BaseAbilityContext) {
         now: ctx.now,
         baseIndex: ctx.baseIndex,
         candidates,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: 'base_tornado_alley',
+        sourceKind: 'nonAction',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
     }));
 }
 
@@ -663,7 +946,13 @@ const tornadoAlleyPromptProgram = createPromptProgram<TornadoAlleyContext, Smash
                     payload: { playerId, baseIndex: context.baseIndex, baseDefId: 'base_tornado_alley' },
                     timestamp,
                 } as BaseAbilityUsedEvent,
-                ...moveEvents(state, choice.minionUid, choice.defId, choice.baseIndex, context.baseIndex, 'base_tornado_alley', timestamp),
+                ...moveEvents(state, choice.minionUid, choice.defId, choice.baseIndex, context.baseIndex, 'base_tornado_alley', timestamp, {
+                    sourcePlayerId: context.sourcePlayerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceKind: context.sourceKind,
+                    sourceControllerId: context.sourceControllerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                }),
             ],
         };
     },

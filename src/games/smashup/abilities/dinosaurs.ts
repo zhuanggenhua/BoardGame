@@ -7,7 +7,6 @@
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
-    destroyMinion,
     addTempPower,
     modifyBreakpoint,
     getMinionPower,
@@ -17,6 +16,7 @@ import {
     createSkipOption,
     buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import type { SmashUpEvent, SmashUpCore, OngoingDetachedEvent, MinionDestroyedEvent, MinionReturnedEvent, CardToDeckBottomEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -457,6 +457,9 @@ function buildDinoDestroyEvents(
         minionDefId: target.defId,
         fromBaseIndex: target.baseIndex,
         destroyerId,
+        sourcePlayerId: destroyerId,
+        sourceDefId: reason,
+        sourceControllerId: destroyerId,
         reason,
         now,
     });
@@ -531,25 +534,35 @@ const dinoLaserTriceratopsPodProgram = createBranchProgram<
     then: createEffectProgram(() => ({ events: [] })),
     else: createPromptProgram({
         sourceId: 'dino_laser_triceratops_pod',
-        buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-            `dino_laser_triceratops_pod_${context.now}`,
-            context.playerId,
-            '你可以消灭这里一个印制力量≤2的随从',
-            [
-                createSkipOption('跳过（不消灭随从）', 'ui.dino_laser_triceratops_pod_skip_option'),
-                ...buildMinionTargetOptions(context.targets, {
-                    state: context.matchState.core,
-                    sourcePlayerId: context.playerId,
-                    effectType: 'destroy',
-                }),
-            ],
-            {
-                sourceId: 'dino_laser_triceratops_pod',
-                titleKey: 'ui.dino_laser_triceratops_pod_title',
-                targetType: 'minion',
-                subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
-            },
-        ),
+        buildInteraction: (context) => {
+            const title = '你可以消灭这里一个印制力量≤2的随从';
+            const interaction = createAbilityRuntimeSimpleChoice(
+                `dino_laser_triceratops_pod_${context.now}`,
+                context.playerId,
+                title,
+                [
+                    createSkipOption('跳过（不消灭随从）', 'ui.dino_laser_triceratops_pod_skip_option'),
+                    ...buildMinionTargetOptions(context.targets, {
+                        state: context.matchState.core,
+                        sourcePlayerId: context.playerId,
+                        effectType: 'destroy',
+                    }),
+                ],
+                {
+                    sourceId: 'dino_laser_triceratops_pod',
+                    titleKey: 'ui.dino_laser_triceratops_pod_title',
+                    targetType: 'minion',
+                    subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
+                },
+            );
+            return {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    title,
+                },
+            };
+        },
         onResolve: ({ playerId, value, timestamp, state }) => {
             const choice = value as DinoMinionChoice;
             if (choice.skip) return { events: [] };
@@ -676,7 +689,18 @@ const dinoNaturalSelectionTargetPromptProgram = createPromptProgram<
             return { events: [] };
         }
         return {
-            events: [destroyMinion(choice.minionUid, choice.defId, choice.baseIndex, target.owner, playerId, 'dino_natural_selection', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: choice.minionUid,
+                minionDefId: choice.defId,
+                fromBaseIndex: choice.baseIndex,
+                destroyerId: playerId,
+                reason: 'dino_natural_selection',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'dino_natural_selection',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -771,9 +795,18 @@ const dinoSurvivalTiebreakPromptProgram = createPromptProgram<
         if (!chosen) {
             return { events: [] };
         }
-        const events: SmashUpEvent[] = [
-            destroyMinion(choice.minionUid, choice.defId, choice.baseIndex, chosen.owner, playerId, 'dino_survival_of_the_fittest', timestamp),
-        ];
+        const events: SmashUpEvent[] = buildValidatedDestroyEvents(state, {
+            minionUid: choice.minionUid,
+            minionDefId: choice.defId,
+            fromBaseIndex: choice.baseIndex,
+            destroyerId: playerId,
+            reason: 'dino_survival_of_the_fittest',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'dino_survival_of_the_fittest',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
+        });
         const remainingBases = context.remainingBases.slice(1);
         if (remainingBases.length === 0) {
             return { events };
@@ -805,7 +838,18 @@ const dinoSurvivalOfTheFittestProgram = createEffectProgram<AbilityContext, Smas
         if (!hasHigher) continue;
         const lowest = base.minions.filter((minion) => getMinionPower(ctx.state, minion, baseIndex) === minPower);
         if (lowest.length === 1) {
-            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, ctx.playerId, 'dino_survival_of_the_fittest', ctx.now));
+            events.push(...buildValidatedDestroyEvents(ctx.state, {
+                minionUid: lowest[0].uid,
+                minionDefId: lowest[0].defId,
+                fromBaseIndex: baseIndex,
+                destroyerId: ctx.playerId,
+                reason: 'dino_survival_of_the_fittest',
+                now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceDefId: 'dino_survival_of_the_fittest',
+                sourceControllerId: ctx.playerId,
+                sourceKind: 'action',
+            }));
         }
     }
 
@@ -990,16 +1034,13 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
         return undefined;
     }
     // 自毁全副武装，阻止影响
-    const detachEvt: OngoingDetachedEvent = {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: toothCard.uid,
-            defId: toothCard.defId,
-            ownerId: toothCard.ownerId,
-            reason: 'dino_tooth_and_claw_self_destruct',
-        },
-        timestamp: event.timestamp,
-    };
+    const detachEvt: OngoingDetachedEvent = buildOngoingDetachedEvent({
+        cardUid: toothCard.uid,
+        defId: toothCard.defId,
+        ownerId: toothCard.ownerId,
+        reason: 'dino_tooth_and_claw_self_destruct',
+        now: event.timestamp,
+    });
     return [detachEvt]; // 替换原事件为自毁事件，随从存活
 }
 

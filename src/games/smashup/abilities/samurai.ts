@@ -390,6 +390,10 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
                     destroyerId: playerId,
                     reason: 'samurai_yokai_attack',
                     now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'samurai_yokai_attack',
+                    sourceControllerId: playerId,
+                    sourceKind: 'action',
                 }),
             },
         );

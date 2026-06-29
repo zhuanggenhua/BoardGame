@@ -12,7 +12,9 @@ import type { GameEngineConfig } from '../engine/transport/server';
 import type { LatencyOptimizationConfig } from '../engine/transport/latency/types';
 import { ConnectionLoadingScreen } from '../components/system/ConnectionLoadingScreen';
 import { HudPortal } from '../core';
+import { useModalStack } from '../contexts/ModalStackContext';
 import { RematchProvider } from '../contexts/RematchContext';
+import { navigateBackToLobbyWithModalCleanup } from '../lib/navigation/navigateBackToLobbyWithModalCleanup';
 import { OnlineAiSeatBridge } from './onlineAiSeatBridge';
 import { OnlineGameHudBridge } from './matchRoomOnlineGameHudBridge';
 import {
@@ -129,6 +131,7 @@ const OnlineRoomConnectionLoading = ({
 }) => {
     const { t: tLobbyConnection } = useTranslation('lobby');
     const navigate = useNavigate();
+    const { closeAll } = useModalStack();
     const { state, isConnected, matchPlayers } = useGameClient();
     const core = state?.core as { turnNumber?: number; activePlayer?: number | string; phase?: string } | undefined;
     const activityKey = [
@@ -177,11 +180,11 @@ const OnlineRoomConnectionLoading = ({
                             </button>
                             <button
                                 onClick={() => {
-                                    if (gameId) {
-                                        navigate(`/?game=${gameId}`, { replace: true });
-                                    } else {
-                                        navigate('/', { replace: true });
-                                    }
+                                    navigateBackToLobbyWithModalCleanup({
+                                        navigate,
+                                        closeAll,
+                                        gameId,
+                                    });
                                 }}
                                 className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 text-sm transition-colors"
                             >

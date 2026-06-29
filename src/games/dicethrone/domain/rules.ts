@@ -776,11 +776,12 @@ const matchesPendingDamagePlayCondition = (
     if (!pendingDamage) {
         // 规则 §7.2：若攻击会进入防御阶段，防御方的减伤牌可在防御能力启动前或后打出。
         // 这时尚未生成 pendingDamage，因此允许 beforeDamageReceived 类卡牌在 defensiveRoll 先落成一次性护盾。
+        // 对于不可防御攻击，当前项目口径同样允许这类“受击即刻防伤牌”在防御阶段直接落地护盾，
+        // 不把“不可防御”误解释为“连受击即时牌都不能打”。
         if (
             phase === 'defensiveRoll'
             && pendingDamageCondition.responseType === 'beforeDamageReceived'
             && state.pendingAttack?.defenderId === playerId
-            && state.pendingAttack?.isDefendable
         ) {
             return pendingDamageCondition.role !== 'source';
         }
@@ -995,6 +996,12 @@ const checkStandardCardPlay = (
     return { ok: true };
 };
 
+const isResponseUpgradeCard = (card: AbilityCard): boolean => (
+    card.type === 'upgrade'
+    && getUpgradeTargetAbilityId(card) === null
+    && !!card.playCondition?.pendingDamage
+);
+
 const checkResponseWindowCardPlay = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -1005,7 +1012,7 @@ const checkResponseWindowCardPlay = (
     const failResponseWindow = (): CardPlayCheckResult => ({ ok: false, reason: 'wrongPhaseForCard' });
     const cond = card.playCondition;
 
-    if (card.type === 'upgrade') {
+    if (card.type === 'upgrade' && !isResponseUpgradeCard(card)) {
         return failResponseWindow();
     }
 
@@ -1065,7 +1072,7 @@ export const checkPlayCard = (
     phase: TurnPhase,
     responseWindowType?: DtResponseWindowType,
 ): CardPlayCheckResult => {
-    if (card.type === 'upgrade') {
+    if (card.type === 'upgrade' && !isResponseUpgradeCard(card)) {
         if (responseWindowType) {
             return checkResponseWindowCardPlay(state, playerId, card, responseWindowType, phase);
         }

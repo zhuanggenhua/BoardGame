@@ -1,4 +1,13 @@
 import type { AiResolution, AiSeatController } from '../ai';
+import {
+    getFreshSimpleChoiceOptions,
+    isControlChoiceOption as isSharedControlChoiceOption,
+    isDoneControlChoiceOption,
+    isSkipLikeControlChoiceOption,
+    isSystemCancelControlChoiceOption,
+    type InteractionDescriptor,
+    type SimpleChoiceData,
+} from '../systems/InteractionSystem';
 import type { MatchState } from '../types';
 import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 import type { GameEngineConfig } from './server';
@@ -452,6 +461,37 @@ export function buildMultistepChoiceMetaSemanticSignature(meta: unknown): string
     });
 }
 
+export function buildPendingDamageSemanticSignature(pendingDamage: unknown): string {
+    if (!pendingDamage || typeof pendingDamage !== 'object') {
+        return '';
+    }
+
+    const raw = pendingDamage as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        responderId: typeof raw.responderId === 'string' ? raw.responderId : null,
+        responseType: typeof raw.responseType === 'string' ? raw.responseType : null,
+        currentDamage: typeof raw.currentDamage === 'number' ? raw.currentDamage : null,
+        sourceAbilityId: typeof raw.sourceAbilityId === 'string' ? raw.sourceAbilityId : null,
+        tokenUsageTotals: raw.tokenUsageTotals ?? null,
+    });
+}
+
+export function buildPendingBonusDiceSettlementSemanticSignature(settlement: unknown): string {
+    if (!settlement || typeof settlement !== 'object') {
+        return '';
+    }
+
+    const raw = settlement as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        attackerId: typeof raw.attackerId === 'string' ? raw.attackerId : null,
+        displayOnly: raw.displayOnly === true ? true : null,
+        rerollCount: typeof raw.rerollCount === 'number' ? raw.rerollCount : null,
+        dice: raw.dice ?? null,
+    });
+}
+
 export function buildInteractionRecoveryFingerprintHint(
     state: MatchState<unknown>,
     interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction | null | undefined,
@@ -709,27 +749,23 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
     });
 }
 
-function isControlChoiceOption(option: HiddenSimpleChoiceOption): boolean {
-    const value = option.value;
-    return option.id === 'skip'
-        || option.id === 'pass'
-        || option.id === 'done'
-        || option.id === 'cancel'
-        || option.id === '__cancel__'
-        || option.id === '__emergency_skip__'
-        || value?.skip === true
-        || value?.kind === 'pass'
-        || value?.done === true
-        || value?.cancel === true
-        || value?.__cancel__ === true
-        || value?.__emergency_skip__ === true;
+function isControlChoiceOptionShared(option: HiddenSimpleChoiceOption): boolean {
+    return isSharedControlChoiceOption(option);
 }
 
-function hasEnabledNonControlOptions(data: { options?: HiddenSimpleChoiceOption[] } | undefined): boolean {
-    const options = Array.isArray(data?.options) ? data.options : [];
-    return options.some((option) =>
-        Boolean(option) && option.disabled !== true && !isControlChoiceOption(option),
-    );
+function hasEnabledNonControlOptions(options: Array<HiddenSimpleChoiceOption & { id: string }>): boolean {
+    return options.some((option) => !isControlChoiceOptionShared(option));
+}
+
+function getFreshEnabledSimpleChoiceOptions(
+    state: MatchState<unknown>,
+    current: HiddenSimpleChoiceInteraction,
+): Array<HiddenSimpleChoiceOption & { id: string }> {
+    return getFreshSimpleChoiceOptions(
+        state,
+        current as unknown as InteractionDescriptor<SimpleChoiceData<unknown>>,
+    ).filter((option): option is HiddenSimpleChoiceOption & { id: string } =>
+        Boolean(option) && option.disabled !== true && typeof option.id === 'string');
 }
 
 function buildForceSkipPayloadFromSeatState(
@@ -755,23 +791,13 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const data = current.data;
-    const enabledOptions = Array.isArray(data?.options)
-        ? data.options.filter((option): option is HiddenSimpleChoiceOption & { id: string } =>
-            Boolean(option) && option.disabled !== true && typeof option.id === 'string')
-        : [];
+    const enabledOptions = getFreshEnabledSimpleChoiceOptions(state, current);
     const sourceId = typeof data?.sourceId === 'string' ? data.sourceId : undefined;
     const title = typeof data?.title === 'string' ? data.title : undefined;
     const minCount = typeof data?.multi?.min === 'number' ? data.multi.min : 1;
     const maxCount = typeof data?.multi?.max === 'number' ? data.multi.max : minCount;
 
-    const skipOption = enabledOptions.find((option) =>
-        option.id === 'skip'
-        || option.id === 'pass'
-        || option.value?.skip === true
-        || option.value?.kind === 'pass'
-        || option.id === '__emergency_skip__'
-        || option.value?.__emergency_skip__ === true,
-    );
+    const skipOption = enabledOptions.find((option) => isSkipLikeControlChoiceOption(option));
     if (skipOption?.id) {
         return {
             interactionId: current.id,
@@ -782,7 +808,7 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const enabledTriggerOptions = enabledOptions.filter((option) =>
-        !isControlChoiceOption(option) && option.value?.kind === 'trigger',
+        !isControlChoiceOptionShared(option) && option.value?.kind === 'trigger',
     );
     if (shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice({
         sourceId,
@@ -802,13 +828,11 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
-    if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
+    if (!allowWhenHasNonControl && hasEnabledNonControlOptions(enabledOptions)) {
         return null;
     }
 
-    const cancelOption = enabledOptions.find((option) =>
-        option.id === '__cancel__' || option.value?.__cancel__ === true,
-    );
+    const cancelOption = enabledOptions.find((option) => isSystemCancelControlChoiceOption(option));
     if (cancelOption?.id) {
         return {
             interactionId: current.id,
@@ -827,9 +851,7 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
-    const doneOption = enabledOptions.find((option) =>
-        option.id === 'done' || option.value?.done === true,
-    );
+    const doneOption = enabledOptions.find((option) => isDoneControlChoiceOption(option));
     if (doneOption?.id) {
         return {
             interactionId: current.id,
@@ -868,6 +890,73 @@ export function shouldInspectSeatStatesForHiddenAiInteraction(
         return true;
     }
     return hasPendingResponseWindowInteractionLock(state);
+}
+
+function shouldPreferResponderHiddenInteractionOverResponsePass(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    seatState: MatchState<unknown> | null | undefined;
+    responderId: string;
+}): boolean {
+    const seatCurrent = (args.seatState?.sys?.interaction as { current?: unknown } | undefined)?.current as HiddenSimpleChoiceInteraction | undefined;
+    if (!seatCurrent || String(seatCurrent.playerId) !== args.responderId) {
+        return false;
+    }
+
+    const sharedWindow = (args.sharedState?.sys?.responseWindow as {
+        current?: {
+            id?: unknown;
+            windowType?: unknown;
+            sourceId?: unknown;
+            responderQueue?: unknown;
+            currentResponderIndex?: unknown;
+        };
+    } | undefined)?.current;
+    const seatWindow = (args.seatState?.sys?.responseWindow as {
+        current?: {
+            id?: unknown;
+            windowType?: unknown;
+            sourceId?: unknown;
+            responderQueue?: unknown;
+            currentResponderIndex?: unknown;
+        };
+    } | undefined)?.current;
+    if (!sharedWindow || !seatWindow) {
+        return false;
+    }
+
+    const sharedQueue = Array.isArray(sharedWindow.responderQueue) ? sharedWindow.responderQueue : [];
+    const seatQueue = Array.isArray(seatWindow.responderQueue) ? seatWindow.responderQueue : [];
+    const sharedIndex = typeof sharedWindow.currentResponderIndex === 'number' ? sharedWindow.currentResponderIndex : 0;
+    const seatIndex = typeof seatWindow.currentResponderIndex === 'number' ? seatWindow.currentResponderIndex : 0;
+    const sharedResponderId = typeof sharedQueue[sharedIndex] === 'string' ? sharedQueue[sharedIndex] : null;
+    const seatResponderId = typeof seatQueue[seatIndex] === 'string' ? seatQueue[seatIndex] : null;
+    if (sharedResponderId !== args.responderId || seatResponderId !== args.responderId) {
+        return false;
+    }
+
+    const sharedId = typeof sharedWindow.id === 'string' ? sharedWindow.id : '';
+    const seatId = typeof seatWindow.id === 'string' ? seatWindow.id : '';
+    if (sharedId && seatId) {
+        return sharedId === seatId;
+    }
+
+    const sharedType = typeof sharedWindow.windowType === 'string' ? sharedWindow.windowType : '';
+    const seatType = typeof seatWindow.windowType === 'string' ? seatWindow.windowType : '';
+    if (sharedType && seatType && sharedType !== seatType) {
+        return false;
+    }
+
+    const sharedSourceId = typeof sharedWindow.sourceId === 'string' ? sharedWindow.sourceId : '';
+    const seatSourceId = typeof seatWindow.sourceId === 'string' ? seatWindow.sourceId : '';
+    if (sharedSourceId && seatSourceId && sharedSourceId !== seatSourceId) {
+        return false;
+    }
+
+    if (sharedQueue.length > 0 && seatQueue.length > 0 && sharedQueue.join('|') !== seatQueue.join('|')) {
+        return false;
+    }
+
+    return true;
 }
 
 export function resolveForceSkippableHiddenAiInteraction(args: {
@@ -1015,6 +1104,23 @@ export function resolveForceEndTurnForStalledAi(args: {
         : 0;
     const responderId = responderQueue[responderIndex];
     if (typeof responderId === 'string' && args.seatControllers[responderId]?.type !== 'human') {
+        const responderSeatState = args.seatStates[responderId];
+        if (shouldPreferResponderHiddenInteractionOverResponsePass({
+            sharedState: args.sharedState,
+            seatState: responderSeatState,
+            responderId,
+        })) {
+            const hiddenResolution = responderSeatState
+                ? buildForceEndTurnFromInteractionState(responderSeatState, responderId, 'hidden-interaction', {
+                    engineConfig: args.engineConfig,
+                    gameId: args.gameId,
+                })
+                : null;
+            if (hiddenResolution) {
+                return hiddenResolution;
+            }
+        }
+
         const fingerprintHint = buildResponseWindowRecoveryFingerprintHint(
             args.sharedState,
             responderId,

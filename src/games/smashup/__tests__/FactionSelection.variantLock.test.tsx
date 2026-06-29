@@ -258,7 +258,7 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByTestId('faction-option-ninjas')).toBeInTheDocument();
     });
 
-    it('默认列表应保留上下文，且当前不再存在实施中派系排序分支', () => {
+    it('默认列表应保留上下文，并将实施中派系统一排到末尾', () => {
         renderSelection();
 
         const orderedIds = Array.from(
@@ -271,10 +271,14 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
             ...inProgressIds,
         ];
 
-        expect(inProgressIds).toEqual([]);
+        expect(inProgressIds).toEqual([
+            SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
+            SMASHUP_FACTION_IDS.VIGILANTES,
+            SMASHUP_FACTION_IDS.TRUCKERS,
+            SMASHUP_FACTION_IDS.DISCO_DANCERS,
+        ]);
         expect(orderedIds).toEqual(expectedOrderedIds);
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
-        expect(orderedIds).toEqual(originalOrderedIds);
     });
 
     it('关闭 diy 扩展后不显示 DIY 派系', () => {

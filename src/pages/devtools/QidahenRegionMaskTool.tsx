@@ -36,8 +36,13 @@ import {
     readQidahenRegionMaskLoadPayload,
     type QidahenRegionMaskSavePayload,
 } from '../../games/qidahen/regionMaskWorkspaceBridge';
+import {
+    getQidahenRegionMaskSaveBlockedReason,
+    type QidahenRegionMaskWorkspaceLoadState,
+} from '../../games/qidahen/regionMaskSaveGuards';
 import { QIDAHEN_MAP_REGION_SHAPES } from '../../games/qidahen/ui/mapRegions';
 import {
+    getQidahenRuntimeRegionIdsForPrintedRegionId,
     QIDAHEN_RUNTIME_REGION_BY_ID,
 } from '../../games/qidahen/ui/mapGraph';
 import {
@@ -164,6 +169,7 @@ type QidahenRegionMaskDebugSnapshot = {
     isIsolatedWorkspace: boolean;
     dataOutputDir: string;
     persistedWorkspaceState: PersistedWorkspaceState;
+    workspaceLoadState: QidahenRegionMaskWorkspaceLoadState;
     showAdvancedWorkbench: boolean;
     showFormalEmptyToolPanel: boolean;
     showFormalEmptyWorkspaceGuide: boolean;
@@ -5666,6 +5672,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     const [activeDiagnosticSampleId, setActiveDiagnosticSampleId] = React.useState<string>('beijing');
     const [diagnosticPreview, setDiagnosticPreview] = React.useState<DiagnosticPreview | null>(null);
     const [persistedWorkspaceState, setPersistedWorkspaceState] = React.useState<PersistedWorkspaceState>('empty');
+    const [workspaceLoadState, setWorkspaceLoadState] = React.useState<QidahenRegionMaskWorkspaceLoadState>('loading');
     const [autoDerivedBoundaryDisplay, setAutoDerivedBoundaryDisplay] = React.useState<boolean>(false);
     const [showAdvancedWorkbench, setShowAdvancedWorkbench] = React.useState<boolean>(true);
     const [showFormalEmptyToolPanel, setShowFormalEmptyToolPanel] = React.useState<boolean>(false);
@@ -5754,10 +5761,15 @@ const QidahenRegionMaskTool: React.FC = () => {
     );
     const sharedPrintedGuideAuditRows = React.useMemo(() => {
         const visiblePrintedRegionIds = regions.map((region) => region.id);
+        const visibleRuntimeRegionIds = [...new Set(
+            visiblePrintedRegionIds.flatMap((printedRegionId) => (
+                getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId)
+            )),
+        )];
         const printedRegionNameById = new Map(regions.map((region) => [region.id, region.name]));
         return buildQidahenSharedPrintedRegionMappings({
             visiblePrintedRegionIds,
-            visibleRuntimeRegionIds: visiblePrintedRegionIds,
+            visibleRuntimeRegionIds,
             runtimeGuideCandidates,
             printedRegionNameById,
         });
@@ -6570,14 +6582,21 @@ const QidahenRegionMaskTool: React.FC = () => {
         () => boundaryQualityReport.normality.realMapFit.regionReports.filter((report) => report.state === 'weak'),
         [boundaryQualityReport.normality.realMapFit.regionReports],
     );
+    const workspaceSaveBlockedReason = React.useMemo(() => getQidahenRegionMaskSaveBlockedReason({
+        workspaceLoadState,
+        outputDir: dataOutputDir,
+    }), [dataOutputDir, workspaceLoadState]);
+    const workspaceSaveTemporarilyBlocked = workspaceSaveBlockedReason != null;
     const formalRegionSaveBlocked = !isIsolatedWorkspace
         && boundaryQualityReport.generatedCount > 0
         && boundaryQualityReport.normality.state !== 'accepted';
+    const regionResultSaveDisabled = workspaceSaveTemporarilyBlocked || formalRegionSaveBlocked;
     const debugSnapshot = React.useMemo<QidahenRegionMaskDebugSnapshot>(() => ({
         workspaceKey: currentWorkspaceKey,
         isIsolatedWorkspace,
         dataOutputDir,
         persistedWorkspaceState,
+        workspaceLoadState,
         showAdvancedWorkbench,
         showFormalEmptyToolPanel,
         showFormalEmptyWorkspaceGuide: !isIsolatedWorkspace
@@ -6637,6 +6656,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         showFormalEmptyToolPanel,
         simplifiedBoundaryWorkflow,
         statusMessage,
+        workspaceLoadState,
     ]);
     React.useEffect(() => {
         if (typeof window === 'undefined') {
@@ -8775,6 +8795,7 @@ const QidahenRegionMaskTool: React.FC = () => {
 
         const loadPersistedRegionData = async () => {
             try {
+                setWorkspaceLoadState('loading');
                 setAutoDerivedBoundaryDisplay(false);
                 const response = await fetch(LOAD_ENDPOINT + workspaceQuery);
                 if (response.status === 404) {
@@ -8783,6 +8804,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     setDataOutputDir(initialDataOutputDir);
                     setAuthoritativeGuideRegionIds([]);
                     setRuntimeGuideCandidates([]);
+                    setWorkspaceLoadState('ready');
                     setAutoDerivedBoundaryDisplay(false);
                     setStatusMessage(`当前工作区还没有保存过真实边界成果。请先导入完成边界图或带底图描线图，再开始修边。`);
                     return;
@@ -8972,6 +8994,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 setBoundarySourceReferenceOpacity((hasBoundaryDraftPixels || hasBarrierAddPixels || hasBarrierRemovePixels) && hasBoundarySourceReference ? 0.38 : 0.42);
                 pendingSeedNormalizationRef.current = !usePrimaryMapEditor;
                 setPersistedWorkspaceState(workspaceHasPersistedArtifacts ? 'populated' : 'empty');
+                setWorkspaceLoadState('ready');
                 setAuthoritativeGuideRegionIds(loadedAuthoritativeGuideIds.filter((regionId) => loadedRegions.some((region) => region.id === regionId)));
                 setRuntimeGuideCandidates(loadedRuntimeGuideCandidates);
                 skipNextGraphSyncEffectRef.current = true;
@@ -9059,6 +9082,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 if (cancelled) {
                     return;
                 }
+                setWorkspaceLoadState('failed');
                 setAutoDerivedBoundaryDisplay(false);
                 setStatusMessage(`读取已保存区域数据失败：${error instanceof Error ? error.message : '未知错误'}`);
             }
@@ -14930,6 +14954,14 @@ const QidahenRegionMaskTool: React.FC = () => {
         return normalizeQidahenRegionMaskSaveResult(await response.json());
     };
 
+    const blockSaveUntilWorkspaceLoaded = () => {
+        if (!workspaceSaveBlockedReason) {
+            return false;
+        }
+        setStatusMessage(workspaceSaveBlockedReason);
+        return true;
+    };
+
     const getExportableWorkspaceParts = () => {
         const exportableRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
         const exportableRegionIdSet = new Set(exportableRegions.map((region) => region.id));
@@ -14949,6 +14981,9 @@ const QidahenRegionMaskTool: React.FC = () => {
     };
 
     const saveBoundaryOnly = async () => {
+        if (blockSaveUntilWorkspaceLoaded()) {
+            return;
+        }
         const currentBoundaryMask = barrierMaskRef.current ?? boundaryDraftMaskRef.current;
         if (!currentBoundaryMask || countMaskPixels(currentBoundaryMask) === 0) {
             setStatusMessage('保存边界失败：当前没有最终红线/障碍。请先初始化或手绘边界。');
@@ -15017,6 +15052,9 @@ const QidahenRegionMaskTool: React.FC = () => {
     };
 
     const saveRegionsOnly = async () => {
+        if (blockSaveUntilWorkspaceLoaded()) {
+            return;
+        }
         renderAssignments();
         const {
             exportableRegions,
@@ -15083,6 +15121,9 @@ const QidahenRegionMaskTool: React.FC = () => {
     };
 
     const saveGraphOnly = async () => {
+        if (blockSaveUntilWorkspaceLoaded()) {
+            return;
+        }
         const {
             exportableRegions,
             exportablePassages,
@@ -15103,6 +15144,9 @@ const QidahenRegionMaskTool: React.FC = () => {
     };
 
     const saveAuthoritativeGuidesOnly = async () => {
+        if (blockSaveUntilWorkspaceLoaded()) {
+            return;
+        }
         const {
             exportableRuntimeGuideCandidates,
             exportableAuthoritativeGuideRegionIds,
@@ -15138,6 +15182,9 @@ const QidahenRegionMaskTool: React.FC = () => {
     };
 
     const saveRegionData = async () => {
+        if (blockSaveUntilWorkspaceLoaded()) {
+            return;
+        }
         renderAssignments();
         const exportableRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
         if (exportableRegions.length === 0) {
@@ -15616,7 +15663,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                 type="button"
                                                                 onClick={() => void saveAuthoritativeGuidesOnly()}
                                                                 data-testid="qidahen-save-authoritative-guides-only"
-                                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/45 bg-emerald-500/10 px-3 py-2 text-[11px] font-black text-emerald-100 transition hover:border-emerald-200"
+                                                                disabled={workspaceSaveTemporarilyBlocked}
+                                                                className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-[11px] font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-emerald-400/45 bg-emerald-500/10 text-emerald-100 hover:border-emerald-200')}
                                                             >
                                                                 <Save size={13} />
                                                                 {tr('devtools.regionMaskTool.primary.saveGuideCandidatesOnly', '仅保存 guide 候选')}
@@ -15815,7 +15863,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         <WandSparkles size={15} />
                                         {tr('devtools.regionMaskTool.compactRegions.generateRegions', '生成区域')}
                                     </button>
-                                    <button type="button" onClick={() => void saveBoundaryOnly()} data-testid="qidahen-primary-save-boundary-only" className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-400/50 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-300">
+                                    <button type="button" onClick={() => void saveBoundaryOnly()} data-testid="qidahen-primary-save-boundary-only" disabled={workspaceSaveTemporarilyBlocked} className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-rose-400/50 bg-rose-500/10 text-rose-100 hover:border-rose-300')}>
                                         <Save size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveBoundary', '保存边界')}
                                     </button>
@@ -15823,15 +15871,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveRegionsOnly()}
                                         data-testid="qidahen-primary-save-regions-only"
-                                        disabled={formalRegionSaveBlocked}
-                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (formalRegionSaveBlocked
+                                        disabled={regionResultSaveDisabled}
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (regionResultSaveDisabled
                                             ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80'
                                             : 'border-amber-400/50 bg-amber-500/10 text-amber-100 hover:border-amber-300')}
                                     >
                                         <Save size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveRegions', '保存区域')}
                                     </button>
-                                    <button type="button" onClick={() => void saveGraphOnly()} data-testid="qidahen-primary-save-graph-only" className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-400/50 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300">
+                                    <button type="button" onClick={() => void saveGraphOnly()} data-testid="qidahen-primary-save-graph-only" disabled={workspaceSaveTemporarilyBlocked} className={'col-span-2 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-sky-400/50 bg-sky-500/10 text-sky-100 hover:border-sky-300')}>
                                         <Link2 size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveGraph', '保存连线')}
                                     </button>
@@ -15839,12 +15887,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveAuthoritativeGuidesOnly()}
                                         data-testid="qidahen-primary-save-authoritative-guides-only"
-                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-400/50 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                        disabled={workspaceSaveTemporarilyBlocked}
+                                        className={'col-span-2 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-emerald-400/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300')}
                                     >
                                         <Save size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveGuideCandidatesOnly', '仅保存 guide 候选')}
                                     </button>
                                 </div>
+                                {workspaceSaveBlockedReason ? (
+                                    <div data-testid="qidahen-primary-workspace-load-save-guard" className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-100">
+                                        {workspaceSaveBlockedReason}
+                                    </div>
+                                ) : null}
                                 {formalRegionSaveBlocked ? (
                                     <div data-testid="qidahen-primary-formal-save-guard" className="rounded-md border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-100">
                                         {t('devtools.regionMaskTool.saveFormalGuard', {
@@ -17082,7 +17136,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 type="button"
                                                 onClick={() => void saveRegionData()}
                                                 data-testid="qidahen-region-truth-save-shortcut"
-                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                                disabled={workspaceSaveTemporarilyBlocked}
+                                                className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-emerald-500/60 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300')}
                                             >
                                                 <Save size={14} />
                                                 {tr('devtools.regionMaskTool.regionTruthWorkflow.saveProgress', '存进度')}
@@ -17500,7 +17555,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveBoundaryOnly()}
                                         data-testid="qidahen-primary-save-boundary-only"
-                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-500/70 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-300"
+                                        disabled={workspaceSaveTemporarilyBlocked}
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-rose-500/70 bg-rose-500/10 text-rose-100 hover:border-rose-300')}
                                     >
                                         <Save size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveBoundary', '保存边界')}
@@ -17509,8 +17565,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveRegionsOnly()}
                                         data-testid="qidahen-primary-save-regions-only"
-                                        disabled={formalRegionSaveBlocked}
-                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (formalRegionSaveBlocked
+                                        disabled={regionResultSaveDisabled}
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (regionResultSaveDisabled
                                             ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80'
                                             : 'border-amber-500/70 bg-amber-500/10 text-amber-100 hover:border-amber-300')}
                                     >
@@ -17521,7 +17577,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveGraphOnly()}
                                         data-testid="qidahen-primary-save-graph-only"
-                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-violet-500/70 bg-violet-500/10 px-3 py-2 text-xs font-black text-violet-100 transition hover:border-violet-300"
+                                        disabled={workspaceSaveTemporarilyBlocked}
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-violet-500/70 bg-violet-500/10 text-violet-100 hover:border-violet-300')}
                                     >
                                         <Route size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveGraph', '保存连线')}
@@ -17530,7 +17587,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveAuthoritativeGuidesOnly()}
                                         data-testid="qidahen-primary-save-authoritative-guides-only"
-                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                        disabled={workspaceSaveTemporarilyBlocked}
+                                        className={'col-span-2 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-emerald-500/70 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300')}
                                     >
                                         <Save size={14} />
                                         {tr('devtools.regionMaskTool.compactRegions.saveGuideCandidatesOnly', '仅保存 guide 候选')}
@@ -17540,13 +17598,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             type="button"
                                             onClick={saveRegionData}
                                             data-testid="qidahen-primary-save-workspace"
-                                            className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/70 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
+                                            disabled={workspaceSaveTemporarilyBlocked}
+                                            className={'col-span-2 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-sky-500/70 bg-sky-500/10 text-sky-100 hover:border-sky-300')}
                                         >
                                             <Save size={14} />
                                             {tr('devtools.regionMaskTool.workflow.saveWorkspaceAll', '保存工作区（全部）')}
                                         </button>
                                     ) : null}
                                 </div>
+                                {workspaceSaveBlockedReason ? (
+                                    <div data-testid="qidahen-primary-workspace-load-save-guard" className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-100">
+                                        {workspaceSaveBlockedReason}
+                                    </div>
+                                ) : null}
                                 {formalRegionSaveBlocked ? (
                                     <div data-testid="qidahen-primary-formal-save-guard" className="rounded-md border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-100">
                                         {t('devtools.regionMaskTool.saveFormalGuard', {
@@ -18973,7 +19037,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                           type="button"
                                                           onClick={() => void saveAuthoritativeGuidesOnly()}
                                                           data-testid="qidahen-save-authoritative-guides-only"
-                                                          className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/45 bg-emerald-500/10 px-3 py-2 text-[11px] font-black text-emerald-100 transition hover:border-emerald-200"
+                                                          disabled={workspaceSaveTemporarilyBlocked}
+                                                          className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-[11px] font-black transition ' + (workspaceSaveTemporarilyBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-emerald-400/45 bg-emerald-500/10 text-emerald-100 hover:border-emerald-200')}
                                                       >
                                                           <Save size={13} />
                                                           {t('devtools.regionMaskTool.selectedRegion.saveGuideCandidatesOnly', { defaultValue: '仅保存 guide 候选' })}
@@ -19179,11 +19244,13 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 type="button"
                                 onClick={saveRegionData}
                                 data-testid="qidahen-save-workspace"
-                                disabled={formalRegionSaveBlocked}
-                                className={'inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border px-3 text-sm font-black transition active:translate-y-px ' + (formalRegionSaveBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-amber-400 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25')}
+                                disabled={regionResultSaveDisabled}
+                                className={'inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border px-3 text-sm font-black transition active:translate-y-px ' + (regionResultSaveDisabled ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-amber-400 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25')}
                             >
                                 <Save size={16} />
-                                {formalRegionSaveBlocked
+                                {workspaceSaveBlockedReason
+                                    ? t('devtools.regionMaskTool.saveWorkspace', { defaultValue: '等待回读完成' })
+                                    : formalRegionSaveBlocked
                                     ? t('devtools.regionMaskTool.saveFormalPending', { defaultValue: '正式成果待验收' })
                                     : t('devtools.regionMaskTool.saveWorkspace', { defaultValue: '保存工作区' })}
                             </button>

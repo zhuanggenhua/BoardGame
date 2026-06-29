@@ -202,8 +202,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         id: 'card-righteousness',
         name: cardText('card-righteousness', 'name'),
         type: 'action',
-        // 费用来自 slot-30 左上费用区边缘模板比对，当前证据整体更偏向 2CP。
-        cpCost: 2,
+        cpCost: 1,
         timing: 'roll',
         description: cardText('card-righteousness', 'description'),
         sfxKey: SAMURAI_SFX_HEAVY,
@@ -222,8 +221,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         id: 'card-zanshin',
         name: cardText('card-zanshin', 'name'),
         type: 'action',
-        // 费用来自 slot-31 右上角费用区模板比对，当前证据指向 2CP。
-        cpCost: 2,
+        cpCost: 1,
         timing: 'roll',
         description: cardText('card-zanshin', 'description'),
         sfxKey: SAMURAI_SFX_ULTIMATE,

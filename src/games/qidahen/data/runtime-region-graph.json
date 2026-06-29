@@ -5,21 +5,24 @@
       "label": "平原",
       "note": "战场宽度 3",
       "travelCost": 1,
-      "battleWidth": 3
+      "battleWidth": 3,
+      "unitCap": null
     },
     {
       "id": "mountain",
       "label": "山脉",
       "note": "战场宽度 2",
       "travelCost": 2,
-      "battleWidth": 2
+      "battleWidth": 2,
+      "unitCap": null
     },
     {
       "id": "river",
       "label": "河流",
       "note": "战场宽度 2",
       "travelCost": 2,
-      "battleWidth": 2
+      "battleWidth": 2,
+      "unitCap": null
     },
     {
       "id": "coast",
@@ -34,28 +37,32 @@
       "label": "攻入长城",
       "note": "凸面战场宽度 1",
       "travelCost": 1,
-      "battleWidth": 1
+      "battleWidth": 1,
+      "unitCap": null
     },
     {
       "id": "wall-flat",
       "label": "出长城",
       "note": "平面战场宽度 3",
       "travelCost": 1,
-      "battleWidth": 3
+      "battleWidth": 3,
+      "unitCap": null
     },
     {
       "id": "city",
       "label": "攻城",
       "note": "战场宽度 1",
       "travelCost": 1,
-      "battleWidth": 1
+      "battleWidth": 1,
+      "unitCap": null
     },
     {
       "id": "shanhaiguan",
       "label": "山海关特殊",
       "note": "破关时视为平原",
       "travelCost": 1,
-      "battleWidth": 1
+      "battleWidth": 1,
+      "unitCap": null
     }
   ],
   "nodes": [
@@ -63,14 +70,14 @@
       "id": "city-region-1",
       "name": "大同",
       "seed": {
-        "x": 188,
-        "y": 186
+        "x": 301,
+        "y": 615
       },
       "center": {
-        "x": 188,
-        "y": 186
+        "x": 292,
+        "y": 612
       },
-      "pixelCount": 3923
+      "pixelCount": 12373
     },
     {
       "id": "city-region-2",
@@ -249,10 +256,10 @@
         "y": 382
       },
       "center": {
-        "x": 892,
-        "y": 382
+        "x": 894,
+        "y": 353
       },
-      "pixelCount": 25738
+      "pixelCount": 17846
     },
     {
       "id": "city-region-16",
@@ -301,10 +308,10 @@
         "y": 390
       },
       "center": {
-        "x": 710,
-        "y": 390
+        "x": 719,
+        "y": 386
       },
-      "pixelCount": 5038
+      "pixelCount": 4220
     },
     {
       "id": "city-region-20",
@@ -314,10 +321,23 @@
         "y": 471
       },
       "center": {
-        "x": 175,
-        "y": 471
+        "x": 152,
+        "y": 463
       },
-      "pixelCount": 44505
+      "pixelCount": 35373
+    },
+    {
+      "id": "city-region-21",
+      "name": "喀喇沁部",
+      "seed": {
+        "x": 306,
+        "y": 455
+      },
+      "center": {
+        "x": 262,
+        "y": 501
+      },
+      "pixelCount": 9132
     },
     {
       "id": "jinzhou",
@@ -405,23 +425,23 @@
         "y": 718
       },
       "center": {
-        "x": 424,
-        "y": 718
+        "x": 473,
+        "y": 756
       },
-      "pixelCount": 44113
+      "pixelCount": 32308
     },
     {
       "id": "city-region-28-jizhen",
       "name": "蓟镇",
       "seed": {
-        "x": 503,
-        "y": 634
+        "x": 572,
+        "y": 643
       },
       "center": {
-        "x": 503,
-        "y": 634
+        "x": 546,
+        "y": 652
       },
-      "pixelCount": 7791
+      "pixelCount": 1676
     },
     {
       "id": "city-region-28",
@@ -431,10 +451,10 @@
         "y": 634
       },
       "center": {
-        "x": 503,
-        "y": 634
+        "x": 491,
+        "y": 629
       },
-      "pixelCount": 7791
+      "pixelCount": 6115
     },
     {
       "id": "city-region-29",
@@ -445,7 +465,7 @@
       },
       "center": {
         "x": 1239,
-        "y": 871
+        "y": 820
       },
       "pixelCount": 5445
     },
@@ -500,6 +520,32 @@
         "y": 830
       },
       "pixelCount": 22650
+    },
+    {
+      "id": "city-region-15-liaodong",
+      "name": "辽东",
+      "seed": {
+        "x": 893,
+        "y": 460
+      },
+      "center": {
+        "x": 888,
+        "y": 447
+      },
+      "pixelCount": 7892
+    },
+    {
+      "id": "city-region-19-liaoxi",
+      "name": "辽西",
+      "seed": {
+        "x": 726,
+        "y": 503
+      },
+      "center": {
+        "x": 661,
+        "y": 411
+      },
+      "pixelCount": 818
     }
   ],
   "edges": [
@@ -513,11 +559,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-1::city-region-2",
@@ -529,11 +577,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-1::city-region-20",
@@ -545,11 +595,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-1::city-region-8",
@@ -561,11 +613,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-10::city-region-14",
@@ -577,11 +631,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-10::city-region-15",
@@ -593,11 +649,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-10::city-region-17",
@@ -609,11 +667,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-10::city-region-3",
@@ -625,11 +685,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-10::city-region-6",
@@ -641,11 +703,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-10::city-region-7",
@@ -657,11 +721,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "river",
       "reverseBoundaryLabel": "河流",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-11::city-region-13",
@@ -673,11 +739,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-11::city-region-5",
@@ -689,11 +757,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-11::city-region-9",
@@ -705,11 +775,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "river",
       "reverseBoundaryLabel": "河流",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-11::xian-xing",
@@ -721,27 +793,31 @@
       "travelCost": 3,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
-      "id": "city-region-13::city-region-15",
+      "id": "city-region-13::city-region-15-liaodong",
       "from": "city-region-13",
-      "to": "city-region-15",
+      "to": "city-region-15-liaodong",
       "bidirectional": true,
       "boundaryType": "plain",
       "boundaryLabel": "平原",
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-13::city-region-7",
@@ -753,11 +829,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-13::city-region-9",
@@ -769,11 +847,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "river",
       "reverseBoundaryLabel": "河流",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-13::xian-xing",
@@ -785,11 +865,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-14::city-region-16",
@@ -801,11 +883,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-14::city-region-17",
@@ -817,11 +901,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-14::city-region-19",
@@ -833,11 +919,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-14::city-region-6",
@@ -849,11 +937,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-14::city-region-8",
@@ -865,11 +955,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-14::jinzhou",
@@ -881,11 +973,13 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-15::city-region-17",
@@ -897,11 +991,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-15::city-region-19",
@@ -913,15 +1009,17 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
-      "id": "city-region-15::city-region-22",
-      "from": "city-region-15",
+      "id": "city-region-15-liaodong::city-region-22",
+      "from": "city-region-15-liaodong",
       "to": "city-region-22",
       "bidirectional": true,
       "boundaryType": "mountain",
@@ -929,15 +1027,17 @@
       "travelCost": 3,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
-      "id": "city-region-15::city-region-7",
-      "from": "city-region-15",
+      "id": "city-region-15-liaodong::city-region-7",
+      "from": "city-region-15-liaodong",
       "to": "city-region-7",
       "bidirectional": true,
       "boundaryType": "plain",
@@ -945,11 +1045,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-15::jinzhou",
@@ -961,15 +1063,35 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
-      "id": "city-region-15::song-jin",
-      "from": "city-region-15",
+      "id": "city-region-15-liaodong::jinzhou",
+      "from": "city-region-15-liaodong",
+      "to": "jinzhou",
+      "bidirectional": true,
+      "boundaryType": "city",
+      "boundaryLabel": "攻城",
+      "travelCost": 3,
+      "battleWidth": 1,
+      "ruleNote": "战场宽度 1",
+      "unitCap": null,
+      "reverseBoundaryType": "city",
+      "reverseBoundaryLabel": "攻城",
+      "reverseTravelCost": 3,
+      "reverseBattleWidth": 1,
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-15-liaodong::song-jin",
+      "from": "city-region-15-liaodong",
       "to": "song-jin",
       "bidirectional": true,
       "boundaryType": "coast",
@@ -986,8 +1108,8 @@
       "reverseUnitCap": 2
     },
     {
-      "id": "city-region-15::xian-xing",
-      "from": "city-region-15",
+      "id": "city-region-15-liaodong::xian-xing",
+      "from": "city-region-15-liaodong",
       "to": "xian-xing",
       "bidirectional": true,
       "boundaryType": "mountain",
@@ -995,11 +1117,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-16::city-region-20",
@@ -1011,11 +1135,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-16::city-region-8",
@@ -1027,11 +1153,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-16::jinzhou",
@@ -1043,11 +1171,13 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-17::city-region-19",
@@ -1059,11 +1189,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-18::city-region-29",
@@ -1102,8 +1234,8 @@
       "reverseUnitCap": 2
     },
     {
-      "id": "city-region-19::jinzhou",
-      "from": "city-region-19",
+      "id": "city-region-19-liaoxi::jinzhou",
+      "from": "city-region-19-liaoxi",
       "to": "jinzhou",
       "bidirectional": true,
       "boundaryType": "city",
@@ -1111,15 +1243,17 @@
       "travelCost": 2,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
-      "id": "city-region-19::song-jin",
-      "from": "city-region-19",
+      "id": "city-region-19-liaoxi::song-jin",
+      "from": "city-region-19-liaoxi",
       "to": "song-jin",
       "bidirectional": true,
       "boundaryType": "coast",
@@ -1145,11 +1279,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-2::city-region-6",
@@ -1161,11 +1297,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-2::city-region-8",
@@ -1177,11 +1315,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-20::city-region-24",
@@ -1193,11 +1333,13 @@
       "travelCost": 2,
       "battleWidth": 1,
       "ruleNote": "长城凸面，战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "wall-flat",
       "reverseBoundaryLabel": "出长城",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "长城平面，战场宽度 3"
+      "reverseRuleNote": "长城平面，战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-20::city-region-26",
@@ -1209,11 +1351,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-20::city-region-27",
@@ -1225,11 +1369,13 @@
       "travelCost": 3,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-22::city-region-25",
@@ -1241,11 +1387,13 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-22::city-region-27",
@@ -1257,11 +1405,13 @@
       "travelCost": 3,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-22::city-region-28-jizhen",
@@ -1273,11 +1423,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-22::city-region-29",
@@ -1325,11 +1477,13 @@
       "travelCost": 3,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-22::jinzhou",
@@ -1341,11 +1495,13 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-22::song-jin",
@@ -1393,11 +1549,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-24::city-region-27",
@@ -1409,11 +1567,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-24::city-region-28-jizhen",
@@ -1425,11 +1585,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-24::jinzhou",
@@ -1441,11 +1603,13 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-25::city-region-28-jizhen",
@@ -1457,11 +1621,13 @@
       "travelCost": 1,
       "battleWidth": 3,
       "ruleNote": "自山海关攻击蓟镇视为突围，战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "shanhaiguan",
       "reverseBoundaryLabel": "山海关特殊",
       "reverseTravelCost": 1,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "山海关属于蓟镇，未破败前按关隘防御处理"
+      "reverseRuleNote": "山海关属于蓟镇，未破败前按关隘防御处理",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-25::jinzhou",
@@ -1473,11 +1639,13 @@
       "travelCost": 2,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-26::city-region-31",
@@ -1489,11 +1657,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-27::city-region-28-jizhen",
@@ -1505,11 +1675,13 @@
       "travelCost": 2,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-28::city-region-28-jizhen",
@@ -1521,11 +1693,13 @@
       "travelCost": 1,
       "battleWidth": 3,
       "ruleNote": "顺天/蓟镇拆模过渡边",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "同区过渡",
       "reverseTravelCost": 1,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "顺天/蓟镇拆模过渡边"
+      "reverseRuleNote": "顺天/蓟镇拆模过渡边",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-27::city-region-30",
@@ -1537,11 +1711,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-27::city-region-33",
@@ -1553,11 +1729,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-29::xian-xing",
@@ -1569,11 +1747,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-3::city-region-4",
@@ -1585,11 +1765,13 @@
       "travelCost": 3,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "river",
       "reverseBoundaryLabel": "河流",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-3::city-region-6",
@@ -1601,11 +1783,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-3::city-region-7",
@@ -1617,11 +1801,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-30::city-region-31",
@@ -1633,11 +1819,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-32::city-region-33",
@@ -1649,11 +1837,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-4::city-region-5",
@@ -1665,11 +1855,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-4::city-region-7",
@@ -1681,11 +1873,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-4::city-region-9",
@@ -1697,11 +1891,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-5::city-region-9",
@@ -1713,11 +1909,13 @@
       "travelCost": 3,
       "battleWidth": 3,
       "ruleNote": "战场宽度 3",
+      "unitCap": null,
       "reverseBoundaryType": "plain",
       "reverseBoundaryLabel": "平原",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 3,
-      "reverseRuleNote": "战场宽度 3"
+      "reverseRuleNote": "战场宽度 3",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-5::xian-xing",
@@ -1729,11 +1927,13 @@
       "travelCost": 3,
       "battleWidth": 1,
       "ruleNote": "战场宽度 1",
+      "unitCap": null,
       "reverseBoundaryType": "city",
       "reverseBoundaryLabel": "攻城",
       "reverseTravelCost": 3,
       "reverseBattleWidth": 1,
-      "reverseRuleNote": "战场宽度 1"
+      "reverseRuleNote": "战场宽度 1",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-6::city-region-8",
@@ -1745,11 +1945,13 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
     },
     {
       "id": "city-region-7::city-region-9",
@@ -1761,11 +1963,49 @@
       "travelCost": 2,
       "battleWidth": 2,
       "ruleNote": "战场宽度 2",
+      "unitCap": null,
       "reverseBoundaryType": "mountain",
       "reverseBoundaryLabel": "山脉",
       "reverseTravelCost": 2,
       "reverseBattleWidth": 2,
-      "reverseRuleNote": "战场宽度 2"
+      "reverseRuleNote": "战场宽度 2",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-15::city-region-15-liaodong",
+      "from": "city-region-15",
+      "to": "city-region-15-liaodong",
+      "bidirectional": true,
+      "boundaryType": "plain",
+      "boundaryLabel": "同区过渡",
+      "travelCost": 1,
+      "battleWidth": 3,
+      "ruleNote": "辽北/辽东拆模过渡边",
+      "unitCap": null,
+      "reverseBoundaryType": "plain",
+      "reverseBoundaryLabel": "同区过渡",
+      "reverseTravelCost": 1,
+      "reverseBattleWidth": 3,
+      "reverseRuleNote": "辽北/辽东拆模过渡边",
+      "reverseUnitCap": null
+    },
+    {
+      "id": "city-region-19::city-region-19-liaoxi",
+      "from": "city-region-19",
+      "to": "city-region-19-liaoxi",
+      "bidirectional": true,
+      "boundaryType": "plain",
+      "boundaryLabel": "同区过渡",
+      "travelCost": 1,
+      "battleWidth": 3,
+      "ruleNote": "敖汉部/辽西拆模过渡边",
+      "unitCap": null,
+      "reverseBoundaryType": "plain",
+      "reverseBoundaryLabel": "同区过渡",
+      "reverseTravelCost": 1,
+      "reverseBattleWidth": 3,
+      "reverseRuleNote": "敖汉部/辽西拆模过渡边",
+      "reverseUnitCap": null
     }
   ]
 }

@@ -27,7 +27,9 @@ describe('errorContext 自动反馈', () => {
             __BG_ERROR_CONTEXT_CAPTURE_INSTALLED__?: boolean;
             __BG_LAST_ERROR_CONTEXT__?: unknown;
             __BG_LAST_USER_ACTION__?: unknown;
+            __BG_RECENT_USER_ACTIONS__?: unknown;
             __BG_LAST_ROUTE_CHANGE__?: unknown;
+            __BG_RECENT_ROUTE_CHANGES__?: unknown;
             __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
             __BG_HISTORY_PUSH_STATE_ORIGINAL__?: History['pushState'];
             __BG_HISTORY_REPLACE_STATE_ORIGINAL__?: History['replaceState'];
@@ -36,7 +38,9 @@ describe('errorContext 自动反馈', () => {
         delete host.__BG_ERROR_CONTEXT_CAPTURE_INSTALLED__;
         delete host.__BG_LAST_ERROR_CONTEXT__;
         delete host.__BG_LAST_USER_ACTION__;
+        delete host.__BG_RECENT_USER_ACTIONS__;
         delete host.__BG_LAST_ROUTE_CHANGE__;
+        delete host.__BG_RECENT_ROUTE_CHANGES__;
         delete host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__;
         if (host.__BG_HISTORY_PUSH_STATE_ORIGINAL__) {
             window.history.pushState = host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;

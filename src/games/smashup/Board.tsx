@@ -1057,10 +1057,29 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return data?.targetType === 'discard_minion';
     }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
 
+    // 弃牌堆静态选牌交互（回手/回牌库/埋葬等）：targetType === 'discard'
+    const isDiscardCardPrompt = useMemo(() => {
+        if (!isCurrentPromptForPlayer || !currentPrompt || !playerID) return false;
+        const data = currentInteraction?.data as Record<string, unknown> | undefined;
+        if (data?.targetType !== 'discard') return false;
+
+        const discard = corePlayers[playerID]?.discard ?? [];
+        let discardOptionCount = 0;
+        for (const opt of currentPrompt.options) {
+            const value = opt.value as { cardUid?: unknown; skip?: unknown; done?: unknown } | undefined;
+            if (value?.skip === true || value?.done === true) continue;
+            if (typeof value?.cardUid !== 'string') return false;
+            if (!discard.some(card => card.uid === value.cardUid)) return false;
+            discardOptionCount += 1;
+        }
+
+        return discardOptionCount > 0;
+    }, [corePlayers, currentInteraction, currentPrompt, isCurrentPromptForPlayer, playerID]);
+
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
-        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
+        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isDiscardCardPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
             return 'board';
         }
         return 'overlay';
@@ -1068,6 +1087,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         currentPrompt,
         isBaseSelectPrompt,
         isBuriedSelectPrompt,
+        isDiscardCardPrompt,
         isDiscardMinionPrompt,
         isDirectHandSelectPrompt,
         isTitanReactionPrompt,
@@ -1103,6 +1123,20 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const indices = data?.allowedBaseIndices as number[] | undefined;
         return new Set(indices ?? []);
     }, [isDiscardMinionPrompt, currentInteraction]);
+
+    const discardCardPromptCards = useMemo(() => {
+        if (!isDiscardCardPrompt || !currentPrompt) return [];
+        return currentPrompt.options.flatMap(opt => {
+            const value = opt.value as { cardUid?: unknown; defId?: unknown; skip?: unknown; done?: unknown } | undefined;
+            if (value?.skip === true || value?.done === true) return [];
+            if (typeof value?.cardUid !== 'string' || typeof value?.defId !== 'string') return [];
+            return [{
+                uid: value.cardUid,
+                defId: value.defId,
+                label: resolvePromptOptionLabel(opt),
+            }];
+        });
+    }, [currentPrompt, isDiscardCardPrompt, resolvePromptOptionLabel]);
 
     // 弃牌堆出牌横排选中的卡 uid（统一状态）
     const [discardStripSelectedUid, setDiscardStripSelectedUid] = useState<string | null>(null);
@@ -1142,6 +1176,30 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isDiscardMinionPrompt || !currentPrompt) return null;
         return currentPrompt.options.find(opt => (opt.value as Record<string, unknown>)?.done) ?? null;
     }, [isDiscardMinionPrompt, currentPrompt]);
+
+    const discardCardPromptCloseOption = useMemo(() => {
+        if (!isDiscardCardPrompt || !currentPrompt) return null;
+        return currentPrompt.options.find(opt => {
+            const value = opt.value as { skip?: unknown; done?: unknown } | undefined;
+            return value?.skip === true || value?.done === true;
+        }) ?? null;
+    }, [currentPrompt, isDiscardCardPrompt]);
+
+    const handleDiscardCardPromptSelect = useCallback((cardUid: string | null) => {
+        if (!cardUid || !isDiscardCardPrompt || !currentPrompt) return;
+        const option = currentPrompt.options.find(opt => {
+            if (opt.disabled) return false;
+            const value = opt.value as { cardUid?: unknown } | undefined;
+            return value?.cardUid === cardUid;
+        });
+        if (!option) return;
+        respondCurrentPrompt({ optionId: option.id });
+    }, [currentPrompt, isDiscardCardPrompt, respondCurrentPrompt]);
+
+    const discardPanelCards = useMemo(
+        () => (isDiscardCardPrompt ? discardCardPromptCards : discardStripCards),
+        [discardCardPromptCards, discardStripCards, isDiscardCardPrompt],
+    );
 
     // 横排消失时重置
     useEffect(() => {
@@ -1683,6 +1741,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         playerNames,
     });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
+    const [visualEventFloor] = useState(() => Date.now());
 
     // 行动卡特写队列：
     // - 在线模式：只显示对手打出的行动卡
@@ -1708,6 +1767,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         triggerEventTypes: SPOTLIGHT_TRIGGER_EVENTS,
         extractCard: extractActionCard,
         maxQueue: 5,
+        ignoreEventsBefore: visualEventFloor,
     });
 
     useEffect(() => {
@@ -3920,12 +3980,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
                             compactLayout={isMobileViewport}
                             isMyTurn={isMyTurn}
-                            hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt}
-                            autoOpenPanel={isDiscardMinionPrompt}
-                            playableCards={discardStripCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
-                            selectedUid={discardStripSelectedUid}
-                            onSelectCard={setDiscardStripSelectedUid}
-                            selectHint={discardStripSelectedUid
+                            hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt || isDiscardCardPrompt}
+                            autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}
+                            playableCards={discardPanelCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
+                            selectedUid={isDiscardCardPrompt ? null : discardStripSelectedUid}
+                            onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : setDiscardStripSelectedUid}
+                            selectHint={isDiscardCardPrompt
+                                ? undefined
+                                : discardStripSelectedUid
                                 ? (() => {
                                     const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
                                     if (selected?.mode === 'activate_special_base') {
@@ -3944,6 +4006,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 ? (discardStripDoneOption
                                     ? () => respondCurrentPrompt({ optionId: discardStripDoneOption!.id })
                                     : () => cancelCurrentPrompt())
+                                : isDiscardCardPrompt
+                                    ? (discardCardPromptCloseOption
+                                        ? () => respondCurrentPrompt({ optionId: discardCardPromptCloseOption.id })
+                                        : () => cancelCurrentPrompt())
                                 : () => { setDiscardStripSelectedUid(null); }
                             }
                             setAsideTitans={setAsideTitansForDisplay}
@@ -4011,17 +4077,20 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 />
 
                 {/* 卡牌展示浮层（非阻塞，点击关闭） */}
-                <RevealOverlay
-                    entries={eventStreamEntries}
-                    currentPlayerId={revealViewerId}
-                    playerNames={playerNames}
-                    suppressionRules={revealSuppressionRules}
-                />
+                {spotlightQueue.length === 0 && (
+                    <RevealOverlay
+                        entries={eventStreamEntries}
+                        currentPlayerId={revealViewerId}
+                        playerNames={playerNames}
+                        suppressionRules={revealSuppressionRules}
+                        ignoreEventsBefore={visualEventFloor}
+                    />
+                )}
 
                 {/* PREVIEW OVERLAY */}
                 <CardMagnifyOverlay target={viewingCard} onClose={() => setViewingCard(null)} />
 
-                {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆出牌交互时隐藏，由对应区域直接处理） */}
+                {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆交互时隐藏，由对应区域直接处理） */}
                 {(() => {
                     const shouldRender = !isDirectHandSelectPrompt
                         && !isBaseSelectPrompt
@@ -4029,6 +4098,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         && !isMinionSelectPrompt
                         && !isOngoingSelectPrompt
                         && !isBoardSelectPrompt
+                        && !isDiscardCardPrompt
                         && !isDiscardMinionPrompt
                         && !isTitanReactionPrompt
                         && !titanPromptBaseSelection;

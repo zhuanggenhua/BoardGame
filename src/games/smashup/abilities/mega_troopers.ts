@@ -8,6 +8,7 @@ import {
     buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
+    buildValidatedMoveEvents,
     buildValidatedReturnEvents,
     canControllerPlayTitan,
     createSkipOption,
@@ -17,9 +18,11 @@ import {
     moveTitan,
     playTitan,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerBaseAbility, registerExtended as registerExtendedBase, type BaseAbilityContext } from '../domain/baseAbilities';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { registerInterceptor } from '../domain/ongoingEffects';
@@ -27,7 +30,6 @@ import { getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import type {
     ActionCardDef,
-    ActionPlayedEvent,
     CardsDrawnEvent,
     CardInstance,
     DeckReorderedEvent,
@@ -216,16 +218,13 @@ function lightningCrystal(ctx: AbilityContext): AbilityResult {
 }
 
 function detachOngoing(choice: ActionAttachmentChoice, reason: string, timestamp: number): OngoingDetachedEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: choice.cardUid,
-            defId: choice.defId,
-            ownerId: choice.ownerId,
-            reason,
-        },
-        timestamp,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid: choice.cardUid,
+        defId: choice.defId,
+        ownerId: choice.ownerId,
+        reason,
+        now: timestamp,
+    });
 }
 
 function collectMinions(state: SmashUpCore, predicate: (minion: MinionOnBase, baseIndex: number) => boolean): MinionTarget[] {
@@ -284,6 +283,11 @@ function megaAttack(ctx: AbilityContext): AbilityResult {
                 destroyerId: ctx.playerId,
                 reason: 'mega_troopers_mega_attack',
                 now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: baseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -302,6 +306,17 @@ function megaAttack(ctx: AbilityContext): AbilityResult {
         }),
         { sourceId: 'mega_troopers_mega_attack', targetType: 'minion' },
     );
+    (interaction.data as {
+        continuationContext?: {
+            sourceCardUid?: string;
+            sourceDefId?: string;
+            sourceBaseIndex?: number;
+        };
+    }).continuationContext = {
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceBaseIndex: baseIndex,
+    };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -565,17 +580,19 @@ function yellowTrooperSpecial(ctx: AbilityContext): AbilityResult {
         return {
             events: [
                 specialUsedEvent(ctx.playerId, ctx.defId, ctx.baseIndex, ctx.now),
-                {
-                    type: SU_EVENTS.MINION_MOVED,
-                    payload: {
-                        minionUid: targets[0].uid,
-                        minionDefId: targets[0].defId,
-                        fromBaseIndex: targets[0].baseIndex,
-                        toBaseIndex: ctx.baseIndex,
-                        reason: 'mega_troopers_yellow_trooper',
-                    },
-                    timestamp: ctx.now,
-                } as SmashUpEvent,
+                ...buildValidatedMoveEvents(ctx.state, {
+                    minionUid: targets[0].uid,
+                    minionDefId: targets[0].defId,
+                    fromBaseIndex: targets[0].baseIndex,
+                    toBaseIndex: ctx.baseIndex,
+                    reason: 'mega_troopers_yellow_trooper',
+                    now: ctx.now,
+                    sourcePlayerId: ctx.playerId,
+                    sourceCardUid: ctx.cardUid,
+                    sourceDefId: ctx.defId,
+                    sourceControllerId: ctx.playerId,
+                    sourceBaseIndex: ctx.baseIndex,
+                }),
             ],
         };
     }
@@ -697,6 +714,11 @@ function blitzingSwordAttack(ctx: AbilityContext): AbilityResult {
             destroyerId: ctx.playerId,
             reason: 'mega_troopers_blitzing_sword_attack',
             now: ctx.now,
+            sourcePlayerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceControllerId: ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
             sourceKind: 'action',
         }));
         return { events };
@@ -714,6 +736,17 @@ function blitzingSwordAttack(ctx: AbilityContext): AbilityResult {
         }),
         { sourceId: 'mega_troopers_blitzing_sword_attack', targetType: 'minion', titleKey: 'ui.mega_troopers_blitzing_sword_attack_title' },
     );
+    (interaction.data as {
+        continuationContext?: {
+            sourceCardUid?: string;
+            sourceDefId?: string;
+            sourceBaseIndex?: number;
+        };
+    }).continuationContext = {
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceBaseIndex: ctx.baseIndex,
+    };
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -858,7 +891,14 @@ export function registerMegaTroopersInteractionHandlers(): void {
         return { state, events: [addTempPower(selected.minionUid, selected.baseIndex, 3, 'mega_troopers_its_blitzin_time', timestamp)] };
     });
 
-    registerInteractionHandler('mega_troopers_mega_attack', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('mega_troopers_mega_attack', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = (data as {
+            continuationContext?: {
+                sourceCardUid?: string;
+                sourceDefId?: string;
+                sourceBaseIndex?: number;
+            };
+        } | undefined)?.continuationContext;
         const selected = value as { minionUid?: string; defId?: string; minionDefId?: string; baseIndex?: number } | undefined;
         if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         return {
@@ -870,6 +910,11 @@ export function registerMegaTroopersInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'mega_troopers_mega_attack',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -898,17 +943,18 @@ export function registerMegaTroopersInteractionHandlers(): void {
         }
         return {
             state,
-            events: [{
-                type: SU_EVENTS.MINION_MOVED,
-                payload: {
-                    minionUid: selected.minionUid,
-                    minionDefId: selected.minionDefId ?? selected.defId ?? '',
-                    fromBaseIndex: selected.baseIndex,
-                    toBaseIndex: context.scoringBaseIndex,
-                    reason: 'mega_troopers_yellow_trooper',
-                },
-                timestamp,
-            } as SmashUpEvent],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.minionDefId ?? selected.defId ?? '',
+                fromBaseIndex: selected.baseIndex,
+                toBaseIndex: context.scoringBaseIndex,
+                reason: 'mega_troopers_yellow_trooper',
+                now: timestamp,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'mega_troopers_yellow_trooper',
+                sourceControllerId: _playerId,
+                sourceBaseIndex: context.scoringBaseIndex,
+            }),
         };
     });
 
@@ -936,16 +982,13 @@ export function registerMegaTroopersInteractionHandlers(): void {
         }
         const def = getCardDef(selected.defId) as ActionCardDef | undefined;
         const targetBaseIndex = def?.playNeedsBase || def?.ongoingTarget === 'base' ? selected.baseIndex : undefined;
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ACTION_PLAYED,
-            payload: {
-                playerId,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                isExtraAction: true,
-            },
+        const events: SmashUpEvent[] = [buildActionPlayedEvent({
+            playerId,
+            cardUid: selected.cardUid,
+            defId: selected.defId,
             timestamp,
-        } as ActionPlayedEvent];
+            isExtraAction: true,
+        })];
         const result = appendResolvedActionAbility({
             state,
             events,
@@ -961,7 +1004,14 @@ export function registerMegaTroopersInteractionHandlers(): void {
         return result;
     });
 
-    registerInteractionHandler('mega_troopers_blitzing_sword_attack', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('mega_troopers_blitzing_sword_attack', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = (data as {
+            continuationContext?: {
+                sourceCardUid?: string;
+                sourceDefId?: string;
+                sourceBaseIndex?: number;
+            };
+        } | undefined)?.continuationContext;
         const selected = value as { minionUid?: string; defId?: string; minionDefId?: string; baseIndex?: number } | undefined;
         if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         return {
@@ -973,6 +1023,11 @@ export function registerMegaTroopersInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'mega_troopers_blitzing_sword_attack',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
                 sourceKind: 'action',
             }),
         };

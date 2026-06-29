@@ -19,7 +19,7 @@ void __ensureThreeAxesMarker;
 
 
 test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
-    test('两个玩家都 pass 后响应窗口应该关闭', async ({ page, game }, testInfo) => {
+    test('当后续玩家没有可响应内容时，第一次 pass 后响应窗口应自动收口', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
         // 1. 导航到游戏
@@ -89,48 +89,20 @@ test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
         await page.waitForTimeout(1000);
         await game.screenshot('02-p0-passed', testInfo);
 
-        // 6. 验证窗口仍然打开，当前响应者变为 P1
+        // 6. 验证窗口已自动收口
         const windowState2 = await page.evaluate(() => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness.state.get();
             return {
                 hasWindow: !!state.sys.responseWindow?.current,
                 windowId: state.sys.responseWindow?.current?.id,
-                currentResponder: state.sys.responseWindow?.current?.responderQueue[state.sys.responseWindow?.current?.currentResponderIndex],
-                passedPlayers: state.sys.responseWindow?.current?.passedPlayers || [],
             };
         });
 
         console.log('[TEST] 窗口状态 2:', windowState2);
-        expect(windowState2.hasWindow).toBe(true);
-        expect(windowState2.currentResponder).toBe('1');
-        expect(windowState2.passedPlayers).toContain('0');
+        expect(windowState2.hasWindow).toBe(false);
 
-        // 7. P1 pass
-        await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            harness.command.dispatch({
-                type: 'RESPONSE_PASS',
-                playerId: '1',
-                payload: { windowId: 'test-window' },
-            });
-        });
-
-        await page.waitForTimeout(1000);
-        await game.screenshot('03-p1-passed', testInfo);
-
-        // 8. 验证窗口已关闭
-        const windowState3 = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness.state.get();
-            return {
-                hasWindow: !!state.sys.responseWindow?.current,
-                windowId: state.sys.responseWindow?.current?.id,
-            };
-        });
-
-        console.log('[TEST] 窗口状态 3:', windowState3);
-        expect(windowState3.hasWindow).toBe(false);
+        await game.screenshot('03-window-auto-closed', testInfo);
     });
 
     test('疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡', async ({ page, game }, testInfo) => {

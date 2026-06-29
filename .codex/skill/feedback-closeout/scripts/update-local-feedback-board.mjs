@@ -12,6 +12,8 @@ function parseArgs(argv) {
         status: '',
         owner: '',
         notes: '',
+        closedReason: '',
+        resolvedMethod: '',
         evidence: [],
         verification: [],
         screenshots: [],
@@ -37,6 +39,14 @@ function parseArgs(argv) {
         }
         if (arg === '--notes') {
             options.notes = argv[++index] || '';
+            continue;
+        }
+        if (arg === '--closed-reason') {
+            options.closedReason = argv[++index] || '';
+            continue;
+        }
+        if (arg === '--resolved-method') {
+            options.resolvedMethod = argv[++index] || '';
             continue;
         }
         if (arg === '--evidence') {
@@ -90,13 +100,19 @@ function assertItemCanUseStatus(item) {
         if (!Array.isArray(item.verification) || item.verification.length === 0) {
             throw new Error('resolved 状态至少需要 1 条 verification');
         }
+        const hasResolvedMethod = typeof item.resolvedMethod === 'string' && item.resolvedMethod.trim().length > 0;
+        const hasLegacyNotes = typeof item.notes === 'string' && item.notes.trim().length > 0;
+        if (!hasResolvedMethod && !hasLegacyNotes) {
+            throw new Error('resolved 状态至少需要 resolvedMethod（旧数据可临时用 notes 兼容）');
+        }
     }
 
     if (item.status === 'closed') {
+        const hasClosedReason = typeof item.closedReason === 'string' && item.closedReason.trim().length > 0;
         const hasNotes = typeof item.notes === 'string' && item.notes.trim().length > 0;
         const hasEvidence = Array.isArray(item.evidence) && item.evidence.length > 0;
-        if (!hasNotes && !hasEvidence) {
-            throw new Error('closed 状态至少需要 notes 或 evidence');
+        if (!hasClosedReason && !hasNotes && !hasEvidence) {
+            throw new Error('closed 状态至少需要 closedReason、notes 或 evidence');
         }
     }
 }
@@ -128,6 +144,8 @@ async function main() {
         updatedAt: new Date().toISOString(),
         owner: options.owner || item.owner || '',
         notes: options.notes || item.notes || '',
+        closedReason: options.closedReason || item.closedReason || '',
+        resolvedMethod: options.resolvedMethod || item.resolvedMethod || '',
         evidence: nextEvidence,
         verification: nextVerification,
         screenshots: nextScreenshots,

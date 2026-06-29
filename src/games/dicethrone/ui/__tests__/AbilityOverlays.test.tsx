@@ -123,11 +123,57 @@ describe('AbilityOverlays', () => {
 
         const fistSlot = container.querySelector('[data-ability-slot="fist"]');
         expect(fistSlot).not.toBeNull();
+        expect(fistSlot).toHaveAttribute('data-should-highlight', 'true');
 
         fireEvent.click(fistSlot!);
 
         expect(onHighlightedAbilityClick).toHaveBeenCalledTimes(1);
         expect(onMagnifyCard).not.toHaveBeenCalled();
+    });
+
+    it('高亮壳层保留统一描边结构，并为角色注入对应颜色', () => {
+        const { getByTestId } = renderAbilityOverlays({
+            availableAbilityIds: ['fist-technique'],
+            canHighlight: true,
+        });
+
+        const highlight = getByTestId('dt-ability-highlight-fist');
+        expect(highlight.className).toContain('inset-0');
+        expect(highlight.className).toContain('rounded-lg');
+        expect(highlight.className).toContain('animate-pulse');
+        expect(highlight.style.borderWidth).toBe('2px');
+        expect(highlight.style.borderColor).toBe('rgb(245, 158, 11)');
+        expect(highlight.style.boxShadow).toContain('rgba(245,158,11,0.92)');
+    });
+
+    it('选中态描边会沿用角色色并比普通高亮更强一档', () => {
+        const { getByTestId } = renderAbilityOverlays({
+            availableAbilityIds: ['fist-technique'],
+            canHighlight: true,
+            selectedAbilityId: 'fist-technique',
+        });
+
+        const selected = getByTestId('dt-ability-selected-fist');
+        expect(selected.className).toContain('rounded-lg');
+        expect(selected.style.borderWidth).toBe('2.5px');
+        expect(selected.style.borderColor).toBe('rgb(251, 191, 36)');
+        expect(selected.style.boxShadow).toContain('rgba(251,191,36,0.96)');
+    });
+
+    it('咒缚海盗高亮改用撞色描边，避免与面板暖色混在一起', () => {
+        const { getByTestId } = renderAbilityOverlays({
+            characterId: 'cursed_pirate',
+            playerBoardFace: 'normal',
+            availableAbilityIds: ['merciless-plunder'],
+            canHighlight: true,
+            abilityLevels: {},
+        });
+
+        const highlight = getByTestId('dt-ability-highlight-ultimate');
+        expect(highlight.className).toContain('rounded-lg');
+        expect(highlight.style.borderWidth).toBe('2px');
+        expect(highlight.style.borderColor).toBe('rgb(34, 211, 238)');
+        expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.94)');
     });
 
     it('Ninja v2 中间两列应把 shadow-step / smoke-screen 落到正确视觉槽位', () => {
@@ -216,6 +262,7 @@ describe('AbilityOverlays', () => {
         expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'verdict-command');
         expect(ultimateSlot).toHaveAttribute('data-base-ability-id', 'merciless-plunder');
         expect(ultimateSlot).toHaveAttribute('data-resolved-ability-id', 'merciless-plunder');
+        expect(ultimateSlot).toHaveAttribute('data-should-highlight', 'true');
     });
 
 });

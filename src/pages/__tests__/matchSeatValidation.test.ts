@@ -20,7 +20,6 @@ import {
     resolveOnlineAiSeatClaimOptions,
     resolveMissingOnlineAiSeatCredentialIds,
 } from '../onlineAiSeats';
-import { loadGameImplementation } from '../../games/registry';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
 import type { GameEngineConfig } from '../../engine/transport/server';
@@ -1323,8 +1322,6 @@ describe('onlineAiSeats', () => {
     });
 
     it('手动恢复遇到 compare-roll contestant 时，应把 blocked seat snapshot 交给 dispatch，而不是提前 force-end-turn', async () => {
-        await loadGameImplementation('dicethrone');
-
         const resolveDispatchImpl = vi.fn().mockImplementation(async (dispatchArgs) => {
             const resolved = dispatchArgs.visibleStateResolver?.('1');
             expect(resolved).toMatchObject({

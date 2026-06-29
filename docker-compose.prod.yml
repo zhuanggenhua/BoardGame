@@ -75,6 +75,12 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       INTERNAL_FEEDBACK_TOKEN: ${INTERNAL_FEEDBACK_TOKEN}
+      # 部署/回滚执行器运行在宿主机 systemd 中，不属于本 compose 项目。
+      # web 容器只负责鉴权和发起请求，避免回滚时重启自身导致执行状态丢失。
+      BG_DEPLOY_RUNNER_URL: ${BG_DEPLOY_RUNNER_URL:-http://host.docker.internal:18761}
+      BG_DEPLOY_RUNNER_TOKEN: ${BG_DEPLOY_RUNNER_TOKEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "80:80"
 

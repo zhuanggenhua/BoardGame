@@ -5,6 +5,7 @@ import type { GameEngineConfig } from '../engine/transport/server';
 import type { LatencyOptimizationConfig } from '../engine/transport/latency/types';
 import type { CriticalImageResolver } from '../core/types';
 import type { GameRuntimeAdapter } from './gameRuntimeAdapter';
+import type { GameAudioConfig } from '../lib/audio/types';
 
 /** 游戏运行时实现（Board/engineConfig/tutorial/latencyConfig），按需懒加载 */
 export interface GameClientRuntimeModule {
@@ -12,6 +13,7 @@ export interface GameClientRuntimeModule {
     // 各游戏 Board 组件的 props 都是具体的 GameBoardProps<...>，
     // 在统一 runtime 合同里使用宽类型避免被 Record<string, unknown> 误收窄。
     board: React.ComponentType<any>;
+    audioConfig?: GameAudioConfig;
     tutorial?: TutorialManifest;
     tutorialCatalog?: TutorialCollection;
     latencyConfig?: LatencyOptimizationConfig;

@@ -378,6 +378,53 @@ describe('Feedback Module (e2e)', () => {
         expect(closeRes.body.status).toBe('closed');
     });
 
+    it('标记为已解决时不填写解决方式会返回 400', async () => {
+        const { userToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '需要填写解决方式的反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const resolveRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ status: 'resolved' })
+            .expect(400);
+
+        expect(String(resolveRes.body.error ?? resolveRes.body.message ?? '')).toContain('解决方式不能为空');
+    });
+
+    it('标记为已解决时会保存解决方式', async () => {
+        const { userToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '需要记录解决方式的反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const resolveRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ status: 'resolved', resolvedMethod: '补充判定分支并增加回归测试' })
+            .expect(200);
+
+        expect(resolveRes.body.status).toBe('resolved');
+        expect(resolveRes.body.resolvedMethod).toBe('补充判定分支并增加回归测试');
+    });
+
     it('internal feedback 需要 token 且可创建系统反馈', async () => {
         const payload = {
             content: 'system feedback',
@@ -1183,7 +1230,7 @@ describe('Feedback Module (e2e)', () => {
         const reopened = await request(app.getHttpServer())
             .patch(`/admin/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '重新激活聚合记录用于继续跟进' })
             .expect(200);
         expect(reopened.body.status).toBe('resolved');
         expect(reopened.body.aggregationActiveKey).toBe(first.body.incidentKey);
@@ -1251,7 +1298,7 @@ describe('Feedback Module (e2e)', () => {
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '尝试重新打开旧聚合记录' })
             .expect(409);
 
         const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).sort({ createdAt: 1 }).lean();
@@ -1322,11 +1369,11 @@ describe('Feedback Module (e2e)', () => {
             request(app.getHttpServer())
                 .patch(`/admin/feedback/${first.body._id}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ status: 'resolved' }),
+                .send({ status: 'resolved', resolvedMethod: '并发重开聚合记录 A' }),
             request(app.getHttpServer())
                 .patch(`/admin/feedback/${second.body._id}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ status: 'resolved' }),
+                .send({ status: 'resolved', resolvedMethod: '并发重开聚合记录 B' }),
         ]);
         const statuses = [reopenA.status, reopenB.status].sort((a, b) => a - b);
         expect(statuses).toEqual([200, 409]);
@@ -1671,7 +1718,7 @@ describe('Feedback Module (e2e)', () => {
         const updateRes = await request(app.getHttpServer())
             .patch(`/admin/feedback/${feedbackId}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '后台确认问题已修复' })
             .expect(200);
 
         expect(updateRes.body.status).toBe('resolved');
@@ -1735,13 +1782,13 @@ describe('Feedback Module (e2e)', () => {
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${ownFeedbackRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '本人确认并记录解决方式' })
             .expect(200);
 
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${otherFeedbackRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '越权尝试不应成功' })
             .expect(404);
     });
 
@@ -1798,7 +1845,7 @@ describe('Feedback Module (e2e)', () => {
         const updateRes = await request(app.getHttpServer())
             .patch(`/admin/feedback/${ownFeedbackId}/status`)
             .set('Authorization', `Bearer ${developerToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '负责游戏已完成修复' })
             .expect(200);
 
         expect(updateRes.body.status).toBe('resolved');
@@ -1806,7 +1853,7 @@ describe('Feedback Module (e2e)', () => {
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${otherFeedbackId}/status`)
             .set('Authorization', `Bearer ${developerToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '越权尝试不应成功' })
             .expect(404);
 
         const adminListRes = await request(app.getHttpServer())
@@ -2042,16 +2089,71 @@ describe('Feedback Module (e2e)', () => {
                     playerId: '0',
                     gameId: 'smashup',
                     appVersion: 'dev',
+                    appCommitSha: 'abc123def456',
+                    appBuildTime: '2026-06-19T10:00:00.000Z',
+                    appReleaseChannel: 'production',
                     userAgent: 'vitest',
                     viewport: { width: 1280, height: 720 },
                     language: 'zh-CN',
                     timezone: 'Asia/Shanghai',
+                    activeElement: {
+                        tagName: 'button',
+                        testId: 'confirm-play',
+                        text: '确认出牌',
+                    },
+                    lastUserAction: {
+                        type: 'click',
+                        at: '2026-06-20T08:00:00.000Z',
+                        target: {
+                            tagName: 'button',
+                            testId: 'confirm-play',
+                        },
+                    },
+                    recentUserActions: [
+                        {
+                            type: 'pointerdown',
+                            at: '2026-06-20T07:59:59.000Z',
+                            target: { tagName: 'button', testId: 'confirm-play' },
+                        },
+                        {
+                            type: 'click',
+                            at: '2026-06-20T08:00:00.000Z',
+                            target: { tagName: 'button', testId: 'confirm-play' },
+                        },
+                    ],
+                    lastRouteChange: {
+                        from: '/play/smashup/match/abc?seat=0',
+                        to: '/play/smashup/match/abc?seat=0&step=confirm',
+                        trigger: 'pushState',
+                        at: '2026-06-20T08:00:01.000Z',
+                    },
+                    recentRouteChanges: [
+                        {
+                            to: '/play/smashup/match/abc?seat=0',
+                            trigger: 'init',
+                            at: '2026-06-20T07:59:58.000Z',
+                        },
+                        {
+                            from: '/play/smashup/match/abc?seat=0',
+                            to: '/play/smashup/match/abc?seat=0&step=confirm',
+                            trigger: 'pushState',
+                            at: '2026-06-20T08:00:01.000Z',
+                        },
+                    ],
+                    pageFlags: {
+                        isGamePage: true,
+                        hasModalOpen: true,
+                        gameId: 'smashup',
+                        mobileLayoutPreset: 'board-shell',
+                    },
                 },
                 errorContext: {
                     message: 'Cannot read properties of undefined',
                     name: 'TypeError',
                     stack: 'TypeError: ...',
                     source: 'react.error_boundary',
+                    jsStack: 'TypeError: ...\n    at CardPanel',
+                    componentStack: '\n    at CardPanel\n    at MatchRoomWithAudio',
                 },
             })
             .expect(201);
@@ -2059,7 +2161,18 @@ describe('Feedback Module (e2e)', () => {
         expect(accepted.body.type).toBe('bug');
         expect(accepted.body.actionLog).toContain('cast card');
         expect(accepted.body.clientContext?.matchId).toBe('abc');
+        expect(accepted.body.clientContext?.appCommitSha).toBe('abc123def456');
+        expect(accepted.body.clientContext?.appBuildTime).toBe('2026-06-19T10:00:00.000Z');
+        expect(accepted.body.clientContext?.appReleaseChannel).toBe('production');
+        expect(accepted.body.clientContext?.activeElement?.testId).toBe('confirm-play');
+        expect(accepted.body.clientContext?.lastUserAction?.type).toBe('click');
+        expect(accepted.body.clientContext?.recentUserActions).toHaveLength(2);
+        expect(accepted.body.clientContext?.lastRouteChange?.trigger).toBe('pushState');
+        expect(accepted.body.clientContext?.recentRouteChanges).toHaveLength(2);
+        expect(accepted.body.clientContext?.pageFlags?.mobileLayoutPreset).toBe('board-shell');
         expect(accepted.body.errorContext?.name).toBe('TypeError');
+        expect(accepted.body.errorContext?.jsStack).toContain('CardPanel');
+        expect(accepted.body.errorContext?.componentStack).toContain('MatchRoomWithAudio');
     });
 
     it('admin 可删除单条反馈并批量删除命中的反馈', async () => {

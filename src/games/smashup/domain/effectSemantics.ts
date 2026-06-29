@@ -1,6 +1,8 @@
 import type { PlayerId } from '../../../engine/types';
 import { getCardDef } from '../data/cards';
-import type { AffectRecord } from './affect';
+import { buildAffectRecords, type AffectRecord } from './affect';
+import { buildOngoingDetachedEvent } from './ongoingDetach';
+import { reduce } from './reduce';
 import {
     getConsumableProtectionSource,
     isMinionProtected,
@@ -10,6 +12,8 @@ import {
 } from './ongoingEffects';
 import type {
     AbilityFeedbackEvent,
+    MinionDestroyedEvent,
+    MinionMovedEvent,
     MinionOnBase,
     OngoingAttachedEvent,
     OngoingDetachedEvent,
@@ -66,6 +70,18 @@ export interface SemanticMinionTargetCandidate<TMinion extends MinionOnBase = Mi
 export interface SemanticMinionTargetPartition<TMinion extends MinionOnBase = MinionOnBase> {
     allowed: Array<SemanticMinionTargetCandidate<TMinion>>;
     blocked: Array<SemanticMinionTargetCandidate<TMinion> & { blockInfo: MinionTargetBlockInfo }>;
+}
+
+export interface SemanticMinionCandidateMatchOptions extends MinionTargetSemanticOptions {
+    controllerId?: PlayerId;
+    excludeMinionUid?: string;
+    exactDefId?: string;
+    semanticRole?: SemanticTargetRole;
+}
+
+export interface SemanticRuntimeActionCollectionOptions {
+    includeBaseOngoings?: boolean;
+    includeMinionAttachments?: boolean;
 }
 
 export function mapAffectTypeToMinionSemanticEffectType(affectType: AffectType): MinionSemanticEffectType {
@@ -144,6 +160,9 @@ export function getMinionTargetBlockInfo(
     const sourceKind = inferSemanticSourceKind(options.sourceKind, options.sourceDefId);
     const effectType = normalizeEffectType(options.effectType);
     const actionProtectionSourcePlayerId = options.actionProtectionSourcePlayerId ?? options.sourcePlayerId;
+    const protectionSourcePlayerId = options.sourceDefId?.startsWith('base_')
+        ? minion.controller
+        : options.sourcePlayerId;
 
     if (
         shouldRespectActionProtection(sourceKind, options.respectActionProtection)
@@ -160,24 +179,24 @@ export function getMinionTargetBlockInfo(
     }
 
     const primaryProtectionType = getPrimaryProtectionType(effectType);
-    if (primaryProtectionType && isMinionProtected(state, minion, baseIndex, options.sourcePlayerId, primaryProtectionType, {
+    if (primaryProtectionType && isMinionProtected(state, minion, baseIndex, protectionSourcePlayerId, primaryProtectionType, {
         sourceKind,
     })) {
         return {
             blocked: true,
             protectionType: primaryProtectionType,
-            protectionSourcePlayerId: options.sourcePlayerId,
-            consumableSource: getConsumableProtectionSource(state, minion, baseIndex, options.sourcePlayerId, primaryProtectionType),
+            protectionSourcePlayerId: protectionSourcePlayerId,
+            consumableSource: getConsumableProtectionSource(state, minion, baseIndex, protectionSourcePlayerId, primaryProtectionType),
         };
     }
 
     if (usesBroadAffectProtection(effectType)) {
         const broadAffectBlocked = (
             options.mode === 'preview' && primaryProtectionType
-                ? isMinionProtectedNonConsumable(state, minion, baseIndex, options.sourcePlayerId, 'affect', {
+                ? isMinionProtectedNonConsumable(state, minion, baseIndex, protectionSourcePlayerId, 'affect', {
                     sourceKind,
                 })
-                : isMinionProtected(state, minion, baseIndex, options.sourcePlayerId, 'affect', {
+                : isMinionProtected(state, minion, baseIndex, protectionSourcePlayerId, 'affect', {
                     sourceKind,
                 })
         );
@@ -185,10 +204,10 @@ export function getMinionTargetBlockInfo(
             return {
                 blocked: true,
                 protectionType: 'affect',
-                protectionSourcePlayerId: options.sourcePlayerId,
+                protectionSourcePlayerId: protectionSourcePlayerId,
                 consumableSource: options.mode === 'preview' && primaryProtectionType
                     ? undefined
-                    : getConsumableProtectionSource(state, minion, baseIndex, options.sourcePlayerId, 'affect'),
+                    : getConsumableProtectionSource(state, minion, baseIndex, protectionSourcePlayerId, 'affect'),
             };
         }
     }
@@ -225,29 +244,84 @@ export function partitionMinionTargetsBySemantics<TMinion extends MinionOnBase>(
     return { allowed, blocked };
 }
 
+export function filterSemanticMatchedMinionCandidates<TMinion extends MinionOnBase>(
+    state: SmashUpCore,
+    candidates: readonly SemanticMinionTargetCandidate<TMinion>[],
+    baseDefId: string,
+    options?: SemanticMinionCandidateMatchOptions,
+): Array<SemanticMinionTargetCandidate<TMinion>> {
+    return candidates.filter((candidate) => {
+        if (options?.exactDefId) {
+            if (candidate.minion.defId !== options.exactDefId) {
+                return false;
+            }
+        } else if (!matchesSemanticRuntimeDefId(candidate.minion.defId, baseDefId)) {
+            return false;
+        }
+        if (options?.excludeMinionUid && candidate.minion.uid === options.excludeMinionUid) {
+            return false;
+        }
+        if (options?.controllerId && candidate.minion.controller !== options.controllerId) {
+            return false;
+        }
+        if ((options?.semanticRole ?? 'material') !== 'target') {
+            return true;
+        }
+        if (!options?.sourcePlayerId) {
+            throw new Error(`target semantic minion query 缺少 sourcePlayerId：${baseDefId}`);
+        }
+        return isMinionTargetAllowed(state, candidate.minion, candidate.baseIndex, {
+            sourcePlayerId: options.sourcePlayerId,
+            actionProtectionSourcePlayerId: options.actionProtectionSourcePlayerId,
+            sourceDefId: options.sourceDefId,
+            sourceKind: options.sourceKind,
+            effectType: options.effectType,
+            respectActionProtection: options.respectActionProtection,
+            mode: options.mode,
+        });
+    });
+}
+
+export function countSemanticMatchedMinionCandidates<TMinion extends MinionOnBase>(
+    state: SmashUpCore,
+    candidates: readonly SemanticMinionTargetCandidate<TMinion>[],
+    baseDefId: string,
+    options?: SemanticMinionCandidateMatchOptions,
+): number {
+    return filterSemanticMatchedMinionCandidates(state, candidates, baseDefId, options).length;
+}
+
+export function countSemanticControlledMinionCandidates<TMinion extends MinionOnBase>(
+    candidates: readonly SemanticMinionTargetCandidate<TMinion>[],
+    controllerId: PlayerId,
+    options?: { excludeMinionUid?: string },
+): number {
+    return candidates.filter((candidate) => (
+        candidate.minion.controller === controllerId
+        && !(options?.excludeMinionUid && candidate.minion.uid === options.excludeMinionUid)
+    )).length;
+}
+
 export function buildProtectionSelfDestructEvent(
     source: { uid: string; defId: string; ownerId: PlayerId; controllerId: PlayerId },
     sourceBaseIndex: number | undefined,
     timestamp?: number,
 ): OngoingDetachedEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: source.uid,
-            defId: source.defId,
-            ownerId: source.ownerId,
-            reason: `${source.defId}_self_destruct`,
-            sourcePlayerId: source.controllerId,
-            sourceCardUid: source.uid,
-            sourceDefId: source.defId,
-            sourceControllerId: source.controllerId,
-            sourceBaseIndex,
-        },
-        timestamp,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid: source.uid,
+        defId: source.defId,
+        ownerId: source.ownerId,
+        reason: `${source.defId}_self_destruct`,
+        sourcePlayerId: source.controllerId,
+        sourceCardUid: source.uid,
+        sourceDefId: source.defId,
+        sourceControllerId: source.controllerId,
+        sourceBaseIndex,
+        now: timestamp,
+    });
 }
 
-function isActionAffectRecord(record: AffectRecord): boolean {
+export function isActionAffectRecord(record: AffectRecord): boolean {
     if (!record.sourceDefId) return false;
     const def = getCardDef(record.sourceDefId);
     return def?.type === 'action' || def?.type === 'fusion';
@@ -298,7 +372,7 @@ function inferInPlayActionSourcePlayerId(core: SmashUpCore, record: AffectRecord
     return undefined;
 }
 
-function resolveProtectionSourcePlayerId(core: SmashUpCore, record: AffectRecord): PlayerId | undefined {
+export function resolveProtectionSourcePlayerId(core: SmashUpCore, record: AffectRecord): PlayerId | undefined {
     if (record.reason?.startsWith('base_')) return undefined;
     if (record.affectType === 'attach_action' && record.sourcePlayerId) {
         return record.sourcePlayerId;
@@ -322,21 +396,18 @@ function buildBlockedAttachedActionDiscardEvent(
         return undefined;
     }
     const ownerId = (event as OngoingAttachedEvent).payload.ownerId;
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: record.sourceCardUid,
-            defId: record.sourceDefId,
-            ownerId,
-            reason: `${record.sourceDefId}_blocked_attach`,
-            sourcePlayerId: record.sourcePlayerId,
-            sourceCardUid: record.sourceCardUid,
-            sourceDefId: record.sourceDefId,
-            sourceControllerId: record.sourceControllerId,
-            sourceBaseIndex: record.sourceBaseIndex,
-        },
-        timestamp: event.timestamp,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid: record.sourceCardUid,
+        defId: record.sourceDefId,
+        ownerId,
+        reason: `${record.sourceDefId}_blocked_attach`,
+        sourcePlayerId: record.sourcePlayerId,
+        sourceCardUid: record.sourceCardUid,
+        sourceDefId: record.sourceDefId,
+        sourceControllerId: record.sourceControllerId,
+        sourceBaseIndex: record.sourceBaseIndex,
+        now: event.timestamp,
+    });
 }
 
 function isAttachedActionProtectedByHost(
@@ -434,6 +505,167 @@ export function resolveSemanticAffectProtectionBlock(
     return { blocked: true, extraEvents };
 }
 
+function buildAffectEventSourceKey(
+    event: SmashUpEvent,
+    fallbackSourcePlayerId: PlayerId,
+): string | undefined {
+    const payload = (event as { payload?: Record<string, unknown> }).payload;
+    if (!payload) return undefined;
+    const sourceParts = [
+        payload.sourcePlayerId ?? fallbackSourcePlayerId,
+        payload.sourceCardUid,
+        payload.sourceDefId,
+        payload.sourceControllerId,
+        payload.sourceBaseIndex,
+        payload.reason,
+    ];
+    if (sourceParts.every(part => part === undefined || part === null || part === '')) {
+        return undefined;
+    }
+    return sourceParts.map(part => String(part ?? '')).join('|');
+}
+
+export function filterSemanticProtectedAffectEvents(
+    events: SmashUpEvent[],
+    core: SmashUpCore,
+    fallbackSourcePlayerId: PlayerId,
+): SmashUpEvent[] {
+    const result: SmashUpEvent[] = [];
+    let workingCore = core;
+    let pendingSourceKey: string | undefined;
+    let pendingEvents: SmashUpEvent[] = [];
+
+    const flushPendingEvents = () => {
+        for (const pendingEvent of pendingEvents) {
+            workingCore = reduce(workingCore, pendingEvent);
+        }
+        pendingEvents = [];
+        pendingSourceKey = undefined;
+    };
+
+    for (const event of events) {
+        const sourceKey = buildAffectEventSourceKey(event, fallbackSourcePlayerId);
+        if (pendingEvents.length > 0 && sourceKey !== pendingSourceKey) {
+            flushPendingEvents();
+        }
+
+        if (event.type === SU_EVENTS.MINION_DESTROYED || event.type === SU_EVENTS.MINION_MOVED) {
+            result.push(event);
+            if (sourceKey) {
+                pendingSourceKey = sourceKey;
+                pendingEvents.push(event);
+            } else {
+                workingCore = reduce(workingCore, event);
+            }
+            continue;
+        }
+
+        const affectRecords = buildAffectRecords(workingCore, event, fallbackSourcePlayerId)
+            .filter(record =>
+                (record.targetKind === 'minion' && record.countsForOnMinionAffected)
+                || record.targetKind === 'attached_action',
+            );
+
+        if (affectRecords.length === 0) {
+            result.push(event);
+            if (sourceKey) {
+                pendingSourceKey = sourceKey;
+                pendingEvents.push(event);
+            } else {
+                workingCore = reduce(workingCore, event);
+            }
+            continue;
+        }
+
+        let blocked = false;
+        const extraEvents: SmashUpEvent[] = [];
+
+        for (const record of affectRecords) {
+            const resolution = resolveSemanticAffectProtectionBlock(
+                workingCore,
+                record,
+                event,
+                fallbackSourcePlayerId,
+            );
+            if (!resolution.blocked) continue;
+
+            extraEvents.push(...resolution.extraEvents);
+            blocked = true;
+            break;
+        }
+
+        if (blocked) {
+            result.push(...extraEvents);
+            if (sourceKey) {
+                pendingSourceKey = sourceKey;
+                pendingEvents.push(...extraEvents);
+            } else {
+                for (const extraEvent of extraEvents) {
+                    workingCore = reduce(workingCore, extraEvent);
+                }
+            }
+            continue;
+        }
+
+        result.push(event);
+        if (sourceKey) {
+            pendingSourceKey = sourceKey;
+            pendingEvents.push(event);
+        } else {
+            workingCore = reduce(workingCore, event);
+        }
+    }
+
+    flushPendingEvents();
+    return result;
+}
+
+export function resolveSemanticMinionEventProtectionBlock(
+    core: SmashUpCore,
+    event: MinionDestroyedEvent | MinionMovedEvent,
+    fallbackSourcePlayerId: PlayerId,
+): {
+    blocked: boolean;
+    extraEvents: SmashUpEvent[];
+} {
+    const effectType = event.type === SU_EVENTS.MINION_DESTROYED ? 'destroy' : 'move';
+    const { minionUid, fromBaseIndex } = event.payload;
+    const base = core.bases[fromBaseIndex];
+    const minion = base?.minions.find((candidate) => candidate.uid === minionUid);
+    if (!minion) {
+        return { blocked: false, extraEvents: [] };
+    }
+
+    const rawSource = event.type === SU_EVENTS.MINION_DESTROYED
+        ? event.payload.destroyerId ?? fallbackSourcePlayerId
+        : fallbackSourcePlayerId;
+    const effectiveSource = event.payload.reason?.startsWith('base_') ? minion.controller : rawSource;
+    const actionRecord = buildAffectRecords(core, event, rawSource).find((record) => (
+        record.targetKind === 'minion'
+        && record.triggerMinionUid === minionUid
+        && isActionAffectRecord(record)
+    ));
+    const actionSourcePlayerId = actionRecord
+        ? resolveProtectionSourcePlayerId(core, actionRecord) ?? rawSource
+        : undefined;
+    const blockInfo = getMinionTargetBlockInfo(core, minion, fromBaseIndex, {
+        sourcePlayerId: effectiveSource,
+        actionProtectionSourcePlayerId: actionSourcePlayerId,
+        sourceKind: actionRecord ? 'action' : 'nonAction',
+        effectType,
+        mode: 'apply',
+    });
+    if (!blockInfo.blocked) {
+        return { blocked: false, extraEvents: [] };
+    }
+
+    const extraEvents: SmashUpEvent[] = [];
+    if (blockInfo.consumableSource) {
+        extraEvents.push(buildProtectionSelfDestructEvent(blockInfo.consumableSource, fromBaseIndex, event.timestamp));
+    }
+    return { blocked: true, extraEvents };
+}
+
 export function filterSemanticMatchedRuntimeActions(
     ctx: { state: SmashUpCore; minion: MinionOnBase; baseIndex: number },
     actions: readonly SemanticRuntimeAction[],
@@ -470,4 +702,32 @@ export function filterSemanticMatchedRuntimeActions(
             mode: options?.targetMode ?? 'continuous',
         });
     });
+}
+
+export function collectSemanticRuntimeActionsOnBase(
+    base: Pick<SmashUpCore['bases'][number], 'ongoingActions' | 'minions'>,
+    options?: SemanticRuntimeActionCollectionOptions,
+): SemanticRuntimeAction[] {
+    const includeBaseOngoings = options?.includeBaseOngoings ?? true;
+    const includeMinionAttachments = options?.includeMinionAttachments ?? true;
+    const actions: SemanticRuntimeAction[] = [];
+    if (includeBaseOngoings) {
+        actions.push(...base.ongoingActions);
+    }
+    if (includeMinionAttachments) {
+        for (const minion of base.minions) {
+            actions.push(...minion.attachedActions);
+        }
+    }
+    return actions;
+}
+
+export function countSemanticControlledRuntimeActions(
+    base: Pick<SmashUpCore['bases'][number], 'ongoingActions' | 'minions'>,
+    controllerId: PlayerId,
+    options?: SemanticRuntimeActionCollectionOptions & { controllerLens?: SemanticControllerLens },
+): number {
+    return collectSemanticRuntimeActionsOnBase(base, options).filter(
+        (action) => getSemanticActionControllerId(action, options?.controllerLens) === controllerId,
+    ).length;
 }

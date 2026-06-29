@@ -110,7 +110,7 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
         trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.METEOR]: 4 } },
         tags: ['unblockable'],
         effects: [
-            inflictStatus(STATUS_IDS.STUN, 1, abilityEffectText('meteor', 'inflictStun')),
+            inflictStatus(STATUS_IDS.DAZE, 1, abilityEffectText('meteor', 'inflictStun')),
             {
                 description: abilityEffectText('meteor', 'unblockable'),
                 action: { type: 'custom', target: 'self', customActionId: 'meteor-resolve' }
@@ -361,7 +361,7 @@ export const METEOR_2: AbilityDef = {
             effects: [
                 inflictStatus(STATUS_IDS.KNOCKDOWN, 1, abilityEffectText('meteor-shower', 'inflictKnockdown')),
                 inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('meteor-shower', 'inflictBurn')),
-                inflictStatus(STATUS_IDS.STUN, 1, abilityEffectText('meteor-shower', 'inflictStun')),
+                inflictStatus(STATUS_IDS.DAZE, 1, abilityEffectText('meteor-shower', 'inflictStun')),
             ],
             priority: 1
         },
@@ -371,7 +371,7 @@ export const METEOR_2: AbilityDef = {
             trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.METEOR]: 4 } },
             effects: [
                 // FM 获得由 meteor-resolve 内部处理（先获得FM再基于FM算伤害）
-                inflictStatus(STATUS_IDS.STUN, 1, abilityEffectText('meteor-2', 'inflictStun')),
+                inflictStatus(STATUS_IDS.DAZE, 1, abilityEffectText('meteor-2', 'inflictStun')),
                 {
                     description: abilityEffectText('meteor-2', 'unblockable'),
                     action: { type: 'custom', target: 'self', customActionId: 'meteor-resolve' }

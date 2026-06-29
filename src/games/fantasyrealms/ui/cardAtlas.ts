@@ -1,11 +1,8 @@
 import type { CSSProperties } from 'react';
 import { buildLocalizedImageSet } from '../../../core/AssetLoader';
 
-const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
-const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
-
-const ATLAS_COLUMNS = 10;
-const ATLAS_ROWS = 7;
+export const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
+export const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
 
 type AtlasPosition = {
     column: number;
@@ -70,23 +67,16 @@ const FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID: Record<string, AtlasPosition> = 
     'flame-wildfire': { column: 7, row: 6 },
 };
 
-function formatGridPercent(index: number, maxIndex: number): string {
-    if (index <= 0 || maxIndex <= 0) {
-        return '0%';
-    }
-    return `${((index / maxIndex) * 100).toFixed(3)}%`;
-}
-
 export function getFantasyRealmsCardFaceStyle(cardId: string, locale?: string): CSSProperties | null {
-    const atlasPosition = FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId];
-    if (!atlasPosition) {
+    const position = FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId];
+    if (!position) {
         return null;
     }
 
     return {
         backgroundImage: buildLocalizedImageSet(FANTASY_REALMS_CARD_ATLAS_PATH, locale),
-        backgroundSize: `${ATLAS_COLUMNS * 100}% ${ATLAS_ROWS * 100}%`,
-        backgroundPosition: `${formatGridPercent(atlasPosition.column, ATLAS_COLUMNS - 1)} ${formatGridPercent(atlasPosition.row, ATLAS_ROWS - 1)}`,
+        backgroundSize: '1000% 700%',
+        backgroundPosition: `${(position.column / 9) * 100}% ${(position.row / 6) * 100}%`,
         backgroundRepeat: 'no-repeat',
     };
 }

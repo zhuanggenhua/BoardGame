@@ -104,7 +104,10 @@
       "regionSpecialTroops": "特殊 {{summary}}",
       "regionPassages": "接边 {{summary}}",
       "regionReachable": "调度可达 {{summary}}",
-      "sharedPrintedRegion": "同图块"
+      "sharedPrintedRegion": "同图块",
+      "selectionGuideSource": "起",
+      "selectionContinueHint": "选择目标",
+      "clickableRegionSummary": "目标：{{summary}}"
     },
     "wheel": {
       "aria": "七大恨行动轮盘",
@@ -120,15 +123,42 @@
       "discardPile": "朝鲜弃牌"
     },
     "actions": {
+      "state": {
+        "current": "当前",
+        "available": "可选"
+      },
+      "tooltipHeader": "功能说明",
+      "tooltipCost": "花费 {{cost}}",
+      "primaryStageTagWheel": "轮盘",
+      "primaryStageTagFaction": "行动",
+      "primaryStageFactionTitle": "本次行动",
+      "primaryStageWheelTitle": "轮盘行动",
+      "primaryStageAvailable": "当前可进入",
+      "primaryStageUnavailable": "当前不可进入",
+      "primaryStageFactionCurrentDetail": "当前行动：{{label}}",
+      "primaryStageFactionDetail": "先弃牌，再继续当前行动。",
+      "primaryStageWheelDone": "本席轮盘已完成。",
+      "primaryStageWheelDetail": "本次轮盘行动：{{summary}}。",
+      "clickable": "可选",
+      "mapDirectClick": "地图目标",
+      "mapClickable": "选择目标",
+      "mapDirectClickHint": "选择目标完成这一步。",
+      "currentClickableRegions": "可选地区",
       "status": {
         "used": "已用",
         "unused": "未用"
       },
-      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 势力行动 {{factionStatus}}",
+      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}",
       "scenarioBlocked": "剧本待决项尚未确认，当前只可处理剧本选择。",
-      "wheelNextStepTitle": "下一步：点击轮盘按钮推进回合",
-      "wheelNextStepHint": "不用点左侧轮盘盘面，直接点下面的明文按钮即可。",
-      "directExecute": "直接执行",
+      "scenarioVoteBlocked": "局内剧本投票尚未完成，当前只可处理剧本介绍与投票。",
+      "primaryActionLabel": "这一步做什么",
+      "primaryActionEmpty": "未选择",
+      "primaryActionSelectPrompt": "选择一项行动",
+      "wheelNextStepBadge": "轮盘",
+      "wheelNextStepTitle": "选择轮盘行动",
+      "wheelNextStepHint": "本次轮盘行动待执行",
+      "wheelExecutePrompt": "选择轮盘行动",
+      "directExecute": "点这里",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
       "victory": {
         "hegemony": "霸权胜利",
@@ -145,10 +175,12 @@
         "highestFirst": "高级先损",
         "lowestFirst": "低级先损"
       },
-      "targetUnlocked": "未锁定",
+      "fallbackChoices": "其他做法",
+      "fallbackChoiceList": "其他做法",
+      "targetUnlocked": "先点地图选地区",
       "gaoDi": {
-        "summary": "源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}",
-        "hint": "先点击底部手牌选择要弃掉的牌，再点击下面的调度目标；也可以直接跳过。",
+        "summary": "从 {{sourceRegionName}} 出发 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口",
+        "hint": "弃 1 张牌后选择目标。",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "部队",
         "typePopulation": "人口",
@@ -157,58 +189,157 @@
         "skip": "跳过高第调度"
       },
       "internalDispatch": {
-        "summary": "源区 {{sourceRegionName}} · 最多调度 {{maxTroops}} 部队",
+        "summary": "从 {{sourceRegionName}} 出发 · 最多调 {{maxTroops}} 个部队",
         "committedTroops": "调 {{troops}}"
       },
       "recruit": {
         "title": "征召军队",
-        "summary": "当前目标 {{targetRegionName}} · 可切换到其他己方控制区后再决定建军方式"
+        "summary": "准备在 {{targetRegionName}} 建军，可先换别的己方区域"
       },
       "maShiTrade": {
         "title": "马市贸易",
-        "summary": "当前目标 {{targetRegionName}} · 可切换到其他大明控制区后再决定建立数量"
+        "summary": "准备在 {{targetRegionName}} 建军，可先换别的大明区域"
       },
       "khanEdict": {
         "title": "大汗令箭",
-        "summary": "当前区域 {{sourceRegionName}} · 可切换地图选中区后再决定"
+        "summary": "准备在 {{sourceRegionName}} 执行，可先换别的地区"
       },
       "diplomacy": {
         "currentControlRegion": "当前控制区",
-        "sourceSummary": "源区 {{sourceRegionName}} · 雇佣落在 {{hireRegionName}}",
+        "sourceSummary": "从 {{sourceRegionName}} 出发 · 雇佣落在 {{hireRegionName}}",
         "resolvedSummary": "已执行 {{resolved}}/{{total}} 次外交 · 还可继续 {{remaining}} 次",
-        "targetSummary": "当前目标 {{targetRegionName}} · {{targetHint}}",
+        "targetSummary": "正在查看 {{targetRegionName}} · {{targetHint}}",
         "stepSummary": "外交 {{index}} · {{summary}}"
       },
       "driveTiger": {
         "title": "驱虎吞狼",
-        "summary": "{{targetFactionName}} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。"
+        "summary": "先问 {{targetFactionName}} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻。"
       },
       "wheelDispatch": {
-        "summary": "源区 {{sourceRegionName}} · 可选目标 {{count}} · 可直接点击地图高亮区",
-        "targetSummary": "{{targetRegionName}} · 防守 {{defenderLabel}}",
-        "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
+        "summary": "从 {{sourceRegionName}} 出发 · 可攻 {{count}} 处",
+        "targetSummary": "进攻 {{targetRegionName}} · 守方 {{defenderLabel}}",
+        "stats": "本次出兵 {{committedTroops}}",
         "travelCost": "耗 {{totalTravelCost}}"
       },
       "pendingTarget": {
-        "header": "{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}",
+        "header": "{{title}} · {{targetRegionName}} · 守方 {{defenderLabel}}",
         "defenderPayCost": " · 守方需付 {{cost}}",
-        "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
+        "stats": "本次出兵 {{committedTroops}}",
         "boundaryUnitCap": " · 边界上限 {{count}}",
         "actualCommittedTroops": "实际投入",
         "attackerCasualtyLabel": "攻方承伤",
         "defenderCasualtyLabel": "守方承伤"
       },
       "postBattle": {
-        "summary": "{{summary}} · 投入 {{committedTroops}}"
+        "summary": "{{summary}} · 幸存 {{survivingTroops}}"
       }
+    },
+    "setup": {
+      "eyebrow": "局内开局设置",
+      "title": "先完成剧本人物、军备与阵营前置项",
+      "description": "这一步在对局内完成。先确认本阵营前置项，完成后再进入正式棋盘操作。",
+      "characterLabel": "人物",
+      "pickCount": "请选择 {{count}} 项",
+      "confirmCharacter": "确认人物",
+      "armamentLabel": "军备",
+      "confirmArmament": "确认军备",
+      "waiting": "等待其他玩家完成其所属阵营的前置项。"
+    },
+    "scenarioVote": {
+      "eyebrow": "局内剧本投票",
+      "title": "先看剧本介绍，再为本局投票",
+      "description": "联机房间不再在建房阶段预设剧本。全部席位在局内完成介绍阅读与投票后，才会进入人物、军备前置。",
+      "playerCount": "{{count}} 人房间",
+      "unavailableForPlayerCount": "当前 {{count}} 人房不可投，适用 {{supported}} 人",
+      "voteCount": "{{count}} 票",
+      "supportedPlayers": "适用 {{count}} 人",
+      "orderBadge": "战局 {{orderNo}}",
+      "myVote": "本席已投",
+      "seatStatusTitle": "各席位当前投票",
+      "you": "你",
+      "host": "房主",
+      "pendingVote": "未投票",
+      "tiebreakNote": "全部席位确认后立即结算；若票数相同，则按{{hostFactionName}}的房主票裁定。",
+      "actionTitle": "本席操作",
+      "changeableHint": "你已经提交过一票；在所有席位投完前，仍可改投或撤回。",
+      "selectHint": "先选一张剧本介绍卡，再点确认投票。",
+      "spectatorHint": "观战视角只显示当前票型，不提供代投入口。",
+      "noDraft": "尚未选择剧本",
+      "confirm": "确认投票",
+      "clear": "撤回本票"
     }
   },
   "battle": {
     "pendingTargetChoice": {
-      "rearGuard": "断后结算",
-      "rout": "溃败结算",
-      "cavalryPlunderAttacker": "骑兵劫掠己方牌堆",
-      "cavalryPlunderDefender": "骑兵劫掠守方牌堆"
+      "rearGuard": "断后",
+      "rout": "溃退",
+      "cavalryPlunderAttacker": "抽己方牌堆",
+      "cavalryPlunderDefender": "抽守方牌堆"
+    }
+  },
+  "tutorial": {
+    "basic": {
+      "title": "基础回合",
+      "description": "从开局主入口走完一次手牌行动和一次轮盘行动。",
+      "steps": {
+        "welcome": "七大恨要靠扩地、攻下首都，或先拿到 3 个威望取胜。每回合会做一次手牌行动和一次轮盘行动，这一章先带你走完最基本一圈。",
+        "openingEntry": "先看右侧行动区。正式对局里，手牌行动和轮盘行动都从这里进入，顺序由当前玩家自己决定。",
+        "handResource": "底部手牌是主要资源。事件牌可以直接打出，军备牌打出后还要再弃 1 张；这一步先演示最常见的弃牌支付。",
+        "selectRegion": "先点地图上的皮岛。这里旁边正好有能被招安的敌军，做完后能立刻看到控制权变化。",
+        "pickAction": "现在点“赐印招安”。这一步是在选一项会直接改变地图局面的势力行动。",
+        "payCards": "赐印招安要弃 3 张牌。先点底部任意 3 张手牌，再点“确认执行”。",
+        "actionResult": "执行后，皮岛旁的 1 个敌军会转成大明部队。你刚才弃掉的牌，已经换成了地图上的控制力。",
+        "moraleLevel": "地图木块顶部的数字就是部队等级，也代表士气。战斗受损时通常先掉等级，归零才会被消灭；等级越高，掷骰也越强。",
+        "wheelMove": "手牌行动做完后，这回合还剩一次轮盘行动。现在点轮盘里的“免费走 1”。",
+        "finish": "你已经走完一个基础回合：先用手牌支付一次势力行动，再完成一次轮盘行动。接下来要学的，就是这些部队真正打起来时怎么算。"
+      }
+    },
+    "fieldBattle": {
+      "title": "野战",
+      "description": "完整看一次野战的承伤、掷骰和战后占领。",
+      "steps": {
+        "battleOverview": "这一章直接从一场已经接战的野战开始。野战里要看部队等级、掷骰结果、承伤顺序，以及战后是否占领。",
+        "battleTarget": "当前战场在察哈尔部。先看地图和待结算面板：攻守双方、投入兵力和战场目标都已经摆在这里。",
+        "casualtyPriority": "这里要先决定承伤顺序。现在点“低级先损”，让低级部队先掉等级，再结算这场野战。",
+        "battleResult": "结算后先看掷骰摘要和战果。你可以直接看到双方点数、造成的伤害，以及最后还剩多少幸存部队。",
+        "occupyRegion": "这场野战已经打赢了。现在点“占领该区”，把幸存部队留在察哈尔部，完成战后处理。",
+        "finish": "野战的核心就是这样一圈：比部队等级和掷骰，决定承伤，再结算占领或回退。"
+      }
+    },
+    "diplomacy": {
+      "title": "外交与雇佣",
+      "description": "从真实轮盘入口进入一次外交雇佣，看到控制标记和雇佣军一起生效。",
+      "steps": {
+        "overview": "这一章专门看外交和雇佣。它不只是在地图上翻标记，还会决定哪些区域能驻军、哪些区域会变成你的附庸。",
+        "wheelEntry": "当前轮盘还没走。先点“免费走 1”，把轮盘推进到外交雇佣。",
+        "chooseTarget": "现在已经进入外交雇佣。先看上方提示：这次会从山海关出发，先处理一个相邻地区的控制标记，再结算雇佣军。",
+        "placeFriendly": "先点相邻目标，再点“放置友好标记”。友好区先让你通行和驻守，下一次还能继续翻成附庸。",
+        "hireOnly": "控制标记处理完后，再点“结束并结算雇佣”。这样会在出发区直接建立 2 个等级 2 雇佣军。",
+        "finish": "这次你同时看到了两件事：外交会改地图标记，雇佣会把新兵力落到己方控制区。"
+      }
+    },
+    "siege": {
+      "title": "攻城与围城",
+      "description": "看清城战打赢后，占领和围城为什么不是一回事。",
+      "steps": {
+        "overview": "这一章从山海关城战打完后的战后处理开始。城战打赢以后，不一定立刻改控制权，还要决定是占领、围城还是回退。",
+        "target": "先看山海关。这里已经被突破，但当前仍是后金控制区，所以战后选择会直接决定这座城接下来是什么状态。",
+        "result": "待结算面板里已经给出了城战结果。先看摘要：攻方幸存 2 个部队，现在可以决定是直接进城，还是留在城外围城。",
+        "besiegeChoice": "现在点“围城该区”。围城会把幸存部队留在城外，区域暂时不改控制，但会进入围城状态。",
+        "finish": "这就是城战和野战最关键的差别之一：城战打赢后，未必立刻占领，也可能先围城继续施压。"
+      }
+    },
+    "season": {
+      "title": "年中与新年",
+      "description": "看懂年中判定、新年维护，以及跨年后为什么整局节奏会变化。",
+      "steps": {
+        "overview": "这一章专门看季节结算。七大恨不是只做眼前一手，轮盘走到年中和新年时，还会触发税赋、人物判定、防线维护和跨年结算。",
+        "advanceMidyear": "先点“指定一个对手抽 2 张并前进 2 格”。轮盘跨进年中后，会立刻结算税赋和人物判定。",
+        "midyearSummary": "现在看年中摘要。这里会把税赋、战败标记和人物判定的结果一次列出来。",
+        "advanceNewYear": "年中结算看完后，再点“免费走 1”。轮盘跨进新年后，就会立刻进入防线维护。",
+        "newYearMaintenance": "新年先看维护选择。现在点“尽量维护防线”，让系统按当前局面自动支付能保住的防线。",
+        "finish": "跨年后你会看到新年的结算摘要和新的年份标题。这就是一整年从年中走到新年的基本节奏。"
+      }
     }
   },
   "devtools": {
@@ -244,6 +375,7 @@
         "title": "共享印刷区",
         "description": "当前工作区里，若一个印刷图块同时命中多个运行时区域，这里会直接列出来。",
         "note": "这是运行时/印刷区分层真相，不代表正式印刷数据已经拆开。",
+        "previewHint": "这张小图只展示运行时归属如何把同一印刷区切成多个子区，不代表正式印刷数据已经拆开。",
         "candidateSummary": "当前工作区已记录运行时专属指引候选：{{count}} 条。",
         "empty": "当前工作区没有载入共享印刷区的多运行时样本。",
         "runtime": "运行时：{{names}}",
@@ -332,7 +464,8 @@
         "manualAdditionsLabel": "手工补边：",
         "denoiseRemovedLabel": "去噪：",
         "brushWidth": "画笔宽度约 {{width}}px",
-        "zoom": "缩放 {{scale}}x"
+        "zoom": "缩放 {{scale}}x",
+        "reset": "复位"
       },
       "compactPassages": {
         "summary": "中心 {{centers}} / 自动连线 {{passages}}",

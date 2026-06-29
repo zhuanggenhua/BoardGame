@@ -11,8 +11,10 @@ type MatchRoomBoardComponent = ComponentType<GameBoardProps>;
 
 export type MatchRoomTutorialBoardRuntimeModel = {
     gameId?: string;
+    tutorialId?: string;
     board: MatchRoomBoardComponent;
     engineConfig: GameEngineConfig;
+    numPlayers?: number;
     onCommandRejected: (type: string, error: string) => void;
     title: string;
     preparingDescription: string;
@@ -52,6 +54,7 @@ export function MatchRoomTutorialBoardRuntime({ runtime }: { runtime: MatchRoomT
         return (
             <QidahenPregameScenarioGate
                 searchParams={searchParams}
+                tutorialId={runtime.tutorialId}
                 onSearchParamsChange={(nextSearchParams) => {
                     navigate(
                         {
@@ -66,7 +69,5 @@ export function MatchRoomTutorialBoardRuntime({ runtime }: { runtime: MatchRoomT
         );
     }
 
-    return (
-        renderBoard(2)
-    );
+    return renderBoard(runtime.numPlayers ?? 2);
 }

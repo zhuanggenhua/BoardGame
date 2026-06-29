@@ -21,11 +21,12 @@ import { TREANT_ABILITIES, TREANT_TOKENS, TREANT_INITIAL_TOKENS, TREANT_PASSIVE_
 import { NINJA_ABILITIES, NINJA_TOKENS, NINJA_INITIAL_TOKENS, getNinjaStartingDeck } from '../heroes/ninja';
 import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_TOKENS, ZHANSHUJIA_INITIAL_TOKENS, ZHANSHUJIA_PASSIVE_ABILITIES, getZhanshujiaStartingDeck } from '../heroes/zhanshujia';
 import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TOKENS, getCursedPirateStartingDeck, getCursedPirateAbilitiesForFace } from '../heroes/cursed_pirate';
+import { ARTIFICER_ABILITIES, ARTIFICER_TOKENS, ARTIFICER_INITIAL_TOKENS, ARTIFICER_PASSIVE_ABILITIES, getArtificerStartingDeck } from '../heroes/artificer';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
-import { STATUS_IDS, DICETHRONE_STATUS_ATLAS_IDS } from './ids';
+import { STATUS_IDS, TOKEN_IDS, DICETHRONE_STATUS_ATLAS_IDS } from './ids';
 
 
 export interface CharacterData {
@@ -352,6 +353,28 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE,
         statusAtlasPath: 'dicethrone/images/cursed/status-icons-atlas.json',
     },
+    artificer: {
+        id: 'artificer',
+        abilities: ARTIFICER_ABILITIES,
+        tokens: ARTIFICER_TOKENS,
+        initialTokens: ARTIFICER_INITIAL_TOKENS,
+        diceDefinitionId: 'artificer-dice',
+        getStartingDeck: getArtificerStartingDeck,
+        initialAbilityLevels: {
+            'wrench-strike': 1,
+            'schematics': 1,
+            'collect-parts': 1,
+            'eureka': 1,
+            'activate-bots': 1,
+            'overclock': 1,
+            'shock-bot': 1,
+            'tinker': 1,
+            'maximum-power': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
+        statusAtlasPath: 'dicethrone/images/artificial/status-icons-atlas.json',
+        passiveAbilities: ARTIFICER_PASSIVE_ABILITIES,
+    },
 };
 
 /**
@@ -438,6 +461,13 @@ export function initHeroState(
         },
         tokens: { ...data.initialTokens },
         tokenStackLimits: Object.fromEntries(data.tokens.map(t => [t.id, t.stackLimit])),
+        artificerBotState: characterId === 'artificer'
+            ? {
+                [TOKEN_IDS.NANOBOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+                [TOKEN_IDS.SHOCK_BOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+                [TOKEN_IDS.HEAL_BOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+            }
+            : undefined,
         damageShields: [],
         abilityLevels: { ...data.initialAbilityLevels },
         abilities: buildHeroAbilitiesForFace(

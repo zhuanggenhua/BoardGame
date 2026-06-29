@@ -22,7 +22,37 @@
 - **空间紧预算时允许保留特殊确认链**：若地图、右侧动作栏和底部手牌已经接近满载，把确认/支付/弃牌这类步骤强塞回通用动作槽会直接挤坏主交互区时，允许保留独立的特殊确认链，例如手牌上方独立确认条或局部 overlay。此时优先级是“主交互区不被挤坏、用户一眼知道下一步”，而不是机械追求所有确认都并回同一入口。
 - **用户可操作 UI 必须有固定槽位**：左上轮盘、右侧动作栏、底部手牌是三块固定可操作 UI。它们的位置和尺寸预算必须先保留，再去安排提示、摘要、说明、hover tip、结算块；不得让这些次级 UI 反过来挤压主交互入口。
 - **瞬时交互必须进入既有槽位，不得抢位**：弃牌确认、外交选择、调度目标、战后处理、响应窗口这类瞬时交互，必须进入右侧交互槽位、底部手牌选择链或 overlay；不得靠增加一块新面板去把动作按钮、手牌或地图提示顶开。
-- **交互模式必须有来源表**：七大恨当前可用来源不是空白。固定构图与锚点以 `D:\gongzuo\webgame\gameasset\ui参考\七大恨ui设计.png` 为主真相；“底部非阻塞卡牌查看/选择”参考 [src/games/smashup/ui/PromptOverlay.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/smashup/ui/PromptOverlay.tsx:638)；“阻塞 ownership 的中央响应层”参考 [src/games/smashup/ui/MeFirstOverlay.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/smashup/ui/MeFirstOverlay.tsx:119)。没有写出这类来源表，不得再发明新的交互承载方式。
+- **交互模式必须有来源表**：七大恨当前可用来源不是空白。固定构图与锚点以 `D:\gongzuo\webgame\gameasset\ui参考\七大恨ui设计.png` 为主真相；“底部常驻主交互槽位”参考 `src/games/smashup/ui/HandArea.tsx`；“底部非阻塞卡牌查看/选择”参考 `src/games/smashup/ui/PromptOverlay.tsx`；“阻塞 ownership 的中央响应层”参考 `src/games/smashup/ui/MeFirstOverlay.tsx`；“主交互承接面单一路由”参考 `src/games/smashup/Board.tsx` 中 `activePromptSurface`。没有写出这类来源表，不得再发明新的交互承载方式。
+
+## 主交互槽位五联单（当前正式口径）
+
+- **局内剧本投票 / setup**
+  - 主交互对象：剧本介绍卡、人物/军备候选、确认投票/确认前置按钮。
+  - 固定槽位：独立 setup 页或独立 setup overlay；不得与正式棋盘 HUD 同屏竞争。
+  - 让位顺序：正式棋盘轮盘、右侧动作栏、底部手牌、牌堆、地图提示全部让位，只保留弱化背景或阶段装饰。
+  - 禁止侵入对象：正式轮盘、势力行动按钮、底部手牌 dock、主地图交互热区。
+  - 来源家族：`QidahenScenarioVoteScreen` + `QidahenInMatchSetupOverlay`，参考 `SmashUp MeFirstOverlay` 的单一 ownership/setup 壳层。
+
+- **右侧势力动作槽位**
+  - 主交互对象：一级行动按钮、当前行动说明、当前主入口明文提示、当前步骤专属交互卡。
+  - 固定槽位：右中 `qidahen-actions-zone`；上半段是说明/当前步骤，下半段是固定动作 rail。
+  - 让位顺序：被动状态摘要、季节总结、城防状态、说明块先退；动作 rail 与当前步骤卡不得下移。
+  - 禁止侵入对象：地图 tip、season summary、fortification strip、waiting/hint/confirm strip 不得把动作按钮挤走或做成第二主入口。
+  - 来源家族：`src/games/qidahen/Board.tsx` 中 `qidahen-action-slot + qidahen-action-rail`，参考 `SmashUp activePromptSurface` 的单一主承接面。
+
+- **底部手牌支付 / 弃牌 / 科技选择**
+  - 主交互对象：当前 viewer 的真实手牌，以及手牌上方的确认/取消交互条。
+  - 固定槽位：底部 `qidahen-hand-dock` + `qidahen-hand-interaction-tray`。
+  - 让位顺序：说明块、日志、次级摘要先退；底部手牌与确认条不改成右侧新面板，也不被其它 HUD 下压。
+  - 禁止侵入对象：右侧动作条、地图 tip、season summary、setup waiting 文案、临时帮助块。
+  - 来源家族：`HandZone` + `HandInteractionTray`，参考 `SmashUp HandArea` 与 `PromptOverlay displayCards` 的底部卡牌承接方式。
+
+- **轮盘推进唯一下一步**
+  - 主交互对象：右侧动作槽位中的轮盘推进横幅与明文按钮；左上轮盘盘面只保留辅助视觉与区域理解，不再承担唯一入口。
+  - 固定槽位：右侧 `qidahen-wheel-next-step-banner`。
+  - 让位顺序：被动摘要与其它步骤说明先退，轮盘推进按钮保持第一焦点。
+  - 禁止侵入对象：地图热区提示、轮盘旁边的临时说明块、额外“执行”按钮列。
+  - 来源家族：`showWheelNextStepBanner`，参考成熟项目里“唯一下一步必须有明文 CTA”的主入口策略。
 
 ## 布局合同
 

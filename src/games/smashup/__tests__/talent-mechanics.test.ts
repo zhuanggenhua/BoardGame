@@ -208,7 +208,7 @@ describe('天赋基础设施', () => {
         expect(result.error).toBe('本回合天赋已使用');
     });
 
-    it('被压制的随从仍可手动发动天赋（当前压制仅过滤被动/持续来源）', () => {
+    it('被压制的随从不可手动发动天赋', () => {
         const core = makeState({
             suppressedCardsUntilTurnStart: [{
                 cardUid: 'm1',
@@ -237,27 +237,8 @@ describe('天赋基础设施', () => {
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
         });
-        expect(validation.valid).toBe(true);
-
-        const events = execute(matchState, {
-            type: SU_COMMANDS.USE_TALENT,
-            playerId: '0',
-            payload: { minionUid: 'm1', baseIndex: 0 },
-        }, defaultRandom);
-
-        const types = events.map(e => e.type);
-        expect(types).toContain(SU_EVENTS.TALENT_USED);
-        expect(types).toContain(SU_EVENTS.CARDS_DISCARDED);
-
-        const discardEvt = events.find(e => e.type === SU_EVENTS.CARDS_DISCARDED)!;
-        expect((discardEvt as any).payload.cardUids).toEqual(['mad1']);
-
-        const limitEvts = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
-        expect(limitEvts).toHaveLength(2);
-
-        const nextCore = events.reduce(reduce, core);
-        expect(nextCore.bases[0].minions[0]?.talentUsed).toBe(true);
-        expect(nextCore.suppressedCardsUntilTurnStart).toEqual(core.suppressedCardsUntilTurnStart);
+        expect(validation.valid).toBe(false);
+        expect(validation.error).toBe('该卡牌能力已被压制');
     });
 });
 
@@ -364,7 +345,7 @@ describe('ongoing 行动卡天赋基础设施', () => {
         expect(result.valid).toBe(false);
     });
 
-    it('被压制的 ongoing 卡仍可手动发动天赋（当前压制仅过滤被动/持续来源）', () => {
+    it('被压制的 ongoing 卡不可手动发动天赋', () => {
         const core = makeState({
             suppressedCardsUntilTurnStart: [
                 {
@@ -388,7 +369,8 @@ describe('ongoing 行动卡天赋基础设施', () => {
             playerId: '0',
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         });
-        expect(result.valid).toBe(true);
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('该卡牌能力已被压制');
     });
 
     it('ongoing 卡天赋触发后 TALENT_USED 记录 ongoingCardUid 与 defId', () => {

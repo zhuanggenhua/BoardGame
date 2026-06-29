@@ -3,6 +3,12 @@ import type { MatchState } from '../../../src/engine/types';
 import { FantasyRealmsDomain, evaluateFantasyRealmsScore } from '../../../src/games/fantasyrealms/domain';
 import type { FantasyRealmsCore } from '../../../src/games/fantasyrealms/domain';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../../src/games/fantasyrealms/data/cards';
+import {
+    FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
+    FANTASY_REALMS_DUEL_SETUP_VALUE,
+    FANTASY_REALMS_EXPANSION_SETUP_FIELD,
+    FANTASY_REALMS_VARIANT_SETUP_FIELD,
+} from '../../../src/games/fantasyrealms/roomSetup';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../../framework/evidenceScreenshots';
 import {
     assertNoFatalFrontendErrors,
@@ -17,6 +23,7 @@ import {
 import { getMatchState, injectMatchState } from '../../helpers/state-injection';
 
 export const GAME_NAME = 'fantasyrealms';
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
 export type FantasyRealmsMatchState = MatchState<FantasyRealmsCore>;
 
 export type OnlineAiSummary = {
@@ -40,9 +47,12 @@ export type OnlineAiRoomSetup = {
     context: BrowserContext;
     page: Page;
     matchId: string;
+    hostPlayerId: string;
+    hostCredentials: string;
     hostPlayerName: string;
     aiPlayerName: string;
     aiPlayerNames: Record<string, string>;
+    aiCredentialsBySeat: Record<string, string>;
 };
 
 export type OnlineAiRoomOptions = {
@@ -272,6 +282,12 @@ export async function createFantasyRealmsAiRoom(
 } | null> {
     const numPlayers = options?.numPlayers ?? 2;
     const aiSeatIds = options?.aiSeatIds ?? ['1'];
+    const setupSelections: Record<string, string> = {
+        [FANTASY_REALMS_EXPANSION_SETUP_FIELD]: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
+        ...(numPlayers === 2
+            ? { [FANTASY_REALMS_VARIANT_SETUP_FIELD]: FANTASY_REALMS_DUEL_SETUP_VALUE }
+            : {}),
+    };
     const seatControllers = Object.fromEntries(
         aiSeatIds.map((seatId) => [seatId, {
             type: 'local-ai',
@@ -286,6 +302,8 @@ export async function createFantasyRealmsAiRoom(
                 guestId: ownerGuestId,
                 ownerKey: `guest:${ownerGuestId}`,
                 ownerType: 'guest',
+                ...setupSelections,
+                setupSelections,
                 enableAi: true,
                 seatControllers,
             },
@@ -382,7 +400,7 @@ async function rescueFantasyRealmsRenderError(page: Page): Promise<boolean> {
     return true;
 }
 
-async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
+async function waitForFantasyRealmsLiveOrCompactShell(page: Page, args: {
     urlPattern: RegExp;
     shellLabel: string;
     requireHandRow?: boolean;
@@ -392,7 +410,7 @@ async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
     const maxRescues = 2;
     let lastBodyText = '';
     const liveTable = page.getByTestId('fantasyrealms-live-table');
-    const stackedLayout = page.getByTestId('fantasyrealms-stacked-layout');
+    const compactLayout = page.getByTestId('fantasyrealms-compact-layout');
     const handRow = page.getByTestId('fantasyrealms-hand-row');
 
     while (Date.now() < deadline) {
@@ -401,13 +419,17 @@ async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
 
         if (await liveTable.count() > 0 && await liveTable.first().isVisible().catch(() => false)) {
             await expect(page.getByTestId('fantasyrealms-live-topbar')).toBeVisible({ timeout: 10000 });
+            const liveScoreStrip = page.getByTestId('fantasyrealms-live-score-strip');
+            if (await liveScoreStrip.count() > 0) {
+                await expect(liveScoreStrip).toBeVisible({ timeout: 10000 });
+            }
             if (args.requireHandRow !== false) {
                 await expect(handRow).toBeVisible({ timeout: 10000 });
             }
             return;
         }
 
-        if (await stackedLayout.count() > 0 && await stackedLayout.first().isVisible().catch(() => false)) {
+        if (await compactLayout.count() > 0 && await compactLayout.first().isVisible().catch(() => false)) {
             if (args.requireHandRow !== false) {
                 await expect(handRow).toBeVisible({ timeout: 10000 });
             }
@@ -427,31 +449,31 @@ async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
 }
 
 export async function waitForFantasyRealmsBoard(page: Page, expectedPlayerId: string) {
-    await waitForFantasyRealmsLiveOrStackedShell(page, {
+    await waitForFantasyRealmsLiveOrCompactShell(page, {
         urlPattern: new RegExp(`/play/${GAME_NAME}/match/.+\\?playerID=${expectedPlayerId}`),
         shellLabel: `Fantasy Realms 玩家页棋盘壳（playerID=${expectedPlayerId}）`,
+        requireHandRow: false,
     });
 }
 
 export async function waitForFantasyRealmsSpectatorBoard(page: Page, matchId: string) {
-    await waitForFantasyRealmsLiveOrStackedShell(page, {
+    await waitForFantasyRealmsLiveOrCompactShell(page, {
         urlPattern: new RegExp(`/play/${GAME_NAME}/match/${matchId}\\?spectate=1$`),
         shellLabel: `Fantasy Realms spectator 棋盘壳（matchId=${matchId}）`,
+        requireHandRow: false,
     });
 }
 
 export async function waitForFantasyRealmsSpectatorReviewBoard(page: Page, matchId: string) {
     await expect(page).toHaveURL(new RegExp(`/play/${GAME_NAME}/match/${matchId}\\?spectate=1$`), { timeout: 15000 });
     await expect(page.getByText('终局复盘').first()).toBeVisible({ timeout: 20000 });
-    await expect(page.locator('.fr-endgame-list')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('fantasyrealms-focus-preview')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('fantasyrealms-live-endgame')).toBeVisible({ timeout: 10000 });
 }
 
 export async function waitForFantasyRealmsPlayerReviewBoard(page: Page, matchId: string, playerId: string) {
     await expect(page).toHaveURL(new RegExp(`/play/${GAME_NAME}/match/${matchId}\\?playerID=${playerId}$`), { timeout: 15000 });
     await expect(page.getByText('终局复盘').first()).toBeVisible({ timeout: 20000 });
-    await expect(page.locator('.fr-endgame-list')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('fantasyrealms-focus-preview')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('fantasyrealms-live-endgame')).toBeVisible({ timeout: 10000 });
 }
 
 export async function expectFantasyRealmsSpectatorLiveNoLeak(page: Page) {
@@ -463,22 +485,21 @@ export async function expectFantasyRealmsSpectatorLiveNoLeak(page: Page) {
         await expect(liveScoreStrip).toContainText('终局揭示');
     } else {
         await expect(page.getByText('??').first()).toBeVisible();
-        await expect(page.getByText('终局揭示').first()).toBeVisible();
+            await expect(page.getByText('终局揭示').first()).toBeVisible();
     }
     await expect(page.getByRole('button', { name: /查看手牌|弃置手牌/ })).toHaveCount(0);
+    await expect(page.locator('.fr-card-button--live-hand:visible')).toHaveCount(0);
 }
 
-export async function switchFantasyRealmsPageToStackedLayout(page: Page) {
+export async function switchFantasyRealmsPageToCompactLandscapeLayout(page: Page) {
     await page.setViewportSize({ width: 1024, height: 768 });
-    await expect(page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
 }
 
 export async function expectWaitingPageKeepsOpponentFocusHidden(args: {
     page: Page;
     hiddenCardName: string;
 }) {
-    await expect(args.page.getByText('你当前正在等待。这里仍可查看自己的手牌与公开弃牌，其他玩家的隐藏手牌不会在此展开。')).toHaveCount(0);
-    await expect(args.page.getByText('多人局进行中：这里只公开你的官方总分，其他玩家分数会在终局统一揭示。')).toHaveCount(0);
     await expect(args.page.getByText('你的回合')).toHaveCount(0);
     await expect(args.page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
     await expectHiddenFocusPreviewNoLeak({
@@ -519,9 +540,6 @@ export async function expectLiveWaitingScoreSummary(args: {
     const liveScoreBandTotal = args.page.locator('.fr-live-score-band-total');
     if (await liveScoreBandTotal.count() > 0) {
         await expect(liveScoreBandTotal).toHaveText(String(args.expectedScore));
-        await expect(args.page.getByText('官方总分')).toHaveCount(0);
-        await expect(args.page.getByText('终局揭示')).toHaveCount(0);
-        await expect(args.page.getByText('当前行动')).toHaveCount(0);
     } else {
         await expect(summaryRegion.locator('.fr-score-row-total strong').filter({ hasText: String(args.expectedScore) }).first()).toBeVisible();
     }
@@ -573,38 +591,93 @@ export async function waitForOnlineAiDrawTurnAfterEvent(args: {
     return await readOnlineAiStateSummary(args.matchId, args.page);
 }
 
+export async function waitForSingleOnlineAiRoundtrip(args: {
+    matchId: string;
+    page: Page;
+    humanPlayerId: string;
+    aiTurnSummary: OnlineAiSummary;
+    roundLabel: string;
+    timeoutMs?: number;
+}) {
+    const deckButton = args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
+
+    await expect.poll(async () => {
+        const summary = await readOnlineAiStateSummary(args.matchId, args.page);
+        const handCount = summary.handCounts[args.humanPlayerId] ?? 0;
+        const returnedToHumanDraw = summary.currentPlayer === args.humanPlayerId
+            && summary.stage === 'draw'
+            && (summary.turn ?? 0) > (args.aiTurnSummary.turn ?? 0)
+            && handCount === (args.aiTurnSummary.handCounts[args.humanPlayerId] ?? 0);
+        const returnedToHumanDiscard = summary.currentPlayer === args.humanPlayerId
+            && summary.stage === 'discard'
+            && (summary.turn ?? 0) > (args.aiTurnSummary.turn ?? 0)
+            && handCount > (args.aiTurnSummary.handCounts[args.humanPlayerId] ?? 0);
+        return returnedToHumanDraw || returnedToHumanDiscard;
+    }, {
+        timeout: args.timeoutMs ?? 35000,
+        message: `${args.roundLabel}: 等待 seat1 local AI 完成一轮并把回合交回 human`,
+    }).toBe(true);
+
+    const afterAiSummary = await readOnlineAiStateSummary(args.matchId, args.page);
+    expect(afterAiSummary.eventStreamNextId).not.toBeNull();
+    expect(args.aiTurnSummary.eventStreamNextId).not.toBeNull();
+    expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(args.aiTurnSummary.eventStreamNextId!);
+    expect(
+        afterAiSummary.drawPileCount !== args.aiTurnSummary.drawPileCount
+        || afterAiSummary.discardSignature !== args.aiTurnSummary.discardSignature,
+    ).toBe(true);
+    await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
+    if (afterAiSummary.stage === 'draw') {
+        await expect(deckButton).toBeVisible({ timeout: 10000 });
+    } else {
+        await expect(args.page.getByRole('button', { name: /弃置手牌/ }).first()).toBeVisible({ timeout: 10000 });
+        await expect(args.page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
+        await expect(deckButton).toHaveCount(0);
+    }
+    return afterAiSummary;
+}
+
 export async function completeNaturalHumanDeckTurn(args: {
     matchId: string;
     page: Page;
     playerId: string;
     roundLabel: string;
 }) {
-    const liveActionButton = args.page.getByTestId('fantasyrealms-live-action-button');
+    const deckButton = args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
     const beforeSummary = await readOnlineAiStateSummary(args.matchId, args.page);
     const beforeHandCount = beforeSummary.handCounts[args.playerId] ?? 0;
     const beforeTurn = beforeSummary.turn ?? 0;
     const beforeDiscardCount = beforeSummary.discardCount;
+    const alreadyInDiscardStage = beforeSummary.currentPlayer === args.playerId && beforeSummary.stage === 'discard';
 
     await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-    await expect(liveActionButton).toContainText('抓一张牌');
-    await liveActionButton.click();
+    if (alreadyInDiscardStage) {
+        await expect(deckButton).toHaveCount(0);
+    } else if (beforeDiscardCount === 0) {
+        await expect(deckButton).toHaveCount(0);
+    } else {
+        await expect(deckButton).toBeVisible({ timeout: 10000 });
+        await deckButton.click();
+    }
 
-    await expect.poll(async () => {
-        const summary = await readOnlineAiStateSummary(args.matchId, args.page);
-        return summary.currentPlayer === args.playerId
-            && summary.stage === 'discard'
-            && (summary.turn ?? 0) === beforeTurn
-            && (summary.handCounts[args.playerId] ?? 0) > beforeHandCount;
-    }, {
-        timeout: 10000,
-        message: `${args.roundLabel}: 等待 human 从 draw 进入 discard`,
-    }).toBe(true);
+    if (!alreadyInDiscardStage) {
+        await expect.poll(async () => {
+            const summary = await readOnlineAiStateSummary(args.matchId, args.page);
+            return summary.currentPlayer === args.playerId
+                && summary.stage === 'discard'
+                && (summary.turn ?? 0) === beforeTurn
+                && (summary.handCounts[args.playerId] ?? 0) > beforeHandCount;
+        }, {
+            timeout: 10000,
+            message: `${args.roundLabel}: 等待 human 从 draw 进入 discard`,
+        }).toBe(true);
+    }
 
     const afterDrawSummary = await readOnlineAiStateSummary(args.matchId, args.page);
+    await expect(args.page.getByRole('button', { name: /弃置手牌/ }).first()).toBeVisible({ timeout: 10000 });
+    await expect(args.page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
     const discardHandButton = args.page.getByRole('button', { name: /弃置手牌/ }).first();
     await discardHandButton.click();
-    await expect(liveActionButton).toContainText('确认弃置');
-    await liveActionButton.click();
 
     await expect.poll(async () => {
         const summary = await readOnlineAiStateSummary(args.matchId, args.page);
@@ -725,31 +798,39 @@ export async function waitForNearReviewInjectionOrImmediateGameOver(args: {
 }
 
 export async function expectFinalStandingsVisible(page: Page, standings: FinalStanding[]) {
-    const standingsRegion = page.locator('.fr-endgame-list');
+    const standingsRegion = page.getByTestId('fantasyrealms-live-endgame');
     await expect(standingsRegion).toBeVisible();
-    const rows = standingsRegion.locator('.fr-endgame-row');
+    const rows = standingsRegion.locator('.fr-live-endgame-rank-button');
     await expect(rows).toHaveCount(standings.length);
     for (const [index, standing] of standings.entries()) {
         const row = rows.nth(index);
+        await expect(row).toBeVisible();
         await expect(row).toContainText(`第 ${standing.rank} 名`);
         await expect(row).toContainText(standing.playerName);
-        await expect(row.locator('.fr-endgame-score')).toHaveText(String(standing.score));
+        await expect(row.locator('[data-score-role="final-score"]')).toHaveText(String(standing.score));
     }
 }
 
 export async function openFantasyRealmsOnlineAiRoom(
     browser: NonNullable<BrowserContext['browser']>,
     baseURL: string | undefined,
-    options?: OnlineAiRoomOptions,
+    options?: OnlineAiRoomOptions & {
+        viewport?: { width: number; height: number };
+        deviceScaleFactor?: number;
+    },
 ): Promise<OnlineAiRoomSetup | null> {
-    const context = await browser.newContext({ baseURL });
+    const context = await browser.newContext({
+        baseURL,
+        viewport: options?.viewport,
+        deviceScaleFactor: options?.deviceScaleFactor,
+    });
     await initContext(context, {
         storageKey: '__fantasyrealms_online_ai__',
         skipImageGate: true,
         gameServerBaseURL: getGameServerBaseURL(),
     });
     const page = await context.newPage();
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90000 });
 
     if (!(await ensureGameServerAvailable(page, getGameServerBaseURL()))) {
         await context.close();
@@ -803,7 +884,10 @@ export async function openFantasyRealmsOnlineAiRoom(
         localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetCredentials));
     }, { targetMatchId: room.matchId, targetCredentials: aiCredentialsBySeat });
 
-    await page.goto(`/play/${GAME_NAME}/match/${room.matchId}?playerID=${room.ownerPlayerId}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`/play/${GAME_NAME}/match/${room.matchId}?playerID=${room.ownerPlayerId}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 90000,
+    });
     await waitForFantasyRealmsBoard(page, room.ownerPlayerId);
     await seedAiSeatCredentials(page, room.matchId, aiCredentialsBySeat);
 
@@ -811,9 +895,12 @@ export async function openFantasyRealmsOnlineAiRoom(
         context,
         page,
         matchId: room.matchId,
+        hostPlayerId: room.ownerPlayerId,
+        hostCredentials,
         hostPlayerName,
         aiPlayerName: aiPlayerNames[aiSeatIds[0]!] ?? '',
         aiPlayerNames,
+        aiCredentialsBySeat,
     };
 }
 
@@ -829,7 +916,7 @@ export async function openFantasyRealmsOnlineAiMixedRoom(
         gameServerBaseURL: getGameServerBaseURL(),
     });
     const hostPage = await hostContext.newPage();
-    await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
+    await hostPage.goto('/', { waitUntil: 'domcontentloaded', timeout: 90000 });
 
     if (!(await ensureGameServerAvailable(hostPage, getGameServerBaseURL()))) {
         await hostContext.close();

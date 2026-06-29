@@ -142,7 +142,6 @@ describe('七大恨区域图谱运行时解析', () => {
         expect(QIDAHEN_PRINTED_REGION_GRAPH_EDGES.length).toBeGreaterThanOrEqual(77);
         expect(QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID.get('city-region-21')).toMatchObject({
             name: '喀喇沁部',
-            pixelCount: 12649,
         });
     });
 
@@ -216,14 +215,17 @@ describe('七大恨区域图谱运行时解析', () => {
 
         expect(QIDAHEN_RUNTIME_REGION_DEFINITIONS.find((region) => region.id === 'city-region-20')?.printedRegionIds).toEqual([
             'city-region-20',
+        ]);
+        expect(QIDAHEN_RUNTIME_REGION_DEFINITIONS.find((region) => region.id === 'city-region-21')?.printedRegionIds).toEqual([
             'city-region-21',
         ]);
     });
 
     it('印刷区点击可解析到对应 runtime 区，并支持反查整个 runtime 的印刷区集合', () => {
-        expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-21')).toEqual(['city-region-20']);
-        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-21')).toBe('city-region-20');
-        expect(getQidahenPrintedRegionIdsForRuntimeRegionId('city-region-20')).toEqual(['city-region-20', 'city-region-21']);
+        expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-21')).toEqual(['city-region-21']);
+        expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-21')).toBe('city-region-21');
+        expect(getQidahenPrintedRegionIdsForRuntimeRegionId('city-region-20')).toEqual(['city-region-20']);
+        expect(getQidahenPrintedRegionIdsForRuntimeRegionId('city-region-21')).toEqual(['city-region-21']);
         expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-15')).toEqual(['city-region-15', 'city-region-15-liaodong']);
         expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-15')).toBe('city-region-15');
         expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-15', ['city-region-15-liaodong'])).toBe('city-region-15-liaodong');
@@ -233,6 +235,18 @@ describe('七大恨区域图谱运行时解析', () => {
         expect(getQidahenRuntimeRegionIdsForPrintedRegionId('city-region-28')).toEqual(['city-region-28-jizhen', 'city-region-28']);
         expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-28')).toBe('city-region-28-jizhen');
         expect(resolveQidahenRuntimeRegionIdFromPrintedRegionId('city-region-28', ['city-region-28'])).toBe('city-region-28');
+    });
+
+    it('共享印刷区拆出的运行时子区必须有各自独立的中心点，不能继续共用同一个点位', () => {
+        expect(QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-15-liaodong')?.center).not.toEqual(
+            QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-15')?.center,
+        );
+        expect(QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-19-liaoxi')?.center).not.toEqual(
+            QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-19')?.center,
+        );
+        expect(QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-28-jizhen')?.center).not.toEqual(
+            QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-28')?.center,
+        );
     });
 
     it('正式 shared printed 映射与 authoritative guide 已覆盖当前已锁定真相', () => {

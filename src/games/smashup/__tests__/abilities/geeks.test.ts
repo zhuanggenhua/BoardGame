@@ -1209,7 +1209,8 @@ describe('极客派系隐藏实现批', () => {
         });
 
         const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_mulligan');
-        expect(getPromptTitle(prompt)).toContain('顶 5 张');
+        expect(prompt.titleKey).toBe('ui.geeks_mulligan_title');
+        expect(prompt.titleParams).toEqual({ count: 5 });
 
         const resolved = respondToPrompt(played.finalState, 'draw', '0', fixedRandom as any);
         expect(resolved.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual([
@@ -1290,7 +1291,8 @@ describe('极客派系隐藏实现批', () => {
         });
 
         const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_mulligan');
-        expect(getPromptTitle(prompt)).toContain('顶 5 张');
+        expect(prompt.titleKey).toBe('ui.geeks_mulligan_title');
+        expect(prompt.titleParams).toEqual({ count: 5 });
 
         const resolved = respondToPrompt(played.finalState, 'draw', '0', fixedRandom as any);
         expect(resolved.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual([

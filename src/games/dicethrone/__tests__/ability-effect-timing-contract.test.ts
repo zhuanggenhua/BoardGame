@@ -18,6 +18,7 @@ import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
 import { TREANT_CARDS } from '../heroes/treant/cards';
 import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
+import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 
 type AbilitySource = {
     heroId: SelectableCharacterId;
@@ -40,6 +41,7 @@ const HERO_CARDS: Record<SelectableCharacterId, AbilityCard[]> = {
     ninja: NINJA_CARDS,
     zhanshujia: ZHANSHUJIA_CARDS,
     cursed_pirate: CURSED_PIRATE_CARDS,
+    artificer: ARTIFICER_CARDS,
 };
 
 const collectEffects = (ability: AbilityDef): AbilityEffect[] => [

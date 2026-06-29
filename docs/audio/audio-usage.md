@@ -49,6 +49,8 @@
 - 语义目录：`docs/audio/audio-catalog.md`
 - 资源清单：`docs/audio/common-audio-assets.md`
 - 中文友好名：`public/assets/common/audio/phrase-mappings.zh-CN.json`
+- 全局来源排除清单：`scripts/audio/registry-exclusions.json`
+- 排除清单应用脚本：`scripts/audio/apply_registry_exclusions.mjs`
 
 ## 3. 常用命令入口
 
@@ -63,6 +65,16 @@ npm run compress:audio -- public/assets/common/audio
 ```bash
 node scripts/audio/generate_common_audio_registry.js
 ```
+
+- 若某些历史音频不希望再出现在全局候选库、AI registry、语义目录或 `/dev/audio` 中：
+  - 先把 key 写入 `scripts/audio/registry-exclusions.json`
+  - 先执行 `node scripts/audio/apply_registry_exclusions.mjs`
+  - 再重跑 AI registry / catalog / slim registry 生成链
+  - 这属于“隐藏来源候选”，不是删除物理素材文件
+  - 若该 key 属于用户刚点名要替换的语义槽位，同一轮还必须补：
+    - 新接线，或
+    - 新候选矩阵
+  - 禁止只删旧 key，不补替代项
 
 ### 3.3 生成资源清单
 
@@ -100,14 +112,48 @@ node scripts/audio/generate_audio_catalog.js
 
 执行步骤见 `audio-integration` skill，这里只保留工具层合同：
 
-1. **语义目录优先**
-   先用 `docs/audio/audio-catalog.md` 找语义组和 `grep pattern`
-2. **精简 registry 第二层**
-   用 `docs/audio/registry.ai.json` 或游戏专用精简 registry 缩小候选 key
-3. **全量 registry 最后回退**
+1. **全量语义目录优先**
+   先用 `docs/audio/audio-catalog.md` 在整个公共音频库里找语义组和 `grep pattern`
+2. **全库精简 registry 第二层**
+   用 `docs/audio/registry.ai.json` 缩小候选 key
+3. **现有游戏用例只作对照，不作默认候选池**
+   `src/games/**/audio.config.ts`、既有测试和旧配置默认只用于：
+   - 检查复用语义是否成熟
+   - 检查 BGM 是否重复
+   - 评估迁移成本
+   不得把“别的游戏已用 key 列表”当作默认挑选池
+   - 对 `mini_games_sound_effects_and_music_pack` 的胜利/失败提示，若仓内已大量复用，默认视为低优先级族群
+4. **全量 registry 最后回退**
    仅当前两层不足时，才回退到 `public/assets/common/audio/registry.json`
-4. **/dev/audio 最终确认**
+5. **/dev/audio 最终确认**
    用于试听、复制 key、检查分类与中文友好名
+
+### 4.2 候选矩阵必须有跨族群信息量
+
+- 当任务不是“直接定案”，而是“给我挑选 / 给我候选 / 给我试听矩阵”时：
+  - 默认应给跨族群候选
+  - 至少跨 `2` 个不同语义家族、音频包或 naming line
+- 禁止只给同一包里 `traditional_success_a/b/c...`、`failure_d/e/f...` 这类微变体，就宣称已经给了有意义的挑选矩阵
+- 若因用户明确要求或语义约束，只做单一家族内细挑：
+  - 必须明确标记为 `同族群收窄对比`
+  - 不能冒充完整替换矩阵
+
+### 4.1 中英双语命名合同
+
+- 任何最终入选的音效 / BGM，都必须同时保留：
+  - `中文名`
+  - `英文本体`：原始曲名 / 原始短语 / 英文语义名
+  - `完整 key`
+- 禁止只交中文名，导致用户无法搜索
+- 禁止只交 key，导致用户无法理解语义
+- 若 `phrase-mappings.zh-CN.json` 暂无中文友好名：
+  - 汇报中仍必须补一个可读中文名
+  - 同时保留英文本体
+  - 明确标记 `中文友好名待补`
+- 若用户明确要在 `/dev/audio` 里按中文搜索：
+  - 需要同步补 `public/assets/common/audio/phrase-mappings.zh-CN.json`
+  - 以及 `src/assets/audio/phrase-mappings.zh-CN.json`
+  - 不能只在汇报里补中文名，导致浏览器仍搜不到
 
 ## 5. 代码接入合同（强制）
 
@@ -127,6 +173,19 @@ return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_sy
 - **UI 点击音**：只用于纯 UI 操作，通过 `GameButton`
 - **操作拒绝音**：通过 `playDeniedSound()` 播放
 - **单一来源原则**：同一动作只能由事件音、按钮音或拒绝音其中之一触发
+
+### 5.2.1 私有流程音与公共流程音
+
+- 只要事件 payload 自带 `playerId`，接线时必须明确它属于：
+  - `本地私有流程音`
+  - 或 `全桌公共流程音`
+- 默认规则：
+  - 摸进自己手牌
+  - 从弃牌区拿回自己手牌
+  - 从自己手牌弃牌/打牌后只表示“我这边手牌变动”的短反馈
+  这类优先按 `本地私有流程音` 处理
+- 不能因为事件策略写成 `immediate`，就默认所有玩家都听到
+- 若该音效涉及隐藏信息或私人手感，其他玩家与观战应保持静默
 
 ### 5.3 预加载策略
 
@@ -153,9 +212,11 @@ return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_sy
 
 ### 6.1 核心原则
 
-- 游戏间 BGM 零重叠
+- 游戏间 BGM 默认零重叠
 - 语义匹配优先
 - 普通阶段和战斗阶段分组明确
+- 已有游戏 BGM 清单默认是**去重审计源**，不是默认候选池
+- 只有在语义特别贴合、且替代候选明显更差时，才允许复用已有游戏 BGM
 
 ### 6.2 配置落点
 
@@ -168,10 +229,20 @@ return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_sy
 ### 6.3 新增/调整 BGM 最低检查
 
 1. 曲目语义与目标游戏风格匹配
-2. 不与其他游戏重复
+2. 已检查是否与其他游戏重复
 3. registry 中存在对应 key
 4. 已同步更新 `bgm`、`bgmGroups`、`bgmRules`
 5. 已更新对应测试和文档说明
+6. 已记录 `中文名 + 英文本体 + key`
+
+### 6.4 重复例外合同
+
+- 若 BGM 与其他游戏重复，汇报中必须同时写明：
+  - 重复的具体 key
+  - 已复用到哪些游戏
+  - 为什么本次仍保留
+  - 为什么未选其他全库候选
+- 如果写不出这四项，就不得把重复 BGM 当作最终定案
 
 ## 7. 运行时 AudioContext 合同（强制）
 
@@ -195,8 +266,16 @@ return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_sy
 ## 9. 质量检查清单
 
 - [ ] 音频文件仅存在于 `public/assets/common/audio/`
+- [ ] 若本轮要求“从全局候选库移除某个 key”，已更新 `scripts/audio/registry-exclusions.json`
 - [ ] 代码中不出现 `compressed/`
 - [ ] 游戏层 `audio.config.ts` 不含 `basePath/sounds`
 - [ ] 查 key 时优先使用 `audio-catalog.md` 和 `registry.ai.json`
+- [ ] 最终交付包含 `中文名 + 英文本体 + key`
+- [ ] 若交付的是候选矩阵，已明确它是否跨族群
+- [ ] BGM 已做跨游戏重复检查；若重复，已写明例外理由
 - [ ] 新增素材时已按 `docs/audio/add-audio.md` 生成产物
 - [ ] 音效对接时已按 `audio-integration` skill 留查询证据和汇报
+- [ ] 运行时失败已提供可见反馈，不能只留控制台日志或静默 `return null`
+- [ ] 若删了旧候选来源，已同步补新接线或新候选矩阵
+- [ ] 若用户要中文搜索，`public` 与 `src` 两份 phrase mapping 都已补齐
+- [ ] 私有流程音未误广播给其他玩家或观战

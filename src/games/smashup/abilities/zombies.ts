@@ -6,6 +6,7 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
 import type {
     DeckReorderedEvent,
@@ -1039,9 +1040,10 @@ function zombieOverrunSelfDestruct(ctx: TriggerContext): SmashUpEvent[] {
     if (!overrun) return [];
     const controllerId = ctx.sourceControllerId ?? overrun.ownerId;
     if (controllerId !== ctx.playerId) return [];
-    return [{
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: { cardUid: overrun.uid, defId: overrun.defId, ownerId: overrun.ownerId, reason: 'zombie_overrun_self_destruct' },
-        timestamp: ctx.now,
-    }];
+    return buildValidatedOngoingDetachEvents(ctx.state, {
+        cardUid: overrun.uid,
+        reason: 'zombie_overrun_self_destruct',
+        now: ctx.now,
+        expectedLocation: 'base',
+    });
 }

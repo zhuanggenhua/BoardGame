@@ -395,6 +395,46 @@ describe('formatDiceThroneActionEntry', () => {
         expect(seg?.paramI18nKeys).toContain('effectLabel');
     });
 
+    it('CONFIRM_ROLL 应优先使用真实攻击来源写技能名，而不是残留的激活技能', () => {
+        const state = createState();
+        state.core.players['0'].characterId = 'moon-elf' as any;
+        state.core.selectedCharacters['0'] = 'moon-elf' as any;
+        state.core.rollDiceCount = 5;
+        state.core.dice = [
+            { id: 0, definitionId: 'moon-elf-dice', value: 1, symbol: 'bow', symbols: ['bow'], isKept: false },
+            { id: 1, definitionId: 'moon-elf-dice', value: 2, symbol: 'foot', symbols: ['foot'], isKept: false },
+            { id: 2, definitionId: 'moon-elf-dice', value: 2, symbol: 'foot', symbols: ['foot'], isKept: false },
+            { id: 3, definitionId: 'moon-elf-dice', value: 4, symbol: 'moon', symbols: ['moon'], isKept: false },
+            { id: 4, definitionId: 'moon-elf-dice', value: 6, symbol: 'arrow', symbols: ['arrow'], isKept: false },
+        ] as any;
+        state.core.activatingAbilityId = 'glory';
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'moons-blessing',
+            isDefendable: true,
+        } as any;
+        state.sys.phase = 'offensiveRoll';
+
+        const command: Command = {
+            type: 'CONFIRM_ROLL',
+            playerId: '0',
+            payload: {},
+            timestamp: 36,
+        };
+
+        const result = formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [] as GameEvent[],
+        });
+        const entries = normalizeEntries(result);
+
+        expect(entries).toHaveLength(1);
+        const seg = findI18nSegment(entries[0].segments, 'actionLog.confirmRollWithAbility');
+        expect(seg?.params?.abilityName).toBe('moons-blessing');
+    });
+
     it('compare-roll-choice 应生成对决结果日志，方便双方追踪对掷发生了什么', () => {
         const state = createState();
         const command: Command = {

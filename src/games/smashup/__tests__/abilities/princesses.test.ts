@@ -5,6 +5,7 @@ import { clearRegistry, resolveSpecial } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reduce';
 import { validate } from '../../domain/commands';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
@@ -236,9 +237,15 @@ describe('Princesses abilities', () => {
         const baseOption = getPromptOption(basePrompt, entry => entry.value?.baseIndex === 1, 'destination base');
 
         const resolved = respondToPrompt(choseMinion.finalState, baseOption.id, '0', defaultTestRandom);
+        const movedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-1');
         expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('enemy-1');
+        expect(movedEvent?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'princesses_true_loves_kiss',
+            sourceControllerId: '0',
+        });
     });
 
     it('princesses_some_day_my_prince_will_come 会先选本基地随从再选目标基地', () => {
@@ -320,9 +327,15 @@ describe('Princesses abilities', () => {
         const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'destroy target');
 
         const resolved = respondToPrompt(played.finalState, option.id, '0', defaultTestRandom);
+        const destroyedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_DESTROYED) as any;
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-1');
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2', 'draw-3']);
+        expect(destroyedEvent?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'princesses_skillet',
+            sourceControllerId: '0',
+        });
     });
 
     it('princesses_snow_white 会把另一个基地上的仆从移动到这里', () => {
@@ -354,9 +367,16 @@ describe('Princesses abilities', () => {
         const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'move target');
 
         const resolved = respondToPrompt(talent.finalState, option.id, '0', defaultTestRandom);
+        const movedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('enemy-1');
         expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('enemy-1');
+        expect(movedEvent?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'princesses_snow_white',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+        });
     });
 
     it('princesses_tale_as_old_as_time 会把你的所有仆从移动到选定基地', () => {
@@ -399,6 +419,11 @@ describe('Princesses abilities', () => {
         );
         expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('ally-1');
         expect(played.finalState.core.bases[2].minions.map(minion => minion.uid)).not.toContain('ally-2');
+        const movedEvents = played.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as any[];
+        expect(movedEvents).toHaveLength(2);
+        expect(movedEvents.every(event => event.payload?.sourcePlayerId === '0')).toBe(true);
+        expect(movedEvents.every(event => event.payload?.sourceDefId === 'princesses_tale_as_old_as_time')).toBe(true);
+        expect(movedEvents.every(event => event.payload?.sourceControllerId === '0')).toBe(true);
     });
 
     it('princesses_griselda 可以把传家宝从弃牌堆回到手牌', () => {
@@ -428,6 +453,69 @@ describe('Princesses abilities', () => {
 
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('heirloom-1');
         expect(resolved.finalState.core.players['0'].discard).toHaveLength(0);
+    });
+
+    it('美丽城堡上的 5 力己方随从仍可被自己的传家宝附着', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('heirloom-1', 'princesses_heirloom', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_beautiful_castle',
+                minions: [makeMinion('ally-1', 'superheroes_the_burst', '0', 5)],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'heirloom-1', targetBaseIndex: 0, targetMinionUid: 'ally-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event => event.type === SU_EVENTS.ONGOING_ATTACHED)).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.ABILITY_FEEDBACK
+            && (event as any).payload?.messageKey === 'feedback.target_protected',
+        )).toBe(false);
+        expect(
+            played.finalState.core.bases[0].minions[0]?.attachedActions.some(
+                (action) => action.uid === 'heirloom-1' && action.defId === 'princesses_heirloom',
+            ),
+        ).toBe(true);
+    });
+
+    it('同一随从附着两张传家宝时，每张传家宝都会继续给该随从 +1 力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    ...makeMinion('griselda-1', 'princesses_griselda', '0', 5),
+                    attachedActions: [
+                        { uid: 'heirloom-1', defId: 'princesses_heirloom', ownerId: '0' },
+                        { uid: 'heirloom-2', defId: 'princesses_heirloom', ownerId: '0' },
+                    ],
+                }],
+                ongoingActions: [],
+            }],
+        });
+
+        const griselda = core.bases[0].minions[0]!;
+        expect(griselda.attachedActions).toHaveLength(2);
+        expect(core.bases[0].minions[0]?.attachedActions.filter(action => action.defId === 'princesses_heirloom')).toHaveLength(2);
+        expect(getEffectivePower(core, griselda, 0)).toBe(9);
     });
 
     it('princesses_happily_ever_after 会在你于该基地得分时额外给 1 VP', () => {

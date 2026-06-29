@@ -2,9 +2,11 @@ import type { DomainCore, GameOverResult, PlayerId, RandomFn } from '../../../en
 import {
     cloneTableCards,
     createRuntimeDeck,
+    getFantasyRealmsBaseHandLimit,
     getFantasyRealmsDiscardEndThreshold,
     type TableCard,
 } from '../foundation';
+import { readFantasyRealmsRuntimeSetupConfig } from '../roomSetup';
 import {
     FANTASY_REALMS_COMMANDS,
     getDeckDrawCount,
@@ -44,8 +46,12 @@ function getNextPlayerId(core: FantasyRealmsCore): PlayerId {
 function recalculatePlayerSummary(
     player: FantasyRealmsPlayerState,
     discardPile: readonly TableCard[],
+    core: Pick<FantasyRealmsCore, 'playerIds' | 'setupConfig'>,
 ): FantasyRealmsPlayerState {
-    const evaluation = evaluateFantasyRealmsScore(player.hand, discardPile);
+    const evaluation = evaluateFantasyRealmsScore(player.hand, discardPile, {
+        setupConfig: core.setupConfig,
+        playerCount: core.playerIds.length,
+    });
     return {
         ...player,
         score: evaluation.totalScore,
@@ -55,7 +61,7 @@ function recalculatePlayerSummary(
 
 function recalculatePlayerSummaries(core: FantasyRealmsCore): FantasyRealmsCore {
     const players = Object.fromEntries(
-        Object.entries(core.players).map(([playerId, player]) => [playerId, recalculatePlayerSummary(player, core.discardPile)]),
+        Object.entries(core.players).map(([playerId, player]) => [playerId, recalculatePlayerSummary(player, core.discardPile, core)]),
     ) as Record<PlayerId, FantasyRealmsPlayerState>;
 
     return {
@@ -88,10 +94,15 @@ function withResolvedFocus(core: FantasyRealmsCore, preferredCardId?: string | n
     };
 }
 
-function createInitialCore(playerIds: PlayerId[], random: RandomFn): FantasyRealmsCore {
+function createInitialCore(playerIds: PlayerId[], random: RandomFn, setupData?: unknown): FantasyRealmsCore {
     const normalizedPlayerIds = playerIds.length >= 2 ? playerIds : ['0', '1'];
-    const runtimeDeck = random.shuffle(createRuntimeDeck());
-    const useDuelSetup = normalizedPlayerIds.length === 2;
+    const setupConfig = readFantasyRealmsRuntimeSetupConfig(setupData as Record<string, unknown> | undefined, {
+        playerCount: normalizedPlayerIds.length,
+        allowLegacyTwoPlayerFallback: true,
+    });
+    const runtimeDeck = random.shuffle(createRuntimeDeck(setupConfig));
+    const useDuelSetup = setupConfig.variant === 'duel';
+    const openingHandSize = getFantasyRealmsBaseHandLimit(setupConfig);
     let dealtCount = 0;
 
     const players = Object.fromEntries(
@@ -101,8 +112,8 @@ function createInitialCore(playerIds: PlayerId[], random: RandomFn): FantasyReal
                 return [playerId, basePlayer];
             }
 
-            const hand = runtimeDeck.slice(dealtCount, dealtCount + 7).map((card) => ({ ...card }));
-            dealtCount += 7;
+            const hand = runtimeDeck.slice(dealtCount, dealtCount + openingHandSize).map((card) => ({ ...card }));
+            dealtCount += openingHandSize;
             return [playerId, {
                 ...basePlayer,
                 hand,
@@ -111,6 +122,7 @@ function createInitialCore(playerIds: PlayerId[], random: RandomFn): FantasyReal
     ) as Record<PlayerId, FantasyRealmsPlayerState>;
 
     return recalculatePlayerSummaries({
+        setupConfig,
         playerIds: normalizedPlayerIds,
         currentPlayer: normalizedPlayerIds[0]!,
         turn: 1,
@@ -172,22 +184,32 @@ function createDiscardEvent(core: FantasyRealmsCore, playerId: PlayerId, cardId:
 
 function applyGameEnd(core: FantasyRealmsCore): GameOverResult | undefined {
     if (isDuelVariant(core)) {
-        const allHandsFull = core.playerIds.every((playerId) => (core.players[playerId]?.hand.length ?? 0) >= 7);
-        if (!allHandsFull || core.discardPile.length < getFantasyRealmsDiscardEndThreshold(core.playerIds.length)) {
+        const allHandsFull = core.playerIds.every((playerId) => (
+            (core.players[playerId]?.hand.length ?? 0) >= getFantasyRealmsBaseHandLimit(core.setupConfig)
+        ));
+        if (!allHandsFull || core.discardPile.length < getFantasyRealmsDiscardEndThreshold(core.playerIds.length, core.setupConfig)) {
             return undefined;
         }
         return resolveFantasyRealmsWinner(
             core.playerIds,
             Object.fromEntries(core.playerIds.map((playerId) => [playerId, core.players[playerId]?.hand ?? []])) as Record<PlayerId, readonly TableCard[]>,
             core.discardPile,
+            {
+                setupConfig: core.setupConfig,
+                playerCount: core.playerIds.length,
+            },
         );
     }
 
-    if (core.discardPile.length >= getFantasyRealmsDiscardEndThreshold(core.playerIds.length)) {
+    if (core.discardPile.length >= getFantasyRealmsDiscardEndThreshold(core.playerIds.length, core.setupConfig)) {
         return resolveFantasyRealmsWinner(
             core.playerIds,
             Object.fromEntries(core.playerIds.map((playerId) => [playerId, core.players[playerId]?.hand ?? []])) as Record<PlayerId, readonly TableCard[]>,
             core.discardPile,
+            {
+                setupConfig: core.setupConfig,
+                playerCount: core.playerIds.length,
+            },
         );
     }
 
@@ -197,7 +219,7 @@ function applyGameEnd(core: FantasyRealmsCore): GameOverResult | undefined {
 export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent> = {
     gameId: 'fantasyrealms',
 
-    setup: (playerIds: PlayerId[], random: RandomFn): FantasyRealmsCore => createInitialCore(playerIds, random),
+    setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown): FantasyRealmsCore => createInitialCore(playerIds, random, setupData),
 
     validate,
     playerView,
@@ -303,6 +325,7 @@ export type {
     FantasyRealmsCommandMap,
     FantasyRealmsCore,
     FantasyRealmsEvent,
+    FantasyRealmsPlayerState,
 } from './types';
 
 export {

@@ -8,7 +8,6 @@ import { registerAbilityProgram, registerSimpleAbility } from '../domain/ability
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     grantContextualExtraMinion,
-    destroyMinion,
     getMinionPower,
     buildMinionTargetOptions,
     buildBaseTargetOptions,
@@ -16,6 +15,7 @@ import {
     buildAbilityFeedback,
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
+    buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionPlayedEvent, SmashUpCore, CardInstance } from '../domain/types';
@@ -55,6 +55,7 @@ type RobotHoverbotChoice = {
     cardUid?: string;
     defId?: string;
     power?: number;
+    ownerId?: PlayerId;
     baseIndex?: number;
     skip?: boolean;
 };
@@ -69,6 +70,7 @@ type RobotHoverbotBaseContext = RobotPromptContext & {
     cardUid: string;
     defId: string;
     power: number;
+    ownerId: PlayerId;
 };
 
 type RobotTechCenterContext = RobotPromptContext & {
@@ -233,17 +235,20 @@ const robotMicrobotGuardPromptProgram = createPromptProgram<RobotMicrobotGuardCo
         const selected = candidates.find((minion) => minion.uid === choice.minionUid);
         if (!selected) return { events: [] };
         return {
-            events: [
-                destroyMinion(
-                    selected.uid,
-                    selected.defId,
-                    choice.baseIndex,
-                    selected.owner,
-                    playerId,
-                    'robot_microbot_guard',
-                    timestamp,
-                ),
-            ],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: selected.uid,
+                minionDefId: selected.defId,
+                fromBaseIndex: choice.baseIndex,
+                destroyerId: playerId,
+                reason: 'robot_microbot_guard',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: 'robot_microbot_guard',
+                sourceControllerId: playerId,
+                sourceBaseIndex: choice.baseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     },
 });
@@ -382,6 +387,7 @@ const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseCont
                     playerId,
                     cardUid: context.cardUid,
                     defId: context.defId,
+                    ownerId: context.ownerId,
                     baseIndex: choice.baseIndex,
                     baseDefId: state.core.bases[choice.baseIndex]?.defId,
                     power: context.power,
@@ -408,7 +414,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'play',
                         label: `打出 cards.${topCard.defId}.name`,
-                        value: { cardUid: topCard.uid, defId: topCard.defId, power },
+                        value: { cardUid: topCard.uid, defId: topCard.defId, power, ownerId: topCard.owner },
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
@@ -439,7 +445,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'play',
                         label: `打出 cards.${topCard.defId}.name`,
-                        value: { cardUid: topCard.uid, defId: topCard.defId, power },
+                        value: { cardUid: topCard.uid, defId: topCard.defId, power, ownerId: topCard.owner },
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
@@ -470,6 +476,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                         playerId,
                         cardUid: choice.cardUid,
                         defId: choice.defId,
+                        ownerId: choice.ownerId ?? playerId,
                         baseIndex: 0,
                         baseDefId: state.core.bases[0].defId,
                         power: choice.power ?? 0,
@@ -489,6 +496,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                 cardUid: choice.cardUid,
                 defId: choice.defId,
                 power: choice.power ?? 0,
+                ownerId: choice.ownerId ?? playerId,
             },
             nextProgram: robotHoverbotBasePromptProgram,
         };
@@ -592,9 +600,20 @@ function robotNukebotOnDestroy(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) return { events: [] };
 
     return {
-        events: targets.map(t =>
-            destroyMinion(t.uid, t.defId, ctx.baseIndex, t.owner, ctx.playerId, 'robot_nukebot', ctx.now),
-        ),
+        events: targets.flatMap((target) => buildValidatedDestroyEvents(ctx.state, {
+            minionUid: target.uid,
+            minionDefId: target.defId,
+            fromBaseIndex: ctx.baseIndex,
+            destroyerId: ctx.playerId,
+            reason: 'robot_nukebot',
+            now: ctx.now,
+            sourcePlayerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceControllerId: ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+            sourceKind: 'nonAction',
+        })),
     };
 }
 

@@ -13,6 +13,7 @@ import type {
 } from '../ugc/client/types';
 
 const isAndroidShellBuild = import.meta.env.MODE === 'android';
+const enableInternalToolEntries = import.meta.env.DEV;
 
 export interface GameConfig extends GameManifestEntry {
     thumbnail: ReactNode;
@@ -35,7 +36,7 @@ const buildGameRegistry = () => {
         if (!manifest.enabled) {
             continue;
         }
-        if (isAndroidShellBuild && manifest.type === 'tool') {
+        if (manifest.type === 'tool' && (!enableInternalToolEntries || isAndroidShellBuild)) {
             continue;
         }
         if (!thumbnail) {
@@ -228,6 +229,9 @@ export const getGamesByCategory = (category: string) => {
     if (category === 'All') {
         // "全部游戏" 选项下不再显示工具类项目
         return games.filter(g => g.type !== 'tool');
+    }
+    if (category === 'tools') {
+        return games.filter(g => g.type === 'tool');
     }
     // 同时匹配 category 和 tags，让一个游戏可以出现在多个分类下
     return games.filter(g => g.category === category || g.tags?.includes(category));

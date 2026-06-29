@@ -40,8 +40,6 @@ import {
     canControllerPlayTitan,
     getTitanByController,
     getTitanByUid,
-    destroyMinion,
-    moveMinion,
     moveTitan,
     playTitan,
     removePowerCounter,
@@ -49,6 +47,8 @@ import {
     removeTitanFromPlay,
     revealHand,
     recoverCardsFromDiscard,
+    buildValidatedDestroyEvents,
+    buildValidatedMoveEvents,
 } from '../domain/abilityHelpers';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
@@ -63,6 +63,7 @@ import {
     getDeferredReplacementBaseDefId,
 } from '../domain/scoringSession';
 import { validateActionPlaySemantics } from '../domain/playLegality';
+import { processDestroyTriggers } from '../domain/reducer';
 import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion } from '../domain/utils';
 import {
     registerTitanSpecialValidator,
@@ -76,6 +77,7 @@ import type {
     CardTransferredEvent,
     CardsDrawnEvent,
     MadnessDrawnEvent,
+    MinionDestroyedEvent,
     MinionCardDef,
     PowerCounterAddedEvent,
     SmashUpCore,
@@ -4388,11 +4390,13 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
         return [];
     }
 
-    const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
+    const destroyedControllerId = ctx.triggerMinion?.controller
+        ?? ctx.triggerCardOwnerId
+        ?? ctx.controllerId
+        ?? ctx.playerId;
     const destroyAnotherPlayersCard =
-        ctx.timing === 'onMinionDestroyed'
+        (ctx.timing === 'onMinionDestroyed' || ctx.timing === 'onCardDestroyed')
         && ctx.destroyerId === controllerId
-        && !!ctx.triggerMinion
         && destroyedControllerId !== controllerId;
     const returnedPlayerId = ctx.eventPlayerId ?? ctx.playerId;
     const returnedOwnMinion =
@@ -4438,10 +4442,12 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
 
 function canTriggerInvisibleNinjaTriggered(ctx: TriggerContext): boolean {
     const controllerId = ctx.sourceControllerId ?? ctx.playerId;
-    if (ctx.timing === 'onMinionDestroyed') {
-        const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
+    if (ctx.timing === 'onMinionDestroyed' || ctx.timing === 'onCardDestroyed') {
+        const destroyedControllerId = ctx.triggerMinion?.controller
+            ?? ctx.triggerCardOwnerId
+            ?? ctx.controllerId
+            ?? ctx.playerId;
         return ctx.destroyerId === controllerId
-            && !!ctx.triggerMinion
             && destroyedControllerId !== controllerId;
     }
 
@@ -4650,15 +4656,15 @@ function hasTheBrideSecondEffectOption(
     state: AbilityContext['state'],
     playerId: string,
     firstKind: BrideEffectKind,
-    targetUid: string,
+    _targetUid: string,
 ) {
     const otherKinds: BrideEffectKind[] = ['box', 'destroy', 'removeCounter'].filter(
         (kind): kind is BrideEffectKind => kind !== firstKind,
     );
     return otherKinds.some(kind => {
-        if (kind === 'box') return getTheBrideBoxTargets(state, playerId, targetUid).length > 0;
-        if (kind === 'destroy') return getTheBrideDestroyTargets(state, playerId, targetUid).length > 0;
-        return getTheBrideRemoveCounterTargets(state, playerId, targetUid).length > 0;
+        if (kind === 'box') return getTheBrideBoxTargets(state, playerId).length > 0;
+        if (kind === 'destroy') return getTheBrideDestroyTargets(state, playerId).length > 0;
+        return getTheBrideRemoveCounterTargets(state, playerId).length > 0;
     });
 }
 
@@ -4666,17 +4672,17 @@ function buildTheBrideStartBranchOptions(
     state: AbilityContext['state'],
     playerId: string,
     usedKinds: BrideEffectKind[],
-    excludedUid?: string,
+    _excludedUid?: string,
 ) {
     const options: PromptOption<BrideStartBranchValue>[] = [];
     const requireSecondChoice = usedKinds.length === 0;
-    if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', undefined, requireSecondChoice).length > 0) {
         options.push({ id: 'box', label: '放进盒中', labelKey: 'ui.titan_the_bride_effect_box', value: { kind: 'box' }, displayMode: 'button' });
     }
-    if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', undefined, requireSecondChoice).length > 0) {
         options.push({ id: 'destroy', label: '消灭己方随从', labelKey: 'ui.titan_the_bride_effect_destroy', value: { kind: 'destroy' }, displayMode: 'button' });
     }
-    if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', undefined, requireSecondChoice).length > 0) {
         options.push({ id: 'removeCounter', label: '移除 +1 指示物', labelKey: 'ui.titan_the_bride_effect_remove_counter', value: { kind: 'removeCounter' }, displayMode: 'button' });
     }
     if (usedKinds.length === 0) {
@@ -4746,9 +4752,51 @@ function buildTheBrideEffectEvents(
     if (!minion) return [];
 
     if (selection.kind === 'destroy') {
-        return [destroyMinion(minion.uid, minion.defId, selection.baseIndex, minion.owner, playerId, 'frankenstein_the_bride_special', now)];
+        return buildValidatedDestroyEvents(state, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: selection.baseIndex,
+            destroyerId: playerId,
+            reason: 'frankenstein_the_bride_special',
+            now,
+            sourcePlayerId: playerId,
+            sourceDefId: 'frankenstein_the_bride',
+            sourceControllerId: playerId,
+            sourceBaseIndex: selection.baseIndex,
+            sourceKind: 'nonAction',
+        });
     }
     return [removePowerCounter(minion.uid, selection.baseIndex, 1, 'frankenstein_the_bride_special', now)];
+}
+
+function processTheBrideReplacementIfNeeded(
+    state: MatchState<SmashUpCore>,
+    playerId: string,
+    events: SmashUpEvent[],
+    random: Parameters<typeof processDestroyTriggers>[3],
+    timestamp: number,
+): { events: SmashUpEvent[]; matchState: MatchState<SmashUpCore> } {
+    const destroyEvents = events.filter((event): event is MinionDestroyedEvent =>
+        event.type === SU_EVENTS.MINION_DESTROYED);
+    if (destroyEvents.length === 0) {
+        return { events, matchState: state };
+    }
+
+    const processed = processDestroyTriggers(events, state, playerId, random, timestamp);
+    const remainingDestroyUids = new Set(
+        processed.events
+            .filter((event): event is MinionDestroyedEvent => event.type === SU_EVENTS.MINION_DESTROYED)
+            .map(event => event.payload.minionUid),
+    );
+    const hasSuppressedDestroy = destroyEvents.some(event => !remainingDestroyUids.has(event.payload.minionUid));
+    if (!hasSuppressedDestroy) {
+        return { events, matchState: state };
+    }
+
+    return {
+        events: processed.events,
+        matchState: processed.matchState ?? state,
+    };
 }
 
 function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
@@ -5029,6 +5077,12 @@ export function registerTitanAbilities(): void {
         playerContext: 'sourceController',
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
+        optional: true,
+        baseScoped: false,
+        playerContext: 'sourceController',
+        canTrigger: canTriggerInvisibleNinjaTriggered,
+    });
+    registerTrigger('ninjas_invisible_ninja', 'onCardDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
@@ -5627,7 +5681,19 @@ export function registerTitanInteractionHandlers(): void {
         return {
             state,
             events: [
-                destroyMinion(minion.uid, minion.defId, continuation.baseIndex, minion.owner, playerId, 'dinosaurs_fort_titanosaurus_special', timestamp),
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: continuation.baseIndex,
+                    destroyerId: playerId,
+                    reason: 'dinosaurs_fort_titanosaurus_special',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'dinosaurs_fort_titanosaurus',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation.baseIndex,
+                    sourceKind: 'nonAction',
+                }),
                 playTitan(titan, playerId, continuation.baseIndex, 'dinosaurs_fort_titanosaurus_special', timestamp, continuation.baseDefId),
                 ...(destroyedPower > 0 ? [addTitanPowerCounter(titan.uid, destroyedPower, 'dinosaurs_fort_titanosaurus_special', timestamp)] : []),
             ],
@@ -5997,9 +6063,8 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const excludedUid = continuation.selectedTargetUids?.[0];
         const requireSecondChoice = (continuation.usedKinds?.length ?? 0) === 0;
-        const options = buildTheBrideStartTargetOptions(state.core, playerId, selected.kind, excludedUid, requireSecondChoice);
+        const options = buildTheBrideStartTargetOptions(state.core, playerId, selected.kind, undefined, requireSecondChoice);
         if (options.length === 0) {
             return { state, events: [] };
         }
@@ -6024,14 +6089,14 @@ export function registerTitanInteractionHandlers(): void {
                 nextState.core,
                 playerId,
                 selected.kind,
-                excludedUid,
+                undefined,
                 requireSecondChoice,
             );
 
         return { state: queueInteraction(state, interaction), events: [] };
     });
 
-    registerInteractionHandler('titan_frankenstein_the_bride_start_choose_target', (state, playerId, value, data, _random, timestamp) => {
+    registerInteractionHandler('titan_frankenstein_the_bride_start_choose_target', (state, playerId, value, data, random, timestamp) => {
         const selected = value as { kind?: BrideEffectKind; targetUid?: string; defId?: string; from?: 'hand' | 'discard'; baseIndex?: number } | undefined;
         const continuation = (data as {
             continuationContext?: {
@@ -6048,13 +6113,16 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const events = buildTheBrideEffectEvents(state.core, playerId, {
+        const rawEvents = buildTheBrideEffectEvents(state.core, playerId, {
             kind: selected.kind,
             targetUid: selected.targetUid,
             defId: selected.defId,
             from: selected.from,
             baseIndex: selected.baseIndex,
         }, timestamp);
+        const replacement = processTheBrideReplacementIfNeeded(state, playerId, rawEvents, random, timestamp);
+        const events = replacement.events;
+        const continuationState = replacement.matchState;
 
         const usedKinds = [...(continuation.usedKinds ?? []), selected.kind];
         const selectedTargetUids = [...(continuation.selectedTargetUids ?? []), selected.targetUid];
@@ -6064,7 +6132,7 @@ export function registerTitanInteractionHandlers(): void {
                 `titan_frankenstein_the_bride_start_choose_branch_${timestamp}`,
                 playerId,
                 '新娘：选择第二个效果',
-                buildTheBrideStartBranchOptions(state.core, playerId, usedKinds, selected.targetUid),
+                buildTheBrideStartBranchOptions(continuationState.core, playerId, usedKinds, selected.targetUid),
                 {
                     sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
                     targetType: 'generic',
@@ -6079,7 +6147,7 @@ export function registerTitanInteractionHandlers(): void {
             };
             (interaction.data as { continuationContext?: unknown; optionsGenerator?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) =>
                 buildTheBrideStartBranchOptions(nextState.core, playerId, usedKinds, selected.targetUid);
-            return { state: queueInteraction(state, interaction), events };
+            return { state: queueInteraction(continuationState, interaction), events };
         }
 
         const interaction = createSimpleChoice(
@@ -6270,15 +6338,21 @@ export function registerTitanInteractionHandlers(): void {
                     candidate.uid === minionUid && candidate.controller === playerId,
                 );
                 if (!minion) continue;
-                events.push(moveMinion(
-                    minion.uid,
-                    minion.defId,
-                    liveContext.fromBaseIndex,
-                    continuation.targetBaseIndex,
-                    'magical_girls_walking_castle_talent',
-                    timestamp,
-                    continuation.targetBaseDefId,
-                ));
+                events.push(...buildValidatedMoveEvents(state, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: liveContext.fromBaseIndex,
+                    toBaseIndex: continuation.targetBaseIndex,
+                    toBaseDefId: continuation.targetBaseDefId,
+                    reason: 'magical_girls_walking_castle_talent',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: liveContext.titanUid ?? continuation.titanUid,
+                    sourceDefId: liveContext.titanDefId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: liveContext.fromBaseIndex,
+                    sourceKind: 'nonAction',
+                }));
             }
         }
 
@@ -6585,15 +6659,20 @@ export function registerTitanInteractionHandlers(): void {
             const targetBase = state.core.bases[continuation.toBaseIndex];
             const targetMinion = targetBase?.minions.find(minion => minion.uid === target.uid);
             if (!targetMinion) return { state, events };
-            events.push(destroyMinion(
-                targetMinion.uid,
-                targetMinion.defId,
-                continuation.toBaseIndex,
-                targetMinion.owner,
-                playerId,
-                'explorers_very_large_boulder_move',
-                timestamp,
-            ));
+            events.push(...buildValidatedDestroyEvents(state, {
+                minionUid: targetMinion.uid,
+                minionDefId: targetMinion.defId,
+                fromBaseIndex: continuation.toBaseIndex,
+                destroyerId: playerId,
+                reason: 'explorers_very_large_boulder_move',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: titan.uid,
+                sourceDefId: titan.defId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation.toBaseIndex,
+                sourceKind: 'nonAction',
+            }));
             return { state, events };
         }
 
@@ -6654,15 +6733,20 @@ export function registerTitanInteractionHandlers(): void {
 
         return {
             state,
-            events: [destroyMinion(
-                target.uid,
-                target.defId,
-                continuation.targetBaseIndex,
-                target.owner,
-                playerId,
-                'explorers_very_large_boulder_move',
-                timestamp,
-            )],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: continuation.targetBaseIndex,
+                destroyerId: playerId,
+                reason: 'explorers_very_large_boulder_move',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: titan.uid,
+                sourceDefId: titan.defId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation.targetBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -7688,28 +7772,32 @@ export function registerTitanInteractionHandlers(): void {
         ) {
             return { state, events: [] };
         }
-        const sourceTitanStillLive = (state.core.titans ?? []).some(titan =>
+        const sourceTitan = (state.core.titans ?? []).find(titan =>
             titan.uid === continuation.titanUid
             && titan.defId === 'bear_cavalry_major_ursa'
             && titan.location.zone === 'base',
         );
-        if (!sourceTitanStillLive) {
+        if (!sourceTitan) {
             return { state, events: [] };
         }
 
         return {
             state,
-            events: [
-                moveMinion(
-                    continuation.minionUid,
-                    continuation.minionDefId,
-                    continuation.fromBaseIndex,
-                    selected.baseIndex,
-                    'bear_cavalry_major_ursa',
-                    timestamp,
-                    selected.baseDefId,
-                ),
-            ],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: continuation.minionUid,
+                minionDefId: continuation.minionDefId,
+                fromBaseIndex: continuation.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'bear_cavalry_major_ursa',
+                now: timestamp,
+                sourcePlayerId: sourceTitan.controllerId,
+                sourceCardUid: sourceTitan.uid,
+                sourceDefId: sourceTitan.defId,
+                sourceControllerId: sourceTitan.controllerId,
+                sourceBaseIndex: sourceTitan.location.baseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -8193,17 +8281,21 @@ export function registerTitanInteractionHandlers(): void {
 
         return {
             state,
-            events: [
-                moveMinion(
-                    liveMinion.uid,
-                    liveMinion.defId,
-                    liveContext.fromBaseIndex,
-                    selected.baseIndex,
-                    'pirates_the_kraken_after_scoring_move',
-                    timestamp,
-                    selected.baseDefId,
-                ),
-            ],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: liveMinion.uid,
+                minionDefId: liveMinion.defId,
+                fromBaseIndex: liveContext.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'pirates_the_kraken_after_scoring_move',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: liveContext.titanUid ?? continuation.titanUid,
+                sourceDefId: liveContext.titanDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: liveContext.fromBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -8343,15 +8435,20 @@ export function registerTitanInteractionHandlers(): void {
         return {
             state,
             events: [
-                destroyMinion(
-                    continuation.minionUid,
-                    continuation.minionDefId,
-                    continuation.minionBaseIndex,
-                    minion.owner,
-                    playerId,
-                    'tricksters_big_funny_giant_talent',
-                    timestamp,
-                ),
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: continuation.minionUid,
+                    minionDefId: continuation.minionDefId,
+                    fromBaseIndex: continuation.minionBaseIndex,
+                    destroyerId: playerId,
+                    reason: 'tricksters_big_funny_giant_talent',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: liveContext.titanUid ?? continuation.titanUid,
+                    sourceDefId: liveContext.titanDefId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: liveContext.fromBaseIndex,
+                    sourceKind: 'nonAction',
+                }),
                 moveTitan(
                     liveContext.titanUid ?? continuation.titanUid,
                     liveContext.titanDefId,

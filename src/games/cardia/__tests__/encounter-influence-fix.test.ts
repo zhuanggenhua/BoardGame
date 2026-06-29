@@ -121,4 +121,93 @@ describe('遭遇影响力回溯修复', () => {
         expect(core.encounterHistory[0].winnerId).toBeUndefined();
         expect(core.encounterHistory[0].loserId).toBeUndefined();
     });
+
+    it('回溯重算应使用与 host 一致的遭遇索引口径，正确识别 forceTie', () => {
+        const baseCore = CardiaDomain.setup(['0', '1'], { random: () => 0.5 });
+
+        const p1Card = createCard(
+            'p1_card04',
+            '0',
+            'deck_i_card_04',
+            4,
+            'guild',
+            [ABILITY_IDS.MEDIATOR]
+        );
+        const p2Card = createCard(
+            'p2_card11',
+            '1',
+            'deck_i_card_11',
+            11,
+            'swamp',
+            [ABILITY_IDS.CLOCKMAKER]
+        );
+
+        const p1Played: PlayedCard = { ...p1Card, encounterIndex: 1 };
+        const p2Played: PlayedCard = { ...p2Card, encounterIndex: 1 };
+
+        const encounter: EncounterState = {
+            player1Card: p1Card,
+            player2Card: p2Card,
+            player1Influence: 4,
+            player2Influence: 11,
+            winnerId: '1',
+            loserId: '0',
+        };
+
+        let core: CardiaCore = {
+            ...baseCore,
+            turnNumber: 1,
+            phase: 'ability',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...baseCore.players['0'],
+                    playedCards: [p1Played],
+                    currentCard: undefined,
+                    hasPlayed: false,
+                },
+                '1': {
+                    ...baseCore.players['1'],
+                    playedCards: [p2Played],
+                    currentCard: undefined,
+                    hasPlayed: false,
+                },
+            },
+            currentEncounter: encounter,
+            encounterHistory: [encounter],
+            ongoingAbilities: [
+                {
+                    abilityId: ABILITY_IDS.MEDIATOR,
+                    cardId: 'p1_card04',
+                    playerId: '0',
+                    effectType: 'forceTie',
+                    timestamp: 1,
+                    encounterIndex: 1,
+                },
+            ],
+            modifierTokens: [],
+        };
+
+        const placeModifierEvent: CardiaEvent = {
+            type: CARDIA_EVENTS.MODIFIER_TOKEN_PLACED.type,
+            timestamp: 2,
+            payload: {
+                cardId: 'p2_card11',
+                value: 1,
+                source: ABILITY_IDS.CLOCKMAKER,
+                timestamp: 2,
+            },
+        };
+        core = reduce(core, placeModifierEvent);
+
+        const recalcEvents = recalculateEncounterState(core, 'p2_card11');
+        const resultChanged = recalcEvents.find(
+            e => e.type === CARDIA_EVENTS.ENCOUNTER_RESULT_CHANGED.type
+        ) as Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ENCOUNTER_RESULT_CHANGED }> | undefined;
+
+        expect(resultChanged?.payload).toMatchObject({
+            previousWinner: '1',
+            newWinner: 'tie',
+        });
+    });
 });

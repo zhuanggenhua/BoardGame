@@ -23,6 +23,7 @@ import type {
     AttackResolvedEvent,
     DamageDealtEvent,
     DamageShieldGrantedEvent,
+    BonusDieRolledEvent,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -61,7 +62,7 @@ import { getPlayerAbilityBaseDamage, playerAbilityHasDamage, playerAbilityNeedsS
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
-import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import { hasSpentTreantTreeSpiritThisTurn, hasUsablePassiveAction } from './passiveAbility';
 import {
     POWDER_KEG_TRANSFER_CHOICE_ID,
     POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
@@ -198,7 +199,7 @@ function createOffensiveRollEndTokenChoiceEvent(
         return null;
     }
 
-    if (hasPendingBonusDiceSettlement(core) || core.pendingAttack.offensiveRollEndTokenResolved) {
+    if (hasInteractivePendingBonusDiceSettlement(core) || core.pendingAttack.offensiveRollEndTokenResolved) {
         return null;
     }
 
@@ -383,39 +384,40 @@ function resolvePassivePhaseTriggerEvents(args: {
 }
 
 /**
- * 计算玩家当前的眩晕层数（包含 core 中的和 events 中的）
+ * 计算玩家当前“额外攻击类眩晕”层数（包含 core 中的和 events 中的）
  * 
  * @param core - 当前游戏状态
  * @param playerId - 玩家 ID
  * @param events - 待处理的事件数组
  * @returns 眩晕总层数
  */
-function getTotalDazeStacks(
+function getTotalImmediateExtraAttackStacksByStatus(
     core: DiceThroneCore,
     playerId: string,
-    events: GameEvent[]
+    events: GameEvent[],
+    statusId: string,
 ): number {
     const player = core.players[playerId];
-    const dazeInCore = player?.statusEffects[STATUS_IDS.DAZE] ?? 0;
+    const statusInCore = player?.statusEffects[statusId] ?? 0;
 
-    const dazeAppliedInEvents = events.filter(e =>
+    const appliedInEvents = events.filter(e =>
         e.type === 'STATUS_APPLIED' &&
         e.payload.targetId === playerId &&
-        e.payload.statusId === STATUS_IDS.DAZE
+        e.payload.statusId === statusId
     ).reduce((sum, e) => sum + (e.payload as any).stacks, 0);
 
-    const dazeRemovedInEvents = events.filter(e => 
+    const removedInEvents = events.filter(e =>
         e.type === 'STATUS_REMOVED' && 
         e.payload.targetId === playerId && 
-        e.payload.statusId === STATUS_IDS.DAZE
+        e.payload.statusId === statusId
     ).reduce((sum, e) => sum + e.payload.stacks, 0);
 
-    return dazeInCore + dazeAppliedInEvents - dazeRemovedInEvents;
+    return statusInCore + appliedInEvents - removedInEvents;
 }
 
 /**
- * 检查防御方是否有晕眩（daze）
- * 晕眩规则：攻击结算后，如果防御方有眩晕，立即移除眩晕并让攻击方再次攻击
+ * 检查防御方是否有“额外攻击类眩晕”（daze / legacy stun）
+ * 规则：攻击结算后，如果防御方有这类眩晕，立即移除并让攻击方再次攻击
  * 
  * 正确理解：
  * - Player A 攻击 Player B，施加眩晕给 Player B
@@ -438,20 +440,27 @@ function checkDazeExtraAttack(
     const { attackerId, defenderId } = attackResolved.payload;
     if (!defenderId) return { dazeEvents: [], triggered: false };
     
-    // ✅ 检查防御方是否有眩晕（不是攻击方！）
-    const totalDaze = getTotalDazeStacks(core, defenderId, events);
-    
+    const statusIds = [STATUS_IDS.DAZE, STATUS_IDS.STUN];
+    const statusTotals = statusIds
+        .map((statusId) => ({
+            statusId,
+            stacks: getTotalImmediateExtraAttackStacksByStatus(core, defenderId, events, statusId),
+        }))
+        .filter((entry) => entry.stacks > 0);
+
+    const totalDaze = statusTotals.reduce((sum, entry) => sum + entry.stacks, 0);
     if (totalDaze <= 0) return { dazeEvents: [], triggered: false };
 
     const dazeEvents: GameEvent[] = [];
 
-    // 移除防御方的晕眩状态
-    dazeEvents.push({
-        type: 'STATUS_REMOVED',
-        payload: { targetId: defenderId, statusId: STATUS_IDS.DAZE, stacks: totalDaze },
-        sourceCommandType: commandType,
-        timestamp,
-    } as StatusRemovedEvent);
+    for (const entry of statusTotals) {
+        dazeEvents.push({
+            type: 'STATUS_REMOVED',
+            payload: { targetId: defenderId, statusId: entry.statusId, stacks: entry.stacks },
+            sourceCommandType: commandType,
+            timestamp,
+        } as StatusRemovedEvent);
+    }
 
     // 触发额外攻击：攻击方再次攻击防御方
     dazeEvents.push({
@@ -608,6 +617,56 @@ function resolvePostAttackFollowUp(
     return { events, overrideNextPhase: 'main2' };
 }
 
+function resolveNanobombUpkeepEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): DiceThroneEvent[] {
+    const stacks = core.players[playerId]?.statusEffects[STATUS_IDS.NANOBOMB] ?? 0;
+    if (stacks <= 0 || !random) return [];
+
+    const events: DiceThroneEvent[] = [];
+    let removedStacks = 0;
+
+    for (let index = 0; index < stacks; index += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(core, playerId, value) ?? '';
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId,
+                targetPlayerId: playerId,
+                effectKey: 'bonusDie.effect.artificerNanobombUpkeep',
+                effectParams: { value },
+            },
+            sourceCommandType,
+            timestamp: timestamp + index * 0.001,
+        } as BonusDieRolledEvent);
+        if (value === 6) {
+            removedStacks += 1;
+        }
+    }
+
+    if (removedStacks > 0) {
+        events.push({
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: playerId,
+                statusId: STATUS_IDS.NANOBOMB,
+                stacks: removedStacks,
+            },
+            sourceCommandType,
+            timestamp: timestamp + stacks * 0.001,
+        } as StatusRemovedEvent);
+    }
+
+    return events;
+}
+
 function appendPendingAttackResolvedEvent(
     pendingAttack: DiceThroneCore['pendingAttack'],
     events: GameEvent[],
@@ -631,7 +690,10 @@ function resolveCursedPirateNoAttackPowderKegEvents(
     if (core.offensiveRollAttackMadeThisTurn?.[activePlayerId]) return [];
 
     const hasOpposingCursedPirate = getOpponents(core, activePlayerId)
-        .some(playerId => core.players[playerId]?.characterId === 'cursed_pirate');
+        .some((playerId) => {
+            const player = core.players[playerId];
+            return player?.characterId === 'cursed_pirate' && player.playerBoardFace === 'cursed';
+        });
     if (!hasOpposingCursedPirate) return [];
 
     return buildStatusAppliedOrChoiceEvents({
@@ -843,22 +905,6 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 events.push(statusRemovedEvent);
                 return { events, overrideNextPhase: 'main2' };
             }
-            const stunStacks = player?.statusEffects[STATUS_IDS.STUN] ?? 0;
-            if (stunStacks > 0) {
-                // 眩晕（stun）：跳过本次 offensiveRoll 并移除
-                const statusRemovedEvent: StatusRemovedEvent = {
-                    type: 'STATUS_REMOVED',
-                    payload: {
-                        targetId: core.activePlayerId,
-                        statusId: STATUS_IDS.STUN,
-                        stacks: stunStacks,
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                };
-                events.push(statusRemovedEvent);
-                return { events, overrideNextPhase: 'main2' };
-            }
         }
 
         // ========== offensiveRoll 阶段退出：攻击前处理 ==========
@@ -961,6 +1007,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         !(e as any).payload?.settlement?.displayOnly
                     );
                     if (hasBonusDiceRerollOffDR) {
+                        return { events, halt: true };
+                    }
+
+                    if (postDamageEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
 
@@ -1320,6 +1370,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
+                if (postDamageEvents.some(isBlockingInteractionEvent)) {
+                    return { events, halt: true };
+                }
+
                 if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
                     return { events, halt: true };
                 }
@@ -1479,6 +1533,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
+                    if (postDamageEvents.some(isBlockingInteractionEvent)) {
+                        return { events, halt: true };
+                    }
+
                     if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
                         return { events, halt: true };
                     }
@@ -1625,6 +1683,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
             const hasPendingDamage = core.pendingDamage !== null && core.pendingDamage !== undefined;
             const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core);
+            const hasUsableUpkeepPassiveAction = phase === 'upkeep'
+                && hasUsablePassiveAction(core, core.activePlayerId, 'upkeep');
 
             if (
                 justEnteredPhase
@@ -1633,6 +1693,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && !hasActiveResponseWindow
                 && !hasPendingDamage
                 && !hasPendingBonusDice
+                && !hasUsableUpkeepPassiveAction
             ) {
                 return { autoContinue: true, playerId: core.activePlayerId };
             }
@@ -1848,6 +1909,15 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     activeId,
                     command.type,
                     timestamp + 0.02,
+                    random,
+                ));
+
+                // 5. 工匠：纳米爆弹 — 每层投 1 骰，6 移除 1 层。
+                events.push(...resolveNanobombUpkeepEvents(
+                    phaseEnterCore,
+                    activeId,
+                    command.type,
+                    timestamp + 0.03,
                     random,
                 ));
             }

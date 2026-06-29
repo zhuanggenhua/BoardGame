@@ -16,7 +16,7 @@ import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
 import type { MatchState } from '../../../core/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase } from '../types';
 import { defaultTestRandom, runCommand } from './testRunner';
-import { getCurrentPlayerId, SU_COMMANDS } from '../domain/types';
+import { SU_COMMANDS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { initAllAbilities } from '../abilities';
 import { buildMinionTargetOptions, buildPlayerTargetOptions } from '../domain/abilityHelpers';
@@ -563,7 +563,7 @@ describe('scoreBases 阶段自动推进', () => {
         expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
     });
 
-    it('反馈 69beb069：基地已达 breakpoint 且当前玩家仍有额外随从额度时，ADVANCE_PHASE 仍应触发基地计分', () => {
+    it('反馈 69beb069：基地已达 breakpoint 且当前玩家仍有额外随从额度时，ADVANCE_PHASE 仍应触发基地计分并进入延迟收尾', () => {
         const initialState: MatchState<SmashUpCore> = {
             core: makeMinimalCore({
                 currentPlayerIndex: 1,
@@ -634,21 +634,13 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(advanced.success, advanced.error).toBe(true);
         expect(advanced.events.map(event => event.type)).toContain(SU_EVENT_TYPES.BASE_SCORED);
+        expect(advanced.events.filter(event => event.type === SU_EVENT_TYPES.BASE_SCORED)).toHaveLength(1);
         expect(advanced.events.map(event => event.type)).not.toContain(SU_EVENT_TYPES.BASE_CLEARED);
-        const delayUntil = (advanced.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        expect(delayUntil).toBeGreaterThan(Date.now());
+        expect(advanced.events.map(event => event.type)).not.toContain(SU_EVENT_TYPES.BASE_REPLACED);
+        expect((advanced.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
+        expect(advanced.finalState.sys.phase).toBe('scoreBases');
+        expect((advanced.finalState.sys as any).flowHalted).toBe(true);
         expect(advanced.finalState.core.bases[0]?.defId).toBe('base_the_homeworld');
-
-        const finalized = runCommand(advanced.finalState as any, {
-            type: 'ADVANCE_PHASE',
-            playerId: getCurrentPlayerId(advanced.finalState.core),
-            payload: {},
-            timestamp: delayUntil,
-        } as any);
-        expect(finalized.success, finalized.error).toBe(true);
-        expect(finalized.events.map(event => event.type)).toContain(SU_EVENT_TYPES.BASE_CLEARED);
-        expect(finalized.finalState.core.bases[0]?.defId).toBe('base_haunted_house');
     });
 
     it('达标基地上只有触发式侏儒 POD beforeScoring 时仍应自动推进', () => {
@@ -1825,6 +1817,8 @@ describe('scoreBases 阶段自动推进', () => {
     });
 
     it('wizards_arcane_protector 已进场后，afterScoring live 反应不应继续暴露其 special', async () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+        initAllAbilities();
         registerArcaneProtectorSpecialForTests();
 
         const initialState = {

@@ -8,6 +8,11 @@ import { ABILITY_IDS } from '../ids';
 import { CARDIA_EVENTS } from '../events';
 import { abilityExecutorRegistry } from '../abilityExecutor';
 import { registerInteractionHandler } from '../abilityInteractionHandlers';
+import {
+    getCardiaStoredOngoingAbilitiesOnCard,
+    getCardiaStoredOngoingAbilityCardIds,
+    hasCardiaStoredOngoingAbilitiesOnCard,
+} from '../effectHost';
 import type { CardiaAbilityContext } from '../abilityExecutor';
 import type { CardiaEvent } from '../events';
 
@@ -115,7 +120,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityConte
             cardId: ctx.cardId,
             selectedCardId: ctx.selectedCardId,
             modifierTokens: ctx.core.modifierTokens,
-            ongoingAbilities: ctx.core.ongoingAbilities,
+            ongoingAbilityCardIds: getCardiaStoredOngoingAbilityCardIds(ctx.core),
         });
         
         // 如果还没有选择目标卡牌，创建交互
@@ -125,7 +130,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityConte
                 ctx.core.modifierTokens.map(token => token.cardId)
             );
             const cardsWithOngoing = new Set(
-                ctx.core.ongoingAbilities.map(ability => ability.cardId)
+                getCardiaStoredOngoingAbilityCardIds(ctx.core)
             );
             
             const allCardsWithMarkers = Array.from(new Set([
@@ -194,7 +199,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityConte
         
         // 验证卡牌是否仍有标记
         const hasMarkers = ctx.core.modifierTokens.some(t => t.cardId === targetCardId) ||
-                          ctx.core.ongoingAbilities.some(a => a.cardId === targetCardId);
+                          hasCardiaStoredOngoingAbilitiesOnCard(ctx.core, targetCardId);
         if (!hasMarkers) {
             console.warn('[VoidMage] Selected card has no markers, returning empty events');
             return { events: [] };
@@ -219,9 +224,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.VOID_MAGE, (ctx: CardiaAbilityConte
         }
         
         // 移除该卡牌上的所有持续标记
-        const ongoingToRemove = ctx.core.ongoingAbilities.filter(
-            ability => ability.cardId === targetCardId
-        );
+        const ongoingToRemove = getCardiaStoredOngoingAbilitiesOnCard(ctx.core, targetCardId);
         
         for (const ability of ongoingToRemove) {
             events.push({
@@ -282,9 +285,7 @@ export function registerCardOpsInteractionHandlers(): void {
         }
         
         // 移除该卡牌上的所有持续标记
-        const ongoingToRemove = state.core.ongoingAbilities.filter(
-            ability => ability.cardId === targetCardId
-        );
+        const ongoingToRemove = getCardiaStoredOngoingAbilitiesOnCard(state.core, targetCardId);
         
         for (const ability of ongoingToRemove) {
             events.push({

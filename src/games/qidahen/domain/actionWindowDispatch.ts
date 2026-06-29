@@ -57,6 +57,19 @@ interface QidahenActionWindowDispatchDependencies {
     ) => QidahenWheelDispatchSelection | null;
 }
 
+const markCharacterActionWindowEffectHandled = (
+    state: QidahenCore,
+    effectId: string,
+): string => {
+    const triggerKey = `${state.currentPlayer}:${state.roundNumber}:${Number(state.wheelActionUsed)}:${Number(state.factionActionUsed)}`;
+    const progressKey = state.lastCharacterActionWindowTriggerKey;
+    const handledEffectIds = !progressKey?.startsWith(`${triggerKey}|`)
+        ? new Set<string>()
+        : new Set(progressKey.slice(triggerKey.length + 1).split(',').filter(Boolean));
+    handledEffectIds.add(effectId);
+    return `${triggerKey}|${[...handledEffectIds].sort().join(',')}`;
+};
+
 const buildPendingTargetActionFromWheelDispatchChoice = (
     selection: QidahenWheelDispatchSelection,
     candidate: QidahenWheelDispatchCandidate,
@@ -316,6 +329,7 @@ export const resolveQidahenGaoDiDispatchChoice = (
         ...state,
         selectedRegionId: resolution.selectedRegionId,
         turnPhase: 'action-window',
+        lastCharacterActionWindowTriggerKey: markCharacterActionWindowEffectHandled(state, 'ming-gao-di'),
         recruitSelection: null,
         maShiTradeSelection: null,
         khanEdictSelection: null,
@@ -372,6 +386,7 @@ export const resolveQidahenInternalDispatchInteractionChoice = (
         ...state,
         selectedRegionId: resolution.selectedRegionId,
         turnPhase: 'action-window',
+        lastCharacterActionWindowTriggerKey: markCharacterActionWindowEffectHandled(state, 'ming-wang-huazhen'),
         recruitSelection: null,
         maShiTradeSelection: null,
         khanEdictSelection: null,

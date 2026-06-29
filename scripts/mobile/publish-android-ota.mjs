@@ -29,6 +29,7 @@ const args = process.argv.slice(2);
 const allowedValueArgs = new Set([
     'channel',
     'version',
+    'ota-version-base',
     'native-version',
     'expected-base-version',
     'force-update-title',
@@ -58,6 +59,7 @@ Android OTA 发布脚本
 参数：
 - --channel <name>
 - --version <bundleVersion>
+- --ota-version-base <semver> 仅用于未显式 --version 时生成 OTA 内部游标；默认取 package.json.version
 - --native-version <version>
 - --expected-base-version <package.json.version>
 - --force-update / --no-force-update
@@ -130,6 +132,10 @@ const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.tr
 const nativeVersion = readArgValue('native-version', packageJson.version);
 const expectedBaseVersion = readArgValue('expected-base-version', '').trim();
 const explicitBundleVersion = readArgValue('version', '');
+const otaVersionBase = readArgValue(
+    'ota-version-base',
+    process.env.ANDROID_OTA_VERSION_BASE?.trim() || packageJson.version,
+).trim();
 const notes = readArgValue('notes', 'Android embedded OTA bundle');
 const forbiddenCompatibilityArgs = [
     'target-native-version',
@@ -160,7 +166,7 @@ const distDir = path.join(rootDir, 'dist');
 const androidBuildMetaPath = path.join(distDir, 'android-build-meta.json');
 const buildInstant = new Date();
 const builtAt = buildInstant.toISOString().replace(/[:.]/g, '-');
-const bundleVersion = explicitBundleVersion || `${packageJson.version}-ota-${builtAt}`;
+const bundleVersion = explicitBundleVersion || `${otaVersionBase}-ota-${builtAt}`;
 const manifestPrefix = `official/app-updates/android/${channel}`;
 const humanDateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -185,6 +191,7 @@ const latestManifestKey = `${manifestPrefix}/latest.json`;
 const assetsBaseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
 const bundleUrl = `${assetsBaseUrl}/app-updates/android/${channel}/bundles/${encodeURIComponent(bundleVersion)}.zip`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;
+const validOtaVersionBasePattern = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 const releaseAndroidAppId = 'top.easyboardgame.app';
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
 
@@ -194,6 +201,13 @@ const isNonReleaseAndroidAppId = (appId) => appId
 
 if (!validChannelPattern.test(channel)) {
     throw new Error(`非法 channel: ${channel}。仅允许字母、数字、点、下划线、短横线。`);
+}
+
+if (!explicitBundleVersion && !validOtaVersionBasePattern.test(otaVersionBase)) {
+    throw new Error(
+        `非法 OTA 游标基线: ${otaVersionBase || '(空)'}。`
+        + ' 未显式传 --version 时，--ota-version-base 必须是类似 0.6.0 或 6.0.0 的版本号。',
+    );
 }
 
 if (!expectedBaseVersion) {
@@ -360,6 +374,7 @@ console.log(dryRun ? 'OTA bundle 预演完成（未上传）' : 'OTA bundle 已�
 console.log(`channel=${channel}`);
 console.log(`bundleVersion=${bundleVersion}`);
 console.log(`bundleVersionHumanTime=${bundleVersionHumanTime}`);
+console.log(`otaVersionBase=${explicitBundleVersion ? '(explicit-version)' : otaVersionBase}`);
 console.log(`nativeVersion=${nativeVersion}`);
 console.log(`mode=${dryRun ? 'dry-run' : 'publish'}`);
 console.log(`forceUpdate=${forceUpdate ? 'true' : 'false'}`);

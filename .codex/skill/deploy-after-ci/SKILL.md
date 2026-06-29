@@ -1,19 +1,20 @@
 ---
 name: deploy-after-ci
-description: 用于 BoardGame 生产更新的最短路径工作流。用户说“更新部署”“部署生产”“发生产”“更新线上”时使用；若用户没有明确要求看 CI，则直接执行生产更新脚本。用户说“看下 CI 好了就更新部署”“CI 好了就部署”“查 CI 后部署”等需要先确认 GitHub Actions / Docker 镜像构建状态时使用，先查 origin/main 对应的 Build & Push Docker Images workflow，成功后再部署。
+description: 用于 BoardGame 生产更新的最短路径工作流。用户说“更新部署”“部署生产”“发生产”“更新线上”时使用；默认动作是“服务器镜像更新 + Android stable OTA 发布”。若用户没有明确要求看 CI，则直接执行这条组合发布脚本。用户说“看下 CI 好了就更新部署”“CI 好了就部署”“查 CI 后部署”等需要先确认 GitHub Actions / Docker 镜像构建状态时使用，先查 origin/main 对应的 Build & Push Docker Images workflow，成功后再执行服务器更新与 OTA。
 ---
 
 # BoardGame CI 后部署
 
 ## 目标
 
-把生产更新固定成两条命令路径，避免每次重新展开部署文档、手工拼 GitHub CLI 和 SSH 命令。
+把生产更新固定成两条命令路径，避免每次重新展开部署文档、手工拼 GitHub CLI、SSH 和 OTA 发布命令。
 
 ## 路径选择
 
-- 用户只说“更新部署 / 部署生产 / 更新线上”：直接部署，不查 CI。
-- 用户明确说“看 CI / CI 好了 / 查 CI / 等 CI”：先查远端 `origin/main` 对应的 Docker 镜像 CI；只有成功才部署。
-- 用户指定 tag：把 tag 传给部署脚本；没有 tag 默认更新 `latest`。
+- 用户只说“更新部署 / 部署生产 / 更新线上”：直接执行“服务器更新 + Android stable OTA”，不查 CI。
+- 用户明确说“看 CI / CI 好了 / 查 CI / 等 CI”：先查远端 `origin/main` 对应的 Docker 镜像 CI；只有成功才执行服务器更新与 OTA。
+- 用户明确说“只更新服务器 / 不发 OTA”：显式加 `-SkipOta`。
+- 用户指定 tag：默认只建议用于服务器镜像更新；若同时要发 OTA，必须确认本地当前发布基线就是这次要发的版本。
 
 ## 直接部署
 
@@ -23,13 +24,25 @@ description: 用于 BoardGame 生产更新的最短路径工作流。用户说�
 powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1
 ```
 
-指定 tag：
+只更新服务器，不发 OTA：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1 -SkipOta
 ```
 
-脚本会通过 SSH 在生产机执行：
+指定 tag 且只更新服务器：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3 -SkipOta
+```
+
+脚本默认会先更新服务器，再在本地发布 Android `stable` OTA：
+
+```powershell
+node scripts/release/deploy-and-ota.mjs --skip-wait --ota-channel stable
+```
+
+其中服务器步骤仍然是：
 
 ```bash
 cd /home/admin/BoardGame && bash scripts/deploy/deploy-image.sh update [tag]
@@ -46,7 +59,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci
 指定 tag：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -Tag v1.2.3
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -Tag v1.2.3 -SkipOta
 ```
 
 验证流程但不执行生产更新：
@@ -74,5 +87,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci
 
 - 不要因为本地工作区有未提交改动而阻塞 `push` 后的生产更新；生产更新只基于远端镜像。
 - 不要在生产机直接运行 `docker compose up -d`。
+- “更新部署”默认包含 Android OTA；如果用户只要服务器更新，必须显式 `-SkipOta` 或口头说明“只更新服务器”。
+- 指定 tag 时，不要在未确认本地发布基线与该 tag 对齐的情况下顺手发 OTA。
 - 不要默认执行本地测试、lint、构建或额外审计。
 - 部署失败时只报告：执行了哪个脚本、远端脚本失败位置、下一步最小补救。

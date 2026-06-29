@@ -38,9 +38,9 @@ export const SHARED_TOKENS: TokenDef[] = [
     },
 
     /**
-     * 眩晕（Stun）- 跳过下个进攻掷骰阶段并自动移除
+     * 眩晕（Stun）- 旧状态别名；攻击结算后立即移除并触发额外攻击
      *
-     * 使用角色：炎术士
+     * 使用角色：炎术士旧录入兼容
      */
     {
         id: STATUS_IDS.STUN,
@@ -51,9 +51,9 @@ export const SHARED_TOKENS: TokenDef[] = [
         stackLimit: 1,
         category: 'debuff',
         passiveTrigger: {
-            timing: 'onPhaseEnter',
+            timing: 'onAttackEnd',
             removable: true,
-            actions: [{ type: 'skipPhase', target: 'self' }],
+            actions: [{ type: 'extraAttack', target: 'self' }],
         },
         frameId: 'stun',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.PYROMANCER,

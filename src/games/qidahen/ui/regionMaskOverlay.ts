@@ -2,7 +2,7 @@ import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from './mapGra
 
 type OverlayRgba = readonly [number, number, number, number];
 
-export type RegionMaskOverlayToneKey = 'selected' | 'dispatch' | 'hovered' | 'pending';
+export type RegionMaskOverlayToneKey = 'selected' | 'source' | 'dispatch' | 'hovered' | 'pending';
 
 type RegionMaskOverlayToneConfig = {
     fill: OverlayRgba;
@@ -28,9 +28,25 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         outerGlow: [159, 52, 38, 74],
         outerGlowRadius: 7,
     },
+    source: {
+        fill: [215, 168, 77, 72],
+        stroke: [255, 228, 155, 238],
+        innerStrokeRadius: 1,
+        outerFill: [215, 168, 77, 38],
+        outerFillRadius: 2,
+        outerGlow: [255, 216, 126, 56],
+        outerGlowRadius: 5,
+    },
     dispatch: {
-        fill: [79, 122, 164, 72],
-        stroke: [178, 216, 247, 230],
+        fill: [46, 166, 82, 156],
+        stroke: [238, 255, 226, 252],
+        innerStrokeRadius: 1,
+        outerFill: [46, 166, 82, 78],
+        outerFillRadius: 4,
+        outerStroke: [161, 246, 170, 244],
+        outerStrokeRadius: 5,
+        outerGlow: [86, 214, 118, 110],
+        outerGlowRadius: 9,
     },
     hovered: {
         fill: [238, 190, 94, 82],
@@ -60,6 +76,19 @@ const readMaskRegionIdAt = (
     }
     const colorKey = qidahenRegionColorKey(hitmap[offset], hitmap[offset + 1], hitmap[offset + 2]);
     return QIDAHEN_REGION_ID_BY_MASK_COLOR[colorKey] ?? null;
+};
+
+const readOwnershipRegionIdAt = (
+    regionIdByPixel: readonly (string | null)[],
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+): string | null => {
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+        return null;
+    }
+    return regionIdByPixel[(y * width) + x] ?? null;
 };
 
 const touchesOtherRegionWithinRadius = (
@@ -94,6 +123,46 @@ const touchesOtherRegionWithinRadius = (
                 return true;
             }
             if (readMaskRegionIdAt(hitmap, width, height, nextX, nextY) !== regionId) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+};
+
+const touchesOtherOwnershipRegionWithinRadius = (
+    regionIdByPixel: readonly (string | null)[],
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+    regionId: string,
+    radius: number,
+): boolean => {
+    if (radius <= 1) {
+        return (
+            readOwnershipRegionIdAt(regionIdByPixel, width, height, x - 1, y) !== regionId
+            || readOwnershipRegionIdAt(regionIdByPixel, width, height, x + 1, y) !== regionId
+            || readOwnershipRegionIdAt(regionIdByPixel, width, height, x, y - 1) !== regionId
+            || readOwnershipRegionIdAt(regionIdByPixel, width, height, x, y + 1) !== regionId
+        );
+    }
+
+    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+        const nextY = y + offsetY;
+        if (nextY < 0 || nextY >= height) {
+            return true;
+        }
+        for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+            if ((offsetX * offsetX) + (offsetY * offsetY) > radius * radius) {
+                continue;
+            }
+            const nextX = x + offsetX;
+            if (nextX < 0 || nextX >= width) {
+                return true;
+            }
+            if (readOwnershipRegionIdAt(regionIdByPixel, width, height, nextX, nextY) !== regionId) {
                 return true;
             }
         }
@@ -380,6 +449,64 @@ export const buildRegionMaskOverlayPixels = (
     return pixels;
 };
 
+export const buildRegionOwnershipOverlayPixels = (
+    regionIdByPixel: readonly (string | null)[],
+    width: number,
+    height: number,
+    toneByRegionId: Map<string, RegionMaskOverlayToneKey>,
+): Uint8ClampedArray => {
+    const pixels = new Uint8ClampedArray(width * height * 4);
+    const selectedMask = new Uint8Array(width * height);
+    const selectedBounds = {
+        left: width,
+        top: height,
+        right: -1,
+        bottom: -1,
+    };
+
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+            const regionId = readOwnershipRegionIdAt(regionIdByPixel, width, height, x, y);
+            if (!regionId) {
+                continue;
+            }
+            const toneKey = toneByRegionId.get(regionId);
+            if (!toneKey) {
+                continue;
+            }
+
+            const tone = REGION_MASK_OVERLAY_TONES[toneKey];
+            const offset = (y * width + x) * 4;
+            if (toneKey === 'selected') {
+                pixels[offset] = tone.fill[0];
+                pixels[offset + 1] = tone.fill[1];
+                pixels[offset + 2] = tone.fill[2];
+                pixels[offset + 3] = tone.fill[3];
+                selectedMask[(y * width) + x] = 1;
+                selectedBounds.left = Math.min(selectedBounds.left, x);
+                selectedBounds.top = Math.min(selectedBounds.top, y);
+                selectedBounds.right = Math.max(selectedBounds.right, x);
+                selectedBounds.bottom = Math.max(selectedBounds.bottom, y);
+                continue;
+            }
+
+            const innerStrokeRadius = Math.max(1, tone.innerStrokeRadius ?? 1);
+            const isBorder = touchesOtherOwnershipRegionWithinRadius(regionIdByPixel, width, height, x, y, regionId, innerStrokeRadius);
+            const color = isBorder ? tone.stroke : tone.fill;
+            pixels[offset] = color[0];
+            pixels[offset + 1] = color[1];
+            pixels[offset + 2] = color[2];
+            pixels[offset + 3] = color[3];
+        }
+    }
+
+    if (selectedBounds.right >= 0) {
+        applySelectedHalo(pixels, selectedMask, width, height, selectedBounds);
+    }
+
+    return pixels;
+};
+
 export const renderRegionMaskOverlay = (
     canvas: HTMLCanvasElement,
     hitmap: Uint8ClampedArray,
@@ -394,6 +521,24 @@ export const renderRegionMaskOverlay = (
 
     const image = context.createImageData(width, height);
     image.data.set(buildRegionMaskOverlayPixels(hitmap, width, height, toneByRegionId));
+    context.clearRect(0, 0, width, height);
+    context.putImageData(image, 0, 0);
+};
+
+export const renderRegionOwnershipOverlay = (
+    canvas: HTMLCanvasElement,
+    regionIdByPixel: readonly (string | null)[],
+    width: number,
+    height: number,
+    toneByRegionId: Map<string, RegionMaskOverlayToneKey>,
+) => {
+    const context = canvas.getContext('2d');
+    if (!context) {
+        return;
+    }
+
+    const image = context.createImageData(width, height);
+    image.data.set(buildRegionOwnershipOverlayPixels(regionIdByPixel, width, height, toneByRegionId));
     context.clearRect(0, 0, width, height);
     context.putImageData(image, 0, 0);
 };

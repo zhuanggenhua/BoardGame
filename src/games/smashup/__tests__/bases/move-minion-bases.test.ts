@@ -388,7 +388,7 @@ describe('Move Minion bases', () => {
         expect(result.events).toHaveLength(0);
         expect(interactions).toHaveLength(1);
         expect(getPromptSourceId(interactions[0])).toBe('base_tortuga');
-        expect(getPromptTitle(interactions[0])).toBe('托尔图加：选择移动一个其他基地上的随从到替换基地');
+        expect(getPromptTitle(interactions[0])).toBe('ui.base_tortuga_title');
         expect(getPromptPlayerId(interactions[0])).toBe('1');
     });
 

@@ -5,6 +5,22 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 
 # 反馈收口
 
+## 单一真相（强制）
+
+- 本文件是 **BoardGame 反馈收口 workflow 的唯一规范真相源**。
+- 只要涉及：
+  - 处理线上反馈
+  - `open / in_progress / resolved / closed`
+  - `closedReason / resolvedMethod`
+  - 本地分诊板是否需要写
+  - HTTP 回写与 SSH / Mongo 回写切换
+  - 反馈状态与部署状态拆轴
+  都只以本文件为准。
+- 其他相关文档只允许承担两类职责：
+  - `references/feedback-open-api.md`：描述 HTTP 接口路径、认证方式、字段形状
+  - `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md`：提供 SSH / Mongo 入口和最小操作路径
+- 禁止在其他文档再写一套等价的反馈收口规则、状态时机、字段要求或双写口径；若发现冲突，一律以本文件为准，并回头删掉重复规则。
+
 ## 概览
 
 这个 skill 负责把“看反馈”收敛成一条固定流水线：先从开放接口抓取未收口反馈，再排重、分类、挑出可并行的非冲突候选，最后由多个子 agent 分别判断真假 bug、修复代码并回写状态。
@@ -15,11 +31,11 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 
 当用户说“处理反馈/收口反馈/修复反馈”时，**默认必须同时覆盖下面这些动作**，不能只做其中一部分就对外宣称“已处理”：
 
-1. **拉取最新线上真实反馈**（或明确获得用户许可改用生产库直连），并同步到 `status-board.json`。
+1. **拉取最新线上真实反馈**（或明确获得用户许可改用生产库直连），必要时可同步到本地分诊板。
 2. **排重与代表项归并**，只对代表项进行分诊与处理。
 3. **分诊与结论**：判定是真 bug / 误报 / 建议 / 已修复待回写 / 证据不足等。
 4. **若是真 bug：修复 + 验证 + 证据**（测试、截图或日志证据），不得只改状态。
-5. **状态回写**：本地状态板 + 远端正式状态同步更新。
+5. **状态回写**：把正式状态与关闭/解决理由回写到远端真实反馈记录。
 6. **更新记录/文档**：补充证据或说明本轮使用的真实写入口。
 
 **注意**：仅回写状态 ≠ 修复完成；仅本地验证但未回写 ≠ 已收口。对外汇报时必须清楚说明本轮到底完成了哪些步骤。
@@ -66,22 +82,21 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
   - 暂缓理由是“按默认优先级”，还是“已确认只是伴随线索”
 - 禁止只汇报“已开始修反馈”，却不说明系统单其实仍未处理，造成用户误以为所有 open 项都在同一轮被覆盖。
 
-## 本地状态板（强制）
+## 本地分诊板（可选）
 
-- 当前批次反馈默认使用 `temp/feedback-closeout/status-board.json` 作为本地状态板。
-- 该 JSON 是当前批次反馈进度的单一真实来源：一旦某条反馈确认进入 `in_progress`、`resolved`、`closed` 或 `blocked`，必须立刻更新状态板，禁止等整批结束再统一回填。
-- `resolved` 至少要附 1 条 `evidence` 和 1 条 `verification`；`closed` 至少要写清 `notes` 或补充证据。
-- **开始处理就立刻认领（强制，2026-06-10 补强）**：只要已经决定“这条由当前批次实际接手处理”，无论后面是继续排查、开始修复，还是先做真假 bug 判断，都必须先把该条状态推进到 `in_progress`；禁止口头说“我在看/我开始修了”，但状态板仍停在 `open`。
-- **有结论就立刻收口（强制，2026-06-10 补强）**：只要结论已经成立，就必须当场更新，不允许攒到整批结束再统一回写：
-  - 确认真是 bug，且已有“修复 + 验证 + 证据”：立刻改 `resolved`
-  - 确认不是 bug、误报、重复、当前树已恢复、建议项：立刻改 `closed`
-  - 确认被阻塞且短时间内无法继续：立刻改 `blocked` 并写明阻塞
-- **“修了”与“确认没问题”同等要求即时更新（强制）**：状态即时同步不只适用于修复成功；只要本轮已经确认“不是现存 bug / 不需要改代码 / 已被其他修复覆盖”，也必须立即写 `closed` 或等价收口状态，避免同一条反馈在后续批次再次被重复分派。
-- 推荐顺序：
-  1. 先用 `sync-feedback-status-board.mjs` 从最新 `summary.json` 初始化/刷新状态板
-  2. 一旦实际接手某条反馈，先立刻用 `update-local-feedback-board.mjs` 把该条改成 `in_progress`
-  3. 每拿到一个新结论，立刻再次用 `update-local-feedback-board.mjs` 更新该条本地状态
-  4. 最后跑 `scripts/verify/verify-feedback-status.mjs` 做一次本地校验
+- `temp/feedback-closeout/status-board.json` 现在只作为**本地分诊/并行认领/临时备注板**，不再是正式收口结果的强制真相源。
+- 正式状态、`closedReason`（关闭理由）、`resolvedMethod`（解决方式）的最终查看入口，统一以**线上真实反馈记录**为准。
+- 允许使用本地分诊板的场景：
+  - 批量 triage 时先做代表项认领
+  - 需要给并行 agent 分派边界
+  - HTTP/Mongo 正式回写暂时阻塞时，先记临时备注
+- 不允许把“本地已经写了 `closedReason/resolvedMethod`”当成正式回写完成；只要远端真实记录还没写，就不能对外宣称“已正式收口”。
+- 如果本轮没有并行分派、也不需要临时阻塞备注，可以完全不写本地状态板。
+- 若使用本地分诊板，推荐顺序：
+  1. 先用 `sync-feedback-status-board.mjs` 从最新 `summary.json` 初始化/刷新分诊板
+  2. 需要并行认领时，再用 `update-local-feedback-board.mjs` 标记 `in_progress`
+  3. 如远端正式回写失败，再在本地补阻塞说明
+  4. 需要交接时，再跑 `scripts/verify/verify-feedback-status.mjs` 做一次本地校验
 
 ### 同轮流程缺口回填（强制，2026-06-10 新增）
 
@@ -95,18 +110,24 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 
 ### 修复后立刻回写（强制，2026-05-07 新增）
 
-- 只要某条反馈已经满足“修复 + 验证 + 证据”三件套，就**不得**继续长时间停留在“本地已修 / status-board 已 resolved / 远端未回写”的中间态。
+- **反馈状态与发布状态必须拆轴（强制，2026-06-16 补强）**：
+  - `反馈状态` 只回答“这条反馈当前是否已经被定位、修复、验证并正式回写”
+  - `发布/部署状态` 只回答“修复代码是否已经 push / 已上线 / 已部署 / 已观察”
+  - 两条轴都要记录，但**不得**把“还没发布/还没部署”当成“不能回写反馈状态”的理由
+  - 如果本轮已确认“修复 + 验证 + 证据”成立，就必须先把反馈推进到 `resolved/closed`；发布、部署、观察属于后续单独事项
+- 只要某条反馈已经满足“修复 + 验证 + 证据”三件套，就**不得**继续长时间停留在“本地已修 / 远端未回写”的中间态。
 - **修复完毕后立刻收口（强制，2026-05-25 补强）**：当代码修复、定向验证和 evidence 已经证明原始反馈链路被覆盖时，必须立即把对应反馈推进到 `resolved/closed` 回写流程；不得再用“还没部署”“还没在线上复测”“等线上不再复发”作为继续保留 `open/in_progress` 的理由。
 - 这条规则的理由是：AI 在本地修复后无法在未部署新代码的线上生产环境验证修复后行为；生产环境仍运行旧代码时，“线上复测不复发”不是可取得证据。若把线上复测当成回写前置条件，会把所有已修反馈永久卡在中间态，造成状态板和真实修复进度失真。
 - 默认动作应是：
-  1. 立刻补齐本地状态板
-  2. 立刻执行远端正式状态回写
-  3. 立刻复核远端状态与剩余未收口数量
+  1. 立刻执行远端正式状态回写，并同时写入 `closedReason/resolvedMethod`
+  2. 立刻复核远端状态与剩余未收口数量
+  3. 只有在需要交接、并行认领或阻塞备注时，才补本地分诊板
 - 只有在以下场景才允许暂不回写，并且必须在当轮汇报里显式写明阻塞：
   - 真实写入口不可用；
   - 用户明确要求“先别回写”；
   - 结论仍存在证据缺口，尚不能判为 `resolved/closed`。
 - `resolved` 的判定不以生产部署、线上复测或未来复发观察为前置条件。部署状态、CI 状态、发布窗口、线上后续观察只能作为后续待办单独记录；只要当前反馈已经有“根因定位 + 修复 + 验证 + evidence”，就必须回写 `resolved`。如果部署后再次出现同根因，应按新反馈/聚合项重新处理，而不是用不可证明的“等不复发”提前阻塞当前回写。
+- 对外汇报时若修复尚未部署，必须直说“反馈状态已回写，但部署状态未完成/未核对”；禁止把两件事混成一句“还不能回写”。
 - 禁止把“先记到本地，等攒几条一起回写”当作默认流程；除非用户明确要求批量统一回写。
 
 初始化/刷新状态板：
@@ -118,7 +139,9 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 更新单条本地状态：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status resolved --owner codex --evidence evidence/<file>.md --verification "<验证命令>" --screenshot <绝对路径截图>
+node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status resolved --owner codex --resolved-method "<解决方式>" --evidence evidence/<file>.md --verification "<验证命令>" --screenshot <绝对路径截图>
+
+node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status closed --owner codex --closed-reason "<关闭理由>" --evidence evidence/<file>.md
 ```
 
 校验状态板：
@@ -142,7 +165,7 @@ node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-boa
 1. 当前目标是线上真实反馈，而不是本地开发库。
 2. 当前接口返回的是反馈 JSON，而不是前端 SPA fallback HTML。
 3. 当前样本数量或目标反馈 ID 与用户给的导出/列表能对上。
-4. 如果发现 HTTP 接口并不指向真实线上数据，才允许切换到用户已批准的其他真实写入口，例如生产机上的 Mongo 直连脚本。
+4. 如果发现 HTTP 接口并不指向真实线上数据，或 HTTP 写路径虽然存在但当前拿不到可用管理凭证，允许切换到其他**已确认的真实线上写入口**，例如生产机上的 Mongo 直连脚本。
 
 如果上面任一项不能确认，就先停在分诊和证据阶段，不要写状态。
 
@@ -166,10 +189,11 @@ node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url 
 如果要把挑出的并行候选立即认领成 `in_progress`：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url <真实反馈接口基址> --slots 4 --mark-in-progress
+node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url <真实反馈接口基址> --token <BearerToken> --slots 4 --mark-in-progress
 ```
 
 禁止把 `http://127.0.0.1:*` 当成默认正式目标，除非用户明确说这次就是要处理本地测试反馈。
+当前线上正式列表/回写接口默认是 `https://api.easyboardgame.top/admin/feedback...`；旧的 `/feedback/open` 若返回 `404`，视为过期入口，不得继续沿用。
 
 脚本会：
 
@@ -181,7 +205,7 @@ node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url 
 - 选出一组 `parallelCandidates`，用于后续并行分派
 - 可选把 `parallelCandidates` 立即改成 `in_progress`
 
-拉取完成后，立即把本批 `summary.json` 同步到本地状态板，不要跳过这一步：
+拉取完成后，如本轮需要本地认领/并行分派/临时备注，再把本批 `summary.json` 同步到本地分诊板：
 
 ```bash
 node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/feedback-closeout/<timestamp>/summary.json
@@ -206,7 +230,24 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 2. 反馈是否只是重复、误用、环境噪音、历史已修复问题。
 3. 若是 bug，最小可复现链路和可疑模块是什么。
 
-只要结论已确认，就先更新本地状态板，再继续处理下一条反馈。
+### 2.0 带图反馈优先核图与录入真相（强制）
+
+- 只要反馈自带截图、牌面图、局面图、录像首帧、内嵌图片或可直接观察的图面证据，就不得先按“玩家理解偏差 / 误报 / 看错了”收口。
+- 默认顺序必须是：
+  1. 先看图上实际写了什么、显示了什么、发生了什么；
+  2. 再核对当前录入数据、文案、规则真相源和实现链；
+  3. 最后才判断是不是玩家误解、重复反馈或证据不足。
+- 若图面本身已经能直接证明“牌面文本/图面效果”和当前录入或实现矛盾，默认先判为“录入/实现候选错误”，而不是优先质疑玩家。
+- 这类反馈的最低结论必须同时说明：
+  - 图上看到的现实内容是什么；
+  - 当前录入/实现写的是什么；
+  - 两者是相符还是冲突。
+- 禁止行为：
+  - 没打开截图，就引用“玩家可能记错了”“应该是他看错了”这类结论。
+  - 图上已经出现明确牌面/按钮/数值/状态证据，仍跳过图面只按旧实现判断真伪。
+  - 已经发现图面与录入冲突，还把反馈按误报关闭。
+
+只要结论已确认，就先回写远端正式状态与理由，再继续处理下一条反馈；本地分诊板仅在需要交接或记录阻塞时同步。
 
 ### 2.1 真实反馈真相门禁（强制）
 
@@ -275,13 +316,16 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 
 强制检查顺序：
 
-1. **先看本地状态板**
+1. **先看线上真实反馈状态**
+   - 先确认目标反馈当前在真实线上记录里是不是已经 `resolved/closed`
+   - 若线上已经收口，禁止再次当成待修 bug 派单
+2. **必要时再看本地分诊板**
    - `temp/feedback-closeout/status-board.json`
-   - 若某条已经是 `resolved/closed`，禁止再次当成待修 bug 派单
-2. **再看最近证据与最近改动**
+   - 只把它当交接/并行认领线索，不得覆盖线上正式状态
+3. **再看最近证据与最近改动**
    - 优先搜索 `evidence/` 中最近 1~3 天新增/更新的反馈文档
    - 再按反馈关键词、卡牌名、错误文案、游戏模块 grep 最近改过的源码/测试
-3. **最后才决定是否真的进入“修复”**
+4. **最后才决定是否真的进入“修复”**
    - 若代码与证据已经覆盖用户描述，只差状态没回写：应走“补验证/补证据/回写状态”流程，而不是重新改实现
    - 若只能确认“可能已修”，但缺少证据：先补最小验证，再决定 `resolved` 还是继续 `in_progress`
 
@@ -363,38 +407,77 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - 预计要持续处理较久，且已经明确接手
   - 可先改 `in_progress`
 
+状态语义补强：
+
+- **只要本轮结论是“这条真实 bug 已经修复”，默认只能回写 `resolved`，不得改成 `closed`。**
+- `closed` 只用于：误报、建议、重复、旧样本已失效、当前树已恢复但本轮没有再次做该 bug 的正式修复。
+- `resolved` 的现实含义必须是：
+  - 这条反馈本体是 bug；
+  - 本轮已经完成根因定位、代码修复、匹配验证和 evidence；
+  - 因此正式标记为“已修复”。
+- **禁止**把“修过了但顺手关掉”“真实 bug 已修好但写成 closed”“因为想减少 open 数量就用 closed 代替 resolved”当成可接受口径。
+
+字段要求：
+
+- `closed`
+  - 必填 `closedReason`（关闭理由）
+- `resolved`
+  - 必填 `resolvedMethod`（解决方式）
+
+字段必填补强：
+
+- **`resolvedMethod` 与 `closedReason` 都视为正式收口理由字段，默认必须填写完整。**
+- 当目标状态是 `resolved` 时：
+  - 必须填写 `resolvedMethod`
+  - 若当前真实库/接口支持 `closedReason`，也应同步填写一句面向人能读懂的收口结论；不得只写状态不写结论
+- 当目标状态是 `closed` 时：
+  - 必须填写 `closedReason`
+- 这里的“完整”至少要回答：
+  - 这条反馈为什么被判成 `resolved` 或 `closed`
+  - 若是 `resolved`，修的是哪条现实规则/链路、用了什么验证
+  - 若是 `closed`，为什么它不是现存 bug（如重复、误报、当前树已恢复、证据不足、已失效）
+- 禁止只写空字符串、占位词、只写“已处理”“已修复”“当前正常”“close”这类无信息密度文本。
+
 执行顺序硬规则：
 
-1. 决定接手该条反馈的当下，就先改 `in_progress`
-2. 一旦结论变成“已修好”或“确认不是 bug”，立刻把该条推进到 `resolved/closed`
-3. 不得等“这一批都看完再一起改状态”
-4. 不得出现“代码已经改完、测试已经跑过、但状态还停在 `open/in_progress`”的长时间滞留
-5. 若因为远端回写阻塞导致无法同步正式状态，必须当场在本地状态板写明阻塞，不得静默留待下一轮
+1. 决定接手该条反馈的当下，就把线上真实记录改成 `in_progress`
+2. 一旦结论变成“已修好”或“确认不是 bug”，立刻把线上真实记录推进到 `resolved/closed`
+3. 推进到 `resolved/closed` 时，必须同时回写对应理由字段；若真实写入口支持两种理由字段并且不会引入歧义，默认补齐结论字段，不得留空
+4. 不得等“这一批都看完再一起改状态”
+5. 不得出现“代码已经改完、测试已经跑过、但线上状态还停在 `open/in_progress`”的长时间滞留
+6. 若因为远端回写阻塞导致无法同步正式状态，必须当场记录阻塞；需要交接时可补到本地分诊板，不得静默留待下一轮
 
-本地状态板和远端正式状态必须一起维护：
+本地分诊板不是强制双写目标：
 
-1. 先更新 `temp/feedback-closeout/status-board.json`
-2. 立刻回写远端正式状态
-3. 如果远端回写失败，必须立刻在本地状态板补 `notes` 说明阻塞原因，必要时改成 `blocked`
+1. 默认先回写线上真实状态
+2. 只有远端回写阻塞、需要并行认领或需要交接时，才补 `temp/feedback-closeout/status-board.json`
+3. 若远端回写失败且要继续交接，必须在本地分诊板补 `notes` 说明阻塞原因，必要时改成 `blocked`
 
 使用：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> <status> --base-url <真实反馈接口基址>
+node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> closed --base-url <真实反馈接口基址> --token <BearerToken> --closed-reason "<关闭理由>"
+
+node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken> --resolved-method "<解决方式>"
 ```
 
 收口代表项并顺带关闭重复项：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址>
+node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken>
 ```
 
 补充规则：
 
 - 如果开放反馈接口实际上指向本地开发库或空库，禁止因为“脚本能通”就把本地结果当成线上已回写。
-- 如果线上 HTTP 接口不可用，但用户已经允许使用生产机直连数据库作为真实写入口，可以改走生产机脚本；此时必须在交付里明确写明“本轮不是通过 HTTP 接口，而是通过生产机真实数据源回写”。
-- 未经用户明确允许，不要擅自使用生产 SSH、生产数据库直连或其他越过业务接口的写路径。
-- 不得只改远端状态、不改本地状态板；也不得只改本地状态板就口头宣称“已收口”。
+- 如果当前 HTTP 回写失败是 `401 缺少登录凭证`，这代表“正式接口存在，但缺 Bearer 凭证”；不得再把它误判成“只能 Mongo 直写”。
+- 如果线上 HTTP 接口不可用、HTTP 写接口缺少可用 Bearer 凭证、或当前项目未保存可复用管理员 token，但本轮任务本身就是“处理线上反馈 / 回写反馈状态”，则可直接改走生产机脚本或生产 Mongo 作为真实写入口；这属于反馈收口动作本身，不需要再向用户二次确认。
+- 这里的默认授权只覆盖**反馈状态回写**所需的最小生产写操作，不扩展为任意生产数据库改数、部署、清理或旁路修复。
+- 一旦改走生产机 / Mongo，必须在交付里明确写明“本轮不是通过 HTTP 接口，而是通过生产机真实数据源回写”，并记录为什么没有走 HTTP（例如 `401 缺少登录凭证`、生产机未保存管理员 token、接口返回非真实线上数据）。
+- 走生产机 / Mongo 时，若当前真实库支持 `closedReason/resolvedMethod`，默认也必须一并写入；不得只改状态不写理由。
+- 不得只改本地状态板就口头宣称“已收口”。
+- **缺的只是关闭理由/解决方式时也直接补远端（强制）**：如果线上真实记录已经是 `closed/resolved`，但 `closedReason` 或 `resolvedMethod` 仍为空，而本轮结论已经锁定，则默认动作不是停下确认，也不是只记本地板，而是**直接对同一条线上真实记录补写缺失字段**，然后继续主任务。
+- **回写阻塞不得抢占主 bug 处理（强制）**：当用户主目标仍是继续修 bug / 继续排查，而反馈回写这里只是缺最后一笔 `closedReason/resolvedMethod` 时，agent 应先用最小真实写入口补齐并继续主线；不得因为“HTTP 没 token”“要不要走 Mongo”这种已在本 skill 授权范围内的选择，再额外停下来征求用户确认。
 
 ### 5. 交付口径
 

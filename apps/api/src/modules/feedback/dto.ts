@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
 
 export const FEEDBACK_SORT_OPTIONS = ['newest', 'oldest'] as const;
@@ -17,6 +17,116 @@ export class FeedbackViewportDto {
 
     @IsNumber()
     height!: number;
+}
+
+export class FeedbackElementSummaryDto {
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    tagName?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    testId?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    role?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    id?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    name?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    type?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(80)
+    ariaLabel?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(80)
+    text?: string;
+}
+
+export class FeedbackUserActionSummaryDto {
+    @IsString()
+    @MaxLength(32)
+    type!: string;
+
+    @IsString()
+    @MaxLength(40)
+    at!: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    key?: string;
+
+    @ValidateNested()
+    @Type(() => FeedbackElementSummaryDto)
+    @IsOptional()
+    target?: FeedbackElementSummaryDto;
+}
+
+export class FeedbackRouteChangeSummaryDto {
+    @IsString()
+    @IsOptional()
+    @MaxLength(300)
+    from?: string;
+
+    @IsString()
+    @MaxLength(300)
+    to!: string;
+
+    @IsIn(['init', 'pushState', 'replaceState', 'popstate', 'hashchange'])
+    trigger!: 'init' | 'pushState' | 'replaceState' | 'popstate' | 'hashchange';
+
+    @IsString()
+    @MaxLength(40)
+    at!: string;
+}
+
+export class FeedbackPageFlagsDto {
+    @IsBoolean()
+    @IsOptional()
+    isGamePage?: boolean;
+
+    @IsBoolean()
+    @IsOptional()
+    hasModalOpen?: boolean;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    gameId?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    homeStyle?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    mobileLayoutPreset?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    mobileProfile?: string;
 }
 
 export class FeedbackClientContextDto {
@@ -52,6 +162,21 @@ export class FeedbackClientContextDto {
 
     @IsString()
     @IsOptional()
+    @MaxLength(64)
+    appCommitSha?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    appBuildTime?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    appReleaseChannel?: string;
+
+    @IsString()
+    @IsOptional()
     @MaxLength(512)
     userAgent?: string;
 
@@ -69,6 +194,40 @@ export class FeedbackClientContextDto {
     @IsOptional()
     @MaxLength(64)
     timezone?: string;
+
+    @ValidateNested()
+    @Type(() => FeedbackElementSummaryDto)
+    @IsOptional()
+    activeElement?: FeedbackElementSummaryDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackUserActionSummaryDto)
+    @IsOptional()
+    lastUserAction?: FeedbackUserActionSummaryDto;
+
+    @IsArray()
+    @ArrayMaxSize(8)
+    @ValidateNested({ each: true })
+    @Type(() => FeedbackUserActionSummaryDto)
+    @IsOptional()
+    recentUserActions?: FeedbackUserActionSummaryDto[];
+
+    @ValidateNested()
+    @Type(() => FeedbackRouteChangeSummaryDto)
+    @IsOptional()
+    lastRouteChange?: FeedbackRouteChangeSummaryDto;
+
+    @IsArray()
+    @ArrayMaxSize(6)
+    @ValidateNested({ each: true })
+    @Type(() => FeedbackRouteChangeSummaryDto)
+    @IsOptional()
+    recentRouteChanges?: FeedbackRouteChangeSummaryDto[];
+
+    @ValidateNested()
+    @Type(() => FeedbackPageFlagsDto)
+    @IsOptional()
+    pageFlags?: FeedbackPageFlagsDto;
 }
 
 export class FeedbackErrorContextDto {
@@ -91,6 +250,16 @@ export class FeedbackErrorContextDto {
     @IsOptional()
     @MaxLength(128)
     source?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(4000)
+    jsStack?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(4000)
+    componentStack?: string;
 }
 
 export class CreateFeedbackDto {
@@ -214,6 +383,11 @@ export class UpdateFeedbackStatusDto {
     @IsOptional()
     @MaxLength(500)
     closedReason?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(500)
+    resolvedMethod?: string;
 }
 
 export class QueryFeedbackDto {

@@ -320,6 +320,9 @@ export const BaseZone: React.FC<{
         const pConf = PLAYER_CONFIG[parseInt(ongoingControllerId) % PLAYER_CONFIG.length];
         const hasOngoingTalent = actionDef?.abilityTags?.includes('talent') ?? false;
         const canUseOngoingTalent = !!usableOngoingTalentUids?.has(oa.uid);
+        const hasExtraTalentReady =
+            oa.metadata?.mythicHorsesSeastarExtraTalent === true
+            && oa.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
         const ongoingActivationKey = `ongoing-${oa.uid}`;
         const isOngoingActivationArmed = isActivationArmed(ongoingActivationKey);
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
@@ -464,6 +467,15 @@ export const BaseZone: React.FC<{
                             insetClassName="left-[0.12vw] right-[0.12vw]"
                             muteStroke={ongoingAccentHighlightActive}
                             testId={`su-base-ongoing-used-badge-${oa.uid}`}
+                        />
+                    )}
+                    {hasExtraTalentReady && (
+                        <TopStateBadge
+                            label={t('ui.extra_talent_ready')}
+                            compact
+                            insetClassName="left-[0.12vw] right-[0.12vw]"
+                            muteStroke={ongoingAccentHighlightActive}
+                            testId={`su-base-ongoing-extra-talent-badge-${oa.uid}`}
                         />
                     )}
                 </motion.div>
@@ -1227,6 +1239,27 @@ const UsedStateBadge: React.FC<{ label: string; compact?: boolean; insetClassNam
     </div>
 );
 
+const TopStateBadge: React.FC<{ label: string; compact?: boolean; insetClassName?: string; muteStroke?: boolean; testId?: string }> = ({
+    label,
+    compact = false,
+    insetClassName = 'inset-x-0',
+    muteStroke = false,
+    testId,
+}) => (
+    <div className={`absolute pointer-events-none z-40 flex justify-center ${insetClassName} ${compact ? 'top-[4%]' : 'top-[4.2%]'}`}>
+        <div
+            data-testid={testId}
+            className={`whitespace-nowrap rounded-full ${getAccessoryChromeClass(muteStroke, 'border border-white/90 shadow-[0_2px_8px_rgba(15,23,42,0.45)]')} ${getAccessorySurfaceClass(muteStroke, 'bg-emerald-700', 'bg-emerald-700/96')} text-white ${
+                compact
+                    ? 'min-w-[34%] px-[10%] py-[3%] text-[clamp(9px,0.5vw,12px)] font-black leading-none text-center'
+                    : 'min-w-[38%] px-[12%] py-[4%] text-[clamp(10px,0.58vw,14px)] font-black leading-none text-center'
+            }`}
+        >
+            {label}
+        </div>
+    </div>
+);
+
 // ============================================================================
 // Minion Card
 // ============================================================================
@@ -1289,6 +1322,9 @@ const MinionCard: React.FC<{
             ? (genericDef.minionAbilityTags ?? []).includes('talent')
             : false);
     const canUseTalent = !!usableMinionTalentUids?.has(minion.uid);
+    const hasExtraTalentReady =
+        minion.metadata?.mythicHorsesSeastarExtraTalent === true
+        && minion.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
 
     const canActivateSpecial = !!usableSpecialMinionUids?.has(minion.uid);
 
@@ -1643,6 +1679,16 @@ const MinionCard: React.FC<{
                         insetClassName="left-[0.2vw] right-[0.2vw]"
                         muteStroke={hostAccentHighlightActive}
                         testId={`su-minion-used-badge-${minion.uid}`}
+                    />
+                )}
+
+                {hasExtraTalentReady && (
+                    <TopStateBadge
+                        label={t('ui.extra_talent_ready')}
+                        compact
+                        insetClassName="left-[0.12vw] right-[0.12vw]"
+                        muteStroke={hostAccentHighlightActive}
+                        testId={`su-minion-extra-talent-badge-${minion.uid}`}
                     />
                 )}
 

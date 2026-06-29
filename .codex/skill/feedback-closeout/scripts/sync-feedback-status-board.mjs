@@ -94,6 +94,8 @@ function toBoardItem(group, summaryPath) {
         verification: [],
         screenshots: normalizeScreenshotPaths(group.screenshotPaths),
         notes: '',
+        closedReason: '',
+        resolvedMethod: '',
         updatedAt: new Date().toISOString(),
     };
 }
@@ -124,6 +126,12 @@ function mergeItem(baseItem, existingItem, summaryPath) {
         screenshots: normalizeStringArray(existingItem.screenshots).length > 0
             ? normalizeStringArray(existingItem.screenshots)
             : baseItem.screenshots,
+        closedReason: typeof existingItem.closedReason === 'string'
+            ? existingItem.closedReason
+            : baseItem.closedReason,
+        resolvedMethod: typeof existingItem.resolvedMethod === 'string'
+            ? existingItem.resolvedMethod
+            : baseItem.resolvedMethod,
     };
 }
 

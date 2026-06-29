@@ -19,14 +19,18 @@ describe('clientAutoReport', () => {
         }));
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         vi.unstubAllEnvs();
         vi.unstubAllGlobals();
+        const { setCurrentGameFeedbackContext } = await import('../feedback/gameFeedbackContext');
+        setCurrentGameFeedbackContext(null);
         const host = window as Window & {
             __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean;
             __BG_LAST_ERROR_CONTEXT__?: unknown;
             __BG_LAST_USER_ACTION__?: unknown;
+            __BG_RECENT_USER_ACTIONS__?: unknown;
             __BG_LAST_ROUTE_CHANGE__?: unknown;
+            __BG_RECENT_ROUTE_CHANGES__?: unknown;
             __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
             __BG_HISTORY_PUSH_STATE_ORIGINAL__?: History['pushState'];
             __BG_HISTORY_REPLACE_STATE_ORIGINAL__?: History['replaceState'];
@@ -34,7 +38,9 @@ describe('clientAutoReport', () => {
         delete host.__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
         delete host.__BG_LAST_ERROR_CONTEXT__;
         delete host.__BG_LAST_USER_ACTION__;
+        delete host.__BG_RECENT_USER_ACTIONS__;
         delete host.__BG_LAST_ROUTE_CHANGE__;
+        delete host.__BG_RECENT_ROUTE_CHANGES__;
         delete host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__;
         if (host.__BG_HISTORY_PUSH_STATE_ORIGINAL__) {
             window.history.pushState = host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;
@@ -53,6 +59,10 @@ describe('clientAutoReport', () => {
 
     it('会自动上报并写入最近错误上下文', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        vi.stubGlobal('__APP_VERSION__', '0.6.1-test');
+        vi.stubGlobal('__APP_COMMIT_SHA__', 'abc123def456');
+        vi.stubGlobal('__APP_BUILD_TIME__', '2026-06-19T10:00:00.000Z');
+        vi.stubGlobal('__APP_RELEASE_CHANNEL__', 'production');
         const { installClientDiagnosticCapture } = await import('../feedback/clientFeedbackContext');
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
         const { getLastErrorContext } = await import('../feedback/errorContext');
@@ -100,6 +110,10 @@ describe('clientAutoReport', () => {
                 gameId: 'smashup',
                 matchId: 'match-1',
                 playerId: '0',
+                appVersion: '0.6.1-test',
+                appCommitSha: 'abc123def456',
+                appBuildTime: '2026-06-19T10:00:00.000Z',
+                appReleaseChannel: 'production',
                 activeElement: {
                     tagName: 'button',
                     testId: 'confirm-play',
@@ -107,10 +121,25 @@ describe('clientAutoReport', () => {
                 lastUserAction: {
                     type: 'click',
                 },
+                recentUserActions: [
+                    {
+                        type: 'click',
+                    },
+                ],
                 lastRouteChange: {
                     to: '/play/smashup/match/match-1?seat=0&step=confirm',
                     trigger: 'pushState',
                 },
+                recentRouteChanges: [
+                    {
+                        to: '/play/smashup/match/match-1?seat=0',
+                        trigger: 'init',
+                    },
+                    {
+                        to: '/play/smashup/match/match-1?seat=0&step=confirm',
+                        trigger: 'pushState',
+                    },
+                ],
                 pageFlags: {
                     isGamePage: true,
                     gameId: 'smashup',
@@ -169,6 +198,71 @@ describe('clientAutoReport', () => {
         });
         expect(body.errorContext.stack).toContain('CardPanel');
         expect(body.errorContext.stack).toContain('MatchRoomWithAudio');
+    });
+
+    it('游戏页有现场时会自动附带操作日志和状态快照', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { setCurrentGameFeedbackContext } = await import('../feedback/gameFeedbackContext');
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        setCurrentGameFeedbackContext({
+            state: {
+                core: {
+                    gameId: 'smashup',
+                },
+                sys: {
+                    phase: 'play',
+                    turnNumber: 7,
+                    actionLog: {
+                        entries: [
+                            {
+                                text: '打出一张牌',
+                                event: { type: 'play-card' },
+                                timestamp: 123,
+                            },
+                        ],
+                    },
+                    eventStream: {
+                        entries: [],
+                    },
+                    undo: {
+                        snapshots: [],
+                    },
+                    interaction: {
+                        current: {
+                            type: 'select',
+                        },
+                    },
+                    responseWindow: {
+                        current: {
+                            triggerEvent: {
+                                type: 'reaction-ready',
+                            },
+                        },
+                    },
+                },
+            } as never,
+            playerId: '0',
+            isGameOver: false,
+            isLocalMode: false,
+        });
+
+        await reportClientAutoFeedbackOnce('game-context-auto-report', {
+            content: '[auto][react.error_boundary] render failed',
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Cannot read properties of undefined',
+            errorSource: 'react.error_boundary',
+        });
+
+        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        expect(body).toMatchObject({
+            actionLog: expect.stringContaining('user-feedback-diagnostic'),
+            stateSnapshot: expect.stringContaining('"turnNumber": 7'),
+        });
     });
 
     it('同一签名在去重窗口内只会上报一次', async () => {
@@ -280,6 +374,61 @@ describe('clientAutoReport', () => {
             errorName: 'InvalidStateError',
             errorMessage: 'Failed to start the audio device',
             errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('音频编解码不支持噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-codec-unsupported', {
+            content: '[auto][unhandledrejection] No codec support for selected audio sources.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'No codec support for selected audio sources.',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('音频解码失败噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-decoding-failed', {
+            content: '[auto][unhandledrejection] Decoding audio data failed.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Decoding audio data failed.',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('Howler 音频错误码噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-howler-error-code-4', {
+            content: '[auto][unhandledrejection] 4',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: '4',
+            errorSource: 'window.unhandledrejection',
+            stack: 'Error: 4\n    at c (https://easyboardgame.top/assets/index-Cmi8y5la.js:187:33412)\n    at _.<anonymous> (https://easyboardgame.top/assets/vendor-howler-Bp1HXCiM.js:1:19873)',
         });
 
         expect(globalThis.fetch).not.toHaveBeenCalled();

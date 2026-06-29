@@ -17,6 +17,9 @@ import {
     createNoResponseSetupWithEmptyHand,
     assertState,
     cmd,
+    getCurrentInteractionId,
+    getSimpleChoicePrompt,
+    respondToPrompt,
 } from './test-utils';
 
 describe('Monk 技能完整覆盖测试', () => {
@@ -153,6 +156,40 @@ describe('Monk 技能完整覆盖测试', () => {
             });
 
             expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('触发禅忘二选一后应关闭当前提示并标记前置选择已完成', () => {
+            const diceValues = [4, 4, 4, 1, 1];
+            const random = createQueuedRandom(diceValues);
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: assertState,
+                silent: true,
+            });
+
+            expect(runner.dispatch('ADVANCE_PHASE', { playerId: '0' }).success).toBe(true);
+            expect(runner.dispatch('ROLL_DICE', { playerId: '0' }).success).toBe(true);
+            expect(runner.dispatch('CONFIRM_ROLL', { playerId: '0' }).success).toBe(true);
+            expect(runner.dispatch('SELECT_ABILITY', { playerId: '0', abilityId: 'zen-forget' }).success).toBe(true);
+            expect(runner.dispatch('ADVANCE_PHASE', { playerId: '0' }).success).toBe(true);
+
+            const promptState = runner.getState();
+            const prompt = getSimpleChoicePrompt(promptState, 'zen-forget');
+            expect(promptState.core.pendingAttack?.preDefenseResolved).toBe(true);
+
+            const purifyOption = prompt.options.find(option => option.id === 'option-1');
+            expect(purifyOption).toBeTruthy();
+            const responded = respondToPrompt(promptState, purifyOption!.id, '0', random, ['0', '1']);
+            expect(responded.success).toBe(true);
+            if (!responded.success) return;
+            expect(getCurrentInteractionId(responded.state)).toBeUndefined();
+            expect(responded.state.sys.phase).toBe('main2');
+            expect(responded.state.core.pendingAttack).toBeNull();
         });
     });
 

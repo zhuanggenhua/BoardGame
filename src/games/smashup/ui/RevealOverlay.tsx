@@ -48,6 +48,7 @@ interface RevealOverlayProps {
     currentPlayerId: PlayerId | null;
     playerNames?: Record<string, string>;
     suppressionRules?: RevealSuppressionRule[];
+    ignoreEventsBefore?: number;
 }
 
 const AUTO_DISMISS_MS = 15_000;
@@ -152,7 +153,7 @@ export function shouldSuppressRevealItem(item: RevealItem, suppressionRules: Rev
 // 组件
 // ============================================================================
 
-export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressionRules = [] }: RevealOverlayProps) {
+export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressionRules = [], ignoreEventsBefore }: RevealOverlayProps) {
     const { t } = useTranslation('game-smashup');
     const [queue, setQueue] = useState<RevealItem[]>([]);
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
@@ -213,6 +214,13 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
             if (!TRIGGER_EVENTS.has(entry.event.type)) {
                 continue;
             }
+            if (
+                typeof ignoreEventsBefore === 'number'
+                && typeof entry.event.timestamp === 'number'
+                && entry.event.timestamp < ignoreEventsBefore
+            ) {
+                continue;
+            }
             const p = entry.event.payload as {
                 targetPlayerId: string | string[];
                 viewerPlayerId: string | 'all';
@@ -251,7 +259,7 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
         if (visibleItems.length > 0) {
             setQueue(prev => [...prev, ...visibleItems].slice(-5));
         }
-    }, [entries, currentPlayerId, suppressionRules, TRIGGER_EVENTS]);
+    }, [entries, currentPlayerId, suppressionRules, TRIGGER_EVENTS, ignoreEventsBefore]);
 
     const visibleQueue = useMemo(
         () => queue.filter((item) => !shouldSuppressRevealItem(item, suppressionRules)),

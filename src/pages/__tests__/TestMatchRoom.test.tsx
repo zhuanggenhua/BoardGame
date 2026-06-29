@@ -47,6 +47,27 @@ vi.mock('../../config/games.config', () => ({
         id: 'fantasyrealms',
         title: '幻想国度',
         playerOptions: [2, 3, 4, 5, 6],
+        bestPlayers: [3, 4],
+        setupOptions: {
+            variant: {
+                type: 'select',
+                labelKey: 'games.fantasyrealms.setup.variant.label',
+                options: [
+                    { value: 'standard', labelKey: 'games.fantasyrealms.setup.variant.standard' },
+                    { value: 'duel', labelKey: 'games.fantasyrealms.setup.variant.duel' },
+                ],
+                default: 'standard',
+            },
+            expansion: {
+                type: 'select',
+                labelKey: 'games.fantasyrealms.setup.expansion.label',
+                options: [
+                    { value: 'base', labelKey: 'games.fantasyrealms.setup.expansion.base' },
+                    { value: 'cursed-hoard-suits', labelKey: 'games.fantasyrealms.setup.expansion.cursedHoardSuits' },
+                ],
+                default: 'base',
+            },
+        },
         ai: {
             localAi: true,
             remoteAi: false,
@@ -142,8 +163,10 @@ describe('TestMatchRoom', () => {
         cleanup();
     });
 
-    it('应把 players、playerID 与 seatControllers 透传给 LocalGameProvider', async () => {
-        mockSearchParams = new URLSearchParams('players=2&numPlayers=6&playerID=1&seat1=local-ai&seat1Difficulty=hard');
+    it('应按幻想国度 setup 收敛人数，并把 playerID、seatControllers、setupData 透传给 LocalGameProvider', async () => {
+        mockSearchParams = new URLSearchParams(
+            'players=6&playerID=1&seat1=local-ai&seat1Difficulty=hard&setup.variant=duel&setup.expansion=cursed-hoard-suits',
+        );
         const { TestMatchRoom } = await import('../TestMatchRoom');
 
         render(<TestMatchRoom />);
@@ -156,6 +179,14 @@ describe('TestMatchRoom', () => {
         expect(latestCall.numPlayers).toBe(2);
         expect(latestCall.playerId).toBe('1');
         expect(latestCall.followCurrentTurnPlayer).toBe(false);
+        expect(latestCall.setupData).toEqual({
+            variant: 'duel',
+            expansion: 'cursed-hoard-suits',
+            setupSelections: {
+                variant: 'duel',
+                expansion: 'cursed-hoard-suits',
+            },
+        });
         expect(latestCall.seatControllers).toEqual({
             '0': { type: 'human' },
             '1': { type: 'local-ai', difficulty: 'hard' },
@@ -174,9 +205,39 @@ describe('TestMatchRoom', () => {
 
         const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
         expect(latestCall.followCurrentTurnPlayer).toBe(true);
+        expect(latestCall.setupData).toEqual({
+            variant: 'duel',
+            expansion: 'base',
+            setupSelections: {
+                variant: 'duel',
+                expansion: 'base',
+            },
+        });
         expect(latestCall.seatControllers).toEqual({
             '0': { type: 'human' },
             '1': expect.objectContaining({ type: 'local-ai' }),
+        });
+    });
+
+    it('未显式指定人数时，应默认落到最佳标准局人数，而不是被 2 人总体支持误切到 duel', async () => {
+        mockSearchParams = new URLSearchParams('seed=default-standard');
+        const { TestMatchRoom } = await import('../TestMatchRoom');
+
+        render(<TestMatchRoom />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        expect(latestCall.numPlayers).toBe(3);
+        expect(latestCall.setupData).toEqual({
+            variant: 'standard',
+            expansion: 'base',
+            setupSelections: {
+                variant: 'standard',
+                expansion: 'base',
+            },
         });
     });
 });

@@ -3,9 +3,11 @@
  * 从 reducer.ts 提取
  */
 
+import type { RandomFn } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
+import { getUpgradeTargetAbilityId } from './rules';
 import { removeCard } from './utils';
 import { CHARACTER_DATA_MAP } from './characters';
 
@@ -29,7 +31,7 @@ function resolveCharacterCardMeta(characterId: string | undefined, cardId: strin
     const data = CHARACTER_DATA_MAP[characterId as keyof typeof CHARACTER_DATA_MAP];
     if (!data) return null;
 
-    const deck = data.getStartingDeck(CARD_LOOKUP_RANDOM as any);
+    const deck = data.getStartingDeck(CARD_LOOKUP_RANDOM as RandomFn);
     const map = cached ?? new Map<string, { id: string; cpCost: number }>();
     for (const card of deck) {
         map.set(card.id, { id: card.id, cpCost: card.cpCost });
@@ -155,7 +157,7 @@ export const handleCardPlayed: EventHandler<Extract<DiceThroneEvent, { type: 'CA
     if (!card) return { ...state, lastSoldCardId: undefined };
 
     const newResources = resourceSystem.pay(player.resources, { [RESOURCE_IDS.CP]: cpCost });
-    const nextDiscard = card.type === 'upgrade'
+    const nextDiscard = card.type === 'upgrade' && getUpgradeTargetAbilityId(card) !== null
         ? player.discard
         : [...player.discard, card];
 

@@ -3,6 +3,17 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CardSpotlightQueue } from '../CardSpotlightQueue';
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, options?: Record<string, unknown>) => {
+            if (key === 'cardSpotlightQueue.dismiss') return '关闭后继续';
+            if (key === 'cardSpotlightQueue.queue') return `${options?.count} 张待查看 · 关闭后继续`;
+            if (key === 'cardSpotlightQueue.closeSpotlight') return '关闭特写';
+            return key;
+        },
+    }),
+}));
+
 describe('CardSpotlightQueue', () => {
     it('应支持点击空白背景关闭，并保留更紧凑的默认提示文案', () => {
         const onDismiss = vi.fn();
@@ -22,10 +33,12 @@ describe('CardSpotlightQueue', () => {
         );
 
         const content = screen.getByTestId('card-spotlight-content');
+        const backdrop = screen.getByRole('button', { name: '关闭特写' });
 
         expect(screen.getByText('关闭后继续')).toBeInTheDocument();
+        expect(backdrop.className).toContain('pointer-events-auto');
 
-        fireEvent.click(screen.getByRole('button', { name: '关闭特写' }));
+        fireEvent.click(backdrop);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
 
         onDismiss.mockClear();

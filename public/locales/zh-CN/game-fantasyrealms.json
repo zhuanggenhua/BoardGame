@@ -19,6 +19,8 @@
     "reviewChip": "终局复盘",
     "compact": {
       "draw": "摸牌",
+      "drawChoice": "摸牌（或拿中央牌）",
+      "drawTwo": "摸 2 张",
       "discard": "弃牌"
     },
     "drawDeck": {
@@ -29,13 +31,17 @@
       "discardRequired": "弃一张牌"
     },
     "short": {
-      "round": "R{{turn}}"
+      "round": "第{{turn}}轮"
     },
     "live": {
       "selfTurn": "你的回合"
     },
     "statusBanner": {
-      "discardSelf": "确认弃牌",
+      "kicker": "下一步",
+      "discardPick": "弃置 1 张",
+      "discardDirect": "弃一张牌",
+      "drawChoice": "摸牌 / 拿中央牌",
+      "takeCenter": "拿中央牌",
       "waiting": "等待 {{player}}"
     }
   },
@@ -48,7 +54,8 @@
     "handCount": "手牌 {{count}} 张",
     "badges": {
       "you": "你",
-      "winner": "胜者"
+      "winner": "胜者",
+      "reviewing": "当前查看"
     },
     "labels": {
       "activeBase": "有效基础分",
@@ -64,6 +71,7 @@
     "hand": {
       "ariaLabel": "手牌区",
       "title": "{{player}}的手牌",
+      "reviewTitle": "{{player}}的终局手牌",
       "titleSpectator": "隐藏手牌区",
       "emptyCompact": "暂无手牌"
     }
@@ -73,8 +81,8 @@
     "inspectDiscardAria": "查看弃牌 {{name}}",
     "discardHandAria": "弃置手牌 {{name}}",
     "inspectHandAria": "查看手牌 {{name}}",
-    "confirmTake": "确认选择",
-    "confirmDiscard": "确认弃置",
+    "openMagnifyAria": "放大查看 {{name}}",
+    "closePreview": "关闭预览",
     "selected": "已选"
   },
   "focus": {
@@ -103,5 +111,47 @@
     "finalStandings": "最终排名",
     "drawBadge": "平局",
     "rank": "第 {{rank}} 名"
+  },
+  "setup": {
+    "variant": {
+      "label": "对局模式",
+      "standard": "标准对局",
+      "duel": "双人变体"
+    },
+    "expansion": {
+      "label": "卡组范围",
+      "base": "基础卡组",
+      "cursedHoardSuits": "诅咒宝藏：新花色"
+    }
+  },
+  "tutorial": {
+    "steps": {
+      "setupOverview": "幻想国度中，每人将有七张起始手牌，轮到你时，可以选择从牌库或弃牌堆抽取一张牌并弃掉一张牌，直到中央弃牌堆达到 10 张时游戏结束，分数最高者是赢家。",
+      "drawOverview": "现在从牌库摸 1 张牌。",
+      "drawFromDeck": "点击摸牌按钮。",
+      "discardAfterDraw": "摸到幻象后，这手牌的组合更完整了，王后现在用处不大。选中王后，把它弃掉。",
+      "setupTakeCenter": "接着看另一种情况：中央如果正好有你需要的牌，就直接拿它。",
+      "takeCenterCard": "现在中央有钟塔，和你手里的蜡烛可以加分。选中钟塔来获取。",
+      "discardAfterCenter": "暴风雨对这组牌没有帮助。选中暴风雨，把它弃掉。",
+      "setupScoreShowcase": "下面直接进入计分。",
+      "scoreIntro": "所有有效卡牌的基础分，加上奖励分，再减去惩罚分，就是你的总分。",
+      "scoreCardDetails": "点击或悬浮卡牌，可以查看这张牌的基础分和它的加分效果。",
+      "scoreTotalReview": "查看右上角总分，可以看到这手牌最后得了多少分。",
+      "endgameReview": "终局会按这手最终留牌结算。查看单张牌时，可以对照它在这手组合里实际算了多少分。",
+      "finish": "以上就是幻想国度的基础流程。尝试组出更高分的手牌吧！"
+    }
+  },
+  "error": {
+    "unknownCard": "该牌当前不可见",
+    "notYourTurn": "现在还不是你的回合",
+    "notInDrawStage": "当前还不能摸牌",
+    "deckEmpty": "牌库已经空了",
+    "discardCardUnavailable": "这张中央牌当前不能拿",
+    "notInDiscardStage": "当前还不能弃牌",
+    "handCardUnavailable": "这张手牌当前不能弃",
+    "unknownCommand": "未知操作",
+    "tutorial_manifest_invalid": "教程配置无效",
+    "tutorial_command_blocked": "当前教程步骤不允许这个操作",
+    "tutorial_step_locked": "当前步骤还不能跳过"
   }
 }

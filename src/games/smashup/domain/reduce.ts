@@ -2611,14 +2611,24 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED: {
-            const { cardUid, delta } = (event as OngoingCardCounterChangedEvent).payload;
+            const { cardUid, delta, metadataUpdate, replaceMode } = (event as OngoingCardCounterChangedEvent).payload;
             // 使用 cardUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
             const newBases = state.bases.map(base => ({
                 ...base,
                 ongoingActions: base.ongoingActions.map(oa => {
                     if (oa.uid !== cardUid) return oa;
                     const prev = ((oa.metadata?.powerCounters as number) ?? 0);
-                    return { ...oa, metadata: { ...oa.metadata, powerCounters: Math.max(0, prev + delta) } };
+                    const nextPowerCounters = replaceMode
+                        ? Math.max(0, typeof metadataUpdate?.powerCounters === 'number' ? metadataUpdate.powerCounters : prev)
+                        : Math.max(0, prev + delta);
+                    return {
+                        ...oa,
+                        metadata: {
+                            ...oa.metadata,
+                            ...(metadataUpdate ?? {}),
+                            powerCounters: nextPowerCounters,
+                        },
+                    };
                 }),
             }));
             return { ...state, bases: newBases };
@@ -2636,6 +2646,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 const baseOngoing = oldBase?.ongoingActions.find(o => o.uid === ongoingCardUid);
                 if (baseOngoing?.talentUsed) {
                     reusedTalent = true;
+                    consumedSeastarExtra =
+                        (baseOngoing.metadata?.mythicHorsesSeastarExtraTalent === true)
+                        && (baseOngoing.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true);
                 }
                 if (!reusedTalent) {
                     for (const minion of oldBase?.minions ?? []) {
@@ -2647,6 +2660,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                                 && minion.controller === playerId
                                 && !state.standingStonesDoubleTalentMinionUid;
                             standingStonesHostMinionUid = minion.uid;
+                            consumedSeastarExtra =
+                                (attached.metadata?.mythicHorsesSeastarExtraTalent === true)
+                                && (attached.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true);
                             break;
                         }
                     }
@@ -2672,12 +2688,28 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     return {
                         ...base,
                         ongoingActions: base.ongoingActions.map(o => 
-                            o.uid === ongoingCardUid ? { ...o, talentUsed: true } : o
+                            o.uid === ongoingCardUid
+                                ? {
+                                    ...o,
+                                    talentUsed: true,
+                                    metadata: consumedSeastarExtra
+                                        ? { ...(o.metadata ?? {}), mythicHorsesSeastarExtraTalentConsumed: true }
+                                        : o.metadata,
+                                }
+                                : o
                         ),
                         minions: base.minions.map(m => ({
                             ...m,
                             attachedActions: m.attachedActions.map(a => 
-                                a.uid === ongoingCardUid ? { ...a, talentUsed: true } : a
+                                a.uid === ongoingCardUid
+                                    ? {
+                                        ...a,
+                                        talentUsed: true,
+                                        metadata: consumedSeastarExtra
+                                            ? { ...(a.metadata ?? {}), mythicHorsesSeastarExtraTalentConsumed: true }
+                                            : a.metadata,
+                                    }
+                                    : a
                             ),
                         })),
                     };

@@ -1,6 +1,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type { TableCard } from '../foundation';
-import { getFantasyRealmsDiscardEndThreshold } from '../foundation';
+import { getFantasyRealmsBaseHandLimit, getFantasyRealmsDiscardEndThreshold } from '../foundation';
 import type { FantasyRealmsCore, FantasyRealmsPlayerState } from './types';
 
 const HIDDEN_HAND_CARD_ID_PREFIX = '__fantasyrealms_hidden_hand__';
@@ -21,11 +21,13 @@ function createHiddenCard(id: string): TableCard {
 
 function shouldRevealAllHands(state: FantasyRealmsCore): boolean {
     if (state.playerIds.length === 2) {
-        const allHandsFull = state.playerIds.every((playerId) => (state.players[playerId]?.hand.length ?? 0) >= 7);
+        const allHandsFull = state.playerIds.every((playerId) => (
+            (state.players[playerId]?.hand.length ?? 0) >= getFantasyRealmsBaseHandLimit(state.setupConfig)
+        ));
         return allHandsFull
-            && state.discardPile.length >= getFantasyRealmsDiscardEndThreshold(state.playerIds.length);
+            && state.discardPile.length >= getFantasyRealmsDiscardEndThreshold(state.playerIds.length, state.setupConfig);
     }
-    return state.discardPile.length >= getFantasyRealmsDiscardEndThreshold(state.playerIds.length);
+    return state.discardPile.length >= getFantasyRealmsDiscardEndThreshold(state.playerIds.length, state.setupConfig);
 }
 
 function maskPlayerHand(

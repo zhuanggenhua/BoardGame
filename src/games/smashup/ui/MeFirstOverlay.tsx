@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { SU_COMMANDS, type CardInstance, type SmashUpCommand, type SmashUpCore } from '../domain/types';
 import {
     canCardBePlayedInResponseWindowForMatchState,
@@ -82,45 +81,25 @@ export const MeFirstOverlay: React.FC<{
     const { t } = useTranslation('game-smashup');
     const reactionWindow = getSmashUpReactionWindowPresentation(G);
 
-    // `smashup_reaction_choose` 本身就是计分响应的中间承载语义，不应把这层提示弹窗隐藏掉。
     const currentInteraction = G.sys.interaction?.current;
-    const interactionSourceId = (currentInteraction?.data as { sourceId?: unknown } | undefined)?.sourceId;
-    const reactionPassOptionId = (() => {
-        if (interactionSourceId !== 'smashup_reaction_choose') return undefined;
-        const rawOptions = (currentInteraction?.data as { options?: unknown } | undefined)?.options;
-        if (!Array.isArray(rawOptions)) return undefined;
-        const option = rawOptions.find((entry) => {
-            if (!entry || typeof entry !== 'object') return false;
-            const candidate = entry as { id?: unknown; value?: { kind?: unknown; __emergency_skip__?: unknown } };
-            return candidate.id === 'pass'
-                || candidate.value?.kind === 'pass'
-                || candidate.id === '__emergency_skip__'
-                || candidate.value?.__emergency_skip__ === true;
-        }) as { id?: unknown } | undefined;
-        return typeof option?.id === 'string' ? option.id : undefined;
-    })();
     const handlePass = () => {
         onSelectCard(null);
-        if (interactionSourceId === 'smashup_reaction_choose' && currentInteraction?.id && reactionPassOptionId) {
-            dispatch(INTERACTION_COMMANDS.RESPOND, {
-                interactionId: currentInteraction.id,
-                optionId: reactionPassOptionId,
-            });
-            return;
-        }
         dispatch('RESPONSE_PASS');
     };
-    const hasInteraction = !!currentInteraction && interactionSourceId !== 'smashup_reaction_choose';
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
     // 支持 meFirst 和 afterScoring 两种窗口类型
     if (!reactionWindow) return null;
-    if (hasInteraction || hasLockedHiddenInteraction || pendingCard) return null;
+    if (hasLockedHiddenInteraction || pendingCard) return null;
 
     const currentResponderId = reactionWindow.activePlayerId;
     const isMyResponse = playerID === currentResponderId;
+    if (isMyResponse && !reactionWindow.showsPassWindow) return null;
     const core = G.core;
     const currentResponderName = playerNames?.[currentResponderId] ?? `P${Number(currentResponderId) + 1}`;
+
+    // 只要当前玩家已经有真实交互承接层，中央 Me First 壳层就必须退场，避免出现两个并列主入口。
+    if (isMyResponse && currentInteraction) return null;
 
     // 检查手牌中是否有可在当前响应窗口打出的行动卡或 beforeScoringPlayable 随从
     const myPlayer = playerID ? core.players[playerID] : undefined;
@@ -131,8 +110,32 @@ export const MeFirstOverlay: React.FC<{
     
     // 窗口标题
     const windowTitle = reactionWindow.windowType === 'afterScoring'
-        ? t('ui.after_scoring_title')
-        : t('ui.me_first_title');
+        ? t('ui.after_scoring_title', { defaultValue: '计分后响应' })
+        : t('ui.me_first_title', { defaultValue: 'Me First!' });
+
+    const progressDots = (
+        <div className="flex justify-center gap-2 mt-3" data-testid="me-first-progress">
+            {reactionWindow.responderQueue.map((pid, idx) => {
+                const isPassed = reactionWindow.passedPlayers.includes(pid);
+                const isCurrent = idx === reactionWindow.currentResponderIndex;
+                const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
+                return (
+                    <div
+                        key={pid}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 ${conf.bg} ${isCurrent ? 'ring-2 ring-amber-400 scale-125' : isPassed ? 'opacity-40' : ''
+                            }`}
+                        title={playerNames?.[pid] ?? `P${Number(pid) + 1}`}
+                    >
+                        {isPassed
+                            ? <CheckCircle size={12} strokeWidth={3} />
+                            : pid === playerID
+                                ? t('ui.you_badge', { defaultValue: '我' })
+                                : getCompactPlayerBadgeLabel(playerNames?.[pid] ?? `P${Number(pid) + 1}`, 2)}
+                    </div>
+                );
+            })}
+        </div>
+    );
 
     if (!isMyResponse) {
         return (
@@ -154,6 +157,7 @@ export const MeFirstOverlay: React.FC<{
                     <p className="text-sm font-bold text-slate-700 text-center" data-testid="me-first-status">
                         {t('ui.me_first_waiting', {
                             player: currentResponderName,
+                            defaultValue: '正在等待 {{player}} 响应...',
                         })}
                     </p>
                 </motion.div>
@@ -181,7 +185,7 @@ export const MeFirstOverlay: React.FC<{
                         {windowTitle}
                     </h3>
                     <p className="text-sm font-bold text-slate-600 mt-1" data-testid="me-first-status">
-                        {t('ui.me_first_your_turn')}
+                        {t('ui.me_first_your_turn', { defaultValue: '轮到你响应' })}
                     </p>
                 </div>
 
@@ -189,11 +193,11 @@ export const MeFirstOverlay: React.FC<{
                     {/* 提示：从手牌中选择可响应的卡牌或让过 */}
                     {hasRespondableCards ? (
                         <p className="text-xs text-center text-amber-700/80 font-medium">
-                            {t('ui.me_first_select_from_hand')}
+                            {t('ui.me_first_select_from_hand', { defaultValue: '从手牌中选择一张可响应的牌，或让过' })}
                         </p>
                     ) : (
                         <p className="text-xs text-center text-slate-600 font-medium">
-                            {t('ui.me_first_no_special')}
+                            {t('ui.me_first_no_special', { defaultValue: '你没有可打出的特殊战术卡' })}
                         </p>
                     )}
 
@@ -204,33 +208,12 @@ export const MeFirstOverlay: React.FC<{
                             onClick={handlePass}
                             data-testid="me-first-pass-button"
                         >
-                            {t('ui.me_first_pass')}
+                            {t('ui.me_first_pass', { defaultValue: '让过' })}
                         </GameButton>
                     </div>
                 </div>
 
-                {/* 响应进度 */}
-                <div className="flex justify-center gap-2 mt-3" data-testid="me-first-progress">
-                    {reactionWindow.responderQueue.map((pid, idx) => {
-                        const isPassed = reactionWindow.passedPlayers.includes(pid);
-                        const isCurrent = idx === reactionWindow.currentResponderIndex;
-                        const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
-                        return (
-                            <div
-                                key={pid}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 ${conf.bg} ${isCurrent ? 'ring-2 ring-amber-400 scale-125' : isPassed ? 'opacity-40' : ''
-                                    }`}
-                                title={playerNames?.[pid] ?? `P${Number(pid) + 1}`}
-                            >
-                                {isPassed
-                                    ? <CheckCircle size={12} strokeWidth={3} />
-                                    : pid === playerID
-                                        ? t('ui.you_badge')
-                                        : getCompactPlayerBadgeLabel(playerNames?.[pid] ?? `P${Number(pid) + 1}`, 2)}
-                            </div>
-                        );
-                    })}
-                </div>
+                {progressDots}
             </motion.div>
         </motion.div>
     );

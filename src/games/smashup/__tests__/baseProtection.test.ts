@@ -117,6 +117,14 @@ describe('base_beautiful_castle: 力量≥5 随从保护', () => {
         expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
     });
 
+    it('自己的效果不会被美丽城堡错误拦截', () => {
+        const state = makeState({ bases: [castleBase] });
+        const minion = castleBase.minions[0];
+        expect(isMinionProtected(state, minion, 0, '0', 'destroy')).toBe(false);
+        expect(isMinionProtected(state, minion, 0, '0', 'move')).toBe(false);
+        expect(isMinionProtected(state, minion, 0, '0', 'affect')).toBe(false);
+    });
+
     it('power<5 随从不受保护', () => {
         const state = makeState({ bases: [castleBase] });
         const minion = castleBase.minions[1]; // m_weak, power=3

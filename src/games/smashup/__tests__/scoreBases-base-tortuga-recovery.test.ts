@@ -1,10 +1,10 @@
 /**
  * scoreBases / base_tortuga 响应恢复合同。
  *
- * 锁定 `scoreBases -> Me First! -> base_tortuga afterScoring prompt -> 恢复到下个玩家 playCards`：
+ * 锁定 `scoreBases -> Me First! -> base_tortuga afterScoring prompt -> 留在 scoreBases 等待收尾`：
  * - 计分阶段应暂停等待亚军响应
- * - 响应后流程应恢复并完成基地替换
- * - 不应把 prompt 悬空带到后续阶段
+ * - 点选响应后应清掉当前 prompt，但清场/换基地仍留给 scoreBases 后续收尾
+ * - 不应把 prompt 悬空带到后续阶段，也不应在同一步里提前切到下个玩家
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -150,7 +150,7 @@ describe('scoreBases / base_tortuga 响应恢复', () => {
         };
     }
 
-    it('托尔图加 afterScoring prompt 应暂停计分链，并在响应后恢复到下个玩家 playCards', () => {
+    it('托尔图加 afterScoring prompt 应暂停计分链，并在响应后留在 scoreBases 等待后续收尾', () => {
         const runner = createRunner(createTortugaScoringSetup());
 
         const result = runner.run({
@@ -184,11 +184,13 @@ describe('scoreBases / base_tortuga 响应恢复', () => {
         expectSuccessfulResult(resolvePrompt, '响应托尔图加 prompt 失败');
 
         const resolvedState = resolvePrompt.finalState;
-        expect(resolvedState.sys.phase).toBe('playCards');
-        expect(resolvedState.core.currentPlayerIndex).toBe(1);
+        expect(resolvedState.sys.phase).toBe('scoreBases');
+        expect(resolvedState.core.currentPlayerIndex).toBe(0);
+        expect((resolvedState.sys as any).flowHalted).toBe(true);
         expectNoPrompt(resolvedState);
-        expect(resolvedState.core.bases[0].defId).toBe('base_castle_blood');
-        expect(resolvedState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['reserve_p1']);
-        expect(resolvedState.core.bases[1].minions).toHaveLength(0);
+        expect(resolvePrompt.events.map(event => event.type)).toEqual(['SYS_INTERACTION_RESOLVED']);
+        expect(resolvedState.core.bases[0].defId).toBe('base_tortuga');
+        expect(resolvedState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['tort_m0', 'tort_m1']);
+        expect(resolvedState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['reserve_p1']);
     });
 });

@@ -111,8 +111,12 @@ const PassiveActionButton: React.FC<{
         : action.type === 'drawCard'
             ? t(action.labelKey ?? 'passive.action.draw')
             : t(action.labelKey ?? action.descriptionKey);
-    const tokenCostLabel = action.tokenCost
-        ? `${action.tokenCost.amount} ${t(`tokens.${action.tokenCost.tokenId}.name`)}`
+    const tokenCosts = [
+        ...(action.tokenCost ? [action.tokenCost] : []),
+        ...(action.tokenCosts ?? []),
+    ];
+    const tokenCostLabel = tokenCosts.length > 0
+        ? tokenCosts.map(cost => `${cost.amount} ${t(`tokens.${cost.tokenId}.name`)}`).join(' + ')
         : null;
     const cpCostLabel = action.cpCost > 0 ? `${action.cpCost} CP` : null;
     const fullCostLabel = [cpCostLabel, tokenCostLabel].filter(Boolean).join(' + ') || t('passive.action.free');
