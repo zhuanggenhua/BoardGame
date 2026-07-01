@@ -31,6 +31,7 @@
 - 禁止用“共享槽位名看起来像”“旧英雄同名位置应该一样”“先按感觉映射，后面再审”来补录槽位；槽位合同必须由本英雄本图直出，不能靠猜。
 - 任何 `ui/abilitySlotMapping.ts` / `AbilityOverlays.tsx` 这类槽位消费链，必须能回指到该合同表；若合同表缺行、缺空槽、缺被动/防御槽说明，录入不得收口。
 - 只要用户反馈的是“某张卡的图和效果对不上”“怀疑枪手/忍者这类角色卡牌录入错了”“怀疑 atlas/索引用错”，必须先直接打开对应 `ability-cards` 主真相源里的完整单卡，再去看 `cards.ts`、`abilities.ts`、AI、日志或测试。没完成这步前，只能说“代码层暂未发现分叉”，不能裁定“不是录入错误”。
+- 对 Dice Throne 角色，`public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/ability-cards.webp` 或对应正式 atlas 永远是卡牌语义主真相源；`temp/dicethrone-intake/<hero>/ability-card-slots/*.webp` 之类临时裁片只能辅助读字，不能单独推翻正式 atlas 读法。
 
 ## 权威来源分工
 
@@ -169,15 +170,17 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 
 当前项目里 Dice Throne 已有角色专用裁图脚本时，优先复用或仿照：
 
+- `npm run dicethrone:intake:crops -- --hero <heroId> --source ability-cards --max-index <n>`
 - `scripts/games/dicethrone/assets/extract-dicethrone-gunslinger-crops.mjs`
 - `scripts/games/dicethrone/assets/extract-dicethrone-samurai-crops.mjs`
 
 强制补充：
 
 - `crops/ability-cards/` 默认只是真相源裁图，不自动等于运行时素材。
-- 只要是为了 OCR / 看清文字 / 看清局部版式额外做的拆分图、放大图、normalized preview，都必须进 `temp/`；禁止把这类后处理图继续放在 `public/assets/.../crops/**`
+- 只要是为了录入生成的裁图，不论只是普通几何裁切，还是额外做了 OCR / 放大 / normalized preview，都必须进 `temp/`；禁止把这类图继续放在 `public/assets/.../crops/**`、manifest 或 R2/CDN 上传链
 - 默认优先级永远是：
   - 能直接复用原 `ability-cards` atlas 的，继续走 atlas
+  - 录入时可以参考同源 `slot-xx.webp` 裁片；但正式 `ability-cards.webp` / 正式 atlas 的读法高于任何临时裁片，若两者冲突，先重切高清裁片再裁定
   - 如果核对图看起来像“一格里有两张”，先检查核对图是不是后处理产物或裁图参数错了，不能直接把它升级成 atlas 结论
   - 只有 atlas 合同被证伪且用户明确批准时，才允许升级 atlas 配置或正式单卡图方案
 - `previewRef` 可以指向两类正式资源：

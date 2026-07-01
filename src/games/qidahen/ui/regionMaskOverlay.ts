@@ -2,7 +2,7 @@ import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from './mapGra
 
 type OverlayRgba = readonly [number, number, number, number];
 
-export type RegionMaskOverlayToneKey = 'selected' | 'source' | 'dispatch' | 'hovered' | 'pending';
+export type RegionMaskOverlayToneKey = 'selected' | 'source' | 'dispatch' | 'hovered' | 'pending' | 'ming' | 'mongol' | 'jin' | 'neutral';
 
 type RegionMaskOverlayToneConfig = {
     fill: OverlayRgba;
@@ -17,6 +17,22 @@ type RegionMaskOverlayToneConfig = {
 };
 
 export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionMaskOverlayToneConfig> = {
+    ming: {
+        fill: [159, 52, 38, 28],
+        stroke: [159, 52, 38, 74],
+    },
+    mongol: {
+        fill: [105, 88, 44, 28],
+        stroke: [125, 107, 58, 70],
+    },
+    jin: {
+        fill: [71, 88, 128, 26],
+        stroke: [86, 103, 146, 68],
+    },
+    neutral: {
+        fill: [116, 100, 76, 22],
+        stroke: [126, 111, 92, 56],
+    },
     selected: {
         fill: [182, 53, 39, 86],
         stroke: [159, 52, 38, 244],

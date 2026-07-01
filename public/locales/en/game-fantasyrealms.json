@@ -127,19 +127,19 @@
   },
   "tutorial": {
     "steps": {
-      "setupOverview": "In Fantasy Realms, each player starts with seven cards. On your turn, you draw one card from the deck or take one card from the discard pile, then discard one card. The game ends when the center discard pile reaches 10 cards, and the highest score wins.",
-      "drawOverview": "Draw 1 card from the deck now.",
-      "drawFromDeck": "Click the draw button.",
-      "discardAfterDraw": "After drawing Mirage, this hand's combo becomes clearer, and Queen is not helping right now. Select Queen and discard it.",
-      "setupTakeCenter": "Now look at the other case: if the center already has the card you want, take it directly.",
+      "setupOverview": "Start by looking at your current hand.",
+      "drawOverview": "Your goal is to finish with the highest-scoring seven-card hand. On your turn, you either draw 1 card from the deck or take 1 card from the discard pile.",
+      "drawFromDeck": "Click the draw button now.",
+      "discardAfterDraw": "Queen is not helping this hand right now. Select Queen and discard it.",
+      "setupTakeCenter": "If the center already has the card you need, you can take it directly.",
       "takeCenterCard": "Bell Tower is in the center now, and it scores with the Candle in your hand. Select Bell Tower to take it.",
-      "discardAfterCenter": "Rainstorm does not help this group. Select Rainstorm and discard it.",
-      "setupScoreShowcase": "Now move into scoring.",
-      "scoreIntro": "Your total score is the base score of every active card, plus bonuses, minus penalties.",
-      "scoreCardDetails": "Hover or tap a card to inspect its base score and bonus effects.",
-      "scoreTotalReview": "Check the total score in the upper right to see how many points this hand earned.",
-      "endgameReview": "The final score is settled from this exact hand. Inspect a card to see how many points it actually contributes inside the finished combo.",
-      "finish": "That is the basic flow of Fantasy Realms. Try building an even higher-scoring hand."
+      "discardAfterCenter": "Now select Rainstorm and discard it.",
+      "setupScoreShowcase": "This hand is close to the endgame. Now look at how it scores.",
+      "scoreIntro": "This hand finishes at 198 points. Candle scoring with Bell Tower and a Wizard is the main reason this total climbs so high.",
+      "scoreCardDetails": "Hover or tap a card to inspect how that single card scores.",
+      "scoreTotalReview": "The upper-right total shows the final score for this hand.",
+      "endgameReview": "When the center discard pile reaches 10 cards, each player compares the final score of their seven-card hand. The highest score wins.",
+      "finish": "Now start a real game of Fantasy Realms."
     }
   },
   "error": {

@@ -132,6 +132,34 @@ function forceHumanOwnerSeat(seatControllers: Record<string, AiSeatController>):
     };
 }
 
+function fillNonOwnerSeatsWithAi(args: {
+    seatControllers: Record<string, AiSeatController>;
+    numPlayers: number;
+    gameManifest: GameManifestEntry;
+    difficulty: AiDifficultyLevel;
+    manualFactionSelection: boolean;
+    minimumActionDelayMs: number;
+    onlyMissingSeats?: boolean;
+}): Record<string, AiSeatController> {
+    const nextControllers = forceHumanOwnerSeat({ ...args.seatControllers });
+    for (let index = 1; index < args.numPlayers; index += 1) {
+        const playerId = String(index);
+        const currentController = nextControllers[playerId];
+        if (args.onlyMissingSeats && currentController) {
+            continue;
+        }
+        nextControllers[playerId] = currentController?.type && currentController.type !== 'human'
+            ? currentController
+            : getEnabledAiController(
+                args.gameManifest,
+                args.difficulty,
+                args.manualFactionSelection,
+                args.minimumActionDelayMs,
+            );
+    }
+    return nextControllers;
+}
+
 function countAiSeats(seatControllers: Record<string, AiSeatController>, numPlayers: number): number {
     let total = 0;
     for (let index = 0; index < numPlayers; index += 1) {
@@ -415,11 +443,21 @@ export const CreateRoomModal = ({
         const shouldManualFactionSelection = Object.values(nextSeatControllers).some(
             (controller) => isManualSetupSelectionEnabledForSeat(controller),
         );
+        const nextMinimumActionDelayMs = normalizeAiMinimumActionDelayMs(nextPreferences.minimumActionDelayMs)
+            ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
         const shouldEnableAi = initialPreferences
             ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0
             : false;
-        const nextMinimumActionDelayMs = normalizeAiMinimumActionDelayMs(nextPreferences.minimumActionDelayMs)
-            ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
+        const resolvedSeatControllers = shouldEnableAi
+            ? fillNonOwnerSeatsWithAi({
+                seatControllers: nextSeatControllers,
+                numPlayers: nextPreferences.numPlayers,
+                gameManifest,
+                difficulty: inferredDifficulty,
+                manualFactionSelection: shouldManualFactionSelection,
+                minimumActionDelayMs: nextMinimumActionDelayMs,
+            })
+            : nextSeatControllers;
 
         setRoomName('');
         setNumPlayers(nextPreferences.numPlayers);
@@ -430,7 +468,7 @@ export const CreateRoomModal = ({
         setAiMinimumActionDelayMs(nextMinimumActionDelayMs);
         setManualFactionSelection(shouldManualFactionSelection);
         setSeatControllers(applyAiMinimumActionDelay(
-            nextSeatControllers,
+            resolvedSeatControllers,
             nextPreferences.numPlayers,
             nextMinimumActionDelayMs,
         ));
@@ -498,6 +536,7 @@ export const CreateRoomModal = ({
     };
 
     const handlePlayerCountChange = (nextNumPlayers: number) => {
+        const previousNumPlayers = numPlayers;
         setNumPlayers(nextNumPlayers);
         setSetupSelections((current) => normalizeCreateRoomSetupSelections({
             gameManifest,
@@ -506,6 +545,17 @@ export const CreateRoomModal = ({
             setupSelections: current,
             isQidahenRoom,
         }));
+        if (enableAi && nextNumPlayers > previousNumPlayers) {
+            setSeatControllers((current) => fillNonOwnerSeatsWithAi({
+                seatControllers: current,
+                numPlayers: nextNumPlayers,
+                gameManifest,
+                difficulty: aiDifficulty,
+                manualFactionSelection,
+                minimumActionDelayMs: aiMinimumActionDelayMs,
+                onlyMissingSeats: true,
+            }));
+        }
     };
 
     const handleToggleAiEnabled = () => {
@@ -516,19 +566,14 @@ export const CreateRoomModal = ({
         setEnableAi((current) => {
             const nextEnabled = !current;
             if (nextEnabled) {
-                setSeatControllers((existing) => {
-                    const nextControllers = forceHumanOwnerSeat({ ...existing });
-                    const hasAiSeat = countAiSeats(nextControllers, numPlayers) > 0;
-                    if (!hasAiSeat && numPlayers > 1) {
-                        nextControllers['1'] = getEnabledAiController(
-                            gameManifest,
-                            aiDifficulty,
-                            manualFactionSelection,
-                            aiMinimumActionDelayMs,
-                        );
-                    }
-                    return nextControllers;
-                });
+                setSeatControllers((existing) => fillNonOwnerSeatsWithAi({
+                    seatControllers: existing,
+                    numPlayers,
+                    gameManifest,
+                    difficulty: aiDifficulty,
+                    manualFactionSelection,
+                    minimumActionDelayMs: aiMinimumActionDelayMs,
+                }));
                 return true;
             }
 

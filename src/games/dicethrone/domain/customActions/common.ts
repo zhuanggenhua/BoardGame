@@ -6,6 +6,7 @@
 import type {
     DiceThroneCore,
     DiceThroneEvent,
+    BonusDamageAddedEvent,
     CpChangedEvent,
     PendingInteraction,
     InteractionRequestedEvent,
@@ -23,7 +24,7 @@ import { findHeroCard } from '../../heroes';
 
 /** 通用 CP 获取：params.amount 指定数量 */
 function handleGainCp({ attackerId, sourceAbilityId, state, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
-    const params = (action as any).params;
+    const params = action.params as Record<string, unknown> | undefined;
     const amount = (params?.amount as number) || 0;
     if (amount <= 0) return [];
 
@@ -36,6 +37,28 @@ function handleGainCp({ attackerId, sourceAbilityId, state, timestamp, action }:
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as CpChangedEvent];
+}
+
+function handleAddAttackBonus({
+    attackerId,
+    sourceAbilityId,
+    timestamp,
+    action,
+}: CustomActionContext): DiceThroneEvent[] {
+    const params = action.params as Record<string, unknown> | undefined;
+    const amount = Math.max(0, Math.trunc((params?.amount as number) ?? 0));
+    if (amount <= 0 || !sourceAbilityId) return [];
+
+    return [{
+        type: 'BONUS_DAMAGE_ADDED',
+        payload: {
+            playerId: attackerId,
+            amount,
+            sourceCardId: sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as BonusDamageAddedEvent];
 }
 
 // ============================================================================
@@ -327,6 +350,9 @@ function handleResolveCardEffectsOnSelectedOpponent({
 export function registerCommonCustomActions(): void {
     // --- 资源相关 ---
     registerCustomActionHandler('gain-cp', handleGainCp, { categories: ['resource'] });
+    registerCustomActionHandler('common-add-attack-bonus', handleAddAttackBonus, {
+        categories: ['damage'],
+    });
 
     // --- 骰子相关：修改骰子数值 ---
     registerCustomActionHandler('modify-die-to-6', handleModifyDieTo6, {

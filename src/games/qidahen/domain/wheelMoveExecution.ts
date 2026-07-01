@@ -182,7 +182,7 @@ export const resolveQidahenWheelMoveExecuted = (
                     {
                         id: `log-wheel-diplomacy-${timestamp}`,
                         faction: currentFactionId,
-                        text: `${nextState.factions[currentFactionId].name} 轮盘进入外交/雇佣，从 ${diplomacySelection.sourceRegionName ?? '待选地区'} 出发，等待选择外交目标。`,
+                        text: `${nextState.factions[currentFactionId].name} 轮盘进入外交/雇佣，等待选择外交目标。`,
                     },
                     ...nextState.actionLog,
                 ].slice(0, 6),
@@ -226,7 +226,7 @@ export const resolveQidahenWheelMoveExecuted = (
                 {
                     id: `log-wheel-dispatch-${timestamp}`,
                     faction: currentFactionId,
-                    text: `${nextState.factions[currentFactionId].name} 轮盘进入进攻/调度，从 ${wheelDispatchSelection.sourceRegionName} 出发 · ${wheelDispatchSelection.movementProfileLabel}。`,
+                    text: `${nextState.factions[currentFactionId].name} 轮盘进入进攻/调度，等待选择目标 · ${wheelDispatchSelection.movementProfileLabel}。`,
                 },
                 ...nextState.actionLog,
             ].slice(0, 6),

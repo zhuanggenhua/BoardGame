@@ -38,7 +38,7 @@
 | 电能脉冲 III / 机械大军 | 下半区改为 1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害，并按当前拥有的机器人种类数再 +1 伤害 | `shock-bot-3-mechanical-army` + `artificer-mechanical-army` |
 | 超频运行 / 超频运行 II | 上半区可在伤害后发起“激活至多 2 个不同机器人”选择链，按基础 / 高级机器人 2 / 1 合成器成本结算，并支持提前跳过 | `artificer-activate-bots` + `overclock*` |
 | 电能脉冲 / 电能脉冲 III | 上半区可在伤害后发起“激活 1 个机器人”选择链；电能机器人追加 3 点攻击伤害，治疗机器人投骰治疗，纳米机器人引爆所有纳米爆弹 | `artificer-activate-bots` + `shock-bot*` |
-| 稍作调整 | 基础版防御掷 4：获得 1 合成器；只要投出电能就施加 1 纳米爆弹 | `artificer-tinker-defense` |
+| 稍作调整 | 基础版防御掷 4：每个齿轮获得 1 合成器；只要投出电能就施加 1 纳米爆弹 | `artificer-tinker-defense` |
 | 稍作调整 II | 防御掷 5；若投出 2 个扳手则反击 1；每个齿轮获得 1 合成器；每个电能施加 1 纳米爆弹 | `artificer-tinker-2-defense` |
 | 真本能量！ | 终极上半区可在 10 点伤害后发起“激活至多 2 个不同机器人”选择链，并正确收口攻击结算 | `maximum-power` + `artificer-activate-bots` |
 | 灵感突现 II / 从头构建 | 下半区改为 2 扳手 + 2 齿轮；可直接制造 1 个任意高级机器人，或把 1 个基础机器人升级为高级机器人，且不消耗合成器 | `eureka-2-build-from-scratch` |

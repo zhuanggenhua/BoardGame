@@ -773,6 +773,13 @@ test.describe('FantasyRealms live flow', () => {
                 player0Hand: 8,
                 discardCount: 1,
             });
+            await expect(page.getByTestId('fantasyrealms-live-center-selection-notice')).toBeVisible({ timeout: 1000 });
+            await expect(page.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toContainText('玩家1');
+
+            const takeDiscardSelectionPath = getEvidenceScreenshotPath(testInfo, '04-点击中央牌拿取后-待弃牌');
+            await mkdir(dirname(takeDiscardSelectionPath), { recursive: true });
+            await page.screenshot({ path: takeDiscardSelectionPath, fullPage: false });
+
             await expect(page.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'idle');
             await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
             await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
@@ -784,10 +791,6 @@ test.describe('FantasyRealms live flow', () => {
             const handSizeAfterTake = await getFirstHandCardSize(page);
             expect(Math.abs(handSizeAfterTake.width - handSizeBeforeTake.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(handSizeAfterTake.height - handSizeBeforeTake.height)).toBeLessThanOrEqual(2);
-
-            const takeDiscardSelectionPath = getEvidenceScreenshotPath(testInfo, '04-点击中央牌拿取后-待弃牌');
-            await mkdir(dirname(takeDiscardSelectionPath), { recursive: true });
-            await page.screenshot({ path: takeDiscardSelectionPath, fullPage: false });
         } finally {
             await context.close().catch(() => {});
         }
@@ -1389,6 +1392,7 @@ test.describe('FantasyRealms live flow', () => {
             await expect(liveTable).not.toHaveClass(/fr-live-table--early-draw/);
             await expect(liveHandZone).toHaveAttribute('data-motion', 'idle', { timeout: 2000 });
             await expect(liveCenterRow).toHaveAttribute('data-motion', 'idle');
+            await expect(page.locator('.fr-card-slot--live-center-placeholder')).toHaveCount(0);
 
             const sampleRects = async () => {
                 const handRects = await getLocatorRects(page, '.fr-card-button--live-hand');
@@ -1400,6 +1404,7 @@ test.describe('FantasyRealms live flow', () => {
             await page.waitForTimeout(900);
             await expect(liveHandZone).toHaveAttribute('data-motion', 'idle');
             await expect(liveCenterRow).toHaveAttribute('data-motion', 'idle');
+            await expect(page.locator('.fr-card-slot--live-center-placeholder')).toHaveCount(0);
             const secondSample = await sampleRects();
 
             expect(firstSample.handRects).toHaveLength(2);

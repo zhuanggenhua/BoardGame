@@ -547,6 +547,13 @@
     "noClient": "Game client not found",
     "noGame": "Game not found",
     "tutorialTitle": "Learning {{game}}",
+    "tutorialCatalog": {
+      "eyebrow": "Tutorial Catalog",
+      "title": "Choose a chapter first",
+      "description": "This game includes multiple tutorial chapters. Pick one before entering its real teaching flow.",
+      "recommended": "Recommended Start",
+      "enter": "Open Chapter"
+    },
     "matchTitle": "Playing {{game}}",
     "loadingResources": "Loading match resources...",
     "preparingMatch": "Preparing match...",

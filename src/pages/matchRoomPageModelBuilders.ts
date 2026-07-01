@@ -106,6 +106,9 @@ export function buildTutorialStageModel(args: {
 
     return {
         noTutorialText: tLobby('matchRoom.noTutorial'),
+        gameId,
+        tutorialId: stage.tutorialId,
+        tutorialCatalog: stage.tutorialCatalog,
         runtime: buildMatchRoomTutorialBoardRuntimeModel({
             gameId,
             stage,

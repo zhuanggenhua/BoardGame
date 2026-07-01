@@ -12,7 +12,9 @@ const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: st
     switch (step.id) {
         case 'move-entry':
             return core.turnPhase === 'dispatch-targeting';
+        case 'border-width':
         case 'battle-open':
+        case 'tactic-window':
         case 'battle-damage':
             return Boolean(core.pendingTargetAction);
         case 'retreat-and-defeat':
@@ -62,6 +64,67 @@ const wheelSharedCostStepValidator = (state: MatchState<unknown>, step: { id: st
     }
 };
 
+const wheelReclaimStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const targetRegion = core.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-24');
+    switch (step.id) {
+        case 'choose-move':
+            return core.turnPhase === 'action-window'
+                && core.actionWheelPosition === 'wheel-new-year'
+                && core.wheelActionUsed === false;
+        case 'result':
+        case 'finish':
+            return core.lastSeasonSummary?.title === '轮盘开垦'
+                && core.actionWheelPosition === 'wheel-reclaim'
+                && (targetRegion?.population ?? 0) >= 7;
+        default:
+            return true;
+    }
+};
+
+const wheelMilitaryFarmStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const targetRegion = core.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-24');
+    switch (step.id) {
+        case 'choose-move':
+            return core.turnPhase === 'action-window'
+                && core.actionWheelPosition === 'wheel-reclaim'
+                && core.wheelActionUsed === false;
+        case 'result':
+        case 'finish':
+            return core.lastSeasonSummary?.title === '轮盘军屯'
+                && core.actionWheelPosition === 'wheel-military-farm'
+                && (targetRegion?.troops ?? 0) >= 3
+                && core.factions.ming.handCount >= 5;
+        default:
+            return true;
+    }
+};
+
+const wheelRecruitTrainStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const targetRegion = core.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-24');
+    const artilleryTech = core.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech');
+    switch (step.id) {
+        case 'choose-move':
+            return (
+            core.turnPhase === 'action-window'
+            && core.actionWheelPosition === 'wheel-military-farm'
+            && core.wheelActionUsed === false
+            );
+        case 'result':
+        case 'finish':
+            return (
+                core.lastSeasonSummary?.title === '轮盘征兵/训练'
+                && core.actionWheelPosition === 'wheel-recruit-train'
+                && (targetRegion?.troops ?? 0) >= 4
+                && (artilleryTech?.level ?? 0) >= 2
+            );
+        default:
+            return true;
+    }
+};
+
 const armamentUpgradeStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     const artilleryTech = core.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech');
@@ -69,15 +132,44 @@ const armamentUpgradeStepValidator = (state: MatchState<unknown>, step: { id: st
         case 'choose-action':
             return core.turnPhase === 'action-window'
                 && core.factionActionUsed === false
-                && (artilleryTech?.level ?? 0) === 1;
+                && (artilleryTech?.level ?? 0) === 1
+                && core.payment.required === 0;
         case 'pay-cards':
             return core.selectedActionId === 'upgrade-armament'
                 && core.factionActionUsed === false
-                && (artilleryTech?.level ?? 0) === 1;
+                && (artilleryTech?.level ?? 0) === 1
+                && core.payment.required === 2;
         case 'result':
         case 'finish':
             return core.lastSeasonSummary?.title === '升级军备'
                 && (artilleryTech?.level ?? 0) === 2;
+        default:
+            return true;
+    }
+};
+
+const eventActionStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const recruitTargetRegion = core.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-25');
+    switch (step.id) {
+        case 'choose-action':
+            return core.turnPhase === 'action-window'
+                && core.selectedActionId === 'khan-edict'
+                && core.factionActionUsed === false
+                && core.payment.required === 0;
+        case 'pay-cards':
+            return core.turnPhase === 'action-window'
+                && core.selectedActionId === 'khan-edict'
+                && core.payment.required === 1
+                && core.factionActionUsed === false;
+        case 'choose-effect':
+            return core.turnPhase === 'khan-edict-choice'
+                && core.selectedActionId === 'khan-edict';
+        case 'result':
+            return core.lastSeasonSummary?.title === '大汗令箭';
+        case 'finish':
+            return core.lastSeasonSummary?.title === '大汗令箭'
+                && (recruitTargetRegion?.troops ?? 0) === 4;
         default:
             return true;
     }
@@ -132,6 +224,7 @@ const yearAndCharactersStepValidator = (state: MatchState<unknown>, step: { id: 
         case 'advance-new-year':
             return core.turnPhase !== 'season-resolution'
                 && core.lastSeasonSummary?.title === '年中结算';
+        case 'new-year-tribute':
         case 'new-year-maintenance':
             return core.turnPhase === 'season-resolution';
         case 'new-year-attrition':
@@ -149,10 +242,22 @@ const koreaSpecialStepValidator = (state: MatchState<unknown>, step: { id: strin
     switch (step.id) {
         case 'korea-region':
         case 'hanseong-vp':
-            return core.koreaDeckCount >= 0;
+            return core.turnPhase === 'season-resolution'
+                && core.actionWheelPosition === 'wheel-new-year'
+                && core.koreaDeckCount >= 0;
         case 'water-limit':
+            return core.turnPhase === 'season-resolution'
+                && core.actionWheelPosition === 'wheel-new-year';
+        case 'new-year-maintenance':
+            return core.turnPhase === 'season-resolution'
+                && core.actionWheelPosition === 'wheel-new-year';
+        case 'korea-attrition':
+            return Boolean(core.lastSeasonSummary)
+                && core.lastSeasonSummary.title === '新年结算';
         case 'shanhaiguan':
-            return core.regions.length > 0;
+        case 'finish':
+            return Boolean(core.lastSeasonSummary)
+                && core.lastSeasonSummary.title === '新年结算';
         default:
             return true;
     }
@@ -176,8 +281,25 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'opening-entry',
-            content: 'game-qidahen:tutorial.basic.steps.openingEntry',
+            id: 'wheel-first',
+            content: 'game-qidahen:tutorial.basic.steps.wheelFirst',
+            highlightTarget: 'qidahen-action-wheel',
+            position: 'right',
+            infoStep: true,
+        },
+        {
+            id: 'wheel-move',
+            content: 'game-qidahen:tutorial.basic.steps.wheelMove',
+            highlightTarget: 'qidahen-wheel-move-move-1-free',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
+            allowedTargets: ['move-1-free'],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
+        },
+        {
+            id: 'after-wheel',
+            content: 'game-qidahen:tutorial.basic.steps.afterWheel',
             highlightTarget: 'qidahen-actions-zone',
             position: 'right',
             infoStep: true,
@@ -188,16 +310,6 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             highlightTarget: 'qidahen-hand-zone',
             position: 'top',
             infoStep: true,
-        },
-        {
-            id: 'select-region',
-            content: 'game-qidahen:tutorial.basic.steps.selectRegion',
-            highlightTarget: 'qidahen-map-target-song-jin',
-            position: 'bottom',
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-            allowedTargets: ['song-jin'],
-            advanceOnEvents: [{ type: 'REGION_SELECTED', match: { regionId: 'song-jin' } }],
         },
         {
             id: 'pick-action',
@@ -233,14 +345,11 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'wheel-move',
-            content: 'game-qidahen:tutorial.basic.steps.wheelMove',
-            highlightTarget: 'qidahen-wheel-move-move-1-free',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
-            allowedTargets: ['move-1-free'],
-            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
+            id: 'wheel-action',
+            content: 'game-qidahen:tutorial.basic.steps.wheelAction',
+            highlightTarget: 'qidahen-turn-banner',
+            position: 'top',
+            infoStep: true,
         },
         {
             id: 'finish',
@@ -272,8 +381,22 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
         },
         {
+            id: 'border-width',
+            content: 'game-qidahen:tutorial.attackAndBattle.steps.borderWidth',
+            highlightTarget: 'qidahen-raid-intent',
+            position: 'left',
+            infoStep: true,
+        },
+        {
             id: 'battle-open',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.battleOpen',
+            highlightTarget: 'qidahen-raid-intent',
+            position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'tactic-window',
+            content: 'game-qidahen:tutorial.attackAndBattle.steps.tacticWindow',
             highlightTarget: 'qidahen-raid-intent',
             position: 'left',
             infoStep: true,
@@ -454,6 +577,120 @@ const QIDAHEN_WHEEL_SHARED_COST_TUTORIAL: TutorialManifest = {
     ],
 };
 
+const QIDAHEN_WHEEL_RECLAIM_TUTORIAL: TutorialManifest = {
+    id: 'wheel-reclaim',
+    stepValidator: wheelReclaimStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.wheelReclaim.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-move',
+            content: 'game-qidahen:tutorial.wheelReclaim.steps.chooseMove',
+            highlightTarget: 'qidahen-wheel-move-move-1-free',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
+            allowedTargets: ['move-1-free'],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
+        },
+        {
+            id: 'result',
+            content: 'game-qidahen:tutorial.wheelReclaim.steps.result',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.wheelReclaim.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+        },
+    ],
+};
+
+const QIDAHEN_WHEEL_MILITARY_FARM_TUTORIAL: TutorialManifest = {
+    id: 'wheel-military-farm',
+    stepValidator: wheelMilitaryFarmStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.wheelMilitaryFarm.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-move',
+            content: 'game-qidahen:tutorial.wheelMilitaryFarm.steps.chooseMove',
+            highlightTarget: 'qidahen-wheel-move-move-1-free',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
+            allowedTargets: ['move-1-free'],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
+        },
+        {
+            id: 'result',
+            content: 'game-qidahen:tutorial.wheelMilitaryFarm.steps.result',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.wheelMilitaryFarm.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+        },
+    ],
+};
+
+const QIDAHEN_WHEEL_RECRUIT_TRAIN_TUTORIAL: TutorialManifest = {
+    id: 'wheel-recruit-train',
+    stepValidator: wheelRecruitTrainStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-move',
+            content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.chooseMove',
+            highlightTarget: 'qidahen-wheel-move-move-1-free',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
+            allowedTargets: ['move-1-free'],
+            advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
+        },
+        {
+            id: 'result',
+            content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.result',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.wheelRecruitTrain.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+        },
+    ],
+};
+
 const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
     id: 'armament-upgrade',
     stepValidator: armamentUpgradeStepValidator,
@@ -468,11 +705,11 @@ const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
         {
             id: 'choose-action',
             content: 'game-qidahen:tutorial.armamentUpgrade.steps.chooseAction',
-            highlightTarget: 'qidahen-action-upgrade-armament',
+            highlightTarget: 'tutorial-ming-artillery-tech-upgrade',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
-            allowedTargets: ['upgrade-armament'],
+            allowedTargets: ['tutorial-ming-artillery-tech-upgrade'],
             advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'upgrade-armament' } }],
         },
         {
@@ -497,6 +734,68 @@ const QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL: TutorialManifest = {
             position: 'center',
             infoStep: true,
             showMask: true,
+        },
+    ],
+};
+
+const QIDAHEN_EVENT_ACTION_TUTORIAL: TutorialManifest = {
+    id: 'event-action',
+    stepValidator: eventActionStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.eventAction.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+            viewAs: '1',
+        },
+        {
+            id: 'choose-action',
+            content: 'game-qidahen:tutorial.eventAction.steps.chooseAction',
+            highlightTarget: 'tutorial-mongol-khan-edict-event',
+            position: 'left',
+            requireAction: true,
+            viewAs: '1',
+            allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
+            allowedTargets: ['tutorial-mongol-khan-edict-event'],
+            advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'khan-edict' } }],
+        },
+        {
+            id: 'pay-cards',
+            content: 'game-qidahen:tutorial.eventAction.steps.payCards',
+            highlightTarget: 'qidahen-hand-zone',
+            position: 'top',
+            requireAction: true,
+            viewAs: '1',
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
+            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'khan-edict' } }],
+        },
+        {
+            id: 'choose-effect',
+            content: 'game-qidahen:tutorial.eventAction.steps.chooseEffect',
+            highlightTarget: 'qidahen-khan-edict-selection',
+            position: 'left',
+            requireAction: true,
+            viewAs: '1',
+            allowedCommands: [INTERACTION_COMMANDS.RESPOND],
+            allowedTargets: ['recruit-train'],
+        },
+        {
+            id: 'result',
+            content: 'game-qidahen:tutorial.eventAction.steps.result',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+            viewAs: '1',
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.eventAction.steps.finish',
+            position: 'center',
+            infoStep: true,
+            showMask: true,
+            viewAs: '1',
         },
     ],
 };
@@ -619,6 +918,13 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'WHEEL_MOVE_EXECUTED', match: { moveId: 'move-1-free' } }],
         },
         {
+            id: 'new-year-tribute',
+            content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearTribute',
+            highlightTarget: 'qidahen-korea-zone',
+            position: 'top',
+            infoStep: true,
+        },
+        {
             id: 'new-year-maintenance',
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearMaintenance',
             highlightTarget: 'qidahen-fortification-maintenance-choice-auto-pay',
@@ -628,10 +934,6 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             allowManualSkip: true,
             allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
             allowedTargets: ['auto-pay'],
-            advanceOnEvents: [
-                { type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'auto-pay' } },
-                { type: 'FORTIFICATION_MAINTENANCE_RESOLVED', match: { choiceId: 'auto-pay' } },
-            ],
         },
         {
             id: 'new-year-attrition',
@@ -685,7 +987,7 @@ const QIDAHEN_KOREA_SPECIAL_TUTORIAL: TutorialManifest = {
         {
             id: 'hanseong-vp',
             content: 'game-qidahen:tutorial.koreaSpecial.steps.hanseongVp',
-            highlightTarget: 'qidahen-korea-zone',
+            highlightTarget: 'qidahen-player-float',
             position: 'left',
             infoStep: true,
         },
@@ -697,9 +999,26 @@ const QIDAHEN_KOREA_SPECIAL_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
+            id: 'new-year-maintenance',
+            content: 'game-qidahen:tutorial.koreaSpecial.steps.newYearMaintenance',
+            highlightTarget: 'qidahen-fortification-maintenance-choice-auto-pay',
+            position: 'left',
+            requireAction: true,
+            allowManualSkip: true,
+            allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
+            allowedTargets: ['auto-pay'],
+        },
+        {
+            id: 'korea-attrition',
+            content: 'game-qidahen:tutorial.koreaSpecial.steps.koreaAttrition',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
             id: 'shanhaiguan',
             content: 'game-qidahen:tutorial.koreaSpecial.steps.shanhaiguan',
-            highlightTarget: 'qidahen-map-layer',
+            highlightTarget: 'qidahen-season-summary',
             position: 'top',
             infoStep: true,
         },
@@ -724,6 +1043,7 @@ const QIDAHEN_TUTORIALS: TutorialCollection = {
         'attack-and-battle': {
             titleKey: 'tutorial.attackAndBattle.title',
             descriptionKey: 'tutorial.attackAndBattle.description',
+            nextTutorialId: 'retreat-and-rout',
             manifest: QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL,
         },
         'siege-and-occupation': {
@@ -734,21 +1054,54 @@ const QIDAHEN_TUTORIALS: TutorialCollection = {
         'retreat-and-rout': {
             titleKey: 'tutorial.retreatAndRout.title',
             descriptionKey: 'tutorial.retreatAndRout.description',
+            hiddenFromCatalog: true,
             manifest: QIDAHEN_RETREAT_AND_ROUT_TUTORIAL,
         },
         'wheel-shared-cost': {
             titleKey: 'tutorial.wheelSharedCost.title',
             descriptionKey: 'tutorial.wheelSharedCost.description',
+            nextTutorialId: 'wheel-reclaim',
             manifest: QIDAHEN_WHEEL_SHARED_COST_TUTORIAL,
+        },
+        'wheel-reclaim': {
+            titleKey: 'tutorial.wheelReclaim.title',
+            descriptionKey: 'tutorial.wheelReclaim.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'wheel-military-farm',
+            manifest: QIDAHEN_WHEEL_RECLAIM_TUTORIAL,
+        },
+        'wheel-military-farm': {
+            titleKey: 'tutorial.wheelMilitaryFarm.title',
+            descriptionKey: 'tutorial.wheelMilitaryFarm.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'wheel-recruit-train',
+            manifest: QIDAHEN_WHEEL_MILITARY_FARM_TUTORIAL,
+        },
+        'wheel-recruit-train': {
+            titleKey: 'tutorial.wheelRecruitTrain.title',
+            descriptionKey: 'tutorial.wheelRecruitTrain.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'armament-upgrade',
+            manifest: QIDAHEN_WHEEL_RECRUIT_TRAIN_TUTORIAL,
         },
         'armament-upgrade': {
             titleKey: 'tutorial.armamentUpgrade.title',
             descriptionKey: 'tutorial.armamentUpgrade.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'event-action',
             manifest: QIDAHEN_ARMAMENT_UPGRADE_TUTORIAL,
+        },
+        'event-action': {
+            titleKey: 'tutorial.eventAction.title',
+            descriptionKey: 'tutorial.eventAction.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'diplomacy-and-hire',
+            manifest: QIDAHEN_EVENT_ACTION_TUTORIAL,
         },
         'diplomacy-and-hire': {
             titleKey: 'tutorial.diplomacy.title',
             descriptionKey: 'tutorial.diplomacy.description',
+            hiddenFromCatalog: true,
             manifest: QIDAHEN_DIPLOMACY_HIRE_TUTORIAL,
         },
         'year-and-characters': {

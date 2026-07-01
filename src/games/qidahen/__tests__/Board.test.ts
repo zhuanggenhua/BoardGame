@@ -70,7 +70,6 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-turn-banner"',
     'data-tutorial-id="qidahen-turn-banner"',
     'testId="qidahen-top-action-banner"',
-    'data-testid={`qidahen-action-state-${action.id}`}',
     'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
@@ -134,7 +133,6 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'dispatch(QIDAHEN_COMMANDS.RESOLVE_MA_SHI_TRADE_CHOICE',
     'dispatch(QIDAHEN_COMMANDS.RESOLVE_KHAN_EDICT_CHOICE',
     'dispatch(QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT',
-    'dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE',
     'dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: choiceId })',
     'WheelMoveChoiceButton',
     'QIDAHEN_MAP_REGION_SHAPES =',
@@ -206,7 +204,7 @@ describe('Qidahen Board 结构门禁', () => {
     it('剧本待决项出现时，动作区只保留阻断提示，真正交互在单独 setup 覆层里完成', () => {
         expect(boardSource).toContain('局内剧本投票尚未完成');
         expect(boardSource).toContain('当前只可处理剧本介绍与投票');
-        expect(boardSource).toContain('先选一张剧本介绍卡，再点确认投票');
+        expect(boardSource).toContain('选择剧本介绍卡后确认投票');
         expect(boardSource).toContain('剧本待决项尚未确认');
         expect(boardSource).toContain('当前只可处理剧本选择');
         expect(boardSource).toContain('确认人物');
@@ -221,17 +219,29 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘成为唯一下一步时，横幅只做提示，真正交互继续由轮盘本体热区承接', () => {
         expect(boardSource).toContain('showTopWheelPrompt');
+        expect(boardSource).toContain("const showTopWheelPrompt = primaryStageMode === 'wheel'");
+        expect(boardSource).toContain('tutorialInfoStepActive');
+        expect(boardSource).toContain('!tutorialInfoStepActive');
+        expect(boardSource).toContain('!actionPaymentPreviewVisible');
+        expect(boardSource).toContain('khanEdictSelection == null');
         expect(boardSource).toContain('emphasized={wheelStageAvailable}');
         expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
-        expect(boardSource).toContain('选择轮盘行动');
+        expect(boardSource).toContain('轮盘行动');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
-        expect(boardSource).toContain("defaultValue: '本次轮盘行动待执行'");
+        expect(boardSource).toContain("defaultValue: '选择轮盘格'");
         expect(boardSource).toContain('data-testid={`qidahen-wheel-move-target-${choice.id}`}');
         expect(boardSource).toContain('data-tutorial-id={`qidahen-wheel-move-${choice.id}`}');
+        expect(boardSource).toContain('directExecuteOnClick={!isTouchLikeWheelInteraction}');
+        expect(boardSource).toContain("const mediaQuery = safeMatchMedia('(hover: none), (pointer: coarse), (any-pointer: coarse)');");
+        expect(boardSource).toContain('return subscribeMediaQueryChange(mediaQuery, update);');
+        expect(boardSource).toContain('if (directExecuteOnClick) {');
         expect(boardSource).toContain('canActivateMove={(moveId, selected) => {');
-        expect(boardSource).toContain('? isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)');
-        expect(boardSource).toContain(': isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);');
+        expect(boardSource).toContain('return isTouchLikeWheelInteraction');
+        expect(boardSource).toContain('? (selected');
+        expect(boardSource).toContain('isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)');
+        expect(boardSource).toContain('isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId))');
+        expect(boardSource).toContain(': isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);');
         expect(boardSource).not.toContain('qidahen-wheel-next-step-choice-${choice.id}');
         expect(boardSource).not.toContain('onSelectChoice={executeWheelMove}');
         expect(boardSource).not.toContain('发亮的绿色格就是下一步');
@@ -244,6 +254,29 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-tutorial-id="qidahen-actions-zone"');
         expect(boardSource).toContain('data-tutorial-id="qidahen-hand-zone"');
         expect(boardSource).toContain('data-tutorial-id="qidahen-turn-banner"');
+        expect(boardSource).toContain('data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}');
+    });
+
+    it('已识别手牌会把教程和正式动作入口挂到单牌本体，而不是只能退回右侧按钮', () => {
+        expect(boardSource).toContain("const getQidahenHandCardTutorialTargetId = (card: QidahenHandCard): string => (");
+        expect(boardSource).toContain("card.cardDefId ?? card.id");
+        expect(boardSource).toContain("const getQidahenDirectActionIdForHandCard = (card: QidahenHandCard): string | null => {");
+        expect(boardSource).toContain("if (card.cardKind === 'armament' && card.armamentId) {");
+        expect(boardSource).toContain("return 'upgrade-armament';");
+        expect(boardSource).toContain("if (card.cardKind === 'event' && card.cardDefId?.includes('khan-edict')) {");
+        expect(boardSource).toContain("return 'khan-edict';");
+        expect(boardSource).toContain("const getQidahenDirectHandActionIdsForFaction = (");
+        expect(boardSource).toContain(".map((card) => getQidahenDirectActionIdForHandCard(card))");
+        expect(boardSource).toContain("if (directHandActionIds.has(selectedAction.id)) {");
+        expect(boardSource).toContain("return '打出手牌';");
+        expect(boardSource).toContain("const visibleActionChoices = core.actionChoices.filter((action) => !directHandActionIds.has(action.id));");
+        expect(boardSource).toContain('{visibleActionChoices.map((action) => (');
+        expect(boardSource).toContain('onPreviewActionFromHandCard: (card: QidahenHandCard) => void;');
+        expect(boardSource).toContain('const selectableForDirectHandAction = !actionPaymentPreviewVisible');
+        expect(boardSource).toContain('getQidahenDirectActionIdForHandCard(card) != null');
+        expect(boardSource).toContain('? () => onPreviewActionFromHandCard(card)');
+        expect(boardSource).toContain('const previewActionFromHandCard = React.useCallback((card: QidahenHandCard) => {');
+        expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card));');
     });
 
     it('Board 会接教程桥、终局遮罩和游戏音频，而不是继续缺少新游戏共用壳层能力', () => {
@@ -259,18 +292,36 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('一级行动入口会收口为顶部横幅与直达动作按钮，不再保留右侧说明式步骤卡', () => {
         expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
-        expect(boardSource).toContain("return selectedAction ? selectedAction.label : '选择一项行动';");
-        expect(boardSource).toContain("return '选择一项行动';");
+        expect(boardSource).toContain("return selectedAction ? selectedAction.label : '手牌行动';");
+        expect(boardSource).toContain("return '选择手牌行动';");
         expect(boardSource).toContain("return '选择行动目标';");
-        expect(boardSource).toContain(": '选择轮盘行动';");
+        expect(boardSource).toContain(": '选择轮盘格';");
         expect(boardSource).toContain('showTopFactionPrompt');
+        expect(boardSource).toContain("const showTopFactionPrompt = primaryStageMode === 'faction'");
         expect(boardSource).toContain('qidahen-top-action-banner');
-        expect(boardSource).toContain("t('board.actions.primaryActionSelectPrompt', { defaultValue: '选择一项行动' })");
+        expect(boardSource).toContain('!tutorialInfoStepActive');
+        expect(boardSource).toContain('!actionPaymentPreviewVisible');
+        expect(boardSource).toContain('const isQidahenGaoDiTargetSelectionActive = (');
+        expect(boardSource).toContain('const mapRegionSelectionDecisionActive = isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection)');
+        expect(boardSource).toContain('if (!mapRegionSelectionDecisionActive) {');
+        expect(boardSource).toContain("t('board.actions.primaryActionSelectPrompt', { defaultValue: '手牌行动' })");
         expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
-        expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
-        expect(boardSource).toContain('qidahen-action-state-${action.id}');
-        expect(boardSource).toContain("t('board.actions.state.current', { defaultValue: '当前' })");
-        expect(boardSource).not.toContain("t('board.actions.state.available', { defaultValue: '可选' })");
+        expect(boardSource).toContain('hint={selectedPrimaryAction ? primaryActionEntryText : undefined}');
+        expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}'");
+        expect(boardSource).toContain("defaultValue: '选择建军方式'");
+        expect(boardSource).toContain("defaultValue: '选择建军数量'");
+        expect(boardSource).toContain("defaultValue: '选择执行效果'");
+        expect(boardSource).toContain("defaultValue: '处理外交与雇佣'");
+        expect(boardSource).toContain("defaultValue: '当前目标步骤 · {{targetHint}}'");
+        expect(boardSource).toContain("defaultValue: '选择进攻目标 · 可攻 {{count}} 处'");
+        expect(boardSource).toContain("defaultValue: '{{targetRegionName}} · {{defenderLabel}}'");
+        expect(boardSource).not.toContain("defaultValue: '先选建军方式；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
+        expect(boardSource).not.toContain("defaultValue: '先选建军数量；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
+        expect(boardSource).not.toContain("defaultValue: '先选执行效果；需要时再改来源地区（当前聚焦 {{sourceRegionName}}）'");
+        expect(boardSource).not.toContain("defaultValue: '从 {{sourceRegionName}} 出发 · 雇佣落在 {{hireRegionName}}'");
+        expect(boardSource).not.toContain("defaultValue: '从 {{sourceRegionName}} 出发 · 可攻 {{count}} 处'");
+        expect(boardSource).not.toContain("defaultValue: '正在查看 {{targetRegionName}} · {{targetHint}}'");
+        expect(boardSource).not.toContain("defaultValue: '进攻 {{targetRegionName}} · 守方 {{defenderLabel}}'");
         expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
         expect(boardSource).not.toContain('qidahen-primary-action-next-step');
         expect(boardSource).not.toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
@@ -279,10 +330,24 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('地图可点');
         expect(boardSource).not.toContain('当前主入口');
         expect(boardSource).not.toContain('所有绿色底部都可点击');
+        expect(boardSource).not.toContain("t('board.actions.state.current', { defaultValue: '当前' })");
         expect(boardSource).not.toContain("defaultValue: '可选' })");
         expect(boardSource).not.toContain('先选中下方一级势力行动');
         expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
         expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');
+        expect(boardSource).not.toContain('primaryStageHint === primaryStageHeadline ? primaryStageHeadline :');
+        expect(boardSource).not.toContain('const visuallySelected = selected && engaged;');
+        expect(boardSource).not.toContain("badgeLabel: '已锁定'");
+        expect(boardSource).toContain('focused={core.selectedActionId === action.id}');
+        expect(boardSource).toContain('const engagedActionId = core.confirmedActionId;');
+        expect(boardSource).toContain("hint: gaoDiTargetSelectionActive ? '选择目标' : '先选要弃掉的手牌'");
+        expect(boardSource).toContain("badgeLabel: gaoDiTargetSelectionActive ? '选择目标' : '弃牌'");
+        expect(boardSource).toContain("candidateSummary: gaoDiTargetSelectionActive");
+        expect(boardSource).toContain(": '等待弃牌'");
+        expect(boardSource).toContain('mapSelectionGuide.candidates.length > 0');
+        expect(boardSource).toContain("title: gaoDiTargetSelectionActive");
+        expect(boardSource).toContain("candidates: gaoDiTargetSelectionActive ? core.gaoDiDispatchSelection.candidates.map");
+        expect(boardSource).not.toContain("action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const");
     });
 
     it('右侧动作按钮在 hover 或 focus 时必须显示可见功能提示，而不是只依赖原生 title', () => {
@@ -372,7 +437,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';");
         expect(boardSource).toContain('{showFortificationStrip ? (');
         expect(boardSource).toContain('data-testid="qidahen-fortification-strip"');
-        expect(boardSource).toContain('!suppressPassiveActionContext && core.lastSeasonSummary ? (');
+        expect(boardSource).toContain('!suppressPassiveActionContext && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (');
         expect(boardSource).toContain('data-testid="qidahen-season-summary"');
     });
 
@@ -391,7 +456,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('compactRegionTip={compactMapRegionTip}');
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;");
         expect(boardSource).toContain("const focusedRegion = hoveredRegion ?? displaySelectedRegion;");
-        expect(boardSource).toContain('if (compactRegionTip && core.selectedRegionId) {');
+        expect(boardSource).toContain('if (compactRegionTip && core.explicitRegionId) {');
+        expect(boardSource).toContain('const selectedRegion = core.explicitRegionId');
+        expect(boardSource).toContain('data-map-selected={core.explicitRegionId ?? \'\'}');
         expect(boardSource).toContain('{!compactRegionTip && activePassageSummary ? (');
         expect(boardSource).toContain('{!compactRegionTip && activeMovementPreview ? (');
         expect(boardSource).toContain('{!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (');
@@ -408,8 +475,23 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row"');
+        expect(boardSource).toContain('data-testid={`qidahen-hand-card-magnify-${card.id}`}');
+        expect(boardSource).toContain('onMagnifyCard?.({');
         expect(boardSource).toContain('hover:-translate-y-[18px]');
         expect(boardSource).toContain('marginLeft: stackIndex === 0 ? 0 : overlapPx');
+    });
+
+    it('纪年卡与手牌都要接入局内放大查看，而不是只能靠缩略图硬读', () => {
+        expect(boardSource).toContain("overlayTestId=\"qidahen-card-magnify-overlay\"");
+        expect(boardSource).toContain('<QidahenCardMagnifyOverlay target={magnifyTarget} locale={locale} onClose={() => setMagnifyTarget(null)} />');
+        expect(boardSource).toContain('onMagnify={setMagnifyTarget}');
+        expect(boardSource).toContain('closeLabel="关闭查看"');
+    });
+
+    it('棋盘壳层与地图区域遮罩要保留正式底色和常驻势力浅色归属，不再露白底', () => {
+        expect(boardSource).toContain("const QIDAHEN_STAGE_BG = '#c8a970';");
+        expect(boardSource).toContain('background: QIDAHEN_STAGE_BG,');
+        expect(boardSource).toContain('applyTone(region.id, region.controller);');
     });
 
     it('地图 army token 会拆成可旋转的方块棋子，非部队图片 token 才保留数量徽标', () => {

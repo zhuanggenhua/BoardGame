@@ -1107,9 +1107,20 @@ async function preloadImageWithResult(src: string, timeoutMs?: number): Promise<
             removePreloadLink(src);
             resolve(ok);
         };
+        const settleFromDimensions = () => {
+            if (img.naturalWidth > 0) {
+                cacheLoadedImage(src, img);
+                finish(true);
+                return true;
+            }
+            return false;
+        };
         const timer = timeoutMs != null
             ? setTimeout(() => {
                 console.debug(`[AssetLoader] 图片加载超时（${timeoutMs}ms），跳过: ${src}`);
+                if (settleFromDimensions()) {
+                    return;
+                }
                 // 超时 ≠ 失败：浏览器的 Image 请求仍在后台继续。
                 // 注册后台回调，加载完成后自动更新缓存并通知 UI 组件。
                 img.onload = () => {
@@ -1132,6 +1143,9 @@ async function preloadImageWithResult(src: string, timeoutMs?: number): Promise<
             finish(false);
         };
         img.src = src;
+        if (img.complete && settleFromDimensions()) {
+            if (timer) clearTimeout(timer);
+        }
     });
 }
 

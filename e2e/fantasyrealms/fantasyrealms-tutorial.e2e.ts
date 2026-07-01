@@ -69,8 +69,14 @@ test.describe('FantasyRealms tutorial flow', () => {
             await expect(page.getByTestId('fantasyrealms-live-deck')).toBeVisible({ timeout: 60000 });
             await waitForTestHarness(page);
 
+            await waitForTutorialStep(page, 'setup-overview');
+            const setupOverviewPath = getEvidenceScreenshotPath(testInfo, '01-先看当前手牌');
+            await mkdir(dirname(setupOverviewPath), { recursive: true });
+            await page.screenshot({ path: setupOverviewPath, fullPage: true });
+
+            await clickNext(page);
             await waitForTutorialStep(page, 'draw-overview');
-            const openingPath = getEvidenceScreenshotPath(testInfo, '01-开场先讲目标与基础回合');
+            const openingPath = getEvidenceScreenshotPath(testInfo, '02-开场讲目标与基础回合');
             await mkdir(dirname(openingPath), { recursive: true });
             await page.screenshot({ path: openingPath, fullPage: true });
 
@@ -99,14 +105,14 @@ test.describe('FantasyRealms tutorial flow', () => {
             await drawButton.click();
 
             await waitForTutorialStep(page, 'discard-after-draw');
-            const drawPath = getEvidenceScreenshotPath(testInfo, '02-摸牌后直接按组合收益弃掉王后');
+            const drawPath = getEvidenceScreenshotPath(testInfo, '03-摸牌后直接按组合收益弃掉王后');
             await mkdir(dirname(drawPath), { recursive: true });
             await page.screenshot({ path: drawPath, fullPage: true });
 
             await expect(getLiveHandCardButton(page, 'leader-queen')).toBeVisible({ timeout: 15000 });
             await getLiveHandCardButton(page, 'leader-queen').click();
             await waitForTutorialStep(page, 'take-center-card');
-            const centerDecisionPath = getEvidenceScreenshotPath(testInfo, '03-中央有钟塔时直接拿取');
+            const centerDecisionPath = getEvidenceScreenshotPath(testInfo, '04-中央有钟塔时直接拿取');
             await mkdir(dirname(centerDecisionPath), { recursive: true });
             await page.screenshot({ path: centerDecisionPath, fullPage: true });
 
@@ -115,7 +121,7 @@ test.describe('FantasyRealms tutorial flow', () => {
 
             await waitForTutorialStep(page, 'discard-after-center');
             await expect(getLiveHandCardButton(page, 'weather-rainstorm')).toBeVisible({ timeout: 15000 });
-            const discardActionPath = getEvidenceScreenshotPath(testInfo, '04-拿到钟塔后弃掉暴风雨');
+            const discardActionPath = getEvidenceScreenshotPath(testInfo, '05-拿到钟塔后弃掉暴风雨');
             await mkdir(dirname(discardActionPath), { recursive: true });
             await page.screenshot({ path: discardActionPath, fullPage: true });
 
@@ -123,7 +129,7 @@ test.describe('FantasyRealms tutorial flow', () => {
             await waitForTutorialStep(page, 'score-intro');
             await expect(page.getByTestId('fantasyrealms-live-score-total')).toContainText('198', { timeout: 15000 });
 
-            const scorePath = getEvidenceScreenshotPath(testInfo, '05-进入计分并看到总分结果');
+            const scorePath = getEvidenceScreenshotPath(testInfo, '06-进入计分并看到总分结果');
             await mkdir(dirname(scorePath), { recursive: true });
             await page.screenshot({ path: scorePath, fullPage: true });
 
@@ -131,7 +137,7 @@ test.describe('FantasyRealms tutorial flow', () => {
             await waitForTutorialStep(page, 'score-card-details');
             await expect(page.locator('[data-tutorial-id="fantasyrealms-card-hand-flame-candle"]')).toBeVisible({ timeout: 15000 });
             await expect(page.locator('[data-tutorial-id="fantasyrealms-live-hand-zone"]')).not.toHaveCSS('outline-style', 'solid');
-            const scoreCardDetailsPath = getEvidenceScreenshotPath(testInfo, '06-查看单张牌的基础分与加分效果');
+            const scoreCardDetailsPath = getEvidenceScreenshotPath(testInfo, '07-查看单张牌的基础分与加分效果');
             await mkdir(dirname(scoreCardDetailsPath), { recursive: true });
             await page.screenshot({ path: scoreCardDetailsPath, fullPage: true });
 
@@ -140,13 +146,13 @@ test.describe('FantasyRealms tutorial flow', () => {
             await clickNext(page);
             await waitForTutorialStep(page, 'endgame-review');
             await expect(page.getByTestId('fantasyrealms-live-endgame')).toBeVisible({ timeout: 15000 });
+            await clickNext(page);
+            await waitForTutorialStep(page, 'finish');
 
-            const finishPath = getEvidenceScreenshotPath(testInfo, '07-终局排名与教程结语收口');
+            const finishPath = getEvidenceScreenshotPath(testInfo, '08-终局排名与教程结语收口');
             await mkdir(dirname(finishPath), { recursive: true });
             await page.screenshot({ path: finishPath, fullPage: true });
 
-            await clickNext(page);
-            await waitForTutorialStep(page, 'finish');
             await clickNext(page);
             await expect(page.locator('[data-tutorial-step]')).toHaveCount(0, { timeout: 15000 });
         } finally {

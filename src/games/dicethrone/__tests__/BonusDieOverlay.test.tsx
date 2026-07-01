@@ -387,10 +387,9 @@ describe('BonusDieOverlay', () => {
     it('多骰重掷后只应让被选中的那颗骰子播放重投动画', async () => {
         vi.useFakeTimers();
 
-        const readRollingStates = () => screen.getAllByTestId('dice-3d').map((die) => {
-            const cube = die.firstElementChild as HTMLElement | null;
-            return cube?.className.includes('animate-dice3d-bonus-tumble') ?? false;
-        });
+        const readRollingStates = () => screen.getAllByTestId('bonus-die-spotlight-content').map((node) =>
+            node.getAttribute('data-is-rolling') === 'true'
+        );
 
         const { rerender } = render(
             <BonusDieOverlay
@@ -431,10 +430,7 @@ describe('BonusDieOverlay', () => {
     it('单骰特写在结果相同但 presentationKey 变化时也应重播滚动动画', async () => {
         vi.useFakeTimers();
 
-        const readIsRolling = () => {
-            const cube = screen.getByTestId('dice-3d').firstElementChild as HTMLElement | null;
-            return cube?.className.includes('animate-dice3d-bonus-tumble') ?? false;
-        };
+        const readIsRolling = () => screen.getByTestId('bonus-die-spotlight-content').getAttribute('data-is-rolling') === 'true';
 
         const { rerender } = render(
             <BonusDieOverlay
@@ -464,6 +460,28 @@ describe('BonusDieOverlay', () => {
         );
 
         expect(readIsRolling()).toBe(true);
+    });
+
+    it('spotlight 奖励骰应使用 2D 骰面节点，而不是 3D 骰模', async () => {
+        vi.useFakeTimers();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                value={4}
+                face="lotus"
+                presentationKey="bonus-face-2d"
+                autoCloseDelay={10000}
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(1200);
+        });
+
+        expect(screen.getByTestId('bonus-die-spotlight-face')).toBeInTheDocument();
+        expect(screen.queryByTestId('dice-3d')).toBeNull();
     });
 
     it('奖励骰展示态特写应保留首次点击保护，0.3 秒后才允许关闭', () => {

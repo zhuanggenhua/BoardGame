@@ -222,7 +222,7 @@ export function QidahenPregameScenarioGate({
                             {t('setup.pregameGate.title', { defaultValue: '先确认当前剧本的开局人物与军备' })}
                         </h1>
                         <p className="mt-2 max-w-[620px] text-sm leading-6 text-[#d9c9a6]">
-                            {t('setup.pregameGate.description', { defaultValue: '正式棋盘只保留紧凑剧本摘要。这里确认完本局剧本后，再进入地图主视图。' })}
+                            {t('setup.pregameGate.description', { defaultValue: '正式棋盘只保留紧凑剧本摘要；当前页确认本局剧本后进入地图主视图。' })}
                         </p>
                     </div>
                     <div

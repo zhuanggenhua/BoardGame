@@ -6,6 +6,8 @@ const REQUIRED_LITERAL_IDS = [
     'betrayal-character-select-screen',
     'betrayal-character-selection-grid',
     'betrayal-character-confirm',
+    'betrayal-current-traits',
+    'betrayal-moves-remaining',
     'betrayal-inventory-zone',
     'betrayal-room-board',
     'betrayal-reference-entry',

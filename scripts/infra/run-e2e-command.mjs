@@ -33,6 +33,9 @@ const PREFLIGHT_CACHE_PATH = path.resolve(process.cwd(), '.tmp', 'e2e-preflight-
 const CLEANUP_CACHE_TTL_MS = 90_000;
 const ENCODING_CACHE_TTL_MS = 90_000;
 const SAFETY_CACHE_TTL_MS = 90_000;
+const PREFLIGHT_WRITE_RETRYABLE_CODES = new Set(['EBUSY', 'EPERM']);
+const PREFLIGHT_WRITE_RETRY_COUNT = 6;
+const PREFLIGHT_WRITE_RETRY_DELAY_MS = 50;
 
 function createE2ESessionId() {
     return `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -238,6 +241,10 @@ function ensurePreflightCacheDir() {
     fs.mkdirSync(path.dirname(PREFLIGHT_CACHE_PATH), { recursive: true });
 }
 
+function sleepSync(ms) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 function readPreflightCache() {
     try {
         return JSON.parse(fs.readFileSync(PREFLIGHT_CACHE_PATH, 'utf-8'));
@@ -248,7 +255,23 @@ function readPreflightCache() {
 
 function writePreflightCache(cache) {
     ensurePreflightCacheDir();
-    fs.writeFileSync(PREFLIGHT_CACHE_PATH, JSON.stringify(cache, null, 2));
+    let lastError = null;
+    for (let attempt = 0; attempt < PREFLIGHT_WRITE_RETRY_COUNT; attempt += 1) {
+        try {
+            fs.writeFileSync(PREFLIGHT_CACHE_PATH, JSON.stringify(cache, null, 2));
+            return;
+        } catch (error) {
+            lastError = error;
+            if (!PREFLIGHT_WRITE_RETRYABLE_CODES.has(error?.code) || attempt === PREFLIGHT_WRITE_RETRY_COUNT - 1) {
+                throw error;
+            }
+            sleepSync(PREFLIGHT_WRITE_RETRY_DELAY_MS);
+        }
+    }
+
+    if (lastError) {
+        throw lastError;
+    }
 }
 
 function getPreflightCacheKey(mode, options = {}) {

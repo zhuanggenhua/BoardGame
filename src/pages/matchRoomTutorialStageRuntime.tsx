@@ -6,6 +6,7 @@ import { LoadingScreen } from '../components/system/LoadingScreen';
 import { TutorialDispatchBridge } from './matchRoomBridges';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QidahenPregameScenarioGate } from '../games/qidahen/QidahenPregameScenarioGate';
+import { useDebug } from '../contexts/DebugContext';
 
 type MatchRoomBoardComponent = ComponentType<GameBoardProps>;
 
@@ -24,13 +25,14 @@ export type MatchRoomTutorialBoardRuntimeModel = {
 export function MatchRoomTutorialBoardRuntime({ runtime }: { runtime: MatchRoomTutorialBoardRuntimeModel }) {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { playerID } = useDebug();
 
     const renderBoard = (numPlayers: number, setupData?: Record<string, unknown>) => (
         <LocalGameProvider
             config={runtime.engineConfig}
             numPlayers={numPlayers}
             seed={`tutorial-${runtime.gameId}`}
-            playerId="0"
+            playerId={playerID ?? '0'}
             setupData={setupData}
             onCommandRejected={runtime.onCommandRejected}
         >

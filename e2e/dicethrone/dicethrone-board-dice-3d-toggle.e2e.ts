@@ -1,5 +1,8 @@
+import { mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
+import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
 const BOARD_DICE_3D_STORAGE_KEY = 'dicethrone:boardDice3dEnabled';
 
@@ -41,6 +44,27 @@ async function openFabSettingsPanel(page: Page) {
     return settingsPanel;
 }
 
+async function closeFabSettingsPanel(page: Page) {
+    const settingsPanel = page.getByTestId('fab-panel-settings');
+    if (!(await settingsPanel.isVisible().catch(() => false))) return;
+    const settingsButton = page.locator('[data-fab-id="settings"]');
+    await expect(settingsButton).toBeVisible({ timeout: 5000 });
+    await settingsButton.click();
+    await expect(settingsPanel).not.toBeVisible({ timeout: 5000 });
+}
+
+async function saveBoardDiceStageScreenshot(
+    page: Page,
+    name: string,
+    testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
+) {
+    const stage = page.getByTestId('dicethrone-board-dice-stage');
+    await expect(stage).toBeVisible({ timeout: 5000 });
+    const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await stage.screenshot({ path: screenshotPath });
+}
+
 test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
     test('默认关闭，打开后切到棋盘 3D 骰子，重投时不是原地静止', async ({ page, game }, testInfo) => {
         await page.addInitScript((storageKey) => {
@@ -51,7 +75,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             }));
         }, BOARD_DICE_3D_STORAGE_KEY);
 
-        await game.openTestGame('dicethrone');
+        await game.openTestGame('dicethrone', { playerID: '0' });
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
@@ -116,7 +140,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
 
         const settingsPanel = await openFabSettingsPanel(page);
         await expect(settingsPanel.getByText(/骰子显示|Dice Display/i)).toBeVisible({ timeout: 5000 });
-        const board3dToggle = settingsPanel.locator('button').filter({ hasText: /棋盘内 3D 骰子|Board 3D Dice/i }).first();
+        const board3dToggle = settingsPanel.getByRole('switch', { name: /棋盘内 3D 骰子|Board 3D Dice/i }).first();
         await expect(board3dToggle).toBeVisible({ timeout: 5000 });
         await board3dToggle.click();
 
@@ -125,6 +149,10 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         }, { timeout: 5000 }).toBe('true');
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
+        await saveBoardDiceStageScreenshot(page, '02a-切到棋盘3D骰台-局部', testInfo);
+        await closeFabSettingsPanel(page);
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(150);
 
         await game.screenshot('02-打开设置后-切到棋盘内3D骰子', testInfo);
 
@@ -138,55 +166,75 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).first();
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
 
-        const movementPromise = page.evaluate(async () => {
-            const readPositions = () => [0, 1].map((dieId) => {
+        const readProjectedRects = async () => {
+            return await page.evaluate(() => [0, 1].map((dieId) => {
                 const node = document.querySelector(`[data-testid="die-button-${dieId}"]`) as HTMLElement | null;
                 if (!node) {
-                    return { dieId, x: null, y: null };
+                    return {
+                        dieId,
+                        x: null,
+                        y: null,
+                        width: null,
+                        height: null,
+                        rotateX: null,
+                        rotateY: null,
+                        rotateZ: null,
+                    };
                 }
                 const rect = node.getBoundingClientRect();
                 return {
                     dieId,
                     x: rect.left,
                     y: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                    rotateX: Number(node.dataset.rotateX ?? Number.NaN),
+                    rotateY: Number(node.dataset.rotateY ?? Number.NaN),
+                    rotateZ: Number(node.dataset.rotateZ ?? Number.NaN),
                 };
-            });
-
-            const samples: Array<{
-                t: number;
-                positions: Array<{ dieId: number; x: number | null; y: number | null }>;
-            }> = [];
-            const startedAt = performance.now();
-
-            while ((performance.now() - startedAt) < 450) {
-                samples.push({
-                    t: performance.now() - startedAt,
-                    positions: readPositions(),
-                });
-                await new Promise((resolve) => setTimeout(resolve, 50));
-            }
-
-            return samples;
-        });
+            }));
+        };
+        const baselineRects = await readProjectedRects();
 
         await confirmButton.click();
-        const movementSamples = await movementPromise;
-
-        const movementDetected = movementSamples.some((sample, index) => {
-            if (index === 0) return false;
-            const previous = movementSamples[index - 1];
-            return sample.positions.some((position, posIndex) => {
-                const prevPosition = previous.positions[posIndex];
-                if (position.x === null || position.y === null || prevPosition?.x === null || prevPosition?.y === null) {
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await saveBoardDiceStageScreenshot(page, '03a-确认重投后-3D骰子位移中-局部', testInfo);
+        await game.screenshot('03-确认重投后-3D骰子发生位移弹跳', testInfo);
+        await expect.poll(async () => {
+            const currentRects = await readProjectedRects();
+            return currentRects.some((position, posIndex) => {
+                const baselinePosition = baselineRects[posIndex];
+                if (
+                    position.x === null
+                    || position.y === null
+                    || position.width === null
+                    || position.height === null
+                    || Number.isNaN(position.rotateX)
+                    || Number.isNaN(position.rotateY)
+                    || Number.isNaN(position.rotateZ)
+                    || baselinePosition?.x === null
+                    || baselinePosition?.y === null
+                    || baselinePosition?.width === null
+                    || baselinePosition?.height === null
+                    || Number.isNaN(baselinePosition?.rotateX ?? Number.NaN)
+                    || Number.isNaN(baselinePosition?.rotateY ?? Number.NaN)
+                    || Number.isNaN(baselinePosition?.rotateZ ?? Number.NaN)
+                ) {
                     return false;
                 }
-                return Math.abs(position.x - prevPosition.x) > 1.5
-                    || Math.abs(position.y - prevPosition.y) > 1.5;
+                return Math.abs(position.x - baselinePosition.x) > 1.2
+                    || Math.abs(position.y - baselinePosition.y) > 1.2
+                    || Math.abs(position.width - baselinePosition.width) > 1.2
+                    || Math.abs(position.height - baselinePosition.height) > 1.2
+                    || Math.abs(position.rotateX - baselinePosition.rotateX) > 0.05
+                    || Math.abs(position.rotateY - baselinePosition.rotateY) > 0.05
+                    || Math.abs(position.rotateZ - baselinePosition.rotateZ) > 0.05;
             });
-        });
-
-        expect(movementDetected).toBe(true);
-        await game.screenshot('03-确认重投后-3D骰子发生位移弹跳', testInfo);
+        }, {
+            timeout: 1500,
+            intervals: [50, 80, 120, 180],
+        }).toBe(true);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -198,5 +246,128 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         }, { timeout: 5000 }).toMatchObject({
             interactionKind: null,
         });
+    });
+
+    test('对方投掷阶段我方响应改骰时，关闭 3D 仍走右侧骰盘，开启后才切到棋盘骰台', async ({ page, game }, testInfo) => {
+        await page.addInitScript((storageKey) => {
+            localStorage.removeItem(storageKey);
+        }, BOARD_DICE_3D_STORAGE_KEY);
+
+        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { CP: 2, HP: 50 },
+            },
+            currentPlayer: '1',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'moon_elf', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                dice: [
+                    { id: 0, value: 2, isKept: false },
+                    { id: 1, value: 3, isKept: false },
+                    { id: 2, value: 4, isKept: false },
+                    { id: 3, value: 5, isKept: false },
+                    { id: 4, value: 1, isKept: false },
+                ],
+                pendingAttack: {
+                    attackerId: '1',
+                    targetId: '0',
+                    sourceAbilityId: 'smash',
+                    baseDamage: 4,
+                    totalDamage: 4,
+                    bonusDamage: 0,
+                    unblockable: false,
+                },
+            },
+            sys: {
+                responseWindow: {
+                    current: {
+                        id: 'board-dice-response-window',
+                        windowType: 'afterRollConfirmed',
+                        sourceId: 'smash',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                        actionTakenThisRound: false,
+                        consecutivePassRounds: 0,
+                    },
+                },
+                interaction: {
+                    current: {
+                        id: 'dt-dice-modify-response-window',
+                        kind: 'multistep-choice',
+                        playerId: '0',
+                        title: 'interaction.selectDieToSet',
+                        description: null,
+                        options: [],
+                        data: {
+                            title: 'interaction.selectDieToSet',
+                            sourceId: 'card-play-six',
+                            maxSteps: 1,
+                            initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
+                            allowedDieIds: [0, 1, 2, 3, 4],
+                            completedDieIds: [],
+                            meta: {
+                                dtType: 'modifyDie',
+                                dieModifyConfig: { mode: 'set', targetValue: 6 },
+                                selectCount: 1,
+                                diceOwnerId: '1',
+                                targetOpponentDice: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
+                responderId: state?.sys?.responseWindow?.current?.responderQueue?.[0] ?? null,
+                activePlayerId: state?.core?.activePlayerId ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            interactionKind: 'multistep-choice',
+            interactionPlayerId: '0',
+            responderId: '0',
+            activePlayerId: '1',
+        });
+
+        await expect.poll(async () => {
+            return await page.evaluate((storageKey) => localStorage.getItem(storageKey), BOARD_DICE_3D_STORAGE_KEY);
+        }, { timeout: 3000 }).not.toBe('true');
+
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toHaveCount(0);
+        await expect(page.locator('[data-tutorial-id="dice-tray"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'true');
+        await game.screenshot('04-对方投掷阶段-关闭3D仍走右侧骰盘', testInfo);
+
+        const settingsPanel = await openFabSettingsPanel(page);
+        await expect(settingsPanel.getByText(/骰子显示|Dice Display/i)).toBeVisible({ timeout: 5000 });
+        const board3dToggle = settingsPanel.getByRole('switch', { name: /棋盘内 3D 骰子|Board 3D Dice/i }).first();
+        await expect(board3dToggle).toBeVisible({ timeout: 5000 });
+        await board3dToggle.click();
+
+        await expect.poll(async () => {
+            return await page.evaluate((storageKey) => localStorage.getItem(storageKey), BOARD_DICE_3D_STORAGE_KEY);
+        }, { timeout: 5000 }).toBe('true');
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
+        await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'true');
+        await saveBoardDiceStageScreenshot(page, '05a-对方响应改骰-棋盘3D骰台-局部', testInfo);
+        await closeFabSettingsPanel(page);
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(150);
+        await game.screenshot('05-对方投掷阶段-开启3D后切到棋盘骰台', testInfo);
     });
 });

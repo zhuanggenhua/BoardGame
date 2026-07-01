@@ -8,7 +8,13 @@
 import { type BrowserContext, type Page } from '@playwright/test';
 
 export const DEFAULT_FATAL_FRONTEND_ERROR_PATTERN =
-    /Maximum update depth exceeded|Too many re-renders/i;
+    /Maximum update depth exceeded|Too many re-renders|Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed|Expected a JavaScript module script|is not a valid JavaScript MIME type|ChunkLoadError|Loading chunk/i;
+
+const VITE_ERROR_OVERLAY_SELECTOR = 'vite-error-overlay';
+
+function normalizeFrontendDiagnosticText(value: string): string {
+    return value.replace(/\s+/g, ' ').trim();
+}
 
 // ============================================================================
 // 浏览器上下文初始化（注入 localStorage / 拦截请求）
@@ -213,10 +219,10 @@ export const waitForMatchAvailable = async (
 
 /** 移除 Vite 错误覆盖层 */
 export const dismissViteOverlay = async (page: Page) => {
-    await page.evaluate(() => {
-        const overlay = document.querySelector('vite-error-overlay');
+    await page.evaluate((selector) => {
+        const overlay = document.querySelector(selector);
         if (overlay) overlay.remove();
-    });
+    }, VITE_ERROR_OVERLAY_SELECTOR);
 };
 
 /** 挂载页面错误收集器（pageerror + console.error） */
@@ -224,8 +230,11 @@ export const attachPageDiagnostics = (page: Page) => {
     const existing = (page as Page & { __e2eDiagnostics?: { errors: string[] } })
         .__e2eDiagnostics;
     if (existing) return existing;
-    const diagnostics = { errors: [] as string[] };
-    (page as Page & { __e2eDiagnostics?: { errors: string[] } }).__e2eDiagnostics =
+    const diagnostics = {
+        errors: [] as string[],
+        page,
+    };
+    (page as Page & { __e2eDiagnostics?: typeof diagnostics }).__e2eDiagnostics =
         diagnostics;
     page.on('pageerror', (err) =>
         diagnostics.errors.push(`pageerror:${err.stack ?? err.message}`),
@@ -253,9 +262,33 @@ export const attachPageDiagnostics = (page: Page) => {
     return diagnostics;
 };
 
+async function readViteOverlayMessage(page: Page): Promise<string | null> {
+    if (page.isClosed()) {
+        return null;
+    }
+
+    try {
+        const overlayText = await page.evaluate((selector) => {
+            const overlay = document.querySelector(selector) as HTMLElement | null;
+            if (!overlay) return null;
+            const raw = overlay.shadowRoot?.textContent ?? overlay.textContent ?? '';
+            return raw || null;
+        }, VITE_ERROR_OVERLAY_SELECTOR);
+
+        if (!overlayText) {
+            return null;
+        }
+
+        const normalized = normalizeFrontendDiagnosticText(overlayText);
+        return normalized.length > 0 ? normalized : null;
+    } catch {
+        return null;
+    }
+}
+
 /** 断言页面未出现致命前端渲染错误 */
-export const assertNoFatalFrontendErrors = (
-    diagnosticsEntries: Array<{ label: string; diagnostics: { errors: string[] } }>,
+export const assertNoFatalFrontendErrors = async (
+    diagnosticsEntries: Array<{ label: string; diagnostics: { errors: string[]; page: Page } }>,
     pattern: RegExp = DEFAULT_FATAL_FRONTEND_ERROR_PATTERN,
 ) => {
     const matched = diagnosticsEntries.flatMap(({ label, diagnostics }) =>
@@ -264,11 +297,21 @@ export const assertNoFatalFrontendErrors = (
             .map((entry) => `[${label}] ${entry}`),
     );
 
-    if (matched.length > 0) {
+    const overlayMatched: string[] = [];
+    for (const { label, diagnostics } of diagnosticsEntries) {
+        const overlayMessage = await readViteOverlayMessage(diagnostics.page);
+        if (!overlayMessage) {
+            continue;
+        }
+        overlayMatched.push(`[${label}] vite-error-overlay:${overlayMessage}`);
+    }
+
+    if (matched.length > 0 || overlayMatched.length > 0) {
         throw new Error(
             [
                 '检测到致命前端渲染错误：',
                 ...matched,
+                ...overlayMatched,
             ].join('\n'),
         );
     }

@@ -106,9 +106,12 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
             .filter((card) => card.faction === 'ming')
             .slice(0, 4)
             .map((card) => card.id);
+        if (mingCardIds.length < 4) {
+            return core;
+        }
 
         core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 行动窗口';
+        core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
         core.handCards = core.handCards.map((card) => {
             if (card.id === mingCardIds[0]) {
                 return {
@@ -145,6 +148,26 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
             }
             return card;
         });
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = false;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = '';
+        core.confirmedActionId = null;
+        core.selectedPaymentCardIds = [];
+        core.lastSeasonSummary = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.wheelDispatchProgress = null;
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
         return core;
     },
 });
@@ -163,6 +186,7 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedWheelMoveId = 'move-1-free';
         core.selectedRegionId = 'city-region-16';
         core.selectedActionId = '';
+        core.confirmedActionId = null;
         core.pendingTargetAction = null;
         core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
@@ -385,6 +409,148 @@ const createWheelSharedCostTutorialSetup = (): QidahenTutorialPreset => ({
     },
 });
 
+const createWheelReclaimTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-new-year';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = '';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    population: 6,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
+const createWheelMilitaryFarmTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-reclaim';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = '';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    population: 7,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
+const createWheelRecruitTrainTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-military-farm';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = '';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.factions.ming.armaments = core.factions.ming.armaments.map((armament) => (
+            armament.id === 'artillery-tech'
+                ? { ...armament, level: 2 }
+                : armament
+        ));
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    population: 7,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('ming-wheel-artillery-lv1', '大明火炮', 'ming', 'artillery', 1, 1),
+                    ],
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
 const createArmamentUpgradeTutorialSetup = (): QidahenTutorialPreset => ({
     numPlayers: 3,
     setupSelections: createDefaultSelections('post-sarhu-1619'),
@@ -404,6 +570,7 @@ const createArmamentUpgradeTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedWheelMoveId = 'move-1-free';
         core.selectedRegionId = 'city-region-24';
         core.selectedActionId = 'upgrade-armament';
+        core.confirmedActionId = null;
         core.selectedPaymentCardIds = [];
         core.recruitSelection = null;
         core.maShiTradeSelection = null;
@@ -416,7 +583,7 @@ const createArmamentUpgradeTutorialSetup = (): QidahenTutorialPreset => ({
         core.pendingTargetAction = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
-        core.payment = { required: 2, selected: 0, prompt: '需弃 2 / 已选 0' };
+        core.payment = { required: 0, selected: 0, prompt: '需弃 0 / 已选 0' };
         core.handCards = core.handCards.map((card) => {
             if (card.id === mingCardIds[0]) {
                 return {
@@ -447,6 +614,95 @@ const createArmamentUpgradeTutorialSetup = (): QidahenTutorialPreset => ({
             }
             return card;
         });
+        return core;
+    },
+});
+
+const createEventActionTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        const mongolCardIds = core.handCards
+            .filter((card) => card.faction === 'mongol')
+            .slice(0, 3)
+            .map((card) => card.id);
+
+        core.currentPlayer = '1';
+        core.turnLabel = '第 1 轮 · 蒙古 · 行动窗口';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = false;
+        core.actionWheelPosition = 'wheel-hire';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-25';
+        core.selectedActionId = 'khan-edict';
+        core.confirmedActionId = null;
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.maShiTradeSelection = null;
+        core.khanEdictSelection = null;
+        core.diplomacyProgress = null;
+        core.handLimitDiscardSelection = null;
+        core.sunYuanhuaTechSelection = null;
+        core.gaoDiDispatchSelection = null;
+        core.wheelDispatchProgress = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.payment = { required: 0, selected: 0, prompt: '需弃 0 / 已选 0' };
+        core.actionChoices = [
+            { id: 'upgrade-armament', label: '升级军备', cost: 2, detail: '弃 1 张手牌，选择一项已开发军备进行升级。' },
+            { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+            { id: 'ma-shi-trade', label: '马市贸易', cost: 1, detail: '弃 1 张手牌，大明选择建立 1-3 个部队，蒙古抽 2 倍张数的手牌。' },
+            { id: 'khan-edict', label: '大汗令箭', cost: 1, detail: '弃 1 张手牌，执行征兵训练或外交雇佣，不需再支付花费。' },
+        ];
+        core.handCards = core.handCards.map((card) => {
+            if (card.id === mongolCardIds[0]) {
+                return {
+                    ...card,
+                    label: '大汗令箭事件牌',
+                    cardKind: 'event' as const,
+                    armamentId: null,
+                    cardDefId: 'tutorial-mongol-khan-edict-event',
+                };
+            }
+            if (card.id === mongolCardIds[1]) {
+                return {
+                    ...card,
+                    label: '蒙古银两牌',
+                    cardKind: 'silver' as const,
+                    armamentId: null,
+                    cardDefId: 'tutorial-mongol-silver-event',
+                };
+            }
+            if (card.id === mongolCardIds[2]) {
+                return {
+                    ...card,
+                    label: '蒙古战术牌',
+                    cardKind: 'tactic' as const,
+                    armamentId: null,
+                    cardDefId: 'tutorial-mongol-tactic-event',
+                };
+            }
+            return card;
+        });
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-25') {
+                return {
+                    ...region,
+                    controller: 'mongol',
+                    controlLabel: '蒙古',
+                    troops: 2,
+                    population: 2,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+        core.factions.mongol.troops = 2;
         return core;
     },
 });
@@ -525,6 +781,7 @@ const createYearAndCharactersTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedWheelMoveId = 'move-2-one-opponent';
         core.selectedRegionId = 'city-region-25';
         core.selectedActionId = 'khan-edict';
+        core.confirmedActionId = 'khan-edict';
         core.selectedPaymentCardIds = [];
         core.recruitSelection = null;
         core.maShiTradeSelection = null;
@@ -571,11 +828,11 @@ const createKoreaSpecialMapTutorialSetup = (): QidahenTutorialPreset => ({
     coreTransform: (initialCore) => {
         const core = cloneCore(initialCore);
         core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 朝鲜与地图特例';
-        core.turnPhase = 'action-window';
-        core.wheelActionUsed = false;
-        core.factionActionUsed = false;
-        core.actionWheelPosition = 'wheel-attack';
+        core.turnLabel = '第 1 轮 · 大明 · 新年结算';
+        core.turnPhase = 'season-resolution';
+        core.wheelActionUsed = true;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-new-year';
         core.selectedWheelMoveId = 'move-1-free';
         core.selectedRegionId = 'city-region-25';
         core.selectedActionId = '';
@@ -595,6 +852,45 @@ const createKoreaSpecialMapTutorialSetup = (): QidahenTutorialPreset => ({
         core.koreaDiscardCount = 3;
         core.factions.ming.prestige = 1;
         core.hanseongPrestigeUnlocked = true;
+        core.factions.ming.handCount = 8;
+        core.factions.ming.characters = core.factions.ming.characters.map((character) => ({
+            ...character,
+            inPlay: false,
+        }));
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'xian-xing') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    population: 0,
+                    specialTroops: [
+                        createTroop('ming-korea-front-infantry-lv2', '大明步兵', 'ming', 'infantry', 2, 2),
+                    ],
+                };
+            }
+            if (region.id === 'city-region-18') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 0,
+                };
+            }
+            if (region.id === 'city-region-29') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 0,
+                };
+            }
+            return region;
+        });
         return core;
     },
 });
@@ -605,7 +901,11 @@ const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     'attack-and-battle': createAttackAndBattleTutorialSetup(),
     'retreat-and-rout': createRetreatAndRoutTutorialSetup(),
     'wheel-shared-cost': createWheelSharedCostTutorialSetup(),
+    'wheel-reclaim': createWheelReclaimTutorialSetup(),
+    'wheel-military-farm': createWheelMilitaryFarmTutorialSetup(),
+    'wheel-recruit-train': createWheelRecruitTrainTutorialSetup(),
     'armament-upgrade': createArmamentUpgradeTutorialSetup(),
+    'event-action': createEventActionTutorialSetup(),
     'diplomacy-and-hire': createDiplomacyTutorialSetup(),
     'siege-and-occupation': createSiegeTutorialSetup(),
     'year-and-characters': createYearAndCharactersTutorialSetup(),
@@ -629,7 +929,13 @@ export function buildQidahenTutorialSetupData(tutorialId?: string): QidahenTutor
     };
 
     if (preset.coreTransform) {
-        setupData.qidahenTutorialCoreTransform = preset.coreTransform;
+        setupData.qidahenTutorialCoreTransform = ((core: QidahenCore) => {
+            const transformedCore = preset.coreTransform?.(core) ?? core;
+            return {
+                ...transformedCore,
+                explicitRegionId: null,
+            };
+        }) satisfies QidahenTutorialCoreTransform;
     }
 
     return {

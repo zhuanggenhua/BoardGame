@@ -1773,7 +1773,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && core.pendingAttack !== undefined;
 
             const shouldAttemptAutoContinue = state.sys.flowHalted
-                || hasSysInteractionResolved
+                || pendingOffensiveTokenChoice
+                || pendingTargetingChoice
+                || pendingAttackFollowUpChoice
+                || pendingTreantDivinePreventDebuffChoice
                 || resolvedDefenderSelectionThisRound
                 || hasTokenResponseClosed;
             if (!shouldAttemptAutoContinue) return undefined;

@@ -163,6 +163,7 @@ export function advanceQidahenTurnIfReady(
         currentPlayer: nextState.factions[nextFactionId].playerId,
         roundNumber,
         ...actionWindowEntryState,
+        explicitRegionId: null,
         actionLog: [
             {
                 id: `log-turn-${timestamp}`,

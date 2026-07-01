@@ -101,6 +101,7 @@ export const reduceQidahenRegionSelected = (
         : { state, forcedSelectedRegionId: null };
     const nextState = actionWindowEffect.state;
     let selectedRegionId = regionId;
+    const explicitRegionId = regionId;
     const recruitSelection = getQidahenRecruitSelectionForCore(nextState);
     if (recruitSelection) {
         const rebuiltRecruitSelection = buildRecruitSelection(
@@ -112,8 +113,9 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId,
+            explicitRegionId,
             turnPhase: rebuiltRecruitSelection ? 'recruit-choice' : 'action-window',
-            recruitSelection: null,
+            recruitSelection: rebuiltRecruitSelection,
         });
     }
     if (nextState.gaoDiDispatchSelection) {
@@ -140,6 +142,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: rebuiltGaoDiDispatchSelection?.sourceRegionId ?? selectedRegionId,
+            explicitRegionId,
             turnPhase: rebuiltGaoDiDispatchSelection ? 'gao-di-dispatch-choice' : 'action-window',
             gaoDiDispatchSelection: rebuiltGaoDiDispatchSelection,
         });
@@ -167,6 +170,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: rebuiltInternalDispatchSelection?.sourceRegionId ?? selectedRegionId,
+            explicitRegionId,
             turnPhase: rebuiltInternalDispatchSelection ? 'internal-dispatch-choice' : 'action-window',
         });
     }
@@ -177,8 +181,9 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId,
+            explicitRegionId,
             turnPhase: rebuiltMaShiTradeSelection ? 'ma-shi-trade-choice' : 'action-window',
-            maShiTradeSelection: null,
+            maShiTradeSelection: rebuiltMaShiTradeSelection,
         });
     }
     const khanEdictSelection = getQidahenKhanEdictSelectionForCore(nextState);
@@ -191,9 +196,10 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltKhanEdictSelection?.sourceRegionId ?? selectedRegionId,
+            selectedRegionId,
+            explicitRegionId,
             turnPhase: rebuiltKhanEdictSelection ? 'khan-edict-choice' : 'action-window',
-            khanEdictSelection: null,
+            khanEdictSelection: rebuiltKhanEdictSelection,
         });
     }
     const diplomacySelection = diplomacySelectionCarry ?? getQidahenCurrentDiplomacySelectionForCore(nextState);
@@ -223,6 +229,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: rebuiltDiplomacySelection?.targetRegionId ?? selectedRegionId,
+            explicitRegionId,
             turnPhase: rebuiltDiplomacySelection ? 'diplomacy-choice' : 'action-window',
             diplomacyProgress: rebuiltDiplomacySelection ? rebuiltDiplomacyProgress : null,
         });
@@ -231,6 +238,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.selectedRegionId,
+            explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
             turnPhase: 'hand-limit-discard',
         });
     }
@@ -238,6 +246,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.selectedRegionId,
+            explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
             turnPhase: 'sun-yuanhua-tech-choice',
         });
     }
@@ -245,6 +254,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.selectedRegionId,
+            explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
             turnPhase: nextState.turnPhase,
         });
     }
@@ -252,6 +262,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.pendingTargetAction.targetRuntimeRegionId,
+            explicitRegionId,
             turnPhase: 'resolve-pending',
         });
     }
@@ -263,6 +274,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: wheelDispatchSelection.sourceRegionId,
+            explicitRegionId,
             turnPhase: 'drive-tiger-consent',
         });
     }
@@ -270,6 +282,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.postBattleSelection.targetRuntimeRegionId,
+            explicitRegionId,
             turnPhase: 'post-battle-decision',
         });
     }
@@ -277,6 +290,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: actionWindowEffect.forcedSelectedRegionId ?? selectedRegionId,
+            explicitRegionId,
         });
     }
 
@@ -334,6 +348,7 @@ export const reduceQidahenRegionSelected = (
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: rebuiltSelection.sourceRegionId,
+            explicitRegionId,
             turnPhase: 'dispatch-targeting',
             wheelDispatchProgress: shouldKeepRebuiltWheelDispatchSelectionOffHost ? null : rebuiltSelection,
             pendingTargetAction: null,
@@ -343,5 +358,6 @@ export const reduceQidahenRegionSelected = (
     return dependencies.updateTurnLabel({
         ...nextState,
         selectedRegionId,
+        explicitRegionId,
     });
 };

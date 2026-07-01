@@ -4,7 +4,7 @@
  * 主题：消灭随从、潜入基地
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram, resolveSpecial } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedDestroyEvents, buildValidatedMoveEvents, buildValidatedReturnEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
@@ -590,7 +590,9 @@ const ninjaHiddenNinjaProgram = createEffectProgram<AbilityContext, AbilityConte
     const player = ctx.state.players[ctx.playerId];
     const handOptions = buildHandMinionOptions(player.hand);
     if (handOptions.length === 0) return { events: [] };
-    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_hidden_ninja', ctx.baseIndex, ctx.now);
+    const limitEvt = resolveSpecial('ninja_hidden_ninja')
+        ? undefined
+        : emitSpecialLimitUsed(ctx.playerId, 'ninja_hidden_ninja', ctx.baseIndex, ctx.now);
     return {
         events: limitEvt ? [limitEvt] : [],
         context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {

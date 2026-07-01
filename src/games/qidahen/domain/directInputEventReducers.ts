@@ -1,4 +1,5 @@
 import {
+    resolveQidahenPreviewActionCancelledEvent,
     resolveQidahenPreviewActionConfirmedEvent,
 } from './previewActionReducer';
 import {
@@ -56,6 +57,10 @@ const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
     defineDirectInputEventReducer(
         ['PREVIEW_ACTION_CONFIRMED'],
         resolveQidahenPreviewActionConfirmedEvent,
+    ),
+    defineDirectInputEventReducer(
+        ['PREVIEW_ACTION_CANCELLED'],
+        resolveQidahenPreviewActionCancelledEvent,
     ),
     defineDirectInputEventReducer(
         ['WHEEL_MOVE_EXECUTED'],

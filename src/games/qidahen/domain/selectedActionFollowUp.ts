@@ -32,8 +32,11 @@ interface QidahenSelectedActionFollowUpResolutionResult {
 
 interface QidahenSelectedActionFollowUpResult {
     actionLogText: string;
+    khanEdictSelection: QidahenCore['khanEdictSelection'];
     lastSeasonSummary: QidahenSeasonSummary | null;
+    maShiTradeSelection: QidahenCore['maShiTradeSelection'];
     pendingTargetAction: QidahenPendingTargetAction | null;
+    recruitSelection: QidahenCore['recruitSelection'];
     selectedRegionId: string;
     turnPhase: QidahenCore['turnPhase'];
     wheelDispatchProgress: QidahenCore['wheelDispatchProgress'];
@@ -237,8 +240,11 @@ export const resolveQidahenSelectedActionFollowUp = (
 
     return {
         actionLogText,
+        khanEdictSelection: selectionResolution.khanEdictSelection,
         lastSeasonSummary: stateTransition.lastSeasonSummary,
+        maShiTradeSelection: selectionResolution.maShiTradeSelection,
         pendingTargetAction: stateTransition.pendingTargetAction,
+        recruitSelection: selectionResolution.recruitSelection,
         selectedRegionId: stateTransition.selectedRegionId,
         turnPhase: stateTransition.turnPhase,
         wheelDispatchProgress: stateTransition.wheelDispatchProgress,

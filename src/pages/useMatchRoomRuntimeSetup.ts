@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { i18n as I18nInstance } from 'i18next';
+import type { GameImplementation } from '../core/types';
 import { getGameImplementation, resolveGameTutorialManifest } from '../games/registry';
 import { preloadWarmImages } from '../core';
 import { resolveCriticalImages } from '../core/CriticalImageResolverRegistry';
@@ -8,6 +9,93 @@ import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
 import { useMatchRoomBoardRuntime } from './matchRoomBoardRuntime';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
+import type { TutorialCollection, TutorialManifest } from '../engine/types';
+
+const createSingleTutorialCatalog = (manifest: TutorialManifest): TutorialCollection => ({
+    defaultTutorialId: manifest.id,
+    tutorials: {
+        [manifest.id]: {
+            manifest,
+        },
+    },
+});
+
+export const resolveTutorialCatalogForStage = (
+    gameImplementation: GameImplementation | null,
+): TutorialCollection | null => {
+    if (!gameImplementation) {
+        return null;
+    }
+
+    if (gameImplementation.tutorialCatalog) {
+        return gameImplementation.tutorialCatalog;
+    }
+
+    if (gameImplementation.tutorial) {
+        return createSingleTutorialCatalog(gameImplementation.tutorial);
+    }
+
+    return null;
+};
+
+export const getVisibleTutorialCatalogEntries = (
+    tutorialCatalog: TutorialCollection | null | undefined,
+): Array<[string, NonNullable<TutorialCollection['tutorials'][string]>]> => {
+    if (!tutorialCatalog) {
+        return [];
+    }
+
+    return Object.entries(tutorialCatalog.tutorials)
+        .filter(([, entry]) => entry.hiddenFromCatalog !== true);
+};
+
+export const getTutorialCatalogEntry = (
+    tutorialCatalog: TutorialCollection | null | undefined,
+    tutorialId?: string,
+): NonNullable<TutorialCollection['tutorials'][string]> | null => {
+    if (!tutorialCatalog || !tutorialId) {
+        return null;
+    }
+    return tutorialCatalog.tutorials[tutorialId] ?? null;
+};
+
+export const resolveTutorialManifestForStage = (args: {
+    gameId?: string;
+    isTutorialRoute: boolean;
+    tutorialId?: string;
+    gameImplementation: GameImplementation | null;
+}): TutorialManifest | null => {
+    const {
+        gameId,
+        isTutorialRoute,
+        tutorialId,
+        gameImplementation,
+    } = args;
+
+    if (!gameId || !isTutorialRoute || !gameImplementation) {
+        return null;
+    }
+
+    const tutorialCatalog = resolveTutorialCatalogForStage(gameImplementation);
+    const visibleEntries = getVisibleTutorialCatalogEntries(tutorialCatalog);
+    if (!tutorialId && tutorialCatalog && visibleEntries.length > 1) {
+        return null;
+    }
+
+    if (tutorialId) {
+        return tutorialCatalog?.tutorials[tutorialId]?.manifest ?? null;
+    }
+
+    if (tutorialCatalog) {
+        const defaultEntry = tutorialCatalog.tutorials[tutorialCatalog.defaultTutorialId];
+        if (defaultEntry && defaultEntry.hiddenFromCatalog !== true) {
+            return defaultEntry.manifest;
+        }
+        return visibleEntries[0]?.[1].manifest ?? null;
+    }
+
+    return gameImplementation.tutorial ?? null;
+};
 
 export function useMatchRoomRuntimeSetup(args: {
     gameId?: string;
@@ -52,12 +140,22 @@ export function useMatchRoomRuntimeSetup(args: {
         tutorialId,
     });
     const gameImplReady = isGameImplementationReady;
+    const gameImplementation = useMemo(() => {
+        if (!gameId || !gameImplReady) return null;
+        return getGameImplementation(gameId) ?? null;
+    }, [gameId, gameImplReady]);
+    const tutorialCatalog = useMemo(() => {
+        if (!isTutorialRoute) return null;
+        return resolveTutorialCatalogForStage(gameImplementation);
+    }, [gameImplementation, isTutorialRoute]);
     const resolvedTutorialManifest = useMemo(() => {
-        if (!gameId || !isTutorialRoute || !gameImplReady) {
-            return null;
-        }
-        return resolveGameTutorialManifest(gameId, tutorialId);
-    }, [gameId, gameImplReady, isTutorialRoute, tutorialId]);
+        return resolveTutorialManifestForStage({
+            gameId,
+            isTutorialRoute,
+            tutorialId,
+            gameImplementation,
+        });
+    }, [gameId, gameImplementation, isTutorialRoute, tutorialId]);
     const tutorialLoadingProgressText = useMemo(() => {
         if (!isTutorialRoute) return undefined;
         if (!gameId || !isGameNamespaceReady) {
@@ -113,11 +211,6 @@ export function useMatchRoomRuntimeSetup(args: {
         shouldBlockBoardOnImagePreload,
         onInitialOnlinePreloadReady: handleInitialOnlinePreloadReady,
     });
-
-    const gameImplementation = useMemo(() => {
-        if (!gameId || !gameImplReady) return null;
-        return getGameImplementation(gameId) ?? null;
-    }, [gameId, gameImplReady]);
     const engineConfig = gameImplementation?.engineConfig ?? null;
     const latencyConfig = gameImplementation?.latencyConfig;
 
@@ -143,6 +236,7 @@ export function useMatchRoomRuntimeSetup(args: {
         gameImplementationError,
         retryGameImplementationLoad,
         gameImplReady,
+        tutorialCatalog,
         resolvedTutorialManifest,
         tutorialLoadingProgressText,
         boardShell,

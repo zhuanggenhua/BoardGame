@@ -410,7 +410,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             {
                                 id: `log-gao-di-dispatch-${triggerKey}`,
                                 faction: 'ming',
-                                text: `高第可在行动前弃 1 张手牌，调度 1 格内最多 6 个人口或部队；从 ${gaoDiDispatchSelection.sourceRegionName} 出发。`,
+                                text: `高第可在行动前弃 1 张手牌；弃牌后再选择调度目标，最多调 6 个人口或部队。`,
                             },
                             ...nextState.actionLog,
                         ].slice(0, 6),
@@ -436,7 +436,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             {
                                 id: `log-wang-huazhen-dispatch-${triggerKey}`,
                                 faction: 'ming',
-                                text: `王化贞可在行动前免费调度 2 个部队；从 ${internalDispatchSelection.sourceRegionName} 出发。`,
+                                text: `王化贞可在行动前免费调度 2 个部队；直接在地图上选择调度目标。`,
                             },
                             ...nextState.actionLog,
                         ].slice(0, 6),

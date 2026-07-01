@@ -182,7 +182,7 @@ export const reduceQidahenSelectionInputEvent = (
             return dependencies.updateTurnLabel({
                 ...state,
                 selectedPaymentCardIds,
-                payment: buildPaymentState(state.selectedActionId, selectedPaymentCardIds.length),
+                payment: buildPaymentState(state.confirmedActionId ?? state.selectedActionId, selectedPaymentCardIds.length),
             });
         }
         case 'HAND_LIMIT_DISCARD_CARD_SELECTED':

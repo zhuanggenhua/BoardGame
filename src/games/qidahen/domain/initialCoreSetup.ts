@@ -162,7 +162,7 @@ export const createInitialCore = (
             },
         ],
         actionLog: [
-            { id: 'log-1', faction: openingFactionId, text: `${factions[openingFactionId].name} 进入势力行动并锁定 ${getActionChoiceById(selectedActionId)?.label ?? selectedActionId}。` },
+            { id: 'log-1', faction: openingFactionId, text: `${factions[openingFactionId].name} 进入行动窗口，当前聚焦 ${getActionChoiceById(selectedActionId)?.label ?? selectedActionId}。` },
             { id: 'log-2', faction: 'jin', text: '后金 在 沿海据点 维持前线兵力。' },
         ],
     };
@@ -171,6 +171,7 @@ export const createInitialCore = (
     return {
         ...syncedBaseCore,
         selectedRegionId: getPreferredOpeningActionWindowSelectedRegionId(syncedBaseCore, openingFactionId),
+        explicitRegionId: null,
     };
 };
 

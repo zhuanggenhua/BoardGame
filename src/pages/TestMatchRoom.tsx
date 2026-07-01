@@ -33,14 +33,13 @@ import { useToast } from '../contexts/ToastContext';
 import { isUiHintOnlyError, resolveCommandError } from '../engine/transport/errorI18n';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
-import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContext';
 import {
     buildLocalMatchSetupData,
     resolveLocalMatchPlayerCount,
     resolveSetupSelectionsFromSearchParams,
     resolveSeatControllersFromSearchParams,
 } from '../engine/ai';
-import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../games/roomSetupRegistry';
+import { resolveAllowedPlayerCountsForGame } from '../games/roomSetupRegistry';
 
 // 闂備礁鎲￠崙褰掑垂閹惰棄鏋侀柕鍫濇偪閸︻厸鍋撻敐搴″箻婵℃彃鎲℃穱濠囶敍濡炶浜剧€规洖娲ㄩ、鍛存⒑閹稿海鈽夐柣妤€妫涢幑銏ゅ焵椤掆偓椤啴濡堕崼顐㈡濠电姭鍋撴い蹇撴绾惧ジ鏌涢弴銊ょ凹妞ゆ劘妫勯…鍧楁嚋閻㈤潧鈷岄梺绋块椤曨參骞忛锕€绀冩い蹇撴噺濞堛垽姊洪幐搴ｂ槈闁活剙銈搁崹鎯熼懡銈傛敵濠电娀娼уΛ娆撶叕椤掆偓闇夐柣妯硅閸炶櫣绱?Provider 婵犵數鍋為幐绋款嚕閸洘鍋傞悗锝庡枛缁€鍫⑩偓骞垮劚濞诧箓寮查幖浣圭厸濞达絽鎽滄晶宕囩磼?
 if (typeof window !== 'undefined') {
@@ -96,36 +95,15 @@ export const TestMatchRoom: React.FC = () => {
         const p1Factions = searchParams.get('p1')?.split(',') || [];
         const seed = searchParams.get('seed') || '12345';
         const requestedPlayers = searchParams.get('players') ?? searchParams.get('numPlayers');
-        const parsedSetupSelections = resolveSetupSelectionsFromSearchParams({
+        const setupSelections = resolveSetupSelectionsFromSearchParams({
             gameManifest: gameConfig ?? undefined,
             searchParams,
-        });
-        const requestedPlayerCount = Number(requestedPlayers);
-        const setupScopedPlayerOptions = resolveAllowedPlayerCountsForGame({
-            gameManifest: gameConfig ?? undefined,
-            setupData: parsedSetupSelections,
-        });
-        const fallbackPlayerCount = gameConfig?.bestPlayers?.find((count) => setupScopedPlayerOptions.includes(count))
-            ?? setupScopedPlayerOptions[0]
-            ?? gameConfig?.playerOptions?.[0]
-            ?? 2;
-        const setupSelections = applySetupDefaultsForGame({
-            gameManifest: gameConfig ?? undefined,
-            numPlayers: Number.isInteger(requestedPlayerCount)
-                ? requestedPlayerCount
-                : fallbackPlayerCount,
-            setupSelections: parsedSetupSelections,
         });
         const playerOptions = resolveAllowedPlayerCountsForGame({
             gameManifest: gameConfig ?? undefined,
             setupData: setupSelections,
         });
         const numPlayers = resolveLocalMatchPlayerCount(requestedPlayers, playerOptions);
-        const resolvedSetupSelections = applySetupDefaultsForGame({
-            gameManifest: gameConfig ?? undefined,
-            numPlayers,
-            setupSelections,
-        });
         const skipFactionSelect = searchParams.get('skipFactionSelect') === 'true';
         const skipInitialization = searchParams.get('skipInitialization') === 'true';
         const playerId = searchParams.get('playerID') || '0';
@@ -134,7 +112,7 @@ export const TestMatchRoom: React.FC = () => {
             searchParams,
             aiSupport: gameConfig?.ai,
         });
-        const setupData = buildLocalMatchSetupData(resolvedSetupSelections);
+        const setupData = buildLocalMatchSetupData(setupSelections);
         
         return {
             player0Factions: p0Factions,
@@ -291,8 +269,6 @@ export const TestMatchRoom: React.FC = () => {
         );
     }
 
-    const shouldRenderTestHud = gameId !== 'betrayal';
-
     return (
         <>
             <SEO
@@ -308,46 +284,44 @@ export const TestMatchRoom: React.FC = () => {
                 } as React.CSSProperties}
             >
                 <GamePageRuntimeProvider gameId={gameId}>
-                    <SmashUpOverlayProvider>
-                        <GameModeProvider mode="test">
-                            <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
-                                <MobileBoardShell>
-                                    {engineConfig && WrappedBoard ? (
-                                        <LocalGameProvider
-                                            config={engineConfig}
-                                            numPlayers={testConfig.numPlayers}
-                                            seed={testConfig.randomSeed}
-                                            playerId={testConfig.playerId}
-                                            setupData={testConfig.setupData}
-                                            onCommandRejected={handleCommandRejected}
-                                            seatControllers={testConfig.seatControllers}
-                                            followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
-                                        >
-                                            {shouldRenderTestHud ? <GameHUD gameId={gameId} mode="test" /> : null}
-                                            <BoardBridge
-                                                board={WrappedBoard}
-                                                loading={(
-                                                    <LoadingScreen
-                                                        anchor="container"
-                                                        title={gameConfig
-                                                            ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
-                                                            : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
-                                                    />
-                                                )}
-                                            />
-                                        </LocalGameProvider>
-                                    ) : (
-                                        <LoadingScreen
-                                            anchor="container"
-                                            title={gameConfig
-                                                ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
-                                                : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+                    <GameModeProvider mode="test">
+                        <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
+                            <MobileBoardShell>
+                                {engineConfig && WrappedBoard ? (
+                                    <LocalGameProvider
+                                        config={engineConfig}
+                                        numPlayers={testConfig.numPlayers}
+                                        seed={testConfig.randomSeed}
+                                        playerId={testConfig.playerId}
+                                        setupData={testConfig.setupData}
+                                        onCommandRejected={handleCommandRejected}
+                                        seatControllers={testConfig.seatControllers}
+                                        followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
+                                    >
+                                        <GameHUD gameId={gameId} mode="test" />
+                                        <BoardBridge
+                                            board={WrappedBoard}
+                                            loading={(
+                                                <LoadingScreen
+                                                    anchor="container"
+                                                    title={gameConfig
+                                                        ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                                        : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+                                                />
+                                            )}
                                         />
-                                    )}
-                                </MobileBoardShell>
-                            </GameCursorProvider>
-                        </GameModeProvider>
-                    </SmashUpOverlayProvider>
+                                    </LocalGameProvider>
+                                ) : (
+                                    <LoadingScreen
+                                        anchor="container"
+                                        title={gameConfig
+                                            ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                            : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+                                    />
+                                )}
+                            </MobileBoardShell>
+                        </GameCursorProvider>
+                    </GameModeProvider>
                 </GamePageRuntimeProvider>
             </div>
         </>

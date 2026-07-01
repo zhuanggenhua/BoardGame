@@ -1471,6 +1471,7 @@ export function registerCursedPirateCustomActions(): void {
                 sourceAbilityId,
                 sourceCommandType: 'CHOICE_RESOLVED',
                 timestamp: timestamp + 2,
+                triggerExplosionOnExisting: false,
             }),
         ];
     });

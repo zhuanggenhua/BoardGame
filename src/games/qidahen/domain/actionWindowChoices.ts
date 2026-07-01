@@ -280,11 +280,12 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
     const drawCards = Math.max(0, Math.min(dependencies.getFactionDrawPileCount(state, acceptedSelection.attackerFactionId), 6));
     const drawResult = dependencies.drawFromFactionPile(state.factions, acceptedSelection.attackerFactionId, drawCards);
     const nextFactions = dependencies.addFactionHandCards(drawResult.factions, acceptedSelection.attackerFactionId, drawResult.drawnCards);
-    const acceptedState = dependencies.applyVictoryStatus({
-        ...state,
-        selectedRegionId: acceptedSelection.sourceRegionId,
-        selectedActionId: 'drive-tiger',
-        turnPhase: 'dispatch-targeting',
+        const acceptedState = dependencies.applyVictoryStatus({
+            ...state,
+            selectedRegionId: acceptedSelection.sourceRegionId,
+            selectedActionId: 'drive-tiger',
+            confirmedActionId: 'drive-tiger',
+            turnPhase: 'dispatch-targeting',
         diplomacyProgress: null,
         wheelDispatchProgress: null,
         drawPileCount: acceptedSelection.attackerFactionId === 'ming' ? state.drawPileCount - drawResult.drawnCards : state.drawPileCount,
@@ -292,7 +293,7 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('驱虎吞狼', timestamp, [
             `${state.factions[selection.targetFactionId].name} 同意接受大明指挥，并获得 ${drawResult.drawnCards} 张手牌。`,
-            `从 ${acceptedSelection.sourceRegionName} 出发，由大明指挥其执行调度进攻。`,
+            `进入调度目标选择，由大明指挥其执行进攻。`,
         ]),
         actionLog: [
             {
@@ -425,7 +426,7 @@ export const resolveQidahenKhanEdictInteractionChoice = (
         const diplomacySelection = buildDiplomacySelection(
             state,
             currentFactionId,
-            state.selectedRegionId,
+            selection.hireTargetRegionId ?? state.selectedRegionId,
             'khan-edict',
             selection.hireTargetRegionId,
             selection.preferredSourceRegionId,
@@ -454,7 +455,7 @@ export const resolveQidahenKhanEdictInteractionChoice = (
                 {
                     id: `log-khan-edict-${timestamp}`,
                     faction: currentFactionId,
-                    text: `${state.factions[currentFactionId].name} 选择大汗令箭的外交雇佣，从 ${diplomacySelection.sourceRegionName ?? '待选地区'} 出发，等待选择外交目标。`,
+                    text: `${state.factions[currentFactionId].name} 选择大汗令箭的外交雇佣，进入外交目标选择。`,
                 },
                 ...state.actionLog,
             ].slice(0, 6),

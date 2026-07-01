@@ -22,6 +22,7 @@ export const QIDAHEN_COMMANDS = {
     CAST_SCENARIO_VOTE: 'CAST_SCENARIO_VOTE',
     SELECT_REGION: 'SELECT_REGION',
     CONFIRM_PREVIEW_ACTION: 'CONFIRM_PREVIEW_ACTION',
+    CANCEL_PREVIEW_ACTION: 'CANCEL_PREVIEW_ACTION',
     SELECT_WHEEL_MOVE: 'SELECT_WHEEL_MOVE',
     EXECUTE_WHEEL_MOVE: 'EXECUTE_WHEEL_MOVE',
     SELECT_PAYMENT_CARD: 'SELECT_PAYMENT_CARD',
@@ -109,6 +110,16 @@ export function validate(
                 return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
             }
             return command.payload.actionId.length > 0
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION:
+            if (hasPendingScenarioVote(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
+                return { valid: false, error: 'actionAlreadyUsed' };
+            }
+            return state.core.confirmedActionId != null
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE:
@@ -220,11 +231,14 @@ export function validate(
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
             }
-            if (wouldRepeatLastFactionAction(state.core, state.core.selectedActionId)) {
+            if (state.core.confirmedActionId == null) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            if (wouldRepeatLastFactionAction(state.core, state.core.confirmedActionId)) {
                 return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
             }
             if (
-                state.core.selectedActionId === 'upgrade-armament'
+                state.core.confirmedActionId === 'upgrade-armament'
                 && !hasUpgradableArmament(state.core, getCurrentFactionId(state.core))
             ) {
                 return { valid: false, error: 'noUpgradableArmament' };

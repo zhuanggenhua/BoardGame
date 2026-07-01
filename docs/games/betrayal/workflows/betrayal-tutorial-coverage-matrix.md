@@ -1,12 +1,12 @@
 # 山屋惊魂教程覆盖矩阵
 
-> 目的：把“规则条目 -> 教程章节 -> 真实页面锚点 -> 证据”锁清，确保教程继续复用真实角色选择、真实 runtime、真实终局。
+> 目的：把“规则条目 -> 教程章节 -> 真实页面锚点 -> 证据”锁清，确保教程从真实运行时主入口开始，并继续复用真实 runtime、真实终局。
 > 当前真相源：`src/games/betrayal/tutorial.ts`、`src/games/betrayal/Board.tsx`、`docs/games/betrayal/README.md`、`evidence/betrayal-basic-flow/`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-tutorial/`、`docs/games/betrayal/sources/official/*.md`。
 
 ## 当前章节
 
 1. `basic-setup-and-turn`
-   - 目标：从真实角色选择和真实开局入口进入，讲清恶兆前最基本的主界面入口。
+   - 目标：直接从真实恶兆前运行时进入，讲清首轮最先要理解的目标、动作、速度与房间牌桌。
 2. `move-explore-use`
    - 目标：直接在真实恶兆前运行时里走一次使用物品、移动、探索。
 3. `crimson-jack-objective`
@@ -20,7 +20,7 @@
 - 已接入标准教程解析链：`src/games/manifest.client.generated.tsx`
 - 已挂真实教程锚点：
   - 角色选择：`betrayal-character-select-screen`、`betrayal-character-selection-grid`、`betrayal-character-confirm`
-  - 运行时：`betrayal-inventory-zone`、`betrayal-room-board`、`betrayal-latest-discovery`、`betrayal-actions-zone`、`betrayal-action-*`
+  - 运行时：`betrayal-current-traits`、`betrayal-inventory-zone`、`betrayal-room-board`、`betrayal-latest-discovery`、`betrayal-actions-zone`、`betrayal-action-*`
   - 帮助与终局：`betrayal-reference-entry`、`betrayal-endgame-screen`
 - 已有静态验证：
   - `src/games/betrayal/__tests__/tutorial.test.ts`
@@ -57,10 +57,12 @@
 
 | 规则条目 | 状态 | 对应章节 | 真实锚点 / 真实动作 | 当前证据 |
 | :--- | :--- | :--- | :--- | :--- |
-| 开局先选探索者并确认进入对局 | 已覆盖 | `basic-setup-and-turn` | `betrayal-character-selection-grid` / `CONFIRM_EXPLORER` / `START_SCENARIO` | `tutorial.test.ts`、`evidence/betrayal-tutorial/01-02` |
+| 角色选择 / 剧本开始属于真实进入链路，但不再作为基础教程主教学落点 | 已调整 | 真实入口保留，基础教程正文不单列 | 角色选择 UI 与 `CONFIRM_EXPLORER` / `START_SCENARIO` 仍存在，但首章改为 `setup-runtime` 注入到真实恶兆前运行时 | `tutorial.ts`、`tutorial.test.ts` |
 | 恶兆前主动作入口：移动 / 探索 / 交易 / 使用 / 结束回合 | 已覆盖 | `basic-setup-and-turn` | `betrayal-actions-zone` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02` |
+| 速度决定理论移动范围，移动前先看属性区里的速度值 | 已覆盖 | `basic-setup-and-turn` | `betrayal-current-traits` | `tutorial.test.ts` |
+| 当前这回合还剩几步，要看右上角剩余移动提示 | 已覆盖 | `basic-setup-and-turn` | `betrayal-moves-remaining` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02` |
 | 持有区与帮助入口都在真实牌桌里，不另造说明页 | 已覆盖 | `basic-setup-and-turn` | `betrayal-inventory-zone`、`betrayal-reference-entry` | `tutorial.test.ts`、`evidence/betrayal-tutorial/03` |
-| 房间牌桌是主视区 | 已覆盖 | `basic-setup-and-turn` | `betrayal-room-board` | `evidence/betrayal-tutorial/04` |
+| 房间牌桌是主视区 | 已覆盖 | `basic-setup-and-turn` | `betrayal-room-board` | `evidence/betrayal-tutorial/03` |
 | 真实移动会消耗移动点，使用绳索会先补移动 | 已覆盖 | `move-explore-use` | `USE_POSSESSION` -> `MOVE_TO_ROOM` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
 | 探索会真实翻房间并触发事件 / 物品 / 预兆 | 已覆盖 | `move-explore-use` | `EXPLORE_ROOM` | `tutorial.test.ts` |
 | 第一剧本 haunt 后英雄目标：调查杰克、研究法阵、驱魔 | 已覆盖 | `crimson-jack-objective` | `betrayal-actions-zone` | `tutorial.test.ts`、教程文案断言 |

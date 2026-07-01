@@ -59,6 +59,11 @@ const ACTIVATE_BOT_LABEL_KEY_BY_TOKEN_ID: Record<ArtificerRobotTokenId, string> 
     [TOKEN_IDS.SHOCK_BOT]: 'choices.artificerBotActivation.activateShockBot',
     [TOKEN_IDS.HEAL_BOT]: 'choices.artificerBotActivation.activateHealBot',
 };
+const ACTIVATE_BOT_FREE_LABEL_KEY_BY_TOKEN_ID: Record<ArtificerRobotTokenId, string> = {
+    [TOKEN_IDS.NANOBOT]: 'choices.artificerBotActivation.activateNanobotFree',
+    [TOKEN_IDS.SHOCK_BOT]: 'choices.artificerBotActivation.activateShockBotFree',
+    [TOKEN_IDS.HEAL_BOT]: 'choices.artificerBotActivation.activateHealBotFree',
+};
 const ROBOT_ACTIVATION_LIMIT_BY_TOKEN_ID: Record<ArtificerRobotTokenId, number> = {
     [TOKEN_IDS.NANOBOT]: 1,
     [TOKEN_IDS.SHOCK_BOT]: 1,
@@ -203,15 +208,25 @@ function getArtificerBotActivationSynthCost(
     return isArtificerBotUpgraded(state, playerId, tokenId) ? 1 : 2;
 }
 
+function ignoresNormalBotActivationConditions(sourceAbilityId?: string): boolean {
+    if (!sourceAbilityId) return false;
+    return sourceAbilityId === 'overclock'
+        || sourceAbilityId === 'overclock-2'
+        || sourceAbilityId === 'shock-bot'
+        || sourceAbilityId === 'shock-bot-3'
+        || sourceAbilityId === 'maximum-power';
+}
+
 function buildStateAfterArtificerBotResourceSpend(
     state: DiceThroneCore,
     playerId: string,
     tokenId: ArtificerRobotTokenId,
+    options?: { freeActivation?: boolean },
 ): DiceThroneCore {
     const player = state.players[playerId];
     if (!player) return state;
 
-    const synthCost = getArtificerBotActivationSynthCost(state, playerId, tokenId);
+    const synthCost = options?.freeActivation ? 0 : getArtificerBotActivationSynthCost(state, playerId, tokenId);
     const botState = getArtificerBotState(state, playerId, tokenId);
     return {
         ...state,
@@ -243,6 +258,7 @@ function buildArtificerBotActivationOptions(
     remainingActivations: number,
     usedMask: number,
     allowSkip: boolean,
+    activationOptions?: { freeActivation?: boolean },
 ): ChoiceRequestedEvent['payload']['options'] {
     const player = state.players[playerId];
     if (!player || remainingActivations <= 0) return [];
@@ -254,8 +270,8 @@ function buildArtificerBotActivationOptions(
         if (!isArtificerBotBuilt(state, playerId, tokenId)) continue;
         if (getRemainingArtificerBotActivations(state, playerId, tokenId) <= 0) continue;
 
-        const synthCost = getArtificerBotActivationSynthCost(state, playerId, tokenId);
-        if ((player.tokens[TOKEN_IDS.SYNTH] ?? 0) < synthCost) continue;
+        const synthCost = activationOptions?.freeActivation ? 0 : getArtificerBotActivationSynthCost(state, playerId, tokenId);
+        if (!activationOptions?.freeActivation && (player.tokens[TOKEN_IDS.SYNTH] ?? 0) < synthCost) continue;
 
         options.push({
             customId: ACTIVATE_BOT_CHOICE_ID,
@@ -264,8 +280,10 @@ function buildArtificerBotActivationOptions(
                 remainingActivations - 1,
                 usedMask | tokenMask,
             ),
-            labelKey: ACTIVATE_BOT_LABEL_KEY_BY_TOKEN_ID[tokenId],
-            labelParams: { synth: synthCost },
+            labelKey: activationOptions?.freeActivation
+                ? ACTIVATE_BOT_FREE_LABEL_KEY_BY_TOKEN_ID[tokenId]
+                : ACTIVATE_BOT_LABEL_KEY_BY_TOKEN_ID[tokenId],
+            ...(activationOptions?.freeActivation ? {} : { labelParams: { synth: synthCost } }),
         });
     }
 
@@ -289,7 +307,15 @@ function buildArtificerBotActivationChoiceRequest(
     timestamp: number,
 ): ChoiceRequestedEvent | undefined {
     const allowSkip = true;
-    const options = buildArtificerBotActivationOptions(state, playerId, remainingActivations, usedMask, allowSkip);
+    const freeActivation = ignoresNormalBotActivationConditions(sourceAbilityId);
+    const options = buildArtificerBotActivationOptions(
+        state,
+        playerId,
+        remainingActivations,
+        usedMask,
+        allowSkip,
+        { freeActivation },
+    );
     if (options.length <= 0) return undefined;
 
     return {
@@ -405,6 +431,9 @@ function buildRobotUse(tokenId: string) {
         const player = state.players[attackerId];
         if (!player) return [];
 
+        const robotId = tokenId as ArtificerRobotTokenId;
+        if (isArtificerBotBuilt(state, attackerId, robotId)) return [];
+
         const current = player.tokens[tokenId] ?? 0;
         const limit = getTokenStackLimit(state, attackerId, tokenId);
         const newTotal = Math.min(current + 1, limit);
@@ -423,7 +452,6 @@ function buildRobotUse(tokenId: string) {
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
         } as TokenGrantedEvent];
-        const robotId = tokenId as ArtificerRobotTokenId;
         const artificerBotState = buildArtificerBotStatePatch(state, attackerId, robotId, {
             built: true,
             upgraded: false,
@@ -446,8 +474,10 @@ function upgradeRobot(tokenId: string) {
         const player = state.players[attackerId];
         if (!player) return [];
 
+        const robotId = tokenId as ArtificerRobotTokenId;
+        if (!isArtificerBotBuilt(state, attackerId, robotId) || isArtificerBotUpgraded(state, attackerId, robotId)) return [];
+
         const currentLimit = getTokenStackLimit(state, attackerId, tokenId);
-        if (!isArtificerBotBuilt(state, attackerId, tokenId as ArtificerRobotTokenId) || currentLimit >= ADVANCED_ROBOT_LIMIT) return [];
 
         const events: DiceThroneEvent[] = [{
             type: 'TOKEN_LIMIT_CHANGED',
@@ -462,7 +492,6 @@ function upgradeRobot(tokenId: string) {
             timestamp,
         } as TokenLimitChangedEvent];
 
-        const robotId = tokenId as ArtificerRobotTokenId;
         const artificerBotState = buildArtificerBotStatePatch(state, attackerId, robotId, {
             built: true,
             upgraded: true,
@@ -537,10 +566,10 @@ function buildFromScratchOptions(state: DiceThroneCore, playerId: string): Choic
         value: number,
         mode: 'build' | 'upgrade',
     ) => {
-        const current = player.tokens[tokenId] ?? 0;
-        const currentLimit = getTokenStackLimit(state, playerId, tokenId);
-        const built = isArtificerBotBuilt(state, playerId, tokenId as ArtificerRobotTokenId);
-        const isLegal = mode === 'build' ? !built && current <= 0 : built && currentLimit < ADVANCED_ROBOT_LIMIT;
+        const robotId = tokenId as ArtificerRobotTokenId;
+        const built = isArtificerBotBuilt(state, playerId, robotId);
+        const upgraded = isArtificerBotUpgraded(state, playerId, robotId);
+        const isLegal = mode === 'build' ? !built : built && !upgraded;
         if (!isLegal) return;
         options.push({
             customId: BUILD_FROM_SCRATCH_CHOICE_ID,
@@ -880,6 +909,8 @@ function handleMechanicalArmy({ attackerId, targetId, sourceAbilityId, state, ti
             ...event,
             payload: {
                 ...event.payload,
+                amount: 5 + robotTypes,
+                actualDamage: Math.min(5 + robotTypes, state.players[targetId]?.resources[RESOURCE_IDS.HP] ?? (5 + robotTypes)),
                 sourceAbilityId,
                 damageScope: 'attack',
             },
@@ -909,10 +940,12 @@ function handleTinkerDefense({ attackerId, ctx, sourceAbilityId, state, timestam
     const originalAttackerId = ctx.defenderId;
     if (!originalAttackerId) return [];
 
-    const electricityCount = getFaceCounts(getActiveDice(state))[ARTIFICER_DICE_FACE_IDS.ELECTRICITY] ?? 0;
+    const faceCounts = getFaceCounts(getActiveDice(state));
+    const gearCount = faceCounts[ARTIFICER_DICE_FACE_IDS.GEAR] ?? 0;
+    const electricityCount = faceCounts[ARTIFICER_DICE_FACE_IDS.ELECTRICITY] ?? 0;
     const currentSynth = state.players[attackerId]?.tokens[TOKEN_IDS.SYNTH] ?? 0;
     const maxSynth = getTokenStackLimit(state, attackerId, TOKEN_IDS.SYNTH);
-    const newTotal = Math.min(currentSynth + 1, maxSynth);
+    const newTotal = Math.min(currentSynth + gearCount, maxSynth);
     const events: DiceThroneEvent[] = [];
 
     if (newTotal > currentSynth) {
@@ -998,7 +1031,9 @@ function handleTinker2Defense({ attackerId, ctx, sourceAbilityId, state, timesta
         }
     }
 
-    events.push(...buildNanobombApplyEvents(state, originalAttackerId, electricityCount, sourceAbilityId, nextTimestamp));
+    if (electricityCount > 0) {
+        events.push(...buildNanobombApplyEvents(state, originalAttackerId, electricityCount, sourceAbilityId, nextTimestamp));
+    }
     return events;
 }
 
@@ -1019,7 +1054,9 @@ registerChoiceResolvedEventHandler(ACTIVATE_BOT_CHOICE_ID, ({
     } = decodeActivateBotChoiceValue(value);
     if (!selectedTokenId) return [];
 
-    const nextState = buildStateAfterArtificerBotResourceSpend(state, playerId, selectedTokenId);
+    const nextState = buildStateAfterArtificerBotResourceSpend(state, playerId, selectedTokenId, {
+        freeActivation: ignoresNormalBotActivationConditions(sourceAbilityId),
+    });
     const events: DiceThroneEvent[] = [];
     let nextTimestamp = timestamp;
 

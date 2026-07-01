@@ -372,8 +372,8 @@ describe('Qidahen compatibility source guards', () => {
     it('地图视口容器应保持裁切与绝对舞台定位，避免缩放后出现越界或错位', () => {
         const board = readBoardSource();
 
-        expect(board).toContain('className="relative h-full min-h-0 overflow-hidden bg-white"');
-        expect(board).toContain('className="absolute overflow-hidden bg-white"');
+        expect(board).toContain('className="relative h-full min-h-0 overflow-hidden"');
+        expect(board).toContain('className="absolute overflow-hidden"');
         expect(board).toContain('data-testid="qidahen-board"');
         expect(board).toContain('data-testid="qidahen-desktop-stage"');
         expect(board).toContain('left: stageMetrics.left,');
@@ -1483,7 +1483,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(commandEventBuildersSource).toContain('const getAutoPaymentCardIds = (');
         expect(commandEventBuildersSource).not.toContain('export const buildQidahenSelectedActionExecutedEvent = (');
         expect(commandEventBuildersSource).toContain("type: 'SELECTED_ACTION_EXECUTED',");
-        expect(commandEventBuildersSource).toContain("actionId: state.selectedActionId,");
+        expect(commandEventBuildersSource).toContain("actionId: state.confirmedActionId ?? state.selectedActionId,");
         expect(commandEventBuildersSource).toContain('cardIds: state.selectedPaymentCardIds,');
         expect(commandEventBuildersSource).toContain('cardIds: getAutoPaymentCardIds(state, command.payload.actionId),');
         expect(commandEventBuildersSource).toContain('sourceCommandType: command.type,');
@@ -2114,8 +2114,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(previewActionReducerSource).toContain('reduceQidahenPreviewActionConfirmed(');
         expect(previewActionReducerSource).toContain('actionWheelPosition: event.payload.actionId,');
         expect(previewActionReducerSource).toContain('selectedActionId: actionId,');
+        expect(previewActionReducerSource).toContain('confirmedActionId: actionId,');
         expect(previewActionReducerSource).toContain('selectedPaymentCardIds: [],');
         expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId),');
+        expect(previewActionReducerSource).toContain("export const resolveQidahenPreviewActionCancelledEvent = (");
         expect(previewActionReducerSource).not.toContain("const grantPardonSourceRegion = actionId === 'grant-pardon'");
         expect(previewActionReducerSource).not.toContain("const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')");
         expect(previewActionReducerSource).not.toContain('applyVictoryStatus');
@@ -3360,7 +3362,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('const createInitialCore = (');
         expect(indexSource).not.toContain('const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS:');
         expect(indexSource).not.toContain('const applyScenarioRuntimeRegionPreset = (');
-        expect(indexSource).toContain('return createInitialCore(');
+        expect(indexSource).toContain('const initialCore = createInitialCore(');
+        expect(indexSource).toContain('return tutorialCoreTransform ? tutorialCoreTransform(initialCore) : initialCore;');
 
         expect(initialCoreSetupSource).toContain("import { getScenarioPlayableFactionIds } from './factionTurnOrder';");
         expect(initialCoreSetupSource).toContain("import { getQidahenScenarioPreset } from './scenarioPresets';");

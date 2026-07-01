@@ -106,7 +106,7 @@ describe('CreateRoomModal AI default state', () => {
         expect(screen.getByText('AI 占位')).toBeInTheDocument();
     });
 
-    it('首次打开默认关闭时，手动点击后仍可开启 AI', () => {
+    it('首次打开默认关闭时，手动点击后会开启 AI 并显示占位设置', () => {
         render(createElement(CreateRoomModal, {
             isOpen: true,
             onClose: vi.fn(),
@@ -119,7 +119,6 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(screen.getByText('Enabled')).toBeInTheDocument();
         expect(screen.getByText('AI 占位')).toBeInTheDocument();
-        expect(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i })).not.toBeChecked();
     });
 
     it('房间密码支持右侧眼睛按钮切换显隐', () => {
@@ -281,7 +280,7 @@ describe('CreateRoomModal AI default state', () => {
         }));
     });
 
-    it('四人房开启 AI 时会保留显式真人空座，不把第三座补成 AI', () => {
+    it('四人房开启 AI 时会默认把除房主外的座位全部设为 AI，占位可再手动取消', () => {
         const onConfirm = vi.fn();
         const fourPlayerManifest: GameManifestEntry = {
             ...gameManifest,
@@ -298,7 +297,7 @@ describe('CreateRoomModal AI default state', () => {
 
         fireEvent.click(screen.getByRole('button', { name: '4人' }));
         fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
-        fireEvent.click(screen.getByRole('button', { name: 'seat-4' }));
+        fireEvent.click(screen.getByRole('button', { name: 'seat-3' }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({

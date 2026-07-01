@@ -196,10 +196,10 @@ export function getQidahenRecruitSelectionForCore(
         interaction,
         isActive: (currentCore) => (
             currentCore.turnPhase === 'recruit-choice'
-            && currentCore.selectedActionId === 'recruit'
+            && currentCore.confirmedActionId === 'recruit'
         ),
         readInteraction: getQidahenRecruitSelectionFromInteraction,
-        readCore: getCoreQidahenRecruitSelectionForCore,
+        readCore: (currentCore) => currentCore.recruitSelection ?? getCoreQidahenRecruitSelectionForCore(currentCore),
     });
 }
 
@@ -286,7 +286,7 @@ export function getQidahenMaShiTradeSelectionForCore(
         interaction,
         isActive: (currentCore) => currentCore.turnPhase === 'ma-shi-trade-choice',
         readInteraction: getQidahenMaShiTradeSelectionFromInteraction,
-        readCore: getCoreQidahenMaShiTradeSelectionForCore,
+        readCore: (currentCore) => currentCore.maShiTradeSelection ?? getCoreQidahenMaShiTradeSelectionForCore(currentCore),
     });
 }
 
@@ -315,10 +315,10 @@ export function getQidahenKhanEdictSelectionForCore(
         interaction,
         isActive: (currentCore) => (
             currentCore.turnPhase === 'khan-edict-choice'
-            && currentCore.selectedActionId === 'khan-edict'
+            && currentCore.confirmedActionId === 'khan-edict'
         ),
         readInteraction: getQidahenKhanEdictSelectionFromInteraction,
-        readCore: getCoreQidahenKhanEdictSelectionForCore,
+        readCore: (currentCore) => currentCore.khanEdictSelection ?? getCoreQidahenKhanEdictSelectionForCore(currentCore),
     });
 }
 

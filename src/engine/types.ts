@@ -407,6 +407,20 @@ export interface TutorialCollectionEntry {
     titleKey?: string;
     description?: string;
     descriptionKey?: string;
+    /**
+     * 是否从玩家可见的教程目录中隐藏。
+     *
+     * 适用于仍需保留直达路由、测试入口或补充分支案例，
+     * 但不应作为玩家主章节平级暴露的教程。
+     */
+    hiddenFromCatalog?: boolean;
+    /**
+     * 当前教程完成后，自动衔接到的下一个教程路由。
+     *
+     * 用于把多个真实预设局面串成一个玩家章节，
+     * 避免为了保留真实局面而把同一章拆成多个平级目录项。
+     */
+    nextTutorialId?: string;
     manifest: TutorialManifest;
 }
 

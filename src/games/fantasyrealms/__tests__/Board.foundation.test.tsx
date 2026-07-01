@@ -393,7 +393,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('进入弃牌阶段后会立即收掉入手动画态，避免手牌仍在动时阻塞当前操作', async () => {
+    it('进入弃牌阶段后会立即进入可弃牌状态；若是公开弃牌入手链，允许短暂保留入手提示动画', async () => {
         const baseCore = makeCore({
             currentPlayer: '0',
             stage: 'draw',
@@ -451,8 +451,9 @@ describe('FantasyRealms Board foundation', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-selection-state', 'discard');
-            expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'idle');
+            expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'center-to-hand');
         });
+        expect(screen.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveTextContent('测试玩家');
     });
 
     it('1024 宽度的 PC 横屏不再切紧凑壳，继续使用同一张正式牌桌', () => {
@@ -1135,7 +1136,7 @@ describe('FantasyRealms Board foundation', () => {
         expect(Math.min(...secondRowZ)).toBeGreaterThan(Math.max(...firstRowZ));
     });
 
-    it('中央占位区使用扫光骨架，而不是裸露纯色底板', () => {
+    it('标准局开局发牌动效窗口内，不再把未来弃牌区伪装成加载骨架', () => {
         clearGameAssetsCache('fantasyrealms');
         const firstView = renderBoard();
 
@@ -1144,11 +1145,34 @@ describe('FantasyRealms Board foundation', () => {
         expect(handCards[0]).not.toHaveClass('atlas-shimmer');
         firstView.unmount();
 
-        const discardEmptyCore = makeCore({ discardPile: [] });
+        const discardEmptyCore = makeStandardOpeningCore({
+            players: {
+                '0': {
+                    id: '0',
+                    name: '玩家1',
+                    hand: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+                '1': {
+                    id: '1',
+                    name: '玩家2',
+                    hand: [],
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+                '2': {
+                    id: '2',
+                    name: '玩家3',
+                    hand: [],
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+            } as FantasyRealmsCore['players'],
+        });
         const secondView = renderBoard(discardEmptyCore);
         const placeholders = document.querySelectorAll('.fr-card-slot--live-center-placeholder');
-        expect(placeholders.length).toBeGreaterThan(0);
-        expect(Array.from(placeholders).every((node) => node.classList.contains('atlas-shimmer'))).toBe(true);
+        expect(placeholders).toHaveLength(0);
         secondView.unmount();
     });
 
@@ -1297,6 +1321,22 @@ describe('FantasyRealms Board foundation', () => {
                 />,
             );
             expectDuelOpeningToStayStable();
+        });
+    });
+
+    it('3人标准局开局静置后不再保留中央半透明占位', () => {
+        withViewport(1440, 1024, () => {
+            const openingCore = makeStandardOpeningCore();
+            openingCore.players['0']!.hand = openingCore.players['0']!.hand.slice(0, 2);
+            openingCore.stage = 'discard';
+
+            renderBoard(openingCore);
+
+            expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--opening');
+            expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--early-draw');
+            expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'idle');
+            expect(screen.getByTestId('fantasyrealms-live-center-row')).toHaveAttribute('data-motion', 'idle');
+            expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
         });
     });
 
@@ -1782,6 +1822,42 @@ describe('FantasyRealms Board foundation', () => {
             expect(focusCardButton.className).toContain('fr-card-button--selected');
             expect(screen.queryByText('当前焦点')).not.toBeInTheDocument();
             expect(screen.queryByText(new RegExp(`若现在拿走 ${focusCard.displayNameZh}`))).not.toBeInTheDocument();
+        });
+    });
+
+    it('从公开弃牌拿牌进入弃牌阶段后，会短暂显示谁拿走了这张牌', () => {
+        withViewport(1440, 1024, () => {
+            const dispatch = vi.fn();
+            renderBoard(makeCore({
+                playerIds: ['0', '1'],
+                currentPlayer: '0',
+                turn: 5,
+                stage: 'draw',
+                discardPile: PUBLIC_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                players: {
+                    '0': {
+                        id: '0',
+                        name: '玩家1',
+                        hand: HAND_CARDS.slice(0, 7).map((card) => ({ ...card })),
+                        score: 0,
+                        scoreBreakdown: [],
+                    },
+                    '1': {
+                        id: '1',
+                        name: '玩家2',
+                        hand: HAND_CARDS.slice(7, 14).map((card, index) => ({ ...card, id: `${card.id}-p2-${index}` })),
+                        score: 0,
+                        scoreBreakdown: [],
+                    },
+                } as FantasyRealmsCore['players'],
+                focusCardId: PUBLIC_CARDS[1]!.id,
+            }), { dispatch });
+
+            fireEvent.click(screen.getAllByRole('button', { name: /拿取弃牌/ })[1]!);
+
+            expect(screen.getByTestId('fantasyrealms-live-center-selection-notice')).toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveTextContent('测试玩家');
+            expect(dispatch).toHaveBeenCalledWith('TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[1]!.id });
         });
     });
 

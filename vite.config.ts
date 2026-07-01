@@ -679,6 +679,7 @@ export default defineConfig(({ mode }) => {
               'react-i18next',
               'react-easy-crop',
               'framer-motion',
+              'fast-json-patch',
               'cookie',
               'set-cookie-parser',
               'debug',

@@ -510,7 +510,7 @@
       "title": "骰子显示",
       "hint": "切换局内骰子的展示方式，不改变真实掷骰结果。",
       "board3d": "棋盘内 3D 骰子",
-      "board3dHint": "开启后在局内中央使用 3D 骰子投掷演出；默认关闭。",
+      "board3dHint": "开启后，自己掷骰阶段会切到棋盘内 3D 骰台；改骰等必须直接点骰的场景会自动使用棋盘骰台。",
       "enabled": "已开启",
       "disabled": "已关闭"
     }
@@ -707,6 +707,7 @@
     "rolling": "投掷中…",
     "roll": "投掷（{{current}}/{{total}}）",
     "roll_action": "投掷",
+    "reroll_action": "重掷",
     "reroll": "重投",
     "rerollSelected": "已选",
     "confirm": "确认",

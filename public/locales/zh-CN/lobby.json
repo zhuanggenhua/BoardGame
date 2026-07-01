@@ -547,6 +547,13 @@
     "noClient": "未找到游戏客户端",
     "noGame": "未找到游戏",
     "tutorialTitle": "正在学习 {{game}}",
+    "tutorialCatalog": {
+      "eyebrow": "教程目录",
+      "title": "先选择要学习的章节",
+      "description": "这款游戏包含多个教程章节。先选一章，再进入对应的真实教学流程。",
+      "recommended": "默认起步",
+      "enter": "进入这一章"
+    },
     "matchTitle": "正在对局 {{game}}",
     "loadingResources": "正在加载对局资源…",
     "preparingMatch": "正在准备对局…",

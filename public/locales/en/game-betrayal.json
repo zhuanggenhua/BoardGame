@@ -190,15 +190,15 @@
   "tutorial": {
     "basicSetup": {
       "title": "Setup and Core Loop",
-      "description": "Start from the real character select screen and learn the basic pre-haunt entry points.",
+      "description": "Start directly from the real pre-haunt board and learn the first true decision entry point.",
       "steps": {
-        "selectExplorer": "Start by choosing an explorer on the real character select screen. This is not a tutorial-only page.",
-        "confirmStart": "Use this button to confirm your explorer. Once confirmed, the match continues through the normal opening flow.",
-        "startScenario": "When everyone is ready, start the real first scenario from the same entry point.",
-        "runtimeOverview": "These five buttons are the core runtime actions: move, explore, trade, use, and end turn.",
-        "inventoryAndHelp": "The lower-left area is your real inventory. Tap a card to zoom it. The reference card is only a help entry, not the main UI.",
-        "roomBoard": "The central room board is the main play area. Read this first, then decide where to move or explore.",
-        "finish": "This chapter only locks the real entry points. The next short chapters cover move, explore, use, and the first haunt goal."
+        "setupRuntime": "This chapter drops you straight into the real pre-haunt state for the first scenario instead of teaching character select as a standalone lesson.",
+        "objectiveAndTurn": "Before the haunt, your job is to keep exploring the house. On your turn, the five core actions are move, explore, trade, use, and end turn.",
+        "traitsAndSpeed": "Speed is the first trait to read here. It tells you the movement range your explorer can work with before spending any steps.",
+        "movesRemaining": "The MOVE medallion in the upper-right shows how many steps you still have right now this turn. That current remainder is not always the same as your full speed value.",
+        "roomBoard": "The central room board is the main play area. First read where you are, which rooms are already connected, and where exploration can continue.",
+        "inventoryAndHelp": "The lower-left area is your real inventory for items and omens. Open the reference card only when you need to check terms, not as a replacement for the main UI.",
+        "finish": "You now know to read the goal, action bar, speed, and room board first. The next chapter walks through a real use, move, and explore sequence."
       }
     },
     "moveExploreUse": {

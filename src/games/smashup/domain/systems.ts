@@ -522,6 +522,29 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 // 纯 state 变更（例如 multi_base_scoring 选基地、afterScoring 把后续动作写入 deferred frame）
                                 // 必须允许 FlowSystem 在同一轮基于最新 sys 继续推进，否则会停在 scoreBases。
                                 if (newState.sys.phase === 'scoreBases' && producedDomainEvents) {
+                                    // 某些计分阶段交互（如海盗王确认移动）会先产出领域事件，再回到
+                                    // smashup 的统一反应队列继续处理 Me First!/afterScoring。
+                                    // 这时真实 core 还没 reduce 当前 emittedEvents，若直接等待下一轮
+                                    // auto-continue，可能会把计分前反应窗漏掉。先用预览 core 补跑一次
+                                    // reaction queue，只同步 sys/交互变化，事件仍留给后续统一 reduce。
+                                    if (payload.sourceId !== 'smashup_reaction_choose' && !newState.sys.interaction?.current) {
+                                        const previewState = buildPreviewStateWithPendingDomainEvents(
+                                            newState as MatchState<SmashUpCore>,
+                                            nextEvents,
+                                        );
+                                        const reactionQueueResult = maybeResolveReactionQueue(
+                                            previewState,
+                                            random,
+                                            latestTimestamp,
+                                        );
+                                        if (reactionQueueResult) {
+                                            newState = {
+                                                ...reactionQueueResult.state,
+                                                core: newState.core,
+                                            };
+                                            nextEvents.push(...reactionQueueResult.events as GameEvent[]);
+                                        }
+                                    }
                                     newState = {
                                         ...newState,
                                         sys: {

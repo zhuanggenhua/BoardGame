@@ -375,6 +375,45 @@ function getMandatoryFrameTriggers(state: MatchState<SmashUpCore>, frameId: stri
     );
 }
 
+function inferSessionFrameContext(
+    frameId: string,
+): Pick<SmashUpReactionSession, 'frameKind' | 'responseWindowType'> {
+    if (frameId.startsWith('score-before:')) {
+        return {
+            frameKind: 'score-before',
+            responseWindowType: 'meFirst',
+        };
+    }
+    if (frameId.startsWith('score-after:')) {
+        return {
+            frameKind: 'score-after',
+            responseWindowType: 'afterScoring',
+        };
+    }
+    if (frameId.startsWith('score-when:')) {
+        return {
+            frameKind: 'score-when',
+            responseWindowType: undefined,
+        };
+    }
+    if (frameId.startsWith('turn-start:')) {
+        return {
+            frameKind: 'turn-start',
+            responseWindowType: undefined,
+        };
+    }
+    if (frameId.startsWith('turn-end:')) {
+        return {
+            frameKind: 'turn-end',
+            responseWindowType: undefined,
+        };
+    }
+    return {
+        frameKind: 'generic',
+        responseWindowType: undefined,
+    };
+}
+
 function getReactionSessionForTrigger(
     state: MatchState<SmashUpCore>,
     trigger: TriggerInstance,
@@ -389,6 +428,7 @@ function getReactionSessionForTrigger(
     const phase: SmashUpReactionPhase = getMandatoryFrameTriggers(state, frameId).length > 0
         ? 'mandatory'
         : 'optional';
+    const inferredContext = inferSessionFrameContext(frameId);
     const currentPlayerId = activeSession?.currentPlayerId ?? getCurrentPlayerId(state.core);
     const activePlayerId = phase === 'mandatory'
         ? currentPlayerId
@@ -396,13 +436,13 @@ function getReactionSessionForTrigger(
 
     return normalizeReactionSessionPlayers(state, {
         frameId,
-        frameKind: activeSession?.frameKind ?? 'generic',
+        frameKind: activeSession?.frameKind ?? inferredContext.frameKind,
         phase,
         activePlayerId,
         currentPlayerId,
         consecutivePasses: 0,
         sourceBaseIndex: trigger.baseIndex ?? trigger.sourceBaseIndex ?? activeSession?.sourceBaseIndex,
-        responseWindowType: activeSession?.responseWindowType,
+        responseWindowType: activeSession?.responseWindowType ?? inferredContext.responseWindowType,
     });
 }
 
@@ -1212,13 +1252,15 @@ function createSessionFromPendingFrame(
     )
         ? 'mandatory'
         : 'optional';
+    const inferredContext = inferSessionFrameContext(frameId);
     return startSmashUpReactionSession(state, {
         frameId,
-        frameKind: 'generic',
+        frameKind: inferredContext.frameKind,
         currentPlayerId,
         activePlayerId: currentPlayerId,
         phase,
         sourceBaseIndex: first.baseIndex ?? first.sourceBaseIndex,
+        responseWindowType: inferredContext.responseWindowType,
     });
 }
 

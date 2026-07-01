@@ -18,10 +18,11 @@
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
 | **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
-| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先建对象清单，再锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
+| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先过 fail-close 审计门禁：最终权威状态、流程收口、共享链来源、来源例外；再建对象清单，锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
+| **处理 UI 回归恢复 / 功能开关双分支** (改回原来、默认关闭必须完全旧实现、开启后新体验单独成立、不能混用) | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/ui-ux.md` | 先锁 `last known good / first known bad`，直接阅读并恢复旧代码；若当前已混在同一组件里，先把关闭态拆回旧合同，再挂开启态；关闭态与开启态按两份并列正式合同实现和验收，只允许共享非视觉适配层 |
 | **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；禁止把游戏特化语义退回共享默认 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；E2E 汇报必须附截图路径 |
-| **教程 / 新手引导设计** (tutorial/onboarding、教程看不懂、只在教按钮、需要重做教学结构) | `.codex/skill/tutorial-workflow/SKILL.md` + `docs/ai-rules/tutorial-design.md` + `.codex/skill/game-audit-workflow/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先走教程 workflow：先锁文案，再改实现；再核目标、收益、真实案例、计分因果、真实交互与截图证据 |
+| **教程 / 新手引导设计** (tutorial/onboarding、教程看不懂、只在教按钮、需要重做教学结构) | `.codex/skill/tutorial-workflow/SKILL.md` + `docs/ai-rules/tutorial-design.md` + `.codex/skill/game-audit-workflow/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先读该游戏规则真相源，再走教程 workflow：先出完整文案，用户确认后才实施；再核目标、收益、真实案例、计分因果、真实交互与截图证据 |
 | **打开图片 / 给我看图 / 截图真正打开到本机** | `.codex/skill/screenshot-delivery/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先区分 AI 核图和真实开图；固定顺序是 `view_image` 核图 → `npm run verify:open-image` 真开图 → 回复附 `OPENED_IMAGE` 证据和绝对路径 |
 | **首屏关键素材 / 图片预加载** (为什么没素材进度、为什么首帧抖动、atlas/牌背/桌面图是否必须预热) | `docs/ai-rules/critical-image-gate.md` + `docs/ai-rules/asset-pipeline.md` | 只要首屏依赖正式图片就必须配 `criticalImageResolver.ts`；真实房间页要能走到 `loadingAssets`；不要把“有图片资源”误当成“已配置首屏关键素材” |
 | **E2E 太慢 / 长链拆分 / 从主页起跑是否合理** | `docs/ai-rules/e2e-verification.md` | 先看三板斧、入口分层、组合式验证、时长预算；默认不要把主页漏斗和游戏流程绑成一条巨型 E2E |
@@ -57,7 +58,7 @@
 | **根 AGENTS 该写到什么粒度** (渐进式披露 / 路由优先 / 只保留触发入口) | `docs/ai-rules/document-consolidation.md` + 本文件 | 根文件只保留“何时触发、先看哪里、哪些红线不能越过”；细节下沉到二级文档 |
 | **向用户索要保留/合并/真相源拍板** (是不是二选一、能不能都保留、哪边先翻正) | `.codex/skill/merge-decision-package/SKILL.md` + `AGENTS.md` §1.1 | 先回答能不能都保留；按正式实现/候选实现/过程材料拆开；结论先行，用户只需决定一句话 |
 | **UI/UX 设计** (配色/组件/动效) | `.codex/skill/ui-ux-pro-max/SKILL.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统与验收口径 |
-| **新游戏位图设计稿 / 设计批准门禁** (先看图、先出 PNG/JPG/WebP、批准后才进骨架/前端) | `.codex/skill/boardgame-ui-imagegen/SKILL.md` + `.codex/skill/create-new-game/SKILL.md` | 设计稿默认是图片不是页面；Step1 结构、Step2 布局分裂、Step3 风格、Step4 分界面逐步批准；Step2 默认 3 张且至少 1 张素材优先；设计稿未批前不得启动服务、不得写运行页；前端实现必须等骨架完成 |
+| **新游戏位图设计稿 / 设计批准门禁** (先看图、先出 PNG/JPG/WebP、批准后才进骨架/前端) | `.codex/skill/boardgame-ui-imagegen/SKILL.md` + `.codex/skill/create-new-game/SKILL.md` | 设计稿默认是图片不是页面；Step1 结构、Step2 布局收敛、Step3 风格、Step4 分界面逐步批准；Step2 默认收成 1 张布局定稿，只有用户明确要求时才做多版对比；设计稿未批前不得启动服务、不得写运行页；前端实现必须等骨架完成 |
 | **游戏主交互槽位 / 手牌区 / waiting / prompt / rail 抢位** (主交互被挤压、双主焦点、来源家族、交互壳层重排) | `docs/ai-rules/ui-ux.md` + `design-system/game-ui/MASTER.md` + `.codex/skill/ui-ux-pro-max/SKILL.md` | 先写 `主交互槽位五联单`；来源家族必须能回查到真实文件/截图；验收必须证明主交互槽位前中后不漂移、临时 UI 不侵入主槽位、页面没有双主焦点 |
 | **显示游戏实施状态** (`statusTag` / `under_construction` / 实施中横幅) | `docs/framework/frontend.md` § 实施中状态横幅 | 游戏目录、详情缩略图、选角卡面等用户可见入口，只要展示“实施中”，必须复用共享斜条组件 `ImplementationStatusRibbon`，禁止降级成普通标签/小字提示 |
 | **七大恨区域工具 / 红线 truth / 工作区清点** | `docs/games/qidahen/workflows/qidahen-region-mask-truth-sources.md` | 先区分正式边界输入、默认页自动反推红线、`manual-boundary-user` 手工候选、历史 overlay/证据图，再决定截图、修图或清理 |

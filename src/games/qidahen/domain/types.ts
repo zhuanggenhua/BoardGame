@@ -619,7 +619,9 @@ export interface QidahenCore {
     wheelMoveChoices: QidahenWheelMoveChoice[];
     wheelMoveSummary: string;
     selectedRegionId: string;
+    explicitRegionId?: string | null;
     selectedActionId: string;
+    confirmedActionId?: string | null;
     selectedPaymentCardIds: string[];
     recruitSelection: QidahenRecruitSelection | null;
     maShiTradeSelection: QidahenMaShiTradeSelection | null;
@@ -664,6 +666,10 @@ export interface ConfirmPreviewActionCommand extends Command<'CONFIRM_PREVIEW_AC
     payload: {
         actionId: string;
     };
+}
+
+export interface CancelPreviewActionCommand extends Command<'CANCEL_PREVIEW_ACTION'> {
+    payload: Record<string, never>;
 }
 
 export interface SelectWheelMoveCommand extends Command<'SELECT_WHEEL_MOVE'> {
@@ -816,6 +822,7 @@ export type QidahenCommand =
     | CastScenarioVoteCommand
     | SelectRegionCommand
     | ConfirmPreviewActionCommand
+    | CancelPreviewActionCommand
     | SelectWheelMoveCommand
     | ExecuteWheelMoveCommand
     | SelectPaymentCardCommand
@@ -852,6 +859,12 @@ export interface RegionSelectedEvent extends GameEvent<'REGION_SELECTED'> {
 export interface PreviewActionConfirmedEvent extends GameEvent<'PREVIEW_ACTION_CONFIRMED'> {
     payload: {
         actionId: string;
+        playerId: PlayerId;
+    };
+}
+
+export interface PreviewActionCancelledEvent extends GameEvent<'PREVIEW_ACTION_CANCELLED'> {
+    payload: {
         playerId: PlayerId;
     };
 }
@@ -1036,6 +1049,7 @@ export type QidahenEvent =
     | ScenarioVoteCastEvent
     | RegionSelectedEvent
     | PreviewActionConfirmedEvent
+    | PreviewActionCancelledEvent
     | WheelMoveSelectedEvent
     | WheelMoveExecutedEvent
     | PaymentCardSelectedEvent
@@ -1062,6 +1076,7 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     CAST_SCENARIO_VOTE: CastScenarioVoteCommand['payload'];
     SELECT_REGION: SelectRegionCommand['payload'];
     CONFIRM_PREVIEW_ACTION: ConfirmPreviewActionCommand['payload'];
+    CANCEL_PREVIEW_ACTION: CancelPreviewActionCommand['payload'];
     SELECT_WHEEL_MOVE: SelectWheelMoveCommand['payload'];
     EXECUTE_WHEEL_MOVE: ExecuteWheelMoveCommand['payload'];
     SELECT_PAYMENT_CARD: SelectPaymentCardCommand['payload'];

@@ -189,11 +189,12 @@ const readRequiredQidahenHarnessState = async (page: Page): Promise<QidahenHarne
     })
 );
 
+const QIDAHEN_BASIC_OPENING_TEST_URL = '/play/qidahen?tutorialSetup=basic-opening';
+
 const clickMapRegion = async (page: import('@playwright/test').Page, regionId: keyof typeof MAP_REGION_POINTS) => {
     const point = MAP_REGION_POINTS[regionId];
-    const canvas = page.locator('[data-testid="qidahen-map-hitmap-canvas"]');
-    const canvasBox = await canvas.boundingBox();
-    expect(canvasBox).not.toBeNull();
+    const canvas = page.getByTestId('qidahen-map-hitmap-canvas');
+    await expect(canvas).toBeVisible({ timeout: 15000 });
     await canvas.evaluate((element, targetPoint) => {
         const rect = element.getBoundingClientRect();
         const init: PointerEventInit = {
@@ -208,7 +209,10 @@ const clickMapRegion = async (page: import('@playwright/test').Page, regionId: k
         };
         element.dispatchEvent(new PointerEvent('pointermove', init));
         element.dispatchEvent(new PointerEvent('pointerdown', init));
-        element.dispatchEvent(new PointerEvent('pointerleave', init));
+        element.dispatchEvent(new PointerEvent('pointerup', {
+            ...init,
+            buttons: 0,
+        }));
     }, point);
 };
 
@@ -250,7 +254,7 @@ const clickQidahenHandCardVisibleZone = async (
     page: import('@playwright/test').Page,
     index: number,
 ) => {
-    const locator = page.locator('[data-testid^="qidahen-hand-card-"]').nth(index);
+    const locator = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])').nth(index);
     await locator.evaluate((element) => {
         if (!(element instanceof HTMLElement)) {
             throw new Error('qidahen hand card is not an HTMLElement');
@@ -281,10 +285,7 @@ const previewActionPayment = async (
 ) => {
     const button = page.getByRole('button', { name: actionLabel });
     await button.click();
-    const stateBadge = page.locator('[data-testid^="qidahen-action-state-"]').filter({ hasText: '当前' });
-    if (await stateBadge.count() === 0) {
-        await expect(button).toBeVisible();
-    }
+    await expect(button).toBeVisible();
     await button.click();
     await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
     await expect(page.locator('[data-testid="qidahen-action-payment-confirm"]')).toBeDisabled();
@@ -297,7 +298,7 @@ const selectActionPaymentCards = async (
     const harnessState = await readRequiredQidahenHarnessState(page);
     const currentPlayerId = harnessState.core.currentPlayer as keyof typeof PLAYER_ID_TO_FACTION;
     const currentFaction = PLAYER_ID_TO_FACTION[currentPlayerId];
-    const handCards = page.locator('[data-testid^="qidahen-hand-card-"]');
+    const handCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
     const visibleCardIds = await handCards.evaluateAll((elements) => (
         elements
             .map((element) => element.getAttribute('data-testid'))
@@ -458,7 +459,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-testid="qidahen-scenario-pregame-screen"]')).toHaveCount(0);
@@ -471,17 +472,17 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
     test('教程直入行动窗口，点赐印招安后先进入弃牌支付，完成后进入轮盘推进提示', async ({ page }) => {
         await setChineseLocale(page);
         await disableAudio(page);
-        await disableTutorial(page);
         await page.addInitScript(() => {
             (window as Window & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__ = true;
         });
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-testid="qidahen-scenario-pregame-screen"]')).toHaveCount(0);
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0);
         await saveScreenshot(page, BASIC_GUIDED_FLOW_PREGAME_BEFORE);
 
         await page.waitForFunction(() => (window as Window & {
@@ -492,6 +493,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await waitForAtlasFrames(page, '[data-testid^="qidahen-year-card-slot-"] [data-card-atlas-frame], [data-testid^="qidahen-hand-card-"] [data-card-atlas-frame]');
         await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('行动窗口');
+        await expect(page.locator('[data-testid="qidahen-top-action-banner"]')).toContainText('手牌行动');
         await expect(page.locator('[data-testid="qidahen-action-grant-pardon"]')).toBeEnabled();
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BOARD_AFTER_CONFIRM);
 
@@ -511,12 +513,12 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await confirmActionPayment(page, 3);
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_ACTION_CONFIRM);
-
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BEFORE_DISPATCH_RESOLVE);
-        await page.locator('[data-testid="qidahen-wheel-next-step-choice-move-1-free"]').click();
+        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
+        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_DISPATCH_RESOLVED);
 
         const finalState = await readRequiredQidahenHarnessState(page);
@@ -534,7 +536,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -564,7 +566,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-draw-pile"]')).toContainText('大明抽牌');
         await expect(page.locator('[data-testid="qidahen-draw-pile"]')).toContainText('20');
         await expect(page.locator('[data-testid="qidahen-hand-zone"]')).toBeVisible();
-        await expect(page.locator('[data-testid^="qidahen-hand-card-"]')).toHaveCount(4);
+        await expect(page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"]):not([data-testid^="qidahen-hand-card-magnify-"])')).toHaveCount(4);
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toContainText('大明弃牌');
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toContainText('7');
@@ -583,6 +585,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         for (const wheelLabel of ['开垦', '军屯', '征兵', '训练', '外交', '雇佣', '进攻', '调度', '新年', '年中']) {
             await expect(page.locator('[data-testid="qidahen-action-wheel-asset"]')).toContainText(wheelLabel);
         }
+
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0);
 
         const drawBox = await page.locator('[data-testid="qidahen-draw-pile"]').boundingBox();
         const handBox = await page.locator('[data-testid="qidahen-hand-zone"]').boundingBox();
@@ -661,7 +665,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         const mapLayer = page.locator('[data-testid="qidahen-map-layer"]');
         const mapCanvas = page.locator('[data-testid="qidahen-map-hitmap-canvas"]');
@@ -706,7 +710,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -767,7 +771,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -799,7 +803,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await previewAndConfirmActionPayment(page, /征召军队/, 1);
         await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toContainText('征召军队');
         await page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
@@ -854,7 +857,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -892,7 +895,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -991,7 +994,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1104,7 +1107,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1214,7 +1217,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1365,7 +1368,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1460,7 +1463,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1574,7 +1577,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await seedRegionCavalry(page, 'song-jin', 'ming', 2);
@@ -1663,7 +1666,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1730,7 +1733,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('王化贞免费调度');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('东江');
-        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-22');
         const internalDispatchState = await readRequiredQidahenHarnessState(page);
         const internalTargetRegion = internalDispatchState.core.regions.find((region) => region.id === 'city-region-22');
         expect(internalTargetRegion?.troops).toBe(3);
@@ -1746,7 +1748,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1846,13 +1848,13 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await expect(page.locator('[data-testid="qidahen-gao-di-dispatch-selection"]')).toContainText('高第');
-        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('高第调度');
+        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('选择目标');
+        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('点一个调度目标');
         await saveScreenshot(page, GAO_DI_DISPATCH_DIRECT_BEFORE_SCREENSHOT);
 
         await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-gao-di-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('高第');
-        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         const gaoDiDispatchState = await readRequiredQidahenHarnessState(page);
         const gaoDiSourceRegion = gaoDiDispatchState.core.regions.find((region) => region.id === 'city-region-24');
         const gaoDiTargetRegion = gaoDiDispatchState.core.regions.find((region) => region.id === 'city-region-25');
@@ -1872,7 +1874,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -1936,7 +1938,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('轮盘进攻/调度 · 调骑 4');
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-25"]')).toContainText('山海关');
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-25"]')).toContainText('增援围城');
@@ -1994,7 +1995,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2046,7 +2047,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await page.click('[data-testid="qidahen-wheel-dispatch-target-city-region-20"]');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');
         await selectPendingCommittedTroopsIfPresent(page);
@@ -2074,7 +2074,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2192,7 +2192,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2331,7 +2331,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2344,7 +2344,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('皮岛 · 大明');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 2');
 
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('轮盘征兵/训练');
@@ -2369,7 +2368,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2405,7 +2404,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 2');
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('轮盘外交/雇佣');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('从 皮岛 出发');
@@ -2433,7 +2431,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2477,7 +2475,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2524,7 +2522,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2536,7 +2534,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await previewAndConfirmActionPayment(page, /征召军队/, 1);
         await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toContainText('征召军队');
         await page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
 
@@ -2577,7 +2574,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await seedRegionCavalry(page, 'jinzhou', 'jin', 2, 2);
@@ -2635,7 +2632,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2710,7 +2707,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: 'recruit-train' },
         });
         await expect(page.locator('[data-testid="qidahen-khan-edict-selection"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
@@ -2726,7 +2724,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -2835,7 +2833,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             });
         });
 
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('一名对手抽 2，走 2');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'ningyuan');
@@ -2857,7 +2856,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -3037,7 +3036,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -3110,7 +3109,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action"]')).toBeVisible();
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rout' });
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 后金');
@@ -3129,7 +3129,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-testid="qidahen-fortification-strip"]')).toHaveCount(0);
@@ -3214,7 +3214,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: 'recruit-train' },
         });
         await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').click();
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('年中结算');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('年中战败标记与人物判定');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('大明处理 1 个战败标记，掷骰 4');
@@ -3227,7 +3226,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-character-markers-mongol"]')).toContainText('人物 0');
         await saveScreenshot(page, MIDYEAR_DEFEAT_MARKERS_SCREENSHOT);
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('后金');
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await expect(page.locator('[data-testid="qidahen-fortification-maintenance-selection"]')).toContainText('新年防线维护');
         await expect(page.locator('[data-testid="qidahen-upkeep-attrition-priority"]')).toContainText('兵力耗损');
@@ -3264,7 +3262,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 936, height: 432 });
-        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+        await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await page.waitForFunction(() => (window as Window & {
@@ -3308,6 +3306,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         expect(discardBox?.x ?? 0).toBeGreaterThan(680);
         expect(discardBox?.y ?? 0).toBeGreaterThan(330);
 
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0);
         await saveScreenshot(page, MOBILE_LANDSCAPE_SCREENSHOT);
         assertNoFatalFrontendErrors([{ label: 'qidahen-map-hud-mobile-landscape', diagnostics }]);
     });

@@ -1071,6 +1071,13 @@ const TRAIT_TONE_CLASS: Record<BetrayalTraitKey, { active: string; inactive: str
     },
 };
 
+const TRAIT_VALUE_TEXT_CLASS: Record<BetrayalTraitKey, string> = {
+    might: 'text-[#f0b29f]',
+    speed: 'text-[#f2e09e]',
+    knowledge: 'text-[#cbe7ee]',
+    sanity: 'text-[#dcc7f1]',
+};
+
 function EndgameScreen({
     core,
     matchData,
@@ -2542,7 +2549,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
                                 </div>
                             </div>
-                            <div className="grid h-[72px] w-[72px] place-items-center rounded-full border border-[#756244] bg-[radial-gradient(circle_at_35%_30%,rgba(190,233,97,0.22),rgba(20,28,18,0.94)_72%)] text-center shadow-[0_0_18px_rgba(130,177,76,0.18)]">
+                            <div
+                                className="grid h-[72px] w-[72px] place-items-center rounded-full border border-[#756244] bg-[radial-gradient(circle_at_35%_30%,rgba(190,233,97,0.22),rgba(20,28,18,0.94)_72%)] text-center shadow-[0_0_18px_rgba(130,177,76,0.18)]"
+                                data-tutorial-id="betrayal-moves-remaining"
+                            >
                                 <div>
                                     <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b5ef42]">MOVE</div>
                                     <div className="text-[28px] font-bold text-[#c8f05e]">{core.movesRemaining}</div>
@@ -2621,6 +2631,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     <div
                                         className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-3 py-2 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
                                         data-testid="betrayal-current-traits"
+                                        data-tutorial-id="betrayal-current-traits"
                                     >
                                         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                         <div className="mb-1 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-1">
@@ -2657,7 +2668,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             );
                                                         })}
                                                     </div>
-                                                    <span className="text-right text-[14px] font-semibold text-[#f1e8d4]">
+                                                    <span className={`text-right text-[14px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[trait]}`}>
                                                         {core.currentExplorer.traits[trait]}
                                                     </span>
                                                 </div>
@@ -3357,7 +3368,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
                                                             <span
                                                                 key={`${explorer.playerId}-${key}`}
-                                                                className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(21,18,14,0.84)] px-1 text-[9px] font-semibold text-[#efe3c3]"
+                                                                className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(21,18,14,0.84)] px-1 text-[9px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[key]}`}
                                                                 title={`${TRAIT_LABEL_LOCAL[key]} ${explorer.traits[key]}`}
                                                             >
                                                                 {explorer.traits[key]}

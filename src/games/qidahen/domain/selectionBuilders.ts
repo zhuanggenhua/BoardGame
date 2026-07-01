@@ -35,6 +35,15 @@ import type {
 
 const QIDAHEN_DIPLOMACY_MAX_TARGETS = 3;
 
+const getQidahenExplicitOrSelectedRegionId = (
+    state: Pick<QidahenCore, 'explicitRegionId' | 'selectedRegionId'>,
+    selectedRegionId: string,
+): string => (
+    selectedRegionId !== state.selectedRegionId
+        ? selectedRegionId
+        : state.explicitRegionId ?? selectedRegionId
+);
+
 const cloneQidahenDiplomacyResolvedSteps = (
     resolvedSteps: QidahenDiplomacySelection['resolvedSteps'],
 ): QidahenDiplomacySelection['resolvedSteps'] => (
@@ -57,7 +66,8 @@ export const buildMaShiTradeSelection = (
     state: QidahenCore,
     selectedRegionId: string,
 ): QidahenMaShiTradeSelection | null => {
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
@@ -67,7 +77,7 @@ export const buildMaShiTradeSelection = (
     if (!targetRegion) {
         return null;
     }
-    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, selectedRegionId);
+    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, explicitOrSelectedRegionId);
     const choices: QidahenMaShiTradeSelection['choices'] = ([1, 2, 3] as const).map((troopCount) => ({
         troopCount,
         label: `建立 ${troopCount} 个部队`,
@@ -100,7 +110,8 @@ export const buildRecruitSelection = (
     selectedRegionId: string,
     factionId: QidahenFactionId,
 ): QidahenRecruitSelection | null => {
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
@@ -110,7 +121,7 @@ export const buildRecruitSelection = (
     if (!targetRegion) {
         return null;
     }
-    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, selectedRegionId);
+    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, explicitOrSelectedRegionId);
     const choices: QidahenRecruitSelection['choices'] = [
         {
             id: 'level-2-troops',
@@ -147,7 +158,7 @@ const getQidahenRecruitSelectionFromCurrentAction = (
     state: QidahenCore,
 ): QidahenRecruitSelection | null => {
     const currentFactionId = getCurrentFactionId(state);
-    return state.turnPhase === 'recruit-choice' && state.selectedActionId === 'recruit'
+    return state.turnPhase === 'recruit-choice' && state.confirmedActionId === 'recruit'
         ? buildRecruitSelection(state, state.selectedRegionId, currentFactionId)
         : null;
 };
@@ -277,7 +288,8 @@ export const buildDiplomacySelection = (
     preferredSourceRegionId?: string | null,
     carryState?: Pick<QidahenDiplomacySelection, 'remainingTargetCount' | 'resolvedSteps'>,
 ): QidahenDiplomacySelection | null => {
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
@@ -306,13 +318,13 @@ export const buildDiplomacySelection = (
     )) ?? null;
     const preferredSourceDisplayRegionId = resolvePreferredRegionDisplayAnchor(
         sourceRegion,
-        preferredSourceRegionId ?? selectedRegionId,
+        preferredSourceRegionId ?? sourceRegion.id,
     );
     const sourceRegionName = getPreferredLogicalRegionDisplayName(sourceRegion, preferredSourceDisplayRegionId);
     const targetRegionName = selectedTargetRegion
         ? getPreferredLogicalRegionDisplayName(
             selectedTargetRegion,
-            resolvePreferredRegionDisplayAnchor(selectedTargetRegion, selectedRegionId),
+            resolvePreferredRegionDisplayAnchor(selectedTargetRegion, explicitOrSelectedRegionId),
         )
         : null;
     const resolvedSteps = carryState?.resolvedSteps.map((step) => ({ ...step })) ?? [];
@@ -368,7 +380,7 @@ const getQidahenKhanEdictInitialDiplomacySelectionForCore = (
 ): QidahenDiplomacySelection | null => {
     if (
         state.turnPhase !== 'diplomacy-choice'
-        || state.selectedActionId !== 'khan-edict'
+        || state.confirmedActionId !== 'khan-edict'
     ) {
         return null;
     }
@@ -467,7 +479,8 @@ export const buildKhanEdictSelection = (
     selectedRegionId: string,
     preferredSourceRegionId?: string | null,
 ): QidahenKhanEdictSelection | null => {
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === selectedRuntimeRegionId);
     const preferredSourceRuntimeRegionId = preferredSourceRegionId
         ? resolveQidahenPrimaryRuntimeRegionId(preferredSourceRegionId)
@@ -489,13 +502,19 @@ export const buildKhanEdictSelection = (
         ? selectedRuntimeRegion
         : fallbackSourceRegion ?? recruitTargetRegion ?? hireTargetRegion;
     const recruitTargetRegionName = recruitTargetRegion
-        ? getPreferredLogicalRegionDisplayName(recruitTargetRegion, selectedRegionId)
+        ? getPreferredLogicalRegionDisplayName(recruitTargetRegion, explicitOrSelectedRegionId)
         : null;
     const hireTargetRegionName = hireTargetRegion
-        ? getPreferredLogicalRegionDisplayName(hireTargetRegion, selectedRegionId)
+        ? getPreferredLogicalRegionDisplayName(hireTargetRegion, explicitOrSelectedRegionId)
         : null;
     const preferredSourceRegionName = preferredSourceRegion
-        ? getPreferredLogicalRegionDisplayName(preferredSourceRegion, selectedRegionId)
+        ? getPreferredLogicalRegionDisplayName(
+            preferredSourceRegion,
+            resolvePreferredRegionDisplayAnchor(
+                preferredSourceRegion,
+                preferredSourceRegionId ?? preferredSourceRegion.id,
+            ),
+        )
         : null;
 
     if (recruitTargetRegion) {
@@ -518,7 +537,10 @@ export const buildKhanEdictSelection = (
 
     return {
         preferredSourceRegionId: preferredSourceRegion
-            ? resolvePreferredRegionDisplayAnchor(preferredSourceRegion, selectedRegionId)
+            ? resolvePreferredRegionDisplayAnchor(
+                preferredSourceRegion,
+                preferredSourceRegionId ?? preferredSourceRegion.id,
+            )
             : null,
         sourceRegionId: preferredSourceRegion?.id ?? null,
         sourceRegionName: preferredSourceRegionName,
@@ -536,7 +558,7 @@ const getQidahenKhanEdictSelectionFromCurrentAction = (
     state: QidahenCore,
 ): QidahenKhanEdictSelection | null => {
     const currentFactionId = getCurrentFactionId(state);
-    return state.turnPhase === 'khan-edict-choice' && state.selectedActionId === 'khan-edict'
+    return state.turnPhase === 'khan-edict-choice' && state.confirmedActionId === 'khan-edict'
         ? buildKhanEdictSelection(state, currentFactionId, state.selectedRegionId)
         : null;
 };

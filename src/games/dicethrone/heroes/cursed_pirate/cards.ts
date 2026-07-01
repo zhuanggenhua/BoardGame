@@ -105,7 +105,12 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [{
             description: abilityEffectText('card-cursed-pirate-shark-bait', 'attackDamagePlus2'),
-            action: { type: 'damage', target: 'opponent', value: 2, damageScope: 'attack' },
+            action: {
+                type: 'custom',
+                target: 'self',
+                customActionId: 'common-add-attack-bonus',
+                params: { amount: 2 },
+            },
             timing: 'immediate',
         }],
     },

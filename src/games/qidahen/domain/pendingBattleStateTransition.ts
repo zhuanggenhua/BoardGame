@@ -100,6 +100,7 @@ export const applyPendingActionResolutionToBattleFlowState = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolvedSelectedRegionId,
+        explicitRegionId: resolvedSelectedRegionId,
         turnPhase: resolution.pendingTargetAction
             ? 'resolve-pending'
             : resolution.postBattleSelection
@@ -149,6 +150,7 @@ export const applyPostBattleDecisionResolutionToBattleFlowState = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolution.selectedRegionId,
+        explicitRegionId: resolution.selectedRegionId,
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,

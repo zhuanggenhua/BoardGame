@@ -3,7 +3,8 @@ import type { NavigateFunction } from 'react-router-dom';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import type { ModalEntry } from '../contexts/ModalStackContext';
-import type { TutorialManifest } from '../engine/types';
+import type { TutorialCollection, TutorialManifest } from '../engine/types';
+import { getTutorialCatalogEntry } from './useMatchRoomRuntimeSetup';
 
 let latestTutorialLifecycleMountId = 0;
 
@@ -13,6 +14,9 @@ type TutorialProgressSnapshot = {
 };
 
 type UseMatchRoomTutorialLifecycleArgs = {
+    gameId?: string;
+    tutorialId?: string;
+    tutorialCatalog: TutorialCollection | null;
     isTutorialRoute: boolean;
     isGameNamespaceReady: boolean;
     gameImplReady: boolean;
@@ -25,6 +29,9 @@ type UseMatchRoomTutorialLifecycleArgs = {
 
 export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycleArgs): void {
     const {
+        gameId,
+        tutorialId,
+        tutorialCatalog,
         isTutorialRoute,
         isGameNamespaceReady,
         gameImplReady,
@@ -51,6 +58,8 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const tutorialModalIdRef = useRef<string | null>(null);
     const currentManifestId = resolvedTutorialManifest?.id ?? null;
     const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
+    const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, tutorialId);
+    const nextTutorialId = currentTutorialEntry?.nextTutorialId;
 
     useEffect(() => {
         latestTutorialLifecycleMountId += 1;
@@ -195,12 +204,16 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                     && lastTutorialProgressRef.current.manifestId === currentManifestId
                     && lastTutorialProgressRef.current.stepId === currentManifestLastStepId
                 ) {
+                    if (gameId && nextTutorialId) {
+                        navigate(`/play/${gameId}/tutorial/${nextTutorialId}`);
+                        return;
+                    }
                     navigate(-1);
                 }
             }, 600);
             return () => window.clearTimeout(timer);
         }
-    }, [currentManifestId, currentManifestLastStepId, isTutorialRoute, isActive, navigate]);
+    }, [currentManifestId, currentManifestLastStepId, gameId, isTutorialRoute, isActive, navigate, nextTutorialId]);
 
     useEffect(() => {
         // 关键约束：教程提示层只允许在 /tutorial 路由出现。

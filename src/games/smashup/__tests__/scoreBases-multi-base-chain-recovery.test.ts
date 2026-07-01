@@ -13,6 +13,7 @@ import { SmashUpDomain } from '../domain';
 import { initAllAbilities } from '../abilities';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { MatchState } from '../../../engine/types';
 import {
     getOptionalSimpleChoicePrompt,
@@ -512,6 +513,43 @@ describe('scoreBases 多基地计分链恢复', () => {
         return state;
     }
 
+    function createPirateKingKrakenAfterScoringSetup(): MatchState<SmashUpCore> {
+        const state = createPirateKingFirstMateEndToEndSetup();
+        state.core.players['0'] = makePlayer('0', {
+            ...state.core.players['0'],
+            factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
+        });
+        state.core.titans = [{
+            uid: 't-kraken-setaside',
+            defId: 'pirates_the_kraken',
+            faction: SMASHUP_FACTION_IDS.PIRATES,
+            ownerId: '0',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            location: { zone: 'setaside' },
+        } as any];
+        return state;
+    }
+
+    function createPirateKingMeFirstHandResponseSetup(): MatchState<SmashUpCore> {
+        const state = createPirateKingFirstMateEndToEndSetup();
+        state.core.players['0'] = makePlayer('0', {
+            ...state.core.players['0'],
+            factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
+            hand: [
+                makeCard('hidden-0', 'ninja_hidden_ninja', 'action', '0'),
+                makeCard('shinobi-hand-0', 'ninja_shinobi', 'minion', '0'),
+            ],
+        });
+        state.core.players['1'] = makePlayer('1', {
+            ...state.core.players['1'],
+            factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.WIZARDS],
+            hand: [],
+        });
+        return state;
+    }
+
     function createFourPlayerSixInteractionsSetup(): MatchState<SmashUpCore> {
         const core: SmashUpCore = {
             turnOrder: ['0', '1', '2', '3'],
@@ -861,6 +899,158 @@ describe('scoreBases 多基地计分链恢复', () => {
         }
     });
 
+    it('海盗王 beforeScoring 跳入计分基地后，计分后仍应继续给海怪克拉肯替换基地进场机会', () => {
+        const initialState = createPirateKingKrakenAfterScoringSetup();
+
+        const advance = runCommandWithFullSystems(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+
+        const scoringStart = startTortugaScoringSequence(advance.finalState, runCommandWithFullSystems, true);
+        let state = scoringStart.stateAfterPirateKing;
+        const chainEvents: SmashUpEvent[] = [...scoringStart.events];
+
+        let sawKrakenReactionChoice = false;
+        let sawKrakenPrompt = false;
+
+        for (let guard = 0; guard < 40; guard += 1) {
+            state = drainScoreBasesDelayUntilPromptOrIdle(state, runCommandWithFullSystems, chainEvents);
+            const choice = getActiveSimpleChoice(state);
+            if (!choice) break;
+
+            if (choice.sourceId === 'smashup_reaction_choose') {
+                const options = getPromptOptions(choice);
+                const krakenOption = options.find((option: any) =>
+                    String(option.id ?? '').includes('pirates_the_kraken')
+                    || String(option.label ?? '').includes('pirates_the_kraken')
+                    || option.value?.sourceDefId === 'pirates_the_kraken'
+                    || option.value?.defId === 'pirates_the_kraken',
+                );
+                if (krakenOption) {
+                    sawKrakenReactionChoice = true;
+                    const chosen = runCommandWithFullSystems(state, respondCommand(krakenOption.id, choice.playerId));
+                    expect(chosen.success).toBe(true);
+                    chainEvents.push(...(chosen.events as SmashUpEvent[]));
+                    state = chosen.finalState;
+                    const krakenPrompt = getActiveSimpleChoice(state);
+                    expect(krakenPrompt?.sourceId).toBe('titan_pirates_the_kraken_play_replacement');
+                    sawKrakenPrompt = true;
+                    break;
+                }
+
+                const optionId = findReactionOptionOrPass(choice, ['pirate_first_mate', 'base_tortuga', 'base_pirate_cove']);
+                const resolved = runCommandWithFullSystems(state, respondCommand(optionId, choice.playerId));
+                expect(resolved.success).toBe(true);
+                chainEvents.push(...(resolved.events as SmashUpEvent[]));
+                state = resolved.finalState;
+                continue;
+            }
+
+            if (choice.sourceId === 'pirate_first_mate_choose_base') {
+                const moveMate = findOption(choice, (option: any) => option.value?.baseIndex === 2);
+                const resolved = runCommandWithFullSystems(state, respondCommand(moveMate, choice.playerId));
+                expect(resolved.success).toBe(true);
+                chainEvents.push(...(resolved.events as SmashUpEvent[]));
+                state = resolved.finalState;
+                continue;
+            }
+
+            if (choice.sourceId === 'base_tortuga' || choice.sourceId === 'base_pirate_cove') {
+                const skip = findOption(choice, (option: any) => option.id === 'skip' || option.value?.skip === true);
+                const resolved = runCommandWithFullSystems(state, respondCommand(skip, choice.playerId));
+                expect(resolved.success).toBe(true);
+                chainEvents.push(...(resolved.events as SmashUpEvent[]));
+                state = resolved.finalState;
+                continue;
+            }
+
+            const fallback = getPromptOptions(choice)[0];
+            expect(fallback).toBeDefined();
+            const resolved = runCommandWithFullSystems(state, respondCommand(fallback.id, choice.playerId));
+            expect(resolved.success).toBe(true);
+            chainEvents.push(...(resolved.events as SmashUpEvent[]));
+            state = resolved.finalState;
+        }
+
+        expect(sawKrakenReactionChoice).toBe(true);
+        expect(sawKrakenPrompt).toBe(true);
+    });
+
+    it('海盗王 beforeScoring 触发后，Me First 窗口里应同时允许打出便衣忍者和影舞者', () => {
+        const initialState = createPirateKingMeFirstHandResponseSetup();
+
+        const advance = runCommandWithFullSystems(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+
+        const scoringStart = startTortugaScoringSequence(advance.finalState, runCommandWithFullSystems, true);
+        const meFirstChoice = getActiveSimpleChoice(scoringStart.stateAfterPirateKing)!;
+        expect(meFirstChoice).toBeTruthy();
+        expect(meFirstChoice.sourceId).toBe('smashup_reaction_choose');
+
+        const meFirstOptions = getPromptOptions(meFirstChoice);
+        const hiddenNinjaOption = meFirstOptions.find(
+            (option: any) => option.value?.kind === 'play_action' && option.value?.cardUid === 'hidden-0',
+        );
+        const shinobiOption = meFirstOptions.find(
+            (option: any) => option.value?.kind === 'play_minion' && option.value?.cardUid === 'shinobi-hand-0',
+        );
+
+        expect(hiddenNinjaOption).toBeDefined();
+        expect(shinobiOption).toBeDefined();
+
+        const playShinobi = runCommandWithFullSystems(
+            scoringStart.stateAfterPirateKing,
+            respondCommand(shinobiOption!.id, meFirstChoice.playerId),
+        );
+        expect(playShinobi.success).toBe(true);
+        expect(playShinobi.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'shinobi-hand-0',
+                        defId: 'ninja_shinobi',
+                        baseIndex: 0,
+                        consumesNormalLimit: false,
+                    }),
+                }),
+            ]),
+        );
+
+        const playHiddenNinja = runCommandWithFullSystems(
+            scoringStart.stateAfterPirateKing,
+            respondCommand(hiddenNinjaOption!.id, meFirstChoice.playerId),
+        );
+        expect(playHiddenNinja.success).toBe(true);
+        expect(playHiddenNinja.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ACTION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'hidden-0',
+                        defId: 'ninja_hidden_ninja',
+                    }),
+                }),
+                expect.objectContaining({
+                    type: SU_EVENTS.SPECIAL_LIMIT_USED,
+                    payload: expect.objectContaining({
+                        playerId: '0',
+                        abilityDefId: 'ninja_hidden_ninja',
+                    }),
+                }),
+            ]),
+        );
+        const hiddenPrompt = getActiveSimpleChoice(playHiddenNinja.finalState);
+        expect(hiddenPrompt?.sourceId).toBe('ninja_hidden_ninja');
+    });
+
     it('海盗王选择不移动时，afterScoring 窗口内打出无效特殊牌不应导致托尔图加重复计分', () => {
         const initialState = createPirateKingNoMoveAfterScoringResponseSetup();
 
@@ -1040,7 +1230,7 @@ describe('scoreBases 多基地计分链恢复', () => {
             event.type === SU_EVENTS.BASE_SCORED
             && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
         );
-        expect(tortugaScoredEventsBeforeResponse).toHaveLength(2);
+        expect(tortugaScoredEventsBeforeResponse).toHaveLength(1);
 
         const clearOrReplaceBeforeResponse = [
             ...scoringStart.events,
@@ -1091,7 +1281,7 @@ describe('scoreBases 多基地计分链恢复', () => {
             event.type === SU_EVENTS.BASE_SCORED
             && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
         );
-        expect(tortugaScoredAll).toHaveLength(2);
+        expect(tortugaScoredAll).toHaveLength(1);
     });
 
     it('4人压力链：6个交互串行解决后，托尔图加仍只计分一次', () => {

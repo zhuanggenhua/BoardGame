@@ -114,7 +114,7 @@ function buildQidahenRecruitInteraction(
             sourceId: QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `准备在 ${selection.targetRegionName ?? '先选地区'} 建军 · 也可先换别的己方区域`,
+            subtitle: '选择建军方式',
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenRecruitInteraction;
@@ -151,7 +151,7 @@ function buildQidahenDiplomacyInteraction(
             sourceId: QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `从 ${selection.sourceRegionName ?? '当前区域'} 出发 · 当前看向 ${selection.targetRegionName ?? '待选目标'} · 还可再做 ${selection.remainingTargetCount} 次`,
+            subtitle: `处理外交步骤 · 还可再做 ${selection.remainingTargetCount} 次`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenDiplomacyInteraction;
@@ -196,7 +196,7 @@ function buildQidahenWheelDispatchInteraction(
             sourceId: QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `从 ${selection.sourceRegionName} 出发 · 可去 ${selection.candidates.length} 处 · 也可直接点地图高亮区`,
+            subtitle: `选择进攻目标 · 可去 ${selection.candidates.length} 处`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenWheelDispatchInteraction;
@@ -234,7 +234,7 @@ function buildQidahenInternalDispatchInteraction(
             sourceId: QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `从 ${selection.sourceRegionName} 出发 · 最多调 ${selection.maxTroops} 个部队 · 在地图上选择目标`,
+            subtitle: `选择调度目标 · 最多调 ${selection.maxTroops} 个部队`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenInternalDispatchInteraction;
@@ -273,7 +273,7 @@ function buildQidahenMaShiTradeInteraction(
             sourceId: QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `准备在 ${selection.targetRegionName ?? '先选地区'} 建军 · 也可先换别的大明区域`,
+            subtitle: '选择建军数量',
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenMaShiTradeInteraction;
@@ -312,7 +312,7 @@ function buildQidahenKhanEdictInteraction(
             sourceId: QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `准备在 ${selection.sourceRegionName ?? '先选地区'} 执行 · 也可先换地图区域`,
+            subtitle: '选择执行效果',
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenKhanEdictInteraction;

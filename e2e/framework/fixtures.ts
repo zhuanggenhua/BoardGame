@@ -138,7 +138,7 @@ export const test = base.extend<FrameworkFixtures>({
         } finally {
             context.removeListener('page', trackPage);
             await Promise.resolve();
-            assertNoFatalFrontendErrors(Array.from(trackedPages.values()));
+            await assertNoFatalFrontendErrors(Array.from(trackedPages.values()));
         }
     }, { auto: true }],
 

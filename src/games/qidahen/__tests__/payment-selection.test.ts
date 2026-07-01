@@ -419,7 +419,31 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(selected.selectedActionId).toBe('upgrade-armament');
+        expect(selected.confirmedActionId).toBe('upgrade-armament');
         expect(selected.payment).toMatchObject({
+            required: 2,
+            selected: 0,
+            prompt: '需弃 2 / 已选 0',
+        });
+    });
+
+    it('取消弃牌预览后只保留当前聚焦动作，不再保留已确认动作', () => {
+        const previewed = apply(QidahenDomain.setup(['0', '1', '2'], random), {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'upgrade-armament' },
+        });
+
+        const cancelled = apply(previewed, {
+            type: QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(cancelled.selectedActionId).toBe('upgrade-armament');
+        expect(cancelled.confirmedActionId).toBeNull();
+        expect(cancelled.selectedPaymentCardIds).toEqual([]);
+        expect(cancelled.payment).toMatchObject({
             required: 2,
             selected: 0,
             prompt: '需弃 2 / 已选 0',
@@ -473,6 +497,7 @@ describe('七大恨支付手牌选择', () => {
         const selectedCore: QidahenCore = {
             ...maxedCore,
             selectedActionId: 'upgrade-armament',
+            confirmedActionId: 'upgrade-armament',
             selectedPaymentCardIds: factionHandCards(maxedCore, 'ming').slice(0, 2).map((card) => card.id),
             payment: {
                 required: 2,
@@ -1105,6 +1130,7 @@ describe('七大恨支付手牌选择', () => {
         const targetedCore: QidahenCore = {
             ...core,
             selectedActionId: 'upgrade-armament',
+            confirmedActionId: 'upgrade-armament',
             selectedPaymentCardIds: [armamentCard.id, paymentCard.id],
             payment: {
                 required: 2,
@@ -2584,7 +2610,12 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { regionId: 'jinzhou' },
         });
-        const first = apply(selectedRegion, {
+        const previewed = apply(selectedRegion, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        const first = apply(previewed, {
             type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
             playerId: '0',
             payload: { cardId: 'hand-1' },
@@ -2628,6 +2659,7 @@ describe('七大恨支付手牌选择', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
         core.selectedActionId = 'grant-pardon';
+        core.confirmedActionId = 'grant-pardon';
         core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
         core.payment = {
             required: 3,
@@ -2699,6 +2731,7 @@ describe('七大恨支付手牌选择', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'ning-yuan';
         core.selectedActionId = 'grant-pardon';
+        core.confirmedActionId = 'grant-pardon';
         core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
         core.payment = {
             required: 3,
@@ -2762,6 +2795,7 @@ describe('七大恨支付手牌选择', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
         core.selectedActionId = 'grant-pardon';
+        core.confirmedActionId = 'grant-pardon';
         core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
         core.payment = {
             required: 3,
@@ -2856,6 +2890,7 @@ describe('七大恨支付手牌选择', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
         core.selectedActionId = 'grant-pardon';
+        core.confirmedActionId = 'grant-pardon';
         core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
         core.payment = {
             required: 3,
@@ -2958,6 +2993,7 @@ describe('七大恨支付手牌选择', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
         core.selectedActionId = 'grant-pardon';
+        core.confirmedActionId = 'grant-pardon';
         core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
         core.payment = {
             required: 3,
@@ -3150,6 +3186,8 @@ describe('七大恨支付手牌选择', () => {
         });
         expect(targeting.actionLog[0]?.text).toContain('同意接受');
         expect(targeting.actionLog[0]?.text).toContain('进入指挥调度目标选择');
+        expect(targeting.lastSeasonSummary?.lines.join(' ')).toContain('进入调度目标选择');
+        expect(targeting.lastSeasonSummary?.lines.join(' ')).not.toContain('出发');
     });
 
     it('驱虎吞狼选中被围城城市时会按 siegeState 围城军识别被指挥方', () => {
@@ -15391,12 +15429,12 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(rebound.turnPhase).toBe('khan-edict-choice');
-        expect(rebound.selectedRegionId).toBe('city-region-25');
+        expect(rebound.selectedRegionId).toBe('city-region-24');
         expect(getKhanEdictSelection(rebound)?.sourceRegionId).toBe('city-region-25');
         expect(getKhanEdictSelection(rebound)?.sourceRegionName).toBe('山海关');
     });
 
-    it('大汗令箭进入选择面板后就算 core.khanEdictSelection 被清空，切区仍会按当前等待态重建', () => {
+    it('大汗令箭进入选择面板后就算 core.khanEdictSelection 被清空，切区仍会按当前等待态回退到合法蒙古来源区', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '1';
         core.wheelActionUsed = true;
@@ -15447,11 +15485,14 @@ describe('七大恨支付手牌选择', () => {
             playerId: '1',
             payload: { regionId: 'city-region-24' },
         });
+        const rebuiltSelection = getKhanEdictSelection(rebound);
+        const rebuiltSourceRegion = rebound.regions.find((region) => region.id === rebuiltSelection?.sourceRegionId);
 
         expect(rebound.turnPhase).toBe('khan-edict-choice');
-        expect(rebound.selectedRegionId).toBe('city-region-25');
-        expect(getKhanEdictSelection(rebound)?.sourceRegionId).toBe('city-region-25');
-        expect(getKhanEdictSelection(rebound)?.sourceRegionName).toBe('山海关');
+        expect(rebound.selectedRegionId).toBe('city-region-24');
+        expect(rebuiltSelection?.sourceRegionId).not.toBe('city-region-24');
+        expect(rebuiltSourceRegion?.controller).toBe('mongol');
+        expect(rebuiltSelection?.sourceRegionName).toBeTruthy();
     });
 
     it('大汗令箭选择征兵训练后会给当前蒙古控制区增加 2 部队', () => {
@@ -15953,7 +15994,7 @@ describe('七大恨支付手牌选择', () => {
         expect(choosingDiplomacy.diplomacyProgress).toBeNull();
         expect(getDiplomacySelection(choosingDiplomacy)?.sourceRegionId).toBe('city-region-25');
         expect(choosingDiplomacy.turnPhase).toBe('diplomacy-choice');
-        expect(choosingDiplomacy.actionLog.some((entry) => entry.text.includes('等待选择外交目标'))).toBe(true);
+        expect(choosingDiplomacy.actionLog.some((entry) => entry.text.includes('进入外交目标选择'))).toBe(true);
 
         const targeted = apply(choosingDiplomacy, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
@@ -20655,7 +20696,7 @@ describe('七大恨支付手牌选择', () => {
             source: 'gao-di',
             sourceRegionId: 'city-region-25',
         });
-        expect(afterSunSkip.actionLog[0]?.text).toContain('高第可在行动前弃 1 张手牌');
+        expect(afterSunSkip.actionLog[0]?.text).toContain('高第可在行动前弃 1 张手牌；弃牌后再选择调度目标');
 
         const afterGaoSkip = apply(afterSunSkip, {
             type: QIDAHEN_COMMANDS.RESOLVE_GAO_DI_DISPATCH,
@@ -20836,7 +20877,7 @@ describe('七大恨支付手牌选择', () => {
             source: 'gao-di',
             sourceRegionId: 'city-region-25',
         });
-        expect(resolved.actionLog[0]?.text).toContain('高第可在行动前弃 1 张手牌');
+        expect(resolved.actionLog[0]?.text).toContain('高第可在行动前弃 1 张手牌；弃牌后再选择调度目标');
     });
 
     it('高第在场时会先进入弃牌调度选择，跳过后同窗口仍会继续触发王化贞免费调度', () => {
@@ -20895,7 +20936,7 @@ describe('七大恨支付手牌选择', () => {
             sourceRegionName: '山海关',
         });
         expect(firstWindow.gaoDiDispatchSelection?.candidateCardIds.length ?? 0).toBeGreaterThanOrEqual(3);
-        expect(firstWindow.actionLog[0]?.text).toContain('高第可在行动前弃 1 张手牌');
+        expect(firstWindow.actionLog[0]?.text).toContain('高第可在行动前弃 1 张手牌；弃牌后再选择调度目标');
 
         const skipped = apply(firstWindow, {
             type: QIDAHEN_COMMANDS.RESOLVE_GAO_DI_DISPATCH,
@@ -20909,7 +20950,7 @@ describe('七大恨支付手牌选择', () => {
             source: 'wang-huazhen',
             sourceRegionId: 'city-region-25',
         });
-        expect(skipped.actionLog[0]?.text).toContain('王化贞可在行动前免费调度 2 个部队');
+        expect(skipped.actionLog[0]?.text).toContain('王化贞可在行动前免费调度 2 个部队；直接在地图上选择调度目标');
     });
 
     it('高第与王化贞从逻辑区宁远进入人物窗口时，会把 selectedRegionId 收到真实运行时来源区', () => {
@@ -21555,7 +21596,7 @@ describe('七大恨支付手牌选择', () => {
                 committedTroops: 2,
             }),
         ]));
-        expect(firstWindow.actionLog[0]?.text).toContain('王化贞可在行动前免费调度 2 个部队');
+        expect(firstWindow.actionLog[0]?.text).toContain('王化贞可在行动前免费调度 2 个部队；直接在地图上选择调度目标');
 
         const resolved = apply(firstWindow, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,

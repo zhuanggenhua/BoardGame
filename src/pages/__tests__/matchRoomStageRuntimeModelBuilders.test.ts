@@ -57,4 +57,33 @@ describe('buildMatchRoomTutorialBoardRuntimeModel', () => {
 
         expect(runtime?.numPlayers).toBe(2);
     });
+
+    it('目录页接管前，教程运行时模型仍可由页面层按需构建', () => {
+        const runtime = buildMatchRoomTutorialBoardRuntimeModel({
+            gameId: 'qidahen',
+            tLobby,
+            stage: {
+                tutorialId: undefined,
+                tutorialCatalog: {
+                    defaultTutorialId: 'basic-opening',
+                    tutorials: {
+                        'basic-opening': {
+                            manifest: { id: 'basic-opening', steps: [] },
+                        },
+                        'attack-and-battle': {
+                            manifest: { id: 'attack-and-battle', steps: [] },
+                        },
+                    },
+                },
+                tutorialManifest: null,
+                board,
+                engineConfig,
+                onCommandRejected: vi.fn(),
+                loadingProgressText: undefined,
+            },
+        });
+
+        expect(runtime?.tutorialId).toBeUndefined();
+        expect(runtime?.numPlayers).toBe(3);
+    });
 });

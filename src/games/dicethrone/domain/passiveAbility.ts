@@ -123,6 +123,22 @@ export function getPassiveActionTokenCosts(action: PassiveActionDef): Array<{ to
     ];
 }
 
+function getArtificerRobotIdFromPassiveAction(action: PassiveActionDef): string | undefined {
+    switch (action.customActionId) {
+        case 'artificer-build-nanobot':
+        case 'artificer-upgrade-nanobot':
+            return TOKEN_IDS.NANOBOT;
+        case 'artificer-build-shock-bot':
+        case 'artificer-upgrade-shock-bot':
+            return TOKEN_IDS.SHOCK_BOT;
+        case 'artificer-build-heal-bot':
+        case 'artificer-upgrade-heal-bot':
+            return TOKEN_IDS.HEAL_BOT;
+        default:
+            return undefined;
+    }
+}
+
 const isArtificerNanobotPassiveActivation = (
     passiveId: string,
     actionIndex: number,
@@ -186,6 +202,16 @@ export function isPassiveActionUsable(
             continue;
         }
         if ((player.tokens[requirement.tokenId] ?? 0) < requirement.amount) return false;
+    }
+    const artificerRobotId = getArtificerRobotIdFromPassiveAction(action);
+    if (artificerRobotId) {
+        const botState = player.artificerBotState?.[artificerRobotId];
+        if (action.customActionId?.startsWith('artificer-build-')) {
+            if (botState?.built) return false;
+        }
+        if (action.customActionId?.startsWith('artificer-upgrade-')) {
+            if (!botState?.built || botState.upgraded) return false;
+        }
     }
     if (action.requiresTokenBelowLimit) {
         const tokenId = action.requiresTokenBelowLimit.tokenId;

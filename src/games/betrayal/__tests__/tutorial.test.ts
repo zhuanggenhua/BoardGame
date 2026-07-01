@@ -13,24 +13,24 @@ describe('Betrayal 教程配置', () => {
         ]);
     });
 
-    it('默认教程会覆盖角色确认、正式开局和恶兆前主界面入口', () => {
+    it('默认教程会直接落到真实恶兆前运行时，并覆盖首轮必需的规则入口', () => {
         const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
         expect(manifest?.steps.map((step) => step.id)).toEqual([
-            'select-explorer',
-            'confirm-start',
-            'start-scenario',
-            'runtime-overview',
-            'inventory-and-help',
+            'setup-runtime',
+            'objective-and-turn',
+            'traits-and-speed',
+            'moves-remaining',
             'room-board',
+            'inventory-and-help',
             'finish',
         ]);
 
-        const confirmStep = manifest?.steps.find((step) => step.id === 'confirm-start');
-        const startStep = manifest?.steps.find((step) => step.id === 'start-scenario');
-        expect(confirmStep?.allowedCommands).toEqual(['CONFIRM_EXPLORER']);
-        expect(startStep?.allowedCommands).toEqual(['START_SCENARIO']);
-        expect(confirmStep?.highlightTarget).toBe('betrayal-character-confirm');
-        expect(startStep?.highlightTarget).toBe('betrayal-character-confirm');
+        const setupStep = manifest?.steps.find((step) => step.id === 'setup-runtime');
+        expect(setupStep?.aiActions).toHaveLength(1);
+        expect(setupStep?.aiActions?.[0]?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
+        expect(manifest?.steps.find((step) => step.id === 'objective-and-turn')?.highlightTarget).toBe('betrayal-actions-zone');
+        expect(manifest?.steps.find((step) => step.id === 'traits-and-speed')?.highlightTarget).toBe('betrayal-current-traits');
+        expect(manifest?.steps.find((step) => step.id === 'moves-remaining')?.highlightTarget).toBe('betrayal-moves-remaining');
     });
 
     it('移动探索教程只允许真实的使用、移动、探索命令链', () => {
@@ -63,9 +63,11 @@ describe('Betrayal 教程配置', () => {
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'endgame-review')?.highlightTarget).toBe('betrayal-endgame-screen');
     });
 
-    it('中文教程文案会明确说明这批步骤复用真实角色选择、真实运行时和真实终局', () => {
-        expect(zhCNLocale.tutorial.basicSetup.steps.selectExplorer).toContain('真实角色选择页');
-        expect(zhCNLocale.tutorial.basicSetup.steps.runtimeOverview).toContain('底部 5 个主动作');
+    it('中文教程文案会聚焦真实运行时里的第一批规则理解点', () => {
+        expect(zhCNLocale.tutorial.basicSetup.steps.setupRuntime).toContain('真实恶兆前局面');
+        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('底部 5 个主动作');
+        expect(zhCNLocale.tutorial.basicSetup.steps.traitsAndSpeed).toContain('速度');
+        expect(zhCNLocale.tutorial.basicSetup.steps.movesRemaining).toContain('剩余移动');
         expect(zhCNLocale.tutorial.moveExploreUse.steps.exploreUpper).toContain('事件、物品或预兆');
         expect(zhCNLocale.tutorial.crimsonJack.steps.heroGoal).toContain('调查杰克');
         expect(zhCNLocale.tutorial.crimsonJack.steps.heroGoal).toContain('驱魔法阵');

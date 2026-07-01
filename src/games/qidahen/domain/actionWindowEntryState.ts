@@ -28,7 +28,9 @@ QidahenCore,
 | 'selectedWheelMoveId'
 | 'wheelMoveSummary'
 | 'selectedRegionId'
+| 'explicitRegionId'
 | 'selectedActionId'
+| 'confirmedActionId'
 | 'selectedPaymentCardIds'
 | 'recruitSelection'
 | 'maShiTradeSelection'
@@ -56,7 +58,9 @@ QidahenCore,
         selectedWheelMoveId,
         wheelMoveSummary: buildQidahenWheelMoveSummary(selectedWheelMoveId),
         selectedRegionId: options.selectedRegionId,
+        explicitRegionId: null,
         selectedActionId,
+        confirmedActionId: null,
         selectedPaymentCardIds: [],
         recruitSelection: null,
         maShiTradeSelection: null,

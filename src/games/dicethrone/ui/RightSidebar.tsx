@@ -168,7 +168,7 @@ export const RightSidebar = ({
             return t(key, { current: currentCount, max: maxCount });
         }
         return null;
-    }, [isDiceMultistep, interaction, multistepInteraction?.result, rootPlayerId, t, teamIdByPlayerId]);
+    }, [interaction, isDiceMultistep, multistepInteraction?.result, rootPlayerId, t, teamIdByPlayerId]);
 
     return (
         <div

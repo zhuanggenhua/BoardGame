@@ -453,6 +453,27 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(state.core.players['0'].tokens[TOKEN_IDS.NANOBOT]).toBe(1);
     });
 
+    it('机器人已升级为高级后，不应再提供制造该基础机器人的工坊动作', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'main1';
+        state.core.activePlayerId = '0';
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT, { upgraded: true });
+
+        const events = execute(state, command('USE_PASSIVE_ABILITY', '0', {
+            passiveId: 'artificer-workshop',
+            actionIndex: 3,
+        }), fixedRandom);
+
+        expect(events).toHaveLength(0);
+        expect(state.core.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
+        expect(state.core.players['0'].tokens[TOKEN_IDS.NANOBOT]).toBe(1);
+        expect(state.core.players['0'].artificerBotState?.[TOKEN_IDS.NANOBOT]).toMatchObject({
+            built: true,
+            upgraded: true,
+        });
+    });
+
     it('工匠可花费 3 合成器将基础机器人升级为 2 次使用机会', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'main1';
@@ -1478,10 +1499,10 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(49);
     });
 
-    it('基础版稍作调整获得 1 合成器，且只要投出电能就施加 1 纳米爆弹', () => {
+    it('基础版稍作调整按齿轮数量获得合成器，且只要投出电能就施加 1 纳米爆弹', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
-        setPlayerDiceValues(state.core, '0', [6, 1, 4, 2]);
+        setPlayerDiceValues(state.core, '0', [6, 4, 5, 2]);
         const ability = getArtificerAbility(state.core, 'tinker');
 
         const events = resolveEffectsToEvents(ability.effects ?? [], 'withDamage', {
@@ -1498,8 +1519,8 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(eventsOfType(events, 'TOKEN_GRANTED')[0]?.payload).toMatchObject({
             targetId: '0',
             tokenId: TOKEN_IDS.SYNTH,
-            amount: 1,
-            newTotal: 1,
+            amount: 2,
+            newTotal: 2,
             sourceAbilityId: 'tinker',
         });
         expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload).toMatchObject({
@@ -1509,7 +1530,36 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             newTotal: 1,
             sourceAbilityId: 'tinker',
         });
-        expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
+        expect(next.players['1'].statusEffects[STATUS_IDS.NANOBOMB]).toBe(1);
+    });
+
+    it('基础版稍作调整在没有齿轮时不会平白获得合成器，但投出电能仍会施加 1 纳米爆弹', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+        setPlayerDiceValues(state.core, '0', [6, 2, 3, 1]);
+        const ability = getArtificerAbility(state.core, 'tinker');
+
+        const events = resolveEffectsToEvents(ability.effects ?? [], 'withDamage', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'tinker',
+            state: state.core,
+            damageDealt: 0,
+            timestamp: 228,
+            isDefensiveContext: true,
+        }, { random: fixedRandom });
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'TOKEN_GRANTED')).toHaveLength(0);
+        expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.NANOBOMB,
+            stacks: 1,
+            newTotal: 1,
+            sourceAbilityId: 'tinker',
+        });
+        expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
         expect(next.players['1'].statusEffects[STATUS_IDS.NANOBOMB]).toBe(1);
     });
 
@@ -1531,12 +1581,12 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 300);
         const requestedState = applyEvents(state.core, requestEvents);
         const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
-        const nanobotOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateNanobot');
+        const nanobotOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateNanobotFree');
 
         expect(firstRequest?.payload.titleKey).toBe('choices.artificerBotActivation.titleMultiple');
         expect(firstRequest?.payload.options.map(option => option.labelKey)).toEqual(expect.arrayContaining([
-            'choices.artificerBotActivation.activateNanobot',
-            'choices.artificerBotActivation.activateShockBot',
+            'choices.artificerBotActivation.activateNanobotFree',
+            'choices.artificerBotActivation.activateShockBotFree',
             'choices.artificerBotActivation.skip',
         ]));
 
@@ -1561,11 +1611,11 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(firstResolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(47);
         expect(secondRequest?.payload.titleKey).toBe('choices.artificerBotActivation.titleSingle');
         expect(secondRequest?.payload.options.map(option => option.labelKey)).toEqual([
-            'choices.artificerBotActivation.activateShockBot',
+            'choices.artificerBotActivation.activateShockBotFree',
             'choices.artificerBotActivation.skip',
         ]);
 
-        const shockOption = secondRequest!.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateShockBot')!;
+        const shockOption = secondRequest!.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateShockBotFree')!;
         const secondResolution = resolveChoiceWithFollowups(firstResolution.nextState, {
             playerId: '0',
             customId: shockOption.customId!,
@@ -1606,7 +1656,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         const request = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
 
         expect(request?.payload.options.map(option => option.labelKey)).toEqual([
-            'choices.artificerBotActivation.activateShockBot',
+            'choices.artificerBotActivation.activateShockBotFree',
             'choices.artificerBotActivation.skip',
         ]);
 
@@ -1679,7 +1729,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 310);
         const requestedState = applyEvents(state.core, requestEvents);
         const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
-        const healOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateHealBot');
+        const healOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateHealBotFree');
 
         const resolution = resolveChoiceWithFollowups(requestedState, {
             playerId: '0',
@@ -1737,7 +1787,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.pendingAttack?.settlementStage).toBe('postDamagePending');
     });
 
-    it('超频运行在合成器不足时不提供基础机器人，但高级机器人仍可被激活', () => {
+    it('超频运行在技能送的激活链中无视正常激活条件，可免费激活基础和高级机器人', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 1;
         setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT);
@@ -1758,9 +1808,55 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             labelKey: option.labelKey,
             synth: option.labelParams?.synth,
         }))).toEqual([
-            { labelKey: 'choices.artificerBotActivation.activateShockBot', synth: 1 },
+            { labelKey: 'choices.artificerBotActivation.activateNanobotFree', synth: undefined },
+            { labelKey: 'choices.artificerBotActivation.activateShockBotFree', synth: undefined },
             { labelKey: 'choices.artificerBotActivation.skip', synth: undefined },
         ]);
+    });
+
+    it('超频运行在技能送的机器人激活链中应无视正常激活条件，不消耗合成器也允许激活基础机器人', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT);
+        setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT, { upgraded: true });
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'overclock',
+            damageResolved: true,
+            resolvedDamage: 6,
+            settlementStage: 'postDamagePending',
+        } as DiceThroneCore['pendingAttack'];
+
+        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 321);
+        const requestedState = applyEvents(state.core, requestEvents);
+        const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
+        const nanobotOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateNanobotFree');
+
+        expect(firstRequest?.payload.options.map(option => ({
+            labelKey: option.labelKey,
+            synth: option.labelParams?.synth,
+        }))).toEqual([
+            { labelKey: 'choices.artificerBotActivation.activateNanobotFree', synth: undefined },
+            { labelKey: 'choices.artificerBotActivation.activateShockBotFree', synth: undefined },
+            { labelKey: 'choices.artificerBotActivation.skip', synth: undefined },
+        ]);
+
+        const resolution = resolveChoiceWithFollowups(requestedState, {
+            playerId: '0',
+            customId: nanobotOption!.customId!,
+            sourceAbilityId: 'overclock',
+            value: nanobotOption!.value!,
+            timestamp: 322,
+            random: fixedRandom,
+        });
+
+        expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
+        expect(resolution.nextState.players['0'].artificerBotState?.[TOKEN_IDS.NANOBOT]).toMatchObject({
+            built: true,
+            upgraded: false,
+            activationsUsedThisTurn: 1,
+        });
     });
 
     it('灵感突现 II 的从头构建可直接制造一个高级机器人', () => {

@@ -16,6 +16,7 @@ interface StatusEventInput {
     sourceCommandType: string;
     timestamp: number;
     sfxKey?: string;
+    triggerExplosionOnExisting?: boolean;
 }
 
 export function getPowderKegTransferTargetIds(state: DiceThroneCore, _ownerId: PlayerId): PlayerId[] {
@@ -71,12 +72,13 @@ export function buildStatusAppliedOrChoiceEvents({
     sourceCommandType,
     timestamp,
     sfxKey,
+    triggerExplosionOnExisting = true,
 }: StatusEventInput): DiceThroneEvent[] {
     const target = state.players[targetId];
     if (!target || stacks <= 0) return [];
 
     const currentStacks = target.statusEffects[statusId] ?? 0;
-    if (statusId === STATUS_IDS.POWDER_KEG && currentStacks > 0) {
+    if (statusId === STATUS_IDS.POWDER_KEG && currentStacks > 0 && triggerExplosionOnExisting) {
         return [
             ...buildPowderKegExplosionEvents({
                 state,

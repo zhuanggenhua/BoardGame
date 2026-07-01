@@ -2333,6 +2333,94 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             playerId: '1',
         });
         expect(rerollResult.state.core.dice[0].value).toBe(4);
+        expect(rerollResult.state.sys.phase).toBe('offensiveRoll');
+    });
+
+    it('鲨鱼饵在真实攻击链中会保留海盗技能本体的伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-cursed-pirate-shark-bait')];
+        setCursedPirateDiceValues(state, [1, 6, 6, 6, 4]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'undead-claw' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+
+        const modified = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('PLAY_CARD', '0', { cardId: 'card-cursed-pirate-shark-bait' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(modified.success).toBe(true);
+
+        const hpBefore = modified.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const resolved = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            modified.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 10);
+    });
+
+    it('抽筋剥皮在真实攻击链中会保留海盗技能本体的伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-cursed-pirate-flay')];
+        setCursedPirateDiceValues(state, [1, 6, 6, 6, 4]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'undead-claw' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+
+        const modified = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('PLAY_CARD', '0', { cardId: 'card-cursed-pirate-flay' }),
+            createQueuedRandom([1, 1, 1, 1, 1]),
+            ['0', '1'],
+        );
+        expect(modified.success).toBe(true);
+
+        const hpBefore = modified.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const resolved = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            modified.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 13);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
     it('干票大的只要投出战利品就抽 2 并获得 2CP', () => {
@@ -3583,6 +3671,53 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
         expect(accepted.state.core.players['3'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
         expect(accepted.state.core.players['3'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面无情劫掠对已有炸药桶的目标不应当场引爆炸药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        setCursedPirateDiceValues(state, [6, 6, 6, 6, 6]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'merciless-plunder' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
+
+        const prompt = getSimpleChoicePrompt(advanced.state, 'merciless-plunder');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const resolved = respondToPrompt(advanced.state, accept!.id, '0');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
     it('human 面嘿，老兄会结算反击、CP、防伤与诅咒金币选择', () => {

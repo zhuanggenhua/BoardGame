@@ -93,7 +93,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
     allowManualSkip: true,
     steps: [
         {
-            id: 'setup-overview',
+            id: 'setup-state',
             content: 'game-fantasyrealms:tutorial.steps.setupOverview',
             position: 'center',
             showMask: true,
@@ -136,6 +136,13 @@ export const FantasyRealmsTutorial: TutorialManifest = {
                     },
                 },
             ],
+        },
+        {
+            id: 'setup-overview',
+            content: 'game-fantasyrealms:tutorial.steps.setupOverview',
+            position: 'center',
+            infoStep: true,
+            viewAs: '0',
         },
         {
             id: 'draw-overview',

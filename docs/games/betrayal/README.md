@@ -4,8 +4,8 @@
 
 ## 当前结论
 
-- 当前执行现场：`D:\gongzuo\webgame\BoardGame\.worktrees\betrayal`
-- 分支：`feat/game-betrayal`
+- 当前执行现场：`D:\gongzuo\webgame\BoardGame`
+- 分支：`main`
 - 用户本地图片是本轮主真相源，优先用于资源命名、对象识别和后续实现合同。
 - 用户本地 PDF 都是扫描型 PDF，现有自动抽取只能得到空文本，暂时不能直接当“可读规则文本”。
 - 已经从 `Mods\Images` 中挑出 59 个可直接进入运行时的明确资源。
@@ -80,7 +80,7 @@
 
 ## 下一步建议
 
-1. 当前七条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，且已在这轮 `Board.tsx` 焦点修正后重新串行回归通过：
+1. 当前七条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，并且本轮已在当前 `main` 现场重新串行复核通过：
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-traitor-victory.e2e.ts`

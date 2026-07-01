@@ -15,12 +15,14 @@ import {
 } from './interactionSelectionAccessors';
 import { buildQidahenResolvedCommandEvents } from './resolvedCommandEventBuilders';
 import type {
+    CancelPreviewActionCommand,
     ConfirmPreviewActionCommand,
     ExecuteWheelMoveCommand,
     GaoDiDispatchCardSelectedEvent,
     HandLimitDiscardCardSelectedEvent,
     PaymentCardSelectedEvent,
     PreviewActionConfirmedEvent,
+    PreviewActionCancelledEvent,
     QidahenCommand,
     QidahenCore,
     QidahenEvent,
@@ -75,7 +77,7 @@ const buildQidahenSelectedActionExecutedEvent = (
     type: 'SELECTED_ACTION_EXECUTED',
     payload: command.type === 'EXECUTE_SELECTED_ACTION'
         ? {
-            actionId: state.selectedActionId,
+            actionId: state.confirmedActionId ?? state.selectedActionId,
             cardIds: state.selectedPaymentCardIds,
             playerId: command.playerId,
         }
@@ -118,6 +120,18 @@ const buildQidahenPreviewActionConfirmedEvent = (
     type: 'PREVIEW_ACTION_CONFIRMED',
     payload: {
         actionId: command.payload.actionId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenPreviewActionCancelledEvent = (
+    command: CancelPreviewActionCommand,
+    timestamp: number,
+): PreviewActionCancelledEvent => ({
+    type: 'PREVIEW_ACTION_CANCELLED',
+    payload: {
         playerId: command.playerId,
     },
     sourceCommandType: command.type,
@@ -245,6 +259,12 @@ const QIDAHEN_COMMAND_EVENT_BUILDERS: readonly QidahenCommandEventBuilderSpec[] 
         commandTypes: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
         buildEvents: buildSingleCommandEvents<ConfirmPreviewActionCommand>(
             buildQidahenPreviewActionConfirmedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION],
+        buildEvents: buildSingleCommandEvents<CancelPreviewActionCommand>(
+            buildQidahenPreviewActionCancelledEvent,
         ),
     },
     {

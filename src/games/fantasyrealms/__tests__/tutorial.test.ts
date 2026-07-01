@@ -6,6 +6,7 @@ describe('FantasyRealms 教程配置', () => {
     it('基础教程改成短句示范局结构，只保留常规对局的真实流程', () => {
         expect(tutorial.id).toBe('fantasyrealms-basic');
         expect(tutorial.steps.map((step) => step.id)).toEqual([
+            'setup-state',
             'setup-overview',
             'draw-overview',
             'draw-from-deck',
@@ -38,25 +39,38 @@ describe('FantasyRealms 教程配置', () => {
         ]);
     });
 
+    it('开场会先隐藏铺好真实牌桌，再把第一句正式开场文案展示给玩家', () => {
+        const setupState = tutorial.steps.find((step) => step.id === 'setup-state');
+        const setupOverview = tutorial.steps.find((step) => step.id === 'setup-overview');
+        const setupMerge = setupState?.aiActions?.[0];
+
+        expect(setupState?.showMask).toBe(true);
+        expect(setupState?.infoStep).not.toBe(true);
+        expect(setupMerge?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
+        expect(setupOverview?.content).toBe('game-fantasyrealms:tutorial.steps.setupOverview');
+        expect(setupOverview?.infoStep).toBe(true);
+    });
+
     it('教程文案会先讲目标和基础回合，再直接点名当前牌和动作', () => {
-        expect(zhCNLocale.tutorial.steps.setupOverview).toContain('七张起始手牌');
-        expect(zhCNLocale.tutorial.steps.setupOverview).toContain('从牌库或弃牌堆抽取一张牌并弃掉一张牌');
-        expect(zhCNLocale.tutorial.steps.setupOverview).toContain('中央弃牌堆达到 10 张');
-        expect(zhCNLocale.tutorial.steps.drawOverview).toContain('现在从牌库摸 1 张牌');
-        expect(zhCNLocale.tutorial.steps.drawFromDeck).toContain('摸牌按钮');
-        expect(zhCNLocale.tutorial.steps.discardAfterDraw).toContain('幻象');
+        expect(zhCNLocale.tutorial.steps.setupOverview).toBe('先看当前手牌。');
+        expect(zhCNLocale.tutorial.steps.drawOverview).toContain('终局总分最高');
+        expect(zhCNLocale.tutorial.steps.drawOverview).toContain('始终维持 7 张手牌');
+        expect(zhCNLocale.tutorial.steps.drawOverview).toContain('从牌库摸 1 张牌');
+        expect(zhCNLocale.tutorial.steps.drawOverview).toContain('从弃牌堆拿 1 张牌');
+        expect(zhCNLocale.tutorial.steps.drawFromDeck).toBe('现在点击摸牌按钮。');
         expect(zhCNLocale.tutorial.steps.discardAfterDraw).toContain('王后');
         expect(zhCNLocale.tutorial.steps.takeCenterCard).toContain('钟塔');
         expect(zhCNLocale.tutorial.steps.takeCenterCard).toContain('蜡烛');
         expect(zhCNLocale.tutorial.steps.takeCenterCard).toContain('选中钟塔');
         expect(zhCNLocale.tutorial.steps.discardAfterCenter).toContain('选中暴风雨');
-        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('基础分');
-        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('奖励分');
+        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('198 分');
+        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('蜡烛');
+        expect(zhCNLocale.tutorial.steps.scoreIntro).toContain('钟塔');
         expect(zhCNLocale.tutorial.steps.scoreCardDetails).toContain('点击或悬浮卡牌');
-        expect(zhCNLocale.tutorial.steps.scoreTotalReview).toContain('右上角总分');
-        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('最终留牌结算');
-        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('实际算了多少分');
-        expect(zhCNLocale.tutorial.steps.finish).toContain('尝试组出更高分的手牌');
+        expect(zhCNLocale.tutorial.steps.scoreTotalReview).toBe('右上角会显示这手牌的总分。');
+        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('中央弃牌堆达到 10 张');
+        expect(zhCNLocale.tutorial.steps.endgameReview).toContain('分数最高的人获胜');
+        expect(zhCNLocale.tutorial.steps.finish).toBe('现在开始一局真正的幻想国度吧。');
     });
 
     it('计分步骤会把分数带与终局区都纳入教学锚点', () => {

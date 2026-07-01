@@ -28,6 +28,7 @@ scripts/
 - **资源提取**：`node scripts/assets/extract_assets.js`（需先在脚本内配置本地路径常量）
 - **模拟房主流程**：`npx tsx scripts/infra/simulate-host.ts`（用于快速验证创建/加入/离开流程）
 - **图集网格扫描（方案A）**：`npm run atlas:scan -- <image> --rows <rows> --cols <cols>`（输出行/列裁切数据）
+- **Dice Throne 录入切图**：`npm run dicethrone:intake:crops -- --hero <heroId> --source ability-cards --max-index <n>`（只输出到 `temp/dicethrone-intake/<heroId>/...`，用于录入核对，不写正式资源树）
 - **部署（全量）**：`bash scripts/deploy/deploy-auto.sh`（首次部署/装机）
 - **部署（快速更新）**：`bash scripts/deploy/deploy-quick.sh`（已部署后拉取/重建）
 
@@ -50,6 +51,7 @@ scripts/
 
 - `compress_images.js` / `compress_images.py`：图片压缩（JS 启动器 + Python 实现）
 - `atlas_grid_scan.js` / `atlas_grid_scan.py`：图集网格扫描（JS 启动器 + Python 实现）
+- `extract-dicethrone-intake-crops.mjs`：Dice Throne 录入切图工具，只输出到 `temp/`
 - `pack_sprite_atlas.js` / `pack_sprite_atlas.py`：图集打包（JS 启动器 + Python 实现）
 - `scan_sprite_bounds.py`：精灵图内容边界扫描（识别每帧真实内容区域，裁切黑边/透明边）
 - `scan_atlas_to_file.py`：图集扫描输出到文件

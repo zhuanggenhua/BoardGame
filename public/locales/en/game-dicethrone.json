@@ -511,7 +511,7 @@
       "title": "Dice Display",
       "hint": "Switch the in-match dice presentation without changing the actual roll result.",
       "board3d": "Board 3D Dice",
-      "board3dHint": "Use the in-board 3D dice presentation during rolls. Off by default.",
+      "board3dHint": "When enabled, your own roll phase uses the board 3D dice stage; response dice interactions that require direct die clicks use the board stage automatically.",
       "enabled": "Enabled",
       "disabled": "Disabled"
     }
@@ -648,6 +648,7 @@
     "rolling": "Rolling...",
     "roll": "Roll ({{current}}/{{total}})",
     "roll_action": "Roll",
+    "reroll_action": "Reroll",
     "reroll": "Reroll",
     "rerollSelected": "Selected",
     "confirm": "Confirm",

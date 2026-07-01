@@ -80,6 +80,7 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passi
 import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import { useDiceThroneDisplayPreference } from './ui/useDiceThroneDisplayPreference';
+import { canInteractDiceForCurrentBoard, shouldUseBoardDiceStage } from './ui/diceStagePolicy';
 import { useSyncedModalStackEntry } from '../../hooks/ui/useSyncedModalStackEntry';
 import { TokenResponseModal } from './ui/TokenResponseModal';
 import { InteractionOverlay } from './ui/InteractionOverlay';
@@ -539,7 +540,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         diceMultistepInteraction,
         dispatch,
     );
-
     // 追踪取消交互时返回的卡牌ID
     const prevInteractionRef = React.useRef<typeof pendingInteraction>(undefined);
     React.useEffect(() => {
@@ -706,6 +706,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             : undefined;
     const canOperateView = isSelfView && !isSpectator;
     const hasRolled = G.rollCount > 0;
+    const [rerollSelectingAction, setRerollSelectingAction] = React.useState<{ passiveId: string; actionIndex: number } | null>(null);
 
     // 焦点玩家判断（统一的操作权判断）
     const isFocusPlayer = !isSpectator && access.focusPlayerId === rootPid;
@@ -716,7 +717,27 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const canResolveChoice = Boolean(choice.hasChoice && choice.playerId === rootPid);
     // 产品特例：Duel 在防御阶段只能“结束防御”进入对掷，不允许手动掷防御骰。
     const isDuelDirectDefenseOnly = currentPhase === 'defensiveRoll' && G.pendingAttack?.defenseAbilityId === 'duel';
-    const canInteractDice = canOperateView && isViewRolling && !isAttackShowcaseVisible && !isDuelDirectDefenseOnly;
+    const diceInteractionPlayerId = diceMultistepInteraction?.playerId != null
+        ? String(diceMultistepInteraction.playerId)
+        : undefined;
+    const canInteractDice = canInteractDiceForCurrentBoard({
+        isSpectator,
+        isSelfView,
+        isViewRolling,
+        isAttackShowcaseVisible,
+        isDuelDirectDefenseOnly,
+        isManualSelfResponseWindow,
+        isDirectDiceActor,
+        currentResponderId,
+        rootPid,
+        diceInteractionPlayerId,
+        boardDice3dEnabled,
+        isRollPhase,
+        rollCount: G.rollCount,
+        isRolling,
+        hasPassiveRerollSelection: !!rerollSelectingAction,
+        hasDiceMultistepInteraction: !!diceMultistepInteraction,
+    });
 
     // 防御阶段进入时就应高亮可用的防御技能，不需要等投骰
     // 响应窗口打开时，如果本地玩家是响应者，也应该高亮可用技能
@@ -988,8 +1009,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
 
     // ========== 被动能力（如教皇税）==========
-    const [rerollSelectingAction, setRerollSelectingAction] = React.useState<{ passiveId: string; actionIndex: number } | null>(null);
-
     const playerPassives = React.useMemo(
         () => getPlayerPassiveAbilities(G, rootPid),
         [G, rootPid]
@@ -1048,12 +1067,24 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             onCancelRerollSelect: () => setRerollSelectingAction(null),
         };
     }, [playerPassives, passiveActionUsability, player.resources, rerollSelectingAction, handlePassiveActionClick]);
-    const useBoardDiceStage = boardDice3dEnabled && ((
-        isRollPhase
-        && isViewRolling
-        && (G.rollCount > 0 || isRolling || !!rerollSelectingAction)
-    ) || !!diceMultistepInteraction);
-
+    const useBoardDiceStage = shouldUseBoardDiceStage({
+        isSpectator,
+        isSelfView,
+        isViewRolling,
+        isAttackShowcaseVisible,
+        isDuelDirectDefenseOnly,
+        isManualSelfResponseWindow,
+        isDirectDiceActor,
+        currentResponderId,
+        rootPid,
+        diceInteractionPlayerId,
+        boardDice3dEnabled,
+        isRollPhase,
+        rollCount: G.rollCount,
+        isRolling,
+        hasPassiveRerollSelection: !!rerollSelectingAction,
+        hasDiceMultistepInteraction: !!diceMultistepInteraction,
+    });
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -1985,7 +2016,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         discardHighlighted={discardHighlighted}
                         sellButtonVisible={sellButtonVisible}
                         interaction={diceMultistepInteraction ?? pendingInteraction}
-                        dispatch={dispatch}
                         multistepInteraction={diceMultistepState}
                         showDiceTray={!useBoardDiceStage}
                         activeModifiers={activeModifiers}

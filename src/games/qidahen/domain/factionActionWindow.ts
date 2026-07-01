@@ -149,10 +149,14 @@ export const syncFactionActionWindow = (
     const selectedActionId = isFactionActionSelectable(state, factionId, state.selectedActionId)
         ? state.selectedActionId
         : fallbackActionId;
+    const confirmedActionId = state.confirmedActionId === selectedActionId
+        ? state.confirmedActionId
+        : null;
     return {
         ...state,
         actionChoices,
         selectedActionId,
+        confirmedActionId,
         payment: buildPaymentState(selectedActionId, state.selectedPaymentCardIds.length),
     };
 };

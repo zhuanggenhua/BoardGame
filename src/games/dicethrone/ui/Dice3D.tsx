@@ -21,6 +21,9 @@ import {
     markImageLoaded,
 } from '../../../core';
 
+type RapierRigidBody = import('@dimforge/rapier3d-compat').RigidBody;
+type RapierWorld = import('@dimforge/rapier3d-compat').World;
+
 export interface Dice3DProps {
     value: number;
     isRolling: boolean;
@@ -30,6 +33,8 @@ export interface Dice3DProps {
     variant?: 'default' | 'spotlight' | 'board-topdown';
     characterId?: string;
     definitionId?: string;
+    enableWebgl?: boolean;
+    overrideTransform?: string;
 }
 
 export interface DiceField3DProps {
@@ -71,6 +76,9 @@ export interface ProjectedDiceLayout {
     minY: number;
     maxY: number;
     selected: boolean;
+    rotateX: number;
+    rotateY: number;
+    rotateZ: number;
 }
 
 const dice3DLogger = createScopedLogger('dicethrone:dice3d');
@@ -89,6 +97,54 @@ const DICE3D_STYLE_TEXT = `
 }
 .animate-dice3d-tumble { animation: dice3d-tumble 1s linear infinite; }
 .animate-dice3d-bonus-tumble { animation: dice3d-bonus-tumble 0.8s linear infinite; }
+@keyframes dice3d-rail-shadow {
+  0% { transform: scale(1) translateZ(0); opacity: 0.22; }
+  22% { transform: scale(0.82) translateZ(0); opacity: 0.11; }
+  48% { transform: scale(0.9) translateZ(0); opacity: 0.16; }
+  76% { transform: scale(0.96) translateZ(0); opacity: 0.2; }
+  100% { transform: scale(1) translateZ(0); opacity: 0.22; }
+}
+@keyframes dice3d-rail-flight-0 {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  18% { transform: translate3d(-6%, -18%, 0) rotateX(180deg) rotateY(160deg) rotateZ(46deg); }
+  43% { transform: translate3d(8%, -33%, 0) rotateX(420deg) rotateY(480deg) rotateZ(132deg); }
+  68% { transform: translate3d(-4%, -12%, 0) rotateX(640deg) rotateY(760deg) rotateZ(210deg); }
+  100% { transform: translate3d(0, 0, 0) rotateX(760deg) rotateY(900deg) rotateZ(270deg); }
+}
+@keyframes dice3d-rail-flight-1 {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  17% { transform: translate3d(7%, -16%, 0) rotateX(150deg) rotateY(210deg) rotateZ(-32deg); }
+  42% { transform: translate3d(-9%, -34%, 0) rotateX(400deg) rotateY(520deg) rotateZ(114deg); }
+  69% { transform: translate3d(5%, -10%, 0) rotateX(690deg) rotateY(780deg) rotateZ(196deg); }
+  100% { transform: translate3d(0, 0, 0) rotateX(840deg) rotateY(980deg) rotateZ(288deg); }
+}
+@keyframes dice3d-rail-flight-2 {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  20% { transform: translate3d(-4%, -14%, 0) rotateX(210deg) rotateY(180deg) rotateZ(24deg); }
+  46% { transform: translate3d(6%, -29%, 0) rotateX(470deg) rotateY(520deg) rotateZ(148deg); }
+  72% { transform: translate3d(-3%, -8%, 0) rotateX(720deg) rotateY(820deg) rotateZ(246deg); }
+  100% { transform: translate3d(0, 0, 0) rotateX(880deg) rotateY(1020deg) rotateZ(312deg); }
+}
+@keyframes dice3d-rail-flight-3 {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  19% { transform: translate3d(6%, -20%, 0) rotateX(170deg) rotateY(150deg) rotateZ(-26deg); }
+  45% { transform: translate3d(-10%, -36%, 0) rotateX(430deg) rotateY(470deg) rotateZ(126deg); }
+  70% { transform: translate3d(4%, -13%, 0) rotateX(700deg) rotateY(760deg) rotateZ(224deg); }
+  100% { transform: translate3d(0, 0, 0) rotateX(860deg) rotateY(940deg) rotateZ(300deg); }
+}
+@keyframes dice3d-rail-flight-4 {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  16% { transform: translate3d(-7%, -15%, 0) rotateX(140deg) rotateY(190deg) rotateZ(42deg); }
+  41% { transform: translate3d(9%, -31%, 0) rotateX(390deg) rotateY(500deg) rotateZ(138deg); }
+  67% { transform: translate3d(-5%, -11%, 0) rotateX(660deg) rotateY(790deg) rotateZ(228deg); }
+  100% { transform: translate3d(0, 0, 0) rotateX(820deg) rotateY(970deg) rotateZ(294deg); }
+}
+.animate-dice3d-rail-shadow { animation: dice3d-rail-shadow 900ms cubic-bezier(0.2, 0.7, 0.18, 1) both; }
+.animate-dice3d-rail-flight-0 { animation: dice3d-rail-flight-0 900ms cubic-bezier(0.2, 0.7, 0.18, 1) both; }
+.animate-dice3d-rail-flight-1 { animation: dice3d-rail-flight-1 920ms cubic-bezier(0.2, 0.7, 0.18, 1) both; }
+.animate-dice3d-rail-flight-2 { animation: dice3d-rail-flight-2 880ms cubic-bezier(0.2, 0.7, 0.18, 1) both; }
+.animate-dice3d-rail-flight-3 { animation: dice3d-rail-flight-3 940ms cubic-bezier(0.2, 0.7, 0.18, 1) both; }
+.animate-dice3d-rail-flight-4 { animation: dice3d-rail-flight-4 910ms cubic-bezier(0.2, 0.7, 0.18, 1) both; }
 `;
 
 const DICE_FACE_FALLBACK_LABELS: Record<string, string> = {
@@ -349,14 +405,35 @@ const loadDiceSpriteCandidatesShared = (candidateUrls: string[]): Promise<DiceSp
 
             const url = candidateUrls[index];
             const img = new Image();
-            img.onload = () => {
+            let settled = false;
+            const finish = (result: DiceSpriteLoadResult) => {
+                if (settled) return;
+                settled = true;
+                resolve(result);
+            };
+            const settleFromDimensions = () => {
+                if (img.naturalWidth <= 0) return false;
                 markImageLoaded(url, undefined, img);
-                resolve({ url, img });
+                finish({ url, img });
+                return true;
+            };
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                settleFromDimensions();
             };
             img.onerror = () => {
+                if (settled) return;
                 tryLoad(index + 1);
             };
             img.src = url;
+            if (img.complete && settleFromDimensions()) return;
+
+            const pollDecodedImage = () => {
+                if (settled) return;
+                if (settleFromDimensions()) return;
+                window.requestAnimationFrame(pollDecodedImage);
+            };
+            window.requestAnimationFrame(pollDecodedImage);
         };
 
         tryLoad(0);
@@ -399,16 +476,36 @@ const loadDiceAtlasImageShared = (candidateUrls: string[]): Promise<DiceAtlasIma
 
             const url = orderedCandidates[index];
             const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
+            let settled = false;
+            const finish = (result: DiceAtlasImageLoadResult) => {
+                if (settled) return;
+                settled = true;
+                resolve(result);
+            };
+            const settleFromDimensions = () => {
+                if (img.naturalWidth <= 0) return false;
                 diceAtlasImageCache.set(url, img);
                 markImageLoaded(url, undefined, img);
-                resolve({ url, img });
+                finish({ url, img });
+                return true;
+            };
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                settleFromDimensions();
             };
             img.onerror = () => {
+                if (settled) return;
                 tryLoad(index + 1);
             };
             img.src = url;
+            if (img.complete && settleFromDimensions()) return;
+
+            const pollDecodedImage = () => {
+                if (settled) return;
+                if (settleFromDimensions()) return;
+                window.requestAnimationFrame(pollDecodedImage);
+            };
+            window.requestAnimationFrame(pollDecodedImage);
         };
 
         tryLoad(0);
@@ -624,7 +721,7 @@ function createFaceTexture(
         drawFallbackDieFace(ctx, size, fallbackMeta, isSpotlight);
     }
 
-    const texture = new THREE.Texture(canvas);
+    const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.flipY = false;
     texture.premultiplyAlpha = false;
@@ -876,6 +973,18 @@ function createPrototypeDiceMesh({
     };
 }
 
+function applyAngularVelocityQuaternion(
+    quaternion: THREE.Quaternion,
+    angularVelocity: THREE.Vector3,
+    deltaSeconds: number,
+) {
+    const angularSpeed = angularVelocity.length();
+    if (angularSpeed < 0.0001 || deltaSeconds <= 0) return;
+    const axis = angularVelocity.clone().normalize();
+    const deltaQuat = new THREE.Quaternion().setFromAxisAngle(axis, angularSpeed * deltaSeconds);
+    quaternion.premultiply(deltaQuat).normalize();
+}
+
 export const DiceField3D = ({
     dice,
     selectedDieIds = [],
@@ -906,14 +1015,14 @@ export const DiceField3D = ({
             targetX: number;
             targetZ: number;
             posX: number;
+            posY: number;
             posZ: number;
             velocityX: number;
+            velocityY: number;
             velocityZ: number;
-            bouncePhase: number;
-            bounceAmplitude: number;
-            spinX: number;
-            spinY: number;
-            spinZ: number;
+            angularVelocity: THREE.Vector3;
+            settleProgress: number;
+            rigidBody?: RapierRigidBody;
             wasRolling: boolean;
         }>;
         raycaster: THREE.Raycaster;
@@ -922,6 +1031,7 @@ export const DiceField3D = ({
     } | null>(null);
     const rollingRef = React.useRef({ isRolling, rerollingDiceIds });
     const selectedDieIdsRef = React.useRef(new Set<number>(selectedDieIds));
+    const lastTickAtRef = React.useRef(0);
     const signature = React.useMemo(
         () => dice.map((die) => `${die.id}:${die.value}:${die.definitionId ?? ''}`).join('|'),
         [dice],
@@ -1152,14 +1262,14 @@ export const DiceField3D = ({
                 targetX: worldX,
                 targetZ: worldZ,
                 posX: worldX,
+                posY: item.baseY,
                 posZ: worldZ,
                 velocityX: 0,
+                velocityY: 0,
                 velocityZ: 0,
-                bouncePhase: index * 0.75,
-                bounceAmplitude: 0,
-                spinX: 0.14 + (index * 0.01),
-                spinY: 0.17 + (index * 0.012),
-                spinZ: 0.05 + (index * 0.008),
+                angularVelocity: new THREE.Vector3(0, 0, 0),
+                settleProgress: 0,
+                rigidBody: undefined,
                 wasRolling: false,
             };
         });
@@ -1235,6 +1345,57 @@ export const DiceField3D = ({
         const xBounds: [number, number] = scenePreset === 'board-topdown' ? [-2.26, 2.26] : [-2.35, 2.35];
         const zBounds: [number, number] = scenePreset === 'board-topdown' ? [-1.62, 1.5] : [-0.88, 0.88];
         const collisionRadius = scenePreset === 'board-topdown' ? 0.9 : 0.78;
+        const physics = scenePreset === 'board-topdown'
+            ? {
+                gravity: -12.8,
+                launchLinear: [1.9, 2.45] as const,
+                launchVertical: [3.9, 4.8] as const,
+                launchAngular: [8.8, 12.8] as const,
+                groundRestitution: 0.42,
+                wallRestitution: 0.58,
+                collisionRestitution: 0.72,
+                airLinearDamping: 0.18,
+                groundRollingLinearDamping: 3.1,
+                groundSettlingLinearDamping: 5.8,
+                airAngularDamping: 0.24,
+                groundRollingAngularDamping: 1.85,
+                groundSettlingAngularDamping: 4.6,
+                settleLinearSpeed: 0.28,
+                settleAngularSpeed: 1.32,
+                settleRotateSpeed: 5.6,
+                settleProgressRate: 2.6,
+                returnAttraction: 3.4,
+                snapLerp: 6.8,
+                angularCouple: 5.8,
+                collisionSpinKick: 0.55,
+            }
+            : {
+                gravity: -10.6,
+                launchLinear: [1.4, 1.95] as const,
+                launchVertical: [4.8, 5.7] as const,
+                launchAngular: [10.2, 14.5] as const,
+                groundRestitution: 0.48,
+                wallRestitution: 0.62,
+                collisionRestitution: 0.76,
+                airLinearDamping: 0.14,
+                groundRollingLinearDamping: 2.4,
+                groundSettlingLinearDamping: 4.8,
+                airAngularDamping: 0.2,
+                groundRollingAngularDamping: 1.45,
+                groundSettlingAngularDamping: 3.9,
+                settleLinearSpeed: 0.24,
+                settleAngularSpeed: 1.2,
+                settleRotateSpeed: 5.2,
+                settleProgressRate: 2.8,
+                returnAttraction: 2.6,
+                snapLerp: 5.6,
+                angularCouple: 4.8,
+                collisionSpinKick: 0.48,
+            };
+        let rapierWorld: RapierWorld | null = null;
+        let rapierAccumulator = 0;
+        let rapierReady = false;
+        const rapierFixedDt = 1 / 60;
 
         const resolveDiceSeparation = () => {
             for (let i = 0; i < diceItems.length; i += 1) {
@@ -1261,10 +1422,18 @@ export const DiceField3D = ({
                     b.posX = THREE.MathUtils.clamp(b.posX + pushX, xBounds[0], xBounds[1]);
                     b.posZ = THREE.MathUtils.clamp(b.posZ + pushZ, zBounds[0], zBounds[1]);
 
-                    a.velocityX -= pushX * 0.06;
-                    a.velocityZ -= pushZ * 0.06;
-                    b.velocityX += pushX * 0.06;
-                    b.velocityZ += pushZ * 0.06;
+                    const relativeVelocityX = b.velocityX - a.velocityX;
+                    const relativeVelocityZ = b.velocityZ - a.velocityZ;
+                    const separatingVelocity = (relativeVelocityX * nx) + (relativeVelocityZ * nz);
+                    if (separatingVelocity < 0) {
+                        const impulse = (-(1 + physics.collisionRestitution) * separatingVelocity) / 2;
+                        a.velocityX -= nx * impulse;
+                        a.velocityZ -= nz * impulse;
+                        b.velocityX += nx * impulse;
+                        b.velocityZ += nz * impulse;
+                        a.angularVelocity.y -= impulse * physics.collisionSpinKick;
+                        b.angularVelocity.y += impulse * physics.collisionSpinKick;
+                    }
                 }
             }
         };
@@ -1307,6 +1476,7 @@ export const DiceField3D = ({
                 const halfHeight = (height / 2) + (scenePreset === 'board-topdown' ? 18 : 6);
                 const centerX = THREE.MathUtils.clamp((minX + maxX) / 2, halfWidth, Math.max(halfWidth, rect.width - halfWidth));
                 const centerY = THREE.MathUtils.clamp((minY + maxY) / 2, halfHeight, Math.max(halfHeight, rect.height - halfHeight));
+                const projectedEuler = new THREE.Euler().setFromQuaternion(item.mesh.quaternion, 'XYZ');
                 return {
                     id: item.dieId,
                     x: centerX,
@@ -1318,10 +1488,97 @@ export const DiceField3D = ({
                     minY,
                     maxY,
                     selected: selectedDieIdsRef.current.has(item.dieId),
+                    rotateX: projectedEuler.x,
+                    rotateY: projectedEuler.y,
+                    rotateZ: projectedEuler.z,
                 };
             });
             callback(layouts);
         };
+
+        const initRapierWorld = async () => {
+            if (scenePreset !== 'board-topdown' || rapierReady) return;
+            try {
+                const RAPIER = await import('@dimforge/rapier3d-compat');
+                await RAPIER.init();
+                if (stateRef.current?.disposed) return;
+
+                const world = new RAPIER.World({ x: 0, y: physics.gravity, z: 0 });
+                world.timestep = rapierFixedDt;
+                world.numSolverIterations = 8;
+                world.numAdditionalFrictionIterations = 6;
+                world.numInternalPgsIterations = 2;
+
+                const floorY = Math.min(...diceItems.map((item) => item.baseY));
+                const floorBody = world.createRigidBody(
+                    RAPIER.RigidBodyDesc.fixed().setTranslation(0, floorY - 0.08, 0),
+                );
+                world.createCollider(
+                    RAPIER.ColliderDesc.cuboid(3.4, 0.08, 2.6)
+                        .setFriction(0.92)
+                        .setRestitution(0.18),
+                    floorBody,
+                );
+
+                const wallHeight = 1.35;
+                const wallY = floorY + wallHeight - 0.12;
+                const wallDefinitions = [
+                    { x: xBounds[0] - 0.08, y: wallY, z: 0, hx: 0.08, hy: wallHeight, hz: 2.5 },
+                    { x: xBounds[1] + 0.08, y: wallY, z: 0, hx: 0.08, hy: wallHeight, hz: 2.5 },
+                    { x: 0, y: wallY, z: zBounds[0] - 0.08, hx: 3.2, hy: wallHeight, hz: 0.08 },
+                    { x: 0, y: wallY, z: zBounds[1] + 0.08, hx: 3.2, hy: wallHeight, hz: 0.08 },
+                ];
+                wallDefinitions.forEach((wall) => {
+                    const wallBody = world.createRigidBody(
+                        RAPIER.RigidBodyDesc.fixed().setTranslation(wall.x, wall.y, wall.z),
+                    );
+                    world.createCollider(
+                        RAPIER.ColliderDesc.cuboid(wall.hx, wall.hy, wall.hz)
+                            .setFriction(0.78)
+                            .setRestitution(0.52),
+                        wallBody,
+                    );
+                });
+
+                diceItems.forEach((item) => {
+                    const body = world.createRigidBody(
+                        RAPIER.RigidBodyDesc.dynamic()
+                            .setTranslation(item.posX, item.baseY + 0.08, item.posZ)
+                            .setRotation({
+                                x: item.targetQuat.x,
+                                y: item.targetQuat.y,
+                                z: item.targetQuat.z,
+                                w: item.targetQuat.w,
+                            })
+                            .setLinearDamping(0.12)
+                            .setAngularDamping(0.16)
+                            .setCcdEnabled(true)
+                            .setCanSleep(true)
+                            .setAdditionalSolverIterations(2),
+                    );
+                    world.createCollider(
+                        RAPIER.ColliderDesc.cuboid(0.56, 0.56, 0.56)
+                            .setFriction(0.86)
+                            .setRestitution(0.36),
+                        body,
+                    );
+                    item.rigidBody = body;
+                });
+
+                rapierWorld = world;
+                rapierReady = true;
+            } catch (error) {
+                dice3DLogger.warn('board-rapier-init-failed', {
+                    scenePreset,
+                    error,
+                });
+                rapierWorld = null;
+                rapierReady = false;
+            }
+        };
+        if (scenePreset === 'board-topdown') {
+            void initRapierWorld();
+        }
 
         const tick = () => {
             const state = stateRef.current;
@@ -1330,77 +1587,266 @@ export const DiceField3D = ({
             const underlayCtx = underlayCanvas.getContext('2d');
             const stageRect = canvas.getBoundingClientRect();
             const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            const now = performance.now();
+            const deltaSeconds = lastTickAtRef.current > 0
+                ? THREE.MathUtils.clamp((now - lastTickAtRef.current) / 1000, 1 / 120, 1 / 24)
+                : 1 / 60;
+            lastTickAtRef.current = now;
+            const useRapierBoardPhysics = scenePreset === 'board-topdown' && rapierReady && !!rapierWorld;
             diceItems.forEach((item, dieIndex) => {
                 const die = dice[dieIndex];
                 const dieRolling = rolling.isRolling || Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
                 const wasRolling = item.wasRolling;
+                if (useRapierBoardPhysics && item.rigidBody) {
+                    const body = item.rigidBody;
+                    if (dieRolling) {
+                        if (!wasRolling) {
+                            const launchSpread = ((dieIndex / Math.max(1, diceItems.length - 1)) * Math.PI * 1.72);
+                            const launchAngle = (-Math.PI * 0.9) + launchSpread + ((Math.random() - 0.5) * 0.34);
+                            const linearSpeed = physics.launchLinear[0] + (Math.random() * (physics.launchLinear[1] - physics.launchLinear[0]));
+                            const verticalSpeed = physics.launchVertical[0] + (Math.random() * (physics.launchVertical[1] - physics.launchVertical[0]));
+                            const angularSpeed = physics.launchAngular[0] + (Math.random() * (physics.launchAngular[1] - physics.launchAngular[0]));
+                            body.setTranslation({ x: item.posX, y: item.baseY + 0.18, z: item.posZ }, true);
+                            body.setRotation({
+                                x: item.mesh.quaternion.x,
+                                y: item.mesh.quaternion.y,
+                                z: item.mesh.quaternion.z,
+                                w: item.mesh.quaternion.w,
+                            }, true);
+                            body.setLinvel({
+                                x: Math.cos(launchAngle) * linearSpeed,
+                                y: verticalSpeed,
+                                z: Math.sin(launchAngle) * linearSpeed * 0.9,
+                            }, true);
+                            body.setAngvel({
+                                x: (Math.random() - 0.5) * angularSpeed,
+                                y: (Math.random() - 0.5) * angularSpeed * 1.15,
+                                z: (Math.random() - 0.5) * angularSpeed,
+                            }, true);
+                            body.wakeUp();
+                            item.settleProgress = 0;
+                        }
+                        item.wasRolling = true;
+                    } else {
+                        if (wasRolling) {
+                            item.targetX = THREE.MathUtils.clamp(item.posX, xBounds[0], xBounds[1]);
+                            item.targetZ = THREE.MathUtils.clamp(item.posZ, zBounds[0], zBounds[1]);
+                            item.settleProgress = 0;
+                        }
+                        item.wasRolling = false;
+                    }
+                    return;
+                }
                 if (dieRolling) {
                     if (!wasRolling) {
-                        if (scenePreset === 'board-topdown') {
-                            const launchAngle = (-Math.PI * 0.9)
-                                + ((dieIndex / Math.max(1, diceItems.length - 1)) * Math.PI * 1.72)
-                                + ((Math.random() - 0.5) * 0.34);
-                            const launchSpeedX = 0.22 + (Math.random() * 0.06);
-                            const launchSpeedZ = 0.18 + (Math.random() * 0.05);
-                            item.velocityX = Math.cos(launchAngle) * launchSpeedX;
-                            item.velocityZ = Math.sin(launchAngle) * launchSpeedZ;
-                            item.bounceAmplitude = 0.22 + (Math.random() * 0.06);
-                            item.spinX = 0.13 + (Math.random() * 0.04);
-                            item.spinY = 0.15 + (Math.random() * 0.05);
-                            item.spinZ = 0.05 + (Math.random() * 0.03);
-                        } else {
-                            item.velocityX = (Math.random() - 0.5) * 0.18;
-                            item.velocityZ = (Math.random() - 0.5) * 0.11;
-                            item.bounceAmplitude = 0.58 + (Math.random() * 0.12);
-                            item.spinX = 0.16 + (Math.random() * 0.06);
-                            item.spinY = 0.18 + (Math.random() * 0.08);
-                            item.spinZ = 0.06 + (Math.random() * 0.04);
-                        }
+                        const launchSpread = scenePreset === 'board-topdown'
+                            ? ((dieIndex / Math.max(1, diceItems.length - 1)) * Math.PI * 1.72)
+                            : ((Math.random() - 0.5) * Math.PI * 0.42);
+                        const launchAngle = (-Math.PI * 0.9) + launchSpread + ((Math.random() - 0.5) * 0.34);
+                        const linearSpeed = physics.launchLinear[0] + (Math.random() * (physics.launchLinear[1] - physics.launchLinear[0]));
+                        const verticalSpeed = physics.launchVertical[0] + (Math.random() * (physics.launchVertical[1] - physics.launchVertical[0]));
+                        const angularSpeed = physics.launchAngular[0] + (Math.random() * (physics.launchAngular[1] - physics.launchAngular[0]));
+                        item.posY = item.baseY + (scenePreset === 'board-topdown' ? 0.08 : 0.14);
+                        item.velocityX = Math.cos(launchAngle) * linearSpeed;
+                        item.velocityZ = Math.sin(launchAngle) * linearSpeed * (scenePreset === 'board-topdown' ? 0.9 : 0.72);
+                        item.velocityY = verticalSpeed;
+                        item.angularVelocity.set(
+                            (Math.random() - 0.5) * angularSpeed,
+                            (Math.random() - 0.5) * angularSpeed * 1.15,
+                            (Math.random() - 0.5) * angularSpeed,
+                        );
+                        item.settleProgress = 0;
                     }
                     item.wasRolling = true;
-                    item.posX += item.velocityX;
-                    item.posZ += item.velocityZ;
-                    if (item.posX < xBounds[0] || item.posX > xBounds[1]) {
-                        item.posX = THREE.MathUtils.clamp(item.posX, xBounds[0], xBounds[1]);
-                        item.velocityX *= -0.82;
-                    }
-                    if (item.posZ < zBounds[0] || item.posZ > zBounds[1]) {
-                        item.posZ = THREE.MathUtils.clamp(item.posZ, zBounds[0], zBounds[1]);
-                        item.velocityZ *= -0.82;
-                    }
-                    item.velocityX *= scenePreset === 'board-topdown' ? 0.989 : 0.992;
-                    item.velocityZ *= scenePreset === 'board-topdown' ? 0.989 : 0.992;
-                    item.bounceAmplitude *= scenePreset === 'board-topdown' ? 0.976 : 0.985;
-                    item.mesh.rotation.x += item.spinX;
-                    item.mesh.rotation.y += item.spinY;
-                    item.mesh.rotation.z += item.spinZ;
-                    item.mesh.position.x = item.posX;
-                    item.mesh.position.z = item.posZ;
-                    item.mesh.position.y = item.baseY + Math.abs(Math.sin((performance.now() * 0.0105) + item.bouncePhase)) * item.bounceAmplitude;
                 } else {
                     if (wasRolling) {
                         item.targetX = THREE.MathUtils.clamp(item.posX, xBounds[0], xBounds[1]);
                         item.targetZ = THREE.MathUtils.clamp(item.posZ, zBounds[0], zBounds[1]);
-                        item.posX = item.targetX;
-                        item.posZ = item.targetZ;
-                        item.velocityX = 0;
-                        item.velocityZ = 0;
-                        item.bounceAmplitude = 0;
+                        item.settleProgress = 0;
                     }
                     item.wasRolling = false;
-                    item.posX += (item.targetX - item.posX) * 0.16;
-                    item.posZ += (item.targetZ - item.posZ) * 0.16;
-                    if (scenePreset === 'board-topdown') {
-                        item.mesh.quaternion.copy(item.targetQuat);
-                    } else {
-                        item.mesh.quaternion.rotateTowards(item.targetQuat, 0.1);
+                    item.velocityX += (item.targetX - item.posX) * physics.returnAttraction * deltaSeconds;
+                    item.velocityZ += (item.targetZ - item.posZ) * physics.returnAttraction * deltaSeconds;
+                }
+
+                item.velocityY += physics.gravity * deltaSeconds;
+                item.posX += item.velocityX * deltaSeconds;
+                item.posY += item.velocityY * deltaSeconds;
+                item.posZ += item.velocityZ * deltaSeconds;
+
+                if (item.posX < xBounds[0] || item.posX > xBounds[1]) {
+                    item.posX = THREE.MathUtils.clamp(item.posX, xBounds[0], xBounds[1]);
+                    item.velocityX *= -physics.wallRestitution;
+                    item.angularVelocity.z *= -0.78;
+                }
+                if (item.posZ < zBounds[0] || item.posZ > zBounds[1]) {
+                    item.posZ = THREE.MathUtils.clamp(item.posZ, zBounds[0], zBounds[1]);
+                    item.velocityZ *= -physics.wallRestitution;
+                    item.angularVelocity.x *= -0.78;
+                }
+
+                applyAngularVelocityQuaternion(item.mesh.quaternion, item.angularVelocity, deltaSeconds);
+
+                let grounded = false;
+                if (item.posY <= item.baseY) {
+                    item.posY = item.baseY;
+                    grounded = true;
+                    if (item.velocityY < 0) {
+                        item.velocityY = Math.abs(item.velocityY) * physics.groundRestitution;
                     }
-                    item.mesh.position.x = item.posX;
-                    item.mesh.position.z = item.posZ;
-                    item.mesh.position.y += (item.baseY - item.mesh.position.y) * (scenePreset === 'board-topdown' ? 0.34 : 0.18);
+                    item.angularVelocity.x += (-item.velocityZ * physics.angularCouple) * deltaSeconds;
+                    item.angularVelocity.z += (item.velocityX * physics.angularCouple) * deltaSeconds;
+                    if (item.velocityY < 0.14) {
+                        item.velocityY = 0;
+                    }
+                }
+
+                const linearDamping = grounded
+                    ? (dieRolling ? physics.groundRollingLinearDamping : physics.groundSettlingLinearDamping)
+                    : physics.airLinearDamping;
+                const angularDamping = grounded
+                    ? (dieRolling ? physics.groundRollingAngularDamping : physics.groundSettlingAngularDamping)
+                    : physics.airAngularDamping;
+                const linearDampingFactor = Math.exp(-linearDamping * deltaSeconds);
+                item.velocityX *= linearDampingFactor;
+                item.velocityZ *= linearDampingFactor;
+                item.angularVelocity.multiplyScalar(Math.exp(-angularDamping * deltaSeconds));
+
+                if (!dieRolling) {
+                    const linearSpeed = Math.hypot(item.velocityX, item.velocityY, item.velocityZ);
+                    const angularSpeed = item.angularVelocity.length();
+                    const distanceToTarget = Math.hypot(item.targetX - item.posX, item.targetZ - item.posZ);
+                    if (grounded && linearSpeed < physics.settleLinearSpeed && angularSpeed < physics.settleAngularSpeed) {
+                        item.settleProgress = Math.min(1, item.settleProgress + (deltaSeconds * physics.settleProgressRate));
+                        item.posX = THREE.MathUtils.lerp(
+                            item.posX,
+                            item.targetX,
+                            Math.min(1, deltaSeconds * physics.snapLerp * (0.42 + item.settleProgress)),
+                        );
+                        item.posZ = THREE.MathUtils.lerp(
+                            item.posZ,
+                            item.targetZ,
+                            Math.min(1, deltaSeconds * physics.snapLerp * (0.42 + item.settleProgress)),
+                        );
+                        item.mesh.quaternion.rotateTowards(
+                            item.targetQuat,
+                            deltaSeconds * physics.settleRotateSpeed * (0.4 + item.settleProgress),
+                        );
+                        if (item.velocityY === 0) {
+                            item.posY = THREE.MathUtils.lerp(item.posY, item.baseY, Math.min(1, deltaSeconds * 10));
+                        }
+                    } else {
+                        item.settleProgress = Math.max(0, item.settleProgress - (deltaSeconds * 1.4));
+                    }
+
+                    if (
+                        grounded
+                        && distanceToTarget < 0.01
+                        && linearSpeed < 0.05
+                        && angularSpeed < 0.18
+                        && item.mesh.quaternion.angleTo(item.targetQuat) < 0.02
+                    ) {
+                        item.posX = item.targetX;
+                        item.posY = item.baseY;
+                        item.posZ = item.targetZ;
+                        item.velocityX = 0;
+                        item.velocityY = 0;
+                        item.velocityZ = 0;
+                        item.angularVelocity.set(0, 0, 0);
+                        item.mesh.quaternion.copy(item.targetQuat);
+                        item.settleProgress = 1;
+                    }
                 }
             });
-            resolveDiceSeparation();
+            if (useRapierBoardPhysics && rapierWorld) {
+                rapierAccumulator = Math.min(rapierAccumulator + deltaSeconds, 0.25);
+                while (rapierAccumulator >= rapierFixedDt) {
+                    rapierWorld.step();
+                    rapierAccumulator -= rapierFixedDt;
+                }
+
+                diceItems.forEach((item) => {
+                    if (!item.rigidBody) return;
+                    const body = item.rigidBody;
+                    const translation = body.translation();
+                    const rotation = body.rotation();
+                    item.posX = translation.x;
+                    item.posY = translation.y;
+                    item.posZ = translation.z;
+                    item.mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+
+                    if (item.wasRolling) {
+                        return;
+                    }
+
+                    const linvel = body.linvel();
+                    const angvel = body.angvel();
+                    const linearSpeed = Math.hypot(linvel.x, linvel.y, linvel.z);
+                    const angularSpeed = Math.hypot(angvel.x, angvel.y, angvel.z);
+                    const distanceToTarget = Math.hypot(item.targetX - item.posX, item.targetZ - item.posZ);
+                    const grounded = item.posY <= item.baseY + 0.04;
+
+                    if (grounded && linearSpeed < 0.32 && angularSpeed < 1.5) {
+                        item.settleProgress = Math.min(1, item.settleProgress + (deltaSeconds * 2.4));
+                        const nextPosition = {
+                            x: THREE.MathUtils.lerp(item.posX, item.targetX, Math.min(1, deltaSeconds * 6.5 * (0.4 + item.settleProgress))),
+                            y: THREE.MathUtils.lerp(item.posY, item.baseY, Math.min(1, deltaSeconds * 8)),
+                            z: THREE.MathUtils.lerp(item.posZ, item.targetZ, Math.min(1, deltaSeconds * 6.5 * (0.4 + item.settleProgress))),
+                        };
+                        const nextQuat = item.mesh.quaternion.clone();
+                        nextQuat.rotateTowards(item.targetQuat, deltaSeconds * 5.8 * (0.4 + item.settleProgress));
+
+                        body.setTranslation(nextPosition, true);
+                        body.setRotation({
+                            x: nextQuat.x,
+                            y: nextQuat.y,
+                            z: nextQuat.z,
+                            w: nextQuat.w,
+                        }, true);
+                        body.setLinvel({
+                            x: linvel.x * 0.55,
+                            y: linvel.y * 0.2,
+                            z: linvel.z * 0.55,
+                        }, true);
+                        body.setAngvel({
+                            x: angvel.x * 0.5,
+                            y: angvel.y * 0.5,
+                            z: angvel.z * 0.5,
+                        }, true);
+
+                        item.posX = nextPosition.x;
+                        item.posY = nextPosition.y;
+                        item.posZ = nextPosition.z;
+                        item.mesh.quaternion.copy(nextQuat);
+
+                        if (
+                            distanceToTarget < 0.015
+                            && linearSpeed < 0.08
+                            && angularSpeed < 0.2
+                            && item.mesh.quaternion.angleTo(item.targetQuat) < 0.02
+                        ) {
+                            body.setTranslation({ x: item.targetX, y: item.baseY, z: item.targetZ }, true);
+                            body.setRotation({
+                                x: item.targetQuat.x,
+                                y: item.targetQuat.y,
+                                z: item.targetQuat.z,
+                                w: item.targetQuat.w,
+                            }, true);
+                            body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+                            body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+                            item.posX = item.targetX;
+                            item.posY = item.baseY;
+                            item.posZ = item.targetZ;
+                            item.mesh.quaternion.copy(item.targetQuat);
+                            item.settleProgress = 1;
+                        }
+                    } else {
+                        item.settleProgress = Math.max(0, item.settleProgress - (deltaSeconds * 1.2));
+                    }
+                });
+            } else {
+                resolveDiceSeparation();
+            }
             const debugWindow = window as Window & {
                 __DT_RING_DEBUG__?: Array<{
                     dieId: number;
@@ -1424,8 +1870,7 @@ export const DiceField3D = ({
                 debugWindow.__DT_RING_DEBUG__ = [];
             }
             diceItems.forEach((item) => {
-                item.mesh.position.x = item.posX;
-                item.mesh.position.z = item.posZ;
+                item.mesh.position.set(item.posX, item.posY, item.posZ);
                 const lift = Math.max(0, item.mesh.position.y - item.baseY);
                 const shadowSpread = scenePreset === 'board-topdown'
                 ? THREE.MathUtils.clamp(1.02 - (lift * 0.42), 0.76, 1.02)
@@ -1613,6 +2058,7 @@ export const DiceField3D = ({
                     shadowLight.shadow.map.dispose();
                 }
                 shadowLight?.dispose();
+                rapierWorld?.free();
             }
             canvas.removeEventListener('pointerup', handlePointerUp);
             delete canvas.dataset.diceSettled;
@@ -1643,7 +2089,6 @@ export const DiceField3D = ({
 function FallbackFaces({
     faces,
     isRolling,
-    animationClass,
     index,
     isSpotlight,
     isBoardTopdown,
@@ -1654,7 +2099,6 @@ function FallbackFaces({
 }: {
     faces: Array<{ id: number; trans: string }>;
     isRolling: boolean;
-    animationClass: string;
     index: number;
     isSpotlight: boolean;
     isBoardTopdown: boolean;
@@ -1667,6 +2111,9 @@ function FallbackFaces({
     const faceRadius = isSpotlight ? 'rounded-[0.7vw]' : (isBoardTopdown ? 'rounded-[0.52vw]' : 'rounded-[0.38vw]');
     const shellFaceInset = isSpotlight ? '-3.5%' : (isBoardTopdown ? '-3%' : '-2.5%');
     const decalInset = isSpotlight ? '12.5%' : (isBoardTopdown ? '12%' : '11.5%');
+    const railFlightClass = isSpotlight || isBoardTopdown
+        ? ''
+        : `animate-dice3d-rail-flight-${index % 5}`;
     const shellFaceStyle = {
         background: 'linear-gradient(145deg, #fff8eb 0%, #f0e4cd 54%, #d8c7aa 100%)',
         boxShadow: isSpotlight
@@ -1676,12 +2123,12 @@ function FallbackFaces({
 
     return (
         <div
-            className={`relative w-full h-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
+            className={`relative w-full h-full dice3d-preserve-3d ${isRolling ? (railFlightClass || '') : ''}`}
             style={{
-                transform: isRolling
+                transform: isRolling && !railFlightClass
                     ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
                     : settledTransform,
-                transition: isRolling ? 'none' : 'transform 1000ms ease-out',
+                transition: isRolling ? (railFlightClass ? 'none' : 'transform 900ms linear') : 'transform 360ms cubic-bezier(0.2, 0.7, 0.18, 1)',
             }}
         >
             {faces.map((face) => {
@@ -1747,6 +2194,61 @@ function FallbackFaces({
     );
 }
 
+function FlatRailFace({
+    value,
+    spriteReady,
+    resolvedSpriteUrl,
+    definitionId,
+}: {
+    value: number;
+    spriteReady: boolean;
+    resolvedSpriteUrl: string | null;
+    definitionId?: string;
+}) {
+    const { xPos, yPos } = getDiceSpritePosition(value);
+    const hasSprite = Boolean(spriteReady && resolvedSpriteUrl);
+    const fallbackMeta = resolveFallbackLabel(value, definitionId);
+
+    return (
+        <div className="relative h-full w-full overflow-hidden rounded-[0.42vw] border border-[#d9bf7f] bg-[linear-gradient(160deg,_rgba(255,248,235,0.98)_0%,_rgba(239,228,205,0.98)_62%,_rgba(216,199,170,0.98)_100%)] shadow-[0_0.16vw_0.6vw_rgba(0,0,0,0.35)]">
+            <div
+                className="absolute inset-[8%] overflow-hidden rounded-[0.32vw] border border-white/65"
+                data-flat-face-value={String(value)}
+                data-flat-sprite-position={`${xPos},${yPos}`}
+                style={hasSprite && resolvedSpriteUrl ? {
+                    backgroundImage: `url("${resolvedSpriteUrl}")`,
+                    backgroundSize: DICE_BG_SIZE,
+                    backgroundPosition: `${xPos}% ${yPos}%`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundColor: '#ffffff',
+                } : {
+                    backgroundColor: SHIMMER_BG.backgroundColor,
+                    backgroundImage: SHIMMER_BG.backgroundImage,
+                    backgroundSize: SHIMMER_BG.backgroundSize,
+                    backgroundPosition: SHIMMER_BG.backgroundPosition,
+                    backgroundRepeat: SHIMMER_BG.backgroundRepeat,
+                    animation: SHIMMER_BG.animation,
+                }}
+            >
+                {!hasSprite && (
+                    <span
+                        className="absolute inset-0 flex items-center justify-center select-none text-slate-100 font-black uppercase tracking-[0.08em]"
+                        style={{
+                            fontSize: '1.02vw',
+                            textShadow: '0 0 0.35vw rgba(0, 0, 0, 0.72)',
+                            lineHeight: 1,
+                        }}
+                    >
+                        {fallbackMeta.label}
+                    </span>
+                )}
+            </div>
+            <div className="pointer-events-none absolute inset-x-[14%] top-[10%] h-[14%] rounded-full bg-white/42 blur-[0.12vw]" />
+            <div className="pointer-events-none absolute inset-[7%] rounded-[0.34vw] shadow-[inset_0_-0.12vw_0.28vw_rgba(15,23,42,0.16)]" />
+        </div>
+    );
+}
+
 function WebglDice({
     value,
     isRolling,
@@ -1756,6 +2258,7 @@ function WebglDice({
     spriteCandidates,
     definitionId,
     onUnavailable,
+    onReady,
 }: {
     value: number;
     isRolling: boolean;
@@ -1765,6 +2268,7 @@ function WebglDice({
     spriteCandidates: string[];
     definitionId?: string;
     onUnavailable: () => void;
+    onReady?: () => void;
 }) {
     const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
     const stateRef = React.useRef<{
@@ -1772,19 +2276,62 @@ function WebglDice({
         scene: THREE.Scene;
         camera: THREE.PerspectiveCamera;
         cube: THREE.Group;
+        shadowMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
         cubeGeometry: RoundedBoxGeometry;
         cubeMaterial: THREE.MeshStandardMaterial;
         outlineMaterial: OutlineShaderMaterial;
         decalGeometry: THREE.PlaneGeometry;
         faceMaterials: THREE.MeshBasicMaterial[];
+        shadowMaterial: THREE.MeshBasicMaterial;
         resizeObserver?: ResizeObserver;
         rafId?: number;
         disposed: boolean;
     } | null>(null);
+    const motionRef = React.useRef({
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        angularVelocity: new THREE.Vector3(0, 0, 0),
+        wasRolling: false,
+        lastFrameAt: 0,
+    });
     const rollingRef = React.useRef(isRolling);
+    const readyNotifiedRef = React.useRef(false);
     const targetQuatRef = React.useRef(
         buildTargetQuaternion(value, index, isSpotlight ? 'spotlight' : (isBoardTopdown ? 'board-topdown' : 'default')),
     );
+
+    const applyMotionTransforms = React.useCallback(() => {
+        const state = stateRef.current;
+        if (!state) return;
+        const motion = motionRef.current;
+        state.cube.position.set(motion.x, motion.y, motion.z);
+        const shadowOffsetX = motion.x * (isSpotlight ? 0.42 : 0.55);
+        const shadowOffsetZ = motion.z * (isSpotlight ? 0.34 : 0.42);
+        const shadowLift = THREE.MathUtils.clamp(motion.y, 0, 0.42);
+        const shadowScale = THREE.MathUtils.clamp(1.02 - (shadowLift * 0.42), 0.76, 1.02);
+        state.shadowMesh.position.set(shadowOffsetX, -0.62, shadowOffsetZ);
+        state.shadowMesh.scale.set(shadowScale, shadowScale * 0.78, 1);
+        state.shadowMaterial.opacity = THREE.MathUtils.clamp(0.26 - (shadowLift * 0.32), 0.08, 0.26);
+    }, [isSpotlight]);
+
+    const resetMotionState = React.useCallback(() => {
+        motionRef.current = {
+            x: 0,
+            y: 0,
+            z: 0,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+            angularVelocity: new THREE.Vector3(0, 0, 0),
+            wasRolling: false,
+            lastFrameAt: 0,
+        };
+        applyMotionTransforms();
+    }, [applyMotionTransforms]);
 
     const applyFaceTextures = React.useCallback((spriteImage: HTMLImageElement | null) => {
         const state = stateRef.current;
@@ -1813,6 +2360,9 @@ function WebglDice({
             index,
             isSpotlight ? 'spotlight' : (isBoardTopdown ? 'board-topdown' : 'default'),
         );
+        if (!isRolling) {
+            motionRef.current.lastFrameAt = 0;
+        }
     }, [index, isBoardTopdown, isRolling, isSpotlight, value]);
 
     React.useEffect(() => {
@@ -1891,8 +2441,23 @@ function WebglDice({
             decal.renderOrder = 3;
             cube.add(decal);
         });
+
+        const shadowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            map: getBoardShadowTexture(),
+            transparent: true,
+            opacity: 0.22,
+            depthWrite: false,
+            toneMapped: false,
+        });
+        const shadowMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.28, 0.92), shadowMaterial);
+        shadowMesh.rotation.x = -Math.PI / 2;
+        shadowMesh.position.y = -0.62;
+        shadowMesh.renderOrder = 0;
+        scene.add(shadowMesh);
         scene.add(cube);
         cube.quaternion.copy(targetQuatRef.current);
+        resetMotionState();
 
         const render = () => {
             renderer.render(scene, camera);
@@ -1913,17 +2478,23 @@ function WebglDice({
             : undefined;
         observer?.observe(canvas);
         resize();
+        if (!readyNotifiedRef.current) {
+            readyNotifiedRef.current = true;
+            onReady?.();
+        }
 
         stateRef.current = {
             renderer,
             scene,
             camera,
             cube,
+            shadowMesh,
             cubeGeometry,
             cubeMaterial,
             outlineMaterial,
             decalGeometry,
             faceMaterials,
+            shadowMaterial,
             resizeObserver: observer,
             disposed: false,
         };
@@ -1931,29 +2502,131 @@ function WebglDice({
         const tick = () => {
             const state = stateRef.current;
             if (!state || state.disposed) return;
+            const motion = motionRef.current;
+            const now = performance.now();
+            const deltaSeconds = motion.lastFrameAt > 0
+                ? THREE.MathUtils.clamp((now - motion.lastFrameAt) / 1000, 1 / 120, 1 / 24)
+                : 1 / 60;
+            motion.lastFrameAt = now;
 
             if (rollingRef.current) {
-                const spin = isSpotlight ? 3.9 : (isBoardTopdown ? 4.1 : 4.8);
-                const rollIndexBoost = index * 0.18;
-                cube.rotation.x += (spin + rollIndexBoost) * 0.018;
-                cube.rotation.y += (spin * 1.08 + rollIndexBoost) * 0.018;
-                cube.rotation.z += (spin * 0.24) * 0.012;
+                if (!motion.wasRolling) {
+                    const lateralBias = ((index % 3) - 1) * 0.05;
+                    motion.x = lateralBias;
+                    motion.y = 0.12 + (Math.random() * 0.04);
+                    motion.z = -0.06 + ((Math.random() - 0.5) * 0.08);
+                    motion.vx = lateralBias * -1.15 + ((Math.random() - 0.5) * 0.7);
+                    motion.vy = 3.6 + (Math.random() * 0.8);
+                    motion.vz = 1.2 + (Math.random() * 0.55);
+                    motion.angularVelocity.set(
+                        8.6 + (Math.random() * 2.1),
+                        10.2 + (Math.random() * 2.4),
+                        4.6 + (Math.random() * 1.4),
+                    );
+                    motion.wasRolling = true;
+                }
+
+                motion.vy -= 11.8 * deltaSeconds;
+                motion.x += motion.vx * deltaSeconds;
+                motion.y += motion.vy * deltaSeconds;
+                motion.z += motion.vz * deltaSeconds;
+
+                if (motion.y < 0) {
+                    motion.y = 0;
+                    motion.vy = Math.abs(motion.vy) * 0.54;
+                    motion.angularVelocity.x += (-motion.vz * 1.8) * deltaSeconds;
+                    motion.angularVelocity.z += (motion.vx * 1.8) * deltaSeconds;
+                    if (motion.vy < 0.16) {
+                        motion.vy = 0;
+                    }
+                }
+                if (motion.x < -0.42 || motion.x > 0.42) {
+                    motion.x = THREE.MathUtils.clamp(motion.x, -0.42, 0.42);
+                    motion.vx *= -0.72;
+                    motion.angularVelocity.z *= -0.8;
+                }
+                if (motion.z < -0.24 || motion.z > 0.28) {
+                    motion.z = THREE.MathUtils.clamp(motion.z, -0.24, 0.28);
+                    motion.vz *= -0.7;
+                    motion.angularVelocity.x *= -0.8;
+                }
+
+                const grounded = motion.y === 0;
+                const linearDamping = grounded ? 2.8 : 0.18;
+                const angularDamping = grounded ? 1.65 : 0.22;
+                const linearDampingFactor = Math.exp(-linearDamping * deltaSeconds);
+                motion.vx *= linearDampingFactor;
+                motion.vz *= linearDampingFactor;
+                motion.angularVelocity.multiplyScalar(Math.exp(-angularDamping * deltaSeconds));
+                applyAngularVelocityQuaternion(cube.quaternion, motion.angularVelocity, deltaSeconds);
             } else {
-                cube.quaternion.rotateTowards(targetQuatRef.current, isSpotlight ? 0.09 : (isBoardTopdown ? 0.085 : 0.11));
-                if (cube.quaternion.angleTo(targetQuatRef.current) < 0.003) {
+                motion.wasRolling = false;
+                motion.vx += (0 - motion.x) * 3.2 * deltaSeconds;
+                motion.vz += (0 - motion.z) * 3.2 * deltaSeconds;
+                motion.vy -= 10.6 * deltaSeconds;
+                motion.x += motion.vx * deltaSeconds;
+                motion.y += motion.vy * deltaSeconds;
+                motion.z += motion.vz * deltaSeconds;
+
+                if (motion.y < 0) {
+                    motion.y = 0;
+                    motion.vy *= -0.34;
+                    motion.angularVelocity.x += (-motion.vz * 1.4) * deltaSeconds;
+                    motion.angularVelocity.z += (motion.vx * 1.4) * deltaSeconds;
+                    if (Math.abs(motion.vy) < 0.08) {
+                        motion.vy = 0;
+                    }
+                }
+                const grounded = motion.y === 0;
+                const linearDampingFactor = Math.exp(-(grounded ? 4.9 : 0.22) * deltaSeconds);
+                motion.vx *= linearDampingFactor;
+                motion.vz *= linearDampingFactor;
+                motion.angularVelocity.multiplyScalar(Math.exp(-(grounded ? 4.2 : 0.28) * deltaSeconds));
+                applyAngularVelocityQuaternion(cube.quaternion, motion.angularVelocity, deltaSeconds);
+                if (
+                    grounded
+                    && Math.hypot(motion.vx, motion.vy, motion.vz) < 0.22
+                    && motion.angularVelocity.length() < 1.1
+                ) {
+                    cube.quaternion.rotateTowards(
+                        targetQuatRef.current,
+                        deltaSeconds * (isSpotlight ? 5.4 : 6.2),
+                    );
+                }
+                if (
+                    cube.quaternion.angleTo(targetQuatRef.current) < 0.0015
+                    && Math.abs(motion.x) < 0.003
+                    && Math.abs(motion.y) < 0.003
+                    && Math.abs(motion.z) < 0.003
+                    && Math.abs(motion.vx) < 0.002
+                    && Math.abs(motion.vy) < 0.002
+                    && Math.abs(motion.vz) < 0.002
+                ) {
                     cube.quaternion.copy(targetQuatRef.current);
+                    motion.x = 0;
+                    motion.y = 0;
+                    motion.z = 0;
+                    motion.vx = 0;
+                    motion.vy = 0;
+                    motion.vz = 0;
+                    motion.angularVelocity.set(0, 0, 0);
                 }
             }
 
+            applyMotionTransforms();
             renderer.render(scene, camera);
             state.rafId = requestAnimationFrame(() => tick());
         };
 
-        applyFaceTextures(null);
+        const initialSpriteImage = prioritizeWebglSpriteCandidates(spriteCandidates)
+            .map((candidateUrl) => getPreloadedImageElement(candidateUrl))
+            .find(hasUsableSpriteImage) ?? null;
+        applyFaceTextures(initialSpriteImage);
         render();
         stateRef.current.rafId = requestAnimationFrame(() => tick());
 
         return () => {
+            lastTickAtRef.current = 0;
             const state = stateRef.current;
             if (state) {
                 state.disposed = true;
@@ -1967,11 +2640,14 @@ function WebglDice({
                 state.cubeGeometry.dispose();
                 state.cubeMaterial.dispose();
                 state.outlineMaterial.dispose();
+                state.shadowMesh.geometry.dispose();
+                state.shadowMaterial.dispose();
             }
             renderer.dispose();
             stateRef.current = null;
+            readyNotifiedRef.current = false;
         };
-    }, [applyFaceTextures, index, isBoardTopdown, isSpotlight, onUnavailable]);
+    }, [applyFaceTextures, applyMotionTransforms, index, isBoardTopdown, isSpotlight, onReady, onUnavailable, resetMotionState, spriteCandidates]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -2018,6 +2694,8 @@ export const Dice3D = ({
     variant = 'default',
     characterId = 'monk',
     definitionId,
+    enableWebgl = true,
+    overrideTransform,
 }: Dice3DProps) => {
     const translateZ = `calc(${size} / 2)`;
     const rootRef = React.useRef<HTMLDivElement | null>(null);
@@ -2060,6 +2738,7 @@ export const Dice3D = ({
         };
     const { resolvedSpriteUrl, isSpriteReady } = currentSpriteState;
     const [webglUnavailable, setWebglUnavailable] = React.useState(false);
+    const [webglReady, setWebglReady] = React.useState(false);
     const handleWebglUnavailable = React.useCallback(() => {
         setWebglUnavailable(true);
     }, []);
@@ -2141,7 +2820,14 @@ export const Dice3D = ({
 
     const isSpotlight = variant === 'spotlight';
     const isBoardTopdown = variant === 'board-topdown';
-    const hasWebgl = !webglUnavailable && isWebglCapable();
+    const hasWebgl = enableWebgl && !webglUnavailable && isWebglCapable();
+    const showFlatRailFallback = !isSpotlight && !isBoardTopdown;
+
+    React.useEffect(() => {
+        if (!hasWebgl) {
+            setWebglReady(false);
+        }
+    }, [hasWebgl]);
 
     React.useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -2192,6 +2878,94 @@ export const Dice3D = ({
         : (isBoardTopdown
             ? `rotateX(-1.18rad) rotateY(${0.38 + (index * 0.07)}rad) rotateZ(${(-0.1 + (index * 0.035)).toFixed(2)}rad)`
             : `rotateX(0deg) rotateY(0deg)`);
+    const fallbackTransform = overrideTransform ?? settledTransform;
+    const usePhysicsDrivenFallback = isBoardTopdown && !hasWebgl && Boolean(overrideTransform);
+    const railShadowClass = !isSpotlight && !isBoardTopdown && isRolling ? 'animate-dice3d-rail-shadow' : '';
+    const isRailVariant = !isSpotlight && !isBoardTopdown;
+
+    const getLegacyRailTransform = (faceValue: number) => {
+        switch (faceValue) {
+            case 1: return 'rotateX(0deg) rotateY(0deg)';
+            case 6: return 'rotateX(180deg) rotateY(0deg)';
+            case 2: return 'rotateX(-90deg) rotateY(0deg)';
+            case 5: return 'rotateX(90deg) rotateY(0deg)';
+            case 3: return 'rotateX(0deg) rotateY(-90deg)';
+            case 4: return 'rotateX(0deg) rotateY(90deg)';
+            default: return 'rotateY(0deg)';
+        }
+    };
+
+    if (isRailVariant) {
+        return (
+            <div
+                ref={rootRef}
+                className="relative dice3d-perspective"
+                style={{ width: size, height: size }}
+                data-testid="dice-3d"
+                data-sprite-ready={isSpriteReady ? 'true' : 'false'}
+                data-definition-id={definitionId ?? ''}
+                data-sprite-url={resolvedSpriteUrl ?? ''}
+            >
+                <div
+                    className={`relative w-full h-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
+                    style={{
+                        transform: isRolling
+                            ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
+                            : getLegacyRailTransform(value),
+                        transition: isRolling ? 'none' : 'transform 1000ms ease-out',
+                    }}
+                >
+                    {faces.map((face) => {
+                        const { xPos, yPos } = getDiceSpritePosition(face.id);
+                        const needsFlip = face.id === 1 || face.id === 6;
+                        const faceTransform = needsFlip ? `${face.trans} rotateZ(180deg)` : face.trans;
+                        const hasSprite = Boolean(isSpriteReady && resolvedSpriteUrl);
+                        const fallbackMeta = resolveFallbackLabel(face.id, definitionId);
+
+                        return (
+                            <div
+                                key={face.id}
+                                className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[0.5vw] border border-slate-700/50 bg-slate-900 shadow-inner dice3d-backface-hidden"
+                                style={{
+                                    transform: faceTransform,
+                                    ...(hasSprite && resolvedSpriteUrl ? {
+                                        backgroundImage: `url("${resolvedSpriteUrl}")`,
+                                        backgroundSize: DICE_BG_SIZE,
+                                        backgroundPosition: `${xPos}% ${yPos}%`,
+                                        backgroundRepeat: 'no-repeat',
+                                    } : {
+                                        backgroundColor: SHIMMER_BG.backgroundColor,
+                                        backgroundImage: SHIMMER_BG.backgroundImage,
+                                        backgroundSize: SHIMMER_BG.backgroundSize,
+                                        backgroundPosition: SHIMMER_BG.backgroundPosition,
+                                        backgroundRepeat: 'no-repeat',
+                                        animation: SHIMMER_BG.animation,
+                                    }),
+                                    boxShadow: 'inset 0 0 1vw rgba(0,0,0,0.8)',
+                                    imageRendering: 'auto',
+                                }}
+                                data-face-id={face.id}
+                                data-face-fallback={hasSprite ? 'false' : 'glyph'}
+                                data-face-symbol={fallbackMeta.symbol}
+                            >
+                                {!hasSprite && (
+                                    <span
+                                        className="pointer-events-none select-none text-[1.1vw] font-black uppercase tracking-[0.08em] text-slate-100"
+                                        style={{
+                                            textShadow: '0 0 0.4vw rgba(0, 0, 0, 0.75)',
+                                            lineHeight: 1,
+                                        }}
+                                    >
+                                        {fallbackMeta.label}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -2212,40 +2986,65 @@ export const Dice3D = ({
             data-definition-id={definitionId ?? ''}
             data-sprite-url={resolvedSpriteUrl ?? ''}
         >
-            {hasWebgl ? (
-                <WebglDice
-                    value={value}
-                    isRolling={isRolling}
-                    index={index}
-                    isSpotlight={isSpotlight}
-                    isBoardTopdown={isBoardTopdown}
-                    spriteCandidates={spriteCandidates}
-                    definitionId={definitionId}
-                    onUnavailable={handleWebglUnavailable}
-                />
-            ) : (
+            {!hasWebgl && !isSpotlight && !isBoardTopdown && (
                 <div
-                    className={`relative h-full w-full dice3d-preserve-3d ${isRolling ? animationClass : ''}`}
-                    style={{
-                        transform: isRolling
-                            ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
-                            : settledTransform,
-                        transition: isRolling ? 'none' : 'transform 1000ms ease-out',
-                    }}
-                >
-                    <FallbackFaces
-                        faces={faces}
-                        isRolling={isRolling}
-                        animationClass={animationClass}
-                        index={index}
-                        isSpotlight={isSpotlight}
-                        isBoardTopdown={isBoardTopdown}
-                        settledTransform={settledTransform}
+                    className={`pointer-events-none absolute left-[10%] right-[10%] bottom-[2%] h-[18%] rounded-full bg-black/30 blur-[0.18vw] ${railShadowClass}`}
+                    aria-hidden="true"
+                />
+            )}
+            {showFlatRailFallback && (!hasWebgl || !webglReady) && (
+                <div className="absolute inset-0">
+                    <FlatRailFace
+                        value={value}
                         spriteReady={isSpriteReady}
                         resolvedSpriteUrl={resolvedSpriteUrl}
                         definitionId={definitionId}
                     />
                 </div>
+            )}
+            {hasWebgl ? (
+                <div
+                    className="relative h-full w-full transition-opacity duration-150"
+                    style={{ opacity: showFlatRailFallback && !webglReady ? 0 : 1 }}
+                >
+                    <WebglDice
+                        value={value}
+                        isRolling={isRolling}
+                        index={index}
+                        isSpotlight={isSpotlight}
+                        isBoardTopdown={isBoardTopdown}
+                        spriteCandidates={spriteCandidates}
+                        definitionId={definitionId}
+                        onUnavailable={handleWebglUnavailable}
+                        onReady={() => setWebglReady(true)}
+                    />
+                </div>
+            ) : (
+                showFlatRailFallback ? null : (
+                    <div
+                        className={`relative h-full w-full dice3d-preserve-3d ${isRolling && !usePhysicsDrivenFallback ? animationClass : ''}`}
+                        style={{
+                            transform: usePhysicsDrivenFallback
+                                ? fallbackTransform
+                                : (isRolling
+                                ? `rotateX(${720 + index * 90}deg) rotateY(${720 + index * 90}deg)`
+                                : fallbackTransform),
+                            transition: isRolling && !usePhysicsDrivenFallback ? 'none' : 'transform 75ms linear',
+                        }}
+                    >
+                        <FallbackFaces
+                            faces={faces}
+                            isRolling={isRolling}
+                            index={index}
+                            isSpotlight={isSpotlight}
+                            isBoardTopdown={isBoardTopdown}
+                            settledTransform={fallbackTransform}
+                            spriteReady={isSpriteReady}
+                            resolvedSpriteUrl={resolvedSpriteUrl}
+                            definitionId={definitionId}
+                        />
+                    </div>
+                )
             )}
             <div
                 className="pointer-events-none absolute inset-0 opacity-0"
@@ -2254,11 +3053,10 @@ export const Dice3D = ({
                 <FallbackFaces
                     faces={faces}
                     isRolling={isRolling}
-                    animationClass={animationClass}
                     index={index}
                     isSpotlight={isSpotlight}
                     isBoardTopdown={isBoardTopdown}
-                    settledTransform={settledTransform}
+                    settledTransform={fallbackTransform}
                     spriteReady={isSpriteReady}
                     resolvedSpriteUrl={resolvedSpriteUrl}
                     definitionId={definitionId}

@@ -346,7 +346,7 @@ describe('CriticalImageGate', () => {
         });
     });
 
-    it('旧 runKey 的 preload 完成后，不会提前放行新 runKey', async () => {
+    it('旧 runKey 的 preload 尚未完成时，新 runKey 会立刻启动自己的预加载', async () => {
         const resolvers: Array<(paths: string[]) => void> = [];
         vi.mocked(preloadCriticalImages).mockImplementation(
             () => new Promise<string[]>((resolve) => {
@@ -394,8 +394,6 @@ describe('CriticalImageGate', () => {
 
         expect(screen.getByText('加载中')).toBeInTheDocument();
 
-        resolvers[0]?.(['warm:setup']);
-
         await waitFor(() => {
             expect(preloadCriticalImages).toHaveBeenCalledTimes(2);
         });
@@ -404,6 +402,7 @@ describe('CriticalImageGate', () => {
         expect(screen.queryByText('子内容')).toBeNull();
         expect(enqueueWarmPreload).not.toHaveBeenCalledWith(['warm:setup'], 'zh-CN', 'dicethrone');
 
+        resolvers[0]?.(['warm:setup']);
         resolvers[1]?.(['warm:playing']);
 
         await waitFor(() => {
@@ -411,5 +410,68 @@ describe('CriticalImageGate', () => {
         });
 
         expect(enqueueWarmPreload).toHaveBeenCalledWith(['warm:playing'], 'zh-CN', 'dicethrone');
+    });
+
+    it('旧 runKey 仍在预加载时，新 runKey 若已无 critical，应立即放行', async () => {
+        let resolveFirstRun: ((paths: string[]) => void) | null = null;
+        vi.mocked(preloadCriticalImages).mockImplementation(
+            () => new Promise<string[]>((resolve) => {
+                resolveFirstRun = resolve;
+            }),
+        );
+        vi.mocked(resolveCriticalImages).mockImplementation((_gameId, state) => {
+            const phase = (state as { phase: string }).phase;
+            if (phase === 'setup') {
+                return {
+                    critical: ['critical:setup'],
+                    warm: ['warm:setup'],
+                    phaseKey: 'setup',
+                };
+            }
+            return {
+                critical: [],
+                warm: [],
+                phaseKey: 'tutorial-setup',
+            };
+        });
+
+        const view = render(
+            <CriticalImageGate
+                enabled={true}
+                gameId="dicethrone"
+                gameState={{ phase: 'setup' }}
+                locale="zh-CN"
+                playerID="0"
+                loadingDescription="加载中"
+            >
+                <div>子内容</div>
+            </CriticalImageGate>,
+        );
+
+        await waitFor(() => {
+            expect(preloadCriticalImages).toHaveBeenCalledTimes(1);
+        });
+
+        view.rerender(
+            <CriticalImageGate
+                enabled={true}
+                gameId="dicethrone"
+                gameState={{ phase: 'tutorial-setup' }}
+                locale="zh-CN"
+                playerID="0"
+                loadingDescription="加载中"
+            >
+                <div>子内容</div>
+            </CriticalImageGate>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('子内容')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText('加载中')).toBeNull();
+        expect(preloadCriticalImages).toHaveBeenCalledTimes(1);
+
+        resolveFirstRun?.(['warm:setup']);
     });
 });

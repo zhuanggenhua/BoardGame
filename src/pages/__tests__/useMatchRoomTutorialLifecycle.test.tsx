@@ -2,7 +2,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMatchRoomTutorialLifecycle } from '../useMatchRoomTutorialLifecycle';
-import type { TutorialManifest, TutorialState } from '../../engine/types';
+import type { TutorialCollection, TutorialManifest, TutorialState } from '../../engine/types';
 
 const tutorialState = {
     startTutorial: vi.fn(),
@@ -27,6 +27,22 @@ const makeManifest = (id: string, stepIds: string[]): TutorialManifest => ({
         content: `${id}.${stepId}`,
         position: 'center',
     })),
+});
+
+const makeCatalog = (entries: Array<{
+    id: string;
+    hiddenFromCatalog?: boolean;
+    nextTutorialId?: string;
+}>): TutorialCollection => ({
+    defaultTutorialId: entries[0]?.id ?? 'default',
+    tutorials: Object.fromEntries(entries.map((entry) => [
+        entry.id,
+        {
+            hiddenFromCatalog: entry.hiddenFromCatalog,
+            nextTutorialId: entry.nextTutorialId,
+            manifest: makeManifest(entry.id, ['overview', 'finish']),
+        },
+    ])),
 });
 
 describe('useMatchRoomTutorialLifecycle', () => {
@@ -57,6 +73,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         tutorialState.isBoardMounted = true;
 
         const { rerender } = renderHook((manifest: TutorialManifest | null) => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'field-battle',
+            tutorialCatalog: null,
             isTutorialRoute: true,
             isGameNamespaceReady: true,
             gameImplReady: true,
@@ -90,6 +109,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         tutorialState.isBoardMounted = true;
 
         const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'field-battle',
+            tutorialCatalog: null,
             isTutorialRoute: true,
             isGameNamespaceReady: true,
             gameImplReady: true,
@@ -122,6 +144,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         tutorialState.isBoardMounted = true;
 
         const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'season-flow',
+            tutorialCatalog: null,
             isTutorialRoute: true,
             isGameNamespaceReady: true,
             gameImplReady: true,
@@ -151,6 +176,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         tutorialState.isBoardMounted = true;
 
         const firstHook = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'basic-setup-and-turn',
+            tutorialCatalog: null,
             isTutorialRoute: true,
             isGameNamespaceReady: true,
             gameImplReady: true,
@@ -168,6 +196,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         tutorialState.isBoardMounted = true;
 
         renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'haunt-actions-and-finish',
+            tutorialCatalog: null,
             isTutorialRoute: true,
             isGameNamespaceReady: true,
             gameImplReady: true,
@@ -184,5 +215,44 @@ describe('useMatchRoomTutorialLifecycle', () => {
 
         expect(tutorialState.startTutorial).toHaveBeenCalledWith(secondManifest);
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
+
+    it('主章节完成后，若目录指定 nextTutorialId，会自动切到下一条隐藏教程路由', async () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('attack-and-battle', ['overview', 'finish']);
+        const catalog = makeCatalog([
+            { id: 'attack-and-battle', nextTutorialId: 'retreat-and-rout' },
+            { id: 'retreat-and-rout', hiddenFromCatalog: true },
+        ]);
+
+        tutorialState.isActive = true;
+        tutorialState.currentStep = manifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'attack-and-battle',
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        tutorialState.isActive = false;
+        rerender();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(navigate).toHaveBeenCalledWith('/play/qidahen/tutorial/retreat-and-rout');
     });
 });

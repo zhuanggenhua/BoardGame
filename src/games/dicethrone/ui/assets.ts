@@ -151,10 +151,18 @@ export const buildSpriteBackgroundImage = (assetPath?: string | null, locale?: s
 };
 
 export const getDiceSpriteAssetPath = (definitionId?: string, characterId: string = 'monk') => {
-    const definitionAsset = definitionId
-        ? getDiceDefinition(definitionId)?.assets?.spriteSheet
+    const normalizedDefinitionId = definitionId?.replace(/^dicethrone:/, '');
+    const definitionAsset = normalizedDefinitionId
+        ? getDiceDefinition(normalizedDefinitionId)?.assets?.spriteSheet
         : undefined;
     return normalizeDiceSpriteAssetPath(definitionAsset ?? ASSETS.DICE_SPRITE(characterId));
+};
+
+export const resolveCharacterIdFromDiceDefinitionId = (definitionId?: string) => {
+    const normalizedDefinitionId = definitionId?.replace(/^dicethrone:/, '');
+    if (!normalizedDefinitionId) return undefined;
+    const matched = normalizedDefinitionId.match(/^(.*)-dice$/);
+    return matched?.[1] || undefined;
 };
 
 export const getDiceSpriteUrl = (definitionId?: string, characterId: string = 'monk', locale?: string) => (

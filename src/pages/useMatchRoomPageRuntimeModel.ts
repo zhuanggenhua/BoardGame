@@ -13,7 +13,7 @@ import { useMatchRoomSessionState } from './useMatchRoomSessionState';
 import { useMatchRoomStageControllers } from './useMatchRoomStageControllers';
 import { useMatchRoomTutorialLifecycle } from './useMatchRoomTutorialLifecycle';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
-import type { TutorialManifest } from '../engine/types';
+import type { TutorialCollection, TutorialManifest } from '../engine/types';
 
 export type MatchRoomPageRuntimeSetupModel = Pick<
     ReturnType<typeof useMatchRoomRuntimeSetup>,
@@ -23,6 +23,7 @@ export type MatchRoomPageRuntimeSetupModel = Pick<
     | 'gameImplementationError'
     | 'retryGameImplementationLoad'
     | 'gameImplReady'
+    | 'tutorialCatalog'
     | 'resolvedTutorialManifest'
     | 'tutorialLoadingProgressText'
     | 'boardShell'
@@ -97,6 +98,7 @@ export type MatchRoomPageShellAdapter = {
 
 export type MatchRoomTutorialStageAdapter = {
     tutorialId?: string;
+    tutorialCatalog: TutorialCollection | null;
     tutorialManifest: TutorialManifest | null;
     board: MatchRoomPageRuntimeSetupModel['tutorialBoard'];
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
@@ -194,6 +196,7 @@ function buildMatchRoomTutorialStageAdapter(args: {
 
     return {
         tutorialId,
+        tutorialCatalog: runtimeSetup.tutorialCatalog,
         tutorialManifest: runtimeSetup.resolvedTutorialManifest,
         board: runtimeSetup.tutorialBoard,
         engineConfig: runtimeSetup.engineConfig,
@@ -424,6 +427,9 @@ export function useMatchRoomPageRuntimeModel(args: {
     });
 
     useMatchRoomTutorialLifecycle({
+        gameId,
+        tutorialId,
+        tutorialCatalog: runtimeSetup.tutorialCatalog,
         isTutorialRoute: pageIdentity.isTutorialRoute,
         isGameNamespaceReady: runtimeSetup.isGameNamespaceReady,
         gameImplReady: runtimeSetup.gameImplReady,

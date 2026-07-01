@@ -127,19 +127,19 @@
   },
   "tutorial": {
     "steps": {
-      "setupOverview": "幻想国度中，每人将有七张起始手牌，轮到你时，可以选择从牌库或弃牌堆抽取一张牌并弃掉一张牌，直到中央弃牌堆达到 10 张时游戏结束，分数最高者是赢家。",
-      "drawOverview": "现在从牌库摸 1 张牌。",
-      "drawFromDeck": "点击摸牌按钮。",
-      "discardAfterDraw": "摸到幻象后，这手牌的组合更完整了，王后现在用处不大。选中王后，把它弃掉。",
-      "setupTakeCenter": "接着看另一种情况：中央如果正好有你需要的牌，就直接拿它。",
+      "setupOverview": "先看当前手牌。",
+      "drawOverview": "你的目标，是在始终维持 7 张手牌的前提下，留下一手终局总分最高的组合牌。轮到你时，可以从牌库摸 1 张牌，或从弃牌堆拿 1 张牌。",
+      "drawFromDeck": "现在点击摸牌按钮。",
+      "discardAfterDraw": "王后现在没用，选中它弃掉。",
+      "setupTakeCenter": "中央如果正好有你需要的牌，也可以直接拿它。",
       "takeCenterCard": "现在中央有钟塔，和你手里的蜡烛可以加分。选中钟塔来获取。",
-      "discardAfterCenter": "暴风雨对这组牌没有帮助。选中暴风雨，把它弃掉。",
-      "setupScoreShowcase": "下面直接进入计分。",
-      "scoreIntro": "所有有效卡牌的基础分，加上奖励分，再减去惩罚分，就是你的总分。",
-      "scoreCardDetails": "点击或悬浮卡牌，可以查看这张牌的基础分和它的加分效果。",
-      "scoreTotalReview": "查看右上角总分，可以看到这手牌最后得了多少分。",
-      "endgameReview": "终局会按这手最终留牌结算。查看单张牌时，可以对照它在这手组合里实际算了多少分。",
-      "finish": "以上就是幻想国度的基础流程。尝试组出更高分的手牌吧！"
+      "discardAfterCenter": "现在选中暴风雨，把它弃掉。",
+      "setupScoreShowcase": "这手牌已经接近终局，接着看它最后怎样计分。",
+      "scoreIntro": "这手牌最后得了 198 分。蜡烛和钟塔、法师牌连在一起，是这手牌里的主要加分来源。",
+      "scoreCardDetails": "点击或悬浮卡牌，可以查看单张牌的得分。",
+      "scoreTotalReview": "右上角会显示这手牌的总分。",
+      "endgameReview": "当中央弃牌堆达到 10 张时，就比较每位玩家最终这 7 张牌的总分，分数最高的人获胜。",
+      "finish": "现在开始一局真正的幻想国度吧。"
     }
   },
   "error": {

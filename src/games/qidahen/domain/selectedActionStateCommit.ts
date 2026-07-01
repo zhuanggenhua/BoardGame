@@ -28,8 +28,11 @@ interface QidahenSelectedActionStateCommitDependencies {
 
 interface QidahenSelectedActionStateCommitFollowUp {
     actionLogText: string;
+    khanEdictSelection: QidahenCore['khanEdictSelection'];
     lastSeasonSummary: QidahenCore['lastSeasonSummary'];
+    maShiTradeSelection: QidahenCore['maShiTradeSelection'];
     pendingTargetAction: QidahenCore['pendingTargetAction'];
+    recruitSelection: QidahenCore['recruitSelection'];
     selectedRegionId: string;
     turnPhase: QidahenCore['turnPhase'];
     wheelDispatchProgress: QidahenCore['wheelDispatchProgress'];
@@ -70,11 +73,13 @@ export function commitQidahenSelectedActionState(
     const executedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: followUp.selectedRegionId,
+        explicitRegionId: null,
         selectedActionId: actionId,
+        confirmedActionId: actionId,
         selectedPaymentCardIds: [],
-        recruitSelection: null,
-        maShiTradeSelection: null,
-        khanEdictSelection: null,
+        recruitSelection: followUp.recruitSelection,
+        maShiTradeSelection: followUp.maShiTradeSelection,
+        khanEdictSelection: followUp.khanEdictSelection,
         diplomacyProgress: null,
         wheelDispatchProgress: shouldKeepDriveTigerDispatchSelectionOffHost ? null : followUp.wheelDispatchProgress,
         postBattleSelection: null,

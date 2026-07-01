@@ -152,6 +152,33 @@ describe('preloadCriticalImages', () => {
         vi.useRealTimers();
     });
 
+    it('图片 naturalWidth 已可用但 onload 不触发时，也应视为加载成功', async () => {
+        vi.stubGlobal('Image', class {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            complete = false;
+            private _src = '';
+
+            get src() { return this._src; }
+            set src(value: string) {
+                this._src = value;
+                this.complete = true;
+                this.naturalWidth = 2048;
+                this.naturalHeight = 1673;
+            }
+        });
+
+        registerGameAssets('test-natural-width-ready', {
+            criticalImages: ['slow-but-decoded.png'],
+        });
+
+        const warm = await preloadCriticalImages('test-natural-width-ready');
+        expect(warm).toEqual([]);
+        expect(isImagePreloaded('/assets/i18n/zh-CN/compressed/slow-but-decoded.webp')).toBe(true);
+    });
+
     it('关键图预加载命中带版本参数的 native URL 后，图集查询也能拿到缓存元素', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
         setGameAssetBaseOverride('smashup', '/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets');
