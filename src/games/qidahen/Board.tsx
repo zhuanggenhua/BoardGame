@@ -343,7 +343,7 @@ const formatQidahenCandidateRegionSummary = (regionNames: string[]): string => {
     return `${uniqueNames.slice(0, 4).join('、')} 等 ${uniqueNames.length} 处`;
 };
 
-const buildQidahenPrimaryStageHeadline = (
+const _buildQidahenPrimaryStageHeadline = (
     core: QidahenCore,
     primaryStageMode: QidahenPrimaryStageMode | null,
     selectedAction: QidahenActionChoice | null,
@@ -363,7 +363,7 @@ const buildQidahenPrimaryStageHeadline = (
     return '等待中';
 };
 
-const buildQidahenPrimaryStageHint = (
+const _buildQidahenPrimaryStageHint = (
     core: QidahenCore,
     primaryStageMode: QidahenPrimaryStageMode | null,
     selectedAction: QidahenActionChoice | null,
@@ -1437,8 +1437,7 @@ const MapSceneLayer: React.FC<{
         }
         renderRegionOwnershipOverlay(canvas, runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, toneByRegionId);
     }, [
-        core.gaoDiDispatchSelection?.sourceRegionId,
-        core.gaoDiDispatchSelection?.candidates,
+        core.gaoDiDispatchSelection,
         internalDispatchSelection?.candidates,
         internalDispatchSelection?.sourceRegionId,
         pendingTargetAction?.sourceRegionId,
@@ -2797,7 +2796,7 @@ const ActionsZone: React.FC<{
     onResolvePostBattleDecision: (choiceId: string) => void;
     isTutorialCommandAllowed?: (commandType: string) => boolean;
     isTutorialTargetAllowed?: (targetId: string | null | undefined) => boolean;
-}> = ({ core, primaryStageMode, isTutorialActive, tutorialInfoStepActive, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed }) => {
+}> = ({ core, primaryStageMode, isTutorialActive: _isTutorialActive, tutorialInfoStepActive, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-qidahen');
     const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
@@ -2811,8 +2810,6 @@ const ActionsZone: React.FC<{
         khanEdictSelection,
         driveTigerConsentSelection,
     });
-    const primaryStageHeadline = buildQidahenPrimaryStageHeadline(core, primaryStageMode, selectedAction);
-    const primaryStageHint = buildQidahenPrimaryStageHint(core, primaryStageMode, selectedAction);
     const factionStageActiveSelection = core.gaoDiDispatchSelection != null
         || internalDispatchSelection != null
         || recruitSelection != null

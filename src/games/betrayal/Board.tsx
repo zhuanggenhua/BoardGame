@@ -1765,7 +1765,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     floor: resolveFloorLabel(explorableRoomSlots[0]!.floor),
                 })
                 : t('board.status.turnHintHold');
-    const roomFocusState = React.useMemo(() => {
+    const roomFocusState = (() => {
         if (previewState.interactionMode === 'move' && moveTargetRooms.length === 1) {
             return {
                 label: t('board.status.focusMoveMode', { room: moveTargetRooms[0]!.name }),
@@ -1823,19 +1823,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             };
         }
         return null;
-    }, [
-        core.recommendedAction,
-        matchData,
-        moveTargetRooms,
-        previewState.interactionMode,
-        selectedCardUsedThisTurn,
-        selectedInventoryCard,
-        selectedTradeTarget,
-        hauntActionContext,
-        t,
-        tradeTargets.length,
-    ]);
-    const tradeShortcutState = React.useMemo(() => {
+    })();
+    const tradeShortcutState = (() => {
         if (tradeTargets.length !== 1 || !selectedTradeTarget || core.currentExplorerInventory.length === 0) {
             return null;
         }
@@ -1851,15 +1840,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ),
             }),
         };
-    }, [
-        core.currentExplorerInventory.length,
-        matchData,
-        roomFocusState?.actionKind,
-        selectedTradeTarget,
-        t,
-        tradeTargets.length,
-    ]);
-    const actionCueText = React.useMemo(() => {
+    })();
+    const actionCueText = (() => {
         if (hauntActionContext?.cue) {
             return hauntActionContext.cue;
         }
@@ -1909,18 +1891,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             default:
                 return t('board.status.actionCueMoveMany');
         }
-    }, [
-        core.recommendedAction,
-        matchData,
-        moveTargetRooms,
-        explorableRoomSlots,
-        hauntActionContext,
-        previewState.interactionMode,
-        selectedCardUsedThisTurn,
-        selectedInventoryCard,
-        selectedTradeTarget,
-        t,
-    ]);
+    })();
     const toggleReferenceSide = React.useCallback(() => {
         setReferenceSide((previousSide) => (previousSide === 'front' ? 'back' : 'front'));
     }, []);
@@ -2071,7 +2042,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         }));
     }, [dispatchCommand]);
 
-    const handleUseAction = React.useCallback(() => {
+    const handleUseAction = () => {
         if (core.phase === 'haunt' && hauntActionContext?.actionKind === 'use') {
             if (core.activeRoomId === 'upper-west' && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)) {
                 dispatchCommand(BETRAYAL_COMMANDS.LEARN_ABOUT_JACK, {});
@@ -2098,9 +2069,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ...previousState,
             interactionMode: 'default',
         }));
-    }, [core, dispatchCommand, hauntActionContext, selectedInventoryCard?.id]);
+    };
 
-    const handleTradeAction = React.useCallback(() => {
+    const handleTradeAction = () => {
         if (selectedCorpseLootTarget) {
             const cardId = selectedCorpseLootTarget.inventory[0]?.id;
             dispatchCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, {
@@ -2124,7 +2095,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ...previousState,
             interactionMode: 'default',
         }));
-    }, [dispatchCommand, selectedCorpseLootTarget, selectedInventoryCard?.id, selectedTradeTargetPlayerId]);
+    };
 
     const handleAttackAction = React.useCallback((target: 'traitor' | 'hero' | 'jack-spirit', targetPlayerId?: string | null) => {
         dispatchCommand(BETRAYAL_COMMANDS.HAUNT_ATTACK, {
@@ -2148,7 +2119,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         }));
     }, [dispatchCommand]);
 
-    const handleRoomFocusAction = React.useCallback(() => {
+    const handleRoomFocusAction = () => {
         if (!roomFocusState) {
             return;
         }
@@ -2171,9 +2142,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (roomFocusState.actionKind === 'use') {
             handleUseAction();
         }
-    }, [handleAttackAction, handleMoveToRoom, handleTradeAction, handleUseAction, roomFocusState]);
+    };
 
-    const actionItems = React.useMemo<ActionBarAction[]>(() => ([
+    const actionItems: ActionBarAction[] = [
         {
             id: 'move',
             label: previewState.interactionMode === 'move' ? t('board.actions.cancelMove') : t('board.actions.move'),
@@ -2213,7 +2184,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             variant: 'secondary',
         },
         { id: 'endTurn', label: t('board.actions.endTurn'), disabled: false, variant: 'ghost' },
-    ]), [core, explorableRoomSlots.length, hauntActionContext, previewState.interactionMode, selectedCardUsedThisTurn, selectedCorpseLootTarget, t, tradeTargets.length]);
+    ];
 
     const tutorialMapTargetRoomId = React.useMemo(() => {
         const target = tutorialStep?.highlightTarget;
