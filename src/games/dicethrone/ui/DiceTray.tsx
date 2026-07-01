@@ -9,6 +9,7 @@ import type { InteractionDescriptor } from '../../../engine/systems/InteractionS
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
 import { Dice3D, DiceField3D, type ProjectedDiceLayout } from './Dice3D';
+import { BoardDiceBoxTray } from './BoardDiceBoxTray';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { UI_Z_INDEX } from '../../../core';
 
@@ -309,6 +310,42 @@ export const DiceTray = ({
             }
         }
     };
+
+    if (isBoardPresentation) {
+        const boardDice = dice.map((d) => {
+            const selected = isSelected(d.id);
+            const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
+            const canModifyDie = true;
+            const isInactiveDie = isInteractionMode && !canModifyDie;
+            const clickable = isInteractionMode
+                ? (isAnyMode || isAdjustMode
+                    ? !isInactiveDie
+                    : (!isInactiveDie && (canSelectMore || selected)))
+                : canToggleDieLock;
+            const displayValue = (isAnyMode || isAdjustMode)
+                ? (modifyResult?.modifications[d.id] ?? d.value)
+                : d.value;
+
+            return {
+                id: d.id,
+                displayValue,
+                isKept: d.isKept,
+                selected: selected || isModified,
+                clickable,
+                definitionId: d.definitionId,
+            };
+        });
+
+        return (
+            <BoardDiceBoxTray
+                dice={boardDice}
+                isRolling={isRolling}
+                rerollingDiceIds={rerollingDiceIds}
+                onDieClick={handleOverlayDieClick}
+                locale={locale}
+            />
+        );
+    }
 
     if (!isOverlayPresentation) {
         return (
@@ -713,7 +750,7 @@ export const DiceActions = ({
 
     const leftDisabled = isInteractionMode
         ? false
-        : (!canInteract || rollConfirmed || rollCount >= rollLimit);
+        : (!isRollPhase || !canInteract || rollConfirmed || rollCount >= rollLimit);
     const leftVariant = isInteractionMode
         ? 'secondary' as const
         : (isRollPhase && canInteract && !rollConfirmed && rollCount < rollLimit ? 'primary' as const : 'secondary' as const);

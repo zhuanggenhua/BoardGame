@@ -161,6 +161,7 @@
     ]
   },
   "dependencies": {
+    "@3d-dice/dice-box-threejs": "^0.0.12",
     "@alloc/quick-lru": "^5.2.0",
     "@aws-sdk/client-s3": "^3.975.0",
     "@babel/standalone": "^7.29.0",
