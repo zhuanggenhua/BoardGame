@@ -74,6 +74,8 @@
     }
   },
   "board": {
+    "magnifyButton": "看",
+    "magnifyCardAria": "查看 {{card}}",
     "handInteraction": {
       "actionPaymentStatus": "需弃 {{cost}} 张 · 已选 {{selected}} 张",
       "actionPaymentHint": "点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。",

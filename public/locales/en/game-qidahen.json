@@ -74,6 +74,8 @@
     }
   },
   "board": {
+    "magnifyButton": "View",
+    "magnifyCardAria": "View {{card}}",
     "handInteraction": {
       "actionPaymentStatus": "Discard {{cost}} card(s) · Selected {{selected}}",
       "actionPaymentHint": "Click a hand card at the bottom to discard it. Click a selected card again to remove it.",

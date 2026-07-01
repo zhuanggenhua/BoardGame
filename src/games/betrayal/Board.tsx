@@ -769,6 +769,7 @@ function CharacterSelectScreen({
     onConfirmExplorer: () => void;
     onStartScenario: () => void;
 }) {
+    const { t } = useTranslation('game-betrayal');
     const selectedExplorer = EXPLORER_CATALOG.find((item) => item.explorerId === selectedExplorerId) ?? EXPLORER_CATALOG[0]!;
     const readySet = new Set(core.readyPlayerIds);
     const isReady = readySet.has(viewerPlayerId);
@@ -809,7 +810,7 @@ function CharacterSelectScreen({
                             <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
                             <div className="relative flex h-[72px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.28)] bg-[linear-gradient(180deg,rgba(8,12,11,0.74),rgba(5,8,7,0.92))] px-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
                                 <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
-                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt="山屋惊魂" className="relative h-[56px] w-full object-contain object-left" draggable={false} />
+                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt={t('title')} className="relative h-[56px] w-full object-contain object-left" draggable={false} />
                             </div>
                         </div>
                         <div className="relative flex items-center justify-center px-6 py-4 text-center">
@@ -822,15 +823,15 @@ function CharacterSelectScreen({
                                 <span className="h-px w-16 bg-[linear-gradient(90deg,#9f854d,transparent)]" />
                             </div>
                             <div className="text-[24px] font-semibold uppercase tracking-[0.28em] text-[#e7c783]">
-                                选择探索者
+                                {t('board.characterSelect.title')}
                             </div>
                         </div>
                         <div className="border-l border-[#5e4b2e]">
                             <div className="flex h-full flex-col items-center justify-center px-4 py-3 text-center">
-                                <div className="text-xs uppercase tracking-[0.2em] text-[#d8bf81]">玩家</div>
+                                <div className="text-xs uppercase tracking-[0.2em] text-[#d8bf81]">{t('board.characterSelect.playersLabel')}</div>
                                 <div className="mt-1 text-[22px] font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
                                 <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#9e8c69]">
-                                    已就绪
+                                    {t('board.characterSelect.readyCountLabel')}
                                 </div>
                             </div>
                         </div>
@@ -859,11 +860,11 @@ function CharacterSelectScreen({
                                         <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-[#b9aa84]">
                                             <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(214,191,129,0.18)] bg-[rgba(15,16,13,0.42)] px-3 py-1">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#d8bf81]" />
-                                                当前选择
+                                                {t('board.characterSelect.currentSelection')}
                                             </span>
                                             <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(110,133,66,0.26)] bg-[rgba(23,33,19,0.36)] px-3 py-1 text-[#b5ef42]">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#b5ef42]" />
-                                                {isReady ? '已准备' : '待确认'}
+                                                {isReady ? t('board.characterSelect.ready') : t('board.characterSelect.pending')}
                                             </span>
                                         </div>
                                     </div>
@@ -871,7 +872,7 @@ function CharacterSelectScreen({
                                         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                         <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28))]" />
-                                            <span>属性</span>
+                                            <span>{t('board.characterSelect.traitsTitle')}</span>
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(214,191,129,0.28),transparent)]" />
                                         </div>
                                         <div className="grid gap-2.5">
@@ -901,7 +902,7 @@ function CharacterSelectScreen({
                                     <div className="mt-5 border-t border-[rgba(78,65,45,0.54)] pt-4">
                                         <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28))]" />
-                                            <span>特性</span>
+                                            <span>{t('board.characterSelect.abilityTitle')}</span>
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(214,191,129,0.28),transparent)]" />
                                         </div>
                                         <div className="px-1 py-1">
@@ -949,7 +950,7 @@ function CharacterSelectScreen({
                     <footer className="grid grid-cols-[minmax(0,1fr)_520px] border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]">
                         <div className="grid grid-cols-[124px_repeat(6,minmax(92px,1fr))] overflow-hidden">
                             <div className="flex flex-col justify-center border-r border-[#5e4b2e] px-3 py-3 text-center">
-                                <div className="text-[11px] uppercase tracking-[0.2em] text-[#d8bf81]">玩家</div>
+                                <div className="text-[11px] uppercase tracking-[0.2em] text-[#d8bf81]">{t('board.characterSelect.playersLabel')}</div>
                                 <div className="mt-1 text-[16px] font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
                             </div>
                             {Array.from({ length: 6 }).map((_, seatIndex) => {
@@ -1000,7 +1001,7 @@ function CharacterSelectScreen({
                                                     ? 'border border-[rgba(214,191,129,0.22)] bg-[rgba(39,31,18,0.28)] text-[#d8bf81]'
                                                     : 'border border-[rgba(93,79,54,0.18)] bg-transparent text-[#676253]'
                                         }`}>
-                                            {ready ? '已就绪' : selectedId ? '待确认' : '空位'}
+                                            {ready ? t('board.characterSelect.ready') : selectedId ? t('board.characterSelect.pending') : t('board.characterSelect.emptySeat')}
                                         </div>
                                     </div>
                                 );
@@ -1013,7 +1014,7 @@ function CharacterSelectScreen({
                                 className="relative inline-flex min-h-[126px] items-center justify-center gap-3 border-l border-[#5e4b2e] text-[16px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
                             >
                                 <span className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-                                随机
+                                {t('board.characterSelect.random')}
                             </button>
                             <button
                                 type="button"
@@ -1023,7 +1024,7 @@ function CharacterSelectScreen({
                                 className="relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] bg-[linear-gradient(180deg,rgba(95,135,44,0.24),rgba(54,81,22,0.76))] text-[26px] font-semibold uppercase tracking-[0.18em] text-[#dfff8f] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.3),rgba(61,91,25,0.82))]"
                             >
                                 <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
-                                {isReady ? '开始' : '确认'}
+                                {isReady ? t('board.characterSelect.start') : t('board.characterSelect.confirm')}
                             </button>
                             <button
                                 type="button"
@@ -1031,7 +1032,7 @@ function CharacterSelectScreen({
                             >
                                 <span className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                 <ChevronLeft size={18} />
-                                返回
+                                {t('board.characterSelect.back')}
                             </button>
                         </div>
                     </footer>
@@ -1087,6 +1088,7 @@ function EndgameScreen({
     matchData?: MatchPlayerInfo[];
     effectiveLocale: string;
 }) {
+    const { t } = useTranslation('game-betrayal');
     const result = core.endgameResult;
     const allExplorers = [core.currentExplorer, ...core.otherExplorers];
     const survivors = result
@@ -1096,10 +1098,10 @@ function EndgameScreen({
         ? allExplorers.find((explorer) => explorer.playerId === result.traitorPlayerId) ?? allExplorers[allExplorers.length - 1]
         : allExplorers[allExplorers.length - 1];
     const survivorsWon = result?.outcome !== 'traitor';
-    const outcomeTitle = survivorsWon ? '胜利' : '失败';
-    const outcomeSubtitle = survivorsWon ? '幸存者逃脱' : '叛徒得逞';
-    const survivorsTitle = survivorsWon ? '逃脱' : '败北';
-    const traitorTitle = survivorsWon ? '败退' : '得胜';
+    const outcomeTitle = survivorsWon ? t('board.endgame.victory') : t('board.endgame.defeat');
+    const outcomeSubtitle = survivorsWon ? t('board.endgame.survivorsEscaped') : t('board.endgame.traitorSucceeded');
+    const survivorsTitle = survivorsWon ? t('board.endgame.survivorsStatusWin') : t('board.endgame.survivorsStatusLose');
+    const traitorTitle = survivorsWon ? t('board.endgame.traitorStatusLose') : t('board.endgame.traitorStatusWin');
     const endgameTraitOrder = ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[];
     const roomsExploredCount = result?.stats.roomsExplored ?? core.rooms.filter((room) => room.state === 'discovered').length;
     const omensDrawnCount = result?.stats.omensDrawn ?? 0;
@@ -1138,11 +1140,11 @@ function EndgameScreen({
                             <div className="pointer-events-none absolute inset-x-3 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
                             <div className="relative flex h-[74px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.3)] bg-[linear-gradient(180deg,rgba(8,12,11,0.72),rgba(5,8,7,0.92))] px-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
                                 <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
-                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt="山屋惊魂" className="relative h-[58px] w-full object-contain object-left" draggable={false} />
+                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt={t('title')} className="relative h-[58px] w-full object-contain object-left" draggable={false} />
                             </div>
                         </div>
                         <div className="relative flex flex-col items-center justify-center px-6 py-2 text-center">
-                            <div className="text-xs uppercase tracking-[0.34em] text-[#e1c480]">剧本结果</div>
+                            <div className="text-xs uppercase tracking-[0.34em] text-[#e1c480]">{t('board.endgame.title')}</div>
                             <div className={`mt-1 text-[56px] font-bold tracking-[0.1em] drop-shadow-[0_0_18px_rgba(183,239,116,0.28)] ${
                                 survivorsWon ? 'text-[#b7ef74]' : 'text-[#eb8a67]'
                             }`}>
@@ -1169,7 +1171,7 @@ function EndgameScreen({
                                     <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,12,11,0.1),rgba(8,12,11,0.52))]" />
                                 </div>
                                 <div className="relative flex flex-col justify-center px-4 py-3">
-                                    <div className="text-xs uppercase tracking-[0.26em] text-[#ddb774]">剧本</div>
+                                    <div className="text-xs uppercase tracking-[0.26em] text-[#ddb774]">{t('board.scenario.button')}</div>
                                     <div className="mt-1 text-[28px] font-semibold tracking-[0.08em] text-[#f3e1bd]">{result?.hauntTitle ?? scenarioConfig.hauntTitle}</div>
                                 </div>
                             </div>
@@ -1182,7 +1184,7 @@ function EndgameScreen({
                             <div className="relative overflow-hidden px-3 py-3">
                                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(179,239,116,0.45),transparent)]" />
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
-                                <div className="text-center text-[19px] font-semibold uppercase tracking-[0.16em] text-[#b7ef74]">幸存者</div>
+                                <div className="text-center text-[19px] font-semibold uppercase tracking-[0.16em] text-[#b7ef74]">{t('board.endgame.survivors')}</div>
                                 <div className="mt-1 text-center text-[13px] uppercase tracking-[0.18em] text-[#d6e3b5]">{survivorsTitle}</div>
                                 <div className="mt-4 space-y-2">
                                     {survivors.map((explorer) => (
@@ -1318,7 +1320,7 @@ function EndgameScreen({
 
                                     <div className="mt-4 grid grid-cols-[1fr_1fr] gap-0 border-t border-[#6f5d3d]">
                                         <div className="relative border-r border-[#6f5d3d] pr-4 pt-4">
-                                            <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">目标</div>
+                                            <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">{t('board.scenario.objectiveLabel')}</div>
                                             <div className="mt-4 flex h-14 items-center justify-center">
                                                 {survivors.slice(0, 2).map((explorer, index) => (
                                                     <OptimizedImage
@@ -1332,17 +1334,17 @@ function EndgameScreen({
                                                     />
                                                 ))}
                                             </div>
-                                            <p className="mt-4 text-center text-[14px] font-semibold leading-[1.35] text-[#352a1e]">所有幸存者逃脱。</p>
+                                            <p className="mt-4 text-center text-[14px] font-semibold leading-[1.35] text-[#352a1e]">{t('board.endgame.survivorsEscaped')}。</p>
                                             <div className="mt-4 flex justify-center">
                                                 <div className="relative grid h-[72px] w-[72px] rotate-[-11deg] place-items-center rounded-full border-[4px] border-[#476a31] text-[18px] font-bold tracking-[0.08em] text-[#476a31] opacity-90 shadow-[inset_0_0_0_2px_rgba(71,106,49,0.34)]">
                                                     <span className="pointer-events-none absolute inset-[11px] rounded-full border-2 border-[rgba(71,106,49,0.46)]" />
-                                                    完成
+                                                    {t('board.endgame.completedStamp')}
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="pl-4 pt-4">
-                                            <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">结果</div>
+                                            <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">{t('board.endgame.resultLabel')}</div>
                                             <div className="mt-4 flex h-14 items-center justify-center">
                                                 {survivors.slice(0, 2).map((explorer, index) => (
                                                     <OptimizedImage
@@ -1360,7 +1362,7 @@ function EndgameScreen({
                                                 {outcomeTitle}
                                             </div>
                                             <div className="mt-4 border-t border-[#6f5d3d] pt-3">
-                                                <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">奖励</div>
+                                                <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">{t('board.endgame.rewardsLabel')}</div>
                                                 <div className="mt-3 grid grid-cols-3 gap-3 text-center">
                                                     <div className="flex flex-col items-center gap-2">
                                                         <span className="grid h-14 w-14 place-items-center rounded-full border border-[rgba(132,108,68,0.38)] bg-[rgba(88,67,38,0.08)] text-[32px] leading-none text-[#bf9647] drop-shadow-[0_2px_0_rgba(86,58,22,0.45)]">★</span>
@@ -1391,19 +1393,19 @@ function EndgameScreen({
                                     <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
                                     <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                                     <RotateCcw size={22} />
-                                    <span>重赛</span>
+                                    <span>{t('board.endgame.rematch')}</span>
                                 </button>
                                 <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
                                     <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
                                     <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                                     <House size={22} />
-                                    <span>大厅</span>
+                                    <span>{t('board.endgame.lobby')}</span>
                                 </button>
                                 <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
                                     <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
                                     <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                                     <BookOpen size={22} />
-                                    <span>日志</span>
+                                    <span>{t('board.endgame.logs')}</span>
                                 </button>
                             </div>
                         </section>
@@ -1413,7 +1415,7 @@ function EndgameScreen({
                             <div className="relative overflow-hidden px-3 pb-2 pt-3">
                                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(235,114,80,0.42),transparent)]" />
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
-                                <div className="text-center text-[19px] font-semibold uppercase tracking-[0.16em] text-[#eb7250]">叛徒</div>
+                                <div className="text-center text-[19px] font-semibold uppercase tracking-[0.16em] text-[#eb7250]">{t('board.endgame.traitor')}</div>
                                 <div className="mt-1 text-center text-[13px] uppercase tracking-[0.18em] text-[#f1b49d]">{traitorTitle}</div>
                                 {traitor ? (
                                     <div className="relative mt-4 grid grid-cols-[50px_1fr_34px] items-center gap-3 border-y border-[rgba(151,92,74,0.34)] bg-[linear-gradient(180deg,rgba(11,14,12,0.34),rgba(17,10,9,0.48))] px-2 py-2">
@@ -1444,24 +1446,24 @@ function EndgameScreen({
                             <div className="relative overflow-hidden px-2 pb-2 pt-2">
                                 <div className="flex items-center gap-3 text-center">
                                     <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(221,183,116,0.34))]" />
-                                    <div className="text-[15px] font-semibold uppercase tracking-[0.22em] text-[#ddb774]">统计</div>
+                                    <div className="text-[15px] font-semibold uppercase tracking-[0.22em] text-[#ddb774]">{t('board.endgame.statsLabel')}</div>
                                     <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(221,183,116,0.34),transparent)]" />
                                 </div>
                                 <div className="mt-2.5 grid grid-cols-3 gap-2 text-center">
                                     <div className="border-r border-[rgba(76,60,39,0.44)] pr-2 last:border-r-0">
                                         <Footprints size={28} className="mx-auto text-[#d0af6e]" />
                                         <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">{roomsExploredCount}</div>
-                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">房间</div>
+                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">{t('board.endgame.roomsStat')}</div>
                                     </div>
                                     <div className="border-r border-[rgba(76,60,39,0.44)] px-2 last:border-r-0">
                                         <BookOpen size={28} className="mx-auto text-[#c3a166]" />
                                         <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">{omensDrawnCount}</div>
-                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">预兆</div>
+                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">{t('board.endgame.omensStat')}</div>
                                     </div>
                                     <div className="px-2">
                                         <Search size={28} className="mx-auto text-[#c3a166]" />
                                         <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">{eventsDrawnCount}</div>
-                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">事件</div>
+                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">{t('board.endgame.eventsStat')}</div>
                                     </div>
                                 </div>
                             </div>
@@ -2535,7 +2537,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         <div className="relative flex flex-col items-center justify-center px-6 py-4 text-center">
                             <div className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
                             <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
-                            <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">PHASE</span>
+                            <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">{t('board.hud.phaseLabel')}</span>
                             <span className="mt-1 text-[28px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
                                 {phaseLabel}
                             </span>
@@ -2544,7 +2546,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
                             <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
                             <div className="text-right">
-                                <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">TURN</div>
+                                <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">{t('board.hud.turnLabel')}</div>
                                 <div className="mt-1 text-[21px] font-semibold uppercase tracking-[0.14em] text-[#f0d29a]">
                                     {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
                                 </div>
@@ -2554,7 +2556,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 data-tutorial-id="betrayal-moves-remaining"
                             >
                                 <div>
-                                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b5ef42]">MOVE</div>
+                                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b5ef42]">{t('board.hud.moveLabel')}</div>
                                     <div className="text-[28px] font-bold text-[#c8f05e]">{core.movesRemaining}</div>
                                     <span className="sr-only">
                                         {t('board.status.movesRemaining', { count: core.movesRemaining })}
@@ -2614,14 +2616,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                         <div className="min-w-0">
                                             <div className="text-[8px] uppercase tracking-[0.18em] text-[#95876d]">
-                                                位置
+                                                {t('board.hud.locationLabel')}
                                             </div>
                                             <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.12em] text-[#efe2c4]">
                                                 {core.rooms.find((room) => room.id === core.currentExplorer.roomId)?.name || t('board.rooms.unknown')}
                                             </div>
                                         </div>
                                         <div className="shrink-0 self-center rounded-full border border-[rgba(105,83,47,0.58)] bg-[radial-gradient(circle_at_35%_25%,rgba(227,211,168,0.12),rgba(18,15,12,0.95))] px-2 py-0.5 text-center shadow-[0_4px_10px_rgba(0,0,0,0.14)]">
-                                            <div className="text-[7px] uppercase tracking-[0.16em] text-[#98886a]">持有</div>
+                                            <div className="text-[7px] uppercase tracking-[0.16em] text-[#98886a]">{t('board.hud.holdingLabel')}</div>
                                             <div className="text-[15px] font-semibold leading-none text-[#f0e2c0]">{core.currentExplorerInventory.length}</div>
                                         </div>
                                     </div>
@@ -2635,7 +2637,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     >
                                         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                         <div className="mb-1 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-1">
-                                            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">当前属性</span>
+                                            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">{t('board.hud.currentTraitsLabel')}</span>
                                             <span className="rounded-full border border-[rgba(181,239,66,0.28)] bg-[rgba(40,58,21,0.52)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#d9ff97]">
                                                 {resolvePlayerName(core.currentExplorer.playerId, core.currentExplorer.displayName, matchData)}
                                             </span>
@@ -2654,7 +2656,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             return (
                                                                 <span
                                                                     key={`${trait}-${index}`}
-                                                                    title={isDangerSlot ? '低值危险区' : undefined}
+                                                                    title={isDangerSlot ? t('board.hud.dangerZone') : undefined}
                                                                     className={`h-2.5 rounded-full border ${
                                                                         isDangerSlot
                                                                             ? isFilled
@@ -3304,7 +3306,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 <div className="flex items-center gap-2">
                                     <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.18))]" />
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-[#a89d84]">
-                                        队友
+                                        {t('board.hud.teammatesLabel')}
                                     </div>
                                 </div>
                                 <div className="mt-2 grid gap-1.5">
@@ -3509,7 +3511,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         <div className="mb-2 flex items-center gap-2">
                             <div className="min-w-0 flex-1 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2">
                                 <div className="text-[10px] uppercase tracking-[0.14em] text-[#a89d84]">
-                                    当前选中
+                                    {t('board.mobile.selectedLabel')}
                                 </div>
                                 <div
                                     className="truncate text-sm font-medium text-[#f3ead6]"
@@ -3544,7 +3546,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 data-testid="betrayal-mobile-jump-inventory"
                                 className="rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]"
                             >
-                                持有区
+                                {t('board.sections.inventory')}
                             </button>
                             <button
                                 type="button"
@@ -3552,7 +3554,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 data-testid="betrayal-mobile-jump-decks"
                                 className="rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]"
                             >
-                                牌堆区
+                                {t('board.sections.decks')}
                             </button>
                         </div>
                         <div className="grid grid-cols-5 gap-2">

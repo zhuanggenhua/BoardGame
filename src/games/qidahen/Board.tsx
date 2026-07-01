@@ -3773,7 +3773,7 @@ const HandZone: React.FC<{
                             <button
                                 type="button"
                                 data-testid={`qidahen-hand-card-magnify-${card.id}`}
-                                aria-label={`查看 ${card.label}`}
+                                aria-label={t('board.magnifyCardAria', { card: card.label })}
                                 className="pointer-events-auto absolute right-2 top-2 inline-flex h-[26px] min-w-[26px] items-center justify-center rounded-full border-[2px] text-[11px] font-black transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30"
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -3791,7 +3791,7 @@ const HandZone: React.FC<{
                                     boxShadow: '0 3px 8px rgba(56,35,15,0.18)',
                                 }}
                             >
-                                看
+                                {t('board.magnifyButton')}
                             </button>
                         </div>
                     ))}

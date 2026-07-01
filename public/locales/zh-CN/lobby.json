@@ -448,7 +448,7 @@
     "games": {
       "betrayal": {
         "title": "山屋惊魂",
-        "description": "3-6 人恐怖探索桌游。当前已接入运行时 foundation skeleton，用于锁定房间主视图、探索者区与牌堆区。",
+        "description": "3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定房间主视图、探索者区与牌堆区。",
         "players": "3-6 人"
       },
       "tictactoe": {

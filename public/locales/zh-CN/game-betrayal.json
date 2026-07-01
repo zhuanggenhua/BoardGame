@@ -1,12 +1,63 @@
 {
   "title": "山屋惊魂",
-  "description": "3-6 人恐怖探索桌游。当前已接入运行时 foundation skeleton，用于锁定牌桌布局、资源路径与后续玩法实施入口。",
+  "description": "3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定牌桌布局、资源路径与后续玩法实施入口。",
   "players": "3-6 人",
   "board": {
     "phase": {
       "preHaunt": "恶兆前",
-      "haunt": "Haunt",
+      "haunt": "恶兆后",
       "endgame": "终局"
+    },
+    "characterSelect": {
+      "title": "选择探索者",
+      "playersLabel": "玩家",
+      "readyCountLabel": "已就绪",
+      "currentSelection": "当前选择",
+      "ready": "已准备",
+      "pending": "待确认",
+      "traitsTitle": "属性",
+      "abilityTitle": "特性",
+      "random": "随机",
+      "start": "开始",
+      "confirm": "确认",
+      "back": "返回",
+      "emptySeat": "空位"
+    },
+    "endgame": {
+      "title": "剧本结果",
+      "survivors": "幸存者",
+      "traitor": "叛徒",
+      "resultLabel": "结果",
+      "rewardsLabel": "奖励",
+      "statsLabel": "统计",
+      "roomsStat": "房间",
+      "omensStat": "预兆",
+      "eventsStat": "事件",
+      "rematch": "重赛",
+      "lobby": "大厅",
+      "logs": "日志",
+      "victory": "胜利",
+      "defeat": "失败",
+      "survivorsEscaped": "幸存者逃脱",
+      "traitorSucceeded": "叛徒得逞",
+      "survivorsStatusWin": "逃脱",
+      "survivorsStatusLose": "败北",
+      "traitorStatusWin": "得胜",
+      "traitorStatusLose": "败退",
+      "completedStamp": "完成"
+    },
+    "hud": {
+      "phaseLabel": "阶段",
+      "turnLabel": "当前回合",
+      "moveLabel": "移动",
+      "locationLabel": "位置",
+      "holdingLabel": "持有",
+      "currentTraitsLabel": "当前属性",
+      "dangerZone": "低值危险区",
+      "teammatesLabel": "队友"
+    },
+    "mobile": {
+      "selectedLabel": "当前选中"
     },
     "sections": {
       "currentExplorer": "当前探索者",
@@ -80,10 +131,10 @@
       "button": "剧本",
       "title": "首剧本查阅",
       "objectiveLabel": "目标",
-      "objective": "恶兆前继续探索；haunt 后击倒叛徒、放置两处法阵并驱散杰克之灵。",
+      "objective": "恶兆前继续探索；恶兆后击倒叛徒、放置两处法阵并驱散杰克之灵。",
       "statusLabel": "当前局面",
       "haunt": "剧本",
-      "hauntValue": "Crimson Jack Returns",
+      "hauntValue": "赤红杰克归来",
       "rooms": "已发现房间",
       "omens": "弃置预兆"
     },
@@ -186,7 +237,7 @@
     }
   },
   "errors": {
-    "readOnly": "当前是只读 foundation skeleton，尚未开放正式玩法命令。"
+    "readOnly": "当前是只读基础运行时骨架，尚未开放正式玩法命令。"
   },
   "tutorial": {
     "basicSetup": {
@@ -196,7 +247,7 @@
         "setupRuntime": "这一章直接落在第一剧本的真实恶兆前局面，不再把选角色和确认开始单独拆成教学正文。",
         "objectiveAndTurn": "你这局先要在恶兆前继续探索山屋；轮到你时，底部 5 个主动作就是最常用入口：移动、探索、交易、使用、结束回合。",
         "traitsAndSpeed": "左侧属性里最先要看的是速度。它决定你一回合理论上能走多远，所以移动前先先确认速度值。",
-        "movesRemaining": "真正的剩余移动要看右上角这个 MOVE 圆牌。它显示的是你这回合此刻还能继续移动多少格，不是总速度。",
+        "movesRemaining": "真正的剩余移动要看右上角这个移动圆牌。它显示的是你这回合此刻还能继续移动多少格，不是总速度。",
         "roomBoard": "中间这块房间牌桌才是主视区。先看自己在哪、哪些房间已连通、哪里还能继续翻新房间，再决定怎么走。",
         "inventoryAndHelp": "左下是真实持有区，物品和预兆都会放这里；需要复查术语时再开参考卡，但帮助入口不替代主界面信息。",
         "finish": "到这里你已经知道这局先看目标、动作、速度和房间牌桌。下一章再直接走一次真实的使用、移动和探索。"
@@ -214,23 +265,23 @@
       }
     },
     "crimsonJack": {
-      "title": "Crimson Jack 剧本目标",
-      "description": "讲清第一剧本从 haunt 开始后，英雄和叛徒各自要做什么。",
+      "title": "赤红杰克剧本目标",
+      "description": "讲清第一剧本进入恶兆后阶段后，英雄和叛徒各自要做什么。",
       "steps": {
-        "setupHaunt": "这一章直接切到第一剧本已经进入 haunt 的真实局面，这样不用靠口头假设来讲规则。",
-        "hauntReveal": "第一剧本是 Crimson Jack Returns。触发 haunt 后，揭示者会成为叛徒，后面的目标也会按剧本分流。",
+        "setupHaunt": "这一章直接切到第一剧本已经进入恶兆后阶段的真实局面，这样不用靠口头假设来讲规则。",
+        "hauntReveal": "第一剧本是《赤红杰克归来》。触发恶兆后，揭示者会成为叛徒，后面的目标也会按剧本分流。",
         "heroGoal": "英雄线的目标是三件事：先调查杰克，再研究两处驱魔法阵，最后去驱散杰克之灵。",
         "traitorGoal": "叛徒线则想杀光英雄，或者借杰克之灵重新恢复肉身。房间、移动和攻击都还是同一张真实牌桌。",
         "finish": "到这里你应该已经知道这剧本不是单纯互殴，而是围绕调查、法阵与杰克之灵展开的双线目标。"
       }
     },
     "hauntActions": {
-      "title": "Haunt 动作与收尾",
-      "description": "从真实的第一剧本收官局面，看到帮助入口、haunt 动作和终局收尾。",
+      "title": "恶兆后动作与收尾",
+      "description": "从真实的第一剧本收官局面，看到帮助入口、恶兆后动作和终局收尾。",
       "steps": {
         "setupReadyToExorcise": "现在直接跳到英雄已经准备好驱魔的真实局面。这样能聚焦最后一段关键动作，而不是重复前置步骤。",
         "helpEntry": "需要复查术语时，从这里打开参考卡。帮助入口只是轻量查看，不会替代底部真实动作按钮。",
-        "hauntActions": "haunt 后真正关键的动作都还在底部：调查杰克、研究法阵、驱魔，以及必要时的攻击。",
+        "hauntActions": "恶兆后真正关键的动作都还在底部：调查杰克、研究法阵、驱魔，以及必要时的攻击。",
         "exorciseJack": "现在执行真实的驱魔动作。成功后会直接进入正式终局，而不是跳到教程专用结算页。",
         "endgameReview": "这就是第一剧本英雄线的真实收尾。你看到的终局页，就是后续正式跑通首剧本时会落到的结果页。"
       }

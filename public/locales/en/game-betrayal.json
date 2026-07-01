@@ -8,6 +8,57 @@
       "haunt": "Haunt",
       "endgame": "Endgame"
     },
+    "characterSelect": {
+      "title": "Choose Explorer",
+      "playersLabel": "Players",
+      "readyCountLabel": "Ready",
+      "currentSelection": "Current Selection",
+      "ready": "Ready",
+      "pending": "Pending",
+      "traitsTitle": "Traits",
+      "abilityTitle": "Ability",
+      "random": "Random",
+      "start": "Start",
+      "confirm": "Confirm",
+      "back": "Back",
+      "emptySeat": "Empty"
+    },
+    "endgame": {
+      "title": "Scenario Result",
+      "survivors": "Survivors",
+      "traitor": "Traitor",
+      "resultLabel": "Result",
+      "rewardsLabel": "Rewards",
+      "statsLabel": "Stats",
+      "roomsStat": "Rooms",
+      "omensStat": "Omens",
+      "eventsStat": "Events",
+      "rematch": "Rematch",
+      "lobby": "Lobby",
+      "logs": "Logs",
+      "victory": "Victory",
+      "defeat": "Defeat",
+      "survivorsEscaped": "Survivors Escaped",
+      "traitorSucceeded": "Traitor Prevails",
+      "survivorsStatusWin": "Escaped",
+      "survivorsStatusLose": "Defeated",
+      "traitorStatusWin": "Victorious",
+      "traitorStatusLose": "Repelled",
+      "completedStamp": "Complete"
+    },
+    "hud": {
+      "phaseLabel": "Phase",
+      "turnLabel": "Turn",
+      "moveLabel": "Move",
+      "locationLabel": "Location",
+      "holdingLabel": "Holding",
+      "currentTraitsLabel": "Current Traits",
+      "dangerZone": "Low danger",
+      "teammatesLabel": "Teammates"
+    },
+    "mobile": {
+      "selectedLabel": "Selected"
+    },
     "sections": {
       "currentExplorer": "Current Explorer",
       "traits": "Trait Track",
