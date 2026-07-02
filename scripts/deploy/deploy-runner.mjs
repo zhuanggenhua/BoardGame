@@ -12,6 +12,8 @@ const port = Number.parseInt(process.env.BG_DEPLOY_RUNNER_PORT || '18761', 10);
 const token = process.env.BG_DEPLOY_RUNNER_TOKEN || '';
 const allowUnauthenticated = process.env.BG_DEPLOY_RUNNER_ALLOW_UNAUTHENTICATED === '1';
 const outputLimit = 200_000;
+const deployStepTimeoutMs = readPositiveIntegerEnv('BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS', 20 * 60) * 1000;
+const mobileReleaseStepTimeoutMs = readPositiveIntegerEnv('BG_DEPLOY_RUNNER_MOBILE_STEP_TIMEOUT_SECONDS', 30 * 60) * 1000;
 const jobs = new Map();
 
 let activeJobId = null;
@@ -330,34 +332,11 @@ function createJob(args, command = buildDeployCommand(args)) {
 function runDeployJob(job, args) {
     job.status = 'running';
     job.startedAt = new Date().toISOString();
-
-    const child = spawn('bash', [deployScriptPath(), ...args], {
-        cwd: rootDir,
-        env: process.env,
-        windowsHide: true,
-    });
-
-    const append = (chunk) => {
-        job.output += chunk.toString('utf8');
-        if (job.output.length > outputLimit) {
-            job.output = job.output.slice(job.output.length - outputLimit);
-        }
-    };
-
-    child.stdout.on('data', append);
-    child.stderr.on('data', append);
-    child.on('error', (error) => {
-        job.status = 'failed';
-        job.exitCode = 1;
-        job.finishedAt = new Date().toISOString();
-        job.output += `\n${error.message}`;
-        activeJobId = null;
-    });
-    child.on('exit', (code) => {
-        job.exitCode = code ?? 1;
-        job.status = job.exitCode === 0 ? 'succeeded' : 'failed';
-        job.finishedAt = new Date().toISOString();
-        activeJobId = null;
+    runJobProcess(job, 'bash', [deployScriptPath(), ...args], (deployCode) => {
+        finishJob(job, deployCode);
+    }, {}, {
+        label: 'deploy',
+        timeoutMs: deployStepTimeoutMs,
     });
 }
 
@@ -374,11 +353,23 @@ function runDeployAndMobileReleaseJob(job, deployArgs, mobileArgs) {
             finishJob(job, otaCode);
         }, {
             NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=4096',
+        }, {
+            label: 'Android OTA',
+            timeoutMs: mobileReleaseStepTimeoutMs,
         });
+    }, {}, {
+        label: 'deploy',
+        timeoutMs: deployStepTimeoutMs,
     });
 }
 
-function runJobProcess(job, command, args, onExit, extraEnv = {}) {
+function runJobProcess(job, command, args, onExit, extraEnv = {}, options = {}) {
+    const label = options.label || command;
+    const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 0;
+    let settled = false;
+    let timedOut = false;
+    let timeoutId = null;
+    let forceKillId = null;
     const child = spawn(command, args, {
         cwd: rootDir,
         env: {
@@ -386,17 +377,57 @@ function runJobProcess(job, command, args, onExit, extraEnv = {}) {
             ...extraEnv,
         },
         windowsHide: true,
+        detached: process.platform !== 'win32',
     });
+
+    if (timeoutMs > 0) {
+        timeoutId = setTimeout(() => {
+            timedOut = true;
+            appendJobOutput(job, `\n[deploy-runner] ${label} timed out after ${Math.round(timeoutMs / 1000)}s; terminating process tree.\n`);
+            terminateProcessTree(child, 'SIGTERM');
+            forceKillId = setTimeout(() => {
+                terminateProcessTree(child, 'SIGKILL');
+            }, 5_000);
+        }, timeoutMs);
+    }
 
     child.stdout.on('data', (chunk) => appendJobOutput(job, chunk));
     child.stderr.on('data', (chunk) => appendJobOutput(job, chunk));
     child.on('error', (error) => {
+        if (settled) return;
+        settled = true;
+        clearProcessTimers(timeoutId, forceKillId);
         appendJobOutput(job, `\n${error.message}`);
         onExit(1);
     });
     child.on('exit', (code) => {
-        onExit(code ?? 1);
+        if (settled) return;
+        settled = true;
+        clearProcessTimers(timeoutId, forceKillId);
+        onExit(timedOut ? 124 : (code ?? 1));
     });
+}
+
+function clearProcessTimers(timeoutId, forceKillId) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (forceKillId) clearTimeout(forceKillId);
+}
+
+function terminateProcessTree(child, signal) {
+    if (!child.pid) return;
+    try {
+        if (process.platform === 'win32') {
+            child.kill(signal);
+            return;
+        }
+        process.kill(-child.pid, signal);
+    } catch {
+        try {
+            child.kill(signal);
+        } catch {
+            // Process already exited.
+        }
+    }
 }
 
 function appendJobOutput(job, chunk) {
@@ -525,6 +556,14 @@ function parseScriptOutput(output) {
 
 function buildDeployCommand(args) {
     return ['bash', 'scripts/deploy/deploy-image.sh', ...args].join(' ');
+}
+
+function readPositiveIntegerEnv(name, fallback) {
+    const raw = process.env[name];
+    if (!raw) return fallback;
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return parsed;
 }
 
 function sendJson(res, statusCode, body) {

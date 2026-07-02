@@ -20,6 +20,7 @@ set -euo pipefail
 #
 # 环境变量（可选，用于非交互环境）：
 #   JWT_SECRET=xxx bash deploy-image.sh
+#   DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=300 bash deploy-image.sh update
 #
 # 架构：Cloudflare CDN (HTTPS) → 服务器 80 端口 → Docker web 容器 (NestJS monolith) → 内部 game-server
 # 同域部署，无 CORS 问题。Cloudflare 自动缓存静态资源，服务器只承担 API 和 WebSocket 带宽。
@@ -55,6 +56,7 @@ PUBLIC_ENTRY_SYNC_RETRY="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
 PUBLIC_ENTRY_SYNC_DELAY="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
 REQUIRE_PUBLIC_ENTRY_SYNC="${REQUIRE_PUBLIC_ENTRY_SYNC:-1}"
 CLOUDFLARE_PURGE_MODE="${CLOUDFLARE_PURGE_MODE:-auto}"
+DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-300}"
 
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
@@ -1246,6 +1248,33 @@ ensure_local_target_image() {
   fi
 }
 
+pull_image_ref() {
+  local image_ref="${1:-}"
+  local timeout_seconds="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-300}"
+  local pull_status=0
+
+  if [ -z "$image_ref" ]; then
+    die "拉取镜像缺少镜像引用"
+  fi
+
+  if ! [[ "$timeout_seconds" =~ ^[0-9]+$ ]]; then
+    die "DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS 必须是非负整数秒：${timeout_seconds}"
+  fi
+
+  if [ "$timeout_seconds" -eq 0 ] || ! command -v timeout >/dev/null 2>&1; then
+    docker pull "$image_ref"
+    return
+  fi
+
+  timeout "${timeout_seconds}s" docker pull "$image_ref" || pull_status=$?
+  if [ "$pull_status" -eq 124 ]; then
+    die "拉取镜像超时（${timeout_seconds}s）：${image_ref}"
+  fi
+  if [ "$pull_status" -ne 0 ]; then
+    die "拉取镜像失败（exit=${pull_status}）：${image_ref}"
+  fi
+}
+
 pull_app_images() {
   local image_source="${1:-remote}"
   if [ -z "$TARGET_GAME_IMAGE_REF" ] || [ -z "$TARGET_WEB_IMAGE_REF" ]; then
@@ -1264,8 +1293,8 @@ pull_app_images() {
   log "拉取应用镜像引用"
   log "  - game-server: ${TARGET_GAME_IMAGE_REF}"
   log "  - web: ${TARGET_WEB_IMAGE_REF}"
-  docker pull "$TARGET_GAME_IMAGE_REF"
-  docker pull "$TARGET_WEB_IMAGE_REF"
+  pull_image_ref "$TARGET_GAME_IMAGE_REF"
+  pull_image_ref "$TARGET_WEB_IMAGE_REF"
 }
 
 # ============================================================
