@@ -109,7 +109,7 @@ export const reduceQidahenRegionSelected = (
         ? dependencies.applyCharacterActionWindowEffectsWithFocus(state)
         : { state, forcedSelectedRegionId: null };
     const nextState = actionWindowEffect.state;
-    let selectedRegionId = regionId;
+    const selectedRegionId = regionId;
     const explicitRegionId = regionId;
     const recruitSelection = getQidahenRecruitSelectionForCore(nextState);
     if (recruitSelection) {
