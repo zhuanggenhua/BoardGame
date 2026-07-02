@@ -8,7 +8,6 @@ import type {
     AndroidOtaReleaseDto,
     DeployRollbackExecuteDto,
     DeployRollbackPreviewDto,
-    DeployUpdateMode,
     DeployUpdateExecuteDto,
     DeployUpdatePreviewDto,
 } from './dtos/mobile-release.dto';
@@ -81,7 +80,6 @@ type DeployRunnerRequest = {
     args?: string[];
     otaArgs?: string[];
     tag?: string;
-    deployMode?: DeployUpdateMode;
     confirmText?: string;
 };
 
@@ -325,7 +323,6 @@ export class AdminMobileReleaseService {
         try {
             const result = await this.callDeployRunner('/deploy/update-and-ota/execute', {
                 tag: dto.tag,
-                deployMode: dto.deployMode,
                 confirmText: dto.confirmText,
                 otaArgs,
             });
@@ -636,11 +633,10 @@ export class AdminMobileReleaseService {
 
     private buildDeployUpdateArgs(dto: DeployUpdatePreviewDto) {
         const tag = dto.tag?.trim();
-        const deployCommand = dto.deployMode === 'local' ? 'update-local' : 'update';
         if (!tag) {
-            return [deployCommand];
+            return ['update'];
         }
-        return [deployCommand, tag];
+        return ['update', tag];
     }
 
     private buildDeployUpdateOtaDto(dto: DeployUpdatePreviewDto): AndroidOtaReleaseDto {
@@ -727,7 +723,6 @@ export class AdminMobileReleaseService {
                     args: body.args,
                     otaArgs: body.otaArgs,
                     tag: body.tag,
-                    deployMode: body.deployMode,
                     confirmText: body.confirmText,
                 }),
             });

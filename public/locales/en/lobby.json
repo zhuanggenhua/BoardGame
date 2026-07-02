@@ -1101,12 +1101,9 @@
         "title": "Deployment Update + OTA",
         "tag": "Image tag",
         "tag_placeholder": "Leave empty to deploy latest",
-        "mode": "Deploy mode",
-        "mode_remote": "Pull remote image (update)",
-        "mode_local": "Use server-local image (update-local)",
         "confirm_label": "Execution confirmation",
         "confirm_placeholder": "Type 确认部署 to execute",
-        "description": "Deployment update + OTA first runs the image update through the independent server-host deploy runner. After the image update succeeds, it publishes Android OTA with the selected channel and OTA cursor settings. Remote mode pulls from the image registry; server-local mode uses images already imported on the production host."
+        "description": "Deployment update + OTA first asks the independent server-host deploy runner to pull the latest image from the image registry and update the services. After the image update succeeds, it publishes Android OTA with the selected channel and OTA cursor settings."
       },
       "rollback": {
         "title": "Deployment Rollback",

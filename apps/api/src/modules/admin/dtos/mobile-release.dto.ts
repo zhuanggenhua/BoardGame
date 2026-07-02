@@ -3,7 +3,6 @@ import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class
 
 export type AndroidOtaChannel = 'stable' | 'gray' | 'edge';
 export type AndroidVersionBump = 'patch' | 'minor' | 'major';
-export type DeployUpdateMode = 'remote' | 'local';
 
 const parseBoolean = (value: unknown): boolean | undefined => {
     if (value === true || value === 'true') return true;
@@ -130,10 +129,6 @@ export class DeployUpdatePreviewDto {
     @MaxLength(80)
     @Matches(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
     tag?: string;
-
-    @IsOptional()
-    @IsIn(['remote', 'local'])
-    deployMode?: DeployUpdateMode;
 
     @IsOptional()
     @IsIn(['stable', 'gray', 'edge'])

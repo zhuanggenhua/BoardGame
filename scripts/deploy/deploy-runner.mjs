@@ -301,21 +301,14 @@ function buildUpdateArgs(body) {
     if (!body || typeof body !== 'object') {
         throw new Error('Request body is required');
     }
-    const mode = typeof body.deployMode === 'string' && body.deployMode.trim()
-        ? body.deployMode.trim()
-        : 'remote';
-    if (!['remote', 'local'].includes(mode)) {
-        throw new Error('Invalid deploy mode');
-    }
-    const deployCommand = mode === 'local' ? 'update-local' : 'update';
     const tag = typeof body.tag === 'string' ? body.tag.trim() : '';
     if (!tag) {
-        return [deployCommand];
+        return ['update'];
     }
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(tag)) {
         throw new Error('Invalid image tag');
     }
-    return [deployCommand, tag];
+    return ['update', tag];
 }
 
 function createJob(args, command = buildDeployCommand(args)) {
