@@ -100,12 +100,46 @@ function packageDir(packageName) {
     return path.join(nodeModulesDir, ...packageName.split('/'));
 }
 
-function readPackageJson(packageName) {
-    const packageJsonPath = path.join(packageDir(packageName), 'package.json');
+function readPackageJsonAt(packagePath) {
+    const packageJsonPath = path.join(packagePath, 'package.json');
     if (!fs.existsSync(packageJsonPath)) {
         return null;
     }
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return {
+        path: packagePath,
+        packageJson: JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')),
+    };
+}
+
+function readPackageJson(packageName) {
+    return readPackageJsonAt(packageDir(packageName));
+}
+
+function findPackageDir(packageName, fromDir = nodeModulesDir) {
+    let currentDir = fromDir;
+    while (true) {
+        const candidate = path.join(currentDir, 'node_modules', ...packageName.split('/'));
+        if (fs.existsSync(path.join(candidate, 'package.json'))) {
+            return candidate;
+        }
+
+        const parentDir = path.dirname(currentDir);
+        if (parentDir === currentDir) {
+            return null;
+        }
+        currentDir = parentDir;
+    }
+}
+
+function packageNameFromPath(packagePath) {
+    const relativePath = path.relative(nodeModulesDir, packagePath).split(path.sep);
+    const nodeModulesIndex = relativePath.lastIndexOf('node_modules');
+    const packageParts = relativePath.slice(nodeModulesIndex + 1);
+    const firstPart = packageParts[0];
+    if (firstPart?.startsWith('@')) {
+        return `${firstPart}/${packageParts[1]}`;
+    }
+    return firstPart;
 }
 
 function shouldKeepPeer(packageJson, peerName) {
@@ -116,16 +150,19 @@ function collectRuntimeClosure(requiredRootPackages, optionalRootPackages = []) 
     const keep = new Set();
     const rootPackages = [...requiredRootPackages, ...optionalRootPackages];
     const optionalRoots = new Set(optionalRootPackages);
-    const queue = [...rootPackages];
+    const queue = rootPackages.map((packageName) => ({ packageName, fromDir: nodeModulesDir, isRoot: true }));
+    const visitedPaths = new Set();
     const missingRoots = [];
     const missingOptionalRoots = [];
 
     while (queue.length > 0) {
-        const packageName = queue.shift();
-        if (!packageName || keep.has(packageName)) continue;
+        const item = queue.shift();
+        const packageName = item?.packageName;
+        if (!packageName) continue;
 
-        const packageJson = readPackageJson(packageName);
-        if (!packageJson) {
+        const packagePath = item.isRoot ? packageDir(packageName) : findPackageDir(packageName, item.fromDir);
+        const packageInfo = packagePath ? readPackageJsonAt(packagePath) : null;
+        if (!packageInfo) {
             if (optionalRoots.has(packageName)) {
                 missingOptionalRoots.push(packageName);
             } else if (requiredRootPackages.includes(packageName)) {
@@ -134,21 +171,27 @@ function collectRuntimeClosure(requiredRootPackages, optionalRootPackages = []) 
             continue;
         }
 
-        keep.add(packageName);
+        if (visitedPaths.has(packageInfo.path)) continue;
+        visitedPaths.add(packageInfo.path);
+
+        keep.add(packageNameFromPath(packageInfo.path));
+        const { packageJson } = packageInfo;
         const dependencyGroups = [
             packageJson.dependencies,
             packageJson.optionalDependencies,
         ];
         for (const group of dependencyGroups) {
             for (const dependencyName of Object.keys(group || {})) {
-                if (fs.existsSync(packageDir(dependencyName))) {
-                    queue.push(dependencyName);
+                const dependencyPath = findPackageDir(dependencyName, packageInfo.path);
+                if (dependencyPath) {
+                    queue.push({ packageName: dependencyName, fromDir: packageInfo.path, isRoot: false });
                 }
             }
         }
         for (const peerName of Object.keys(packageJson.peerDependencies || {})) {
-            if (shouldKeepPeer(packageJson, peerName) && fs.existsSync(packageDir(peerName))) {
-                queue.push(peerName);
+            const peerPath = findPackageDir(peerName, packageInfo.path);
+            if (shouldKeepPeer(packageJson, peerName) && peerPath) {
+                queue.push({ packageName: peerName, fromDir: packageInfo.path, isRoot: false });
             }
         }
     }
