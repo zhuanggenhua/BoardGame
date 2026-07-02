@@ -1102,8 +1102,8 @@
         "tag": "镜像 tag",
         "tag_placeholder": "留空部署最新镜像",
         "mode": "部署模式",
-        "mode_remote": "远端拉取镜像（update）",
-        "mode_local": "使用服务器本地镜像（update-local）",
+        "mode_remote": "从镜像仓库拉取",
+        "mode_local": "使用服务器本地镜像",
         "confirm_label": "执行确认",
         "confirm_placeholder": "输入“确认部署”后才可执行",
         "description": "更新部署 + OTA 会先交给服务器宿主机上的独立部署执行器执行镜像更新；镜像更新成功后，再按当前渠道和 OTA 游标配置发布 Android OTA。远端拉取会从镜像仓库下载；服务器本地镜像模式用于镜像已提前导入生产机时绕过远端拉取。"
