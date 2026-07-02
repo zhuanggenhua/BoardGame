@@ -113,6 +113,8 @@
       "usePreview": "Use: {{effect}}",
       "cardUsedThisTurn": "Used this turn",
       "cardUsedTag": "Used",
+      "cardUnavailableThisTurn": "New this turn, usable next turn",
+      "cardUnavailableTag": "Next turn",
       "frontMissing": "Front missing"
     },
     "feedback": {

@@ -1,0 +1,167 @@
+{
+  "url": "http://127.0.0.1:4273/play/fantasyrealms?playerID=0",
+  "viewport": {
+    "width": 936,
+    "height": 432,
+    "dpr": 1
+  },
+  "scroll": {
+    "docWidth": 936,
+    "bodyWidth": 936,
+    "docHeight": 432,
+    "bodyHeight": 432
+  },
+  "rects": {
+    "shell": {
+      "selector": ".mobile-board-shell",
+      "x": 57.594,
+      "y": 0,
+      "width": 820.8,
+      "height": 432,
+      "right": 878.394,
+      "bottom": 432,
+      "centerX": 467.994,
+      "centerY": 216,
+      "transform": "matrix(0.54, 0, 0, 0.54, 0, 0)",
+      "display": "block",
+      "visibility": "visible"
+    },
+    "board": {
+      "selector": ".fr-board--minimal-live",
+      "x": 61.914,
+      "y": 4.32,
+      "width": 812.16,
+      "height": 423.36,
+      "right": 874.074,
+      "bottom": 427.68,
+      "centerX": 467.994,
+      "centerY": 216,
+      "transform": "none",
+      "display": "block",
+      "visibility": "visible"
+    },
+    "table": {
+      "selector": "[data-testid=\"fantasyrealms-live-table\"]",
+      "x": 68.394,
+      "y": 10.8,
+      "width": 799.2,
+      "height": 410.4,
+      "right": 867.594,
+      "bottom": 421.2,
+      "centerX": 467.994,
+      "centerY": 216,
+      "transform": "none",
+      "display": "grid",
+      "visibility": "visible"
+    },
+    "topbar": {
+      "selector": "[data-testid=\"fantasyrealms-live-topbar\"]",
+      "x": 68.394,
+      "y": 10.8,
+      "width": 814.312,
+      "height": 71.28,
+      "right": 882.705,
+      "bottom": 82.08,
+      "centerX": 475.55,
+      "centerY": 46.44,
+      "transform": "none",
+      "display": "grid",
+      "visibility": "visible"
+    },
+    "score": {
+      "selector": "[data-testid=\"fantasyrealms-live-score-strip\"]",
+      "x": 798.465,
+      "y": 15.12,
+      "width": 71.28,
+      "height": 22.68,
+      "right": 869.745,
+      "bottom": 37.8,
+      "centerX": 834.105,
+      "centerY": 26.46,
+      "transform": "none",
+      "display": "block",
+      "visibility": "visible"
+    },
+    "center": {
+      "selector": "[data-testid=\"fantasyrealms-live-center-row\"]",
+      "x": 68.394,
+      "y": 82.08,
+      "width": 814.312,
+      "height": 212.043,
+      "right": 882.705,
+      "bottom": 294.123,
+      "centerX": 475.55,
+      "centerY": 188.101,
+      "transform": "none",
+      "display": "grid",
+      "visibility": "visible"
+    },
+    "hand": {
+      "selector": "[data-testid=\"fantasyrealms-live-hand-zone\"]",
+      "x": 68.394,
+      "y": 294.123,
+      "width": 814.312,
+      "height": 127.077,
+      "right": 882.705,
+      "bottom": 421.2,
+      "centerX": 475.55,
+      "centerY": 357.661,
+      "transform": "none",
+      "display": "grid",
+      "visibility": "visible"
+    },
+    "handRow": {
+      "selector": "[data-testid=\"fantasyrealms-hand-row\"]",
+      "x": 70.554,
+      "y": 294.123,
+      "width": 809.992,
+      "height": 125.997,
+      "right": 880.545,
+      "bottom": 420.12,
+      "centerX": 475.55,
+      "centerY": 357.121,
+      "transform": "matrix(1, 0, 0, 1, 0, 0)",
+      "display": "grid",
+      "visibility": "visible"
+    },
+    "action": {
+      "selector": "[data-testid=\"fantasyrealms-live-action-zone\"]",
+      "x": 718.554,
+      "y": 238.68,
+      "width": 120.96,
+      "height": 33.48,
+      "right": 839.514,
+      "bottom": 272.16,
+      "centerX": 779.034,
+      "centerY": 255.42,
+      "transform": "none",
+      "display": "flex",
+      "visibility": "visible"
+    },
+    "deck": {
+      "selector": "[data-testid=\"fantasyrealms-live-deck\"]",
+      "x": 81.354,
+      "y": 10.8,
+      "width": 51.84,
+      "height": 72.36,
+      "right": 133.194,
+      "bottom": 83.16,
+      "centerX": 107.274,
+      "centerY": 46.98,
+      "transform": "none",
+      "display": "grid",
+      "visibility": "visible"
+    }
+  },
+  "checks": {
+    "noHorizontalOverflow": true,
+    "keyInViewport": true,
+    "actionHandOverlap": false,
+    "actionHandOverlapY": 0
+  },
+  "htmlAttrs": {
+    "gameId": "fantasyrealms",
+    "mobileProfile": "landscape-adapted",
+    "mobilePreset": "board-shell"
+  }
+}

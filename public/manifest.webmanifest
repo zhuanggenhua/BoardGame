@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "易桌游",
+  "short_name": "易桌游",
+  "description": "桌游教学与在线联机平台，提供房间匹配、回合引导与跨设备对战体验。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "theme_color": "#1b130a",
+  "background_color": "#0f0a06",
+  "icons": [
+    {
+      "src": "/logos/logo_1_grid.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

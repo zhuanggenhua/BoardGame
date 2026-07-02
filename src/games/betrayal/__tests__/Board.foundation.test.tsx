@@ -224,7 +224,7 @@ describe('Betrayal Board foundation', () => {
             matchData: defaultMatchData.slice(0, 3),
         });
 
-        expect(within(screen.getByTestId('betrayal-runtime-header-grid')).getByText('Haunt')).toBeInTheDocument();
+        expect(within(screen.getByTestId('betrayal-runtime-header-grid')).getByText('恶兆后')).toBeInTheDocument();
         expect(screen.getAllByText('推荐动作：移动').length).toBeGreaterThan(0);
         expect(screen.getByTestId('betrayal-room-grid')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-open-scenario')).toBeInTheDocument();

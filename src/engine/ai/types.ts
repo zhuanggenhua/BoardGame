@@ -110,6 +110,7 @@ export interface AiResponseWindowSnapshot {
     currentResponderIndex?: number;
     responderQueue?: string[];
     allowedCommands?: string[];
+    pendingInteractionId?: string;
 }
 
 export interface AiCommandSpec {

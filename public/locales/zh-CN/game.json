@@ -210,7 +210,9 @@
     },
     "fullscreen": {
       "enterFailed": "全屏失败，请检查浏览器权限或系统全屏占用。",
-      "exitFailed": "退出全屏失败，请检查浏览器权限或系统状态。"
+      "exitFailed": "退出全屏失败，请检查浏览器权限或系统状态。",
+      "iosLimited": "当前苹果手机浏览器对全屏支持有限。可尝试“添加到主屏幕”后再进入。",
+      "orientationLockUnavailable": "已进入全屏，但当前浏览器没有完成方向锁定。"
     },
     "download": {
       "missingLink": "下载入口未配置，请先配置原生更新清单或安装包直链。",

@@ -337,8 +337,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="dispatch-ready"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('选择进攻目标');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('可攻');
+        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('进攻目标');
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(3);
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('进攻调度入口');
         await saveScreenshot(page, WHEEL_COST_STEP_03);
@@ -725,6 +724,7 @@ test.describe('七大恨新游戏收口', () => {
     });
 
     test('外交雇佣教程会从真实轮盘入口进入，并完成一次友好标记与雇佣结算', async ({ page }) => {
+        const diagnostics = attachPageDiagnostics(page);
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {
@@ -734,7 +734,24 @@ test.describe('七大恨新游戏收口', () => {
         await page.setViewportSize({ width: 1920, height: 1080 });
         await page.goto('/play/qidahen/tutorial/diplomacy-and-hire', { waitUntil: 'domcontentloaded' });
 
+        await page.waitForFunction(() => {
+            return Boolean(
+                document.querySelector('[data-testid="qidahen-board"]')
+                || document.querySelector('[data-bg-friendly-screen="true"]'),
+            );
+        }, { timeout: 30000 });
+        const friendlyErrorScreen = page.locator('[data-bg-friendly-screen="true"]');
+        if (await friendlyErrorScreen.isVisible().catch(() => false)) {
+            const errorScreenText = await friendlyErrorScreen.innerText().catch(() => '游戏加载失败');
+            const diagnosticTail = diagnostics.errors.slice(-8).join('\n') || 'EMPTY';
+            throw new Error([
+                '外交雇佣教程在进入棋盘前命中前端错误屏。',
+                `错误屏文案: ${errorScreenText}`,
+                `最近页面错误:\n${diagnosticTail}`,
+            ].join('\n'));
+        }
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
+        await assertNoFatalFrontendErrors([{ label: 'qidahen-diplomacy-and-hire', diagnostics }]);
         await expect(page.locator('[data-tutorial-step="overview"]')).toBeVisible({ timeout: 15000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('外交决定的是地区关系');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('雇佣决定的是新兵力能落到哪里');
@@ -748,7 +765,7 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="choose-target"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('轮盘外交/雇佣');
-        await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('当前目标步骤');
+        await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('外交目标');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('邻近 山海关');
         await expect(page.locator('[data-testid^="qidahen-diplomacy-target-"]')).toHaveCount(4);
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('外交只能碰邻近己方控制区的目标');

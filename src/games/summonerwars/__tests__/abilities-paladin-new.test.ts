@@ -12,7 +12,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
-import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard, PlayerId } from '../domain/types';
+import type {
+  SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard,
+  PlayerId, StructureCard, BoardStructure,
+} from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
@@ -77,6 +80,22 @@ function placeUnit(
   };
   state.board[pos.row][pos.col].unit = unit;
   return unit;
+}
+
+function placeStructure(
+  state: SummonerWarsCore,
+  pos: CellCoord,
+  overrides: Partial<BoardStructure> & { card: StructureCard; owner: PlayerId }
+): BoardStructure {
+  const structure: BoardStructure = {
+    cardId: overrides.cardId ?? `struct-${pos.row}-${pos.col}`,
+    card: overrides.card,
+    owner: overrides.owner,
+    position: pos,
+    damage: overrides.damage ?? 0,
+  };
+  state.board[pos.row][pos.col].structure = structure;
+  return structure;
 }
 
 function clearArea(state: SummonerWarsCore, rows: number[], cols: number[]) {
@@ -147,6 +166,14 @@ function makeAlly(id: string, overrides?: Partial<UnitCard>): UnitCard {
     id, cardType: 'unit', name: '友方单位', unitClass: 'common',
     faction: 'paladin', strength: 1, life: 3, cost: 0,
     attackType: 'melee', attackRange: 1, deckSymbols: [],
+    ...overrides,
+  };
+}
+
+function makeStructure(id: string, overrides?: Partial<StructureCard>): StructureCard {
+  return {
+    id, cardType: 'structure', name: '敌方建筑',
+    faction: 'necromancer', cost: 0, life: 10, deckSymbols: [],
     ...overrides,
   };
 }
@@ -350,6 +377,43 @@ describe('城塞圣武士 - 裁决 (judgment)', () => {
     }, allMeleeRandom);
 
     // 不应有 judgment 抓牌事件
+    const drawEvents = events.filter(e =>
+      e.type === SW_EVENTS.CARD_DRAWN
+      && (e.payload as any).sourceAbilityId === 'judgment'
+    );
+    expect(drawEvents.length).toBe(0);
+    expect(newState.players['0'].hand.length).toBe(handSizeBefore);
+  });
+
+  it('攻击敌方建筑后不触发裁决', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-warrior',
+      card: makeFortressWarrior('test-warrior'),
+      owner: '0',
+    });
+
+    placeStructure(state, { row: 4, col: 3 }, {
+      cardId: 'enemy-structure',
+      card: makeStructure('enemy-structure'),
+      owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+    state.players['0'].deck = [makeAlly('deck-1'), makeAlly('deck-2'), makeAlly('deck-3')];
+    const handSizeBefore = state.players['0'].hand.length;
+
+    const allSpecialRandom = createControlledRandom([0.75, 0.75, 0.75]);
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+    }, allSpecialRandom);
+
     const drawEvents = events.filter(e =>
       e.type === SW_EVENTS.CARD_DRAWN
       && (e.payload as any).sourceAbilityId === 'judgment'

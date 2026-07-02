@@ -101,7 +101,8 @@
     "stun": {
       "name": "眩晕",
       "description": [
-        "受影响的玩家跳过其下一个主要的掷骰阶段和主要的行动阶段。在该阶段结束时移除此标记。"
+        "受影响的玩家跳过其下一个进攻掷骰阶段和主要阶段。",
+        "在该阶段结束时移除此标记。"
       ]
     },
     "concussion": {
@@ -921,6 +922,8 @@
       },
       "ninjaNinjutsu": "忍术：掷出 {{value}}。",
       "ninjaNinjutsuResult": "忍术使本次攻击伤害 +{{bonusDamage}}。",
+      "ninjaPoisonBlade2": "毒刃 II：掷出 {{value}}，施加 {{poisonAmount}} 层慢性中毒。",
+      "ninjaDeathBlossom2Reroll": "死亡盛放 II：重掷 {{value}}，结果为{{face}}。",
       "ninjaDojoMask": "道场：面具，获得烟雾弹和 2 忍术",
       "ninjaDojoOther": "道场：否则抽 1 张牌",
       "zhanshujiaWarMongerSabre": "战争贩子：军刀造成 5 点伤害",
@@ -1183,6 +1186,7 @@
     }
   },
   "choices": {
+    "default": "请选择一个选项",
     "title": "技能结算选择",
     "option": "选项 {{index}}",
     "sliderLabel": "选择花费数量",
@@ -3961,6 +3965,8 @@
       }
     },
     "upgrade-artificer-tinker-2": {
+      "name": "稍作调整 II",
+      "description": "升级稍作调整：防御掷 5；如果投出 2 个扳手，造成 1 点伤害；每个齿轮获得 1 个合成器；每个电能施加 1 个纳米爆弹。",
       "effects": {
         "upgrade": "升级稍作调整至 II 级。"
       }

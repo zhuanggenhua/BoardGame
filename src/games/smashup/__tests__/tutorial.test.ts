@@ -6,8 +6,8 @@
  * - content 字段格式
  * - setup 步骤包含 aiActions
  * - randomPolicy 已设置
- * - 蛇形选秀包含米斯卡塔尼克大学
- * - 手牌只含图书管理员、嚎叫和疯狂卡
+ * - 蛇形选秀包含巫师和机器人
+ * - 固定场景覆盖组合手牌、牌库、基地和读局操作
  */
 
 import { describe, it, expect } from 'vitest';
@@ -48,36 +48,55 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
         expect(setup!.aiActions!.length).toBeGreaterThan(0);
     });
 
-    it('setup 步骤派系选秀包含恐龙和米斯卡塔尼克大学', () => {
+    it('setup 步骤蛇形选秀让玩家使用巫师和机器人，不再使用疯狂教学派系', () => {
         const setup = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'setup')!;
         const factionActions = setup.aiActions!.filter(a => a.commandType === SU_COMMANDS.SELECT_FACTION);
+        const playerIds = factionActions.map(a => a.playerId);
         const factionIds = factionActions.map(a => (a.payload as { factionId: string }).factionId);
-        expect(factionIds).toContain(SMASHUP_FACTION_IDS.DINOSAURS);
-        expect(factionIds).toContain(SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY);
-        // 不应包含克苏鲁仆从（已替换为米斯卡塔尼克大学）
+        expect(playerIds).toEqual(['0', '1', '1', '0']);
+        expect(factionIds).toEqual([
+            SMASHUP_FACTION_IDS.WIZARDS,
+            SMASHUP_FACTION_IDS.PIRATES,
+            SMASHUP_FACTION_IDS.NINJAS,
+            SMASHUP_FACTION_IDS.ROBOTS,
+        ]);
+        expect(factionIds).not.toContain(SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY);
         expect(factionIds).not.toContain(SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU);
     });
 
-    it('setup 步骤手牌包含图书管理员、嚎叫和疯狂卡', () => {
+    it('setup 步骤手牌包含巫师 + 机器人的组合教学牌', () => {
         const setup = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'setup')!;
         const mergeAction = setup.aiActions!.find(a => a.commandType === CHEAT_COMMANDS.MERGE_STATE)!;
         const hand = (mergeAction.payload as any).fields.players['0'].hand as { uid: string; defId: string }[];
         const defIds = hand.map(c => c.defId);
-        expect(defIds).toContain('miskatonic_librarian');
-        expect(defIds).toContain('dino_howl');
-        expect(defIds).toContain('special_madness');
-        // 星之眷族已替换为图书管理员
+        expect(defIds).toEqual([
+            'wizard_chronomage',
+            'wizard_summon',
+            'robot_zapbot',
+            'robot_tech_center',
+        ]);
+        expect(defIds).not.toContain('miskatonic_librarian');
+        expect(defIds).not.toContain('dino_howl');
+        expect(defIds).not.toContain('special_madness');
         expect(defIds).not.toContain('cthulhu_star_spawn');
-        // 战争猛禽已从教学手牌移除
         expect(defIds).not.toContain('dino_war_raptor');
     });
 
-    it('setup 步骤的 MERGE_STATE 只覆盖玩家手牌，不直接改写 madnessDeck', () => {
+    it('setup 步骤固定牌库、基地和牌库查看能力', () => {
         const setup = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'setup')!;
         const mergeAction = setup.aiActions!.find(a => a.commandType === CHEAT_COMMANDS.MERGE_STATE)!;
         const fields = (mergeAction.payload as any).fields;
 
-        expect(fields.players?.['0']?.hand).toBeDefined();
+        expect(fields.deckQueryEnabled).toBe(true);
+        expect(fields.players?.['0']?.deck.map((card: { defId: string }) => card.defId)).toEqual([
+            'robot_hoverbot',
+            'wizard_enchantress',
+            'robot_microbot_fixer',
+        ]);
+        expect(fields.bases.map((base: { defId: string }) => base.defId)).toEqual([
+            'base_central_brain',
+            'base_great_library',
+        ]);
         expect(fields.madnessDeck).toBeUndefined();
         expect(fields.players?.['0']?.madnessDeck).toBeUndefined();
     });
@@ -86,20 +105,37 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
         expect(SMASH_UP_BASIC_TUTORIAL.steps.length).toBeGreaterThanOrEqual(15);
     });
 
+    it('基础教程覆盖对手视角、牌库弃牌堆和组合收益读局步骤', () => {
+        const stepIds = SMASH_UP_BASIC_TUTORIAL.steps.map(s => s.id);
+        expect(stepIds).toEqual(expect.arrayContaining([
+            'opponentView',
+            'deckDiscardIntro',
+            'comboBoardRead',
+            'deckAfterDraw',
+        ]));
+
+        expect(SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'opponentView')?.highlightTarget).toBe('su-scoreboard');
+        expect(SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'deckDiscardIntro')?.highlightTarget).toBe('su-deck-discard');
+        expect(SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'deckAfterDraw')?.highlightTarget).toBe('su-deck-discard');
+    });
+
     it('finish 步骤存在且为最后一步', () => {
         const last = SMASH_UP_BASIC_TUTORIAL.steps[SMASH_UP_BASIC_TUTORIAL.steps.length - 1];
         expect(last.id).toBe('finish');
     });
 
     it('交互步骤配置了 allowedTargets 目标级门控', () => {
-        const playMinion = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'playMinion');
-        expect(playMinion?.allowedTargets).toEqual(['tut-1']); // 图书管理员（天赋随从）
+        const playChronomage = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'playChronomage');
+        expect(playChronomage?.allowedTargets).toEqual(['tut-chrono']);
 
-        const playAction = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'playAction');
-        expect(playAction?.allowedTargets).toEqual(['tut-2']); // 嚎叫
+        const playSummon = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'playSummon');
+        expect(playSummon?.allowedTargets).toEqual(['tut-summon']);
 
-        const useTalent = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'useTalent');
-        expect(useTalent?.allowedTargets).toEqual(['tut-1']); // 图书管理员（已在基地上）
+        const extraZapbot = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'extraZapbot');
+        expect(extraZapbot?.allowedTargets).toEqual(['tut-zapbot']);
+
+        const playTechCenter = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'playTechCenter');
+        expect(playTechCenter?.allowedTargets).toEqual(['tut-tech']);
     });
 
     it('allowedTargets 只引用教学手牌中存在的 uid', () => {
@@ -110,7 +146,6 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
 
         for (const step of SMASH_UP_BASIC_TUTORIAL.steps) {
             if (!step.allowedTargets) continue;
-            if (step.id === 'useTalent') continue; // 目标在基地上，不在手牌
             for (const target of step.allowedTargets) {
                 expect(handUids.has(target), `allowedTarget '${target}' 在步骤 '${step.id}' 中引用了不存在的手牌 uid`).toBe(true);
             }

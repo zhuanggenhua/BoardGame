@@ -261,6 +261,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     description: abilityText('intimidate', 'description'),
     sfxKey: 'fantasy.elemental_sword_earthattack_01',
     trigger: 'afterAttack',
+    condition: { type: 'isOwner', target: 'target', owner: 'opponent' },
     effects: [
       { type: 'addCharge', target: 'self', value: 1 },
     ],

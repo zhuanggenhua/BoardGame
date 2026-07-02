@@ -40,12 +40,7 @@ export const getPlayerBoardAssetPath = (
 
 const diceAssetsLogger = createScopedLogger('dicethrone:dice-assets');
 
-/**
- * 扩展名处理：仅 barbarian 依然保留原生的 .png 格式（因为其暂未进行优化转换）
- */
-const withExtension = (path: string, charId: string) => (
-    charId === 'barbarian' ? `${path}.png` : path
-);
+const withExtension = (path: string, _charId: string) => path;
 
 export const ASSETS = {
     PLAYER_BOARD: (charId: string = 'monk', playerBoardFace?: HeroState['playerBoardFace']) => (

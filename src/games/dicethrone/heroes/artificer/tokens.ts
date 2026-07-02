@@ -1,6 +1,7 @@
 import type { TokenDef } from '../../domain/tokenTypes';
 import type { PassiveAbilityDef } from '../../domain/passiveAbility';
 import { DICETHRONE_STATUS_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
+import { ARTIFICER_SFX_ELECTRIC, ARTIFICER_SFX_METAL } from './abilities';
 
 const tokenText = (id: string, field: 'name' | 'description') => `tokens.${id}.${field}`;
 const statusText = (id: string, field: 'name' | 'description') => `statusEffects.${id}.${field}`;
@@ -14,6 +15,7 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/合成器',
         stackLimit: 7,
         category: 'consumable',
+        sfxKey: ARTIFICER_SFX_METAL,
         frameId: 'synth',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
     },
@@ -25,6 +27,7 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/纳米爆蛋',
         stackLimit: 3,
         category: 'debuff',
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: true,
@@ -41,6 +44,7 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/纳米机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        sfxKey: ARTIFICER_SFX_METAL,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: false,
@@ -57,6 +61,7 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/电能机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: false,
@@ -87,6 +92,7 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/治疗机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        sfxKey: ARTIFICER_SFX_METAL,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: false,

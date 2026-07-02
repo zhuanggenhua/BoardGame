@@ -4,10 +4,10 @@ import { TREANT_DICE_FACE_IDS, TOKEN_IDS } from '../../domain/ids';
 
 const FACE = TREANT_DICE_FACE_IDS;
 
-export const TREANT_SFX_LIGHT = 'magic.general.simple_magic_sound_fx_pack_vol.earth.earth_magic_impact';
-export const TREANT_SFX_GROWTH = 'magic.general.simple_magic_sound_fx_pack_vol.nature.heal_nature';
-export const TREANT_SFX_HEAVY = 'combat.general.forged_in_fury_vol_1.body_impact.body_impact_heavy';
-export const TREANT_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.earth.earth_magic_cast';
+export const TREANT_SFX_LIGHT = 'magic.general.simple_magic_sound_fx_pack_vol.earth.earthen_grasp';
+export const TREANT_SFX_GROWTH = 'magic.general.simple_magic_sound_fx_pack_vol.nature.natural_healing';
+export const TREANT_SFX_HEAVY = 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_01_krst';
+export const TREANT_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.earth.earthmeld';
 
 const damage = (value: number, description: string, opts?: { timing?: EffectTiming; unblockable?: boolean; damageScope?: 'attack' | 'direct' }): AbilityEffect => ({
     description,

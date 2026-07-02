@@ -1,5 +1,6 @@
 import type { TokenDef } from '../../domain/tokenTypes';
 import { DICETHRONE_STATUS_ATLAS_IDS, STATUS_IDS } from '../../domain/ids';
+import { CURSED_PIRATE_SFX_CURSE, CURSED_PIRATE_SFX_EXPLOSION } from './abilities';
 
 const statusText = (id: string, field: 'name' | 'description') => `statusEffects.${id}.${field}`;
 
@@ -12,6 +13,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/cursed/status/诅咒金币',
         stackLimit: 5,
         category: 'debuff',
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: false,
@@ -28,6 +30,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/cursed/status/炸药',
         stackLimit: 1,
         category: 'debuff',
+        sfxKey: CURSED_PIRATE_SFX_EXPLOSION,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: true,
@@ -44,6 +47,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/cursed/status/凋零',
         stackLimit: 2,
         category: 'debuff',
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         passiveTrigger: {
             timing: 'onDamageDealt',
             damageTriggerScope: 'opponentAttackDamage',
@@ -61,6 +65,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/cursed/status/休战',
         stackLimit: 1,
         category: 'debuff',
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: true,

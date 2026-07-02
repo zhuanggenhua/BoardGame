@@ -10,6 +10,7 @@ import {
     MatchRoomTutorialBoardRuntime as MatchRoomTutorialBoardStageRuntime,
     type MatchRoomTutorialBoardRuntimeModel as MatchRoomTutorialBoardStageRuntimeModel,
 } from './matchRoomTutorialStageRuntime';
+import { readCompletedTutorialIds } from './useMatchRoomTutorialLifecycle';
 import { getVisibleTutorialCatalogEntries } from './useMatchRoomRuntimeSetup';
 
 export type MatchRoomTutorialBoardStageModel = {
@@ -36,6 +37,7 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
     }
 
     const entries = getVisibleTutorialCatalogEntries(tutorialCatalog);
+    const completedTutorialIds = readCompletedTutorialIds(stage.gameId);
     const recommendedTutorialId = tutorialCatalog.tutorials[tutorialCatalog.defaultTutorialId]?.hiddenFromCatalog === true
         ? entries[0]?.[0]
         : tutorialCatalog.defaultTutorialId;
@@ -63,6 +65,7 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                             ? t(entry.descriptionKey, { defaultValue: entry.description ?? '' })
                             : (entry.description ?? '');
                         const isDefault = recommendedTutorialId === tutorialId;
+                        const isCompleted = completedTutorialIds.has(tutorialId);
 
                         return (
                             <button
@@ -76,11 +79,21 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                                     <div className="text-sm font-semibold tracking-[0.16em] text-[#c9a96d]">
                                         {String(index + 1).padStart(2, '0')}
                                     </div>
-                                    {isDefault ? (
-                                        <span className="rounded-full border border-[#8e6d3b] bg-[rgba(201,169,109,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f0d7a1]">
-                                            {tLobby('matchRoom.tutorialCatalog.recommended')}
-                                        </span>
-                                    ) : null}
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                        {isCompleted ? (
+                                            <span
+                                                className="rounded-full border border-[#6fbf8d] bg-[rgba(83,165,112,0.16)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#b9f2c9]"
+                                                aria-label={tLobby('matchRoom.tutorialCatalog.completed')}
+                                            >
+                                                ✓ {tLobby('matchRoom.tutorialCatalog.completed')}
+                                            </span>
+                                        ) : null}
+                                        {isDefault ? (
+                                            <span className="rounded-full border border-[#8e6d3b] bg-[rgba(201,169,109,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f0d7a1]">
+                                                {tLobby('matchRoom.tutorialCatalog.recommended')}
+                                            </span>
+                                        ) : null}
+                                    </div>
                                 </div>
                                 <div className="mt-5 text-2xl font-bold leading-tight text-[#f8f0df]">
                                     {title}

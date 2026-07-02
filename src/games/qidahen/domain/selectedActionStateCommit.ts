@@ -77,6 +77,7 @@ export function commitQidahenSelectedActionState(
         selectedActionId: actionId,
         confirmedActionId: actionId,
         selectedPaymentCardIds: [],
+        selectedHandActionCardId: null,
         recruitSelection: followUp.recruitSelection,
         maShiTradeSelection: followUp.maShiTradeSelection,
         khanEdictSelection: followUp.khanEdictSelection,

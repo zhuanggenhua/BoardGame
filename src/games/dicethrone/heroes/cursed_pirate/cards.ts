@@ -4,6 +4,7 @@ import { COMMON_CARDS, injectCommonCardPreviewRefs, type CommonCardAtlasIndexMap
 import { CURSED_PIRATE_DICE_FACE_IDS, DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS } from '../../domain/ids';
 import type { AbilityCard } from '../../types';
 import { abilityEffectText } from '../../../../engine/primitives/ability';
+import { CURSED_PIRATE_SFX_CURSE, CURSED_PIRATE_SFX_SLASH, CURSED_PIRATE_SFX_ULTIMATE } from './abilities';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
 
@@ -44,6 +45,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'main',
         description: cardText('card-cursed-pirate-weigh-anchor', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(17),
         sourceAtlasIndex: 17,
         effects: [{
@@ -69,6 +71,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'instant',
         description: cardText('card-cursed-pirate-curse-card', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(18),
         sourceAtlasIndex: 18,
         effects: [{
@@ -84,6 +87,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 4,
         timing: 'instant',
         description: cardText('card-cursed-pirate-batten-down', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(19),
         sourceAtlasIndex: 19,
         effects: [{
@@ -99,6 +103,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-cursed-pirate-shark-bait', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_SLASH,
         previewRef: atlasPreview(20),
         sourceAtlasIndex: 20,
         isAttackModifier: true,
@@ -121,6 +126,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'roll',
         description: cardText('card-cursed-pirate-flay', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_SLASH,
         previewRef: atlasPreview(21),
         sourceAtlasIndex: 21,
         isAttackModifier: true,
@@ -138,6 +144,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-cursed-pirate-ransom', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(22),
         sourceAtlasIndex: 22,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
@@ -154,6 +161,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('card-cursed-pirate-bluster', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_SLASH,
         previewRef: atlasPreview(23),
         sourceAtlasIndex: 23,
         effects: [{
@@ -178,6 +186,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('card-cursed-pirate-scurvy', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(24),
         sourceAtlasIndex: 24,
         effects: [
@@ -192,6 +201,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'main',
         description: cardText('card-cursed-pirate-pillage', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(25),
         sourceAtlasIndex: 25,
         effects: [{
@@ -207,6 +217,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 3,
         timing: 'main',
         description: cardText('card-cursed-pirate-parley', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(26),
         sourceAtlasIndex: 26,
         effects: [{
@@ -222,6 +233,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'main',
         description: cardText('card-cursed-pirate-crows-nest', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_CURSE,
         previewRef: atlasPreview(27),
         sourceAtlasIndex: 27,
         effects: [{
@@ -237,6 +249,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('card-cursed-pirate-hefty', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_SLASH,
         previewRef: atlasPreview(28),
         sourceAtlasIndex: 28,
         effects: [{
@@ -252,6 +265,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'main',
         description: cardText('card-cursed-pirate-pirates-life', 'description'),
+        sfxKey: CURSED_PIRATE_SFX_ULTIMATE,
         previewRef: atlasPreview(29),
         sourceAtlasIndex: 29,
         effects: [{

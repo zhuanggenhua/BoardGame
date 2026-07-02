@@ -12,6 +12,11 @@ import dotenv from 'dotenv';
 import { checkChildProcessSupport } from '../infra/assert-child-process-support.mjs';
 import { generateAndroidBrandAssets, getAndroidBrandAssetConfig } from './android-assets.mjs';
 import { detectAndroidReleaseSigning, prepareAndroidReleaseSigning } from './android-signing.mjs';
+import {
+    DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS,
+    DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
+    DIST_LOGOS_RETAIN_RELATIVE_PATHS,
+} from '../deploy/prune-web-dist-assets.mjs';
 
 const rootDir = process.cwd();
 const androidDir = path.join(rootDir, 'android');
@@ -38,6 +43,13 @@ const androidBuildMetaFileName = 'android-build-meta.json';
 const gameManifestGeneratorPath = path.join(rootDir, 'scripts', 'game', 'generate_game_manifests.js');
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
 const webDistPruneScriptPath = path.join(rootDir, 'scripts', 'deploy', 'prune-web-dist-assets.mjs');
+const allowedEmbeddedRuntimeAssetFiles = new Set(
+    [
+        ...DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS.map((relativePath) => `assets/common/${relativePath}`),
+        ...DIST_I18N_JSON_RETAIN_RELATIVE_PATHS.map((relativePath) => `assets/i18n/${relativePath}`),
+        ...DIST_LOGOS_RETAIN_RELATIVE_PATHS.map((relativePath) => `logos/${relativePath}`),
+    ],
+);
 
 const envFiles = ['.env', '.env.android', '.env.android.local'];
 for (const file of envFiles) {
@@ -360,11 +372,10 @@ const collectBlockedRelativePaths = (baseDir, blockedPrefixes) => {
 
 const ensureNoBlockedEmbeddedAssets = (baseDir, label) => {
     const blockedPaths = collectBlockedRelativePaths(baseDir, [
-        'assets/common/audio/',
-        'assets/common/images/',
-        'assets/common/logos/',
+        'assets/common/',
         'assets/i18n/',
-    ]);
+        'logos/',
+    ]).filter((relativePath) => !allowedEmbeddedRuntimeAssetFiles.has(relativePath));
     if (blockedPaths.length === 0) {
         return;
     }

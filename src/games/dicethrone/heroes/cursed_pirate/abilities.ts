@@ -5,9 +5,10 @@ import type { HeroState } from '../../domain/types';
 
 const FACE = CURSED_PIRATE_DICE_FACE_IDS;
 
-export const CURSED_PIRATE_SFX_SLASH = 'combat.general.forged_in_fury_vol_1.blade_impact.blade_impact_heavy';
-export const CURSED_PIRATE_SFX_CURSE = 'magic.general.simple_magic_sound_fx_pack_vol.dark.dark_magic_cast';
-export const CURSED_PIRATE_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.dark.dark_magic_impact';
+export const CURSED_PIRATE_SFX_SLASH = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
+export const CURSED_PIRATE_SFX_CURSE = 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_blight_curse_001';
+export const CURSED_PIRATE_SFX_ULTIMATE = 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_001';
+export const CURSED_PIRATE_SFX_EXPLOSION = 'fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.pot_explosion';
 
 const damage = (
     value: number,

@@ -29,7 +29,7 @@ test.describe('山屋惊魂第一剧本杰克之灵复活边界', () => {
 
         await injectCore(page, createJackSpiritReviveReadyRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('betrayal-runtime-header-grid').getByText('Haunt')).toBeVisible();
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('丽贝卡·艾伦博士');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/轮到丽贝卡|可前往/i);
         await saveScreenshot(page, READY_SCREENSHOT);

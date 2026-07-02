@@ -4,9 +4,9 @@ import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids
 
 const FACE = ARTIFICER_DICE_FACE_IDS;
 
-export const ARTIFICER_SFX_METAL = 'combat.general.forged_in_fury_vol_1.blade_impact.blade_impact_light';
-export const ARTIFICER_SFX_ELECTRIC = 'magic.general.simple_magic_sound_fx_pack_vol.electricity.electricity_zap';
-export const ARTIFICER_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.electricity.electricity_impact';
+export const ARTIFICER_SFX_METAL = 'system.computers_machinery_sound_fx_pack_vol.foley_and_impacts.foley.tools_metal_foley_001';
+export const ARTIFICER_SFX_ELECTRIC = 'magic.general.simple_magic_sound_fx_pack_vol.shock.lightning_bolt_cast_a';
+export const ARTIFICER_SFX_ULTIMATE = 'magic.general.simple_magic_sound_fx_pack_vol.shock.lightning_bolt_impact_a';
 
 const damage = (
     value: number,

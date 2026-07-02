@@ -181,6 +181,11 @@ export class DiceBoxThreeEngine {
         this.applyCurrentSkins();
     }
 
+    async removeDice(indices: number[]): Promise<void> {
+        if (indices.length === 0) return;
+        await this.box.remove(indices);
+    }
+
     syncValues(values: number[]): void {
         this.applyValues(values, undefined, true);
     }

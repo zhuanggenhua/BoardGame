@@ -877,6 +877,8 @@
       },
       "ninjaNinjutsu": "Ninjutsu: rolled {{value}}.",
       "ninjaNinjutsuResult": "Ninjutsu adds +{{bonusDamage}} damage.",
+      "ninjaPoisonBlade2": "Poison Blade II: rolled {{value}}, inflict {{poisonAmount}} Delayed Poison.",
+      "ninjaDeathBlossom2Reroll": "Death Blossom II: rerolled {{value}}, showing {{face}}.",
       "ninjaDojoMask": "Dojo: Mask, gain Smoke Bomb and 2 Ninjutsu",
       "ninjaDojoOther": "Dojo: otherwise draw 1",
       "zhanshujiaWarMongerSabre": "War Monger: Sabre deals 5 damage",
@@ -1138,6 +1140,7 @@
     }
   },
   "choices": {
+    "default": "Choose an option",
     "title": "Ability Resolution Choice",
     "option": "Option {{index}}",
     "sliderLabel": "Select amount to spend",

@@ -1639,7 +1639,7 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
         return actions;
     }
 
-    if (responseWindow && isCurrentResponder) {
+    if (responseWindow && isCurrentResponder && !responseWindow.pendingInteractionId) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('response', 'pass'),
             kind: 'response-pass',

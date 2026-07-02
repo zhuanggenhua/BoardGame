@@ -56,6 +56,13 @@ type MissingTranslation = {
     refs: I18nReference[];
 };
 
+type LocaleStructureMismatch = {
+    namespace: string;
+    key: string;
+    baseLanguage: string;
+    targetLanguage: string;
+};
+
 type SourceRange = {
     start: number;
     end: number;
@@ -457,6 +464,16 @@ const parseStringLiteral = (quote: string, value: string): { value: string; dyna
     return { value, dynamic: false };
 };
 
+const SIMPLE_TEMPLATE_PLACEHOLDER_EXPRESSION = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/;
+
+const getTemplatePlaceholderExpression = (segment: string): string | null => {
+    const trimmed = segment.trim();
+    if (!trimmed.startsWith('${') || !trimmed.endsWith('}')) {
+        return null;
+    }
+    return trimmed.slice(2, -1).trim();
+};
+
 const parseTemplateLiteralPatterns = (
     rawValue: string,
     content: string,
@@ -482,12 +499,11 @@ const parseTemplateLiteralPatterns = (
     }
 
     const segments = splitTemplatePathSegments(keyPath);
-    const placeholderOnlyRegex = /^\$\{([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\}$/;
     let variants: Array<Array<string | null>> = [[]];
 
     for (const segment of segments) {
-        const match = segment.match(placeholderOnlyRegex);
-        if (!match) {
+        const placeholderExpression = getTemplatePlaceholderExpression(segment);
+        if (placeholderExpression === null) {
             if (segment.includes('${')) {
                 return [];
             }
@@ -495,8 +511,13 @@ const parseTemplateLiteralPatterns = (
             continue;
         }
 
+        if (!SIMPLE_TEMPLATE_PLACEHOLDER_EXPRESSION.test(placeholderExpression)) {
+            variants = variants.map((variant) => [...variant, null]);
+            continue;
+        }
+
         const resolvedKeys = resolveTemplatePlaceholderKeys(
-            match[1],
+            placeholderExpression,
             content,
             filePath,
             position,
@@ -1278,12 +1299,11 @@ const parseTemplateLiteralPatternsFromExpression = (
     if (!rawValue.includes('${')) return [];
 
     const segments = splitTemplatePathSegments(rawValue);
-    const placeholderOnlyRegex = /^\$\{([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\}$/;
     let variants: Array<Array<string | null>> = [[]];
 
     for (const segment of segments) {
-        const placeholderMatch = segment.match(placeholderOnlyRegex);
-        if (!placeholderMatch) {
+        const placeholderExpression = getTemplatePlaceholderExpression(segment);
+        if (placeholderExpression === null) {
             if (segment.includes('${')) {
                 return [];
             }
@@ -1291,8 +1311,13 @@ const parseTemplateLiteralPatternsFromExpression = (
             continue;
         }
 
+        if (!SIMPLE_TEMPLATE_PLACEHOLDER_EXPRESSION.test(placeholderExpression)) {
+            variants = variants.map((variant) => [...variant, null]);
+            continue;
+        }
+
         const resolvedKeys = resolveTemplatePlaceholderKeys(
-            placeholderMatch[1],
+            placeholderExpression,
             content,
             filePath,
             position,
@@ -1691,6 +1716,84 @@ export const collectReferencesFromContent = (
         };
     };
 
+    const inferTFunctionNamespaces = (): string[] => {
+        const namespaces = new Set<string>();
+        const tFunctionGenericRegex = /\bTFunction\s*<\s*([\s\S]*?)\s*>/g;
+        let match: RegExpExecArray | null;
+        while ((match = tFunctionGenericRegex.exec(content)) !== null) {
+            for (const namespace of parseNamespaceLiteral(match[1])) {
+                if (knownNamespaces.has(namespace)) {
+                    namespaces.add(namespace);
+                }
+            }
+        }
+        return Array.from(namespaces);
+    };
+
+    const inferContextualI18nNamespaces = (): string[] => {
+        const namespaces = new Set<string>();
+        for (const namespace of inferStaticNamespacesForFile(content, filePath, knownNamespaces)) {
+            namespaces.add(namespace);
+        }
+        for (const namespace of inferTFunctionNamespaces()) {
+            namespaces.add(namespace);
+        }
+        const normalizedFilePath = normalizeFilePath(filePath);
+        if (namespaces.size === 0 && /\bTFunction\b/.test(content) && normalizedFilePath.includes('/src/components/lobby/')) {
+            namespaces.add('lobby');
+        }
+        return Array.from(namespaces);
+    };
+
+    const scanI18nHelperCalls = (helperName: string, fallbackNamespaces: string[]) => {
+        const escapedHelperName = escapeRegExp(helperName);
+        const literalRegex = new RegExp(`\\b${escapedHelperName}\\s*\\(\\s*(['"\`])((?:\\\\.|(?!\\1).)*)\\1`, 'g');
+        let literalMatch: RegExpExecArray | null;
+        while ((literalMatch = literalRegex.exec(content)) !== null) {
+            const literal = parseStringLiteral(literalMatch[1], literalMatch[2]);
+            const line = getLineNumber(content, literalMatch.index);
+            const source = `${helperName}(${literal.value})`;
+            const callEnd = findCallEnd(content, literalMatch.index + literalMatch[0].length);
+            const snippet = content.slice(literalMatch.index, callEnd);
+            const overrideNamespaces = findNsOverride(snippet);
+            if (literal.dynamic) {
+                const parsedPatterns = literalMatch[1] === '`'
+                    ? parseTemplateLiteralPatterns(literal.value, content, filePath, literalMatch.index, knownNamespaces)
+                    : [];
+                for (const pattern of parsedPatterns) {
+                    const namespaces = pattern.namespace ? [pattern.namespace] : (overrideNamespaces.length ? overrideNamespaces : fallbackNamespaces);
+                    pushReference(pattern.key, namespaces, line, source, pattern.patternSegments);
+                }
+                continue;
+            }
+
+            const parsed = parseI18nKey(literal.value, knownNamespaces);
+            const namespaces = parsed.namespace ? [parsed.namespace] : (overrideNamespaces.length ? overrideNamespaces : fallbackNamespaces);
+            pushReference(parsed.key, namespaces, line, source);
+        }
+
+        const variableRegex = new RegExp(`\\b${escapedHelperName}\\s*\\(\\s*([A-Za-z_$][\\w$]*)(?:\\s*[,)])`, 'g');
+        let variableMatch: RegExpExecArray | null;
+        while ((variableMatch = variableRegex.exec(content)) !== null) {
+            const identifier = variableMatch[1];
+            const line = getLineNumber(content, variableMatch.index);
+            const source = `${helperName}(${identifier})`;
+            const callEnd = findCallEnd(content, variableMatch.index + variableMatch[0].length);
+            const snippet = content.slice(variableMatch.index, callEnd);
+            const overrideNamespaces = findNsOverride(snippet);
+            const resolved = resolveIdentifierKeys(content, filePath, identifier, variableMatch.index, knownNamespaces);
+            for (const pattern of resolved.patterns ?? []) {
+                const namespaces = pattern.namespace ? [pattern.namespace] : (overrideNamespaces.length ? overrideNamespaces : fallbackNamespaces);
+                pushReference(pattern.key, namespaces, line, source, pattern.patternSegments);
+            }
+            for (const keyValue of resolved.keys) {
+                const parsed = parseI18nKey(keyValue, knownNamespaces);
+                const namespaces = parsed.namespace ? [parsed.namespace] : (overrideNamespaces.length ? overrideNamespaces : fallbackNamespaces);
+                pushReference(parsed.key, namespaces, line, source);
+            }
+        }
+    };
+
     for (const aliasName of aliasMap.keys()) {
         const regex = new RegExp("\\b" + aliasName + "\\s*\\(\\s*(['\"`])((?:\\\\.|(?!\\1).)*)\\1", 'g');
         let match: RegExpExecArray | null;
@@ -1851,6 +1954,12 @@ export const collectReferencesFromContent = (
             ? [parsed.namespace]
             : (overrideNamespaces.length ? overrideNamespaces : [defaultNamespace]);
         pushReference(parsed.key, namespaces, line, source);
+    }
+
+    const contextualNamespaces = inferContextualI18nNamespaces();
+    scanI18nHelperCalls('i18nSeg', contextualNamespaces);
+    if (!aliasMap.has('t') && /\bTFunction\b/.test(content)) {
+        scanI18nHelperCalls('t', contextualNamespaces);
     }
 
     const toastRegex = /toast\.\w+\s*\(\s*\{[\s\S]*?kind\s*:\s*['"]i18n['"][\s\S]*?\}\s*[,)\n]/g;
@@ -3337,38 +3446,104 @@ export const collectStaticKeyReferencesFromContent = (
 
     const references: I18nReference[] = [];
     const seen = new Set<string>();
-    const propertyRegex = /\b([A-Za-z_$][\w$]*Key)\s*:\s*(['"`])((?:\\.|(?!\2).)*)\2/g;
-    let match: RegExpExecArray | null;
-
-    while ((match = propertyRegex.exec(content)) !== null) {
-        const propertyName = match[1];
-        if (!isI18nPropertyName(propertyName)) {
-            continue;
+    const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const getPropertyNameText = (name: ts.PropertyName): string | null => {
+        if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+            return name.text;
         }
-        const literal = parseStringLiteral(match[2], match[3]);
-        if (literal.dynamic || !looksLikeI18nKey(literal.value)) {
-            continue;
+        return null;
+    };
+    const getLiteralInfo = (node: ts.Expression): { value: string; dynamic: boolean } | null => {
+        if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+            return { value: node.text.trim(), dynamic: false };
         }
+        if (ts.isTemplateExpression(node)) {
+            const raw = node.getText(sourceFile);
+            return { value: raw.slice(1, -1).trim(), dynamic: true };
+        }
+        return null;
+    };
+    const collectLiteralCandidates = (node: ts.Expression): Array<{ node: ts.Expression; value: string; dynamic: boolean }> => {
+        const direct = getLiteralInfo(node);
+        if (direct) {
+            return [{ node, value: direct.value, dynamic: direct.dynamic }];
+        }
+        if (ts.isConditionalExpression(node)) {
+            return [...collectLiteralCandidates(node.whenTrue), ...collectLiteralCandidates(node.whenFalse)];
+        }
+        if (
+            ts.isParenthesizedExpression(node)
+            || ts.isAsExpression(node)
+            || ts.isSatisfiesExpression(node)
+            || ts.isNonNullExpression(node)
+            || ts.isTypeAssertionExpression(node)
+        ) {
+            return collectLiteralCandidates(node.expression);
+        }
+        if (
+            ts.isBinaryExpression(node)
+            && (node.operatorToken.kind === ts.SyntaxKind.BarBarToken || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
+        ) {
+            return collectLiteralCandidates(node.right);
+        }
+        return [];
+    };
 
-        const parsed = parseI18nKey(literal.value, knownNamespaces);
+    const pushStaticKeyReference = (propertyName: string, rawKey: string, index: number) => {
+        const parsed = parseI18nKey(rawKey, knownNamespaces);
         const namespaces = parsed.namespace
             ? [parsed.namespace]
             : inferredNamespaces;
 
         for (const namespace of namespaces) {
             if (!knownNamespaces.has(namespace)) continue;
-            const dedupeKey = `${propertyName}:${namespace}:${parsed.key}:${match.index}`;
+            const dedupeKey = `${propertyName}:${namespace}:${parsed.key}:${index}`;
             if (seen.has(dedupeKey)) continue;
             seen.add(dedupeKey);
             references.push(createManifestReference(
                 normalizedPath,
-                getLineNumber(content, match.index),
+                getLineNumber(content, index),
                 `static.${propertyName}`,
                 parsed.key,
                 namespace,
             ));
         }
-    }
+    };
+
+    const visit = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node)) {
+            const propertyName = getPropertyNameText(node.name);
+            if (propertyName && isI18nPropertyName(propertyName)) {
+                for (const literal of collectLiteralCandidates(node.initializer)) {
+                    if (literal.dynamic || !looksLikeI18nKey(literal.value)) {
+                        continue;
+                    }
+                    pushStaticKeyReference(propertyName, literal.value, literal.node.getStart(sourceFile));
+                }
+            }
+        } else if (ts.isShorthandPropertyAssignment(node)) {
+            const propertyName = node.name.text;
+            if (isI18nPropertyName(propertyName)) {
+                const resolved = resolveIdentifierKeys(
+                    content,
+                    filePath,
+                    propertyName,
+                    node.getStart(sourceFile),
+                    knownNamespaces,
+                );
+                for (const keyValue of resolved.keys) {
+                    if (!looksLikeI18nKey(keyValue)) {
+                        continue;
+                    }
+                    pushStaticKeyReference(propertyName, keyValue, node.getStart(sourceFile));
+                }
+            }
+        }
+
+        ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
 
     return references;
 };
@@ -3512,6 +3687,228 @@ export const collectMissingTranslations = (
     }
 
     return Array.from(missingMap.values());
+};
+
+const collectLocalePropertyPaths = (
+    value: unknown,
+    keyPath: string[] = [],
+): string[] => {
+    if (Array.isArray(value)) {
+        return keyPath.length ? [keyPath.join('.')] : [];
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+        return keyPath.length ? [keyPath.join('.')] : [];
+    }
+
+    if (!isPlainObject(value)) {
+        return [];
+    }
+
+    return Object.entries(value).flatMap(([key, nestedValue]) => collectLocalePropertyPaths(nestedValue, [...keyPath, key]));
+};
+
+const collectDiceThroneBonusDieEffectReferences = (
+    rootDir: string,
+): I18nReference[] => {
+    const dicethroneDir = path.join(rootDir, 'src', 'games', 'dicethrone');
+    if (!fs.existsSync(dicethroneDir)) {
+        return [];
+    }
+
+    const references: I18nReference[] = [];
+    const seen = new Set<string>();
+    const files = scanFilePaths(dicethroneDir)
+        .filter((file) => !normalizeFilePath(file).includes('/__tests__/'));
+    const bonusDieRegex = /bonusDie\.effect\.[A-Za-z0-9_.]+/g;
+    const knownNamespaces = new Set(I18N_NAMESPACES);
+    const effectKeyPropertyNames = new Set(['effectKey', 'summaryEffectKey', 'rerollEffectKey', 'dieEffectKey']);
+
+    const pushReference = (
+        filePath: string,
+        line: number,
+        source: string,
+        key: string,
+        patternSegments?: Array<string | null>,
+    ) => {
+        const dedupeKey = `${filePath}:${source}:${key}:${line}:${patternSegments?.join('.') ?? ''}`;
+        if (seen.has(dedupeKey)) {
+            return;
+        }
+        seen.add(dedupeKey);
+        references.push({
+            ...createManifestReference(filePath, line, source, key, 'game-dicethrone'),
+            patternSegments,
+        });
+    };
+
+    const collectEffectKeyInitializer = (
+        filePath: string,
+        content: string,
+        sourceFile: ts.SourceFile,
+        initializer: ts.Expression,
+        source: string,
+    ) => {
+        if (ts.isStringLiteral(initializer) || ts.isNoSubstitutionTemplateLiteral(initializer)) {
+            const raw = initializer.text.trim();
+            if (raw.startsWith('bonusDie.effect.')) {
+                const key = raw.slice('bonusDie.effect.'.length);
+                if (key && !key.endsWith('.')) {
+                    pushReference(
+                        filePath,
+                        getLineNumber(content, initializer.getStart(sourceFile)),
+                        source,
+                        raw,
+                    );
+                }
+            }
+            return;
+        }
+
+        if (ts.isTemplateExpression(initializer)) {
+            const patterns = parseTemplateLiteralPatternsFromExpression(
+                initializer.getText(sourceFile),
+                content,
+                filePath,
+                initializer.getStart(sourceFile),
+                knownNamespaces,
+            );
+            for (const pattern of patterns) {
+                if (!pattern.key.startsWith('bonusDie.effect.')) {
+                    continue;
+                }
+                pushReference(
+                    filePath,
+                    getLineNumber(content, initializer.getStart(sourceFile)),
+                    source,
+                    pattern.key,
+                    pattern.patternSegments,
+                );
+            }
+            return;
+        }
+
+        if (ts.isIdentifier(initializer)) {
+            const resolved = resolveIdentifierKeys(
+                content,
+                filePath,
+                initializer.text,
+                initializer.getStart(sourceFile),
+                knownNamespaces,
+            );
+            for (const keyValue of resolved.keys) {
+                if (!keyValue.startsWith('bonusDie.effect.')) {
+                    continue;
+                }
+                const key = keyValue.slice('bonusDie.effect.'.length);
+                if (key && !key.endsWith('.')) {
+                    pushReference(
+                        filePath,
+                        getLineNumber(content, initializer.getStart(sourceFile)),
+                        source,
+                        keyValue,
+                    );
+                }
+            }
+            for (const pattern of resolved.patterns ?? []) {
+                if (!pattern.key.startsWith('bonusDie.effect.')) {
+                    continue;
+                }
+                pushReference(
+                    filePath,
+                    getLineNumber(content, initializer.getStart(sourceFile)),
+                    source,
+                    pattern.key,
+                    pattern.patternSegments,
+                );
+            }
+        }
+    };
+
+    for (const file of files) {
+        const content = fs.readFileSync(file, 'utf-8');
+        const normalizedFile = normalizeFilePath(file);
+        const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+        let match: RegExpExecArray | null;
+        while ((match = bonusDieRegex.exec(content)) !== null) {
+            const fullKey = match[0];
+            const key = fullKey.slice('bonusDie.effect.'.length);
+            if (!key || key.endsWith('.')) {
+                continue;
+            }
+            pushReference(
+                normalizedFile,
+                getLineNumber(content, match.index),
+                'dicethrone.bonusDie.effectKey',
+                `bonusDie.effect.${key}`,
+            );
+        }
+
+        const visit = (node: ts.Node) => {
+            if (ts.isPropertyAssignment(node)) {
+                const propertyName = ts.isIdentifier(node.name) || ts.isStringLiteral(node.name) || ts.isNoSubstitutionTemplateLiteral(node.name)
+                    ? node.name.text
+                    : null;
+                if (propertyName && effectKeyPropertyNames.has(propertyName)) {
+                    collectEffectKeyInitializer(
+                        normalizedFile,
+                        content,
+                        sourceFile,
+                        node.initializer,
+                        `dicethrone.${propertyName}`,
+                    );
+                }
+            } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+                const variableName = node.name.text;
+                if (effectKeyPropertyNames.has(variableName)) {
+                    collectEffectKeyInitializer(
+                        normalizedFile,
+                        content,
+                        sourceFile,
+                        node.initializer,
+                        `dicethrone.${variableName}`,
+                    );
+                }
+            }
+
+            ts.forEachChild(node, visit);
+        };
+
+        visit(sourceFile);
+    }
+
+    return references;
+};
+
+export const collectLocaleStructureMismatches = (
+    locales: LocalesByLanguage,
+    baseLanguage: string,
+    targetLanguages: readonly string[],
+): LocaleStructureMismatch[] => {
+    const mismatches: LocaleStructureMismatch[] = [];
+    const baseNamespaces = locales[baseLanguage] ?? {};
+
+    for (const [namespace, baseLocale] of Object.entries(baseNamespaces)) {
+        const baseKeyPaths = collectLocalePropertyPaths(baseLocale);
+        for (const targetLanguage of targetLanguages) {
+            if (targetLanguage === baseLanguage) {
+                continue;
+            }
+            const targetLocale = locales[targetLanguage]?.[namespace];
+            for (const keyPath of baseKeyPaths) {
+                if (!targetLocale || !hasKeyPath(targetLocale, keyPath)) {
+                    mismatches.push({
+                        namespace,
+                        key: keyPath,
+                        baseLanguage,
+                        targetLanguage,
+                    });
+                }
+            }
+        }
+    }
+
+    return mismatches;
 };
 
 const dedupeWarnings = (warnings: I18nWarning[]): I18nWarning[] => {
@@ -3673,12 +4070,14 @@ const main = () => {
     }
 
     references.push(...collectDiceThroneAbilityChoiceFaceLabelReferences());
+    references.push(...collectDiceThroneBonusDieEffectReferences(ROOT_DIR));
     const diceThroneContract = collectDiceThroneDataContractReferences();
     references.push(...diceThroneContract.references);
     warnings.push(...diceThroneContract.warnings);
     warnings.push(...collectZhCnLocaleEnglishWarnings());
 
     const missing = collectMissingTranslations(references, locales);
+    const localeStructureMismatches = collectLocaleStructureMismatches(locales, 'en', ['zh-CN']);
     const dedupedWarnings = dedupeWarnings(warnings);
     if (shouldWriteWarningBaseline) {
         writeWarningBaseline(dedupedWarnings);
@@ -3703,7 +4102,7 @@ const main = () => {
     ]);
     const blockingWarnings = newWarnings.filter((warning) => blockingWarningTypes.has(warning.type));
 
-    if (missing.length === 0 && newWarnings.length === 0) {
+    if (missing.length === 0 && localeStructureMismatches.length === 0 && newWarnings.length === 0) {
         console.log('i18n-check: no missing keys detected.');
         if (legacyWarnings.length > 0) {
             console.log(`legacy warning baseline: ${legacyWarnings.length} (${summarizeWarningCounts(legacyWarnings)})`);
@@ -3716,6 +4115,13 @@ const main = () => {
         for (const item of missing) {
             console.log(`- [${item.namespaces.join('|')}] ${item.key} (missing: ${item.languages.join(', ')})`);
             console.log(`  refs: ${formatRefs(item.refs)}`);
+        }
+    }
+
+    if (localeStructureMismatches.length) {
+        console.log(`i18n-check: locale structure missing ${localeStructureMismatches.length} key(s).`);
+        for (const mismatch of localeStructureMismatches) {
+            console.log(`- [${mismatch.namespace}] ${mismatch.key} (${mismatch.targetLanguage} missing, base: ${mismatch.baseLanguage})`);
         }
     }
 
@@ -3738,7 +4144,7 @@ const main = () => {
         }
     }
 
-    if (missing.length > 0 || blockingWarnings.length > 0) {
+    if (missing.length > 0 || localeStructureMismatches.length > 0 || blockingWarnings.length > 0) {
         process.exitCode = 1;
     }
 };

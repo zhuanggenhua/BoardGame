@@ -31,6 +31,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
     description: abilityText('fortress_power', 'description'),
     sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_smite_001',
     trigger: 'afterAttack',
+    condition: { type: 'isOwner', target: 'target', owner: 'opponent' },
     usesPerTurn: 1,
     effects: [
       { type: 'custom', actionId: 'fortress_power_retrieve' },
@@ -237,7 +238,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
     description: abilityText('judgment', 'description'),
     sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_smite_005',
     trigger: 'afterAttack',
-    usesPerTurn: 1,
+    condition: { type: 'isOwner', target: 'target', owner: 'opponent' },
     effects: [
       { type: 'custom', actionId: 'judgment_draw' },
     ],

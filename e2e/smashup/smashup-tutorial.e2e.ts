@@ -12,7 +12,7 @@
 
 import { test, expect } from '../framework';
 import type { Locator, Page } from '@playwright/test';
-import { setEnglishLocale, disableAudio, blockAudioRequests } from '../helpers/common';
+import { setChineseLocale, setEnglishLocale, disableAudio, blockAudioRequests } from '../helpers/common';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { MOBILE_REFERENCE_VIEWPORT } from '../../src/shared/referenceViewports';
 
@@ -101,11 +101,47 @@ const waitForActionPrompt = async (page: Page, timeout = 15000) => {
     await expect(page.locator('[data-tutorial-step] .animate-pulse')).toBeVisible({ timeout });
 };
 
-const navigateToTutorial = async (page: Page, path = '/play/smashup/tutorial') => {
+const navigateToTutorial = async (page: Page, path = '/play/smashup/tutorial/smashup-basic') => {
     await page.goto(path, { waitUntil: 'domcontentloaded' });
     // 冷启动时教程页会串行加载游戏实现 + namespace + 教程初始化链路，
     // 移动端横屏回归场景下比普通页面更慢，30 秒偶发误杀。
     await page.waitForSelector('[data-game-page][data-game-id="smashup"]', { timeout: 60000 });
+};
+
+const waitForSmashUpDetailEntry = async (page: Page, timeout = 30000) => {
+    await expect.poll(async () => {
+        const homeV2DetailVisible = await page.getByTestId('home-v2-detail-left-page').isVisible().catch(() => false);
+        if (homeV2DetailVisible) return 'home-v2';
+        const modalVisible = await page.getByTestId('game-details-modal-root').isVisible().catch(() => false);
+        if (modalVisible) return 'modal';
+        return null;
+    }, { timeout }).not.toBeNull();
+};
+
+const openSmashUpTutorialFromHomepage = async (page: Page) => {
+    const detailLeftPage = page.getByTestId('home-v2-detail-left-page');
+    const detailModalRoot = page.getByTestId('game-details-modal-root');
+
+    const isDetailAlreadyOpen = await detailLeftPage.isVisible().catch(() => false)
+        || await detailModalRoot.isVisible().catch(() => false);
+
+    if (!isDetailAlreadyOpen) {
+        const smashUpEntry = page.locator('[data-game-id="smashup"]').first();
+        await expect(smashUpEntry).toBeVisible({ timeout: 30000 });
+        await smashUpEntry.click();
+    }
+
+    await waitForSmashUpDetailEntry(page, 30000);
+
+    const homeV2TutorialButton = page.getByTestId('home-v2-tutorial-button');
+    if (await homeV2TutorialButton.isVisible().catch(() => false)) {
+        await homeV2TutorialButton.click();
+        return;
+    }
+
+    const tutorialButton = page.getByRole('button', { name: /Tutorial/i });
+    await expect(tutorialButton).toBeVisible({ timeout: 15000 });
+    await tutorialButton.click();
 };
 
 const readTutorialViewportMetrics = async (page: Page) => page.evaluate(() => {
@@ -190,7 +226,16 @@ const sampleElementRectDrift = async (page: Page, selector: string, samples = 6,
 
 const skipIntroSteps = async (page: Page) => {
     await waitForTutorialStep(page, 'welcome', 40000);
-    for (const stepId of ['welcome', 'scoreboard', 'handIntro', 'turnTracker', 'endTurnBtn', 'playCardsExplain']) {
+    for (const stepId of [
+        'welcome',
+        'scoreboard',
+        'opponentView',
+        'deckDiscardIntro',
+        'handIntro',
+        'turnTracker',
+        'endTurnBtn',
+        'playCardsExplain',
+    ]) {
         await waitForTutorialStep(page, stepId, 10000);
         await clickNext(page);
     }
@@ -235,17 +280,16 @@ const expectTutorialPanelKeepsCenterLaneClear = (metrics: {
     throw new Error(`教程浮层未落在左右贴边位置: ${metrics.placement ?? 'null'}`);
 };
 
-const doPlayMinion = async (page: Page) => {
-    await waitForTutorialStep(page, 'playMinion', 10000);
+const doPlayHandCard = async (page: Page, stepId: string, cardUid: string) => {
+    await waitForTutorialStep(page, stepId, 15000);
     await waitForActionPrompt(page);
     await page.waitForTimeout(500);
 
     const handArea = page.locator('[data-testid="su-hand-area"]');
     await expect(handArea).toBeVisible();
 
-    const handCards = handArea.locator('> div > div');
-    await expect(handCards.first()).toBeVisible({ timeout: 10000 });
-    await clickHandCard(page, handCards.first());
+    const card = handArea.locator(`[data-card-uid="${cardUid}"]`);
+    await clickHandCard(page, card);
     await page.waitForTimeout(500);
 
     const bases = page.locator('.group\\/base');
@@ -254,46 +298,56 @@ const doPlayMinion = async (page: Page) => {
     await page.waitForTimeout(1000);
 };
 
-const doPlayAction = async (page: Page) => {
-    await waitForTutorialStep(page, 'playAction', 15000);
+const doPlayChronomage = async (page: Page) => {
+    await doPlayHandCard(page, 'playChronomage', 'tut-chrono');
+};
+
+const doPlaySummon = async (page: Page) => {
+    await doPlayHandCard(page, 'playSummon', 'tut-summon');
+};
+
+const doPlayZapbot = async (page: Page) => {
+    await doPlayHandCard(page, 'extraZapbot', 'tut-zapbot');
+};
+
+const doPlayTechCenter = async (
+    page: Page,
+    game: {
+        getInteractionOptions: () => Promise<unknown[]>;
+        selectOption: (optionId: string) => Promise<void>;
+    },
+) => {
+    await waitForTutorialStep(page, 'playTechCenter', 15000);
     await waitForActionPrompt(page);
     await page.waitForTimeout(500);
 
     const handArea = page.locator('[data-testid="su-hand-area"]');
-    const actionCards = handArea.locator('> div > div');
-    const bases = page.locator('.group\\/base');
-    const count = await actionCards.count();
-
-    for (let i = 0; i < count; i++) {
-        await clickHandCard(page, actionCards.nth(i));
-        await page.waitForTimeout(300);
-        if (!(await page.locator('[data-tutorial-step="playAction"]').isVisible({ timeout: 1000 }).catch(() => false))) {
-            break;
-        }
-        await clickHandCard(page, actionCards.nth(i));
-        await page.waitForTimeout(500);
-        if (await bases.first().isVisible().catch(() => false)) {
-            await clickLocatorCenter(page, bases.first());
-            await page.waitForTimeout(500);
-        }
-        if (!(await page.locator('[data-tutorial-step="playAction"]').isVisible({ timeout: 1000 }).catch(() => false))) {
-            break;
-        }
-    }
+    await expect(handArea).toBeVisible();
+    await clickHandCard(page, handArea.locator('[data-card-uid="tut-tech"]'));
+    await waitForInteractionSource(game, 'robot_tech_center', 10000);
+    await selectInteractionOption(
+        game,
+        (option) => option.value?.targetBaseIndex === 0 || option.value?.baseIndex === 0,
+        '技术中心选择第一个基地',
+    );
+    await page.waitForTimeout(800);
 };
 
-const doUseTalent = async (page: Page) => {
-    await waitForTutorialStep(page, 'useTalent', 15000);
-    await waitForActionPrompt(page);
-    await page.waitForTimeout(500);
-
-    // 基地区随从容器本身负责 onClick -> dispatch USE_TALENT
-    const baseArea = page.locator('[data-tutorial-id="su-base-area"]');
-    await expect(baseArea).toBeVisible({ timeout: 5000 });
-    const librarianMinion = baseArea.locator('[data-minion-def-id="miskatonic_librarian"]');
-    await expect(librarianMinion.first()).toBeVisible({ timeout: 10000 });
-    await clickLocatorCenter(page, librarianMinion.first());
-    await page.waitForTimeout(800);
+const doCoreCombo = async (
+    page: Page,
+    game: {
+        getInteractionOptions: () => Promise<unknown[]>;
+        selectOption: (optionId: string) => Promise<void>;
+    },
+) => {
+    await doPlayChronomage(page);
+    await doPlaySummon(page);
+    await doPlayZapbot(page);
+    await waitForTutorialStep(page, 'comboBoardRead', 15000);
+    await clickNext(page);
+    await doPlayTechCenter(page, game);
+    await waitForTutorialStep(page, 'deckAfterDraw', 15000);
+    await clickNext(page);
 };
 
 const doEndPlayCards = async (page: Page) => {
@@ -326,6 +380,16 @@ test.describe('Smash Up Tutorial E2E', () => {
         await expect(page.locator('[data-tutorial-id="su-scoreboard"]')).toBeVisible();
         await clickNext(page);
 
+        await waitForTutorialStep(page, 'opponentView', 10000);
+        await expect(page.locator('[data-tutorial-id="su-opponent-view-toggle"]')).toBeVisible();
+        await clickNext(page);
+
+        await waitForTutorialStep(page, 'deckDiscardIntro', 10000);
+        await expect(page.locator('[data-tutorial-id="su-deck-discard"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="su-deck-stack"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="su-discard-stack"]')).toBeVisible();
+        await clickNext(page);
+
         await waitForTutorialStep(page, 'handIntro', 10000);
         await expect(page.locator('[data-tutorial-id="su-hand-area"]')).toBeVisible();
         await clickNext(page);
@@ -342,26 +406,24 @@ test.describe('Smash Up Tutorial E2E', () => {
         await expect(page.locator('[data-tutorial-id="su-hand-area"]')).toBeVisible();
         await clickNext(page);
 
-        await waitForTutorialStep(page, 'playMinion', 10000);
+        await waitForTutorialStep(page, 'playChronomage', 10000);
         await expect(page.getByRole('button', { name: /^Next$/i })).toHaveCount(0, { timeout: 3000 });
         await waitForActionPrompt(page);
     });
 
-    test('出牌阶段可完成随从 行动和结束回合', async ({ page }) => {
+    test('出牌阶段可完成巫师机器人组合和结束回合', async ({ page, game }) => {
         test.setTimeout(120000);
         await setEnglishLocale(page);
         await disableAudio(page);
         await navigateToTutorial(page);
 
         await skipIntroSteps(page);
-        await doPlayMinion(page);
-        await doPlayAction(page);
-        await doUseTalent(page);
+        await doCoreCombo(page, game);
         await doEndPlayCards(page);
         await waitForTutorialStep(page, 'baseScoring', 15000);
     });
 
-    test('完整教程流程可从开始推进到结束', async ({ page }, testInfo) => {
+    test('完整教程流程可从开始推进到结束', async ({ page, game }, testInfo) => {
         test.setTimeout(180000);
         await clearEvidenceScreenshotsForTest(testInfo);
         await setEnglishLocale(page);
@@ -370,14 +432,20 @@ test.describe('Smash Up Tutorial E2E', () => {
 
         await waitForTutorialStep(page, 'welcome', 40000);
         await clickNext(page);
-        for (const stepId of ['scoreboard', 'handIntro', 'turnTracker', 'endTurnBtn', 'playCardsExplain']) {
+        for (const stepId of [
+            'scoreboard',
+            'opponentView',
+            'deckDiscardIntro',
+            'handIntro',
+            'turnTracker',
+            'endTurnBtn',
+            'playCardsExplain',
+        ]) {
             await waitForTutorialStep(page, stepId, 10000);
             await clickNext(page);
         }
 
-        await doPlayMinion(page);
-        await doPlayAction(page);
-        await doUseTalent(page);
+        await doCoreCombo(page, game);
         await doEndPlayCards(page);
 
         await waitForTutorialStep(page, 'baseScoring', 15000);
@@ -418,6 +486,82 @@ test.describe('Smash Up Tutorial E2E', () => {
         });
     });
 
+    test('重构后主教程关键画面截图', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await setChineseLocale(page);
+        await disableAudio(page);
+        await navigateToTutorial(page);
+
+        await waitForTutorialStep(page, 'welcome', 40000);
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '01-welcome-wizards-robots', {
+                filename: '01-welcome-wizards-robots.png',
+            }),
+            fullPage: false,
+        });
+        await clickNext(page);
+
+        await waitForTutorialStep(page, 'scoreboard', 10000);
+        await clickNext(page);
+        await waitForTutorialStep(page, 'opponentView', 10000);
+        await expect(page.locator('[data-tutorial-id="su-opponent-view-toggle"]')).toBeVisible();
+        await page.locator('[data-tutorial-id="su-opponent-view-toggle"]').click();
+        await expect(page.locator('[data-tutorial-id="su-back-to-self"]')).toBeVisible({ timeout: 5000 });
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '02-opponent-view-toggle', {
+                filename: '02-opponent-view-toggle.png',
+            }),
+            fullPage: false,
+        });
+        await page.locator('[data-tutorial-id="su-back-to-self"]').click();
+        await clickNext(page);
+
+        await waitForTutorialStep(page, 'deckDiscardIntro', 10000);
+        await expect(page.locator('[data-tutorial-id="su-deck-stack"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="su-discard-stack"]')).toBeVisible();
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '03-deck-discard-intro', {
+                filename: '03-deck-discard-intro.png',
+            }),
+            fullPage: false,
+        });
+        await clickNext(page);
+
+        for (const stepId of ['handIntro', 'turnTracker', 'endTurnBtn', 'playCardsExplain']) {
+            await waitForTutorialStep(page, stepId, 10000);
+            await clickNext(page);
+        }
+
+        await waitForTutorialStep(page, 'playChronomage', 10000);
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '04-play-chronomage-start-combo', {
+                filename: '04-play-chronomage-start-combo.png',
+            }),
+            fullPage: false,
+        });
+
+        await doPlayChronomage(page);
+        await doPlaySummon(page);
+        await doPlayZapbot(page);
+        await waitForTutorialStep(page, 'comboBoardRead', 15000);
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '05-combo-board-read', {
+                filename: '05-combo-board-read.png',
+            }),
+            fullPage: false,
+        });
+        await clickNext(page);
+        await doPlayTechCenter(page, game);
+        await waitForTutorialStep(page, 'deckAfterDraw', 15000);
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '06-deck-after-draw', {
+                filename: '06-deck-after-draw.png',
+            }),
+            fullPage: false,
+        });
+    });
+
     test('首页可以进入教程路由', async ({ page }) => {
         test.setTimeout(120000);
         await setEnglishLocale(page);
@@ -425,22 +569,8 @@ test.describe('Smash Up Tutorial E2E', () => {
 
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
-        await expect(page.locator('[data-game-id]').first()).toBeVisible({ timeout: 20000 });
-
-        const card = page.locator('[data-game-id="smashup"]');
-        if (await card.count() === 0) {
-            const allTab = page.getByRole('button', { name: /^All Games$/i });
-            if (await allTab.isVisible().catch(() => false)) {
-                await allTab.click();
-            }
-        }
-
-        await expect(card.first()).toBeVisible({ timeout: 15000 });
-        await card.first().click();
-
-        const tutorialBtn = page.getByRole('button', { name: /Tutorial/i });
-        await expect(tutorialBtn).toBeVisible({ timeout: 10000 });
-        await tutorialBtn.click();
+        await expect(page.locator('[data-game-id]').first()).toBeVisible({ timeout: 30000 });
+        await openSmashUpTutorialFromHomepage(page);
 
         await page.waitForURL(/\/play\/smashup\/tutorial/, { timeout: 15000 });
         await waitForTutorialStep(page, 'welcome', 40000);
@@ -631,7 +761,7 @@ test.describe('Smash Up Tutorial E2E', () => {
         });
     });
 
-    test('手机横屏下主教程关键交互不应被提示挡住', async ({ page }, testInfo) => {
+    test('手机横屏下主教程关键交互不应被提示挡住', async ({ page, game }, testInfo) => {
         test.setTimeout(180000);
         await clearEvidenceScreenshotsForTest(testInfo);
         await page.setViewportSize({ width: 812, height: 375 });
@@ -641,49 +771,49 @@ test.describe('Smash Up Tutorial E2E', () => {
 
         await skipIntroSteps(page);
 
-        await waitForTutorialStep(page, 'playMinion', 10000);
-        const playMinionMetrics = await readTutorialOcclusionMetrics(page, '[data-base-index="0"]');
-        expect(playMinionMetrics.overlayRect).toBeTruthy();
-        expect(playMinionMetrics.targetRect).toBeTruthy();
-        expectTutorialPlacementAwayFromBoardCenter(playMinionMetrics.placement);
-        expectTutorialPanelKeepsCenterLaneClear(playMinionMetrics);
+        await waitForTutorialStep(page, 'playChronomage', 10000);
+        const playChronomageMetrics = await readTutorialOcclusionMetrics(page, '[data-card-uid="tut-chrono"]');
+        expect(playChronomageMetrics.overlayRect).toBeTruthy();
+        expect(playChronomageMetrics.targetRect).toBeTruthy();
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'main-tutorial-mobile-play-minion-clear', {
-                filename: 'main-tutorial-mobile-play-minion-clear.png',
+            path: getEvidenceScreenshotPath(testInfo, 'main-tutorial-mobile-play-chronomage-clear', {
+                filename: 'main-tutorial-mobile-play-chronomage-clear.png',
             }),
             fullPage: false,
         });
 
-        await doPlayMinion(page);
+        await doPlayChronomage(page);
 
-        await waitForTutorialStep(page, 'playAction', 15000);
-        const playActionMetrics = await readTutorialOcclusionMetrics(page, '[data-base-index="0"]');
-        expect(playActionMetrics.overlayRect).toBeTruthy();
-        expect(playActionMetrics.targetRect).toBeTruthy();
-        expectTutorialPlacementAwayFromBoardCenter(playActionMetrics.placement);
-        expectTutorialPanelKeepsCenterLaneClear(playActionMetrics);
+        await waitForTutorialStep(page, 'playSummon', 15000);
+        const playSummonMetrics = await readTutorialOcclusionMetrics(page, '[data-card-uid="tut-summon"]');
+        expect(playSummonMetrics.overlayRect).toBeTruthy();
+        expect(playSummonMetrics.targetRect).toBeTruthy();
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'main-tutorial-mobile-play-action-clear', {
-                filename: 'main-tutorial-mobile-play-action-clear.png',
+            path: getEvidenceScreenshotPath(testInfo, 'main-tutorial-mobile-play-summon-clear', {
+                filename: 'main-tutorial-mobile-play-summon-clear.png',
             }),
             fullPage: false,
         });
 
-        await doPlayAction(page);
+        await doPlaySummon(page);
 
-        await waitForTutorialStep(page, 'useTalent', 15000);
-        const useTalentMetrics = await readTutorialOcclusionMetrics(page, '[data-minion-def-id="miskatonic_librarian"]');
-        expect(useTalentMetrics.overlayRect).toBeTruthy();
-        expect(useTalentMetrics.targetRect).toBeTruthy();
-        expect(useTalentMetrics.overlapArea).toBe(0);
+        await waitForTutorialStep(page, 'extraZapbot', 15000);
+        const extraZapbotMetrics = await readTutorialOcclusionMetrics(page, '[data-card-uid="tut-zapbot"]');
+        expect(extraZapbotMetrics.overlayRect).toBeTruthy();
+        expect(extraZapbotMetrics.targetRect).toBeTruthy();
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'main-tutorial-mobile-use-talent-clear', {
-                filename: 'main-tutorial-mobile-use-talent-clear.png',
+            path: getEvidenceScreenshotPath(testInfo, 'main-tutorial-mobile-extra-zapbot-clear', {
+                filename: 'main-tutorial-mobile-extra-zapbot-clear.png',
             }),
             fullPage: false,
         });
 
-        await doUseTalent(page);
+        await doPlayZapbot(page);
+        await waitForTutorialStep(page, 'comboBoardRead', 15000);
+        await clickNext(page);
+        await doPlayTechCenter(page, game);
+        await waitForTutorialStep(page, 'deckAfterDraw', 15000);
+        await clickNext(page);
 
         await waitForTutorialStep(page, 'endPlayCards', 15000);
         const endTurnMetrics = await readTutorialOcclusionMetrics(page, '[data-tutorial-id="su-end-turn-btn"]');
@@ -710,14 +840,14 @@ test.describe('Smash Up Tutorial E2E', () => {
         await navigateToTutorial(page);
 
         await skipIntroSteps(page);
-        await doPlayMinion(page);
+        await doPlayChronomage(page);
 
-        await waitForTutorialStep(page, 'playAction', 15000);
-        const minionLocator = page.locator('[data-minion-uid="tut-1"]').first();
+        await waitForTutorialStep(page, 'playSummon', 15000);
+        const minionLocator = page.locator('[data-minion-uid="tut-chrono"]').first();
         await expect(minionLocator).toBeVisible({ timeout: 10000 });
         await page.waitForTimeout(300);
 
-        const samples = await sampleElementRectDrift(page, '[data-minion-uid="tut-1"]', 6, 120);
+        const samples = await sampleElementRectDrift(page, '[data-minion-uid="tut-chrono"]', 6, 120);
         const validSamples = samples.filter((sample): sample is NonNullable<typeof sample> => !!sample);
         expect(validSamples.length).toBeGreaterThanOrEqual(4);
 

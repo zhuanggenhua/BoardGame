@@ -2371,6 +2371,28 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('响应窗口被 pendingInteractionId 锁定时 AI 不应暴露 RESPONSE_PASS', () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'targetingRoll';
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-ai-hidden-response-lock',
+                windowType: 'afterAttackResolved',
+                responderQueue: ['0'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+                pendingInteractionId: 'hidden-after-attack-choice',
+            },
+        };
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'response-pass')).toBe(false);
+    });
+
     it('本地 AI 在多个防御 token 可用时，应优先选择保命收益更高的 token', async () => {
         const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;

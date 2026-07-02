@@ -66,6 +66,8 @@ await DiceBoxThreeEngine.create(container, {
 - 首次投掷用 `rollToValues(values)`，内部转成 `Xd6@...` 预定结果。
 - 重投用 `rerollToValues(indices, values)`，必须走 dice-box-threejs 的 `reroll()` 改变位置/姿态；重投完成后再把 DiceThrone 权威结果写回骰面，不能只改 DOM 位置或只换骰面。
 - 游戏结果仍以 DiceThrone 权威状态为准；第三方引擎只负责物理表现和可点击投影层。
+- 棋盘 3D 只展示未锁定骰子；一旦骰子被锁定，该骰子必须回到右侧传统骰盘，棋盘中的可见骰子数量随之减少。
+- `已锁定` 这类提示只能作为独立 overlay 跟随骰子，不能写进点击层内部，更不能改变骰子点击层的宽高或位置。
 - 如果要改碰撞区、重力、缩放、材质或骰子样式，先改 `DiceBoxStyleProfile` 或 `DiceBoxThreeEngine`，不要改业务组件。
 
 ## 验证用法

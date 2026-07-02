@@ -31,6 +31,7 @@ describe('buildMatchRoomTutorialBoardRuntimeModel', () => {
         });
 
         expect(runtime?.numPlayers).toBe(3);
+        expect(runtime?.tutorialManifest?.id).toBe('haunt-actions-and-finish');
     });
 
     it('未声明教程人数时，回退到引擎最小人数', () => {

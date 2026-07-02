@@ -22,6 +22,7 @@ import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canMoveToEnhanced, getStructureAt, getUnitAt } from '../domain/helpers';
 import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
+import { buildUsageKey } from '../domain/utils';
 
 // ============================================================================
 // 辅助函数
@@ -837,6 +838,83 @@ describe('贾穆德 - 威势 (imposing)', () => {
     // 应该有充能事件
     const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
     expect(chargeEvents.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('攻击敌方建筑后不触发威势', () => {
+    const state = createFrostState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-jarmund', card: makeJarmund('test-jarmund'), owner: '0',
+      boosts: 0,
+    });
+
+    placeStructure(state, { row: 4, col: 4 }, {
+      cardId: 'enemy-structure',
+      card: makePortal('enemy-structure'),
+      owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const { newState, events } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 4 },
+    });
+
+    expect(events.some(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && (e.payload as Record<string, unknown>).sourceAbilityId === 'imposing'
+    )).toBe(false);
+    expect(newState.board[4][2].unit?.boosts).toBe(0);
+  });
+
+  it('同一回合已触发威势后，通过额外攻击再次攻击敌方单位时不再次充能', () => {
+    const state = createFrostState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    const jarmund = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-jarmund', card: makeJarmund('test-jarmund'), owner: '0',
+      boosts: 0,
+    });
+
+    placeUnit(state, { row: 4, col: 4 }, {
+      cardId: 'enemy-1', card: makeEnemy('enemy-1', { life: 10 }), owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const first = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 4 },
+    });
+
+    expect(first.events.some(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && (e.payload as Record<string, unknown>).sourceAbilityId === 'imposing'
+    )).toBe(true);
+    expect(first.newState.abilityUsageCount[buildUsageKey(jarmund.instanceId, 'imposing')]).toBe(1);
+    expect(first.newState.board[4][2].unit?.boosts).toBe(1);
+
+    const jarmundAfterFirst = first.newState.board[4][2].unit!;
+    first.newState.board[4][2].unit = {
+      ...jarmundAfterFirst,
+      hasAttacked: false,
+      extraAttacks: 1,
+    };
+
+    const second = executeAndReduce(first.newState, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 4 },
+    });
+
+    expect(second.events.some(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && (e.payload as Record<string, unknown>).sourceAbilityId === 'imposing'
+    )).toBe(false);
+    expect(second.newState.board[4][2].unit?.boosts).toBe(1);
   });
 });
 

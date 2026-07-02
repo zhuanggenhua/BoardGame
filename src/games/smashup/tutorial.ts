@@ -1,7 +1,7 @@
 /**
  * 大杀四方 (Smash Up) - 教学配置
  *
- * - 默认教程：恐龙 + 米斯卡塔尼克大学基础教学
+ * - 默认教程：巫师 + 机器人基础组合教学
  * - 子教程：牛仔决斗机制教学
  */
 
@@ -51,10 +51,55 @@ export {
 // 默认基础教程固定手牌（P0）
 // ============================================================================
 
+const createTutorialMinion = (
+    uid: string,
+    defId: string,
+    owner: '0' | '1',
+    basePower: number,
+): MinionOnBase => ({
+    uid,
+    defId,
+    controller: owner,
+    owner,
+    basePower,
+    powerCounters: 0,
+    powerModifier: 0,
+    tempPowerModifier: 0,
+    talentUsed: false,
+    attachedActions: [],
+});
+
 const TUTORIAL_HAND_P0: CardInstance[] = [
-    { uid: 'tut-1', defId: 'miskatonic_librarian', type: 'minion', owner: '0' },
-    { uid: 'tut-2', defId: 'dino_howl', type: 'action', owner: '0' },
-    { uid: 'tut-mad', defId: 'special_madness', type: 'action', owner: '0' },
+    { uid: 'tut-chrono', defId: 'wizard_chronomage', type: 'minion', owner: '0' },
+    { uid: 'tut-summon', defId: 'wizard_summon', type: 'action', owner: '0' },
+    { uid: 'tut-zapbot', defId: 'robot_zapbot', type: 'minion', owner: '0' },
+    { uid: 'tut-tech', defId: 'robot_tech_center', type: 'action', owner: '0' },
+];
+
+const TUTORIAL_DECK_P0: CardInstance[] = [
+    { uid: 'tut-hoverbot', defId: 'robot_hoverbot', type: 'minion', owner: '0' },
+    { uid: 'tut-enchantress', defId: 'wizard_enchantress', type: 'minion', owner: '0' },
+    { uid: 'tut-fixer', defId: 'robot_microbot_fixer', type: 'minion', owner: '0' },
+];
+
+const TUTORIAL_BASES: BaseInPlay[] = [
+    {
+        defId: 'base_central_brain',
+        minions: [
+            createTutorialMinion('enemy-brain-1', 'robot_microbot_alpha', '1', 1),
+            createTutorialMinion('enemy-brain-2', 'robot_zapbot', '1', 2),
+        ],
+        ongoingActions: [],
+        buriedCards: [],
+    },
+    {
+        defId: 'base_great_library',
+        minions: [
+            createTutorialMinion('enemy-library-1', 'wizard_enchantress', '1', 2),
+        ],
+        ongoingActions: [],
+        buriedCards: [],
+    },
 ];
 
 // ============================================================================
@@ -72,16 +117,43 @@ export const SMASH_UP_BASIC_TUTORIAL: TutorialManifest = {
             requireAction: false,
             showMask: true,
             aiActions: [
-                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
-                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.ROBOTS } },
-                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS } },
-                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+                { commandType: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ROBOTS } },
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
                         fields: {
+                            turnOrder: ['0', '1'],
+                            currentPlayerIndex: 0,
+                            turnNumber: 1,
+                            nextUid: 5000,
+                            bases: TUTORIAL_BASES,
+                            baseDeck: [
+                                { defId: 'base_wizard_academy', minions: [], ongoingActions: [], buriedCards: [] },
+                                { defId: 'base_the_factory', minions: [], ongoingActions: [], buriedCards: [] },
+                            ],
+                            deckQueryEnabled: true,
                             players: {
-                                '0': { hand: TUTORIAL_HAND_P0 },
+                                '0': {
+                                    hand: TUTORIAL_HAND_P0,
+                                    deck: TUTORIAL_DECK_P0,
+                                    discard: [],
+                                    minionsPlayed: 0,
+                                    minionLimit: 1,
+                                    actionsPlayed: 0,
+                                    actionLimit: 1,
+                                },
+                                '1': {
+                                    hand: [],
+                                    deck: [],
+                                    discard: [],
+                                    minionsPlayed: 0,
+                                    minionLimit: 1,
+                                    actionsPlayed: 0,
+                                    actionLimit: 1,
+                                },
                             },
                         },
                     },
@@ -100,6 +172,20 @@ export const SMASH_UP_BASIC_TUTORIAL: TutorialManifest = {
             content: 'game-smashup:tutorial.steps.scoreboard',
             highlightTarget: 'su-scoreboard',
             position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'opponentView',
+            content: 'game-smashup:tutorial.steps.opponentView',
+            highlightTarget: 'su-scoreboard',
+            position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'deckDiscardIntro',
+            content: 'game-smashup:tutorial.steps.deckDiscardIntro',
+            highlightTarget: 'su-deck-discard',
+            position: 'top',
             infoStep: true,
         },
         {
@@ -131,34 +217,63 @@ export const SMASH_UP_BASIC_TUTORIAL: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'playMinion',
-            content: 'game-smashup:tutorial.steps.playMinion',
+            id: 'playChronomage',
+            content: 'game-smashup:tutorial.steps.playChronomage',
             highlightTarget: 'su-hand-area',
             position: 'top',
             requireAction: true,
             allowedCommands: [SU_COMMANDS.PLAY_MINION],
-            allowedTargets: ['tut-1'],
+            allowedTargets: ['tut-chrono'],
             advanceOnEvents: [{ type: SU_EVENTS.MINION_PLAYED }],
         },
         {
-            id: 'playAction',
-            content: 'game-smashup:tutorial.steps.playAction',
+            id: 'playSummon',
+            content: 'game-smashup:tutorial.steps.playSummon',
             highlightTarget: 'su-hand-area',
             position: 'top',
             requireAction: true,
             allowedCommands: [SU_COMMANDS.PLAY_ACTION],
-            allowedTargets: ['tut-2'],
+            allowedTargets: ['tut-summon'],
             advanceOnEvents: [{ type: SU_EVENTS.ACTION_PLAYED }],
         },
         {
-            id: 'useTalent',
-            content: 'game-smashup:tutorial.steps.useTalent',
-            highlightTarget: 'tut-1',
-            position: 'bottom',
+            id: 'extraZapbot',
+            content: 'game-smashup:tutorial.steps.extraZapbot',
+            highlightTarget: 'su-hand-area',
+            position: 'top',
             requireAction: true,
-            allowedCommands: [SU_COMMANDS.USE_TALENT],
-            allowedTargets: ['tut-1'],
-            advanceOnEvents: [{ type: SU_EVENTS.TALENT_USED }],
+            allowedCommands: [SU_COMMANDS.PLAY_MINION],
+            allowedTargets: ['tut-zapbot'],
+            advanceOnEvents: [{ type: SU_EVENTS.MINION_PLAYED }],
+        },
+        {
+            id: 'comboBoardRead',
+            content: 'game-smashup:tutorial.steps.comboBoardRead',
+            highlightTarget: 'su-base-area',
+            position: 'bottom',
+            infoStep: true,
+        },
+        {
+            id: 'playTechCenter',
+            content: 'game-smashup:tutorial.steps.playTechCenter',
+            highlightTarget: 'su-hand-area',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [SU_COMMANDS.PLAY_ACTION],
+            allowedTargets: ['tut-tech'],
+            advanceOnEvents: [
+                {
+                    type: INTERACTION_EVENTS.RESOLVED,
+                    match: { sourceId: 'robot_tech_center', playerId: '0' },
+                },
+            ],
+        },
+        {
+            id: 'deckAfterDraw',
+            content: 'game-smashup:tutorial.steps.deckAfterDraw',
+            highlightTarget: 'su-deck-discard',
+            position: 'top',
+            infoStep: true,
         },
         {
             id: 'endPlayCards',
@@ -252,24 +367,6 @@ const COWBOYS_DUEL_HAND_P0: CardInstance[] = [
     { uid: 'gun-1', defId: 'cowboys_gunfighter', type: 'minion', owner: '0' },
     { uid: 'deputy-1', defId: 'cowboys_deputy', type: 'minion', owner: '0' },
 ];
-
-const createTutorialMinion = (
-    uid: string,
-    defId: string,
-    owner: '0' | '1',
-    basePower: number,
-): MinionOnBase => ({
-    uid,
-    defId,
-    controller: owner,
-    owner,
-    basePower,
-    powerCounters: 0,
-    powerModifier: 0,
-    tempPowerModifier: 0,
-    talentUsed: false,
-    attachedActions: [],
-});
 
 const COWBOYS_DUEL_BASES: BaseInPlay[] = [
     {

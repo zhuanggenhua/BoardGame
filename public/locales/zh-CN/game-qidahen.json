@@ -197,7 +197,7 @@
         "currentControlRegion": "控制区",
         "sourceSummary": "处理外交与雇佣",
         "resolvedSummary": "已执行 {{resolved}}/{{total}} 次外交 · 还可继续 {{remaining}} 次",
-        "targetSummary": "当前目标步骤 · {{targetHint}}",
+        "targetSummary": "外交目标 · {{targetHint}}",
         "stepSummary": "外交 {{index}} · {{summary}}"
       },
       "driveTiger": {
@@ -205,7 +205,7 @@
         "summary": "先问 {{targetFactionName}} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻。"
       },
       "wheelDispatch": {
-        "summary": "选择进攻目标 · 可攻 {{count}} 处",
+        "summary": "进攻目标",
         "targetSummary": "{{targetRegionName}} · {{defenderLabel}}",
         "stats": "本次出兵 {{committedTroops}}",
         "travelCost": "耗 {{totalTravelCost}}"

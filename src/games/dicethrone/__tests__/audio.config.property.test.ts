@@ -4,6 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { DICETHRONE_AUDIO_CONFIG } from '../audio.config';
+import { HEROES_DATA } from '../heroes';
 import { BARBARIAN_ABILITIES } from '../heroes/barbarian/abilities';
 import { MONK_ABILITIES } from '../heroes/monk/abilities';
 import {
@@ -128,6 +129,7 @@ describe.skipIf(!registryExists)('DiceThrone 音效配置属性测试', () => {
 
         it('所有攻击型技能应配置 sfxKey', () => {
             const resolverAbilities = [
+                ...Object.values(HEROES_DATA).flatMap(hero => hero.abilities),
                 ...MONK_ABILITIES,
                 ...BARBARIAN_ABILITIES,
                 ...PYROMANCER_ABILITIES,
@@ -144,6 +146,7 @@ describe.skipIf(!registryExists)('DiceThrone 音效配置属性测试', () => {
 
         it('所有自定义音效键应在 registry 中存在', () => {
             const allAbilityDefs = [
+                ...Object.values(HEROES_DATA).flatMap(hero => hero.abilities),
                 ...MONK_ABILITIES,
                 ...BARBARIAN_ABILITIES,
                 ...PYROMANCER_ABILITIES,
@@ -216,6 +219,14 @@ describe.skipIf(!registryExists)('DiceThrone 音效配置属性测试', () => {
         allUsedKeys.add(DEFEAT_KEY);
         for (const ability of MONK_ABILITIES) {
             if (ability.sfxKey) allUsedKeys.add(ability.sfxKey);
+        }
+        for (const hero of Object.values(HEROES_DATA)) {
+            for (const ability of hero.abilities) {
+                if (ability.sfxKey) allUsedKeys.add(ability.sfxKey);
+            }
+            for (const card of hero.cards) {
+                if (card.sfxKey) allUsedKeys.add(card.sfxKey);
+            }
         }
         for (const token of ALL_TOKEN_DEFINITIONS) {
             if (token.sfxKey) allUsedKeys.add(token.sfxKey);

@@ -87,6 +87,7 @@ export function extractAiResponseWindowSnapshot(viewState: unknown): AiResponseW
         currentResponderIndex?: unknown;
         responderQueue?: unknown;
         allowedCommands?: unknown;
+        pendingInteractionId?: unknown;
     } | null | undefined;
 
     if (!current) return null;
@@ -106,6 +107,9 @@ export function extractAiResponseWindowSnapshot(viewState: unknown): AiResponseW
     }
     if (Array.isArray(current.allowedCommands)) {
         snapshot.allowedCommands = current.allowedCommands.filter((item): item is string => typeof item === 'string');
+    }
+    if (typeof current.pendingInteractionId === 'string') {
+        snapshot.pendingInteractionId = current.pendingInteractionId;
     }
 
     return Object.keys(snapshot).length > 0 ? snapshot : null;

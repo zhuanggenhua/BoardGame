@@ -1,0 +1,299 @@
+{
+  "name": "mobile-936x432-1920design",
+  "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-936x432-1920design.png",
+  "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-936x432-1920design.json",
+  "metrics": {
+    "title": "undefined - 测试模式 | 易桌游",
+    "bodyText": "31 你的回合 第1轮 0/10 当前总分 95 从手牌弃置一张牌",
+    "viewport": {
+      "innerWidth": 936,
+      "innerHeight": 432,
+      "devicePixelRatio": 1
+    },
+    "doc": {
+      "clientWidth": 936,
+      "clientHeight": 432,
+      "scrollWidth": 936,
+      "scrollHeight": 432
+    },
+    "cssVars": {
+      "designWidth": "1920px",
+      "designHeight": "1080px",
+      "scale": "0.400000",
+      "inverseScale": "2.500000",
+      "logicalHeight": "1080.000px",
+      "offsetX": "84.000px",
+      "offsetY": "0.000px"
+    },
+    "rects": {
+      "shell": {
+        "x": 84,
+        "y": 0,
+        "width": 768,
+        "height": 432,
+        "right": 852,
+        "bottom": 432,
+        "centerX": 468,
+        "centerY": 216,
+        "display": "block",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "matrix(0.4, 0, 0, 0.4, 0, 0)"
+      },
+      "shellContent": {
+        "x": 84,
+        "y": 0,
+        "width": 768,
+        "height": 432,
+        "right": 852,
+        "bottom": 432,
+        "centerX": 468,
+        "centerY": 216,
+        "display": "block",
+        "visibility": "visible",
+        "overflow": "hidden",
+        "transform": "none"
+      },
+      "root": {
+        "x": 84,
+        "y": 0,
+        "width": 768,
+        "height": 432,
+        "right": 852,
+        "bottom": 432,
+        "centerX": 468,
+        "centerY": 216,
+        "display": "block",
+        "visibility": "visible",
+        "overflow": "hidden",
+        "transform": "none"
+      },
+      "board": {
+        "x": 87.2,
+        "y": 3.2,
+        "width": 761.6,
+        "height": 425.6,
+        "right": 848.8,
+        "bottom": 428.8,
+        "centerX": 468,
+        "centerY": 216,
+        "display": "block",
+        "visibility": "visible",
+        "overflow": "hidden",
+        "transform": "none"
+      },
+      "table": {
+        "x": 92,
+        "y": 8,
+        "width": 752,
+        "height": 416,
+        "right": 844,
+        "bottom": 424,
+        "centerX": 468,
+        "centerY": 216,
+        "display": "grid",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "topbar": {
+        "x": 92,
+        "y": 8,
+        "width": 755.2,
+        "height": 52.8,
+        "right": 847.2,
+        "bottom": 60.8,
+        "centerX": 469.6,
+        "centerY": 34.4,
+        "display": "grid",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "score": {
+        "x": 784.8,
+        "y": 11.2,
+        "width": 52.8,
+        "height": 16.8,
+        "right": 837.6,
+        "bottom": 28,
+        "centerX": 811.2,
+        "centerY": 19.6,
+        "display": "block",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "deck": {
+        "x": 101.6,
+        "y": 8,
+        "width": 38.4,
+        "height": 53.6,
+        "right": 140,
+        "bottom": 61.6,
+        "centerX": 120.8,
+        "centerY": 34.8,
+        "display": "grid",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "center": {
+        "x": 92,
+        "y": 60.8,
+        "width": 755.2,
+        "height": 268.375,
+        "right": 847.2,
+        "bottom": 329.175,
+        "centerX": 469.6,
+        "centerY": 194.988,
+        "display": "grid",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "hand": {
+        "x": 92,
+        "y": 329.175,
+        "width": 755.2,
+        "height": 94.825,
+        "right": 847.2,
+        "bottom": 424,
+        "centerX": 469.6,
+        "centerY": 376.588,
+        "display": "grid",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "handRow": {
+        "x": 167.6,
+        "y": 329.175,
+        "width": 603.994,
+        "height": 94.025,
+        "right": 771.594,
+        "bottom": 423.2,
+        "centerX": 469.597,
+        "centerY": 376.188,
+        "display": "grid",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "matrix(1, 0, 0, 1, 0, 0)"
+      },
+      "action": {
+        "x": 730.4,
+        "y": 288.8,
+        "width": 89.6,
+        "height": 24.8,
+        "right": 820,
+        "bottom": 313.6,
+        "centerX": 775.2,
+        "centerY": 301.2,
+        "display": "flex",
+        "visibility": "visible",
+        "overflow": "visible",
+        "transform": "none"
+      },
+      "actionButton": {
+        "x": 730.4,
+        "y": 288.8,
+        "width": 89.6,
+        "height": 24.8,
+        "right": 820,
+        "bottom": 313.6,
+        "centerX": 775.2,
+        "centerY": 301.2,
+        "display": "flex",
+        "visibility": "visible",
+        "overflow": "hidden",
+        "transform": "none"
+      }
+    },
+    "keyBounds": {
+      "left": 84,
+      "top": 0,
+      "right": 852,
+      "bottom": 432
+    },
+    "checks": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 41.194,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    }
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-07-01T15:52:10.218Z\",\"stage\":\"load-start\",\"gameId\":\"fantasyrealms\",\"namespace\":\"game-fantasyrealms\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-07-01T15:52:10.221Z\",\"stage\":\"load-start\",\"gameId\":\"fantasyrealms\",\"timeoutMs\":45000}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-07-01T15:52:10.773Z\",\"stage\":\"load-start\",\"gameId\":\"fantasyrealms\",\"namespace\":\"game-fantasyrealms\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-07-01T15:52:10.775Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"fantasyrealms\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-07-01T15:52:10.883Z\",\"stage\":\"load-success\",\"gameId\":\"fantasyrealms\",\"durationMs\":663}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-07-01T15:52:10.883Z\",\"stage\":\"load-success\",\"gameId\":\"fantasyrealms\",\"durationMs\":109}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-07-01T15:52:16.874Z\",\"stage\":\"load-success\",\"gameId\":\"fantasyrealms\",\"namespace\":\"game-fantasyrealms\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":6101}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"fantasyrealms\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: fantasyrealms, hasAiSeat: true, currentPlayerId: 0}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"fantasyrealms\",\"matchId\":\"local:fantasyrealms:12345\",\"decisionElapsedMs\":27,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: fantasyrealms, matchId: local:fantasyrealms:12345, decisionElapsedMs: 27, activePhaseElapsedMs: null}"
+    }
+  ]
+}

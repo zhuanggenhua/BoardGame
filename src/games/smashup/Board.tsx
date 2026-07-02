@@ -3064,6 +3064,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     <motion.div
                                                         key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
                                                         data-testid={`su-score-vp-${pid}`}
+                                                        data-tutorial-id={isOpponent ? 'su-opponent-view-toggle' : undefined}
                                                         className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer relative' : ''}`}
                                                         initial={{ scale: 1 }}
                                                         animate={{ scale: [1, 1.3, 1] }}
@@ -3157,6 +3158,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     {t('ui.opponent_view')}
                                 </span>
                                 <button
+                                    data-tutorial-id="su-back-to-self"
                                     onClick={() => setViewedPlayerId(null)}
                                     className="ml-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-sm rounded transition-colors pointer-events-auto"
                                 >

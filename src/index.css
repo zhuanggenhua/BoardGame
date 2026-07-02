@@ -669,8 +669,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         transform-origin: top left;
         transform: scale(var(--mobile-board-shell-scale));
         width: var(--mobile-board-shell-design-width);
-        height: calc(100vh * var(--mobile-board-shell-inverse-scale, 1));
-        height: calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1));
+        height: var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1)));
         max-width: none;
         padding: 0;
     }

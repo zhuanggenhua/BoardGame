@@ -26,10 +26,12 @@
 - `px` 只表示设计坐标，最终显示尺寸必须由壳层缩放、容器约束或同等适配层统一承接。
 - `vw/vh` 仅允许作为安全区、壳层可用高度、装饰偏移、非关键视觉细节等局部辅助。
 - 普通文本、按钮、日志、表单、常规 HUD 使用 `rem`，必要时配 `clamp()`；触控命中区使用 `px/rem` 下限，例如 `44px`。
+- 对固定构图 / `board-shell` 牌桌，顶栏、分数、手牌、中央牌区、主按钮、主操作区默认属于同一张 PC 构图；移动端应保留同一坐标关系并交给壳层统一缩放，不得在游戏内部媒体查询里重排成另一套手机 UI。
 
 ### 2. 移动端改动只能条件化生效
 
 - 允许的移动端改动包括：窄屏压缩、触控替代入口、抽屉化次要信息、底部操作轨道、安全区适配。
+- 上述“底部操作轨道 / 抽屉化 / 重排”只适用于流式信息区、次要工具区或用户明确要求的新移动版；不得默认用于固定牌桌中的主按钮、手牌、顶栏、分数和中央牌区。
 - 这些改动必须只在移动条件下生效，不能全局覆盖。
 - 任何为触控补的 `armed / 二次点击激活 / 展开后再操作 / 长按查看` 之类状态机，都必须只影响移动触控分支；PC 端原有的 `单击触发 / 单击查看 / 单击展开` 语义不得被卷入同一套门控。
 - 任何移动端适配都不得顺带改写 PC 端的“可用 / 已用 / 不可用”视觉反馈；描边、发光、徽记、标签等状态提示若有调整，必须证明桌面端仍与改动前一致。
@@ -232,7 +234,7 @@ shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 - `fantasyrealms`
   - `landscape-adapted`
   - `board-shell`
-  - 手机横屏主口径：沿用同一套 PC live 牌桌，通过 `FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX = 1520` 与 `MobileBoardShell` 统一缩放适配。
+  - 手机横屏主口径：沿用同一套 PC live 牌桌，通过 `FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX = 1920`、`FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX = 1080` 与 `MobileBoardShell` 统一缩放适配。
   - 不保留独立的 `fantasyrealms-compact-layout` 临界壳；手机、窄横屏和平板都应先进入同一套 live 牌桌，再按壳层缩放和局部 CSS 处理高度、边距、遮挡问题。
 
 ## 验证要求

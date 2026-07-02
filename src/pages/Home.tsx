@@ -279,7 +279,7 @@ export const Home = () => {
 
     // Monitoring & Stats
     const { mostPopularGameId } = useLobbyStats();
-    const gamePopularityById = useGamePopularityRanking();
+    const gamePopularityRanking = useGamePopularityRanking();
 
     const { user, token, logout } = useAuth();
     const { openModal, closeModal } = useModalStack();
@@ -300,10 +300,10 @@ export const Home = () => {
         return sortGamesForLobbyDirectory(
             getGamesByCategory(activeCategory),
             category,
-            gamePopularityById,
+            gamePopularityRanking.popularityByGameId,
             [],
         );
-    }, [activeCategory, gamePopularityById, registryVersion]);
+    }, [activeCategory, gamePopularityRanking.popularityByGameId, registryVersion]);
     useEffect(() => {
         if (user?.id) return;
         setGuestId((current) => current ?? getOrCreateGuestId());

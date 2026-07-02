@@ -1,6 +1,7 @@
 import type { PassiveAbilityDef } from '../../domain/passiveAbility';
 import type { TokenDef } from '../../domain/tokenTypes';
 import { DICETHRONE_STATUS_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
+import { ZHANSHUJIA_SFX_COMMAND, ZHANSHUJIA_SFX_LIGHT } from './abilities';
 
 const tokenText = (id: string, field: 'name' | 'description') => `tokens.${id}.${field}`;
 const statusText = (id: string, field: 'name' | 'description') => `statusEffects.${id}.${field}`;
@@ -14,6 +15,7 @@ export const ZHANSHUJIA_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/zhanshujia/status/战术优势',
         stackLimit: 5,
         category: 'consumable',
+        sfxKey: ZHANSHUJIA_SFX_COMMAND,
         frameId: 'tactical_advantage',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA,
     },
@@ -25,6 +27,7 @@ export const ZHANSHUJIA_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/zhanshujia/status/紧缚',
         stackLimit: 1,
         category: 'debuff',
+        sfxKey: ZHANSHUJIA_SFX_LIGHT,
         passiveTrigger: {
             timing: 'onPhaseEnter',
             removable: true,

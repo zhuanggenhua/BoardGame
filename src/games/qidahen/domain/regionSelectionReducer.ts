@@ -54,6 +54,15 @@ const doesQidahenSelectedRegionMatchTarget = (
     return false;
 };
 
+const keepQidahenDecisionRegionWithExplicitFocus = (
+    nextState: QidahenCore,
+    decisionRegionId: string | null | undefined,
+    explicitRegionId: string,
+): Pick<QidahenCore, 'selectedRegionId' | 'explicitRegionId'> => ({
+    selectedRegionId: decisionRegionId ?? nextState.selectedRegionId,
+    explicitRegionId,
+});
+
 interface QidahenRegionSelectedDependencies {
     applyCharacterActionWindowEffectsWithFocus: (
         state: QidahenCore,
@@ -109,10 +118,9 @@ export const reduceQidahenRegionSelected = (
             selectedRegionId,
             getCurrentFactionId(nextState),
         );
-        selectedRegionId = rebuiltRecruitSelection?.targetRegionId ?? selectedRegionId;
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId,
+            selectedRegionId: rebuiltRecruitSelection?.targetRegionId ?? nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltRecruitSelection ? 'recruit-choice' : 'action-window',
             recruitSelection: rebuiltRecruitSelection,
@@ -141,7 +149,11 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltGaoDiDispatchSelection?.sourceRegionId ?? selectedRegionId,
+            ...keepQidahenDecisionRegionWithExplicitFocus(
+                nextState,
+                rebuiltGaoDiDispatchSelection?.sourceRegionId,
+                explicitRegionId,
+            ),
             explicitRegionId,
             turnPhase: rebuiltGaoDiDispatchSelection ? 'gao-di-dispatch-choice' : 'action-window',
             gaoDiDispatchSelection: rebuiltGaoDiDispatchSelection,
@@ -169,7 +181,11 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltInternalDispatchSelection?.sourceRegionId ?? selectedRegionId,
+            ...keepQidahenDecisionRegionWithExplicitFocus(
+                nextState,
+                rebuiltInternalDispatchSelection?.sourceRegionId,
+                explicitRegionId,
+            ),
             explicitRegionId,
             turnPhase: rebuiltInternalDispatchSelection ? 'internal-dispatch-choice' : 'action-window',
         });
@@ -177,10 +193,9 @@ export const reduceQidahenRegionSelected = (
     const maShiTradeSelection = getQidahenMaShiTradeSelectionForCore(nextState);
     if (maShiTradeSelection) {
         const rebuiltMaShiTradeSelection = buildMaShiTradeSelection(nextState, selectedRegionId);
-        selectedRegionId = rebuiltMaShiTradeSelection?.targetRegionId ?? selectedRegionId;
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId,
+            selectedRegionId: rebuiltMaShiTradeSelection?.targetRegionId ?? nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltMaShiTradeSelection ? 'ma-shi-trade-choice' : 'action-window',
             maShiTradeSelection: rebuiltMaShiTradeSelection,
@@ -261,7 +276,11 @@ export const reduceQidahenRegionSelected = (
     if (nextState.pendingTargetAction) {
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: nextState.pendingTargetAction.targetRuntimeRegionId,
+            ...keepQidahenDecisionRegionWithExplicitFocus(
+                nextState,
+                nextState.pendingTargetAction.targetRuntimeRegionId,
+                explicitRegionId,
+            ),
             explicitRegionId,
             turnPhase: 'resolve-pending',
         });
@@ -273,15 +292,22 @@ export const reduceQidahenRegionSelected = (
     ) {
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: wheelDispatchSelection.sourceRegionId,
-            explicitRegionId,
+            ...keepQidahenDecisionRegionWithExplicitFocus(
+                nextState,
+                wheelDispatchSelection.sourceRegionId,
+                explicitRegionId,
+            ),
             turnPhase: 'drive-tiger-consent',
         });
     }
     if (nextState.postBattleSelection) {
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: nextState.postBattleSelection.targetRuntimeRegionId,
+            ...keepQidahenDecisionRegionWithExplicitFocus(
+                nextState,
+                nextState.postBattleSelection.targetRuntimeRegionId,
+                explicitRegionId,
+            ),
             explicitRegionId,
             turnPhase: 'post-battle-decision',
         });
@@ -347,8 +373,11 @@ export const reduceQidahenRegionSelected = (
             );
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltSelection.sourceRegionId,
-            explicitRegionId,
+            ...keepQidahenDecisionRegionWithExplicitFocus(
+                nextState,
+                rebuiltSelection.sourceRegionId,
+                explicitRegionId,
+            ),
             turnPhase: 'dispatch-targeting',
             wheelDispatchProgress: shouldKeepRebuiltWheelDispatchSelectionOffHost ? null : rebuiltSelection,
             pendingTargetAction: null,

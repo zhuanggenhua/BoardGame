@@ -114,6 +114,8 @@
       "usePreview": "使用：{{effect}}",
       "cardUsedThisTurn": "本回合已用",
       "cardUsedTag": "已用",
+      "cardUnavailableThisTurn": "本回合新获得，下回合可用",
+      "cardUnavailableTag": "下回合",
       "frontMissing": "缺正面"
     },
     "feedback": {

@@ -260,11 +260,9 @@ describe('Qidahen Board 结构门禁', () => {
     it('已识别手牌会把教程和正式动作入口挂到单牌本体，而不是只能退回右侧按钮', () => {
         expect(boardSource).toContain("const getQidahenHandCardTutorialTargetId = (card: QidahenHandCard): string => (");
         expect(boardSource).toContain("card.cardDefId ?? card.id");
-        expect(boardSource).toContain("const getQidahenDirectActionIdForHandCard = (card: QidahenHandCard): string | null => {");
-        expect(boardSource).toContain("if (card.cardKind === 'armament' && card.armamentId) {");
-        expect(boardSource).toContain("return 'upgrade-armament';");
-        expect(boardSource).toContain("if (card.cardKind === 'event' && card.cardDefId?.includes('khan-edict')) {");
-        expect(boardSource).toContain("return 'khan-edict';");
+        expect(boardSource).toContain("import {");
+        expect(boardSource).toContain("getQidahenDirectActionIdForHandCard,");
+        expect(boardSource).toContain("getQidahenHandCardBadgeKind,");
         expect(boardSource).toContain("const getQidahenDirectHandActionIdsForFaction = (");
         expect(boardSource).toContain(".map((card) => getQidahenDirectActionIdForHandCard(card))");
         expect(boardSource).toContain("if (directHandActionIds.has(selectedAction.id)) {");
@@ -276,7 +274,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('getQidahenDirectActionIdForHandCard(card) != null');
         expect(boardSource).toContain('? () => onPreviewActionFromHandCard(card)');
         expect(boardSource).toContain('const previewActionFromHandCard = React.useCallback((card: QidahenHandCard) => {');
-        expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card));');
+        expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);');
+        expect(boardSource).not.toContain("const getQidahenDirectActionIdForHandCard = (card: QidahenHandCard): string | null => {");
     });
 
     it('Board 会接教程桥、终局遮罩和游戏音频，而不是继续缺少新游戏共用壳层能力', () => {
@@ -298,6 +297,15 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain(": '选择轮盘格';");
         expect(boardSource).toContain('showTopFactionPrompt');
         expect(boardSource).toContain("const showTopFactionPrompt = primaryStageMode === 'faction'");
+        expect(boardSource).toContain("&& khanEdictSelection == null");
+        expect(boardSource).toContain("&& recruitSelection == null");
+        expect(boardSource).toContain("&& maShiTradeSelection == null");
+        expect(boardSource).toContain("&& diplomacySelection == null");
+        expect(boardSource).toContain("&& driveTigerConsentSelection == null");
+        expect(boardSource).toContain("&& internalDispatchSelection == null");
+        expect(boardSource).toContain("&& wheelDispatchSelection == null");
+        expect(boardSource).toContain("&& pendingTargetAction == null");
+        expect(boardSource).toContain("&& postBattleSelection == null");
         expect(boardSource).toContain('qidahen-top-action-banner');
         expect(boardSource).toContain('!tutorialInfoStepActive');
         expect(boardSource).toContain('!actionPaymentPreviewVisible');
@@ -311,15 +319,24 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("defaultValue: '选择建军方式'");
         expect(boardSource).toContain("defaultValue: '选择建军数量'");
         expect(boardSource).toContain("defaultValue: '选择执行效果'");
+        expect(boardSource).toContain('targetRegionName: recruitSelection.displayAnchorRegionName');
+        expect(boardSource).toContain('targetRegionName: maShiTradeSelection.displayAnchorRegionName');
+        expect(boardSource).toContain('sourceRegionName: khanEdictSelection.displayAnchorRegionName');
+        expect(boardSource).toContain('sourceRegionName: diplomacySelection.displayAnchorRegionName');
+        expect(boardSource).not.toContain('targetRegionName: recruitSelection.targetRegionName');
+        expect(boardSource).not.toContain('targetRegionName: maShiTradeSelection.targetRegionName');
+        expect(boardSource).not.toContain('sourceRegionName: khanEdictSelection.sourceRegionName');
+        expect(boardSource).not.toContain('sourceRegionName: diplomacySelection.sourceRegionName');
         expect(boardSource).toContain("defaultValue: '处理外交与雇佣'");
-        expect(boardSource).toContain("defaultValue: '当前目标步骤 · {{targetHint}}'");
-        expect(boardSource).toContain("defaultValue: '选择进攻目标 · 可攻 {{count}} 处'");
+        expect(boardSource).toContain("defaultValue: '外交目标 · {{targetHint}}'");
+        expect(boardSource).toContain("defaultValue: '进攻目标'");
         expect(boardSource).toContain("defaultValue: '{{targetRegionName}} · {{defenderLabel}}'");
         expect(boardSource).not.toContain("defaultValue: '先选建军方式；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
         expect(boardSource).not.toContain("defaultValue: '先选建军数量；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
         expect(boardSource).not.toContain("defaultValue: '先选执行效果；需要时再改来源地区（当前聚焦 {{sourceRegionName}}）'");
         expect(boardSource).not.toContain("defaultValue: '从 {{sourceRegionName}} 出发 · 雇佣落在 {{hireRegionName}}'");
         expect(boardSource).not.toContain("defaultValue: '从 {{sourceRegionName}} 出发 · 可攻 {{count}} 处'");
+        expect(boardSource).not.toContain("defaultValue: '选择进攻目标 · 可攻 {{count}} 处'");
         expect(boardSource).not.toContain("defaultValue: '正在查看 {{targetRegionName}} · {{targetHint}}'");
         expect(boardSource).not.toContain("defaultValue: '进攻 {{targetRegionName}} · 守方 {{defenderLabel}}'");
         expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
@@ -340,8 +357,13 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain("badgeLabel: '已锁定'");
         expect(boardSource).toContain('focused={core.selectedActionId === action.id}');
         expect(boardSource).toContain('const engagedActionId = core.confirmedActionId;');
-        expect(boardSource).toContain("hint: gaoDiTargetSelectionActive ? '选择目标' : '先选要弃掉的手牌'");
+        expect(boardSource).toContain("hint: gaoDiTargetSelectionActive ? '选择目标' : '弃 1 张手牌'");
         expect(boardSource).toContain("badgeLabel: gaoDiTargetSelectionActive ? '选择目标' : '弃牌'");
+        expect(boardSource).toContain("title: '进攻目标'");
+        expect(boardSource).toContain("? '调度目标'");
+        expect(boardSource).not.toContain("title: '点一个进攻目标'");
+        expect(boardSource).not.toContain("? '点一个调度目标'");
+        expect(boardSource).not.toContain("title: '点一个调度目标'");
         expect(boardSource).toContain("candidateSummary: gaoDiTargetSelectionActive");
         expect(boardSource).toContain(": '等待弃牌'");
         expect(boardSource).toContain('mapSelectionGuide.candidates.length > 0');
@@ -486,6 +508,27 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('<QidahenCardMagnifyOverlay target={magnifyTarget} locale={locale} onClose={() => setMagnifyTarget(null)} />');
         expect(boardSource).toContain('onMagnify={setMagnifyTarget}');
         expect(boardSource).toContain('closeLabel="关闭查看"');
+    });
+
+    it('手牌放大按钮应在 HandZone 内获取翻译函数，避免运行时报 t 未定义', () => {
+        const handZoneStart = boardSource.indexOf('const HandZone: React.FC<{');
+        const handZoneEnd = boardSource.indexOf('const QidahenInMatchSetupOverlay', handZoneStart);
+        const handZoneSource = boardSource.slice(handZoneStart, handZoneEnd);
+
+        expect(handZoneStart).toBeGreaterThanOrEqual(0);
+        expect(handZoneEnd).toBeGreaterThan(handZoneStart);
+        expect(handZoneSource).toContain("const { t } = useTranslation('game-qidahen');");
+        expect(handZoneSource).toContain("t('board.magnifyCardAria'");
+        expect(handZoneSource).toContain("t('board.magnifyButton'");
+    });
+
+    it('正式手牌 badge 会复用领域层最小身份，而不是只硬编码事件/军备/战术/银两', () => {
+        expect(boardSource).toContain('const cardKindBadgeKind = getQidahenHandCardBadgeKind(card);');
+        expect(boardSource).toContain("character: '人物'");
+        expect(boardSource).toContain("scenario: '剧本'");
+        expect(boardSource).toContain("chronology: '纪年'");
+        expect(boardSource).toContain("'card-back': '牌背'");
+        expect(boardSource).not.toContain("}[card.cardKind]");
     });
 
     it('棋盘壳层与地图区域遮罩要保留正式底色和常驻势力浅色归属，不再露白底', () => {

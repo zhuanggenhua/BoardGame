@@ -1,4 +1,5 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
+import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { QidahenCommand, QidahenCore } from './types';
 import { hasUpgradableArmament } from './armamentLowFidelity';
 import {
@@ -17,6 +18,7 @@ import {
     hasRemainingFactionAction,
 } from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
+import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
 
 export const QIDAHEN_COMMANDS = {
     CAST_SCENARIO_VOTE: 'CAST_SCENARIO_VOTE',
@@ -70,6 +72,77 @@ const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): bool
     && core.lastFactionActionId === actionId
 );
 
+const isCurrentSeatCommand = (state: MatchState<QidahenCore>, command: QidahenCommand): boolean => (
+    command.playerId === state.core.currentPlayer
+);
+
+const isCurrentInteractionSeatCommand = (state: MatchState<QidahenCore>, command: QidahenCommand): boolean => {
+    const currentInteractionPlayerId = state.sys.interaction?.current?.playerId;
+    return currentInteractionPlayerId != null && command.playerId === currentInteractionPlayerId;
+};
+
+const getCurrentInteractionSourceId = (currentInteraction: InteractionDescriptor | undefined): string | null => {
+    const sourceId = (currentInteraction?.data as { sourceId?: unknown } | undefined)?.sourceId;
+    return typeof sourceId === 'string' ? sourceId : null;
+};
+
+const getPendingTargetActionCommandSeat = (state: MatchState<QidahenCore>, currentInteraction: InteractionDescriptor | undefined): string | null => {
+    const pendingTargetAction = getQidahenPendingTargetActionForCore(state.core, currentInteraction);
+    if (!pendingTargetAction) {
+        return null;
+    }
+    return state.core.factions[pendingTargetAction.attackerFactionId]?.playerId ?? null;
+};
+
+const getPostBattleDecisionCommandSeat = (state: MatchState<QidahenCore>, currentInteraction: InteractionDescriptor | undefined): string | null => {
+    const selection = getQidahenPostBattleSelectionForCore(state.core, currentInteraction);
+    if (!selection) {
+        return null;
+    }
+    return state.core.factions[selection.attackerFactionId]?.playerId ?? null;
+};
+
+const isPendingTargetActionSeatCommand = (
+    state: MatchState<QidahenCore>,
+    command: QidahenCommand,
+    currentInteraction: InteractionDescriptor | undefined,
+): boolean => getPendingTargetActionCommandSeat(state, currentInteraction) === command.playerId;
+
+const isPostBattleDecisionSeatCommand = (
+    state: MatchState<QidahenCore>,
+    command: QidahenCommand,
+    currentInteraction: InteractionDescriptor | undefined,
+): boolean => getPostBattleDecisionCommandSeat(state, currentInteraction) === command.playerId;
+
+const isScenarioChoiceSeatCommand = (
+    state: MatchState<QidahenCore>,
+    command: QidahenCommand,
+    factionId: string,
+): boolean => {
+    const faction = state.core.factions[factionId as keyof QidahenCore['factions']];
+    return faction?.playerId === command.playerId;
+};
+
+const isValidQidahenDirectHandActionSource = (
+    core: QidahenCore,
+    actionId: string,
+    sourceHandCardId: string | null | undefined,
+): boolean => {
+    if (!sourceHandCardId) {
+        return true;
+    }
+    const currentFactionId = getCurrentFactionId(core);
+    const sourceCard = core.handCards.find((card) => card.id === sourceHandCardId);
+    return !!sourceCard
+        && sourceCard.faction === currentFactionId
+        && sourceCard.status !== 'disabled'
+        && getQidahenDirectActionIdForHandCard(sourceCard) === actionId;
+};
+
+const requiresQidahenDirectHandActionSource = (actionId: string): boolean => (
+    actionId === 'upgrade-armament'
+);
+
 export function validate(
     state: MatchState<QidahenCore>,
     command: QidahenCommand,
@@ -96,6 +169,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentSeatCommand(state, command) && !isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return state.core.regions.some((region) => region.id === command.payload.regionId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownRegion' };
@@ -103,11 +179,24 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
             }
             if (wouldRepeatLastFactionAction(state.core, command.payload.actionId)) {
                 return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
+            }
+            if (requiresQidahenDirectHandActionSource(command.payload.actionId) && !command.payload.sourceHandCardId) {
+                return { valid: false, error: 'unknownPaymentCard' };
+            }
+            if (!isValidQidahenDirectHandActionSource(
+                state.core,
+                command.payload.actionId,
+                command.payload.sourceHandCardId,
+            )) {
+                return { valid: false, error: 'unknownPaymentCard' };
             }
             return command.payload.actionId.length > 0
                 ? { valid: true }
@@ -115,6 +204,9 @@ export function validate(
         case QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
@@ -126,6 +218,9 @@ export function validate(
             if (hasPendingScenarioChoices(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
                 return { valid: false, error: 'wheelAlreadyUsed' };
             }
@@ -136,6 +231,9 @@ export function validate(
             if (hasPendingScenarioChoices(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
                 return { valid: false, error: 'wheelAlreadyUsed' };
             }
@@ -145,6 +243,9 @@ export function validate(
         case QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD:
             if (hasPendingScenarioChoices(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
@@ -160,6 +261,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return getQidahenHandLimitDiscardSelectionForCore(state.core, currentInteraction)
                 ?.candidateCardIds.includes(command.payload.cardId)
                 ? { valid: true }
@@ -168,6 +272,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return state.core.sunYuanhuaTechSelection?.candidateCardIds.includes(command.payload.cardId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
@@ -175,12 +282,18 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return state.core.gaoDiDispatchSelection?.candidateCardIds.includes(command.payload.cardId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
         case QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             {
                 const selection = getQidahenHandLimitDiscardSelectionForCore(state.core, currentInteraction);
@@ -192,6 +305,9 @@ export function validate(
         case QIDAHEN_COMMANDS.RESOLVE_SUN_YUANHUA_TECH:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (!state.core.sunYuanhuaTechSelection) {
                 return { valid: false, error: 'unknownAction' };
@@ -205,6 +321,9 @@ export function validate(
         case QIDAHEN_COMMANDS.RESOLVE_GAO_DI_DISPATCH:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (!state.core.gaoDiDispatchSelection) {
                 return { valid: false, error: 'unknownAction' };
@@ -220,6 +339,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return getQidahenInternalDispatchSelectionForCore(state.core, currentInteraction)
                 ?.candidates.some((candidate) => candidate.id === command.payload.choiceId)
                 ? { valid: true }
@@ -227,6 +349,9 @@ export function validate(
         case QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION:
             if (hasPendingScenarioChoices(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
@@ -249,6 +374,9 @@ export function validate(
         case QIDAHEN_COMMANDS.EXECUTE_ACTION: {
             if (hasPendingScenarioChoices(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
@@ -273,12 +401,18 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isPendingTargetActionSeatCommand(state, command, currentInteraction)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return getQidahenPendingTargetActionForCore(state.core, currentInteraction)
                 ? { valid: true }
                 : { valid: false, error: 'noPendingAction' };
         case QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isPostBattleDecisionSeatCommand(state, command, currentInteraction)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             return getQidahenPostBattleSelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.id === command.payload.choiceId)
@@ -288,6 +422,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return getQidahenKhanEdictSelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
@@ -295,6 +432,9 @@ export function validate(
         case QIDAHEN_COMMANDS.RESOLVE_DIPLOMACY_CHOICE:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             return getQidahenDiplomacySelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.id === command.payload.choiceId)
@@ -304,6 +444,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return getQidahenMaShiTradeSelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.troopCount === command.payload.troopCount)
                 ? { valid: true }
@@ -311,6 +454,9 @@ export function validate(
         case QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             return getQidahenDriveTigerConsentSelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.id === command.payload.choiceId)
@@ -320,6 +466,9 @@ export function validate(
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             return getQidahenRecruitSelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
@@ -327,6 +476,9 @@ export function validate(
         case QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (getCurrentInteractionSourceId(currentInteraction) != null && !isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             if (
                 command.payload.attritionPriority != null
@@ -347,6 +499,9 @@ export function validate(
             if (!group) {
                 return { valid: false, error: 'unknownAction' };
             }
+            if (!isScenarioChoiceSeatCommand(state, command, group.factionId)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
             const selectedIds = Array.from(new Set(command.payload.characterIds));
             if (selectedIds.length !== group.count) {
                 return { valid: false, error: 'paymentIncomplete' };
@@ -362,6 +517,9 @@ export function validate(
             const group = state.core.pendingScenarioArmamentChoices.find((choice) => choice.id === command.payload.groupId);
             if (!group) {
                 return { valid: false, error: 'unknownAction' };
+            }
+            if (!isScenarioChoiceSeatCommand(state, command, group.factionId)) {
+                return { valid: false, error: 'notCurrentPlayer' };
             }
             const selectedIds = Array.from(new Set(command.payload.armamentIds));
             if (selectedIds.length !== group.count) {

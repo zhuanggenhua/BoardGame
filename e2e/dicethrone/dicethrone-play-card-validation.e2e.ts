@@ -96,18 +96,6 @@ test.describe('DiceThrone - 打牌验证', () => {
     });
 
     test('手牌中的合法卡牌应通过验证并成功执行', async ({ page, game }) => {
-        const consoleLogs: string[] = [];
-        page.on('console', (msg) => {
-            const text = msg.text();
-            if (
-                text.includes('[validateCommand]')
-                || text.includes('[validatePlayCard]')
-                || text.includes('card_not_in_hand')
-            ) {
-                consoleLogs.push(text);
-            }
-        });
-
         await setupPlayCardValidationScene(page, game);
 
         const buddhaLightCard = page
@@ -124,7 +112,7 @@ test.describe('DiceThrone - 打牌验证', () => {
                 handIds: player0?.hand?.map((card: any) => card.id) ?? [],
                 tokens: player0?.tokens ?? {},
                 cp: player0?.resources?.CP ?? player0?.resources?.cp ?? null,
-                opponentKnockdown: player1?.statuses?.knockdown ?? player1?.tokens?.knockdown ?? null,
+                opponentKnockdown: player1?.statusEffects?.knockdown ?? player1?.statuses?.knockdown ?? player1?.tokens?.knockdown ?? null,
             };
         }, { timeout: 5000 }).toMatchObject({
             handIds: [],
@@ -143,12 +131,8 @@ test.describe('DiceThrone - 打牌验证', () => {
             handIds: player0?.hand?.map((card: any) => card.id) ?? [],
             tokens: player0?.tokens ?? {},
             cp: player0?.resources?.CP ?? player0?.resources?.cp ?? null,
-            opponentKnockdown: player1?.statuses?.knockdown ?? player1?.tokens?.knockdown ?? null,
+            opponentKnockdown: player1?.statusEffects?.knockdown ?? player1?.statuses?.knockdown ?? player1?.tokens?.knockdown ?? null,
         };
-
-        expect(consoleLogs.some((log) => log.includes('[validateCommand]'))).toBe(true);
-        expect(consoleLogs.some((log) => log.includes('[validatePlayCard]'))).toBe(true);
-        expect(consoleLogs.some((log) => log.includes('card_not_in_hand'))).toBe(false);
 
         expect(finalState.handIds).not.toContain('card-buddha-light');
         expect(finalState.tokens.taiji ?? 0).toBe(1);
@@ -159,18 +143,6 @@ test.describe('DiceThrone - 打牌验证', () => {
     });
 
     test('不在手牌中的卡牌应命中 card_not_in_hand 校验', async ({ page, game }) => {
-        const consoleLogs: string[] = [];
-        page.on('console', (msg) => {
-            const text = msg.text();
-            if (
-                text.includes('[validateCommand]')
-                || text.includes('[validatePlayCard]')
-                || text.includes('card_not_in_hand')
-            ) {
-                consoleLogs.push(text);
-            }
-        });
-
         await setupPlayCardValidationScene(page, game, { hand: [] });
 
         await page.evaluate(() => {
@@ -181,26 +153,13 @@ test.describe('DiceThrone - 打牌验证', () => {
                 timestamp: Date.now(),
             });
         });
-        await expect.poll(
-            () => ({
-                hasValidateCommand: consoleLogs.some((log) => log.includes('[validateCommand]')),
-                hasValidatePlayCard: consoleLogs.some((log) => log.includes('[validatePlayCard]')),
-                hasCardNotInHand: consoleLogs.some((log) => log.includes('card_not_in_hand')),
-            }),
-            { timeout: 2000 },
-        ).toMatchObject({
-            hasValidateCommand: true,
-            hasValidatePlayCard: true,
-            hasCardNotInHand: true,
-        });
-
-        expect(consoleLogs.some((log) => log.includes('[validateCommand]'))).toBe(true);
-        expect(consoleLogs.some((log) => log.includes('[validatePlayCard]'))).toBe(true);
-        expect(consoleLogs.some((log) => log.includes('card_not_in_hand'))).toBe(true);
+        await expect(page.getByText('卡牌不在手牌中')).toBeVisible({ timeout: 5000 });
 
         const player0 = await game.getPlayerState('0');
         const finalHand = player0?.hand?.map((card: any) => card.id) ?? [];
+        const finalCp = player0?.resources?.CP ?? player0?.resources?.cp ?? null;
 
         expect(finalHand).toEqual([]);
+        expect(finalCp).toBe(5);
     });
 });

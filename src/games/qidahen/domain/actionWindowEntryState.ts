@@ -32,6 +32,7 @@ QidahenCore,
 | 'selectedActionId'
 | 'confirmedActionId'
 | 'selectedPaymentCardIds'
+| 'selectedHandActionCardId'
 | 'recruitSelection'
 | 'maShiTradeSelection'
 | 'khanEdictSelection'
@@ -62,6 +63,7 @@ QidahenCore,
         selectedActionId,
         confirmedActionId: null,
         selectedPaymentCardIds: [],
+        selectedHandActionCardId: null,
         recruitSelection: null,
         maShiTradeSelection: null,
         khanEdictSelection: null,

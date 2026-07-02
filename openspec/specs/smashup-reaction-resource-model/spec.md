@@ -13,6 +13,13 @@ Smash Up reaction ordering SHALL compare strongly typed concrete resources inste
 - **THEN** the footprints SHALL identify different `sourceInstance` or `cardInstance` resources
 - **AND** they SHALL NOT conflict merely because both are ongoing cards
 
+#### Scenario: Duplicate cards keep instance identity
+- **GIVEN** a player has two copies of the same card definition in a response window
+- **WHEN** response options are built
+- **THEN** each copy SHALL be represented by its concrete card instance identity
+- **AND** the system SHALL NOT deduplicate the options by printed name or `defId`
+- **AND** any per-card or per-base usage limit SHALL be enforced by explicit rule state rather than accidental identity collision
+
 #### Scenario: Resource types are centralized
 - **GIVEN** a new reaction-orderable effect is implemented
 - **WHEN** it emits existing Smash Up events or existing structured interactions

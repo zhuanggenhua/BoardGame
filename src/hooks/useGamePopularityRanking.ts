@@ -1,14 +1,14 @@
 import React from 'react';
-import { AUTH_API_URL } from '../config/server';
+import { fetchAdminStats, type GamePlayTimeStat } from '../api/admin-stats';
 
-export type GamePlayTimeStat = {
-    gameName?: string;
-    totalDuration?: number;
-    count?: number;
-};
+export type { GamePlayTimeStat };
 
-type AdminStatsResponse = {
-    playTimeStats?: GamePlayTimeStat[];
+export type GamePopularityRankingStatus = 'disabled' | 'loading' | 'success' | 'failed';
+
+export type GamePopularityRankingResult = {
+    status: GamePopularityRankingStatus;
+    popularityByGameId: Record<string, number>;
+    error?: string;
 };
 
 const HEAT_DURATION_WEIGHT = 0.5;
@@ -57,40 +57,46 @@ export function buildBalancedPopularityByGameId(playTimeStats: GamePlayTimeStat[
     );
 }
 
-export const useGamePopularityRanking = (enabled = true) => {
-    const [popularityByGameId, setPopularityByGameId] = React.useState<Record<string, number>>({});
+export const useGamePopularityRanking = (enabled = true): GamePopularityRankingResult => {
+    const [ranking, setRanking] = React.useState<GamePopularityRankingResult>(() => ({
+        status: enabled ? 'loading' : 'disabled',
+        popularityByGameId: {},
+    }));
 
     React.useEffect(() => {
         if (!enabled) {
-            setPopularityByGameId({});
+            setRanking({ status: 'disabled', popularityByGameId: {} });
             return undefined;
         }
 
         const controller = new AbortController();
 
-        void fetch(`${AUTH_API_URL}/admin/stats`, { signal: controller.signal })
-            .then(async (response) => {
-                if (!response.ok) {
-                    throw new Error(`加载游戏热度失败: ${response.status}`);
-                }
-                return response.json() as Promise<AdminStatsResponse>;
-            })
+        setRanking({ status: 'loading', popularityByGameId: {} });
+
+        void fetchAdminStats({ signal: controller.signal })
             .then((data) => {
                 if (controller.signal.aborted) {
                     return;
                 }
-                setPopularityByGameId(buildBalancedPopularityByGameId(data.playTimeStats ?? []));
+                setRanking({
+                    status: 'success',
+                    popularityByGameId: buildBalancedPopularityByGameId(data.playTimeStats),
+                });
             })
             .catch((error) => {
                 if (controller.signal.aborted) {
                     return;
                 }
                 console.warn('[Lobby] 加载游戏热度失败，回退固定排序', error);
-                setPopularityByGameId({});
+                setRanking({
+                    status: 'failed',
+                    popularityByGameId: {},
+                    error: error instanceof Error ? error.message : '加载游戏热度失败',
+                });
             });
 
         return () => controller.abort();
     }, [enabled]);
 
-    return popularityByGameId;
+    return ranking;
 };

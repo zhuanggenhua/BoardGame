@@ -1,3 +1,5 @@
+import type { Die } from '../types';
+
 export interface DiceStagePolicyParams {
     isSpectator: boolean;
     isSelfView: boolean;
@@ -44,4 +46,15 @@ export function shouldUseBoardDiceStage(params: DiceStagePolicyParams): boolean 
         && (params.isViewRolling || shouldShowForResponseDice);
 
     return shouldShowForRolling || shouldShowForInteraction;
+}
+
+export function shouldShowRailDiceTray(params: {
+    useBoardDiceStage: boolean;
+    hasKeptDice: boolean;
+}): boolean {
+    return !params.useBoardDiceStage || params.hasKeptDice;
+}
+
+export function getRailDiceForCurrentBoard(dice: Die[], useBoardDiceStage: boolean): Die[] {
+    return useBoardDiceStage ? dice.filter((die) => die.isKept) : dice;
 }

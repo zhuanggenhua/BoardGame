@@ -68,6 +68,10 @@ import {
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './domain/interactionSelectionAccessors';
+import {
+    getQidahenDirectActionIdForHandCard,
+    getQidahenHandCardBadgeKind,
+} from './domain/handCardIdentity';
 import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';
 import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';
 
@@ -222,16 +226,6 @@ const ACTIONS_DOCK_RIGHT = 80;
 const getQidahenHandCardTutorialTargetId = (card: QidahenHandCard): string => (
     card.cardDefId ?? card.id
 );
-
-const getQidahenDirectActionIdForHandCard = (card: QidahenHandCard): string | null => {
-    if (card.cardKind === 'armament' && card.armamentId) {
-        return 'upgrade-armament';
-    }
-    if (card.cardKind === 'event' && card.cardDefId?.includes('khan-edict')) {
-        return 'khan-edict';
-    }
-    return null;
-};
 
 const getQidahenDirectHandActionIdsForFaction = (
     core: QidahenCore,
@@ -1706,7 +1700,7 @@ const MapSceneLayer: React.FC<{
         if (wheelDispatchSelection) {
             return {
                 sourceRegionId: wheelDispatchSelection.sourceRegionId,
-                title: '点一个进攻目标',
+                title: '进攻目标',
                 hint: '选择目标',
                 badgeLabel: '选择目标',
                 candidates: wheelDispatchSelection.candidates.map((candidate) => ({
@@ -1724,9 +1718,9 @@ const MapSceneLayer: React.FC<{
             return {
                 sourceRegionId: core.gaoDiDispatchSelection.sourceRegionId,
                 title: gaoDiTargetSelectionActive
-                    ? '点一个调度目标'
-                    : '先弃 1 张牌',
-                hint: gaoDiTargetSelectionActive ? '选择目标' : '先选要弃掉的手牌',
+                    ? '调度目标'
+                    : '弃牌',
+                hint: gaoDiTargetSelectionActive ? '选择目标' : '弃 1 张手牌',
                 badgeLabel: gaoDiTargetSelectionActive ? '选择目标' : '弃牌',
                 candidates: gaoDiTargetSelectionActive ? core.gaoDiDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
@@ -1743,7 +1737,7 @@ const MapSceneLayer: React.FC<{
         if (internalDispatchSelection) {
             return {
                 sourceRegionId: internalDispatchSelection.sourceRegionId,
-                title: '点一个调度目标',
+                title: '调度目标',
                 hint: '选择目标',
                 badgeLabel: '选择目标',
                 candidates: internalDispatchSelection.candidates.map((candidate) => ({
@@ -3047,7 +3041,7 @@ const ActionsZone: React.FC<{
                     <div>{core.gaoDiDispatchSelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.gaoDi.summary', {
-                            sourceRegionName: core.gaoDiDispatchSelection.sourceRegionName,
+                            sourceRegionName: core.gaoDiDispatchSelection.displayAnchorRegionName,
                             maxTroops: core.gaoDiDispatchSelection.maxTroops,
                             maxPopulation: core.gaoDiDispatchSelection.maxPopulation,
                             defaultValue: '选择调度目标 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口',
@@ -3076,7 +3070,7 @@ const ActionsZone: React.FC<{
                     <div>{internalDispatchSelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.internalDispatch.summary', {
-                            sourceRegionName: internalDispatchSelection.sourceRegionName,
+                            sourceRegionName: internalDispatchSelection.displayAnchorRegionName,
                             maxTroops: internalDispatchSelection.maxTroops,
                             defaultValue: '选择调度目标 · 最多调 {{maxTroops}} 个部队',
                         })}
@@ -3092,7 +3086,7 @@ const ActionsZone: React.FC<{
                     <div>{t('board.actions.recruit.title', { defaultValue: '征召军队' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.recruit.summary', {
-                            targetRegionName: recruitSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
+                            targetRegionName: recruitSelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             defaultValue: '选择建军方式',
                         })}
                     </div>
@@ -3126,7 +3120,7 @@ const ActionsZone: React.FC<{
                     <div>{t('board.actions.maShiTrade.title', { defaultValue: '马市贸易' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.maShiTrade.summary', {
-                            targetRegionName: maShiTradeSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
+                            targetRegionName: maShiTradeSelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             defaultValue: '选择建军数量',
                         })}
                     </div>
@@ -3160,7 +3154,7 @@ const ActionsZone: React.FC<{
                     <div>{t('board.actions.khanEdict.title', { defaultValue: '大汗令箭' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.khanEdict.summary', {
-                            sourceRegionName: khanEdictSelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
+                            sourceRegionName: khanEdictSelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             defaultValue: '选择执行效果',
                         })}
                     </div>
@@ -3194,7 +3188,7 @@ const ActionsZone: React.FC<{
                     <div>{diplomacySelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.sourceSummary', {
-                            sourceRegionName: diplomacySelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
+                            sourceRegionName: diplomacySelection.displayAnchorRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '待选地区' }),
                             hireRegionName: diplomacySelection.hireRegionName ?? t('board.actions.diplomacy.currentControlRegion', { defaultValue: '当前控制区' }),
                             defaultValue: '处理外交与雇佣',
                         })}
@@ -3210,7 +3204,7 @@ const ActionsZone: React.FC<{
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.diplomacy.targetSummary', {
                             targetHint: diplomacySelection.targetHint,
-                            defaultValue: '当前目标步骤 · {{targetHint}}',
+                            defaultValue: '外交目标 · {{targetHint}}',
                         })}
                     </div>
                     {diplomacySelection.resolvedSteps.length > 0 ? (
@@ -3318,9 +3312,9 @@ const ActionsZone: React.FC<{
                     <div>{wheelDispatchSelection.restriction}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.wheelDispatch.summary', {
-                            sourceRegionName: wheelDispatchSelection.sourceRegionName,
+                            sourceRegionName: wheelDispatchSelection.displayAnchorRegionName,
                             count: wheelDispatchSelection.candidates.length,
-                            defaultValue: '选择进攻目标 · 可攻 {{count}} 处',
+                            defaultValue: '进攻目标',
                         })}
                     </div>
                     <div className="mt-2 max-h-[236px] overflow-y-auto pr-1">
@@ -3575,13 +3569,18 @@ const HandCard: React.FC<{
 }> = ({ card, locale, selected = false, stackIndex, totalCards, onClick }) => {
     const disabled = card.status === 'disabled';
     const overlapPx = getQidahenHandCardOverlapPx(totalCards);
-    const cardKindBadge = card.cardKind && card.cardKind !== 'unknown'
+    const cardKindBadgeKind = getQidahenHandCardBadgeKind(card);
+    const cardKindBadge = cardKindBadgeKind
         ? ({
             event: '事件',
             armament: '军备',
             tactic: '战术',
             silver: '银两',
-        } satisfies Record<'event' | 'armament' | 'tactic' | 'silver', string>)[card.cardKind]
+            character: '人物',
+            scenario: '剧本',
+            chronology: '纪年',
+            'card-back': '牌背',
+        } satisfies Record<'event' | 'armament' | 'tactic' | 'silver' | 'character' | 'scenario' | 'chronology' | 'card-back', string>)[cardKindBadgeKind]
         : null;
 
     return (
@@ -3670,6 +3669,7 @@ const HandZone: React.FC<{
     onMagnifyCard,
     isTutorialTargetAllowed,
 }) => {
+    const { t } = useTranslation('game-qidahen');
     const currentFactionId = playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId;
     if (!currentFactionId) {
         return null;
@@ -4564,11 +4564,14 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         dispatch(QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE, { scenarioId });
     }, [dispatch]);
 
-    const previewAction = React.useCallback((actionId: string, tutorialTargetId = actionId) => {
+    const previewAction = React.useCallback((actionId: string, tutorialTargetId = actionId, sourceHandCardId?: string) => {
         if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION) || !isTutorialTargetAllowed(tutorialTargetId)) {
             return;
         }
-        dispatch(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId });
+        dispatch(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, {
+            actionId,
+            ...(sourceHandCardId ? { sourceHandCardId } : {}),
+        });
     }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
     const cancelActionPaymentPreview = React.useCallback(() => {
@@ -4618,7 +4621,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         if (!actionId || !factionStageAvailable || actionPaymentPreviewVisible || card.status === 'disabled') {
             return;
         }
-        previewAction(actionId, getQidahenHandCardTutorialTargetId(card));
+        previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);
     }, [actionPaymentPreviewVisible, factionStageAvailable, previewAction]);
 
     const resolvePendingAction = React.useCallback((choiceValue: QidahenPendingTargetChoiceValue, attackerCasualtyPriority?: QidahenCasualtyPriority, defenderCasualtyPriority?: QidahenCasualtyPriority, committedTroops?: number) => {
@@ -4832,7 +4835,19 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         && factionStageAvailable
         && !tutorialInfoStepActive
         && !actionPaymentPreviewVisible
-        && !actionPaymentPreviewVisible;
+        && khanEdictSelection == null
+        && recruitSelection == null
+        && maShiTradeSelection == null
+        && diplomacySelection == null
+        && driveTigerConsentSelection == null
+        && fortificationMaintenanceSelection == null
+        && internalDispatchSelection == null
+        && wheelDispatchSelection == null
+        && pendingTargetAction == null
+        && postBattleSelection == null
+        && handLimitDiscardSelection == null
+        && core.gaoDiDispatchSelection == null
+        && core.sunYuanhuaTechSelection == null;
     const selectedPrimaryAction = getQidahenForegroundActionChoice(core, {
         actionPaymentPreviewVisible,
         recruitSelection,

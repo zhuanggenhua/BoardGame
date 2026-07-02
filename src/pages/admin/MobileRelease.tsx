@@ -82,6 +82,9 @@ type PublishResponse = {
     ok: boolean;
     kind?: 'ota' | 'native' | 'packages';
     mode: 'dry-run' | 'publish' | 'preview' | 'execute';
+    jobId?: string;
+    status?: 'queued' | 'running' | 'succeeded' | 'failed';
+    exitCode?: number | null;
     packageVersion?: string;
     command: string;
     target?: DeployRollbackTarget;
@@ -94,6 +97,20 @@ const CHANNELS = ['stable', 'gray', 'edge'] as const;
 const BUMP_OPTIONS = ['', 'patch', 'minor', 'major'] as const;
 const DEPLOY_UPDATE_CONFIRM_TEXT = '确认部署';
 const DEPLOY_ROLLBACK_CONFIRM_TEXT = '确认回滚';
+const DEPLOY_JOB_POLL_INTERVAL_MS = 3000;
+const DEPLOY_JOB_POLL_ATTEMPTS = 160;
+
+const sleep = (ms: number) => new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+});
+
+const isDeployJobDone = (result: PublishResponse) => result.status === 'succeeded' || result.status === 'failed';
+
+const isFailedResult = (result: PublishResponse) => (
+    result.ok === false
+    || result.status === 'failed'
+    || (typeof result.exitCode === 'number' && result.exitCode !== 0)
+);
 
 const formatSize = (bytes?: number) => {
     if (!bytes || !Number.isFinite(bytes)) return '-';
@@ -183,7 +200,8 @@ export default function MobileReleasePage() {
     const canPreviewDeployUpdate = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteDeployUpdate = Boolean(
         canPreviewDeployUpdate
-        && status?.deploy.updateExecutionEnabled,
+        && status?.deploy.updateExecutionEnabled
+        && canPublishOta,
     );
     const canPreviewRollback = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteRollback = Boolean(
@@ -210,6 +228,42 @@ export default function MobileReleasePage() {
         return await response.json() as PublishResponse;
     };
 
+    const fetchDeployJob = async (jobId: string) => {
+        if (!token) {
+            return null;
+        }
+        const response = await fetch(`${ADMIN_API_URL}/mobile-release/deploy/jobs/${encodeURIComponent(jobId)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+            throw new Error(await readApiError(response, pageT('toast.status_failed')));
+        }
+        return await response.json() as PublishResponse;
+    };
+
+    const waitForDeployJob = async (initial: PublishResponse) => {
+        let current = initial;
+        for (let attempt = 0; attempt < DEPLOY_JOB_POLL_ATTEMPTS; attempt += 1) {
+            if (!current.jobId || isDeployJobDone(current)) {
+                return current;
+            }
+            await sleep(DEPLOY_JOB_POLL_INTERVAL_MS);
+            const next = await fetchDeployJob(current.jobId);
+            if (!next) {
+                return current;
+            }
+            current = {
+                ...current,
+                ...next,
+                jobId: current.jobId,
+                command: next.command || current.command,
+                output: next.output ?? current.output,
+            };
+            setLastResult(current);
+        }
+        return current;
+    };
+
     const runAction = async (
         actionKey: string,
         path: string,
@@ -222,6 +276,11 @@ export default function MobileReleasePage() {
             const data = await postJson(path, body, pageT('toast.publish_failed'));
             if (data) {
                 setLastResult(data);
+                const finalData = data.jobId ? await waitForDeployJob(data) : data;
+                setLastResult(finalData);
+                if (isFailedResult(finalData)) {
+                    throw new Error(pageT('toast.job_failed'));
+                }
                 toast.success(pageT(successKey));
                 await fetchStatus();
             }
@@ -437,7 +496,7 @@ export default function MobileReleasePage() {
                         </ReleaseSection>
 
                         <ReleaseSection icon={<Server size={18} className="text-emerald-600" />} title={pageT('deployUpdate.title')}>
-                            <div className="grid gap-4">
+                            <div className="grid gap-4 md:grid-cols-3">
                                 <label className="space-y-1.5">
                                     <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.tag')}</span>
                                     <input
@@ -447,7 +506,20 @@ export default function MobileReleasePage() {
                                         placeholder={pageT('deployUpdate.tag_placeholder')}
                                     />
                                 </label>
+                                <ChannelSelect pageT={pageT} channel={channel} onChange={setChannel} />
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_version_base')}</span>
+                                    <input
+                                        value={otaVersionBase}
+                                        onChange={(event) => setOtaVersionBase(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="6.0.0"
+                                    />
+                                </label>
                             </div>
+                            <CheckboxRow>
+                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
+                            </CheckboxRow>
                             <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
                                 {pageT('deployUpdate.description')}
                             </div>
@@ -457,6 +529,9 @@ export default function MobileReleasePage() {
                                     disabled={!canPreviewDeployUpdate}
                                     onClick={() => void runAction('deploy-update-preview', '/mobile-release/deploy/update/preview', {
                                         tag: deployUpdateTag.trim() || undefined,
+                                        channel,
+                                        otaVersionBase: otaVersionBase.trim() || undefined,
+                                        forceUpdate: otaForceUpdate,
                                     }, 'toast.preview_success')}
                                 >
                                     {busyAction === 'deploy-update-preview' ? runningText : pageT('actions.preview_command')}
@@ -467,6 +542,9 @@ export default function MobileReleasePage() {
                                     disabled={!canExecuteDeployUpdate}
                                     onClick={() => void runAction('deploy-update-execute', '/mobile-release/deploy/update/execute', {
                                         tag: deployUpdateTag.trim() || undefined,
+                                        channel,
+                                        otaVersionBase: otaVersionBase.trim() || undefined,
+                                        forceUpdate: otaForceUpdate,
                                         confirmText: DEPLOY_UPDATE_CONFIRM_TEXT,
                                     }, 'toast.deploy_update_success')}
                                 >
@@ -554,9 +632,11 @@ export default function MobileReleasePage() {
                 {lastResult ? (
                     <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                         <h2 className="mb-4 text-lg font-bold text-zinc-900">{pageT('result.title')}</h2>
-                        <div className="grid gap-3 text-sm md:grid-cols-4">
+                        <div className="grid gap-3 text-sm md:grid-cols-6">
                             <ResultField label={pageT('result.kind')} value={lastResult.kind ?? '-'} />
                             <ResultField label={pageT('result.mode')} value={lastResult.mode} />
+                            <ResultField label={pageT('result.job_status')} value={lastResult.status ?? '-'} />
+                            <ResultField label={pageT('result.exit_code')} value={lastResult.exitCode == null ? '-' : String(lastResult.exitCode)} />
                             <ResultField label={pageT('result.bundle_version')} value={lastResult.parsed?.bundleVersion ?? lastResult.parsed?.version ?? '-'} />
                             <ResultField label={pageT('result.zip_bytes')} value={lastResult.parsed?.zipBytes ?? lastResult.parsed?.apkBytes ?? '-'} />
                         </div>

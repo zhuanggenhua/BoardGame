@@ -171,6 +171,27 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     // ========================================================================
     // soul-burn-2-fm: 获得 2×火魂骰面数量 FM（基础版和升级版共用）
     // ========================================================================
+    describe('pyro-blast-3-roll (炎爆术 III 奖励骰重掷)', () => {
+        it('没有火焰精通时也应给出 1 次免费重投入口', () => {
+            const state = createState({ attackerFM: 0 });
+            const handler = getCustomActionHandler('pyro-blast-3-roll')!;
+            const events = handler(buildCtx(state, 'pyro-blast-3-roll', {
+                random: () => 0.5,
+            }));
+
+            const request = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED')[0] as any;
+            expect(request).toBeDefined();
+            expect(request.payload.settlement.displayOnly).toBeUndefined();
+            expect(request.payload.settlement.dice).toHaveLength(2);
+            expect(request.payload.settlement.maxRerollCount).toBe(1);
+            expect(request.payload.settlement.rerollCostAmount).toBe(0);
+            expect(request.payload.settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
+        });
+    });
+
+    // ========================================================================
+    // soul-burn-2-fm: 获得 2×火魂骰面数量 FM（基础版和升级版共用）
+    // ========================================================================
     describe('soul-burn-2-fm (灵魂燃烧 FM获取 — 基础版2火魂)', () => {
         it('2个火魂面时获得4FM（2×2）', () => {
             // 骰子: fire,fire,fire,fiery_soul,fiery_soul → 2个fiery_soul
@@ -896,7 +917,7 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             expect(settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
         });
 
-        it('FM=0时直接结算（不进入reroll）', () => {
+        it('FM=0时也进入免费重投模式', () => {
             const state = createState({ attackerFM: 0 });
             let callCount = 0;
             const handler = getCustomActionHandler('pyro-blast-3-roll')!;
@@ -907,12 +928,13 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
                 },
             }));
 
-            // displayOnly 模式：有 BONUS_DICE_REROLL_REQUESTED 但标记为 displayOnly
             const rerollEvents = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
             expect(rerollEvents).toHaveLength(1);
-            expect((rerollEvents[0] as any).payload.settlement.displayOnly).toBe(true);
-            // 应该有直接结算的伤害/状态事件
-            expect(events.length).toBeGreaterThan(2); // 至少有 BONUS_DIE_ROLLED + displayOnly + 效果
+            const settlement = (rerollEvents[0] as any).payload.settlement;
+            expect(settlement.displayOnly).toBeUndefined();
+            expect(settlement.rerollCostAmount).toBe(0);
+            expect(settlement.maxRerollCount).toBe(1);
+            expect(settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
         });
     });
 });

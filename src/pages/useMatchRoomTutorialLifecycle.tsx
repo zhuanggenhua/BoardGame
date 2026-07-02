@@ -1,16 +1,206 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { useTutorial } from '../contexts/TutorialContext';
 import type { ModalEntry } from '../contexts/ModalStackContext';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
+import type { LocalMatchSnapshot } from '../engine/transport/localSession';
+import {
+    clearLocalMatchSnapshot,
+    readLocalMatchSnapshot,
+} from '../engine/transport/localSession';
 import { getTutorialCatalogEntry } from './useMatchRoomRuntimeSetup';
 
 let latestTutorialLifecycleMountId = 0;
+const TUTORIAL_COMPLETION_STORAGE_PREFIX = 'boardgame:tutorial-completion:v1';
+const TUTORIAL_PROGRESS_SEED_PREFIX = 'tutorial-progress:v1';
+const TUTORIAL_PROGRESS_STORAGE_CHANGED_EVENT = 'boardgame:tutorial-progress-storage-changed';
 
 type TutorialProgressSnapshot = {
     manifestId: string | null;
     stepId: string | null;
+};
+
+export type RestorableTutorialProgress = {
+    seed: string;
+    snapshot: LocalMatchSnapshot;
+    stepIndex: number;
+    stepId: string;
+    totalSteps: number;
+    savedAt: number;
+};
+
+const getTutorialCompletionStorageKey = (gameId: string) => `${TUTORIAL_COMPLETION_STORAGE_PREFIX}:${gameId}`;
+
+const encodeTutorialProgressPart = (value: string) => encodeURIComponent(value.trim());
+
+export const resolveTutorialProgressId = (
+    tutorialId: string | undefined,
+    manifestId: string | null | undefined,
+): string | null => {
+    const resolved = tutorialId ?? manifestId;
+    return resolved && resolved.trim().length > 0 ? resolved : null;
+};
+
+export const buildTutorialProgressSeed = (
+    gameId: string | undefined,
+    tutorialId: string | undefined,
+    manifestId: string | null | undefined,
+): string | null => {
+    const progressId = resolveTutorialProgressId(tutorialId, manifestId);
+    if (!gameId || !progressId) {
+        return null;
+    }
+
+    return [
+        TUTORIAL_PROGRESS_SEED_PREFIX,
+        encodeTutorialProgressPart(gameId),
+        encodeTutorialProgressPart(progressId),
+    ].join(':');
+};
+
+export const readRestorableTutorialProgress = (args: {
+    gameId?: string;
+    tutorialId?: string;
+    manifest: TutorialManifest | null;
+    numPlayers?: number;
+}): RestorableTutorialProgress | null => {
+    const { gameId, tutorialId, manifest, numPlayers } = args;
+    if (!gameId || !manifest || !numPlayers) {
+        return null;
+    }
+
+    const seed = buildTutorialProgressSeed(gameId, tutorialId, manifest.id);
+    if (!seed) {
+        return null;
+    }
+
+    const snapshot = readLocalMatchSnapshot({
+        gameId,
+        seed,
+        numPlayers,
+    });
+    const tutorial = snapshot?.state.sys.tutorial;
+    if (!snapshot || !tutorial?.active) {
+        return null;
+    }
+    if (tutorial.manifestId !== manifest.id) {
+        return null;
+    }
+    if (!Number.isInteger(tutorial.stepIndex) || tutorial.stepIndex <= 0) {
+        return null;
+    }
+
+    const step = manifest.steps[tutorial.stepIndex];
+    if (!step) {
+        return null;
+    }
+    if (tutorial.step?.id && tutorial.step.id !== step.id) {
+        return null;
+    }
+
+    return {
+        seed,
+        snapshot,
+        stepIndex: tutorial.stepIndex,
+        stepId: step.id,
+        totalSteps: manifest.steps.length,
+        savedAt: snapshot.savedAt,
+    };
+};
+
+export const clearTutorialProgress = (args: {
+    gameId?: string;
+    tutorialId?: string;
+    manifestId?: string | null;
+}): void => {
+    const { gameId, tutorialId, manifestId } = args;
+    if (!gameId) {
+        return;
+    }
+
+    const seed = buildTutorialProgressSeed(gameId, tutorialId, manifestId);
+    if (!seed) {
+        return;
+    }
+
+    clearLocalMatchSnapshot(gameId, seed);
+};
+
+export const notifyTutorialProgressStorageChanged = (): void => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.dispatchEvent(new Event(TUTORIAL_PROGRESS_STORAGE_CHANGED_EVENT));
+};
+
+export const readCompletedTutorialIds = (gameId: string): Set<string> => {
+    if (typeof window === 'undefined') {
+        return new Set();
+    }
+
+    try {
+        const raw = window.localStorage.getItem(getTutorialCompletionStorageKey(gameId));
+        const parsed: unknown = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
+    } catch {
+        return new Set();
+    }
+};
+
+const writeCompletedTutorialIds = (gameId: string, ids: Set<string>): void => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        window.localStorage.setItem(getTutorialCompletionStorageKey(gameId), JSON.stringify([...ids].sort()));
+    } catch {
+        // localStorage 可能被隐私模式或配额限制禁用；教程完成本身不应因此失败。
+    }
+};
+
+export const markTutorialChapterCompleted = (gameId: string, tutorialId: string): void => {
+    const completedIds = readCompletedTutorialIds(gameId);
+    completedIds.add(tutorialId);
+    writeCompletedTutorialIds(gameId, completedIds);
+};
+
+export const resolveCompletedTutorialCatalogId = (
+    tutorialCatalog: TutorialCollection | null | undefined,
+    tutorialId: string | undefined,
+): string | null => {
+    if (!tutorialCatalog || !tutorialId) {
+        return null;
+    }
+
+    const currentEntry = tutorialCatalog.tutorials[tutorialId];
+    if (!currentEntry) {
+        return null;
+    }
+
+    if (currentEntry.hiddenFromCatalog !== true && !currentEntry.nextTutorialId) {
+        return tutorialId;
+    }
+
+    for (const [candidateId, candidateEntry] of Object.entries(tutorialCatalog.tutorials)) {
+        if (candidateEntry.hiddenFromCatalog === true) {
+            continue;
+        }
+
+        const visitedIds = new Set<string>();
+        let nextId = candidateEntry.nextTutorialId;
+        while (nextId && !visitedIds.has(nextId)) {
+            if (nextId === tutorialId) {
+                return currentEntry.nextTutorialId ? null : candidateId;
+            }
+            visitedIds.add(nextId);
+            nextId = tutorialCatalog.tutorials[nextId]?.nextTutorialId;
+        }
+    }
+
+    return null;
 };
 
 type UseMatchRoomTutorialLifecycleArgs = {
@@ -21,6 +211,7 @@ type UseMatchRoomTutorialLifecycleArgs = {
     isGameNamespaceReady: boolean;
     gameImplReady: boolean;
     resolvedTutorialManifest: TutorialManifest | null;
+    tutorialProgressNumPlayers?: number;
     setPlayerID: (playerID: string) => void;
     navigate: NavigateFunction;
     openModal: (entry: Omit<ModalEntry, 'id'> & { id?: string }) => string;
@@ -36,6 +227,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         isGameNamespaceReady,
         gameImplReady,
         resolvedTutorialManifest,
+        tutorialProgressNumPlayers,
         setPlayerID,
         navigate,
         openModal,
@@ -50,6 +242,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     } = useTutorial();
 
     const tutorialStartedRef = useRef(false);
+    const [, setProgressStorageRevision] = useState(0);
     const lifecycleMountIdRef = useRef(0);
     const lastTutorialProgressRef = useRef<TutorialProgressSnapshot>({
         manifestId: null,
@@ -60,6 +253,25 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
     const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, tutorialId);
     const nextTutorialId = currentTutorialEntry?.nextTutorialId;
+    const completedTutorialCatalogId = resolveCompletedTutorialCatalogId(tutorialCatalog, tutorialId);
+    const restorableTutorialProgress = readRestorableTutorialProgress({
+        gameId,
+        tutorialId,
+        manifest: resolvedTutorialManifest,
+        numPlayers: tutorialProgressNumPlayers,
+    });
+    const shouldWaitForTutorialResumeDecision = Boolean(restorableTutorialProgress) && !isActive;
+
+    useEffect(() => {
+        const handleProgressStorageChanged = () => {
+            setProgressStorageRevision((revision) => revision + 1);
+        };
+
+        window.addEventListener(TUTORIAL_PROGRESS_STORAGE_CHANGED_EVENT, handleProgressStorageChanged);
+        return () => {
+            window.removeEventListener(TUTORIAL_PROGRESS_STORAGE_CHANGED_EVENT, handleProgressStorageChanged);
+        };
+    }, []);
 
     useEffect(() => {
         latestTutorialLifecycleMountId += 1;
@@ -79,6 +291,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!isGameNamespaceReady) return;
         // 等待游戏实现加载完成，否则 getGameImplementation 返回 null
         if (!gameImplReady) return;
+        if (shouldWaitForTutorialResumeDecision) return;
 
         // 只在未激活且未启动过时调用 startTutorial
         // 不依赖 tutorial.manifestId/steps.length，避免 startTutorial 的 setTutorial 触发循环
@@ -86,7 +299,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             tutorialStartedRef.current = true;
             startTutorial(resolvedTutorialManifest);
         }
-    }, [startTutorial, isTutorialRoute, isActive, isGameNamespaceReady, gameImplReady, resolvedTutorialManifest]);
+    }, [startTutorial, isTutorialRoute, isActive, isGameNamespaceReady, gameImplReady, resolvedTutorialManifest, shouldWaitForTutorialResumeDecision]);
 
     // gameImplReady 变为 true 时补触发一次教程启动
     // 场景：dev 模式首次加载时 i18n namespace 先于游戏实现加载完成，
@@ -96,18 +309,20 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!gameImplReady) return;
         if (!isTutorialRoute) return;
         if (!isGameNamespaceReady) return;
+        if (shouldWaitForTutorialResumeDecision) return;
         if (isActive || tutorialStartedRef.current) return;
         if (resolvedTutorialManifest) {
             tutorialStartedRef.current = true;
             startTutorial(resolvedTutorialManifest);
         }
-    }, [gameImplReady, isTutorialRoute, isGameNamespaceReady, isActive, startTutorial, resolvedTutorialManifest]);
+    }, [gameImplReady, isTutorialRoute, isGameNamespaceReady, shouldWaitForTutorialResumeDecision, isActive, startTutorial, resolvedTutorialManifest]);
 
     useEffect(() => {
         if (!isTutorialRoute) return;
         if (!isBoardMounted) return;
         if (!gameImplReady) return;
         if (!isGameNamespaceReady) return;
+        if (shouldWaitForTutorialResumeDecision) return;
         if (isActive) return;
         if (
             lastTutorialProgressRef.current.manifestId === currentManifestId
@@ -129,6 +344,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         isGameNamespaceReady,
         isTutorialRoute,
         resolvedTutorialManifest,
+        shouldWaitForTutorialResumeDecision,
         startTutorial,
     ]);
 
@@ -204,6 +420,16 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                     && lastTutorialProgressRef.current.manifestId === currentManifestId
                     && lastTutorialProgressRef.current.stepId === currentManifestLastStepId
                 ) {
+                    if (gameId) {
+                        clearTutorialProgress({
+                            gameId,
+                            tutorialId,
+                            manifestId: currentManifestId,
+                        });
+                    }
+                    if (gameId && completedTutorialCatalogId) {
+                        markTutorialChapterCompleted(gameId, completedTutorialCatalogId);
+                    }
                     if (gameId && nextTutorialId) {
                         navigate(`/play/${gameId}/tutorial/${nextTutorialId}`);
                         return;
@@ -213,7 +439,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             }, 600);
             return () => window.clearTimeout(timer);
         }
-    }, [currentManifestId, currentManifestLastStepId, gameId, isTutorialRoute, isActive, navigate, nextTutorialId]);
+    }, [
+        completedTutorialCatalogId,
+        currentManifestId,
+        currentManifestLastStepId,
+        gameId,
+        isTutorialRoute,
+        isActive,
+        navigate,
+        nextTutorialId,
+        tutorialId,
+    ]);
 
     useEffect(() => {
         // 关键约束：教程提示层只允许在 /tutorial 路由出现。

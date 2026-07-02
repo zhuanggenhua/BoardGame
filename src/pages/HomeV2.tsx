@@ -76,7 +76,7 @@ export const HomeV2 = () => {
         width: typeof window === 'undefined' ? 0 : window.innerWidth,
         height: typeof window === 'undefined' ? 0 : window.innerHeight,
     }));
-    const gamePopularityById = useGamePopularityRanking();
+    const gamePopularityRanking = useGamePopularityRanking();
     const { mostPopularGameId } = useLobbyStats();
 
     React.useEffect(() => {
@@ -318,7 +318,7 @@ export const HomeV2 = () => {
             <div className="absolute inset-0 z-10" data-scene-slot="overview_spread_body">
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
-                    popularityByGameId={gamePopularityById}
+                    popularityByGameId={gamePopularityRanking.popularityByGameId}
                     mostPopularGameId={mostPopularGameId}
                     activeCategory={category}
                     onCategoryChange={onCategorySelect}
@@ -337,7 +337,7 @@ export const HomeV2 = () => {
                 />
             </div>
         </div>
-    ), [continueMatch, gamePopularityById, handleContinueMatch, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
+    ), [continueMatch, gamePopularityRanking.popularityByGameId, handleContinueMatch, handleGameOpen, handleOpenAuthModal, mostPopularGameId, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
 
     const renderCurrentOverviewStage = React.useCallback(
         ({ includeTestId = true }: { includeTestId?: boolean } = {}) => renderOverviewStageForCategory(

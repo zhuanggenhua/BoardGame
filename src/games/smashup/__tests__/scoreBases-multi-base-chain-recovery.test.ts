@@ -1051,6 +1051,67 @@ describe('scoreBases 多基地计分链恢复', () => {
         expect(hiddenPrompt?.sourceId).toBe('ninja_hidden_ninja');
     });
 
+    it('同一 Me First 窗口里两张影舞者先按实例展示，打出一张后按牌面限制阻止第二张', () => {
+        const initialState = createPirateKingMeFirstHandResponseSetup();
+        initialState.core.players['0'].hand.push(makeCard('shinobi-hand-1', 'ninja_shinobi', 'minion', '0'));
+
+        const advance = runCommandWithFullSystems(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+
+        const scoringStart = startTortugaScoringSequence(advance.finalState, runCommandWithFullSystems, true);
+        const meFirstChoice = getActiveSimpleChoice(scoringStart.stateAfterPirateKing)!;
+        expect(meFirstChoice).toBeTruthy();
+        expect(meFirstChoice.sourceId).toBe('smashup_reaction_choose');
+
+        const firstOptions = getPromptOptions(meFirstChoice);
+        expect(firstOptions.some(
+            (option: any) => option.value?.kind === 'play_minion' && option.value?.cardUid === 'shinobi-hand-0',
+        )).toBe(true);
+        expect(firstOptions.some(
+            (option: any) => option.value?.kind === 'play_minion' && option.value?.cardUid === 'shinobi-hand-1',
+        )).toBe(true);
+
+        const firstShinobi = firstOptions.find(
+            (option: any) => option.value?.kind === 'play_minion' && option.value?.cardUid === 'shinobi-hand-0',
+        );
+        expect(firstShinobi).toBeDefined();
+
+        const playFirstShinobi = runCommandWithFullSystems(
+            scoringStart.stateAfterPirateKing,
+            respondCommand(firstShinobi!.id, meFirstChoice.playerId),
+        );
+        expect(playFirstShinobi.success).toBe(true);
+        expect(playFirstShinobi.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'shinobi-hand-0',
+                        defId: 'ninja_shinobi',
+                        baseIndex: 0,
+                        consumesNormalLimit: false,
+                    }),
+                }),
+            ]),
+        );
+        expect(playFirstShinobi.events.some(event =>
+            event.type === SU_EVENTS.SPECIAL_LIMIT_USED
+            && (event as any).payload?.abilityDefId === 'ninja_shinobi',
+        )).toBe(true);
+
+        const followupChoice = getActiveSimpleChoice(playFirstShinobi.finalState)!;
+        if (followupChoice?.sourceId === 'smashup_reaction_choose' && followupChoice.playerId === '0') {
+            const followupOptions = getPromptOptions(followupChoice);
+            expect(followupOptions.some(
+                (option: any) => option.value?.kind === 'play_minion' && option.value?.cardUid === 'shinobi-hand-1',
+            )).toBe(false);
+        }
+    });
+
     it('海盗王选择不移动时，afterScoring 窗口内打出无效特殊牌不应导致托尔图加重复计分', () => {
         const initialState = createPirateKingNoMoveAfterScoringResponseSetup();
 

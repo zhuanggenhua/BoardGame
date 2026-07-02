@@ -958,6 +958,13 @@ export const readCoreState = async (page: Page) => {
     return parsed?.core ?? parsed?.G?.core ?? parsed;
 };
 
+const readDebugStateRoot = async (page: Page) => {
+    await ensureDebugStateTab(page);
+    const raw = await page.getByTestId('debug-state-json').innerText();
+    const parsed = JSON.parse(raw);
+    return parsed?.G ?? parsed;
+};
+
 /**
  * 读取事件流（EventStream）
  */
@@ -1130,8 +1137,11 @@ export const maybePassResponse = async (page: Page): Promise<boolean> => {
 export const waitForPhase = async (page: Page, phase: string, timeout = 10000) => {
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
-        const state = await readCoreState(page);
-        if (state.phase === phase) return;
+        const state = await readDebugStateRoot(page);
+        const currentPhase = typeof state?.sys?.phase === 'string'
+            ? state.sys.phase
+            : (typeof state?.core?.phase === 'string' ? state.core.phase : undefined);
+        if (currentPhase === phase) return;
         await page.waitForTimeout(300);
     }
     throw new Error(`Timeout waiting for phase: ${phase}`);

@@ -21,6 +21,11 @@ type BoardDisplayDie = {
     definitionId?: string;
 };
 
+type LockedLabelLayout = {
+    x: number;
+    y: number;
+};
+
 const FALLBACK_BOARD_DICE_SLOTS = [
     { left: '16%', top: '69%', rotate: '-18deg', zIndex: 5 },
     { left: '34%', top: '31%', rotate: '14deg', zIndex: 2 },
@@ -50,9 +55,11 @@ export const BoardDiceBoxTray = ({
     const engineReadyRef = React.useRef(false);
     const dieSkinsRef = React.useRef<Array<DiceThroneDiceBoxSkin | null>>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
+    const previousDiceIdsRef = React.useRef<number[]>([]);
     const [engineVersion, setEngineVersion] = React.useState(0);
     const [projectedLayouts, setProjectedLayouts] = React.useState<Record<number, DiceBoxProjectedLayout>>({});
     const [motionSnapshots, setMotionSnapshots] = React.useState<Record<number, DiceBoxMotionSnapshot>>({});
+    const [lockedLabelLayouts, setLockedLabelLayouts] = React.useState<Record<number, LockedLabelLayout>>({});
     const [engineState, setEngineState] = React.useState<BoardDiceBoxState>('loading');
     const [diceSettled, setDiceSettled] = React.useState(false);
     const [skinsReady, setSkinsReady] = React.useState(false);
@@ -141,10 +148,17 @@ export const BoardDiceBoxTray = ({
         const update = () => {
             const nextLayouts: Record<number, DiceBoxProjectedLayout> = {};
             const nextSnapshots: Record<number, DiceBoxMotionSnapshot> = {};
+            const nextLockedLayouts: Record<number, LockedLabelLayout> = {};
             dice.forEach((die, index) => {
                 const layout = engine.getProjectedLayout(index, die.id);
                 if (layout) {
                     nextLayouts[die.id] = layout;
+                    if (die.isKept && !die.selected) {
+                        nextLockedLayouts[die.id] = {
+                            x: layout.x,
+                            y: layout.y + (layout.height * 0.58),
+                        };
+                    }
                 }
                 const snapshot = engine.getMotionSnapshot(index);
                 if (snapshot) {
@@ -153,6 +167,7 @@ export const BoardDiceBoxTray = ({
             });
             setProjectedLayouts(nextLayouts);
             setMotionSnapshots(nextSnapshots);
+            setLockedLabelLayouts(nextLockedLayouts);
         };
 
         let frameId = 0;
@@ -181,7 +196,12 @@ export const BoardDiceBoxTray = ({
 
         const run = async () => {
             if (dice.length === 0) {
-                engine.clear();
+                if (previousDiceIdsRef.current.length > 0) {
+                    await engine.removeDice(previousDiceIdsRef.current.map((_, index) => index).reverse());
+                    previousDiceIdsRef.current = [];
+                } else {
+                    engine.clear();
+                }
                 setProjectedLayouts({});
                 setDiceSettled(true);
                 return;
@@ -232,14 +252,31 @@ export const BoardDiceBoxTray = ({
             }
 
             if (!engine.hasDice(dice.length)) {
+                const previousIds = previousDiceIdsRef.current;
+                const removedIndices = previousIds
+                    .map((dieId, index) => (dice.some((die) => die.id === dieId) ? -1 : index))
+                    .filter((index) => index >= 0)
+                    .sort((left, right) => right - left);
+                if (previousIds.length > dice.length && removedIndices.length === previousIds.length - dice.length) {
+                    setDiceSettled(false);
+                    await engine.removeDice(removedIndices);
+                    engine.syncValues(values);
+                    previousDiceIdsRef.current = dice.map((die) => die.id);
+                    activeMotionRef.current = null;
+                    setDiceSettled(true);
+                    return;
+                }
+
                 setDiceSettled(false);
                 await engine.rollToValues(values);
+                previousDiceIdsRef.current = dice.map((die) => die.id);
                 activeMotionRef.current = null;
                 setDiceSettled(true);
                 return;
             }
 
             engine.syncValues(values);
+            previousDiceIdsRef.current = dice.map((die) => die.id);
             activeMotionRef.current = null;
             setDiceSettled(true);
         };
@@ -404,14 +441,31 @@ export const BoardDiceBoxTray = ({
                                 {!die.selected && (
                                     <span className="sr-only">{`die-${die.id}`}</span>
                                 )}
-                                {die.isKept && !die.selected && (
-                                    <span className="pointer-events-none absolute inset-x-[16%] bottom-[-6px] rounded bg-black/58 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/15">
-                                        {t('dice.locked')}
-                                    </span>
-                                )}
                             </button>
                         );
                     })}
+                    <div className="pointer-events-none absolute inset-0">
+                        {dice.map((die) => {
+                            if (!die.isKept || die.selected) return null;
+                            const labelLayout = lockedLabelLayouts[die.id];
+                            if (!labelLayout) return null;
+                            return (
+                                <div
+                                    key={`locked-label-${die.id}`}
+                                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                                    style={{
+                                        left: `${labelLayout.x}px`,
+                                        top: `${labelLayout.y}px`,
+                                        zIndex: 18,
+                                    }}
+                                >
+                                    <span className="block rounded bg-black/58 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/15">
+                                        {t('dice.locked')}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>

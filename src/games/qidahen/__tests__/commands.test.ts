@@ -50,6 +50,29 @@ function executeAndReduceCore(
 }
 
 describe('Qidahen Commands 交互宿主门禁', () => {
+    it('非当前座位不能执行当前势力的一级动作、轮盘和普通地图选择', () => {
+        const state: MatchState<QidahenCore> = {
+            core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+            sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+        };
+
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '1',
+            payload: { regionId: 'jinzhou' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: '1',
+            payload: { actionId: 'recruit' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            playerId: '1',
+            payload: { moveId: 'move-1-free' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+    });
+
     it('commands validate 不再对已迁移等待态双读 core 历史宿主', () => {
         const forbiddenFallbacks = [
             'state.core.handLimitDiscardSelection',
@@ -281,9 +304,15 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             payload: { actionId: 'drive-tiger' },
         }).state;
 
-        const validation = QidahenDomain.validate(state, {
+        expect(QidahenDomain.validate(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT,
             playerId: '0',
+            payload: { choiceId: 'accept' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+
+        const validation = QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT,
+            playerId: '2',
             payload: { choiceId: 'accept' },
         });
 
@@ -291,14 +320,33 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
         const reduced = executeAndReduceCore(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT,
-            playerId: '0',
+            playerId: '2',
             payload: { choiceId: 'accept' },
         });
 
         expect(getQidahenDriveTigerConsentSelectionForCore(reduced)).toBeNull();
         expect(reduced.turnPhase).toBe('dispatch-targeting');
         expect(reduced.wheelDispatchProgress).toBeNull();
-        expect(getQidahenCurrentWheelDispatchSelectionForCore(reduced)?.attackerFactionId).toBe('jin');
+        const dispatchSelection = getQidahenCurrentWheelDispatchSelectionForCore(reduced);
+        const firstTargetId = dispatchSelection?.candidates[0]?.targetRuntimeRegionId;
+        expect(dispatchSelection?.attackerFactionId).toBe('jin');
+        expect(firstTargetId).toBeTruthy();
+
+        const targetingState = syncQidahenRuntimeInteractionState({
+            ...state,
+            core: reduced,
+        });
+        expect(targetingState.sys.interaction.current?.playerId).toBe('0');
+        expect(QidahenDomain.validate(targetingState, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '2',
+            payload: { regionId: firstTargetId! },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+        expect(QidahenDomain.validate(targetingState, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '0',
+            payload: { regionId: firstTargetId! },
+        })).toEqual({ valid: true });
     });
 
     it('待结算与战后命令校验现在可以只依赖 interaction current，而不是 core 历史字段', () => {
@@ -353,6 +401,18 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             },
         }).state;
 
+        expect(QidahenDomain.validate({
+            ...state,
+            core: {
+                ...state.core,
+                pendingTargetAction: null,
+            },
+        }, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '1',
+            payload: {},
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+
         const pendingValidation = QidahenDomain.validate({
             ...state,
             core: {
@@ -374,6 +434,18 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 optionId: 'rear-guard',
             },
         }).state;
+
+        expect(QidahenDomain.validate({
+            ...state,
+            core: {
+                ...state.core,
+                postBattleSelection: null,
+            },
+        }, {
+            type: QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION,
+            playerId: '1',
+            payload: { choiceId: 'occupy' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
 
         const postBattleValidation = QidahenDomain.validate({
             ...state,
@@ -451,6 +523,36 @@ describe('Qidahen Commands 交互宿主门禁', () => {
 
         expect(reduced.currentYearIndex).toBeGreaterThan(state.core.currentYearIndex);
         expect(reduced.turnPhase).not.toBe('season-resolution');
+    });
+
+    it('新年防线维护即使由非大明轮盘触发，也只能由大明座位处理', () => {
+        let state: MatchState<QidahenCore> = {
+            core: {
+                ...QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+                actionWheelPosition: 'wheel-midyear',
+                playerIds: ['2', '1', '0'],
+                currentPlayer: '2',
+            },
+            sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+        };
+
+        state = applyPipeline(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            playerId: '2',
+            payload: { moveId: 'move-1-free' },
+        }).state;
+
+        expect(state.sys.interaction.current?.playerId).toBe('0');
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE,
+            playerId: '2',
+            payload: { choiceId: 'skip-all' },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE,
+            playerId: '0',
+            payload: { choiceId: 'skip-all' },
+        })).toEqual({ valid: true });
     });
 
     it('王化贞内部调度命令校验现在可以只依赖 interaction current，而不是 core.internalDispatchSelection', () => {

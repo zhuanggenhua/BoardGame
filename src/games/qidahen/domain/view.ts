@@ -39,6 +39,9 @@ export function playerView(state: QidahenCore, viewingPlayerId: PlayerId): Parti
     return {
         handCards: visibleHandCards,
         selectedPaymentCardIds: state.selectedPaymentCardIds.filter((cardId) => visibleHandCardIdSet.has(cardId)),
+        selectedHandActionCardId: state.selectedHandActionCardId && visibleHandCardIdSet.has(state.selectedHandActionCardId)
+            ? state.selectedHandActionCardId
+            : null,
         handLimitDiscardSelection: maskHandLimitDiscardSelection(state.handLimitDiscardSelection, viewingFactionId),
     };
 }

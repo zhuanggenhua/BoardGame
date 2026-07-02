@@ -10,6 +10,7 @@ describe('applyRuntimeViewportCssVars', () => {
         style.removeProperty('--runtime-viewport-width');
         style.removeProperty('--runtime-viewport-height');
         style.removeProperty('--mobile-board-shell-design-width');
+        style.removeProperty('--mobile-board-shell-design-height');
         style.removeProperty('--mobile-board-shell-scale');
         style.removeProperty('--mobile-board-shell-inverse-scale');
         style.removeProperty('--mobile-board-shell-logical-height');
@@ -30,6 +31,7 @@ describe('applyRuntimeViewportCssVars', () => {
         applyRuntimeViewportCssVars({ width: 936, height: 432 });
 
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1160px');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-height')).toBe('');
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.806897');
     });
 
@@ -43,9 +45,10 @@ describe('applyRuntimeViewportCssVars', () => {
 
         applyRuntimeViewportCssVars({ width: 936, height: 432 });
 
-        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1520px');
-        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.540000');
-        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('57.600px');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1920px');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-height')).toBe('1080px');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.400000');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('84.000px');
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-y')).toBe('0.000px');
     });
 });

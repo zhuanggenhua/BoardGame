@@ -294,6 +294,7 @@ function resolveResponsePassFallback(context: ReturnType<typeof buildAiDecisionC
     if (context.interaction) return null;
     const responseWindow = context.responseWindow;
     if (!responseWindow || !Array.isArray(responseWindow.responderQueue)) return null;
+    if (responseWindow.pendingInteractionId) return null;
     const responderIndex = typeof responseWindow.currentResponderIndex === 'number'
         ? responseWindow.currentResponderIndex
         : 0;

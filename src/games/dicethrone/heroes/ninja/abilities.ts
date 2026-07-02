@@ -5,8 +5,8 @@ import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../../domain/ids';
 const FACE = NINJA_DICE_FACE_IDS;
 
 export const NINJA_SFX_SLASH = 'combat.general.forged_in_fury_vol_1.katana.katana_whoosh_type_a.dsgnwhsh_katana_whoosh_type_a_03_krst';
-export const NINJA_SFX_POISON = 'magic.general.simple_magic_sound_fx_pack_vol.dark.dark_magic_cast';
-export const NINJA_SFX_SMOKE = 'fantasy.medieval_fantasy_sound_fx_pack_vol.magic.poof';
+export const NINJA_SFX_POISON = 'magic.poison.26.poison_spell_01';
+export const NINJA_SFX_SMOKE = 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_shadow_wail_001';
 export const NINJA_SFX_ULTIMATE = 'combat.general.forged_in_fury_vol_1.katana.double_katana_whoosh.dsgnwhsh_double_katana_whoosh_02_krst';
 
 const damage = (value: number, description: string, opts?: { timing?: EffectTiming; unblockable?: boolean; damageScope?: 'attack' | 'direct' }): AbilityEffect => ({

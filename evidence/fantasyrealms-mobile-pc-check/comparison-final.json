@@ -1,0 +1,228 @@
+{
+  "generatedAt": "2026-07-01T16:01:21.864Z",
+  "files": {
+    "pc-1920x1080-final": {
+      "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\pc-1920x1080-final.png",
+      "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\pc-1920x1080-final.json",
+      "small": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fr-small\\pc-1920x1080-final.jpg"
+    },
+    "mobile-936x432-final": {
+      "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-936x432-final.png",
+      "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-936x432-final.json",
+      "small": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fr-small\\mobile-936x432-final.jpg"
+    },
+    "mobile-844x390-final": {
+      "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-844x390-final.png",
+      "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-844x390-final.json",
+      "small": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fr-small\\mobile-844x390-final.jpg"
+    }
+  },
+  "checks": {
+    "pc-1920x1080-final": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 95,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    },
+    "mobile-936x432-final": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 41.194,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    },
+    "mobile-844x390-final": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 37.189,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    }
+  },
+  "relativeToOwnTable": {
+    "pc-1920x1080-final": {
+      "topbar": {
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 0.1243,
+        "cx": 0.5,
+        "cy": 0.0621
+      },
+      "score": {
+        "x": 0.9174,
+        "y": 0.0075,
+        "w": 0.0699,
+        "h": 0.0395,
+        "cx": 0.9523,
+        "cy": 0.0273
+      },
+      "deck": {
+        "x": 0.0127,
+        "y": 0,
+        "w": 0.0508,
+        "h": 0.1262,
+        "cx": 0.0381,
+        "cy": 0.0631
+      },
+      "center": {
+        "x": 0,
+        "y": 0.1243,
+        "w": 1,
+        "h": 0.6437,
+        "cx": 0.5,
+        "cy": 0.4461
+      },
+      "hand": {
+        "x": 0,
+        "y": 0.768,
+        "w": 1,
+        "h": 0.2321,
+        "cx": 0.5,
+        "cy": 0.884
+      },
+      "handRow": {
+        "x": 0.1001,
+        "y": 0.768,
+        "w": 0.7998,
+        "h": 0.2302,
+        "cx": 0.5,
+        "cy": 0.883
+      },
+      "action": {
+        "x": 0.8496,
+        "y": 0.6817,
+        "w": 0.1186,
+        "h": 0.0584,
+        "cx": 0.9089,
+        "cy": 0.7109
+      }
+    },
+    "mobile-936x432-final": {
+      "topbar": {
+        "x": 0,
+        "y": 0,
+        "w": 1.0043,
+        "h": 0.1269,
+        "cx": 0.5021,
+        "cy": 0.0635
+      },
+      "score": {
+        "x": 0.9213,
+        "y": 0.0077,
+        "w": 0.0702,
+        "h": 0.0404,
+        "cx": 0.9564,
+        "cy": 0.0279
+      },
+      "deck": {
+        "x": 0.0128,
+        "y": 0,
+        "w": 0.0511,
+        "h": 0.1288,
+        "cx": 0.0383,
+        "cy": 0.0644
+      },
+      "center": {
+        "x": 0,
+        "y": 0.1269,
+        "w": 1.0043,
+        "h": 0.6451,
+        "cx": 0.5021,
+        "cy": 0.4495
+      },
+      "hand": {
+        "x": 0,
+        "y": 0.7721,
+        "w": 1.0043,
+        "h": 0.2279,
+        "cx": 0.5021,
+        "cy": 0.886
+      },
+      "handRow": {
+        "x": 0.1005,
+        "y": 0.7721,
+        "w": 0.8032,
+        "h": 0.226,
+        "cx": 0.5021,
+        "cy": 0.8851
+      },
+      "action": {
+        "x": 0.8489,
+        "y": 0.675,
+        "w": 0.1191,
+        "h": 0.0596,
+        "cx": 0.9085,
+        "cy": 0.7048
+      }
+    },
+    "mobile-844x390-final": {
+      "topbar": {
+        "x": 0,
+        "y": 0,
+        "w": 1.0043,
+        "h": 0.1269,
+        "cx": 0.5021,
+        "cy": 0.0635
+      },
+      "score": {
+        "x": 0.9213,
+        "y": 0.0077,
+        "w": 0.0702,
+        "h": 0.0404,
+        "cx": 0.9564,
+        "cy": 0.0279
+      },
+      "deck": {
+        "x": 0.0128,
+        "y": 0,
+        "w": 0.0511,
+        "h": 0.1288,
+        "cx": 0.0383,
+        "cy": 0.0644
+      },
+      "center": {
+        "x": 0,
+        "y": 0.1269,
+        "w": 1.0043,
+        "h": 0.6413,
+        "cx": 0.5021,
+        "cy": 0.4476
+      },
+      "hand": {
+        "x": 0,
+        "y": 0.7682,
+        "w": 1.0043,
+        "h": 0.2318,
+        "cx": 0.5021,
+        "cy": 0.8841
+      },
+      "handRow": {
+        "x": 0.1005,
+        "y": 0.7682,
+        "w": 0.8032,
+        "h": 0.2299,
+        "cx": 0.5021,
+        "cy": 0.8831
+      },
+      "action": {
+        "x": 0.8489,
+        "y": 0.675,
+        "w": 0.1191,
+        "h": 0.0596,
+        "cx": 0.9085,
+        "cy": 0.7048
+      }
+    }
+  }
+}

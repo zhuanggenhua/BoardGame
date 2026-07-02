@@ -13,8 +13,75 @@ import {
     playFirstScenarioToTraitorVictory,
 } from '../testing/firstScenarioTestUtils';
 import { BETRAYAL_COMMANDS, BetrayalDomain } from '../game';
+import { BETRAYAL_DISCOVERY_POOLS, BETRAYAL_SCENARIO_CONFIGS } from '../scenarioConfig';
+import { resolvePossessionAtlasVisual } from '../possessionAtlas';
+import { BETRAYAL_ROOM_TILE_VISUALS } from '../roomAtlas';
 
 describe('Betrayal first scenario runtime', () => {
+    it('正式局内探索会消费 setup 生成的当前局发现池顺序，而不是固定索引序列', () => {
+        const reverseRandom = {
+            random: () => 0.42,
+            d: (max: number) => Math.max(1, Math.min(max, 1)),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array].reverse(),
+        };
+        let core = BetrayalDomain.setup(['0', '1', '2'], reverseRandom);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', { scenarioId: 'first-scenario' });
+
+        expect(core.drawOrder).toEqual(['omen', 'item', 'event']);
+        const expectedFirstUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[0]!;
+        const expectedNextUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[1]!;
+        expect(core.roomDiscoveryOrderByFloor.upper[0]?.name).toBe(expectedFirstUpperRoom.name);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}, 100, createBetrayalScriptedRandom(1));
+
+        expect(core.latestDiscovery?.kind).toBe('omen');
+        expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe(expectedNextUpperRoom.name);
+        expect(core.currentExplorer.inventory.at(-1)?.name).toBe('匕首');
+    });
+
+    it('正式发现池只使用已确认正面素材和可渲染房间图集，不再回落到最小代表池', () => {
+        const itemIds = BETRAYAL_DISCOVERY_POOLS.possessions.item.map((card) => card.id);
+        const omenIds = BETRAYAL_DISCOVERY_POOLS.possessions.omen.map((card) => card.id);
+        const roomVisualIds = Object.values(BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor)
+            .flat()
+            .map((room) => room.visualId);
+
+        const allDiscoveryRooms = Object.values(BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor).flat();
+
+        expect(itemIds).toHaveLength(11);
+        expect(omenIds).toEqual([
+            'omen-book',
+            'dog',
+            'mask',
+            'skull',
+            'holy-symbol',
+            'armor',
+            'idol',
+            'ring',
+            'dagger',
+        ]);
+        expect(new Set([...itemIds, ...omenIds]).size).toBe(itemIds.length + omenIds.length);
+        expect(allDiscoveryRooms).toHaveLength(43);
+        expect(allDiscoveryRooms.every((room) => room.doorways.length > 0)).toBe(true);
+
+        for (const card of [
+            ...BETRAYAL_DISCOVERY_POOLS.possessions.item,
+            ...BETRAYAL_DISCOVERY_POOLS.possessions.omen,
+            ...Object.values(BETRAYAL_SCENARIO_CONFIGS['first-scenario'].startingInventoryByExplorerId).flat(),
+        ]) {
+            expect(resolvePossessionAtlasVisual(card)).not.toBeNull();
+        }
+        for (const visualId of roomVisualIds) {
+            expect(Object.prototype.hasOwnProperty.call(BETRAYAL_ROOM_TILE_VISUALS, visualId)).toBe(true);
+        }
+    });
+
     it('能在第三次恶兆且 haunt roll 达标后进入真实 haunt', () => {
         const core = createFirstScenarioHauntCore();
 
@@ -25,6 +92,50 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Splash of Crimson');
         expect(core.currentPlayer).toBe('0');
         expect(core.activityLog[0]?.text).toContain('Crimson Jack Returns');
+    });
+
+    it('本回合新获得的物品或预兆不能立刻使用，直到下一次回合开始才可用', () => {
+        const fixedItemDrawRandom = {
+            random: () => 0.42,
+            d: (max: number) => Math.max(1, Math.min(max, 1)),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array].reverse(),
+        };
+        let core = BetrayalDomain.setup(['0', '1', '2'], fixedItemDrawRandom);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', { scenarioId: 'first-scenario' });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}, 100, createBetrayalScriptedRandom(1));
+
+        const newCardId = core.currentExplorer.inventory.at(-1)?.id;
+        expect(newCardId).toBeTruthy();
+        expect(core.latestDiscovery?.summary).toBe('已加入持有区');
+        expect(core.turnStartInventoryCardIds).not.toContain(newCardId);
+
+        const immediateUseValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: newCardId }),
+        );
+        expect(immediateUseValidation.valid).toBe(false);
+        if (!immediateUseValidation.valid) {
+            expect(immediateUseValidation.error).toContain('回合已经结束');
+        }
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+
+        expect(core.currentPlayer).toBe('0');
+        expect(core.turnStartInventoryCardIds).toContain(newCardId);
+        const nextTurnUseValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: newCardId }),
+        );
+        expect(nextTurnUseValidation.valid).toBe(true);
     });
 
     it('首剧本起跑位就是真实运行时，不再保留手工结算口', () => {
@@ -151,6 +262,68 @@ describe('Betrayal first scenario runtime', () => {
         if (roomExplored?.type === 'ROOM_EXPLORED') {
             expect(roomExplored.payload.hauntTriggered).toBe(true);
         }
+    });
+
+    it('翻开未知房间时会把新房间门位旋转到当前开放门位，不再靠黄色连接补丁伪造门', () => {
+        const reverseRandom = {
+            random: () => 0.42,
+            d: (max: number) => Math.max(1, Math.min(max, 1)),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array].reverse(),
+        };
+        let core = BetrayalDomain.setup(['0', '1', '2'], reverseRandom);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', { scenarioId: 'first-scenario' });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' }, 100, createBetrayalScriptedRandom(1));
+
+        const discoveredRoom = core.rooms.find((room) => room.id === 'upper-north');
+        expect(discoveredRoom?.entryRoomId).toBe('upper-landing');
+        expect(discoveredRoom?.entryEdge).toBe('north');
+        expect(discoveredRoom?.doorways.some((doorway) => (
+            doorway.edge === 'south' && doorway.connectsToRoomId === 'upper-landing'
+        ))).toBe(true);
+    });
+
+    it('正式探索会从真实开放门位动态生成下一批未知房间，并在探索后结束当前回合', () => {
+        let core = createStartedFirstScenarioCore();
+
+        expect(core.rooms.some((room) => room.id === 'upper-north' && room.state === 'unexplored')).toBe(true);
+        expect(core.rooms.some((room) => room.id === 'frontier-upper-north-east')).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' }, 100, createBetrayalScriptedRandom(1));
+
+        const discoveredRoom = core.rooms.find((room) => room.id === 'upper-north');
+        const dynamicFrontier = core.rooms.find((room) => room.id === 'frontier-upper-north-west');
+        expect(discoveredRoom?.state).toBe('discovered');
+        expect(dynamicFrontier?.state).toBe('unexplored');
+        expect(dynamicFrontier?.doorways).toEqual([
+            { edge: 'east', connectsToRoomId: 'upper-north' },
+        ]);
+        expect(discoveredRoom?.doorways.some((doorway) => (
+            doorway.edge === 'west' && doorway.connectsToRoomId === 'frontier-upper-north-west'
+        ))).toBe(true);
+        expect(core.movesRemaining).toBe(0);
+        expect(core.turnEndedByDiscovery).toBe(true);
+
+        const moveAfterDiscovery = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'frontier-upper-north-west' }),
+        );
+        expect(moveAfterDiscovery.valid).toBe(false);
+        if (!moveAfterDiscovery.valid) {
+            expect(moveAfterDiscovery.error).toContain('回合已经结束');
+        }
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        expect(core.turnEndedByDiscovery).toBe(false);
     });
 
     it('Stalk the Prey 只能在未攻击且本回合未用过时发动一次，并且不消耗普通移动', () => {

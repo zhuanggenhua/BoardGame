@@ -122,27 +122,20 @@ const resolveQidahenSelectedActionSelectionFollowUpResolution = (
     dependencies: QidahenSelectedActionFollowUpDependencies,
 ): QidahenSelectedActionSelectionFollowUpResolutionResult => {
     const recruitSelection = actionId === 'recruit'
-        ? buildRecruitSelection(state, state.selectedRegionId, currentFactionId)
+        ? buildRecruitSelection(state, baseSelectedRegionId, currentFactionId)
         : null;
     const maShiTradeSelection = actionId === 'ma-shi-trade'
-        ? buildMaShiTradeSelection(state, state.selectedRegionId)
+        ? buildMaShiTradeSelection(state, baseSelectedRegionId)
         : null;
     const khanEdictSelection = actionId === 'khan-edict'
-        ? buildKhanEdictSelection(state, currentFactionId, state.selectedRegionId)
+        ? buildKhanEdictSelection(state, currentFactionId, baseSelectedRegionId)
         : null;
     const driveTigerDispatchSelection = actionId === 'drive-tiger'
-        ? buildDriveTigerDispatchSelection(state, currentFactionId, state.selectedRegionId)
+        ? buildDriveTigerDispatchSelection(state, currentFactionId, baseSelectedRegionId)
         : null;
 
-    let nextSelectedRegionId = baseSelectedRegionId;
     let nextLastSeasonSummary = baseLastSeasonSummary;
 
-    if (recruitSelection?.targetRegionId) {
-        nextSelectedRegionId = recruitSelection.targetRegionId;
-    }
-    if (maShiTradeSelection?.targetRegionId) {
-        nextSelectedRegionId = maShiTradeSelection.targetRegionId;
-    }
     if (actionId === 'recruit' && !recruitSelection) {
         nextLastSeasonSummary = dependencies.buildSeasonSummary('征召军队', timestamp, [
             '当前没有可执行征召军队的己方控制区域。',
@@ -153,12 +146,6 @@ const resolveQidahenSelectedActionSelectionFollowUpResolution = (
             '当前没有可执行马市贸易的大明控制区域。',
         ]);
     }
-    if (khanEdictSelection?.sourceRegionId) {
-        nextSelectedRegionId = khanEdictSelection.sourceRegionId;
-    }
-    if (actionId === 'drive-tiger' && driveTigerDispatchSelection?.sourceRegionId) {
-        nextSelectedRegionId = driveTigerDispatchSelection.sourceRegionId;
-    }
 
     return {
         driveTigerDispatchSelection,
@@ -166,7 +153,7 @@ const resolveQidahenSelectedActionSelectionFollowUpResolution = (
         lastSeasonSummary: nextLastSeasonSummary,
         maShiTradeSelection,
         recruitSelection,
-        selectedRegionId: nextSelectedRegionId,
+        selectedRegionId: baseSelectedRegionId,
     };
 };
 
@@ -176,20 +163,20 @@ const resolveQidahenSelectedActionPendingFollowUpResolution = (
     actionId: string,
     baseSelectedRegionId: string,
 ): QidahenSelectedActionPendingFollowUpResolutionResult => {
-    const selectedRegion = state.regions.find((region) => region.id === state.selectedRegionId);
+    const selectedRegion = state.regions.find((region) => region.id === baseSelectedRegionId);
     const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')
         ? buildPendingTargetAction(
             state,
             currentFactionId,
             actionId,
             selectedRegion,
-            state.selectedRegionId,
+            baseSelectedRegionId,
         )
         : null;
 
     return {
         pendingTargetAction,
-        selectedRegionId: pendingTargetAction?.targetRuntimeRegionId ?? baseSelectedRegionId,
+        selectedRegionId: baseSelectedRegionId,
     };
 };
 
@@ -226,8 +213,7 @@ export const resolveQidahenSelectedActionFollowUp = (
         maShiTradeSelection: selectionResolution.maShiTradeSelection,
         pendingTargetAction: pendingResolution.pendingTargetAction,
         recruitSelection: selectionResolution.recruitSelection,
-        selectedRegionId: pendingResolution.pendingTargetAction?.targetRuntimeRegionId
-            ?? pendingResolution.selectedRegionId,
+        selectedRegionId: pendingResolution.selectedRegionId,
     };
     const actionLogText = buildQidahenSelectedActionFollowUpLogText(
         state,

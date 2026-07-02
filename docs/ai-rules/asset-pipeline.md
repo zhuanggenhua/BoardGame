@@ -24,7 +24,7 @@ public/assets/
 │   │               └── foo.webp # 压缩后的图片（必需，运行时使用）
 │   └── en/                      # 英文资源（未来）
 │       └── <gameId>/
-├── atlas-configs/               # 图集配置文件（与语言无关）
+├── atlas-configs/               # 语言无关的图集配置文件
 │   └── <gameId>/
 │       └── xxx.atlas.json       # 图集配置（rows/cols 或精确坐标）
 └── <gameId>/                    # 原始资源位置（过渡期保留，通过符号链接被 i18n/zh-CN/ 引用）
@@ -36,8 +36,15 @@ public/assets/
 
 **关键规则**：
 - **图片文件**：必须在 `i18n/<locale>/<gameId>/<分类>/compressed/` 目录（需要国际化）
-- **图集配置 JSON**：必须在 `atlas-configs/<gameId>/` 目录（与语言无关，不需要国际化）
+- **语言无关的图集配置 JSON**：放在 `atlas-configs/<gameId>/` 目录，例如通用 `xxx.atlas.json`
+- **运行时本地 JSON 配置**：如果代码明确通过本地资源链读取，并且文件本身跟随语言/游戏/角色路径组织，则保留在 `i18n/<locale>/<gameId>/...`。这类文件默认不走 R2 正式媒体上传链，属于本地包内配置资源
 - **原始图片**：可选，仅在需要重新压缩时使用。如果只有 WebP 文件，可以直接放在 `compressed/` 目录
+
+**DiceThrone 当前例外（必须认现状）**：
+- `status-icons-atlas.json` 属于 DiceThrone 运行时本地 JSON 配置，不属于 `atlas-configs/<gameId>/` 那类语言无关图集配置
+- 它的当前落点是 `public/assets/i18n/<locale>/dicethrone/images/<hero>/status-icons-atlas.json`
+- 运行时代码通过本地资源路径读取它，再从其中解析出 `status-icons-atlas.webp` 的图集图片路径
+- 因此，排查 DiceThrone 状态图标问题时，不能把 `status-icons-atlas.json` 是否存在于 R2 当成默认真相源；先看本地包、`/assets/i18n/...` 和 dist 保留规则
 
 **当前状态（过渡期）**：
 - 物理文件仍在 `public/assets/<gameId>/`
@@ -180,14 +187,14 @@ style={{
 **核心原则**：精灵图 JSON 中的 `meta.image` 字段包含扩展名（如 `"status-icons-atlas.png"`），但传递给 `buildLocalizedImageSet` 的路径必须**去掉扩展名**。
 
 **原因**：`buildLocalizedImageSet` 内部会自动：
-1. 调用 `getLocalizedAssetPath` 添加 `i18n/{locale}/` 前缀
+1. 调用语言化图片路径解析，添加 `i18n/{locale}/` 前缀
 2. 调用 `buildOptimizedImageSet` 生成 `compressed/*.webp` 的 URL
 
 **正确流程**：
 ```typescript
-// 1. 加载 JSON（路径包含 .json 扩展名）
+// 1. 加载本地 JSON（路径包含 .json 扩展名）
 const jsonPath = 'dicethrone/images/paladin/status-icons-atlas.json';
-const url = getLocalizedAssetPath(jsonPath);
+const url = getLocalizedLocalAssetPath(jsonPath, locale);
 const data = await fetch(url).then(r => r.json());
 
 // 2. 提取图片路径（去掉 .png 扩展名）
@@ -253,7 +260,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 5. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
 6. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
 7. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
-8. ✅ **图集配置 JSON 放入 `public/assets/atlas-configs/<gameId>/`**（不要放在 `i18n/` 目录）
+8. ✅ 先判断 JSON 是**语言无关图集配置**还是**运行时本地 JSON 配置**：前者放 `public/assets/atlas-configs/<gameId>/`，后者按实际读取链保留在 `public/assets/i18n/<locale>/<gameId>/...`
 9. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
 10. ✅ **确认路径中不含 `compressed/` 子目录**
 11. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`

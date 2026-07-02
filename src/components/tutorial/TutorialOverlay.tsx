@@ -39,6 +39,29 @@ const getPlacementAxisClearance = (
     }
 };
 
+type TutorialTooltipStyles = {
+    style: React.CSSProperties,
+    arrowClass: string,
+    placement: string,
+};
+
+const areStyleObjectsEqual = (
+    left: React.CSSProperties,
+    right: React.CSSProperties,
+) => {
+    const leftKeys = Object.keys(left) as Array<keyof React.CSSProperties>;
+    const rightKeys = Object.keys(right) as Array<keyof React.CSSProperties>;
+    if (leftKeys.length !== rightKeys.length) return false;
+    return leftKeys.every((key) => left[key] === right[key]);
+};
+
+const areTooltipStylesEqual = (
+    left: TutorialTooltipStyles,
+    right: TutorialTooltipStyles,
+) => left.arrowClass === right.arrowClass
+    && left.placement === right.placement
+    && areStyleObjectsEqual(left.style, right.style);
+
 const getCompactTutorialPanelMetrics = (
     viewportWidth: number,
     viewportHeight: number,
@@ -98,11 +121,7 @@ export const TutorialOverlay: React.FC = () => {
     const tooltipRef = useRef<HTMLDivElement>(null);
     const viewport = useRuntimeViewport();
 
-    const [tooltipStyles, setTooltipStyles] = useState<{
-        style: React.CSSProperties,
-        arrowClass: string,
-        placement: string,
-    }>({ style: {}, arrowClass: '', placement: 'hidden' });
+    const [tooltipStyles, setTooltipStyles] = useState<TutorialTooltipStyles>({ style: {}, arrowClass: '', placement: 'hidden' });
     const isMobileViewport = viewport.width > 0 && viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH;
     const isCompactTutorialLayout = isMobileViewport && viewport.width > viewport.height;
     const visibleTargetRect = positionedStepId === currentStep?.id ? targetRect : null;
@@ -136,6 +155,11 @@ export const TutorialOverlay: React.FC = () => {
 
         let resizeObserver: ResizeObserver | null = null;
         let rafId: number | null = null;
+
+        const commitTooltipLayout = (nextStyles: TutorialTooltipStyles) => {
+            setTooltipStyles((prev) => areTooltipStylesEqual(prev, nextStyles) ? prev : nextStyles);
+            setPositionedStepId((prev) => prev === stepId ? prev : stepId);
+        };
 
         /** 从 DOMRect 直接算出提示框位置，和 targetRect 一起原子更新 */
         const applyLayout = (rect: DOMRect | null) => {
@@ -321,17 +345,16 @@ export const TutorialOverlay: React.FC = () => {
                     });
                 const chosenCompactCandidate = rankedCompactCandidates[0]?.candidate ?? compactCandidates[0];
 
-                setTooltipStyles({
+                commitTooltipLayout({
                     style: chosenCompactCandidate.style,
                     arrowClass: 'hidden',
                     placement: chosenCompactCandidate.placement,
                 });
-                setPositionedStepId(stepId);
                 return;
             }
 
             if (!rect || isCenterPosition) {
-                setTooltipStyles({
+                commitTooltipLayout({
                     style: {
                         position: 'fixed',
                         bottom: safeArea.bottom + 24,
@@ -343,7 +366,6 @@ export const TutorialOverlay: React.FC = () => {
                     arrowClass: 'hidden',
                     placement: isCenterPosition ? 'center' : 'floating',
                 });
-                setPositionedStepId(stepId);
                 return;
             }
 
@@ -425,12 +447,11 @@ export const TutorialOverlay: React.FC = () => {
             const topValue = typeof styles.top === 'number' ? styles.top : minTop;
             styles.maxHeight = viewportHeight - topValue - safeArea.bottom - safeMargin;
 
-            setTooltipStyles({
+            commitTooltipLayout({
                 style: styles,
                 arrowClass: `${arrowBase} ${arrow}`,
                 placement: pos,
             });
-            setPositionedStepId(stepId);
         };
 
         const updateLayout = () => {
@@ -491,6 +512,12 @@ export const TutorialOverlay: React.FC = () => {
 
     // 在智能回合期间不显示遮罩层 - 让智能方静默移动
     if (currentStep.aiActions && currentStep.aiActions.length > 0) {
+        return null;
+    }
+
+    // 依赖高亮目标的步骤必须等目标真实出现在 DOM 后再显示，
+    // 否则提示卡会提前盖在 loading 或未完成装载的页面上。
+    if (currentStep.highlightTarget && !visibleTargetRect) {
         return null;
     }
 

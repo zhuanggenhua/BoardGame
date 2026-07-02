@@ -1154,18 +1154,18 @@ test.describe('FantasyRealms live flow', () => {
 
             const drawStartPath = getEvidenceScreenshotPath(testInfo, 'motion-draw-start');
             await mkdir(dirname(drawStartPath), { recursive: true });
-            const drawStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-hand-draw .fr-card');
+            const drawStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-hand-draw');
             await page.screenshot({ path: drawStartPath, fullPage: false });
 
             await page.waitForTimeout(220);
             const drawMidPath = getEvidenceScreenshotPath(testInfo, 'motion-draw-mid');
-            const drawMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-hand-draw .fr-card');
+            const drawMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-hand-draw');
             await page.screenshot({ path: drawMidPath, fullPage: false });
 
             await expect(handZone).toHaveAttribute('data-motion', 'idle', { timeout: 1600 });
             const drawEndPath = getEvidenceScreenshotPath(testInfo, 'motion-draw-end');
             await page.screenshot({ path: drawEndPath, fullPage: false });
-            const drawEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-hand .fr-card');
+            const drawEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-hand');
 
             expect(drawStartFrame.transform).not.toBe('none');
             expect(drawMidFrame.transform).not.toBe('none');
@@ -1179,18 +1179,18 @@ test.describe('FantasyRealms live flow', () => {
             await expect(centerRow).toHaveAttribute('data-motion', 'hand-to-center', { timeout: 1000 });
 
             const discardStartPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-start');
-            const discardStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive .fr-card');
+            const discardStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive');
             await page.screenshot({ path: discardStartPath, fullPage: false });
 
             await page.waitForTimeout(220);
             const discardMidPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-mid');
-            const discardMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive .fr-card');
+            const discardMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive');
             await page.screenshot({ path: discardMidPath, fullPage: false });
 
             await expect(centerRow).toHaveAttribute('data-motion', 'idle', { timeout: 2400 });
             const discardEndPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-end');
             await page.screenshot({ path: discardEndPath, fullPage: false });
-            const discardEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-center .fr-card');
+            const discardEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-center');
 
             expect(discardStartFrame.transform).not.toBe('none');
             expect(discardMidFrame.transform).not.toBe('none');

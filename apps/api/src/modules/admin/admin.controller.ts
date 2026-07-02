@@ -123,6 +123,13 @@ export class AdminController {
         return res.status(200).json(result);
     }
 
+    @Get('mobile-release/deploy/jobs/:jobId')
+    @AdminController.AdminOnly()
+    async getDeployJob(@Param('jobId') jobId: string, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.getDeployJob(jobId);
+        return res.status(200).json(result);
+    }
+
     @Get('stats')
     async getStats(@Req() req: Request, @Res() res: Response) {
         const stats = await this.adminService.getStats();

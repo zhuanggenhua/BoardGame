@@ -266,6 +266,8 @@ export interface QidahenWheelDispatchSelection {
     preferredSourceRegionId: string | null;
     sourceRegionId: string;
     sourceRegionName: string;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     movementProfileId: string;
     movementProfileLabel: string;
     restriction: string;
@@ -305,6 +307,8 @@ export interface QidahenGaoDiDispatchSelection {
     summary: string;
     sourceRegionId: string;
     sourceRegionName: string;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     maxTroops: number;
     maxPopulation: number;
     candidateCardIds: string[];
@@ -328,6 +332,8 @@ export interface QidahenInternalDispatchSelection {
     summary: string;
     sourceRegionId: string;
     sourceRegionName: string;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     maxTroops: number;
     candidates: QidahenInternalDispatchCandidate[];
 }
@@ -368,6 +374,8 @@ export interface QidahenMaShiTradeChoice {
 export interface QidahenMaShiTradeSelection {
     targetRegionId: string | null;
     targetRegionName: string | null;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     choices: QidahenMaShiTradeChoice[];
 }
 
@@ -400,6 +408,8 @@ export interface QidahenDriveTigerConsentSelection {
 export interface QidahenRecruitSelection {
     targetRegionId: string | null;
     targetRegionName: string | null;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     choices: QidahenRecruitChoice[];
 }
 
@@ -407,6 +417,8 @@ export interface QidahenKhanEdictSelection {
     preferredSourceRegionId: string | null;
     sourceRegionId: string | null;
     sourceRegionName: string | null;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     recruitTargetRegionId: string | null;
     recruitTargetRegionName: string | null;
     hireTargetRegionId: string | null;
@@ -422,6 +434,8 @@ export interface QidahenDiplomacySelection {
     preferredSourceRegionId: string | null;
     sourceRegionId: string | null;
     sourceRegionName: string | null;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     hireRegionId: string | null;
     hireRegionName: string | null;
     targetRegionId: string | null;
@@ -521,9 +535,11 @@ export interface QidahenHandCard {
     previewRef: CardPreviewRef;
     accent: QidahenFactionId | 'neutral';
     status: 'idle' | 'selected' | 'payable' | 'disabled';
-    cardKind?: 'unknown' | 'event' | 'armament' | 'tactic' | 'silver';
+    cardKind?: 'unknown' | 'event' | 'armament' | 'tactic' | 'silver' | 'character' | 'scenario' | 'chronology' | 'card-back';
     armamentId?: QidahenArmamentId | null;
     cardDefId?: string | null;
+    previewKind?: 'unknown' | 'character' | 'scenario' | 'chronology' | 'card-back';
+    previewIdentityId?: string | null;
 }
 
 export interface QidahenHandLimitDiscardSelection {
@@ -623,6 +639,7 @@ export interface QidahenCore {
     selectedActionId: string;
     confirmedActionId?: string | null;
     selectedPaymentCardIds: string[];
+    selectedHandActionCardId: string | null;
     recruitSelection: QidahenRecruitSelection | null;
     maShiTradeSelection: QidahenMaShiTradeSelection | null;
     khanEdictSelection: QidahenKhanEdictSelection | null;
@@ -665,6 +682,7 @@ export interface SelectRegionCommand extends Command<'SELECT_REGION'> {
 export interface ConfirmPreviewActionCommand extends Command<'CONFIRM_PREVIEW_ACTION'> {
     payload: {
         actionId: string;
+        sourceHandCardId?: string;
     };
 }
 
@@ -860,6 +878,7 @@ export interface PreviewActionConfirmedEvent extends GameEvent<'PREVIEW_ACTION_C
     payload: {
         actionId: string;
         playerId: PlayerId;
+        sourceHandCardId?: string | null;
     };
 }
 

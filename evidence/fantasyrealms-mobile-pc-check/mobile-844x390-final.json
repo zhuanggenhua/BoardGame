@@ -1,0 +1,114 @@
+{
+  "name": "mobile-844x390-final",
+  "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-844x390-final.png",
+  "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-844x390-final.json",
+  "metrics": {
+    "viewport": {
+      "innerWidth": 844,
+      "innerHeight": 390
+    },
+    "doc": {
+      "clientWidth": 844,
+      "scrollWidth": 844
+    },
+    "cssVars": {
+      "designWidth": "1920px",
+      "designHeight": "1080px",
+      "scale": "0.361111",
+      "offsetX": "75.333px",
+      "offsetY": "0.000px"
+    },
+    "rects": {
+      "table": {
+        "x": 82.55,
+        "y": 7.222,
+        "width": 678.889,
+        "height": 375.555,
+        "right": 761.439,
+        "bottom": 382.778,
+        "centerX": 421.995,
+        "centerY": 195
+      },
+      "topbar": {
+        "x": 82.55,
+        "y": 7.222,
+        "width": 681.778,
+        "height": 47.667,
+        "right": 764.328,
+        "bottom": 54.889,
+        "centerX": 423.439,
+        "centerY": 31.056
+      },
+      "score": {
+        "x": 707.995,
+        "y": 10.111,
+        "width": 47.667,
+        "height": 15.167,
+        "right": 755.661,
+        "bottom": 25.278,
+        "centerX": 731.828,
+        "centerY": 17.694
+      },
+      "deck": {
+        "x": 91.217,
+        "y": 7.222,
+        "width": 34.667,
+        "height": 48.389,
+        "right": 125.884,
+        "bottom": 55.611,
+        "centerX": 108.55,
+        "centerY": 31.417
+      },
+      "center": {
+        "x": 82.55,
+        "y": 54.889,
+        "width": 681.778,
+        "height": 240.838,
+        "right": 764.328,
+        "bottom": 295.727,
+        "centerX": 423.439,
+        "centerY": 175.308
+      },
+      "hand": {
+        "x": 82.55,
+        "y": 295.727,
+        "width": 681.778,
+        "height": 87.05,
+        "right": 764.328,
+        "bottom": 382.778,
+        "centerX": 423.439,
+        "centerY": 339.252
+      },
+      "handRow": {
+        "x": 150.8,
+        "y": 295.727,
+        "width": 545.272,
+        "height": 86.328,
+        "right": 696.072,
+        "bottom": 382.055,
+        "centerX": 423.436,
+        "centerY": 338.891
+      },
+      "action": {
+        "x": 658.883,
+        "y": 260.722,
+        "width": 80.889,
+        "height": 22.389,
+        "right": 739.772,
+        "bottom": 283.111,
+        "centerX": 699.328,
+        "centerY": 271.917
+      }
+    },
+    "checks": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 37.189,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    }
+  }
+}

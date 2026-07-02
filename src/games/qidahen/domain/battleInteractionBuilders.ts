@@ -38,7 +38,7 @@ function buildQidahenPendingTargetInteraction(
 
     const interaction = createSimpleChoice(
         `qidahen-pending-target-${pendingTargetAction.actionId}-${pendingTargetAction.targetRuntimeRegionId}`,
-        state.core.currentPlayer,
+        state.core.factions[pendingTargetAction.attackerFactionId]?.playerId ?? state.core.currentPlayer,
         `${pendingTargetAction.title} · ${pendingTargetAction.targetRegionName}`,
         options,
         {
@@ -75,7 +75,7 @@ function buildQidahenPostBattleInteraction(
 
     const interaction = createSimpleChoice(
         `qidahen-post-battle-${selection.actionId}-${selection.targetRuntimeRegionId}`,
-        state.core.currentPlayer,
+        state.core.factions[selection.attackerFactionId]?.playerId ?? state.core.currentPlayer,
         `${selection.title} · ${selection.targetRegionName}`,
         options,
         {

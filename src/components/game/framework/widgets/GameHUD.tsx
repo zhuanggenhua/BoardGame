@@ -46,10 +46,13 @@ import { GameHudRuntimeSettingsSection } from '../../../../games/gameHudRuntimeA
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 import { EmotePicker } from './EmotePicker';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
+import { GAME_MANIFEST_BY_ID } from '../../../../games/manifest';
+import { resolveGameMobileSupport } from '../../../../games/mobileSupport';
 import {
     buildGameFeedbackActionLog,
     buildGameFeedbackStateSnapshot,
 } from '../../../../lib/feedback/gameFeedbackDiagnostics';
+import { toggleDocumentFullscreen } from '../../../../lib/webFullscreen';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -447,42 +450,35 @@ export const GameHUD = ({
 
     // 全屏状态
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
-    const toggleFullscreen = async () => {
-        const doc = document as any;
-        const elem = document.documentElement as any;
+    const preferredFullscreenOrientation = useMemo(() => {
+        if (!_gameId) return undefined;
+        const gameManifest = GAME_MANIFEST_BY_ID[_gameId];
+        return resolveGameMobileSupport(gameManifest).preferredOrientation;
+    }, [_gameId]);
 
-        if (!document.fullscreenElement) {
-            try {
-                if (elem.requestFullscreen) {
-                    await elem.requestFullscreen();
-                } else if (elem.msRequestFullscreen) {
-                    await elem.msRequestFullscreen();
-                } else if (elem.mozRequestFullScreen) {
-                    await elem.mozRequestFullScreen();
-                } else if (elem.webkitRequestFullscreen) {
-                    await elem.webkitRequestFullscreen((Element as any).ALLOW_KEYBOARD_INPUT);
-                }
-                setIsFullscreen(true);
-            } catch {
-                toast.error(t('hud.fullscreen.enterFailed'));
+    const toggleFullscreen = async () => {
+        const result = await toggleDocumentFullscreen({
+            preferredOrientation: preferredFullscreenOrientation,
+        });
+
+        if (result.ok) {
+            setIsFullscreen(result.state === 'entered');
+            if (result.state === 'entered' && preferredFullscreenOrientation && !result.orientationLocked) {
+                toast.info(t('hud.fullscreen.orientationLockUnavailable'));
             }
             return;
         }
 
-        try {
-            if (document.exitFullscreen) {
-                await document.exitFullscreen();
-            } else if (doc.msExitFullscreen) {
-                await doc.msExitFullscreen();
-            } else if (doc.mozCancelFullScreen) {
-                await doc.mozCancelFullScreen();
-            } else if (doc.webkitExitFullscreen) {
-                await doc.webkitExitFullscreen();
-            }
-            setIsFullscreen(false);
-        } catch {
-            toast.error(t('hud.fullscreen.exitFailed'));
+        if (result.reason === 'ios-web-limited') {
+            toast.info(t('hud.fullscreen.iosLimited'));
+            return;
         }
+
+        toast.error(t(
+            result.reason === 'exit-failed'
+                ? 'hud.fullscreen.exitFailed'
+                : 'hud.fullscreen.enterFailed',
+        ));
     };
 
     useEffect(() => {

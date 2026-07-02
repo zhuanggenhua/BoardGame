@@ -143,6 +143,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
     description: abilityText('imposing', 'description'),
     sfxKey: 'fantasy.elemental_sword_iceattack_v3',
     trigger: 'afterAttack',
+    condition: { type: 'isOwner', target: 'target', owner: 'opponent' },
     effects: [
       { type: 'addCharge', target: 'self', value: 1 },
     ],

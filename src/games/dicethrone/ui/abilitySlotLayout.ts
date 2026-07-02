@@ -69,14 +69,14 @@ export const DICETHRONE_ABILITY_SLOT_LAYOUTS: Record<DiceThronePlayerBoardLayout
 export const DEFAULT_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = DICETHRONE_ABILITY_SLOT_LAYOUTS.v1;
 
 export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimensions> = {
-    barbarian: { width: 2048, height: 1675 },
+    barbarian: { width: 3632, height: 2234 },
     gunslinger: { width: 2048, height: 1254 },
-    monk: { width: 2048, height: 1673 },
-    moon_elf: { width: 2048, height: 1670 },
-    paladin: { width: 2048, height: 1680 },
-    pyromancer: { width: 2048, height: 1674 },
+    monk: { width: 3632, height: 2234 },
+    moon_elf: { width: 3632, height: 2234 },
+    paladin: { width: 3160, height: 1929 },
+    pyromancer: { width: 3632, height: 2234 },
     samurai: { width: 2048, height: 1248 },
-    shadow_thief: { width: 2048, height: 1686 },
+    shadow_thief: { width: 3632, height: 2234 },
     treant: { width: 2048, height: 1233 },
     ninja: { width: 2048, height: 1260 },
     zhanshujia: { width: 3632, height: 2234 },
@@ -85,12 +85,12 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
-    monk: 'v1',
-    barbarian: 'v1',
-    pyromancer: 'v1',
-    moon_elf: 'v1',
-    shadow_thief: 'v1',
-    paladin: 'v1',
+    monk: 'v2',
+    barbarian: 'v2',
+    pyromancer: 'v2',
+    moon_elf: 'v2',
+    shadow_thief: 'v2',
+    paladin: 'v2',
     gunslinger: 'v2',
     samurai: 'v2',
     treant: 'v2',

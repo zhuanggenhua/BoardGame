@@ -62,7 +62,14 @@ import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
 import { getMinionDef, getMinionLikePower, getCardDef, getBaseDefIdsForFactions, getFusionDef } from '../data/cards';
 import type { ActionCardDef, FusionCardDef } from './types';
 import { buildCardInstanceFromObjectRef, getCardTransferObjectRef } from './objectProvenance';
-import { buildDeck, drawCards, getActionLikeResponseWindowTiming, isCardMinionLike, matchesDefId } from './utils';
+import {
+    buildDeck,
+    drawCards,
+    getActionLikeResponseWindowTiming,
+    getMinionLikeResponseWindowLimitGroup,
+    isCardMinionLike,
+    matchesDefId,
+} from './utils';
 import { autoMulligan } from '../../../engine/primitives/mulligan';
 import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
 import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy, resolveOngoingActivation } from './abilityRegistry';
@@ -210,25 +217,20 @@ function executeCommand(
             };
             events.push(playedEvt);
 
-            // meFirst 响应窗口中打出 beforeScoringPlayable 随从时，记录 specialLimitGroup 使用
-            const fusionDef = getFusionDef(card.defId);
-            if (
-                reactionWindow?.windowType === 'meFirst'
-                && (minionDef?.beforeScoringPlayable || fusionDef?.minionBeforeScoringPlayable)
-            ) {
-                const limitGroup = minionDef?.specialLimitGroup ?? fusionDef?.minionSpecialLimitGroup;
-                if (limitGroup) {
-                    events.push({
-                        type: SU_EVENTS.SPECIAL_LIMIT_USED,
-                        payload: {
-                            playerId: command.playerId,
-                            baseIndex,
-                            limitGroup,
-                            abilityDefId: card.defId,
-                        },
-                        timestamp: now,
-                    } as SmashUpEvent);
-                }
+            const responseLimitGroup = reactionWindow?.windowType
+                ? getMinionLikeResponseWindowLimitGroup(card.defId, reactionWindow.windowType)
+                : undefined;
+            if (responseLimitGroup) {
+                events.push({
+                    type: SU_EVENTS.SPECIAL_LIMIT_USED,
+                    payload: {
+                        playerId: command.playerId,
+                        baseIndex,
+                        limitGroup: responseLimitGroup,
+                        abilityDefId: card.defId,
+                    },
+                    timestamp: now,
+                } as SmashUpEvent);
             }
 
             // 触发链由 postProcessSystemEvents 统一处理，避免重复触发

@@ -227,6 +227,18 @@ function isSpecialLimitBlockedByGroup(
     return state.specialLimitUsed?.[limitGroup]?.includes(baseIndex) ?? false;
 }
 
+export function getMinionLikeResponseWindowLimitGroup(
+    cardDefId: string,
+    windowType: ResponseWindowType,
+): string | undefined {
+    if (!isMinionLikeRespondableInWindow(cardDefId, windowType)) return undefined;
+    const minionDef = getMinionDef(cardDefId);
+    if (minionDef?.beforeScoringPlayable) return minionDef.specialLimitGroup;
+    const fusionDef = getFusionDef(cardDefId);
+    if (fusionDef?.minionBeforeScoringPlayable) return fusionDef.minionSpecialLimitGroup;
+    return undefined;
+}
+
 /**
  * 计算某张牌在 Me First! 窗口中可响应的基地索引。
  *
@@ -254,9 +266,7 @@ export function getResponseWindowPlayableBaseIndicesForCard(
     if (eligibleBaseIndices.length === 0) return [];
 
     if (isMinionLikeRespondableInWindow(cardDefId, windowType)) {
-        const minionDef = getMinionDef(cardDefId);
-        const fusionDef = getFusionDef(cardDefId);
-        const limitGroup = minionDef?.specialLimitGroup ?? fusionDef?.minionSpecialLimitGroup;
+        const limitGroup = getMinionLikeResponseWindowLimitGroup(cardDefId, windowType);
         return eligibleBaseIndices.filter(baseIndex =>
             !isSpecialLimitBlockedByGroup(state, limitGroup, baseIndex),
         );

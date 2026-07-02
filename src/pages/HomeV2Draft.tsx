@@ -227,7 +227,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         width: typeof window === 'undefined' ? 0 : window.innerWidth,
         height: typeof window === 'undefined' ? 0 : window.innerHeight,
     }));
-    const gamePopularityById = useGamePopularityRanking();
+    const gamePopularityRanking = useGamePopularityRanking();
     const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('open');
     const [activeTab, setActiveTab] = React.useState<HomeV2TabId>('lobby');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
@@ -1270,13 +1270,13 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
             <div className="absolute inset-0 z-10" data-scene-slot="overview_spread_body">
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
-                    popularityByGameId={gamePopularityById}
+                    popularityByGameId={gamePopularityRanking.popularityByGameId}
                     onGameClick={handleGameOpen}
                     onAccountClick={handleOpenAuthModal}
                 />
             </div>
         </div>
-    ), [gamePopularityById, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
+    ), [gamePopularityRanking.popularityByGameId, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
 
     const renderOverviewFlipStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
         <div
@@ -1346,7 +1346,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
             slots.overview_spread_body = (
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
-                    popularityByGameId={gamePopularityById}
+                    popularityByGameId={gamePopularityRanking.popularityByGameId}
                     onGameClick={handleGameOpen}
                     onAccountClick={handleOpenAuthModal}
                 />
@@ -1377,7 +1377,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         }
 
         return slots;
-    }, [activeTab, authMode, gamePopularityById, handleBackToOverview, handleGameOpen, handleOpenAuthModal, overviewGames, sceneState, selectedGame]);
+    }, [activeTab, authMode, gamePopularityRanking.popularityByGameId, handleBackToOverview, handleGameOpen, handleOpenAuthModal, overviewGames, sceneState, selectedGame]);
 
     const stage = (
         <div className="relative flex h-full items-center justify-center overflow-hidden">

@@ -187,16 +187,20 @@ function buildQidahenWheelDispatchInteraction(
         description: `${candidate.resolutionHint} · 出兵 ${candidate.committedTroops} · 路耗 ${candidate.totalTravelCost}`,
     }));
 
+    const interactionPlayerId = selection.sourceActionId === 'drive-tiger'
+        ? state.core.factions.ming.playerId
+        : state.core.factions[selection.attackerFactionId]?.playerId ?? state.core.currentPlayer;
+
     const interaction = createSimpleChoice(
         `qidahen-dispatch-targeting-${selection.attackerFactionId}-${selection.sourceRegionId}`,
-        state.core.currentPlayer,
+        interactionPlayerId,
         selection.restriction,
         options,
         {
             sourceId: QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `选择进攻目标 · 可去 ${selection.candidates.length} 处`,
+            subtitle: '进攻目标',
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenWheelDispatchInteraction;
@@ -355,7 +359,7 @@ function buildQidahenDriveTigerConsentInteraction(
             sourceId: QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `先问 ${selection.targetFactionName} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻`,
+            subtitle: `先问 ${selection.targetFactionName} 愿不愿听大明指挥；同意后抽 6 张牌，再由大明指挥其出兵进攻`,
         },
     ) as QidahenDriveTigerConsentInteraction;
 
@@ -389,7 +393,7 @@ function buildQidahenFortificationMaintenanceInteraction(
 
     const interaction = createSimpleChoice(
         `qidahen-fortification-maintenance-${state.core.currentYearIndex}`,
-        state.core.currentPlayer,
+        state.core.factions.ming.playerId ?? state.core.currentPlayer,
         selection.title,
         options,
         {

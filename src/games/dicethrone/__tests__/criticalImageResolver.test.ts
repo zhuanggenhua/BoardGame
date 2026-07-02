@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import type { DiceThroneCore } from '../domain/types';
 import { diceThroneCriticalImageResolver, _testExports } from '../criticalImageResolver';
-import { getPlayerBoardUiTuning } from '../ui/abilitySlotLayout';
+import {
+    getPlayerBoardDimensions,
+    getPlayerBoardLayoutVersion,
+    getPlayerBoardUiTuning,
+} from '../ui/abilitySlotLayout';
 
 const {
     CHARACTER_ASSET_TYPES,
@@ -168,6 +172,22 @@ describe('diceThroneCriticalImageResolver', () => {
             expect(tuning.playerBoardBaseHeightVw, `${characterId} 缺少 playerBoardBaseHeightVw`).toBeGreaterThan(0);
             expect(tuning.tipBoardHeightVw, `${characterId} 缺少 tipBoardHeightVw`).toBeGreaterThan(0);
             expect(tuning.centerBoardGapVw, `${characterId} 缺少 centerBoardGapVw`).toBeGreaterThanOrEqual(0);
+        }
+    });
+
+    it('旧六名英雄玩家面板改用 v2 布局与新面板尺寸', () => {
+        const expectedDimensions = {
+            barbarian: { width: 3632, height: 2234 },
+            monk: { width: 3632, height: 2234 },
+            moon_elf: { width: 3632, height: 2234 },
+            paladin: { width: 3160, height: 1929 },
+            pyromancer: { width: 3632, height: 2234 },
+            shadow_thief: { width: 3632, height: 2234 },
+        } as const;
+
+        for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {
+            expect(getPlayerBoardLayoutVersion(characterId), `${characterId} 应使用 v2 面板布局`).toBe('v2');
+            expect(getPlayerBoardDimensions(characterId)).toEqual(dimensions);
         }
     });
 });

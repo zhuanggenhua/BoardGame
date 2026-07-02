@@ -124,6 +124,7 @@ declare module '@3d-dice/dice-box-threejs' {
         initialize(): Promise<void>;
         roll(notation: string): Promise<unknown>;
         reroll(indices: number[]): Promise<unknown>;
+        remove(indices: number[]): Promise<unknown>;
         clearDice(): void;
         setDimensions(dimensions?: { x: number; y: number }): void;
         updateConfig(config?: DiceBoxConfig): Promise<void>;

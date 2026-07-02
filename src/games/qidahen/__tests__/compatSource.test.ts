@@ -60,6 +60,7 @@ const readHandLimitDiscardSource = () => readFileSync(resolve(TEST_DIR, '..', 'd
 const readHandCardStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'handCardState.ts'), 'utf8');
 const readInitialCoreSeedsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'initialCoreSeeds.ts'), 'utf8');
 const readInitialCoreSetupSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'initialCoreSetup.ts'), 'utf8');
+const readViewSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'view.ts'), 'utf8');
 const readInteractionAccessorsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'interactionSelectionAccessors.ts'), 'utf8');
 const readInteractionContractsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'interactionContracts.ts'), 'utf8');
 const readInteractionBuildersSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'interactionBuilders.ts'), 'utf8');
@@ -551,6 +552,14 @@ describe('Qidahen compatibility source guards', () => {
         expect(source).toContain('?? getQidahenCurrentWheelDispatchSelectionForCore(state.core)');
     });
 
+    it('轮盘进攻 runtime builder 的 subtitle 不再复述候选数量', () => {
+        const source = readTurnActionInteractionBuildersSource();
+
+        expect(source).toContain("subtitle: '进攻目标'");
+        expect(source).not.toContain('可去 ${selection.candidates.length} 处');
+        expect(source).not.toContain('选择进攻目标 · 可去');
+    });
+
     it('骑兵避战与劫掠判定应共用 compat piece 计数口径，不能继续直接数 specialTroops 聚合栈', () => {
         const source = readPendingTargetChoiceOptionsSource();
 
@@ -915,7 +924,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(regionSelectionReducerSource).toContain('getPreferredDispatchSelectedRegionIdForFaction,');
         expect(selectedActionExecutionSource).toContain("} from './selectedActionFollowUp';");
         expect(selectedActionFollowUpSource).toContain("import { buildDriveTigerDispatchSelection } from './dispatchSelectionBuilders';");
-        expect(selectedActionFollowUpSource).toContain('buildDriveTigerDispatchSelection(state, currentFactionId, state.selectedRegionId)');
+        expect(selectedActionFollowUpSource).toContain('buildDriveTigerDispatchSelection(state, currentFactionId, baseSelectedRegionId)');
         expect(dispatchSelectionSource).toContain('export const buildGaoDiDispatchSelection = (');
         expect(dispatchSelectionSource).toContain('export const buildDriveTigerDispatchSelection = (');
         expect(dispatchSelectionSource).toContain('export const buildKhanEdictDispatchSelection = (');
@@ -933,6 +942,12 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectionBuildersSource).not.toContain('export const getQidahenMaShiTradeSelectionFromCurrentAction = (');
         expect(selectionBuildersSource).not.toContain('export const getQidahenRecruitSelectionFromCurrentAction = (');
         expect(selectionBuildersSource).not.toContain('export const getQidahenKhanEdictSelectionFromCurrentAction = (');
+        expect(selectionBuildersSource).toContain('displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, explicitOrSelectedRegionId)');
+        expect(selectionBuildersSource).toContain('displayAnchorRegionName: targetRegionName');
+        expect(selectionBuildersSource).toContain('displayAnchorRegionId: preferredSourceRegion');
+        expect(selectionBuildersSource).toContain('displayAnchorRegionName: preferredSourceRegionName');
+        expect(selectionBuildersSource).toContain('displayAnchorRegionId = preferredSourceDisplayRegionId;');
+        expect(selectionBuildersSource).toContain('displayAnchorRegionName = sourceRegionName;');
         expect(selectionBuildersSource).toContain('export const getQidahenMaShiTradeSelectionForCore = (');
         expect(selectionBuildersSource).toContain('export const getQidahenRecruitSelectionForCore = (');
         expect(selectionBuildersSource).toContain('export const getQidahenKhanEdictSelectionForCore = (');
@@ -1774,7 +1789,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionFollowUpSource).toContain('const pendingResolution = resolveQidahenSelectedActionPendingFollowUpResolution(');
         expect(selectedActionFollowUpSource).toContain('const resolution: QidahenSelectedActionFollowUpResolutionResult = {');
         expect(selectedActionFollowUpSource).toContain("pendingTargetAction: pendingResolution.pendingTargetAction,");
-        expect(selectedActionFollowUpSource).toContain('selectedRegionId: pendingResolution.pendingTargetAction?.targetRuntimeRegionId');
+        expect(selectedActionFollowUpSource).toContain('selectedRegionId: pendingResolution.selectedRegionId,');
+        expect(selectedActionFollowUpSource).not.toContain('selectedRegionId: pendingResolution.pendingTargetAction?.targetRuntimeRegionId');
         expect(selectedActionFollowUpSource).toContain('const actionLogText = buildQidahenSelectedActionFollowUpLogText(');
         expect(selectedActionFollowUpSource).toContain('const stateTransition = buildQidahenSelectedActionFollowUpStateTransition(resolution);');
         expect(selectedActionFollowUpSource).toContain('if (resolution.recruitSelection) {');
@@ -1788,6 +1804,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionFollowUpResolution';");
         expect(selectedActionFollowUpSource).toContain("const recruitSelection = actionId === 'recruit'");
         expect(selectedActionFollowUpSource).toContain("const driveTigerDispatchSelection = actionId === 'drive-tiger'");
+        expect(selectedActionFollowUpSource).toContain('buildRecruitSelection(state, baseSelectedRegionId, currentFactionId)');
+        expect(selectedActionFollowUpSource).toContain('buildMaShiTradeSelection(state, baseSelectedRegionId)');
+        expect(selectedActionFollowUpSource).toContain('buildKhanEdictSelection(state, currentFactionId, baseSelectedRegionId)');
+        expect(selectedActionFollowUpSource).toContain('const selectedRegion = state.regions.find((region) => region.id === baseSelectedRegionId);');
         expect(selectedActionFollowUpSource).toContain("if (actionId === 'recruit' && !recruitSelection) {");
         expect(selectedActionFollowUpSource).toContain("if (actionId === 'ma-shi-trade' && !maShiTradeSelection) {");
         expect(selectedActionFollowUpSource).toContain("const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')");
@@ -2115,8 +2135,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(previewActionReducerSource).toContain('actionWheelPosition: event.payload.actionId,');
         expect(previewActionReducerSource).toContain('selectedActionId: actionId,');
         expect(previewActionReducerSource).toContain('confirmedActionId: actionId,');
-        expect(previewActionReducerSource).toContain('selectedPaymentCardIds: [],');
-        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId),');
+        expect(previewActionReducerSource).toContain('selectedPaymentCardIds,');
+        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, selectedPaymentCardIds.length),');
         expect(previewActionReducerSource).toContain("export const resolveQidahenPreviewActionCancelledEvent = (");
         expect(previewActionReducerSource).not.toContain("const grantPardonSourceRegion = actionId === 'grant-pardon'");
         expect(previewActionReducerSource).not.toContain("const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')");
@@ -4731,7 +4751,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(typesSource).not.toContain("export type QidahenGaoDiDispatchMode = 'troops' | 'population';");
         expect(typesSource).toContain("mode: 'troops' | 'population';");
         expect(typesSource).not.toContain("export type QidahenHandCardKind = 'unknown' | 'event' | 'armament' | 'tactic' | 'silver';");
-        expect(typesSource).toContain("cardKind?: 'unknown' | 'event' | 'armament' | 'tactic' | 'silver';");
+        expect(typesSource).toContain("cardKind?: 'unknown' | 'event' | 'armament' | 'tactic' | 'silver' | 'character' | 'scenario' | 'chronology' | 'card-back';");
     });
 
     it('pending-battle targetKind 与 turnPhase 应直接收口到真实字段，避免 types owner 继续保留零外部 caller 的导出联合别名', () => {
@@ -4785,6 +4805,29 @@ describe('Qidahen compatibility source guards', () => {
         expect(typesSource).toContain("interface ExecuteSelectedActionCommand extends Command<'EXECUTE_SELECTED_ACTION'> {");
         expect(typesSource).not.toContain("export interface ExecuteActionCommand extends Command<'EXECUTE_ACTION'> {");
         expect(typesSource).toContain("interface ExecuteActionCommand extends Command<'EXECUTE_ACTION'> {");
+    });
+
+    it('已识别手牌直点必须把手牌来源带进预览事件，不能只退化成抽象动作预览', () => {
+        const boardSource = readBoardSource();
+        const commandEventBuildersSource = readCommandEventBuildersSource();
+        const previewActionReducerSource = readPreviewActionReducerSource();
+        const selectionInputStateSource = readSelectionInputStateSource();
+        const commandsSource = readCommandsSource();
+        const stateCommitSource = readSelectedActionStateCommitSource();
+        const viewSource = readViewSource();
+        const typesSource = readTypesSource();
+
+        expect(typesSource).toContain('selectedHandActionCardId: string | null;');
+        expect(typesSource).toContain('sourceHandCardId?: string;');
+        expect(typesSource).toContain('sourceHandCardId?: string | null;');
+        expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);');
+        expect(commandEventBuildersSource).toContain('sourceHandCardId: command.payload.sourceHandCardId ?? null,');
+        expect(previewActionReducerSource).toContain('selectedHandActionCardId: sourceCard?.id ?? null,');
+        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, selectedPaymentCardIds.length),');
+        expect(selectionInputStateSource).toContain('if (state.selectedHandActionCardId === cardId) {');
+        expect(commandsSource).toContain('getQidahenDirectActionIdForHandCard(sourceCard) === actionId');
+        expect(stateCommitSource).toContain('selectedHandActionCardId: null,');
+        expect(viewSource).toContain('selectedHandActionCardId: state.selectedHandActionCardId && visibleHandCardIdSet.has(state.selectedHandActionCardId)');
     });
 
     it('types owner 下零外部 caller 的场景待决子形状也应退回本地 interface，scenarioChoiceState 只按 QidahenCore 子字段取型', () => {

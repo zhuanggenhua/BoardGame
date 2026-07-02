@@ -257,7 +257,7 @@ export function formatCardiaActionEntry({
                             kind: event.type,
                             segments: [
                                 i18nSeg('actionLog.factionSelected'),
-                                i18nSeg(`factions.${faction}.name`),
+                                i18nSeg(`factions.${faction}`),
                             ],
                         };
                         break;

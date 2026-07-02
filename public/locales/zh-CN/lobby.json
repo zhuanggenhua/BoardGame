@@ -552,7 +552,15 @@
       "title": "先选择要学习的章节",
       "description": "这款游戏包含多个教程章节。先选一章，再进入对应的真实教学流程。",
       "recommended": "默认起步",
+      "completed": "已完成",
       "enter": "进入这一章"
+    },
+    "tutorialProgress": {
+      "title": "继续上次教程？",
+      "description": "检测到你已学到第 {{current}} / {{total}} 步。要从这里继续，还是重新开始这一章？",
+      "continue": "继续学习",
+      "restart": "重头开始",
+      "waitingChoice": "正在等待选择教程进度…"
     },
     "matchTitle": "正在对局 {{game}}",
     "loadingResources": "正在加载对局资源…",
@@ -1035,7 +1043,7 @@
     },
     "mobileReleasePage": {
       "title": "发布中心",
-      "description": "集中处理 Android OTA、原生包、移动游戏包、更新部署和部署回滚。",
+      "description": "集中处理 Android OTA、原生包、移动游戏包、更新部署 + OTA 和部署回滚。",
       "cards": {
         "product_version": "产品版本",
         "latest_ota": "最新 OTA 游标",
@@ -1074,7 +1082,7 @@
         "publish_native": "发布原生包",
         "publish_packages": "发布游戏包",
         "preview_command": "生成命令预览",
-        "execute_deploy_update": "执行更新部署",
+        "execute_deploy_update": "执行更新部署 + OTA",
         "execute_rollback": "执行回滚",
         "running": "执行中…"
       },
@@ -1090,12 +1098,12 @@
         "title": "Android 原生包"
       },
       "deployUpdate": {
-        "title": "更新部署",
+        "title": "更新部署 + OTA",
         "tag": "镜像 tag",
         "tag_placeholder": "留空部署最新镜像",
         "confirm_label": "执行确认",
         "confirm_placeholder": "输入“确认部署”后才可执行",
-        "description": "更新部署会执行服务器宿主机上的更新部署脚本。留空镜像标签时部署最新镜像；填写镜像标签时部署指定镜像。实际执行必须通过独立部署执行器，避免网页服务容器更新自己时中断控制入口。"
+        "description": "更新部署 + OTA 会先交给服务器宿主机上的独立部署执行器执行镜像更新；镜像更新成功后，再按当前渠道和 OTA 游标配置发布 Android OTA。留空镜像标签时部署最新镜像；填写镜像标签时部署指定镜像。"
       },
       "rollback": {
         "title": "部署回滚",
@@ -1113,12 +1121,14 @@
       },
       "safety": {
         "title": "操作边界",
-        "description": "发布、更新部署与回滚都改为后台显式操作。更新部署和部署回滚只能交给服务器宿主机上的独立部署执行器执行；未配置独立部署执行器时后台只生成命令预览。"
+        "description": "发布、更新部署 + OTA 与回滚都改为后台显式操作。更新部署 + OTA 和部署回滚只能交给服务器宿主机上的独立部署执行器执行；未配置独立部署执行器时后台只生成命令预览。"
       },
       "result": {
         "title": "最近执行结果",
         "kind": "类型",
         "mode": "模式",
+        "job_status": "任务状态",
+        "exit_code": "退出码",
         "bundle_version": "Bundle 游标",
         "zip_bytes": "ZIP 字节数"
       },
@@ -1134,7 +1144,8 @@
         "dry_run_success": "预演完成",
         "publish_success": "发布完成",
         "preview_success": "命令预览已生成",
-        "deploy_update_success": "更新部署命令已提交",
+        "deploy_update_success": "更新部署 + OTA 任务已提交",
+        "job_failed": "更新部署 + OTA 执行失败，请查看最近执行结果",
         "rollback_success": "回滚命令已执行"
       }
     },

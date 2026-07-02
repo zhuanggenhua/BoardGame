@@ -354,9 +354,6 @@ export function validate(
                 if (!mfEligible.includes(mfBaseIndex)) {
                     return { valid: false, error: '只能打出到即将计分的基地' };
                 }
-                if (isSpecialLimitBlocked(core, mfCard.defId, mfBaseIndex)) {
-                    return { valid: false, error: '该基地本回合已使用过同组特殊能力' };
-                }
                 const mfMinionDef = getMinionDef(mfCard.defId);
                 const mfFusionDef = getFusionDef(mfCard.defId);
                 const mfBasePower = getMinionLikePower(mfCard.defId) ?? 0;

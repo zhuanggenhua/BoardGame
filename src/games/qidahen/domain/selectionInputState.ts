@@ -102,6 +102,10 @@ const toggleQidahenPaymentCard = (
         return state.selectedPaymentCardIds;
     }
 
+    if (state.selectedHandActionCardId === cardId) {
+        return state.selectedPaymentCardIds;
+    }
+
     if (state.selectedPaymentCardIds.includes(cardId)) {
         return state.selectedPaymentCardIds.filter((selectedId) => selectedId !== cardId);
     }

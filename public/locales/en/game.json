@@ -210,7 +210,9 @@
     },
     "fullscreen": {
       "enterFailed": "Failed to enter fullscreen. Check browser permissions.",
-      "exitFailed": "Failed to exit fullscreen. Check browser status."
+      "exitFailed": "Failed to exit fullscreen. Check browser status.",
+      "iosLimited": "Fullscreen support is limited in iPhone browsers. Try adding this app to the home screen first.",
+      "orientationLockUnavailable": "Entered fullscreen, but the browser did not complete orientation lock."
     },
     "download": {
       "missingLink": "App download is not configured yet. Configure the native update manifest or an APK direct link first.",

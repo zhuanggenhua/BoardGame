@@ -87,6 +87,8 @@ export const buildMaShiTradeSelection = (
     return {
         targetRegionId: targetRegion.id,
         targetRegionName,
+        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, explicitOrSelectedRegionId),
+        displayAnchorRegionName: targetRegionName,
         choices,
     };
 };
@@ -150,6 +152,8 @@ export const buildRecruitSelection = (
     return {
         targetRegionId: targetRegion.id,
         targetRegionName,
+        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, explicitOrSelectedRegionId),
+        displayAnchorRegionName: targetRegionName,
         choices,
     };
 };
@@ -190,8 +194,8 @@ const buildDiplomacyChoicesForTarget = (
     if (!targetRegion) {
         return {
             hint: remainingTargetCount > 0
-                ? `先从地图或候选列表选择一个邻近 ${sourceRegionName} 的区域；当前还可执行 ${remainingTargetCount} 次外交操作。`
-                : `当前 ${sourceRegionName} 的外交操作已用尽，可直接结束并结算雇佣。`,
+                ? `邻近 ${sourceRegionName} 的区域可执行外交；还可执行 ${remainingTargetCount} 次。`
+                : `${sourceRegionName} 外交次数已用尽，可结算雇佣。`,
             choices,
         };
     }
@@ -321,6 +325,8 @@ export const buildDiplomacySelection = (
         preferredSourceRegionId ?? sourceRegion.id,
     );
     const sourceRegionName = getPreferredLogicalRegionDisplayName(sourceRegion, preferredSourceDisplayRegionId);
+    const displayAnchorRegionId = preferredSourceDisplayRegionId;
+    const displayAnchorRegionName = sourceRegionName;
     const targetRegionName = selectedTargetRegion
         ? getPreferredLogicalRegionDisplayName(
             selectedTargetRegion,
@@ -345,6 +351,8 @@ export const buildDiplomacySelection = (
         preferredSourceRegionId: preferredSourceDisplayRegionId,
         sourceRegionId: sourceRegion.id,
         sourceRegionName,
+        displayAnchorRegionId,
+        displayAnchorRegionName,
         hireRegionId: sourceRegion.id,
         hireRegionName: sourceRegionName,
         targetRegionId: selectedTargetRegion?.id ?? null,
@@ -544,6 +552,13 @@ export const buildKhanEdictSelection = (
             : null,
         sourceRegionId: preferredSourceRegion?.id ?? null,
         sourceRegionName: preferredSourceRegionName,
+        displayAnchorRegionId: preferredSourceRegion
+            ? resolvePreferredRegionDisplayAnchor(
+                preferredSourceRegion,
+                preferredSourceRegionId ?? preferredSourceRegion.id,
+            )
+            : null,
+        displayAnchorRegionName: preferredSourceRegionName,
         recruitTargetRegionId: recruitTargetRegion?.id ?? null,
         recruitTargetRegionName,
         hireTargetRegionId: hireTargetRegion?.id ?? null,

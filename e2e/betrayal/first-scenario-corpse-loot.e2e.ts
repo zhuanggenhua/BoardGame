@@ -29,7 +29,7 @@ test.describe('山屋惊魂第一剧本搜尸边界', () => {
 
         await injectCore(page, createCorpseLootReadyRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('betrayal-runtime-header-grid').getByText('Haunt')).toBeVisible();
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('丽贝卡·艾伦博士');
         await expect(page.getByTestId('betrayal-action-trade')).toContainText('搜尸');
         await expect(page.getByTestId('betrayal-trade-status')).toContainText(/可搜刮|尸体/i);

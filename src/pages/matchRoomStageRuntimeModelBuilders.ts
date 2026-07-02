@@ -144,6 +144,7 @@ export function buildMatchRoomTutorialBoardRuntimeModel(args: {
     return {
         gameId,
         tutorialId: stage.tutorialId,
+        tutorialManifest: stage.tutorialManifest,
         board: stage.board,
         engineConfig: stage.engineConfig,
         numPlayers: stage.tutorialManifest?.numPlayers

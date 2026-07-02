@@ -2,6 +2,8 @@ import {
     buildPaymentState,
     getActionChoiceById,
 } from './factionActionWindow';
+import { getCurrentFactionId } from './factionTurnAccessors';
+import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type {
     QidahenCore,
@@ -27,15 +29,28 @@ interface QidahenPreviewActionConfirmedDependencies {
 const reduceQidahenPreviewActionConfirmed = (
     state: QidahenCore,
     actionId: string,
+    sourceHandCardId: string | null | undefined,
     _timestamp: number,
     dependencies: QidahenPreviewActionConfirmedDependencies,
-): QidahenCore => dependencies.updateTurnLabel({
-    ...state,
-    selectedActionId: actionId,
-    confirmedActionId: actionId,
-    selectedPaymentCardIds: [],
-    payment: buildPaymentState(actionId),
-});
+): QidahenCore => {
+    const sourceCard = sourceHandCardId
+        ? state.handCards.find((card) => (
+            card.id === sourceHandCardId
+            && card.faction === getCurrentFactionId(state)
+            && card.status !== 'disabled'
+            && getQidahenDirectActionIdForHandCard(card) === actionId
+        ))
+        : null;
+    const selectedPaymentCardIds = sourceCard ? [sourceCard.id] : [];
+    return dependencies.updateTurnLabel({
+        ...state,
+        selectedActionId: actionId,
+        confirmedActionId: actionId,
+        selectedPaymentCardIds,
+        selectedHandActionCardId: sourceCard?.id ?? null,
+        payment: buildPaymentState(actionId, selectedPaymentCardIds.length),
+    });
+};
 
 const reduceQidahenPreviewActionCancelled = (
     state: QidahenCore,
@@ -44,6 +59,7 @@ const reduceQidahenPreviewActionCancelled = (
     ...state,
     confirmedActionId: null,
     selectedPaymentCardIds: [],
+    selectedHandActionCardId: null,
     payment: buildPaymentState(state.selectedActionId, 0),
 });
 
@@ -57,6 +73,7 @@ export const resolveQidahenPreviewActionConfirmedEvent = (
     ? reduceQidahenPreviewActionConfirmed(
         state,
         event.payload.actionId,
+        event.payload.sourceHandCardId,
         event.timestamp,
         dependencies,
     )

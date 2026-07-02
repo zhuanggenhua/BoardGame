@@ -129,6 +129,26 @@ export class DeployUpdatePreviewDto {
     @MaxLength(80)
     @Matches(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
     tag?: string;
+
+    @IsOptional()
+    @IsIn(['stable', 'gray', 'edge'])
+    channel?: AndroidOtaChannel;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    @Matches(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/)
+    otaVersionBase?: string;
+
+    @IsOptional()
+    @Transform(({ value }: { value: unknown }) => parseBoolean(value))
+    @IsBoolean()
+    forceUpdate?: boolean;
+
+    @IsOptional()
+    @Transform(({ value }: { value: unknown }) => parseBoolean(value))
+    @IsBoolean()
+    skipLatest?: boolean;
 }
 
 export class DeployUpdateExecuteDto extends DeployUpdatePreviewDto {

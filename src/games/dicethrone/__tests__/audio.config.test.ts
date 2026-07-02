@@ -7,11 +7,19 @@ import { DICETHRONE_AUDIO_CONFIG } from '../audio.config';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 import { MONK_ABILITIES } from '../heroes/monk/abilities';
+import { ARTIFICER_ABILITIES, ARTIFICER_SFX_ELECTRIC, ARTIFICER_SFX_METAL, ARTIFICER_SFX_ULTIMATE } from '../heroes/artificer/abilities';
+import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
+import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_SFX_CURSE, CURSED_PIRATE_SFX_EXPLOSION, CURSED_PIRATE_SFX_SLASH, CURSED_PIRATE_SFX_ULTIMATE } from '../heroes/cursed_pirate/abilities';
+import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 import { GUNSLINGER_ABILITIES, GUNSLINGER_SFX_BOUNTY, GUNSLINGER_SFX_HEAVY, GUNSLINGER_SFX_LOADED, GUNSLINGER_SFX_SHOT, GUNSLINGER_SFX_ULTIMATE } from '../heroes/gunslinger/abilities';
 import { SHADOW_THIEF_ABILITIES, SHADOW_THIEF_SFX_LOOT, SHADOW_THIEF_SFX_STEAL } from '../heroes/shadow_thief/abilities';
 import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
 import { SAMURAI_ABILITIES, SAMURAI_SFX_DEFENSE, SAMURAI_SFX_HEAVY, SAMURAI_SFX_LIGHT, SAMURAI_SFX_ULTIMATE } from '../heroes/samurai/abilities';
 import { SAMURAI_TOKEN_SFX_HONOR, SAMURAI_TOKEN_SFX_RETRIBUTION, SAMURAI_TOKEN_SFX_SHAME } from '../heroes/samurai/tokens';
+import { TREANT_ABILITIES, TREANT_SFX_GROWTH, TREANT_SFX_HEAVY, TREANT_SFX_LIGHT, TREANT_SFX_ULTIMATE } from '../heroes/treant/abilities';
+import { NINJA_ABILITIES, NINJA_SFX_POISON, NINJA_SFX_SMOKE } from '../heroes/ninja/abilities';
+import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_SFX_COMMAND, ZHANSHUJIA_SFX_HEAVY, ZHANSHUJIA_SFX_LIGHT, ZHANSHUJIA_SFX_ULTIMATE } from '../heroes/zhanshujia/abilities';
+import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import type { AudioEvent } from '../../../lib/audio/types';
 
 const DICE_ROLL_SINGLE_KEY = 'dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_001';
@@ -215,6 +223,34 @@ describe('DiceThrone 音效配置', () => {
             expect(SAMURAI_ABILITIES.find(a => a.id === 'samurai-ultimate')?.sfxKey).toBe(ABILITY_SFX_KEYS.samuraiUltimate);
         });
 
+        it('工匠核心技能应配置机械/电击主题音效', () => {
+            expect(ARTIFICER_ABILITIES.find(a => a.id === 'wrench-strike')?.sfxKey).toBe(ARTIFICER_SFX_METAL);
+            expect(ARTIFICER_ABILITIES.find(a => a.id === 'overclock')?.sfxKey).toBe(ARTIFICER_SFX_ELECTRIC);
+            expect(ARTIFICER_ABILITIES.find(a => a.id === 'maximum-power')?.sfxKey).toBe(ARTIFICER_SFX_ULTIMATE);
+        });
+
+        it('咒缚海盗核心技能应配置刀剑/诅咒主题音效', () => {
+            expect(CURSED_PIRATE_ABILITIES.find(a => a.id === 'soul-stab')?.sfxKey).toBe(CURSED_PIRATE_SFX_SLASH);
+            expect(CURSED_PIRATE_ABILITIES.find(a => a.id === 'marked-for-death')?.sfxKey).toBe(CURSED_PIRATE_SFX_CURSE);
+            expect(CURSED_PIRATE_ABILITIES.find(a => a.id === 'merciless-curse')?.sfxKey).toBe(CURSED_PIRATE_SFX_ULTIMATE);
+        });
+
+        it('战术家核心技能应配置军令/爆破主题音效', () => {
+            expect(ZHANSHUJIA_ABILITIES.find(a => a.id === 'sabre-thrust')?.sfxKey).toBe(ZHANSHUJIA_SFX_LIGHT);
+            expect(ZHANSHUJIA_ABILITIES.find(a => a.id === 'carpet-bombing')?.sfxKey).toBe(ZHANSHUJIA_SFX_HEAVY);
+            expect(ZHANSHUJIA_ABILITIES.find(a => a.id === 'war-monger')?.sfxKey).toBe(ZHANSHUJIA_SFX_COMMAND);
+            expect(ZHANSHUJIA_ABILITIES.find(a => a.id === 'high-ground')?.sfxKey).toBe(ZHANSHUJIA_SFX_ULTIMATE);
+        });
+
+        it('树人与忍者历史音效 key 应仍存在于注册表', () => {
+            expect(TREANT_ABILITIES.find(a => a.id === 'shattering-fist')?.sfxKey).toBe(TREANT_SFX_HEAVY);
+            expect(TREANT_ABILITIES.find(a => a.id === 'tend-care')?.sfxKey).toBe(TREANT_SFX_GROWTH);
+            expect(TREANT_ABILITIES.find(a => a.id === 'vengeful-vines')?.sfxKey).toBe(TREANT_SFX_LIGHT);
+            expect(TREANT_ABILITIES.find(a => a.id === 'forest-awakens')?.sfxKey).toBe(TREANT_SFX_ULTIMATE);
+            expect(NINJA_ABILITIES.find(a => a.id === 'poison-blade')?.sfxKey).toBe(NINJA_SFX_POISON);
+            expect(NINJA_ABILITIES.find(a => a.id === 'smoke-screen')?.sfxKey).toBe(NINJA_SFX_SMOKE);
+        });
+
         it('选中枪手后应预热枪手专属技能音效', () => {
             const keys = DICETHRONE_AUDIO_CONFIG.contextualPreloadKeys?.({
                 G: { selectedCharacters: { '0': 'gunslinger' } },
@@ -239,9 +275,24 @@ describe('DiceThrone 音效配置', () => {
             expect(keys).toContain(SAMURAI_SFX_DEFENSE);
             expect(keys).toContain(SAMURAI_SFX_ULTIMATE);
         });
+
+        it('选中新补音效角色后应预热其专属技能音效', () => {
+            const keys = DICETHRONE_AUDIO_CONFIG.contextualPreloadKeys?.({
+                G: { selectedCharacters: { '0': 'artificer', '1': 'cursed_pirate', '2': 'zhanshujia' } },
+                ctx: {},
+                meta: {},
+            } as never) ?? [];
+
+            expect(keys).toContain(ARTIFICER_SFX_METAL);
+            expect(keys).toContain(ARTIFICER_SFX_ELECTRIC);
+            expect(keys).toContain(CURSED_PIRATE_SFX_CURSE);
+            expect(keys).toContain(CURSED_PIRATE_SFX_SLASH);
+            expect(keys).toContain(ZHANSHUJIA_SFX_COMMAND);
+            expect(keys).toContain(ZHANSHUJIA_SFX_ULTIMATE);
+        });
     });
 
-    describe('枪手 / 武士手牌音效配置', () => {
+    describe('新英雄手牌音效配置', () => {
         it('影贼金币主题手牌应返回卡牌级奖励音效', () => {
             const shadowCoinsCard: AudioEvent = {
                 type: 'CARD_PLAYED',
@@ -278,6 +329,51 @@ describe('DiceThrone 音效配置', () => {
 
             expect(resolveKey(samuraiHonorCard)).toBe(SAMURAI_TOKEN_SFX_HONOR);
             expect(resolveKey(samuraiAttackModifier)).toBe(SAMURAI_SFX_ULTIMATE);
+        });
+
+        it('工匠打出主题手牌时应返回卡牌级专属音效', () => {
+            const electricCard: AudioEvent = {
+                type: 'CARD_PLAYED',
+                payload: { playerId: '0', cardId: 'card-artificer-voltage', cpCost: 1 },
+            };
+            const metalCard: AudioEvent = {
+                type: 'CARD_PLAYED',
+                payload: { playerId: '0', cardId: 'card-artificer-mechanical-strike', cpCost: 1 },
+            };
+
+            expect(ARTIFICER_CARDS.find(card => card.id === 'card-artificer-voltage')?.sfxKey).toBe(ARTIFICER_SFX_ELECTRIC);
+            expect(resolveKey(electricCard)).toBe(ARTIFICER_SFX_ELECTRIC);
+            expect(resolveKey(metalCard)).toBe(ARTIFICER_SFX_METAL);
+        });
+
+        it('咒缚海盗打出主题手牌时应返回卡牌级专属音效', () => {
+            const curseCard: AudioEvent = {
+                type: 'CARD_PLAYED',
+                payload: { playerId: '0', cardId: 'card-cursed-pirate-curse-card', cpCost: 0 },
+            };
+            const slashCard: AudioEvent = {
+                type: 'CARD_PLAYED',
+                payload: { playerId: '0', cardId: 'card-cursed-pirate-flay', cpCost: 2 },
+            };
+
+            expect(CURSED_PIRATE_CARDS.find(card => card.id === 'card-cursed-pirate-curse-card')?.sfxKey).toBe(CURSED_PIRATE_SFX_CURSE);
+            expect(resolveKey(curseCard)).toBe(CURSED_PIRATE_SFX_CURSE);
+            expect(resolveKey(slashCard)).toBe(CURSED_PIRATE_SFX_SLASH);
+        });
+
+        it('战术家打出主题手牌时应返回卡牌级专属音效', () => {
+            const commandCard: AudioEvent = {
+                type: 'CARD_PLAYED',
+                payload: { playerId: '0', cardId: 'card-zhanshujia-war-room', cpCost: 1 },
+            };
+            const strikeCard: AudioEvent = {
+                type: 'CARD_PLAYED',
+                payload: { playerId: '0', cardId: 'card-zhanshujia-ambush', cpCost: 1 },
+            };
+
+            expect(ZHANSHUJIA_CARDS.find(card => card.id === 'card-zhanshujia-war-room')?.sfxKey).toBe(ZHANSHUJIA_SFX_COMMAND);
+            expect(resolveKey(commandCard)).toBe(ZHANSHUJIA_SFX_COMMAND);
+            expect(resolveKey(strikeCard)).toBe(ZHANSHUJIA_SFX_LIGHT);
         });
     });
 
@@ -347,6 +443,15 @@ describe('DiceThrone 音效配置', () => {
 
             expect(loaded?.sfxKey).toBe(GUNSLINGER_SFX_LOADED);
             expect(bounty?.sfxKey).toBe(GUNSLINGER_SFX_BOUNTY);
+        });
+    });
+
+    describe('咒缚海盗 Token 音效配置', () => {
+        it('炸药桶应使用爆炸音效，不应复用诅咒终极音效', () => {
+            const powderKeg = ALL_TOKEN_DEFINITIONS.find(token => token.id === STATUS_IDS.POWDER_KEG);
+
+            expect(powderKeg?.sfxKey).toBe(CURSED_PIRATE_SFX_EXPLOSION);
+            expect(powderKeg?.sfxKey).not.toBe(CURSED_PIRATE_SFX_ULTIMATE);
         });
     });
 

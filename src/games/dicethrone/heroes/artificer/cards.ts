@@ -14,6 +14,9 @@ import {
     SHOCK_BOT_3,
     TINKER_2,
     WRENCH_STRIKE_2,
+    ARTIFICER_SFX_ELECTRIC,
+    ARTIFICER_SFX_METAL,
+    ARTIFICER_SFX_ULTIMATE,
 } from './abilities';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
@@ -66,6 +69,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'main',
         description: cardText('card-artificer-masterpiece', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(17),
         sourceAtlasIndex: 17,
         effects: [{
@@ -91,6 +95,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'instant',
         description: cardText('card-artificer-mechanical-strike', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(18),
         sourceAtlasIndex: 18,
         playCondition: {
@@ -119,6 +124,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'instant',
         description: cardText('upgrade-artificer-shock-bot-2', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(19),
         sourceAtlasIndex: 19,
         playCondition: {
@@ -140,6 +146,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 3,
         timing: 'main',
         description: cardText('upgrade-artificer-tinker-2', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(20),
         sourceAtlasIndex: 20,
         effects: [replaceAbility('tinker', TINKER_2, 2, abilityEffectText('upgrade-artificer-tinker-2', 'upgrade'))],
@@ -151,6 +158,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('upgrade-artificer-overclock-2', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(21),
         sourceAtlasIndex: 21,
         effects: [replaceAbility('overclock', OVERCLOCK_2, 2, abilityEffectText('upgrade-artificer-overclock-2', 'upgrade'))],
@@ -162,6 +170,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('upgrade-artificer-shock-bot-3', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(22),
         sourceAtlasIndex: 22,
         effects: [replaceAbility('shock-bot', SHOCK_BOT_3, 3, abilityEffectText('upgrade-artificer-shock-bot-3', 'upgrade'))],
@@ -173,6 +182,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('upgrade-artificer-activate-bots-2', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(23),
         sourceAtlasIndex: 23,
         effects: [replaceAbility('activate-bots', ACTIVATE_BOTS_2, 2, abilityEffectText('upgrade-artificer-activate-bots-2', 'upgrade'))],
@@ -184,6 +194,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('upgrade-artificer-eureka-2', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(24),
         sourceAtlasIndex: 24,
         effects: [replaceAbility('eureka', EUREKA_2, 2, abilityEffectText('upgrade-artificer-eureka-2', 'upgrade'))],
@@ -195,6 +206,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'main',
         description: cardText('upgrade-artificer-schematics-2', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(25),
         sourceAtlasIndex: 25,
         effects: [replaceAbility('schematics', SCHEMATICS_2, 2, abilityEffectText('upgrade-artificer-schematics-2', 'upgrade'))],
@@ -206,6 +218,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'main',
         description: cardText('upgrade-artificer-wrench-strike-2', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(26),
         sourceAtlasIndex: 26,
         effects: [replaceAbility('wrench-strike', WRENCH_STRIKE_2, 2, abilityEffectText('upgrade-artificer-wrench-strike-2', 'upgrade'))],
@@ -217,6 +230,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'main',
         description: cardText('upgrade-artificer-collect-parts-2', 'description'),
+        sfxKey: ARTIFICER_SFX_METAL,
         previewRef: atlasPreview(27),
         sourceAtlasIndex: 27,
         effects: [replaceAbility('collect-parts', COLLECT_PARTS_2, 2, abilityEffectText('upgrade-artificer-collect-parts-2', 'upgrade'))],
@@ -228,6 +242,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'instant',
         description: cardText('card-artificer-voltage', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(28),
         sourceAtlasIndex: 28,
         effects: [{
@@ -243,6 +258,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'instant',
         description: cardText('card-artificer-nano-attack', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(29),
         sourceAtlasIndex: 29,
         effects: [{
@@ -258,6 +274,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'main',
         description: cardText('card-artificer-overdrive', 'description'),
+        sfxKey: ARTIFICER_SFX_ELECTRIC,
         previewRef: atlasPreview(30),
         sourceAtlasIndex: 30,
         effects: [{
@@ -294,6 +311,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'main',
         description: cardText('card-artificer-perfectly-calibrated', 'description'),
+        sfxKey: ARTIFICER_SFX_ULTIMATE,
         previewRef: atlasPreview(31),
         sourceAtlasIndex: 31,
         effects: [{

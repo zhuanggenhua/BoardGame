@@ -5740,8 +5740,8 @@
     "zh-CN/dicethrone/images/barbarian/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "fe0af0e56aa28023fb41b8bd7de98b9f2da13301f33f75d1ff4cbe0f233385e3",
-          "bytes": 590846,
+          "sha256": "a04a9f8cb15bdb46ec0241a9d6b002fb73e468f183d3661b83aca7d35a7e1c7f",
+          "bytes": 400888,
           "mime": "image/webp"
         }
       }
@@ -5758,8 +5758,8 @@
     "zh-CN/dicethrone/images/barbarian/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "6bb76d72941456d417f30addf9c883990bde57991cb0507cb0146c5e844c0fec",
-          "bytes": 286512,
+          "sha256": "caedee40355b1b4d4da5248df23b213b0c1ec4c99cf63add04eff93c90222c9d",
+          "bytes": 337946,
           "mime": "image/webp"
         }
       }
@@ -5770,6 +5770,15 @@
           "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
           "bytes": 387,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/tip": {
+      "variants": {
+        "png": {
+          "sha256": "70bc1216c4e1d1487df1acbc2f59291a8c2ad07296e53407604a1cccc7cffbf1",
+          "bytes": 8997558,
+          "mime": "image/png"
         }
       }
     },
@@ -6208,8 +6217,8 @@
     "zh-CN/dicethrone/images/monk/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "f25a2ac98467af7e92fa083397d05bc12596ac4810785507858307571ece3ab3",
-          "bytes": 750176,
+          "sha256": "cecde8d4735affa7eac69e19ff72a7f62318c1e138f92ace2abc0f2a6d6e93eb",
+          "bytes": 405996,
           "mime": "image/webp"
         }
       }
@@ -6226,8 +6235,8 @@
     "zh-CN/dicethrone/images/monk/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "78d1e6e12a607b50638a74d27586dcab689fd9c91ef98f1f926d53eacc0e89bf",
-          "bytes": 348536,
+          "sha256": "fdbdbb3a4e0e395fbd6f7988e0dfa252806d7926ec9386c0c2c1ff6864bd4cda",
+          "bytes": 266084,
           "mime": "image/webp"
         }
       }
@@ -6238,6 +6247,15 @@
           "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
           "bytes": 640,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/tip": {
+      "variants": {
+        "png": {
+          "sha256": "368214dfef15b899502b0dffd5201f7a8be3c224ec9ad63c2449e97d22a35257",
+          "bytes": 6797557,
+          "mime": "image/png"
         }
       }
     },
@@ -6262,8 +6280,8 @@
     "zh-CN/dicethrone/images/moon_elf/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "6910533a61ed2332e10bba23397127ff4d654ba282858644501703bc59d13799",
-          "bytes": 494292,
+          "sha256": "806ebce242a2976dc624522a94128667793cb217ba6c7e863959cf9c511d6462",
+          "bytes": 445434,
           "mime": "image/webp"
         }
       }
@@ -6280,8 +6298,8 @@
     "zh-CN/dicethrone/images/moon_elf/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "7ed0461a37e7c36067870201512979ef6e2a9c71195c627148c6476d4ac24d4a",
-          "bytes": 379818,
+          "sha256": "320c8f44ce47c201fa3c6e455c31f863ebef971646a61cd2a706da6972251b2f",
+          "bytes": 255808,
           "mime": "image/webp"
         }
       }
@@ -6292,6 +6310,15 @@
           "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
           "bytes": 642,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "ef441060123206505e5c17748f99aacb6513a4e900ca4f6cb2bb114f5046e934",
+          "bytes": 2158372,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -6433,8 +6460,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "2723c83aee6f4464cf6c0598e05178e7396a33f000d9c0a660fd7e8f7cc80c79",
-          "bytes": 521456,
+          "sha256": "5604d728fb35cf4d19e958972d151541a2873ad4350afe0614b1e746a6816f9c",
+          "bytes": 517586,
           "mime": "image/webp"
         }
       }
@@ -6451,8 +6478,8 @@
     "zh-CN/dicethrone/images/paladin/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "6af37b2a2904c593ecdc3801164ed1497a21dee669015deb86d850c4090a977c",
-          "bytes": 368890,
+          "sha256": "8f336e0020b7a547f3a2821af8cc01d5aae3a42000849d9517f6bf193261dfbe",
+          "bytes": 317698,
           "mime": "image/webp"
         }
       }
@@ -6463,6 +6490,15 @@
           "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
           "bytes": 797,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/tip": {
+      "variants": {
+        "png": {
+          "sha256": "3044f4ef9f06a9af61e5f2e7cc599938d13fc10d87e53f47482a839bde907e54",
+          "bytes": 7347544,
+          "mime": "image/png"
         }
       }
     },
@@ -6496,8 +6532,8 @@
     "zh-CN/dicethrone/images/pyromancer/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "53e95a68fca021c6606118afe7dd9c2ed80de37bbd4a1aff96d0eb2eba168329",
-          "bytes": 596868,
+          "sha256": "806ebce242a2976dc624522a94128667793cb217ba6c7e863959cf9c511d6462",
+          "bytes": 445434,
           "mime": "image/webp"
         }
       }
@@ -6514,8 +6550,8 @@
     "zh-CN/dicethrone/images/pyromancer/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "f6840fa7212e26412e6fbd097e1f9edba62d7684e1b67b32d1409337009601d9",
-          "bytes": 336250,
+          "sha256": "fe86ef7d0034d0d1c8e6316ebc5963272ef43ea02a2c4b025ffab113b705b34f",
+          "bytes": 342550,
           "mime": "image/webp"
         }
       }
@@ -6526,6 +6562,15 @@
           "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
           "bytes": 664,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/tip": {
+      "variants": {
+        "png": {
+          "sha256": "54d6bd5fd6b13abdf9423619c823e7dd219a6e9c8b26386b78aee902938d1c61",
+          "bytes": 8100399,
+          "mime": "image/png"
         }
       }
     },
@@ -6640,8 +6685,8 @@
     "zh-CN/dicethrone/images/shadow_thief/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "a0b6a96709792f4c65ccffa8c2b0b9201647fab6a0e7ba6218c400914837524e",
-          "bytes": 562506,
+          "sha256": "bb8da05e418f844b2073cc5498cb5923d3a33e6454db1eab275b705909254dbe",
+          "bytes": 330762,
           "mime": "image/webp"
         }
       }
@@ -6658,8 +6703,8 @@
     "zh-CN/dicethrone/images/shadow_thief/compressed/tip": {
       "variants": {
         "webp": {
-          "sha256": "c27bc6e1c8b2622b82ae89667d39b38ce6c97a1be506be25883197e8e952230c",
-          "bytes": 321172,
+          "sha256": "24c1b05b8ab091426ceb99518dd7d8acbe5fafc9ffdb70459a9a5b97c3add1c4",
+          "bytes": 307916,
           "mime": "image/webp"
         }
       }
@@ -6670,6 +6715,15 @@
           "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
           "bytes": 521,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/tip": {
+      "variants": {
+        "png": {
+          "sha256": "24eee5d2515fb1c183289cb9cdabc22c5ad62388cb6b965aa386ebe2a98f2d43",
+          "bytes": 9059653,
+          "mime": "image/png"
         }
       }
     },

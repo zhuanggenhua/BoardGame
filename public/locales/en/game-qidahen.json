@@ -197,7 +197,7 @@
         "currentControlRegion": "controlled region",
         "sourceSummary": "Resolve diplomacy and hire",
         "resolvedSummary": "Diplomacy used {{resolved}}/{{total}} times · {{remaining}} remaining",
-        "targetSummary": "Current step · {{targetHint}}",
+        "targetSummary": "Diplomacy target · {{targetHint}}",
         "stepSummary": "Diplomacy {{index}} · {{summary}}"
       },
       "driveTiger": {
@@ -205,7 +205,7 @@
         "summary": "Will {{targetFactionName}} accept Ming command? If accepted, they will draw 6 cards and enter dispatch attack."
       },
       "wheelDispatch": {
-        "summary": "Choose an attack target · {{count}} target(s)",
+        "summary": "Attack targets",
         "targetSummary": "{{targetRegionName}} · {{defenderLabel}}",
         "stats": "Source troops {{sourceAvailableTroops}} · Commit {{committedTroops}} · Pressure {{attackPressure}}",
         "travelCost": "Cost {{totalTravelCost}}"

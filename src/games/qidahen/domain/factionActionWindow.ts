@@ -26,20 +26,17 @@ const defaultActionIdByFaction: Record<QidahenFactionId, string> = {
 
 const actionChoiceCatalog: Record<QidahenFactionId, QidahenActionChoice[]> = {
     ming: [
-        upgradeArmamentActionChoice,
         { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
         { id: 'recruit', label: '征召军队', cost: 1, detail: '弃 1 张手牌，建立 6 个等级 2 部队、2 个等级 4 川兵；已研发火炮技术时可建立炮兵。' },
         { id: 'grant-pardon', label: '赐印招安', cost: 3, detail: '指定 1 个对手，将相邻部队改为大明控制。' },
         { id: 'drive-tiger', label: '驱虎吞狼', cost: 3, detail: '指定 1 个对手抽 6 张牌，并由大明指挥其部队。' },
     ],
     mongol: [
-        upgradeArmamentActionChoice,
         { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
         { id: 'ma-shi-trade', label: '马市贸易', cost: 1, detail: '弃 1 张手牌，大明选择建立 1-3 个部队，蒙古抽 2 倍张数的手牌。' },
         { id: 'khan-edict', label: '大汗令箭', cost: 1, detail: '弃 1 张手牌，执行征兵训练或外交雇佣，不需再支付花费。' },
     ],
     jin: [
-        upgradeArmamentActionChoice,
         { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
         { id: 'marriage-subjugation', label: '联姻诱降', cost: 2, detail: '弃 2 张手牌，指定邻近控制区域，触发对手支付或转控判定。' },
     ],
@@ -59,7 +56,8 @@ export const getActionChoicesForFaction = (factionId: QidahenFactionId): Qidahen
 );
 
 export const getActionChoiceById = (actionId: string): QidahenActionChoice | undefined => (
-    factionOrder.flatMap((factionId) => actionChoiceCatalog[factionId]).find((choice) => choice.id === actionId)
+    [upgradeArmamentActionChoice, ...factionOrder.flatMap((factionId) => actionChoiceCatalog[factionId])]
+        .find((choice) => choice.id === actionId)
 );
 
 export const getDefaultActionIdForFaction = (factionId: QidahenFactionId): string => (
@@ -70,7 +68,7 @@ export const buildPaymentState = (
     selectedActionId: string,
     selectedCardCount = 0,
 ): QidahenPaymentState => {
-    const action = getActionChoiceById(selectedActionId) ?? actionChoiceCatalog.ming[2];
+    const action = getActionChoiceById(selectedActionId) ?? actionChoiceCatalog.ming[0];
     const selected = Math.min(selectedCardCount, action.cost);
     return {
         required: action.cost,

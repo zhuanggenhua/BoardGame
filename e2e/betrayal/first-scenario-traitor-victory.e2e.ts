@@ -31,7 +31,7 @@ test.describe('山屋惊魂第一剧本叛徒线', () => {
 
         await injectCore(page, createFirstScenarioReadyToTraitorVictoryRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('betrayal-runtime-header-grid').getByText('Haunt')).toBeVisible();
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('达里尔·海拉');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/轮到达里尔·海拉|可前往/i);
         await saveScreenshot(page, PRE_ENDGAME_SCREENSHOT);

@@ -258,6 +258,13 @@ function getOpponentId(playerId: PlayerId): PlayerId {
 // 效果解析
 // ============================================================================
 
+function shouldConsumeAutomaticUsage(ability: AbilityDef): boolean {
+  if (ability.usesPerTurn === undefined) return false;
+  if (ability.requiresTargetSelection || ability.interactionChain) return false;
+
+  return !ability.effects.some(effect => effect.type === 'custom');
+}
+
 /**
  * 解析单个效果，生成事件
  */
@@ -592,15 +599,17 @@ export function resolveAbilityEffects(
 
   // 解析所有效果
   const events: GameEvent[] = [];
-  
-  // 先触发技能激活事件（自动触发的通知事件，不消耗 usageCount）
-  // usageCount 的消耗由 executeActivateAbility 中的 ABILITY_TRIGGERED 事件负责
+
+  const consumeAutomaticUsage = shouldConsumeAutomaticUsage(ability);
+
+  // 先触发技能激活事件。需要后续确认/选择的技能只作为通知；
+  // 直接结算的 usesPerTurn 技能必须在这里消耗次数。
   events.push(createAbilityTriggeredEvent({
     abilityId: ability.id,
     abilityName: ability.name,
     sourceUnitId: ctx.sourceUnit.instanceId,
     sourcePosition: ctx.sourcePosition,
-    skipUsageCount: true,
+    skipUsageCount: !consumeAutomaticUsage,
   }, ctx.timestamp));
 
   // 解析效果

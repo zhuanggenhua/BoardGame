@@ -80,7 +80,7 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passi
 import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import { useDiceThroneDisplayPreference } from './ui/useDiceThroneDisplayPreference';
-import { canInteractDiceForCurrentBoard, shouldUseBoardDiceStage } from './ui/diceStagePolicy';
+import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray, shouldUseBoardDiceStage } from './ui/diceStagePolicy';
 import { useSyncedModalStackEntry } from '../../hooks/ui/useSyncedModalStackEntry';
 import { TokenResponseModal } from './ui/TokenResponseModal';
 import { InteractionOverlay } from './ui/InteractionOverlay';
@@ -1085,6 +1085,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         hasPassiveRerollSelection: !!rerollSelectingAction,
         hasDiceMultistepInteraction: !!diceMultistepInteraction,
     });
+    const showRailDiceTray = shouldShowRailDiceTray({
+        useBoardDiceStage,
+        hasKeptDice: G.dice.some((die) => die.isKept),
+    });
+    const boardStageDice = React.useMemo(() => G.dice.filter((die) => !die.isKept), [G.dice]);
+    const railDice = React.useMemo(() => getRailDiceForCurrentBoard(G.dice, useBoardDiceStage), [G.dice, useBoardDiceStage]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -1948,7 +1954,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         playerTokens={viewPlayer.tokens}
                         diceStage={useBoardDiceStage ? (
                             <BoardDiceStage
-                                dice={G.dice}
+                                dice={boardStageDice}
                                 rollCount={G.rollCount}
                                 currentPhase={currentPhase}
                                 canInteract={canInteractDice || !!rerollSelectingAction}
@@ -1970,7 +1976,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     />
 
                     <RightSidebar
-                        dice={G.dice}
+                        dice={railDice}
                         rollCount={G.rollCount}
                         rollLimit={G.rollLimit}
                         rollConfirmed={rollConfirmed}
@@ -2017,7 +2023,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         sellButtonVisible={sellButtonVisible}
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         multistepInteraction={diceMultistepState}
-                        showDiceTray={!useBoardDiceStage}
+                        showDiceTray={showRailDiceTray}
                         activeModifiers={activeModifiers}
                         attackModifierBonusDamage={
                             G.pendingAttack?.attackModifierBonusDamage ?? G.players[G.activePlayerId]?.pendingBonusDamage

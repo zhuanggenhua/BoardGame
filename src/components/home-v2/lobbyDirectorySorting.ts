@@ -1,14 +1,27 @@
 import type { GameConfig } from '../../config/games.config';
 import type { LobbyCategory } from './LobbyDirectory';
 
-const FEATURED_GAME_ORDER = [
-    'cardia',
+export const FEATURED_GAME_ORDER = [
     'dicethrone',
+    'cardia',
     'smashup',
     'splendor',
     'summonerwars',
     'tictactoe',
 ];
+
+export type LobbyDirectoryRankingFactors = {
+    gameId: string;
+    implementationStatusRank: number;
+    popularityScore: number;
+    featuredPriority: number;
+    originalIndex: number;
+};
+
+export type RankedLobbyDirectoryGame = {
+    game: GameConfig;
+    factors: LobbyDirectoryRankingFactors;
+};
 
 function matchesActiveCategory(
     game: Pick<GameConfig, 'category' | 'tags' | 'type'>,
@@ -27,7 +40,33 @@ function resolveGamePopularity(gameId: string, popularityByGameId: Record<string
     return popularityByGameId[gameId.toLowerCase()] ?? 0;
 }
 
-export function sortGamesForLobbyDirectory(
+function resolveImplementationStatusRank(game: Pick<GameConfig, 'statusTag'>) {
+    return game.statusTag === 'under_construction' ? 1 : 0;
+}
+
+function normalizePopularityByGameId(popularityByGameId: Record<string, number>) {
+    return Object.fromEntries(
+        Object.entries(popularityByGameId).map(([gameId, popularity]) => [gameId.toLowerCase(), popularity]),
+    );
+}
+
+function compareRankedLobbyDirectoryGames(left: RankedLobbyDirectoryGame, right: RankedLobbyDirectoryGame) {
+    if (left.factors.implementationStatusRank !== right.factors.implementationStatusRank) {
+        return left.factors.implementationStatusRank - right.factors.implementationStatusRank;
+    }
+
+    if (left.factors.popularityScore !== right.factors.popularityScore) {
+        return right.factors.popularityScore - left.factors.popularityScore;
+    }
+
+    if (left.factors.featuredPriority !== right.factors.featuredPriority) {
+        return left.factors.featuredPriority - right.factors.featuredPriority;
+    }
+
+    return left.factors.originalIndex - right.factors.originalIndex;
+}
+
+export function rankGamesForLobbyDirectory(
     games: GameConfig[],
     activeCategory: LobbyCategory,
     popularityByGameId: Record<string, number> = {},
@@ -35,27 +74,29 @@ export function sortGamesForLobbyDirectory(
 ) {
     const priorityById = new Map(featuredGameOrder.map((gameId, index) => [gameId, index]));
     const originalIndexById = new Map(games.map((game, index) => [game.id, index]));
-    const normalizedPopularityByGameId = Object.fromEntries(
-        Object.entries(popularityByGameId).map(([gameId, duration]) => [gameId.toLowerCase(), duration]),
-    );
+    const normalizedPopularityByGameId = normalizePopularityByGameId(popularityByGameId);
 
     return games
         .filter((game) => matchesActiveCategory(game, activeCategory))
-        .slice()
-        .sort((left, right) => {
-            const leftPopularity = resolveGamePopularity(left.id, normalizedPopularityByGameId);
-            const rightPopularity = resolveGamePopularity(right.id, normalizedPopularityByGameId);
-            if (leftPopularity !== rightPopularity) {
-                return rightPopularity - leftPopularity;
-            }
+        .map((game): RankedLobbyDirectoryGame => ({
+            game,
+            factors: {
+                gameId: game.id,
+                implementationStatusRank: resolveImplementationStatusRank(game),
+                popularityScore: resolveGamePopularity(game.id, normalizedPopularityByGameId),
+                featuredPriority: priorityById.get(game.id) ?? Number.MAX_SAFE_INTEGER,
+                originalIndex: originalIndexById.get(game.id) ?? Number.MAX_SAFE_INTEGER,
+            },
+        }))
+        .sort(compareRankedLobbyDirectoryGames);
+}
 
-            const leftPriority = priorityById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
-            const rightPriority = priorityById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
-            if (leftPriority !== rightPriority) {
-                return leftPriority - rightPriority;
-            }
-
-            return (originalIndexById.get(left.id) ?? Number.MAX_SAFE_INTEGER)
-                - (originalIndexById.get(right.id) ?? Number.MAX_SAFE_INTEGER);
-        });
+export function sortGamesForLobbyDirectory(
+    games: GameConfig[],
+    activeCategory: LobbyCategory,
+    popularityByGameId: Record<string, number> = {},
+    featuredGameOrder: string[] = FEATURED_GAME_ORDER,
+) {
+    return rankGamesForLobbyDirectory(games, activeCategory, popularityByGameId, featuredGameOrder)
+        .map(({ game }) => game);
 }

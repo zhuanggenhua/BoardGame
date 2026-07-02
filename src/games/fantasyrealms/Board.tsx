@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Crown, Search } from 'lucide-react';
 import { UndoProvider } from '../../contexts/UndoContext';
@@ -114,7 +113,7 @@ const ENDGAME_SCORE_SETTLE_MS = 220;
 const FANTASY_REALMS_BOARD_SHELL_SCOPE = '[data-game-page][data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]';
 const FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX = 16;
 const FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO = 1180 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
-const FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO = 1500 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
+const FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO = 1510 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 
 function debugFantasyRealmsOpeningLoop(label: string, payload?: Record<string, unknown>): void {
     if (typeof window === 'undefined') {
@@ -1417,9 +1416,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     aria-hidden={discardCards.length === 0 ? 'true' : undefined}
                 >
                     {minimalLiveCenterSlots.map((slot) => (slot.card ? (
-                        <motion.button
-                            initial={{ opacity: 0, y: -16, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                        <button
                             key={slot.key}
                             type="button"
                             className={`fr-card-button fr-card-button--live-center${core.focusCardId === slot.card.id && shouldShowTutorialSelectedCard(slot.card.id) ? ' fr-card-button--selected' : ''}${canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? ' fr-card-button--actionable' : ''}${liveMotionCue?.type === 'hand-to-center' && liveMotionCue.cardIds.includes(slot.card.id) ? ' fr-card-button--motion-center-receive' : ''}`}
@@ -1434,7 +1431,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         >
                             <FantasyRealmsCard card={slot.card} t={t} locale={locale} />
                             {shouldShowInlineMagnifyButton ? renderCardMagnifyButton(slot.card, 'discard', openCardMagnify, t) : null}
-                        </motion.button>
+                        </button>
                     ) : shouldShowLiveCenterPlaceholders ? (
                         <div
                             key={slot.key}
@@ -1678,8 +1675,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         --fr-live-opening-hand-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO.toFixed(6)});
                         --fr-live-center-row-width: var(--fr-live-content-width);
                         --fr-live-hand-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO.toFixed(6)});
-                        --fr-live-hand-header-width: var(--fr-board-shell-reference-width);
-                        --fr-live-action-right-offset: 52px;
+                        --fr-live-hand-header-width: var(--fr-live-content-width);
+                        --fr-live-desktop-ui-scale: 1;
+                        --fr-live-action-right-offset: calc(((var(--fr-board-shell-reference-width) - var(--fr-live-content-width)) / 2) + 44px);
                         --fr-live-center-card-width: min(${LIVE_CENTER_CARD_WIDTH_PX}px, max(${LIVE_CENTER_CARD_MIN_WIDTH_PX}px, calc(var(--fr-live-center-row-width) / ${LIVE_CENTER_CARD_WIDTH_FIT_UNITS})));
                         --fr-live-center-card-height: calc(var(--fr-live-center-card-width) / 0.72);
                         --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) * ${LIVE_CENTER_CARD_STRIDE_MULTIPLIER});
@@ -3011,29 +3009,36 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-board--minimal-live .fr-card--face {
                     box-shadow: inset 0 0 0 0.5px rgba(255, 250, 239, 0.03);
                 }
-                .fr-board--minimal-live .fr-card-button--motion-hand-draw .fr-card {
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw {
                     animation: fr-live-hand-arrive-from-deck 920ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
                 }
-                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(2n) .fr-card {
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(2n) {
                     animation-delay: 32ms;
                 }
-                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(3n) .fr-card {
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(3n) {
                     animation-delay: 64ms;
                 }
-                .fr-board--minimal-live .fr-card-button--motion-hand-take .fr-card {
+                .fr-board--minimal-live .fr-card-button--motion-hand-take {
                     animation: fr-live-hand-arrive-from-center 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
                 }
-                .fr-card-button--motion-hand-opening .fr-card {
+                .fr-card-button--motion-hand-opening {
                     animation: fr-live-opening-deal 960ms cubic-bezier(0.16, 0.88, 0.24, 1) both;
                 }
-                .fr-card-button--motion-hand-opening:nth-child(2n) .fr-card {
+                .fr-card-button--motion-hand-opening:nth-child(2n) {
                     animation-delay: 42ms;
                 }
-                .fr-card-button--motion-hand-opening:nth-child(3n) .fr-card {
+                .fr-card-button--motion-hand-opening:nth-child(3n) {
                     animation-delay: 84ms;
                 }
-                .fr-board--minimal-live .fr-card-button--motion-center-receive .fr-card {
+                .fr-board--minimal-live .fr-card-button--motion-center-receive {
                     animation: fr-live-center-row-receive-discard 1200ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw,
+                .fr-board--minimal-live .fr-card-button--motion-hand-take,
+                .fr-board--minimal-live .fr-card-button--motion-hand-opening,
+                .fr-board--minimal-live .fr-card-button--motion-center-receive {
+                    transform-origin: center center;
+                    will-change: transform, opacity;
                 }
                 @keyframes fr-live-opening-deal {
                     0% {
@@ -3823,6 +3828,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 @media (prefers-reduced-motion: reduce) {
                     .fr-board--minimal-live .fr-card-button--live-center .fr-card,
                     .fr-board--minimal-live .fr-card-button--live-hand .fr-card,
+                    .fr-board--minimal-live .fr-card-button--motion-hand-draw,
+                    .fr-board--minimal-live .fr-card-button--motion-hand-take,
+                    .fr-board--minimal-live .fr-card-button--motion-hand-opening,
+                    .fr-board--minimal-live .fr-card-button--motion-center-receive,
                     .fr-board--minimal-live .fr-live-action-button,
                     .fr-live-chip--turn-active,
                     .fr-board--minimal-live .fr-live-deck-stack {
@@ -3832,6 +3841,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     .fr-board--minimal-live .fr-card-button--live-center.fr-card-button--actionable:hover .fr-card,
                     .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable:hover .fr-card,
                     .fr-board--minimal-live .fr-card-button--armed .fr-card,
+                    .fr-board--minimal-live .fr-card-button--motion-hand-draw,
+                    .fr-board--minimal-live .fr-card-button--motion-hand-take,
+                    .fr-board--minimal-live .fr-card-button--motion-hand-opening,
+                    .fr-board--minimal-live .fr-card-button--motion-center-receive,
                     .fr-board--minimal-live .fr-live-action-button--enabled:hover,
                     .fr-board--minimal-live .fr-live-action-button--enabled:active {
                         transform: none;
@@ -4532,87 +4545,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     .fr-combo-item {
                         padding: 8px 10px;
                         font-size: 12px;
-                    }
-                }
-                @media (max-width: 1023px) and (orientation: landscape) {
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table {
-                        overflow: hidden;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-topbar {
-                        grid-template-columns: 188px minmax(0, 1fr) 156px;
-                        gap: 16px;
-                        width: 100%;
-                        max-width: 100%;
-                        padding: 10px 20px 0;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-score-strip {
-                        width: 156px;
-                        justify-self: end;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-score-band {
-                        height: 64px;
-                        padding: 8px 10px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-card-button--live-center {
-                        width: var(--fr-live-center-card-width);
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-hand-zone {
-                        overflow: visible;
-                        padding-left: 18px;
-                        padding-right: 190px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone,
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
-                        width: var(--fr-live-hand-row-width);
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-action-zone {
-                        right: 24px;
-                        bottom: 26px;
-                        top: auto;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-action-button {
-                        width: 160px;
-                        min-height: 44px;
-                        padding: 7px 12px;
-                        border-radius: 10px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-action-button-label {
-                        max-width: 124px;
-                        font-size: 15px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-deck {
-                        gap: 8px;
-                        padding-top: 0;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-deck-stack {
-                        width: 78px;
-                        height: 108px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-deck-count {
-                        right: 6px;
-                        bottom: 7px;
-                        min-width: 34px;
-                        height: 26px;
-                        padding: 0 8px;
-                        font-size: 19px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-chip--turn {
-                        min-width: 112px;
-                        font-size: 20px;
-                        padding: 0 14px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-chip--progress {
-                        min-width: 74px;
-                        font-size: 20px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-chip--round {
-                        min-height: 30px;
-                        padding: 0 10px;
-                        font-size: 11px;
-                    }
-                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-center-row {
-                        padding-top: 34px;
-                        padding-bottom: 8px;
                     }
                 }
             `}</style>

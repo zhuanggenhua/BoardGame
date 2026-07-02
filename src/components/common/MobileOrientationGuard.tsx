@@ -17,6 +17,10 @@ import {
     isHomeEntryRoute,
     subscribeHomeEntryStyleChange,
 } from '../../lib/homeV2Routing';
+import {
+    isStandaloneWebApp,
+    tryLockScreenOrientation,
+} from '../../lib/webFullscreen';
 
 type GameMobileEntry = Pick<
     GameManifestEntry,
@@ -82,20 +86,6 @@ const isNativeAppShell = async () => {
     return capacitorCore?.Capacitor.isNativePlatform() ?? false;
 };
 
-const lockScreenOrientationFallback = async (orientation: 'landscape' | 'portrait'): Promise<boolean> => {
-    if (typeof window === 'undefined') return false;
-    const orientationApi = window.screen?.orientation as (ScreenOrientation & {
-        lock?: (orientation: 'landscape' | 'portrait') => Promise<void>;
-    }) | undefined;
-    if (typeof orientationApi?.lock !== 'function') return false;
-    try {
-        await orientationApi.lock(orientation);
-        return true;
-    } catch {
-        return false;
-    }
-};
-
 const lockScreenByRoute = async (targetOrientation: 'landscape' | 'portrait'): Promise<boolean> => {
     try {
         const screenOrientation = await loadScreenOrientation();
@@ -107,7 +97,7 @@ const lockScreenByRoute = async (targetOrientation: 'landscape' | 'portrait'): P
         // ignore and fallback below
     }
 
-    return lockScreenOrientationFallback(targetOrientation);
+    return tryLockScreenOrientation(targetOrientation);
 };
 
 const renderBannerVisual = (bannerKind: GameMobileBannerKind) => {
@@ -174,6 +164,7 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
     const [nativeAppShell, setNativeAppShell] = useState(() => hasCapacitorRuntime());
     const nativeAppShellRef = useRef(nativeAppShell);
+    const standaloneWebApp = isStandaloneWebApp();
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
     const [homeEntryStyleRevision, setHomeEntryStyleRevision] = useState(0);
     nativeAppShellRef.current = nativeAppShell;
@@ -296,7 +287,7 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     }, [activeBannerKind]);
 
     useEffect(() => {
-        if (!nativeAppShell || !targetOrientation) return;
+        if ((!nativeAppShell && !standaloneWebApp) || !targetOrientation) return;
 
         let disposed = false;
         const timeoutIds: number[] = [];
@@ -342,7 +333,7 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('orientationchange', handleOrientationChange);
         };
-    }, [nativeAppShell, targetOrientation, location.pathname]);
+    }, [nativeAppShell, standaloneWebApp, targetOrientation, location.pathname]);
 
     return (
         <>

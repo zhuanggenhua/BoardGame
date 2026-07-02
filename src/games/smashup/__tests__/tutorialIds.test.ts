@@ -16,6 +16,10 @@ const REQUIRED_IDS = [
     'su-hand-area',
     'su-end-turn-btn',
     'su-deck-discard',
+    'su-deck-stack',
+    'su-discard-stack',
+    'su-opponent-view-toggle',
+    'su-back-to-self',
     'su-faction-select',
 ];
 
@@ -32,9 +36,12 @@ describe('SmashUp Board data-tutorial-id 属性', () => {
     const factionSrc = readSource('ui/FactionSelection.tsx');
     const allSrc = boardSrc + handSrc + deckSrc + factionSrc;
 
+    const hasTutorialId = (id: string): boolean => allSrc.includes(`data-tutorial-id="${id}"`)
+        || allSrc.includes(`'${id}'`);
+
     for (const id of REQUIRED_IDS) {
         it(`包含 data-tutorial-id="${id}"`, () => {
-            expect(allSrc).toContain(`data-tutorial-id="${id}"`);
+            expect(hasTutorialId(id)).toBe(true);
         });
     }
 

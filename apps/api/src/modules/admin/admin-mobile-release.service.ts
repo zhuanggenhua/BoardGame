@@ -47,6 +47,8 @@ type DeployRunnerResponse = {
     ok?: boolean;
     mode?: string;
     jobId?: string;
+    status?: 'queued' | 'running' | 'succeeded' | 'failed';
+    exitCode?: number | null;
     command?: string;
     output?: string;
     parsed?: Record<string, string>;
@@ -76,6 +78,7 @@ type GitHubWorkflowDispatchResponse = {
 type DeployRunnerRequest = {
     action?: string;
     args?: string[];
+    otaArgs?: string[];
     tag?: string;
     confirmText?: string;
 };
@@ -147,7 +150,7 @@ export class AdminMobileReleaseService {
                 rollbackExecutionEnabled: Boolean(deployRunnerReady && deployScriptReady),
                 rollbackLastTarget: await this.resolveDeployRollbackTarget({ action: 'rollback-last' }),
             },
-            running: this.running,
+            running: this.running || Boolean(deployRunnerHealth?.activeJobId),
         };
     }
 
@@ -289,18 +292,20 @@ export class AdminMobileReleaseService {
 
     async previewDeployUpdate(dto: DeployUpdatePreviewDto) {
         const args = this.buildDeployUpdateArgs(dto);
+        const otaArgs = this.buildDeployUpdateOtaArgs(dto);
         return {
             ok: true,
             mode: 'preview',
-            command: this.buildDeployCommand(args),
+            command: `${this.buildDeployCommand(args)} && node scripts/mobile/release-android.mjs ${otaArgs.join(' ')}`,
             output: this.isDeployRunnerConfigured()
-                ? '已配置独立部署 runner。请确认目标后再执行更新部署。'
-                : '未配置独立部署 runner，当前只生成更新部署命令预览。',
+                ? '已配置独立部署 runner。请确认目标后再执行“更新部署 + Android OTA”。'
+                : '未配置独立部署 runner，当前只生成“更新部署 + Android OTA”命令预览。',
         };
     }
 
     async executeDeployUpdate(dto: DeployUpdateExecuteDto) {
         const args = this.buildDeployUpdateArgs(dto);
+        const otaArgs = this.buildDeployUpdateOtaArgs(dto);
         if (!this.isDeployRunnerConfigured()) {
             throw new HttpException({
                 message: '未配置独立部署 runner。请在服务器宿主机启动 deploy runner，并配置 BG_DEPLOY_RUNNER_URL 与 BG_DEPLOY_RUNNER_TOKEN。',
@@ -316,18 +321,48 @@ export class AdminMobileReleaseService {
 
         this.running = true;
         try {
-            const result = await this.callDeployRunner('/deploy/update/execute', dto);
+            const result = await this.callDeployRunner('/deploy/update-and-ota/execute', {
+                tag: dto.tag,
+                confirmText: dto.confirmText,
+                otaArgs,
+            });
             return {
                 ok: result.ok ?? true,
-                mode: result.mode ?? 'execute',
+                kind: 'ota' as const,
+                mode: 'execute',
                 jobId: result.jobId,
-                command: result.command ?? this.buildDeployCommand(args),
-                parsed: {},
-                output: result.output ?? '更新部署任务已提交到独立 runner。',
+                status: result.status ?? 'queued',
+                exitCode: result.exitCode ?? null,
+                command: result.command ?? `${this.buildDeployCommand(args)} && node scripts/mobile/release-android.mjs ${otaArgs.join(' ')}`,
+                parsed: result.parsed ?? {},
+                latest: null,
+                output: result.output ?? '更新部署 + Android OTA 任务已提交到独立 runner。',
             };
         } finally {
             this.running = false;
         }
+    }
+
+    async getDeployJob(jobId: string) {
+        const normalizedJobId = jobId.trim();
+        if (!normalizedJobId || normalizedJobId.length > 120 || !/^[A-Za-z0-9._:-]+$/.test(normalizedJobId)) {
+            throw new HttpException('无效的部署任务 ID', HttpStatus.BAD_REQUEST);
+        }
+        const result = await this.callDeployRunnerGet(`/jobs/${encodeURIComponent(normalizedJobId)}`);
+        const status = result.status ?? 'queued';
+        const output = result.output ?? '';
+        return {
+            ok: status !== 'failed',
+            kind: 'ota' as const,
+            mode: 'execute',
+            jobId: normalizedJobId,
+            status,
+            exitCode: result.exitCode ?? null,
+            command: result.command ?? '',
+            parsed: result.parsed ?? this.parseScriptOutput(output),
+            latest: null,
+            output,
+        };
     }
 
     private buildOtaReleaseArgs(dto: AndroidOtaReleaseDto) {
@@ -604,6 +639,20 @@ export class AdminMobileReleaseService {
         return ['update', tag];
     }
 
+    private buildDeployUpdateOtaDto(dto: DeployUpdatePreviewDto): AndroidOtaReleaseDto {
+        return {
+            channel: dto.channel ?? 'stable',
+            otaVersionBase: dto.otaVersionBase,
+            forceUpdate: dto.forceUpdate ?? true,
+            dryRun: false,
+            skipLatest: false,
+        };
+    }
+
+    private buildDeployUpdateOtaArgs(dto: DeployUpdatePreviewDto) {
+        return this.buildOtaReleaseArgs(this.buildDeployUpdateOtaDto(dto));
+    }
+
     private isDeployRunnerConfigured() {
         return Boolean(this.getDeployRunnerConfig());
     }
@@ -672,6 +721,7 @@ export class AdminMobileReleaseService {
                 body: JSON.stringify({
                     action: body.action,
                     args: body.args,
+                    otaArgs: body.otaArgs,
                     tag: body.tag,
                     confirmText: body.confirmText,
                 }),
@@ -688,6 +738,37 @@ export class AdminMobileReleaseService {
             throw new HttpException({
                 message: data?.error || data?.output || '独立部署 runner 执行失败',
                 error: data?.error || 'deploy runner failed',
+                output: data?.output,
+            }, response.status);
+        }
+        return data ?? { ok: true };
+    }
+
+    private async callDeployRunnerGet(pathname: string): Promise<DeployRunnerResponse> {
+        const config = this.getDeployRunnerConfig();
+        if (!config) {
+            throw new HttpException('独立部署 runner 未配置', HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        let response: Response;
+        try {
+            response = await fetch(`${config.url}${pathname}`, {
+                headers: {
+                    'Authorization': `Bearer ${config.token}`,
+                },
+            });
+        } catch (error) {
+            throw new HttpException({
+                message: '无法连接独立部署 runner',
+                error: error instanceof Error ? error.message : 'runner connection failed',
+            }, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        const data = await response.json().catch(() => null) as DeployRunnerResponse | null;
+        if (!response.ok) {
+            throw new HttpException({
+                message: data?.error || data?.output || '独立部署 runner 查询失败',
+                error: data?.error || 'deploy runner query failed',
                 output: data?.output,
             }, response.status);
         }

@@ -21,6 +21,19 @@ function syncQidahenSpecificInteraction(
     const currentSourceId = getInteractionSourceId(current);
     const interaction = buildQidahenRuntimeInteractionFromBuilders(state, sourceId);
 
+    if (current && currentSourceId !== sourceId && interaction) {
+        return {
+            ...state,
+            sys: {
+                ...state.sys,
+                interaction: {
+                    ...interactionState,
+                    current: interaction,
+                },
+            },
+        };
+    }
+
     if (!interaction) {
         if (currentSourceId !== sourceId) {
             return state;

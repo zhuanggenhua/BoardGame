@@ -39,4 +39,51 @@ describe('QidahenDomain.playerView', () => {
         expect(mingView.selectedPaymentCardIds).toEqual([]);
         expect(mongolView.selectedPaymentCardIds).toEqual(mongolCardIds);
     });
+
+    it('联机视角不会泄漏其他阵营正在直点的手牌行动 id', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], fakeRandom);
+        const jinCardId = core.handCards.find((card) => card.faction === 'jin')?.id;
+        expect(jinCardId).toBeTruthy();
+
+        const mutatedCore: QidahenCore = {
+            ...core,
+            selectedHandActionCardId: jinCardId!,
+        };
+        const mingView = QidahenDomain.playerView?.(mutatedCore, core.factions.ming.playerId) as Partial<QidahenCore>;
+        const jinView = QidahenDomain.playerView?.(mutatedCore, core.factions.jin.playerId) as Partial<QidahenCore>;
+
+        expect(mingView.selectedHandActionCardId).toBeNull();
+        expect(jinView.selectedHandActionCardId).toBe(jinCardId);
+    });
+
+    it('联机视角只向所属阵营展示自己的手牌上限弃牌选择', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], fakeRandom);
+        const jinCardIds = core.handCards
+            .filter((card) => card.faction === 'jin')
+            .slice(0, 2)
+            .map((card) => card.id);
+        expect(jinCardIds.length).toBe(2);
+
+        const mutatedCore: QidahenCore = {
+            ...core,
+            handLimitDiscardSelection: {
+                factionId: 'jin',
+                factionName: '后金',
+                handLimit: 4,
+                handCount: 6,
+                requiredDiscardCount: 2,
+                candidateCardIds: jinCardIds,
+                selectedCardIds: [jinCardIds[0]],
+            },
+        };
+        const mingView = QidahenDomain.playerView?.(mutatedCore, core.factions.ming.playerId) as Partial<QidahenCore>;
+        const jinView = QidahenDomain.playerView?.(mutatedCore, core.factions.jin.playerId) as Partial<QidahenCore>;
+
+        expect(mingView.handLimitDiscardSelection).toBeNull();
+        expect(jinView.handLimitDiscardSelection).toMatchObject({
+            factionId: 'jin',
+            candidateCardIds: jinCardIds,
+            selectedCardIds: [jinCardIds[0]],
+        });
+    });
 });

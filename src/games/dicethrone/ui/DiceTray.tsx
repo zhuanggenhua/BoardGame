@@ -312,7 +312,9 @@ export const DiceTray = ({
     };
 
     if (isBoardPresentation) {
-        const boardDice = dice.map((d) => {
+        const boardDice = dice
+            .filter((d) => !d.isKept)
+            .map((d) => {
             const selected = isSelected(d.id);
             const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
             const canModifyDie = true;
@@ -334,7 +336,7 @@ export const DiceTray = ({
                 clickable,
                 definitionId: d.definitionId,
             };
-        });
+            });
 
         return (
             <BoardDiceBoxTray

@@ -113,6 +113,51 @@ const server = createServer(async (req, res) => {
             return;
         }
 
+        if (req.method === 'POST' && req.url === '/deploy/update-and-ota/execute') {
+            if (!authorize(req)) {
+                sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+                return;
+            }
+            if (!deployScriptReady()) {
+                sendJson(res, 503, { ok: false, error: 'Deploy script not found' });
+                return;
+            }
+            if (!mobileReleaseScriptReady()) {
+                sendJson(res, 503, { ok: false, error: 'Mobile release script not found' });
+                return;
+            }
+            if (activeJobId) {
+                sendJson(res, 409, { ok: false, error: 'Deploy runner is busy', activeJobId });
+                return;
+            }
+
+            const body = await readJson(req);
+            if (body.confirmText !== '确认部署') {
+                sendJson(res, 400, { ok: false, error: 'Confirmation text mismatch' });
+                return;
+            }
+
+            const deployArgs = buildUpdateArgs(body);
+            const otaArgs = validateMobileReleaseArgs({ args: body.otaArgs });
+            if (otaArgs[0] !== 'ota') {
+                sendJson(res, 400, { ok: false, error: 'Only Android OTA release can be chained after deploy update' });
+                return;
+            }
+            const job = createJob(
+                deployArgs,
+                `${buildDeployCommand(deployArgs)} && ${buildMobileReleaseCommand(otaArgs)}`,
+            );
+            runDeployAndMobileReleaseJob(job, deployArgs, otaArgs);
+            sendJson(res, 202, {
+                ok: true,
+                mode: 'execute',
+                jobId: job.id,
+                command: job.command,
+                output: 'Deploy update + Android OTA job accepted by independent runner.',
+            });
+            return;
+        }
+
         if (req.method === 'POST' && req.url === '/mobile-release/android/run') {
             if (!authorize(req)) {
                 sendJson(res, 401, { ok: false, error: 'Unauthorized' });
@@ -264,13 +309,13 @@ function buildUpdateArgs(body) {
     return ['update', tag];
 }
 
-function createJob(args) {
+function createJob(args, command = buildDeployCommand(args)) {
     const now = new Date().toISOString();
     const job = {
         id: randomUUID(),
         ok: true,
         status: 'queued',
-        command: buildDeployCommand(args),
+        command,
         createdAt: now,
         startedAt: null,
         finishedAt: null,
@@ -314,6 +359,58 @@ function runDeployJob(job, args) {
         job.finishedAt = new Date().toISOString();
         activeJobId = null;
     });
+}
+
+function runDeployAndMobileReleaseJob(job, deployArgs, mobileArgs) {
+    job.status = 'running';
+    job.startedAt = new Date().toISOString();
+    runJobProcess(job, 'bash', [deployScriptPath(), ...deployArgs], (deployCode) => {
+        if (deployCode !== 0) {
+            finishJob(job, deployCode);
+            return;
+        }
+        appendJobOutput(job, '\n[deploy-runner] production deploy succeeded; starting Android OTA.\n');
+        runJobProcess(job, process.execPath, [mobileReleaseScriptPath(), ...mobileArgs], (otaCode) => {
+            finishJob(job, otaCode);
+        }, {
+            NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=4096',
+        });
+    });
+}
+
+function runJobProcess(job, command, args, onExit, extraEnv = {}) {
+    const child = spawn(command, args, {
+        cwd: rootDir,
+        env: {
+            ...process.env,
+            ...extraEnv,
+        },
+        windowsHide: true,
+    });
+
+    child.stdout.on('data', (chunk) => appendJobOutput(job, chunk));
+    child.stderr.on('data', (chunk) => appendJobOutput(job, chunk));
+    child.on('error', (error) => {
+        appendJobOutput(job, `\n${error.message}`);
+        onExit(1);
+    });
+    child.on('exit', (code) => {
+        onExit(code ?? 1);
+    });
+}
+
+function appendJobOutput(job, chunk) {
+    job.output += chunk.toString('utf8');
+    if (job.output.length > outputLimit) {
+        job.output = job.output.slice(job.output.length - outputLimit);
+    }
+}
+
+function finishJob(job, exitCode) {
+    job.exitCode = exitCode ?? 1;
+    job.status = job.exitCode === 0 ? 'succeeded' : 'failed';
+    job.finishedAt = new Date().toISOString();
+    activeJobId = null;
 }
 
 function deployScriptPath() {
@@ -376,6 +473,10 @@ function validateMobileReleaseArgs(body) {
         throw new Error('Unsupported mobile release command');
     }
     return args;
+}
+
+function buildMobileReleaseCommand(args) {
+    return ['node', 'scripts/mobile/release-android.mjs', ...args].join(' ');
 }
 
 function runMobileRelease(args) {

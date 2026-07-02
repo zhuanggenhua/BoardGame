@@ -3,6 +3,7 @@ import {
     qidahenMingHandPreview,
     qidahenMongolHandPreview,
 } from '../ui/cardAtlas';
+import { resolveQidahenFormalHandCardIdentity } from './handCardIdentity';
 import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';
 
 const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;
@@ -27,6 +28,10 @@ export const buildInitialHandCards = (
         return Array.from({ length: visibleCardCount }, (_, index) => {
             const cardId = `hand-${nextId}`;
             nextId += 1;
+            const identity = resolveQidahenFormalHandCardIdentity(
+                factionId,
+                index % QIDAHEN_FACTION_HAND_PREVIEW_COUNT,
+            );
             return {
                 id: cardId,
                 label: `${factions[factionId].name} 手牌 ${index + 1}`,
@@ -34,9 +39,7 @@ export const buildInitialHandCards = (
                 previewRef: previewForFaction(index % QIDAHEN_FACTION_HAND_PREVIEW_COUNT),
                 accent: factionId,
                 status: index < factions[factionId].handCount ? 'payable' as const : 'idle' as const,
-                cardKind: 'unknown' as const,
-                armamentId: null,
-                cardDefId: null,
+                ...identity,
             };
         });
     });
@@ -58,17 +61,19 @@ export const buildDrawnHandCards = (
     const factionCardCount = state.handCards.filter((card) => card.faction === factionId).length;
     const previewBase = (state.factions[factionId].discardPileCount ?? 0) + factionCardCount;
     const previewForFaction = factionHandPreviewById[factionId];
-    const nextCards = Array.from({ length: drawCards }, (_, index) => ({
-        id: `hand-${currentMaxIndex + index + 1}`,
-        label: `${state.factions[factionId].name} 手牌 ${factionCardCount + index + 1}`,
-        faction: factionId,
-        previewRef: previewForFaction((previewBase + index) % QIDAHEN_FACTION_HAND_PREVIEW_COUNT),
-        accent: factionId,
-        status: 'payable' as const,
-        cardKind: 'unknown' as const,
-        armamentId: null,
-        cardDefId: null,
-    }));
+    const nextCards = Array.from({ length: drawCards }, (_, index) => {
+        const previewIndex = (previewBase + index) % QIDAHEN_FACTION_HAND_PREVIEW_COUNT;
+        const identity = resolveQidahenFormalHandCardIdentity(factionId, previewIndex);
+        return {
+            id: `hand-${currentMaxIndex + index + 1}`,
+            label: `${state.factions[factionId].name} 手牌 ${factionCardCount + index + 1}`,
+            faction: factionId,
+            previewRef: previewForFaction(previewIndex),
+            accent: factionId,
+            status: 'payable' as const,
+            ...identity,
+        };
+    });
     return [...state.handCards, ...nextCards];
 };
 

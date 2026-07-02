@@ -393,6 +393,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                 <div
                     className={`flex flex-col items-center group ${deckQueryEnabled && aggregatedDeckCards.length > 0 ? 'cursor-pointer' : ''}`}
                     data-testid="su-deck-stack"
+                    data-tutorial-id="su-deck-stack"
                     data-deck-toggle
                     onClick={() => {
                         if (!deckQueryEnabled || aggregatedDeckCards.length === 0) return;
@@ -457,6 +458,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
             <div
                 className="flex flex-col items-center pointer-events-auto group cursor-pointer relative"
                 data-testid="su-discard-toggle"
+                data-tutorial-id="su-discard-stack"
                 data-discard-toggle
                 onClick={() => {
                     if (autoOpenPanel) return;

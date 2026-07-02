@@ -26,6 +26,7 @@ import {
 import { resolveAndroidWebAppDownload } from '../../lib/mobile/androidNativeUpdates';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { shouldShowAndroidOtaToastOncePerDay } from '../../lib/mobile/otaToastGate';
+import { toggleDocumentFullscreen } from '../../lib/webFullscreen';
 
 const HUD_MODAL_NS = 'hud';
 const LazyAudioProvider = lazy(() => import('../../contexts/AudioContext').then(m => ({ default: m.AudioProvider })));
@@ -34,19 +35,6 @@ const LazyFriendsChatModal = lazy(() => import('../social/FriendsChatModal').the
 const LazyAboutModal = lazy(() => import('./AboutModal').then(m => ({ default: m.AboutModal })));
 const LazyFeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
 
-type LegacyFullscreenDocument = Document & {
-    msExitFullscreen?: () => Promise<void> | void;
-    mozCancelFullScreen?: () => Promise<void> | void;
-    webkitExitFullscreen?: () => Promise<void> | void;
-};
-
-type LegacyFullscreenElement = HTMLElement & {
-    msRequestFullscreen?: () => Promise<void> | void;
-    mozRequestFullScreen?: () => Promise<void> | void;
-    webkitRequestFullscreen?: (keyboardInput?: number) => Promise<void> | void;
-};
-
-const LEGACY_KEYBOARD_INPUT_ALLOWED = 1;
 const HOME_STYLE_QUERY_PARAM = 'homeStyle';
 
 const openExternalUrlInNewTab = (url: string) => {
@@ -106,41 +94,22 @@ export const GlobalHUD = () => {
     };
 
     const toggleFullscreen = async () => {
-        const doc = document as LegacyFullscreenDocument;
-        const elem = document.documentElement as LegacyFullscreenElement;
-
-        if (!document.fullscreenElement) {
-            try {
-                if (elem.requestFullscreen) {
-                    await elem.requestFullscreen();
-                } else if (elem.msRequestFullscreen) {
-                    await elem.msRequestFullscreen();
-                } else if (elem.mozRequestFullScreen) {
-                    await elem.mozRequestFullScreen();
-                } else if (elem.webkitRequestFullscreen) {
-                    await elem.webkitRequestFullscreen(LEGACY_KEYBOARD_INPUT_ALLOWED);
-                }
-                setIsFullscreen(true);
-            } catch {
-                toast.error(t('hud.fullscreen.enterFailed'));
-            }
+        const result = await toggleDocumentFullscreen();
+        if (result.ok) {
+            setIsFullscreen(result.state === 'entered');
             return;
         }
 
-        try {
-            if (document.exitFullscreen) {
-                await document.exitFullscreen();
-            } else if (doc.msExitFullscreen) {
-                await doc.msExitFullscreen();
-            } else if (doc.mozCancelFullScreen) {
-                await doc.mozCancelFullScreen();
-            } else if (doc.webkitExitFullscreen) {
-                await doc.webkitExitFullscreen();
-            }
-            setIsFullscreen(false);
-        } catch {
-            toast.error(t('hud.fullscreen.exitFailed'));
+        if (result.reason === 'ios-web-limited') {
+            toast.info(t('hud.fullscreen.iosLimited'));
+            return;
         }
+
+        toast.error(t(
+            result.reason === 'exit-failed'
+                ? 'hud.fullscreen.exitFailed'
+                : 'hud.fullscreen.enterFailed',
+        ));
     };
 
     const handleOpenAppDownload = async () => {

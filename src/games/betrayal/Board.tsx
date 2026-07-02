@@ -36,6 +36,7 @@ import type {
 } from './game';
 import {
     BETRAYAL_COMMANDS,
+    BetrayalDomain,
     EXPLORER_CATALOG,
     createBetrayalCharacterSelectCore,
     getBetrayalScenarioConfig,
@@ -308,8 +309,12 @@ function createInitialPreviewState(core: BetrayalCore): PreviewState {
     const latestDrawnCardId = core.latestDiscovery && core.latestDiscovery.kind !== 'event'
         ? core.currentExplorerInventory[core.currentExplorerInventory.length - 1]?.id ?? null
         : null;
+    const firstUsableCardId = core.currentExplorerInventory.find((card) => (
+        core.turnStartInventoryCardIds.includes(card.id)
+        && !core.usedCardIdsThisTurn.includes(card.id)
+    ))?.id ?? null;
     return {
-        selectedInventoryCardId: latestDrawnCardId ?? core.currentExplorerInventory[0]?.id ?? null,
+        selectedInventoryCardId: firstUsableCardId ?? latestDrawnCardId ?? core.currentExplorerInventory[0]?.id ?? null,
         selectedTradeTargetPlayerId: resolveTradeTargets(core)[0]?.playerId ?? null,
         interactionMode: 'default',
     };
@@ -574,10 +579,38 @@ const ROOM_VISUAL_BY_ID: Partial<Record<BetrayalRoomVisualId, BetrayalRoomTileVi
     diningRoom: BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
     foyer: BETRAYAL_ROOM_TILE_VISUALS.startGroundFloorStaircase,
     ballroom: BETRAYAL_ROOM_TILE_VISUALS.ballroom,
+    kitchen: BETRAYAL_ROOM_TILE_VISUALS.kitchen,
     chapel: BETRAYAL_ROOM_TILE_VISUALS.chapel,
     larder: BETRAYAL_ROOM_TILE_VISUALS.larder,
+    laboratory: BETRAYAL_ROOM_TILE_VISUALS.laboratory,
+    graveyard: BETRAYAL_ROOM_TILE_VISUALS.graveyard,
+    panicRoom: BETRAYAL_ROOM_TILE_VISUALS.panicRoom,
+    undergroundCavern: BETRAYAL_ROOM_TILE_VISUALS.undergroundCavern,
     library: BETRAYAL_ROOM_TILE_VISUALS.library,
     ritualRoom: BETRAYAL_ROOM_TILE_VISUALS.ritualRoom,
+    undergroundLake: BETRAYAL_ROOM_TILE_VISUALS.undergroundLake,
+    catacombs: BETRAYAL_ROOM_TILE_VISUALS.catacombs,
+    secretStaircase: BETRAYAL_ROOM_TILE_VISUALS.secretStaircase,
+    furnaceRoom: BETRAYAL_ROOM_TILE_VISUALS.furnaceRoom,
+    winterBedroom: BETRAYAL_ROOM_TILE_VISUALS.winterBedroom,
+    guestQuarters: BETRAYAL_ROOM_TILE_VISUALS.guestQuarters,
+    bloodyRoom: BETRAYAL_ROOM_TILE_VISUALS.bloodyRoom,
+    collapsedRoom: BETRAYAL_ROOM_TILE_VISUALS.collapsedRoom,
+    junkRoom: BETRAYAL_ROOM_TILE_VISUALS.junkRoom,
+    specimenRoom: BETRAYAL_ROOM_TILE_VISUALS.specimenRoom,
+    charredRoom: BETRAYAL_ROOM_TILE_VISUALS.charredRoom,
+    salon: BETRAYAL_ROOM_TILE_VISUALS.salon,
+    primaryBedroom: BETRAYAL_ROOM_TILE_VISUALS.primaryBedroom,
+    organRoom: BETRAYAL_ROOM_TILE_VISUALS.organRoom,
+    soundproofedRoom: BETRAYAL_ROOM_TILE_VISUALS.soundproofedRoom,
+    nursery: BETRAYAL_ROOM_TILE_VISUALS.nursery,
+    operatingTheatre: BETRAYAL_ROOM_TILE_VISUALS.operatingTheatre,
+    crawlspace: BETRAYAL_ROOM_TILE_VISUALS.crawlspace,
+    gameRoom: BETRAYAL_ROOM_TILE_VISUALS.gameRoom,
+    gymnasium: BETRAYAL_ROOM_TILE_VISUALS.gymnasium,
+    armory: BETRAYAL_ROOM_TILE_VISUALS.armory,
+    crampedPassageway: BETRAYAL_ROOM_TILE_VISUALS.crampedPassageway,
+    mysticElevator: BETRAYAL_ROOM_TILE_VISUALS.mysticElevator,
     backUpper: BETRAYAL_ROOM_TILE_VISUALS.backUpper,
     backGround: BETRAYAL_ROOM_TILE_VISUALS.backGround,
     backBasement: BETRAYAL_ROOM_TILE_VISUALS.backBasement,
@@ -1504,7 +1537,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     });
 
     React.useEffect(() => {
-        setPreviewState(createInitialPreviewState(baseCore));
+        setPreviewState((previousState) => {
+            if (baseCore.currentExplorerInventory.some((card) => card.id === previousState.selectedInventoryCardId)) {
+                return {
+                    ...createInitialPreviewState(baseCore),
+                    selectedInventoryCardId: previousState.selectedInventoryCardId,
+                };
+            }
+            return createInitialPreviewState(baseCore);
+        });
         setInventoryPreviewCardId(null);
     }, [baseCore]);
 
@@ -1519,6 +1560,30 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     ) => {
         dispatch(type, payload);
     }, [dispatch]);
+    const applyOptimisticPreviewAfterCommand = React.useCallback(<Type extends keyof BetrayalCommandMap>(
+        type: Type,
+        payload: BetrayalCommandMap[Type],
+        options: { keepSelectedInventoryCardId?: string | null } = {},
+    ) => {
+        const command = {
+            type,
+            payload,
+            playerId: viewerPlayerId,
+            timestamp: Date.now(),
+        } as Parameters<typeof BetrayalDomain.execute>[1];
+        const validation = BetrayalDomain.validate({ core: baseCore, sys: {} as never }, command);
+        if (!validation.valid) {
+            return;
+        }
+        const nextCore = BetrayalDomain.execute({ core: baseCore, sys: {} as never }, command)
+            .reduce((currentCore, event) => BetrayalDomain.reduce(currentCore, event), baseCore);
+        const nextPreviewState = createInitialPreviewState(nextCore);
+        setPreviewState({
+            ...nextPreviewState,
+            selectedInventoryCardId: options.keepSelectedInventoryCardId
+                ?? nextPreviewState.selectedInventoryCardId,
+        });
+    }, [baseCore, viewerPlayerId]);
 
     const handleSelectExplorer = React.useCallback((explorerId: string) => {
         setSelectedExplorerId(explorerId);
@@ -1645,6 +1710,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedCardUsedThisTurn = selectedInventoryCard
         ? core.usedCardIdsThisTurn.includes(selectedInventoryCard.id)
         : false;
+    const selectedCardAvailableThisTurn = selectedInventoryCard
+        ? core.turnStartInventoryCardIds.includes(selectedInventoryCard.id)
+        : false;
+    const selectedCardUseDisabled = Boolean(selectedInventoryCard && (!selectedCardAvailableThisTurn || selectedCardUsedThisTurn));
     const tradeStatusText = selectedTradeTarget
         ? t('board.status.tradeTarget', {
             player: resolvePlayerName(
@@ -1665,9 +1734,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const useStatusText = selectedInventoryCard
         ? selectedCardUsedThisTurn
             ? t('board.status.cardUsedThisTurn')
-            : t('board.status.usePreview', {
-                effect: resolvePreviewUseEffectLabel(selectedInventoryCard, t),
-            })
+            : selectedCardAvailableThisTurn
+                ? t('board.status.usePreview', {
+                    effect: resolvePreviewUseEffectLabel(selectedInventoryCard, t),
+                })
+                : t('board.status.cardUnavailableThisTurn')
         : t('board.status.noSelectedCard');
     const hauntActionContext = React.useMemo(() => {
         if (core.phase !== 'haunt') {
@@ -1802,7 +1873,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 roomId: moveTargetRooms[0]!.id,
             };
         }
-        if (core.recommendedAction === 'use' && selectedInventoryCard && !selectedCardUsedThisTurn) {
+        if (core.recommendedAction === 'use' && selectedInventoryCard && !selectedCardUseDisabled) {
             return {
                 label: t('board.status.focusUseCard', { card: selectedInventoryCard.name }),
                 actionKind: 'use' as const,
@@ -2063,12 +2134,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             return;
         }
         const cardId = selectedInventoryCard?.id;
-        dispatchCommand(BETRAYAL_COMMANDS.USE_POSSESSION, cardId ? { cardId } : {});
+        const payload = cardId ? { cardId } : {};
+        applyOptimisticPreviewAfterCommand(BETRAYAL_COMMANDS.USE_POSSESSION, payload, {
+            keepSelectedInventoryCardId: cardId ?? null,
+        });
+        dispatchCommand(BETRAYAL_COMMANDS.USE_POSSESSION, payload);
         setInventoryPreviewCardId(null);
-        setPreviewState((previousState) => ({
-            ...previousState,
-            interactionMode: 'default',
-        }));
     };
 
     const handleTradeAction = () => {
@@ -2180,7 +2251,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : t('board.actions.use'),
             disabled: hauntActionContext?.actionKind === 'use'
                 ? false
-                : core.currentExplorerInventory.length === 0 || selectedCardUsedThisTurn,
+                : core.currentExplorerInventory.length === 0 || selectedCardUseDisabled,
             variant: 'secondary',
         },
         { id: 'endTurn', label: t('board.actions.endTurn'), disabled: false, variant: 'ghost' },
@@ -2214,6 +2285,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     ) => {
         const isSelected = item.id === selectedInventoryCard?.id;
         const isUsedThisTurn = core.usedCardIdsThisTurn.includes(item.id);
+        const isAvailableThisTurn = core.turnStartInventoryCardIds.includes(item.id);
+        const isUnavailableThisTurn = !isUsedThisTurn && !isAvailableThisTurn;
         const tone = INVENTORY_FACE_TONE[item.kind];
         const frontVisual = resolvePossessionAtlasVisual(item);
         const backAsset = INVENTORY_CARD_BACK_ASSET[item.kind];
@@ -2270,9 +2343,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 aria-pressed={isPreview ? undefined : isSelected}
                 style={{ ...cardWidthStyle, ...compactStackStyle }}
             >
-                {isUsedThisTurn ? (
+                {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
-                        {t('board.status.cardUsedTag')}
+                        {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
                     </div>
                 ) : null}
                 <div
@@ -2284,7 +2357,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             : isCompact
                                 ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
                                 : tone.cardSurfaceClass
-                    } ${isUsedThisTurn ? 'opacity-60' : ''}`}
+                    } ${isUsedThisTurn || isUnavailableThisTurn ? 'opacity-60' : ''}`}
                     style={{ aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO }}
                 >
                     {frontVisual ? (
@@ -3491,7 +3564,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
                                 </div>
                                 <div
-                                    className={`mt-1 truncate text-[11px] ${selectedCardUsedThisTurn ? 'text-[#f0c1a2]' : 'text-[#8db29a]'}`}
+                                    className={`mt-1 truncate text-[11px] ${selectedCardUseDisabled ? 'text-[#f0c1a2]' : 'text-[#8db29a]'}`}
                                     data-testid="betrayal-mobile-use-status"
                                 >
                                     {useStatusText}

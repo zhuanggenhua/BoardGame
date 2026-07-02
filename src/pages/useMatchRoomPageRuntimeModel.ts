@@ -434,6 +434,9 @@ export function useMatchRoomPageRuntimeModel(args: {
         isGameNamespaceReady: runtimeSetup.isGameNamespaceReady,
         gameImplReady: runtimeSetup.gameImplReady,
         resolvedTutorialManifest: runtimeSetup.resolvedTutorialManifest,
+        tutorialProgressNumPlayers: runtimeSetup.resolvedTutorialManifest?.numPlayers
+            ?? runtimeSetup.engineConfig?.minPlayers
+            ?? 2,
         setPlayerID,
         navigate,
         openModal,

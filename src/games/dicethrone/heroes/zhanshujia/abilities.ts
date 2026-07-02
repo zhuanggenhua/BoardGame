@@ -4,10 +4,10 @@ import { STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../../domain/id
 
 const FACE = ZHANSHUJIA_DICE_FACE_IDS;
 
-export const ZHANSHUJIA_SFX_LIGHT = 'combat.general.forged_in_fury_vol_1.blade_impact.blade_impact_light';
-export const ZHANSHUJIA_SFX_HEAVY = 'combat.general.forged_in_fury_vol_1.blade_impact.blade_impact_heavy';
-export const ZHANSHUJIA_SFX_COMMAND = 'ui.general.casual_mobile_sound_fx_pack_vol.interactions.notifications.success';
-export const ZHANSHUJIA_SFX_ULTIMATE = 'combat.general.forged_in_fury_vol_1.explosion.explosion_heavy';
+export const ZHANSHUJIA_SFX_LIGHT = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
+export const ZHANSHUJIA_SFX_HEAVY = 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_01_krst';
+export const ZHANSHUJIA_SFX_COMMAND = 'ui.fantasy_ui_sound_fx_pack_vol.signals.signal_positive_a_001';
+export const ZHANSHUJIA_SFX_ULTIMATE = 'puzzle.24.bomb_explosion_01';
 
 const damage = (
     value: number,

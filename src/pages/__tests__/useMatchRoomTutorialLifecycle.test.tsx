@@ -2,7 +2,15 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMatchRoomTutorialLifecycle } from '../useMatchRoomTutorialLifecycle';
-import type { TutorialCollection, TutorialManifest, TutorialState } from '../../engine/types';
+import {
+    buildTutorialProgressSeed,
+    clearTutorialProgress,
+    readCompletedTutorialIds,
+    readRestorableTutorialProgress,
+    resolveCompletedTutorialCatalogId,
+} from '../useMatchRoomTutorialLifecycle';
+import { buildLocalMatchSnapshotKey, persistLocalMatchSnapshot } from '../../engine/transport/localSession';
+import type { MatchState, TutorialCollection, TutorialManifest, TutorialState } from '../../engine/types';
 
 const tutorialState = {
     startTutorial: vi.fn(),
@@ -45,9 +53,59 @@ const makeCatalog = (entries: Array<{
     ])),
 });
 
+const persistTutorialSnapshot = (args: {
+    gameId: string;
+    tutorialId: string;
+    manifest: TutorialManifest;
+    numPlayers?: number;
+    stepIndex?: number;
+    active?: boolean;
+    manifestId?: string;
+    stepId?: string;
+}) => {
+    const {
+        gameId,
+        tutorialId,
+        manifest,
+        numPlayers = 2,
+        stepIndex = 1,
+        active = true,
+        manifestId = manifest.id,
+        stepId = manifest.steps[stepIndex]?.id,
+    } = args;
+    const seed = buildTutorialProgressSeed(gameId, tutorialId, manifest.id);
+    if (!seed) {
+        throw new Error('expected tutorial progress seed');
+    }
+
+    persistLocalMatchSnapshot({
+        gameId,
+        seed,
+        numPlayers,
+        randomCursor: 0,
+        state: {
+            core: {},
+            sys: {
+                tutorial: {
+                    active,
+                    manifestId,
+                    stepIndex,
+                    steps: manifest.steps,
+                    step: stepId
+                        ? { ...manifest.steps[stepIndex], id: stepId }
+                        : null,
+                },
+            },
+        } as MatchState<unknown>,
+    });
+
+    return seed;
+};
+
 describe('useMatchRoomTutorialLifecycle', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        window.localStorage.clear();
         tutorialState.startTutorial.mockReset();
         tutorialState.closeTutorial.mockReset();
         tutorialState.isActive = false;
@@ -217,6 +275,119 @@ describe('useMatchRoomTutorialLifecycle', () => {
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
     });
 
+    it('教程进度 seed 会按游戏与章节隔离', () => {
+        expect(buildTutorialProgressSeed('qidahen', 'basic-opening', 'basic-opening'))
+            .toBe('tutorial-progress:v1:qidahen:basic-opening');
+        expect(buildTutorialProgressSeed('qidahen', 'basic-opening', 'basic-opening'))
+            .not.toBe(buildTutorialProgressSeed('qidahen', 'attack-and-battle', 'attack-and-battle'));
+        expect(buildTutorialProgressSeed('qidahen', undefined, 'basic-opening'))
+            .toBe('tutorial-progress:v1:qidahen:basic-opening');
+    });
+
+    it('只把有效的激活中章节快照识别为可恢复教程进度', () => {
+        const manifest = makeManifest('basic-opening', ['intro', 'play-card', 'finish']);
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            stepIndex: 1,
+        });
+
+        expect(readRestorableTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            numPlayers: 2,
+        })).toMatchObject({
+            stepIndex: 1,
+            stepId: 'play-card',
+            totalSteps: 3,
+        });
+
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            active: false,
+        });
+        expect(readRestorableTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            numPlayers: 2,
+        })).toBeNull();
+
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            stepIndex: 0,
+        });
+        expect(readRestorableTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            numPlayers: 2,
+        })).toBeNull();
+
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            manifestId: 'other-manifest',
+        });
+        expect(readRestorableTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            numPlayers: 2,
+        })).toBeNull();
+
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            stepId: 'unexpected-step',
+        });
+        expect(readRestorableTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            numPlayers: 2,
+        })).toBeNull();
+    });
+
+    it('存在可恢复进度时，不会自动从第一步重新启动教程', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-opening', ['intro', 'play-card', 'finish']);
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            stepIndex: 1,
+        });
+
+        renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            tutorialCatalog: null,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            tutorialProgressNumPlayers: 2,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).not.toHaveBeenCalled();
+    });
+
     it('主章节完成后，若目录指定 nextTutorialId，会自动切到下一条隐藏教程路由', async () => {
         const setPlayerID = vi.fn();
         const navigate = vi.fn();
@@ -254,5 +425,162 @@ describe('useMatchRoomTutorialLifecycle', () => {
         });
 
         expect(navigate).toHaveBeenCalledWith('/play/qidahen/tutorial/retreat-and-rout');
+        expect(readCompletedTutorialIds('qidahen').has('attack-and-battle')).toBe(false);
+    });
+
+    it('隐藏续章完成后，会把对应的可见章节标记为已完成', async () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('retreat-and-rout', ['overview', 'finish']);
+        const catalog = makeCatalog([
+            { id: 'attack-and-battle', nextTutorialId: 'retreat-and-rout' },
+            { id: 'retreat-and-rout', hiddenFromCatalog: true },
+        ]);
+
+        tutorialState.isActive = true;
+        tutorialState.currentStep = manifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'retreat-and-rout',
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        tutorialState.isActive = false;
+        rerender();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(readCompletedTutorialIds('qidahen').has('attack-and-battle')).toBe(true);
+        expect(navigate).toHaveBeenCalledWith(-1);
+    });
+
+    it('完成普通可见章节时，会直接记录该章节', async () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-opening', ['overview', 'finish']);
+        const catalog = makeCatalog([
+            { id: 'basic-opening' },
+            { id: 'attack-and-battle' },
+        ]);
+
+        tutorialState.isActive = true;
+        tutorialState.currentStep = manifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        tutorialState.isActive = false;
+        rerender();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(readCompletedTutorialIds('qidahen').has('basic-opening')).toBe(true);
+    });
+
+    it('完成普通可见章节时，会清理对应章节的可恢复进度', async () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-opening', ['overview', 'finish']);
+        const catalog = makeCatalog([{ id: 'basic-opening' }]);
+        const seed = persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            stepIndex: 1,
+        });
+
+        tutorialState.isActive = true;
+        tutorialState.currentStep = manifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            tutorialProgressNumPlayers: 2,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        tutorialState.isActive = false;
+        rerender();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(window.localStorage.getItem(buildLocalMatchSnapshotKey('qidahen', seed))).toBeNull();
+    });
+
+    it('重头开始会只清理当前章节进度，不影响同游戏其他章节', () => {
+        const basicManifest = makeManifest('basic-opening', ['intro', 'play-card']);
+        const battleManifest = makeManifest('attack-and-battle', ['intro', 'fight']);
+        const basicSeed = persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest: basicManifest,
+        });
+        const battleSeed = persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'attack-and-battle',
+            manifest: battleManifest,
+        });
+
+        clearTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifestId: basicManifest.id,
+        });
+
+        expect(window.localStorage.getItem(buildLocalMatchSnapshotKey('qidahen', basicSeed))).toBeNull();
+        expect(window.localStorage.getItem(buildLocalMatchSnapshotKey('qidahen', battleSeed))).not.toBeNull();
+    });
+
+    it('完成状态只解析到可见章节，不让隐藏续章成为目录打勾对象', () => {
+        const catalog = makeCatalog([
+            { id: 'attack-and-battle', nextTutorialId: 'retreat-and-rout' },
+            { id: 'retreat-and-rout', hiddenFromCatalog: true },
+        ]);
+
+        expect(resolveCompletedTutorialCatalogId(catalog, 'attack-and-battle')).toBeNull();
+        expect(resolveCompletedTutorialCatalogId(catalog, 'retreat-and-rout')).toBe('attack-and-battle');
     });
 });

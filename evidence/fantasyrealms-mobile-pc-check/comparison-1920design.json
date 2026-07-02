@@ -1,0 +1,438 @@
+{
+  "generatedAt": "2026-07-01T15:53:39.662Z",
+  "files": {
+    "pc-1920x1080-1920design": {
+      "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\pc-1920x1080-1920design.png",
+      "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\pc-1920x1080-1920design.json",
+      "small": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fr-small\\pc-1920x1080-1920design.jpg"
+    },
+    "mobile-936x432-1920design": {
+      "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-936x432-1920design.png",
+      "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-936x432-1920design.json",
+      "small": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fr-small\\mobile-936x432-1920design.jpg"
+    },
+    "mobile-844x390-1920design": {
+      "png": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-844x390-1920design.png",
+      "json": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fantasyrealms-mobile-pc-check\\mobile-844x390-1920design.json",
+      "small": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\fr-small\\mobile-844x390-1920design.jpg"
+    }
+  },
+  "checks": {
+    "pc-1920x1080-1920design": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 95,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    },
+    "mobile-936x432-1920design": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 41.194,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    },
+    "mobile-844x390-1920design": {
+      "noHorizontalOverflow": true,
+      "actionHandOverlap": false,
+      "actionHandIntersection": {
+        "width": 37.189,
+        "height": 0,
+        "area": 0
+      },
+      "keyInViewport": true
+    }
+  },
+  "compareToPcTable": {
+    "pc-1920x1080-1920design": {
+      "topbar": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.0113,
+          "w": 1,
+          "h": 0.1243,
+          "cx": 0.5085,
+          "cy": 0.0734
+        },
+        "current": {
+          "x": 0.0085,
+          "y": 0.0113,
+          "w": 1,
+          "h": 0.1243,
+          "cx": 0.5085,
+          "cy": 0.0734
+        }
+      },
+      "score": {
+        "pc": {
+          "x": 0.9258,
+          "y": 0.0188,
+          "w": 0.0699,
+          "h": 0.0395,
+          "cx": 0.9608,
+          "cy": 0.0386
+        },
+        "current": {
+          "x": 0.9258,
+          "y": 0.0188,
+          "w": 0.0699,
+          "h": 0.0395,
+          "cx": 0.9608,
+          "cy": 0.0386
+        }
+      },
+      "deck": {
+        "pc": {
+          "x": 0.0212,
+          "y": 0.0113,
+          "w": 0.0508,
+          "h": 0.1262,
+          "cx": 0.0466,
+          "cy": 0.0744
+        },
+        "current": {
+          "x": 0.0212,
+          "y": 0.0113,
+          "w": 0.0508,
+          "h": 0.1262,
+          "cx": 0.0466,
+          "cy": 0.0744
+        }
+      },
+      "center": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.1356,
+          "w": 1,
+          "h": 0.6437,
+          "cx": 0.5085,
+          "cy": 0.4574
+        },
+        "current": {
+          "x": 0.0085,
+          "y": 0.1356,
+          "w": 1,
+          "h": 0.6437,
+          "cx": 0.5085,
+          "cy": 0.4574
+        }
+      },
+      "hand": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.7792,
+          "w": 1,
+          "h": 0.2321,
+          "cx": 0.5085,
+          "cy": 0.8953
+        },
+        "current": {
+          "x": 0.0085,
+          "y": 0.7792,
+          "w": 1,
+          "h": 0.2321,
+          "cx": 0.5085,
+          "cy": 0.8953
+        }
+      },
+      "handRow": {
+        "pc": {
+          "x": 0.1086,
+          "y": 0.7792,
+          "w": 0.7998,
+          "h": 0.2302,
+          "cx": 0.5085,
+          "cy": 0.8943
+        },
+        "current": {
+          "x": 0.1086,
+          "y": 0.7792,
+          "w": 0.7998,
+          "h": 0.2302,
+          "cx": 0.5085,
+          "cy": 0.8943
+        }
+      },
+      "action": {
+        "pc": {
+          "x": 0.8581,
+          "y": 0.693,
+          "w": 0.1186,
+          "h": 0.0584,
+          "cx": 0.9174,
+          "cy": 0.7222
+        },
+        "current": {
+          "x": 0.8581,
+          "y": 0.693,
+          "w": 0.1186,
+          "h": 0.0584,
+          "cx": 0.9174,
+          "cy": 0.7222
+        }
+      }
+    },
+    "mobile-936x432-1920design": {
+      "topbar": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.0113,
+          "w": 1,
+          "h": 0.1243,
+          "cx": 0.5085,
+          "cy": 0.0734
+        },
+        "current": {
+          "x": 0.1223,
+          "y": 0.0192,
+          "w": 1.0043,
+          "h": 0.1269,
+          "cx": 0.6245,
+          "cy": 0.0827
+        }
+      },
+      "score": {
+        "pc": {
+          "x": 0.9258,
+          "y": 0.0188,
+          "w": 0.0699,
+          "h": 0.0395,
+          "cx": 0.9608,
+          "cy": 0.0386
+        },
+        "current": {
+          "x": 1.0436,
+          "y": 0.0269,
+          "w": 0.0702,
+          "h": 0.0404,
+          "cx": 1.0787,
+          "cy": 0.0471
+        }
+      },
+      "deck": {
+        "pc": {
+          "x": 0.0212,
+          "y": 0.0113,
+          "w": 0.0508,
+          "h": 0.1262,
+          "cx": 0.0466,
+          "cy": 0.0744
+        },
+        "current": {
+          "x": 0.1351,
+          "y": 0.0192,
+          "w": 0.0511,
+          "h": 0.1288,
+          "cx": 0.1606,
+          "cy": 0.0837
+        }
+      },
+      "center": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.1356,
+          "w": 1,
+          "h": 0.6437,
+          "cx": 0.5085,
+          "cy": 0.4574
+        },
+        "current": {
+          "x": 0.1223,
+          "y": 0.1462,
+          "w": 1.0043,
+          "h": 0.6451,
+          "cx": 0.6245,
+          "cy": 0.4687
+        }
+      },
+      "hand": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.7792,
+          "w": 1,
+          "h": 0.2321,
+          "cx": 0.5085,
+          "cy": 0.8953
+        },
+        "current": {
+          "x": 0.1223,
+          "y": 0.7913,
+          "w": 1.0043,
+          "h": 0.2279,
+          "cx": 0.6245,
+          "cy": 0.9053
+        }
+      },
+      "handRow": {
+        "pc": {
+          "x": 0.1086,
+          "y": 0.7792,
+          "w": 0.7998,
+          "h": 0.2302,
+          "cx": 0.5085,
+          "cy": 0.8943
+        },
+        "current": {
+          "x": 0.2229,
+          "y": 0.7913,
+          "w": 0.8032,
+          "h": 0.226,
+          "cx": 0.6245,
+          "cy": 0.9043
+        }
+      },
+      "action": {
+        "pc": {
+          "x": 0.8581,
+          "y": 0.693,
+          "w": 0.1186,
+          "h": 0.0584,
+          "cx": 0.9174,
+          "cy": 0.7222
+        },
+        "current": {
+          "x": 0.9713,
+          "y": 0.6942,
+          "w": 0.1191,
+          "h": 0.0596,
+          "cx": 1.0309,
+          "cy": 0.724
+        }
+      }
+    },
+    "mobile-844x390-1920design": {
+      "topbar": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.0113,
+          "w": 1,
+          "h": 0.1243,
+          "cx": 0.5085,
+          "cy": 0.0734
+        },
+        "current": {
+          "x": 0.1216,
+          "y": 0.0192,
+          "w": 1.0043,
+          "h": 0.1269,
+          "cx": 0.6237,
+          "cy": 0.0827
+        }
+      },
+      "score": {
+        "pc": {
+          "x": 0.9258,
+          "y": 0.0188,
+          "w": 0.0699,
+          "h": 0.0395,
+          "cx": 0.9608,
+          "cy": 0.0386
+        },
+        "current": {
+          "x": 1.0429,
+          "y": 0.0269,
+          "w": 0.0702,
+          "h": 0.0404,
+          "cx": 1.078,
+          "cy": 0.0471
+        }
+      },
+      "deck": {
+        "pc": {
+          "x": 0.0212,
+          "y": 0.0113,
+          "w": 0.0508,
+          "h": 0.1262,
+          "cx": 0.0466,
+          "cy": 0.0744
+        },
+        "current": {
+          "x": 0.1344,
+          "y": 0.0192,
+          "w": 0.0511,
+          "h": 0.1288,
+          "cx": 0.1599,
+          "cy": 0.0837
+        }
+      },
+      "center": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.1356,
+          "w": 1,
+          "h": 0.6437,
+          "cx": 0.5085,
+          "cy": 0.4574
+        },
+        "current": {
+          "x": 0.1216,
+          "y": 0.1462,
+          "w": 1.0043,
+          "h": 0.6413,
+          "cx": 0.6237,
+          "cy": 0.4668
+        }
+      },
+      "hand": {
+        "pc": {
+          "x": 0.0085,
+          "y": 0.7792,
+          "w": 1,
+          "h": 0.2321,
+          "cx": 0.5085,
+          "cy": 0.8953
+        },
+        "current": {
+          "x": 0.1216,
+          "y": 0.7874,
+          "w": 1.0043,
+          "h": 0.2318,
+          "cx": 0.6237,
+          "cy": 0.9033
+        }
+      },
+      "handRow": {
+        "pc": {
+          "x": 0.1086,
+          "y": 0.7792,
+          "w": 0.7998,
+          "h": 0.2302,
+          "cx": 0.5085,
+          "cy": 0.8943
+        },
+        "current": {
+          "x": 0.2221,
+          "y": 0.7874,
+          "w": 0.8032,
+          "h": 0.2299,
+          "cx": 0.6237,
+          "cy": 0.9024
+        }
+      },
+      "action": {
+        "pc": {
+          "x": 0.8581,
+          "y": 0.693,
+          "w": 0.1186,
+          "h": 0.0584,
+          "cx": 0.9174,
+          "cy": 0.7222
+        },
+        "current": {
+          "x": 0.9705,
+          "y": 0.6942,
+          "w": 0.1191,
+          "h": 0.0596,
+          "cx": 1.0301,
+          "cy": 0.724
+        }
+      }
+    }
+  }
+}

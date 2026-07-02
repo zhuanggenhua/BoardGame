@@ -197,4 +197,41 @@ describe('resolveNextAiAction attemptKey', () => {
 
         expect(resolution).toBeNull();
     });
+
+    it('响应窗口被私有交互锁定时不应 fallback 成 RESPONSE_PASS', async () => {
+        const gameId = '__test_local_ai_pending_interaction_blocks_response_pass_fallback__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: () => [],
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => null,
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const state = buildState(11);
+        state.sys.interaction.current = undefined;
+        state.sys.responseWindow.current = {
+            ...state.sys.responseWindow.current,
+            pendingInteractionId: 'hidden-response-choice-1',
+        } as typeof state.sys.responseWindow.current;
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state,
+            matchId: 'match-pending-response-pass-fallback-1',
+            seatControllers: {
+                '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
 });

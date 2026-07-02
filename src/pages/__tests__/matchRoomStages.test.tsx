@@ -19,6 +19,10 @@ vi.mock('../matchRoomTutorialStageRuntime', () => ({
 }));
 
 describe('MatchRoomTutorialBoardStage', () => {
+    beforeEach(() => {
+        window.localStorage.clear();
+    });
+
     it('多章节教程且未指定 tutorialId 时，先显示章节目录而不是直接进默认章节', () => {
         render(
             <MemoryRouter initialEntries={['/play/qidahen/tutorial']}>
@@ -141,5 +145,47 @@ describe('MatchRoomTutorialBoardStage', () => {
         expect(screen.getByTestId('tutorial-catalog-entry-korea-and-special-map-rules')).toBeInTheDocument();
         expect(screen.queryByTestId('tutorial-catalog-entry-retreat-and-rout')).not.toBeInTheDocument();
         expect(screen.queryByTestId('tutorial-catalog-entry-armament-upgrade')).not.toBeInTheDocument();
+    });
+
+    it('只在多章节教程目录中给完成过的可见章节打勾', () => {
+        window.localStorage.setItem('boardgame:tutorial-completion:v1:qidahen', JSON.stringify(['basic-opening']));
+
+        render(
+            <MemoryRouter initialEntries={['/play/qidahen/tutorial']}>
+                <Routes>
+                    <Route
+                        path="/play/:gameId/tutorial"
+                        element={(
+                            <MatchRoomTutorialBoardStage
+                                stage={{
+                                    noTutorialText: 'no tutorial',
+                                    gameId: 'qidahen',
+                                    tutorialId: undefined,
+                                    tutorialCatalog: {
+                                        defaultTutorialId: 'basic-opening',
+                                        tutorials: {
+                                            'basic-opening': {
+                                                title: '基础回合',
+                                                description: '从开局进入并完成一次基础回合。',
+                                                manifest: { id: 'basic-opening', steps: [] },
+                                            },
+                                            'attack-and-battle': {
+                                                title: '进攻与野战',
+                                                description: '走完一次真实进攻与战斗。',
+                                                manifest: { id: 'attack-and-battle', steps: [] },
+                                            },
+                                        },
+                                    },
+                                    runtime: null,
+                                }}
+                            />
+                        )}
+                    />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByTestId('tutorial-catalog-entry-basic-opening')).toHaveTextContent('✓ matchRoom.tutorialCatalog.completed');
+        expect(screen.getByTestId('tutorial-catalog-entry-attack-and-battle')).not.toHaveTextContent('matchRoom.tutorialCatalog.completed');
     });
 });

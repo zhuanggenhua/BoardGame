@@ -5,7 +5,10 @@ import {
     resolveStableViewportSize,
     type RuntimeViewportSize,
 } from '../../games/mobileSupport';
-import { FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX } from '../../games/fantasyrealms/manifest';
+import {
+    FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX,
+    FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
+} from '../../games/fantasyrealms/manifest';
 import { isTextEntrySessionElement } from '../../lib/textEntry';
 
 export interface RuntimeSafeAreaInsets {
@@ -30,6 +33,9 @@ const BOARD_SHELL_DESIGN_WIDTH_BY_GAME: Record<string, number> = {
     fantasyrealms: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
     smashup: 1160,
     summonerwars: 900,
+};
+const BOARD_SHELL_DESIGN_HEIGHT_BY_GAME: Record<string, number> = {
+    fantasyrealms: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX,
 };
 const BOARD_SHELL_MIN_LOGICAL_HEIGHT_BY_GAME: Record<string, number> = {
     fantasyrealms: 800,
@@ -186,6 +192,7 @@ const clearRuntimeScaleVars = (root: HTMLElement) => {
 
 const clearBoardShellVars = (root: HTMLElement) => {
     root.style.removeProperty('--mobile-board-shell-design-width');
+    root.style.removeProperty('--mobile-board-shell-design-height');
     root.style.removeProperty('--mobile-board-shell-scale');
     root.style.removeProperty('--mobile-board-shell-inverse-scale');
     root.style.removeProperty('--mobile-board-shell-logical-height');
@@ -200,10 +207,35 @@ const resolveBoardShellScaleMetrics = (
     designWidth: number,
     gameId: string,
 ) => {
+    const designHeight = BOARD_SHELL_DESIGN_HEIGHT_BY_GAME[gameId];
+    if (designHeight) {
+        const safeDesignWidth = Math.max(1, designWidth);
+        const safeDesignHeight = Math.max(1, designHeight);
+        const scale = Math.max(0.01, Math.min(
+            viewport.width / safeDesignWidth,
+            viewport.height / safeDesignHeight,
+        ));
+        const inverseScale = 1 / scale;
+        const renderedWidth = safeDesignWidth * scale;
+        const renderedHeight = safeDesignHeight * scale;
+
+        return {
+            designWidth: safeDesignWidth,
+            designHeight: safeDesignHeight,
+            scale,
+            inverseScale,
+            logicalHeight: safeDesignHeight,
+            inlineUnit: safeDesignWidth / 100,
+            blockUnit: safeDesignHeight / 100,
+            offsetX: Math.max(0, (viewport.width - renderedWidth) / 2),
+            offsetY: Math.max(0, (viewport.height - renderedHeight) / 2),
+        };
+    }
+
     const widthMetrics = resolveRuntimeLayoutScaleMetrics(viewport, designWidth);
     const minLogicalHeight = BOARD_SHELL_MIN_LOGICAL_HEIGHT_BY_GAME[gameId];
     if (!minLogicalHeight) {
-        return { ...widthMetrics, offsetX: 0, offsetY: 0 };
+        return { ...widthMetrics, designHeight: undefined, offsetX: 0, offsetY: 0 };
     }
 
     const heightScale = Math.max(0.01, viewport.height / minLogicalHeight);
@@ -215,6 +247,7 @@ const resolveBoardShellScaleMetrics = (
 
     return {
         ...widthMetrics,
+        designHeight: undefined,
         scale,
         inverseScale,
         logicalHeight: viewport.height * inverseScale,
@@ -285,6 +318,11 @@ export const applyRuntimeViewportCssVars = (
     const designWidth = BOARD_SHELL_DESIGN_WIDTH_BY_GAME[gameId] ?? DEFAULT_BOARD_SHELL_DESIGN_WIDTH;
     const shellScaleMetrics = resolveBoardShellScaleMetrics(viewport, designWidth, gameId);
     root.style.setProperty('--mobile-board-shell-design-width', `${shellScaleMetrics.designWidth}px`);
+    if (shellScaleMetrics.designHeight) {
+        root.style.setProperty('--mobile-board-shell-design-height', `${shellScaleMetrics.designHeight}px`);
+    } else {
+        root.style.removeProperty('--mobile-board-shell-design-height');
+    }
     root.style.setProperty('--mobile-board-shell-scale', shellScaleMetrics.scale.toFixed(6));
     root.style.setProperty('--mobile-board-shell-inverse-scale', shellScaleMetrics.inverseScale.toFixed(6));
     root.style.setProperty('--mobile-board-shell-logical-height', `${shellScaleMetrics.logicalHeight.toFixed(3)}px`);

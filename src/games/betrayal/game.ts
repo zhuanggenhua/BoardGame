@@ -90,6 +90,9 @@ export interface BetrayalRoomNode {
     x: number;
     y: number;
     connectedRoomIds: string[];
+    entryRoomId?: string;
+    entryEdge?: BetrayalRoomEdge;
+    orientationTurns: 0 | 1 | 2 | 3;
     state: 'discovered' | 'unexplored';
     startingTile?: boolean;
     hint: string;
@@ -162,16 +165,22 @@ export interface BetrayalCore {
     movesRemaining: number;
     recommendedAction: BetrayalRecommendedAction;
     activeRoomId: string;
+    turnEndedByDiscovery: boolean;
     currentExplorer: BetrayalExplorerSummary;
     currentExplorerTraits: Record<BetrayalTraitKey, number>;
     currentExplorerInventory: BetrayalInventoryCard[];
     otherExplorers: BetrayalExplorerSummary[];
     monsters: BetrayalMonsterSummary[];
+    drawOrder: BetrayalDeckKind[];
+    roomDiscoveryOrderByFloor: Record<BetrayalRoomFloor, RoomTemplate[]>;
+    possessionOrderByKind: Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInventoryCard[]>;
+    eventOrder: EventTemplate[];
     deckCounts: Record<BetrayalDeckKind, number>;
     discardCounts: Record<BetrayalDeckKind, number>;
     rooms: BetrayalRoomNode[];
     exploreIndex: number;
     usedCardIdsThisTurn: string[];
+    turnStartInventoryCardIds: string[];
     latestDiscovery: BetrayalDiscoverySummary | null;
     latestDiscoveryOwnerPlayerId: string | null;
     highlightedDeckKind: BetrayalDeckKind | null;
@@ -367,6 +376,44 @@ const EVENT_POOL: EventTemplate[] = BETRAYAL_DISCOVERY_POOLS.events.map((event) 
     effect: { ...event.effect },
 }));
 
+function cloneRoomTemplate(template: RoomTemplate): RoomTemplate {
+    return {
+        ...template,
+        tags: [...template.tags],
+        doorways: [...template.doorways],
+    };
+}
+
+function cloneEventTemplate(event: EventTemplate): EventTemplate {
+    return {
+        ...event,
+        effect: { ...event.effect },
+    };
+}
+
+function createShuffledDiscoveryState(random: RandomFn) {
+    return {
+        drawOrder: random.shuffle([...DRAW_ORDER]),
+        roomDiscoveryOrderByFloor: {
+            ground: random.shuffle(ROOM_DISCOVERY_POOL.ground.map(cloneRoomTemplate)),
+            upper: random.shuffle(ROOM_DISCOVERY_POOL.upper.map(cloneRoomTemplate)),
+            basement: random.shuffle(ROOM_DISCOVERY_POOL.basement.map(cloneRoomTemplate)),
+        } satisfies Record<BetrayalRoomFloor, RoomTemplate[]>,
+        possessionOrderByKind: {
+            item: random.shuffle(DRAW_POOL.item.map(cloneInventoryCard)),
+            omen: random.shuffle(DRAW_POOL.omen.map(cloneInventoryCard)),
+        } satisfies Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInventoryCard[]>,
+        eventOrder: random.shuffle(EVENT_POOL.map(cloneEventTemplate)),
+    };
+}
+
+const DEFAULT_BETRAYAL_RANDOM: RandomFn = {
+    random: () => 0.5,
+    d: (max) => Math.max(1, Math.min(max, 1)),
+    range: (min) => min,
+    shuffle: (array) => [...array],
+};
+
 const TRAIT_LABEL: Record<BetrayalTraitKey, string> = {
     might: '力量',
     speed: '速度',
@@ -450,12 +497,25 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         currentExplorerInventory: core.currentExplorerInventory.map(cloneInventoryCard),
         otherExplorers: core.otherExplorers.map(cloneExplorer),
         monsters: core.monsters.map(cloneMonster),
+        drawOrder: [...core.drawOrder],
+        roomDiscoveryOrderByFloor: {
+            ground: core.roomDiscoveryOrderByFloor.ground.map(cloneRoomTemplate),
+            upper: core.roomDiscoveryOrderByFloor.upper.map(cloneRoomTemplate),
+            basement: core.roomDiscoveryOrderByFloor.basement.map(cloneRoomTemplate),
+        },
+        possessionOrderByKind: {
+            item: core.possessionOrderByKind.item.map(cloneInventoryCard),
+            omen: core.possessionOrderByKind.omen.map(cloneInventoryCard),
+        },
+        eventOrder: core.eventOrder.map(cloneEventTemplate),
         deckCounts: { ...core.deckCounts },
         discardCounts: { ...core.discardCounts },
         rooms: core.rooms.map(cloneRoom),
         usedCardIdsThisTurn: [...core.usedCardIdsThisTurn],
+        turnStartInventoryCardIds: [...core.turnStartInventoryCardIds],
         latestDiscovery: core.latestDiscovery ? { ...core.latestDiscovery } : null,
         activityLog: core.activityLog.map((entry) => ({ ...entry })),
+        turnEndedByDiscovery: core.turnEndedByDiscovery,
         scenarioRuntime: {
             ...core.scenarioRuntime,
             exorcismCircleRoomIds: [...core.scenarioRuntime.exorcismCircleRoomIds],
@@ -524,6 +584,7 @@ function roomSeedToNode(room: BetrayalRoomSeed): BetrayalRoomNode {
     return {
         ...room,
         connectedRoomIds: [...room.connectedRoomIds],
+        orientationTurns: room.orientationTurns ?? 0,
         tags: [...room.tags],
         doorways: room.doorways.map((doorway) => ({ ...doorway })),
     };
@@ -554,10 +615,11 @@ function buildRepresentativeRuntimeExplorers(core: BetrayalCore): BetrayalExplor
     });
 }
 
-function makeBaseCore(playerIds: string[], phase: BetrayalPhase): BetrayalCore {
+function makeBaseCore(playerIds: string[], phase: BetrayalPhase, random: RandomFn): BetrayalCore {
     const normalizedPlayerIds = normalizePlayerIds(playerIds);
     const scenarioId = DEFAULT_BETRAYAL_SCENARIO_ID;
-    const rooms = BETRAYAL_SHARED_PRE_HAUNT_SETUP.startingRoomLayout.map(roomSeedToNode);
+    const rooms = createInitialRoomLayout(BETRAYAL_SHARED_PRE_HAUNT_SETUP.startingRoomLayout);
+    const discoveryState = createShuffledDiscoveryState(random);
     const currentExplorer = createExplorer(
         normalizedPlayerIds[0]!,
         EXPLORER_CATALOG[0]!,
@@ -586,16 +648,22 @@ function makeBaseCore(playerIds: string[], phase: BetrayalPhase): BetrayalCore {
         movesRemaining: 3,
         recommendedAction: 'explore',
         activeRoomId: currentExplorer.roomId,
+        turnEndedByDiscovery: false,
         currentExplorer,
         currentExplorerTraits: { ...currentExplorer.traits },
         currentExplorerInventory: currentExplorer.inventory.map(cloneInventoryCard),
         otherExplorers,
         monsters: [],
+        drawOrder: discoveryState.drawOrder,
+        roomDiscoveryOrderByFloor: discoveryState.roomDiscoveryOrderByFloor,
+        possessionOrderByKind: discoveryState.possessionOrderByKind,
+        eventOrder: discoveryState.eventOrder,
         deckCounts: { ...BETRAYAL_INITIAL_DECK_COUNTS },
         discardCounts: { omen: 0, item: 0, event: 0 },
         rooms,
         exploreIndex: 0,
         usedCardIdsThisTurn: [],
+        turnStartInventoryCardIds: currentExplorer.inventory.map((card) => card.id),
         latestDiscovery: null,
         latestDiscoveryOwnerPlayerId: null,
         highlightedDeckKind: null,
@@ -605,17 +673,30 @@ function makeBaseCore(playerIds: string[], phase: BetrayalPhase): BetrayalCore {
     });
 }
 
-export function createBetrayalCharacterSelectCore(playerIds: string[] = ['0', '1', '2', '3']): BetrayalCore {
-    return makeBaseCore(playerIds, 'characterSelect');
+export function createBetrayalCharacterSelectCore(
+    playerIds: string[] = ['0', '1', '2', '3'],
+    random: RandomFn = DEFAULT_BETRAYAL_RANDOM,
+): BetrayalCore {
+    return makeBaseCore(playerIds, 'characterSelect', random);
 }
 
-export function createBetrayalFoundationCore(playerIds: string[] = ['0', '1', '2', '3']): BetrayalCore {
-    const core = makeBaseCore(playerIds, 'preHaunt');
-    return replaceExplorers(core, buildRepresentativeRuntimeExplorers(core), core.playerIds[0]);
+export function createBetrayalFoundationCore(
+    playerIds: string[] = ['0', '1', '2', '3'],
+    random: RandomFn = DEFAULT_BETRAYAL_RANDOM,
+): BetrayalCore {
+    const core = makeBaseCore(playerIds, 'preHaunt', random);
+    const nextCore = replaceExplorers(core, buildRepresentativeRuntimeExplorers(core), core.playerIds[0]);
+    return {
+        ...nextCore,
+        turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore),
+    };
 }
 
-export function createBetrayalMonsterEncounterCore(playerIds: string[] = ['0', '1', '2', '3']): BetrayalCore {
-    const core = createBetrayalFoundationCore(playerIds);
+export function createBetrayalMonsterEncounterCore(
+    playerIds: string[] = ['0', '1', '2', '3'],
+    random: RandomFn = DEFAULT_BETRAYAL_RANDOM,
+): BetrayalCore {
+    const core = createBetrayalFoundationCore(playerIds, random);
     const previewMonsters = scenarioConfigById(core.scenarioId).runtimePreview?.monsters ?? [];
     return {
         ...core,
@@ -695,6 +776,14 @@ function buildScenarioExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
 
 function findExplorerByPlayerId(core: BetrayalCore, playerId: string): BetrayalExplorerSummary | null {
     return getAllExplorers(core).find((explorer) => explorer.playerId === playerId) ?? null;
+}
+
+function resolveTurnStartInventoryCardIds(core: BetrayalCore, playerId = core.currentExplorer.playerId): string[] {
+    return findExplorerByPlayerId(core, playerId)?.inventory.map((card) => card.id) ?? [];
+}
+
+function canUsePossessionThisTurn(core: BetrayalCore, cardId: string): boolean {
+    return core.turnStartInventoryCardIds.includes(cardId) && !core.usedCardIdsThisTurn.includes(cardId);
 }
 
 function healExplorerToTemplate(explorer: BetrayalExplorerSummary): void {
@@ -850,6 +939,193 @@ function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set
     );
 }
 
+function oppositeEdge(edge: BetrayalRoomEdge): BetrayalRoomEdge {
+    switch (edge) {
+        case 'north':
+            return 'south';
+        case 'east':
+            return 'west';
+        case 'south':
+            return 'north';
+        case 'west':
+        default:
+            return 'east';
+    }
+}
+
+function rotateEdge(edge: BetrayalRoomEdge, turns: 0 | 1 | 2 | 3): BetrayalRoomEdge {
+    const edges: BetrayalRoomEdge[] = ['north', 'east', 'south', 'west'];
+    const index = edges.indexOf(edge);
+    return edges[(index + turns + edges.length) % edges.length]!;
+}
+
+function resolveDoorwayConnectionEdge(fromRoom: BetrayalRoomNode, targetRoomId: string): BetrayalRoomEdge | null {
+    return fromRoom.doorways.find((doorway) => doorway.connectsToRoomId === targetRoomId)?.edge ?? null;
+}
+
+function orientDoorwaysToEntry(
+    templateDoorways: BetrayalRoomEdge[],
+    entryEdge: BetrayalRoomEdge,
+): { doorways: BetrayalRoomDoorway[]; orientationTurns: 0 | 1 | 2 | 3 } {
+    const requiredEdge = oppositeEdge(entryEdge);
+    const baseEdge = templateDoorways[0] ?? requiredEdge;
+    const edges: BetrayalRoomEdge[] = ['north', 'east', 'south', 'west'];
+    const turns = ((edges.indexOf(requiredEdge) - edges.indexOf(baseEdge) + edges.length) % edges.length) as 0 | 1 | 2 | 3;
+    return {
+        doorways: templateDoorways.map((edge) => ({ edge: rotateEdge(edge, turns) })),
+        orientationTurns: turns,
+    };
+}
+
+const ROOM_EDGE_VECTOR: Record<BetrayalRoomEdge, { x: number; y: number }> = {
+    north: { x: 0, y: -1 },
+    east: { x: 1, y: 0 },
+    south: { x: 0, y: 1 },
+    west: { x: -1, y: 0 },
+};
+
+const STARTING_FRONTIER_SLOT_IDS: Record<string, Partial<Record<BetrayalRoomEdge, string>>> = {
+    'upper-landing': {
+        north: 'upper-north',
+        west: 'upper-west',
+    },
+    hallway: {
+        north: 'ground-north',
+        south: 'ground-south',
+    },
+    'entrance-hall': {
+        east: 'ground-east',
+    },
+    'basement-landing': {
+        east: 'basement-east',
+        south: 'basement-south',
+    },
+};
+
+function resolveBackVisualId(floor: BetrayalRoomFloor): Extract<BetrayalRoomVisualId, 'backUpper' | 'backGround' | 'backBasement'> {
+    if (floor === 'upper') {
+        return 'backUpper';
+    }
+    if (floor === 'basement') {
+        return 'backBasement';
+    }
+    return 'backGround';
+}
+
+function createFrontierSlotId(fromRoom: BetrayalRoomNode, edge: BetrayalRoomEdge): string {
+    return STARTING_FRONTIER_SLOT_IDS[fromRoom.id]?.[edge] ?? `frontier-${fromRoom.id}-${edge}`;
+}
+
+function refreshExplorableRoomSlots(rooms: BetrayalRoomNode[]): BetrayalRoomNode[] {
+    const discoveredRooms = rooms
+        .filter((room) => room.state === 'discovered')
+        .map(cloneRoom);
+    const discoveredIds = new Set(discoveredRooms.map((room) => room.id));
+
+    for (const room of discoveredRooms) {
+        room.connectedRoomIds = room.connectedRoomIds.filter((roomId) => discoveredIds.has(roomId));
+        room.doorways = room.doorways.map((doorway) => (
+            doorway.connectsToRoomId && !discoveredIds.has(doorway.connectsToRoomId)
+                ? {
+                    edge: doorway.edge,
+                    leadsToFloor: doorway.leadsToFloor,
+                    note: doorway.note,
+                }
+                : { ...doorway }
+        ));
+    }
+
+    const occupiedPositions = new Set(discoveredRooms.map((room) => `${room.floor}:${room.x}:${room.y}`));
+    const frontierSlots: BetrayalRoomNode[] = [];
+
+    for (const room of discoveredRooms) {
+        for (const doorway of room.doorways) {
+            if (doorway.connectsToRoomId || doorway.leadsToFloor) {
+                continue;
+            }
+            const vector = ROOM_EDGE_VECTOR[doorway.edge];
+            const x = room.x + vector.x;
+            const y = room.y + vector.y;
+            const positionKey = `${room.floor}:${x}:${y}`;
+            if (occupiedPositions.has(positionKey)) {
+                const neighbor = discoveredRooms.find((item) => item.floor === room.floor && item.x === x && item.y === y);
+                const neighborDoorway = neighbor?.doorways.find((item) => item.edge === oppositeEdge(doorway.edge));
+                if (neighbor && neighborDoorway) {
+                    doorway.connectsToRoomId = neighbor.id;
+                    neighborDoorway.connectsToRoomId = room.id;
+                    room.connectedRoomIds = Array.from(new Set([...room.connectedRoomIds, neighbor.id]));
+                    neighbor.connectedRoomIds = Array.from(new Set([...neighbor.connectedRoomIds, room.id]));
+                }
+                continue;
+            }
+
+            const existingSlot = frontierSlots.find((slot) => slot.floor === room.floor && slot.x === x && slot.y === y);
+            if (existingSlot) {
+                doorway.connectsToRoomId = existingSlot.id;
+                room.connectedRoomIds = Array.from(new Set([...room.connectedRoomIds, existingSlot.id]));
+                if (!existingSlot.doorways.some((slotDoorway) => slotDoorway.connectsToRoomId === room.id)) {
+                    existingSlot.doorways = [
+                        ...existingSlot.doorways,
+                        { edge: oppositeEdge(doorway.edge), connectsToRoomId: room.id },
+                    ];
+                    existingSlot.connectedRoomIds = Array.from(new Set([...existingSlot.connectedRoomIds, room.id]));
+                }
+                continue;
+            }
+
+            const backVisualId = resolveBackVisualId(room.floor);
+            const slot: BetrayalRoomNode = {
+                id: createFrontierSlotId(room, doorway.edge),
+                name: '未探索',
+                floor: room.floor,
+                x,
+                y,
+                connectedRoomIds: [room.id],
+                entryRoomId: room.id,
+                entryEdge: doorway.edge,
+                orientationTurns: 0,
+                state: 'unexplored',
+                hint: `等待从${room.name}翻出房间`,
+                tags: ['待翻出'],
+                discoveryReward: null,
+                visualId: backVisualId,
+                doorways: [
+                    { edge: oppositeEdge(doorway.edge), connectsToRoomId: room.id },
+                ],
+                backVisualId,
+            };
+            doorway.connectsToRoomId = slot.id;
+            room.connectedRoomIds = Array.from(new Set([...room.connectedRoomIds, slot.id]));
+            frontierSlots.push(slot);
+            occupiedPositions.add(positionKey);
+        }
+    }
+
+    return [...discoveredRooms, ...frontierSlots];
+}
+
+function createInitialRoomLayout(seeds: BetrayalRoomSeed[]): BetrayalRoomNode[] {
+    const discoveredSeedIds = new Set(seeds.filter((room) => room.state === 'discovered').map((room) => room.id));
+    const discoveredRooms = seeds
+        .filter((room) => room.state === 'discovered')
+        .map((seed) => {
+            const room = roomSeedToNode(seed);
+            room.connectedRoomIds = room.connectedRoomIds.filter((roomId) => discoveredSeedIds.has(roomId));
+            room.doorways = room.doorways.map((doorway) => (
+                doorway.connectsToRoomId && !discoveredSeedIds.has(doorway.connectsToRoomId)
+                    ? {
+                        edge: doorway.edge,
+                        leadsToFloor: doorway.leadsToFloor,
+                        note: doorway.note,
+                    }
+                    : { ...doorway }
+            ));
+            return room;
+        });
+
+    return refreshExplorableRoomSlots(discoveredRooms);
+}
+
 function roomDistanceByLayout(a: BetrayalRoomNode, b: BetrayalRoomNode): number {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
@@ -979,8 +1255,8 @@ function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
 }
 
 function resolveNextDeckKind(core: BetrayalCore): BetrayalDeckKind | null {
-    for (let index = 0; index < DRAW_ORDER.length; index += 1) {
-        const kind = DRAW_ORDER[(core.exploreIndex + index) % DRAW_ORDER.length]!;
+    for (let index = 0; index < core.drawOrder.length; index += 1) {
+        const kind = core.drawOrder[(core.exploreIndex + index) % core.drawOrder.length]!;
         if (core.deckCounts[kind] > 0) {
             return kind;
         }
@@ -989,22 +1265,24 @@ function resolveNextDeckKind(core: BetrayalCore): BetrayalDeckKind | null {
 }
 
 function resolveRoomTemplate(core: BetrayalCore, floor: BetrayalRoomNode['floor']): RoomTemplate {
-    const pool = ROOM_DISCOVERY_POOL[floor];
+    const pool = core.roomDiscoveryOrderByFloor[floor];
     const discoveredCount = core.rooms.filter((room) => room.floor === floor && room.state === 'discovered' && !room.startingTile).length;
-    return pool[(core.exploreIndex + discoveredCount) % pool.length]!;
+    return cloneRoomTemplate(pool[discoveredCount % pool.length]!);
 }
 
-function createDrawnCard(kind: Exclude<BetrayalDeckKind, 'event'>, exploreIndex: number): BetrayalInventoryCard {
-    const template = DRAW_POOL[kind][exploreIndex % DRAW_POOL[kind].length]!;
+function createDrawnCard(core: BetrayalCore, kind: Exclude<BetrayalDeckKind, 'event'>): BetrayalInventoryCard {
+    const drawnCount = countDrawnCards(core, kind);
+    const template = core.possessionOrderByKind[kind][drawnCount % core.possessionOrderByKind[kind].length]!;
     return {
-        id: `${template.id}-${exploreIndex}`,
+        id: `${template.id}-${core.exploreIndex}`,
         name: template.name,
         kind: template.kind,
     };
 }
 
-function resolveEvent(index: number): EventTemplate {
-    return EVENT_POOL[index % EVENT_POOL.length]!;
+function resolveEvent(core: BetrayalCore): EventTemplate {
+    const drawnCount = countDrawnCards(core, 'event');
+    return cloneEventTemplate(core.eventOrder[drawnCount % core.eventOrder.length]!);
 }
 
 function resolveUseEffect(card: BetrayalInventoryCard): UseEffectProfile {
@@ -1038,8 +1316,9 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
     const canExplore = Boolean(resolveNextExplorableRoomSlot(core) && resolveNextDeckKind(core));
     const canTrade = core.currentExplorer.inventory.length > 0
         && (resolveTradeTargets(core).length > 0 || resolveCorpseLootTargets(core).length > 0);
-    const cardId = options.cardId ?? core.currentExplorer.inventory[0]?.id;
-    const canUse = Boolean(cardId && !core.usedCardIdsThisTurn.includes(cardId));
+    const cardId = options.cardId
+        ?? core.currentExplorer.inventory.find((card) => canUsePossessionThisTurn(core, card.id))?.id;
+    const canUse = Boolean(cardId && canUsePossessionThisTurn(core, cardId));
 
     if (options.preferUse && canUse) return 'use';
     if (canMove) return 'move';
@@ -1124,6 +1403,9 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     if (!isPlayersTurn(core, command.playerId)) {
         return { valid: false, error: '还没有轮到该玩家。' };
     }
+    if (core.turnEndedByDiscovery && command.type !== BETRAYAL_COMMANDS.END_TURN) {
+        return { valid: false, error: '探索新房间后回合已经结束。' };
+    }
 
     switch (command.type) {
         case BETRAYAL_COMMANDS.MOVE_TO_ROOM: {
@@ -1152,6 +1434,9 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             }
             if (core.usedCardIdsThisTurn.includes(cardId)) {
                 return { valid: false, error: '该持有物本回合已经使用。' };
+            }
+            if (!core.turnStartInventoryCardIds.includes(cardId)) {
+                return { valid: false, error: '本回合新获得的持有物不能立刻使用。' };
             }
             return { valid: true };
         }
@@ -1425,22 +1710,25 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 : explorableSlots[0]!;
             const deckKind = resolveNextDeckKind(core)!;
             const roomTemplate = resolveRoomTemplate(core, nextSlot.floor);
+            const entryRoom = core.rooms.find((room) => room.id === core.activeRoomId);
+            const entryEdge = entryRoom ? resolveDoorwayConnectionEdge(entryRoom, nextSlot.id) : null;
+            const orientedRoom = orientDoorwaysToEntry(roomTemplate.doorways, entryEdge ?? nextSlot.doorways[0]?.edge ?? 'west');
 
             if (deckKind === 'event') {
-                const eventCard = resolveEvent(core.exploreIndex);
+                const eventCard = resolveEvent(core);
                 const effectLabel = formatEffectLabel(eventCard.effect);
                 return [nowEvent(EVENTS.ROOM_EXPLORED, {
                     playerId: command.playerId,
                     roomId: nextSlot.id,
-            room: {
-                name: roomTemplate.name,
-                hint: roomTemplate.hint,
-                tags: roomTemplate.tags,
-                discoveryReward: deckKind,
-                visualId: roomTemplate.visualId,
-                doorways: roomTemplate.doorways.map((edge) => ({ edge })),
-                backVisualId: nextSlot.backVisualId,
-            },
+                    room: {
+                        name: roomTemplate.name,
+                        hint: roomTemplate.hint,
+                        tags: roomTemplate.tags,
+                        discoveryReward: deckKind,
+                        visualId: roomTemplate.visualId,
+                        doorways: orientedRoom.doorways,
+                        backVisualId: nextSlot.backVisualId,
+                    },
                     deckKind,
                     eventEffect: eventCard.effect,
                     discovery: {
@@ -1455,7 +1743,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 }, timestamp)];
             }
 
-            const drawnCard = createDrawnCard(deckKind, core.exploreIndex);
+            const drawnCard = createDrawnCard(core, deckKind);
             return [nowEvent(EVENTS.ROOM_EXPLORED, {
                 playerId: command.playerId,
                 roomId: nextSlot.id,
@@ -1465,7 +1753,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     tags: roomTemplate.tags,
                     discoveryReward: deckKind,
                     visualId: roomTemplate.visualId,
-                    doorways: roomTemplate.doorways.map((edge) => ({ edge })),
+                    doorways: orientedRoom.doorways,
                     backVisualId: nextSlot.backVisualId,
                 },
                 deckKind,
@@ -1473,7 +1761,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 discovery: {
                     kind: deckKind,
                     title: drawnCard.name,
-                    summary: '已选中，可直接使用',
+                    summary: '已加入持有区',
                     detail: formatEffectLabel(resolveUseEffect(drawnCard)),
                     tone: 'accent',
                 },
@@ -1489,7 +1777,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             tags: roomTemplate.tags,
                             discoveryReward: deckKind,
                             visualId: roomTemplate.visualId,
-                            doorways: roomTemplate.doorways.map((edge) => ({ edge })),
+                            doorways: orientedRoom.doorways,
                             backVisualId: nextSlot.backVisualId,
                         },
                         deckKind,
@@ -1497,7 +1785,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         discovery: {
                             kind: deckKind,
                             title: drawnCard.name,
-                            summary: '已选中，可直接使用',
+                            summary: '已加入持有区',
                             detail: formatEffectLabel(resolveUseEffect(drawnCard)),
                             tone: 'accent',
                         },
@@ -1765,6 +2053,10 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 recommendedAction: 'explore',
                 activeRoomId: explorers[0]?.roomId ?? core.activeRoomId,
                 usedCardIdsThisTurn: [],
+                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(
+                    replaceExplorers(core, explorers, explorers[0]?.playerId),
+                    explorers[0]?.playerId,
+                ),
                 latestDiscovery: null,
                 latestDiscoveryOwnerPlayerId: null,
                 highlightedDeckKind: null,
@@ -1811,31 +2103,36 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 targetRoom.visualId = event.payload.room.visualId;
                 targetRoom.doorways = event.payload.room.doorways.map((doorway) => ({ ...doorway }));
                 targetRoom.backVisualId = event.payload.room.backVisualId;
-                if (!targetRoom.connectedRoomIds.includes(core.activeRoomId)) {
-                    targetRoom.connectedRoomIds = [...targetRoom.connectedRoomIds, core.activeRoomId];
-                }
+                targetRoom.entryRoomId = core.activeRoomId;
+                const reverseDoorway = core.rooms
+                    .find((room) => room.id === core.activeRoomId)
+                    ?.doorways.find((doorway) => doorway.connectsToRoomId === targetRoom.id);
+                targetRoom.entryEdge = reverseDoorway?.edge ?? targetRoom.doorways[0]?.edge ?? 'west';
+                targetRoom.orientationTurns = orientDoorwaysToEntry(
+                    event.payload.room.doorways.map((doorway) => doorway.edge),
+                    targetRoom.entryEdge,
+                ).orientationTurns;
                 if (!targetRoom.doorways.some((doorway) => doorway.connectsToRoomId === core.activeRoomId)) {
-                    const reverseDoorway = core.rooms
-                        .find((room) => room.id === core.activeRoomId)
-                        ?.doorways.find((doorway) => doorway.connectsToRoomId === targetRoom.id);
                     targetRoom.doorways = [
                         ...targetRoom.doorways,
                         {
-                            edge: reverseDoorway?.edge === 'north'
-                                ? 'south'
-                                : reverseDoorway?.edge === 'south'
-                                    ? 'north'
-                                    : reverseDoorway?.edge === 'east'
-                                        ? 'west'
-                                        : reverseDoorway?.edge === 'west'
-                                            ? 'east'
-                                            : targetRoom.doorways[0]?.edge ?? 'west',
+                            edge: oppositeEdge(targetRoom.entryEdge),
                             connectsToRoomId: core.activeRoomId,
                         },
                     ];
                 }
+                const newlyConnectedIds = targetRoom.doorways
+                    .map((doorway) => doorway.connectsToRoomId)
+                    .filter((roomId): roomId is string => Boolean(roomId));
+                targetRoom.connectedRoomIds = Array.from(new Set([
+                    ...targetRoom.connectedRoomIds,
+                    ...newlyConnectedIds,
+                ]));
             }
             core.currentExplorer.roomId = event.payload.roomId;
+            core.rooms = refreshExplorableRoomSlots(core.rooms);
+            core.movesRemaining = 0;
+            core.turnEndedByDiscovery = true;
             core.deckCounts[event.payload.deckKind] = Math.max(0, core.deckCounts[event.payload.deckKind] - 1);
             core.exploreIndex += 1;
             core.highlightedDeckKind = event.payload.deckKind;
@@ -1845,11 +2142,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 core.scenarioRuntime.omensDiscovered += 1;
             }
 
-            if (event.payload.deckKind === 'event' && event.payload.eventEffect) {
+            if (!core.turnEndedByDiscovery && event.payload.deckKind === 'event' && event.payload.eventEffect) {
                 core.discardCounts.event += 1;
                 if (event.payload.eventEffect.mode === 'move') {
                     core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + event.payload.eventEffect.amount));
                 } else {
+                    core.currentExplorer.traits[event.payload.eventEffect.trait!] += event.payload.eventEffect.amount;
+                }
+            } else if (event.payload.deckKind === 'event' && event.payload.eventEffect) {
+                core.discardCounts.event += 1;
+                if (event.payload.eventEffect.mode !== 'move') {
                     core.currentExplorer.traits[event.payload.eventEffect.trait!] += event.payload.eventEffect.amount;
                 }
             } else if (event.payload.drawnCard) {
@@ -1859,10 +2161,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const synced = syncCurrentExplorerProjection(core);
             let nextCore = {
                 ...synced,
-                recommendedAction: resolveRecommendedAction(synced, {
-                    preferUse: Boolean(event.payload.drawnCard),
-                    cardId: event.payload.drawnCard?.id,
-                }),
+                recommendedAction: resolveRecommendedAction(synced),
                 activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
             };
             if (event.payload.hauntTriggered) {
@@ -1938,6 +2237,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 movesRemaining: 4,
                 recommendedAction: resolveRecommendedAction({ ...nextCore, movesRemaining: 4 }),
                 usedCardIdsThisTurn: [],
+                turnEndedByDiscovery: false,
+                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
                 scenarioRuntime: {
                     ...nextCore.scenarioRuntime,
                     corpseLootedByPlayerIdsThisTurn: [],
@@ -1970,6 +2271,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.scenarioRuntime.hauntTriggerLabel = event.payload.hauntTriggerLabel;
             core.movesRemaining = 4;
             core.usedCardIdsThisTurn = [];
+            core.turnEndedByDiscovery = false;
             const traitor = findExplorerByPlayerId(core, event.payload.traitorPlayerId);
             if (traitor) {
                 healTraitorForHaunt(traitor);
@@ -1978,6 +2280,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return {
                 ...nextCore,
                 currentPlayer: event.payload.nextPlayerId,
+                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
                 recommendedAction: 'move',
                 activityLog: appendActivity(nextCore, event.payload.logText, 'warning'),
             };
@@ -2181,7 +2484,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
 
 export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalEvent> = {
     gameId: 'betrayal',
-    setup: (playerIds: PlayerId[], _random: RandomFn) => createBetrayalCharacterSelectCore(playerIds),
+    setup: (playerIds: PlayerId[], random: RandomFn) => createBetrayalCharacterSelectCore(playerIds, random),
     validate: validateCommand,
     execute: executeCommand,
     reduce: reduceEvent,

@@ -26,7 +26,7 @@ const waitForStep = async (page: Parameters<typeof test>[0]['page'], stepId: str
 
 const waitForHauntRuntime = async (page: Parameters<typeof test>[0]['page'], timeout = 30000) => {
     await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout });
-    await expect(page.getByTestId('betrayal-runtime-header-grid').getByText('Haunt')).toBeVisible({ timeout });
+    await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i, { timeout });
 };
 
 const clickNext = async (page: Parameters<typeof test>[0]['page']) => {

@@ -462,7 +462,7 @@ const getPyroBlastDieEffect = (face: string) => {
     return {};
 };
 
-const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount: number; maxRerollCount?: number; dieEffectKey: string; rerollEffectKey: string }): DiceThroneEvent[] => {
+const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount: number; maxRerollCount?: number; rerollCostAmount?: number; dieEffectKey: string; rerollEffectKey: string }): DiceThroneEvent[] => {
     // 伤害/状态目标是对手，不是 ctx.targetId（custom action target='self' 导致 targetId 指向自己）
     const opponentId = ctx.ctx.defenderId;
 
@@ -471,7 +471,7 @@ const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount
         {
             diceCount: config.diceCount,
             rerollCostTokenId: TOKEN_IDS.FIRE_MASTERY,
-            rerollCostAmount: config.maxRerollCount ? 1 : Infinity, // 无 maxRerollCount 时不可重掷
+            rerollCostAmount: config.rerollCostAmount ?? Infinity, // 无 maxRerollCount 时不可重掷
             maxRerollCount: config.maxRerollCount,
             dieEffectKey: config.dieEffectKey,
             rerollEffectKey: config.rerollEffectKey,
@@ -759,7 +759,7 @@ export function registerPyromancerCustomActions(): void {
     registerCustomActionHandler('pyro-spend-cp-for-fm', resolveSpendCpForFM, { categories: ['resource', 'choice'] });
 
     registerCustomActionHandler('pyro-blast-2-roll', (ctx) => createPyroBlastRollEvents(ctx, { diceCount: 2, dieEffectKey: 'bonusDie.effect.pyroBlast2Die', rerollEffectKey: 'bonusDie.effect.pyroBlast2Reroll' }), { categories: ['dice', 'other'] });
-    registerCustomActionHandler('pyro-blast-3-roll', (ctx) => createPyroBlastRollEvents(ctx, { diceCount: 2, maxRerollCount: 1, dieEffectKey: 'bonusDie.effect.pyroBlast3Die', rerollEffectKey: 'bonusDie.effect.pyroBlast3Reroll' }), { categories: ['dice', 'other'] });
+    registerCustomActionHandler('pyro-blast-3-roll', (ctx) => createPyroBlastRollEvents(ctx, { diceCount: 2, maxRerollCount: 1, rerollCostAmount: 0, dieEffectKey: 'bonusDie.effect.pyroBlast3Die', rerollEffectKey: 'bonusDie.effect.pyroBlast3Reroll' }), { categories: ['dice', 'other'] });
 
     registerChoiceEffectHandler('pyro-spend-cp-for-fm-confirmed', (choiceCtx) => {
         const cpToSpend = choiceCtx.value ?? 0;

@@ -5,7 +5,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi } from 'vitest';
 import { OverviewSpread, type HomeV2ContinueMatch } from '../LobbyDirectory';
-import { sortGamesForLobbyDirectory } from '../lobbyDirectorySorting';
+import { rankGamesForLobbyDirectory, sortGamesForLobbyDirectory } from '../lobbyDirectorySorting';
 
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
@@ -105,9 +105,10 @@ describe('HomeV2 Overview game ordering', () => {
             buildGame('tictactoe'),
             buildGame('smashup'),
             buildGame('cardia'),
+            buildGame('dicethrone'),
         ], 'all');
 
-        expect(ordered.map((game) => game.id)).toEqual(['cardia', 'smashup', 'tictactoe']);
+        expect(ordered.map((game) => game.id)).toEqual(['dicethrone', 'cardia', 'smashup', 'tictactoe']);
     });
 
     it('有总时长数据时按热度降序排序，并对 gameId 大小写不敏感', () => {
@@ -130,6 +131,71 @@ describe('HomeV2 Overview game ordering', () => {
             .map((element) => element.dataset.gameId);
 
         expect(renderedGameIds).toEqual(['tictactoe', 'smashup', 'cardia']);
+    });
+
+    it('Dice Throne 热度最高时首页首位渲染 Dice Throne', () => {
+        render(createElement(OverviewSpread, {
+            games: [
+                buildGame('cardia'),
+                buildGame('dicethrone'),
+                buildGame('smashup'),
+            ],
+            popularityByGameId: {
+                cardia: 0.2,
+                dicethrone: 0.9,
+                smashup: 0.3,
+            },
+            activeCategory: 'all',
+            onCategoryChange: vi.fn(),
+            onGameClick: vi.fn(),
+        }));
+
+        const renderedGameIds = Array.from(document.querySelectorAll<HTMLElement>('[data-game-id]'))
+            .map((element) => element.dataset.gameId);
+
+        expect(renderedGameIds[0]).toBe('dicethrone');
+    });
+
+    it('实施中的游戏即使热度最高也排在已上线游戏后面', () => {
+        const ordered = sortGamesForLobbyDirectory([
+            buildGame('cardia'),
+            {
+                ...buildGame('qidahen'),
+                statusTag: 'under_construction',
+            },
+            buildGame('smashup'),
+        ], 'all', {
+            qidahen: 999,
+            cardia: 1,
+            smashup: 0,
+        });
+
+        expect(ordered.map((game) => game.id)).toEqual(['cardia', 'smashup', 'qidahen']);
+    });
+
+    it('会输出可解释排序因子，并显示实施状态优先于热度生效', () => {
+        const ranked = rankGamesForLobbyDirectory([
+            buildGame('cardia'),
+            {
+                ...buildGame('qidahen'),
+                statusTag: 'under_construction',
+            },
+        ], 'all', {
+            qidahen: 1,
+            cardia: 0,
+        });
+
+        expect(ranked.map(({ game }) => game.id)).toEqual(['cardia', 'qidahen']);
+        expect(ranked[0].factors).toMatchObject({
+            gameId: 'cardia',
+            implementationStatusRank: 0,
+            popularityScore: 0,
+        });
+        expect(ranked[1].factors).toMatchObject({
+            gameId: 'qidahen',
+            implementationStatusRank: 1,
+            popularityScore: 1,
+        });
     });
 
     it('会给当前在线最多的游戏显示经典同款热门标识', () => {

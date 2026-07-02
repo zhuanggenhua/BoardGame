@@ -552,7 +552,15 @@
       "title": "Choose a chapter first",
       "description": "This game includes multiple tutorial chapters. Pick one before entering its real teaching flow.",
       "recommended": "Recommended Start",
+      "completed": "Completed",
       "enter": "Open Chapter"
+    },
+    "tutorialProgress": {
+      "title": "Continue the tutorial?",
+      "description": "You reached step {{current}} / {{total}}. Continue from there or restart this chapter?",
+      "continue": "Continue",
+      "restart": "Restart",
+      "waitingChoice": "Waiting for tutorial progress choice..."
     },
     "matchTitle": "Playing {{game}}",
     "loadingResources": "Loading match resources...",
@@ -1035,7 +1043,7 @@
     },
     "mobileReleasePage": {
       "title": "Release Center",
-      "description": "Manage Android OTA, native app packages, mobile game packages, deployment updates, and deployment rollback.",
+      "description": "Manage Android OTA, native app packages, mobile game packages, deployment update + OTA, and deployment rollback.",
       "cards": {
         "product_version": "Product Version",
         "latest_ota": "Latest OTA Cursor",
@@ -1074,7 +1082,7 @@
         "publish_native": "Publish Native Package",
         "publish_packages": "Publish Game Packages",
         "preview_command": "Preview Command",
-        "execute_deploy_update": "Execute Deploy Update",
+        "execute_deploy_update": "Execute Deploy Update + OTA",
         "execute_rollback": "Execute Rollback",
         "running": "Running..."
       },
@@ -1090,12 +1098,12 @@
         "title": "Android Native Package"
       },
       "deployUpdate": {
-        "title": "Deployment Update",
+        "title": "Deployment Update + OTA",
         "tag": "Image tag",
         "tag_placeholder": "Leave empty to deploy latest",
         "confirm_label": "Execution confirmation",
         "confirm_placeholder": "Type 确认部署 to execute",
-        "description": "Deployment update runs the server host deploy script with update. Leaving the tag empty deploys latest; entering a tag deploys that image. Execution must go through the independent deploy runner so the web container does not interrupt its own control entry while updating."
+        "description": "Deployment update + OTA first runs the image update through the independent server-host deploy runner. After the image update succeeds, it publishes Android OTA with the selected channel and OTA cursor settings. Leaving the tag empty deploys latest; entering a tag deploys that image."
       },
       "rollback": {
         "title": "Deployment Rollback",
@@ -1113,12 +1121,14 @@
       },
       "safety": {
         "title": "Operation Boundary",
-        "description": "Release, deployment update, and rollback are explicit admin operations. Deployment update and rollback are executed only by the independent deploy runner on the server host; without the runner, the admin page only previews commands."
+        "description": "Release, deployment update + OTA, and rollback are explicit admin operations. Deployment update + OTA and rollback are executed only by the independent deploy runner on the server host; without the runner, the admin page only previews commands."
       },
       "result": {
         "title": "Latest Execution",
         "kind": "Kind",
         "mode": "Mode",
+        "job_status": "Job Status",
+        "exit_code": "Exit Code",
         "bundle_version": "Bundle Cursor",
         "zip_bytes": "ZIP Bytes"
       },
@@ -1134,7 +1144,8 @@
         "dry_run_success": "Dry run completed",
         "publish_success": "Published",
         "preview_success": "Command preview generated",
-        "deploy_update_success": "Deployment update command submitted",
+        "deploy_update_success": "Deployment update + OTA job submitted",
+        "job_failed": "Deployment update + OTA failed. Check the latest execution output.",
         "rollback_success": "Rollback command executed"
       }
     },

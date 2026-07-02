@@ -472,6 +472,46 @@ const WORLD_CHAMP_ACTION_KEYS = [
     'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_02_krst',
     'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_sparkle_b',
 ];
+const KUNG_FU_FIGHTER_MINION_KEYS = [
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.kung_fu_shout_001',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.kung_fu_shout_002',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.kung_fu_shout_003',
+];
+const KUNG_FU_FIGHTER_ACTION_KEYS = [
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.kick_001',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.pixel_punch_001',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.steel_fist_punch_001',
+];
+const VIGILANTE_MINION_KEYS = [
+    'combat.guns_sound_fx_pack.30_30_lever_action_rifle.foley.30_30_lever_action_rifle_lever_001',
+    'combat.guns_sound_fx_pack.30_30_lever_action_rifle.foley.30_30_lever_action_rifle_lever_002',
+    'combat.guns_sound_fx_pack.38_spl_revolver.gunshots.38_spl_revolver_gunshot_a_001',
+];
+const VIGILANTE_ACTION_KEYS = [
+    'combat.guns_sound_fx_pack.38_spl_revolver.gunshots.38_spl_revolver_gunshot_a_002',
+    'combat.guns_sound_fx_pack.12ga_pump_shotgun.foley.12ga_pump_shotgun_pump_001',
+    'combat.guns_sound_fx_pack.30_30_lever_action_rifle.gunshots.30_30_lever_action_rifle_gunshot_a_001',
+];
+const TRUCKER_MINION_KEYS = [
+    'system.computers_machinery_sound_fx_pack_vol.misc.machinery.mech_transform_001',
+    'system.computers_machinery_sound_fx_pack_vol.misc.machinery.mech_transform_002',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.machinery.lever_001',
+];
+const TRUCKER_ACTION_KEYS = [
+    'system.computers_machinery_sound_fx_pack_vol.foley_and_impacts.foley.tools_metal_foley_001',
+    'system.computers_machinery_sound_fx_pack_vol.foley_and_impacts.foley.tools_metal_foley_002',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.machinery.lever_002',
+];
+const DISCO_DANCER_MINION_KEYS = [
+    'system.success_and_failure_sound_fx_pack_vol.successes.party_horn_short_a',
+    'system.success_and_failure_sound_fx_pack_vol.successes.party_horn_short_b',
+    'system.success_and_failure_sound_fx_pack_vol.successes.party_horn_short_c',
+];
+const DISCO_DANCER_ACTION_KEYS = [
+    'foley.analogue_gear_sound_fx_pack_vol.home_media.vinyl_player_a',
+    'foley.analogue_gear_sound_fx_pack_vol.home_media.vinyl_record_handling_a',
+    'foley.analogue_gear_sound_fx_pack_vol.home_media.casette_tape_handling_a',
+];
 
 const FACTION_SFX_KEYS: Record<string, string[]> = {
     [SMASHUP_FACTION_IDS.ZOMBIES]: [...ZOMBIE_MINION_KEYS, ...ZOMBIE_ACTION_KEYS],
@@ -519,6 +559,10 @@ const FACTION_SFX_KEYS: Record<string, string[]> = {
     [SMASHUP_FACTION_IDS.TORNADOS]: [...TORNADO_MINION_KEYS, ...TORNADO_ACTION_KEYS],
     [SMASHUP_FACTION_IDS.VIKINGS]: [...VIKING_MINION_KEYS, ...VIKING_ACTION_KEYS],
     [SMASHUP_FACTION_IDS.WORLD_CHAMPS]: [...WORLD_CHAMP_MINION_KEYS, ...WORLD_CHAMP_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS]: [...KUNG_FU_FIGHTER_MINION_KEYS, ...KUNG_FU_FIGHTER_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.VIGILANTES]: [...VIGILANTE_MINION_KEYS, ...VIGILANTE_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.TRUCKERS]: [...TRUCKER_MINION_KEYS, ...TRUCKER_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.DISCO_DANCERS]: [...DISCO_DANCER_MINION_KEYS, ...DISCO_DANCER_ACTION_KEYS],
 };
 
 const collectFactionPreloadKeys = (factionIds: string[]): string[] => {
@@ -725,6 +769,22 @@ const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'ac
     if (defId.startsWith('world_champs_')) {
         const keys = cardType === 'action' ? WORLD_CHAMP_ACTION_KEYS : WORLD_CHAMP_MINION_KEYS;
         return pickRandomSoundKey(`smashup.world_champs.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('kung_fu_fighters_')) {
+        const keys = cardType === 'action' ? KUNG_FU_FIGHTER_ACTION_KEYS : KUNG_FU_FIGHTER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.kung_fu_fighters.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('vigilantes_')) {
+        const keys = cardType === 'action' ? VIGILANTE_ACTION_KEYS : VIGILANTE_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.vigilantes.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('truckers_')) {
+        const keys = cardType === 'action' ? TRUCKER_ACTION_KEYS : TRUCKER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.truckers.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('disco_dancers_')) {
+        const keys = cardType === 'action' ? DISCO_DANCER_ACTION_KEYS : DISCO_DANCER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.disco_dancers.${cardType}`, keys, { minGap: 1 });
     }
     
     // 未配置音效池的派系，返回 null（静默）

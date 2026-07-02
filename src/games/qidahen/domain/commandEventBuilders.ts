@@ -121,6 +121,7 @@ const buildQidahenPreviewActionConfirmedEvent = (
     payload: {
         actionId: command.payload.actionId,
         playerId: command.playerId,
+        sourceHandCardId: command.payload.sourceHandCardId ?? null,
     },
     sourceCommandType: command.type,
     timestamp,

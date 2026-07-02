@@ -3087,6 +3087,64 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 7);
     });
 
+    it('诅咒面无情诅咒选择火药桶后仍会继续结算 13 点主伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        setCursedPirateDiceValues(state, [6, 6, 6, 6, 6]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'merciless-curse' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'merciless-curse',
+            isDefendable: false,
+        });
+        expect(getCurrentInteractionId(selected.state)).toBeUndefined();
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+        expect(advanced.state.core.currentChoiceSourceAbilityId).toBe('merciless-curse');
+
+        const prompt = getSimpleChoicePrompt(advanced.state, 'merciless-curse');
+        const applyToDefender = prompt.options.find(option => (
+            option.value as { value?: number }
+        ).value === 1);
+        expect(applyToDefender).toBeDefined();
+
+        const resolved = respondToPrompt(advanced.state, applyToDefender!.id, '0');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 13);
+    });
+
     it('human 面判决指令在镜像 E2E 注入态下仍会于 ADVANCE_PHASE 后进入诅咒金币 simple-choice', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';

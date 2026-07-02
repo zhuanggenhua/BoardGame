@@ -34,7 +34,7 @@ test.describe('山屋惊魂第一剧本', () => {
         await injectCore(page, createFirstScenarioHauntRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-open-scenario')).toBeVisible();
-        await expect(page.getByTestId('betrayal-runtime-header-grid').getByText('Haunt')).toBeVisible();
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await saveScreenshot(page, HAUNT_SCREENSHOT);
 
         await page.getByTestId('betrayal-open-scenario').click();

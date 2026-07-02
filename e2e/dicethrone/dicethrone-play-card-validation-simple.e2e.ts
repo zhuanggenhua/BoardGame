@@ -68,19 +68,7 @@ async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
 }
 
 test.describe('DiceThrone - 打牌验证诊断', () => {
-    test('诊断：打牌时的验证日志', async ({ page, game }) => {
-        const consoleLogs: string[] = [];
-        page.on('console', (msg) => {
-            const text = msg.text();
-            if (
-                text.includes('[validateCommand]')
-                || text.includes('[validatePlayCard]')
-                || text.includes('card_not_in_hand')
-            ) {
-                consoleLogs.push(text);
-            }
-        });
-
+    test('诊断：合法打牌后状态应正确落地', async ({ page, game }) => {
         await setupPlayCardValidationScene(game);
 
         const buddhaLightCard = page
@@ -96,7 +84,7 @@ test.describe('DiceThrone - 打牌验证诊断', () => {
                 handIds: player0?.hand?.map((card: any) => card.id) ?? [],
                 tokens: player0?.tokens ?? {},
                 cp: player0?.resources?.CP ?? player0?.resources?.cp ?? null,
-                opponentKnockdown: player1?.statuses?.knockdown ?? player1?.tokens?.knockdown ?? null,
+                opponentKnockdown: player1?.statusEffects?.knockdown ?? player1?.statuses?.knockdown ?? player1?.tokens?.knockdown ?? null,
             };
         }, { timeout: 5000 }).toMatchObject({
             handIds: [],
@@ -110,14 +98,6 @@ test.describe('DiceThrone - 打牌验证诊断', () => {
         });
 
         const player0 = await game.getPlayerState('0');
-
-        const hasValidateCommand = consoleLogs.some((log) => log.includes('[validateCommand]'));
-        const hasValidatePlayCard = consoleLogs.some((log) => log.includes('[validatePlayCard]'));
-        const hasCardNotInHand = consoleLogs.some((log) => log.includes('card_not_in_hand'));
-
-        expect(hasValidateCommand).toBe(true);
-        expect(hasValidatePlayCard).toBe(true);
-        expect(hasCardNotInHand).toBe(false);
 
         expect(player0?.hand?.map((card: any) => card.id) ?? []).not.toContain('card-buddha-light');
         expect(player0?.tokens?.taiji ?? 0).toBe(1);
