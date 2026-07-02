@@ -321,3 +321,18 @@
 - P1 任一对象一旦逐字锁定，立刻做定义、执行、状态、消耗、验证、UI、i18n、测试八层对照。
 - 若发现卡图与实现冲突，先写最小失败测试，再改最小机制逻辑，再回到原始卡图子句和真实状态位点验收。
 - 同步保留旧 evidence 回写任务；旧文档里“已覆盖/已通过”的句子如果不满足新规范，必须改成当前证据等级。
+
+
+## 17. P1 单卡压缩复核图补充（2026-07-02 10:47:54 +08:00）
+
+### 17.1 本轮动作
+
+- 已按“先压缩后读取”的口径，生成 P1 单卡小尺寸复核图，避免直接读取原始 atlas 或超大长图。
+- 复核图路径：`temp/summonerwars-card-authority/manual-review-sheets/p1-*-focused-review.jpg`。
+- 这些图片只用于人工/视觉复核卡图文字；在逐字确认前，不作为规则断言。
+
+### 17.2 当前处理
+
+- 第二批 7 个对象仍维持“未锁定”。
+- 下一步应逐张打开 `p1-makinda_ru-focused-review.jpg`、`p1-frontier_archer-focused-review.jpg`、`p1-kalu-focused-review.jpg`、`p1-kara-focused-review.jpg`、`p1-gulzhuang-focused-review.jpg`、`p1-wind_mage-focused-review.jpg`，只把肉眼能逐字确认的文本写入子句矩阵。
+- 任何看不清、只能猜词、只能由 OCR 推测的字段，继续保留“未锁定”。

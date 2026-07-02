@@ -426,10 +426,10 @@ function ExplorerFigureToken({
             'drop-shadow(0 4px 8px rgba(0,0,0,0.32))',
         ].join(' ')
         : [
-            'drop-shadow(1px 0 0 rgba(31,31,26,0.98))',
-            'drop-shadow(-1px 0 0 rgba(31,31,26,0.98))',
-            'drop-shadow(0 1px 0 rgba(31,31,26,0.98))',
-            'drop-shadow(0 -1px 0 rgba(31,31,26,0.98))',
+            'drop-shadow(1px 0 0 rgba(245,204,72,0.98))',
+            'drop-shadow(-1px 0 0 rgba(245,204,72,0.98))',
+            'drop-shadow(0 1px 0 rgba(245,204,72,0.98))',
+            'drop-shadow(0 -1px 0 rgba(245,204,72,0.98))',
             'drop-shadow(0 4px 8px rgba(0,0,0,0.32))',
         ].join(' ');
 
