@@ -13,7 +13,7 @@ import {
     warmBetrayalFrontend,
 } from './betrayalTestHelpers';
 
-const EVIDENCE_DIR = 'evidence/betrayal-explore-unknown-room';
+const EVIDENCE_DIR = 'evidence/山屋惊魂-未知房间探索';
 const READY_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-未知房间-探索前.png`;
 const TARGETS_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-未知房间-选择门位.png`;
 const REVEALED_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-未知房间-翻开后.png`;

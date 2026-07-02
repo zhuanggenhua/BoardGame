@@ -267,3 +267,57 @@
 - 不把“看起来像”“实现里这样写”“旧测试是绿的”写成规则结论。
 - 不把显示上限、动画降噪、防重复播放等止血动作称为机制根因修复。
 - 不把“第一批已通过”外推成“同家族都正确”。
+
+## 15. 第二批 OCR 与压缩图复核记录（2026-07-02 10:55:00 +08:00）
+
+### 15.1 本轮动作
+
+- 已按用户要求继续压缩/裁切读图，避免直接读取原始大图。
+- 已查看第二批卡牌的压缩全图证据：凯鲁尊者、卡拉、古尔壮、清风法师。
+- 已补跑中文+英文 OCR 辅助文件：`temp/summonerwars-card-authority/ocr/second-batch-ocr-zh-en-2026-07-02.md`。
+
+### 15.2 当前结论
+
+- 现有压缩卡图和 OCR 辅助结果仍不足以把第二批 7 个对象的规则原文逐字锁定。
+- OCR 结果只能证明“当前图片质量不足 / 模型无法稳定识别”，不能反向证明实现正确。
+- 第二批仍保持“未锁定”状态；不进入机制代码修改、不改测试断言、不把实现文案补成规则结论。
+
+### 15.3 对全面审计的影响
+
+- 需要继续全面审计，且必须把“真相源不可读”作为审计发现记录，而不是跳过这批对象。
+- P1 后续优先动作：寻找更清晰卡图或权威规则文本；若只剩压缩 atlas，先做对象路径、风险字段和实现入口登记，不做规则判通。
+
+## 16. 全面审计补审决策与执行队列（2026-07-02）
+
+### 16.1 是否要全面补审
+
+- 结论：要补审，而且不能只补雌狮「威势」这一条。
+- 理由：当前审计规范已经从“能力是否注册/测试是否命中”升级为“卡图原文子句 → 实现链路 → 最终状态 → UI/交互 → 负向路径”的闭环审计；召唤师战争旧证据大多不足以支撑这个口径。
+- 约束：本轮只推进审计和证据登记；未逐字锁定卡图或权威规则前，不修改机制代码、不改测试断言。
+- 真相源：不确定项以卡图为主；OCR、i18n、AbilityDef、代码注释、旧测试只能作为定位线索。
+
+### 16.2 当前对象分层
+
+- P0 已完成 L1/L2（仍需按新规范补 L3/L4 适用性复核）：4 个对象。
+  - 样例：intimidate、imposing、fortress_power、judgment
+- P1 正在卡图锁定：7 个对象。
+  - 样例：prepare、rapid_fire、inspire、withdraw、high_telekinesis、mind_transmission、telekinesis
+- P2 高风险机制链：36 个对象。
+  - 样例：ancestral_bond、speed_up、spirit_bond、structure_shift、ice_shards、greater_frost_bolt、frost_bolt、frost_axe、ice_ram、vanish、blood_rune、magic_addiction、ferocity、feed_beast、charge、immobile、grab、guidance……
+- P3 状态/数值链：13 个对象。
+  - 样例：gather_power、trample、slow、climb、entangle、flying、swift、evasion、rebound、blood_rage、power_boost、blood_rage_decay、sacrifice
+- P4 低风险静态/被动：8 个对象。
+  - 样例：power_up、life_up、cold_snap、living_gate、mobile_structure、fire_sacrifice_summon、rage、soulless
+
+### 16.3 补审优先级
+
+- 第一优先级：攻击后触发、每回合次数、custom 后续结算、额外攻击、推拉、召回、召唤、资源消耗、充能/boost；这些直接关联“重复触发/循环/状态堆叠/交互卡死”。
+- 第二优先级：共享执行器或共享状态链，例如推拉、额外攻击、充能、能力次数、pending/interaction；同一共享链发现一个对象有风险，不能外推同家族正确。
+- 第三优先级：低风险静态/被动；只有卡图子句简单且无共享状态、无交互、无阶段清理时，才允许轻量审计。
+
+### 16.4 下一步执行门槛
+
+- 先补完 P1 第二批 7 个对象的卡图子句锁定；看不清的继续记录“未锁定”，不猜。
+- P1 任一对象一旦逐字锁定，立刻做定义、执行、状态、消耗、验证、UI、i18n、测试八层对照。
+- 若发现卡图与实现冲突，先写最小失败测试，再改最小机制逻辑，再回到原始卡图子句和真实状态位点验收。
+- 同步保留旧 evidence 回写任务；旧文档里“已覆盖/已通过”的句子如果不满足新规范，必须改成当前证据等级。
