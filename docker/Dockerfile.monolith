@@ -38,6 +38,8 @@ COPY package.json package-lock.json ./
 # 安装生产依赖（利用 BuildKit 缓存挂载加速）
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --ignore-scripts
+COPY scripts/deploy/prune-prod-node-modules.mjs ./scripts/deploy/prune-prod-node-modules.mjs
+RUN node scripts/deploy/prune-prod-node-modules.mjs --profile api
 
 # ---- 阶段 3：最终生产镜像 ----
 FROM node:${NODE_VERSION}-slim

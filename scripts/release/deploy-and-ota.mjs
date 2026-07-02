@@ -18,7 +18,6 @@ const helpText = `
   --wait-minutes <number>    等待多少分钟后再开始，默认 10
   --skip-wait                立即执行，不等待
   --dry-run                  只打印将执行的命令，不真正执行
-  --deploy-mode <mode>       部署模式：remote | stream，默认 remote
   --host <user@host>         覆盖 SSH 目标，默认 admin@8.148.71.102
   --remote-dir <path>        覆盖远端项目目录，默认 /home/admin/BoardGame
   --deploy-tag <tag>         远端执行 update <tag>；不传则执行 update latest
@@ -46,7 +45,6 @@ const waitMinutesRaw = readArgValue('wait-minutes', '10');
 const waitMinutes = Number.parseFloat(waitMinutesRaw);
 const dryRun = hasFlag('dry-run');
 const skipWait = hasFlag('skip-wait');
-const deployMode = readArgValue('deploy-mode', 'remote');
 const sshTarget = readArgValue('host', 'admin@8.148.71.102');
 const remoteDir = readArgValue('remote-dir', '/home/admin/BoardGame');
 const deployTag = readArgValue('deploy-tag', '');
@@ -62,10 +60,6 @@ if (hasFlag('help') || rawArgs.includes('-h')) {
 
 if (!skipWait && (!Number.isFinite(waitMinutes) || waitMinutes < 0)) {
     throw new Error(`--wait-minutes 必须是 >= 0 的数字，当前值: ${waitMinutesRaw}`);
-}
-
-if (!['remote', 'stream'].includes(deployMode)) {
-    throw new Error(`--deploy-mode 只能是 remote 或 stream，当前值: ${deployMode}`);
 }
 
 const runCommand = (command, args, label) => new Promise((resolve, reject) => {
@@ -125,23 +119,7 @@ const main = async () => {
         return;
     }
 
-    if (deployMode === 'stream') {
-        const streamArgs = [
-            'scripts/deploy/stream-images-to-server.mjs',
-            '--host',
-            sshTarget,
-            '--remote-dir',
-            remoteDir,
-        ];
-        if (deployTag) {
-            streamArgs.push('--tag', deployTag);
-        }
-        streamArgs.push('--deploy');
-        console.log(`[deploy-and-ota] 镜像输送命令: ${process.execPath} ${streamArgs.join(' ')}`);
-        await runCommand(process.execPath, streamArgs, '镜像输送部署');
-    } else {
-        await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署');
-    }
+    await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署');
     if (!skipOta) {
         await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
     }

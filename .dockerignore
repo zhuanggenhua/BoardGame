@@ -24,6 +24,7 @@ nul
 Thumbs.db
 Desktop.ini
 .git
+.worktrees
 .gitignore
 .vscode
 .vscode/*
@@ -36,6 +37,7 @@ Desktop.ini
 *.sw?
 *.log
 logs
+artifacts
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
@@ -55,6 +57,11 @@ blob-report
 e2e/screenshots
 .agent
 .agent/recordings
+.codex
+.omx
+.kiro
+.craft
+.openclaw-temp
 .windsurf
 .claude
 .opencode
