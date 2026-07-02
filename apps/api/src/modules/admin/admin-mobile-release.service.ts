@@ -727,6 +727,7 @@ export class AdminMobileReleaseService {
                     args: body.args,
                     otaArgs: body.otaArgs,
                     tag: body.tag,
+                    deployMode: body.deployMode,
                     confirmText: body.confirmText,
                 }),
             });
