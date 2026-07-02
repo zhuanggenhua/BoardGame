@@ -107,6 +107,13 @@ function hasOverflowHiddenAncestor(el: Element): boolean {
     return false;
 }
 
+const escapeTutorialTargetSelector = (value: string): string => {
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+        return CSS.escape(value);
+    }
+    return value.replace(/["\\]/g, '\\$&');
+};
+
 export const TutorialOverlay: React.FC = () => {
     const { isActive, currentStep, nextStep, isLastStep } = useTutorial();
     const stepNamespace = currentStep?.content?.includes(':')
@@ -456,8 +463,10 @@ export const TutorialOverlay: React.FC = () => {
 
         const updateLayout = () => {
             if (highlightTarget) {
-                const el = document.querySelector(`[data-tutorial-id="${highlightTarget}"]`) ||
-                    document.getElementById(highlightTarget);
+                const escapedHighlightTarget = escapeTutorialTargetSelector(highlightTarget);
+                const el = document.querySelector(`[data-tutorial-id="${escapedHighlightTarget}"]`) ||
+                    document.getElementById(highlightTarget) ||
+                    document.querySelector(`[data-testid="${escapedHighlightTarget}"]`);
                 if (el) {
                     const rect = el.getBoundingClientRect();
                     applyLayout(rect);

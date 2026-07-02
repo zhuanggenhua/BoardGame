@@ -72,6 +72,7 @@ import {
     getQidahenDirectActionIdForHandCard,
     getQidahenHandCardBadgeKind,
 } from './domain/handCardIdentity';
+import { getActionChoiceById } from './domain/factionActionWindow';
 import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';
 import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';
 
@@ -426,8 +427,10 @@ const getQidahenForegroundActionChoice = (
         driveTigerConsentSelection: unknown | null;
     },
 ): QidahenActionChoice | null => {
-    if (options.actionPaymentPreviewVisible) {
-        return core.actionChoices.find((action) => action.id === core.selectedActionId) ?? null;
+    if (options.actionPaymentPreviewVisible && core.selectedActionId) {
+        return getActionChoiceById(core.selectedActionId)
+            ?? core.actionChoices.find((action) => action.id === core.selectedActionId)
+            ?? null;
     }
     if (options.recruitSelection) {
         return core.actionChoices.find((action) => action.id === 'recruit') ?? null;
@@ -700,8 +703,9 @@ const HandInteractionTray: React.FC<{
     onResolveSunYuanhuaTech,
 }) => {
     const { t } = useTranslation('game-qidahen');
-    const selectedAction = actionPaymentPreviewVisible
-        ? core.actionChoices.find((action) => action.id === core.selectedActionId && action.cost > 0) ?? null
+    const selectedAction = actionPaymentPreviewVisible && core.selectedActionId
+        ? [getActionChoiceById(core.selectedActionId), ...core.actionChoices]
+            .find((action) => action?.id === core.selectedActionId && action.cost > 0) ?? null
         : null;
     const sunYuanhuaSelection = core.sunYuanhuaTechSelection;
 
