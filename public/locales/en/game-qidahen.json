@@ -263,7 +263,9 @@
       "rearGuard": "Rear guard resolution",
       "rout": "Rout resolution",
       "cavalryPlunderAttacker": "Cavalry plunder own deck",
-      "cavalryPlunderDefender": "Cavalry plunder defender deck"
+      "cavalryPlunderDefender": "Cavalry plunder defender deck",
+      "defenderSortie": "Defender sortie",
+      "defenderHoldCity": "Defender holds city"
     }
   },
   "tutorial": {

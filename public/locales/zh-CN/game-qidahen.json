@@ -263,7 +263,9 @@
       "rearGuard": "断后",
       "rout": "溃退",
       "cavalryPlunderAttacker": "抽己方牌堆",
-      "cavalryPlunderDefender": "抽守方牌堆"
+      "cavalryPlunderDefender": "抽守方牌堆",
+      "defenderSortie": "出城野战",
+      "defenderHoldCity": "守城避战"
     }
   },
   "tutorial": {
