@@ -5365,7 +5365,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(rebound.turnPhase).toBe('dispatch-targeting');
-        expect(rebound.selectedRegionId).toBe('jinzhou');
+        expect(rebound.selectedRegionId).toBe('city-region-24');
         expect(rebound.explicitRegionId).toBe('city-region-14');
         expect(rebound.wheelDispatchProgress).toBeNull();
         expect(getWheelDispatchSelection(rebound)).toMatchObject({
@@ -6744,6 +6744,7 @@ describe('七大恨支付手牌选择', () => {
 
         expect(rebound.turnPhase).toBe('dispatch-targeting');
         expect(rebound.selectedRegionId).toBe('jinzhou');
+        expect(rebound.explicitRegionId).toBe('city-region-14');
         expect(rebound.wheelDispatchProgress).toBeNull();
         expect(getWheelDispatchSelection(rebound)).toMatchObject({
             sourceActionId: 'drive-tiger',
@@ -7853,7 +7854,8 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(rebound.turnPhase).toBe('dispatch-targeting');
-        expect(rebound.selectedRegionId).toBe('jinzhou');
+        expect(rebound.selectedRegionId).toBe('city-region-24');
+        expect(rebound.explicitRegionId).toBe('city-region-14');
         expect(getWheelDispatchSelection(rebound)).toMatchObject({
             sourceRegionId: 'jinzhou',
             sourceRegionName: '锦州',
@@ -21172,7 +21174,7 @@ describe('七大恨支付手牌选择', () => {
         });
     });
 
-    it('高第与王化贞人物窗口内点逻辑区宁远时，高第会重建来源区，王化贞会按真实运行时目标直接完成调度', () => {
+    it('高第与王化贞人物窗口内点逻辑区宁远时，高第只重建来源区，王化贞会按真实运行时目标直接完成调度', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '0';
         core.selectedRegionId = 'city-region-25';
@@ -21241,7 +21243,8 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(retargetedGaoDi.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(retargetedGaoDi.selectedRegionId).toBe('city-region-24');
+        expect(retargetedGaoDi.selectedRegionId).toBe('city-region-25');
+        expect(retargetedGaoDi.explicitRegionId).toBe('ning-yuan');
         expect(retargetedGaoDi.gaoDiDispatchSelection).toMatchObject({
             sourceRegionId: 'city-region-24',
             sourceRegionName: '宁远',
@@ -21742,6 +21745,21 @@ describe('七大恨支付手牌选择', () => {
             }),
         ]));
         expect(firstWindow.actionLog[0]?.text).toContain('王化贞可在行动前免费调度 2 个部队；直接在地图上选择调度目标');
+
+        const retargetedSource = apply(firstWindow, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '0',
+            payload: { regionId: 'song-jin' },
+        });
+
+        expect(retargetedSource.turnPhase).toBe('internal-dispatch-choice');
+        expect(retargetedSource.selectedRegionId).toBe('city-region-25');
+        expect(retargetedSource.explicitRegionId).toBe('song-jin');
+        expect(getInternalDispatchSelection(retargetedSource)).toMatchObject({
+            sourceRegionId: 'city-region-25',
+            sourceRegionName: '山海关',
+        });
+        expect(getInternalDispatchSelection(retargetedSource)?.candidates.length ?? 0).toBeGreaterThan(0);
 
         const resolved = apply(firstWindow, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,

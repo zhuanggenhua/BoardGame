@@ -243,7 +243,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         color: '#777777',
         traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
         abilityName: '沉默',
-        abilityText: '暂作首剧本叛徒占位。',
+        abilityText: '长曲棍球冠军，适合作为首剧本叛徒基准角色。',
     },
 ];
 

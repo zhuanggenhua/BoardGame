@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 
@@ -27,16 +26,6 @@ type LockedLabelLayout = {
     y: number;
 };
 
-type DepartingDieAnimation = {
-    die: BoardDisplayDie;
-    fromLayout: DiceBoxProjectedLayout;
-    startedAt: number;
-};
-
-type PreviousBoardDie = {
-    die: BoardDisplayDie;
-};
-
 const FALLBACK_BOARD_DICE_SLOTS = [
     { left: '16%', top: '69%', rotate: '-18deg', zIndex: 5 },
     { left: '34%', top: '31%', rotate: '14deg', zIndex: 2 },
@@ -44,16 +33,6 @@ const FALLBACK_BOARD_DICE_SLOTS = [
     { left: '70%', top: '29%', rotate: '18deg', zIndex: 1 },
     { left: '84%', top: '53%', rotate: '-14deg', zIndex: 3 },
 ] as const;
-
-const DEPARTING_DIE_DURATION_MS = 420;
-
-const RAIL_EXIT_TARGET = {
-    x: 'calc(100% + 7vw)',
-    y: '78%',
-    scale: 0.72,
-    opacity: 0,
-    rotate: 18,
-};
 
 type BoardDiceBoxState = 'loading' | 'ready' | 'failed';
 
@@ -77,12 +56,10 @@ export const BoardDiceBoxTray = ({
     const dieSkinsRef = React.useRef<Array<DiceThroneDiceBoxSkin | null>>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
     const previousDiceIdsRef = React.useRef<number[]>([]);
-    const previousDiceByIdRef = React.useRef<Record<number, PreviousBoardDie>>({});
     const [engineVersion, setEngineVersion] = React.useState(0);
     const [projectedLayouts, setProjectedLayouts] = React.useState<Record<number, DiceBoxProjectedLayout>>({});
     const [motionSnapshots, setMotionSnapshots] = React.useState<Record<number, DiceBoxMotionSnapshot>>({});
     const [lockedLabelLayouts, setLockedLabelLayouts] = React.useState<Record<number, LockedLabelLayout>>({});
-    const [departingDice, setDepartingDice] = React.useState<Record<number, DepartingDieAnimation>>({});
     const [engineState, setEngineState] = React.useState<BoardDiceBoxState>('loading');
     const [diceSettled, setDiceSettled] = React.useState(false);
     const [skinsReady, setSkinsReady] = React.useState(false);
@@ -214,13 +191,6 @@ export const BoardDiceBoxTray = ({
     }, [dice, engineVersion]);
 
     React.useEffect(() => {
-        previousDiceByIdRef.current = dice.reduce<Record<number, PreviousBoardDie>>((next, die) => {
-            next[die.id] = { die };
-            return next;
-        }, {});
-    }, [dice]);
-
-    React.useEffect(() => {
         const engine = engineRef.current;
         if (!engineReadyRef.current || !engine || !skinsReady) return;
 
@@ -283,37 +253,11 @@ export const BoardDiceBoxTray = ({
 
             if (!engine.hasDice(dice.length)) {
                 const previousIds = previousDiceIdsRef.current;
-                const previousDiceById = previousDiceByIdRef.current;
                 const removedIndices = previousIds
                     .map((dieId, index) => (dice.some((die) => die.id === dieId) ? -1 : index))
                     .filter((index) => index >= 0)
                     .sort((left, right) => right - left);
                 if (previousIds.length > dice.length && removedIndices.length === previousIds.length - dice.length) {
-                    const removedIdSet = new Set(removedIndices.map((index) => previousIds[index]));
-                    setDepartingDice((prev) => {
-                        const now = Date.now();
-                        const next = { ...prev };
-                        for (const removedId of removedIdSet) {
-                            const previousLayout = projectedLayouts[removedId];
-                            const sourceDie = previousDiceById[removedId]?.die;
-                            if (!previousLayout) continue;
-                            const dieFromPreviousState: BoardDisplayDie = sourceDie
-                                ? { ...sourceDie, isKept: true, selected: false, clickable: false }
-                                : {
-                                    id: removedId,
-                                    displayValue: values[previousIds.indexOf(removedId)] ?? 1,
-                                    isKept: true,
-                                    selected: false,
-                                    clickable: false,
-                                };
-                            next[removedId] = {
-                                die: dieFromPreviousState,
-                                fromLayout: previousLayout,
-                                startedAt: now,
-                            };
-                        }
-                        return next;
-                    });
                     setDiceSettled(false);
                     await engine.removeDice(removedIndices);
                     engine.syncValues(values);
@@ -338,27 +282,7 @@ export const BoardDiceBoxTray = ({
         };
 
         void run();
-    }, [dice, engineVersion, isRolling, projectedLayouts, rerollIds, rerollKey, skinsReady, values, valuesKey]);
-
-    React.useEffect(() => {
-        const ids = Object.keys(departingDice);
-        if (ids.length === 0) return;
-
-        const timeoutId = window.setTimeout(() => {
-            setDepartingDice((prev) => {
-                const now = Date.now();
-                const next = { ...prev };
-                for (const [id, animation] of Object.entries(prev)) {
-                    if (now - animation.startedAt >= DEPARTING_DIE_DURATION_MS) {
-                        delete next[Number(id)];
-                    }
-                }
-                return next;
-            });
-        }, DEPARTING_DIE_DURATION_MS);
-
-        return () => window.clearTimeout(timeoutId);
-    }, [departingDice]);
+    }, [dice, engineVersion, isRolling, rerollIds, rerollKey, skinsReady, values, valuesKey]);
 
     const renderFallbackDice = () => (
         <div
@@ -477,49 +401,6 @@ export const BoardDiceBoxTray = ({
                             );
                         })}
                     </div>
-                    <AnimatePresence>
-                        {Object.values(departingDice).map(({ die, fromLayout }) => (
-                            <motion.div
-                                key={`departing-die-${die.id}`}
-                                className="pointer-events-none absolute"
-                                data-testid={`departing-die-${die.id}`}
-                                initial={{
-                                    left: fromLayout.x,
-                                    top: fromLayout.y,
-                                    width: fromLayout.width,
-                                    height: fromLayout.height,
-                                    x: '-50%',
-                                    y: '-50%',
-                                    scale: 1,
-                                    opacity: 0.9,
-                                    rotate: 0,
-                                }}
-                                animate={{
-                                    left: RAIL_EXIT_TARGET.x,
-                                    top: RAIL_EXIT_TARGET.y,
-                                    x: '-50%',
-                                    y: '-50%',
-                                    scale: RAIL_EXIT_TARGET.scale,
-                                    opacity: RAIL_EXIT_TARGET.opacity,
-                                    rotate: RAIL_EXIT_TARGET.rotate,
-                                }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: DEPARTING_DIE_DURATION_MS / 1000, ease: [0.22, 0.8, 0.32, 1] }}
-                                style={{ zIndex: 22 }}
-                            >
-                                <Dice3D
-                                    value={die.displayValue}
-                                    isRolling={false}
-                                    size="100%"
-                                    locale={locale}
-                                    variant="default"
-                                    characterId={resolveCharacterIdFromDiceDefinitionId(die.definitionId)}
-                                    definitionId={die.definitionId}
-                                    enableWebgl={false}
-                                />
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
                     {dice.map((die) => {
                         const layout = projectedLayouts[die.id];
                         if (!layout) return null;

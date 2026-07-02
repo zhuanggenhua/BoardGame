@@ -41,6 +41,7 @@ import { CenterBoard } from './ui/CenterBoard';
 import { playSound as playSoundFn } from '../../lib/audio/useGameAudio';
 import { RightSidebar } from './ui/RightSidebar';
 import { BoardDiceStage } from './ui/DiceTray';
+import { Dice3D } from './ui/Dice3D';
 import { BoardOverlays } from './ui/BoardOverlays';
 import { GameHints } from './ui/GameHints';
 import { useGameMode } from '../../contexts/GameModeContext';
@@ -81,6 +82,7 @@ import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import { useDiceThroneDisplayPreference } from './ui/useDiceThroneDisplayPreference';
 import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray, shouldUseBoardDiceStage } from './ui/diceStagePolicy';
+import { resolveCharacterIdFromDiceDefinitionId } from './ui/assets';
 import { useSyncedModalStackEntry } from '../../hooks/ui/useSyncedModalStackEntry';
 import { TokenResponseModal } from './ui/TokenResponseModal';
 import { InteractionOverlay } from './ui/InteractionOverlay';
@@ -93,6 +95,19 @@ import { findMatchPlayerInfo } from '../../engine/transport/matchPlayers';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 const boardBonusDieLogger = createScopedLogger('DT_BOARD_BONUS_DIE');
+const LOCKED_DIE_RETURN_ANIMATION_MS = 520;
+
+type LockedDieReturnAnimation = {
+    key: string;
+    die: {
+        id: number;
+        value: number;
+        definitionId?: string;
+    };
+    from: DOMRectReadOnly;
+    to: DOMRectReadOnly;
+    active: boolean;
+};
 
 /** 教程 targetId → 对应的命令类型映射（用于白名单放行） */
 const TUTORIAL_TARGET_COMMAND_MAP: Record<string, string[]> = {
@@ -158,6 +173,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     ) as DiceThroneMoveMap;
     const { t, i18n } = useTranslation('game-dicethrone');
     const { boardDice3dEnabled } = useDiceThroneDisplayPreference();
+    const pendingLockedDieReturnAnimationsRef = React.useRef<Map<number, {
+        die: LockedDieReturnAnimation['die'];
+        from: DOMRectReadOnly;
+    }>>(new Map());
+    const [lockedDieReturnAnimations, setLockedDieReturnAnimations] = React.useState<LockedDieReturnAnimation[]>([]);
     useTutorialBridge(rawG.sys.tutorial, dispatch);
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep: nextTutorialStep } = useTutorial();
     const toast = useToast();
@@ -1091,6 +1111,67 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const boardStageDice = React.useMemo(() => G.dice.filter((die) => !die.isKept), [G.dice]);
     const railDice = React.useMemo(() => getRailDiceForCurrentBoard(G.dice, useBoardDiceStage), [G.dice, useBoardDiceStage]);
+    const queueLockedDieReturnAnimation = React.useCallback((dieId: number) => {
+        const sourceNode = document.querySelector(
+            `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`,
+        );
+        const die = G.dice.find((candidate) => candidate.id === dieId);
+        if (!sourceNode || !die || die.isKept) return;
+        const from = sourceNode.getBoundingClientRect();
+        if (from.width <= 0 || from.height <= 0) return;
+        pendingLockedDieReturnAnimationsRef.current.set(dieId, {
+            die: {
+                id: die.id,
+                value: die.value,
+                definitionId: die.definitionId,
+            },
+            from,
+        });
+    }, [G.dice]);
+
+    React.useEffect(() => {
+        const pending = pendingLockedDieReturnAnimationsRef.current;
+        if (pending.size === 0 || !showRailDiceTray) return;
+
+        const nextAnimations: LockedDieReturnAnimation[] = [];
+        for (const [dieId, pendingAnimation] of pending) {
+            const targetNode = document.querySelector(
+                `[data-tutorial-id="dice-tray"] [data-testid="die-button-${dieId}"]`,
+            );
+            if (!targetNode) continue;
+            const to = targetNode.getBoundingClientRect();
+            if (to.width <= 0 || to.height <= 0) continue;
+            nextAnimations.push({
+                key: `${dieId}-${Date.now()}-${nextAnimations.length}`,
+                die: pendingAnimation.die,
+                from: pendingAnimation.from,
+                to,
+                active: false,
+            });
+            pending.delete(dieId);
+        }
+
+        if (nextAnimations.length === 0) return;
+
+        setLockedDieReturnAnimations((current) => [...current, ...nextAnimations]);
+        const frameId = window.requestAnimationFrame(() => {
+            setLockedDieReturnAnimations((current) => current.map((animation) => (
+                nextAnimations.some((nextAnimation) => nextAnimation.key === animation.key)
+                    ? { ...animation, active: true }
+                    : animation
+            )));
+        });
+        const timeoutId = window.setTimeout(() => {
+            setLockedDieReturnAnimations((current) => current.filter(
+                (animation) => !nextAnimations.some((nextAnimation) => nextAnimation.key === animation.key),
+            ));
+        }, LOCKED_DIE_RETURN_ANIMATION_MS + 80);
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            window.clearTimeout(timeoutId);
+        };
+    }, [railDice, showRailDiceTray]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -1376,7 +1457,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 usePortal={false}
             />
         ),
-    }), [activeResolutionFrameId, compareRollInteraction, dispatch, locale, sysInteraction]);
+    }), [activeResolutionFrameId, compareRollInteraction, dispatch, isSpectator, locale, rootPid, sysInteraction]);
 
     const bonusDiceModalEntry = React.useMemo(() => ({
         owner: interactiveBonusDiceSettlement ? {
@@ -1650,7 +1731,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             playDeniedSound();
             toast.warning(t('error.confirmRoll'), undefined, { dedupeKey: 'dicethrone.confirmRoll' });
         }
-    }, [G.rollConfirmed, currentPhase, playDeniedSound, t]);
+    }, [G.rollConfirmed, currentPhase, t, toast]);
 
     const handleAdvancePhase = () => {
         if (!canAdvancePhase) {
@@ -1966,6 +2047,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                         handlePassiveRerollDieSelect(id);
                                         return;
                                     }
+                                    queueLockedDieReturnAnimation(id);
                                     engineMoves.toggleDieLock(id);
                                 }}
                                 interaction={diceMultistepInteraction}
@@ -1974,6 +2056,40 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             />
                         ) : null}
                     />
+
+                    {lockedDieReturnAnimations.map((animation) => {
+                        const left = animation.active ? animation.to.left + (animation.to.width / 2) : animation.from.left + (animation.from.width / 2);
+                        const top = animation.active ? animation.to.top + (animation.to.height / 2) : animation.from.top + (animation.from.height / 2);
+                        const width = animation.active ? animation.to.width : animation.from.width;
+                        const height = animation.active ? animation.to.height : animation.from.height;
+                        return (
+                            <div
+                                key={animation.key}
+                                className="pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 transition-[left,top,width,height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,0.8,0.32,1)]"
+                                data-testid={`locked-die-return-${animation.die.id}`}
+                                style={{
+                                    left,
+                                    top,
+                                    width,
+                                    height,
+                                    zIndex: 2400,
+                                    opacity: animation.active ? 0.25 : 0.95,
+                                    transform: `translate(-50%, -50%) scale(${animation.active ? 0.82 : 1})`,
+                                }}
+                            >
+                                <Dice3D
+                                    value={animation.die.value}
+                                    isRolling={false}
+                                    size="100%"
+                                    locale={locale}
+                                    variant="default"
+                                    characterId={resolveCharacterIdFromDiceDefinitionId(animation.die.definitionId)}
+                                    definitionId={animation.die.definitionId}
+                                    enableWebgl={false}
+                                />
+                            </div>
+                        );
+                    })}
 
                     <RightSidebar
                         dice={railDice}

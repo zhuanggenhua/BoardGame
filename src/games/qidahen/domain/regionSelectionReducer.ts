@@ -149,11 +149,7 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            ...keepQidahenDecisionRegionWithExplicitFocus(
-                nextState,
-                rebuiltGaoDiDispatchSelection?.sourceRegionId,
-                explicitRegionId,
-            ),
+            selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltGaoDiDispatchSelection ? 'gao-di-dispatch-choice' : 'action-window',
             gaoDiDispatchSelection: rebuiltGaoDiDispatchSelection,
@@ -181,11 +177,7 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            ...keepQidahenDecisionRegionWithExplicitFocus(
-                nextState,
-                rebuiltInternalDispatchSelection?.sourceRegionId,
-                explicitRegionId,
-            ),
+            selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltInternalDispatchSelection ? 'internal-dispatch-choice' : 'action-window',
         });
@@ -373,11 +365,8 @@ export const reduceQidahenRegionSelected = (
             );
         return dependencies.updateTurnLabel({
             ...nextState,
-            ...keepQidahenDecisionRegionWithExplicitFocus(
-                nextState,
-                rebuiltSelection.sourceRegionId,
-                explicitRegionId,
-            ),
+            selectedRegionId: nextState.selectedRegionId,
+            explicitRegionId,
             turnPhase: 'dispatch-targeting',
             wheelDispatchProgress: shouldKeepRebuiltWheelDispatchSelectionOffHost ? null : rebuiltSelection,
             pendingTargetAction: null,

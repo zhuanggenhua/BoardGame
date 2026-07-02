@@ -81,7 +81,7 @@
 
 ## 下一步建议
 
-1. 当前七条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，并且本轮已在当前 `main` 现场重新串行复核通过：
+1. 当前十一条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，并且本轮已在当前 `main` 现场重新串行复核通过：
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-traitor-victory.e2e.ts`
@@ -89,12 +89,20 @@
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-corpse-loot.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-jack-spirit-revive.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-jack-spirit-post-revive-attack.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/omen-atlas.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/inventory-density.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/monster-runtime.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/explore-unknown-room.e2e.ts`
    其中：
    - `basic-flow` 覆盖“角色选择确认到恶兆前运行时”；
    - `first-scenario` 覆盖“真实 haunt 运行时到幸存者终局收尾”；
    - `first-scenario-traitor-victory` 覆盖“真实 haunt 运行时到叛徒终局收尾”；
-   - `betrayal-tutorial` 覆盖“真实角色选择 -> 真实教程章节 -> 第一剧本英雄线收尾 -> 真实终局”。
-2. 第一剧本三条关键边界真实页面证据也已经成立：
+   - `betrayal-tutorial` 覆盖“真实角色选择 -> 真实教程章节 -> 第一剧本英雄线收尾 -> 真实终局”；
+   - `omen-atlas` 覆盖“预兆持有区使用正式正面图集”；
+   - `inventory-density` 覆盖“持有区高密度物品与预兆仍能渲染”；
+   - `monster-runtime` 覆盖“玩家、队友与怪物同场的真实运行时”；
+   - `explore-unknown-room` 覆盖“真实牌桌里点击探索、选择未知门位并翻开新房间”。
+2. 第一剧本三条关键 haunt 边界真实页面证据也已经成立：
    其中：
    - `first-scenario-corpse-loot` 覆盖“同房间尸体搜刮”的正式动作入口与回合内消耗；
    - `first-scenario-jack-spirit-revive` 覆盖“Jack's Spirit 回尸体房间后通过正式结束回合触发叛徒复活”；
@@ -117,6 +125,6 @@
    - 已覆盖真实角色选择、恶兆前主循环、第一剧本英雄目标与英雄线收尾
    - 叛徒视角、更复杂 haunt 分支和更多剧本仍留待后续子教程
 9. 首剧本里的 `Stalk the Prey` 已按规则补到“本回合未攻击前才能用、每回合只能用一次、且不消耗普通移动”；后续若别的剧本继续复用更复杂的 line-of-sight 语义，再继续抽成共享正式规则，不允许回退到提示层或注入绕过。
-10. 后续再从大拼版房间图里裁出房间板块与楼层板，补 `rooms/`、`boards/` 资源合同。
+10. 当前正式发现池已经扩到 43 间房、11 张物品、9 张预兆、8 张事件；后续重点不再是“是否只有代表池”，而是继续审计每间房的门位 / 朝向 / 楼层适用性、房间背面与楼层板资源合同。
 11. 再处理扫描 PDF 的 OCR 或人工录入，把规则文本沉淀成可实现的结构化文档。
 12. 最后进入更多 haunt / 多剧本的正式玩法实现。

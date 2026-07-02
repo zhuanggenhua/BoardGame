@@ -103,7 +103,27 @@ declare module '@3d-dice/dice-box-threejs' {
             z: number;
         };
         result: DiceValueRecord[];
-        body?: unknown;
+        body?: {
+            velocity?: {
+                x?: number;
+                y?: number;
+                z?: number;
+                set?: (x: number, y: number, z: number) => void;
+            };
+            angularVelocity?: {
+                x?: number;
+                y?: number;
+                z?: number;
+                set?: (x: number, y: number, z: number) => void;
+            };
+            position?: {
+                x?: number;
+                y?: number;
+                z?: number;
+                set?: (x: number, y: number, z: number) => void;
+            };
+            wakeUp?: () => void;
+        };
         getLastValue: () => DiceValueRecord;
         storeRolledValue: (reason?: string) => void;
         updateMatrixWorld?: (force?: boolean) => void;

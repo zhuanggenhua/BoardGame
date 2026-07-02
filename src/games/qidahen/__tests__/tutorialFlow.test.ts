@@ -66,6 +66,93 @@ const dispatch = (state: MatchState<unknown>, command: Command): MatchState<unkn
 };
 
 describe('qidahen tutorial flow', () => {
+    it('教程目录用 6 个玩家主章节串起隐藏续章，并保留关键步骤合同', () => {
+        const tutorials = QIDAHEN_TUTORIALS.tutorials;
+        const visibleTutorialIds = Object.entries(tutorials)
+            .filter(([, tutorial]) => !tutorial.hiddenFromCatalog)
+            .map(([tutorialId]) => tutorialId);
+        const hiddenTutorialIds = Object.entries(tutorials)
+            .filter(([, tutorial]) => tutorial.hiddenFromCatalog)
+            .map(([tutorialId]) => tutorialId);
+        const collectNextTutorialChain = (tutorialId: string): string[] => {
+            const chain: string[] = [];
+            let nextTutorialId = tutorials[tutorialId]?.nextTutorialId;
+            while (nextTutorialId) {
+                expect(chain).not.toContain(nextTutorialId);
+                chain.push(nextTutorialId);
+                nextTutorialId = tutorials[nextTutorialId]?.nextTutorialId;
+            }
+            return chain;
+        };
+        const stepIdsOf = (tutorialId: string): string[] => (
+            tutorials[tutorialId]?.manifest.steps.map((step) => step.id) ?? []
+        );
+
+        expect(visibleTutorialIds).toEqual([
+            'basic-opening',
+            'attack-and-battle',
+            'siege-and-occupation',
+            'wheel-shared-cost',
+            'year-and-characters',
+            'korea-and-special-map-rules',
+        ]);
+        expect(hiddenTutorialIds).toEqual([
+            'retreat-and-rout',
+            'wheel-reclaim',
+            'wheel-military-farm',
+            'wheel-recruit-train',
+            'armament-upgrade',
+            'event-action',
+            'diplomacy-and-hire',
+        ]);
+        expect(collectNextTutorialChain('attack-and-battle')).toEqual([
+            'retreat-and-rout',
+        ]);
+        expect(collectNextTutorialChain('wheel-shared-cost')).toEqual([
+            'wheel-reclaim',
+            'wheel-military-farm',
+            'wheel-recruit-train',
+            'armament-upgrade',
+            'event-action',
+            'diplomacy-and-hire',
+        ]);
+        expect(collectNextTutorialChain('siege-and-occupation')).toEqual([]);
+        expect(collectNextTutorialChain('year-and-characters')).toEqual([]);
+        expect(collectNextTutorialChain('korea-and-special-map-rules')).toEqual([]);
+        expect(stepIdsOf('basic-opening')).toEqual(expect.arrayContaining([
+            'wheel-move',
+            'pick-action',
+            'pay-cards',
+        ]));
+        expect(stepIdsOf('attack-and-battle')).toEqual(expect.arrayContaining([
+            'move-entry',
+            'tactic-window',
+            'battle-damage',
+            'retreat-and-defeat',
+        ]));
+        expect(stepIdsOf('siege-and-occupation')).toEqual(expect.arrayContaining([
+            'defend-city',
+            'city-battle',
+            'besiege-choice',
+        ]));
+        expect(stepIdsOf('wheel-shared-cost')).toEqual(expect.arrayContaining([
+            'choose-move',
+            'draw-result',
+            'dispatch-ready',
+        ]));
+        expect(stepIdsOf('year-and-characters')).toEqual(expect.arrayContaining([
+            'advance-midyear',
+            'new-year-tribute',
+            'new-year-maintenance',
+            'chronology-score',
+        ]));
+        expect(stepIdsOf('korea-and-special-map-rules')).toEqual(expect.arrayContaining([
+            'korea-region',
+            'water-limit',
+            'korea-attrition',
+        ]));
+    });
+
     it('基础教程会先把轮盘真实选择作为首回合的第一个主操作，再进入手牌行动', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
@@ -460,7 +547,7 @@ describe('qidahen tutorial flow', () => {
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
             playerId: '0',
-            payload: { actionId: 'upgrade-armament' },
+            payload: { actionId: 'upgrade-armament', sourceHandCardId: mingArmamentCard.id },
         });
         expect(state.sys.tutorial.step?.id).toBe('pay-cards');
         expect((state.core as any).payment.required).toBe(2);
@@ -737,9 +824,10 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('advance-new-year');
 
+        const newYearPlayerId = (state.core as any).currentPlayer;
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
-            playerId: '1',
+            playerId: newYearPlayerId,
             payload: {
                 moveId: 'move-1-free',
             },
@@ -749,7 +837,7 @@ describe('qidahen tutorial flow', () => {
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '1',
+            playerId: newYearPlayerId,
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('new-year-maintenance');
