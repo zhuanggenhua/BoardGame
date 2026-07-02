@@ -78,6 +78,8 @@ type DeployRollbackTarget = {
     stateAction?: string;
 };
 
+type DeployUpdateMode = 'remote' | 'local';
+
 type PublishResponse = {
     ok: boolean;
     kind?: 'ota' | 'native' | 'packages';
@@ -159,6 +161,7 @@ export default function MobileReleasePage() {
     const [packageManifestOnly, setPackageManifestOnly] = useState(false);
 
     const [deployUpdateTag, setDeployUpdateTag] = useState('');
+    const [deployUpdateMode, setDeployUpdateMode] = useState<DeployUpdateMode>('remote');
 
     const [rollbackAction, setRollbackAction] = useState<'rollback-last' | 'rollback'>('rollback-last');
     const [rollbackTag, setRollbackTag] = useState('');
@@ -506,6 +509,17 @@ export default function MobileReleasePage() {
                                         placeholder={pageT('deployUpdate.tag_placeholder')}
                                     />
                                 </label>
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.mode')}</span>
+                                    <select
+                                        value={deployUpdateMode}
+                                        onChange={(event) => setDeployUpdateMode(event.target.value as DeployUpdateMode)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                    >
+                                        <option value="remote">{pageT('deployUpdate.mode_remote')}</option>
+                                        <option value="local">{pageT('deployUpdate.mode_local')}</option>
+                                    </select>
+                                </label>
                                 <ChannelSelect pageT={pageT} channel={channel} onChange={setChannel} />
                                 <label className="space-y-1.5">
                                     <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_version_base')}</span>
@@ -529,6 +543,7 @@ export default function MobileReleasePage() {
                                     disabled={!canPreviewDeployUpdate}
                                     onClick={() => void runAction('deploy-update-preview', '/mobile-release/deploy/update/preview', {
                                         tag: deployUpdateTag.trim() || undefined,
+                                        deployMode: deployUpdateMode,
                                         channel,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
                                         forceUpdate: otaForceUpdate,
@@ -542,6 +557,7 @@ export default function MobileReleasePage() {
                                     disabled={!canExecuteDeployUpdate}
                                     onClick={() => void runAction('deploy-update-execute', '/mobile-release/deploy/update/execute', {
                                         tag: deployUpdateTag.trim() || undefined,
+                                        deployMode: deployUpdateMode,
                                         channel,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
                                         forceUpdate: otaForceUpdate,

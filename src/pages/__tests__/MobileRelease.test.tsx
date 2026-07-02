@@ -124,7 +124,64 @@ describe('MobileReleasePage', () => {
             );
         });
         expect(executeBody).toMatchObject({
+            deployMode: 'remote',
             confirmText: '确认部署',
+        });
+    });
+
+    it('更新部署 + OTA 可选择服务器本地镜像模式', async () => {
+        let previewBody: Record<string, unknown> | null = null;
+        let executeBody: Record<string, unknown> | null = null;
+        const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = typeof input === 'string' ? input : input.toString();
+            const method = init?.method ?? 'GET';
+            if (method === 'GET' && url.includes('/mobile-release/android/status')) {
+                return jsonResponse(baseStatus);
+            }
+            if (method === 'POST' && url.endsWith('/mobile-release/deploy/update/preview')) {
+                previewBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+                return jsonResponse({
+                    ok: true,
+                    mode: 'preview',
+                    command: 'bash scripts/deploy/deploy-image.sh update-local',
+                    output: 'preview',
+                });
+            }
+            if (method === 'POST' && url.endsWith('/mobile-release/deploy/update/execute')) {
+                executeBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+                return jsonResponse({
+                    ok: true,
+                    mode: 'execute',
+                    command: 'bash scripts/deploy/deploy-image.sh update-local',
+                    output: 'done',
+                });
+            }
+            throw new Error(`Unexpected request: ${method} ${url}`);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<MobileReleasePage />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: 'admin.mobileReleasePage.actions.execute_deploy_update' })).toBeEnabled();
+        });
+
+        fireEvent.change(screen.getByLabelText('admin.mobileReleasePage.deployUpdate.mode'), {
+            target: { value: 'local' },
+        });
+        fireEvent.click(screen.getAllByRole('button', { name: 'admin.mobileReleasePage.actions.preview_command' })[0]);
+
+        await waitFor(() => {
+            expect(previewBody).toMatchObject({ deployMode: 'local' });
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'admin.mobileReleasePage.actions.execute_deploy_update' }));
+
+        await waitFor(() => {
+            expect(executeBody).toMatchObject({
+                deployMode: 'local',
+                confirmText: '确认部署',
+            });
         });
     });
 
