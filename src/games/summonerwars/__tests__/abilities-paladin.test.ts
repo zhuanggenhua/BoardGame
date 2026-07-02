@@ -14,7 +14,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
-import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard, PlayerId, StructureCard } from '../domain/types';
+import type {
+  SummonerWarsCore, CellCoord, BoardUnit, UnitCard, EventCard,
+  PlayerId, StructureCard, BoardStructure,
+} from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canAttackEnhanced, manhattanDistance, getPlayerUnits } from '../domain/helpers';
 import { getEffectiveStrengthValue } from '../domain/abilityResolver';
@@ -65,6 +68,23 @@ function placeUnit(
   };
   state.board[pos.row][pos.col].unit = unit;
   return unit;
+}
+
+/** 在指定位置放置测试建筑 */
+function placeStructure(
+  state: SummonerWarsCore,
+  pos: CellCoord,
+  overrides: Partial<BoardStructure> & { card: StructureCard; owner: PlayerId }
+): BoardStructure {
+  const structure: BoardStructure = {
+    cardId: overrides.cardId ?? `struct-${pos.row}-${pos.col}`,
+    card: overrides.card,
+    owner: overrides.owner,
+    position: pos,
+    damage: overrides.damage ?? 0,
+  };
+  state.board[pos.row][pos.col].structure = structure;
+  return structure;
 }
 
 /** 清空指定区域 */
@@ -153,6 +173,15 @@ function makeEnemy(id: string, overrides?: Partial<UnitCard>): UnitCard {
     id, cardType: 'unit', name: '敌方单位', unitClass: 'common',
     faction: 'necromancer', strength: 2, life: 3, cost: 0,
     attackType: 'melee', attackRange: 1, deckSymbols: [],
+    ...overrides,
+  };
+}
+
+/** 创建普通建筑 */
+function makeStructure(id: string, overrides?: Partial<StructureCard>): StructureCard {
+  return {
+    id, cardType: 'structure', name: '敌方建筑',
+    faction: 'necromancer', cost: 0, life: 10, deckSymbols: [],
     ...overrides,
   };
 }
@@ -589,6 +618,80 @@ describe('城塞骑士 - 缠斗 (entangle)', () => {
 // ============================================================================
 
 describe('瑟拉·艾德温 - 城塞之力 (fortress_power)', () => {
+  it('攻击敌方单位后触发城塞之力通知', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makePaladinSummoner('test-summoner'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 2, col: 2 }, {
+      cardId: 'fortress-knight-board',
+      card: makeFortressKnight('fortress-knight-board'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 5 }, {
+      cardId: 'enemy-1',
+      card: makeEnemy('enemy-1', { life: 10 }),
+      owner: '1',
+    });
+
+    state.players['0'].discard.push(makeFortressWarrior('fortress-warrior-discard'));
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const { events } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 5 },
+    });
+
+    expect(events.some(e =>
+      e.type === SW_EVENTS.ABILITY_TRIGGERED
+      && (e.payload as Record<string, unknown>).abilityId === 'fortress_power'
+    )).toBe(true);
+  });
+
+  it('攻击敌方建筑后不触发城塞之力', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makePaladinSummoner('test-summoner'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 2, col: 2 }, {
+      cardId: 'fortress-knight-board',
+      card: makeFortressKnight('fortress-knight-board'),
+      owner: '0',
+    });
+
+    placeStructure(state, { row: 4, col: 5 }, {
+      cardId: 'enemy-structure',
+      card: makeStructure('enemy-structure'),
+      owner: '1',
+    });
+
+    state.players['0'].discard.push(makeFortressWarrior('fortress-warrior-discard'));
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const { events } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 5 },
+    });
+
+    expect(events.some(e =>
+      e.type === SW_EVENTS.ABILITY_TRIGGERED
+      && (e.payload as Record<string, unknown>).abilityId === 'fortress_power'
+    )).toBe(false);
+  });
+
   it('从弃牌堆拿取城塞单位到手牌', () => {
     const state = createPaladinState();
     clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);

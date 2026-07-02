@@ -2815,9 +2815,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     <div
                         id="betrayal-inventory-section"
                         data-tutorial-id="betrayal-inventory-zone"
-                        className="order-4 mt-1 px-0.5 xl:absolute xl:bottom-0 xl:left-1 xl:z-20 xl:mt-0 xl:w-fit xl:max-w-[calc(62px*4.35+0.5rem*3+0.5rem)] xl:px-0"
+                        className="order-4 mt-1 px-0.5 xl:absolute xl:bottom-0 xl:left-1 xl:z-20 xl:mt-0 xl:w-[calc(62px*5.35+0.5rem*4+0.75rem)] xl:max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] xl:px-0"
                     >
-                        <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:max-w-[max-content] xl:min-w-[22rem] xl:pr-4">
+                        <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:pr-4">
                             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
                                 <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
                                 {t('board.sections.inventory')}
@@ -2838,7 +2838,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         <div className="grid gap-2 px-1 xl:px-0 xl:pr-2">
                             <section data-testid="betrayal-inventory-group-item">
                                 <div
-                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*4.35+0.5rem*3)] xl:gap-2"
+                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2"
                                     data-testid="betrayal-inventory-row-item"
                                 >
                                     {inventoryGroups.item.map((item) => renderInventoryCard(item, {
@@ -2849,7 +2849,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </section>
                             <section data-testid="betrayal-inventory-group-omen">
                                 <div
-                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*4.35+0.5rem*3)] xl:gap-2"
+                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2"
                                     data-testid="betrayal-inventory-row-omen"
                                 >
                                     {inventoryGroups.omen.map((item) => renderInventoryCard(item, {

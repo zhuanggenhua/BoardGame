@@ -120,7 +120,7 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltRecruitSelection?.targetRegionId ?? nextState.selectedRegionId,
+            selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltRecruitSelection ? 'recruit-choice' : 'action-window',
             recruitSelection: rebuiltRecruitSelection,
@@ -195,7 +195,7 @@ export const reduceQidahenRegionSelected = (
         const rebuiltMaShiTradeSelection = buildMaShiTradeSelection(nextState, selectedRegionId);
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltMaShiTradeSelection?.targetRegionId ?? nextState.selectedRegionId,
+            selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltMaShiTradeSelection ? 'ma-shi-trade-choice' : 'action-window',
             maShiTradeSelection: rebuiltMaShiTradeSelection,
@@ -211,7 +211,7 @@ export const reduceQidahenRegionSelected = (
         );
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId,
+            selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltKhanEdictSelection ? 'khan-edict-choice' : 'action-window',
             khanEdictSelection: rebuiltKhanEdictSelection,

@@ -2162,7 +2162,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.lastSeasonSummary?.lines.join(' | ')).toContain('宁远');
     });
 
-    it('征召军队进入选择面板后点逻辑区宁远时，会把目标与 selectedRegionId 重建到真实运行时区域', () => {
+    it('征召军队进入选择面板后点逻辑区宁远时，会保留已锁焦点并把建军目标重建到真实运行时区域', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'song-jin';
         core.regions = core.regions.map((region) => {
@@ -2215,7 +2215,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'ning-yuan' },
         });
 
-        expect(retargeted.selectedRegionId).toBe('city-region-24');
+        expect(retargeted.selectedRegionId).toBe('song-jin');
+        expect(retargeted.explicitRegionId).toBe('ning-yuan');
         expect(retargeted.turnPhase).toBe('recruit-choice');
         expect(getRecruitSelection(retargeted)).toMatchObject({
             targetRegionId: 'city-region-24',
@@ -2306,7 +2307,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.lastSeasonSummary?.lines.join(' | ')).toContain('辽东');
     });
 
-    it('征召军队进入选择面板后点逻辑区辽东时，会保留规则名并把目标与 selectedRegionId 重建到真实运行时区域', () => {
+    it('征召军队进入选择面板后点逻辑区辽东时，会保留已锁焦点与规则名并把建军目标重建到真实运行时区域', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'song-jin';
         core.regions = core.regions.map((region) => {
@@ -2359,7 +2360,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'liao-dong' },
         });
 
-        expect(retargeted.selectedRegionId).toBe('city-region-15-liaodong');
+        expect(retargeted.selectedRegionId).toBe('song-jin');
+        expect(retargeted.explicitRegionId).toBe('liao-dong');
         expect(retargeted.turnPhase).toBe('recruit-choice');
         expect(getRecruitSelection(retargeted)).toMatchObject({
             targetRegionId: 'city-region-15-liaodong',
@@ -2420,7 +2422,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'liao-dong' },
         });
 
-        expect(retargeted.selectedRegionId).toBe('city-region-15-liaodong');
+        expect(retargeted.selectedRegionId).toBe('song-jin');
+        expect(retargeted.explicitRegionId).toBe('liao-dong');
         expect(retargeted.turnPhase).toBe('recruit-choice');
         expect(getRecruitSelection(retargeted)).toMatchObject({
             targetRegionId: 'city-region-15-liaodong',
@@ -2511,7 +2514,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.lastSeasonSummary?.lines.join(' | ')).toContain('蓟镇');
     });
 
-    it('征召军队进入选择面板后点逻辑区蓟镇时，会保留规则名并把目标与 selectedRegionId 重建到真实运行时区域', () => {
+    it('征召军队进入选择面板后点逻辑区蓟镇时，会保留已锁焦点与规则名并把建军目标重建到真实运行时区域', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'song-jin';
         core.regions = core.regions.map((region) => {
@@ -2564,7 +2567,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'ji-zhen' },
         });
 
-        expect(retargeted.selectedRegionId).toBe('city-region-28-jizhen');
+        expect(retargeted.selectedRegionId).toBe('song-jin');
+        expect(retargeted.explicitRegionId).toBe('ji-zhen');
         expect(retargeted.turnPhase).toBe('recruit-choice');
         expect(getRecruitSelection(retargeted)).toMatchObject({
             targetRegionId: 'city-region-28-jizhen',
@@ -3946,7 +3950,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.lastSeasonSummary?.lines.join(' | ')).toContain('宁远');
     });
 
-    it('马市贸易进入数量选择后点逻辑区宁远时，会把目标与 selectedRegionId 重建到真实运行时区域', () => {
+    it('马市贸易进入数量选择后点逻辑区宁远时，会保留已锁焦点并把建兵目标重建到真实运行时区域', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '1';
         core.selectedRegionId = 'song-jin';
@@ -4002,7 +4006,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'ning-yuan' },
         });
 
-        expect(retargeted.selectedRegionId).toBe('city-region-24');
+        expect(retargeted.selectedRegionId).toBe('song-jin');
+        expect(retargeted.explicitRegionId).toBe('ning-yuan');
         expect(retargeted.turnPhase).toBe('ma-shi-trade-choice');
         expect(getMaShiTradeSelection(retargeted)).toMatchObject({
             targetRegionId: 'city-region-24',
@@ -4052,7 +4057,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'ning-yuan' },
         });
 
-        expect(retargeted.selectedRegionId).toBe('city-region-24');
+        expect(retargeted.selectedRegionId).toBe('song-jin');
+        expect(retargeted.explicitRegionId).toBe('ning-yuan');
         expect(retargeted.turnPhase).toBe('ma-shi-trade-choice');
         expect(getMaShiTradeSelection(retargeted)).toMatchObject({
             targetRegionId: 'city-region-24',
@@ -4885,7 +4891,8 @@ describe('七大恨支付手牌选择', () => {
 
         const interaction = state.sys.interaction.current;
         expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:recruit');
-        expect(state.core.selectedRegionId).toBe('city-region-24');
+        expect(state.core.selectedRegionId).toBe('song-jin');
+        expect(state.core.explicitRegionId).toBe('ning-yuan');
         expect(getRecruitSelection(state.core)).toMatchObject({
             targetRegionId: 'city-region-24',
             targetRegionName: '宁远',
@@ -15621,7 +15628,8 @@ describe('七大恨支付手牌选择', () => {
         const rebuiltSourceRegion = rebound.regions.find((region) => region.id === rebuiltSelection?.sourceRegionId);
 
         expect(rebound.turnPhase).toBe('khan-edict-choice');
-        expect(rebound.selectedRegionId).toBe('city-region-24');
+        expect(rebound.selectedRegionId).toBe('city-region-25');
+        expect(rebound.explicitRegionId).toBe('city-region-24');
         expect(rebuiltSelection?.sourceRegionId).not.toBe('city-region-24');
         expect(rebuiltSourceRegion?.controller).toBe('mongol');
         expect(rebuiltSelection?.sourceRegionName).toBeTruthy();

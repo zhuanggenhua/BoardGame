@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import {
+    createRespondToPromptCommand,
+    getCurrentInteractionSummary,
+    getPromptOption,
+} from '../../../engine/testing/interactionTestFacade';
+import {
     getQidahenDiplomacySelectionForCore,
     getQidahenDriveTigerConsentSelectionForCore,
     QidahenDomain,
@@ -12,7 +17,6 @@ import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';
 import { getQidahenCurrentWheelDispatchSelectionForCore } from '../domain/dispatchSelectionBuilders';
 import type { QidahenCore, QidahenEvent } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { engineConfig } from '../game';
 import { syncQidahenRuntimeInteractionState } from '../domain/runtimeInteractions';
 
@@ -336,7 +340,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             ...state,
             core: reduced,
         });
-        expect(targetingState.sys.interaction.current?.playerId).toBe('0');
+        expect(getCurrentInteractionSummary(targetingState).playerId).toBe('0');
         expect(QidahenDomain.validate(targetingState, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '2',
@@ -392,14 +396,10 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             playerId: '0',
             payload: { moveId: 'move-3-all-opponents' },
         }).state;
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
+        state = applyPipeline(state, createRespondToPromptCommand(state, {
             playerId: '0',
-            payload: {
-                interactionId: state.sys.interaction.current?.id,
-                optionId: 'city-region-20',
-            },
-        }).state;
+            optionId: 'city-region-20',
+        })).state;
 
         expect(QidahenDomain.validate({
             ...state,
@@ -426,14 +426,10 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         });
         expect(pendingValidation).toEqual({ valid: true });
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
+        state = applyPipeline(state, createRespondToPromptCommand(state, {
             playerId: '0',
-            payload: {
-                interactionId: state.sys.interaction.current?.id,
-                optionId: 'rear-guard',
-            },
-        }).state;
+            optionId: 'rear-guard',
+        })).state;
 
         expect(QidahenDomain.validate({
             ...state,
@@ -542,7 +538,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             payload: { moveId: 'move-1-free' },
         }).state;
 
-        expect(state.sys.interaction.current?.playerId).toBe('0');
+        expect(getCurrentInteractionSummary(state).playerId).toBe('0');
         expect(QidahenDomain.validate(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE,
             playerId: '2',
@@ -620,9 +616,11 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             payload: { regionId: 'city-region-25' },
         }).state;
 
-        const choiceId = (state.sys.interaction.current?.data as {
-            options?: Array<{ id: string }>;
-        } | undefined)?.options?.find((option) => option.id.includes('city-region-24'))?.id;
+        const choiceId = getPromptOption(
+            state,
+            (option) => option.id.includes('city-region-24'),
+            '王化贞内部调度目标',
+        ).id;
         expect(choiceId).toBeTruthy();
 
         const validation = QidahenDomain.validate({

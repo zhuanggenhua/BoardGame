@@ -918,16 +918,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     }, [liveCenterSelectionNotice]);
 
     React.useEffect(() => {
-        if (!canDiscard) {
-            return;
-        }
-        setLiveMotionCue((current) => (
-            current?.type === 'draw-to-hand'
-                ? null
-                : current
-        ));
-    }, [canDiscard]);
-    React.useEffect(() => {
         if (liveMotionCue?.type !== 'opening-deal' || !openingDealSignature) {
             return;
         }

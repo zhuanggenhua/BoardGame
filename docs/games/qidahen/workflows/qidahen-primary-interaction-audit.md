@@ -620,9 +620,9 @@
 | 一级行动入口：势力行动 | `primaryStageMode = faction` | 右侧行动列、顶部横幅 | 行动按钮 | 默认 `selectedActionId` | 默认聚焦存在，但不能把它写成“规则先做这个”；当前部分文案仍在绕地区 | 局部收口：二级步骤上方一级横幅已退场；仍需继续拆默认聚焦与已确认动作 |
 | 支付/弃牌 | 动作已预览且需要费用 | 手牌区、支付卡 | 手牌本体 + 执行按钮 | 已选支付牌 | 这是正式支付阶段，不是一级动作入口 | 暂不处理：当前语义基本合理 |
 | 二级目标：赐印招安 | 一级动作已锁定 | 地图候选、右侧支付/结果提示 | 地图目标 + 支付牌 | 当前常由默认 `selectedRegionId` 承接 | 教程容易被带成“先选区”；正式实现也依赖预选区 | 需要建模补齐：缺默认聚焦、当前目标、已锁来源拆分 |
-| 二级目标：征召军队 | `turnPhase = recruit-choice` | 右侧选择卡、地图 | 右侧选项 + 地图改区 | 默认 `selectedRegionId` | 地区仍容易被当成动作入口前提 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`，右侧摘要不再直接用 `targetRegionName` 当展示锚点；持久 `selectedRegionId` 语义仍待拆 |
-| 二级目标：马市贸易 | `turnPhase = ma-shi-trade-choice` | 右侧选择卡、地图 | 右侧选项 + 地图改区 | 默认 `selectedRegionId` | 地区先行语气仍需防回流 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`，右侧摘要不再直接用 `targetRegionName` 当展示锚点；持久 `selectedRegionId` 语义仍待拆 |
-| 二级目标：大汗令箭 | `turnPhase = khan-edict-choice` | 右侧效果卡、地图 | 右侧选项 + 地图改区 | 默认 `selectedRegionId` | 来源区容易被误读成首入口 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`，右侧摘要不再直接用 `sourceRegionName` 当展示锚点；来源区/目标区/展示锚点仍需继续拆 |
+| 二级目标：征召军队 | `turnPhase = recruit-choice` | 右侧选择卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 地图改区现在不再把建军目标反写成持久焦点，但结算后仍会收回真实建军区 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；等待态地图重选只更新 `explicitRegionId` 与 `recruitSelection.targetRegionId`，不再反写 `selectedRegionId` |
+| 二级目标：马市贸易 | `turnPhase = ma-shi-trade-choice` | 右侧选择卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 地图改区现在不再把建兵目标反写成持久焦点，但结算后仍会收回真实建兵区 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；等待态地图重选只更新 `explicitRegionId` 与 `maShiTradeSelection.targetRegionId`，不再反写 `selectedRegionId` |
+| 二级目标：大汗令箭 | `turnPhase = khan-edict-choice` | 右侧效果卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 来源区/目标区/展示锚点已部分拆开，外交分支仍按目标区同步 `selectedRegionId` | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；令箭等待态地图重选只更新 `explicitRegionId` 与 `khanEdictSelection`，不再反写 `selectedRegionId` |
 | 二级目标：外交雇佣 | `turnPhase = diplomacy-choice` | 地图候选、右侧摘要 | 地图候选 + 右侧选项 | 默认 `selectedRegionId` / 默认来源区 | 外交摘要现在也已改为消费 `displayAnchorRegionId/displayAnchorRegionName`，不再直接拿 `sourceRegionName` 当屏幕主语；剩余风险仍在 builder / reducer / 结算层继续混用来源区、当前目标区与展示锚点 | 可立即真修项已处理；建模尾项仍保留 |
 | 地图目标：轮盘进攻调度 | `turnPhase = dispatch-targeting` | 地图高亮、右侧摘要 | 地图目标本体 | 默认来源区、高亮候选区 | 右侧目标卡已去掉“进攻某地”和“可攻/可去 N 处”复述；剩余风险仍是默认来源区与展示锚点绑在一起 | 可立即真修项已处理；建模尾项仍保留 |
 | 地图目标：王化贞/高第等调度 | 对应人物效果开启 | 王化贞直接暴露地图高亮；高第只有选完弃牌后才暴露地图高亮 | 地图目标本体或后续选择 | 默认来源区/默认目标区 | 高第的“弃牌前地图可点”已移除；当前剩余风险集中在默认来源区与目标区语义仍需继续拆开 | 可立即真修项已处理；建模尾项仍保留 |
@@ -674,7 +674,7 @@
 
 ### B. 需要交互建模层继续真修的问题
 
-1. `selectedRegionId` 当前仍深度渗透在 `regionSelectionReducer`、`selectionBuilders`、`dispatchSelectionBuilders` 等正式流程里；`selectedActionFollowUp` 已不再把一级动作结果反写成后续来源区或目标区，但等待态重建链仍会把“便捷聚焦 / 后续来源区 / 当前目标区 / 展示锚点”混在一起。
+1. `selectedRegionId` 当前仍深度渗透在 `regionSelectionReducer`、`selectionBuilders`、`dispatchSelectionBuilders` 等正式流程里；`selectedActionFollowUp` 已不再把一级动作结果反写成后续来源区或目标区，`regionSelectionReducer` 也已把征召军队、马市贸易、大汗令箭等待态地图重选从“反写 selectedRegionId”改为“保留已锁焦点 + 记录 explicitRegionId + 重建 selection 目标”。外交、调度与结算链仍会把“便捷聚焦 / 后续来源区 / 当前目标区 / 展示锚点”混在一起。
 2. 只要这层混合职责还没拆开，正式流程就会持续倾向于把“后续目标/来源区”感知成“主流程第一步”，教程也会被同一建模再次带偏。
 3. 后续真修方向不是简单删掉默认选中，而是把这三层语义拆开：
    - 默认聚焦
@@ -725,7 +725,7 @@
    - 征召军队、马市贸易、大汗令箭、外交雇佣已把右侧展示主语改成 `displayAnchorRegionId/displayAnchorRegionName`
    - 高第调度、王化贞调度、轮盘进攻/调度也已把右侧展示主语改成 `displayAnchorRegionId/displayAnchorRegionName`
    - `selectedActionFollowUp` 已保留一级动作执行前的当前焦点，不再把后续建军目标、马市目标、令箭来源、驱虎来源或待结算目标反写进 `selectedRegionId`
-5. 但这还不是完整拆分：`regionSelectionReducer` 里仍会在若干等待态把 `selectedRegionId` 回写为正式来源区或目标区，`selectionBuilders / dispatchSelectionBuilders` 也仍把它作为默认来源/目标/展示锚点的输入；后续仍需继续拆 `默认聚焦 / 当前目标 / 已锁来源` 的持久状态。
+5. 但这还不是完整拆分：`regionSelectionReducer` 里外交雇佣、轮盘/人物调度与若干结算态仍会把 `selectedRegionId` 回写为正式来源区或目标区，`selectionBuilders / dispatchSelectionBuilders` 也仍把它作为默认来源/目标/展示锚点的输入；后续仍需继续拆 `默认聚焦 / 当前目标 / 已锁来源` 的持久状态。
 6. 只要持久状态还没拆清，就不能把七大恨正式流程判成“已经完全回到先选动作、后选目标”的稳定状态。
 
 ### C. 当前不能靠 UI 小修冒充完成的问题
