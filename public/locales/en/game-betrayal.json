@@ -171,10 +171,21 @@
       "knowledge": "Knowledge",
       "sanity": "Sanity"
     },
-    "inventory": {
-      "item": "Item",
-      "omen": "Omen"
-    },
+  "inventory": {
+    "item": "Item",
+    "omen": "Omen",
+    "dog": "Dog",
+    "map": "Map",
+    "heal": "Heal",
+    "weapon": "Weapon",
+    "unarmed": "Unarmed",
+    "rabbitFoot": "Rabbit's Foot",
+    "rerollDie": "Reroll die {{index}}",
+    "explore": "Explore",
+    "holySymbol": "Holy Symbol",
+    "idol": "Idol",
+    "mask": "Mask"
+  },
     "decks": {
       "omen": "Omen Deck",
       "item": "Item Deck",
@@ -188,11 +199,13 @@
       "tilePlaceholder": "Room tile pending",
       "ready": "Move here",
       "slotUndiscovered": "Not revealed yet",
-      "slotReady": "Press Explore to reveal a new room",
-      "explorable": "Explorable",
-      "moveTarget": "Move target",
-      "preview": "Zoom preview",
-      "rewards": {
+    "slotReady": "Press Explore to reveal a new room",
+    "explorable": "Explorable",
+    "moveTarget": "Move target",
+    "skeletonKeyMoveTarget": "Use Skeleton Key to move through walls",
+    "preview": "Zoom preview",
+    "obstacle": "Obstacle",
+    "rewards": {
         "event": "Event",
         "item": "Item",
         "omen": "Omen"

@@ -3098,7 +3098,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                     : 'bg-transparent text-[#bddac2]'
                                                             }`}
                                                         >
-                                                            {isDogTradeTarget && !isSameRoom ? '狗' : isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
+                                                            {isDogTradeTarget && !isSameRoom ? t('board.inventory.dog') : isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
                                                         </span>
                                                     ) : null}
                                                 </div>
@@ -3277,7 +3277,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-dog-trade-selector"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">狗</span>
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.dog')}</span>
                                             {core.currentExplorerInventory
                                                 .filter((card) => card.id !== 'dog' && !core.usedCardIdsThisTurn.includes(card.id))
                                                 .map((card) => {
@@ -3305,7 +3305,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-inventory-target-room-selector"
                                             className="inline-flex max-w-[min(720px,calc(100vw-2rem))] flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">地图</span>
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.map')}</span>
                                             {inventoryTargetRooms.map((room) => {
                                                 const isSelectedRoom = selectedInventoryTargetRoomId === room.id;
                                                 return (
@@ -3331,7 +3331,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-inventory-target-player-selector"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">治疗</span>
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.heal')}</span>
                                             {healTargetExplorers.map((explorer) => {
                                                 const isSelectedPlayer = selectedInventoryTargetPlayerId === explorer.playerId;
                                                 return (
@@ -3357,7 +3357,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-attack-weapon-selector"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">武器</span>
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.weapon')}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => handleSelectAttackWeapon(null)}
@@ -3368,7 +3368,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         : 'text-[#d6c498] hover:text-[#f0dfad]'
                                                 }`}
                                             >
-                                                徒手
+                                                {t('board.inventory.unarmed')}
                                             </button>
                                             {attackWeaponCards.map((card) => {
                                                 const isSelectedWeapon = selectedAttackWeaponCardId === card.id;
@@ -3395,7 +3395,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-rabbit-foot-dice"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">兔脚</span>
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.rabbitFoot')}</span>
                                             {core.recentRoll.dice.map((pip, dieIndex) => (
                                                 <button
                                                     key={`${core.recentRoll!.id}-${dieIndex}`}
@@ -3409,7 +3409,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     }}
                                                     data-testid={`betrayal-rabbit-foot-die-${dieIndex}`}
                                                     className="min-h-[28px] min-w-[28px] rounded-none border-0 bg-transparent px-1 text-[12px] font-bold text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4 shadow-none transition hover:text-[#f6ffc4]"
-                                                    title={`重掷第 ${dieIndex + 1} 颗骰子`}
+                                                    title={t('board.inventory.rerollDie', { index: dieIndex + 1 })}
                                                 >
                                                     {pip}
                                                 </button>
@@ -3421,7 +3421,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-explore-options"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">探索</span>
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.explore')}</span>
                                             {canDeclareHolySymbolExplore ? (
                                                 <button
                                                     type="button"
@@ -3433,7 +3433,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             : 'text-[#d6c498] hover:text-[#f0dfad]'
                                                     }`}
                                                 >
-                                                    圣符
+                                                    {t('board.inventory.holySymbol')}
                                                 </button>
                                             ) : null}
                                             {canDeclareIdolExplore ? (
@@ -3447,7 +3447,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             : 'text-[#d6c498] hover:text-[#f0dfad]'
                                                     }`}
                                                 >
-                                                    雕像
+                                                    {t('board.inventory.idol')}
                                                 </button>
                                             ) : null}
                                         </div>
@@ -3457,7 +3457,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             data-testid="betrayal-mask-target-selector"
                                             className="inline-flex max-w-[min(720px,calc(100vw-2rem))] flex-wrap items-center gap-2 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
                                         >
-                                            <span className="px-1 text-[11px] font-semibold text-[#d9c68f]">面具</span>
+                                            <span className="px-1 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.mask')}</span>
                                             {maskTargetTokens.map((token) => (
                                                 <div
                                                     key={token.id}
@@ -3629,12 +3629,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 <span
                                                     data-testid={`betrayal-room-marker-${room.id}-obstacle`}
                                                     className="pointer-events-none absolute bottom-2 left-2 z-20 grid h-6 w-6 place-items-center rounded-full border border-[#b8914f] bg-[rgba(20,14,9,0.84)] shadow-[0_0_12px_rgba(184,145,79,0.42)]"
-                                                    title="障碍物"
+                                                    title={t('board.rooms.obstacle')}
                                                 >
                                                     <OptimizedImage
                                                         src={ASSETS.marker.obstacle}
                                                         locale={effectiveLocale}
-                                                        alt="障碍物"
+                                                        alt={t('board.rooms.obstacle')}
                                                         className="h-5 w-5 object-contain"
                                                         draggable={false}
                                                     />
@@ -3704,14 +3704,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 data-testid={`betrayal-room-move-target-${room.id}`}
                                                 data-tutorial-id={tutorialMapTargetRoomId === room.id ? tutorialStep?.highlightTarget : undefined}
                                                 className="grid h-4 w-4 place-items-center rounded-full border border-[#76bd99] bg-[#76bd99] shadow-[0_0_14px_rgba(118,189,153,0.8)]"
-                                                title={isSkeletonKeyMoveTarget ? '使用骨制钥匙穿墙移动' : t('board.rooms.moveTarget')}
+                                                title={isSkeletonKeyMoveTarget ? t('board.rooms.skeletonKeyMoveTarget') : t('board.rooms.moveTarget')}
                                             >
-                                                        <span className="sr-only">{isSkeletonKeyMoveTarget ? '使用骨制钥匙穿墙移动' : t('board.rooms.moveTarget')}</span>
+                                                        <span className="sr-only">{isSkeletonKeyMoveTarget ? t('board.rooms.skeletonKeyMoveTarget') : t('board.rooms.moveTarget')}</span>
                                                     </button>
                                                 ) : isReachableRoom ? (
                                                     <span
                                                         className="pointer-events-none h-2.5 w-2.5 rounded-full border border-[#6aa986] bg-[rgba(106,169,134,0.58)]"
-                                                        title={isSkeletonKeyMoveTarget ? '使用骨制钥匙穿墙移动' : t('board.rooms.moveTarget')}
+                                                        title={isSkeletonKeyMoveTarget ? t('board.rooms.skeletonKeyMoveTarget') : t('board.rooms.moveTarget')}
                                                     />
                                                 ) : isExploreTarget ? (
                                                     <button

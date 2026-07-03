@@ -172,10 +172,21 @@
       "knowledge": "知识",
       "sanity": "神志"
     },
-    "inventory": {
-      "item": "物品",
-      "omen": "预兆"
-    },
+  "inventory": {
+    "item": "物品",
+    "omen": "预兆",
+    "dog": "狗",
+    "map": "地图",
+    "heal": "治疗",
+    "weapon": "武器",
+    "unarmed": "徒手",
+    "rabbitFoot": "兔脚",
+    "rerollDie": "重掷第 {{index}} 颗骰子",
+    "explore": "探索",
+    "holySymbol": "圣符",
+    "idol": "雕像",
+    "mask": "面具"
+  },
     "decks": {
       "omen": "预兆牌堆",
       "item": "物品牌堆",
@@ -189,11 +200,13 @@
       "tilePlaceholder": "房间板块待接入",
       "ready": "可移动到此",
       "slotUndiscovered": "尚未翻出",
-      "slotReady": "按“探索”翻出新房间",
-      "explorable": "可探索",
-      "moveTarget": "可移动到此",
-      "preview": "放大查看",
-      "rewards": {
+    "slotReady": "按“探索”翻出新房间",
+    "explorable": "可探索",
+    "moveTarget": "可移动到此",
+    "skeletonKeyMoveTarget": "使用骨制钥匙穿墙移动",
+    "preview": "放大查看",
+    "obstacle": "障碍物",
+    "rewards": {
         "event": "事件",
         "item": "物品",
         "omen": "预兆"
