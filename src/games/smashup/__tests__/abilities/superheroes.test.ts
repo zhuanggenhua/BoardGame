@@ -57,7 +57,7 @@ describe('超级英雄派系隐藏实现批', () => {
         const secretBase = getCardDef('superheroes_secret_base') as ActionCardDef | any;
         const myOnlyWeakness = getCardDef('superheroes_my_only_weakness') as ActionCardDef | any;
 
-        expect(mindLady?.abilityTags).toEqual(['onPlay']);
+        expect(mindLady?.abilityTags).toEqual(['talent']);
         expect(expandedPower).toMatchObject({
             subtype: 'ongoing',
             ongoingTarget: 'minion',
@@ -104,17 +104,16 @@ describe('超级英雄派系隐藏实现批', () => {
         expect(getEffectivePower(result.finalState.core, enemy, 0)).toBe(3);
     });
 
-    it('心灵女士会选择另一名玩家的随从并压制其能力直到你下回合开始', () => {
+    it('心灵女士在场后可发动天赋，选择另一名玩家的随从并压制其能力直到你下回合开始', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 0,
             players: {
-                '0': makePlayer('0', {
-                    hand: [makeCard('mind-1', 'superheroes_mind_lady', 'minion', '0')],
-                }),
+                '0': makePlayer('0'),
                 '1': makePlayer('1'),
             },
             bases: [
                 makeBase('base_ninja_dojo', [
+                    makeMinion('mind-1', 'superheroes_mind_lady', '0', 5),
                     makeMinion('captain-1', 'superheroes_captain_amazing', '1', 5),
                     makeMinion('burst-1', 'superheroes_the_burst', '1', 5),
                 ]),
@@ -122,28 +121,29 @@ describe('超级英雄派系隐藏实现批', () => {
             ],
         }));
 
-        const played = runCommand(state, {
-            type: SU_COMMANDS.PLAY_MINION,
+        const activated = runCommand(state, {
+            type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
-            payload: { cardUid: 'mind-1', baseIndex: 1 },
+            payload: { minionUid: 'mind-1', baseIndex: 0 },
         });
 
-        expect(played.success).toBe(true);
-        const prompt = getSimpleChoicePrompt(played.finalState, 'superheroes_mind_lady');
+        expect(activated.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(activated.finalState, 'superheroes_mind_lady');
         const target = getPromptOption(prompt, (option) => option.value?.minionUid === 'captain-1', '心灵女士候选随从');
 
-        const resolved = respondToPromptOption(played.finalState, (option) => option.id === target.id, '心灵女士候选随从', '0');
+        const resolved = respondToPromptOption(activated.finalState, (option) => option.id === target.id, '心灵女士候选随从', '0');
         expect(resolved.success).toBe(true);
 
         const suppressed = resolved.finalState.core.suppressedCardsUntilTurnStart ?? [];
         expect(suppressed.map((entry) => entry.cardUid)).toEqual(['captain-1']);
+        expect(resolved.finalState.core.bases[0].minions.find((minion) => minion.uid === 'mind-1')?.talentUsed).toBe(true);
 
         const destroyedMindLady = applyEvents(resolved.finalState.core, [{
             type: SU_EVENTS.MINION_DESTROYED,
             payload: {
                 minionUid: 'mind-1',
                 minionDefId: 'superheroes_mind_lady',
-                fromBaseIndex: 1,
+                fromBaseIndex: 0,
                 ownerId: '0',
                 controllerId: '0',
                 destroyerId: '1',

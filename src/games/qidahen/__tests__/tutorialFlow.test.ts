@@ -120,6 +120,7 @@ describe('qidahen tutorial flow', () => {
         expect(collectNextTutorialChain('year-and-characters')).toEqual([]);
         expect(collectNextTutorialChain('korea-and-special-map-rules')).toEqual([]);
         expect(stepIdsOf('basic-opening')).toEqual(expect.arrayContaining([
+            'hand-limit',
             'wheel-move',
             'pick-action',
             'pay-cards',
@@ -153,7 +154,7 @@ describe('qidahen tutorial flow', () => {
         ]));
     });
 
-    it('基础教程会先把轮盘真实选择作为首回合的第一个主操作，再进入手牌行动', () => {
+    it('基础教程从正式开局真实示范手牌上限、轮盘推进、一次手牌行动和一次轮盘行动', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
 
@@ -172,13 +173,25 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('hand-limit');
+        expect((state.core as any).turnPhase).toBe('hand-limit-discard');
+        expect((state.core as any).handLimitDiscardSelection?.requiredDiscardCount).toBe(1);
+        const [discardCardId] = (state.core as any).handLimitDiscardSelection?.candidateCardIds ?? [];
+        expect(discardCardId).toBeTruthy();
 
+        const handLimitInteraction = state.sys.interaction.current;
+        expect(handLimitInteraction?.kind).toBe('simple-choice');
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: INTERACTION_COMMANDS.RESPOND,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: {
+                interactionId: handLimitInteraction?.id,
+                optionIds: [discardCardId],
+            },
         });
         expect(state.sys.tutorial.step?.id).toBe('wheel-first');
+        expect((state.core as any).turnPhase).toBe('action-window');
+        expect((state.core as any).handLimitDiscardSelection).toBeNull();
+        expect((state.core as any).factions.ming.handCount).toBe((state.core as any).factions.ming.handLimit);
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -198,6 +211,7 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('after-wheel');
         expect((state.core as any).wheelActionUsed).toBe(true);
+        expect((state.core as any).factionActionUsed).toBe(false);
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -212,6 +226,53 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('pick-action');
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('pay-cards');
+        expect((state.core as any).payment.required).toBe(3);
+
+        const paymentCardIds = (state.core as any).handCards
+            .filter((card: any) => card.faction === 'ming' && card.status !== 'disabled')
+            .slice(0, 3)
+            .map((card: any) => card.id);
+        expect(paymentCardIds).toHaveLength(3);
+        for (const cardId of paymentCardIds) {
+            state = dispatch(state, {
+                type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+                playerId: '0',
+                payload: { cardId },
+            });
+        }
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('action-result');
+        expect(((state.core as any).actionLog ?? []).map((entry: any) => entry.text).join(' | ')).toContain('赐印招安');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('morale-level');
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('wheel-action');
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
     it('进攻与野战教程在真实点选进攻目标后会先进入边界说明，再进入战斗阶段', () => {
@@ -690,7 +751,8 @@ describe('qidahen tutorial flow', () => {
                 regionId: 'city-region-24',
             },
         });
-        expect((state.core as any).selectedRegionId).toBe('city-region-24');
+        expect((state.core as any).selectedRegionId).toBe('city-region-25');
+        expect((state.core as any).explicitRegionId).toBe('city-region-24');
 
         state = dispatch(state, {
             type: INTERACTION_COMMANDS.RESPOND,
@@ -703,27 +765,34 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('tribute-mark');
 
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: INTERACTION_COMMANDS.RESPOND,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: {
+                interactionId: state.sys.interaction?.current?.id,
+                optionId: 'flip-vassal',
+            },
         });
         expect(state.sys.tutorial.step?.id).toBe('remove-mark');
 
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: {
+                regionId: 'city-region-22',
+            },
         });
-        expect(state.sys.tutorial.step?.id).toBe('hire-only');
-        expect((state.core as any).diplomacyProgress?.resolvedSteps).toHaveLength(1);
+        expect((state.core as any).explicitRegionId).toBe('city-region-22');
+        expect(
+            (state.sys.interaction?.current?.data as { options?: Array<{ id: string }> } | undefined)
+                ?.options?.map((option) => option.id),
+        ).toContain('remove-marker');
 
         state = dispatch(state, {
             type: INTERACTION_COMMANDS.RESPOND,
             playerId: '0',
             payload: {
                 interactionId: state.sys.interaction?.current?.id,
-                optionId: 'hire-only',
-                choiceId: 'hire-only',
+                optionId: 'remove-marker',
             },
         });
 
@@ -731,7 +800,7 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
-    it('攻城教程会从城战待结算入口开始，并在结算后推进到围城选择', () => {
+    it('攻城教程会先走真实守城宣告，再进入城战待结算和围城选择', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['siege-and-occupation']?.manifest;
         expect(manifest).toBeTruthy();
 
@@ -750,15 +819,20 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('defend-city');
-        expect((state.core as any).pendingTargetAction?.battleMode).toBe('city');
-        expect((state.core as any).pendingTargetAction?.title).toContain('城战待结算');
+        expect((state.core as any).pendingTargetAction?.battleMode).toBe('field');
+        expect((state.core as any).pendingTargetAction?.title).toContain('守城宣告');
+        expect((state.sys as any).interaction?.current?.data?.options?.some((option: any) => option.id === 'defender-hold-city')).toBe(true);
 
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: {
+                defenderHoldCity: true,
+            },
         });
         expect(state.sys.tutorial.step?.id).toBe('city-battle');
+        expect((state.core as any).pendingTargetAction?.battleMode).toBe('city');
+        expect((state.core as any).pendingTargetAction?.title).toContain('城战待结算');
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
@@ -770,7 +844,7 @@ describe('qidahen tutorial flow', () => {
             },
         });
         expect((state.core as any).pendingTargetAction).toBeNull();
-        expect((state.core as any).postBattleSelection?.battleMode).toBe('city');
+        expect((state.core as any).postBattleSelection?.battleMode).toBe('field');
         expect(state.sys.tutorial.step?.id).toBe('city-result');
 
         state = dispatch(state, {

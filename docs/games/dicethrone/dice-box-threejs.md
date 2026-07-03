@@ -22,6 +22,7 @@ DiceThrone 的骰面不能使用 dice-box-threejs 默认数字样式。骰面必
 - 物理、碰撞、投掷、重投、位置和姿态来自 `@3d-dice/dice-box-threejs`
 - 骰面、颜色基调、选中反馈继续使用 DiceThrone 自己的视觉语言
 - 业务组件只传骰子定义和本地 profile，不直接接触第三方 mesh / material / geometry
+- 棋盘 3D 选中反馈必须是骰子底部跟随投影的弧形光，不是方框、包边、整块背景、CSS ring 或描边外框。截图里只要选中骰子出现方框/包边，就视为视觉回归，不能作为收口图。
 
 正确做法：
 
@@ -60,6 +61,8 @@ await DiceBoxThreeEngine.create(container, {
 - 为某个英雄或某个骰面在组件内部临时塞第三方配置字段
 - 为了让截图好看，把物理投掷降级回 `Dice3D.tsx` 的自研运动学
 - 直接交付 dice-box-threejs 默认数字骰样式，冒充 DiceThrone 骰子样式
+- 在没核对合并期代码或历史截图的情况下，凭感觉重画骰子大小、位置、选中态或材质
+- 用方框、包边、ring、高亮背景替代合并期确定的底部弧形选中光
 
 ## 物理与结果规则
 
@@ -90,10 +93,20 @@ temp/dice3d-reroll-flow/
 - `04-打出选任意骰子重投卡牌-选择两个骰子.png`：验证选骰反馈跟随真实 3D 投影层。
 - `05-点击重投后.png`：验证重投后仍是棋盘 3D 骰子，并且位置/姿态来自真实物理重投。
 
+视觉收口前必须先人工核图：
+
+- 骰子必须是 DiceThrone 圆角 WebGL 样式，不是尖角平面备用骰。
+- 骰面必须来自 DiceThrone 图集/皮肤，不得是 dice-box-threejs 默认数字骰。
+- 选中效果必须是底部弧形光，且跟随骰子落点；不得出现方框、包边、整块背景或 CSS ring。
+- 骰子必须处在棋盘中央骰台区域，大小与合并期视觉相近，不压右侧技能区。
+- 截图必须是投掷完成/稳定态；中途飞行、位移中、未落稳状态不能作为最终达标图。
+- 未达标候选图不得直接打开给用户；只有自检达标后，才执行真实开图动作。
+
 验收时必须同时看：
 
 - 页面存在 `data-testid="dicethrone-board-dice-box-canvas"`
 - 骰子点击层 `data-render-mode="engine"`
+- 不存在 `data-testid="dicethrone-board-dice-box-fallback"` 作为最终收口骰子层
 - 截图 05 中骰子位置或姿态相对 04 有真实变化
 - 关闭 3D 开关时仍走原右侧 2D 骰盘
 

@@ -580,6 +580,12 @@ const getQidahenFriendlyPendingChoiceLabel = (choice: { id: string; label: strin
     if (choice.id === 'rout') {
         return '溃退';
     }
+    if (choice.id === 'defender-hold-city') {
+        return '守城避战';
+    }
+    if (choice.id === 'defender-sortie') {
+        return '出城野战';
+    }
     if (choice.id === 'cavalry-plunder-attacker') {
         return '抽己方牌堆';
     }
@@ -2956,7 +2962,7 @@ const ActionsZone: React.FC<{
                     ))}
                 </div>
             ) : null}
-            {!suppressPassiveActionContext && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (
+            {(!suppressPassiveActionContext || tutorialHighlightsSeasonSummary) && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
                     data-testid="qidahen-season-summary"
@@ -4503,8 +4509,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         && !wheelStageSelectionActive
         && core.wheelMoveChoices.length > 0;
     const tutorialInfoStepActive = tutorialStep?.infoStep === true;
-    const tutorialShowsSeasonSummary = tutorialStep?.id === 'korea-attrition'
-        || tutorialStep?.id === 'shanhaiguan';
+    const tutorialShowsSeasonSummary = tutorialStep?.highlightTarget === 'qidahen-season-summary';
     const primaryStageMode: QidahenPrimaryStageMode | null = wheelStageSelectionActive
         ? 'wheel'
         : factionStageSelectionActive

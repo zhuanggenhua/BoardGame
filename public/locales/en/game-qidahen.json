@@ -271,15 +271,15 @@
   "tutorial": {
     "basic": {
       "title": "Opening, Wheel, And The First Turn",
-      "description": "Start from the formal opening and cover: check hand limit, rotate the shared wheel, complete one hand action, then complete one wheel action.",
+      "description": "The formal opening resolves hand limit, the shared wheel, one hand action, and one wheel action.",
       "steps": {
         "welcome": "Seven Hatreds has three victory paths: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige first.",
-        "handLimit": "At the start of every turn, check hand limit first. Ming may keep 15 cards; Later Jin and the Mongols may keep 10.",
+        "handLimit": "At the start of every turn, check hand limit first. Ming may keep 15 cards; Later Jin and the Mongols may keep 10. Pick the excess card from the hand area and confirm the discard.",
         "handResource": "Cards are your main resource. Event cards resolve when played, armament cards need one extra discard, tactic cards are used only in battle, and silver cards serve only as payment.",
         "wheelFirst": "After tidying the hand, rotate the shared wheel first. Moving it by 1, 2, or 3 spaces decides not only whether other players draw, but also which kind of wheel action you can enter next.",
         "wheelMove": "Choose how far to move the wheel this turn.",
         "afterWheel": "Once the wheel is resolved, this turn still has two parts left: one hand action and one wheel action. The current player chooses which of those two parts to do first.",
-        "pickAction": "Choose one hand action first: Grant Pardon. It pulls adjacent enemy troops into Ming control and changes ownership on the map directly.",
+        "pickAction": "Hand action: Grant Pardon. It pulls adjacent enemy troops into Ming control and changes ownership on the map directly.",
         "payCards": "Discard 3 cards to pay for this Grant Pardon.",
         "actionResult": "Ownership on the map has already changed. Hand resources have turned into direct board control.",
         "moraleLevel": "The number on each troop is both level and morale. Higher level means stronger dice in battle; only when a troop falls to 0 does it rout away.",
@@ -289,11 +289,11 @@
     },
     "attackAndBattle": {
       "title": "Attack And Field Battle",
-      "description": "Enter from a real attack-dispatch entry and learn how troops move, when tactics are played, how damage lands, and who retreats after a field battle.",
+      "description": "Attack dispatch covers troop movement, tactic timing, damage assignment, and retreat after field battle.",
       "steps": {
         "overview": "Attack dispatch does not end when you click a target. You first move troops into place, and only after movement is done are the battles settled together.",
         "moveEntry": "This time you enter from Attack and Dispatch. Move the troops into place first, and remember that the border also decides how many troops can actually deploy. Artillery and infantry move 1 region; cavalry move 2, and that distance can double if they stay inside friendly control and do not join battle.",
-        "borderWidth": "Once the target is chosen, first read how many troops this border actually allows to deploy. Mountains, rivers, walls, and cities all change the width of the field battle.",
+        "borderWidth": "Once the target is chosen, the border limits how many troops can deploy. Mountains, rivers, walls, and cities all change the width of the field battle.",
         "battleOpen": "Battles first reveal both sides' troops, then check whether either side plays a tactic card. This is the real timing window for tactics, and only after that do artillery, cavalry, and infantry resolve in order.",
         "tacticWindow": "Tactic cards are not cards you casually throw at any time. In most battles you play only one, and this is the moment that changes how this fight trades.",
         "battleDamage": "The total rolled in one combat stage deals 1 damage for every 3 points. Damage usually goes onto higher-level troops first, and artillery does not absorb losses for other units.",
@@ -304,10 +304,10 @@
     },
     "siege": {
       "title": "Siege And Occupation",
-      "description": "See how defenders fall back into the city, why city battle is different from field battle, and why victory still leaves a choice between siege and occupation.",
+      "description": "Siege covers defender city withdrawal, city battle resolution, and the post-victory choice between siege and occupation.",
       "steps": {
         "overview": "City battle is not the same as field battle. Defenders can fall back into the city, and even victory does not grant control immediately.",
-        "defendCity": "When a city region is attacked, up to 2 troops and 2 population can withdraw into the city. This step first decides what stays inside and what remains outside.",
+        "defendCity": "When a city region is attacked, up to 2 troops and 2 population can withdraw into the city. The choice decides what stays inside and what remains outside.",
         "cityBattle": "City battle resolves artillery first, then cavalry and infantry together in melee. Cavalry also suffers a -1 penalty here.",
         "cityResult": "If the defenders lose inside the city, those defenders are cleared, but control still depends on whether you besiege or occupy next.",
         "besiegeChoice": "Besieging means leaving pressure outside the city while the defender still keeps regional control for now.",
@@ -317,17 +317,17 @@
     },
     "retreatAndRout": {
       "title": "Retreat And Rout",
-      "description": "Enter from a real field-battle resolution state and see the difference between rear guard and rout.",
+      "description": "The field-battle loser chooses between rear guard and rout.",
       "steps": {
         "overview": "After losing a battle, you must choose one retreat mode: rear guard or rout.",
-        "chooseRout": "Choose one retreat mode here. This example takes rout.",
+        "chooseRout": "Choose one retreat mode. This resolution uses rout.",
         "routResult": "After routing, the source region is cleared of the defeated force and Ming gains 1 more defeat marker.",
         "finish": "Rear guard leaves a remnant behind; rout loses more troops."
       }
     },
     "wheelSharedCost": {
       "title": "Wheel Branches And Development Actions",
-      "description": "See who refills cards when the wheel moves farther, and how the wheel pushes you into armaments, events, diplomacy, and hiring systems.",
+      "description": "Longer wheel movement refills opponents and pushes the turn into armaments, events, diplomacy, and hiring systems.",
       "steps": {
         "overview": "Wheel movement is never free. The farther you move, the more cards your opponents recover, and the more it pushes you into a different system entry.",
         "chooseMove": "Pick \"All opponents draw 2, move 3.\"",
@@ -338,7 +338,7 @@
     },
     "wheelReclaim": {
       "title": "Wheel Reclaim",
-      "description": "Watch one real Wheel Reclaim resolution and confirm that it directly adds population to a controlled region.",
+      "description": "Wheel Reclaim directly adds population to a controlled region.",
       "steps": {
         "overview": "Reclaim is not an off-turn bonus. It is a formal wheel result.",
         "chooseMove": "Move the wheel forward 1 for free and enter Reclaim.",
@@ -348,7 +348,7 @@
     },
     "wheelMilitaryFarm": {
       "title": "Wheel Military Farm",
-      "description": "Watch one real Wheel Military Farm resolution and confirm that it adds both cards and troops.",
+      "description": "Wheel Military Farm adds both cards and troops.",
       "steps": {
         "overview": "Military Farm differs from Reclaim because it converts that base directly into current cards and troops.",
         "chooseMove": "Move the wheel forward 1 more space and enter Military Farm.",
@@ -358,7 +358,7 @@
     },
     "wheelRecruitTrain": {
       "title": "Wheel Recruit And Train",
-      "description": "Watch one real Wheel Recruit / Train resolution and confirm that it adds troops and also trains artillery by armament level.",
+      "description": "Wheel Recruit / Train adds troops and trains artillery by armament level.",
       "steps": {
         "overview": "Wheel Recruit / Train is not only about placing new blocks. It also consumes the armament levels you have already developed.",
         "chooseMove": "Move the wheel forward 1 more space and enter Recruit / Train.",
@@ -368,10 +368,10 @@
     },
     "armamentUpgrade": {
       "title": "Armament Upgrade",
-      "description": "Enter from the current formal action choice, upgrade one armament, and see both the discard cost and the new level land on the live board.",
+      "description": "Armament upgrade spends hand cards and updates the armament level on the live board.",
       "steps": {
         "overview": "Armaments do not grow for free. You still spend hand cards to push them higher.",
-        "chooseAction": "Play this armament card first to enter Armament Upgrade. You will still discard 1 more hand card before that armament rises by 1 level.",
+        "chooseAction": "Play this armament card to enter Armament Upgrade. You still discard 1 more hand card before that armament rises by 1 level.",
         "payCards": "Pick 2 cards from the hand at the bottom, then confirm the action.",
         "result": "The upgrade is now live: Ming Artillery Technology has gone from level 1 to level 2, and the armament summary in the player strip updates with it.",
         "finish": "This hand action does not change the map directly. It improves the armament level that later battles will use."
@@ -379,10 +379,10 @@
     },
     "eventAction": {
       "title": "Khan's Edict",
-      "description": "Use Khan's Edict to demonstrate an action chain that pays first and chooses an effect next, with the discard, choice, and result landing together.",
+      "description": "Khan's Edict resolves through payment, effect choice, and result, with the discard and map change landing together.",
       "steps": {
         "overview": "An event card is not just payment fodder. Once played, it immediately turns its printed effect into this turn's real action.",
-        "chooseAction": "Play this Khan's Edict event card first. After it is fired, you still discard 1 more hand card before choosing which effect it resolves.",
+        "chooseAction": "Play this Khan's Edict event card. After it fires, you still discard 1 more hand card before choosing which effect it resolves.",
         "payCards": "Pick 1 card from the hand at the bottom, then confirm the action.",
         "chooseEffect": "The event is now live. Choose Recruit / Train here to turn this event into a real troop gain.",
         "result": "The result has landed: Khan's Edict raised Mongol troops at Shanhaiguan from 2 to 4, so this event has already changed live board strength.",
@@ -394,25 +394,25 @@
       "description": "Enter a real wheel diplomacy step and see control markers and hired troops resolve together.",
       "steps": {
         "overview": "Diplomacy decides regional relationships, not just marker sides; hiring decides where new troops can appear.",
-        "wheelEntry": "Push the wheel into Diplomacy and Hire. This step is not about battle. It is about control relationships and room for troops.",
+        "wheelEntry": "Push the wheel into Diplomacy and Hire. This branch resolves control relationships and room for troops, not battle.",
         "chooseTarget": "Diplomacy can only target regions adjacent to your controlled areas, and it cannot target homeland regions without control markers, Korea regions, or areas with regular troops stationed there.",
         "friendlyMark": "A reverse-side marker means a friendly region. Your troops may pass through and station there, but it is not yet a controlled region.",
-        "tributeMark": "A face-up marker means a tribute region, which counts as your controlled region. Neutral regions taken by battle also become this state directly.",
-        "removeMark": "Diplomacy not only places your own markers. It can also push back markers already placed by someone else.",
+        "tributeMark": "Flip the friendly marker you just placed into a vassal marker. Only a face-up marker counts as your controlled region; neutral regions taken by battle also become this state directly.",
+        "removeMark": "Choose Dongjiang and remove the existing rival control marker. Diplomacy not only places your own markers; it can also push back markers already placed by someone else.",
         "hireOnly": "Mercenary troops can only be built in controlled regions. They do not appear freely in ordinary neutral territory.",
         "finish": "When diplomacy and hiring resolve together, you get two benefits at once: map relationships change, and force structure changes with them."
       }
     },
     "yearAndCharacters": {
       "title": "Midyear, New Year, And Chronology",
-      "description": "See Midyear taxes, character checks, New Year maintenance, attrition, chronology scoring, and turn-order refresh.",
+      "description": "Midyear taxes, character checks, New Year maintenance, attrition, chronology scoring, and turn-order refresh form the yearly resolution.",
       "steps": {
         "overview": "When the shared wheel reaches Midyear and New Year, the consequences of the whole year catch up together. Seven Hatreds does not care only about the move in front of you.",
         "advanceMidyear": "Push the wheel into Midyear.",
         "midyearTax": "Midyear checks taxes first: controlled regions with more population than troops send resources back into your hand, while besieged regions do not.",
-        "midyearCharacters": "Then come character checks. Eligible characters roll for resolution here, and defeat markers are also processed one by one in this step.",
+        "midyearCharacters": "Then come character checks. Eligible characters roll for resolution, and defeat markers are processed one by one during the character check.",
         "advanceNewYear": "After Midyear, push on into New Year.",
-        "newYearTribute": "New Year first resolves Korean tribute. Whoever controls Korean regions draws the matching number of Korea cards shown on the map.",
+        "newYearTribute": "New Year Korean tribute: whoever controls Korean regions draws the matching number of Korea cards shown on the map.",
         "newYearMaintenance": "Then comes fortification maintenance. If the Great Wall, Shanhaiguan, Ningyuan, or Jinzhou cannot be maintained, they fall into ruin and their border and city effects fail with them.",
         "newYearAttrition": "After maintenance you still resolve attrition. If population cannot support the troops, you either discard to keep them or cut them yourself.",
         "chronologyScore": "Chronology cards are not just year markers. The player with the highest score must pay half their hand to claim that year's prestige, or pass the chance to the next player.",
@@ -422,7 +422,7 @@
     },
     "koreaSpecial": {
       "title": "Korea And Special Map Rules",
-      "description": "Read the map-specific rules around Korea, Hanseong, sea routes, and Shanhaiguan.",
+      "description": "Korea, Hanseong, sea routes, and Shanhaiguan are map-specific rules that directly change play.",
       "steps": {
         "overview": "Korea, Hanseong, sea routes, and Shanhaiguan are not side notes. They directly change scoring, movement, and defense.",
         "koreaRegion": "First look at how New Year tribute already resolves. Whoever controls Korean regions actually draws the marked Korea cards into hand.",

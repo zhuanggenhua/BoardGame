@@ -210,6 +210,7 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
                     dieModifyConfig: meta.dieModifyConfig as InteractionDescriptor['dieModifyConfig'] | undefined,
                     diceOwnerId: typeof meta.diceOwnerId === 'string' ? meta.diceOwnerId : undefined,
                     targetOpponentDice: meta.targetOpponentDice === true,
+                    skipAbilityReselection: meta.skipAbilityReselection === true,
                     allowedDieIds,
                     completedDieIds,
                 } as InteractionDescriptor;

@@ -12,9 +12,13 @@ import {
     createFirstScenarioHauntCore,
     createJackSpiritReviveReadyCore,
     createJackSpiritPostReviveAttackReadyCore,
+    createFirstScenarioReadyToLearnAboutJackCore,
+    createFirstScenarioReadyToStudyExorcismCore,
     createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToTraitorVictoryCore,
+    createHeroAttackTraitorReadyCore,
     createStartedFirstScenarioCore,
+    createTradeReadyCore,
     playFirstScenarioToSurvivorVictory,
 } from '../../src/games/betrayal/testing/firstScenarioTestUtils';
 import type { Command, MatchState } from '../../src/engine/types';
@@ -68,6 +72,40 @@ export const waitForBetrayalHarnessCommand = async (page: Page, timeout = 30000)
     );
 };
 
+const readBetrayalPageDiagnostics = async (page: Page) => {
+    return page.evaluate(() => {
+        const harness = (window as BetrayalHarnessWindow).__BG_TEST_HARNESS__;
+        const rescueGate = document.querySelector('[data-testid="game-page-rescue-gate"]');
+        const viewport = document.querySelector('.game-page-viewport');
+        const shell = document.querySelector('.mobile-board-shell');
+        const content = document.querySelector('.mobile-board-shell__content');
+        const loadingScreen = document.querySelector('[data-testid="loading-screen"]');
+        const viteOverlay = document.querySelector('vite-error-overlay');
+        const rect = (element: Element | null) => {
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            return `${Math.round(box.width)}x${Math.round(box.height)}`;
+        };
+
+        return {
+            href: window.location.href,
+            testMode: Boolean((window as BetrayalHarnessWindow).__E2E_TEST_MODE__),
+            hasHarness: Boolean(harness),
+            harnessStatus: typeof harness?.getStatus === 'function' ? harness.getStatus() : null,
+            hasRescueGate: Boolean(rescueGate),
+            rescueText: rescueGate?.textContent?.replace(/\s+/g, ' ').trim().slice(0, 500) ?? null,
+            viewport: rect(viewport),
+            shell: rect(shell),
+            content: rect(content),
+            hasLoadingScreen: Boolean(loadingScreen),
+            hasViteOverlay: Boolean(viteOverlay),
+            bodyText: document.body.textContent?.replace(/\s+/g, ' ').trim().slice(0, 700) ?? '',
+        };
+    }).catch((error) => ({
+        diagnosticError: error instanceof Error ? error.message : String(error),
+    }));
+};
+
 export const waitForBetrayalPageReady = async (page: Page, attempts = 4) => {
     let lastError: unknown = null;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -77,6 +115,7 @@ export const waitForBetrayalPageReady = async (page: Page, attempts = 4) => {
             return;
         } catch (error) {
             lastError = error;
+            const diagnostics = await readBetrayalPageDiagnostics(page);
             const rescueReloadButton = page.getByRole('button', { name: /刷新重试/i });
             const rescueGate = page.getByTestId('game-page-rescue-gate');
             const rescueTitle = page.getByText('页面没有正常显示');
@@ -84,7 +123,8 @@ export const waitForBetrayalPageReady = async (page: Page, attempts = 4) => {
                 || await rescueTitle.isVisible({ timeout: 800 }).catch(() => false);
 
             if (attempt === attempts - 1) {
-                throw error;
+                const detail = JSON.stringify(diagnostics, null, 2);
+                throw new Error(`betrayal 页面未能进入 harness。最后错误：${error instanceof Error ? error.message : String(error)}\n诊断：${detail}`);
             }
 
             if (shouldReloadRescueGate) {
@@ -103,9 +143,10 @@ export const warmBetrayalFrontend = async (context: BrowserContext, timeout = 45
     const warmupPage = await context.newPage();
     try {
         await warmupPage.goto('/play/betrayal', {
-            waitUntil: 'domcontentloaded',
+            waitUntil: 'commit',
             timeout,
         });
+        await warmupPage.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => undefined);
         await waitForBetrayalPageReady(warmupPage);
     } finally {
         await warmupPage.close();
@@ -148,6 +189,22 @@ export function createFirstScenarioSurvivorEndgameCore(): BetrayalCore {
 
 export function createFirstScenarioReadyToExorciseRuntimeCore(): BetrayalCore {
     return createFirstScenarioReadyToExorciseCore();
+}
+
+export function createFirstScenarioReadyToLearnAboutJackRuntimeCore(): BetrayalCore {
+    return createFirstScenarioReadyToLearnAboutJackCore();
+}
+
+export function createFirstScenarioReadyToStudyExorcismRuntimeCore(): BetrayalCore {
+    return createFirstScenarioReadyToStudyExorcismCore();
+}
+
+export function createTradeReadyRuntimeCore(): BetrayalCore {
+    return createTradeReadyCore();
+}
+
+export function createHeroAttackTraitorReadyRuntimeCore(): BetrayalCore {
+    return createHeroAttackTraitorReadyCore();
 }
 
 export function createFirstScenarioReadyToTraitorVictoryRuntimeCore(): BetrayalCore {

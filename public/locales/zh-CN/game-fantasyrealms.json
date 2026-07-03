@@ -84,7 +84,9 @@
     "openMagnifyAria": "放大查看 {{name}}",
     "closePreview": "关闭预览",
     "selected": "已选",
-    "centerSelectedNotice": "{{player}}已选中"
+    "centerSelectedNotice": "{{player}}已选中",
+    "centerTakeNotice": "{{player}}拿走一张牌",
+    "centerDiscardNotice": "{{player}}弃置一张牌"
   },
   "focus": {
     "panelTitle": "当前焦点",

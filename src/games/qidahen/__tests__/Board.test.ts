@@ -459,7 +459,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';");
         expect(boardSource).toContain('{showFortificationStrip ? (');
         expect(boardSource).toContain('data-testid="qidahen-fortification-strip"');
-        expect(boardSource).toContain('!suppressPassiveActionContext && (!tutorialInfoStepActive || tutorialHighlightsSeasonSummary) && core.lastSeasonSummary ? (');
+        expect(boardSource).toContain('!suppressPassiveActionContext');
+        expect(boardSource).toContain('(!tutorialInfoStepActive || tutorialHighlightsSeasonSummary)');
+        expect(boardSource).toContain('core.lastSeasonSummary ? (');
         expect(boardSource).toContain('data-testid="qidahen-season-summary"');
     });
 

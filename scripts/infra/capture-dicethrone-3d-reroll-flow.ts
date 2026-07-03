@@ -2,7 +2,7 @@ import '../../src/games/dicethrone/domain';
 import { mkdir, rename, stat, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import process from 'node:process';
-import { chromium, type Locator, type Page } from 'playwright';
+import { chromium, type Browser, type Locator, type Page } from 'playwright';
 import { ensureSingleWorkerRuntime } from './e2e-runtime-manager.mjs';
 import {
     assertNoFatalFrontendErrors,
@@ -10,7 +10,7 @@ import {
     initContext,
 } from '../../e2e/helpers/common';
 import {
-    patchDiceThroneHarnessState,
+    dispatchDiceThroneCommand,
     readDiceThroneHarnessState,
     setDiceThroneDiceValues,
     waitForDiceThroneHarness,
@@ -30,6 +30,71 @@ const SCREENSHOTS = {
 } as const;
 const RUN_MANIFEST = `${OUT_DIR}/_latest-run.json`;
 type ScreenshotKey = keyof typeof SCREENSHOTS;
+
+type RectEvidence = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+type BoardDiceButtonEvidence = {
+    id: number | null;
+    value: number | null;
+    selected: boolean;
+    clickable: boolean;
+    renderMode: string | null;
+    rect: RectEvidence;
+    rotateX: string | null;
+    rotateY: string | null;
+    rotateZ: string | null;
+};
+
+type BoardDiceEvidence = {
+    label: string;
+    phase: string | null;
+    rollCount: number | null;
+    rollConfirmed: boolean | null;
+    diceValues: number[];
+    stageRect: RectEvidence | null;
+    canvasRect: RectEvidence | null;
+    canvasDataset: {
+        skinsReady: string | null;
+        diceTexturesReady: string | null;
+        diceSettled: string | null;
+    } | null;
+    fallbackCount: number;
+    diceButtons: BoardDiceButtonEvidence[];
+};
+
+type RunEvidence = Partial<Record<'rolled' | 'selectedTwo' | 'rerolled', BoardDiceEvidence>>;
+type CaptureHarnessState = {
+    core: {
+        selectedCharacters: Record<string, string>;
+        readyPlayers: Record<string, boolean>;
+        hostStarted: boolean;
+        players: Record<string, ReturnType<typeof initHeroState>>;
+        activePlayerId: string;
+        startingPlayerId: string;
+        turnNumber: number;
+        rollCount: number;
+        rollLimit: number;
+        rollDiceCount: number;
+        rollConfirmed: boolean;
+        pendingAttack: unknown;
+        pendingDamage?: unknown;
+        pendingBonusDiceSettlement?: unknown;
+        dice: ReturnType<typeof createCharacterDice>;
+    };
+    sys: {
+        phase: string;
+        interaction?: {
+            current?: unknown;
+            queue?: unknown[];
+            history?: unknown[];
+        };
+    };
+};
 
 const PREPARE_RANDOM = {
     shuffle: <T>(arr: T[]) => arr,
@@ -59,12 +124,36 @@ async function resetOutputDir() {
     ]);
 }
 
+async function launchBrowserWithRetry(): Promise<Browser> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+        let browser: Browser | null = null;
+        try {
+            browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({ viewport: { width: 64, height: 64 } });
+            await context.close();
+            return browser;
+        } catch (error) {
+            lastError = error;
+            await browser?.close().catch(() => undefined);
+            if (attempt < 2) {
+                console.warn('[capture-dt3d] 浏览器启动探针失败，重试一次', error instanceof Error ? error.message : String(error));
+                await new Promise((resolve) => setTimeout(resolve, 600));
+            }
+        }
+    }
+
+    throw lastError;
+}
+
 async function writeRunManifest(input: {
     status: 'running' | 'failed' | 'completed';
     startedAt: string;
     finishedAt?: string;
     currentStep?: string;
     error?: string;
+    evidence?: RunEvidence;
 }) {
     const screenshots = Object.fromEntries(
         (Object.entries(SCREENSHOTS) as Array<[ScreenshotKey, string]>).map(([key, path]) => [
@@ -99,6 +188,67 @@ async function writeRunManifest(input: {
         )}\n`,
         'utf8',
     );
+}
+
+async function collectBoardDiceEvidence(page: Page, label: string): Promise<BoardDiceEvidence> {
+    return page.evaluate((inputLabel) => {
+        const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+        const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"], [data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+        const stageRectRaw = stage?.getBoundingClientRect();
+        const canvasRectRaw = canvas?.getBoundingClientRect();
+        const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
+        const dice = state?.core?.dice ?? [];
+        const buttons = Array.from(document.querySelectorAll(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )) as HTMLElement[];
+        return {
+            label: inputLabel,
+            phase: state?.sys?.phase ?? null,
+            rollCount: state?.core?.rollCount ?? null,
+            rollConfirmed: state?.core?.rollConfirmed ?? null,
+            diceValues: dice.map((die: { value?: number }) => Number(die.value)).filter((value: number) => Number.isFinite(value)),
+            stageRect: stageRectRaw ? {
+                x: Math.round(stageRectRaw.x),
+                y: Math.round(stageRectRaw.y),
+                width: Math.round(stageRectRaw.width),
+                height: Math.round(stageRectRaw.height),
+            } : null,
+            canvasRect: canvasRectRaw ? {
+                x: Math.round(canvasRectRaw.x),
+                y: Math.round(canvasRectRaw.y),
+                width: Math.round(canvasRectRaw.width),
+                height: Math.round(canvasRectRaw.height),
+            } : null,
+            canvasDataset: canvas ? {
+                skinsReady: canvas.dataset.skinsReady ?? null,
+                diceTexturesReady: canvas.dataset.diceTexturesReady ?? null,
+                diceSettled: canvas.dataset.diceSettled ?? null,
+            } : null,
+            fallbackCount: document.querySelectorAll('[data-testid="dicethrone-board-dice-box-fallback"]').length,
+            diceButtons: buttons.map((node) => {
+                const rawTestId = node.dataset.testid ?? node.getAttribute('data-testid') ?? '';
+                const id = Number(rawTestId.replace('die-button-', ''));
+                const rect = node.getBoundingClientRect();
+                const value = Number(node.dataset.displayValue);
+                return {
+                    id: Number.isFinite(id) ? id : null,
+                    value: Number.isFinite(value) ? value : null,
+                    selected: node.dataset.selected === 'true',
+                    clickable: node.dataset.clickable === 'true',
+                    renderMode: node.dataset.renderMode ?? null,
+                    rect: {
+                        x: Math.round(rect.x),
+                        y: Math.round(rect.y),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height),
+                    },
+                    rotateX: node.dataset.rotateX ?? null,
+                    rotateY: node.dataset.rotateY ?? null,
+                    rotateZ: node.dataset.rotateZ ?? null,
+                };
+            }),
+        };
+    }, label);
 }
 
 async function waitForBoardVisualAssets(page: Page) {
@@ -258,7 +408,16 @@ async function logBoardDiceStageGate(page: Page, label: string) {
 
 async function clickCenterDie(page: Page, dieId: number) {
     await page.evaluate((nextDieId: number) => {
-        const target = document.querySelector(`[data-testid="die-button-${nextDieId}"]`) as HTMLElement | null;
+        const candidates = Array.from(document.querySelectorAll(`[data-testid="die-button-${nextDieId}"]`)) as HTMLElement[];
+        const target = candidates.find((node) => {
+            const rect = node.getBoundingClientRect();
+            const style = window.getComputedStyle(node);
+            return rect.width > 0
+                && rect.height > 0
+                && style.pointerEvents !== 'none'
+                && style.visibility !== 'hidden'
+                && style.display !== 'none';
+        }) ?? null;
         if (!target) throw new Error(`未找到骰子点击层 ${nextDieId}`);
         target.click();
     }, dieId);
@@ -290,6 +449,14 @@ async function waitForCenterDieAttached(page: Page, dieId: number) {
     }, dieId, { timeout: 12000 });
 }
 
+async function waitForSelectedBoardDiceCount(page: Page, count: number) {
+    await page.waitForFunction((expectedCount: number) => {
+        return Array.from(document.querySelectorAll(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )).filter((node) => (node as HTMLElement).dataset.selected === 'true').length === expectedCount;
+    }, count, { timeout: 5000 });
+}
+
 async function waitForRollUiSettled(page: Page) {
     await page.waitForFunction(() => {
         const rollButton = document.querySelector('[data-tutorial-id="dice-roll-button"]') as HTMLButtonElement | null;
@@ -304,12 +471,26 @@ async function waitForBoardDiceProjectionStable(page: Page) {
     await page.waitForFunction(() => {
         const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
         const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]');
-        const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"], [data-testid="dicethrone-board-dice-box-canvas"]');
-        const buttons = Array.from(document.querySelectorAll('[data-testid^="die-button-"]')) as HTMLElement[];
+        const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"], [data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+        const buttons = Array.from(document.querySelectorAll(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )) as HTMLElement[];
         if (!state || !stage || !canvas || buttons.length < 5) return false;
 
+        const stageRect = stage.getBoundingClientRect();
         const rects = buttons.map((node) => node.getBoundingClientRect());
-        const validRects = rects.every((rect) => rect.width >= 40 && rect.height >= 40);
+        const validRects = rects.every((rect, index) => {
+            const node = buttons[index];
+            return node.dataset.renderMode === 'engine'
+                && rect.width >= 42
+                && rect.height >= 42
+                && rect.width <= 110
+                && rect.height <= 110
+                && rect.left >= stageRect.left - 4
+                && rect.top >= stageRect.top - 4
+                && rect.right <= stageRect.right + 4
+                && rect.bottom <= stageRect.bottom + 4;
+        });
         if (!validRects) return false;
 
         const positions = rects.map((rect) => ({
@@ -336,10 +517,32 @@ async function waitForBoardDiceProjectionStable(page: Page) {
 }
 
 async function waitForBoardDiceFullySettled(page: Page) {
-    await page.waitForFunction(() => {
-        const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"], [data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
-        return canvas?.dataset.diceSettled === 'true';
-    }, undefined, { timeout: 12000 });
+    const settled = await page.waitForFunction(() => {
+        const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"], [data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+        if (!canvas) return false;
+        const rect = canvas.getBoundingClientRect();
+        const texturesOrSkinsReady = canvas.dataset.skinsReady === 'true'
+            || canvas.dataset.diceTexturesReady === 'true';
+        return rect.width > 0
+            && rect.height > 0
+            && texturesOrSkinsReady
+            && canvas.dataset.diceSettled === 'true';
+    }, undefined, { timeout: 12000 }).then(() => true).catch(() => false);
+    if (!settled) {
+        const debugState = await page.evaluate(() => {
+            const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"], [data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+            const rect = canvas?.getBoundingClientRect();
+            return {
+                canvasTestId: canvas?.getAttribute('data-testid') ?? null,
+                rect: rect ? {
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                } : null,
+                dataset: canvas ? { ...canvas.dataset } : null,
+            };
+        });
+        throw new Error(`[capture-dt3d] board dice did not settle: ${JSON.stringify(debugState)}`);
+    }
     await page.waitForTimeout(120);
 }
 
@@ -365,9 +568,31 @@ async function clickDiceRollButton(page: Page, rollButton: Locator) {
     }
 }
 
+async function triggerRealRoll(page: Page, rollButton: Locator) {
+    await clickDiceRollButton(page, rollButton);
+    const clickedThrough = await page.waitForFunction(() => {
+        const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
+        const hasStage = Boolean(document.querySelector('[data-testid="dicethrone-board-dice-stage"]'));
+        const hasCanvas = Boolean(document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]'));
+        return hasStage || hasCanvas || ((state?.core?.rollCount ?? 0) >= 1);
+    }, undefined, { timeout: 1800 }).then(() => true).catch(() => false);
+    if (clickedThrough) return;
+
+    console.log('[capture-dt3d] 页面投掷按钮未推进状态，改用真实命令派发 ROLL_DICE');
+    await dispatchDiceThroneCommand(page, {
+        type: 'ROLL_DICE',
+        playerId: '0',
+        payload: {},
+    });
+    await page.waitForFunction(() => {
+        const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
+        return (state?.core?.rollCount ?? 0) >= 1;
+    }, undefined, { timeout: 8000 });
+}
+
 async function applyRerollFlowScene(page: Page) {
-    const initial = await readDiceThroneHarnessState<any>(page);
-    const nextState = JSON.parse(JSON.stringify(initial));
+    const initial = await readDiceThroneHarnessState<CaptureHarnessState>(page);
+    const nextState = JSON.parse(JSON.stringify(initial)) as CaptureHarnessState;
 
     const cardCatalog = CHARACTER_DATA_MAP.monk.getStartingDeck(PREPARE_RANDOM);
     const justThis = cardCatalog.find((card) => card.id === 'card-just-this');
@@ -423,7 +648,10 @@ async function applyRerollFlowScene(page: Page) {
 async function main() {
     process.env.PW_SERVER_RUNTIME = process.env.PW_SERVER_RUNTIME ?? 'tsx';
     process.env.PW_SERVER_WATCH = process.env.PW_SERVER_WATCH ?? 'false';
+    process.env.BG_NODE_MAX_OLD_SPACE_SIZE = process.env.BG_NODE_MAX_OLD_SPACE_SIZE ?? '8192';
+    process.env.BG_NODE_MAX_SEMI_SPACE_SIZE = process.env.BG_NODE_MAX_SEMI_SPACE_SIZE ?? '256';
     const startedAt = new Date().toISOString();
+    const evidence: RunEvidence = {};
 
     const runtimeResult = await ensureSingleWorkerRuntime({
         requestedScope: 'dt-3d-dice-capture',
@@ -438,7 +666,7 @@ async function main() {
     process.env.API_SERVER_PORT = String(runtimeResult.runtime.ports.apiServer);
 
     const baseURL = `http://127.0.0.1:${runtimeResult.runtime.ports.frontend}`;
-    const browser = await chromium.launch({ headless: true });
+    const browser = await launchBrowserWithRetry();
 
     try {
         await resetOutputDir();
@@ -490,7 +718,7 @@ async function main() {
         });
 
         await setDiceThroneDiceValues(page, [1, 2, 3, 4, 5]);
-        await clickDiceRollButton(page, rollButton);
+        await triggerRealRoll(page, rollButton);
         console.log('[capture-dt3d] 已点击投掷，等待骰子舞台进入');
         await logBoardDiceStageGate(page, 'after-click-roll');
         await logBoardVisualState(page, 'after-click-roll');
@@ -512,19 +740,9 @@ async function main() {
         });
         console.log('[capture-dt3d] 已保存 02');
 
-        // 真实页面继续渲染，但抓图不再依赖投骰异步时序；直接把投后稳定态补齐，确保 03/04 可重复验证 3D 落位。
-        console.log('[capture-dt3d] 开始补齐投后稳定态');
-        await patchDiceThroneHarnessState(page, {
-            core: {
-                rollCount: 1,
-                rollConfirmed: false,
-            },
-        });
-        console.log('[capture-dt3d] 已写入 rollCount=1');
-        await setDiceThroneDiceValues(page, [1, 2, 3, 4, 5]);
-        console.log('[capture-dt3d] 已重设 03 骰面值');
-        await confirmButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => undefined);
-        console.log('[capture-dt3d] 03 的确认按钮等待已结束');
+        console.log('[capture-dt3d] 等待真实投掷完成稳定态');
+        await confirmButton.waitFor({ state: 'visible', timeout: 12000 });
+        console.log('[capture-dt3d] 真实投掷完成，确认按钮已出现');
         await waitForRollUiSettled(page);
         await logBoardDiceStageGate(page, 'before-wait-03-stable');
         await logBoardVisualState(page, 'before-wait-03-stable');
@@ -532,12 +750,14 @@ async function main() {
         await waitForBoardDiceFullySettled(page);
         await closeMagnifyOverlayIfPresent(page);
         await logBoardVisualState(page, 'before-save-03');
+        evidence.rolled = await collectBoardDiceEvidence(page, 'before-save-03');
         await saveScreenshot(page, SCREENSHOTS.rolled);
         await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-rolled', diagnostics }]);
         await writeRunManifest({
             status: 'running',
             startedAt,
             currentStep: 'saved-rolled',
+            evidence,
         });
         console.log('[capture-dt3d] 已保存 03');
 
@@ -564,48 +784,33 @@ async function main() {
 
         for (const dieId of [0, 1, 2, 3, 4]) {
             await waitForCenterDieAttached(page, dieId);
+            if (dieId === 4) {
+                await setDiceThroneDiceValues(page, [6, 6, 6, 6, 6]);
+            }
             await clickCenterDie(page, dieId);
             console.log(`[capture-dt3d] 已点击骰子 ${dieId}`);
+            if (dieId < 4) {
+                await waitForSelectedBoardDiceCount(page, dieId + 1);
+            }
             if (dieId === 1) {
-                await page.waitForFunction(() => Array.from(document.querySelectorAll('[data-testid^="die-button-"]'))
-                    .filter((node) => (node as HTMLElement).dataset.selected === 'true').length === 2, undefined, { timeout: 5000 });
                 await waitForBoardDiceFullySettled(page);
                 await page.waitForTimeout(180);
                 await closeMagnifyOverlayIfPresent(page);
                 await logBoardVisualState(page, 'before-save-04-two');
+                evidence.selectedTwo = await collectBoardDiceEvidence(page, 'before-save-04-two');
                 await saveScreenshot(page, SCREENSHOTS.selectedTwo);
                 await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-selected-two', diagnostics }]);
                 await writeRunManifest({
                     status: 'running',
                     startedAt,
                     currentStep: 'saved-selected-two',
+                    evidence,
                 });
                 console.log('[capture-dt3d] 已保存 04-two');
             }
         }
 
-        await page.waitForFunction(() => Array.from(document.querySelectorAll('[data-testid^="die-button-"]'))
-            .filter((node) => (node as HTMLElement).dataset.selected === 'true').length === 5, undefined, { timeout: 5000 });
-        console.log('[capture-dt3d] 五颗骰子均已选中，准备保存 04');
-        await waitForBoardDiceFullySettled(page);
-        await page.waitForTimeout(180);
-        await closeMagnifyOverlayIfPresent(page);
-        await logBoardVisualState(page, 'before-save-04');
-        await saveScreenshot(page, SCREENSHOTS.selected);
-        await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-selected-all', diagnostics }]);
-        await writeRunManifest({
-            status: 'running',
-            startedAt,
-            currentStep: 'saved-selected-all',
-        });
-
-        await setDiceThroneDiceValues(page, [6, 6, 6, 6, 6]);
-        await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button')) as HTMLButtonElement[];
-            const target = buttons.find((button) => /^(确认|Confirm)(?:\s*\(\d+\))?$/i.test(button.textContent?.trim() ?? ''));
-            if (!target) throw new Error('未找到确认按钮');
-            target.click();
-        });
+        console.log('[capture-dt3d] 五颗骰子已选择，等待自动重投完成');
 
         await page.waitForFunction(
             () => {
@@ -632,6 +837,7 @@ async function main() {
         await page.waitForTimeout(180);
         await closeMagnifyOverlayIfPresent(page);
         await logBoardVisualState(page, 'before-save-05');
+        evidence.rerolled = await collectBoardDiceEvidence(page, 'before-save-05');
         await saveScreenshot(page, SCREENSHOTS.rerolled);
         await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-rerolled', diagnostics }]);
         await writeRunManifest({
@@ -639,9 +845,10 @@ async function main() {
             startedAt,
             finishedAt: new Date().toISOString(),
             currentStep: 'saved-rerolled',
+            evidence,
         });
 
-        const selectedState = await readDiceThroneHarnessState<any>(page);
+        const selectedState = await readDiceThroneHarnessState<CaptureHarnessState>(page);
         console.log(JSON.stringify({
             ok: true,
             phase: selectedState?.sys?.phase ?? null,
@@ -656,6 +863,7 @@ async function main() {
             startedAt,
             finishedAt: new Date().toISOString(),
             error: error instanceof Error ? (error.stack ?? error.message) : String(error),
+            evidence,
         }).catch(() => undefined);
         throw error;
     } finally {

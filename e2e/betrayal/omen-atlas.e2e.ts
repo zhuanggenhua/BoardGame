@@ -21,8 +21,8 @@ const INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-预兆图�
 function createFullOmenAtlasCore(): BetrayalCore {
     const core = createRuntimeCore();
     const inventory: BetrayalInventoryCard[] = [
-        { id: 'rope', name: '绳索', kind: 'item' },
-        { id: 'omen-book', name: '预兆书', kind: 'omen' },
+        { id: 'rope', name: '兔脚', kind: 'item' },
+        { id: 'omen-book', name: '书本', kind: 'omen' },
         { id: 'dog', name: '狗', kind: 'omen' },
         { id: 'mask', name: '面具', kind: 'omen' },
         { id: 'skull', name: '头骨', kind: 'omen' },
@@ -56,7 +56,7 @@ test.describe('山屋惊魂预兆图集真相', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
 
         const omenCards = [
-            { id: 'omen-book', name: '预兆书' },
+            { id: 'omen-book', name: '书本' },
             { id: 'dog', name: '狗' },
             { id: 'mask', name: '面具' },
             { id: 'skull', name: '头骨' },

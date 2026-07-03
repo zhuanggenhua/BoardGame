@@ -421,6 +421,67 @@ describe('城塞圣武士 - 裁决 (judgment)', () => {
     expect(drawEvents.length).toBe(0);
     expect(newState.players['0'].hand.length).toBe(handSizeBefore);
   });
+
+  it('同一回合多个城塞圣武士可各自触发裁决', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-warrior-a',
+      card: makeFortressWarrior('test-warrior-a'),
+      owner: '0',
+    });
+    placeUnit(state, { row: 5, col: 2 }, {
+      cardId: 'test-warrior-b',
+      card: makeFortressWarrior('test-warrior-b'),
+      owner: '0',
+    });
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'enemy-a',
+      card: makeEnemy('enemy-a'),
+      owner: '1',
+    });
+    placeUnit(state, { row: 5, col: 3 }, {
+      cardId: 'enemy-b',
+      card: makeEnemy('enemy-b'),
+      owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+    state.players['0'].deck = [
+      makeAlly('deck-1'), makeAlly('deck-2'), makeAlly('deck-3'),
+      makeAlly('deck-4'), makeAlly('deck-5'), makeAlly('deck-6'),
+    ];
+    const handSizeBefore = state.players['0'].hand.length;
+
+    const first = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+    }, createControlledRandom([0.75, 0.75, 0.75]));
+
+    const second = executeAndReduce(first.newState, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 5, col: 2 },
+      target: { row: 5, col: 3 },
+    }, createControlledRandom([0.75, 0.75, 0.75]));
+
+    const firstDrawEvents = first.events.filter(e =>
+      e.type === SW_EVENTS.CARD_DRAWN
+      && (e.payload as any).sourceAbilityId === 'judgment'
+    );
+    const secondDrawEvents = second.events.filter(e =>
+      e.type === SW_EVENTS.CARD_DRAWN
+      && (e.payload as any).sourceAbilityId === 'judgment'
+    );
+
+    expect(firstDrawEvents.length).toBe(1);
+    expect((firstDrawEvents[0].payload as any).count).toBe(3);
+    expect(secondDrawEvents.length).toBe(1);
+    expect((secondDrawEvents[0].payload as any).count).toBe(3);
+    expect(second.newState.players['0'].hand.length).toBe(handSizeBefore + 6);
+    expect(second.newState.players['0'].deck.length).toBe(0);
+  });
 });
 
 
@@ -613,6 +674,104 @@ describe('科琳 - 神圣护盾 (divine_shield)', () => {
     // 命中数应保持3
     const attacked = events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
     expect((attacked!.payload as any).hits).toBe(3);
+  });
+
+  it('[divine_shield/L4] 真实声明攻击只保护科琳友方城塞目标', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-corin',
+      card: makeCorin('test-corin'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'enemy-fortress-knight',
+      card: makeFortressKnight('enemy-fortress-knight'),
+      owner: '1',
+    });
+
+    placeUnit(state, { row: 4, col: 4 }, {
+      cardId: 'friendly-attacker',
+      card: makeAlly('friendly-attacker', { strength: 3 }),
+      owner: '0',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+
+    const allMelee = createControlledRandom([0.0, 0.0, 0.0]);
+
+    const { events } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 4 },
+      target: { row: 4, col: 3 },
+    }, allMelee);
+
+    const reduceEvents = events.filter(e =>
+      e.type === SW_EVENTS.DAMAGE_REDUCED
+      && (e.payload as any).sourceAbilityId === 'divine_shield'
+    );
+    expect(reduceEvents.length).toBe(0);
+
+    const attacked = events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+    expect(attacked).toBeDefined();
+    expect((attacked!.payload as any).diceCount).toBe(3);
+  });
+
+  it('[divine_shield/L4] 减攻只作用本次真实攻击', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-corin',
+      card: makeCorin('test-corin'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-fortress-knight',
+      card: makeFortressKnight('test-fortress-knight'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 4 }, {
+      cardId: 'first-attacker',
+      card: makeEnemy('first-attacker', { strength: 4 }),
+      owner: '1',
+    });
+
+    placeUnit(state, { row: 3, col: 3 }, {
+      cardId: 'second-attacker',
+      card: makeEnemy('second-attacker', { strength: 4 }),
+      owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '1';
+    state.players['1'].attackCount = 0;
+
+    const firstRandom = createControlledRandom([0.75, 0.75, 0.0, 0.0]);
+    const first = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 4 },
+      target: { row: 4, col: 3 },
+    }, firstRandom);
+
+    const firstAttacked = first.events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+    expect(firstAttacked).toBeDefined();
+    expect((firstAttacked!.payload as any).diceCount).toBe(2);
+
+    first.newState.players['1'].attackCount = 0;
+    const secondRandom = createControlledRandom([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    const second = executeAndReduce(first.newState, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 3, col: 3 },
+      target: { row: 4, col: 3 },
+    }, secondRandom);
+
+    const secondAttacked = second.events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+    expect(secondAttacked).toBeDefined();
+    expect((secondAttacked!.payload as any).diceCount).toBe(4);
   });
 });
 

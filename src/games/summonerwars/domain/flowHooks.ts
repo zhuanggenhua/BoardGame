@@ -9,11 +9,13 @@ import type { GameEvent, PlayerId } from '../../../engine/types';
 import type { SummonerWarsCore, GamePhase } from './types';
 import { SW_EVENTS, PHASE_ORDER } from './types';
 import { getSummoner, HAND_SIZE, getUnitAbilities as getUnitAbilityIds } from './helpers';
-import { triggerAllUnitsAbilities, resolveAbilityEffects } from './abilityResolver';
+import type { AbilityContext, AbilityTrigger } from './abilityResolver';
+import { triggerAllUnitsAbilities, resolveAbilityEffects, triggerAbilities } from './abilityResolver';
 import { abilityRegistry } from './abilities';
 import { getUnitAbilities } from './helpers';
 import { getBaseCardId, CARD_IDS } from './ids';
 import { canActivateAbility } from './abilityHelpers';
+import { reduceEvent } from './reduce';
 
 /**
  * 需要玩家确认的阶段结束技能（"你可以"/"may" 语义）
@@ -100,6 +102,48 @@ function triggerPhaseAbilities(
           ownerId: playerId,
           timestamp,
         }));
+      }
+    }
+  }
+
+  return events;
+}
+
+/**
+ * 逐个触发会直接改变共享状态的自动技能。
+ *
+ * 普通 triggerAllUnitsAbilities 会先基于同一份 core 快照收集所有事件；
+ * 史米革「魔力成瘾」这类回合结束技能会消费共享魔力，必须让前一个单位
+ * 的事件先进入临时 core，再判断下一个单位。
+ */
+function triggerSequentialUnitAbilities(
+  trigger: AbilityTrigger,
+  core: SummonerWarsCore,
+  playerId: PlayerId,
+  additionalCtx?: Partial<AbilityContext>,
+): GameEvent[] {
+  const events: GameEvent[] = [];
+  let workingCore = core;
+  const timestamp = typeof additionalCtx?.timestamp === 'number' ? additionalCtx.timestamp : 0;
+
+  for (let row = 0; row < workingCore.board.length; row++) {
+    for (let col = 0; col < workingCore.board[row].length; col++) {
+      const unit = workingCore.board[row]?.[col]?.unit;
+      if (!unit || unit.owner !== playerId) continue;
+
+      const sourcePosition = { row, col };
+      const sourceEvents = triggerAbilities(trigger, {
+        state: workingCore,
+        sourceUnit: unit,
+        sourcePosition,
+        ownerId: playerId,
+        timestamp,
+        ...additionalCtx,
+      });
+
+      for (const event of sourceEvents) {
+        events.push(event);
+        workingCore = reduceEvent(workingCore, event);
       }
     }
   }
@@ -194,8 +238,8 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
         });
       }
       
-      // 触发回合结束技能（如血腥狂怒衰减）
-      events.push(...triggerAllUnitsAbilities('onTurnEnd', core, playerId, { timestamp }));
+      // 回合结束技能可能消费共享资源，需逐个应用后再判断下一个单位。
+      events.push(...triggerSequentialUnitAbilities('onTurnEnd', core, playerId, { timestamp }));
     }
 
     // 阶段结束技能触发（按阶段筛选）

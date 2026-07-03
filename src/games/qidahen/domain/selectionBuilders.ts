@@ -19,6 +19,10 @@ import {
     getEffectiveHomelandController,
     getPreferredLogicalRegionDisplayName,
 } from './regionRuleSemantics';
+import {
+    getQidahenExplicitRegionSelectionSemantics,
+    type QidahenExplicitRegionSelectionSemantics,
+} from './regionFocusSemantics';
 import { getArmamentLevel } from './armamentStateAccessors';
 import { resolvePreferredRegionDisplayAnchor } from './selectionDisplayAnchor';
 import { toFactionLabel } from './factionLabelSemantics';
@@ -35,15 +39,6 @@ import type {
 
 const QIDAHEN_DIPLOMACY_MAX_TARGETS = 3;
 
-const getQidahenExplicitOrSelectedRegionId = (
-    state: Pick<QidahenCore, 'explicitRegionId' | 'selectedRegionId'>,
-    selectedRegionId: string,
-): string => (
-    selectedRegionId !== state.selectedRegionId
-        ? selectedRegionId
-        : state.explicitRegionId ?? selectedRegionId
-);
-
 const cloneQidahenDiplomacyResolvedSteps = (
     resolvedSteps: QidahenDiplomacySelection['resolvedSteps'],
 ): QidahenDiplomacySelection['resolvedSteps'] => (
@@ -56,18 +51,19 @@ export const buildQidahenDiplomacyProgress = (
     source: selection.source,
     preferredSourceRegionId: selection.preferredSourceRegionId,
     sourceRegionId: selection.sourceRegionId,
+    displayAnchorRegionId: selection.displayAnchorRegionId,
+    displayAnchorRegionName: selection.displayAnchorRegionName,
     hireRegionId: selection.hireRegionId,
     hireRegionName: selection.hireRegionName,
     remainingTargetCount: selection.remainingTargetCount,
     resolvedSteps: cloneQidahenDiplomacyResolvedSteps(selection.resolvedSteps),
 });
 
-export const buildMaShiTradeSelection = (
+export const buildMaShiTradeSelectionFromRegionSemantics = (
     state: QidahenCore,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
 ): QidahenMaShiTradeSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
@@ -77,7 +73,7 @@ export const buildMaShiTradeSelection = (
     if (!targetRegion) {
         return null;
     }
-    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, explicitOrSelectedRegionId);
+    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, regionSemantics.displayAnchorRegionId);
     const choices: QidahenMaShiTradeSelection['choices'] = ([1, 2, 3] as const).map((troopCount) => ({
         troopCount,
         label: `建立 ${troopCount} 个部队`,
@@ -87,7 +83,7 @@ export const buildMaShiTradeSelection = (
     return {
         targetRegionId: targetRegion.id,
         targetRegionName,
-        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, explicitOrSelectedRegionId),
+        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, regionSemantics.displayAnchorRegionId),
         displayAnchorRegionName: targetRegionName,
         choices,
     };
@@ -97,7 +93,10 @@ const getQidahenMaShiTradeSelectionFromCurrentAction = (
     state: QidahenCore,
 ): QidahenMaShiTradeSelection | null => (
     state.turnPhase === 'ma-shi-trade-choice'
-        ? buildMaShiTradeSelection(state, state.selectedRegionId)
+        ? buildMaShiTradeSelectionFromRegionSemantics(
+            state,
+            getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
+        )
         : null
 );
 
@@ -107,13 +106,12 @@ export const getQidahenMaShiTradeSelectionForCore = (
     getQidahenMaShiTradeSelectionFromCurrentAction(state)
 );
 
-export const buildRecruitSelection = (
+export const buildRecruitSelectionFromRegionSemantics = (
     state: QidahenCore,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
     factionId: QidahenFactionId,
 ): QidahenRecruitSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
@@ -123,7 +121,7 @@ export const buildRecruitSelection = (
     if (!targetRegion) {
         return null;
     }
-    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, explicitOrSelectedRegionId);
+    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, regionSemantics.displayAnchorRegionId);
     const choices: QidahenRecruitSelection['choices'] = [
         {
             id: 'level-2-troops',
@@ -152,7 +150,7 @@ export const buildRecruitSelection = (
     return {
         targetRegionId: targetRegion.id,
         targetRegionName,
-        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, explicitOrSelectedRegionId),
+        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(targetRegion, regionSemantics.displayAnchorRegionId),
         displayAnchorRegionName: targetRegionName,
         choices,
     };
@@ -163,7 +161,11 @@ const getQidahenRecruitSelectionFromCurrentAction = (
 ): QidahenRecruitSelection | null => {
     const currentFactionId = getCurrentFactionId(state);
     return state.turnPhase === 'recruit-choice' && state.confirmedActionId === 'recruit'
-        ? buildRecruitSelection(state, state.selectedRegionId, currentFactionId)
+        ? buildRecruitSelectionFromRegionSemantics(
+            state,
+            getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
+            currentFactionId,
+        )
         : null;
 };
 
@@ -283,18 +285,17 @@ const buildDiplomacyChoicesForTarget = (
     };
 };
 
-export const buildDiplomacySelection = (
+export const buildDiplomacySelectionFromRegionSemantics = (
     state: QidahenCore,
     actingFactionId: QidahenFactionId,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
     source: QidahenDiplomacySelection['source'],
     pinnedSourceRegionId?: string | null,
     preferredSourceRegionId?: string | null,
     carryState?: Pick<QidahenDiplomacySelection, 'remainingTargetCount' | 'resolvedSteps'>,
 ): QidahenDiplomacySelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
-    const selectedRuntimeRegion = state.regions.find((region) => (
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
+    const selectedTargetOrSourceRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
     )) ?? null;
@@ -308,8 +309,11 @@ export const buildDiplomacySelection = (
             && canPlaceRegularTroopsInRegion(region, actingFactionId)
         )) ?? null
         : null;
-    const sourceRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, actingFactionId)
-        ? selectedRuntimeRegion
+    const candidateSourceRegion = selectedTargetOrSourceRegion && canPlaceRegularTroopsInRegion(selectedTargetOrSourceRegion, actingFactionId)
+        ? selectedTargetOrSourceRegion
+        : null;
+    const sourceRegion = candidateSourceRegion
+        ? candidateSourceRegion
         : pinnedSourceRegion ?? getPreferredRegularTroopPlacementRegion(state, actingFactionId);
     if (!sourceRegion) {
         return null;
@@ -330,7 +334,7 @@ export const buildDiplomacySelection = (
     const targetRegionName = selectedTargetRegion
         ? getPreferredLogicalRegionDisplayName(
             selectedTargetRegion,
-            resolvePreferredRegionDisplayAnchor(selectedTargetRegion, explicitOrSelectedRegionId),
+            resolvePreferredRegionDisplayAnchor(selectedTargetRegion, regionSemantics.displayAnchorRegionId),
         )
         : null;
     const resolvedSteps = carryState?.resolvedSteps.map((step) => ({ ...step })) ?? [];
@@ -375,10 +379,10 @@ const getQidahenWheelAttackDiplomacySelectionForCore = (
     if (state.turnPhase !== 'diplomacy-choice' || state.actionWheelPosition !== 'wheel-attack') {
         return null;
     }
-    return buildDiplomacySelection(
+    return buildDiplomacySelectionFromRegionSemantics(
         state,
         getCurrentFactionId(state),
-        state.selectedRegionId,
+        getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
         'wheel-hire',
     );
 };
@@ -393,18 +397,19 @@ const getQidahenKhanEdictInitialDiplomacySelectionForCore = (
         return null;
     }
     const currentFactionId = getCurrentFactionId(state);
-    const khanEdictSelection = buildKhanEdictSelection(
+    const khanEdictRegionSemantics = getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId);
+    const khanEdictSelection = buildKhanEdictSelectionFromRegionSemantics(
         state,
         currentFactionId,
-        state.selectedRegionId,
+        khanEdictRegionSemantics,
     );
     if (!khanEdictSelection?.hireTargetRegionId) {
         return null;
     }
-    return buildDiplomacySelection(
+    return buildDiplomacySelectionFromRegionSemantics(
         state,
         currentFactionId,
-        state.selectedRegionId,
+        khanEdictRegionSemantics,
         'khan-edict',
         khanEdictSelection.hireTargetRegionId,
         khanEdictSelection.preferredSourceRegionId,
@@ -419,10 +424,10 @@ const buildQidahenDiplomacySelectionFromProgress = (
     if (state.turnPhase !== 'diplomacy-choice') {
         return null;
     }
-    const rebuiltSelection = buildDiplomacySelection(
+    const rebuiltSelection = buildDiplomacySelectionFromRegionSemantics(
         state,
         getCurrentFactionId(state),
-        selectedRegionId,
+        getQidahenExplicitRegionSelectionSemantics(state, selectedRegionId),
         progress.source,
         progress.sourceRegionId,
         progress.preferredSourceRegionId,
@@ -433,6 +438,8 @@ const buildQidahenDiplomacySelectionFromProgress = (
     );
     return rebuiltSelection ? {
         ...rebuiltSelection,
+        displayAnchorRegionId: progress.displayAnchorRegionId ?? rebuiltSelection.displayAnchorRegionId,
+        displayAnchorRegionName: progress.displayAnchorRegionName ?? rebuiltSelection.displayAnchorRegionName,
         hireRegionId: progress.hireRegionId,
         hireRegionName: progress.hireRegionName,
     } : null;
@@ -476,19 +483,18 @@ export const getQidahenDiplomacySelectionForCore = (
         ? buildQidahenDiplomacySelectionFromProgress(
             state,
             progress,
-            interactionSelection?.targetRegionId ?? state.selectedRegionId,
+            state.explicitRegionId ?? interactionSelection?.targetRegionId ?? state.selectedRegionId,
         )
         : null;
 };
 
-export const buildKhanEdictSelection = (
+export const buildKhanEdictSelectionFromRegionSemantics = (
     state: QidahenCore,
     attackerFactionId: QidahenFactionId,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
     preferredSourceRegionId?: string | null,
 ): QidahenKhanEdictSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
     const selectedRuntimeRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === selectedRuntimeRegionId);
     const preferredSourceRuntimeRegionId = preferredSourceRegionId
         ? resolveQidahenPrimaryRuntimeRegionId(preferredSourceRegionId)
@@ -510,10 +516,10 @@ export const buildKhanEdictSelection = (
         ? selectedRuntimeRegion
         : fallbackSourceRegion ?? recruitTargetRegion ?? hireTargetRegion;
     const recruitTargetRegionName = recruitTargetRegion
-        ? getPreferredLogicalRegionDisplayName(recruitTargetRegion, explicitOrSelectedRegionId)
+        ? getPreferredLogicalRegionDisplayName(recruitTargetRegion, regionSemantics.displayAnchorRegionId)
         : null;
     const hireTargetRegionName = hireTargetRegion
-        ? getPreferredLogicalRegionDisplayName(hireTargetRegion, explicitOrSelectedRegionId)
+        ? getPreferredLogicalRegionDisplayName(hireTargetRegion, regionSemantics.displayAnchorRegionId)
         : null;
     const preferredSourceRegionName = preferredSourceRegion
         ? getPreferredLogicalRegionDisplayName(
@@ -574,7 +580,11 @@ const getQidahenKhanEdictSelectionFromCurrentAction = (
 ): QidahenKhanEdictSelection | null => {
     const currentFactionId = getCurrentFactionId(state);
     return state.turnPhase === 'khan-edict-choice' && state.confirmedActionId === 'khan-edict'
-        ? buildKhanEdictSelection(state, currentFactionId, state.selectedRegionId)
+        ? buildKhanEdictSelectionFromRegionSemantics(
+            state,
+            currentFactionId,
+            getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
+        )
         : null;
 };
 

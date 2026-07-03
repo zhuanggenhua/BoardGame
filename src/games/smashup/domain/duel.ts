@@ -464,6 +464,27 @@ function advanceDeputyStage(
     };
 }
 
+function keepStateOnlyDuelChanges(
+    resultState: MatchState<SmashUpCore>,
+    coreBeforePendingEvents: SmashUpCore,
+): MatchState<SmashUpCore> {
+    const resultBases = resultState.core.bases;
+    return {
+        ...resultState,
+        core: {
+            ...coreBeforePendingEvents,
+            bases: coreBeforePendingEvents.bases.map((base, baseIndex) => ({
+                ...base,
+                ongoingActions: resultBases[baseIndex]?.ongoingActions ?? base.ongoingActions,
+                buriedCards: resultBases[baseIndex]?.buriedCards ?? base.buriedCards,
+            })),
+            activeDuel: resultState.core.activeDuel,
+            triggerQueue: resultState.core.triggerQueue,
+            timedPowerModifiers: resultState.core.timedPowerModifiers,
+        },
+    };
+}
+
 function advanceQueuedStage(
     state: MatchState<SmashUpCore>,
     duel: ActiveDuel,
@@ -1077,15 +1098,8 @@ export function registerDuelInteractionHandlers(): void {
             0,
             now,
         );
-        const nextState: MatchState<SmashUpCore> = {
-            ...stageResult.state,
-            core: {
-                ...state.core,
-                activeDuel: stageResult.state.core.activeDuel,
-            },
-        };
         return {
-            state: nextState,
+            state: keepStateOnlyDuelChanges(stageResult.state, state.core),
             events: [...events, ...stageResult.events],
         };
     });

@@ -1057,6 +1057,9 @@ export function resolveForceEndTurnForStalledAi(args: {
                 return hiddenResolution;
             }
         }
+        if (hasPendingResponseWindowInteractionLock(args.sharedState)) {
+            return null;
+        }
     }
 
     const responseWindow = args.sharedState?.sys?.responseWindow as {

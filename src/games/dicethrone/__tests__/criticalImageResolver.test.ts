@@ -177,12 +177,12 @@ describe('diceThroneCriticalImageResolver', () => {
 
     it('旧六名英雄玩家面板改用 v2 布局与新面板尺寸', () => {
         const expectedDimensions = {
-            barbarian: { width: 3632, height: 2234 },
-            monk: { width: 3632, height: 2234 },
-            moon_elf: { width: 3632, height: 2234 },
-            paladin: { width: 3160, height: 1929 },
-            pyromancer: { width: 3632, height: 2234 },
-            shadow_thief: { width: 3632, height: 2234 },
+            barbarian: { width: 2048, height: 1260 },
+            monk: { width: 2048, height: 1260 },
+            moon_elf: { width: 2048, height: 1260 },
+            paladin: { width: 2048, height: 1250 },
+            pyromancer: { width: 2048, height: 1260 },
+            shadow_thief: { width: 2048, height: 1260 },
         } as const;
 
         for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {

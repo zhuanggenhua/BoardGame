@@ -23,19 +23,23 @@ import {
     type RefChain,
 } from '../../../engine/testing/entityIntegritySuite';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
-import { getEffectiveStrengthValue, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
+import { getEffectiveLife, getEffectiveStrengthValue, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
 import {
     isImmobileBase,
+    canMoveToEnhanced,
     getEffectiveAttackRangeBase,
     hasStableAbilityBase,
     getUnitMoveEnhancements,
     getPassedThroughUnitPositions,
+    getValidSummonPositions,
 } from '../domain/helpers';
 import type { SummonerWarsCore, PlayerId, CellCoord, UnitCard, BoardUnit, StructureCard } from '../domain/types';
 import { SW_COMMANDS, SW_EVENTS } from '../domain/types';
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { executeCommand } from '../domain/execute';
+import { postProcessDeathChecks } from '../domain/execute/helpers';
 import { summonerWarsFlowHooks } from '../domain/flowHooks';
+import { reduceEvent } from '../domain/reduce';
 
 // ============================================================================
 // 合法路径白名单（非 registry 处理的 actionId 必须显式登记）
@@ -506,6 +510,18 @@ describe('被动能力运行时验证 (Section 8)', () => {
         expect(str).toBe(2);
     });
 
+    it('[frost_bolt/L4] 只统计相邻友方建筑', () => {
+        const card = mkUnit('fb-unit3', { abilities: ['frost_bolt'], strength: 2, faction: 'frost' });
+        const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
+
+        putStructure(core, { row: 4, col: 4 }, '0');
+        putStructure(core, { row: 4, col: 2 }, '1');
+        putStructure(core, { row: 3, col: 3 }, '0');
+        putStructure(core, { row: 5, col: 5 }, '0');
+
+        expect(getEffectiveStrengthValue(unit, core)).toBe(4);
+    });
+
     // --- greater_frost_bolt: 2格内友方建筑每个+1战力 ---
     it('[greater_frost_bolt] 2格内友方建筑+1战力', () => {
         const card = mkUnit('gfb-unit', { abilities: ['greater_frost_bolt'], strength: 3, faction: 'frost' });
@@ -517,6 +533,18 @@ describe('被动能力运行时验证 (Section 8)', () => {
         expect(str).toBe(5); // 3 base + 2 buildings
     });
 
+    it('[greater_frost_bolt/L4] 只统计2格内友方建筑', () => {
+        const card = mkUnit('gfb-unit2', { abilities: ['greater_frost_bolt'], strength: 3, faction: 'frost' });
+        const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
+
+        putStructure(core, { row: 4, col: 4 }, '0');
+        putStructure(core, { row: 3, col: 2 }, '0');
+        putStructure(core, { row: 4, col: 1 }, '1');
+        putStructure(core, { row: 5, col: 5 }, '0');
+
+        expect(getEffectiveStrengthValue(unit, core)).toBe(5);
+    });
+
     // --- fortress_elite: 2格内友方城塞单位每个+1战力 ---
     it('[fortress_elite] 2格内友方城塞单位+1战力', () => {
         const card = mkUnit('fe-unit', { abilities: ['fortress_elite'], strength: 2, faction: 'frost' });
@@ -526,6 +554,42 @@ describe('被动能力运行时验证 (Section 8)', () => {
         putUnit(core, { row: 3, col: 3 }, fortressCard, '0');
         const str = getEffectiveStrengthValue(unit, core);
         expect(str).toBe(3); // 2 base + 1 fortress unit
+    });
+
+    it('[fortress_elite/L4] 只统计2格内友方城塞单位', () => {
+        const card = mkUnit('fe-unit2', { abilities: ['fortress_elite'], strength: 2, faction: 'frost' });
+        const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
+
+        putUnit(core, { row: 3, col: 3 }, mkUnit('fortress-ally', { faction: 'frost' }), '0');
+        putUnit(core, { row: 4, col: 4 }, mkUnit('regular-ally', { faction: 'frost' }), '0');
+        putUnit(core, { row: 4, col: 2 }, mkUnit('fortress-enemy', { faction: 'frost' }), '1');
+        putUnit(core, { row: 5, col: 5 }, mkUnit('fortress-far', { faction: 'frost' }), '0');
+
+        expect(getEffectiveStrengthValue(unit, core)).toBe(3);
+    });
+
+    it('[radiant_shot/L4] 当前魔力按每2点+1且奇数向下取整', () => {
+        const card = mkUnit('radiant-unit', { abilities: ['radiant_shot'], strength: 2, faction: 'paladin' });
+        const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
+
+        core.players['0'].magic = 5;
+        expect(getEffectiveStrengthValue(unit, core)).toBe(4);
+
+        core.players['0'].magic = 1;
+        expect(getEffectiveStrengthValue(unit, core)).toBe(2);
+    });
+
+    it('[life_up/L4] 按当前充能动态读取有效生命且最多+5', () => {
+        const card = mkUnit('life-up-unit', { abilities: ['life_up'], life: 3, faction: 'barbaric' });
+        const unit = putUnit(core, { row: 4, col: 3 }, card, '0', { boosts: 2 });
+
+        expect(getEffectiveLife(unit, core)).toBe(5);
+
+        unit.boosts = 7;
+        expect(getEffectiveLife(unit, core)).toBe(8);
+
+        unit.boosts = 0;
+        expect(getEffectiveLife(unit, core)).toBe(3);
     });
 
     // --- aerial_strike: 2格内友方普通士兵获得飞行 ---
@@ -584,12 +648,12 @@ describe('被动能力运行时验证 (Section 8)', () => {
         expect(hasStableAbilityBase(unit)).toBe(true);
     });
 
-    // --- cold_snap: 3格内友方建筑+1有效生命 ---
-    it('[cold_snap] 3格内友方建筑应获得+1有效生命', () => {
+    // --- cold_snap: 友方建筑+1有效生命 ---
+    it('[cold_snap] 友方建筑应获得+1有效生命', () => {
         // 放一个有 cold_snap 的单位
         const coldSnapCard = mkUnit('cs-unit', { abilities: ['cold_snap'], faction: 'frost' });
         putUnit(core, { row: 4, col: 3 }, coldSnapCard, '0');
-        // 放一个友方建筑在3格内
+        // 放一个友方建筑
         const structCard = mkStructure('cs-struct', { life: 5 });
         putStructure(core, { row: 4, col: 4 }, '0', structCard);
 
@@ -598,15 +662,15 @@ describe('被动能力运行时验证 (Section 8)', () => {
         expect(effectiveLife).toBe(6); // 5 + 1 cold_snap 光环
     });
 
-    it('[cold_snap] 超出3格不生效', () => {
+    it('[cold_snap] 远处友方建筑仍获得+1有效生命', () => {
         const coldSnapCard = mkUnit('cs-unit', { abilities: ['cold_snap'], faction: 'frost' });
         putUnit(core, { row: 0, col: 0 }, coldSnapCard, '0');
         const structCard = mkStructure('cs-struct2', { life: 5 });
-        putStructure(core, { row: 4, col: 4 }, '0', structCard); // 距离 8 > 3
+        putStructure(core, { row: 4, col: 4 }, '0', structCard); // 官方原文无范围限制
 
         const structure = core.board[4][4].structure!;
         const effectiveLife = getEffectiveStructureLife(core, structure);
-        expect(effectiveLife).toBe(5); // 超出范围，无加成
+        expect(effectiveLife).toBe(6); // 5 + 1 cold_snap 光环
     });
 
     // --- trample: 穿越伤害数据驱动 ---
@@ -638,6 +702,35 @@ describe('被动能力运行时验证 (Section 8)', () => {
         const passed = getPassedThroughUnitPositions(core, { row: 3, col: 3 }, { row: 3, col: 5 });
         expect(passed).toEqual([{ row: 3, col: 4 }]); // 友方也算穿过
     });
+
+    it('[movement/L4] 攀爬/飞行/迅捷/缓慢在真实移动入口遵守各自路径边界', () => {
+        const climber = mkUnit('climber', { abilities: ['climb'], faction: 'goblin' });
+        putUnit(core, { row: 3, col: 0 }, climber, '0');
+        putStructure(core, { row: 3, col: 1 }, '1');
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 3 })).toBe(true);
+        putUnit(core, { row: 3, col: 2 }, mkUnit('blocking-unit'), '1');
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 3 })).toBe(false);
+
+        clearRect(core, [3, 4, 5], [0, 1, 2, 3, 4, 5]);
+        const flyer = mkUnit('flyer', { abilities: ['flying'], faction: 'trickster' });
+        putUnit(core, { row: 3, col: 0 }, flyer, '0');
+        putStructure(core, { row: 3, col: 1 }, '1');
+        putUnit(core, { row: 3, col: 2 }, mkUnit('unit-in-flight-path'), '1');
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 3 })).toBe(true);
+
+        clearRect(core, [3, 4, 5], [0, 1, 2, 3, 4, 5]);
+        const swift = mkUnit('swift-unit', { abilities: ['swift'], faction: 'trickster' });
+        putUnit(core, { row: 3, col: 0 }, swift, '0');
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 3 })).toBe(true);
+        putUnit(core, { row: 3, col: 1 }, mkUnit('swift-blocker'), '1');
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 3 })).toBe(false);
+
+        clearRect(core, [3, 4, 5], [0, 1, 2, 3, 4, 5]);
+        const slow = mkUnit('slow-unit', { abilities: ['slow'], faction: 'frost' });
+        putUnit(core, { row: 3, col: 0 }, slow, '0');
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 1 })).toBe(true);
+        expect(canMoveToEnhanced(core, { row: 3, col: 0 }, { row: 3, col: 2 })).toBe(false);
+    });
 });
 
 // ============================================================================
@@ -656,6 +749,10 @@ describe('完整流程验证 (Section 9)', () => {
     function exec(cmd: string, payload: Record<string, unknown>, overrideRandom?: RandomFn) {
         const state = { core, sys: { flowHalted: false } } as MatchState<SummonerWarsCore>;
         return executeCommand(state, { type: cmd, payload, timestamp: 0 }, overrideRandom ?? random);
+    }
+
+    function applyEvents(events: ReturnType<typeof exec>) {
+        return events.reduce((nextCore, event) => reduceEvent(nextCore, event), core);
     }
 
     /** random 产生 melee 面（index=0），确保近战攻击命中 */
@@ -684,6 +781,27 @@ describe('完整流程验证 (Section 9)', () => {
         );
         expect(trampleDmg).toBeDefined();
         expect((trampleDmg!.payload as Record<string, unknown>).damage).toBe(1);
+    });
+
+    it('[onMove/trample/L4] 真实移动只伤害路径中间被穿越单位', () => {
+        core.phase = 'move';
+        core.currentPlayer = '0' as PlayerId;
+        const trampler = mkUnit('bear-rider-l4', { abilities: ['trample'], faction: 'frost' });
+        putUnit(core, { row: 4, col: 1 }, trampler, '0');
+        const passedEnemy = mkUnit('passed-enemy', { life: 3, faction: 'necromancer' });
+        putUnit(core, { row: 4, col: 2 }, passedEnemy, '1');
+        const destinationEnemy = mkUnit('destination-enemy', { life: 3, faction: 'necromancer' });
+        putUnit(core, { row: 4, col: 4 }, destinationEnemy, '1');
+
+        const events = exec(SW_COMMANDS.MOVE_UNIT, { from: { row: 4, col: 1 }, to: { row: 4, col: 3 } });
+        const trampleDamageEvents = events.filter(e =>
+            e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as Record<string, unknown>).reason === 'trample'
+        );
+
+        expect(events.find(e => e.type === SW_EVENTS.UNIT_MOVED)).toBeDefined();
+        expect(trampleDamageEvents).toHaveLength(1);
+        expect((trampleDamageEvents[0].payload as Record<string, unknown>).position).toEqual({ row: 4, col: 2 });
     });
 
     // ================================================================
@@ -844,6 +962,30 @@ describe('完整流程验证 (Section 9)', () => {
         expect((entangleDmg!.payload as Record<string, unknown>).damage).toBe(1);
     });
 
+    it('[onAdjacentEnemyLeave/rebound/L4] 敌方靠近或仍相邻时不触发缠斗伤害', () => {
+        core.phase = 'move';
+        core.currentPlayer = '1' as PlayerId;
+        const entangler = mkUnit('trickster-rebound-l4', { abilities: ['rebound'], faction: 'trickster' });
+        putUnit(core, { row: 4, col: 3 }, entangler, '0');
+        const enemy = mkUnit('enemy-mover-l4', { life: 3, faction: 'necromancer' });
+        putUnit(core, { row: 4, col: 4 }, enemy, '1');
+
+        const stillAdjacentEvents = exec(SW_COMMANDS.MOVE_UNIT, { from: { row: 4, col: 4 }, to: { row: 5, col: 3 } });
+        expect(stillAdjacentEvents.some(e =>
+            e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as Record<string, unknown>).reason === 'entangle'
+        )).toBe(false);
+
+        core.board[5][3].unit = undefined;
+        core.board[4][5].unit = undefined;
+        putUnit(core, { row: 4, col: 5 }, enemy, '1');
+        const approachingEvents = exec(SW_COMMANDS.MOVE_UNIT, { from: { row: 4, col: 5 }, to: { row: 4, col: 4 } });
+        expect(approachingEvents.some(e =>
+            e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as Record<string, unknown>).reason === 'entangle'
+        )).toBe(false);
+    });
+
     // ================================================================
     // 8. onDamageCalculation — rage 暴怒（伤害值加战力）
     // ================================================================
@@ -924,6 +1066,47 @@ describe('完整流程验证 (Section 9)', () => {
         expect((dmgEvent!.payload as Record<string, unknown>).skipMagicReward).toBe(true);
     });
 
+    it('[soulless/L4] 真实击杀后无魂不获得魔力，普通单位同场景获得魔力', () => {
+        core.phase = 'attack';
+        core.currentPlayer = '0' as PlayerId;
+        core.players['0'].magic = 0;
+        const soullessUnit = mkUnit('plague-zombie-l4', { abilities: ['soulless'], strength: 5, faction: 'necromancer' });
+        putUnit(core, { row: 4, col: 3 }, soullessUnit, '0');
+        putUnit(core, { row: 4, col: 4 }, mkUnit('soulless-victim-l4', { life: 1, faction: 'frost' }), '1');
+
+        const soullessEvents = exec(SW_COMMANDS.DECLARE_ATTACK, {
+            attacker: { row: 4, col: 3 },
+            target: { row: 4, col: 4 },
+        }, meleeRandom());
+        const afterSoullessKill = applyEvents(soullessEvents);
+
+        expect(soullessEvents.some(e =>
+            e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as Record<string, unknown>).skipMagicReward === true
+        )).toBe(true);
+        expect(afterSoullessKill.players['0'].magic).toBe(0);
+
+        core = createInitializedCore(['0', '1'], random, { faction0: 'frost', faction1: 'necromancer' });
+        clearRect(core, [3, 4, 5], [0, 1, 2, 3, 4, 5]);
+        core.phase = 'attack';
+        core.currentPlayer = '0' as PlayerId;
+        core.players['0'].magic = 0;
+        putUnit(core, { row: 4, col: 3 }, mkUnit('ordinary-killer-l4', { strength: 5, faction: 'frost' }), '0');
+        putUnit(core, { row: 4, col: 4 }, mkUnit('ordinary-victim-l4', { life: 1, faction: 'necromancer' }), '1');
+
+        const ordinaryEvents = exec(SW_COMMANDS.DECLARE_ATTACK, {
+            attacker: { row: 4, col: 3 },
+            target: { row: 4, col: 4 },
+        }, meleeRandom());
+        const afterOrdinaryKill = applyEvents(ordinaryEvents);
+
+        expect(ordinaryEvents.some(e =>
+            e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as Record<string, unknown>).skipMagicReward !== true
+        )).toBe(true);
+        expect(afterOrdinaryKill.players['0'].magic).toBe(1);
+    });
+
     // ================================================================
     // 11. onUnitDestroyed — blood_rage 血腥狂怒充能
     // ================================================================
@@ -951,6 +1134,33 @@ describe('完整流程验证 (Section 9)', () => {
             && (e.payload as Record<string, unknown>).sourceAbilityId === 'blood_rage'
         );
         expect(chargeEvent).toBeDefined();
+    });
+
+    it('[onUnitDestroyed/blood_rage] 对手回合单位被消灭时不会给非当前玩家血腥狂怒单位充能', () => {
+        core.phase = 'attack';
+        core.currentPlayer = '1' as PlayerId;
+        // 官方 Blood Fury 限定“on your turn”，玩家0的亡灵战士不应在玩家1回合获得充能。
+        const bloodRager = mkUnit('undead-warrior', { abilities: ['blood_rage', 'power_boost'], faction: 'necromancer' });
+        putUnit(core, { row: 3, col: 3 }, bloodRager, '0');
+        const attacker = mkUnit('attacker', { strength: 5, faction: 'frost' });
+        putUnit(core, { row: 4, col: 3 }, attacker, '1');
+        const weakEnemy = mkUnit('weak-target', { life: 1, faction: 'necromancer' });
+        putUnit(core, { row: 4, col: 4 }, weakEnemy, '0');
+
+        const events = exec(SW_COMMANDS.DECLARE_ATTACK, {
+            attacker: { row: 4, col: 3 },
+            target: { row: 4, col: 4 },
+        }, meleeRandom());
+
+        expect(events.find(e => e.type === SW_EVENTS.UNIT_DESTROYED)).toBeDefined();
+        const chargeEvent = events.find(e =>
+            e.type === SW_EVENTS.UNIT_CHARGED
+            && (e.payload as Record<string, unknown>).sourceAbilityId === 'blood_rage'
+            && (e.payload as Record<string, unknown>).position
+            && ((e.payload as Record<string, unknown>).position as CellCoord).row === 3
+            && ((e.payload as Record<string, unknown>).position as CellCoord).col === 3
+        );
+        expect(chargeEvent).toBeUndefined();
     });
 
     // ================================================================
@@ -1154,6 +1364,36 @@ describe('边界/异常场景验证 (Section 10)', () => {
 
         const effectiveLife = getEffectiveStructureLife(core, core.board[4][3].structure!);
         expect(effectiveLife).toBe(5); // 无加成
+    });
+
+    it('[cold_snap/L4] 建筑进出场与归属变化按当前状态动态重算', () => {
+        const oleg = mkUnit('oleg-dynamic', { abilities: ['cold_snap'], faction: 'frost' });
+        putUnit(core, { row: 0, col: 0 }, oleg, '0');
+
+        const firstGate = mkStructure('dynamic-gate-a', { life: 5 });
+        putStructure(core, { row: 4, col: 3 }, '0', firstGate);
+        expect(getEffectiveStructureLife(core, core.board[4][3].structure!)).toBe(6);
+
+        const secondGate = mkStructure('dynamic-gate-b', { life: 4 });
+        putStructure(core, { row: 4, col: 4 }, '0', secondGate);
+        expect(getEffectiveStructureLife(core, core.board[4][4].structure!)).toBe(5);
+
+        core.board[4][3].structure = undefined;
+        expect(core.board[4][3].structure).toBeUndefined();
+        expect(getEffectiveStructureLife(core, core.board[4][4].structure!)).toBe(5);
+
+        core.board[4][4].structure = {
+            ...core.board[4][4].structure!,
+            owner: '1' as PlayerId,
+        };
+        expect(getEffectiveStructureLife(core, core.board[4][4].structure!)).toBe(4);
+
+        core.board[0][0].unit = undefined;
+        core.board[4][4].structure = {
+            ...core.board[4][4].structure!,
+            owner: '0' as PlayerId,
+        };
+        expect(getEffectiveStructureLife(core, core.board[4][4].structure!)).toBe(4);
     });
 
     // ================================================================
@@ -1399,6 +1639,36 @@ describe('边界/异常场景验证 (Section 10)', () => {
         expect(sacrificeDmgs).toHaveLength(1);
     });
 
+    it('[sacrifice/边界] 只伤害死亡前相邻敌方，不伤害友方或非相邻敌方', () => {
+        core.phase = 'attack';
+        core.currentPlayer = '1' as PlayerId;
+        const sacrificer = mkUnit('cultist-locked-adjacent', { abilities: ['sacrifice'], life: 1, faction: 'necromancer' });
+        putUnit(core, { row: 4, col: 3 }, sacrificer, '0');
+        const adjacentEnemy = mkUnit('adjacent-enemy', { life: 5, faction: 'frost' });
+        putUnit(core, { row: 3, col: 3 }, adjacentEnemy, '1');
+        const adjacentAlly = mkUnit('adjacent-ally', { life: 5, faction: 'necromancer' });
+        putUnit(core, { row: 5, col: 3 }, adjacentAlly, '0');
+        const farEnemy = mkUnit('far-enemy', { life: 5, faction: 'frost' });
+        putUnit(core, { row: 2, col: 3 }, farEnemy, '1');
+        const killer = mkUnit('killer-sacrifice-boundary', { strength: 5, faction: 'frost' });
+        putUnit(core, { row: 4, col: 2 }, killer, '1');
+
+        const events = exec(SW_COMMANDS.DECLARE_ATTACK, {
+            attacker: { row: 4, col: 2 },
+            target: { row: 4, col: 3 },
+        }, meleeRandom());
+
+        const sacrificeDmgs = events.filter(e =>
+            e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as Record<string, unknown>).sourceAbilityId === 'sacrifice'
+        );
+        const damagedPositions = sacrificeDmgs.map(e => (e.payload as Record<string, unknown>).position);
+        expect(damagedPositions).toContainEqual({ row: 3, col: 3 });
+        expect(damagedPositions).toContainEqual({ row: 4, col: 2 });
+        expect(damagedPositions).not.toContainEqual({ row: 5, col: 3 });
+        expect(damagedPositions).not.toContainEqual({ row: 2, col: 3 });
+    });
+
     // ================================================================
     // 10. onKill/soulless — 攻击未击杀时无 skipMagicReward
     // ================================================================
@@ -1509,6 +1779,37 @@ describe('边界/异常场景验证 (Section 10)', () => {
             && (e.payload as Record<string, unknown>).sourceAbilityId === 'gather_power'
         );
         expect(chargeEvent).toBeUndefined();
+    });
+
+    it('[gather_power/living_gate/L4] 活体传送门召唤祖灵法师后只给被召唤单位充能', () => {
+        core.phase = 'summon';
+        core.currentPlayer = '0' as PlayerId;
+        const livingGate = mkUnit('frost-golem-gate', { abilities: ['living_gate'], faction: 'frost' });
+        putUnit(core, { row: 4, col: 3 }, livingGate, '0');
+        const enemyLivingGate = mkUnit('enemy-frost-golem-gate', { abilities: ['living_gate'], faction: 'frost' });
+        putUnit(core, { row: 2, col: 3 }, enemyLivingGate, '1');
+        const ancestralMage = mkUnit('ancestral-mage-gp', { abilities: ['gather_power'], cost: 0, faction: 'barbaric' });
+        core.players['0' as PlayerId].hand.push(ancestralMage);
+
+        const validSummonPositions = getValidSummonPositions(core, '0' as PlayerId);
+        expect(validSummonPositions).toContainEqual({ row: 4, col: 4 });
+        expect(validSummonPositions).not.toContainEqual({ row: 2, col: 4 });
+
+        const events = exec(SW_COMMANDS.SUMMON_UNIT, {
+            cardId: ancestralMage.id,
+            position: { row: 4, col: 4 },
+        });
+
+        expect(events.some(e =>
+            e.type === SW_EVENTS.UNIT_SUMMONED
+            && JSON.stringify((e.payload as Record<string, unknown>).position) === JSON.stringify({ row: 4, col: 4 })
+        )).toBe(true);
+        const gatherPowerCharges = events.filter(e =>
+            e.type === SW_EVENTS.UNIT_CHARGED
+            && (e.payload as Record<string, unknown>).sourceAbilityId === 'gather_power'
+        );
+        expect(gatherPowerCharges).toHaveLength(1);
+        expect((gatherPowerCharges[0].payload as Record<string, unknown>).position).toEqual({ row: 4, col: 4 });
     });
 
     // ================================================================
@@ -1650,5 +1951,64 @@ describe('边界/异常场景验证 (Section 10)', () => {
             && (e.payload as Record<string, unknown>).sourceAbilityId === 'blood_rage'
         );
         expect(brCharge.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('[sacrifice/L4] 重复致死伤害后处理只注入一次献祭连锁', () => {
+        core.phase = 'attack';
+        core.currentPlayer = '1' as PlayerId;
+
+        const sacrificer = mkUnit('cultist-replay', { abilities: ['sacrifice'], life: 1, faction: 'necromancer' });
+        const placedSacrificer = putUnit(core, { row: 4, col: 3 }, sacrificer, '0');
+        const weakBystander = mkUnit('weak-bystander-replay', { life: 1, faction: 'frost' });
+        const placedBystander = putUnit(core, { row: 4, col: 4 }, weakBystander, '1');
+        const bloodRager = mkUnit('warrior-replay', { abilities: ['blood_rage', 'power_boost'], faction: 'necromancer' });
+        putUnit(core, { row: 3, col: 3 }, bloodRager, '0');
+
+        const processed = postProcessDeathChecks([
+            {
+                type: SW_EVENTS.UNIT_DAMAGED,
+                payload: {
+                    position: { row: 4, col: 3 },
+                    damage: 1,
+                    sourcePlayerId: '1' as PlayerId,
+                },
+                timestamp: 0,
+            },
+            {
+                type: SW_EVENTS.UNIT_DAMAGED,
+                payload: {
+                    position: { row: 4, col: 3 },
+                    damage: 1,
+                    sourcePlayerId: '1' as PlayerId,
+                },
+                timestamp: 1,
+            },
+        ], core);
+
+        const cultistDestroyed = processed.filter(e =>
+            e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as Record<string, unknown>).instanceId === placedSacrificer.instanceId
+        );
+        expect(cultistDestroyed).toHaveLength(1);
+
+        const sacrificeDamageToBystander = processed.filter(e =>
+            e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as Record<string, unknown>).sourceAbilityId === 'sacrifice'
+            && ((e.payload as Record<string, unknown>).position as CellCoord).row === 4
+            && ((e.payload as Record<string, unknown>).position as CellCoord).col === 4
+        );
+        expect(sacrificeDamageToBystander).toHaveLength(1);
+
+        const bystanderDestroyed = processed.filter(e =>
+            e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as Record<string, unknown>).instanceId === placedBystander.instanceId
+        );
+        expect(bystanderDestroyed).toHaveLength(1);
+
+        const bloodRageCharges = processed.filter(e =>
+            e.type === SW_EVENTS.UNIT_CHARGED
+            && (e.payload as Record<string, unknown>).sourceAbilityId === 'blood_rage'
+        );
+        expect(bloodRageCharges).toHaveLength(1);
     });
 });

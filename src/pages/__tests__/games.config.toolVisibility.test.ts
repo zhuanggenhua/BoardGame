@@ -44,4 +44,13 @@ describe('games.config 工具入口可见性', () => {
 
         expect(toolIds).toEqual(['archview']);
     });
+
+    it('经典首页无热度数据时应复用 HomeV2 的固定精选顺序', () => {
+        const orderedIds = sortGamesForLobbyDirectory(
+            getGamesByCategory('All'),
+            'all',
+        ).map((game) => game.id);
+
+        expect(orderedIds.slice(0, 3)).toEqual(['dicethrone', 'cardia', 'smashup']);
+    });
 });

@@ -2,21 +2,21 @@ import { getCurrentFactionId } from './factionTurnAccessors';
 import { type QidahenMovementProfileId } from './movement';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import {
-    buildDriveTigerDispatchSelection,
-    buildGaoDiDispatchSelection,
+    buildDriveTigerDispatchSelectionFromRegionSemantics,
+    buildGaoDiDispatchSelectionFromRegionSemantics,
     buildKhanEdictDispatchSelection,
-    buildWangHuazhenInternalDispatchSelection,
-    buildWheelDispatchSelection,
-    getPreferredDispatchSelectedRegionIdForFaction,
+    buildWheelDispatchSelectionFromRegionSemantics,
+    getPreferredDispatchSourceRegionIdForSemantics,
+    getQidahenWheelDispatchSelectionRegionSemantics,
     getQidahenCurrentWheelDispatchSelectionForCore,
     getQidahenInternalDispatchSelectionForCore,
 } from './dispatchSelectionBuilders';
 import {
-    buildDiplomacySelection,
+    buildDiplomacySelectionFromRegionSemantics,
+    buildKhanEdictSelectionFromRegionSemantics,
+    buildMaShiTradeSelectionFromRegionSemantics,
     buildQidahenDiplomacyProgress,
-    buildKhanEdictSelection,
-    buildMaShiTradeSelection,
-    buildRecruitSelection,
+    buildRecruitSelectionFromRegionSemantics,
     getQidahenCurrentDiplomacySelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
@@ -28,6 +28,11 @@ import {
     resolveQidahenWheelDispatchInteractionChoice,
 } from './actionWindowDispatch';
 import { applyQidahenCharacterActionWindowEffectsWithFocus } from './characterActionWindow';
+import {
+    buildQidahenRegionFocusState,
+    getQidahenExplicitRegionSelectionSemantics,
+    keepQidahenDecisionRegionWithExplicitFocus,
+} from './regionFocusSemantics';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type { QidahenCore } from './types';
 import { getQidahenRuntimeRegionIdsForPrintedRegionId } from '../ui/mapGraph';
@@ -53,15 +58,6 @@ const doesQidahenSelectedRegionMatchTarget = (
     }
     return false;
 };
-
-const keepQidahenDecisionRegionWithExplicitFocus = (
-    nextState: QidahenCore,
-    decisionRegionId: string | null | undefined,
-    explicitRegionId: string,
-): Pick<QidahenCore, 'selectedRegionId' | 'explicitRegionId'> => ({
-    selectedRegionId: decisionRegionId ?? nextState.selectedRegionId,
-    explicitRegionId,
-});
 
 interface QidahenRegionSelectedDependencies {
     applyCharacterActionWindowEffectsWithFocus: (
@@ -108,14 +104,29 @@ export const reduceQidahenRegionSelected = (
     const actionWindowEffect = state.turnPhase === 'action-window'
         ? dependencies.applyCharacterActionWindowEffectsWithFocus(state)
         : { state, forcedSelectedRegionId: null };
-    const nextState = actionWindowEffect.state;
     const selectedRegionId = regionId;
     const explicitRegionId = regionId;
+    const nextState = {
+        ...actionWindowEffect.state,
+        explicitRegionId,
+        regionFocusState: buildQidahenRegionFocusState(
+            actionWindowEffect.state.regionFocusState.defaultFocusRegionId,
+            {
+                lockedSourceRegionId: actionWindowEffect.state.regionFocusState.lockedSourceRegionId,
+                currentTargetRegionId: explicitRegionId,
+                displayAnchorRegionId: explicitRegionId,
+            },
+        ),
+    };
+    const selectedRegionSemantics = getQidahenExplicitRegionSelectionSemantics(
+        { ...nextState, explicitRegionId },
+        selectedRegionId,
+    );
     const recruitSelection = getQidahenRecruitSelectionForCore(nextState);
     if (recruitSelection) {
-        const rebuiltRecruitSelection = buildRecruitSelection(
+        const rebuiltRecruitSelection = buildRecruitSelectionFromRegionSemantics(
             nextState,
-            selectedRegionId,
+            selectedRegionSemantics,
             getCurrentFactionId(nextState),
         );
         return dependencies.updateTurnLabel({
@@ -142,10 +153,18 @@ export const reduceQidahenRegionSelected = (
                 nextState.gaoDiDispatchSelection,
             );
         }
-        const rebuiltGaoDiDispatchSelection = buildGaoDiDispatchSelection(
+        if (nextState.gaoDiDispatchSelection.selectedCardId) {
+            return dependencies.updateTurnLabel({
+                ...nextState,
+                selectedRegionId: nextState.selectedRegionId,
+                explicitRegionId,
+                turnPhase: 'gao-di-dispatch-choice',
+                gaoDiDispatchSelection: nextState.gaoDiDispatchSelection,
+            });
+        }
+        const rebuiltGaoDiDispatchSelection = buildGaoDiDispatchSelectionFromRegionSemantics(
             nextState,
-            selectedRegionId,
-            nextState.gaoDiDispatchSelection.selectedCardId,
+            selectedRegionSemantics,
         );
         return dependencies.updateTurnLabel({
             ...nextState,
@@ -171,20 +190,19 @@ export const reduceQidahenRegionSelected = (
                 internalDispatchSelection,
             );
         }
-        const rebuiltInternalDispatchSelection = buildWangHuazhenInternalDispatchSelection(
-            nextState,
-            selectedRegionId,
-        );
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
-            turnPhase: rebuiltInternalDispatchSelection ? 'internal-dispatch-choice' : 'action-window',
+            turnPhase: 'internal-dispatch-choice',
         });
     }
     const maShiTradeSelection = getQidahenMaShiTradeSelectionForCore(nextState);
     if (maShiTradeSelection) {
-        const rebuiltMaShiTradeSelection = buildMaShiTradeSelection(nextState, selectedRegionId);
+        const rebuiltMaShiTradeSelection = buildMaShiTradeSelectionFromRegionSemantics(
+            nextState,
+            selectedRegionSemantics,
+        );
         return dependencies.updateTurnLabel({
             ...nextState,
             selectedRegionId: nextState.selectedRegionId,
@@ -195,10 +213,10 @@ export const reduceQidahenRegionSelected = (
     }
     const khanEdictSelection = getQidahenKhanEdictSelectionForCore(nextState);
     if (khanEdictSelection) {
-        const rebuiltKhanEdictSelection = buildKhanEdictSelection(
+        const rebuiltKhanEdictSelection = buildKhanEdictSelectionFromRegionSemantics(
             nextState,
             getCurrentFactionId(nextState),
-            selectedRegionId,
+            selectedRegionSemantics,
             khanEdictSelection.preferredSourceRegionId,
         );
         return dependencies.updateTurnLabel({
@@ -211,10 +229,10 @@ export const reduceQidahenRegionSelected = (
     }
     const diplomacySelection = diplomacySelectionCarry ?? getQidahenCurrentDiplomacySelectionForCore(nextState);
     if (diplomacySelection) {
-        const rebuiltDiplomacySelection = buildDiplomacySelection(
+        const rebuiltDiplomacySelection = buildDiplomacySelectionFromRegionSemantics(
             nextState,
             getCurrentFactionId(nextState),
-            selectedRegionId,
+            selectedRegionSemantics,
             diplomacySelection.source,
             diplomacySelection.sourceRegionId,
             diplomacySelection.preferredSourceRegionId,
@@ -235,7 +253,7 @@ export const reduceQidahenRegionSelected = (
                 : null);
         return dependencies.updateTurnLabel({
             ...nextState,
-            selectedRegionId: rebuiltDiplomacySelection?.targetRegionId ?? selectedRegionId,
+            selectedRegionId: nextState.selectedRegionId,
             explicitRegionId,
             turnPhase: rebuiltDiplomacySelection ? 'diplomacy-choice' : 'action-window',
             diplomacyProgress: rebuiltDiplomacySelection ? rebuiltDiplomacyProgress : null,
@@ -334,29 +352,42 @@ export const reduceQidahenRegionSelected = (
         ? buildKhanEdictDispatchSelection(
             nextState,
             attackerFactionId,
-            selectedRegionId,
-            wheelDispatchSelection.preferredSourceRegionId,
-        )
-        : selectionSourceActionId === 'drive-tiger'
-            ? buildDriveTigerDispatchSelection(
+            getQidahenWheelDispatchSelectionRegionSemantics(
                 nextState,
-                getCurrentFactionId(nextState),
                 selectedRegionId,
                 wheelDispatchSelection.preferredSourceRegionId,
-            )
-            : buildWheelDispatchSelection(
+            ),
+        )
+        : selectionSourceActionId === 'drive-tiger'
+            ? buildDriveTigerDispatchSelectionFromRegionSemantics(
                 nextState,
-                attackerFactionId,
-                movementProfileId,
-                getPreferredDispatchSelectedRegionIdForFaction(
+                getCurrentFactionId(nextState),
+                selectedRegionSemantics,
+                wheelDispatchSelection.preferredSourceRegionId,
+            )
+            : (() => {
+                const dispatchRegionSemantics = getQidahenWheelDispatchSelectionRegionSemantics(
+                    nextState,
+                    selectedRegionId,
+                    wheelDispatchSelection.preferredSourceRegionId,
+                );
+                const preferredSourceRegionId = getPreferredDispatchSourceRegionIdForSemantics(
                     nextState,
                     attackerFactionId,
                     movementProfileId,
-                    selectedRegionId,
-                ),
-                wheelDispatchSelection.preferredSourceRegionId,
-                selectionSourceActionId,
-            );
+                    dispatchRegionSemantics,
+                );
+                return buildWheelDispatchSelectionFromRegionSemantics(
+                    nextState,
+                    attackerFactionId,
+                    movementProfileId,
+                    {
+                        ...dispatchRegionSemantics,
+                        preferredSourceRegionId,
+                    },
+                    selectionSourceActionId,
+                );
+            })();
     if (rebuiltSelection) {
         const shouldKeepRebuiltWheelDispatchSelectionOffHost = nextState.wheelDispatchProgress == null
             && (

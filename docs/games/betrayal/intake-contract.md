@@ -78,11 +78,11 @@
 - 依据来自项目现有 `create-new-game` skill 6.6、`ManifestGameThumbnail` 测试和 `AssetLoader` 的本地化资源解析合同。
 - 当前本地素材包里已确认 `Item` 正面 atlas 与 `Omen` 正面 atlas；此前把一张无关拼页误登记成 `Omen` 正面 atlas，这个判断已撤销，并已被 `candidate-06` 真图替换：
   - `public/assets/i18n/zh-CN/betrayal/cards/item-front-atlas.jpg` 来自原始大图 `httpssteamusercontentaakamaihdnetugc1925869443038951545DB35BA7304F2999D84979FFC9FDC379603C70853.jpg`；
-  - 当前已确认 `rope / 绳索` 使用该 atlas 第 `21` 格，运行时持有区必须显示该正面裁片；
+  - 当前已确认 `rope / 兔脚` 使用该 atlas 第 `21` 格，运行时持有区必须显示该正面裁片；`rope` 是当前保留的 legacy id；
   - 旧的 `public/assets/i18n/zh-CN/betrayal/cards/omen-front-atlas.png` 已核图确认不是预兆牌正面拼页，不能继续使用；
   - 现已确认真正的预兆正面 atlas 为 `public/assets/i18n/zh-CN/betrayal/cards/omen-front-atlas.jpg`，来源是 `temp/betrayal-omen-source-audit/copies/candidate-06.jpg`；
   - 该 atlas 当前可明确识别为 `2x5` 排列，其中 `9` 格是预兆正面，右下最后 `1` 格是预兆牌背；
-  - 该 atlas 现已可按格位明确读出 `9` 张真实预兆：`omen-book / 预兆书`、`dog / 狗`、`mask / 面具`、`skull / 头骨`、`holy-symbol / 圣符`、`dagger / 匕首`、`ring / 指环`、`armor / 盔甲`、`idol / 雕像`；
+  - 该 atlas 现已可按格位明确读出 `9` 张真实预兆：`omen-book / 书本`、`dog / 狗`、`mask / 面具`、`skull / 头骨`、`holy-symbol / 圣符`、`dagger / 匕首`、`ring / 指环`、`armor / 盔甲`、`idol / 雕像`；`omen-book` 是当前保留的 legacy id；
   - 当前运行时默认预兆对象族必须收敛到这 `9` 张，禁止继续保留 `watch / amulet / pendant / coin / bell / feathers / mirror-shard` 这类不属于真 atlas 的伪对象名。
   - `contact-03-675-1275.jpg` 这组只包含牌背、玩家/叛徒/怪物参考卡；
   - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
@@ -120,7 +120,7 @@
 - 牌背：已确认 5 张
 - 玩家/叛徒/怪物参考卡：已确认 6 张
 - 标记：已确认 28 张
-- 物品正面 atlas：已确认 1 张；`rope / 绳索` 已确认第 `21` 格
+- 物品正面 atlas：已确认 1 张；`rope / 兔脚` 已确认第 `21` 格
 
 ## 8. 待确认对象
 

@@ -10,7 +10,7 @@ import type {
     HeroState,
 } from './types';
 import type { RandomFn } from '../../../engine/types';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getTokenStackLimit, getRollerId } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getTokenStackLimit } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
@@ -59,7 +59,14 @@ const handleDiceRolled: EventHandler<Extract<DiceThroneEvent, { type: 'DICE_ROLL
         }
         return die;
     });
-    return { ...state, dice: newDice, rollCount: state.rollCount + 1, rollConfirmed: false };
+    const pendingAttack = state.pendingAttack?.defenseAbilityId === 'duel'
+        && state.pendingAttack.attackerId
+        ? {
+            ...state.pendingAttack,
+            duelAttackerDieValue: state.pendingAttack.duelAttackerDieValue ?? results[resultIndex] ?? results[results.length - 1] ?? undefined,
+        }
+        : state.pendingAttack;
+    return { ...state, dice: newDice, pendingAttack, rollCount: state.rollCount + 1, rollConfirmed: false };
 };
 
 /**
@@ -836,7 +843,18 @@ const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_RERO
     state,
     event
 ) => {
-    const { dieId, newValue } = event.payload;
+    const { dieId, newValue, ownerId } = event.payload;
+    if (state.pendingAttack?.defenseAbilityId === 'duel'
+        && ownerId === state.pendingAttack.attackerId
+        && dieId === 1) {
+        return {
+            ...state,
+            pendingAttack: {
+                ...state.pendingAttack,
+                duelAttackerDieValue: newValue,
+            },
+        };
+    }
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;

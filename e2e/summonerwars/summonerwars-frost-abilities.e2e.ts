@@ -2,12 +2,17 @@
  * 召唤师战争 - 极地矮人阵营特色交互 E2E 测试
  * 
  * 覆盖范围：
+ * - 威势（imposing）：攻击敌方单位后给自己充能一次
  * - 寒冰碎屑（ice_shards）：建造阶段结束消耗充能对建筑相邻敌方造成伤害
  * - 冰霜战斧（frost_axe）：移动后充能自身
  * - 结构变换（structure_shift）：移动后推拉友方建筑
  */
 
+import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
+import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { CHAMPION_UNITS_FROST, SUMMONER_FROST } from '../../src/games/summonerwars/config/factions/frost';
+import { COMMON_UNITS as COMMON_UNITS_NECROMANCER, SUMMONER_NECROMANCER } from '../../src/games/summonerwars/config/factions/necromancer';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
@@ -24,15 +29,130 @@ import {
   setupSWOnlineMatch,
   readCoreState,
   applyCoreState,
+  clickBoardElement,
   closeDebugPanelIfOpen,
   waitForPhase,
+  waitForSummonerWarsUI,
   advanceToPhase,
   cloneState,
 } from '../helpers/summonerwars';
 
+const cloneInjectedUnitCard = <T extends { abilities?: string[]; deckSymbols?: string[] }>(card: T): T => ({
+  ...card,
+  abilities: Array.isArray(card.abilities) ? [...card.abilities] : [],
+  deckSymbols: Array.isArray(card.deckSymbols) ? [...card.deckSymbols] : [],
+});
+
+const jarmundCard = CHAMPION_UNITS_FROST.find((card) => card.id === 'frost-jarmund');
+const necroWarriorCard = COMMON_UNITS_NECROMANCER.find((card) => card.id === 'necro-undead-warrior');
+if (!jarmundCard) {
+  throw new Error('未找到极地矮人贾穆德配置（frost-jarmund）');
+}
+if (!necroWarriorCard) {
+  throw new Error('未找到亡灵战士配置（necro-undead-warrior）');
+}
+
 // ============================================================================
 // 测试状态准备函数
 // ============================================================================
+
+const dismissDiceResultOverlay = async (page: Page) => {
+  const overlay = page.getByTestId('sw-dice-result-overlay');
+  const visible = await overlay.isVisible().catch(() => false);
+  if (!visible) return;
+  await overlay.click({ force: true }).catch(() => {});
+  await expect(overlay).toBeHidden({ timeout: 8000 });
+};
+
+const setHarnessDiceValues = async (page: Page, values: number[]) => {
+  await page.evaluate((diceValues) => {
+    const harness = (window as Window & {
+      __BG_TEST_HARNESS__?: { dice?: { setValues?: (items: number[]) => void } };
+    }).__BG_TEST_HARNESS__;
+    if (typeof harness?.dice?.setValues !== 'function') {
+      throw new Error('__BG_TEST_HARNESS__.dice.setValues not found');
+    }
+    harness.dice.setValues(diceValues);
+  }, values);
+};
+
+const prepareImposingState = (coreState: any) => {
+  const next = cloneState(coreState);
+  next.currentPlayer = '0';
+  next.phase = 'attack';
+  next.selectedUnit = undefined;
+  next.attackTargetMode = undefined;
+  next.abilityUsage = {};
+  next.abilityUsageCount = {};
+  const player = next.players?.['0'];
+  if (!player) throw new Error('无法读取玩家0状态');
+  player.magic = 3;
+  player.attackCount = 0;
+  player.hasAttackedEnemy = false;
+
+  const board = next.board;
+  for (let row = 0; row < 8; row += 1) {
+    for (let col = 0; col < 6; col += 1) {
+      board[row][col].unit = null;
+      board[row][col].structure = null;
+    }
+  }
+
+  const jarmundPos = { row: 5, col: 2 };
+  const enemyPos = { row: 5, col: 5 };
+  const mySummonerPos = { row: 7, col: 2 };
+  const enemySummonerPos = { row: 0, col: 2 };
+
+  board[mySummonerPos.row][mySummonerPos.col].unit = {
+    instanceId: 'imposing-my-summoner',
+    cardId: 'imposing-my-summoner-card',
+    card: cloneInjectedUnitCard(SUMMONER_FROST),
+    owner: '0',
+    position: mySummonerPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  board[enemySummonerPos.row][enemySummonerPos.col].unit = {
+    instanceId: 'imposing-enemy-summoner',
+    cardId: 'imposing-enemy-summoner-card',
+    card: cloneInjectedUnitCard(SUMMONER_NECROMANCER),
+    owner: '1',
+    position: enemySummonerPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  board[jarmundPos.row][jarmundPos.col].unit = {
+    instanceId: 'imposing-jarmund',
+    cardId: jarmundCard.id,
+    card: cloneInjectedUnitCard(jarmundCard),
+    owner: '0',
+    position: jarmundPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  board[enemyPos.row][enemyPos.col].unit = {
+    instanceId: 'imposing-enemy-warrior',
+    cardId: necroWarriorCard.id,
+    card: { ...cloneInjectedUnitCard(necroWarriorCard), life: 8 },
+    owner: '1',
+    position: enemyPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  return { state: next, jarmundPos, enemyPos };
+};
 
 /**
  * 准备寒冰碎屑（ice_shards）测试状态
@@ -139,6 +259,90 @@ const prepareIceShardsState = (coreState: any) => {
 // ============================================================================
 
 test.describe('极地矮人阵营特色交互', () => {
+
+  test('贾穆德威势：攻击敌方单位后真实 UI 只显示一次充能', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const match = await setupSWOnlineMatch(browser, baseURL, 'frost', 'necromancer');
+    if (!match) { test.skip(true, 'Game server unavailable or room creation failed.'); return; }
+    const { hostPage, hostContext, guestContext } = match;
+    try {
+      const coreState = await readCoreState(hostPage);
+      const { state: imposingCore, jarmundPos, enemyPos } = prepareImposingState(coreState);
+      await applyCoreState(hostPage, imposingCore);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+      await hostPage.waitForTimeout(600);
+
+      const jarmund = hostPage.locator(`[data-testid="sw-unit-${jarmundPos.row}-${jarmundPos.col}"][data-owner="0"]`).first();
+      await expect(jarmund).toBeVisible({ timeout: 5000 });
+      await expect(jarmund.locator('.bg-blue-400')).toHaveCount(0);
+
+      await jarmund.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'imposing-before-attack-no-charge', {
+          filename: 'imposing-before-attack-no-charge.png',
+        }),
+      });
+
+      await setHarnessDiceValues(hostPage, [1, 1, 1]);
+      await clickBoardElement(hostPage, `[data-testid="sw-unit-${jarmundPos.row}-${jarmundPos.col}"][data-owner="0"][data-unit-name="${jarmundCard.name}"]`);
+      await clickBoardElement(hostPage, `[data-testid="sw-unit-${enemyPos.row}-${enemyPos.col}"][data-owner="1"][data-unit-name="${necroWarriorCard.name}"]`);
+      await dismissDiceResultOverlay(hostPage);
+
+      const expectedImposingEvidence = {
+        boosts: 1,
+        attackCount: 1,
+        hasAttacked: true,
+      };
+
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage);
+        const unit = state?.board?.[jarmundPos.row]?.[jarmundPos.col]?.unit;
+        return {
+          boosts: unit?.boosts ?? null,
+          attackCount: state?.players?.['0']?.attackCount ?? null,
+          hasAttacked: unit?.hasAttacked ?? null,
+        };
+      }, { timeout: 12000 }).toEqual(expectedImposingEvidence);
+
+      await expect(jarmund.locator('.bg-blue-400')).toHaveCount(1);
+      await hostPage.waitForTimeout(1200);
+      await expect(jarmund.locator('.bg-blue-400')).toHaveCount(1);
+
+      await closeDebugPanelIfOpen(hostPage);
+      await jarmund.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'imposing-after-attack-one-charge', {
+          filename: 'imposing-after-attack-one-charge.png',
+        }),
+      });
+
+      await hostPage.reload({ waitUntil: 'domcontentloaded' });
+      await waitForSummonerWarsUI(hostPage, 30000);
+      await closeDebugPanelIfOpen(hostPage);
+
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage);
+        const unit = state?.board?.[jarmundPos.row]?.[jarmundPos.col]?.unit;
+        return {
+          boosts: unit?.boosts ?? null,
+          attackCount: state?.players?.['0']?.attackCount ?? null,
+          hasAttacked: unit?.hasAttacked ?? null,
+        };
+      }, { timeout: 12000 }).toEqual(expectedImposingEvidence);
+
+      const reloadedJarmund = hostPage.locator(`[data-testid="sw-unit-${jarmundPos.row}-${jarmundPos.col}"][data-owner="0"]`).first();
+      await expect(reloadedJarmund).toBeVisible({ timeout: 5000 });
+      await expect(reloadedJarmund.locator('.bg-blue-400')).toHaveCount(1);
+      await reloadedJarmund.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'imposing-after-reload-still-one-charge', {
+          filename: 'imposing-after-reload-still-one-charge.png',
+        }),
+      });
+    } finally {
+      void hostContext.close().catch(() => {});
+      void guestContext.close().catch(() => {});
+    }
+  });
 
   test('寒冰碎屑：建造阶段结束消耗充能对建筑相邻敌方造成伤害', async ({ browser }, testInfo) => {
     test.setTimeout(180000);

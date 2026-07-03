@@ -118,7 +118,7 @@ abilityExecutorRegistry.register('frost_axe', (ctx: SWAbilityContext) => {
 
     events.push({
       type: SW_EVENTS.UNIT_CHARGED,
-      payload: { position: sourcePosition, newValue: 0, delta: -charges, sourceAbilityId: 'frost_axe' },
+      payload: { position: sourcePosition, delta: -1, sourceAbilityId: 'frost_axe' },
       timestamp,
     });
     events.push({
@@ -150,6 +150,7 @@ abilityExecutorRegistry.register('ice_ram', (ctx: SWAbilityContext) => {
   if (manhattanDistance(targetPos, structurePos) !== 1) return { events };
   const targetUnit = getUnitAt(core, targetPos);
   if (!targetUnit) return { events };
+  if (targetUnit.card.unitClass !== 'common' && targetUnit.card.unitClass !== 'champion') return { events };
 
   // 造成1伤害
   events.push({

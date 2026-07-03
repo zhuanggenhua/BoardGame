@@ -301,7 +301,6 @@ export const Home = () => {
             getGamesByCategory(activeCategory),
             category,
             gamePopularityRanking.popularityByGameId,
-            [],
         );
     }, [activeCategory, gamePopularityRanking.popularityByGameId, registryVersion]);
     useEffect(() => {

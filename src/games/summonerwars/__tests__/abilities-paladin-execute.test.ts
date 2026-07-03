@@ -2,7 +2,7 @@
  * 召唤师战争 - 先锋军团 execute 流程补充测试
  *
  * 覆盖 abilities-paladin.test.ts 中缺失的：
- * - holy_arrow（圣光箭）：弃除手牌获得魔力+战力
+ * - holy_arrow（圣光箭）：弃除手牌获得魔力和本次攻击战力
  * - guidance 牌组为空边界
  */
 
@@ -69,6 +69,15 @@ function makeJacob(id: string): UnitCard {
   };
 }
 
+function makeFortressArcher(id: string): UnitCard {
+  return {
+    id, cardType: 'unit', name: '城塞弓箭手', unitClass: 'common',
+    faction: 'paladin', strength: 2, life: 2, cost: 1,
+    attackType: 'ranged', attackRange: 3,
+    abilities: ['holy_arrow'], deckSymbols: [],
+  };
+}
+
 function makeValentina(id: string): UnitCard {
   return {
     id, cardType: 'unit', name: '瓦伦蒂娜', unitClass: 'summoner',
@@ -114,7 +123,7 @@ function executeAndReduce(
 // ============================================================================
 
 describe('雅各布 - 圣光箭 (holy_arrow) execute 流程', () => {
-  it('弃除2张手牌获得2魔力+2战力', () => {
+  it('弃除2张手牌获得2魔力，且不留下永久充能', () => {
     const state = createPaladinState();
     clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
 
@@ -147,16 +156,15 @@ describe('雅各布 - 圣光箭 (holy_arrow) execute 流程', () => {
     const discardEvents = events.filter(e => e.type === SW_EVENTS.CARD_DISCARDED);
     expect(discardEvents.length).toBe(2);
 
-    // 应有充能事件（战力加成）
+    // 圣光箭的战力加成只限本次攻击，不应写入永久充能
     const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
-    expect(chargeEvents.length).toBe(1);
-    expect((chargeEvents[0].payload as any).delta).toBe(2);
+    expect(chargeEvents.length).toBe(0);
 
     // 魔力增加2
     expect(newState.players['0'].magic).toBe(magicBefore + 2);
 
-    // 雅各布 boosts 增加2
-    expect(newState.board[4][2].unit?.boosts).toBe(2);
+    // 雅各布不会因为圣光箭获得永久 boosts
+    expect(newState.board[4][2].unit?.boosts).toBe(0);
   });
 
   it('DECLARE_ATTACK 携带 beforeAttack 时触发弃牌并提升战力', () => {
@@ -164,8 +172,8 @@ describe('雅各布 - 圣光箭 (holy_arrow) execute 流程', () => {
     clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
 
     placeUnit(state, { row: 4, col: 2 }, {
-      cardId: 'test-jacob',
-      card: makeJacob('test-jacob'),
+      cardId: 'test-archer',
+      card: makeFortressArcher('test-archer'),
       owner: '0',
     });
 
@@ -201,13 +209,12 @@ describe('雅各布 - 圣光箭 (holy_arrow) execute 流程', () => {
     expect(discardEvents.length).toBe(2);
 
     const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
-    expect(chargeEvents.length).toBe(1);
-    expect((chargeEvents[0].payload as any).delta).toBe(2);
+    expect(chargeEvents.length).toBe(0);
 
     const attackedEvent = events.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
     expect(attackedEvent).toBeDefined();
-    // base 2 + beforeAttack bonus 2 + 弃牌充能 2
-    expect((attackedEvent!.payload as any).diceCount).toBe(6);
+    // base 2 + 圣光箭本次攻击加成 2；不能额外写入 boosts 再双算一次
+    expect((attackedEvent!.payload as any).diceCount).toBe(4);
 
     const magicAfter = magicBefore + 2;
     const magicEvent = magicEvents[0];

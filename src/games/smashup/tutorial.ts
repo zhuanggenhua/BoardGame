@@ -368,6 +368,10 @@ const COWBOYS_DUEL_HAND_P0: CardInstance[] = [
     { uid: 'deputy-1', defId: 'cowboys_deputy', type: 'minion', owner: '0' },
 ];
 
+const COWBOYS_DUEL_DECK_P0: CardInstance[] = [
+    { uid: 'duel-draw-filler-1', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+];
+
 const COWBOYS_DUEL_BASES: BaseInPlay[] = [
     {
         defId: 'base_saloon',
@@ -408,7 +412,7 @@ export const SMASH_UP_COWBOYS_DUEL_TUTORIAL: TutorialManifest = {
                             players: {
                                 '0': {
                                     hand: COWBOYS_DUEL_HAND_P0,
-                                    deck: [],
+                                    deck: COWBOYS_DUEL_DECK_P0,
                                     discard: [],
                                     minionsPlayed: 0,
                                     minionLimit: 1,

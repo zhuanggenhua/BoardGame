@@ -24,6 +24,7 @@ import {
     assertState,
     advanceTo,
     getCompareRollChoicePrompt,
+    getCardById,
     type CommandInput,
 } from './test-utils';
 import { getAbilitySlotId } from '../ui/abilitySlotMapping';
@@ -400,7 +401,8 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    // 产品特例：duel 只能直接结束防御，不允许手动投掷防御骰
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
                     cmd('SYS_INTERACTION_RESPOND', '1', { optionId: 'option-1' }),
                 ],
@@ -418,7 +420,7 @@ describe('cross hero battles', () => {
             expect(result.finalState.core.pendingAttack).toBeNull();
         });
 
-        it('duel defensiveRoll rejects manual ROLL_DICE and requires direct phase advance', () => {
+        it('duel defensiveRoll requires roll confirmation and opens a dice response window before roll-off', () => {
             const random = createQueuedRandom([1, 1, 1, 1, 1, 6, 1]);
             const playerIds: PlayerId[] = ['0', '1'];
             const pipelineConfig = {
@@ -457,6 +459,23 @@ describe('cross hero battles', () => {
             expect(state.sys.phase).toBe('defensiveRoll');
             expect(state.core.pendingAttack?.defenseAbilityId).toBe('duel');
             expect(state.core.rollCount).toBe(0);
+            state.core.players['0'].hand = [getCardById('card-give-hand')];
+            state.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
+
+            const prematureAdvanceResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'ADVANCE_PHASE',
+                    playerId: '1',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(prematureAdvanceResult.success).toBe(false);
+            expect(prematureAdvanceResult.error).toBe('cannot_advance_phase');
 
             const manualRollResult = executePipeline(
                 pipelineConfig,
@@ -470,8 +489,30 @@ describe('cross hero battles', () => {
                 random,
                 playerIds,
             );
-            expect(manualRollResult.success).toBe(false);
-            expect(manualRollResult.error).toBe('defense_roll_disabled_for_duel');
+            expect(manualRollResult.success).toBe(true);
+            state = manualRollResult.state as MatchState<DiceThroneCore>;
+            expect(state.core.rollCount).toBe(1);
+            expect(state.core.rollConfirmed).toBe(false);
+
+            const confirmResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'CONFIRM_ROLL',
+                    playerId: '1',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(confirmResult.success).toBe(true);
+            state = confirmResult.state as MatchState<DiceThroneCore>;
+            expect(state.core.rollConfirmed).toBe(true);
+            expect(state.sys.responseWindow.current).toMatchObject({
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['0'],
+            });
         });
 
         it('duel loss deals 1 undefendable damage without choice', () => {
@@ -490,7 +531,8 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    // 产品特例：duel 只能直接结束防御，不允许手动投掷防御骰
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
                     cmd('SYS_INTERACTION_CONFIRM', '1'),
                 ],
@@ -588,7 +630,8 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    // 产品特例：duel 只能直接结束防御，不允许手动投掷防御骰
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
                     cmd('SYS_INTERACTION_CONFIRM', '1'),
                 ],

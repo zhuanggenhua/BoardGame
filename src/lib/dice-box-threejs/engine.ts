@@ -96,22 +96,6 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
     return typeof value === 'number' ? value : null;
 }
 
-function setVector3(
-    vector: { x?: number; y?: number; z?: number; set?: (x: number, y: number, z: number) => void } | undefined,
-    x: number,
-    y: number,
-    z: number,
-): void {
-    if (!vector) return;
-    if (typeof vector.set === 'function') {
-        vector.set(x, y, z);
-        return;
-    }
-    vector.x = x;
-    vector.y = y;
-    vector.z = z;
-}
-
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
@@ -192,10 +176,7 @@ export class DiceBoxThreeEngine {
 
     async rerollToValues(indices: number[], values: number[]): Promise<void> {
         if (indices.length === 0) return;
-        const rerollPromise = this.box.reroll(indices);
-        this.applyRerollLateralImpulse(indices);
-        globalThis.setTimeout?.(() => this.applyRerollLateralImpulse(indices), 32);
-        await rerollPromise;
+        await this.box.reroll(indices);
         this.applyValues(values, indices, true);
         this.applyCurrentSkins();
     }
@@ -323,25 +304,6 @@ export class DiceBoxThreeEngine {
         if (didChange) {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
-    }
-
-    private applyRerollLateralImpulse(indices: number[]): void {
-        const impulsePattern = [
-            { x: -920, y: 520, z: 2850, ax: 31, ay: 24, az: 19 },
-            { x: 960, y: -460, z: 2920, ax: -27, ay: 32, az: -21 },
-            { x: -680, y: -650, z: 2760, ax: 22, ay: -29, az: 26 },
-            { x: 720, y: 610, z: 2880, ax: -33, ay: -18, az: 23 },
-        ];
-
-        indices.forEach((index, patternIndex) => {
-            const die = this.box.diceList[index];
-            const body = die?.body;
-            if (!body) return;
-            const impulse = impulsePattern[patternIndex % impulsePattern.length];
-            setVector3(body.velocity, impulse.x, impulse.y, impulse.z);
-            setVector3(body.angularVelocity, impulse.ax, impulse.ay, impulse.az);
-            body.wakeUp?.();
-        });
     }
 
     private applyPrimarySkinToDicePreset(): void {

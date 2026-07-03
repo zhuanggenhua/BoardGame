@@ -418,6 +418,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         }));
 
         tutorialState.isActive = false;
+        tutorialState.currentStep = null;
         rerender();
 
         await act(async () => {

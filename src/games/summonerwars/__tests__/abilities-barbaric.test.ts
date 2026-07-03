@@ -358,6 +358,7 @@ describe('犀牛 - 速度强化 (speed_up)', () => {
     // 8格不行（超过7）
     // 棋盘只有6列(0-5)和8行(0-7)，测试7格移动
     expect(canMoveToEnhanced(state, { row: 4, col: 0 }, { row: 7, col: 4 })).toBe(true); // 7格
+    expect(canMoveToEnhanced(state, { row: 4, col: 0 }, { row: 7, col: 5 })).toBe(false); // 8格，不能把8充能当+8
   });
 });
 

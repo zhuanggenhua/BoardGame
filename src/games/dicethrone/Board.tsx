@@ -4,7 +4,7 @@ import type { GameBoardProps } from '../../engine/transport/protocol';
 import { HAND_LIMIT, type InteractionDescriptor, type PendingBonusDiceSettlement, type TokenResponsePhase } from './domain/types';
 import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
-import type { DiceThroneCore } from './domain';
+import type { DiceThroneCore, Die } from './domain';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
 import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getPendingBonusSettlementDice, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
 import { useTranslation } from 'react-i18next';
@@ -96,6 +96,7 @@ import { findMatchPlayerInfo } from '../../engine/transport/matchPlayers';
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 const boardBonusDieLogger = createScopedLogger('DT_BOARD_BONUS_DIE');
 const LOCKED_DIE_RETURN_ANIMATION_MS = 520;
+const DUEL_ATTACKER_DIE_ID = 1;
 
 type LockedDieReturnAnimation = {
     key: string;
@@ -107,6 +108,36 @@ type LockedDieReturnAnimation = {
     from: DOMRectReadOnly;
     to: DOMRectReadOnly;
     active: boolean;
+};
+
+const createDuelAttackerDisplayDie = (G: DiceThroneCore, currentPhase: string): Die | null => {
+    const pendingAttack = G.pendingAttack;
+    if (currentPhase !== 'defensiveRoll' || pendingAttack?.defenseAbilityId !== 'duel') return null;
+    const attackerId = pendingAttack.attackerId;
+    const attackerCharacterId = G.players[attackerId]?.characterId;
+    if (!attackerId || !attackerCharacterId || attackerCharacterId === 'unselected') return null;
+    const definitionId = `${attackerCharacterId}-dice`;
+    return {
+        id: DUEL_ATTACKER_DIE_ID,
+        definitionId,
+        value: pendingAttack.duelAttackerDieValue ?? 1,
+        symbol: null,
+        symbols: [],
+        isKept: false,
+        ownerId: attackerId,
+        displayOnly: true,
+    };
+};
+
+const createDuelDefenderDisplayDie = (G: DiceThroneCore, currentPhase: string): Die | null => {
+    const pendingAttack = G.pendingAttack;
+    if (currentPhase !== 'defensiveRoll' || pendingAttack?.defenseAbilityId !== 'duel') return null;
+    const defenderDie = G.dice[0];
+    if (!defenderDie || !pendingAttack.defenderId) return defenderDie ?? null;
+    return {
+        ...defenderDie,
+        ownerId: pendingAttack.defenderId,
+    };
 };
 
 /** 教程 targetId → 对应的命令类型映射（用于白名单放行） */
@@ -542,6 +573,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
 
         if (meta.dtType === 'selectDie') {
+            const originalData = sysInteraction.data as Record<string, unknown>;
             return {
                 ...sysInteraction,
                 data: {
@@ -550,6 +582,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     localReducer: (current: unknown, step: unknown) =>
                         diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep),
                     toCommands: diceSelectToCommands,
+                    allowedDieIds: originalData.allowedDieIds,
+                    completedDieIds: originalData.completedDieIds,
                 },
             };
         }
@@ -735,8 +769,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 进攻技能特写期间阻止所有操作
     const canAdvancePhase = isFocusPlayer && access.canAdvancePhase && !isAttackShowcaseVisible;
     const canResolveChoice = Boolean(choice.hasChoice && choice.playerId === rootPid);
-    // 产品特例：Duel 在防御阶段只能“结束防御”进入对掷，不允许手动掷防御骰。
-    const isDuelDirectDefenseOnly = currentPhase === 'defensiveRoll' && G.pendingAttack?.defenseAbilityId === 'duel';
+    const isDuelDirectDefenseOnly = false;
     const diceInteractionPlayerId = diceMultistepInteraction?.playerId != null
         ? String(diceMultistepInteraction.playerId)
         : undefined;
@@ -1109,8 +1142,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         useBoardDiceStage,
         hasKeptDice: G.dice.some((die) => die.isKept),
     });
-    const boardStageDice = React.useMemo(() => G.dice.filter((die) => !die.isKept), [G.dice]);
-    const railDice = React.useMemo(() => getRailDiceForCurrentBoard(G.dice, useBoardDiceStage), [G.dice, useBoardDiceStage]);
+    const duelAttackerDisplayDie = React.useMemo(() => createDuelAttackerDisplayDie(G, currentPhase), [G, currentPhase]);
+    const duelDefenderDisplayDie = React.useMemo(() => createDuelDefenderDisplayDie(G, currentPhase), [G, currentPhase]);
+    const rightSidebarDice = React.useMemo(() => {
+        const baseDice = getRailDiceForCurrentBoard(G.dice, useBoardDiceStage);
+        return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
+    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, useBoardDiceStage]);
+    const boardStageDice = React.useMemo(() => {
+        const baseDice = G.dice.filter((die) => !die.isKept);
+        return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
+    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
+    const railDice = rightSidebarDice;
     const queueLockedDieReturnAnimation = React.useCallback((dieId: number) => {
         const sourceNode = document.querySelector(
             `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`,
@@ -2092,7 +2134,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     })}
 
                     <RightSidebar
-                        dice={railDice}
+                        dice={rightSidebarDice}
                         rollCount={G.rollCount}
                         rollLimit={G.rollLimit}
                         rollConfirmed={rollConfirmed}

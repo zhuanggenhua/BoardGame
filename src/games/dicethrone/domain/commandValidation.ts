@@ -190,20 +190,27 @@ const validateDieInteraction = (
     pendingInteraction: InteractionDescriptor | undefined,
     playerId: PlayerId,
     dieId: number,
+    phase: TurnPhase,
     limitError: string,
 ): { interaction: ValidationInteractionDescriptor } | ValidationResult => {
     const ownershipError = validateInteractionOwnership(pendingInteraction, playerId);
     if (ownershipError) return ownershipError;
 
     const interaction = getValidationInteraction(pendingInteraction)!;
-    const die = state.dice.find(entry => entry.id === dieId);
-    if (!die) {
-        return fail('die_not_found');
-    }
-
     const allowedDieIds = interaction.allowedDieIds?.length
         ? interaction.allowedDieIds
         : getActiveDice(state).map(activeDie => activeDie.id);
+    const isDuelAttackerDie = state.pendingAttack?.defenseAbilityId === 'duel'
+        && phase === 'defensiveRoll'
+        && dieId === 1
+        && allowedDieIds.includes(1);
+    if (isDuelAttackerDie && interaction.diceOwnerId !== state.pendingAttack?.attackerId) {
+        return fail('invalid_die_selection');
+    }
+    const die = state.dice.find(entry => entry.id === dieId);
+    if (!die && !isDuelAttackerDie) {
+        return fail('die_not_found');
+    }
     if (!allowedDieIds.includes(dieId)) {
         return fail('invalid_die_selection');
     }
@@ -1031,9 +1038,10 @@ const validateModifyDie = (
     state: DiceThroneCore,
     cmd: ModifyDieCommand,
     playerId: PlayerId,
+    phase: TurnPhase,
     pendingInteraction?: InteractionDescriptor
 ): ValidationResult => {
-    const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, 'modify_die_limit_reached');
+    const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, phase, 'modify_die_limit_reached');
     if ('valid' in validation) return validation;
     // 检查新值是否在范围内
     if (cmd.payload.newValue < 1 || cmd.payload.newValue > 6) {
@@ -1049,9 +1057,10 @@ const validateRerollDie = (
     state: DiceThroneCore,
     cmd: RerollDieCommand,
     playerId: PlayerId,
+    phase: TurnPhase,
     pendingInteraction?: InteractionDescriptor
 ): ValidationResult => {
-    const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, 'reroll_die_limit_reached');
+    const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, phase, 'reroll_die_limit_reached');
     if ('valid' in validation) return validation;
     const remainingSlots = getRemainingDieInteractionSlots(pendingInteraction);
     if (remainingSlots !== undefined && remainingSlots <= 0) {
@@ -1569,8 +1578,8 @@ export const validateCommand = (
     if (isCommandType(command, 'PLAYER_READY')) return validatePlayerReady(state, command, playerId, phase);
     if (isCommandType(command, 'PLAYER_UNREADY')) return validatePlayerUnready(state, command, playerId, phase);
     if (isCommandType(command, 'RESPONSE_PASS')) return validateResponsePass(state, command, playerId);
-    if (isCommandType(command, 'MODIFY_DIE')) return validateModifyDie(state, command, playerId, pendingInteraction);
-    if (isCommandType(command, 'REROLL_DIE')) return validateRerollDie(state, command, playerId, pendingInteraction);
+    if (isCommandType(command, 'MODIFY_DIE')) return validateModifyDie(state, command, playerId, phase, pendingInteraction);
+    if (isCommandType(command, 'REROLL_DIE')) return validateRerollDie(state, command, playerId, phase, pendingInteraction);
     if (isCommandType(command, 'REMOVE_STATUS')) return validateRemoveStatus(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'TRANSFER_STATUS')) return validateTransferStatus(state, command, playerId, pendingInteraction);
     if (isCommandType(command, 'RESOLVE_INTERACTION')) return validateResolveInteraction(state, command, playerId, pendingInteraction);

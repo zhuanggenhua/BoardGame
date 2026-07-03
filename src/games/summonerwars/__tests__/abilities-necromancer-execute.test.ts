@@ -209,6 +209,90 @@ describe('古尔-达斯 - 复活死灵 (revive_undead) execute 流程', () => {
     expect(newState.players['0'].discard.find(c => c.id === 'undead-warrior-discard')).toBeUndefined();
   });
 
+  it('执行器收到非亡灵目标时不应自伤或召唤', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const summoner = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makeSummoner('test-summoner'),
+      owner: '0',
+    });
+
+    state.players['0'].discard.push(makeEnemy('goblin-discard'));
+    state.phase = 'summon';
+    state.currentPlayer = '0';
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'revive_undead',
+      sourceUnitId: summoner.instanceId,
+      targetCardId: 'goblin-discard',
+      targetPosition: { row: 4, col: 3 },
+    });
+
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED)).toBe(false);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(newState.board[4][2].unit?.damage).toBe(0);
+  });
+
+  it('执行器收到非相邻位置时不应自伤或召唤', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const summoner = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makeSummoner('test-summoner'),
+      owner: '0',
+    });
+
+    state.players['0'].discard.push(makeUndeadWarrior('undead-warrior-discard'));
+    state.phase = 'summon';
+    state.currentPlayer = '0';
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'revive_undead',
+      sourceUnitId: summoner.instanceId,
+      targetCardId: 'undead-warrior-discard',
+      targetPosition: { row: 2, col: 2 },
+    });
+
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED)).toBe(false);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(newState.board[4][2].unit?.damage).toBe(0);
+  });
+
+  it('执行器收到非空位置时不应自伤或召唤', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const summoner = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makeSummoner('test-summoner'),
+      owner: '0',
+    });
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'occupied',
+      card: makeCultist('occupied'),
+      owner: '0',
+    });
+
+    state.players['0'].discard.push(makeUndeadWarrior('undead-warrior-discard'));
+    state.phase = 'summon';
+    state.currentPlayer = '0';
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'revive_undead',
+      sourceUnitId: summoner.instanceId,
+      targetCardId: 'undead-warrior-discard',
+      targetPosition: { row: 4, col: 3 },
+    });
+
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED)).toBe(false);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(newState.board[4][2].unit?.damage).toBe(0);
+    expect(newState.board[4][3].unit?.cardId).toBe('occupied');
+  });
+
   it('弃牌堆无亡灵单位时验证拒绝', () => {
     const state = createNecroState();
     clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
@@ -375,6 +459,54 @@ describe('火祭召唤 (fire_sacrifice_summon) execute 流程', () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain('召唤师');
   });
+
+  it('validate：找不到牺牲品时拒绝', () => {
+    const state = setupFireSacrificeState();
+    const elutBarCard = makeFireSacrifice('test-elut-bar');
+    state.players['0'].hand.push(elutBarCard);
+    state.players['0'].magic = 10;
+
+    state.phase = 'summon';
+    state.currentPlayer = '0';
+
+    const result = SummonerWarsDomain.validate(
+      { core: state, sys: {} as any },
+      {
+        type: SW_COMMANDS.SUMMON_UNIT,
+        payload: { cardId: 'test-elut-bar', position: { row: 1, col: 1 }, sacrificeUnitId: 'missing-unit' },
+        playerId: '0',
+      }
+    );
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('找不到');
+  });
+
+  it('validate：牺牲敌方单位时拒绝', () => {
+    const state = setupFireSacrificeState();
+    const elutBarCard = makeFireSacrifice('test-elut-bar');
+    state.players['0'].hand.push(elutBarCard);
+    state.players['0'].magic = 10;
+
+    const enemy = placeUnit(state, { row: 3, col: 2 }, {
+      cardId: 'test-enemy',
+      card: makeEnemy('test-enemy'),
+      owner: '1',
+    });
+
+    state.phase = 'summon';
+    state.currentPlayer = '0';
+
+    const result = SummonerWarsDomain.validate(
+      { core: state, sys: {} as any },
+      {
+        type: SW_COMMANDS.SUMMON_UNIT,
+        payload: { cardId: 'test-elut-bar', position: { row: 3, col: 2 }, sacrificeUnitId: enemy.instanceId },
+        playerId: '0',
+      }
+    );
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('自己的单位');
+  });
 });
 
 // ============================================================================
@@ -418,7 +550,8 @@ describe('吸取生命 (life_drain) execute 流程', () => {
     expect(strengthEvents.length).toBe(0);
   });
 
-  it('DECLARE_ATTACK 携带 beforeAttack 时触发牺牲并翻倍战力', () => {
+  it('DECLARE_ATTACK 支付牺牲成本后，本次攻击 special 标记算近战命中', () => {
+    const specialOnlyRandom: RandomFn = { ...createTestRandom(), random: () => 0.25 };
     const state = createNecroState();
     clearArea(state, [3, 4, 5], [1, 2, 3, 4, 5]);
 
@@ -430,13 +563,13 @@ describe('吸取生命 (life_drain) execute 流程', () => {
 
     placeUnit(state, { row: 4, col: 4 }, {
       cardId: 'test-victim',
-      card: makeCultist('test-victim'),
+      card: makeEnemy('test-victim', { faction: 'necromancer', life: 1, abilities: [] }),
       owner: '0',
     });
 
     placeUnit(state, { row: 4, col: 3 }, {
       cardId: 'test-enemy',
-      card: makeEnemy('test-enemy'),
+      card: makeEnemy('test-enemy', { life: 2 }),
       owner: '1',
     });
 
@@ -451,7 +584,7 @@ describe('吸取生命 (life_drain) execute 流程', () => {
         abilityId: 'life_drain',
         targetUnitId: 'test-victim',
       },
-    });
+    }, specialOnlyRandom);
 
     const destroyEvents = events.filter(
       e => e.type === SW_EVENTS.UNIT_DESTROYED && (e.payload as any).cardId === 'test-victim'
@@ -469,7 +602,51 @@ describe('吸取生命 (life_drain) execute 流程', () => {
     // diceCount 等于基础战力（不翻倍）
     expect((attackedEvent!.payload as any).diceCount).toBe(2);
 
+    const targetDamageEvents = events.filter(
+      e => e.type === SW_EVENTS.UNIT_DAMAGED && (e.payload as any).position.row === 4 && (e.payload as any).position.col === 3
+    );
+    expect(targetDamageEvents).toHaveLength(1);
+    expect((targetDamageEvents[0].payload as any).damage).toBe(2);
+    expect(events.some(
+      e => e.type === SW_EVENTS.UNIT_DESTROYED && (e.payload as any).cardId === 'test-enemy'
+    )).toBe(true);
+
     expect(newState.board[4][4].unit).toBeUndefined();
+  });
+
+  it('DECLARE_ATTACK 未支付牺牲成本时，special 标记不算近战命中', () => {
+    const specialOnlyRandom: RandomFn = { ...createTestRandom(), random: () => 0.25 };
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-drainer',
+      card: makeLifeDrainer('test-drainer'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-enemy',
+      card: makeEnemy('test-enemy', { life: 2 }),
+      owner: '1',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+      beforeAttack: {
+        abilityId: 'life_drain',
+      },
+    }, specialOnlyRandom);
+
+    expect(events.some(
+      e => e.type === SW_EVENTS.UNIT_DESTROYED && (e.payload as any).cardId === 'test-enemy'
+    )).toBe(false);
+    expect(newState.board[4][3].unit?.cardId).toBe('test-enemy');
   });
 
   it('目标超过2格时验证拒绝', () => {
@@ -544,6 +721,47 @@ describe('感染 (infection) execute 流程', () => {
 
     // 疫病体出现在 (4,3)
     expect(newState.board[4][3].unit?.cardId).toBe('plague-zombie-discard');
+  });
+
+  it('执行器拒绝非疫病体或占用格，避免绕过感染合同', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const plague = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-plague',
+      card: makePlagueZombie('test-plague'),
+      owner: '0',
+    });
+    const nonPlague = makeCultist('non-plague-discard');
+    const discardZombie = makePlagueZombie('plague-zombie-discard');
+    state.players['0'].discard.push(nonPlague, discardZombie);
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const nonPlagueResult = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'infection',
+      sourceUnitId: plague.instanceId,
+      targetCardId: 'non-plague-discard',
+      targetPosition: { row: 4, col: 3 },
+    });
+    expect(nonPlagueResult.events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(nonPlagueResult.newState.board[4][3].unit).toBeUndefined();
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'occupied-unit',
+      card: makeCultist('occupied-unit'),
+      owner: '0',
+    });
+
+    const occupiedResult = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'infection',
+      sourceUnitId: plague.instanceId,
+      targetCardId: 'plague-zombie-discard',
+      targetPosition: { row: 4, col: 3 },
+    });
+    expect(occupiedResult.events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED)).toBe(false);
+    expect(occupiedResult.newState.board[4][3].unit?.cardId).toBe('occupied-unit');
   });
 
   it('弃牌堆无疫病体时验证拒绝', () => {

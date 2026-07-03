@@ -49,7 +49,7 @@ abilityExecutorRegistry.register('guidance', (ctx: SWAbilityContext) => {
 /** 圣光箭 */
 abilityExecutorRegistry.register('holy_arrow', (ctx: SWAbilityContext) => {
   const events: GameEvent[] = [];
-  const { core, sourcePosition, payload, ownerId: playerId, timestamp } = ctx;
+  const { core, payload, ownerId: playerId, timestamp } = ctx;
   const discardCardIds = payload.discardCardIds as string[] | undefined;
   if (!discardCardIds || discardCardIds.length === 0) return { events };
 
@@ -68,11 +68,6 @@ abilityExecutorRegistry.register('holy_arrow', (ctx: SWAbilityContext) => {
         timestamp,
       });
     }
-    events.push({
-      type: SW_EVENTS.UNIT_CHARGED,
-      payload: { position: sourcePosition, delta: validDiscards.length },
-      timestamp,
-    });
   }
   return { events };
 });

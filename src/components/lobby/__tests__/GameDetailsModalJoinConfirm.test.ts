@@ -1673,6 +1673,83 @@ describe('GameDetailsModal create room ai entry', () => {
         );
     });
 
+    it('安装任务运行时会轮询原生下载百分比，避免前端卡片一直显示等待中', async () => {
+        vi.useFakeTimers();
+        let resolveFinished: ((value: {
+            gameId: string;
+            runtimeChannel: string;
+            status: 'installed';
+            installedVersion: string;
+            localAssetBaseUrl: string;
+            updatedAt: number;
+        }) => void) | null = null;
+        vi.mocked(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).mockImplementationOnce(
+            async (_manifest, options) => ({
+                cancel: vi.fn(),
+                finished: new Promise((resolve) => {
+                    resolveFinished = (value) => {
+                        options.onStateChange(value);
+                        resolve(value);
+                    };
+                }),
+            }),
+        );
+        vi.mocked(nativeGamePackagePlugin.readNativeGamePackageInstallState).mockResolvedValueOnce({
+            exists: true,
+            state: {
+                gameId: 'dicethrone',
+                status: 'downloading',
+                progressMode: 'determinate',
+                progressPercent: 42,
+                installedVersion: 'test-asset-pack-v2',
+                updatedAt: Date.now(),
+            },
+            taskRunning: true,
+        });
+
+        const fallbackState = createDefaultGamePackageState('dicethrone', {
+            mode: 'package-managed',
+            runtimeChannel: 'stable',
+            modulePackId: 'dicethrone',
+            assetPackId: 'dicethrone',
+        });
+        syncGamePackageState('dicethrone', fallbackState);
+
+        const installPromise = startGamePackageInstall({
+            gameId: 'dicethrone',
+            runtimeChannel: 'stable',
+            modulePackId: 'dicethrone',
+            assetPackId: 'dicethrone',
+            assetPackVersion: 'test-asset-pack-v2',
+            assetPackUrl: 'https://example.com/dicethrone-v2.zip',
+            source: 'remote',
+        }, 'packageManager.runtimeUnsupported');
+
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(JSON.parse(window.localStorage.getItem('mobile-package-state:dicethrone') ?? '{}')).toEqual(
+            expect.objectContaining({
+                status: 'downloading',
+                progressMode: 'determinate',
+                progressPercent: 42,
+            }),
+        );
+
+        resolveFinished?.({
+            gameId: 'dicethrone',
+            runtimeChannel: 'stable',
+            status: 'installed',
+            installedVersion: 'test-asset-pack-v2',
+            localAssetBaseUrl: '/_capacitor_file_/data/user/0/top.easyboardgame.app.debug/files/game-packages/dicethrone/current/assets',
+            updatedAt: Date.now(),
+        });
+
+        await expect(installPromise).resolves.toEqual(expect.objectContaining({
+            status: 'installed',
+            installedVersion: 'test-asset-pack-v2',
+        }));
+    });
+
     it('原生安装器创建卡住时，3 秒内失败而不是无限停留 queued', async () => {
         vi.useFakeTimers();
         vi.mocked(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).mockImplementationOnce(

@@ -69,6 +69,7 @@ export const SW_EVENTS = defineEvents({
   UNIT_MOVED: { audio: 'immediate', sound: UNIT_MOVE_KEY },
   UNIT_ATTACKED: { audio: 'immediate', sound: UNIT_ATTACK_KEY },
   UNIT_CHARGED: { audio: 'immediate', sound: UNIT_CHARGE_KEY },
+  UNIT_CHARGE_BONUS_GAINED: { audio: 'immediate', sound: UNIT_CHARGE_KEY },
   
   STRUCTURE_BUILT: { audio: 'immediate', sound: STRUCTURE_BUILD_KEY },
   

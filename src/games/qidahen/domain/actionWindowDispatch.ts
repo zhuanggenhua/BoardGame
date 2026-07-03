@@ -1,4 +1,5 @@
 import { syncFactionActionWindow } from './factionActionWindow';
+import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { isOwnSiegedCityReinforcementTarget } from './regionSelectionPreferences';
 import { isQidahenCityRuntimeRegion } from './regionConfig';
@@ -328,6 +329,8 @@ export const resolveQidahenGaoDiDispatchChoice = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolution.selectedRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId),
         turnPhase: 'action-window',
         lastCharacterActionWindowTriggerKey: markCharacterActionWindowEffectHandled(state, 'ming-gao-di'),
         recruitSelection: null,
@@ -385,6 +388,8 @@ export const resolveQidahenInternalDispatchInteractionChoice = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolution.selectedRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId),
         turnPhase: 'action-window',
         lastCharacterActionWindowTriggerKey: markCharacterActionWindowEffectHandled(state, 'ming-wang-huazhen'),
         recruitSelection: null,
@@ -466,6 +471,12 @@ export const resolveQidahenWheelDispatchInteractionChoice = (
     return dependencies.updateTurnLabel({
         ...state,
         selectedRegionId: chosenTarget.targetRegionId,
+        explicitRegionId: chosenTarget.targetRegionId,
+        regionFocusState: buildQidahenRegionFocusState(chosenTarget.targetRegionId, {
+            lockedSourceRegionId: selection.sourceRegionId,
+            currentTargetRegionId: chosenTarget.targetRegionId,
+            displayAnchorRegionId: chosenTarget.targetRegionId,
+        }),
         turnPhase: 'resolve-pending',
         wheelDispatchProgress: null,
         pendingTargetAction,

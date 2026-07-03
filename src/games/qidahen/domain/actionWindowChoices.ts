@@ -16,13 +16,18 @@ import {
 } from './handCardState';
 import { toFactionLabel } from './factionLabelSemantics';
 import {
-    buildDiplomacySelection,
+    buildDiplomacySelectionFromRegionSemantics,
     buildQidahenDiplomacyProgress,
     getQidahenCurrentDiplomacySelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './selectionBuilders';
+import {
+    buildQidahenRegionFocusState,
+    getQidahenExplicitRegionSelectionSemantics,
+    getQidahenLockedRegionSelectionSemantics,
+} from './regionFocusSemantics';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import {
     addSpecialTroopStackToRegion,
@@ -195,6 +200,8 @@ export const resolveQidahenRecruitInteractionChoice = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: selection.targetRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(selection.targetRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,
@@ -283,6 +290,11 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         const acceptedState = dependencies.applyVictoryStatus({
             ...state,
             selectedRegionId: acceptedSelection.sourceRegionId,
+            explicitRegionId: null,
+            regionFocusState: buildQidahenRegionFocusState(acceptedSelection.sourceRegionId, {
+                lockedSourceRegionId: acceptedSelection.sourceRegionId,
+                displayAnchorRegionId: acceptedSelection.displayAnchorRegionId ?? acceptedSelection.sourceRegionId,
+            }),
             selectedActionId: 'drive-tiger',
             confirmedActionId: 'drive-tiger',
             turnPhase: 'dispatch-targeting',
@@ -356,6 +368,8 @@ export const resolveQidahenMaShiTradeInteractionChoice = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: selection.targetRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(selection.targetRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,
@@ -423,10 +437,12 @@ export const resolveQidahenKhanEdictInteractionChoice = (
     }
     const currentFactionId = getCurrentFactionId(state);
     if (choiceId === 'hire-dispatch') {
-        const diplomacySelection = buildDiplomacySelection(
+        const diplomacySelection = buildDiplomacySelectionFromRegionSemantics(
             state,
             currentFactionId,
-            selection.hireTargetRegionId ?? state.selectedRegionId,
+            selection.hireTargetRegionId
+                ? getQidahenExplicitRegionSelectionSemantics(state, selection.hireTargetRegionId)
+                : getQidahenLockedRegionSelectionSemantics(state),
             'khan-edict',
             selection.hireTargetRegionId,
             selection.preferredSourceRegionId,
@@ -446,6 +462,17 @@ export const resolveQidahenKhanEdictInteractionChoice = (
 
         return dependencies.updateTurnLabel({
             ...state,
+            selectedRegionId: state.selectedRegionId,
+            explicitRegionId: null,
+            regionFocusState: buildQidahenRegionFocusState(
+                state.selectedRegionId,
+                {
+                    lockedSourceRegionId: diplomacySelection.sourceRegionId,
+                    displayAnchorRegionId: diplomacySelection.displayAnchorRegionId
+                        ?? diplomacySelection.sourceRegionId
+                        ?? selection.displayAnchorRegionId,
+                },
+            ),
             turnPhase: 'diplomacy-choice',
             recruitSelection: null,
             maShiTradeSelection: null,
@@ -494,6 +521,8 @@ export const resolveQidahenKhanEdictInteractionChoice = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: recruitTargetRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(recruitTargetRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,
@@ -538,7 +567,8 @@ const resolveDiplomacyChoice = (
     const targetRegion = selection.targetRegionId
         ? runtimeRegions.find((region) => region.id === selection.targetRegionId) ?? null
         : null;
-    let selectedRegionId = selection.hireRegionId ?? state.selectedRegionId;
+    const diplomacyFocusRegionId = selection.hireRegionId ?? selection.sourceRegionId ?? state.selectedRegionId;
+    let selectedRegionId = diplomacyFocusRegionId;
     let nextFactions = {
         ...state.factions,
     };
@@ -698,13 +728,13 @@ const resolveDiplomacyChoice = (
         );
     }
 
-    const nextSelection = buildDiplomacySelection(
+    const nextSelection = buildDiplomacySelectionFromRegionSemantics(
         {
             ...state,
             regions: refreshedRegions,
         },
         actingFactionId,
-        targetRegion.id,
+        getQidahenExplicitRegionSelectionSemantics(state, targetRegion.id),
         selection.source,
         selection.sourceRegionId,
         selection.preferredSourceRegionId,
@@ -731,12 +761,12 @@ const resolveDiplomacyChoice = (
         resolvedSteps: nextResolvedSteps,
     };
     return {
-        selectedRegionId,
-        regions: refreshedRegions,
-        factions: nextFactions,
-        summaryLines: null,
-        diplomacySelection: continuedSelection,
-        logText: `${state.factions[actingFactionId].name} 完成第 ${nextResolvedSteps.length} 次外交：${stepSummary} 当前还可继续 ${remainingTargetCount} 次，或直接结束结算雇佣。`,
+            selectedRegionId: diplomacyFocusRegionId,
+            regions: refreshedRegions,
+            factions: nextFactions,
+            summaryLines: null,
+            diplomacySelection: continuedSelection,
+            logText: `${state.factions[actingFactionId].name} 完成第 ${nextResolvedSteps.length} 次外交：${stepSummary} 当前还可继续 ${remainingTargetCount} 次，或直接结束结算雇佣。`,
     };
 };
 
@@ -781,6 +811,12 @@ export const resolveQidahenDiplomacyInteractionChoice = (
         return dependencies.updateTurnLabel({
             ...state,
             selectedRegionId: resolution.selectedRegionId,
+            explicitRegionId: resolution.diplomacySelection.targetRegionId ?? state.explicitRegionId,
+            regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId, {
+                lockedSourceRegionId: resolution.selectedRegionId,
+                currentTargetRegionId: resolution.diplomacySelection.targetRegionId ?? state.regionFocusState.currentTargetRegionId,
+                displayAnchorRegionId: resolution.diplomacySelection.displayAnchorRegionId ?? resolution.selectedRegionId,
+            }),
             turnPhase: 'diplomacy-choice',
             recruitSelection: null,
             maShiTradeSelection: null,
@@ -802,6 +838,8 @@ export const resolveQidahenDiplomacyInteractionChoice = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolution.selectedRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,

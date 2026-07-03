@@ -213,12 +213,12 @@ export function executeCommand(
           timestamp,
         });
 
-        // 冲锋加成：直线移动3+格时获得+1战力（通过 boosts 标记）
+        // 冲锋加成：直线移动3+格时获得本回合+1战力，不占用真实充能
         if (unitAbilities.includes('charge')) {
           const moveDist = manhattanDistance(from, to);
           if (moveDist >= 3 && (from.row === to.row || from.col === to.col)) {
             events.push({
-              type: SW_EVENTS.UNIT_CHARGED,
+              type: SW_EVENTS.UNIT_CHARGE_BONUS_GAINED,
               payload: { position: to, delta: 1 },
               timestamp,
             });
@@ -380,11 +380,6 @@ export function executeCommand(
                     timestamp,
                   });
                 }
-                holyArrowEvents.push({
-                  type: SW_EVENTS.UNIT_CHARGED,
-                  payload: { position: attacker, delta: validDiscards.length },
-                  timestamp,
-                });
                 beforeAttackBonus += validDiscards.length;
               }
               applyBeforeAttackEvents(holyArrowEvents);

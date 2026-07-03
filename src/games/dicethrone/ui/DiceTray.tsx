@@ -9,7 +9,6 @@ import type { InteractionDescriptor } from '../../../engine/systems/InteractionS
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
 import { Dice3D, DiceField3D, type ProjectedDiceLayout } from './Dice3D';
-import { BoardDiceBoxTray } from './BoardDiceBoxTray';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { UI_Z_INDEX } from '../../../core';
 
@@ -140,6 +139,7 @@ export const DiceTray = ({
     multistepInteraction,
     isPassiveRerollMode,
     presentation = 'rail',
+    rootPlayerId,
 }: {
     dice: Die[];
     rollCount: number;
@@ -157,6 +157,7 @@ export const DiceTray = ({
     isPassiveRerollMode?: boolean;
     /** rail 用于右侧栏，center 用于中场散落舞台，board 用于玩家面板骰盘 */
     presentation?: 'rail' | 'center' | 'board';
+    rootPlayerId?: PlayerId;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isCenterPresentation = presentation === 'center';
@@ -197,6 +198,15 @@ export const DiceTray = ({
     const isAnyMode = dieModifyConfig?.mode === 'any';
     const isAdjustMode = dieModifyConfig?.mode === 'adjust';
     const adjustRange = dieModifyConfig?.adjustRange ?? { min: -1, max: 1 };
+    const canInteractWithDie = (die: Die): boolean => {
+        if (!isInteractionMode) return true;
+        if (!dtMeta?.diceOwnerId) return true;
+        return die.ownerId === undefined || die.ownerId === dtMeta.diceOwnerId;
+    };
+    const resolveOwnerLabel = (die: Die): string | null => {
+        if (!die.ownerId || !rootPlayerId) return null;
+        return die.ownerId === rootPlayerId ? t('common.self') : t('common.opponent');
+    };
 
     // 从 multistepInteraction.result 读取当前累积结果
     const modifyResult = (isModifyMode && multistepInteraction?.result) as DiceModifyResult | null | undefined;
@@ -227,13 +237,43 @@ export const DiceTray = ({
         })),
         [dice],
     );
+    const visibleOverlayDice = React.useMemo(
+        () => (isBoardPresentation ? dice.filter((d) => !d.isKept) : dice),
+        [dice, isBoardPresentation],
+    );
+    const selectedDieIdsKey = isSelectMode
+        ? (selectResult?.selectedDiceIds ?? []).join('|')
+        : isModifyMode
+            ? Object.keys(modifyResult?.modifications ?? {}).join('|')
+            : '';
     const selectedDieIds = React.useMemo(() => {
-        if (isSelectMode) return selectResult?.selectedDiceIds ?? [];
-        if (isModifyMode) {
-            return Object.keys(modifyResult?.modifications ?? {}).map((dieId) => Number(dieId));
-        }
-        return [];
-    }, [isModifyMode, isSelectMode, modifyResult, selectResult]);
+        if (!selectedDieIdsKey) return [];
+        return selectedDieIdsKey.split('|').map((dieId) => Number(dieId));
+    }, [selectedDieIdsKey]);
+    const handleProjectedDiceUpdate = React.useCallback((layouts: ProjectedDiceLayout[]) => {
+        setCenterDiceLayout((prev) => {
+            const next: Record<number, ProjectedDiceLayout> = {};
+            let changed = layouts.length !== Object.keys(prev).length;
+            for (const layout of layouts) {
+                next[layout.id] = layout;
+                const prevLayout = prev[layout.id];
+                if (!prevLayout
+                    || Math.abs(prevLayout.x - layout.x) > 1
+                    || Math.abs(prevLayout.y - layout.y) > 1
+                    || Math.abs(prevLayout.width - layout.width) > 1
+                    || Math.abs(prevLayout.height - layout.height) > 1
+                    || Math.abs(prevLayout.rotateX - layout.rotateX) > 0.02
+                    || Math.abs(prevLayout.rotateY - layout.rotateY) > 0.02
+                    || Math.abs(prevLayout.rotateZ - layout.rotateZ) > 0.02
+                    || prevLayout.selected !== layout.selected
+                    || Math.abs(prevLayout.minY - layout.minY) > 1
+                    || Math.abs(prevLayout.maxY - layout.maxY) > 1) {
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    }, []);
 
     const handleRailDieClick = (dieId: number) => {
         // 掷骰结果已进入权威状态后，允许玩家立刻锁骰，
@@ -311,44 +351,6 @@ export const DiceTray = ({
         }
     };
 
-    if (isBoardPresentation) {
-        const boardDice = dice
-            .filter((d) => !d.isKept)
-            .map((d) => {
-            const selected = isSelected(d.id);
-            const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
-            const canModifyDie = true;
-            const isInactiveDie = isInteractionMode && !canModifyDie;
-            const clickable = isInteractionMode
-                ? (isAnyMode || isAdjustMode
-                    ? !isInactiveDie
-                    : (!isInactiveDie && (canSelectMore || selected)))
-                : canToggleDieLock;
-            const displayValue = (isAnyMode || isAdjustMode)
-                ? (modifyResult?.modifications[d.id] ?? d.value)
-                : d.value;
-
-            return {
-                id: d.id,
-                displayValue,
-                isKept: d.isKept,
-                selected: selected || isModified,
-                clickable,
-                definitionId: d.definitionId,
-            };
-            });
-
-        return (
-            <BoardDiceBoxTray
-                dice={boardDice}
-                isRolling={isRolling}
-                rerollingDiceIds={rerollingDiceIds}
-                onDieClick={handleOverlayDieClick}
-                locale={locale}
-            />
-        );
-    }
-
     if (!isOverlayPresentation) {
         return (
             <div
@@ -369,9 +371,10 @@ export const DiceTray = ({
 
                 <div className={trayInnerClassName}>
                     {dice.map((d, i) => {
+                        const ownerLabel = resolveOwnerLabel(d);
                         const selected = isSelected(d.id);
                         const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
-                        const canModifyDie = true;
+                        const canModifyDie = canInteractWithDie(d);
                         const showAdjustButtons = isInteractionMode && isAdjustMode && canModifyDie;
                         const showAnyModeButtons = isInteractionMode && isAnyMode && canModifyDie
                             && (isModified || currentSelectCount < maxSelectCount);
@@ -405,6 +408,8 @@ export const DiceTray = ({
                                         data-selected={selected ? 'true' : 'false'}
                                         data-clickable={clickable ? 'true' : 'false'}
                                         data-display-value={displayValue}
+                                        data-owner-id={d.ownerId ?? ''}
+                                        data-display-only={d.displayOnly ? 'true' : 'false'}
                                         className={`
                                             relative flex-shrink-0 group transition-all duration-200
                                             ${!isInteractionMode && d.isKept ? 'opacity-80' : ''}
@@ -438,6 +443,14 @@ export const DiceTray = ({
                                             </div>
                                         )}
                                     </div>
+                                    {ownerLabel && (
+                                        <div
+                                            data-testid={`die-owner-label-${d.id}`}
+                                            className="max-w-[4.4vw] overflow-hidden text-ellipsis whitespace-nowrap rounded bg-black/45 px-[0.35vw] py-[0.08vw] text-[0.58vw] font-black text-slate-200 ring-1 ring-white/10"
+                                        >
+                                            {ownerLabel}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {(showAdjustButtons || showAnyModeButtons) && (
@@ -464,7 +477,7 @@ export const DiceTray = ({
         <div className={resolvedContainerClassName}>
             <div className={resolvedTrayInnerClassName}>
                 <DiceField3D
-                    dice={fieldDice}
+                    dice={isBoardPresentation ? visibleOverlayDice : fieldDice}
                     selectedDieIds={selectedDieIds}
                     isRolling={isRolling}
                     rerollingDiceIds={rerollingDiceIds}
@@ -473,35 +486,12 @@ export const DiceTray = ({
                         slots={isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS}
                         onDieClick={handleOverlayDieClick}
                         scenePreset={isBoardPresentation ? 'board-topdown' : 'spotlight'}
-                        onProjectedDiceUpdate={(layouts) => {
-                        setCenterDiceLayout((prev) => {
-                            const next: Record<number, ProjectedDiceLayout> = {};
-                            let changed = layouts.length !== Object.keys(prev).length;
-                            for (const layout of layouts) {
-                                next[layout.id] = layout;
-                                const prevLayout = prev[layout.id];
-                                if (!prevLayout
-                                    || Math.abs(prevLayout.x - layout.x) > 1
-                                    || Math.abs(prevLayout.y - layout.y) > 1
-                                    || Math.abs(prevLayout.width - layout.width) > 1
-                                    || Math.abs(prevLayout.height - layout.height) > 1
-                                    || Math.abs(prevLayout.rotateX - layout.rotateX) > 0.02
-                                    || Math.abs(prevLayout.rotateY - layout.rotateY) > 0.02
-                                    || Math.abs(prevLayout.rotateZ - layout.rotateZ) > 0.02
-                                    || prevLayout.selected !== layout.selected
-                                    || Math.abs(prevLayout.minY - layout.minY) > 1
-                                    || Math.abs(prevLayout.maxY - layout.maxY) > 1) {
-                                    changed = true;
-                                }
-                            }
-                            return changed ? next : prev;
-                        });
-                    }}
+                        onProjectedDiceUpdate={handleProjectedDiceUpdate}
                 />
-                {dice.map((d, i) => {
+                {visibleOverlayDice.map((d, i) => {
                     const selected = isSelected(d.id);
                     const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
-                    const canModifyDie = true;
+                    const canModifyDie = canInteractWithDie(d);
                     const isInactiveDie = isInteractionMode && !canModifyDie;
                     const clickable = isInteractionMode
                         ? ((isAnyMode || isAdjustMode)
@@ -554,6 +544,9 @@ export const DiceTray = ({
                                 data-selected={selected ? 'true' : 'false'}
                                 data-clickable={clickable ? 'true' : 'false'}
                                 data-display-value={displayValue}
+                                data-owner-id={d.ownerId ?? ''}
+                                data-display-only={d.displayOnly ? 'true' : 'false'}
+                                data-render-mode={isBoardPresentation ? 'engine' : 'overlay'}
                                 data-rotate-x={projectedLayout ? projectedLayout.rotateX.toFixed(4) : ''}
                                 data-rotate-y={projectedLayout ? projectedLayout.rotateY.toFixed(4) : ''}
                                 data-rotate-z={projectedLayout ? projectedLayout.rotateZ.toFixed(4) : ''}
@@ -570,28 +563,26 @@ export const DiceTray = ({
                                     transform: 'translate(-50%, -50%)',
                                 }}
                             >
-                                <div className="pointer-events-none h-full w-full">
-                                    <Dice3D
-                                        value={displayValue}
-                                        isRolling={(isRolling && !d.isKept) || (rerollingDiceIds?.includes(d.id) ?? false)}
-                                        index={i}
-                                        size={overlayDiceSize}
-                                        locale={locale}
-                                        variant={isBoardPresentation ? 'board-topdown' : 'spotlight'}
-                                        characterId={resolveCharacterIdFromDiceDefinitionId(d.definitionId)}
-                                        definitionId={d.definitionId}
-                                        enableWebgl={false}
-                                        overrideTransform={overlayTransform}
-                                    />
-                                </div>
+                                {!isBoardPresentation && (
+                                    <div className="pointer-events-none h-full w-full">
+                                        <Dice3D
+                                            value={displayValue}
+                                            isRolling={(isRolling && !d.isKept) || (rerollingDiceIds?.includes(d.id) ?? false)}
+                                            index={i}
+                                            size={overlayDiceSize}
+                                            locale={locale}
+                                            variant="spotlight"
+                                            characterId={resolveCharacterIdFromDiceDefinitionId(d.definitionId)}
+                                            definitionId={d.definitionId}
+                                            enableWebgl={false}
+                                            overrideTransform={overlayTransform}
+                                        />
+                                    </div>
+                                )}
                                 {selected && !isBoardPresentation && (
-                                    <div
-                                        className={clsx(
-                                            'pointer-events-none absolute z-[8] border-[#f2c14e]',
-                                            'inset-[7%] rounded-[23%]',
-                                        )}
-                                        style={{ borderWidth: 'clamp(4px, 0.34vw, 6px)' }}
-                                    />
+                                    <div className={`absolute ${selectedBadgeClassName} bg-amber-500 rounded-full flex items-center justify-center z-30`}>
+                                        <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
+                                    </div>
                                 )}
                                 {!isInteractionMode && d.isKept && (
                                     <div className="absolute inset-0 flex items-center justify-center">

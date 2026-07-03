@@ -14,9 +14,10 @@ import {
     type QidahenInteractionSourceId,
 } from './interactionSources';
 import {
-    buildDriveTigerDispatchSelection,
+    buildDriveTigerDispatchSelectionFromRegionSemantics,
     getQidahenInternalDispatchSelectionForCore as getCoreQidahenInternalDispatchSelectionForCore,
 } from './dispatchSelectionBuilders';
+import { getQidahenLockedRegionSelectionSemantics } from './regionFocusSemantics';
 import {
     getQidahenDiplomacySelectionForCore as getCoreQidahenDiplomacySelectionForCore,
     getQidahenKhanEdictSelectionForCore as getCoreQidahenKhanEdictSelectionForCore,
@@ -79,10 +80,10 @@ const getQidahenDriveTigerConsentDispatchSelectionForCore = (
     const shouldRebuildDriveTigerDispatchSelection = core.lastFactionActionId === 'drive-tiger'
         && !core.wheelActionUsed;
     return shouldRebuildDriveTigerDispatchSelection
-        ? buildDriveTigerDispatchSelection(
+        ? buildDriveTigerDispatchSelectionFromRegionSemantics(
             core,
             'ming',
-            core.selectedRegionId,
+            getQidahenLockedRegionSelectionSemantics(core),
         )
         : null;
 };

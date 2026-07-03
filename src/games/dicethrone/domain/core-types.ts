@@ -146,6 +146,10 @@ export interface Die {
     symbols: string[];
     /** 是否锁定（保留不重掷） */
     isKept: boolean;
+    /** 当前骰子的归属玩家。常规骰池不填；特殊对掷骰用于 UI 与交互区分双方骰子。 */
+    ownerId?: PlayerId;
+    /** 只用于展示，不参与当前玩家可重掷/锁定的普通投掷池。 */
+    displayOnly?: boolean;
 }
 
 /**
@@ -262,6 +266,8 @@ export interface PendingAttack {
     attackDiceFaceCounts?: Record<string, number>;
     /** 攻击方骰子点数快照（用于 2/3/4/5-of-a-kind 的“相同数字”判定） */
     attackDiceValues?: number[];
+    /** 枪手“对决”中攻击方那颗对掷骰，防御方确认前先展示在右侧骰盘。 */
+    duelAttackerDieValue?: number;
     /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
     offensiveRollEndTokenResolved?: boolean;
     /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */

@@ -170,6 +170,12 @@ export function computeEventStreamDelta(
   };
 }
 
+export function shouldConsumeChargeEvent(consumedEventIds: Set<number>, eventId: number): boolean {
+  if (consumedEventIds.has(eventId)) return false;
+  consumedEventIds.add(eventId);
+  return true;
+}
+
 // ============================================================================
 // Hook 参数
 // ============================================================================
@@ -215,6 +221,8 @@ export function useGameEvents({
   const closedAttackEventIdRef = useRef<number | null>(null);
   // 防止同一 eventStream 事件在重连/回滚场景下被重复消费导致攻击动画重复播放
   const processedAttackEventIdsRef = useRef<Set<number>>(new Set());
+  // 防止同一充能事件在重连/回滚场景下重复播放充能旋涡
+  const processedChargeEventIdsRef = useRef<Set<number>>(new Set());
 
   // ============================================================================
   // 回调函数稳定化（避免 useLayoutEffect 因回调引用变化而重复执行）
@@ -545,6 +553,9 @@ export function useGameEvents({
       // 充能事件 - 旋涡动画反馈（位移后可能触发充能，需等移动动画完成）
       if (event.type === SW_EVENTS.UNIT_CHARGED) {
         const p = event.payload as { position: CellCoord; delta: number; sourceAbilityId?: string };
+        if (!shouldConsumeChargeEvent(processedChargeEventIdsRef.current, entry.id)) {
+          continue;
+        }
         if (p.delta > 0) {
           if (hasPendingMove) {
             setTimeout(() => {

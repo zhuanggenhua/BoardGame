@@ -129,7 +129,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
     sfxKey: 'fantasy.elemental_sword_iceattack_v2',
     trigger: 'passive',
     effects: [
-      { type: 'auraStructureLife', range: 3, value: 1 },
+      { type: 'auraStructureLife', value: 1 },
     ],
   },
 

@@ -150,6 +150,31 @@ function isAbortErrorNoise(payload: ClientAutoReportPayload): boolean {
         && /^the operation was aborted\.?$/.test(normalizedMessage);
 }
 
+function isEmptyGenericUnhandledRejectionNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}${payload.jsStack ?? ''}${payload.componentStack ?? ''}`.trim();
+    return (payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE) === 'client-unhandled-rejection'
+        && normalizedName === 'unhandledrejection'
+        && normalizedMessage === 'unhandled rejection'
+        && normalizedStack.length === 0;
+}
+
+function isBrowserExtensionInjectionNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}\n${payload.jsStack ?? ''}\n${payload.errorSource ?? ''}`.toLowerCase();
+    const isExtensionFrame = normalizedStack.includes('chrome-extension://')
+        || normalizedStack.includes('moz-extension://')
+        || normalizedStack.includes('safari-web-extension://')
+        || normalizedStack.includes('ms-browser-extension://');
+    if (!isExtensionFrame || hasAppStackFrame(payload.stack) || hasAppStackFrame(payload.jsStack)) {
+        return false;
+    }
+
+    return normalizedMessage.includes('cannot redefine property: ethereum')
+        || normalizedMessage.includes('func sseerror not found');
+}
+
 function isAnonymousTopLevelDocumentSource(errorSource: string): boolean {
     if (typeof window === 'undefined') {
         return false;
@@ -231,6 +256,12 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isAbortErrorNoise(payload)) {
+        return true;
+    }
+    if (isEmptyGenericUnhandledRejectionNoise(payload)) {
+        return true;
+    }
+    if (isBrowserExtensionInjectionNoise(payload)) {
         return true;
     }
     if (isAnonymousInjectedWindowErrorNoise(payload)) {

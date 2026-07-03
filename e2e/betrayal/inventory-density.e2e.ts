@@ -22,13 +22,13 @@ const EXTREME_INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-�
 function createDenseInventoryCore(): BetrayalCore {
     const core = createRuntimeCore();
     const denseInventory: BetrayalInventoryCard[] = [
-        { id: 'rope', name: '绳索', kind: 'item' },
+        { id: 'rope', name: '兔脚', kind: 'item' },
         { id: 'flashlight', name: '手电筒', kind: 'item' },
         { id: 'medical-kit', name: '急救包', kind: 'item' },
-        { id: 'camera', name: '相机', kind: 'item' },
-        { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
-        { id: 'hunting-knife', name: '狩猎短刀', kind: 'item' },
-        { id: 'omen-book', name: '预兆书', kind: 'omen' },
+        { id: 'camera', name: '魔法相机', kind: 'item' },
+        { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
+        { id: 'hunting-knife', name: '砍刀', kind: 'item' },
+        { id: 'omen-book', name: '书本', kind: 'omen' },
         { id: 'dog', name: '狗', kind: 'omen' },
     ];
 
@@ -43,13 +43,13 @@ function createDenseInventoryCore(): BetrayalCore {
 function createExtremeInventoryCore(): BetrayalCore {
     const core = createRuntimeCore();
     const extremeInventory: BetrayalInventoryCard[] = [
-        { id: 'rope', name: '绳索', kind: 'item' },
+        { id: 'rope', name: '兔脚', kind: 'item' },
         { id: 'flashlight', name: '手电筒', kind: 'item' },
         { id: 'medical-kit', name: '急救包', kind: 'item' },
-        { id: 'camera', name: '相机', kind: 'item' },
-        { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
-        { id: 'hunting-knife', name: '狩猎短刀', kind: 'item' },
-        { id: 'omen-book', name: '预兆书', kind: 'omen' },
+        { id: 'camera', name: '魔法相机', kind: 'item' },
+        { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
+        { id: 'hunting-knife', name: '砍刀', kind: 'item' },
+        { id: 'omen-book', name: '书本', kind: 'omen' },
         { id: 'dog', name: '狗', kind: 'omen' },
         { id: 'armor', name: '盔甲', kind: 'omen' },
         { id: 'idol', name: '雕像', kind: 'omen' },
@@ -89,7 +89,7 @@ test.describe('山屋惊魂持有区高密度证据', () => {
         await huntingKnifeCard.evaluate((element) => {
             (element as HTMLButtonElement).click();
         });
-        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveText('狩猎短刀');
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveText('砍刀');
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
         await saveScreenshot(page, PREVIEW_SCREENSHOT);
 

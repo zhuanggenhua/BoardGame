@@ -200,6 +200,9 @@ export function execute(
                     results.push(isTutorialActive ? tutorialFixedValue : random.d(6));
                 }
             });
+            if (phase === 'defensiveRoll' && state.pendingAttack?.defenseAbilityId === 'duel') {
+                results.push(isTutorialActive ? tutorialFixedValue : random.d(6));
+            }
             
             const event: DiceRolledEvent = {
                 type: 'DICE_ROLLED',
@@ -634,9 +637,21 @@ export function execute(
             const { dieId } = command.payload as { dieId: number };
             const die = state.dice.find(d => d.id === dieId);
             const newValue = random.d(6);
+            const duelAttackerDieActive = state.pendingAttack?.defenseAbilityId === 'duel'
+                && phase === 'defensiveRoll'
+                && dieId === 1
+                && state.pendingAttack.attackerId;
             const event: DieRerolledEvent = {
                 type: 'DIE_REROLLED',
-                payload: { dieId, oldValue: die?.value ?? newValue, newValue, playerId: command.playerId },
+                payload: {
+                    dieId,
+                    oldValue: duelAttackerDieActive
+                        ? state.pendingAttack?.duelAttackerDieValue ?? newValue
+                        : die?.value ?? newValue,
+                    newValue,
+                    playerId: command.playerId,
+                    ownerId: duelAttackerDieActive ? state.pendingAttack?.attackerId : die?.ownerId,
+                },
                 sourceCommandType: command.type,
                 timestamp,
             };

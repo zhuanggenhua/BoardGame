@@ -63,7 +63,7 @@
 | 当前这回合还剩几步，要看右上角剩余移动提示 | 已覆盖 | `basic-setup-and-turn` | `betrayal-moves-remaining` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02` |
 | 持有区与帮助入口都在真实牌桌里，不另造说明页 | 已覆盖 | `basic-setup-and-turn` | `betrayal-inventory-zone`、`betrayal-reference-entry` | `tutorial.test.ts`、`evidence/betrayal-tutorial/03` |
 | 房间牌桌是主视区 | 已覆盖 | `basic-setup-and-turn` | `betrayal-room-board` | `evidence/betrayal-tutorial/03` |
-| 真实移动会消耗移动点，使用绳索会先补移动 | 已覆盖 | `move-explore-use` | `USE_POSSESSION` -> `MOVE_TO_ROOM` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
+| 真实移动会消耗移动点，使用兔脚会先补移动 | 已覆盖 | `move-explore-use` | `USE_POSSESSION` -> `MOVE_TO_ROOM` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
 | 探索会真实翻房间并触发事件 / 物品 / 预兆 | 已覆盖 | `move-explore-use` | `EXPLORE_ROOM` | `tutorial.test.ts` |
 | 第一剧本 haunt 后英雄目标：调查杰克、研究法阵、驱魔 | 已覆盖 | `crimson-jack-objective` | `betrayal-actions-zone` | `tutorial.test.ts`、教程文案断言 |
 | 第一剧本叛徒目标：杀光英雄或借杰克之灵恢复肉身 | 已覆盖 | `crimson-jack-objective` | `betrayal-room-board` | `tutorial.test.ts`、教程文案断言 |

@@ -56,10 +56,22 @@ type LiveMotionCue = {
     cardIds: string[];
 } | null;
 
-type LiveCenterSelectionNotice = {
+type LiveCenterMotionOverlay = {
+    type: 'enter' | 'exit';
     playerName: string;
     cueKey: number;
     slotStyle: React.CSSProperties;
+    card: TableCard;
+} | null;
+
+type LiveCenterHeldCard = {
+    cardId: string;
+    cueKey: number;
+} | null;
+
+type LiveHandHeldCard = {
+    cardId: string;
+    cueKey: number;
 } | null;
 
 type LiveActionButtonConfig = {
@@ -77,7 +89,9 @@ type LiveMotionSnapshot = {
     currentPlayer: string;
     stage: FantasyRealmsCore['stage'];
     handIds: string[];
+    handCards: TableCard[];
     discardIds: string[];
+    discardCards: TableCard[];
     drawPileCount: number;
     isGameOver: boolean;
 };
@@ -564,7 +578,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const [magnifiedCard, setMagnifiedCard] = React.useState<TableCard | null>(null);
     const [hoveredEndgameCardId, setHoveredEndgameCardId] = React.useState<string | null>(null);
     const [selectedEndgameCardId, setSelectedEndgameCardId] = React.useState<string | null>(null);
-    const [liveCenterSelectionNotice, setLiveCenterSelectionNotice] = React.useState<LiveCenterSelectionNotice>(null);
+    const [liveCenterMotionOverlay, setLiveCenterMotionOverlay] = React.useState<LiveCenterMotionOverlay>(null);
+    const [liveCenterHeldCard, setLiveCenterHeldCard] = React.useState<LiveCenterHeldCard>(null);
+    const [liveHandHeldCard, setLiveHandHeldCard] = React.useState<LiveHandHeldCard>(null);
     const liveMotionSnapshotRef = React.useRef<LiveMotionSnapshot | null>(null);
     const liveMotionSequenceRef = React.useRef(0);
     const openingDealSignatureRef = React.useRef<string | null>(null);
@@ -676,7 +692,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         ? (reviewPlayerId && core.players[reviewPlayerId] ? reviewPlayerId : defaultReviewPlayerId)
         : viewerPlayerId;
     const displayedPlayer = displayedPlayerId ? core.players[displayedPlayerId] : undefined;
-    const displayedHandCards = React.useMemo(() => displayedPlayer?.hand ?? [], [displayedPlayer?.hand]);
+    const rawDisplayedHandCards = React.useMemo(() => displayedPlayer?.hand ?? [], [displayedPlayer?.hand]);
+    const displayedHandCards = React.useMemo(() => {
+        if (!liveHandHeldCard) return rawDisplayedHandCards;
+        return rawDisplayedHandCards.filter((card) => card.id !== liveHandHeldCard.cardId);
+    }, [liveHandHeldCard, rawDisplayedHandCards]);
     const displayedPlayerName = React.useMemo(() => {
         if (!displayedPlayerId) return null;
         return getPlayerDisplayName(displayedPlayerId, core, matchData, t);
@@ -704,7 +724,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         && core.turn === 1
         && discardCards.length === 0
         && displayedHandCards.length <= 2;
-    const viewerHandIdsSignature = displayedHandCards.map((card) => card.id).join('|');
+    const rawViewerHandIdsSignature = rawDisplayedHandCards.map((card) => card.id).join('|');
     const discardIdsSignature = discardCards.map((card) => card.id).join('|');
     const shouldPlayOpeningDealMotion = !isSpectatorView
         && !isGameOver
@@ -715,13 +735,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         && displayedHandCards.length > 0;
     const openingDealSignature = React.useMemo(
         () => (shouldPlayOpeningDealMotion
-            ? `${viewerPlayerId ?? 'spectator'}:${core.currentPlayer}:${viewerHandIdsSignature}:${core.drawPile.length}`
+            ? `${viewerPlayerId ?? 'spectator'}:${core.currentPlayer}:${rawViewerHandIdsSignature}:${core.drawPile.length}`
             : null),
         [
             core.currentPlayer,
             core.drawPile.length,
             shouldPlayOpeningDealMotion,
-            viewerHandIdsSignature,
+            rawViewerHandIdsSignature,
             viewerPlayerId,
         ],
     );
@@ -752,17 +772,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         viewerPlayerId,
         currentPlayer: core.currentPlayer,
         stage: core.stage,
-        handIds: viewerHandIdsSignature ? viewerHandIdsSignature.split('|') : [],
+        handIds: rawViewerHandIdsSignature ? rawViewerHandIdsSignature.split('|') : [],
+        handCards: rawDisplayedHandCards.map((card) => ({ ...card })),
         discardIds: discardIdsSignature ? discardIdsSignature.split('|') : [],
+        discardCards: discardCards.map((card) => ({ ...card })),
         drawPileCount: core.drawPile.length,
         isGameOver,
     }), [
         core.currentPlayer,
         core.drawPile.length,
         core.stage,
+        rawDisplayedHandCards,
+        discardCards,
         discardIdsSignature,
         isGameOver,
-        viewerHandIdsSignature,
+        rawViewerHandIdsSignature,
         viewerPlayerId,
     ]);
 
@@ -795,7 +819,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         return undefined;
     }, [core.currentPlayer, core.stage, core.turn, discardCards.length, displayedHandCards, openingDealSignature]);
 
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         const nextSnapshot = liveMotionSnapshot;
         const previousSnapshot = liveMotionSnapshotRef.current
             ?? (typeof window !== 'undefined'
@@ -826,6 +850,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         ) {
             nextCueType = drawCountDelta < 0 ? 'draw-to-hand' : 'center-to-hand';
             nextCueCardIds = getAddedIds(nextSnapshot.handIds, previousSnapshot.handIds);
+        } else if (
+            previousSnapshot.currentPlayer === nextSnapshot.currentPlayer
+            && previousSnapshot.stage === 'draw'
+            && nextSnapshot.stage === 'discard'
+            && discardCountDelta < 0
+        ) {
+            nextCueType = 'center-to-hand';
+            nextCueCardIds = getRemovedIds(previousSnapshot.discardIds, nextSnapshot.discardIds);
         } else if (
             previousSnapshot.currentPlayer === previousSnapshot.viewerPlayerId
             && previousSnapshot.stage === 'discard'
@@ -870,16 +902,57 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             const previousCardIndex = takenDiscardCardId
                 ? previousSnapshot.discardIds.findIndex((cardId) => cardId === takenDiscardCardId)
                 : -1;
+            const previousDiscardCard = takenDiscardCardId
+                ? previousSnapshot.discardCards.find((card) => card.id === takenDiscardCardId)
+                : null;
             const previousSlotStyle = previousCardIndex >= 0
                 ? buildMinimalLiveCenterSlots(
                     previousSnapshot.discardIds.map((cardId) => ({ id: cardId } as TableCard)),
                     discardThreshold,
                 )[previousCardIndex]?.style
                 : undefined;
-            setLiveCenterSelectionNotice({
-                playerName: viewerPlayerName ?? t('fallback.viewer'),
+            if (!takenDiscardCardId || !previousDiscardCard) {
+                return undefined;
+            }
+            setLiveCenterMotionOverlay({
+                type: 'exit',
+                playerName: getPlayerDisplayName(previousSnapshot.currentPlayer, core, matchData, t),
                 cueKey: nextKey,
                 slotStyle: previousSlotStyle ?? {},
+                card: previousDiscardCard,
+            });
+            setLiveCenterHeldCard(null);
+            setLiveHandHeldCard({
+                cardId: previousDiscardCard.id,
+                cueKey: nextKey,
+            });
+        } else if (nextCueType === 'hand-to-center') {
+            const incomingDiscardCardId = nextCueCardIds[0] ?? null;
+            const incomingDiscardCardIndex = incomingDiscardCardId
+                ? nextSnapshot.discardIds.findIndex((cardId) => cardId === incomingDiscardCardId)
+                : -1;
+            const incomingDiscardCard = incomingDiscardCardId
+                ? nextSnapshot.discardCards.find((card) => card.id === incomingDiscardCardId)
+                : null;
+            const nextSlotStyle = incomingDiscardCardIndex >= 0
+                ? buildMinimalLiveCenterSlots(
+                    nextSnapshot.discardIds.map((cardId) => ({ id: cardId } as TableCard)),
+                    discardThreshold,
+                )[incomingDiscardCardIndex]?.style
+                : undefined;
+            if (!incomingDiscardCardId || !incomingDiscardCard) {
+                return undefined;
+            }
+            setLiveCenterMotionOverlay({
+                type: 'enter',
+                playerName: getPlayerDisplayName(previousSnapshot.currentPlayer, core, matchData, t),
+                cueKey: nextKey,
+                slotStyle: nextSlotStyle ?? {},
+                card: incomingDiscardCard,
+            });
+            setLiveCenterHeldCard({
+                cardId: incomingDiscardCard.id,
+                cueKey: nextKey,
             });
         }
 
@@ -890,9 +963,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         isSpectatorView,
         liveMotionSnapshot,
         core.turn,
+        core,
         discardThreshold,
+        matchData,
         t,
-        viewerPlayerName,
     ]);
 
     React.useEffect(() => {
@@ -905,17 +979,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
 
         return () => window.clearTimeout(clearTimer);
     }, [liveMotionCue]);
-
-    React.useEffect(() => {
-        if (!liveCenterSelectionNotice) return undefined;
-
-        const cueKey = liveCenterSelectionNotice.cueKey;
-        const clearTimer = window.setTimeout(() => {
-            setLiveCenterSelectionNotice((current) => (current?.cueKey === cueKey ? null : current));
-        }, 1350);
-
-        return () => window.clearTimeout(clearTimer);
-    }, [liveCenterSelectionNotice]);
 
     React.useEffect(() => {
         if (liveMotionCue?.type !== 'opening-deal' || !openingDealSignature) {
@@ -1020,11 +1083,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .find((slot) => slot.card?.id === card.id)?.style;
             liveMotionSequenceRef.current += 1;
             const nextKey = liveMotionSequenceRef.current;
-            setLiveCenterSelectionNotice({
+            setLiveCenterMotionOverlay({
+                type: 'exit',
                 playerName: viewerPlayerName ?? t('fallback.viewer'),
                 cueKey: nextKey,
                 slotStyle: selectedSlotStyle ?? {},
+                card: { ...card },
             });
+            setLiveCenterHeldCard(null);
             handleFocusCard(card.id);
             dispatch('TAKE_FROM_DISCARD', { cardId: card.id });
             return;
@@ -1115,8 +1181,20 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         viewerPlayerId,
     ]);
     const minimalLiveCenterSlots = React.useMemo(
-        () => buildMinimalLiveCenterSlots(discardCards, discardThreshold),
-        [discardCards, discardThreshold],
+        () => {
+            const hiddenAnimatedCenterCardIds = new Set<string>();
+            if (liveCenterMotionOverlay) {
+                hiddenAnimatedCenterCardIds.add(liveCenterMotionOverlay.card.id);
+            }
+            if (liveCenterHeldCard) {
+                hiddenAnimatedCenterCardIds.add(liveCenterHeldCard.cardId);
+            }
+            const visibleCenterCards = hiddenAnimatedCenterCardIds.size > 0
+                ? discardCards.filter((card) => !hiddenAnimatedCenterCardIds.has(card.id))
+                : discardCards;
+            return buildMinimalLiveCenterSlots(visibleCenterCards, discardThreshold);
+        },
+        [discardCards, discardThreshold, liveCenterHeldCard, liveCenterMotionOverlay],
     );
     const shouldShowLiveCenterPlaceholders = false;
     const minimalLiveHandCardStyles = React.useMemo(
@@ -1384,18 +1462,41 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 data-testid="fantasyrealms-discard-row"
                 style={minimalLiveDiscardRowStyle}
             >
-                {liveCenterSelectionNotice ? (
+                {liveCenterMotionOverlay ? (
                     <div
                         className="fr-live-center-selection-notice"
-                        style={liveCenterSelectionNotice.slotStyle}
+                        style={liveCenterMotionOverlay.slotStyle}
                         data-testid="fantasyrealms-live-center-selection-notice"
                     >
+                        <div
+                            className={`fr-card-button fr-card-button--live-center ${liveCenterMotionOverlay.type === 'enter' ? 'fr-card-button--motion-center-receive' : 'fr-card-button--motion-center-exit'}`}
+                            data-testid={liveCenterMotionOverlay.type === 'enter' ? 'fantasyrealms-live-center-enter-card' : 'fantasyrealms-live-center-exit-card'}
+                            aria-hidden="true"
+                            onAnimationEnd={() => {
+                                const cueKey = liveCenterMotionOverlay.cueKey;
+                                const cardId = liveCenterMotionOverlay.card.id;
+                                setLiveCenterMotionOverlay((current) => (current?.cueKey === cueKey ? null : current));
+                                setLiveCenterHeldCard((current) => (
+                                    current?.cueKey === cueKey && current.cardId === cardId ? null : current
+                                ));
+                                setLiveHandHeldCard((current) => (
+                                    current?.cueKey === cueKey && current.cardId === cardId ? null : current
+                                ));
+                            }}
+                        >
+                            <FantasyRealmsCard card={liveCenterMotionOverlay.card} t={t} locale={locale} />
+                        </div>
                         <div className="fr-endgame-card-delta fr-live-center-selection-notice-label">
                             <span
                                 className="fr-endgame-card-delta-text fr-live-center-selection-notice-text"
                                 data-testid="fantasyrealms-live-center-selection-notice-badge"
                             >
-                                {t('actions.centerSelectedNotice', { player: liveCenterSelectionNotice.playerName })}
+                                {t(
+                                    liveCenterMotionOverlay.type === 'enter'
+                                        ? 'actions.centerDiscardNotice'
+                                        : 'actions.centerTakeNotice',
+                                    { player: liveCenterMotionOverlay.playerName },
+                                )}
                             </span>
                         </div>
                     </div>
@@ -2423,6 +2524,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     width: var(--fr-live-center-card-width);
                     pointer-events: auto;
                 }
+                .fr-card-button--live-center:not(.fr-card-button--motion-center-receive):not(.fr-card-button--motion-center-exit) {
+                    transition:
+                        left 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                        top 220ms cubic-bezier(0.22, 1, 0.36, 1);
+                }
                 .fr-card-button--live-center .fr-card {
                     border-radius: 14px;
                     border-color: rgba(255, 238, 199, 0.58);
@@ -2870,6 +2976,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     overflow: visible;
                     pointer-events: none;
                 }
+                .fr-board--minimal-live .fr-live-center-selection-notice .fr-card-button--live-center {
+                    left: 0;
+                    top: 0;
+                }
                 .fr-board--minimal-live .fr-live-center-selection-notice-label {
                     left: 50%;
                     right: auto;
@@ -3023,10 +3133,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-board--minimal-live .fr-card-button--motion-center-receive {
                     animation: fr-live-center-row-receive-discard 1200ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
                 }
+                .fr-board--minimal-live .fr-card-button--motion-center-exit {
+                    animation: fr-live-center-row-exit-to-hand 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+                }
                 .fr-board--minimal-live .fr-card-button--motion-hand-draw,
                 .fr-board--minimal-live .fr-card-button--motion-hand-take,
                 .fr-board--minimal-live .fr-card-button--motion-hand-opening,
-                .fr-board--minimal-live .fr-card-button--motion-center-receive {
+                .fr-board--minimal-live .fr-card-button--motion-center-receive,
+                .fr-board--minimal-live .fr-card-button--motion-center-exit {
                     transform-origin: center center;
                     will-change: transform, opacity;
                 }
@@ -3084,6 +3198,20 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     100% {
                         opacity: 1;
                         transform: translate(0, 0) scale(1) rotate(0deg);
+                    }
+                }
+                @keyframes fr-live-center-row-exit-to-hand {
+                    0% {
+                        opacity: 1;
+                        transform: translate(0, 0) scale(1) rotate(0deg);
+                    }
+                    58% {
+                        opacity: 0.92;
+                        transform: translate(0, 150px) scale(0.96) rotate(-1deg);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate(0, 230px) scale(0.88) rotate(-2deg);
                     }
                 }
                 @keyframes fr-endgame-score-card-bounce {
@@ -3822,6 +3950,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     .fr-board--minimal-live .fr-card-button--motion-hand-take,
                     .fr-board--minimal-live .fr-card-button--motion-hand-opening,
                     .fr-board--minimal-live .fr-card-button--motion-center-receive,
+                    .fr-board--minimal-live .fr-card-button--motion-center-exit,
                     .fr-board--minimal-live .fr-live-action-button,
                     .fr-live-chip--turn-active,
                     .fr-board--minimal-live .fr-live-deck-stack {
@@ -3835,6 +3964,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     .fr-board--minimal-live .fr-card-button--motion-hand-take,
                     .fr-board--minimal-live .fr-card-button--motion-hand-opening,
                     .fr-board--minimal-live .fr-card-button--motion-center-receive,
+                    .fr-board--minimal-live .fr-card-button--motion-center-exit,
                     .fr-board--minimal-live .fr-live-action-button--enabled:hover,
                     .fr-board--minimal-live .fr-live-action-button--enabled:active {
                         transform: none;

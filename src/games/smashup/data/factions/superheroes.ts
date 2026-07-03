@@ -32,7 +32,7 @@ export const SUPERHEROES_MINIONS: MinionCardDef[] = [
         nameEn: 'Mind Lady',
         faction: FACTION,
         power: 5,
-        abilityTags: ['onPlay'],
+        abilityTags: ['talent'],
         count: 1,
         previewRef: { type: 'atlas', atlasId: ATLAS, index: 14 },
     },

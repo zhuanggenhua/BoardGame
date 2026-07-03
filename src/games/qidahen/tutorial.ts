@@ -177,10 +177,16 @@ const eventActionStepValidator = (state: MatchState<unknown>, step: { id: string
 
 const siegeStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
+    const pendingTargetAction = core.pendingTargetAction;
     switch (step.id) {
         case 'defend-city':
+            return Boolean(pendingTargetAction)
+                && pendingTargetAction?.targetRuntimeRegionId === 'city-region-25'
+                && pendingTargetAction?.battleMode !== 'city';
         case 'city-battle':
-            return Boolean(core.pendingTargetAction);
+            return Boolean(pendingTargetAction)
+                && pendingTargetAction?.targetRuntimeRegionId === 'city-region-25'
+                && pendingTargetAction?.battleMode === 'city';
         case 'city-result':
         case 'besiege-choice':
         case 'occupy-choice':
@@ -200,6 +206,7 @@ const diplomacyHireStepValidator = (state: MatchState<unknown>, step: { id: stri
         case 'friendly-mark':
             return core.turnPhase === 'diplomacy-choice';
         case 'tribute-mark':
+            return core.turnPhase === 'diplomacy-choice';
         case 'remove-mark':
             return core.turnPhase === 'diplomacy-choice';
         case 'hire-only':
@@ -278,7 +285,9 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.basic.steps.handLimit',
             highlightTarget: 'qidahen-hand-zone',
             position: 'top',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.SELECT_HAND_LIMIT_DISCARD_CARD, QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD],
+            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { sourceId: 'qidahen:hand-limit-discard' } }],
         },
         {
             id: 'wheel-first',
@@ -448,14 +457,17 @@ const QIDAHEN_SIEGE_TUTORIAL: TutorialManifest = {
         {
             id: 'defend-city',
             content: 'game-qidahen:tutorial.siege.steps.defendCity',
-            highlightTarget: 'qidahen-raid-intent',
+            highlightTarget: 'qidahen-resolve-pending-action-defender-hold-city',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            allowedTargets: ['defender-hold-city'],
+            advanceOnEvents: [{ type: 'PENDING_ACTION_RESOLVED', match: { defenderHoldCity: true } }],
         },
         {
             id: 'city-battle',
             content: 'game-qidahen:tutorial.siege.steps.cityBattle',
-            highlightTarget: 'qidahen-pending-casualty-priority',
+            highlightTarget: 'qidahen-raid-intent',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
@@ -841,16 +853,22 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
         {
             id: 'tribute-mark',
             content: 'game-qidahen:tutorial.diplomacy.steps.tributeMark',
-            highlightTarget: 'qidahen-diplomacy-history',
+            highlightTarget: 'qidahen-diplomacy-choice-flip-vassal',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [INTERACTION_COMMANDS.RESPOND],
+            allowedTargets: ['flip-vassal'],
+            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'flip-vassal' } }],
         },
         {
             id: 'remove-mark',
             content: 'game-qidahen:tutorial.diplomacy.steps.removeMark',
-            highlightTarget: 'qidahen-diplomacy-history',
+            highlightTarget: 'qidahen-diplomacy-target-city-region-22',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
+            allowedTargets: ['city-region-22', 'remove-marker'],
+            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'remove-marker' } }],
         },
         {
             id: 'hire-only',
@@ -888,6 +906,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.advanceMidyear',
             highlightTarget: 'qidahen-wheel-move-move-2-one-opponent',
             position: 'left',
+            viewAs: '1',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
             allowedTargets: ['move-2-one-opponent'],
@@ -898,6 +917,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.midyearTax',
             highlightTarget: 'qidahen-season-summary',
             position: 'top',
+            viewAs: '1',
             infoStep: true,
         },
         {
@@ -905,6 +925,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.midyearCharacters',
             highlightTarget: 'qidahen-season-summary',
             position: 'top',
+            viewAs: '1',
             infoStep: true,
         },
         {
@@ -912,6 +933,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.advanceNewYear',
             highlightTarget: 'qidahen-wheel-move-move-1-free',
             position: 'left',
+            viewAs: '2',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE],
             allowedTargets: ['move-1-free'],
@@ -922,6 +944,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearTribute',
             highlightTarget: 'qidahen-korea-zone',
             position: 'top',
+            viewAs: '2',
             infoStep: true,
         },
         {
@@ -929,7 +952,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearMaintenance',
             highlightTarget: 'qidahen-fortification-maintenance-choice-auto-pay',
             position: 'left',
-            viewAs: '2',
+            viewAs: '0',
             requireAction: true,
             allowManualSkip: true,
             allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
@@ -940,6 +963,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.newYearAttrition',
             highlightTarget: 'qidahen-season-summary',
             position: 'top',
+            viewAs: '2',
             infoStep: true,
         },
         {
@@ -947,6 +971,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.chronologyScore',
             highlightTarget: 'qidahen-chronology-zone',
             position: 'top',
+            viewAs: '2',
             infoStep: true,
         },
         {
@@ -954,6 +979,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.turnOrderRefresh',
             highlightTarget: 'qidahen-turn-banner',
             position: 'top',
+            viewAs: '2',
             infoStep: true,
         },
         {
@@ -961,6 +987,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             content: 'game-qidahen:tutorial.yearAndCharacters.steps.finish',
             highlightTarget: 'qidahen-season-summary',
             position: 'top',
+            viewAs: '2',
             infoStep: true,
         },
     ],

@@ -9,17 +9,20 @@
  * - 在线对局状态同步
  */
 
+import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
-  applyCoreState as applyCoreStateViaServer,
   clickBoardElement as clickBoardElementViaHelper,
+  applyCoreState as applyCoreStateViaServer,
   cloneState,
   closeDebugPanelIfOpen as closeDebugPanelIfOpenViaHelper,
   readCoreState as readCoreStateViaServer,
   setupSWOnlineMatch,
   waitForPhase as waitForPhaseViaHelper,
+  waitForSummonerWarsUI,
 } from '../helpers/summonerwars';
+import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { createDeckByFactionId } from '../../src/games/summonerwars/config/factions';
 
 type __ThreeAxeGameMarker = {
@@ -32,6 +35,14 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
   await game.setupScene({ gameId: 'summonerwars' });
 };
 void __ensureThreeAxesMarker;
+
+const dismissDiceResultOverlay = async (page: Page) => {
+  const overlay = page.getByTestId('sw-dice-result-overlay');
+  const visible = await overlay.isVisible().catch(() => false);
+  if (!visible) return;
+  await overlay.click({ force: true }).catch(() => {});
+  await expect(overlay).toBeHidden({ timeout: 8000 });
+};
 
 // ============================================================================
 // 测试状态准备函数
@@ -329,6 +340,211 @@ const prepareFortressPowerState = (coreState: any) => {
     summonerPos,
     enemyPos,
     discardCardId: fortressDiscardCard.id,
+  };
+};
+
+const prepareJudgmentState = (coreState: any) => {
+  const next = cloneState(coreState);
+  next.phase = 'attack';
+  next.currentPlayer = '0';
+  next.selectedUnit = undefined;
+  next.attackTargetMode = undefined;
+
+  const player = next.players?.['0'];
+  if (!player) throw new Error('无法读取玩家0状态');
+  player.attackCount = 0;
+  player.hasAttackedEnemy = false;
+  player.hand = [];
+  player.discard = [];
+  player.activeEvents = [];
+
+  const paladinDeck = createDeckByFactionId('paladin');
+  const necromancerDeck = createDeckByFactionId('necromancer');
+  const fortressWarriorCard = paladinDeck.deck.find(
+    (card) => card.cardType === 'unit' && card.id.startsWith('paladin-fortress-warrior-'),
+  );
+  const enemyChampionCard = necromancerDeck.deck.find(
+    (card) => card.cardType === 'unit' && card.unitClass === 'champion',
+  );
+  const drawCards = paladinDeck.deck.filter(
+    (card) => !card.id.startsWith('paladin-fortress-warrior-'),
+  );
+
+  if (!fortressWarriorCard || fortressWarriorCard.cardType !== 'unit') {
+    throw new Error('未找到真实城塞圣武士模板');
+  }
+  if (!enemyChampionCard || enemyChampionCard.cardType !== 'unit') {
+    throw new Error('未找到真实敌方英雄模板');
+  }
+  if (drawCards.length < 4) {
+    throw new Error('未找到足够的真实圣堂骑士牌库模板');
+  }
+
+  player.deck = drawCards.slice(0, 4).map((card) => ({ ...card }));
+
+  const board = next.board as Array<Array<Record<string, any>>>;
+  const warriorPos = { row: 5, col: 2 };
+  const enemyPos = { row: 4, col: 2 };
+  const friendlySummonerPos = { row: 7, col: 2 };
+  const enemySummonerPos = { row: 0, col: 2 };
+
+  for (const pos of [warriorPos, enemyPos, friendlySummonerPos, enemySummonerPos]) {
+    board[pos.row][pos.col] = {
+      ...board[pos.row][pos.col],
+      unit: undefined,
+      structure: undefined,
+    };
+  }
+
+  const friendlySummoner = paladinDeck.summoner;
+  const enemySummoner = necromancerDeck.summoner;
+  board[friendlySummonerPos.row][friendlySummonerPos.col] = {
+    ...board[friendlySummonerPos.row][friendlySummonerPos.col],
+    unit: {
+      instanceId: 'judgment-friendly-summoner',
+      cardId: friendlySummoner.id,
+      card: { ...friendlySummoner },
+      owner: '0',
+      position: { ...friendlySummonerPos },
+      damage: 0,
+      boosts: 0,
+      hasMoved: false,
+      hasAttacked: false,
+    },
+  };
+  board[enemySummonerPos.row][enemySummonerPos.col] = {
+    ...board[enemySummonerPos.row][enemySummonerPos.col],
+    unit: {
+      instanceId: 'judgment-enemy-summoner',
+      cardId: enemySummoner.id,
+      card: { ...enemySummoner },
+      owner: '1',
+      position: { ...enemySummonerPos },
+      damage: 0,
+      boosts: 0,
+      hasMoved: false,
+      hasAttacked: false,
+    },
+  };
+  board[warriorPos.row][warriorPos.col] = {
+    ...board[warriorPos.row][warriorPos.col],
+    unit: {
+      instanceId: 'judgment-fortress-warrior',
+      cardId: fortressWarriorCard.id,
+      card: { ...fortressWarriorCard },
+      owner: '0',
+      position: { ...warriorPos },
+      damage: 0,
+      boosts: 0,
+      hasMoved: false,
+      hasAttacked: false,
+    },
+  };
+  board[enemyPos.row][enemyPos.col] = {
+    ...board[enemyPos.row][enemyPos.col],
+    unit: {
+      instanceId: 'judgment-enemy-target',
+      cardId: enemyChampionCard.id,
+      card: { ...enemyChampionCard },
+      owner: '1',
+      position: { ...enemyPos },
+      damage: 0,
+      boosts: 0,
+      hasMoved: false,
+      hasAttacked: false,
+    },
+  };
+
+  return {
+    core: next,
+    warriorPos,
+    enemyPos,
+    expectedDrawCount: 3,
+  };
+};
+
+const readFullMatchState = async (matchId: string, page: Page) =>
+  getMatchState(matchId, page) as Promise<Record<string, any>>;
+
+const extractCoreFromMatchState = (matchState: Record<string, any>) =>
+  matchState?.core ?? matchState?.G?.core ?? matchState;
+
+const extractSystemFromMatchState = (matchState: Record<string, any>) =>
+  matchState?.sys ?? matchState?.G?.sys ?? {};
+
+const applyJudgmentPreparedMatchState = async (
+  matchId: string,
+  page: Page,
+  preparedCore: Record<string, any>,
+  randomValues: number[],
+) => {
+  const liveState = await readFullMatchState(matchId, page);
+  const liveSystem = extractSystemFromMatchState(liveState);
+  const turnOrder = Array.isArray(preparedCore.turnOrder)
+    ? preparedCore.turnOrder
+    : (Array.isArray(liveSystem.turnOrder) ? liveSystem.turnOrder : ['0', '1']);
+  const currentPlayer = typeof preparedCore.currentPlayer === 'string'
+    ? preparedCore.currentPlayer
+    : turnOrder[0] ?? '0';
+
+  await injectMatchState(matchId, {
+    ...liveState,
+    core: preparedCore,
+    sys: {
+      ...liveSystem,
+      phase: preparedCore.phase ?? liveSystem.phase,
+      turnOrder,
+      currentPlayerIndex: Math.max(0, turnOrder.indexOf(currentPlayer)),
+      tutorial: {
+        ...(liveSystem.tutorial ?? {}),
+        active: true,
+        randomPolicy: { mode: 'sequence', values: randomValues, cursor: 0 },
+      },
+    },
+  }, page);
+};
+
+const countSpecialMarks = (diceResults: unknown): number => {
+  if (!Array.isArray(diceResults)) return 0;
+  return diceResults
+    .flatMap((result) => Array.isArray((result as { marks?: unknown }).marks)
+      ? (result as { marks: unknown[] }).marks
+      : [])
+    .filter((mark) => mark === 'special')
+    .length;
+};
+
+const readJudgmentAttackEvidence = async (
+  matchId: string,
+  page: Page,
+  attackerId: string,
+) => {
+  const matchState = await readFullMatchState(matchId, page);
+  const core = extractCoreFromMatchState(matchState);
+  const sys = extractSystemFromMatchState(matchState);
+  const entries = Array.isArray(sys?.eventStream?.entries) ? sys.eventStream.entries : [];
+  const attackEntry = [...entries].reverse().find((entry) => {
+    const event = entry?.event;
+    return event?.type === 'sw:unit_attacked'
+      && event?.payload?.attackerId === attackerId;
+  });
+  const judgmentDrawEntries = entries.filter((entry) =>
+    entry?.event?.payload?.sourceAbilityId === 'judgment');
+  const judgmentDrawCardCount = judgmentDrawEntries.reduce((sum, entry) =>
+    sum + Number(entry?.event?.payload?.count ?? 0), 0);
+  const diceResults = attackEntry?.event?.payload?.diceResults;
+  const specialCount = countSpecialMarks(diceResults);
+  const player = core?.players?.['0'];
+  const warrior = core?.board?.[5]?.[2]?.unit;
+
+  return {
+    specialCount,
+    judgmentDrawEventCount: judgmentDrawEntries.length,
+    judgmentDrawCardCount,
+    handCount: Number(player?.hand?.length ?? 0),
+    deckCount: Number(player?.deck?.length ?? 0),
+    attackCount: Number(player?.attackCount ?? 0),
+    hasAttacked: Boolean(warrior?.hasAttacked ?? false),
   };
 };
 
@@ -772,7 +988,23 @@ test.describe('圣堂骑士弃牌技能', () => {
         }),
       });
 
-      await fortressCard.click();
+      await hostPage.reload({ waitUntil: 'domcontentloaded' });
+      await expect(hostPage.getByTestId('sw-map-container')).toBeVisible({ timeout: 30000 });
+      await expect(hostPage.getByTestId('sw-hand-area')).toBeVisible({ timeout: 30000 });
+      await closeDebugPanelIfOpenViaHelper(hostPage);
+
+      const reloadedCardSelector = hostPage.getByTestId('sw-card-selector-overlay');
+      await expect(reloadedCardSelector).toBeVisible({ timeout: 10000 });
+      const reloadedFortressCard = reloadedCardSelector.locator(`[data-card-id="${prepared.discardCardId}"]`).first();
+      await expect(reloadedFortressCard).toBeVisible({ timeout: 5000 });
+
+      await hostPage.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'fortress-power-card-selector-after-reload', {
+          subdir: 'summonerwars/summonerwars-paladin-discard.e2e/城塞之力：攻击后从弃牌堆拿取城塞单位',
+        }),
+      });
+
+      await reloadedFortressCard.click();
       await expect(cardSelector).toBeHidden({ timeout: 8000 });
 
       await expect.poll(async () => {
@@ -794,6 +1026,121 @@ test.describe('圣堂骑士弃牌技能', () => {
       await hostPage.screenshot({
         path: getEvidenceScreenshotPath(testInfo, 'fortress-power-retrieve-complete', {
           subdir: 'summonerwars/summonerwars-paladin-discard.e2e/城塞之力：攻击后从弃牌堆拿取城塞单位',
+        }),
+      });
+
+      await hostPage.reload({ waitUntil: 'domcontentloaded' });
+      await waitForSummonerWarsUI(hostPage, 30000);
+      await closeDebugPanelIfOpenViaHelper(hostPage);
+
+      await expect(hostPage.getByTestId('sw-card-selector-overlay')).toHaveCount(0);
+      await expect.poll(async () => {
+        const latestCore = await readCoreStateViaServer(hostPage);
+        const handIds = (latestCore.players?.['0']?.hand ?? []).map((card: { id?: string }) => card?.id);
+        const discardIds = (latestCore.players?.['0']?.discard ?? []).map((card: { id?: string }) => card?.id);
+        return {
+          inHand: handIds.includes(prepared.discardCardId),
+          removedFromDiscard: !discardIds.includes(prepared.discardCardId),
+          handCount: handIds.length,
+        };
+      }, { timeout: 10000 }).toEqual({
+        inHand: true,
+        removedFromDiscard: true,
+        handCount: handCountBefore + 1,
+      });
+
+      await hostPage.getByTestId('sw-hand-area').screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'fortress-power-after-reload-still-retrieved-once', {
+          subdir: 'summonerwars/summonerwars-paladin-discard.e2e/城塞之力：攻击后从弃牌堆拿取城塞单位',
+        }),
+      });
+    } finally {
+      void hostContext.close().catch(() => {});
+      void guestContext.close().catch(() => {});
+    }
+  });
+
+  test('城塞圣武士裁决：攻击敌方单位后按特殊符号真实抓牌', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    await clearEvidenceScreenshotsForTest(testInfo);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const match = await setupSWOnlineMatch(browser, baseURL, 'paladin', 'necromancer');
+    if (!match) {
+      test.skip(true, 'Game server unavailable or room creation failed.');
+      return;
+    }
+
+    const { hostPage, hostContext, guestContext, matchId } = match;
+
+    try {
+      const prepared = prepareJudgmentState(await readCoreStateViaServer(hostPage));
+      // 4.5 / 6 = 0.75，对应召唤师战争标准骰的 melee + special 面。
+      await applyJudgmentPreparedMatchState(matchId, hostPage, prepared.core, [4.5, 4.5, 4.5]);
+      await closeDebugPanelIfOpenViaHelper(hostPage);
+      await waitForPhaseViaHelper(hostPage, 'attack');
+
+      const stateBefore = await readCoreStateViaServer(hostPage);
+      const handCountBefore = Number(stateBefore.players?.['0']?.hand?.length ?? 0);
+      const deckCountBefore = Number(stateBefore.players?.['0']?.deck?.length ?? 0);
+      expect(handCountBefore).toBe(0);
+      expect(deckCountBefore).toBeGreaterThanOrEqual(prepared.expectedDrawCount);
+
+      await hostPage.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'judgment-before-attack-empty-hand', {
+          filename: 'judgment-before-attack-empty-hand.png',
+        }),
+        fullPage: false,
+      });
+
+      await clickBoardElementViaHelper(
+        hostPage,
+        `[data-testid="sw-unit-${prepared.warriorPos.row}-${prepared.warriorPos.col}"][data-owner="0"]`,
+      );
+      await clickBoardElementViaHelper(
+        hostPage,
+        `[data-testid="sw-unit-${prepared.enemyPos.row}-${prepared.enemyPos.col}"][data-owner="1"]`,
+      );
+      await dismissDiceResultOverlay(hostPage);
+
+      const expectedJudgmentEvidence = {
+        specialCount: prepared.expectedDrawCount,
+        judgmentDrawEventCount: 1,
+        judgmentDrawCardCount: prepared.expectedDrawCount,
+        handCount: handCountBefore + prepared.expectedDrawCount,
+        deckCount: deckCountBefore - prepared.expectedDrawCount,
+        attackCount: 1,
+        hasAttacked: true,
+      };
+
+      await expect.poll(async () => {
+        return readJudgmentAttackEvidence(matchId, hostPage, 'judgment-fortress-warrior');
+      }, { timeout: 10000 }).toEqual(expectedJudgmentEvidence);
+
+      await closeDebugPanelIfOpenViaHelper(hostPage);
+      const handArea = hostPage.getByTestId('sw-hand-area');
+      await expect(handArea).toBeVisible({ timeout: 5000 });
+      await handArea.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'judgment-after-attack-three-cards', {
+          filename: 'judgment-after-attack-three-cards.png',
+        }),
+      });
+
+      await hostPage.reload({ waitUntil: 'domcontentloaded' });
+      await waitForSummonerWarsUI(hostPage, 30000);
+      await closeDebugPanelIfOpenViaHelper(hostPage);
+
+      await expect.poll(async () => {
+        return readJudgmentAttackEvidence(matchId, hostPage, 'judgment-fortress-warrior');
+      }, {
+        timeout: 10000,
+        message: '刷新/重连后裁决不应重复抓牌或重复追加抓牌事件',
+      }).toEqual(expectedJudgmentEvidence);
+
+      const reloadedHandArea = hostPage.getByTestId('sw-hand-area');
+      await expect(reloadedHandArea).toBeVisible({ timeout: 5000 });
+      await reloadedHandArea.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'judgment-after-reload-still-three-cards', {
+          filename: 'judgment-after-reload-still-three-cards.png',
         }),
       });
     } finally {

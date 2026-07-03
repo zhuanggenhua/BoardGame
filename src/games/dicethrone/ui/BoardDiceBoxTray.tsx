@@ -21,11 +21,6 @@ type BoardDisplayDie = {
     definitionId?: string;
 };
 
-type LockedLabelLayout = {
-    x: number;
-    y: number;
-};
-
 const FALLBACK_BOARD_DICE_SLOTS = [
     { left: '16%', top: '69%', rotate: '-18deg', zIndex: 5 },
     { left: '34%', top: '31%', rotate: '14deg', zIndex: 2 },
@@ -59,7 +54,6 @@ export const BoardDiceBoxTray = ({
     const [engineVersion, setEngineVersion] = React.useState(0);
     const [projectedLayouts, setProjectedLayouts] = React.useState<Record<number, DiceBoxProjectedLayout>>({});
     const [motionSnapshots, setMotionSnapshots] = React.useState<Record<number, DiceBoxMotionSnapshot>>({});
-    const [lockedLabelLayouts, setLockedLabelLayouts] = React.useState<Record<number, LockedLabelLayout>>({});
     const [engineState, setEngineState] = React.useState<BoardDiceBoxState>('loading');
     const [diceSettled, setDiceSettled] = React.useState(false);
     const [skinsReady, setSkinsReady] = React.useState(false);
@@ -148,17 +142,10 @@ export const BoardDiceBoxTray = ({
         const update = () => {
             const nextLayouts: Record<number, DiceBoxProjectedLayout> = {};
             const nextSnapshots: Record<number, DiceBoxMotionSnapshot> = {};
-            const nextLockedLayouts: Record<number, LockedLabelLayout> = {};
             dice.forEach((die, index) => {
                 const layout = engine.getProjectedLayout(index, die.id);
                 if (layout) {
                     nextLayouts[die.id] = layout;
-                    if (die.isKept && !die.selected) {
-                        nextLockedLayouts[die.id] = {
-                            x: layout.x,
-                            y: layout.y + (layout.height * 0.58),
-                        };
-                    }
                 }
                 const snapshot = engine.getMotionSnapshot(index);
                 if (snapshot) {
@@ -167,7 +154,6 @@ export const BoardDiceBoxTray = ({
             });
             setProjectedLayouts(nextLayouts);
             setMotionSnapshots(nextSnapshots);
-            setLockedLabelLayouts(nextLockedLayouts);
         };
 
         let frameId = 0;
@@ -203,6 +189,7 @@ export const BoardDiceBoxTray = ({
                     engine.clear();
                 }
                 setProjectedLayouts({});
+                setMotionSnapshots({});
                 setDiceSettled(true);
                 return;
             }
@@ -305,7 +292,7 @@ export const BoardDiceBoxTray = ({
                         data-clickable={die.clickable ? 'true' : 'false'}
                         data-display-value={die.displayValue}
                         className={clsx(
-                            'absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 transition-all duration-150',
+                            'absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 transition-all duration-150 focus:outline-none focus-visible:outline-none',
                             die.clickable ? 'cursor-pointer' : 'cursor-default',
                         )}
                         style={{
@@ -315,14 +302,10 @@ export const BoardDiceBoxTray = ({
                             transform: `translate(-50%, -50%) rotate(${slot.rotate})`,
                         }}
                     >
-                        <div
-                            className={clsx(
-                                'rounded-[1rem] border transition-all duration-150',
-                                die.selected
-                                    ? 'border-amber-300/70 shadow-[0_0_0_2px_rgba(251,191,36,0.38),0_0_24px_rgba(245,158,11,0.26)]'
-                                    : 'border-transparent',
-                            )}
-                        >
+                        {die.selected && (
+                            <div className="pointer-events-none absolute left-1/2 top-[82%] z-0 h-[22%] w-[72%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-300/75 blur-[2px] shadow-[0_0_18px_rgba(245,158,11,0.34)]" />
+                        )}
+                        <div className="relative z-10 transition-all duration-150">
                             <Dice3D
                                 value={die.displayValue}
                                 isRolling={fallbackRolling}
@@ -422,10 +405,7 @@ export const BoardDiceBoxTray = ({
                                 data-motion-y={motionSnapshots[die.id]?.y.toFixed(3)}
                                 data-motion-z={motionSnapshots[die.id]?.z.toFixed(3)}
                                 className={clsx(
-                                    'absolute rounded-[1rem] border transition-[left,top,width,height,opacity,box-shadow,background] duration-75 ease-out',
-                                    die.selected
-                                        ? 'border-amber-200/85 shadow-[0_0_0_2px_rgba(251,191,36,0.52),0_0_28px_rgba(245,158,11,0.32)]'
-                                        : 'border-transparent',
+                                    'absolute transition-[left,top,width,height,opacity] duration-75 ease-out focus:outline-none focus-visible:outline-none',
                                     die.clickable ? 'cursor-pointer' : 'cursor-default',
                                 )}
                                 style={{
@@ -435,37 +415,18 @@ export const BoardDiceBoxTray = ({
                                     height: `${layout.height}px`,
                                     transform: 'translate(-50%, -50%)',
                                     zIndex: die.selected ? 14 : 12,
-                                    background: die.selected ? 'linear-gradient(180deg, rgba(255,239,188,0.16), rgba(255,204,71,0.07))' : 'transparent',
+                                    background: 'transparent',
                                 }}
                             >
-                                {!die.selected && (
-                                    <span className="sr-only">{`die-${die.id}`}</span>
+                                <span className="sr-only">{`die-${die.id}`}</span>
+                                {die.isKept && !die.selected && (
+                                    <span className="pointer-events-none absolute inset-x-[16%] bottom-[-6px] rounded bg-black/58 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/15">
+                                        {t('dice.locked')}
+                                    </span>
                                 )}
                             </button>
                         );
                     })}
-                    <div className="pointer-events-none absolute inset-0">
-                        {dice.map((die) => {
-                            if (!die.isKept || die.selected) return null;
-                            const labelLayout = lockedLabelLayouts[die.id];
-                            if (!labelLayout) return null;
-                            return (
-                                <div
-                                    key={`locked-label-${die.id}`}
-                                    className="absolute -translate-x-1/2 -translate-y-1/2"
-                                    style={{
-                                        left: `${labelLayout.x}px`,
-                                        top: `${labelLayout.y}px`,
-                                        zIndex: 18,
-                                    }}
-                                >
-                                    <span className="block rounded bg-black/58 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/15">
-                                        {t('dice.locked')}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
                 </div>
             )}
         </div>

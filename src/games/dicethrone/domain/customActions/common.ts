@@ -86,6 +86,14 @@ export function resolveDiceOwnerId(state?: DiceThroneCore): PlayerId | undefined
     return getRollerId(state);
 }
 
+function resolveAllowedDieIdsForDiceInteraction(state?: DiceThroneCore): number[] | undefined {
+    if (!state) return undefined;
+    if (state.pendingAttack?.defenseAbilityId === 'duel') {
+        return [0, 1];
+    }
+    return undefined;
+}
+
 // ============================================================================
 // 骰子修改处理器
 // ============================================================================
@@ -103,6 +111,7 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, st
         dieModifyConfig: { mode: 'set', targetValue: 6 },
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -135,6 +144,7 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp, action, s
         dieModifyConfig: { mode: 'copy' },
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -152,6 +162,7 @@ function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, s
         dieModifyConfig: { mode: 'any' },
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -169,6 +180,7 @@ function handleModifyDieAny2({ attackerId, sourceAbilityId, timestamp, action, s
         dieModifyConfig: { mode: 'any' },
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -186,6 +198,7 @@ function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp, action
         dieModifyConfig: { mode: 'adjust', adjustRange: { min: -1, max: 1 } },
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -206,6 +219,7 @@ function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp, acti
         selected: [],
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -222,6 +236,7 @@ function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action, stat
         selected: [],
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -238,6 +253,7 @@ function handleRerollDie5({ attackerId, sourceAbilityId, timestamp, action, stat
         selected: [],
         diceOwnerId: resolveDiceOwnerId(state),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }

@@ -33,7 +33,12 @@ import {
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import type { AbilityCard, SelectableCharacterId } from '../../src/games/dicethrone/types';
 import { createEmptyTokens } from '../../src/games/splendor/domain/rules';
-import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath, sanitizeEvidencePathSegment } from './evidenceScreenshots';
+import {
+    clearEvidenceScreenshotsForTest,
+    getEvidenceScreenshotPath,
+    sanitizeEvidencePathSegment,
+    withJpegEvidenceScreenshotOptions,
+} from './evidenceScreenshots';
 
 type SceneQueryValue = string | number | boolean | null | undefined;
 
@@ -1763,7 +1768,7 @@ export class GameTestContext {
         }
 
         const path = getEvidenceScreenshotPath(testInfo, name, {
-            filename: `${sanitizeEvidencePathSegment(name) || 'screenshot'}.png`,
+            filename: `${sanitizeEvidencePathSegment(name) || 'screenshot'}.jpg`,
         });
         await mkdir(dirname(path), { recursive: true });
 
@@ -1785,6 +1790,8 @@ export class GameTestContext {
             throw lastError;
         };
 
-        await withFileRetry(() => this.page.screenshot({ path, fullPage: true }).then(() => undefined));
+        await withFileRetry(() =>
+            this.page.screenshot(withJpegEvidenceScreenshotOptions({ path, fullPage: true })).then(() => undefined),
+        );
     }
 }

@@ -65,6 +65,73 @@ async function saveBoardDiceStageScreenshot(
     await stage.screenshot({ path: screenshotPath });
 }
 
+async function waitForBoardDiceSettled(page: Page): Promise<void> {
+    await expect(page.getByTestId('dice-field-3d-canvas')).toBeVisible({ timeout: 8000 });
+    await page.waitForFunction(() => {
+        const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+        const canvasNode = document.querySelector('[data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+        if (!stage || !canvasNode) return false;
+        if (canvasNode.dataset.diceTexturesReady !== 'true' || canvasNode.dataset.diceSettled !== 'true') return false;
+
+        const stageRect = stage.getBoundingClientRect();
+        const nodes = Array.from(document.querySelectorAll(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )) as HTMLElement[];
+        if (nodes.length === 0) return false;
+
+        const positions = nodes.map((node) => {
+            const rect = node.getBoundingClientRect();
+            const isEngineLayer = node.dataset.renderMode === 'engine';
+            const isReasonableSize = rect.width >= 42 && rect.height >= 42 && rect.width <= 110 && rect.height <= 110;
+            const isInsideStage = rect.left >= stageRect.left - 4
+                && rect.top >= stageRect.top - 4
+                && rect.right <= stageRect.right + 4
+                && rect.bottom <= stageRect.bottom + 4;
+            if (!isEngineLayer || !isReasonableSize || !isInsideStage) return null;
+            return [
+                node.dataset.testid ?? '',
+                Math.round(rect.left),
+                Math.round(rect.top),
+                Math.round(rect.width),
+                Math.round(rect.height),
+                node.dataset.rotateX ?? '',
+                node.dataset.rotateY ?? '',
+                node.dataset.rotateZ ?? '',
+            ].join(':');
+        });
+        if (positions.some((position) => position === null)) return false;
+        const snapshot = positions.join('|');
+        const win = window as Window & {
+            __DT_BOARD_DICE_STABLE_SNAPSHOT__?: string;
+            __DT_BOARD_DICE_STABLE_SINCE__?: number;
+        };
+        if (win.__DT_BOARD_DICE_STABLE_SNAPSHOT__ !== snapshot) {
+            win.__DT_BOARD_DICE_STABLE_SNAPSHOT__ = snapshot;
+            win.__DT_BOARD_DICE_STABLE_SINCE__ = performance.now();
+            return false;
+        }
+        return performance.now() - (win.__DT_BOARD_DICE_STABLE_SINCE__ ?? 0) >= 360;
+    }, undefined, { timeout: 8000 });
+}
+
+async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): Promise<void> {
+    for (const dieId of dieIds) {
+        const dieButton = page.locator(`[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`);
+        await expect(dieButton).toHaveAttribute('data-render-mode', 'engine');
+        await expect(dieButton).toHaveAttribute('data-selected', 'true');
+    }
+
+    await expect(page.getByTestId('dice-field-3d-underlay')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid^="die-selection-underlay-"]')).toHaveCount(0);
+    await expect(page.locator(
+        '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"][data-selected="true"] .border-\\[\\#f2c14e\\]',
+    )).toHaveCount(0);
+
+    await expect(page.locator(
+        '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"][data-selected="true"]',
+    )).toHaveCount(dieIds.length);
+}
+
 type DiceRectSnapshot = {
     dieId: number;
     x: number | null;
@@ -205,10 +272,11 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         }, { timeout: 5000 }).toBe('true');
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
+        await waitForBoardDiceSettled(page);
         await saveBoardDiceStageScreenshot(page, '02a-切到棋盘3D骰台-局部', testInfo);
         await closeFabSettingsPanel(page);
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
-        await page.waitForTimeout(150);
+        await waitForBoardDiceSettled(page);
 
         await game.screenshot('02-打开设置后-切到棋盘内3D骰子', testInfo);
 
@@ -218,6 +286,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(secondDieButton).toBeVisible({ timeout: 5000 });
         await firstDieButton.click();
         await secondDieButton.click();
+        await expectBoardDiceSelectionUnderlay(page, [0, 1]);
 
         const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).first();
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
@@ -225,10 +294,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const baselineRects = await readBoardDieRects(page, [0, 1]);
 
         await confirmButton.click();
-        await page.waitForTimeout(120);
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
-        await saveBoardDiceStageScreenshot(page, '03a-确认重投后-3D骰子位移中-局部', testInfo);
-        await game.screenshot('03-确认重投后-3D骰子发生位移弹跳', testInfo);
         await expect.poll(async () => {
             const currentRects = await readBoardDieRects(page, [0, 1]);
             return Math.max(
@@ -239,7 +305,9 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             intervals: [80, 120, 180, 240],
         }).toBeGreaterThan(12);
 
-        await expect(page.getByTestId('dicethrone-board-dice-box-canvas')).toHaveAttribute('data-dice-settled', 'true', { timeout: 5000 });
+        await waitForBoardDiceSettled(page);
+        await saveBoardDiceStageScreenshot(page, '03a-确认重投后-3D骰子稳定完成-局部', testInfo);
+        await game.screenshot('03-确认重投后-3D骰子稳定完成', testInfo);
         const settledRects = await readBoardDieRects(page, [0, 1]);
         const settledMoveDistance = Math.max(
             ...settledRects.map((position, posIndex) => getVisualMoveDistance(position, baselineRects[posIndex])),
@@ -427,10 +495,11 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
         await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'true');
+        await waitForBoardDiceSettled(page);
         await saveBoardDiceStageScreenshot(page, '05a-对方响应改骰-棋盘3D骰台-局部', testInfo);
         await closeFabSettingsPanel(page);
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
-        await page.waitForTimeout(150);
+        await waitForBoardDiceSettled(page);
         await game.screenshot('05-对方投掷阶段-开启3D后切到棋盘骰台', testInfo);
     });
 });

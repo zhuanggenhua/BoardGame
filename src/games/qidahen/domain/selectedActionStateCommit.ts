@@ -9,6 +9,7 @@ import {
     hasRemainingFactionAction,
     syncFactionActionWindow,
 } from './factionActionWindow';
+import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import { hasActiveCharacter } from './characterPresenceAccessors';
 import type {
     QidahenCore,
@@ -74,6 +75,7 @@ export function commitQidahenSelectedActionState(
         ...state,
         selectedRegionId: followUp.selectedRegionId,
         explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(followUp.selectedRegionId),
         selectedActionId: actionId,
         confirmedActionId: actionId,
         selectedPaymentCardIds: [],

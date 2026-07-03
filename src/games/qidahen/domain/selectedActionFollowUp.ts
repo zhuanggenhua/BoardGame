@@ -1,9 +1,10 @@
-import { buildDriveTigerDispatchSelection } from './dispatchSelectionBuilders';
+import { buildDriveTigerDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';
 import { buildPendingTargetAction } from './pendingTargetActionBuilder';
+import { getQidahenExplicitRegionSelectionSemantics } from './regionFocusSemantics';
 import {
-    buildKhanEdictSelection,
-    buildMaShiTradeSelection,
-    buildRecruitSelection,
+    buildKhanEdictSelectionFromRegionSemantics,
+    buildMaShiTradeSelectionFromRegionSemantics,
+    buildRecruitSelectionFromRegionSemantics,
 } from './selectionBuilders';
 import type {
     QidahenCore,
@@ -121,17 +122,18 @@ const resolveQidahenSelectedActionSelectionFollowUpResolution = (
     baseLastSeasonSummary: QidahenSeasonSummary | null,
     dependencies: QidahenSelectedActionFollowUpDependencies,
 ): QidahenSelectedActionSelectionFollowUpResolutionResult => {
+    const baseRegionSemantics = getQidahenExplicitRegionSelectionSemantics(state, baseSelectedRegionId);
     const recruitSelection = actionId === 'recruit'
-        ? buildRecruitSelection(state, baseSelectedRegionId, currentFactionId)
+        ? buildRecruitSelectionFromRegionSemantics(state, baseRegionSemantics, currentFactionId)
         : null;
     const maShiTradeSelection = actionId === 'ma-shi-trade'
-        ? buildMaShiTradeSelection(state, baseSelectedRegionId)
+        ? buildMaShiTradeSelectionFromRegionSemantics(state, baseRegionSemantics)
         : null;
     const khanEdictSelection = actionId === 'khan-edict'
-        ? buildKhanEdictSelection(state, currentFactionId, baseSelectedRegionId)
+        ? buildKhanEdictSelectionFromRegionSemantics(state, currentFactionId, baseRegionSemantics)
         : null;
     const driveTigerDispatchSelection = actionId === 'drive-tiger'
-        ? buildDriveTigerDispatchSelection(state, currentFactionId, baseSelectedRegionId)
+        ? buildDriveTigerDispatchSelectionFromRegionSemantics(state, currentFactionId, baseRegionSemantics)
         : null;
 
     let nextLastSeasonSummary = baseLastSeasonSummary;

@@ -6,6 +6,8 @@ import type { GameEvent } from '../../../../engine/types';
 import type { UnitCard, CellCoord } from '../types';
 import { SW_EVENTS } from '../types';
 import { findBoardUnitByCardId, findBoardUnitByInstanceId, emitDestroyWithTriggers } from '../execute/helpers';
+import { isCellEmpty, manhattanDistance } from '../helpers';
+import { isPlagueZombieCard, isUndeadCard } from '../ids';
 import { abilityExecutorRegistry } from './registry';
 import type { SWAbilityContext } from './types';
 
@@ -17,20 +19,22 @@ abilityExecutorRegistry.register('revive_undead', (ctx: SWAbilityContext) => {
   const targetPosition = payload.targetPosition as CellCoord | undefined;
   if (!targetCardId || !targetPosition) return { events };
 
+  const player = core.players[playerId as '0' | '1'];
+  const card = player.discard.find(c => c.id === targetCardId);
+  if (!card || card.cardType !== 'unit' || !isUndeadCard(card)) return { events };
+  if (manhattanDistance(sourcePosition, targetPosition) !== 1) return { events };
+  if (!isCellEmpty(core, targetPosition)) return { events };
+
   events.push({
     type: SW_EVENTS.UNIT_DAMAGED,
     payload: { position: sourcePosition, damage: 2, reason: 'revive_undead', sourcePlayerId: playerId },
     timestamp,
   });
-  const player = core.players[playerId as '0' | '1'];
-  const card = player.discard.find(c => c.id === targetCardId);
-  if (card && card.cardType === 'unit') {
-    events.push({
-      type: SW_EVENTS.UNIT_SUMMONED,
-      payload: { playerId, cardId: targetCardId, position: targetPosition, card: card as UnitCard, fromDiscard: true },
-      timestamp,
-    });
-  }
+  events.push({
+    type: SW_EVENTS.UNIT_SUMMONED,
+    payload: { playerId, cardId: targetCardId, position: targetPosition, card: card as UnitCard, fromDiscard: true },
+    timestamp,
+  });
   return { events };
 }, { payloadContract: { required: ['targetCardId', 'targetPosition'] } });
 
@@ -62,13 +66,14 @@ abilityExecutorRegistry.register('infection', (ctx: SWAbilityContext) => {
 
   const player = core.players[playerId as '0' | '1'];
   const card = player.discard.find(c => c.id === targetCardId);
-  if (card && card.cardType === 'unit') {
-    events.push({
-      type: SW_EVENTS.UNIT_SUMMONED,
-      payload: { playerId, cardId: targetCardId, position: targetPosition, card: card as UnitCard, fromDiscard: true },
-      timestamp,
-    });
-  }
+  if (!card || card.cardType !== 'unit' || !isPlagueZombieCard(card)) return { events };
+  if (!isCellEmpty(core, targetPosition)) return { events };
+
+  events.push({
+    type: SW_EVENTS.UNIT_SUMMONED,
+    payload: { playerId, cardId: targetCardId, position: targetPosition, card: card as UnitCard, fromDiscard: true },
+    timestamp,
+  });
   return { events };
 });
 

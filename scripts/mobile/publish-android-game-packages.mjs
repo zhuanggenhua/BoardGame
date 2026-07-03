@@ -586,7 +586,7 @@ const sharedAudioPackResult = (manifestOnly || reuseSharedAudio)
     : await publishSharedAudioPackage();
 
 if (sharedAudioPackResult) {
-    if (manifestOnly) {
+    if (manifestOnly || reuseSharedAudio) {
         console.log('公共音频包已复用远端 latest manifest');
     } else {
         console.log(dryRun ? '公共音频包预演完成（未上传）' : '公共音频包已发布');

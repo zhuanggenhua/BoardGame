@@ -386,10 +386,12 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
 
     useEffect(() => {
         if (!isTutorialRoute) return;
-        lastTutorialProgressRef.current = {
-            manifestId: currentManifestId,
-            stepId: null,
-        };
+        if (lastTutorialProgressRef.current.manifestId !== currentManifestId) {
+            lastTutorialProgressRef.current = {
+                manifestId: currentManifestId,
+                stepId: null,
+            };
+        }
         if (currentStep?.id) {
             lastTutorialProgressRef.current = {
                 manifestId: currentManifestId,

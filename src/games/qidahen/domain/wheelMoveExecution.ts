@@ -10,7 +10,11 @@ import {
     buildWheelDispatchSelectionFromWheel,
     shouldPersistExplicitWheelDispatchSelectionForWheelState,
 } from './dispatchSelectionBuilders';
-import { buildDiplomacySelection } from './selectionBuilders';
+import {
+    buildQidahenRegionFocusState,
+    getQidahenLockedRegionSelectionSemantics,
+} from './regionFocusSemantics';
+import { buildDiplomacySelectionFromRegionSemantics } from './selectionBuilders';
 import {
     buildQidahenWheelMoveSummary,
     getQidahenWheelMoveById,
@@ -166,16 +170,21 @@ export const resolveQidahenWheelMoveExecuted = (
     }
 
     if (nextWheelPosition === 'wheel-attack') {
-        const diplomacySelection = buildDiplomacySelection(
+        const diplomacySelection = buildDiplomacySelectionFromRegionSemantics(
             nextState,
             currentFactionId,
-            nextState.selectedRegionId,
+            getQidahenLockedRegionSelectionSemantics(nextState),
             'wheel-hire',
         );
         if (diplomacySelection) {
             nextState = {
                 ...nextState,
                 selectedRegionId: diplomacySelection.sourceRegionId,
+                explicitRegionId: null,
+                regionFocusState: buildQidahenRegionFocusState(diplomacySelection.sourceRegionId, {
+                    lockedSourceRegionId: diplomacySelection.sourceRegionId,
+                    displayAnchorRegionId: diplomacySelection.displayAnchorRegionId ?? diplomacySelection.sourceRegionId,
+                }),
                 turnPhase: 'diplomacy-choice',
                 diplomacyProgress: null,
                 actionLog: [
@@ -219,6 +228,11 @@ export const resolveQidahenWheelMoveExecuted = (
         nextState = {
             ...nextState,
             selectedRegionId: wheelDispatchSelection.sourceRegionId,
+            explicitRegionId: null,
+            regionFocusState: buildQidahenRegionFocusState(wheelDispatchSelection.sourceRegionId, {
+                lockedSourceRegionId: wheelDispatchSelection.sourceRegionId,
+                displayAnchorRegionId: wheelDispatchSelection.displayAnchorRegionId ?? wheelDispatchSelection.sourceRegionId,
+            }),
             turnPhase: 'dispatch-targeting',
             wheelDispatchProgress: shouldPersistExplicitWheelDispatchSelection ? wheelDispatchSelection : null,
             pendingTargetAction: null,

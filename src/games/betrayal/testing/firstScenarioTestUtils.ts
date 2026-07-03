@@ -6,6 +6,7 @@ import {
     type BetrayalCommandMap,
     type BetrayalCore,
 } from '../game';
+import { BETRAYAL_DISCOVERY_POOLS } from '../scenarioConfig';
 
 export const BETRAYAL_FIXED_RANDOM: RandomFn = {
     random: () => 0.42,
@@ -72,6 +73,9 @@ export function createStartedFirstScenarioCore(playerIds: string[] = ['0', '1', 
 
 export function createFirstScenarioHauntCore(): BetrayalCore {
     let core = createStartedFirstScenarioCore();
+    core.roomDiscoveryOrderByFloor.basement = [
+        BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.find((room) => room.visualId === 'chasm')!,
+    ];
     const hauntTriggerRandom = createBetrayalScriptedRandom(
         3, 3, 3, 3, // 第三次探索第一次真正抽到恶兆：当前全员持有 4 张恶兆，haunt roll = 8
     );
@@ -132,10 +136,8 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntSuccessRandom);
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'rope' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+    core.currentExplorer.roomId = 'basement-landing';
+    core.activeRoomId = 'basement-landing';
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXORCISE_JACK, '0', {}, 100, hauntSuccessRandom);
 
     return core;
@@ -178,11 +180,75 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'rope' });
+    core.currentExplorer.roomId = 'basement-landing';
+    core.activeRoomId = 'basement-landing';
+
+    return core;
+}
+
+export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
+    let core = createFirstScenarioHauntCore();
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-west' });
+    return core;
+}
+
+export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
+    let core = createFirstScenarioHauntCore();
+    const hauntProgressRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-west' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.LEARN_ABOUT_JACK, '0', {}, 100, hauntProgressRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-north' });
+
+    return core;
+}
+
+export function createTradeReadyCore(): BetrayalCore {
+    const core = createStartedFirstScenarioCore();
+    const teammate = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+
+    core.currentExplorer = {
+        ...core.currentExplorer,
+        roomId: 'hallway',
+        inventory: [
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+        ],
+    };
+    core.otherExplorers = [
+        {
+            ...teammate,
+            roomId: 'hallway',
+        },
+        {
+            ...traitor,
+            roomId: 'entrance-hall',
+        },
+    ];
+    core.activeRoomId = 'hallway';
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.recommendedAction = 'trade';
+    core.usedCardIdsThisTurn = [];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+
+    return core;
+}
+
+export function createHeroAttackTraitorReadyCore(): BetrayalCore {
+    let core = createFirstScenarioHauntCore();
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
-
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
     return core;
 }
 

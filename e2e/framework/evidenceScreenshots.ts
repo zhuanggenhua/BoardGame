@@ -3,6 +3,9 @@ import { join, parse } from 'node:path';
 import type { TestInfo } from '@playwright/test';
 
 const EVIDENCE_GAME_IDS = new Set(['smashup', 'dicethrone', 'summonerwars', 'tictactoe', 'cardia', '_shared']);
+export const EVIDENCE_SCREENSHOT_EXTENSION = '.jpg';
+export const EVIDENCE_SCREENSHOT_TYPE = 'jpeg';
+export const EVIDENCE_SCREENSHOT_QUALITY = 90;
 
 export interface EvidenceScreenshotOptions {
     subdir?: string;
@@ -35,8 +38,7 @@ export function sanitizeEvidencePathSegment(value: string): string {
 function sanitizeEvidenceFileName(filename: string): string {
     const parsed = parse(filename);
     const baseName = sanitizeEvidencePathSegment(parsed.name || 'screenshot') || 'screenshot';
-    const ext = parsed.ext && /^\.[a-z0-9]+$/i.test(parsed.ext) ? parsed.ext.toLowerCase() : '.png';
-    return `${baseName}${ext}`;
+    return `${baseName}${EVIDENCE_SCREENSHOT_EXTENSION}`;
 }
 
 function sanitizeEvidenceSubdir(value: string): string {
@@ -77,8 +79,28 @@ export function getEvidenceScreenshotPath(
     const dir = getEvidenceScreenshotDir(testInfo, options.subdir);
     const filename =
         options.filename ??
-        `${sanitizeEvidencePathSegment(name) || 'screenshot'}.png`;
+        `${sanitizeEvidencePathSegment(name) || 'screenshot'}${EVIDENCE_SCREENSHOT_EXTENSION}`;
     return join(dir, sanitizeEvidenceFileName(filename));
+}
+
+export function toJpegEvidenceScreenshotPath(path: string): string {
+    return path.replace(/\.(?:png|jpe?g)$/i, EVIDENCE_SCREENSHOT_EXTENSION);
+}
+
+export function withJpegEvidenceScreenshotOptions<T extends Record<string, unknown>>(
+    options: T,
+): T & { type: typeof EVIDENCE_SCREENSHOT_TYPE; quality: typeof EVIDENCE_SCREENSHOT_QUALITY } {
+    const next = { ...options } as T & {
+        path?: unknown;
+        type: typeof EVIDENCE_SCREENSHOT_TYPE;
+        quality: typeof EVIDENCE_SCREENSHOT_QUALITY;
+    };
+    if (typeof next.path === 'string') {
+        next.path = toJpegEvidenceScreenshotPath(next.path);
+    }
+    next.type = EVIDENCE_SCREENSHOT_TYPE;
+    next.quality = EVIDENCE_SCREENSHOT_QUALITY;
+    return next;
 }
 
 export async function clearEvidenceScreenshotsForTest(testInfo: TestInfo): Promise<void> {

@@ -69,19 +69,19 @@ export const DICETHRONE_ABILITY_SLOT_LAYOUTS: Record<DiceThronePlayerBoardLayout
 export const DEFAULT_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = DICETHRONE_ABILITY_SLOT_LAYOUTS.v1;
 
 export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimensions> = {
-    barbarian: { width: 3632, height: 2234 },
+    barbarian: { width: 2048, height: 1260 },
     gunslinger: { width: 2048, height: 1254 },
-    monk: { width: 3632, height: 2234 },
-    moon_elf: { width: 3632, height: 2234 },
-    paladin: { width: 3160, height: 1929 },
-    pyromancer: { width: 3632, height: 2234 },
+    monk: { width: 2048, height: 1260 },
+    moon_elf: { width: 2048, height: 1260 },
+    paladin: { width: 2048, height: 1250 },
+    pyromancer: { width: 2048, height: 1260 },
     samurai: { width: 2048, height: 1248 },
-    shadow_thief: { width: 3632, height: 2234 },
+    shadow_thief: { width: 2048, height: 1260 },
     treant: { width: 2048, height: 1233 },
     ninja: { width: 2048, height: 1260 },
-    zhanshujia: { width: 3632, height: 2234 },
-    cursed_pirate: { width: 3643, height: 2234 },
-    artificer: { width: 3643, height: 2234 },
+    zhanshujia: { width: 2048, height: 1260 },
+    cursed_pirate: { width: 2048, height: 1256 },
+    artificer: { width: 2048, height: 1256 },
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {

@@ -33,6 +33,12 @@ import {
 import {
     getPreferredLogicalRegionDisplayName,
 } from './regionRuleSemantics';
+import {
+    getQidahenExplicitRegionSelectionSemantics,
+    getQidahenInteractionFocusRegionId,
+    getQidahenLockedRegionSelectionSemantics,
+    type QidahenExplicitRegionSelectionSemantics,
+} from './regionFocusSemantics';
 import { resolvePreferredRegionDisplayAnchor } from './selectionDisplayAnchor';
 import {
     formatTroopTransferDetails,
@@ -75,33 +81,35 @@ const wheelDispatchProfileIdByPosition: Partial<Record<string, QidahenMovementPr
     'wheel-hire': 'dispatch-cavalry',
 };
 
-const getQidahenExplicitOrSelectedRegionId = (
+export interface QidahenWheelDispatchSelectionRegionSemantics {
+    selectedTargetRegionId: string;
+    preferredSourceRegionId: string;
+    displayAnchorRegionId: string;
+}
+
+export const getQidahenWheelDispatchSelectionRegionSemantics = (
     state: Pick<QidahenCore, 'explicitRegionId' | 'selectedRegionId'>,
-    selectedRegionId: string,
-): string => (
-    selectedRegionId !== state.selectedRegionId
-        ? selectedRegionId
-        : state.explicitRegionId ?? selectedRegionId
-);
+    sourceRegionId: string,
+    preferredSourceRegionId?: string | null,
+): QidahenWheelDispatchSelectionRegionSemantics => {
+    const regionSemantics = getQidahenExplicitRegionSelectionSemantics(state, sourceRegionId);
+    return {
+        selectedTargetRegionId: regionSemantics.targetRegionId,
+        preferredSourceRegionId: sourceRegionId,
+        displayAnchorRegionId: preferredSourceRegionId ?? sourceRegionId,
+    };
+};
 
-const getQidahenDriveTigerLockedOrExplicitRegionId = (
-    state: Pick<QidahenCore, 'turnPhase' | 'explicitRegionId' | 'selectedRegionId'>,
-    selectedRegionId: string,
-): string => (
-    state.turnPhase === 'drive-tiger-consent' || state.turnPhase === 'dispatch-targeting'
-        ? state.selectedRegionId
-        : getQidahenExplicitOrSelectedRegionId(state, selectedRegionId)
-);
-
-export const buildWangHuazhenInternalDispatchSelection = (
+export const buildWangHuazhenInternalDispatchSelectionFromRegionSemantics = (
     state: QidahenCore,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
 ): QidahenInternalDispatchSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const preferredSourceRegionId = regionSemantics.targetRegionId;
+    const displayAnchorRegionId = regionSemantics.displayAnchorRegionId;
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const buildCandidatesForSource = (sourceRegion: QidahenCore['regions'][number]) => {
         const actionSourceRegion = materializeNonSiegedCityActionSourceRegion(sourceRegion);
-        const sourceRegionName = getPreferredLogicalRegionDisplayName(actionSourceRegion, explicitOrSelectedRegionId);
+        const sourceRegionName = getPreferredLogicalRegionDisplayName(actionSourceRegion, displayAnchorRegionId);
         const maxTroops = Math.max(0, Math.min(2, actionSourceRegion.troops));
         if (maxTroops <= 0) {
             return [];
@@ -110,7 +118,7 @@ export const buildWangHuazhenInternalDispatchSelection = (
             .map((regionId) => runtimeRegions.find((region) => region.id === regionId) ?? null)
             .filter((region): region is NonNullable<typeof region> => isFriendlyDispatchSupportTarget(region, 'ming'))
             .map((targetRegion) => {
-                const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, explicitOrSelectedRegionId);
+                const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, displayAnchorRegionId);
                 const passage = getQidahenDirectedPassageRule(state, actionSourceRegion.id, targetRegion.id, 'ming');
                 if (!passage?.usable) {
                     return null;
@@ -140,7 +148,7 @@ export const buildWangHuazhenInternalDispatchSelection = (
             ));
     };
 
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(preferredSourceRegionId);
     const candidateSources = runtimeRegions
         .filter((region) => (
             isRegionControlledByFaction(region, 'ming')
@@ -168,23 +176,24 @@ export const buildWangHuazhenInternalDispatchSelection = (
         title: '王化贞免费调度',
         summary: '行动前可免费调度 2 个部队。当前实现为友方相邻区域之间的正式内部调度，不走进攻链。',
         sourceRegionId: sourceRegion.id,
-        sourceRegionName: getPreferredLogicalRegionDisplayName(sourceRegion, explicitOrSelectedRegionId),
-        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(sourceRegion, explicitOrSelectedRegionId),
+        sourceRegionName: getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId),
+        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(sourceRegion, displayAnchorRegionId),
         displayAnchorRegionName: getPreferredLogicalRegionDisplayName(
             sourceRegion,
-            resolvePreferredRegionDisplayAnchor(sourceRegion, explicitOrSelectedRegionId),
+            resolvePreferredRegionDisplayAnchor(sourceRegion, displayAnchorRegionId),
         ),
         maxTroops: Math.max(0, Math.min(2, getNonSiegedCityActionSourceSnapshot(sourceRegion).troops)),
         candidates,
     };
 };
 
-export const buildGaoDiDispatchSelection = (
+export const buildGaoDiDispatchSelectionFromRegionSemantics = (
     state: QidahenCore,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
     selectedCardId: string | null = null,
 ): QidahenGaoDiDispatchSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const preferredSourceRegionId = regionSemantics.targetRegionId;
+    const displayAnchorRegionId = regionSemantics.displayAnchorRegionId;
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const candidateCardIds = state.handCards
         .filter((card) => card.faction === 'ming' && card.status !== 'disabled')
@@ -195,14 +204,14 @@ export const buildGaoDiDispatchSelection = (
 
     const buildCandidatesForSource = (sourceRegion: QidahenCore['regions'][number]) => {
         const actionSourceRegion = materializeNonSiegedCityActionSourceRegion(sourceRegion);
-        const sourceRegionName = getPreferredLogicalRegionDisplayName(actionSourceRegion, explicitOrSelectedRegionId);
+        const sourceRegionName = getPreferredLogicalRegionDisplayName(actionSourceRegion, displayAnchorRegionId);
         const adjacentTargets = sourceRegion.adjacentRegionIds
             .map((regionId) => runtimeRegions.find((region) => region.id === regionId) ?? null)
             .filter((region): region is NonNullable<typeof region> => isFriendlyDispatchSupportTarget(region, 'ming'));
         const candidates: QidahenGaoDiDispatchSelection['candidates'] = [];
 
         for (const targetRegion of adjacentTargets) {
-            const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, explicitOrSelectedRegionId);
+            const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, displayAnchorRegionId);
             const passage = getQidahenDirectedPassageRule(state, actionSourceRegion.id, targetRegion.id, 'ming');
             if (!passage?.usable) {
                 continue;
@@ -260,7 +269,7 @@ export const buildGaoDiDispatchSelection = (
         ));
     };
 
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(preferredSourceRegionId);
     const candidateSources = runtimeRegions
         .filter((region) => (
             isRegionControlledByFaction(region, 'ming')
@@ -294,11 +303,11 @@ export const buildGaoDiDispatchSelection = (
         title: '高第弃牌调度',
         summary: '行动前弃 1 张手牌，可在友方相邻区域间调度 1 格，数量可在 1-6 之间选择。',
         sourceRegionId: sourceRegion.id,
-        sourceRegionName: getPreferredLogicalRegionDisplayName(sourceRegion, explicitOrSelectedRegionId),
-        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(sourceRegion, explicitOrSelectedRegionId),
+        sourceRegionName: getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId),
+        displayAnchorRegionId: resolvePreferredRegionDisplayAnchor(sourceRegion, displayAnchorRegionId),
         displayAnchorRegionName: getPreferredLogicalRegionDisplayName(
             sourceRegion,
-            resolvePreferredRegionDisplayAnchor(sourceRegion, explicitOrSelectedRegionId),
+            resolvePreferredRegionDisplayAnchor(sourceRegion, displayAnchorRegionId),
         ),
         maxTroops: Math.max(0, Math.min(6, getNonSiegedCityActionSourceSnapshot(sourceRegion).troops)),
         maxPopulation: Math.max(0, Math.min(6, getNonSiegedCityActionSourceSnapshot(sourceRegion).population)),
@@ -318,16 +327,19 @@ export const getQidahenInternalDispatchSelectionForCore = (
     if (currentFactionId !== 'ming' || !hasActiveCharacter(state, 'ming', 'ming-wang-huazhen')) {
         return null;
     }
-    return buildWangHuazhenInternalDispatchSelection(state, state.selectedRegionId);
+    return buildWangHuazhenInternalDispatchSelectionFromRegionSemantics(
+        state,
+        getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
+    );
 };
 
-export const getPreferredDispatchSelectedRegionIdForFaction = (
+export const getPreferredDispatchSourceRegionIdForSemantics = (
     state: QidahenCore,
     factionId: QidahenFactionId,
     movementProfileId: QidahenMovementProfileId,
-    selectedRegionId: string,
+    dispatchRegionSemantics: Pick<QidahenWheelDispatchSelectionRegionSemantics, 'preferredSourceRegionId'>,
 ): string => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const preferredSourceRegionId = dispatchRegionSemantics.preferredSourceRegionId;
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const getRegionDispatchSourceSnapshot = (
         region: QidahenCore['regions'][number],
@@ -362,7 +374,7 @@ export const getPreferredDispatchSelectedRegionIdForFaction = (
             || left.name.localeCompare(right.name, 'zh-CN');
     };
 
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(preferredSourceRegionId);
     const selectedRuntimeRegion = runtimeRegions.find((region) => region.id === selectedRuntimeRegionId) ?? null;
     const preferredSiegeSourceRegion = runtimeRegions
         .filter((region) => region.siegeState?.attackerFactionId === factionId && getDispatchScore(region) > 0)
@@ -386,7 +398,7 @@ export const getPreferredDispatchSelectedRegionIdForFaction = (
         ))
         .sort(compareDispatchRegion)
         .at(0);
-    return preferredControlledSourceRegion?.id ?? explicitOrSelectedRegionId;
+    return preferredControlledSourceRegion?.id ?? preferredSourceRegionId;
 };
 
 const compareWheelDispatchCandidate = (
@@ -409,7 +421,7 @@ const buildSiegeContinueDispatchSelection = (
     selectedRegionId: string,
     actionId: NonNullable<QidahenWheelDispatchSelection['sourceActionId']>,
 ): QidahenWheelDispatchSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const explicitOrSelectedRegionId = getQidahenInteractionFocusRegionId(state, selectedRegionId);
     const targetRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId)
@@ -488,20 +500,20 @@ const buildSiegeContinueDispatchSelection = (
     };
 };
 
-export const buildWheelDispatchSelection = (
+export const buildWheelDispatchSelectionFromRegionSemantics = (
     state: QidahenCore,
     attackerFactionId: QidahenFactionId,
     movementProfileId: QidahenMovementProfileId,
-    selectedRegionId: string,
-    preferredSourceRegionId?: string | null,
+    dispatchRegionSemantics: QidahenWheelDispatchSelectionRegionSemantics,
     actionId: NonNullable<QidahenWheelDispatchSelection['sourceActionId']> = 'wheel-dispatch',
 ): QidahenWheelDispatchSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenExplicitOrSelectedRegionId(state, selectedRegionId);
+    const selectedTargetRegionId = dispatchRegionSemantics.selectedTargetRegionId;
+    const preferredSourceRegionId = dispatchRegionSemantics.preferredSourceRegionId;
     const siegeContinueSelection = buildSiegeContinueDispatchSelection(
         state,
         attackerFactionId,
         movementProfileId,
-        selectedRegionId,
+        selectedTargetRegionId,
         actionId,
     );
     if (siegeContinueSelection) {
@@ -509,7 +521,7 @@ export const buildWheelDispatchSelection = (
     }
     const sourceRegionBase = state.regions.find((region) => (
         !region.isLogicalRegion
-        && region.id === resolveQidahenPrimaryRuntimeRegionId(selectedRegionId)
+        && region.id === resolveQidahenPrimaryRuntimeRegionId(preferredSourceRegionId)
         && region.controller === attackerFactionId
     ));
     if (!sourceRegionBase) {
@@ -527,7 +539,7 @@ export const buildWheelDispatchSelection = (
     }
     const preferredSourceDisplayRegionId = resolvePreferredRegionDisplayAnchor(
         sourceRegion,
-        preferredSourceRegionId ?? explicitOrSelectedRegionId,
+        dispatchRegionSemantics.displayAnchorRegionId,
     );
     const attackRule = getQidahenAttackRuleConfig(
         actionId === 'drive-tiger' ? 'drive-tiger' : 'wheel-dispatch',
@@ -569,7 +581,7 @@ export const buildWheelDispatchSelection = (
                 return null;
             }
             const pathLabel = getActionRulePathLabel(state, target.pathRegionIds, preferredSourceDisplayRegionId);
-            const targetRegionName = getPreferredLogicalRegionDisplayName(targetRuntimeRegion, explicitOrSelectedRegionId);
+            const targetRegionName = getPreferredLogicalRegionDisplayName(targetRuntimeRegion, selectedTargetRegionId);
             const targetKind = isOwnSiegedCityReinforcementTarget(targetRuntimeRegion, attackerFactionId)
                 ? 'siege-reinforce' as const
                 : isFriendlySiegedCityTarget(targetRuntimeRegion, attackerFactionId)
@@ -644,12 +656,26 @@ export const buildWheelDispatchSelectionFromWheel = (
     if (!movementProfileId) {
         return null;
     }
-    return buildWheelDispatchSelection(
+    const initialDispatchRegionSemantics = getQidahenWheelDispatchSelectionRegionSemantics(
+        state,
+        selectedRegionId,
+        selectedRegionId,
+    );
+    const preferredSourceRegionId = getPreferredDispatchSourceRegionIdForSemantics(
         state,
         attackerFactionId,
         movementProfileId,
-        getPreferredDispatchSelectedRegionIdForFaction(state, attackerFactionId, movementProfileId, selectedRegionId),
-        selectedRegionId,
+        initialDispatchRegionSemantics,
+    );
+    return buildWheelDispatchSelectionFromRegionSemantics(
+        state,
+        attackerFactionId,
+        movementProfileId,
+        getQidahenWheelDispatchSelectionRegionSemantics(
+            state,
+            preferredSourceRegionId,
+            initialDispatchRegionSemantics.displayAnchorRegionId,
+        ),
         'wheel-dispatch',
     );
 };
@@ -666,10 +692,10 @@ export const getQidahenCurrentWheelDispatchSelectionForCore = (
         return state.wheelDispatchProgress;
     }
     if (shouldRebuildDriveTigerDispatchSelection) {
-        return buildDriveTigerDispatchSelection(
+        return buildDriveTigerDispatchSelectionFromRegionSemantics(
             state,
             DRIVE_TIGER_COMMANDER_FACTION_ID,
-            state.selectedRegionId,
+            getQidahenLockedRegionSelectionSemantics(state),
         );
     }
     return buildWheelDispatchSelectionFromWheel(
@@ -743,21 +769,22 @@ export const shouldPersistExplicitWheelDispatchSelectionForWheelState = (
 export const buildKhanEdictDispatchSelection = (
     state: QidahenCore,
     attackerFactionId: QidahenFactionId,
-    selectedRegionId: string,
-    preferredSourceRegionId?: string | null,
+    dispatchRegionSemantics: QidahenWheelDispatchSelectionRegionSemantics,
 ): QidahenWheelDispatchSelection | null => {
-    const preferredRegionId = getPreferredDispatchSelectedRegionIdForFaction(
+    const preferredRegionId = getPreferredDispatchSourceRegionIdForSemantics(
         state,
         attackerFactionId,
         'dispatch-cavalry',
-        selectedRegionId,
+        dispatchRegionSemantics,
     );
-    const selection = buildWheelDispatchSelection(
+    const selection = buildWheelDispatchSelectionFromRegionSemantics(
         state,
         attackerFactionId,
         'dispatch-cavalry',
-        preferredRegionId,
-        preferredSourceRegionId,
+        {
+            ...dispatchRegionSemantics,
+            preferredSourceRegionId: preferredRegionId,
+        },
         'khan-edict',
     );
     return selection
@@ -768,13 +795,13 @@ export const buildKhanEdictDispatchSelection = (
         : null;
 };
 
-export const buildDriveTigerDispatchSelection = (
+export const buildDriveTigerDispatchSelectionFromRegionSemantics = (
     state: QidahenCore,
     commanderFactionId: QidahenFactionId,
-    selectedRegionId: string,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
     preferredSourceRegionId?: string | null,
 ): QidahenWheelDispatchSelection | null => {
-    const explicitOrSelectedRegionId = getQidahenDriveTigerLockedOrExplicitRegionId(state, selectedRegionId);
+    const explicitOrSelectedRegionId = regionSemantics.targetRegionId;
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(explicitOrSelectedRegionId);
     const selectedRuntimeRegion = runtimeRegions.find((region) => region.id === selectedRuntimeRegionId) ?? null;
@@ -798,22 +825,29 @@ export const buildDriveTigerDispatchSelection = (
     ) {
         return null;
     }
-    const preferredRegionId = getPreferredDispatchSelectedRegionIdForFaction(
-        state,
-        targetFactionId,
-        'dispatch-cavalry',
-        targetRegion.id,
-    );
-    const selection = buildWheelDispatchSelection(
-        state,
-        targetFactionId,
-        'dispatch-cavalry',
-        preferredRegionId,
-        preferredSourceRegionId ?? (
+    const sourceRegionSemantics: QidahenWheelDispatchSelectionRegionSemantics = {
+        selectedTargetRegionId: targetRegion.id,
+        preferredSourceRegionId: preferredSourceRegionId ?? targetRegion.id,
+        displayAnchorRegionId: preferredSourceRegionId ?? (
             targetRegion.id === selectedRuntimeRegionId
-                ? null
+                ? targetRegion.id
                 : selectedRuntimeRegionId
         ),
+    };
+    const preferredRegionId = getPreferredDispatchSourceRegionIdForSemantics(
+        state,
+        targetFactionId,
+        'dispatch-cavalry',
+        sourceRegionSemantics,
+    );
+    const selection = buildWheelDispatchSelectionFromRegionSemantics(
+        state,
+        targetFactionId,
+        'dispatch-cavalry',
+        {
+            ...sourceRegionSemantics,
+            preferredSourceRegionId: preferredRegionId,
+        },
         'drive-tiger',
     );
     return selection

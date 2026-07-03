@@ -17,6 +17,7 @@ import {
   clickBoardElement,
   closeDebugPanelIfOpen,
   waitForPhase,
+  waitForSummonerWarsUI,
   cloneState,
 } from '../helpers/summonerwars';
 import { getMatchState, type TestMatchAccess } from '../helpers/state-injection';
@@ -45,12 +46,16 @@ const cloneInjectedUnitCard = <T extends { abilities?: string[]; deckSymbols?: s
 
 const spiritMageCard = COMMON_UNITS_BARBARIC.find((card) => card.id === 'barbaric-spirit-mage');
 const frontierArcherCard = COMMON_UNITS_BARBARIC.find((card) => card.id === 'barbaric-frontier-archer');
+const lionessCard = COMMON_UNITS_BARBARIC.find((card) => card.id === 'barbaric-lioness');
 const necroWarriorCard = COMMON_UNITS_NECROMANCER.find((card) => card.id === 'necro-undead-warrior');
 if (!spiritMageCard) {
   throw new Error('未找到炽原精灵祖灵法师配置（barbaric-spirit-mage）');
 }
 if (!frontierArcherCard) {
   throw new Error('未找到炽原精灵边境弓箭手配置（barbaric-frontier-archer）');
+}
+if (!lionessCard) {
+  throw new Error('未找到炽原精灵雌狮配置（barbaric-lioness）');
 }
 if (!necroWarriorCard) {
   throw new Error('未找到亡灵战士配置（necro-undead-warrior）');
@@ -340,6 +345,84 @@ const setHarnessDiceValues = async (page: Page, values: number[]) => {
     }
     harness.dice.setValues(diceValues);
   }, values);
+};
+
+const prepareIntimidateState = (coreState: any) => {
+  const next = cloneState(coreState);
+  next.currentPlayer = '0';
+  next.phase = 'attack';
+  next.selectedUnit = undefined;
+  next.attackTargetMode = undefined;
+  next.abilityUsage = {};
+  next.abilityUsageCount = {};
+  const player = next.players?.['0'];
+  if (!player) throw new Error('无法读取玩家0状态');
+  player.magic = 3;
+  player.attackCount = 0;
+  player.hasAttackedEnemy = false;
+
+  const board = next.board;
+  for (let row = 0; row < 8; row += 1) {
+    for (let col = 0; col < 6; col += 1) {
+      board[row][col].unit = null;
+      board[row][col].structure = null;
+    }
+  }
+
+  const lionessPos = { row: 5, col: 2 };
+  const enemyPos = { row: 5, col: 3 };
+  const mySummonerPos = { row: 7, col: 2 };
+  const enemySummonerPos = { row: 0, col: 2 };
+
+  board[mySummonerPos.row][mySummonerPos.col].unit = {
+    instanceId: 'intimidate-my-summoner',
+    cardId: 'intimidate-my-summoner-card',
+    card: cloneInjectedUnitCard(SUMMONER_BARBARIC),
+    owner: '0',
+    position: mySummonerPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  board[enemySummonerPos.row][enemySummonerPos.col].unit = {
+    instanceId: 'intimidate-enemy-summoner',
+    cardId: 'intimidate-enemy-summoner-card',
+    card: cloneInjectedUnitCard(SUMMONER_NECROMANCER),
+    owner: '1',
+    position: enemySummonerPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  board[lionessPos.row][lionessPos.col].unit = {
+    instanceId: 'intimidate-lioness',
+    cardId: lionessCard.id,
+    card: cloneInjectedUnitCard(lionessCard),
+    owner: '0',
+    position: lionessPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  board[enemyPos.row][enemyPos.col].unit = {
+    instanceId: 'intimidate-enemy-target',
+    cardId: necroWarriorCard.id,
+    card: { ...cloneInjectedUnitCard(necroWarriorCard), life: 8 },
+    owner: '1',
+    position: enemyPos,
+    damage: 0,
+    boosts: 0,
+    hasMoved: false,
+    hasAttacked: false,
+  };
+
+  return { state: next, lionessPos, enemyPos };
 };
 
 const prepareChantOfWeavingState = (coreState: any) => {
@@ -759,6 +842,90 @@ const prepareSpiritBondTransferMoveState = (coreState: any) => {
 // ============================================================================
 
 test.describe('炽原精灵阵营特色交互', () => {
+
+  test('雌狮威势：攻击敌方单位后真实 UI 只显示一次充能', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const match = await setupSWOnlineMatch(browser, baseURL, 'barbaric', 'necromancer');
+    if (!match) { test.skip(true, 'Game server unavailable or room creation failed.'); return; }
+    const { hostPage, hostContext, guestContext } = match;
+    try {
+      const coreState = await readCoreState(hostPage);
+      const { state: intimidateCore, lionessPos, enemyPos } = prepareIntimidateState(coreState);
+      await applyCoreState(hostPage, intimidateCore);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+      await hostPage.waitForTimeout(600);
+
+      const lioness = hostPage.locator(`[data-testid="sw-unit-${lionessPos.row}-${lionessPos.col}"][data-owner="0"]`).first();
+      await expect(lioness).toBeVisible({ timeout: 5000 });
+      await expect(lioness.locator('.bg-blue-400')).toHaveCount(0);
+
+      await lioness.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'intimidate-before-attack-no-charge', {
+          filename: 'intimidate-before-attack-no-charge.png',
+        }),
+      });
+
+      await setHarnessDiceValues(hostPage, [1, 1, 1]);
+      await clickBoardElement(hostPage, `[data-testid="sw-unit-${lionessPos.row}-${lionessPos.col}"][data-owner="0"][data-unit-name="${lionessCard.name}"]`);
+      await clickBoardElement(hostPage, `[data-testid="sw-unit-${enemyPos.row}-${enemyPos.col}"][data-owner="1"][data-unit-name="${necroWarriorCard.name}"]`);
+      await dismissDiceResultOverlay(hostPage);
+
+      const expectedIntimidateEvidence = {
+        boosts: 1,
+        attackCount: 1,
+        hasAttacked: true,
+      };
+
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage);
+        const unit = state?.board?.[lionessPos.row]?.[lionessPos.col]?.unit;
+        return {
+          boosts: unit?.boosts ?? null,
+          attackCount: state?.players?.['0']?.attackCount ?? null,
+          hasAttacked: unit?.hasAttacked ?? null,
+        };
+      }, { timeout: 12000 }).toEqual(expectedIntimidateEvidence);
+
+      await expect(lioness.locator('.bg-blue-400')).toHaveCount(1);
+      await hostPage.waitForTimeout(1200);
+      await expect(lioness.locator('.bg-blue-400')).toHaveCount(1);
+
+      await closeDebugPanelIfOpen(hostPage);
+      await lioness.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'intimidate-after-attack-one-charge', {
+          filename: 'intimidate-after-attack-one-charge.png',
+        }),
+      });
+
+      await hostPage.reload({ waitUntil: 'domcontentloaded' });
+      await waitForSummonerWarsUI(hostPage, 30000);
+      await closeDebugPanelIfOpen(hostPage);
+
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage);
+        const unit = state?.board?.[lionessPos.row]?.[lionessPos.col]?.unit;
+        return {
+          boosts: unit?.boosts ?? null,
+          attackCount: state?.players?.['0']?.attackCount ?? null,
+          hasAttacked: unit?.hasAttacked ?? null,
+        };
+      }, { timeout: 12000 }).toEqual(expectedIntimidateEvidence);
+
+      const reloadedLioness = hostPage.locator(`[data-testid="sw-unit-${lionessPos.row}-${lionessPos.col}"][data-owner="0"]`).first();
+      await expect(reloadedLioness).toBeVisible({ timeout: 5000 });
+      await expect(reloadedLioness.locator('.bg-blue-400')).toHaveCount(1);
+      await reloadedLioness.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, 'intimidate-after-reload-still-one-charge', {
+          filename: 'intimidate-after-reload-still-one-charge.png',
+        }),
+      });
+    } finally {
+      void hostContext.close().catch(() => {});
+      void guestContext.close().catch(() => {});
+    }
+  });
 
   test('预备：充能代替移动', async ({ browser }, testInfo) => {
     test.setTimeout(120000);

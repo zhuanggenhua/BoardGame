@@ -70,10 +70,10 @@ const createFieldBattlePendingAction = (): QidahenPendingTargetAction => ({
 });
 void createFieldBattlePendingAction;
 
-const createSiegePendingAction = (): QidahenPendingTargetAction => ({
+const createSiegeDefenderChoicePendingAction = (): QidahenPendingTargetAction => ({
     actionId: 'raid',
-    battleMode: 'city',
-    title: '山海关 城战待结算',
+    battleMode: 'field',
+    title: '山海关 守城宣告',
     attackerFactionId: 'ming',
     sourceRegionId: 'city-region-24',
     sourceRegionName: '辽西',
@@ -82,14 +82,14 @@ const createSiegePendingAction = (): QidahenPendingTargetAction => ({
     targetRuntimeRegionId: 'city-region-25',
     defenderFactionId: 'jin',
     defenderLabel: '后金',
-    restriction: '教程样本 · 守城避战后直接攻城',
+    restriction: '教程样本 · 城市被攻击前先宣告守城',
     battleWidth: 3,
     boundaryUnitCap: null,
     sourceAvailableTroops: 4,
     committedTroops: 4,
     attackPressure: 3,
     attackBoundaryType: 'plain',
-    resolutionHint: '山海关守军已退入城中，先结算这次城战，再决定是占领还是围城。',
+    resolutionHint: '山海关被攻击，守方先决定出城野战或守城避战。',
     defenderPayCost: null,
 });
 
@@ -148,7 +148,8 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
             }
             return card;
         });
-        core.turnPhase = 'action-window';
+        const discardCandidateCardIds = mingCardIds.slice(0, 1);
+        core.turnPhase = 'hand-limit-discard';
         core.wheelActionUsed = false;
         core.factionActionUsed = false;
         core.actionWheelPosition = 'wheel-attack';
@@ -165,7 +166,19 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
         core.maShiTradeSelection = null;
         core.khanEdictSelection = null;
         core.diplomacyProgress = null;
-        core.handLimitDiscardSelection = null;
+        core.factions.ming = {
+            ...core.factions.ming,
+            handCount: core.factions.ming.handLimit + discardCandidateCardIds.length,
+        };
+        core.handLimitDiscardSelection = {
+            factionId: 'ming',
+            factionName: core.factions.ming.name,
+            handLimit: core.factions.ming.handLimit,
+            handCount: core.factions.ming.handCount,
+            requiredDiscardCount: discardCandidateCardIds.length,
+            candidateCardIds: discardCandidateCardIds,
+            selectedCardIds: [],
+        };
         core.sunYuanhuaTechSelection = null;
         core.gaoDiDispatchSelection = null;
         return core;
@@ -248,7 +261,7 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
         core.factionActionUsed = true;
         core.selectedRegionId = 'city-region-25';
         core.selectedActionId = 'raid';
-        core.pendingTargetAction = createSiegePendingAction();
+        core.pendingTargetAction = createSiegeDefenderChoicePendingAction();
         core.wheelDispatchSelection = null;
         core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
@@ -271,15 +284,11 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
                     ...region,
                     controller: 'jin',
                     controlLabel: '后金',
-                    troops: 0,
-                    population: 2,
+                    troops: 2,
+                    population: 4,
                     siegeState: null,
                     specialTroops: [],
-                    cityState: {
-                        troops: 2,
-                        population: 2,
-                        specialTroops: [],
-                    },
+                    cityState: null,
                 };
             }
             return region;
@@ -744,6 +753,19 @@ const createDiplomacyTutorialSetup = (): QidahenTutorialPreset => ({
                     population: 2,
                     siegeState: null,
                     diplomacyMarkerFaction: 'ming',
+                    diplomacyMarkerSide: 'vassal',
+                    specialTroops: [],
+                };
+            }
+            if (region.id === 'city-region-22') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金附庸',
+                    troops: 0,
+                    population: 2,
+                    siegeState: null,
+                    diplomacyMarkerFaction: 'jin',
                     diplomacyMarkerSide: 'vassal',
                     specialTroops: [],
                 };

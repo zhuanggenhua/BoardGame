@@ -15,7 +15,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
-import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, PlayerId } from '../domain/types';
+import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, PlayerId, StructureCard } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import {
   canMoveToEnhanced, canAttackEnhanced,
@@ -71,6 +71,34 @@ function placeUnit(
   };
   state.board[pos.row][pos.col].unit = unit;
   return unit;
+}
+
+function makeStructure(id: string, overrides?: Partial<StructureCard>): StructureCard {
+  return {
+    id,
+    cardType: 'structure',
+    name: '测试建筑',
+    faction: 'necromancer',
+    cost: 0,
+    life: 5,
+    deckSymbols: [],
+    ...overrides,
+  } as StructureCard;
+}
+
+function placeStructure(
+  state: SummonerWarsCore,
+  pos: CellCoord,
+  owner: PlayerId,
+  card: StructureCard = makeStructure(`test-structure-${pos.row}-${pos.col}`)
+) {
+  state.board[pos.row][pos.col].structure = {
+    cardId: card.id,
+    card,
+    owner,
+    position: pos,
+    damage: 0,
+  };
 }
 
 /** 清空指定区域 */
@@ -219,6 +247,66 @@ describe('掷术师 - 迷魂 (evasion)', () => {
       const reduceEvents = events.filter(e => e.type === SW_EVENTS.DAMAGE_REDUCED);
       expect(reduceEvents.length).toBe(1);
       expect((reduceEvents[0].payload as any).sourceAbilityId).toBe('evasion');
+  });
+
+  it('敌方攻击相邻建筑并掷出✦时，迷魂仍减少该次攻击伤害', () => {
+    const specialRandom: RandomFn = {
+      ...createTestRandom(),
+      random: () => 0.75,
+    };
+    const state = createTricksterState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-enemy-attacker',
+      card: makeEnemy('test-enemy-attacker', { strength: 3 }),
+      owner: '1',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-telekinetic',
+      card: makeTelekinetic('test-telekinetic'),
+      owner: '0',
+    });
+
+    const targetStructure: StructureCard = {
+      id: 'test-gate',
+      cardType: 'structure',
+      name: '测试建筑',
+      faction: 'trickster',
+      cost: 0,
+      life: 10,
+      isGate: true,
+      deckSymbols: [],
+    };
+    state.board[4][1].structure = {
+      cardId: 'test-gate',
+      card: targetStructure,
+      owner: '0',
+      position: { row: 4, col: 1 },
+      damage: 0,
+    };
+
+    state.phase = 'attack';
+    state.currentPlayer = '1';
+    state.players['1'].attackCount = 0;
+    state.players['1'].hasAttackedEnemy = false;
+
+    const { events } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 1 },
+    }, specialRandom);
+
+    const reduceEvents = events.filter(e => e.type === SW_EVENTS.DAMAGE_REDUCED);
+    expect(reduceEvents.length).toBe(1);
+    expect((reduceEvents[0].payload as any).sourceAbilityId).toBe('evasion');
+    const damageEvent = events.find(e =>
+      e.type === SW_EVENTS.UNIT_DAMAGED
+      && ((e.payload as any).position as CellCoord).row === 4
+      && ((e.payload as any).position as CellCoord).col === 1
+    );
+    // 固定骰子下原始 3 点命中，迷魂减少 1 点后应造成 2 点伤害。
+    expect((damageEvent?.payload as any).damage).toBe(2);
   });
 
   it('敌方攻击未掷出✦时，不触发迷魂减伤', () => {
@@ -516,6 +604,70 @@ describe('葛拉克 - 浮空术 (aerial_strike)', () => {
     // 卡拉不应该能移动3格（除非自身有移动增强）
     expect(canMoveToEnhanced(state, { row: 4, col: 3 }, { row: 1, col: 3 })).toBe(false); // 距离3
   });
+
+  it('[aerial_strike/L4] 不影响敌方士兵', () => {
+    const state = createTricksterState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-gelak',
+      card: makeGelak('test-gelak'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'enemy-common',
+      card: makeEnemy('enemy-common', { unitClass: 'common' }),
+      owner: '1',
+    });
+
+    expect(canMoveToEnhanced(state, { row: 4, col: 3 }, { row: 1, col: 3 })).toBe(false);
+  });
+
+  it('[aerial_strike/L4] 按开始移动位置授予本次移动穿越能力', () => {
+    const state = createTricksterState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-gelak',
+      card: makeGelak('test-gelak'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-common',
+      card: makeAllyCommon('test-common'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 4 }, {
+      cardId: 'path-blocker',
+      card: makeEnemy('path-blocker'),
+      owner: '1',
+    });
+
+    state.phase = 'move';
+    state.currentPlayer = '0';
+    state.players['0'].moveCount = 0;
+
+    const command = {
+      type: SW_COMMANDS.MOVE_UNIT,
+      payload: {
+        from: { row: 4, col: 3 },
+        to: { row: 4, col: 5 },
+      },
+      timestamp: fixedTimestamp,
+      playerId: '0' as PlayerId,
+    };
+
+    expect(SummonerWarsDomain.validate({ core: state, sys: {} as any }, command).valid).toBe(true);
+
+    const { newState, events } = executeAndReduce(state, SW_COMMANDS.MOVE_UNIT, command.payload);
+    const moveEvent = events.find(e => e.type === SW_EVENTS.UNIT_MOVED);
+    expect(moveEvent).toBeDefined();
+    expect(newState.board[4][3].unit).toBeUndefined();
+    expect(newState.board[4][5].unit?.cardId).toBe('test-common');
+  });
 });
 
 // ============================================================================
@@ -603,6 +755,124 @@ describe('清风弓箭手 - 远射 (ranged)', () => {
     });
 
     expect(canAttackEnhanced(state, { row: 0, col: 0 }, { row: 5, col: 0 })).toBe(false);
+  });
+
+  it('远射单位可以攻击4格清晰直线外的敌方建筑', () => {
+    const state = createTricksterState();
+    clearArea(state, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'test-archer',
+      card: makeWindArcher('test-archer'),
+      owner: '0',
+    });
+    placeStructure(state, { row: 4, col: 5 }, '1');
+
+    expect(canAttackEnhanced(state, { row: 4, col: 1 }, { row: 4, col: 5 })).toBe(true);
+  });
+
+  it('远射单位不能穿过中间卡牌攻击目标', () => {
+    const state = createTricksterState();
+    clearArea(state, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'test-archer',
+      card: makeWindArcher('test-archer'),
+      owner: '0',
+    });
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-blocker',
+      card: makeEnemy('test-blocker'),
+      owner: '1',
+    });
+    placeUnit(state, { row: 4, col: 5 }, {
+      cardId: 'test-target',
+      card: makeEnemy('test-target'),
+      owner: '1',
+    });
+
+    expect(canAttackEnhanced(state, { row: 4, col: 1 }, { row: 4, col: 5 })).toBe(false);
+  });
+
+  it('远射单位不能攻击4格内但非直线的目标', () => {
+    const state = createTricksterState();
+    clearArea(state, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'test-archer',
+      card: makeWindArcher('test-archer'),
+      owner: '0',
+    });
+    placeUnit(state, { row: 2, col: 3 }, {
+      cardId: 'test-diagonal-target',
+      card: makeEnemy('test-diagonal-target'),
+      owner: '1',
+    });
+
+    expect(canAttackEnhanced(state, { row: 4, col: 1 }, { row: 2, col: 3 })).toBe(false);
+  });
+
+  it('[ranged/L4] 真实声明攻击命令沿用4格清晰直线和阻挡规则', () => {
+    const validateAttack = (state: SummonerWarsCore, target: CellCoord) =>
+      SummonerWarsDomain.validate(
+        { core: state, sys: {} as any },
+        {
+          type: SW_COMMANDS.DECLARE_ATTACK,
+          playerId: '0',
+          payload: {
+            attacker: { row: 4, col: 1 },
+            target,
+          },
+        }
+      );
+
+    const clearStructureState = createTricksterState();
+    clearArea(clearStructureState, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    clearStructureState.phase = 'attack';
+    clearStructureState.currentPlayer = '0';
+    placeUnit(clearStructureState, { row: 4, col: 1 }, {
+      cardId: 'test-archer',
+      card: makeWindArcher('test-archer'),
+      owner: '0',
+    });
+    placeStructure(clearStructureState, { row: 4, col: 5 }, '1');
+
+    expect(validateAttack(clearStructureState, { row: 4, col: 5 }).valid).toBe(true);
+
+    const blockedState = createTricksterState();
+    clearArea(blockedState, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    blockedState.phase = 'attack';
+    blockedState.currentPlayer = '0';
+    placeUnit(blockedState, { row: 4, col: 1 }, {
+      cardId: 'test-archer',
+      card: makeWindArcher('test-archer'),
+      owner: '0',
+    });
+    placeUnit(blockedState, { row: 4, col: 3 }, {
+      cardId: 'test-blocker',
+      card: makeEnemy('test-blocker'),
+      owner: '1',
+    });
+    placeStructure(blockedState, { row: 4, col: 5 }, '1');
+
+    expect(validateAttack(blockedState, { row: 4, col: 5 }).valid).toBe(false);
+
+    const bentLineState = createTricksterState();
+    clearArea(bentLineState, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    bentLineState.phase = 'attack';
+    bentLineState.currentPlayer = '0';
+    placeUnit(bentLineState, { row: 4, col: 1 }, {
+      cardId: 'test-archer',
+      card: makeWindArcher('test-archer'),
+      owner: '0',
+    });
+    placeUnit(bentLineState, { row: 2, col: 3 }, {
+      cardId: 'test-diagonal-target',
+      card: makeEnemy('test-diagonal-target'),
+      owner: '1',
+    });
+
+    expect(validateAttack(bentLineState, { row: 2, col: 3 }).valid).toBe(false);
   });
 
   it('getEffectiveAttackRange 对远射单位返回4', () => {

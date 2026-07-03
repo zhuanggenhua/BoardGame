@@ -356,6 +356,7 @@ export async function ensureSingleWorkerRuntime(options = {}) {
                 PW_TEST_TARGET: target,
                 PW_BOOTSTRAP_LOG_FILE: logFile,
                 PW_SERVER_WATCH: process.env.PW_SERVER_WATCH ?? 'false',
+                E2E_PROXY_QUIET: process.env.E2E_PROXY_QUIET ?? 'true',
                 PW_E2E_DAEMON: plan.mode,
                 PW_PORT: String(ports.frontend),
                 PW_GAME_SERVER_PORT: String(ports.gameServer),

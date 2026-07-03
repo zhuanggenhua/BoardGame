@@ -453,7 +453,147 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-selection-state', 'discard');
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'center-to-hand');
         });
-        expect(screen.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveTextContent('测试玩家');
+        expect(screen.queryByTestId('fantasyrealms-live-center-selection-notice-badge')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('fantasyrealms-live-center-exit-card')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('fantasyrealms-live-center-enter-card')).not.toBeInTheDocument();
+    });
+
+    it('从中央弃牌拿走卡牌时，会保留离场卡牌承接抽走动画', async () => {
+        const takenDiscardCard = PUBLIC_CARDS[0]!;
+        const baseCore = makeCore({
+            currentPlayer: '0',
+            stage: 'draw',
+            discardPile: PUBLIC_CARDS.slice(0, 3).map((card) => ({ ...card })),
+            players: {
+                '0': {
+                    id: '0',
+                    name: '玩家1',
+                    hand: HAND_CARDS.slice(0, 4).map((card) => ({ ...card })),
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+                '1': {
+                    id: '1',
+                    name: '玩家2',
+                    hand: HAND_CARDS.slice(4, 6).map((card, index) => ({ ...card, id: `${card.id}-p2-${index}` })),
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+            } as FantasyRealmsCore['players'],
+        });
+        const { rerender } = renderBoard(baseCore, {
+            matchData: [
+                { id: 0, name: '测试玩家', isConnected: true },
+                { id: 1, name: '第二玩家', isConnected: true },
+            ],
+        });
+
+        rerender(
+            <Board
+                G={{
+                    core: {
+                        ...baseCore,
+                        stage: 'discard',
+                        discardPile: baseCore.discardPile.slice(1),
+                        players: {
+                            ...baseCore.players,
+                            '0': {
+                                ...baseCore.players['0']!,
+                                hand: [...baseCore.players['0']!.hand, { ...takenDiscardCard }],
+                            },
+                        },
+                    },
+                    sys: {},
+                } as MatchState<Record<string, unknown>>}
+                dispatch={() => {}}
+                playerID="0"
+                matchData={[
+                    { id: 0, name: '测试玩家', isConnected: true },
+                    { id: 1, name: '第二玩家', isConnected: true },
+                ]}
+                isConnected
+            />,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'center-to-hand');
+        });
+        const exitCard = screen.getByTestId('fantasyrealms-live-center-exit-card');
+        expect(exitCard).toBeInTheDocument();
+        expect(screen.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveTextContent('测试玩家拿走一张牌');
+        expect(within(exitCard).getByTestId('fantasyrealms-card')).toHaveAttribute('data-atlas-card-id', takenDiscardCard.id);
+        expect(within(screen.getByTestId('fantasyrealms-live-center-row')).getAllByTestId('fantasyrealms-card').filter((card) => (
+            card.getAttribute('data-atlas-card-id') === takenDiscardCard.id
+        ))).toHaveLength(1);
+
+        fireEvent.animationEnd(exitCard);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('fantasyrealms-live-center-exit-card')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-center-selection-notice-badge')).not.toBeInTheDocument();
+        });
+    });
+
+    it('其他玩家从中央弃牌拿走卡牌时，也会显示拿牌者并保留离场动画', async () => {
+        const takenDiscardCard = PUBLIC_CARDS[0]!;
+        const baseCore = makeCore({
+            currentPlayer: '1',
+            stage: 'draw',
+            discardPile: PUBLIC_CARDS.slice(0, 3).map((card) => ({ ...card })),
+            players: {
+                '0': {
+                    id: '0',
+                    name: '玩家1',
+                    hand: HAND_CARDS.slice(0, 4).map((card) => ({ ...card })),
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+                '1': {
+                    id: '1',
+                    name: '玩家2',
+                    hand: HAND_CARDS.slice(4, 6).map((card, index) => ({ ...card, id: `${card.id}-p2-${index}` })),
+                    score: 0,
+                    scoreBreakdown: [],
+                },
+            } as FantasyRealmsCore['players'],
+        });
+        const { rerender } = renderBoard(baseCore, {
+            matchData: [
+                { id: 0, name: '测试玩家', isConnected: true },
+                { id: 1, name: '第二玩家', isConnected: true },
+            ],
+        });
+
+        rerender(
+            <Board
+                G={{
+                    core: {
+                        ...baseCore,
+                        stage: 'discard',
+                        discardPile: baseCore.discardPile.slice(1),
+                        players: {
+                            ...baseCore.players,
+                            '1': {
+                                ...baseCore.players['1']!,
+                                hand: [...baseCore.players['1']!.hand, { ...takenDiscardCard }],
+                            },
+                        },
+                    },
+                    sys: {},
+                } as MatchState<Record<string, unknown>>}
+                dispatch={() => {}}
+                playerID="0"
+                matchData={[
+                    { id: 0, name: '测试玩家', isConnected: true },
+                    { id: 1, name: '第二玩家', isConnected: true },
+                ]}
+                isConnected
+            />,
+        );
+
+        const exitCard = await screen.findByTestId('fantasyrealms-live-center-exit-card');
+        expect(screen.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveTextContent('第二玩家拿走一张牌');
+        expect(within(exitCard).getByTestId('fantasyrealms-card')).toHaveAttribute('data-atlas-card-id', takenDiscardCard.id);
     });
 
     it('1024 宽度的 PC 横屏不再切紧凑壳，继续使用同一张正式牌桌', () => {

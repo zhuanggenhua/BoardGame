@@ -666,6 +666,18 @@ async function getFirstCardMotionFrame(page: Page, selector: string) {
     });
 }
 
+async function getCenterCardCountByAtlasId(page: Page, cardId: string) {
+    return page.locator('.fr-live-center-slot-grid [data-testid="fantasyrealms-card"]').evaluateAll((cards, targetCardId) => (
+        cards.filter((card) => card.getAttribute('data-atlas-card-id') === targetCardId).length
+    ), cardId);
+}
+
+async function getHandCardCountByAtlasId(page: Page, cardId: string) {
+    return page.locator('[data-testid="fantasyrealms-hand-row"] [data-testid="fantasyrealms-card"]').evaluateAll((cards, targetCardId) => (
+        cards.filter((card) => card.getAttribute('data-atlas-card-id') === targetCardId).length
+    ), cardId);
+}
+
 test.describe('FantasyRealms live flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
 
@@ -1177,6 +1189,11 @@ test.describe('FantasyRealms live flow', () => {
             await firstHandButton.click();
             const centerRow = page.getByTestId('fantasyrealms-live-center-row');
             await expect(centerRow).toHaveAttribute('data-motion', 'hand-to-center', { timeout: 1000 });
+            const discardedCardId = await page.getByTestId('fantasyrealms-live-center-enter-card')
+                .locator('[data-testid="fantasyrealms-card"]')
+                .getAttribute('data-atlas-card-id');
+            expect(discardedCardId).toBeTruthy();
+            await expect.poll(async () => getCenterCardCountByAtlasId(page, discardedCardId!)).toBe(0);
 
             const discardStartPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-start');
             const discardStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive');
@@ -1196,6 +1213,47 @@ test.describe('FantasyRealms live flow', () => {
             expect(discardMidFrame.transform).not.toBe('none');
             expect(discardStartFrame.transform).not.toEqual(discardEndFrame.transform);
             expect(discardEndFrame.transform === 'none' || discardEndFrame.transform.includes('1, 0, 0, 1')).toBe(true);
+
+            let centerTakeCore = await readHarnessCore(page);
+            centerTakeCore = {
+                ...centerTakeCore,
+                currentPlayer: '0',
+                stage: 'draw',
+                discardPile: centerTakeCore.discardPile.length > 0
+                    ? centerTakeCore.discardPile
+                    : [byId('army-elven-archers'), byId('beast-unicorn')],
+            };
+            await injectCore(page, centerTakeCore);
+            const firstCenterCard = page.locator('.fr-card-button--live-center').first();
+            const takenCenterCardId = centerTakeCore.discardPile[0]!.id;
+            await firstCenterCard.click();
+            await page.waitForFunction((cardId) => {
+                const state = (window as TestHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.core?.stage === 'discard'
+                    && state?.core?.players?.['0']?.hand?.some((card) => card.id === cardId)
+                    && !state?.core?.discardPile?.some((card) => card.id === cardId);
+            }, takenCenterCardId, { timeout: 10000 });
+            await expect(handZone).toHaveAttribute('data-motion', 'center-to-hand', { timeout: 1000 });
+            const centerExitCard = page.getByTestId('fantasyrealms-live-center-exit-card');
+            await expect(centerExitCard).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveText(/拿走一张牌/);
+            await expect.poll(async () => getCenterCardCountByAtlasId(page, takenCenterCardId)).toBe(0);
+            await expect.poll(async () => getHandCardCountByAtlasId(page, takenCenterCardId)).toBe(0);
+
+            const centerExitStartPath = getEvidenceScreenshotPath(testInfo, 'motion-center-exit-start');
+            const centerExitStartFrame = await getFirstCardMotionFrame(page, '[data-testid="fantasyrealms-live-center-exit-card"]');
+            await page.screenshot({ path: centerExitStartPath, fullPage: false });
+
+            await page.waitForTimeout(220);
+            const centerExitMidPath = getEvidenceScreenshotPath(testInfo, 'motion-center-exit-mid');
+            const centerExitMidFrame = await getFirstCardMotionFrame(page, '[data-testid="fantasyrealms-live-center-exit-card"]');
+            await page.screenshot({ path: centerExitMidPath, fullPage: false });
+
+            expect(centerExitStartFrame.transform).not.toBe('none');
+            expect(centerExitMidFrame.transform).not.toBe('none');
+            expect(centerExitStartFrame.transform).not.toEqual(centerExitMidFrame.transform);
+            await expect(centerExitCard).not.toBeVisible({ timeout: 1200 });
+            await expect(page.getByTestId('fantasyrealms-live-center-selection-notice-badge')).not.toBeVisible();
         } finally {
             await context.close().catch(() => {});
         }

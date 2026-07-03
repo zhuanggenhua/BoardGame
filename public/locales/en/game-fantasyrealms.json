@@ -84,7 +84,9 @@
     "openMagnifyAria": "Magnify {{name}}",
     "closePreview": "Close Preview",
     "selected": "Selected",
-    "centerSelectedNotice": "{{player}} selected"
+    "centerSelectedNotice": "{{player}} selected",
+    "centerTakeNotice": "{{player}} took a card",
+    "centerDiscardNotice": "{{player}} discarded a card"
   },
   "focus": {
     "panelTitle": "Focus",

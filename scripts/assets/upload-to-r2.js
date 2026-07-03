@@ -8,6 +8,7 @@
  *   npm run assets:sync               — 同步（上传新增/变更 + 列出远程多余文件，不删除）
  *   npm run assets:sync -- --confirm  — 同步 + 删除远程多余文件（≤50 个时）
  *   npm run assets:sync -- --confirm --force-delete — 同步 + 强制删除（超过 50 个时）
+ *   node scripts/assets/upload-to-r2.js --android-package-publish-plan <path...> — 预演给定上传路径会刷新哪些安卓素材包
  * 
  * 环境变量（在 .env 中配置）：
  * - R2_ACCOUNT_ID: Cloudflare 账户 ID
@@ -22,6 +23,7 @@ import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand 
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, extname, sep } from 'path';
 import { createHash } from 'crypto';
+import { spawnSync } from 'child_process';
 import mime from 'mime-types';
 
 // 加载环境变量：先读 .env，再用 .env.example 补齐缺失键
@@ -56,7 +58,171 @@ const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--che
 const syncMode = process.env.SYNC_MODE === '1' || process.argv.includes('--sync');
 const confirmDelete = process.argv.includes('--confirm');
 const forceDelete = process.argv.includes('--force-delete');
+const skipAndroidPackagePublish = process.env.SKIP_ANDROID_PACKAGE_PUBLISH === '1' || process.argv.includes('--skip-android-package-publish');
+const androidPackagePublishPlanArgIndex = process.argv.indexOf('--android-package-publish-plan');
 const DELETE_THRESHOLD = 50; // 超过此数量需要 --force-delete
+
+function discoverPackageManagedGames() {
+  const gamesRoot = join(process.cwd(), 'src', 'games');
+  const gameIds = new Set();
+
+  if (!existsSync(gamesRoot)) {
+    return gameIds;
+  }
+
+  for (const entry of readdirSync(gamesRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = join(gamesRoot, entry.name, 'manifest.ts');
+    if (!existsSync(manifestPath)) continue;
+
+    const content = readFileSync(manifestPath, 'utf8');
+    if (!/mode:\s*'package-managed'/.test(content)) continue;
+
+    const idMatch = content.match(/id:\s*'([^']+)'/);
+    const gameId = idMatch?.[1]?.trim();
+    if (gameId) {
+      gameIds.add(gameId);
+    }
+  }
+
+  return gameIds;
+}
+
+function resolvePackageManagedGameId(relativePath, packageManagedGames) {
+  const normalized = relativePath.replace(/\\/g, '/');
+  const parts = normalized.split('/');
+
+  if (parts[0] === 'atlas-configs' && packageManagedGames.has(parts[1])) {
+    return parts[1];
+  }
+
+  if (parts[0] === 'i18n' && packageManagedGames.has(parts[2])) {
+    return parts[2];
+  }
+
+  if (packageManagedGames.has(parts[0])) {
+    return parts[0];
+  }
+
+  return null;
+}
+
+function isSharedAudioAsset(relativePath) {
+  return relativePath.replace(/\\/g, '/').startsWith('common/audio/');
+}
+
+function normalizeUploadedAssetPath(inputPath) {
+  const normalized = inputPath.replace(/\\/g, '/');
+  const officialPrefix = 'official/';
+  const assetsPrefix = 'public/assets/';
+
+  if (normalized.startsWith(officialPrefix)) {
+    return normalized.slice(officialPrefix.length);
+  }
+
+  if (normalized.startsWith(assetsPrefix)) {
+    return normalized.slice(assetsPrefix.length);
+  }
+
+  return normalized.replace(/^\/+/, '');
+}
+
+function resolveAndroidPackagePublishPlan(relativePaths) {
+  const packageManagedGames = discoverPackageManagedGames();
+  const gameIds = new Set();
+  let hasSharedAudioChanges = false;
+
+  for (const relativePath of relativePaths) {
+    const normalizedPath = normalizeUploadedAssetPath(relativePath);
+    const gameId = resolvePackageManagedGameId(normalizedPath, packageManagedGames);
+    if (gameId) {
+      gameIds.add(gameId);
+    }
+    if (isSharedAudioAsset(normalizedPath)) {
+      hasSharedAudioChanges = true;
+    }
+  }
+
+  return {
+    gameIds: Array.from(gameIds).sort((left, right) => left.localeCompare(right)),
+    hasSharedAudioChanges,
+  };
+}
+
+function formatAndroidPackagePublishCommands(plan) {
+  if (plan.hasSharedAudioChanges) {
+    return [
+      `${process.execPath} scripts/mobile/publish-android-game-packages.mjs`,
+    ];
+  }
+
+  return plan.gameIds.map((gameId) => (
+    `${process.execPath} scripts/mobile/publish-android-game-packages.mjs --game ${gameId} --reuse-shared-audio`
+  ));
+}
+
+function publishAndroidPackagesForUploadedAssets(gameIds, hasSharedAudioChanges) {
+  if (skipAndroidPackagePublish || (gameIds.size === 0 && !hasSharedAudioChanges)) {
+    return;
+  }
+
+  if (hasSharedAudioChanges) {
+    console.log('\n📱 检测到共享音频资源变更，刷新共享安卓素材包和全部游戏 manifest...');
+    const result = spawnSync(
+      process.execPath,
+      ['scripts/mobile/publish-android-game-packages.mjs'],
+      {
+        cwd: process.cwd(),
+        env: process.env,
+        encoding: 'utf8',
+        stdio: 'inherit',
+      },
+    );
+
+    if (result.status !== 0) {
+      throw new Error('共享安卓素材包发布失败');
+    }
+    return;
+  }
+
+  console.log(`\n📱 检测到安卓素材包资源变更，刷新 ${gameIds.size} 个游戏包 manifest...`);
+
+  const sortedGameIds = Array.from(gameIds).sort((left, right) => left.localeCompare(right));
+  for (const gameId of sortedGameIds) {
+    const result = spawnSync(
+      process.execPath,
+      ['scripts/mobile/publish-android-game-packages.mjs', '--game', gameId, '--reuse-shared-audio'],
+      {
+        cwd: process.cwd(),
+        env: process.env,
+        encoding: 'utf8',
+        stdio: 'inherit',
+      },
+    );
+
+    if (result.status !== 0) {
+      throw new Error(`安卓素材包发布失败: ${gameId}`);
+    }
+  }
+}
+
+function printAndroidPackagePublishPlan(paths) {
+  const plan = resolveAndroidPackagePublishPlan(paths);
+  const commands = formatAndroidPackagePublishCommands(plan);
+
+  console.log('📱 安卓素材包刷新预演');
+  console.log(`游戏资源变更: ${plan.gameIds.length > 0 ? plan.gameIds.join(', ') : '无'}`);
+  console.log(`共享音频变更: ${plan.hasSharedAudioChanges ? '是' : '否'}`);
+  if (commands.length === 0) {
+    console.log('刷新命令: 无');
+    return;
+  }
+
+  console.log('刷新命令:');
+  for (const command of commands) {
+    console.log(`  ${command}`);
+  }
+}
 
 // 递归获取所有文件
 function getAllFiles(dir, fileList = []) {
@@ -145,8 +311,17 @@ async function uploadFile(fileContent, remotePath, localPath) {
 
 // 主函数
 async function main() {
+  if (androidPackagePublishPlanArgIndex >= 0) {
+    const paths = process.argv.slice(androidPackagePublishPlanArgIndex + 1).filter((arg) => !arg.startsWith('--'));
+    printAndroidPackagePublishPlan(paths);
+    return;
+  }
+
   const assetsDir = join(process.cwd(), 'public', 'assets');
   const files = getAllFiles(assetsDir).filter(shouldUpload);
+  const packageManagedGames = discoverPackageManagedGames();
+  const uploadedPackageManagedGames = new Set();
+  let hasUploadedSharedAudioAssets = false;
   
   console.log(`📦 找到 ${files.length} 个符合条件的本地文件`);
   
@@ -173,6 +348,7 @@ async function main() {
   for (const file of files) {
     const relativePath = relative(join(process.cwd(), 'public', 'assets'), file);
     const remotePath = `official/${relativePath.replace(/\\/g, '/')}`;
+    const packageManagedGameId = resolvePackageManagedGameId(relativePath, packageManagedGames);
     
     try {
       const fileContent = readFileSync(file);
@@ -207,6 +383,12 @@ async function main() {
       await uploadFile(fileContent, remotePath, file);
       console.log(`✅ ${remotePath}`);
       uploaded++;
+      if (packageManagedGameId) {
+        uploadedPackageManagedGames.add(packageManagedGameId);
+      }
+      if (isSharedAudioAsset(relativePath)) {
+        hasUploadedSharedAudioAssets = true;
+      }
     } catch (error) {
       console.error(`❌ ${remotePath}: ${error.message}`);
       failed++;
@@ -295,8 +477,16 @@ async function main() {
   if (checkOnly) {
     console.log(`\n📋 检查完成！新增 ${newFiles}，变更 ${changed}，未变更 ${skipped}`);
   } else {
+    if (failed === 0) {
+      publishAndroidPackagesForUploadedAssets(uploadedPackageManagedGames, hasUploadedSharedAudioAssets);
+    } else if (uploadedPackageManagedGames.size > 0 || hasUploadedSharedAudioAssets) {
+      console.log('\n⚠️  存在上传失败，跳过安卓素材包刷新，避免发布不完整素材包。');
+    }
     console.log(`\n✨ 上传完成！上传 ${uploaded}，跳过 ${skipped}（未变更），删除 ${deleted}，失败 ${failed}`);
   }
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -114,18 +114,43 @@ export interface BetrayalRoomDiscoveryTemplate {
     tags: string[];
     visualId: Exclude<BetrayalRoomVisualId, 'startTriple' | 'startHallway' | 'upperLanding' | 'basementLanding' | 'entranceHall' | 'foyer' | 'backUpper' | 'backGround' | 'backBasement'>;
     doorways: BetrayalRoomEdge[];
+    discoveryEffect?: 'gainSanity1' | 'gainKnowledge1' | 'drawUntilWeapon';
+    endTurnEffect?: 'physicalDamage1' | 'speedCheckFallToBasement' | 'moveToBasementLanding';
+    enterEffect?: 'mysticElevator';
 }
 
-export interface BetrayalUseEffectSeed {
-    mode: 'move' | 'trait';
-    amount: number;
-    trait?: BetrayalTraitKey;
-    recommendedAction: BetrayalRecommendedAction;
+export type BetrayalUseEffectSeed =
+    | {
+        mode: 'move';
+        amount: number;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'trait';
+        amount: number;
+        trait: BetrayalTraitKey;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'generalDamage';
+        amount: number;
+        traits: BetrayalTraitKey[];
+        recommendedAction: BetrayalRecommendedAction;
+    };
+
+export interface BetrayalEventResultBranch {
+    min: number;
+    effect: BetrayalUseEffectSeed;
+    label: string;
 }
 
 export interface BetrayalEventSeed {
     name: string;
-    effect: BetrayalUseEffectSeed;
+    effect?: BetrayalUseEffectSeed;
+    roll?: {
+        trait: BetrayalTraitKey;
+        branches: BetrayalEventResultBranch[];
+    };
 }
 
 export interface BetrayalMonsterSeed {
@@ -481,20 +506,20 @@ export const BETRAYAL_DISCOVERY_POOLS = {
     drawOrder: ['event', 'item', 'omen'] as BetrayalDeckKind[],
     possessions: {
         item: [
-            { id: 'camera', name: '相机', kind: 'item' },
+            { id: 'camera', name: '魔法相机', kind: 'item' },
             { id: 'medical-kit', name: '急救包', kind: 'item' },
-            { id: 'holy-water', name: '圣水', kind: 'item' },
+            { id: 'holy-water', name: '奇怪的药品', kind: 'item' },
             { id: 'flashlight', name: '手电筒', kind: 'item' },
-            { id: 'radio', name: '短波机', kind: 'item' },
-            { id: 'map', name: '折叠地图', kind: 'item' },
-            { id: 'rope', name: '绳索', kind: 'item' },
-            { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
-            { id: 'hunting-knife', name: '狩猎短刀', kind: 'item' },
-            { id: 'notebook', name: '调查笔记', kind: 'item' },
-            { id: 'manuscript', name: '旧手稿', kind: 'item' },
+            { id: 'radio', name: '头戴耳机', kind: 'item' },
+            { id: 'map', name: '地图', kind: 'item' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
+            { id: 'hunting-knife', name: '砍刀', kind: 'item' },
+            { id: 'notebook', name: '地图', kind: 'item' },
+            { id: 'manuscript', name: '地图', kind: 'item' },
         ],
         omen: [
-            { id: 'omen-book', name: '预兆书', kind: 'omen' },
+            { id: 'omen-book', name: '书本', kind: 'omen' },
             { id: 'dog', name: '狗', kind: 'omen' },
             { id: 'mask', name: '面具', kind: 'omen' },
             { id: 'skull', name: '头骨', kind: 'omen' },
@@ -555,6 +580,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['神秘', '静压'],
                 visualId: 'chapel',
                 doorways: ['east', 'south'],
+                discoveryEffect: 'gainSanity1',
             },
             {
                 name: '实验室',
@@ -576,6 +602,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['一层', '危险'],
                 visualId: 'furnaceRoom',
                 doorways: ['east', 'south', 'west'],
+                endTurnEffect: 'physicalDamage1',
             },
             {
                 name: '客房',
@@ -632,6 +659,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['一层', '物品'],
                 visualId: 'armory',
                 doorways: ['north', 'east', 'south'],
+                discoveryEffect: 'drawUntilWeapon',
             },
         ],
         upper: [
@@ -662,6 +690,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['知识', '调查'],
                 visualId: 'study',
                 doorways: ['north', 'east'],
+                discoveryEffect: 'gainKnowledge1',
             },
             {
                 name: '长廊',
@@ -676,6 +705,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['知识', '调查'],
                 visualId: 'library',
                 doorways: ['south', 'west'],
+                discoveryEffect: 'gainKnowledge1',
             },
             {
                 name: '冬季卧室',
@@ -690,6 +720,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['上层', '危险'],
                 visualId: 'collapsedRoom',
                 doorways: ['north', 'south'],
+                endTurnEffect: 'speedCheckFallToBasement',
             },
             {
                 name: '烧焦房间',
@@ -739,6 +770,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['上层', '地下', '特殊移动'],
                 visualId: 'mysticElevator',
                 doorways: ['north', 'east', 'south', 'west'],
+                enterEffect: 'mysticElevator',
             },
         ],
         basement: [
@@ -748,6 +780,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['上层', '地下', '特殊移动'],
                 visualId: 'laundryChute',
                 doorways: ['north', 'east'],
+                endTurnEffect: 'moveToBasementLanding',
             },
             {
                 name: '裂隙',
@@ -841,38 +874,38 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
         },
         startingInventoryByExplorerId: {
             'jaden-jones': [
-                { id: 'rope', name: '绳索', kind: 'item' },
+                { id: 'rope', name: '兔脚', kind: 'item' },
                 { id: 'flashlight', name: '手电筒', kind: 'item' },
-                { id: 'omen-book', name: '预兆书', kind: 'omen' },
+                { id: 'omen-book', name: '书本', kind: 'omen' },
             ],
             'rebecca-allen': [
-                { id: 'rope', name: '绳索', kind: 'item' },
-                { id: 'notebook', name: '调查笔记', kind: 'item' },
-                { id: 'ring', name: '古戒', kind: 'omen' },
+                { id: 'rope', name: '兔脚', kind: 'item' },
+                { id: 'notebook', name: '地图', kind: 'item' },
+                { id: 'ring', name: '指环', kind: 'omen' },
             ],
             'darryl-highla': [
                 { id: 'medical-kit', name: '急救包', kind: 'item' },
-                { id: 'camera', name: '相机', kind: 'item' },
-                { id: 'mask', name: '骨面具', kind: 'omen' },
+                { id: 'camera', name: '魔法相机', kind: 'item' },
+                { id: 'mask', name: '面具', kind: 'omen' },
             ],
             'oliver-swift': [
-                { id: 'map', name: '折叠地图', kind: 'item' },
-                { id: 'lantern', name: '提灯', kind: 'item' },
+                { id: 'map', name: '地图', kind: 'item' },
+                { id: 'lantern', name: '手电筒', kind: 'item' },
                 { id: 'holy-symbol', name: '圣符', kind: 'omen' },
             ],
             'lia-valencia': [
-                { id: 'journal', name: '日志', kind: 'item' },
-                { id: 'radio', name: '短波机', kind: 'item' },
+                { id: 'journal', name: '地图', kind: 'item' },
+                { id: 'radio', name: '头戴耳机', kind: 'item' },
                 { id: 'skull', name: '头骨', kind: 'omen' },
             ],
             'sam-yin': [
-                { id: 'holy-water', name: '圣水', kind: 'item' },
+                { id: 'holy-water', name: '奇怪的药品', kind: 'item' },
                 { id: 'flashlight', name: '手电筒', kind: 'item' },
                 { id: 'idol', name: '雕像', kind: 'omen' },
             ],
             'michelle-monroe': [
-                { id: 'lockpick-tool', name: '撬锁工具', kind: 'item' },
-                { id: 'lantern', name: '提灯', kind: 'item' },
+                { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
+                { id: 'lantern', name: '手电筒', kind: 'item' },
                 { id: 'dagger', name: '匕首', kind: 'omen' },
             ],
         },

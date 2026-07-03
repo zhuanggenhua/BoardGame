@@ -81,7 +81,7 @@
 
 ## 下一步建议
 
-1. 当前十一条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，并且本轮已在当前 `main` 现场重新串行复核通过：
+1. 当前十二条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，并且本轮已在当前 `main` 现场重新串行复核通过：
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-traitor-victory.e2e.ts`
@@ -93,6 +93,7 @@
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/inventory-density.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/monster-runtime.e2e.ts`
    - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/explore-unknown-room.e2e.ts`
+   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-core-interactions.e2e.ts`
    其中：
    - `basic-flow` 覆盖“角色选择确认到恶兆前运行时”；
    - `first-scenario` 覆盖“真实 haunt 运行时到幸存者终局收尾”；
@@ -101,14 +102,15 @@
    - `omen-atlas` 覆盖“预兆持有区使用正式正面图集”；
    - `inventory-density` 覆盖“持有区高密度物品与预兆仍能渲染”；
    - `monster-runtime` 覆盖“玩家、队友与怪物同场的真实运行时”；
-   - `explore-unknown-room` 覆盖“真实牌桌里点击探索、选择未知门位并翻开新房间”。
+   - `explore-unknown-room` 覆盖“真实牌桌里点击探索、选择未知门位并翻开新房间”；
+   - `first-scenario-core-interactions` 覆盖“真实牌桌里交易、调查杰克、研究法阵、英雄攻击叛徒”。
 2. 第一剧本三条关键 haunt 边界真实页面证据也已经成立：
    其中：
    - `first-scenario-corpse-loot` 覆盖“同房间尸体搜刮”的正式动作入口与回合内消耗；
    - `first-scenario-jack-spirit-revive` 覆盖“Jack's Spirit 回尸体房间后通过正式结束回合触发叛徒复活”；
    - `first-scenario-jack-spirit-post-revive-attack` 覆盖“叛徒复活后通过正式房间焦点入口继续攻击同房间英雄”。
 3. 当前规则真相已明确三条：恶兆前正式 domain setup 以 `Entrance Hall` 为探索者共同起点；起始 ground 拓扑必须显式保留 `Ground Floor Staircase / Hallway / Entrance Hall` 三个房间节点，且 `Basement Landing <-> Ground Floor Staircase <-> Upper Landing` 的特殊连接必须按规则存在；`haunt roll` 必须按“所有玩家当前持有的恶兆总数”掷骰，而不是按历史抽牌次数偷算。
-4. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合，且此后攻击英雄时会按 `Jack's Spirit` 的房间与 `Might 5` 结算；当 `Jack's Spirit` 回到尸体所在房间时，叛徒会恢复肉身并移除 spirit。
+4. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合，且此后攻击英雄时会按 `Jack's Spirit` 的房间与 `Might 5` 结算；当 `Jack's Spirit` 回到尸体所在房间时，叛徒会恢复肉身并移除 spirit。交易、调查杰克、研究法阵和英雄攻击叛徒也已补真实页面 E2E，不再只停留在领域单测或命令注入。
 5. `HAUNT_ATTACK` 也已经从“命中即秒杀”改成正式对攻：英雄打叛徒、叛徒打英雄都按 `Might` 对掷，按点差造成 `Physical damage`，平手不受伤；`Knowledge of Jack` 的 `+2` 只在英雄攻击叛徒时生效。
 6. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
 7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E：

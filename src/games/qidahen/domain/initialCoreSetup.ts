@@ -168,10 +168,17 @@ export const createInitialCore = (
     };
 
     const syncedBaseCore = syncQidahenCorePieceCollections(baseCore);
+    const openingSelectedRegionId = getPreferredOpeningActionWindowSelectedRegionId(syncedBaseCore, openingFactionId);
     return {
         ...syncedBaseCore,
-        selectedRegionId: getPreferredOpeningActionWindowSelectedRegionId(syncedBaseCore, openingFactionId),
+        selectedRegionId: openingSelectedRegionId,
         explicitRegionId: null,
+        regionFocusState: {
+            defaultFocusRegionId: openingSelectedRegionId,
+            lockedSourceRegionId: null,
+            currentTargetRegionId: null,
+            displayAnchorRegionId: openingSelectedRegionId,
+        },
     };
 };
 

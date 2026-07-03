@@ -33,9 +33,9 @@ export type AbilityTrigger =
   | 'beforeAttack'       // 攻击前（吸取生命）
   | 'afterAttack'        // 攻击后（读心传念、念力、高阶念力）
   | 'onDamageDealt'      // 造成伤害后
-  | 'onKill'             // 消灭敌方单位后（感染、灵魂转移、心灵捕获）
+  | 'onKill'             // 消灭敌方单位后（感染、心灵捕获）
   | 'onDeath'            // 被消灭时（献祭）
-  | 'onUnitDestroyed'    // 任意单位被消灭时（血腥狂怒）
+  | 'onUnitDestroyed'    // 任意单位被消灭时（血腥狂怒、灵魂转移）
   | 'onTurnStart'        // 回合开始时
   | 'onTurnEnd'          // 回合结束时（血腥狂怒充能衰减）
   | 'onPhaseStart'       // 阶段开始时（幻化）
@@ -99,7 +99,7 @@ export type AbilityEffect =
   // 移动增强
   | { type: 'extraMove'; target: TargetRef; value: number; canPassThrough?: 'units' | 'structures' | 'all'; damageOnPassThrough?: number }
   // 光环：增加友方建筑生命
-  | { type: 'auraStructureLife'; range: number; value: number }
+  | { type: 'auraStructureLife'; range?: number; value: number }
   // 控制权转移（心灵捕获）
   | { type: 'takeControl'; target: TargetRef; duration?: 'permanent' | 'untilEndOfTurn' }
   // 减伤
@@ -364,8 +364,8 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
         }
         
         // 检查位置是否为空
-        const isCellEmpty = !ctx.core.board[targetPosition.row]?.[targetPosition.col]?.unit;
-        if (!isCellEmpty) {
+        const targetCellEmpty = isCellEmpty(ctx.core, targetPosition);
+        if (!targetCellEmpty) {
           return { valid: false, error: '放置位置必须为空' };
         }
         
@@ -622,7 +622,7 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     name: abilityText('soul_transfer', 'name'),
     description: abilityText('soul_transfer', 'description'),
     sfxKey: 'magic.general.spells_variations_vol_2.unholy_echo.magevil_unholy_echo_01_krst_none',
-    trigger: 'onKill',
+    trigger: 'onUnitDestroyed',
     condition: { type: 'isInRange', target: 'victim', range: 3 },
     effects: [
       // 改为请求事件，由 UI 确认后执行

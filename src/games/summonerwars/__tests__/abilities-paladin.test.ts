@@ -490,6 +490,64 @@ describe('城塞骑士 - 守卫 (guardian)', () => {
     expect(result.valid).toBe(true);
   });
 
+  it('多个相邻守卫时可攻击任一守卫但不能攻击非守卫', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-attacker',
+      card: makeEnemy('test-attacker'),
+      owner: '1',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-guardian-a',
+      card: makeFortressKnight('test-guardian-a'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 3, col: 2 }, {
+      cardId: 'test-guardian-b',
+      card: makeFortressKnight('test-guardian-b'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 5, col: 2 }, {
+      cardId: 'test-other',
+      card: makeAlly('test-other'),
+      owner: '0',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '1';
+    state.players['1'].attackCount = 0;
+
+    const fullState = { core: state, sys: {} as any };
+    const attackGuardianA = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      payload: { attacker: { row: 4, col: 2 }, target: { row: 4, col: 3 } },
+      playerId: '1',
+      timestamp: fixedTimestamp,
+    });
+    const attackGuardianB = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      payload: { attacker: { row: 4, col: 2 }, target: { row: 3, col: 2 } },
+      playerId: '1',
+      timestamp: fixedTimestamp,
+    });
+    const attackOther = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      payload: { attacker: { row: 4, col: 2 }, target: { row: 5, col: 2 } },
+      playerId: '1',
+      timestamp: fixedTimestamp,
+    });
+
+    expect(attackGuardianA.valid).toBe(true);
+    expect(attackGuardianB.valid).toBe(true);
+    expect(attackOther.valid).toBe(false);
+    expect(attackOther.error).toContain('守卫');
+  });
+
   it('守卫不相邻攻击者时不强制', () => {
     const state = createPaladinState();
     clearArea(state, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
@@ -905,7 +963,7 @@ describe('瓦伦蒂娜 - 指引 (guidance)', () => {
 // ============================================================================
 
 describe('城塞弓箭手 - 圣光箭 (holy_arrow)', () => {
-  it('弃除1张卡牌获得1魔力+1战力', () => {
+  it('弃除1张卡牌获得1魔力且不留下永久战力', () => {
     const state = createPaladinState();
     clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
 
@@ -939,13 +997,13 @@ describe('城塞弓箭手 - 圣光箭 (holy_arrow)', () => {
     const discardEvents = events.filter(e => e.type === SW_EVENTS.CARD_DISCARDED);
     expect(discardEvents.length).toBe(1);
 
-    // 战力加成（boosts+1）
+    // 战力加成只作用于本次攻击，不写入永久充能
     const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
-    expect(chargeEvents.length).toBe(1);
-    expect(newState.board[4][2].unit?.boosts).toBe(1);
+    expect(chargeEvents.length).toBe(0);
+    expect(newState.board[4][2].unit?.boosts).toBe(0);
   });
 
-  it('弃除多张卡牌获得对应魔力和战力', () => {
+  it('弃除多张卡牌获得对应魔力且不留下永久战力', () => {
     const state = createPaladinState();
     clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
 
@@ -963,14 +1021,15 @@ describe('城塞弓箭手 - 圣光箭 (holy_arrow)', () => {
     state.players['0'].hand.push(makeAlly('discard-unit-a'));
     state.players['0'].hand.push(makeEnemy('discard-unit-b'));
 
-    const { newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'holy_arrow',
       sourceUnitId: archer.instanceId,
       discardCardIds: ['discard-unit-a', 'discard-unit-b'],
     });
 
     expect(newState.players['0'].magic).toBe(4); // 2+2
-    expect(newState.board[4][2].unit?.boosts).toBe(2);
+    expect(events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED)).toHaveLength(0);
+    expect(newState.board[4][2].unit?.boosts).toBe(0);
   });
 
   it('弃除同名单位验证拒绝', () => {

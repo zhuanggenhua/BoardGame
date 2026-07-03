@@ -733,6 +733,7 @@ export interface DieModifiedEvent extends GameEvent<'DIE_MODIFIED'> {
         /** 执行修改的玩家 ID */
         playerId: PlayerId;
         sourceCardId?: string;
+        ownerId?: PlayerId;
     };
 }
 
@@ -744,6 +745,7 @@ export interface DieRerolledEvent extends GameEvent<'DIE_REROLLED'> {
         newValue: number;
         playerId: PlayerId;
         sourceCardId?: string;
+        ownerId?: PlayerId;
     };
 }
 

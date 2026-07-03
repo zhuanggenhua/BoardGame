@@ -259,11 +259,8 @@ function handleShowdownBonus({ attackerId, sourceAbilityId, state, timestamp, ra
 function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
 
-    // 产品特例：duel 只能通过“直接结束防御”进入对掷，此时由系统为防御方自动掷 1 颗骰子。
-    const defenderRoll = (state.rollCount > 0 && state.rollConfirmed)
-        ? (state.dice[0]?.value ?? 1)
-        : random.d(6);
-    const attackerRoll = random.d(6);
+    const defenderRoll = state.dice[0]?.value ?? random.d(6);
+    const attackerRoll = state.pendingAttack?.duelAttackerDieValue ?? random.d(6);
     const originalAttackerId = state.pendingAttack?.attackerId;
     const originalDefenderId = state.pendingAttack?.defenderId;
     if (!originalAttackerId || !originalDefenderId) return [];

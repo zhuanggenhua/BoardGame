@@ -54,6 +54,26 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.GOBLIN_SNEAK,
 ]);
 
+function buildBloodRuneOptions(core: SummonerWarsCore, owner: PlayerId): PromptOption<SwInteractionValue>[] {
+  const options: PromptOption<SwInteractionValue>[] = [
+    {
+      id: 'damage',
+      label: '自伤',
+      labelKey: 'actions.bloodRuneDamage',
+      value: { action: 'on_phase_start_blood_rune', choice: 'damage' },
+    },
+  ];
+  if (core.players[owner]?.magic >= 1) {
+    options.push({
+      id: 'charge',
+      label: '充能',
+      labelKey: 'actions.bloodRuneCharge',
+      value: { action: 'on_phase_start_blood_rune', choice: 'charge' },
+    });
+  }
+  return options;
+}
+
 type SwInteractionMeta =
   | {
       type: 'infection';
@@ -481,6 +501,11 @@ function normalizeInteractionValues(value: unknown): SwInteractionValue[] {
     return [value as SwInteractionValue];
   }
   return [];
+}
+
+function hasQueuedInteraction(state: MatchState<SummonerWarsCore>, interactionId: string): boolean {
+  const interaction = state.sys.interaction;
+  return interaction.current?.id === interactionId || interaction.queue.some((queued) => queued.id === interactionId);
 }
 
 export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWarsCore> {
@@ -1398,7 +1423,10 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             const ownerId = payload.iceRamOwner;
             const structurePosition = payload.structurePosition ?? sourcePosition;
             if (!ownerId || !structurePosition) continue;
-            const adj = getAdjacentCells(structurePosition).filter((pos) => !!getUnitAt(newState.core, pos));
+            const adj = getAdjacentCells(structurePosition).filter((pos) => {
+              const unit = getUnitAt(newState.core, pos);
+              return !!unit && (unit.card.unitClass === 'common' || unit.card.unitClass === 'champion');
+            });
             if (adj.length === 0) continue;
             const options: PromptOption<SwInteractionValue>[] = [
               ...buildPositionOptions(adj, (pos) => ({
@@ -1434,6 +1462,40 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
 
           const sourceUnit = getUnitAt(newState.core, sourcePosition);
           if (!sourceUnit) continue;
+
+          if (actionId === 'fortress_power_retrieve') {
+            const player = newState.core.players[sourceUnit.owner];
+            const discardCards = player.discard.filter((card) => card.cardType === 'unit' && isFortressUnit(card));
+            if (discardCards.length === 0) continue;
+            const interactionId = `sw-after-attack-fortress-power-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = discardCards.map((card) => ({
+              id: card.id,
+              label: card.name,
+              value: { action: 'activated_ability_target', abilityId: 'fortress_power', targetCardId: card.id },
+              displayMode: 'card',
+            }));
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.fortressPower',
+              options,
+              { sourceId: 'fortress_power', targetType: 'discard_minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'activated_ability_target',
+                abilityId: 'fortress_power',
+                sourceUnitId,
+                sourcePosition,
+                step: 'selectCard',
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+            continue;
+          }
 
           if (actionId === 'ice_shards_damage') {
             const hasCharge = normalizeUnitBoosts(sourceUnit.boosts) >= 1;
@@ -1592,22 +1654,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           }
 
           if (actionId === 'blood_rune_choice') {
-            const options: PromptOption<SwInteractionValue>[] = [
-              {
-                id: 'damage',
-                label: '自伤',
-                labelKey: 'actions.bloodRuneDamage',
-                value: { action: 'on_phase_start_blood_rune', choice: 'damage' },
-              },
-            ];
-            if (newState.core.players[sourceUnit.owner]?.magic >= 1) {
-              options.push({
-                id: 'charge',
-                label: '充能',
-                labelKey: 'actions.bloodRuneCharge',
-                value: { action: 'on_phase_start_blood_rune', choice: 'charge' },
-              });
-            }
+            const options = buildBloodRuneOptions(newState.core, sourceUnit.owner);
             const interaction = createSimpleChoice(
               `sw-blood-rune-${event.timestamp ?? 0}-${sourceUnitId}`,
               sourceUnit.owner,
@@ -1618,6 +1665,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
             interaction.data = {
               ...interactionData,
+              optionsGenerator: (state) => buildBloodRuneOptions(state.core as SummonerWarsCore, sourceUnit.owner),
               sw: {
                 type: 'on_phase_start_blood_rune',
                 sourceUnitId,
@@ -1783,12 +1831,6 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                   targetPosition: pos,
                 })));
               }
-              options.push({
-                id: 'skip',
-                label: '跳过',
-                labelKey: 'actions.skip',
-                value: { skip: true },
-              });
               const interaction = createSimpleChoice(
                 `sw-spirit-bond-${event.timestamp ?? 0}-${sourceUnitId}`,
                 sourceUnit.owner,

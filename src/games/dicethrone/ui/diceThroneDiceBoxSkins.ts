@@ -1,3 +1,5 @@
+// @asset-pipeline-allow
+// 骰子盒皮肤在受控 canvas 流程中把已解析图片转成 Three.js 贴图输入。
 import { getDieFaceByValue } from '../domain/diceRegistry';
 import { getDiceSpriteAssetPath } from './assets';
 import {
@@ -228,10 +230,25 @@ const createFaceCanvas = (
     return canvas;
 };
 
-const canvasToImage = (canvas: HTMLCanvasElement): Promise<HTMLImageElement> => new Promise((resolve) => {
+const canvasToImage = (
+    canvas: HTMLCanvasElement,
+    fallbackCanvas?: HTMLCanvasElement,
+): Promise<HTMLImageElement> => new Promise((resolve) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.src = canvas.toDataURL('image/png');
+    try {
+        image.src = canvas.toDataURL('image/png');
+    } catch (error) {
+        if (fallbackCanvas && fallbackCanvas !== canvas) {
+            try {
+                image.src = fallbackCanvas.toDataURL('image/png');
+                return;
+            } catch {
+                // Fall through to the final transparent pixel fallback.
+            }
+        }
+        image.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+    }
 });
 
 export async function loadDiceThroneDiceBoxSkin(
@@ -249,8 +266,9 @@ export async function loadDiceThroneDiceBoxSkin(
 
     for (const faceValue of [1, 2, 3, 4, 5, 6]) {
         const canvas = createFaceCanvas(faceValue, spriteImage, definitionId);
+        const fallbackCanvas = createFaceCanvas(faceValue, null, definitionId);
         faceCanvases[faceValue] = canvas;
-        faceImages[faceValue] = await canvasToImage(canvas);
+        faceImages[faceValue] = await canvasToImage(canvas, fallbackCanvas);
     }
 
     return {

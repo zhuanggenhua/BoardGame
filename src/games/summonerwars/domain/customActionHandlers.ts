@@ -93,6 +93,31 @@ swCustomActionRegistry.register('guidance_draw', ({ ctx, timestamp }) => {
     }];
 });
 
+// --- 魔力成瘾（地精）：回合结束时有魔力花 1 魔力，否则弃置本单位 ---
+swCustomActionRegistry.register('magic_addiction_check', ({ ctx, timestamp }) => {
+    const owner = ctx.ownerId;
+    if (ctx.state.players[owner].magic >= 1) {
+        return [{
+            type: SW_EVENTS.MAGIC_CHANGED,
+            payload: { playerId: owner, delta: -1 },
+            timestamp,
+        }];
+    }
+
+    return [{
+        type: SW_EVENTS.UNIT_DESTROYED,
+        payload: {
+            position: ctx.sourcePosition,
+            cardId: ctx.sourceUnit.cardId,
+            instanceId: ctx.sourceUnit.instanceId,
+            cardName: ctx.sourceUnit.card.name,
+            owner,
+            reason: 'magic_addiction',
+        },
+        timestamp,
+    }];
+});
+
 // --- 占位 handler（逻辑在 execute.ts 中处理，此处 no-op） ---
 swCustomActionRegistry.register('divine_shield_check', () => []);
 swCustomActionRegistry.register('healing_convert', () => []);

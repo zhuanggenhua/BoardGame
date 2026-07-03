@@ -1,4 +1,5 @@
 import { buildSeasonSummary } from './seasonSummaryBuilder';
+import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import type { QidahenPostBattleDecisionResolution } from './postBattleDecisionResolution';
 import type {
     QidahenCore,
@@ -97,10 +98,15 @@ export const applyPendingActionResolutionToBattleFlowState = (
         ?? resolution.pendingTargetAction?.targetRuntimeRegionId
         ?? resolution.postBattleSelection?.targetRuntimeRegionId
         ?? pendingTargetAction.targetRuntimeRegionId;
+    const resolvedExplicitRegionId = state.explicitRegionId ?? resolvedSelectedRegionId;
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolvedSelectedRegionId,
-        explicitRegionId: resolvedSelectedRegionId,
+        explicitRegionId: resolvedExplicitRegionId,
+        regionFocusState: buildQidahenRegionFocusState(resolvedSelectedRegionId, {
+            currentTargetRegionId: resolvedSelectedRegionId,
+            displayAnchorRegionId: resolvedExplicitRegionId,
+        }),
         turnPhase: resolution.pendingTargetAction
             ? 'resolve-pending'
             : resolution.postBattleSelection
@@ -150,7 +156,11 @@ export const applyPostBattleDecisionResolutionToBattleFlowState = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolution.selectedRegionId,
-        explicitRegionId: resolution.selectedRegionId,
+        explicitRegionId: state.explicitRegionId ?? resolution.selectedRegionId,
+        regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId, {
+            currentTargetRegionId: resolution.selectedRegionId,
+            displayAnchorRegionId: state.explicitRegionId ?? resolution.selectedRegionId,
+        }),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,

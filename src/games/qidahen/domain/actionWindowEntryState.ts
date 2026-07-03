@@ -3,6 +3,7 @@ import {
     getActionChoicesForFaction,
     getDefaultActionIdForFaction,
 } from './factionActionWindow';
+import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import { buildQidahenWheelMoveSummary } from './wheelMoves';
 import type {
     QidahenCore,
@@ -29,6 +30,7 @@ QidahenCore,
 | 'wheelMoveSummary'
 | 'selectedRegionId'
 | 'explicitRegionId'
+| 'regionFocusState'
 | 'selectedActionId'
 | 'confirmedActionId'
 | 'selectedPaymentCardIds'
@@ -60,6 +62,7 @@ QidahenCore,
         wheelMoveSummary: buildQidahenWheelMoveSummary(selectedWheelMoveId),
         selectedRegionId: options.selectedRegionId,
         explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(options.selectedRegionId),
         selectedActionId,
         confirmedActionId: null,
         selectedPaymentCardIds: [],

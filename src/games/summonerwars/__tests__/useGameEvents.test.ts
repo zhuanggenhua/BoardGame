@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import type { EventStreamEntry, GameEvent } from '../../../engine/types';
-import { computeEventStreamDelta, type AbilityModeState } from '../ui/useGameEvents';
+import { computeEventStreamDelta, shouldConsumeChargeEvent, type AbilityModeState } from '../ui/useGameEvents';
 import {
   ACTIVATED_ABILITY_IDS,
   deriveInteractionCardsByOptionIds,
@@ -88,6 +88,17 @@ describe('computeEventStreamDelta', () => {
       nextLastSeenId: 6,
       shouldReset: false,
     });
+  });
+});
+
+describe('shouldConsumeChargeEvent', () => {
+  it('同一充能事件 id 只消费一次', () => {
+    const consumed = new Set<number>();
+
+    expect(shouldConsumeChargeEvent(consumed, 7)).toBe(true);
+    expect(shouldConsumeChargeEvent(consumed, 7)).toBe(false);
+    expect(shouldConsumeChargeEvent(consumed, 8)).toBe(true);
+    expect([...consumed]).toEqual([7, 8]);
   });
 });
 

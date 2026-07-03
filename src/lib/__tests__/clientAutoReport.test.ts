@@ -488,6 +488,63 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('空堆栈的泛化 Unhandled rejection 会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('empty-generic-unhandled-rejection', {
+            content: '[auto][unhandledrejection] Unhandled rejection',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'splendor',
+            gameName: 'client',
+            errorName: 'UnhandledRejection',
+            errorMessage: 'Unhandled rejection',
+            errorSource: 'window.unhandledrejection',
+            stack: '',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('钱包扩展注入 ethereum 的噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('extension-ethereum-injection-noise', {
+            content: '[auto][unhandledrejection] Cannot redefine property: ethereum',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Cannot redefine property: ethereum',
+            errorSource: 'window.unhandledrejection',
+            stack: 'TypeError: Cannot redefine property: ethereum\n    at Object.defineProperty (<anonymous>)\n    at chrome-extension://mfgccjchihfkkindfppnaooecgfneiii/inpage.js:144:113558',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('扩展 inpage 脚本 sseError 噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('extension-sse-error-noise', {
+            content: '[auto][unhandledrejection] func sseError not found',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'func sseError not found',
+            errorSource: 'window.unhandledrejection',
+            stack: 'Error: func sseError not found\n    at Object.<anonymous> (chrome-extension://cadiboklkpojfamcoggejbbdjcoiljjk/inpage.js:250:19715)',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('Script error. 浏览器通用噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

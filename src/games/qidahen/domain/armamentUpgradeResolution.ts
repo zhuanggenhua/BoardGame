@@ -3,6 +3,7 @@ import {
 } from './armamentLowFidelity';
 import { syncFactionActionWindow } from './factionActionWindow';
 import { getFactionIdByPlayerId } from './factionTurnAccessors';
+import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import {
     advanceQidahenTurnIfReady,
@@ -202,6 +203,8 @@ export const resolveQidahenSunYuanhuaTechResolvedEvent = (
     const resolvedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: resolution.selectedRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,

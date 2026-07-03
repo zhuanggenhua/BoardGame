@@ -1,0 +1,39 @@
+# 七大恨普通手牌外部文本来源搜索记录
+
+> 这份记录只说明本轮是否找到可追溯的外部逐牌文本真相源；搜索命中不能直接写入正式手牌规则映射。
+
+## 搜索边界
+
+- 本轮只搜索文本型来源，不读取或上传图片。
+- 搜索目标是普通事件、军备、战术、银两的逐牌牌名、牌类、效果和军备目标。
+- 只要来源不能提供逐牌表，就不能作为 OpenSpec `2.4` 完成依据。
+
+## 搜索词
+
+| 搜索词 | 结果 |
+| --- | --- |
+| `七大恨 事件牌 军备牌 战术牌 银两牌` | 搜索结果主要是“七”字百科、数字七解释等噪音 |
+| `七大恨 卡牌列表 事件牌` | 搜索结果主要是 Microsoft Community 等无关页面 |
+| `七大恨 中文mod 牌表` | 搜索结果主要是 Facebook 下载等无关页面 |
+| `Nadan Koro card list event armament tactic silver` | 搜索结果主要是 Tongariro National Park 等无关页面 |
+
+## 2026-07-03 公开搜索复查补充
+
+- 本地辅助输出：
+  - `temp/qidahen-external-source-rerun/search-results.json`
+  - `temp/qidahen-external-source-rerun/search-results.md`
+- 本轮追加搜索词：
+  - `七大恨 牌表 事件牌 军备牌 战术牌 银两牌`
+  - `七大恨 卡牌列表 事件牌 军备牌`
+  - `Nadan Koro card list event armament tactic silver`
+  - `Nadan Koro board game cards list`
+  - `七大恨 中文mod 牌表`
+- 复查结果仍未命中可追溯逐牌牌表；返回摘要主要是 Google Drive、无关医疗/问答/课程/论坛页面或搜索噪音。
+- 因此外部公开文本搜索仍不能提供普通事件、军备、战术、银两的中文牌名、牌类、效果或军备目标。
+
+## 当前结论
+
+- 本轮没有找到可用的外部逐牌牌表。
+- 外部搜索没有提供普通事件、军备、战术、银两的中文牌名、牌类、效果或军备目标。
+- 当前仍只能依赖本地素材、规则 PDF、TTS JSON、OCR 候选和人工复核清单继续推进。
+- OpenSpec `2.4` 和 `4.5` 继续保持未完成。

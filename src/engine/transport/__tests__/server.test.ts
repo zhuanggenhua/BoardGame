@@ -1919,6 +1919,39 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         });
     });
 
+    it('DiceThrone response window 仍被 pendingInteractionId 锁住且没有私有交互时，不应退成 RESPONSE_PASS', () => {
+        const sharedState = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'defensiveRoll',
+            interaction: {
+                current: undefined,
+                queue: [],
+                isBlocked: false,
+            },
+            responseWindow: {
+                current: {
+                    id: 'after-attack-resolved-window-locked-1',
+                    windowType: 'afterAttackResolved',
+                    sourceId: 'barbarian-rage',
+                    responderQueue: ['1'],
+                    currentResponderIndex: 0,
+                    pendingInteractionId: 'dt-hidden-after-attack-choice',
+                },
+            },
+        }).G as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+        });
+
+        expect(candidate).toBeNull();
+    });
+
     it('DiceThrone afterAttackResolved 未显式暴露 pendingInteractionId，但当前响应者 seat view 已有私有交互时，也应优先检查 hidden interaction', () => {
         const sharedState = createOnlineAiRecoveryState({
             activePlayerId: '1',

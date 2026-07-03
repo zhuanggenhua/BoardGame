@@ -14,6 +14,18 @@ export const buildPendingTargetRoutChoiceValue = (): QidahenPendingTargetChoiceV
     retreatLossMode: 'rout',
 });
 
+export const buildPendingTargetDefenderHoldCityChoiceValue = (): QidahenPendingTargetChoiceValue => ({
+    choiceId: 'defender-hold-city',
+    retreatLossMode: 'rear-guard',
+    defenderHoldCity: true,
+});
+
+export const buildPendingTargetDefenderSortieChoiceValue = (): QidahenPendingTargetChoiceValue => ({
+    choiceId: 'defender-sortie',
+    retreatLossMode: 'rear-guard',
+    defenderSortieBattle: true,
+});
+
 export const buildPendingTargetAttackerCavalryPlunderChoiceValue = (
     source: QidahenPlunderSource,
 ): QidahenPendingTargetChoiceValue => ({

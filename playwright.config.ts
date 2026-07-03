@@ -25,6 +25,7 @@ const headedByCli = process.argv.some(arg => arg === '--headed' || arg === '--de
 const headedMode = headedByEnv || headedByCli;
 const allowFullRun = process.env.PW_ALLOW_FULL_RUN === 'true';
 const shouldDisableChromiumGpu = process.platform === 'win32' && !headedMode;
+const shouldUseJpegScreenshotReporter = process.env.PW_DISABLE_JPEG_REPORTER !== 'true';
 // 每次 Playwright 启动链都分配独立 scope，供 globalSetup/globalTeardown 和端口文件隔离。
 const runtimeScope = process.env.PW_RUNTIME_SCOPE
     || `pw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -246,7 +247,12 @@ export default defineConfig({
     forbidOnly: !!process.env.CI,
     retries: 0,
     workers: configuredWorkers,
-    reporter: 'list',
+    reporter: shouldUseJpegScreenshotReporter
+        ? [
+            ['./e2e/reporters/jpeg-screenshot-reporter.ts'],
+            ['list'],
+        ]
+        : 'list',
     outputDir: './test-results/playwright-artifacts',
     preserveOutput: 'failures-only',
     globalSetup: shouldStartServers ? './e2e/global-setup.ts' : undefined,

@@ -11,11 +11,15 @@ import {
 } from './characterConflictState';
 import { hasActiveCharacter } from './characterPresenceAccessors';
 import {
-    buildGaoDiDispatchSelection,
-    buildWangHuazhenInternalDispatchSelection,
+    buildGaoDiDispatchSelectionFromRegionSemantics,
+    buildWangHuazhenInternalDispatchSelectionFromRegionSemantics,
 } from './dispatchSelectionBuilders';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
+import {
+    type QidahenExplicitRegionSelectionSemantics,
+    withQidahenRegionFocusState,
+} from './regionFocusSemantics';
 import { canPlaceRegularTroopsInRegion } from './regionSelectionPreferences';
 import { getActionRuleDisplayRegionName } from './regionRuleSemantics';
 import { buildQidahenSunYuanhuaTechSelection } from './selectionInputState';
@@ -60,7 +64,7 @@ interface QidahenCharacterActionWindowDependencies {
     ) => QidahenCore['sunYuanhuaTechSelection'];
     buildGaoDiDispatchSelection: (
         state: QidahenCore,
-        selectedRegionId: string,
+        regionSemantics: QidahenExplicitRegionSelectionSemantics,
         selectedCardId?: string | null,
     ) => QidahenCore['gaoDiDispatchSelection'];
     getActionRuleDisplayRegionName: (
@@ -256,7 +260,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
         getArmamentLevel,
         refreshRuntimeRegionRules,
         buildSunYuanhuaTechSelection: buildQidahenSunYuanhuaTechSelection,
-        buildGaoDiDispatchSelection,
+        buildGaoDiDispatchSelection: buildGaoDiDispatchSelectionFromRegionSemantics,
         getActionRuleDisplayRegionName,
     },
 ): { state: QidahenCore; forcedSelectedRegionId: string | null } => {
@@ -394,8 +398,17 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
         }
 
         if (!handledEffectIds.has('ming-gao-di')) {
+            const preferredGaoDiRegionId = forcedSelectedRegionId ?? nextState.selectedRegionId;
+            const gaoDiRegionSemantics: QidahenExplicitRegionSelectionSemantics = {
+                defaultFocusRegionId: nextState.regionFocusState.defaultFocusRegionId,
+                lockedFocusRegionId: nextState.selectedRegionId,
+                lockedSourceRegionId: nextState.regionFocusState.lockedSourceRegionId,
+                targetRegionId: preferredGaoDiRegionId,
+                currentTargetRegionId: preferredGaoDiRegionId,
+                displayAnchorRegionId: preferredGaoDiRegionId,
+            };
             const gaoDiDispatchSelection = dependencies.hasActiveCharacter(nextState, 'ming', 'ming-gao-di')
-                ? dependencies.buildGaoDiDispatchSelection(nextState, nextState.selectedRegionId, nextState.gaoDiDispatchSelection?.selectedCardId ?? null)
+                ? dependencies.buildGaoDiDispatchSelection(nextState, gaoDiRegionSemantics, nextState.gaoDiDispatchSelection?.selectedCardId ?? null)
                 : null;
             handledEffectIds.add('ming-gao-di');
             nextState = syncProgress(nextState);
@@ -403,7 +416,11 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                 return {
                     state: {
                         ...nextState,
-                        selectedRegionId: gaoDiDispatchSelection.sourceRegionId,
+                        ...withQidahenRegionFocusState(nextState, gaoDiDispatchSelection.sourceRegionId, {
+                            lockedSourceRegionId: gaoDiDispatchSelection.sourceRegionId,
+                            currentTargetRegionId: nextState.explicitRegionId ?? preferredGaoDiRegionId,
+                            displayAnchorRegionId: gaoDiDispatchSelection.displayAnchorRegionId ?? gaoDiDispatchSelection.sourceRegionId,
+                        }),
                         turnPhase: 'gao-di-dispatch-choice',
                         gaoDiDispatchSelection,
                         actionLog: [
@@ -421,8 +438,17 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
         }
 
         if (!handledEffectIds.has('ming-wang-huazhen')) {
+            const preferredWangHuazhenRegionId = forcedSelectedRegionId ?? nextState.selectedRegionId;
+            const wangHuazhenRegionSemantics: QidahenExplicitRegionSelectionSemantics = {
+                defaultFocusRegionId: nextState.regionFocusState.defaultFocusRegionId,
+                lockedFocusRegionId: nextState.selectedRegionId,
+                lockedSourceRegionId: nextState.regionFocusState.lockedSourceRegionId,
+                targetRegionId: preferredWangHuazhenRegionId,
+                currentTargetRegionId: preferredWangHuazhenRegionId,
+                displayAnchorRegionId: preferredWangHuazhenRegionId,
+            };
             const internalDispatchSelection = dependencies.hasActiveCharacter(nextState, 'ming', 'ming-wang-huazhen')
-                ? buildWangHuazhenInternalDispatchSelection(nextState, nextState.selectedRegionId)
+                ? buildWangHuazhenInternalDispatchSelectionFromRegionSemantics(nextState, wangHuazhenRegionSemantics)
                 : null;
             handledEffectIds.add('ming-wang-huazhen');
             nextState = syncProgress(nextState);
@@ -430,7 +456,11 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                 return {
                     state: {
                         ...nextState,
-                        selectedRegionId: internalDispatchSelection.sourceRegionId,
+                        ...withQidahenRegionFocusState(nextState, internalDispatchSelection.sourceRegionId, {
+                            lockedSourceRegionId: internalDispatchSelection.sourceRegionId,
+                            currentTargetRegionId: nextState.explicitRegionId ?? preferredWangHuazhenRegionId,
+                            displayAnchorRegionId: internalDispatchSelection.displayAnchorRegionId ?? internalDispatchSelection.sourceRegionId,
+                        }),
                         turnPhase: 'internal-dispatch-choice',
                         actionLog: [
                             {
@@ -626,7 +656,7 @@ export function applyQidahenCharacterActionWindowEffects(
         getArmamentLevel,
         refreshRuntimeRegionRules,
         buildSunYuanhuaTechSelection: buildQidahenSunYuanhuaTechSelection,
-        buildGaoDiDispatchSelection,
+        buildGaoDiDispatchSelection: buildGaoDiDispatchSelectionFromRegionSemantics,
         getActionRuleDisplayRegionName,
     },
 ): QidahenCore {

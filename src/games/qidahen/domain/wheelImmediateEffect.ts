@@ -12,6 +12,7 @@ import {
 import {
     resolveQidahenPrimaryRuntimeRegionId,
 } from './regionConfig';
+import { buildQidahenRegionFocusState } from './regionFocusSemantics';
 import {
     canPlaceRegularTroopsInRegion,
     getPreferredRegularTroopPlacementRegion,
@@ -121,6 +122,8 @@ export const applyQidahenWheelImmediateEffect = (
     return {
         ...state,
         selectedRegionId: targetRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(targetRegionId),
         regions: nextRegions,
         drawPileCount: state.drawPileCount - drawnResult.drawnCards,
         handCards: buildDrawnHandCards(state, factionId, drawnResult.drawnCards),

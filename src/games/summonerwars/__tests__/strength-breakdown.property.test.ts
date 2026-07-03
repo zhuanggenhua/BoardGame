@@ -119,7 +119,7 @@ function placeUnit(core: SummonerWarsCore, unit: BoardUnit): void {
 /** 基础战力（1~6，召唤师战争单位战力范围） */
 const arbBaseStrength = () => fc.integer({ min: 0, max: 6 });
 
-/** boosts 值（0~3，冲锋加成范围） */
+/** 临时战力修正值（0~3，用于本回合型战力加成） */
 const arbBoosts = () => fc.integer({ min: 0, max: 3 });
 
 /** 魔力值（0~15） */
@@ -145,10 +145,7 @@ describe('Property 6: 召唤师战争战力 Breakdown 完整性', () => {
         fc.boolean(), // 是否附加狱火铸剑
         (baseStrength, boosts, hasHellfireBlade) => {
           const core = createMinimalCore();
-          const card = makeUnitCard({
-            strength: baseStrength,
-            abilities: boosts > 0 ? ['charge'] : [],
-          });
+          const card = makeUnitCard({ strength: baseStrength });
           const attachedCards: EventCard[] = hasHellfireBlade
             ? [{
               id: CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -231,27 +228,27 @@ describe('Property 6: 召唤师战争战力 Breakdown 完整性', () => {
   /**
    * **Validates: Requirements 4.2**
    *
-   * 冲锋加成：boosts > 0 时 modifiers 包含 charge 来源。
+   * 冲锋加成：chargeBonusThisTurn > 0 时 modifiers 包含 charge 来源。
    */
   it('冲锋加成时 modifiers 包含 charge 来源和正确贡献值', () => {
     fc.assert(
       fc.property(
         arbBaseStrength(),
-        fc.integer({ min: 1, max: 3 }), // boosts > 0
-        (baseStrength, boosts) => {
+        fc.integer({ min: 1, max: 3 }), // 本回合冲锋加成 > 0
+        (baseStrength, chargeBonusThisTurn) => {
           const core = createMinimalCore();
           const card = makeUnitCard({
             strength: baseStrength,
             abilities: ['charge'],
           });
-          const unit = makeUnit({ card, boosts });
+          const unit = makeUnit({ card, boosts: 0, chargeBonusThisTurn });
           placeUnit(core, unit);
 
           const result = calculateEffectiveStrength(unit, core);
 
           const chargeMod = result.modifiers.find(m => m.source === 'charge');
           expect(chargeMod).toBeDefined();
-          expect(chargeMod!.value).toBe(boosts);
+          expect(chargeMod!.value).toBe(chargeBonusThisTurn);
 
           // 总和一致性
           const modSum = result.modifiers.reduce((sum, m) => sum + m.value, 0);

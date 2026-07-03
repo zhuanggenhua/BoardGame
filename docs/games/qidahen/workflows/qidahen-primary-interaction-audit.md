@@ -40,10 +40,16 @@
   - `执行事件` 还没有对正式开局大多数手牌形成稳定一级入口
   - `升级军备` 已从右侧势力行动按钮列拆出，只能由**已识别**军备牌手牌本体直接进入正式动作预览
   - 手牌区虽然已能让**已识别**军备牌/事件牌直接进入正式动作预览，但正式开局仍缺普通事件牌/军备牌真相源，不能稳定承担规则书意义上的“直接打出哪张手牌”
-- 但当前实现里，部分后续交互仍把 `selectedRegionId` 当成重建依据；这层已推进到 action follow-up 不再反写来源/目标，但 reducer 与 builder 里仍需继续拆默认焦点、来源区、目标区与展示锚点。
+- 当前地区状态已完成一层持久语义拆分：`regionFocusState` 明确承接默认聚焦、已锁来源、当前目标和展示锚点；`selectedRegionId` 继续作为兼容的屏幕焦点入口，但不再是后续来源区、目标区和展示锚点的唯一真相源。
 - 当前基础教程虽然已经不再把 `select-region` 写成独立第一步，但教程体系与正式进行页之间仍有两层问题：
   - 基础章当前只稳定示范了 `势力行动 + 轮盘行动`
   - 教程隐藏续章能示范 `升级军备 / 事件行动`，但这不等于正式局已经具备规则书口径的手牌一级入口
+- 当前教程截图链已在 2026-07-02 回跑到 46 张，新增验证点包括：
+  - 攻城、外交、年中、新年这些 `highlightTarget = qidahen-season-summary` 的信息步骤会显示真实结算摘要，而不是被前景交互面板压掉。
+  - 年中/新年教程按真实行动座位切换视角；新年防线维护由大明座位的真实维护按钮承接，不再靠测试旁路命令顶替。
+  - 朝鲜章节已覆盖朝鲜朝贡后的牌库/弃牌堆与朝鲜耗损摘要结果，但水路仍只是说明态，未进入真实移动入口。
+  - 攻城章节已把 `守城宣告` 从说明态改为真实按钮入口：城市被攻击前会出现 `守城避战 / 出城野战`，点击 `守城避战` 后才进入城战待结算；骑兵城战减值仍未形成独立截图证据。
+  - 外交章节已把 `友好标记 / 翻为附庸 / 移除他方控制标记` 都改为真实操作步骤；`33b-外交第2b步-移除他方控制标记.jpg` 已证明东江目标与 `移除控制标记` 按钮由真实外交面板承接。
 - 当前应判定为：**教程有问题，正式流程交互建模也有问题；不能只改教程。**
 
 ## 当前正式阻塞
@@ -71,6 +77,53 @@
       - `jin-sheet.png` 前几张是人物牌，后几张直接是牌背
   - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images`
     - 原始素材目录继续核过一遍，没有发现另一组单独命名、可直接认作 `事件 / 军备 / 战术 / 银两` 的普通手牌资源文件
+- 2026-07-02 已进一步核验 TTS Workshop 素材：
+  - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Workshop\2228142777.json`
+    - `deckId 13 / 16 / 17` 确实有正式 `CardID` 与 10x7 图集，但 JSON 内卡对象基本没有逐牌 `Nickname / Description`，不能从这里直接建立普通 `event / armament / tactic / silver` 的规则级映射。
+    - `deckId 26 / 27 / 28` 分别标成 `大明军备 / 蒙古军备 / 后金军备`，但它们是 1x1 `CardCustom`，且 `FaceURL = BackURL`，更像军备状态标记或 checker，不是可打出的手牌军备牌真相源。
+    - `deckId 29 / 30 / 31` 是辅助卡，1x1，也不能当普通手牌牌库。
+- 2026-07-03 已进一步核验规则 PDF：
+  - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\七大恨规则.pdf`
+    - 已抽取 13,054 字文本并沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-rule-pdf-review.md`。
+    - 规则 PDF 能确认普通手牌分成军备牌、事件牌、战术牌、银两牌，以及手牌行动包含执行事件、升级军备、势力行动。
+    - 但它没有提供逐张普通事件、军备、战术、银两牌的中文牌名、效果或军备目标，因此只能定义目标口径，不能关闭正式手牌真相源缺口。
+- 2026-07-02 已重新做 TTS 结构化字段复核：
+  - `deckId 13 / 16 / 17` 的正式牌库对象有 10x7 图集合同和 `CardID` 顺序，但 `ContainedObjects` 逐牌 `Nickname / Description` 仍为空。
+  - `deckId 26 / 27 / 28` 的命名军备对象仍只是 1x1 状态图来源，不是可打出的普通军备手牌。
+  - 其他带 `Nickname` 的 TTS 对象主要是积分、辅助卡、骰子、控制标记、部队或地区标记，不能作为普通事件、军备、战术、银两逐牌规则表。
+- 2026-07-02 已进一步生成裁切候选审计：
+  - `docs/games/qidahen/workflows/qidahen-hand-card-truth-source-candidates.md`
+    - 已把本轮普通手牌候选审计整理成可提交的长期入口。
+    - 结论是：大明 70 张裁切中 17 张可能可读，后金 60 张中 15 张可能可读，蒙古 70 张中 17 张可能可读。
+    - 已按安全读取图片口径生成标题区小预览，只保留 49 张候选的标题裁切；`tmp/` 下裁切图、候选图册和安全标题预览只作为本地辅助输入，不作为长期交付物。
+    - 这些候选只用于人工读牌与补真相表；未录入前不得把候选自动写进正式 `event / armament / tactic / silver` 规则映射。
+    - EasyOCR 已对 49 张安全标题裁切跑出候选优先级：high 16、medium 7、low 19、unreadable 7；但样本中存在明显错读，OCR 结果只能用于人工录入排序，不能直接写入正式规则映射。
+    - high 核读索引已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-high-priority-title-review.md`，结论是 high 候选主要是人物/非普通手牌标题，不能补普通事件、军备、战术、银两映射。
+    - medium 核读入口已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-medium-priority-title-review.md`，只整理 7 张安全标题小裁切及本地辅助图册；当前仍没有人工确认的中文牌名、牌类、效果或军备目标。
+    - low 核读入口已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-low-priority-title-review.md`，只整理 19 张安全标题小裁切及本地辅助图册；该批 OCR 置信度更低、错读风险更高，仍不能作为正式规则映射依据。
+    - unreadable 核读入口已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-unreadable-title-review.md`，只整理 7 张安全标题小裁切及本地辅助图册；该批 OCR 置信度为 0，只能留作外部 OCR 或人工复核入口。
+    - EasyOCR 批量牌面复核已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-easyocr-batch-review.md`；49 张候选均有牌面正文 OCR 文本，43 张有标题 OCR 文本，但仍存在明显错读，只能作为人工录入辅助，不能自动写入正式规则映射。
+    - OCR 关键词分流已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-ocr-keyword-triage.md`；25 张普通手牌关键词命中全部同时命中人物或剧本/纪年线索，没有普通关键词独占候选，因此不能据“手牌/打出”等词自动判为普通事件、军备、战术或银两牌。
+    - 非普通手牌排除候选已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-nonordinary-exclusion-candidates.md`；37 张候选命中人物或剧本/纪年线索，普通牌类词独占命中为 0，只能缩小人工复核范围，不能替代人工确认。
+    - 剩余人工复核队列已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-remaining-manual-review-queue.md`；当前把 49 张候选缩到 12 张仍需人工确认的候选，但这些候选没有普通牌类词命中，不能自动判为普通事件、军备、战术或银两牌。
+    - 剩余 12 张二次文本分流已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-remaining-review-subtriage.md`；其中 5 张疑似人物牌文本、6 张低信息/疑似牌背或空白、1 张仍需人工看图，仍没有可直接确认为普通事件、军备、战术或银两的候选。
+    - 2026-07-03 已对主矩阵剩余 11 张待复核候选读取单张低分辨率安全标题预览并回填：阿敏、额亦都、皇太极、范文程、努尔哈赤、王化贞、高第、萨囊彻辰均为人物牌标题，蒙古低置信候选为纪年/剧本类牌；至此 49 张 OCR 候选主矩阵没有任何普通事件、军备、战术或银两确认行。
+    - 最后未分流候选安全 OCR 已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-final-candidate-safe-ocr.md`；`mongol_r07_c10` 的小尺寸变体 OCR 仍没有稳定中文牌名、牌类、效果或军备目标，只能保留为人工看图或外部 OCR 候选。
+    - 剩余候选人工复核清单已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-human-review-checklist.md`；它把 12 张候选的人工确认字段固定为中文牌名、牌类、规则效果、军备目标和排除原因，但当前仍没有任何行达到正式规则映射门槛。
+    - 外部文本来源搜索已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-external-source-search.md`；两轮公开搜索都没有找到可追溯逐牌牌表，命中结果主要是无关页面或搜索噪音。
+    - 结构化素材来源复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-structured-source-recheck.md`；运行时资源清单只有资源路径层级，TTS JSON 仍只有 CardID 顺序、图集键、辅助卡和军备状态对象名称，不能提供普通事件、军备、战术、银两逐牌规则字段。
+    - 本地素材逐牌来源穷尽复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-local-asset-source-exhaustion.md`；素材目录只发现 62 个 JPG、9 个 PNG、1 个 TTS JSON 和 1 个规则 PDF，没有额外文本牌表、结构化表格或压缩包可补普通手牌逐牌字段；图片元数据和运行时 manifest 键复查也没有发现普通手牌牌类命名线索。
+    - 疑似单卡素材 OCR 小批量试跑已沉淀到 `docs/games/qidahen/workflows/qidahen-hand-card-single-card-ocr-probe.md`；33 张候选经 PIL + EasyOCR 试跑后，普通牌类关键词独占命中为 0，混合普通/非普通命中为 0，4 张命中人物或下野等非普通线索，23 张只有低信息 OCR 文本，6 张没有 OCR 文本；后续按需求交接式安全读图流程验收 4 张代表样本，得到 3 张非普通手牌排除和 1 张图片不足阻塞；本批没有产生可反写正式手牌规则映射的逐牌真相源。
+    - 完成依据决策矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-truth-source-decision-matrix.md`；当前所有已核来源都被判定为不能单独或合并关闭 `2.4`。
+    - 正式映射反写契约已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-formal-mapping-contract.md`；它只规定人工确认后如何落到 `cardKind / cardDefId / armamentId` 和 `QidahenArmamentId`，当前没有任何确认行可反写。
+    - 人工录入反写校验脚本已沉淀为 `scripts/verify/qidahen-hand-card-manual-entry.mjs`；它覆盖 49 张 OCR 候选人工录入矩阵、12 张剩余候选复核清单、完整 CardID 人工录入矩阵和运行时图集候选人工录入矩阵，当前脚本输出“已确认行数：0”，并明确“不允许反写正式手牌规则映射”；2026-07-03 已补强为无确认普通手牌行时同步检查 OpenSpec `2.4 / 4.5` 必须保持未完成，防止候选 OCR 或人工录入入口被误当正式入口闭环。
+    - TTS CardID 位置清单已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-position-map.md`；它只能提供 `deckId / index / row / col / 出现次数`，不能提供牌名、牌类、效果或军备目标；2026-07-03 交叉核验还确认 `deckId 13 / 16 / 17` 的图集哈希分别命中蒙古、纪年、朝鲜整版图集，不等价于当前运行时正式手牌预览使用的三套 faction atlas。
+    - TTS CardID 完整人工录入矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md`；它把 10 个牌组段展开为 143 行出现记录、99 个唯一图集位置，后续已按哈希交叉证据和低分辨率安全核读结果全部回填为“已排除”，只能作为 TTS 牌组复核归档，不能作为正式规则映射依据。
+    - 2026-07-03 已继续回填 TTS CardID 完整人工录入矩阵：143 行全部按已有证据排除，其中 28 条运行时图集候选已安全核读排除，111 条纪年/朝鲜或非正式手牌图集由哈希证据排除，4 条 1x1 `CardCustom` 小牌组对象没有牌名、说明、牌类或效果字段；仍没有普通事件、军备、战术或银两确认行。
+    - 运行时图集交叉核验与候选人工录入矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-tts-crosswalk.md` 和 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-manual-entry-matrix.md`；它把可能命中正式 faction hand preview atlas 的候选收窄为大明 9、蒙古 14、后金 5，共 28 条；2026-07-03 已通过低分辨率安全预览完成全部 28 条核读并全部排除为人物牌、纪年/剧本类牌或人物效果相关非普通牌，不能作为普通事件、军备、战术或银两真相源。
+    - 运行时图集候选安全复核入口已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-safe-review.md`；本地脚本只生成 28 条候选的小尺寸缩略图与标题裁切索引，避免直接读取大图，但这仍只是人工/OCR 入口，不是正式规则映射。
+    - 运行时图集候选小图 OCR 尝试已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-ocr-attempt.md`；本轮定位到路径编码与内存/显存不足问题，未获得稳定逐牌 OCR 结果，后续改用低分辨率安全预览逐批核读。
+    - 运行时图集候选与既有 OCR 线索交叉表已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-existing-ocr-crosswalk.md`；`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-priority-review.md` 已记录 28 条候选的逐批安全预览核读结果，所有候选均已排除，且没有任何行达到人工确认反写门槛。
 - 因此当前正式局已修正“可证明非行动牌仍是 unknown 壳”的问题，但仍不具备：
   - 按规则书直接打出哪张事件牌
   - 按规则书直接打出哪张军备牌
@@ -79,6 +132,7 @@
   - `执行事件` 仍然只能判定为正式一级入口缺口
   - `升级军备` 已去掉抽象势力行动按钮，但仍只能判定为已识别军备牌的局部真实入口
   - 任何“正式局已经能从真实手牌直接打牌”的口径都不成立
+  - OpenSpec `2.4` 不得因为已经核过 TTS 素材而勾选；当前核验结论是“普通手牌真相源仍缺”，不是“正式手牌入口已完成”
 
 ## 规则骨架
 
@@ -239,13 +293,13 @@
 当前正式 UI 对 `手牌行动` 的处理，是：
 
 - 把 `势力行动` 做成右侧一级按钮
-- 把 `升级军备` 主要做成右侧一级按钮
-- `执行事件` 仍没有面向正式开局稳定暴露的一级入口
+- 把已识别军备牌保留为手牌本体直点入口；右侧抽象 `升级军备` 主按钮已拆掉
+- 把已识别事件牌保留为手牌本体直点入口；正式开局大多数普通事件牌仍没有稳定暴露
 
 同时当前手牌对象本身：
 
-- 当某张手牌已经带有规则级身份时，现已可由手牌本体直接进入对应正式动作预览
-- 但正式开局大多数手牌仍是 `unknown`，不能稳定承接“打出哪张事件牌 / 打出哪张军备牌”
+- 当某张手牌已经带有规则级行动身份时，现已可由手牌本体直接进入对应正式动作预览
+- 但正式开局当前只能稳定识别 atlas 中可审计的非行动牌身份；普通事件牌、军备牌、战术牌、银两仍缺规则级真相源，不能稳定承接“打出哪张事件牌 / 打出哪张军备牌”
 - 主要只承担支付、弃牌、人物/科技/高第这类专项选择
 
 这意味着当前正式流程不只是“地区先行”有问题，还存在一层更早的合同偏差：
@@ -415,24 +469,29 @@
 ### 当前代码证据
 
 - `src/games/qidahen/domain/handCardState.ts`
-  - 正式局初始手牌与摸到的新手牌，默认都只带：
+  - 正式局初始手牌与摸到的新手牌，会先建立低保真预览对象：
     - `previewRef`
     - `label`
     - `status`
-  - 但不会稳定带出：
-    - 规则级 `cardKind`
-    - 对应军备目标 `armamentId`
-    - 稳定可追的 `cardDefId`
+  - 随后经 `resolveQidahenFormalHandCardIdentity` 补入 atlas 中可审计的非行动牌身份：
+    - 人物牌、剧本卡、纪年卡、牌背可以进入稳定 `cardKind / cardDefId`
+  - 但仍不会稳定带出普通手牌所需的：
+    - 普通事件牌 / 军备牌 / 战术牌 / 银两牌 `cardKind`
+    - 军备牌对应的 `armamentId`
+    - 普通手牌逐牌 `cardDefId`
 - `src/games/qidahen/Board.tsx`
-  - 手牌区当前只把手牌用于：
+  - 手牌区当前稳定把手牌用于：
     - 支付
     - 弃牌
     - 孙元化科技选牌
     - 高第弃牌调度
     - 放大查看
-  - 不承担：
-    - 直接打出事件牌
-    - 直接打出军备牌
+  - 已能局部承担：
+    - 已识别事件牌直接进入动作预览
+    - 已识别军备牌直接进入动作预览
+  - 但不承担规则书级完整入口：
+    - 不能稳定让正式开局大多数普通事件牌直接打出
+    - 不能稳定让正式开局普通军备牌直接打出并绑定军备目标
 - `src/games/qidahen/tutorialSetup.ts`
   - 教程能出现 `事件 / 军备 / 战术 / 银两` 这些分类，是因为注入态手动补了 `cardKind`
   - 这不是正式局天然就有的正式交互合同
@@ -480,7 +539,14 @@
 2. 如果要把正式 UI 改回规则书口径，前提不只是补 `cardKind` 映射，而是先拿到真正属于普通手牌集合的素材合同，再把正式局手牌对象提升成可稳定识别类别与定义的对象。
 3. 在这件事没做之前，教程和审计都必须把它明确记成**正式流程缺口**，不能默认“只是 UI 还没高亮一下”。
 4. 在 atlas 裁切合同和卡牌真相表落地前，任何“真实手牌入口”“正式可直接打出事件牌/军备牌”的说法都不成立。
-5. 当前最准确的阻塞描述不是“还缺几张卡的映射”，而是“现用 faction atlas 本身混入别类对象，不能直接充当普通手牌真相源”。
+5. 2026-07-02 的 TTS Workshop 核验进一步证明，当前最准确的阻塞描述不是“还缺几张卡的映射”，而是“现用 faction atlas 与 TTS deck 数据都不能直接充当普通手牌真相源”。
+
+### 2026-07-02 运行时 atlas preview 合同核验（正式手牌阻塞）
+
+- 运行时证据：`src/games/qidahen/ui/cardAtlas.ts` 的 faction atlas 帧由 `buildFrames(topXs, leftYs)` 组装，当前合同只覆盖顶行 `topXs` 与左列 `leftYs` 的 16 个预览帧，而不是三张 10x7 原图的完整 60/70 张全牌面。
+- 发牌证据：`src/games/qidahen/domain/handCardState.ts` 固定 `QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16`，并通过 `resolveQidahenFormalHandCardIdentity` 只为这些 preview index 补 atlas 中可审计的非行动牌身份。
+- 结论：现有运行时 preview seam 可证明人物、剧本、纪年、牌背等少量非行动牌身份，但不能作为普通事件牌、军备牌、战术牌、银两牌的正式逐牌真相源；2.4 仍受完整裁切合同、逐牌牌表或 OCR 复核阻塞。
+- 素材状态：`docs/games/qidahen/workflows/qidahen-hand-card-truth-source-candidates.md` 已沉淀本轮可提交审计结论；TTS 结构化字段复核再次确认 `deckId 13 / 16 / 17` 缺逐牌 `Nickname / Description`，且 2026-07-03 交叉核验确认这些 deckId 命中的图集不等价于当前运行时 faction hand preview atlas；`deckId 26 / 27 / 28` 只是 1x1 军备状态对象；`docs/games/qidahen/workflows/qidahen-hand-card-manual-entry-matrix.md` 已把 49 张 OCR 候选转成可提交人工录入矩阵，并已通过低分辨率安全标题预览完成剩余待复核候选回填，49 张均未形成普通事件、军备、战术或银两确认行；`docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-position-map.md` 与 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md` 已把 TTS CardID 转成位置清单和完整出现记录，且完整矩阵 143 行已按哈希交叉证据和低分辨率安全核读结果全部排除，但仍没有任何普通事件、军备、战术或银两确认行，也不能直接映射到正式手牌预览帧；`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-tts-crosswalk.md` 与 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-manual-entry-matrix.md` 已把可能命中正式运行时手牌图集的候选收窄为 28 条，且 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-priority-review.md` 已通过低分辨率安全预览把 28 条全部核读并排除为人物牌、纪年/剧本类牌或人物效果相关非普通牌；因此运行时 faction hand preview atlas 候选链已被证伪，不能关闭普通事件、军备、战术、银两真相源缺口；`docs/games/qidahen/workflows/qidahen-hand-card-high-priority-title-review.md`、`docs/games/qidahen/workflows/qidahen-hand-card-medium-priority-title-review.md`、`docs/games/qidahen/workflows/qidahen-hand-card-low-priority-title-review.md`、`docs/games/qidahen/workflows/qidahen-hand-card-unreadable-title-review.md` 已记录 49 张候选的安全核读入口；`docs/games/qidahen/workflows/qidahen-hand-card-easyocr-batch-review.md` 已记录 49 张候选的本地批量 OCR 文本线索；`docs/games/qidahen/workflows/qidahen-hand-card-ocr-keyword-triage.md`、`docs/games/qidahen/workflows/qidahen-hand-card-nonordinary-exclusion-candidates.md`、`docs/games/qidahen/workflows/qidahen-hand-card-remaining-manual-review-queue.md`、`docs/games/qidahen/workflows/qidahen-hand-card-remaining-review-subtriage.md` 与 `docs/games/qidahen/workflows/qidahen-hand-card-final-candidate-safe-ocr.md` 已记录关键词分流、误判风险、非普通手牌排除候选、剩余 12 张人工复核队列、二次文本分流和最后未分流候选安全 OCR。本地裁切图、候选清单、安全标题预览和 OCR 输出只作为辅助输入；当前仍没有任何候选行完成普通手牌中文牌名、牌类、效果与军备目标确认，后续仍需要补逐牌牌表或其他可审计普通手牌来源后再闭环。
 
 ## 后续实施门禁
 
@@ -528,7 +594,7 @@
 但当前正式 UI 实际稳定暴露出来的，是：
 
 - 右侧势力行动按钮
-- 已识别军备牌直入预览；未识别时不再退回抽象 `upgrade-armament`
+- 已识别事件牌 / 军备牌直入预览；未识别时不再退回抽象 `upgrade-armament`
 
 却没有：
 
@@ -537,9 +603,9 @@
 
 同时当前手牌对象还是低保真：
 
-- `cardKind` 大量是 `unknown`
-- 手牌区平时不承担真正的“打出动作”
-- `armamentId / cardDefId` 也不是正式局稳定可依赖的规则真相源
+- atlas 中可审计的非行动牌已经能记录 `cardKind / cardDefId`
+- 普通事件牌、军备牌、战术牌、银两仍缺稳定卡名、卡类、效果与军备目标映射
+- 手牌区只对已识别行动牌承担“打出动作”，还不是正式局稳定可依赖的规则书级入口
 
 这说明后续不该只围着“地区先后顺序”修；还要先决定：
 
@@ -622,12 +688,12 @@
 | 二级目标：赐印招安 | 一级动作已锁定 | 地图候选、右侧支付/结果提示 | 地图目标 + 支付牌 | 当前常由默认 `selectedRegionId` 承接 | 教程容易被带成“先选区”；正式实现也依赖预选区 | 需要建模补齐：缺默认聚焦、当前目标、已锁来源拆分 |
 | 二级目标：征召军队 | `turnPhase = recruit-choice` | 右侧选择卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 地图改区现在不再把建军目标反写成持久焦点，但结算后仍会收回真实建军区 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；等待态地图重选只更新 `explicitRegionId` 与 `recruitSelection.targetRegionId`，不再反写 `selectedRegionId` |
 | 二级目标：马市贸易 | `turnPhase = ma-shi-trade-choice` | 右侧选择卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 地图改区现在不再把建兵目标反写成持久焦点，但结算后仍会收回真实建兵区 | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；等待态地图重选只更新 `explicitRegionId` 与 `maShiTradeSelection.targetRegionId`，不再反写 `selectedRegionId` |
-| 二级目标：大汗令箭 | `turnPhase = khan-edict-choice` | 右侧效果卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 来源区/目标区/展示锚点已部分拆开，外交分支仍按目标区同步 `selectedRegionId` | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；令箭等待态地图重选只更新 `explicitRegionId` 与 `khanEdictSelection`，不再反写 `selectedRegionId` |
-| 二级目标：外交雇佣 | `turnPhase = diplomacy-choice` | 地图候选、右侧摘要 | 地图候选 + 右侧选项 | 默认 `selectedRegionId` / 默认来源区 | 外交摘要现在也已改为消费 `displayAnchorRegionId/displayAnchorRegionName`，不再直接拿 `sourceRegionName` 当屏幕主语；剩余风险仍在 builder / reducer / 结算层继续混用来源区、当前目标区与展示锚点 | 可立即真修项已处理；建模尾项仍保留 |
-| 地图目标：轮盘进攻调度 | `turnPhase = dispatch-targeting` | 地图高亮、右侧摘要 | 地图目标本体 | 默认来源区、高亮候选区；误点记录 `explicitRegionId` | 右侧目标卡已去掉“进攻某地”和“可攻/可去 N 处”复述；等待态地图误点重建来源候选时不再把新来源区反写成持久焦点 | 局部收口：仍需继续拆默认来源区与展示锚点 |
-| 地图目标：王化贞/高第等调度 | 对应人物效果开启 | 王化贞直接暴露地图高亮；高第先暴露弃牌步骤，弃牌后才暴露目标地图高亮 | 地图目标本体或后续选择 | 默认来源区/默认目标区；高第等待弃牌时记录显式点击 `explicitRegionId` | 高第等待弃牌时地图改区只重建来源候选，不再把来源反写成持久焦点；王化贞仍是直接地图目标 | 可立即真修项已处理；建模尾项仍保留 |
-| 待结算战斗 | `pendingTargetAction != null` | 右侧待结算卡、地图战斗提示 | 右侧结算控件 | 目标已锁定 | 这时已不是一级动作；应只剩战斗结算语义 | 暂不处理：当前语义基本合理 |
-| 战后选择/围城/占领 | `postBattleSelection != null` | 右侧战后卡 | 右侧选项按钮 | 目标已锁定 | 当前阶段定义清楚，但需防止与上层主步骤卡重复 | 暂不处理：当前语义基本合理 |
+| 二级目标：大汗令箭 | `turnPhase = khan-edict-choice` | 右侧效果卡、地图 | 右侧选项 + 地图改区 | 已锁焦点 `selectedRegionId` + 显式点击 `explicitRegionId` | 来源区/目标区/展示锚点已部分拆开；外交分支已不再按地图目标反写 `selectedRegionId` | 局部收口：选择对象已显式携带 `displayAnchorRegionId/displayAnchorRegionName`；令箭等待态地图重选只更新 `explicitRegionId` 与 `khanEdictSelection`，不再反写 `selectedRegionId` |
+| 二级目标：外交雇佣 | `turnPhase = diplomacy-choice` | 地图候选、右侧摘要 | 地图候选 + 右侧选项 | 已锁来源/焦点 `selectedRegionId` + 当前目标 `explicitRegionId` + `diplomacySelection.targetRegionId` | 外交摘要现在也已改为消费 `displayAnchorRegionId/displayAnchorRegionName`；外交等待态地图重选与连续外交结算都不再把目标区反写成持久焦点 | 局部收口：来源/焦点继续留在 `selectedRegionId`，地图点击目标记录到 `explicitRegionId`，真实外交目标由 `diplomacySelection.targetRegionId` 承接；人物调度与部分结算链仍需继续拆 |
+| 地图目标：轮盘进攻调度 | `turnPhase = dispatch-targeting` | 地图高亮、右侧摘要 | 地图目标本体 | 已锁来源区、高亮候选区；误点只记录 `explicitRegionId` | 右侧目标卡已去掉“进攻某地”和“可攻/可去 N 处”复述；等待态地图误点重建时不再让显式浏览焦点改写已锁来源区或展示锚点 | 局部收口：轮盘调度来源锁已补一层；仍需继续拆其它默认来源区与展示锚点 |
+| 地图目标：王化贞/高第等调度 | 对应人物效果开启 | 王化贞直接暴露地图高亮；高第先暴露弃牌步骤，弃牌后才暴露目标地图高亮 | 地图目标本体或后续选择 | 默认来源区/默认目标区；人物窗口内地图点击记录 `explicitRegionId` | 高第未弃牌前地图改区只重建来源候选，不反写持久焦点；已选弃牌后，误点非候选区会保留原调度选择；王化贞仍是直接地图目标 | 局部收口：人物调度来源/目标反写已补一层；仍需拆 builder 输入里的默认来源与展示锚点 |
+| 待结算战斗 | `pendingTargetAction != null` | 右侧待结算卡、地图战斗提示 | 右侧结算控件 | 目标已锁定；显式浏览焦点只写 `explicitRegionId` | 这时已不是一级动作；应只剩战斗结算语义 | 局部收口：误点地图不改待结算目标；结算进入下一阶段时也不再用结果区覆盖显式浏览焦点 |
+| 战后选择/围城/占领 | `postBattleSelection != null` | 右侧战后卡 | 右侧选项按钮 | 目标已锁定；显式浏览焦点只写 `explicitRegionId` | 当前阶段定义清楚，但需防止与上层主步骤卡重复 | 局部收口：战后等待态误点不改战场目标；最终选择结算后保留此前显式浏览焦点 |
 | 年中/新年/维护 | `season-resolution` 或维护选择开启 | 右侧结算卡 | 右侧选项按钮 | 无关键问题 | 与地区预选无关，语义清晰 | 暂不处理：当前未命中误导 |
 
 ## 联机座位与控制权裁决
@@ -672,11 +738,11 @@
    - 高第调度、王化贞调度、轮盘进攻/调度选择对象也已新增 `displayAnchorRegionId/displayAnchorRegionName`；右侧摘要改用展示锚点字段，不再直接拿正式 `sourceRegionName` 当屏幕主语
    这些都已属于运行态真实实现，不再只是规范口径。
 
-### B. 需要交互建模层继续真修的问题
+### B. 地区状态拆分已收口，仍需防止回流的问题
 
-1. `selectedRegionId` 当前仍深度渗透在 `regionSelectionReducer`、`selectionBuilders`、`dispatchSelectionBuilders` 等正式流程里；`selectedActionFollowUp` 已不再把一级动作结果反写成后续来源区或目标区，`regionSelectionReducer` 也已把征召军队、马市贸易、大汗令箭等待态地图重选从“反写 selectedRegionId”改为“保留已锁焦点 + 记录 explicitRegionId + 重建 selection 目标”。外交、调度与结算链仍会把“便捷聚焦 / 后续来源区 / 当前目标区 / 展示锚点”混在一起。
-2. 只要这层混合职责还没拆开，正式流程就会持续倾向于把“后续目标/来源区”感知成“主流程第一步”，教程也会被同一建模再次带偏。
-3. 后续真修方向不是简单删掉默认选中，而是把这三层语义拆开：
+1. `selectedRegionId` 当前仍保留为兼容焦点入口，但正式运行态已经新增 `regionFocusState`，把 `defaultFocusRegionId / lockedSourceRegionId / currentTargetRegionId / displayAnchorRegionId` 拆成持久语义。`selectedActionFollowUp` 已不再把一级动作结果反写成后续来源区或目标区；`regionSelectionReducer` 也已把征召军队、马市贸易、大汗令箭、外交雇佣等待态地图重选从“反写 selectedRegionId”改为“保留已锁焦点 + 记录 explicitRegionId + 重建 selection 目标”。轮盘调度、外交连续结算、人物调度、待结算/战后结算也已把来源、目标和展示锚点同步到独立语义字段。
+2. 因此 OpenSpec 2.5 已可收口；后续风险不再是“没有拆字段”，而是新增链路若继续裸用 `selectedRegionId`，可能重新把“后续目标/来源区”感知成“主流程第一步”。
+3. 后续维护方向不是简单删掉默认选中，而是继续守住三层语义：
    - 默认聚焦
    - 当前真实可点击对象
    - 玩家已确认的正式决策
@@ -686,28 +752,26 @@
 > 这一段把“所有主要交互都要审查”继续落到 builder / follow-up 层；不是泛泛而谈 `selectedRegionId` 有问题，而是指出它现在具体混了哪些职责。
 
 1. `src/games/qidahen/domain/selectionBuilders.ts`
-   - `buildRecruitSelection` / `buildMaShiTradeSelection`
-   - 同一个 `selectedRegionId` 既参与“优先把哪个地区当目标区”，又参与 `getPreferredLogicalRegionDisplayName(...)` 的展示锚点。
-   - 结果是：系统默认聚焦区很容易同时变成“当前目标区”和“当前文案主语”。
+   - `buildRecruitSelectionFromRegionSemantics` / `buildMaShiTradeSelectionFromRegionSemantics`
+   - 已完成收口：新增 `buildRecruitSelectionFromRegionSemantics` / `buildMaShiTradeSelectionFromRegionSemantics`，进入等待态后由调用方先经 `getQidahenExplicitRegionSelectionSemantics` 拆出锁定焦点、显式目标和展示锚点；地图点击只更新 `explicitRegionId` 与各自 selection 的目标，不再反写 `selectedRegionId`。
+   - 持久状态层已通过 `regionFocusState` 承接 `默认聚焦 / 当前目标 / 已锁来源 / 展示锚点`。
 2. `src/games/qidahen/domain/selectionBuilders.ts`
-   - `buildKhanEdictSelection`
-   - `selectedRegionId` 既决定 `recruit/hire` 的默认目标，又决定 `preferredSourceRegionName` 的展示口径。
-   - 结果是：同一默认聚焦区会同时被玩家感知成“来源区”和“后续效果目标区”。
+   - `buildKhanEdictSelectionFromRegionSemantics`
+   - 已完成收口：新增 `buildKhanEdictSelectionFromRegionSemantics`，令箭面板由调用方显式传入锁定焦点、显式目标和展示锚点；`recruit/hire` 目标与右侧展示名不再直接从持久 `selectedRegionId` 裸推。
+   - 令箭进入外交雇佣和征兵训练结算时已同步 `regionFocusState.lockedSourceRegionId / displayAnchorRegionId`，来源区不再只靠 `selectedRegionId` 裸推。
 3. `src/games/qidahen/domain/selectionBuilders.ts`
-   - `buildDiplomacySelection`
-   - `selectedRegionId` 同时承担：
-     - 当前地图高亮落在哪个目标区
-     - 若该区可用则直接拿来当 source fallback
-     - target/source 的显示锚点
-   - 结果是：外交步骤里“来源区 / 当前目标区 / 展示锚点”三层没有拆开。
+   - `buildDiplomacySelectionFromRegionSemantics`
+   - 已完成收口：新增 `buildDiplomacySelectionFromRegionSemantics`，外交等待态地图点击由 reducer 显式传入锁定焦点、当前目标与展示锚点；地图点击只更新 `explicitRegionId` 与 `diplomacySelection.targetRegionId`，连续外交结算也保留 `hireRegionId/sourceRegionId` 作为来源焦点。
+   - 外交来源锁、当前目标和展示锚点已由 `regionFocusState` 与 `diplomacySelection` 双层承接；显式点击目标不再反写 `selectedRegionId`。
 4. `src/games/qidahen/domain/dispatchSelectionBuilders.ts`
-   - `buildWangHuazhenInternalDispatchSelection` / `buildGaoDiDispatchSelection`
-   - `selectedRegionId` 既影响 source 排序优先级，又参与 source/target 的显示名生成。
-   - 结果是：默认聚焦区会渗进“调度从哪出发”的正式语义。
+   - `buildWangHuazhenInternalDispatchSelectionFromRegionSemantics` / `buildGaoDiDispatchSelectionFromRegionSemantics`
+   - 已完成收口：新增 `buildWangHuazhenInternalDispatchSelectionFromRegionSemantics` / `buildGaoDiDispatchSelectionFromRegionSemantics`，人物窗口进入和地图重选时显式传入已锁焦点、当前目标与展示锚点；高第选牌后若点到非候选目标，不再重建来源区；王化贞等待态若点到非候选目标，不再重建来源区，只保留显式浏览焦点。
+   - 人物调度结算后同步 `regionFocusState`，来源、目标和展示锚点不再只靠 `selectedRegionId`。
 5. `src/games/qidahen/domain/dispatchSelectionBuilders.ts`
-   - `buildWheelDispatchSelection` 及其上游 `getPreferredDispatchSelectedRegionIdForFaction`
-   - `selectedRegionId` 既驱动“优先选哪个 source region 开始找路”，又参与 target/path 的展示锚点。
-   - 结果是：轮盘进攻/调度里“默认来源区”和“当前显示锚点”仍绑在一起。
+   - `buildWheelDispatchSelectionFromRegionSemantics` 及其上游 `getPreferredDispatchSourceRegionIdForSemantics`
+   - 已完成收口：新增 `buildWheelDispatchSelectionFromRegionSemantics` 与 `QidahenWheelDispatchSelectionRegionSemantics`，等待态重建由 reducer 显式传入来源区、当前目标区与展示锚点；进入 `dispatch-targeting` 后，误点地图只更新 `explicitRegionId`，不会让来源选择 helper 用显式浏览焦点改写已锁来源区。
+   - 令箭调度、驱虎吞狼同意链与 `dispatch-targeting` 重建都已改为消费显式地区语义或锁定地区语义，不再通过驱虎吞狼/令箭的裸地区 wrapper 推入 builder；等待同意时地图误点只记录 `explicitRegionId`，正式调度来源继续锁在原来源区。
+   - 进入调度前的默认来源选择也已改为消费 `QidahenWheelDispatchSelectionRegionSemantics`，目标锁定后同步 `regionFocusState.lockedSourceRegionId / currentTargetRegionId / displayAnchorRegionId`。
 6. `src/games/qidahen/domain/selectedActionFollowUp.ts`
    - 已完成收口：征召军队、马市贸易、大汗令箭、驱虎吞狼、突袭作战与联姻诱降进入后续选择或待结算时，`selectedRegionId` 保留一级动作执行前的当前焦点。
    - 后续正式来源区、目标区与结算对象改由 `recruitSelection / maShiTradeSelection / khanEdictSelection / wheelDispatchProgress / pendingTargetAction` 自身携带，不再通过 `selectedRegionId` 反写。
@@ -723,10 +787,19 @@
    - `displayAnchorRegionId`
 4. 当前已完成一层真实推进：
    - 征召军队、马市贸易、大汗令箭、外交雇佣已把右侧展示主语改成 `displayAnchorRegionId/displayAnchorRegionName`
+   - 征召军队、马市贸易、大汗令箭已新增显式地区语义 builder，`selectedActionFollowUp` 与 `regionSelectionReducer` 会先拆出锁定焦点、显式目标和展示锚点再重建 selection
+   - 外交雇佣已新增显式地区语义 builder，等待态地图重选由 reducer 传入显式地区语义，不再让外交 builder 自己从裸 `selectedRegionId` 推导当前目标
    - 高第调度、王化贞调度、轮盘进攻/调度也已把右侧展示主语改成 `displayAnchorRegionId/displayAnchorRegionName`
+   - 高第调度、王化贞调度已新增显式地区语义 builder，人物窗口初次进入和等待态重选都不再只靠一个裸 `selectedRegionId` 同时表达来源、目标与展示锚点
    - `selectedActionFollowUp` 已保留一级动作执行前的当前焦点，不再把后续建军目标、马市目标、令箭来源、驱虎来源或待结算目标反写进 `selectedRegionId`
-5. 但这还不是完整拆分：`regionSelectionReducer` 里外交雇佣、轮盘/人物调度与若干结算态仍会把 `selectedRegionId` 回写为正式来源区或目标区，`selectionBuilders / dispatchSelectionBuilders` 也仍把它作为默认来源/目标/展示锚点的输入；后续仍需继续拆 `默认聚焦 / 当前目标 / 已锁来源` 的持久状态。
-6. 只要持久状态还没拆清，就不能把七大恨正式流程判成“已经完全回到先选动作、后选目标”的稳定状态。
+   - 轮盘外交/雇佣与大汗令箭进入外交链的入口已改为向外交 builder 传入锁定/显式地区语义，不再在这些入口继续直接传裸 `selectedRegionId`
+   - 轮盘调度 `dispatch-targeting` 等待态已阻断“显式浏览焦点反写来源区”：误点地图后仍保留原来源区，只把误点记录到 `explicitRegionId`
+   - 轮盘调度已新增显式地区语义 builder，等待态重建会把 `selectedTargetRegionId / preferredSourceRegionId / displayAnchorRegionId` 作为一个合同对象传入，避免目标名、路径名与来源排序继续共用一个裸 `selectedRegionId`
+   - 外交雇佣等待态与连续外交结算已阻断“目标区反写来源/焦点”：地图目标写入 `explicitRegionId` 与 `diplomacySelection.targetRegionId`，`selectedRegionId` 继续保留外交来源/焦点
+   - 高第/王化贞人物调度等待态已阻断“非候选地图点击反写来源区”：高第选牌后保留原选择，王化贞保留原来源选择，只把点击写到 `explicitRegionId`
+   - 待结算战斗与战后选择已阻断“结果区覆盖显式浏览焦点”：`pendingTargetAction / postBattleSelection` 继续承接真实战斗目标，地图误点与后续结算只保留到 `explicitRegionId`
+5. 这轮已经完成 OpenSpec 2.5 的字段级拆分：默认聚焦、已锁来源、当前目标和展示锚点都有独立持久语义；`selectedRegionId` 仍保留为旧界面焦点兼容入口，但不再承担全部真相。
+6. 仍不能把七大恨判成“新游戏接近收工”，原因转回 2.4：正式手牌行动全集仍缺普通事件/军备/战术/银两真相源，4.5 必须继续保持未完成。
 
 ### C. 当前不能靠 UI 小修冒充完成的问题
 
@@ -778,6 +851,18 @@
   - 转动轮盘
   - 再在 `手牌行动 / 轮盘行动` 之间决定先做哪一个
 - 因此这轮已经收掉“首个主操作跳过轮盘真实选择”的错误，但是否还要继续做到“玩家先在手牌行动与轮盘行动之间自己决定先后”，仍属于后续运行态缺口，不可误报为正式局完整收口。
+
+### 1.1 信息步骤的真实摘要承接已经补齐一层
+
+- 当前 `Board.tsx` 已改为按教程步骤的高亮目标判断是否展示结算摘要：
+  - 只要教程步骤高亮 `qidahen-season-summary`，即使前景还有主动交互面板，也会保留真实摘要。
+  - 这覆盖攻城、外交、年中、新年、朝鲜耗损这类“看结果”的教程信息步骤。
+- 当前 `e2e/qidahen/qidahen-closeout.e2e.ts` 不再断言这些步骤没有摘要，而是断言摘要里出现真实结果词：
+  - 攻城：`战后围城`、`山海关`
+  - 外交：`轮盘外交/雇佣`、`外交 1：宁远 已放置 大明友好标记`、`外交 2：宁远 已翻为 大明附庸`、`外交 3：东江 的控制标记已移除`、`雇佣军`
+  - 年中：`年中结算`
+  - 新年：`新年结算`
+- 这只能证明“教程看结果的承接物已回到真实摘要”，不能外推出正式手牌行动全集已经完成。
 
 ### 2. 当前玩家文案里仍有明显作者旁白腔
 

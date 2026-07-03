@@ -278,7 +278,7 @@ describe('亡灵弓箭手 - 灵魂转移 (soul_transfer)', () => {
       expect(soulTransferEvents.length).toBe(0);
   });
 
-  it('非击杀者不应触发灵魂转移请求（即使弓箭手在范围内）', () => {
+  it('当前玩家回合中，弓箭手范围内单位被其他单位击杀时也触发灵魂转移请求', () => {
     const meleeRandom: RandomFn = { ...createTestRandom(), random: () => 0 };
     const state = createTestState();
       for (let r = 3; r <= 5; r++) {
@@ -317,7 +317,11 @@ describe('亡灵弓箭手 - 灵魂转移 (soul_transfer)', () => {
       }, meleeRandom);
 
       const soulTransferEvents = events.filter(e => e.type === SW_EVENTS.SOUL_TRANSFER_REQUESTED);
-      expect(soulTransferEvents.length).toBe(0);
+      expect(soulTransferEvents.length).toBe(1);
+      expect((soulTransferEvents[0].payload as any).sourceUnitId).toBe(
+        getUnitAt(state, { row: 4, col: 2 })?.instanceId,
+      );
+      expect((soulTransferEvents[0].payload as any).victimPosition).toEqual({ row: 4, col: 4 });
   });
 
   it('ACTIVATE_ABILITY soul_transfer 应移动弓箭手到目标位置', () => {

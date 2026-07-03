@@ -525,7 +525,6 @@ export const canAdvancePhase = (state: DiceThroneCore, phase: TurnPhase): boolea
     }
 
     // 防御阶段：默认需“先选技能 → 掷骰 → 确认”后才能推进。
-    // 产品特例：枪手 duel 只能直接结束防御（进入 duel 对掷结算），不允许手动防御掷骰。
     // 注意：pendingAttack 为 null 表示攻击已结算（ATTACK_RESOLVED），此时允许推进
     if (phase === 'defensiveRoll') {
         if (state.pendingAttack) {
@@ -533,9 +532,6 @@ export const canAdvancePhase = (state: DiceThroneCore, phase: TurnPhase): boolea
                 return false;
             }
             if (state.rollCount === 0) {
-                if (state.pendingAttack.defenseAbilityId === 'duel') {
-                    return true;
-                }
                 return false;
             }
             if (!state.rollConfirmed) {

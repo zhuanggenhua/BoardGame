@@ -43,6 +43,9 @@ export function validateAbilityActivation(
     if (manhattanDistance(targetPos, structurePos) !== 1) return { valid: false, error: '目标必须与建筑相邻' };
     const targetUnit = getUnitAt(core, targetPos);
     if (!targetUnit) return { valid: false, error: '目标位置没有单位' };
+    if (targetUnit.card.unitClass !== 'common' && targetUnit.card.unitClass !== 'champion') {
+      return { valid: false, error: '目标必须是士兵或英雄' };
+    }
     const pushNewPos = payload.pushNewPosition as CellCoord | undefined;
     if (pushNewPos) {
       if (!isValidCoord(pushNewPos)) return { valid: false, error: '推拉目标位置无效' };

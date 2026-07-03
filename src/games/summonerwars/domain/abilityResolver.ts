@@ -192,6 +192,15 @@ registerConditionHandler(swConditionRegistry, 'isInRange', (params, ctx) => {
   const abilityCtx = (ctx as any).abilityCtx as AbilityContext | undefined;
   if (!abilityCtx) return false;
   const { target, range } = (params ?? {}) as any;
+  if (target === 'victim') {
+    if (abilityCtx.victimUnit?.instanceId === abilityCtx.sourceUnit.instanceId) {
+      return false;
+    }
+    if (abilityCtx.victimPosition) {
+      const r = typeof range === 'number' ? range : 0;
+      return manhattanDistance(abilityCtx.sourcePosition, abilityCtx.victimPosition) <= r;
+    }
+  }
   const units = resolveTargetUnits(target, abilityCtx);
   const r = typeof range === 'number' ? range : 0;
   return units.some(u => manhattanDistance(abilityCtx.sourcePosition, u.position) <= r);
@@ -872,10 +881,11 @@ export function calculateEffectiveStrength(
     }
   }
 
-  // 冲锋加成：野兽骑手冲锋3+格时+1战力（通过 boosts 标记）
-  if (abilityIds.has('charge') && unit.boosts > 0) {
-    strength += unit.boosts;
-    modifiers.push({ source: 'charge', sourceName: '冲锋', value: unit.boosts });
+  // 冲锋加成：野兽骑手直线移动3+格后，本回合+1战力
+  const chargeBonusThisTurn = unit.chargeBonusThisTurn ?? 0;
+  if (abilityIds.has('charge') && chargeBonusThisTurn > 0) {
+    strength += chargeBonusThisTurn;
+    modifiers.push({ source: 'charge', sourceName: '冲锋', value: chargeBonusThisTurn });
   }
 
   // 城塞精锐：2格内每有一个友方城塞单位+1战力
@@ -1154,12 +1164,12 @@ export function getEffectiveLife(unit: UnitInstance, state: SummonerWarsCore): n
       for (const ability of allyAbilities) {
         if (ability.trigger !== 'passive') continue;
         for (const effect of ability.effects) {
-          if (effect.type === 'auraStructureLife') {
-            const dist = manhattanDistance(ally.position, unit.position);
-            if (dist <= effect.range) {
-              life += effect.value;
-            }
+        if (effect.type === 'auraStructureLife') {
+          const dist = manhattanDistance(ally.position, unit.position);
+          if (effect.range == null || dist <= effect.range) {
+            life += effect.value;
           }
+        }
         }
       }
     }
@@ -1209,7 +1219,7 @@ export function getEffectiveStructureLife(state: SummonerWarsCore, structure: Bo
       for (const effect of ability.effects) {
         if (effect.type === 'auraStructureLife') {
           const dist = manhattanDistance(unit.position, structure.position);
-          if (dist <= effect.range) {
+          if (effect.range == null || dist <= effect.range) {
             life += effect.value;
           }
         }

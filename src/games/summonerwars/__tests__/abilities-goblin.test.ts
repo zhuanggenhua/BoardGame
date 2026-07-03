@@ -407,7 +407,7 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
     expect(canMoveToEnhanced(state, { row: 4, col: 1 }, { row: 4, col: 2 })).toBe(true);
   });
 
-  it('冲锋3+格时获得+1战力（boosts）', () => {
+  it('冲锋3+格时获得本回合+1战力', () => {
     const state = createGoblinState();
     clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
 
@@ -426,14 +426,15 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
       to: { row: 4, col: 4 }, // 直线3格
     });
 
-    // 应有 UNIT_CHARGED 事件
-    const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
+    // 应有本回合冲锋战力加成事件
+    const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGE_BONUS_GAINED);
     expect(chargeEvents.length).toBe(1);
     expect((chargeEvents[0].payload as any).delta).toBe(1);
 
-    // 单位 boosts 应为1
+    // 冲锋不应写入真实充能，只写本回合临时战力
     const movedUnit = newState.board[4][4].unit;
-    expect(movedUnit?.boosts).toBe(1);
+    expect(movedUnit?.boosts).toBe(0);
+    expect(movedUnit?.chargeBonusThisTurn).toBe(1);
   });
 
   it('冲锋2格时不获得战力加成', () => {
@@ -455,7 +456,7 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
       to: { row: 4, col: 3 }, // 直线2格
     });
 
-    const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGED);
+    const chargeEvents = events.filter(e => e.type === SW_EVENTS.UNIT_CHARGE_BONUS_GAINED);
     expect(chargeEvents.length).toBe(0);
   });
 
@@ -463,13 +464,47 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
     const state = createGoblinState();
     const rider: BoardUnit = {
       cardId: 'test-rider', card: makeBeastRider('test-rider'), owner: '0',
-      position: { row: 4, col: 4 }, damage: 0, boosts: 1, // 已冲锋
+      position: { row: 4, col: 4 }, damage: 0, boosts: 0, chargeBonusThisTurn: 1,
       hasMoved: true, hasAttacked: false,
     };
     state.board[4][4].unit = rider;
 
     const strength = getEffectiveStrengthValue(rider, state);
     expect(strength).toBe(4); // 基础3 + 冲锋1
+  });
+
+  it('冲锋战力加成只持续到本回合结束', () => {
+    const state = createGoblinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'test-rider',
+      card: makeBeastRider('test-rider'),
+      owner: '0',
+    });
+
+    state.phase = 'move';
+    state.currentPlayer = '0';
+    state.players['0'].moveCount = 0;
+
+    const { newState: chargedState } = executeAndReduce(state, SW_COMMANDS.MOVE_UNIT, {
+      from: { row: 4, col: 1 },
+      to: { row: 4, col: 4 },
+    });
+
+    const chargedUnit = chargedState.board[4][4].unit;
+    expect(chargedUnit).toBeDefined();
+    expect(getEffectiveStrengthValue(chargedUnit!, chargedState)).toBe(4);
+
+    const nextTurnState = SummonerWarsDomain.reduce(chargedState, {
+      type: SW_EVENTS.TURN_CHANGED,
+      payload: { from: '0', to: '1' },
+      timestamp: fixedTimestamp + 1,
+    } as GameEvent);
+
+    const nextTurnUnit = nextTurnState.board[4][4].unit;
+    expect(nextTurnUnit).toBeDefined();
+    expect(getEffectiveStrengthValue(nextTurnUnit!, nextTurnState)).toBe(3);
   });
 });
 

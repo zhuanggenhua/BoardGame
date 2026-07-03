@@ -29,6 +29,9 @@
 - Decision: 正式局必须先补手牌对象真相，再补规则书级手牌入口
   - Why: 如果正式开局大多数手牌仍是 `unknown`，那么任何“从手牌直接打出事件/军备”的 UI 只是局部 seam，不是稳定规则入口。
 
+- Decision: TTS Workshop 牌库只能作为素材核验来源，不能自动升级为普通手牌规则真相源
+  - Why: 2026-07-02 已核 `七大恨 中文mod\Workshop\2228142777.json` 与本地图集缓存；`deckId 13 / 16 / 17` 有 CardID 与 10x7 图集，但缺少逐牌 `Nickname / Description`，`deckId 26 / 27 / 28` 的 `大明军备 / 蒙古军备 / 后金军备` 是 1x1 `CardCustom` 状态对象，不是可打出的手牌军备牌。因此普通 `执行事件 / 升级军备 / 战术 / 银两` 映射仍保持 open / blocked。
+
 - Decision: 地区状态必须拆语义，不能继续依赖单一 `selectedRegionId`
   - Why: 目前它同时承担默认聚焦、来源区、目标区和展示主语，任何教程或文案都会被这层建模再次带偏。
 
@@ -58,4 +61,5 @@
 
 ## Open Questions
 
-- 当前 atlas 与原始素材里，哪些对象可以被正式认定为普通手牌真相源，哪些必须继续停留在“暂无法做规则级映射”的状态，需要在实施前逐项锁定。
+- 当前 atlas、TTS Workshop JSON 与原始素材已经证明部分人物、剧本、纪年和牌背身份可以进入最小可追映射；但普通事件牌、军备牌、战术牌和银两牌仍没有逐牌名称、类型与效果的可审计来源。后续必须找到规则级牌表、OCR 后可复核牌面，或其他可追溯真相源，才能继续关闭正式手牌一级入口缺口。
+- **运行时 atlas preview 合同（2026-07-02）**：`cardAtlas.ts` 目前只把 faction atlas 暴露为 `buildFrames(topXs, leftYs)` 的 16 个 preview seam，`handCardState.ts` 也固定 `QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16`；这与素材原图 10x7 牌面规模不等价，不能证明普通事件牌、军备牌、战术牌、银两牌的正式逐牌真相源已接入。

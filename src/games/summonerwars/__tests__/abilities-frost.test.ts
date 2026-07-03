@@ -19,7 +19,7 @@ import type {
   PlayerId, StructureCard, BoardStructure,
 } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
-import { canMoveToEnhanced, getStructureAt, getUnitAt } from '../domain/helpers';
+import { canMoveToEnhanced, getStructureAt, getUnitAt, getValidSummonPositions } from '../domain/helpers';
 import { getEffectiveStrengthValue } from '../domain/abilityResolver';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 import { buildUsageKey } from '../domain/utils';
@@ -453,6 +453,84 @@ describe('寒冰魔像 - 缓慢 (slow)', () => {
     expect(canMoveToEnhanced(state, { row: 4, col: 2 }, { row: 3, col: 2 })).toBe(true);
     expect(canMoveToEnhanced(state, { row: 4, col: 2 }, { row: 4, col: 1 })).toBe(true);
     expect(canMoveToEnhanced(state, { row: 4, col: 2 }, { row: 4, col: 3 })).toBe(true);
+  });
+});
+
+// ============================================================================
+// 寒冰魔像 - 活体传送门 / 活体结构 (living_gate / mobile_structure)
+// ============================================================================
+
+describe('寒冰魔像 - 活体传送门 / 活体结构', () => {
+  it('活体传送门相邻空格可作为己方召唤位置', () => {
+    const state = createFrostState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-golem', card: makeIceGolem('test-golem'), owner: '0',
+    });
+
+    const positions = getValidSummonPositions(state, '0');
+    expect(positions).toContainEqual({ row: 3, col: 2 });
+    expect(positions).toContainEqual({ row: 5, col: 2 });
+    expect(positions).toContainEqual({ row: 4, col: 1 });
+    expect(positions).toContainEqual({ row: 4, col: 3 });
+  });
+
+  it('敌方活体传送门不提供己方召唤位置', () => {
+    const state = createFrostState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'enemy-golem', card: makeIceGolem('enemy-golem'), owner: '1',
+    });
+
+    const positions = getValidSummonPositions(state, '0');
+    expect(positions).not.toContainEqual({ row: 3, col: 2 });
+    expect(positions).not.toContainEqual({ row: 5, col: 2 });
+    expect(positions).not.toContainEqual({ row: 4, col: 1 });
+    expect(positions).not.toContainEqual({ row: 4, col: 3 });
+  });
+
+  it('活体结构是可移动单位，不按普通建筑禁止移动', () => {
+    const state = createFrostState();
+    clearArea(state, [3, 4, 5], [1, 2, 3]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-golem', card: makeIceGolem('test-golem'), owner: '0',
+    });
+
+    expect(canMoveToEnhanced(state, { row: 4, col: 2 }, { row: 4, col: 3 })).toBe(true);
+  });
+
+  it('[mobile_structure/L4] 移动后按新位置作为友方建筑被消费且旧位置不残留', () => {
+    const state = createFrostState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+    state.phase = 'move';
+    state.currentPlayer = '0';
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-golem', card: makeIceGolem('test-golem'), owner: '0',
+    });
+    const oldAdjacentMage = placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'old-adjacent-mage', card: makeFrostMage('old-adjacent-mage'), owner: '0',
+    });
+    const newAdjacentMage = placeUnit(state, { row: 4, col: 4 }, {
+      cardId: 'new-adjacent-mage', card: makeFrostMage('new-adjacent-mage'), owner: '0',
+    });
+
+    expect(getEffectiveStrengthValue(oldAdjacentMage, state)).toBe(2);
+    expect(getEffectiveStrengthValue(newAdjacentMage, state)).toBe(1);
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.MOVE_UNIT, {
+      from: { row: 4, col: 2 },
+      to: { row: 4, col: 3 },
+    });
+
+    expect(events.filter(e => e.type === SW_EVENTS.UNIT_MOVED)).toHaveLength(1);
+    expect(newState.board[4][2].unit).toBeUndefined();
+    expect(newState.board[4][3].unit?.card.id).toBe('test-golem');
+    expect(getEffectiveStrengthValue(newState.board[4][1].unit!, newState)).toBe(1);
+    expect(getEffectiveStrengthValue(newState.board[4][4].unit!, newState)).toBe(2);
   });
 });
 
@@ -1033,6 +1111,46 @@ describe('极地矮人事件卡', () => {
       expect(newState.players['0'].activeEvents.some(e => e.id === 'frost-ice-ram-0')).toBe(true);
       // 不应在手牌中
       expect(newState.players['0'].hand.some(c => c.id === 'frost-ice-ram-0')).toBe(false);
+    });
+
+    it('稳固目标仍受1点伤害但不会被寒冰冲撞强制移动', () => {
+      const state = createFrostState();
+      clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+      state.phase = 'attack';
+      state.currentPlayer = '0';
+      state.players['0'].activeEvents.push({
+        id: 'frost-ice-ram-0',
+        cardType: 'event',
+        name: '寒冰冲撞',
+        faction: 'frost',
+        cost: 0,
+        effect: '持续：在一个友方建筑移动或被推拉之后，你可以指定其相邻的一个单位为目标。对目标造成1点伤害。你可以将目标推拉1个区格。',
+        isActive: true,
+      });
+
+      placeStructure(state, { row: 4, col: 3 }, {
+        cardId: 'test-gate',
+        card: makePortal('test-gate'),
+        owner: '0',
+      });
+      placeUnit(state, { row: 4, col: 4 }, {
+        cardId: 'stable-target',
+        card: makeEnemy('stable-target', { abilities: ['stable'] }),
+        owner: '1',
+      });
+
+      const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+        abilityId: 'ice_ram',
+        targetPosition: { row: 4, col: 4 },
+        structurePosition: { row: 4, col: 3 },
+        pushNewPosition: { row: 4, col: 5 },
+      });
+
+      expect(events.filter(e => e.type === SW_EVENTS.UNIT_DAMAGED)).toHaveLength(1);
+      expect(events.filter(e => e.type === SW_EVENTS.UNIT_PUSHED || e.type === SW_EVENTS.UNIT_PULLED)).toHaveLength(0);
+      expect(newState.board[4][4].unit?.cardId).toBe('stable-target');
+      expect(newState.board[4][4].unit?.damage).toBe(1);
+      expect(newState.board[4][5].unit).toBeUndefined();
     });
   });
 });

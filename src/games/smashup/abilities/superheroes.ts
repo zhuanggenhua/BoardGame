@@ -710,7 +710,7 @@ function captainAmazingTalent(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function mindLadyOnPlay(ctx: AbilityContext): AbilityResult {
+function mindLadyTalent(ctx: AbilityContext): AbilityResult {
     const targets = buildMindLadyTargetOptions(ctx.state, ctx.playerId);
     if (targets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -993,8 +993,8 @@ function superheroesMyOnlyWeaknessSuppression(
 }
 
 export function registerSuperheroesAbilities(): void {
-    registerAbilityProgram('superheroes_mind_lady', 'onPlay', {
-        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mindLadyOnPlay),
+    registerAbilityProgram('superheroes_mind_lady', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mindLadyTalent),
     });
     registerAbilityProgram('superheroes_captain_amazing', 'talent', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(captainAmazingTalent),

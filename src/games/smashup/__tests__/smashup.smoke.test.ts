@@ -11546,6 +11546,56 @@ describe('smashup', () => {
         expect(duelResolved.finalState.core.players['0'].hand.some(card => card.uid === 'draw-1')).toBe(true);
     });
 
+    it('副警长指定目标后应弃置自己、给目标临时力量并继续结算决斗', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('deputy-1', 'cowboys_deputy', 'minion', '0')],
+                    deck: [makeCard('draw-filler-1', 'robot_microbot_alpha', 'minion', '0')],
+                    factions: [SMASHUP_FACTION_IDS.COWBOYS_POD, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+            },
+            bases: [makeBase({
+                defId: 'base_saloon_pod',
+                minions: [
+                    makeMinion('gun-1', 'cowboys_gunfighter_pod', '0', 4),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 5),
+                ],
+                ongoingActions: [],
+            })],
+        });
+
+        const duelStarted = startDuel(
+            makeMatchState(core),
+            {
+                sourceId: 'cowboys_high_noon_pod',
+                sourcePlayerId: '0',
+                challengerMinionUid: 'gun-1',
+                challengedMinionUid: 'enemy-1',
+                outcome: 'destroy_loser',
+            },
+            1004,
+        );
+
+        const resolved = resolveDuelChain(duelStarted, {
+            smashup_duel_deputy_card: (prompt) => ({
+                optionId: getPromptOption(prompt, entry => entry.value?.cardUid === 'deputy-1', '副警长弃置选项').id,
+            }),
+            smashup_duel_deputy_target: (prompt) => ({
+                optionId: getPromptOption(prompt, entry => entry.value?.minionUid === 'gun-1', '副警长指定枪手选项').id,
+            }),
+        });
+
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'deputy-1')).toBe(false);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'deputy-1')).toBe(true);
+        const gunfighter = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'gun-1');
+        expect(gunfighter?.tempPowerModifier).toBe(2);
+        expect(resolved.finalState.core.activeDuel ?? null).toBeNull();
+    });
+
     it('pecos_bill 若在决斗中进入已有泰坦的基地，会把 clash 延后到决斗结束后处理', () => {
         const core = makeState({
             players: {

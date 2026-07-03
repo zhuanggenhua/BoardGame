@@ -264,8 +264,14 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       const newBoard = core.board.map(row => row.map(cell => {
         const newCell = { ...cell };
         if (newCell.unit) {
-          // 回合切换：重置移动/攻击状态，清除临时技能（幻化）和额外攻击
-          const { tempAbilities: _removed, originalOwner: origOwner, extraAttacks: _ea, ...unitWithoutTemp } = newCell.unit;
+          // 回合切换：重置移动/攻击状态，清除临时技能（幻化）、额外攻击和冲锋临时战力
+          const {
+            tempAbilities: _removed,
+            originalOwner: origOwner,
+            extraAttacks: _ea,
+            chargeBonusThisTurn: _chargeBonus,
+            ...unitWithoutTemp
+          } = newCell.unit;
           // 心灵操控：归还临时控制的单位
           if (origOwner) {
             newCell.unit = { ...unitWithoutTemp, owner: origOwner, hasMoved: false, hasAttacked: false, wasAttackedThisTurn: false };
@@ -516,6 +522,20 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           ? normalizeUnitBoosts(newValue)
           : Math.max(0, currentBoosts + safeDelta);
         cell.unit = { ...cell.unit, boosts: finalValue };
+      }
+      return { ...core, board: newBoard };
+    }
+
+    case SW_EVENTS.UNIT_CHARGE_BONUS_GAINED: {
+      const { position, delta } = payload as { position: CellCoord; delta: number };
+      const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
+      const cell = newBoard[position.row]?.[position.col];
+      if (cell?.unit) {
+        const safeDelta = normalizeFiniteNumber(delta, 0);
+        cell.unit = {
+          ...cell.unit,
+          chargeBonusThisTurn: Math.max(0, (cell.unit.chargeBonusThisTurn ?? 0) + safeDelta),
+        };
       }
       return { ...core, board: newBoard };
     }

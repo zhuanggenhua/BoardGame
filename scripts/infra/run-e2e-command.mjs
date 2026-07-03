@@ -225,16 +225,21 @@ function createEnv(overrides = {}) {
 }
 
 function mergeNodeOptions(preferredOption, existingValue = process.env.NODE_OPTIONS) {
+    const preferredOptions = Array.isArray(preferredOption)
+        ? preferredOption
+        : [preferredOption];
     const existing = String(existingValue ?? '').trim();
     if (!existing) {
-        return preferredOption;
+        return preferredOptions.join(' ');
     }
 
     const filtered = existing
         .split(/\s+/)
-        .filter(option => option && !option.startsWith('--max-old-space-size='));
+        .filter(option => option
+            && !option.startsWith('--max-old-space-size=')
+            && !option.startsWith('--max-semi-space-size='));
 
-    return [...filtered, preferredOption].join(' ').trim();
+    return [...filtered, ...preferredOptions].join(' ').trim();
 }
 
 function ensurePreflightCacheDir() {
@@ -345,8 +350,9 @@ function createModeEnv(mode) {
         case 'ci':
             return createEnv({
                 NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
-                // 让 Vite 前端子进程可单独拿到更高堆上限，避免长链 E2E 在默认命令下因前端 OOM 假失败。
-                BG_NODE_MAX_OLD_SPACE_SIZE: '12288',
+                // Vite 前端子进程默认保持保守堆上限；在系统提交内存偏高时，过大的堆上限会让 Windows/Node 24
+                // 更容易在 Zone/VirtualAlloc 阶段直接 OOM。需要长链重压时可由调用方显式覆盖。
+                BG_NODE_MAX_OLD_SPACE_SIZE: process.env.BG_NODE_MAX_OLD_SPACE_SIZE ?? '4096',
                 PW_SERVER_WATCH: 'false',
             });
         case 'critical':

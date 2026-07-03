@@ -30,10 +30,12 @@ const stateCache = new Map<string, StoredGamePackageState>();
 const fallbackCache = new Map<string, StoredGamePackageState>();
 const listenerRegistry = new Map<string, Set<GamePackageStateListener>>();
 const activeInstallRegistry = new Map<string, GamePackageInstallHandle>();
+const nativeProgressPollRegistry = new Map<string, ReturnType<typeof setInterval>>();
 const appliedAssetBaseOverrides = new Map<string, string>();
 let appliedCommonAudioAssetBaseOverride: string | undefined;
 let installedSharedAudioPackVersion: string | undefined;
 const isDevRuntime = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
+const NATIVE_PROGRESS_POLL_INTERVAL_MS = 1000;
 
 const hasInstalledVersion = (state: Pick<StoredGamePackageState, 'status' | 'installedVersion' | 'localAssetBaseUrl'>) =>
     hasUsableInstalledGamePackageState(state);
@@ -257,6 +259,9 @@ const emitState = (state: StoredGamePackageState) => {
         gameId: normalizedState.gameId,
         state: normalizedState,
     });
+    if (!isInProgressStatus(normalizedState.status)) {
+        stopNativeProgressPolling(normalizedState.gameId);
+    }
     applyAssetBaseOverride(normalizedState.gameId, normalizedState.localAssetBaseUrl);
     stateCache.set(normalizedState.gameId, normalizedState);
     writeStoredGamePackageState(normalizedState);
@@ -304,6 +309,32 @@ const stopActiveInstall = (gameId: string) => {
 
     handle.cancel();
     activeInstallRegistry.delete(gameId);
+    stopNativeProgressPolling(gameId);
+};
+
+const stopNativeProgressPolling = (gameId: string) => {
+    const poller = nativeProgressPollRegistry.get(gameId);
+    if (!poller) {
+        return;
+    }
+
+    clearInterval(poller);
+    nativeProgressPollRegistry.delete(gameId);
+};
+
+const startNativeProgressPolling = (gameId: string, fallbackState: StoredGamePackageState) => {
+    if (nativeProgressPollRegistry.has(gameId)) {
+        return;
+    }
+
+    nativeProgressPollRegistry.set(gameId, setInterval(() => {
+        void refreshGamePackageStateFromNativeTask(gameId, fallbackState).catch((error) => {
+            logMobileRuntimeCritical('PackageManagerService', 'native-progress-poll-failed', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+    }, NATIVE_PROGRESS_POLL_INTERVAL_MS));
 };
 
 export const syncGamePackageState = (
@@ -478,6 +509,7 @@ export const resetGamePackageState = (
 
     fallbackCache.set(gameId, resolvedFallback);
     clearStoredGamePackageState(gameId);
+    stopNativeProgressPolling(gameId);
     const nextState = mergeGamePackageState(resolvedFallback, {
         status: 'not-installed',
         progressPercent: undefined,
@@ -641,6 +673,7 @@ export const startGamePackageInstall = (
             updatedAt: Date.now(),
         };
         emitState(queuedState);
+        startNativeProgressPolling(manifest.gameId, queuedState);
 
         let resolvedHandle: GamePackageInstallHandle | null = null;
         let dependencyHandle: GamePackageInstallHandle | null = null;
@@ -745,6 +778,7 @@ export const startGamePackageInstall = (
             if (activeInstallRegistry.get(manifest.gameId) === handle) {
                 activeInstallRegistry.delete(manifest.gameId);
             }
+            stopNativeProgressPolling(manifest.gameId);
         });
     })();
 };
@@ -754,6 +788,9 @@ export const resetGamePackageManagerForTests = () => {
     for (const [gameId, handle] of activeInstallRegistry.entries()) {
         handle.cancel();
         activeInstallRegistry.delete(gameId);
+    }
+    for (const gameId of nativeProgressPollRegistry.keys()) {
+        stopNativeProgressPolling(gameId);
     }
     stateCache.clear();
     fallbackCache.clear();

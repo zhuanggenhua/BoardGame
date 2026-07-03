@@ -452,6 +452,8 @@ export interface QidahenDiplomacyProgress {
     source: 'wheel-hire' | 'khan-edict';
     preferredSourceRegionId: string | null;
     sourceRegionId: string | null;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
     hireRegionId: string | null;
     hireRegionName: string | null;
     remainingTargetCount: number;
@@ -597,6 +599,13 @@ interface QidahenPendingScenarioArmamentChoice {
     armamentNames: string[];
 }
 
+export interface QidahenRegionFocusState {
+    defaultFocusRegionId: string;
+    lockedSourceRegionId: string | null;
+    currentTargetRegionId: string | null;
+    displayAnchorRegionId: string | null;
+}
+
 export interface QidahenCore {
     playerIds: PlayerId[];
     scenarioVote: QidahenScenarioVoteState | null;
@@ -636,6 +645,7 @@ export interface QidahenCore {
     wheelMoveSummary: string;
     selectedRegionId: string;
     explicitRegionId?: string | null;
+    regionFocusState: QidahenRegionFocusState;
     selectedActionId: string;
     confirmedActionId?: string | null;
     selectedPaymentCardIds: string[];
