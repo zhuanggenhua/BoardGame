@@ -98,6 +98,10 @@ describe('qidahen tutorial flow', () => {
         ]);
         expect(hiddenTutorialIds).toEqual([
             'retreat-and-rout',
+            'cavalry-evasion',
+            'cavalry-plunder',
+            'neutral-invasion',
+            'water-dispatch',
             'wheel-reclaim',
             'wheel-military-farm',
             'wheel-recruit-train',
@@ -107,6 +111,10 @@ describe('qidahen tutorial flow', () => {
         ]);
         expect(collectNextTutorialChain('attack-and-battle')).toEqual([
             'retreat-and-rout',
+            'cavalry-evasion',
+            'cavalry-plunder',
+            'neutral-invasion',
+            'water-dispatch',
         ]);
         expect(collectNextTutorialChain('wheel-shared-cost')).toEqual([
             'wheel-reclaim',
@@ -130,6 +138,22 @@ describe('qidahen tutorial flow', () => {
             'tactic-window',
             'battle-damage',
             'retreat-and-defeat',
+        ]));
+        expect(stepIdsOf('cavalry-plunder')).toEqual(expect.arrayContaining([
+            'choose-plunder',
+            'plunder-result',
+        ]));
+        expect(stepIdsOf('cavalry-evasion')).toEqual(expect.arrayContaining([
+            'choose-evasion',
+            'evasion-result',
+        ]));
+        expect(stepIdsOf('neutral-invasion')).toEqual(expect.arrayContaining([
+            'resolve-neutral',
+            'neutral-result',
+        ]));
+        expect(stepIdsOf('water-dispatch')).toEqual(expect.arrayContaining([
+            'choose-water-target',
+            'water-boundary',
         ]));
         expect(stepIdsOf('siege-and-occupation')).toEqual(expect.arrayContaining([
             'defend-city',
@@ -353,12 +377,17 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('tactic-window');
 
+        const tacticCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'tutorial-ming-tactic');
+        expect(tacticCard?.cardKind).toBe('tactic');
         state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '0',
-            payload: { reason: 'manual' },
+            payload: { cardId: tacticCard.id },
         });
         expect(state.sys.tutorial.step?.id).toBe('battle-damage');
+        expect((state.core as any).handCards.some((card: any) => card.id === tacticCard.id)).toBe(false);
+        expect((state.core as any).lastSeasonSummary?.title).toBe('战术牌');
+        expect((state.core as any).lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
@@ -844,8 +873,12 @@ describe('qidahen tutorial flow', () => {
             },
         });
         expect((state.core as any).pendingTargetAction).toBeNull();
-        expect((state.core as any).postBattleSelection?.battleMode).toBe('field');
+        expect((state.core as any).postBattleSelection?.battleMode).toBe('city');
         expect(state.sys.tutorial.step?.id).toBe('city-result');
+        const cityBattleSummaryText = ((state.core as any).lastSeasonSummary?.lines ?? []).join(' ');
+        expect(cityBattleSummaryText).toContain('战斗掷骰（城战）');
+        expect(cityBattleSummaryText).toContain('骑步');
+        expect(cityBattleSummaryText).toMatch(/\d+->\d+/);
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.NEXT,
@@ -853,6 +886,206 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('besiege-choice');
+    });
+
+    it('骑兵劫掠教程会走真实劫掠按钮，并写入结算摘要', () => {
+        const manifest = QIDAHEN_TUTORIALS.tutorials['cavalry-plunder']?.manifest;
+        expect(manifest).toBeTruthy();
+
+        let state = buildStateForTutorial('cavalry-plunder');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.START,
+            playerId: '0',
+            payload: { manifest },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('overview');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-plunder');
+        const options = (state.sys as any).interaction?.current?.data?.options ?? [];
+        expect(options.some((option: any) => option.id === 'cavalry-plunder-defender')).toBe(true);
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {
+                attackerCavalryPlunder: true,
+                attackerCavalryPlunderSource: 'defender',
+            },
+        });
+
+        expect(state.sys.tutorial.step?.id).toBe('plunder-result');
+        expect((state.core as any).pendingTargetAction).toBeNull();
+        expect((state.core as any).lastSeasonSummary?.title).toBeTruthy();
+        expect(((state.core as any).lastSeasonSummary?.lines ?? []).join(' ')).toContain('骑兵劫掠');
+    });
+
+    it('骑兵避战教程会走真实避战按钮，并把骑兵撤到相邻友方区', () => {
+        const manifest = QIDAHEN_TUTORIALS.tutorials['cavalry-evasion']?.manifest;
+        expect(manifest).toBeTruthy();
+
+        let state = buildStateForTutorial('cavalry-evasion');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.START,
+            playerId: '0',
+            payload: { manifest },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('overview');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+        expect(state.sys.tutorial.step?.id).toBe('choose-evasion');
+        const options = (state.sys as any).interaction?.current?.data?.options ?? [];
+        expect(options.some((option: any) => option.id === 'cavalry-evasion:city-region-19')).toBe(true);
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {
+                defenderCavalryEvasion: true,
+                defenderCavalryEvasionRegionId: 'city-region-19',
+            },
+        });
+
+        expect(state.sys.tutorial.step?.id).toBe('evasion-result');
+        expect((state.core as any).pendingTargetAction).toBeNull();
+        expect((state.core as any).lastSeasonSummary?.title).toBeTruthy();
+        const summaryText = ((state.core as any).lastSeasonSummary?.lines ?? []).join(' ');
+        expect(summaryText).toContain('守方骑兵避战');
+        expect(summaryText).toContain('撤至');
+        expect((state.core as any).regions.find((region: any) => region.id === 'city-region-19')).toMatchObject({
+            controller: 'jin',
+            troops: 3,
+        });
+    });
+
+    it('中立入侵教程会走真实待结算按钮，并生成中立守军', () => {
+        const manifest = QIDAHEN_TUTORIALS.tutorials['neutral-invasion']?.manifest;
+        expect(manifest).toBeTruthy();
+
+        let state = buildStateForTutorial('neutral-invasion');
+        expect((state.core as any).pendingTargetAction).toMatchObject({
+            actionId: 'wheel-dispatch',
+            targetRuntimeRegionId: 'city-region-20',
+            defenderFactionId: 'neutral',
+        });
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.START,
+            playerId: '0',
+            payload: { manifest },
+        });
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: {},
+        });
+        expect(state.sys.tutorial.step?.id).toBe('resolve-neutral');
+
+        state = dispatch(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect((state.core as any).pendingTargetAction).toBeNull();
+        const summaryText = ((state.core as any).lastSeasonSummary?.lines ?? []).join(' ');
+        expect(summaryText).toContain('中立守军');
+        expect((state.core as any).regions.find((region: any) => region.id === 'city-region-20')).toMatchObject({
+            controller: 'neutral',
+            controlLabel: '中立',
+            troops: 2,
+        });
+    });
+
+    it('水路调度教程会走真实调度目标，锁定海岸水路限 2，并排除水路后接陆路', () => {
+        const manifest = QIDAHEN_TUTORIALS.tutorials['water-dispatch']?.manifest;
+        expect(manifest).toBeTruthy();
+
+        let state = buildStateForTutorial('water-dispatch');
+
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.START,
+            playerId: '0',
+            payload: { manifest },
+        });
+        state = dispatch(state, {
+            type: TUTORIAL_COMMANDS.NEXT,
+            playerId: '0',
+            payload: { reason: 'manual' },
+        });
+
+        expect(state.sys.tutorial.step?.id).toBe('choose-water-target');
+        expect((state.core as any).turnPhase).toBe('dispatch-targeting');
+        expect((state.core as any).selectedRegionId).toBe('song-jin');
+        const interactionData = state.sys.interaction?.current?.data as {
+            options?: Array<{ id: string; description?: string }>;
+            qidahenWheelDispatchSelection?: {
+                candidates?: Array<{
+                    targetRegionId: string;
+                    pathRegionIds: string[];
+                    resolutionHint?: string;
+                }>;
+            };
+        } | undefined;
+        const options = interactionData
+            ?.options ?? [];
+        const waterOption = options.find((option) => option.id === 'city-region-22');
+        expect(waterOption?.description).toContain('海岸/水路 2');
+        expect(waterOption?.description).toContain('限2');
+        const followOnWaterOption = options.find((option) => option.id === 'city-region-32');
+        expect(followOnWaterOption?.description).toContain('皮岛 → 东江 →');
+        expect(followOnWaterOption?.description).toContain('海岸/水路 2');
+        expect(options.map((option) => option.id)).not.toEqual(expect.arrayContaining([
+            'city-region-25',
+            'jinzhou',
+        ]));
+
+        const candidates = interactionData?.qidahenWheelDispatchSelection?.candidates ?? [];
+        expect(candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                targetRegionId: 'city-region-22',
+                pathRegionIds: ['song-jin', 'city-region-22'],
+            }),
+            expect.objectContaining({
+                targetRegionId: 'city-region-32',
+                pathRegionIds: ['song-jin', 'city-region-22', 'city-region-32'],
+            }),
+        ]));
+        expect(candidates.map((candidate) => candidate.targetRegionId)).not.toEqual(expect.arrayContaining([
+            'city-region-25',
+            'jinzhou',
+        ]));
+
+        state = dispatch(state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                interactionId: state.sys.interaction?.current?.id,
+                optionId: 'city-region-22',
+                choiceId: 'city-region-22',
+            },
+        });
+
+        expect(state.sys.tutorial.step?.id).toBe('water-boundary');
+        expect((state.core as any).pendingTargetAction).toMatchObject({
+            actionId: 'wheel-dispatch',
+            sourceRegionId: 'song-jin',
+            targetRuntimeRegionId: 'city-region-22',
+            attackBoundaryType: 'coast',
+            boundaryUnitCap: 2,
+            battleWidth: 2,
+            committedTroops: 2,
+        });
     });
 
     it('年中新年教程在推进到新年后，会先进入朝鲜朝贡，再进入防线维护', () => {

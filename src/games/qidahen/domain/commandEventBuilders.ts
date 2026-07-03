@@ -30,6 +30,7 @@ import type {
     SelectGaoDiDispatchCardCommand,
     SelectHandLimitDiscardCardCommand,
     SelectPaymentCardCommand,
+    PlayTacticCardCommand,
     SelectRegionCommand,
     SelectSunYuanhuaTechCardCommand,
     SelectWheelMoveCommand,
@@ -178,6 +179,19 @@ const buildQidahenPaymentCardSelectedEvent = (
     timestamp,
 });
 
+const buildQidahenTacticCardPlayedEvent = (
+    command: PlayTacticCardCommand,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'TACTIC_CARD_PLAYED',
+    payload: {
+        cardId: command.payload.cardId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
 const buildQidahenHandLimitDiscardCardSelectedEvent = (
     command: SelectHandLimitDiscardCardCommand,
     timestamp: number,
@@ -284,6 +298,12 @@ const QIDAHEN_COMMAND_EVENT_BUILDERS: readonly QidahenCommandEventBuilderSpec[] 
         commandTypes: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD],
         buildEvents: buildSingleCommandEvents<SelectPaymentCardCommand>(
             buildQidahenPaymentCardSelectedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
+        buildEvents: buildSingleCommandEvents<PlayTacticCardCommand>(
+            buildQidahenTacticCardPlayedEvent,
         ),
     },
     {

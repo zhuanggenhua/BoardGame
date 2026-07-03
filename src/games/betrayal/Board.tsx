@@ -17,7 +17,6 @@ import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import {
-    ActionBarSkeleton,
     ResourceTraySkeleton,
 } from '../../components/game/framework';
 import type { MatchPlayerInfo } from '../../engine/transport/protocol';
@@ -101,6 +100,9 @@ const ROOM_TILE_STEP_Y = 184;
 const ROOM_CANVAS_PADDING = 8;
 const ROOM_CANVAS_MIN_WIDTH = 780;
 const ROOM_CANVAS_MIN_HEIGHT = 560;
+const ACTION_BUTTON_MAP_OFFSET_X = 43;
+const ACTION_BUTTON_MAP_STEP_X = 74;
+const ACTION_BUTTON_MAP_OFFSET_Y = ROOM_CANVAS_PADDING + (3 * ROOM_TILE_STEP_Y) + ROOM_TILE_SIZE - 98;
 
 const EXPLORER_BOARD_MARKER_RANGE: Record<BetrayalTraitKey, { from: { x: number; y: number }; to: { x: number; y: number } }> = {
     might: { from: { x: 14.5, y: 44.5 }, to: { x: 35.5, y: 23.5 } },
@@ -170,7 +172,7 @@ const ACTION_ICON_BY_ID = {
 const ENDGAME_MEDALLION_CLIP_PATH = 'polygon(50% 0%, 85% 11%, 100% 42%, 83% 85%, 50% 100%, 17% 85%, 0% 42%, 15% 11%)';
 const REFERENCE_CARD_FRAME_WIDTH = `min(92vw, calc(86vh * ${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO}))`;
 const INVENTORY_PREVIEW_FRAME_WIDTH = 'min(84vw, 360px)';
-const COMPACT_INVENTORY_CARD_WIDTH = 62;
+const COMPACT_INVENTORY_CARD_WIDTH = 64;
 
 const FLOOR_TONE: Record<BetrayalCore['rooms'][number]['floor'], { label: string; accent: string; glow: string }> = {
     ground: { label: '一层', accent: '#c5a56c', glow: 'rgba(197,165,108,0.32)' },
@@ -1904,6 +1906,20 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             : activeTradeTargets.length > 0
                 ? t('board.status.tradeTargetsAvailable', { count: activeTradeTargets.length })
                 : t('board.status.noTradeTargets');
+    const tradeInstructionText = selectedInventoryCard && selectedTradeTarget
+        ? t('board.status.tradeFlowReady', {
+            card: selectedInventoryCard.name,
+            player: selectedTradeTargetName,
+        })
+        : selectedInventoryCard
+            ? t('board.status.tradeFlowNeedTarget', {
+                card: selectedInventoryCard.name,
+            })
+            : selectedTradeTarget
+                ? t('board.status.tradeFlowNeedCard', {
+                    player: selectedTradeTargetName,
+                })
+                : t('board.status.tradeFlowStart');
     const shouldShowMobileTradeStatus = core.recommendedAction !== 'trade'
         || Boolean(selectedCorpseLootTarget)
         || tradeTargets.length === 0;
@@ -2401,7 +2417,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             }));
             return;
         }
-        if (!tradeSelectionReady || !previewState.tradeSelectionTouched) {
+        if (!tradeSelectionReady) {
             setPreviewState((previousState) => ({
                 ...previousState,
                 tradeSelectionTouched: true,
@@ -2548,9 +2564,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         { id: 'endTurn', label: t('board.actions.endTurn'), disabled: false, variant: 'ghost' },
     ];
     const visibleActionItems = actionItems.filter((action) => {
-        if (action.id === 'trade' && core.recommendedAction === 'trade') {
-            return false;
-        }
         if (action.id === 'roomEffect') {
             return canUseRoomEffect;
         }
@@ -2595,7 +2608,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         const isFocus = options.layout === 'focus';
         const isPreview = options.layout === 'preview';
         const isCompact = options.layout === 'compact';
-        const isTradeCompact = isCompact && core.recommendedAction === 'trade';
+        const isTradeCompact = isCompact && Boolean(frontVisual) && core.recommendedAction === 'trade';
         const isDenseNoFrontCompact = isCompact && !frontVisual && Boolean(options.compactDenseNoFront);
         const isCompactDenseOmen = isDenseNoFrontCompact && item.kind === 'omen';
         const shellRadiusClass = isPreview ? 'rounded-[16px]' : isFocus ? 'rounded-[10px]' : 'rounded-[6px]';
@@ -2616,16 +2629,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 zIndex: showSelectedState ? 12 : 2,
             }
             : undefined;
-        const tradeCompactSelectedClass = showSelectedState && core.recommendedAction === 'trade'
-            ? 'drop-shadow-[0_0_10px_rgba(255,224,110,0.58)]'
-            : '';
-        const selectedTradeCardStyle = showSelectedState && core.recommendedAction === 'trade'
-            ? {
-                borderRadius: '8px',
-                boxShadow: '0 0 0 2px rgba(255,224,110,0.96), 0 0 10px rgba(255,224,110,0.48)',
-            }
-            : {};
-
         return (
             <button
                 key={`${options.layout}-${item.id}`}
@@ -2652,76 +2655,45 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 }}
                 data-testid={options.testId}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击放大`}
-                className={`relative overflow-visible text-left transition ${
+                className={`relative overflow-hidden text-left transition ${
                     showSelectedState
-                            ? core.recommendedAction === 'trade'
-                                ? 'z-30 -translate-y-0.5 rounded-[8px]'
-                            : 'z-30 -translate-y-1 scale-[1.035] outline outline-[5px] outline-offset-[4px] outline-[#ffe06e] drop-shadow-[0_12px_24px_rgba(255,224,110,0.34)]'
+                        ? 'z-20 -translate-y-0.5 shadow-[0_0_0_2px_rgba(238,204,126,0.92),0_0_0_5px_rgba(238,204,126,0.2),0_0_20px_rgba(238,204,126,0.3)]'
                         : isPreview
                             ? 'z-10'
                             : 'z-10 hover:-translate-y-0.5'
-                } ${tradeCompactSelectedClass} ${isCompact ? 'shrink-0' : 'w-full'}`}
+                } ${isCompact ? 'shrink-0' : 'w-full'}`}
                 aria-pressed={isPreview ? undefined : isSelected}
-                style={{
-                    ...cardWidthStyle,
-                    ...compactStackStyle,
-                    ...selectedTradeCardStyle,
-                }}
+                style={{ ...cardWidthStyle, ...compactStackStyle }}
             >
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
                     </div>
                 ) : null}
-                {showSelectedState && core.recommendedAction !== 'trade' ? (
-                    <div
-                        data-testid={options.testId ? `${options.testId}-selected-halo` : undefined}
-                        className="pointer-events-none absolute inset-[-10px] z-50 rounded-[12px] opacity-100"
-                        style={{
-                            borderColor: '#ffe06e',
-                            borderStyle: 'solid',
-                            borderWidth: 4,
-                            boxShadow: '0 0 0 3px rgba(255,255,221,0.86), 0 0 18px rgba(255,224,110,0.44)',
-                        }}
-                        />
-                    ) : null}
                 <div
                     data-testid={options.testId ? `${options.testId}-shell` : undefined}
                     className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} border ${
                         showSelectedState
-                                ? core.recommendedAction === 'trade'
-                                    ? 'border-[#ffe06e] bg-transparent shadow-[inset_0_0_0_4px_rgba(255,224,110,1),inset_0_0_0_6px_rgba(255,255,221,0.96)]'
-                                : 'border-[#fff6bf] bg-[rgba(255,224,110,0.10)] shadow-[0_0_0_3px_rgba(255,255,221,0.98),0_0_0_8px_rgba(255,224,110,0.92),0_0_22px_rgba(255,224,110,0.48)]'
+                            ? 'border-[rgba(238,204,126,0.92)] bg-transparent'
                             : frontVisual
-                                ? isCompact
-                                    ? 'border-[rgba(120,105,76,0.18)] bg-[rgba(10,8,6,0.18)]'
-                                    : 'border-[rgba(60,47,32,0.82)] bg-[rgba(10,8,6,0.96)]'
-                                : isCompact
-                                    ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
-                                    : tone.cardSurfaceClass
+                            ? isCompact
+                                ? 'border-[rgba(120,105,76,0.18)] bg-[rgba(10,8,6,0.18)]'
+                                : 'border-[rgba(60,47,32,0.82)] bg-[rgba(10,8,6,0.96)]'
+                            : isCompact
+                                ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
+                                : tone.cardSurfaceClass
                     } ${isUsedThisTurn || isUnavailableThisTurn ? 'opacity-60' : ''}`}
-                    style={{ aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO }}
+                    style={{
+                        aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
+                        ...(showSelectedState
+                            ? {
+                                borderColor: 'rgb(238, 204, 126)',
+                                borderStyle: 'solid',
+                                borderWidth: '1px',
+                            }
+                            : {}),
+                    }}
                 >
-                    {showSelectedState ? (
-                        <>
-                            <div
-                                data-testid={options.testId ? `${options.testId}-selected-ring` : undefined}
-                                className={`pointer-events-none absolute inset-[1px] z-50 rounded-[inherit] ring-inset ring-[#ffe06e] ${
-                                  core.recommendedAction === 'trade' ? 'ring-[4px]' : 'ring-[5px]'
-                                  }`}
-                              />
-                            <div className="pointer-events-none absolute inset-[5px] z-50 rounded-[4px] ring-[1px] ring-inset ring-[rgba(255,255,221,0.94)]" />
-                            {core.recommendedAction === 'trade' ? (
-                                <div className="pointer-events-none absolute inset-[9px] z-50 rounded-[3px] ring-[1px] ring-inset ring-[#ffe06e]" />
-                            ) : null}
-                            <div
-                                data-testid={options.testId ? `${options.testId}-selected-label` : undefined}
-                                className="pointer-events-none absolute right-1 top-1 z-50 rounded-[4px] bg-[#ffe06e] px-1.5 py-0.5 text-[9px] font-black tracking-[0.08em] text-[#261c05] shadow-[0_0_0_1px_rgba(255,255,221,0.9)]"
-                            >
-                                {t('board.status.selected')}
-                            </div>
-                        </>
-                    ) : null}
                     {frontVisual ? (
                         <>
                             <div className={`absolute overflow-hidden ${
@@ -3533,7 +3505,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     data-testid="betrayal-room-canvas"
                                     style={roomCanvasStyle}
                                 >
-                                    {core.rooms.map((room) => {
+                                {core.rooms.map((room) => {
                                     const tone = FLOOR_TONE[room.floor];
                                     const isActive = room.id === core.activeRoomId;
                                     const occupants = roomOccupants[room.id] ?? [];
@@ -3653,6 +3625,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 ) : null}
                                                 {isActive ? <span>{t('board.rooms.active')}</span> : null}
                                             </div>
+                                            {room.markerTokens?.includes('obstacle') ? (
+                                                <span
+                                                    data-testid={`betrayal-room-marker-${room.id}-obstacle`}
+                                                    className="pointer-events-none absolute bottom-2 left-2 z-20 grid h-6 w-6 place-items-center rounded-full border border-[#b8914f] bg-[rgba(20,14,9,0.84)] shadow-[0_0_12px_rgba(184,145,79,0.42)]"
+                                                    title="障碍物"
+                                                >
+                                                    <OptimizedImage
+                                                        src={ASSETS.marker.obstacle}
+                                                        locale={effectiveLocale}
+                                                        alt="障碍物"
+                                                        className="h-5 w-5 object-contain"
+                                                        draggable={false}
+                                                    />
+                                                </span>
+                                            ) : null}
 
                                             {(() => {
                                                 const hasPlayers = occupants.length > 0;
@@ -3764,136 +3751,78 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     );
                                     })}
                                 </div>
-                            </div>
-                        </article>
-
-                        <article className="relative z-30 order-2 mx-auto w-full max-w-[700px] bg-transparent p-0 pt-0">
-                            <div className="relative mx-auto max-w-[676px] px-2 pt-0 pb-1">
-                                <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.18),transparent)]" />
-                                {core.recommendedAction === 'trade' ? (
-                                    <div
-                                        data-testid="betrayal-trade-flow-banner"
-                                        data-tutorial-id="betrayal-actions-zone"
-                                        aria-label={t('board.status.tradeFlowStart')}
-                                        className="flex flex-wrap items-center justify-center gap-3 rounded-none border-0 bg-transparent p-0 text-[12px] shadow-none outline-none"
-                                        style={{
-                                            appearance: 'none',
-                                            WebkitAppearance: 'none',
-                                            backgroundColor: 'transparent',
-                                            backgroundImage: 'none',
-                                            border: '0',
-                                            boxShadow: 'none',
-                                            filter: 'none',
-                                        }}
-                                    >
-                                        <button
-                                            type="button"
-                                            data-testid="betrayal-trade-flow-item-step"
-                                            onClick={() => scrollToSection('betrayal-inventory-section')}
-                                            className={`inline-flex min-h-[28px] appearance-none items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 text-[12px] font-semibold shadow-none outline-none transition ${
-                                                selectedInventoryCard
-                                                    ? 'text-[#ffe06e] underline decoration-[#ffe06e] decoration-2 underline-offset-5'
-                                                    : 'text-[#ead7a5] hover:text-[#fff1a8]'
-                                            }`}
-                                            style={{
-                                                appearance: 'none',
-                                                WebkitAppearance: 'none',
-                                                backgroundColor: 'transparent',
-                                                backgroundImage: 'none',
-                                                border: '0',
-                                                boxShadow: 'none',
-                                                filter: 'none',
-                                            }}
-                                        >
-                                            <span className="text-[#d5b66e]">{t('board.status.tradeStepItem')}</span>
-                                            <span>{selectedInventoryCard?.name ?? t('board.status.tradeStepPending')}</span>
-                                        </button>
-                                        <span className="select-none text-[12px] font-semibold text-[#bca05f]">-&gt;</span>
-                                        <button
-                                            type="button"
-                                            data-testid="betrayal-trade-flow-target-step"
-                                            onClick={() => {
-                                                const firstTradeTarget = tradeTargets[0];
-                                                if (firstTradeTarget) {
-                                                    focusRoomInView(firstTradeTarget.roomId);
-                                                }
-                                            }}
-                                            className={`inline-flex min-h-[28px] appearance-none items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 text-[12px] font-semibold shadow-none outline-none transition ${
-                                                selectedTradeTarget
-                                                    ? 'text-[#9fe1a7] underline decoration-[#9fe1a7] decoration-2 underline-offset-5'
-                                                    : 'text-[#ead7a5] hover:text-[#d4ead0]'
-                                            }`}
-                                            style={{
-                                                appearance: 'none',
-                                                WebkitAppearance: 'none',
-                                                backgroundColor: 'transparent',
-                                                backgroundImage: 'none',
-                                                border: '0',
-                                                boxShadow: 'none',
-                                                filter: 'none',
-                                            }}
-                                        >
-                                            <span className="text-[#d5b66e]">{t('board.status.tradeStepTarget')}</span>
-                                            <span>{selectedTradeTargetName ?? t('board.status.tradeStepPending')}</span>
-                                        </button>
-                                        <span className="select-none text-[12px] font-semibold text-[#bca05f]">-&gt;</span>
-                                        <button
-                                            type="button"
-                                            onClick={handleTradeAction}
-                                            disabled={!tradeSelectionReady || !previewState.tradeSelectionTouched}
-                                            data-testid="betrayal-action-trade"
-                                            data-tutorial-id="betrayal-action-trade"
-                                            title={actionCueText}
-                                            className={`inline-flex min-h-[28px] min-w-[64px] appearance-none items-center justify-center rounded-none border-0 bg-transparent px-0 py-0 text-[12px] font-semibold shadow-none outline-none transition ${
-                                                tradeSelectionReady && previewState.tradeSelectionTouched
-                                                    ? 'text-[#ffe06e] underline decoration-[#ffe06e] decoration-2 underline-offset-5 hover:text-[#fff1a8]'
-                                                    : 'cursor-default text-[#b9aa82] opacity-60'
-                                            }`}
-                                            style={{
-                                                appearance: 'none',
-                                                WebkitAppearance: 'none',
-                                                backgroundColor: 'transparent',
-                                                backgroundImage: 'none',
-                                                border: '0',
-                                                boxShadow: 'none',
-                                                filter: 'none',
-                                            }}
-                                        >
-                                            {selectedCorpseLootTarget ? t('board.actions.loot') : t('board.status.tradeFlowConfirm')}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <ActionBarSkeleton
-                                        actions={actionItems}
-                                        layout="row"
-                                        align="space-between"
-                                        containerProps={{ 'data-tutorial-id': 'betrayal-actions-zone' }}
-                                        className="flex flex-wrap items-center justify-center gap-1.5"
-                                        renderAction={(action) => {
+                                {visibleActionItems.length > 0 ? (
+                                    <>
+                                        {core.recommendedAction === 'trade' ? (
+                                            <div
+                                                data-testid="betrayal-trade-flow-banner"
+                                                className="pointer-events-none absolute left-1/2 top-0 z-40 flex -translate-x-1/2 items-center gap-2 rounded-none border-0 bg-transparent px-0 py-0 text-[13px] font-semibold tracking-[0.06em] text-[#f3e0a6]"
+                                                style={{
+                                                    transform: `translate(-50%, ${ACTION_BUTTON_MAP_OFFSET_Y - 24}px)`,
+                                                    textShadow: '0 1px 2px rgba(0,0,0,0.85), 0 0 12px rgba(238,204,126,0.36)',
+                                                }}
+                                            >
+                                                <span data-testid="betrayal-trade-flow-item-step">{tradeInstructionText}</span>
+                                                <span
+                                                    data-testid="betrayal-trade-flow-target-step"
+                                                    className={tradeSelectionReady ? 'text-[#f6ffc4]' : 'text-[#d6c498]'}
+                                                >
+                                                    {tradeSelectionReady ? t('board.status.tradeFlowConfirm') : t('board.status.tradeFlowChoose')}
+                                                </span>
+                                            </div>
+                                        ) : null}
+                                        {visibleActionItems.map((action) => {
+                                            const buttonIndex = visibleActionItems.findIndex((item) => item.id === action.id);
+                                            const totalButtons = Math.max(visibleActionItems.length, 1);
+                                            const centerOffset = ACTION_BUTTON_MAP_OFFSET_X + ((buttonIndex - ((totalButtons - 1) / 2)) * ACTION_BUTTON_MAP_STEP_X);
                                             const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
                                             const isRecommended = action.id === core.recommendedAction
                                                 || (previewState.interactionMode === 'move' && action.id === 'move');
                                             return (
                                                 <button
+                                                    key={action.id}
                                                     type="button"
-                                                    onClick={actionHandlerMap[action.id]}
+                                                    onPointerDown={(event) => {
+                                                        event.stopPropagation();
+                                                    }}
+                                                    onPointerUp={(event) => {
+                                                        event.stopPropagation();
+                                                    }}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        actionHandlerMap[action.id]?.();
+                                                    }}
                                                     disabled={action.disabled}
                                                     data-testid={`betrayal-action-${action.id}`}
-                                                    className={`relative inline-flex min-h-[30px] items-center justify-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.06em] transition ${
+                                                    data-tutorial-id={`betrayal-action-${action.id}`}
+                                                    title={actionCueText}
+                                                    className={`pointer-events-auto absolute left-1/2 top-0 z-40 flex min-h-[72px] min-w-[80px] flex-col items-center justify-center gap-1 rounded-[5px] border-0 bg-transparent px-1.5 py-2 text-[13px] font-bold uppercase tracking-[0.08em] shadow-none transition ${
                                                         action.disabled
-                                                            ? 'cursor-not-allowed bg-[rgba(20,18,14,0.3)] text-[#6f6758]'
+                                                            ? 'cursor-not-allowed text-[#5f584d] opacity-55'
                                                             : isRecommended
-                                                                ? 'bg-[rgba(139,164,51,0.24)] text-[#eef4a8] shadow-[0_0_0_1px_rgba(201,163,94,0.34),0_0_18px_rgba(181,239,66,0.16)] hover:bg-[rgba(139,164,51,0.34)]'
-                                                                : 'bg-[rgba(22,19,15,0.24)] text-[#d6c498] shadow-[0_0_0_1px_rgba(140,116,77,0.18)] hover:bg-[rgba(38,30,22,0.34)]'
+                                                                ? 'text-[#f6ffc4] underline decoration-[#f2cc79] decoration-2 underline-offset-4 hover:text-[#fbffd2]'
+                                                                : 'text-[#ead8a8] hover:text-[#fff0ba]'
                                                     }`}
+                                                    style={{
+                                                        transform: `translate(calc(-50% + ${centerOffset}px), ${ACTION_BUTTON_MAP_OFFSET_Y}px)`,
+                                                        backgroundColor: 'transparent',
+                                                        backgroundImage: 'none',
+                                                        border: 0,
+                                                        boxShadow: 'none',
+                                                        textShadow: action.disabled
+                                                            ? 'none'
+                                                            : isRecommended
+                                                                ? '0 1px 2px rgba(0,0,0,0.9), 0 0 14px rgba(238,244,168,0.48)'
+                                                                : '0 1px 2px rgba(0,0,0,0.88), 0 0 8px rgba(234,216,168,0.28)',
+                                                    }}
                                                 >
-                                                    <Icon size={13} />
+                                                    <Icon size={20} strokeWidth={2.35} />
                                                     <span>{action.label}</span>
                                                 </button>
                                             );
-                                        }}
-                                    />
-                                )}
+                                        })}
+                                    </>
+                                ) : null}
                             </div>
                         </article>
 
@@ -4022,19 +3951,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId;
                                         const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
                                         const roomName = core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown');
-                                        const tradeTargetLooseButtonClass = core.recommendedAction === 'trade' && isTradeCandidate
-                                            ? `group relative inline-flex min-h-[26px] w-max max-w-full items-center gap-1.5 rounded-none border-0 bg-transparent px-0 py-0 text-left text-[12px] font-semibold shadow-none outline-none transition ${
-                                                isSelectedTradeTarget
-                                                    ? 'text-[#9fe1a7] underline decoration-[#9fe1a7] decoration-2 underline-offset-4'
-                                                    : 'text-[#d4ead0] hover:text-[#efffe8]'
-                                            }`
-                                            : `group relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] px-1.5 py-1.5 text-left transition ${
-                                                isSelectedTradeTarget
-                                                    ? 'bg-transparent outline outline-[4px] outline-offset-[3px] outline-[#9fe1a7] shadow-[0_0_0_5px_rgba(255,255,221,0.30)]'
-                                                    : isTradeCandidate
-                                                        ? 'bg-transparent hover:bg-[rgba(255,224,138,0.06)]'
-                                                        : 'hover:bg-[rgba(28,24,19,0.18)]'
-                                            }`;
                                         return (
                                             <button
                                                 key={`sidebar-teammate-${explorer.playerId}`}
@@ -4048,78 +3964,56 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     }));
                                                 }}
                                                 data-testid={`betrayal-bottom-teammate-${explorer.playerId}`}
-                                                className={tradeTargetLooseButtonClass}
-                                                style={core.recommendedAction === 'trade' && isTradeCandidate
-                                                    ? {
-                                                        appearance: 'none',
-                                                        WebkitAppearance: 'none',
-                                                        backgroundColor: 'transparent',
-                                                        backgroundImage: 'none',
-                                                        border: '0',
-                                                        boxShadow: 'none',
-                                                    }
-                                                    : undefined}
+                                                className={`group relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] px-1.5 py-1.5 text-left transition ${
+                                                    isSelectedTradeTarget
+                                                        ? 'bg-[linear-gradient(180deg,rgba(53,40,20,0.72),rgba(22,19,14,0.82))]'
+                                                        : 'hover:bg-[rgba(28,24,19,0.5)]'
+                                                }`}
                                                 title={`定位到 ${roomName}`}
                                             >
-                                                {core.recommendedAction === 'trade' && isTradeCandidate ? null : (
-                                                    <div className={`relative h-[34px] w-[34px] overflow-hidden rounded-full border ${
-                                                        isTradeCandidate ? 'border-[rgba(118,189,153,0.62)]' : 'border-[rgba(117,98,68,0.42)]'
-                                                    } bg-[rgba(12,14,13,0.62)]`}>
-                                                        <OptimizedImage
-                                                            src={explorer.portraitAsset}
-                                                            locale={effectiveLocale}
-                                                            alt={explorer.displayName}
-                                                            className="h-full w-full object-contain"
-                                                            draggable={false}
-                                                        />
-                                                        <span
-                                                            className={`pointer-events-none absolute inset-0 rounded-full ring-1 ${
-                                                                isSameRoom ? 'ring-[rgba(174,230,133,0.38)]' : 'ring-transparent'
-                                                            }`}
-                                                        />
-                                                    </div>
-                                                )}
+                                                <div className={`relative h-[34px] w-[34px] overflow-hidden rounded-full border ${
+                                                    isTradeCandidate ? 'border-[rgba(118,189,153,0.62)]' : 'border-[rgba(117,98,68,0.42)]'
+                                                } bg-[rgba(12,14,13,0.62)]`}>
+                                                    <OptimizedImage
+                                                        src={explorer.portraitAsset}
+                                                        locale={effectiveLocale}
+                                                        alt={explorer.displayName}
+                                                        className="h-full w-full object-contain"
+                                                        draggable={false}
+                                                    />
+                                                    <span
+                                                        className={`pointer-events-none absolute inset-0 rounded-full ring-1 ${
+                                                            isSameRoom ? 'ring-[rgba(174,230,133,0.38)]' : 'ring-transparent'
+                                                        }`}
+                                                    />
+                                                </div>
                                                 <div className="min-w-0">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <div className={`truncate tracking-[0.04em] ${
-                                                            core.recommendedAction === 'trade' && isTradeCandidate
-                                                                ? 'text-[12px] font-semibold'
-                                                                : 'text-[11px] font-medium text-[#efe5cf]'
-                                                        }`}>
+                                                        <div className="truncate text-[11px] font-medium tracking-[0.04em] text-[#efe5cf]">
                                                             {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
                                                         </div>
                                                         {isTradeCandidate ? (
-                                                            core.recommendedAction === 'trade' ? (
-                                                                <span className="shrink-0 text-[12px] font-semibold text-[#bca05f]">
-                                                                    {isSelectedTradeTarget ? t('board.status.selected') : t('board.status.tradeStepTarget')}
-                                                                </span>
-                                                            ) : (
-                                                                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] ${
-                                                                     isSelectedTradeTarget
-                                                                         ? 'bg-[#fff1a8] text-[#2a2108]'
-                                                                         : 'bg-[rgba(40,63,50,0.18)] text-[#bddac2]'
-                                                                 }`}>
-                                                                    {isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
-                                                                </span>
-                                                            )
+                                                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] ${
+                                                                isSelectedTradeTarget
+                                                                    ? 'bg-[#fff1a8] text-[#2a2108]'
+                                                                    : 'bg-[rgba(40,63,50,0.18)] text-[#bddac2]'
+                                                            }`}>
+                                                                {isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
+                                                            </span>
                                                         ) : null}
                                                     </div>
-                                                    {core.recommendedAction === 'trade' && isTradeCandidate ? null : (
-                                                        <>
-                                                            <div className="mt-0.5 truncate text-[10px] text-[#b7aa92]">{roomName}</div>
-                                                            <div className="mt-1 flex items-center gap-1">
-                                                                {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
-                                                                    <span
-                                                                        key={`${explorer.playerId}-${key}`}
-                                                                        className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(21,18,14,0.84)] px-1 text-[9px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[key]}`}
-                                                                        title={`${TRAIT_LABEL_LOCAL[key]} ${explorer.traits[key]}`}
-                                                                    >
-                                                                        {explorer.traits[key]}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        </>
-                                                    )}
+                                                    <div className="mt-0.5 truncate text-[10px] text-[#b7aa92]">{roomName}</div>
+                                                    <div className="mt-1 flex items-center gap-1">
+                                                        {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
+                                                            <span
+                                                                key={`${explorer.playerId}-${key}`}
+                                                                className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(21,18,14,0.84)] px-1 text-[9px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[key]}`}
+                                                                title={`${TRAIT_LABEL_LOCAL[key]} ${explorer.traits[key]}`}
+                                                            >
+                                                                {explorer.traits[key]}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </button>
                                         );

@@ -213,7 +213,10 @@
   "mascot": {
     "container_label": "Yi Board Game mascot",
     "button_label": "Tap mascot",
-    "image_alt": "Yi Board Game mascot"
+    "image_alt": "Yi Board Game mascot",
+    "community_welcome": "Join our QQ group:",
+    "copy_success": "Group number copied",
+    "copy_failed": "Copy failed. Please copy the group number manually."
   },
   "viewportDebug": {
     "title": "Device viewport diagnostics",

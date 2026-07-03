@@ -13,7 +13,7 @@ export interface AbilitySlotLayoutItem {
     h: number;
 }
 
-export type DiceThronePlayerBoardLayoutVersion = 'v1' | 'v2';
+export type DiceThronePlayerBoardLayoutVersion = 'v1' | 'v2' | 'v2OldHero';
 
 type PlayerBoardDimensions = {
     width: number;
@@ -41,7 +41,20 @@ const V1_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = [
     { id: 'ultimate', x: 0.60, y: 82.89, w: 55, h: 15.60 },
 ];
 
-// v2 面板来自枪手 / 武士图片裁图坐标，顶部留白显著增加。
+// 旧英雄 v2 玩家面板沿用横向九宫格技能区；升级牌叠图和技能点击必须盖在这些真实技能框上。
+const V2_OLD_HERO_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = [
+    { id: 'fist', x: 0.60, y: 1.62, w: 20.80, h: 38.50 },
+    { id: 'chi', x: 23, y: 1.15, w: 20.80, h: 39.65 },
+    { id: 'sky', x: 55.50, y: 1.28, w: 20.70, h: 39.11 },
+    { id: 'lotus', x: 77.60, y: 1.42, w: 21.10, h: 39.38 },
+    { id: 'combo', x: 0.70, y: 42.05, w: 20.70, h: 38.44 },
+    { id: 'lightning', x: 22.90, y: 42.40, w: 20.90, h: 38.70 },
+    { id: 'calm', x: 55.10, y: 41.75, w: 21.20, h: 39.59 },
+    { id: 'meditate', x: 77.80, y: 41.63, w: 20.90, h: 39.53 },
+    { id: 'ultimate', x: 0.60, y: 82.89, w: 55, h: 15.60 },
+];
+
+// v2 新英雄面板来自枪手 / 武士图片裁图坐标，顶部留白显著增加。
 const V2_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = [
     { id: 'fist', x: 0.58, y: 20.27, w: 15.69, h: 38.89 },
     { id: 'chi', x: 16.69, y: 20.25, w: 16.04, h: 38.72 },
@@ -63,6 +76,7 @@ export type DiceThroneBoardLayoutConfig = {
 
 export const DICETHRONE_ABILITY_SLOT_LAYOUTS: Record<DiceThronePlayerBoardLayoutVersion, AbilitySlotLayoutItem[]> = {
     v1: V1_ABILITY_SLOT_LAYOUT,
+    v2OldHero: V2_OLD_HERO_ABILITY_SLOT_LAYOUT,
     v2: V2_ABILITY_SLOT_LAYOUT,
 };
 
@@ -85,12 +99,12 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
-    monk: 'v2',
-    barbarian: 'v2',
-    pyromancer: 'v2',
-    moon_elf: 'v2',
-    shadow_thief: 'v2',
-    paladin: 'v2',
+    monk: 'v2OldHero',
+    barbarian: 'v2OldHero',
+    pyromancer: 'v2OldHero',
+    moon_elf: 'v2OldHero',
+    shadow_thief: 'v2OldHero',
+    paladin: 'v2OldHero',
     gunslinger: 'v2',
     samurai: 'v2',
     treant: 'v2',
@@ -110,6 +124,14 @@ export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = 
         centerBoardGapVw: 0.50,
     },
     v2: {
+        shellTranslateX: 1.10,
+        playerBoardTranslateY: -1.45,
+        magnifyButtonTop: 1.85,
+        playerBoardBaseHeightVw: 31,
+        tipBoardHeightVw: 29.60,
+        centerBoardGapVw: 0.24,
+    },
+    v2OldHero: {
         shellTranslateX: 1.10,
         playerBoardTranslateY: -1.45,
         magnifyButtonTop: 1.85,

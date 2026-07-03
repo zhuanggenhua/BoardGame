@@ -492,6 +492,115 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         expect(settled.turnPhase).toBe('action-window');
     });
 
+    it('战术牌命令只能在待结算战斗中由攻方打出自己的战术牌', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const tacticCardId = 'ming-tactic-test-card';
+        const jinTacticCardId = 'jin-tactic-test-card';
+        const mingEventCardId = 'ming-event-test-card';
+        const mingCards = core.handCards.filter((card) => card.faction === 'ming');
+        const jinCard = core.handCards.find((card) => card.faction === 'jin');
+        expect(mingCards.length).toBeGreaterThanOrEqual(2);
+        expect(jinCard).toBeTruthy();
+
+        core.turnPhase = 'resolve-pending';
+        core.pendingTargetAction = {
+            actionId: 'wheel-dispatch',
+            battleMode: 'field',
+            targetKind: 'region',
+            title: '调度进攻待结算',
+            attackerFactionId: 'ming',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '克什克腾部',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '察哈尔',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 战术牌',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-cavalry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '克什克腾部 → 察哈尔 · 平原 3',
+            defenderPayCost: null,
+        };
+        core.handCards = [
+            {
+                ...mingCards[0]!,
+                id: tacticCardId,
+                label: '大明战术牌',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'test-ming-tactic',
+            },
+            {
+                ...jinCard!,
+                id: jinTacticCardId,
+                label: '后金战术牌',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'test-jin-tactic',
+            },
+            {
+                ...mingCards[1]!,
+                id: mingEventCardId,
+                label: '大明事件牌',
+                status: 'payable',
+                cardKind: 'event',
+                armamentId: null,
+                cardDefId: 'test-ming-event',
+            },
+        ];
+
+        const state = syncQidahenRuntimeInteractionState({
+            core,
+            sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+        });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '1',
+            payload: { cardId: tacticCardId },
+        })).toEqual({ valid: false, error: 'notCurrentPlayer' });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: jinTacticCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: mingEventCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        expect(QidahenDomain.validate({
+            ...state,
+            core: {
+                ...state.core,
+                pendingTargetAction: null,
+            },
+        }, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: tacticCardId },
+        })).toEqual({ valid: true });
+
+        const result = applyPipeline(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: tacticCardId },
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.handCards.some((card) => card.id === tacticCardId)).toBe(false);
+        expect(result.state.core.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(result.state.core.lastSeasonSummary?.title).toBe('战术牌');
+        expect(result.state.core.lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');
+    });
+
     it('新年维护命令校验现在可以只依赖 interaction current，而不是 core.fortificationMaintenanceSelection', () => {
         let state: MatchState<QidahenCore> = {
             core: QidahenDomain.setup(['0', '1', '2'], () => 0.5),

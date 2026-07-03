@@ -412,13 +412,21 @@ export const useGamePackageState = ({
 
     const cancelInstall = useCallback(async () => {
         requestSerialRef.current += 1;
+        const cancelSource = new Error('UseGamePackageState.cancelInstall source');
         logMobileRuntime('UseGamePackageState', 'cancel-install', {
             gameId,
             latestRequestSerial: requestSerialRef.current,
             currentStatus: cardState.status,
+            sourceStack: cancelSource.stack,
         });
         setPendingInstall(null);
         if (!isInProgressStatus(cardState.status)) {
+            logMobileRuntimeCritical('UseGamePackageState', 'cancel-install-skip-native-not-in-progress', {
+                gameId,
+                currentStatus: cardState.status,
+                latestRequestSerial: requestSerialRef.current,
+                sourceStack: cancelSource.stack,
+            });
             return;
         }
 

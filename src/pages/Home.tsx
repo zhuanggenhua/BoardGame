@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode, lazy, Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CategoryPills, type Category } from '../components/layout/CategoryPills';
@@ -43,10 +43,10 @@ import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
-import { reportClientAutoFeedbackOnce } from '../lib/feedback/clientAutoReport';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
+import { HomeModalErrorBoundary } from './HomeModalErrorBoundary';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
@@ -69,60 +69,6 @@ const HomeGridLogo = () => (
 );
 
 type IdleSchedulerHost = Pick<Window, 'setTimeout' | 'clearTimeout'> & Partial<Pick<Window, 'requestIdleCallback' | 'cancelIdleCallback'>>;
-
-type HomeModalErrorBoundaryProps = {
-    children: ReactNode;
-    onError: () => void;
-};
-
-type HomeModalErrorBoundaryState = {
-    hasError: boolean;
-};
-
-class HomeModalErrorBoundary extends Component<HomeModalErrorBoundaryProps, HomeModalErrorBoundaryState> {
-    public state: HomeModalErrorBoundaryState = {
-        hasError: false,
-    };
-
-    public static getDerivedStateFromError(): HomeModalErrorBoundaryState {
-        return { hasError: true };
-    }
-
-    public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('[Home] 游戏详情弹窗渲染失败，已回退到首页', error, errorInfo);
-        const jsStack = error.stack;
-        const componentStack = errorInfo.componentStack ?? undefined;
-        const stack = [jsStack ?? '', componentStack ?? ''].filter(Boolean).join('\n');
-        const signature = `home-modal-error-boundary:${error.name}:${error.message}`;
-        void reportClientAutoFeedbackOnce(signature, {
-            content: `[auto][home-modal-error-boundary] ${error.message || 'Home modal render error'}`,
-            autoReportKind: 'home-modal-render-error',
-            source: 'home-modal-error-boundary',
-            gameId: 'unknown',
-            gameName: 'client',
-            errorName: error.name || 'Error',
-            errorMessage: error.message || 'Home modal render error',
-            errorSource: 'home.modal_error_boundary',
-            stack,
-            jsStack,
-            componentStack,
-        });
-        this.props.onError();
-    }
-
-    public componentDidUpdate(prevProps: HomeModalErrorBoundaryProps) {
-        if (prevProps.children !== this.props.children && this.state.hasError) {
-            this.setState({ hasError: false });
-        }
-    }
-
-    public render() {
-        if (this.state.hasError) {
-            return null;
-        }
-        return this.props.children;
-    }
-}
 
 export const scheduleHomeGameDetailsModalWarmup = (
     warmup: () => Promise<unknown> | void,
@@ -385,6 +331,7 @@ export const Home = () => {
             return {
                 render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => (
                     <HomeModalErrorBoundary
+                        resetKey={game.id}
                         onError={() => {
                             close();
                             gameModalNavigateAwayBridgeRef.current();

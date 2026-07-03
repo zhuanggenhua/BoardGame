@@ -1,8 +1,8 @@
 {
   "manifestVersion": 1,
   "scope": "official",
-  "id": "betrayal",
-  "basePrefix": "official/betrayal/",
+  "id": "i18n/zh-CN/betrayal",
+  "basePrefix": "official/i18n/zh-CN/betrayal/",
   "files": {
     "cards/back-event": {
       "variants": {
@@ -94,11 +94,38 @@
         }
       }
     },
+    "cards/compressed/event-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "c417367c0540777a9cd1a0c1e2a8ff172d8b1e206ee0ebac79e0043d8cdc63b5",
+          "bytes": 702794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/item-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "990a63f1c436e171072c74ea093b550dce48c72732a713f6e091f65c75381737",
+          "bytes": 633070,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/monster-reference-zh": {
       "variants": {
         "webp": {
           "sha256": "5d3fb4e3bec47e80c73ea3834e9394f243be4041bf6fa0bf8bf82e7cea92627f",
           "bytes": 181382,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/omen-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "a644147a6f62e6490c1c10c1acbf9f5cd7509248c655420a94cc7bb65accfbda",
+          "bytes": 741208,
           "mime": "image/webp"
         }
       }
@@ -154,6 +181,15 @@
           "sha256": "955df3ce826ad160b8b808b21b312f5bd7353fc6d43b6355dc2500982cfb7e2f",
           "bytes": 112192,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/event-front-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "09c43d68facfaeb619162c600d95ae91c011c04c29345dcfb9e0c85902e768f5",
+          "bytes": 11641517,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -1030,6 +1066,15 @@
         }
       }
     },
+    "rooms/compressed/room-back-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "0dfda465f694b505c7671e5cce43b88c219d4252d3d136f3e28ca787c1e11d72",
+          "bytes": 353484,
+          "mime": "image/webp"
+        }
+      }
+    },
     "rooms/compressed/room-back-basement": {
       "variants": {
         "webp": {
@@ -1048,11 +1093,56 @@
         }
       }
     },
+    "rooms/compressed/room-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "2b0058b7d5f62c154726044258899d3baf4aff5903c7c6d5621504bc1be993f6",
+          "bytes": 790768,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/start-basement-landing": {
+      "variants": {
+        "webp": {
+          "sha256": "27fedf3345931b9c5d517a010e1b9b09d15fc4d70d4c8c022bf3c6bf26e36631",
+          "bytes": 192596,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/start-triple-room": {
+      "variants": {
+        "webp": {
+          "sha256": "99076698d7ba48126cc8fa6c369108f7f706ab8152fb5793052aa3e6dfe743d5",
+          "bytes": 446494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/start-upper-landing": {
+      "variants": {
+        "webp": {
+          "sha256": "b5c5f81298915387b0e57c8762db5ff2f23bac8f3234800c2472ab476604a0a2",
+          "bytes": 257668,
+          "mime": "image/webp"
+        }
+      }
+    },
     "rooms/compressed/sunroom": {
       "variants": {
         "webp": {
           "sha256": "f4cb2dd7b578efa16725d0f9702f26ab6c8d376a2aeea842a56da50799d3c917",
           "bytes": 11374,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/trophy-oubliette-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "08a928e07f059317c0ff85b09869e9f8f2c3d79ce8e089f7cb86afb249ecb03d",
+          "bytes": 212802,
           "mime": "image/webp"
         }
       }
@@ -1138,6 +1228,42 @@
         }
       }
     },
+    "tokens/explorers/compressed/darryl-highla": {
+      "variants": {
+        "webp": {
+          "sha256": "284d055691f54901cfb5a88f6e7164e652fa8ac4674f96d5c4f0424102268ae0",
+          "bytes": 31846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/explorers/compressed/father-warren-leung": {
+      "variants": {
+        "webp": {
+          "sha256": "9bfb5a3607f53782f3d7aee5cd24b0466c694e9137ed9910621d0f7a8b16b164",
+          "bytes": 18496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/explorers/compressed/jaden-jones": {
+      "variants": {
+        "webp": {
+          "sha256": "6bff549ae99c08b457c035e3524594e28716bcac0e27be082a969bf2464ba0ff",
+          "bytes": 22392,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/explorers/compressed/rebecca-allen": {
+      "variants": {
+        "webp": {
+          "sha256": "cb3ceb60ca86bcaa810941b3f607b06de3d6d1439156eeea1047dc906a3471c4",
+          "bytes": 33764,
+          "mime": "image/webp"
+        }
+      }
+    },
     "tokens/explorers/darryl-highla": {
       "variants": {
         "png": {
@@ -1171,6 +1297,24 @@
           "sha256": "5254dadcb370a3a19e2b614a9a06386f16540ee0c1692d5ee8a164b5cb76cd16",
           "bytes": 228823,
           "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/compressed/ghost": {
+      "variants": {
+        "webp": {
+          "sha256": "0c287281adb0d5726b1a32bcdcee49781cd7e300ce6ae1aaf0a3b234ffb25fd1",
+          "bytes": 25274,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/werewolf": {
+      "variants": {
+        "webp": {
+          "sha256": "590a3a69099cf22ab3f22584fa867d20532b65544f586f564ec43ab00277ffc6",
+          "bytes": 26356,
+          "mime": "image/webp"
         }
       }
     },

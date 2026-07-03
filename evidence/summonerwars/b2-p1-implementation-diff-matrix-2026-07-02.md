@@ -8,10 +8,12 @@
 
 ## 已锁规则基线
 
+> 说明：本节是规则合同摘要，不是实现对照矩阵。为避免后续脚本把规则基线误扫成 implementation row，本节不使用反引号包裹对象 ID；正式实现状态只看下方“实现对照矩阵”。
+
 | 对象 | 中文承载卡 | 官方原文摘要 | 原子子句基线 |
 | --- | --- | --- | --- |
-| `prepare` | 梅肯达·露、边境弓箭手 | Instead of moving this unit, you may boost it. | 代替本单位移动；可选；给本单位 1 个充能；卡面未写每回合一次 |
-| `inspire` | 凯鲁尊者 | After this unit moves, boost each friendly adjacent unit. | 本单位移动后；每个相邻友方单位；每个目标 1 充能；强制触发；卡面未写每回合一次 |
+| prepare | 梅肯达·露、边境弓箭手 | Instead of moving this unit, you may boost it. | 代替本单位移动；可选；给本单位 1 个充能；卡面未写每回合一次 |
+| inspire | 凯鲁尊者 | After this unit moves, boost each friendly adjacent unit. | 本单位移动后；每个相邻友方单位；每个目标 1 充能；强制触发；卡面未写每回合一次 |
 
 ## 实现对照矩阵
 

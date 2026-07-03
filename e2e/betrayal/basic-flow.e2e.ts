@@ -43,14 +43,15 @@ test.describe('山屋惊魂基本流程', () => {
         await expect(page.getByTestId('betrayal-open-scenario')).toBeVisible();
         await saveScreenshot(page, RUNTIME_SCREENSHOT);
 
-        await page.getByTestId('betrayal-inventory-rope').click();
+        await page.getByTestId('betrayal-inventory-omen-book').click();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
         await saveScreenshot(page, INVENTORY_PREVIEW_SCREENSHOT);
         await page.getByTestId('betrayal-inventory-preview-close').click();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).toBeHidden();
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
         await page.getByTestId('betrayal-action-use').click();
         await expect(page.getByTestId('betrayal-use-status')).toContainText('本回合已用');
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('兔脚');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('书本');
         await expect(page.getByTestId('betrayal-action-use')).toBeDisabled();
         await saveScreenshot(page, USE_ITEM_SCREENSHOT);
 

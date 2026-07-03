@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { OFFICIAL_FANTASY_REALMS_CARDS } from '../data/cards';
+import {
+    CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS,
+    OFFICIAL_FANTASY_REALMS_CARDS,
+} from '../data/cards';
 import { createRuntimeDeck, getFantasyRealmsCardRuleText } from '../foundation';
 import { getFantasyRealmsCardFaceStyle } from '../ui/cardAtlas';
 
@@ -72,6 +75,19 @@ describe('fantasyrealms official card catalog', () => {
 
     it('53 张官方基础卡在 zh-CN 下都映射到正式图集，不卡到 fallback 英文卡面', () => {
         OFFICIAL_FANTASY_REALMS_CARDS.forEach((card) => {
+            const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, 'zh-CN');
+            expect(atlasStyle).not.toBeNull();
+            expect(atlasStyle?.backgroundImage).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
+            expect(atlasStyle?.backgroundImage).not.toContain('fantasyrealms/cards/faces/');
+            expect(atlasStyle?.backgroundSize).toBe('1000% 700%');
+            expect(atlasStyle?.backgroundPosition).toMatch(/^\d+(?:\.\d+)?% \d+(?:\.\d+)?%$/);
+        });
+    });
+
+    it('诅咒宝藏新花色牌在 zh-CN 下都映射到包含扩展正面的正式总图，不能退回文字占位卡面', () => {
+        expect(CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS).toHaveLength(23);
+
+        CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS.forEach((card) => {
             const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, 'zh-CN');
             expect(atlasStyle).not.toBeNull();
             expect(atlasStyle?.backgroundImage).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');

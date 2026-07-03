@@ -5,7 +5,6 @@
  * - fortress_elite（城塞精锐）：2格内每有一个友方城塞单位+1战力
  * - radiant_shot（辉光射击）：每2点魔力+1战力
  * - guardian（守卫）：相邻敌方攻击时必须攻击守卫单位
- * - entangle（缠斗）：相邻敌方远离时造成1伤害
  * - fortress_power（城塞之力）：从弃牌堆拿取城塞单位
  * - guidance（指引）：召唤阶段抓2张牌
  * - holy_arrow（圣光箭）：弃牌获得魔力和战力
@@ -97,7 +96,7 @@ function clearArea(state: SummonerWarsCore, rows: number[], cols: number[]) {
   }
 }
 
-/** 创建城塞骑士卡牌（缠斗+守卫） */
+/** 创建城塞骑士卡牌（缠斗 + 守卫） */
 function makeFortressKnight(id: string): UnitCard {
   return {
     id, cardType: 'unit', name: '城塞骑士', unitClass: 'common',
@@ -548,6 +547,44 @@ describe('城塞骑士 - 守卫 (guardian)', () => {
     expect(attackOther.error).toContain('守卫');
   });
 
+  it('[guardian/L4] 相邻守卫存在时不能改攻建筑', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-attacker',
+      card: makeEnemy('test-attacker'),
+      owner: '1',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-guardian',
+      card: makeFortressKnight('test-guardian'),
+      owner: '0',
+    });
+
+    placeStructure(state, { row: 3, col: 2 }, {
+      cardId: 'test-structure',
+      card: makeStructure('test-structure', { faction: 'paladin' }),
+      owner: '0',
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '1';
+    state.players['1'].attackCount = 0;
+
+    const fullState = { core: state, sys: {} as any };
+    const result = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      payload: { attacker: { row: 4, col: 2 }, target: { row: 3, col: 2 } },
+      playerId: '1',
+      timestamp: fixedTimestamp,
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('守卫');
+  });
+
   it('守卫不相邻攻击者时不强制', () => {
     const state = createPaladinState();
     clearArea(state, [1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
@@ -590,15 +627,21 @@ describe('城塞骑士 - 守卫 (guardian)', () => {
 });
 
 // ============================================================================
-// 缠斗 (entangle) 测试
+// 城塞骑士配置归属测试
 // ============================================================================
 
-describe('城塞骑士 - 缠斗 (entangle)', () => {
-  it('敌方单位远离缠斗单位时受到1点伤害', () => {
+describe('城塞骑士 - 配置归属', () => {
+  it('城塞骑士承载缠斗和守卫', () => {
+    const knight = makeFortressKnight('test-knight');
+    expect(knight.abilities).toContain('guardian');
+    expect(knight.abilities).toContain('entangle');
+  });
+
+  it('敌方单位远离城塞骑士时触发缠斗伤害', () => {
     const state = createPaladinState();
     clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
 
-    // 缠斗骑士
+    // 城塞骑士承载缠斗和守卫。
     placeUnit(state, { row: 4, col: 2 }, {
       cardId: 'test-knight',
       card: makeFortressKnight('test-knight'),
@@ -622,51 +665,14 @@ describe('城塞骑士 - 缠斗 (entangle)', () => {
       to: { row: 4, col: 4 },
     });
 
-    // 应有缠斗伤害事件
+    // 城塞骑士应产生缠斗伤害事件。
     const entangleDamage = events.filter(
       e => e.type === SW_EVENTS.UNIT_DAMAGED && (e.payload as any).reason === 'entangle'
     );
     expect(entangleDamage.length).toBe(1);
-    expect((entangleDamage[0].payload as any).damage).toBe(1);
 
-    // 敌方单位应受到1点伤害
+    // 敌方单位正常完成移动，并受到 1 点缠斗伤害。
     expect(newState.board[4][4].unit?.damage).toBe(1);
-  });
-
-  it('敌方单位不远离时不触发缠斗', () => {
-    const state = createPaladinState();
-    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
-
-    // 缠斗骑士在 (4,2)
-    placeUnit(state, { row: 4, col: 2 }, {
-      cardId: 'test-knight',
-      card: makeFortressKnight('test-knight'),
-      owner: '0',
-    });
-
-    // 敌方单位在 (4,3)，移动到 (3,3) 仍然相邻骑士
-    placeUnit(state, { row: 4, col: 3 }, {
-      cardId: 'test-enemy',
-      card: makeEnemy('test-enemy', { life: 5 }),
-      owner: '1',
-    });
-
-    state.phase = 'move';
-    state.currentPlayer = '1';
-    state.players['1'].moveCount = 0;
-
-    const { events } = executeAndReduce(state, SW_COMMANDS.MOVE_UNIT, {
-      from: { row: 4, col: 3 },
-      to: { row: 3, col: 3 },
-    });
-
-    // 移动到 (3,3) 距离骑士 (4,2) 为2，确实远离了
-    // 但如果移动到仍然相邻的位置则不触发
-    // (3,3) 到 (4,2) 距离=2，所以会触发
-    const entangleDamage = events.filter(
-      e => e.type === SW_EVENTS.UNIT_DAMAGED && (e.payload as any).reason === 'entangle'
-    );
-    expect(entangleDamage.length).toBe(1);
   });
 });
 

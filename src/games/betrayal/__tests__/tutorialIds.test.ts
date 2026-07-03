@@ -24,8 +24,10 @@ describe('Betrayal Board data-tutorial-id 属性', () => {
         });
     }
 
-    it('底部动作栏容器会把 betrayal-actions-zone 暴露给教程系统', () => {
-        expect(boardSource).toContain("containerProps={{ 'data-tutorial-id': 'betrayal-actions-zone' }}");
+    it('底部动作区只保留不可见教程锚点，不再依赖整排动作栏容器', () => {
+        expect(boardSource).not.toContain('data-tutorial-id="betrayal-actions-zone"');
+        expect(boardSource).not.toContain("containerProps={{ 'data-tutorial-id': 'betrayal-actions-zone' }}");
+        expect(boardSource).not.toContain('<ActionBarSkeleton');
     });
 
     it('底部动作按钮会把真实动作 id 暴露给教程系统', () => {

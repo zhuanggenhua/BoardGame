@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PlayerId, EventStreamEntry } from '../../../engine/types';
+import type { CardPreviewRef } from '../../../core';
 import type { DieFace, CharacterId, BonusDieInfo } from '../domain/types';
 import type { CardSpotlightItem } from '../ui/CardSpotlightOverlay';
 import { useEventStreamCursor } from '../../../engine/hooks';
@@ -72,7 +73,7 @@ export interface CardSpotlightState {
 }
 
 /** 浜嬩欢 payload 绫诲瀷锛堜粎浠?payload 鎻愬彇闇€瑕佺殑瀛楁锛?*/
-interface CardEventPayload { playerId: PlayerId; cardId: string }
+interface CardEventPayload { playerId: PlayerId; cardId: string; previewRef?: CardPreviewRef }
 interface BonusDiePayload { value: number; face: DieFace; playerId: PlayerId; targetPlayerId?: PlayerId; effectKey?: string; effectParams?: Record<string, string | number> }
 interface BonusDieRerolledPayload { dieIndex: number; newValue: number; newFace: DieFace; playerId: PlayerId; targetPlayerId?: PlayerId; effectKey?: string; effectParams?: Record<string, string | number> }
 
@@ -304,7 +305,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                     continue;
                 }
 
-                const previewRef = getDiceThroneCardPreviewRef(
+                const previewRef = p.previewRef ?? getDiceThroneCardPreviewRef(
                     p.cardId,
                     resolveSelectableCharacterId(selectedCharacters?.[p.playerId]),
                 );

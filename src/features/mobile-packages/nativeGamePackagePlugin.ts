@@ -672,10 +672,17 @@ export const openNativeDownloadNotificationSettings = async (): Promise<boolean>
 export const cancelNativeGamePackageInstall = async (gameId: string): Promise<boolean> => {
     const plugin = getNativePlugin();
     if (!plugin) {
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'cancel-install-no-native-plugin', {
+            gameId,
+        });
         return false;
     }
 
     try {
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'cancel-install-dispatching', {
+            gameId,
+            sourceStack: new Error('NativeGamePackagePlugin.cancelNativeGamePackageInstall source').stack,
+        });
         await plugin.cancelInstall({ gameId });
         logMobileRuntimeCritical('NativeGamePackagePlugin', 'cancel-install-dispatched', { gameId });
         return true;
@@ -972,10 +979,18 @@ export const createNativeGamePackageInstallHandle = async (
     return {
         cancel: () => {
             cancelled = true;
-            logMobileRuntime('NativeGamePackagePlugin', 'install-cancel-requested', {
+            const cancelSource = new Error('NativeGamePackagePlugin.installHandle.cancel source');
+            logMobileRuntimeCritical('NativeGamePackagePlugin', 'install-cancel-requested', {
                 gameId: manifest.gameId,
-            }, 'warn');
-            void plugin.cancelInstall({ gameId: manifest.gameId }).catch(() => {});
+                currentState,
+                sourceStack: cancelSource.stack,
+            });
+            void plugin.cancelInstall({ gameId: manifest.gameId }).catch((error) => {
+                logMobileRuntimeCritical('NativeGamePackagePlugin', 'install-cancel-request-native-failed', {
+                    gameId: manifest.gameId,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            });
         },
         finished,
     };

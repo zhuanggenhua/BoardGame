@@ -325,6 +325,46 @@
         "finish": "Rear guard leaves a remnant behind; rout loses more troops."
       }
     },
+    "cavalryPlunder": {
+      "title": "Cavalry Plunder",
+      "description": "Cavalry can switch to plunder: take artillery/cavalry counterfire first, then plunder population with surviving cavalry and retreat.",
+      "steps": {
+        "overview": "Cavalry in field battle does not always have to make a normal attack. When the conditions are right, it can declare plunder.",
+        "choosePlunder": "Click the real cavalry plunder button. This sample plunders the defender deck, then removes population, draws cards, and retreats the cavalry.",
+        "plunderResult": "The plunder result is now in the resolution summary: population was removed, and the deck and hand changed together.",
+        "finish": "Cavalry plunder is a real pending-battle entry, not just an after-the-fact note."
+      }
+    },
+    "cavalryEvasion": {
+      "title": "Cavalry Evasion",
+      "description": "Defending cavalry can leave a field battle for an adjacent friendly region without being treated as routed.",
+      "steps": {
+        "overview": "Cavalry can also evade in field battle. Once the defenders leave, the original battle still resolves whether the attacker breaks through.",
+        "chooseEvasion": "Click the real cavalry evasion destination. This sample retreats to an adjacent friendly region.",
+        "evasionResult": "The evasion result is now in the resolution summary: cavalry leaves the battle and enters the retreat destination.",
+        "finish": "Cavalry evasion is a real pending-battle entry, not a waterway note or post-battle retreat explanation."
+      }
+    },
+    "neutralInvasion": {
+      "title": "Neutral Invasion",
+      "description": "When you attack an unoccupied neutral region with population, neutral defenders are generated for the battle.",
+      "steps": {
+        "overview": "Neutral regions are not always empty. If a region has population but no troops, dispatching an attack can generate neutral defenders during resolution.",
+        "resolveNeutral": "Click the real pending-resolution button. This sample attacks Tumed, where population becomes neutral defenders.",
+        "neutralResult": "The resolution summary now records neutral defenders: the attacker did not break through, so the region stays neutral.",
+        "finish": "Neutral invasion is a battle-resolution rule, not just a map note. Control changes only if the attack actually breaks through."
+      }
+    },
+    "waterDispatch": {
+      "title": "Water Dispatch",
+      "description": "Ming can dispatch through anchor-region sea routes; cavalry dispatch can reach farther, but each sea route still commits at most 2 troops.",
+      "steps": {
+        "overview": "Water movement is not just a map note. This sample relieves Dongjiang from Pidao through a real coast/sea-route dispatch candidate, and shows that a sea route can only continue through sea routes.",
+        "chooseWaterTarget": "Click Dongjiang in the real dispatch candidates. The option shows coast/sea route, cost 2, and limit 2; follow-up candidates do not turn a sea route into a land route.",
+        "waterBoundary": "The pending battle is now locked to the sea-route boundary: even with cavalry dispatch, this sea route has battle width 2 and commits at most 2 troops.",
+        "finish": "Water dispatch has entered the real pending-resolution chain; breakthrough still follows normal battle resolution."
+      }
+    },
     "wheelSharedCost": {
       "title": "Wheel Branches And Development Actions",
       "description": "Longer wheel movement refills opponents and pushes the turn into armaments, events, diplomacy, and hiring systems.",

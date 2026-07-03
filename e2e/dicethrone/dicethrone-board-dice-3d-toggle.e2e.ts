@@ -67,11 +67,67 @@ async function saveBoardDiceStageScreenshot(
 
 async function waitForBoardDiceSettled(page: Page): Promise<void> {
     await expect(page.getByTestId('dice-field-3d-canvas')).toBeVisible({ timeout: 8000 });
-    await page.waitForFunction(() => {
+    const readDebugState = async () => page.evaluate(() => {
         const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
         const canvasNode = document.querySelector('[data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
-        if (!stage || !canvasNode) return false;
-        if (canvasNode.dataset.diceTexturesReady !== 'true' || canvasNode.dataset.diceSettled !== 'true') return false;
+        const physicsSource = document.querySelector('[data-testid="dicethrone-board-dice-physics-source"]') as HTMLElement | null;
+        const stageRect = stage?.getBoundingClientRect();
+        const nodes = Array.from(document.querySelectorAll(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )) as HTMLElement[];
+        return {
+            stageRect: stageRect ? {
+                x: Math.round(stageRect.x),
+                y: Math.round(stageRect.y),
+                width: Math.round(stageRect.width),
+                height: Math.round(stageRect.height),
+            } : null,
+            canvasDataset: canvasNode ? { ...canvasNode.dataset } : null,
+            physicsDataset: physicsSource ? { ...physicsSource.dataset } : null,
+            physicsStyle: physicsSource ? {
+                visibility: window.getComputedStyle(physicsSource).visibility,
+                opacity: window.getComputedStyle(physicsSource).opacity,
+            } : null,
+            diceButtons: nodes.map((node) => {
+                const rect = node.getBoundingClientRect();
+                return {
+                    testid: node.dataset.testid ?? node.getAttribute('data-testid'),
+                    selected: node.dataset.selected,
+                    renderMode: node.dataset.renderMode,
+                    rotateX: node.dataset.rotateX,
+                    rotateY: node.dataset.rotateY,
+                    rotateZ: node.dataset.rotateZ,
+                    rect: {
+                        x: Math.round(rect.x),
+                        y: Math.round(rect.y),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height),
+                    },
+                };
+            }),
+        };
+    });
+
+    try {
+        await page.waitForFunction(() => {
+        const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+        const canvasNode = document.querySelector('[data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+        const physicsSource = document.querySelector('[data-testid="dicethrone-board-dice-physics-source"]') as HTMLElement | null;
+        if (!stage || !canvasNode || !physicsSource) return false;
+        if (
+            canvasNode.dataset.diceTexturesReady !== 'true'
+            || canvasNode.dataset.diceSettled !== 'true'
+            || canvasNode.dataset.diceVisualSettled !== 'true'
+        ) return false;
+        if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
+        if (canvasNode.dataset.dicePhysicsMode !== 'physics-only') return false;
+        if (Number(canvasNode.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) > 0.004) return false;
+        if (Number(canvasNode.dataset.diceMaxTravel ?? Number.POSITIVE_INFINITY) > 0.012) return false;
+        if (physicsSource.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
+        if (physicsSource.dataset.dicePhysicsMode !== 'physics-only') return false;
+        if (physicsSource.dataset.diceSettled !== 'true') return false;
+        const physicsStyle = window.getComputedStyle(physicsSource);
+        if (physicsStyle.visibility !== 'hidden' && Number(physicsStyle.opacity) > 0.01) return false;
 
         const stageRect = stage.getBoundingClientRect();
         const nodes = Array.from(document.querySelectorAll(
@@ -111,7 +167,30 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
             return false;
         }
         return performance.now() - (win.__DT_BOARD_DICE_STABLE_SINCE__ ?? 0) >= 360;
-    }, undefined, { timeout: 8000 });
+        }, undefined, { timeout: 8000 });
+    } catch (error) {
+        const debugState = await readDebugState();
+        throw new Error(`棋盘 3D 骰子未达到视觉落地门槛: ${JSON.stringify(debugState)}\n${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+async function clickBoardDieCenter(page: Page, dieId: number): Promise<void> {
+    const point = await page.evaluate((id) => {
+        const node = document.querySelector(
+            `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${id}"]`,
+        ) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return null;
+        return {
+            x: rect.left + (rect.width / 2),
+            y: rect.top + (rect.height / 2),
+        };
+    }, dieId);
+    if (!point) {
+        throw new Error(`未能获取棋盘骰子 ${dieId} 的中心点击坐标`);
+    }
+    await page.mouse.click(point.x, point.y);
 }
 
 async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): Promise<void> {
@@ -123,6 +202,9 @@ async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): P
 
     await expect(page.getByTestId('dice-field-3d-underlay')).toBeVisible({ timeout: 3000 });
     await expect(page.locator('[data-testid^="die-selection-underlay-"]')).toHaveCount(0);
+    await expect(page.getByTestId('dice-field-3d-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
+    await expect(page.getByTestId('dice-field-3d-canvas')).toHaveAttribute('data-dice-physics-mode', 'physics-only');
+    await expect(page.getByTestId('dicethrone-board-dice-physics-source')).toHaveAttribute('data-dice-physics-mode', 'physics-only');
     await expect(page.locator(
         '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"][data-selected="true"] .border-\\[\\#f2c14e\\]',
     )).toHaveCount(0);
@@ -284,8 +366,8 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const secondDieButton = page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-1"]');
         await expect(firstDieButton).toBeVisible({ timeout: 5000 });
         await expect(secondDieButton).toBeVisible({ timeout: 5000 });
-        await firstDieButton.click();
-        await secondDieButton.click();
+        await clickBoardDieCenter(page, 0);
+        await clickBoardDieCenter(page, 1);
         await expectBoardDiceSelectionUnderlay(page, [0, 1]);
 
         const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).first();
@@ -365,12 +447,13 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+        await waitForBoardDiceSettled(page);
 
         const firstBoardDie = page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]');
         await expect(firstBoardDie).toBeVisible({ timeout: 5000 });
-        await firstBoardDie.click();
+        await clickBoardDieCenter(page, 0);
 
-        await expect(page.getByTestId('locked-die-return-0')).toBeVisible({ timeout: 1000 });
+        await expect(page.getByTestId('locked-die-return-0')).toBeVisible({ timeout: 1500 });
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toBeVisible({ timeout: 5000 });
         const railFirstDie = page.locator('[data-tutorial-id="dice-tray"] [data-testid="die-button-0"]');
         await expect(railFirstDie).toBeVisible({ timeout: 5000 });

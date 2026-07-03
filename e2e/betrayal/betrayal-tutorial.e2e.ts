@@ -56,7 +56,8 @@ test.describe('山屋惊魂教程最小真实链路', () => {
 
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await waitForStep(page, 'objective-and-turn');
-        await expect(page.locator('[data-tutorial-id="betrayal-actions-zone"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="betrayal-actions-zone"]')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('底部 5 个主动作');
         await saveScreenshot(page, STEP_01);
 

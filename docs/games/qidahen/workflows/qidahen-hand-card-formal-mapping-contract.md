@@ -69,6 +69,13 @@
 
 ## 可重复校验脚本
 
+- `npm run verify:qidahen:handcards`
+  - 先运行图片验收产物校验，再运行人工录入反写校验。
+  - 当前没有任何 `passed` 图片候选或“已确认”普通手牌行时，必须输出“不允许反写正式手牌规则映射”，并要求 OpenSpec `2.4 / 4.5` 保持未完成。
+- `scripts/verify/qidahen-hand-card-image-validation.mjs`
+  - 读取 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json`。
+  - 校验图片条目统计、逐项状态、子代理结果和主线程抽样对照记录。
+  - 当前 `passed=0` 时同步检查 OpenSpec `2.4 / 4.5` 必须保持未完成。
 - `scripts/verify/qidahen-hand-card-manual-entry.mjs`
   - 读取 `qidahen-hand-card-manual-entry-matrix.md`、`qidahen-hand-card-human-review-checklist.md`、`qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md` 和 `qidahen-hand-card-runtime-atlas-manual-entry-matrix.md`。
   - 只校验“已确认”行是否满足反写字段门槛。

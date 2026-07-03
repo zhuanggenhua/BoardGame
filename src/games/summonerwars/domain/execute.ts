@@ -181,6 +181,17 @@ export function executeCommand(
       const unit = getUnitAt(core, from);
       const unitAbilities = unit ? getUnitAbilities(unit, core) : [];
       if (unit) {
+        events.push({
+          type: SW_EVENTS.UNIT_MOVED,
+          payload: {
+            from,
+            to,
+            unitId: unit.instanceId,
+            path: getMovePath(from, to, core),
+          },
+          timestamp,
+        });
+
         // 缠斗检查：离开时相邻敌方有缠斗技能的单位造成1点伤害
         const entangleUnits = getEntangleUnits(core, from, unit.owner);
         for (const eu of entangleUnits) {
@@ -191,7 +202,7 @@ export function executeCommand(
             events.push({
               type: SW_EVENTS.UNIT_DAMAGED,
               payload: {
-                position: from,
+                position: to,
                 damage: 1,
                 reason: 'entangle',
                 sourceUnitId: eu.instanceId,
@@ -201,17 +212,6 @@ export function executeCommand(
             });
           }
         }
-
-        events.push({
-          type: SW_EVENTS.UNIT_MOVED,
-          payload: { 
-            from, 
-            to, 
-            unitId: unit.instanceId,
-            path: getMovePath(from, to, core),
-          },
-          timestamp,
-        });
 
         // 冲锋加成：直线移动3+格时获得本回合+1战力，不占用真实充能
         if (unitAbilities.includes('charge')) {

@@ -934,8 +934,8 @@
     "images/pyromancer/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "806ebce242a2976dc624522a94128667793cb217ba6c7e863959cf9c511d6462",
-          "bytes": 445434,
+          "sha256": "f2e22ca4a5c1219b70a07a04aee24c3772daa7b45e8336fabf08e6d1312f2a28",
+          "bytes": 431464,
           "mime": "image/webp"
         }
       }
@@ -961,8 +961,8 @@
     "images/pyromancer/player-board": {
       "variants": {
         "png": {
-          "sha256": "7a5181be493f85b090bfd8b291ac818d580450e622dad3c748790f9bf07bb939",
-          "bytes": 10679102,
+          "sha256": "f6121f44c06c076bac3f017e8fffc9b8dfc389cd90851484f97dc813e42e1742",
+          "bytes": 10753329,
           "mime": "image/png"
         }
       }

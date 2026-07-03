@@ -1,29 +1,15 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
-export interface DiceBoxProjectedLayout {
-    id: number;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-    rotateX: number;
-    rotateY: number;
-    rotateZ: number;
-}
+import type {
+    DicePhysicsMotionSnapshot,
+    DicePhysicsProjectedLayout,
+    DicePhysicsRendererMode,
+    DicePhysicsState,
+} from '../dice-physics/types';
 
-export interface DiceBoxMotionSnapshot {
-    x: number;
-    y: number;
-    z: number;
-    rotateX: number;
-    rotateY: number;
-    rotateZ: number;
-}
+export type DiceBoxProjectedLayout = DicePhysicsProjectedLayout;
+export type DiceBoxMotionSnapshot = DicePhysicsMotionSnapshot;
 
 export type DiceBoxMaterial = NonNullable<DiceBoxConfig['theme_material']>;
 export type DiceBoxCustomColorset = NonNullable<DiceBoxConfig['theme_customColorset']>;
@@ -53,6 +39,7 @@ export interface DiceBoxDieSkin {
 
 export interface DiceBoxEngineConfig {
     styleProfile?: DiceBoxStyleProfile;
+    rendererMode?: DicePhysicsRendererMode;
     /**
      * @deprecated Use styleProfile.customColorset. Kept temporarily so callers can
      * be migrated without coupling game UI to third-party option names.
@@ -138,6 +125,12 @@ export class DiceBoxThreeEngine {
         box.renderer.domElement.style.height = '100%';
         box.renderer.domElement.style.display = 'block';
         box.renderer.domElement.style.pointerEvents = 'none';
+        box.renderer.domElement.dataset.dicePhysicsSource = 'dice-box-threejs';
+        if ((config?.rendererMode ?? 'debug-visible') === 'physics-only') {
+            box.renderer.domElement.style.opacity = '0';
+            box.renderer.domElement.style.visibility = 'hidden';
+            box.renderer.domElement.setAttribute('aria-hidden', 'true');
+        }
         return new DiceBoxThreeEngine(box, container);
     }
 
@@ -214,6 +207,18 @@ export class DiceBoxThreeEngine {
             rotateX: die.rotation.x,
             rotateY: die.rotation.y,
             rotateZ: die.rotation.z,
+        };
+    }
+
+    getPhysicsState(index: number, id: number, settled: boolean): DicePhysicsState | null {
+        const layout = this.getProjectedLayout(index, id);
+        const motion = this.getMotionSnapshot(index);
+        if (!layout || !motion) return null;
+        return {
+            id,
+            layout,
+            motion,
+            settled,
         };
     }
 

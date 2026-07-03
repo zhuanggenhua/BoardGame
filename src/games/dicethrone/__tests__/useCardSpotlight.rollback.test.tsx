@@ -6,15 +6,21 @@ import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../..
 import type { EventStreamEntry } from '../../../engine/types';
 import { useCardSpotlight } from '../hooks/useCardSpotlight';
 
-function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+function HookProbe({
+    streamEntries,
+    selectedCharacters = {
+        '0': 'monk',
+        '1': 'gunslinger',
+    },
+}: {
+    streamEntries: EventStreamEntry[];
+    selectedCharacters?: Record<string, any>;
+}) {
     const state = useCardSpotlight({
         eventStreamEntries: streamEntries,
         currentPlayerId: '0',
         opponentName: '对手',
-        selectedCharacters: {
-            '0': 'monk',
-            '1': 'gunslinger',
-        },
+        selectedCharacters,
     });
 
     return (
@@ -28,6 +34,64 @@ function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
 }
 
 describe('useCardSpotlight rollback consumer', () => {
+    it('uses the card preview from the play event instead of recalculating by viewer state', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const playedByGunslingerEntry: EventStreamEntry = {
+            id: 1,
+            event: {
+                type: 'CARD_PLAYED',
+                payload: {
+                    playerId: '1',
+                    cardId: 'card-next-time',
+                    previewRef: {
+                        type: 'atlas',
+                        atlasId: 'dicethrone-gunslinger-cards',
+                        index: 9,
+                    },
+                },
+                timestamp: 1000,
+            },
+        };
+
+        const view = render(
+            <HookProbe
+                streamEntries={[]}
+                selectedCharacters={{
+                    '0': 'monk',
+                    // Simulates a stale or missing opponent hero mapping in PvP.
+                    '1': 'monk',
+                }}
+            />,
+            { wrapper },
+        );
+
+        view.rerender(
+            <HookProbe
+                streamEntries={[playedByGunslingerEntry]}
+                selectedCharacters={{
+                    '0': 'monk',
+                    // Simulates a stale or missing opponent hero mapping in PvP.
+                    '1': 'monk',
+                }}
+            />,
+        );
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].previewRef).toEqual({
+                type: 'atlas',
+                atlasId: 'dicethrone-gunslinger-cards',
+                index: 9,
+            });
+        });
+    });
+
     it('clears stale spotlight and bonus-die state on optimistic rollback signal and does not replay restored old events', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,

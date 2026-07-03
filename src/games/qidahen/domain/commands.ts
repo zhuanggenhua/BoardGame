@@ -38,6 +38,7 @@ export const QIDAHEN_COMMANDS = {
     EXECUTE_SELECTED_ACTION: 'EXECUTE_SELECTED_ACTION',
     EXECUTE_ACTION: 'EXECUTE_ACTION',
     RESOLVE_PENDING_ACTION: 'RESOLVE_PENDING_ACTION',
+    PLAY_TACTIC_CARD: 'PLAY_TACTIC_CARD',
     RESOLVE_POST_BATTLE_DECISION: 'RESOLVE_POST_BATTLE_DECISION',
     RESOLVE_KHAN_EDICT_CHOICE: 'RESOLVE_KHAN_EDICT_CHOICE',
     RESOLVE_DIPLOMACY_CHOICE: 'RESOLVE_DIPLOMACY_CHOICE',
@@ -407,6 +408,27 @@ export function validate(
             return getQidahenPendingTargetActionForCore(state.core, currentInteraction)
                 ? { valid: true }
                 : { valid: false, error: 'noPendingAction' };
+        case QIDAHEN_COMMANDS.PLAY_TACTIC_CARD: {
+            if (hasPendingScenarioVote(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            const pendingTargetAction = getQidahenPendingTargetActionForCore(state.core, currentInteraction);
+            if (!pendingTargetAction) {
+                return { valid: false, error: 'noPendingAction' };
+            }
+            const attackerPlayerId = state.core.factions[pendingTargetAction.attackerFactionId]?.playerId;
+            if (attackerPlayerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return state.core.handCards.some((card) => (
+                card.id === command.payload.cardId
+                && card.faction === pendingTargetAction.attackerFactionId
+                && card.cardKind === 'tactic'
+                && card.status !== 'disabled'
+            ))
+                ? { valid: true }
+                : { valid: false, error: 'unknownPaymentCard' };
+        }
         case QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };

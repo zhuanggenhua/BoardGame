@@ -5,7 +5,9 @@ import { reduce } from '../domain/reducer';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
 import { validateCommand } from '../domain/commandValidation';
 import { RESOURCE_IDS } from '../domain/resources';
-import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../domain/ids';
+import { WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';
+import { getAvailableAbilityIds } from '../domain/rules';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 import { MAX_HEALTH } from '../domain/types';
 import { DiceThroneDomain } from '../domain';
@@ -176,6 +178,64 @@ describe('DiceThrone Treant Token 机制', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(0);
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(41);
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(2);
+    });
+
+    it('野性怒吼 II 升级后 12345 大顺子应可选择，野蛮生长 II 仍只吃 2 树枝 + 3 树叶', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollConfirmed = true;
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map(ability =>
+            ability.id === 'wild-growth' ? { ...WILD_GROWTH_2, id: 'wild-growth' } :
+            ability.id === 'wild-roar' ? { ...WILD_ROAR_2, id: 'wild-roar' } :
+            ability
+        );
+        state.core.players['0'].abilityLevels = {
+            ...state.core.players['0'].abilityLevels,
+            'wild-growth': 2,
+            'wild-roar': 2,
+        };
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            ownerId: '0',
+            value: index + 1,
+            symbol: index < 3 ? TREANT_DICE_FACE_IDS.BRANCH : TREANT_DICE_FACE_IDS.LEAF,
+            symbols: [index < 3 ? TREANT_DICE_FACE_IDS.BRANCH : TREANT_DICE_FACE_IDS.LEAF],
+        }));
+
+        const largeStraightAvailable = getAvailableAbilityIds(state.core, '0', 'offensiveRoll');
+        expect(largeStraightAvailable).toContain('wild-roar');
+        expect(largeStraightAvailable).not.toContain('wild-growth-2-main');
+        expect(validateCommand(
+            state.core,
+            command('SELECT_ABILITY', '0', { abilityId: 'wild-roar' }),
+            'offensiveRoll',
+        ).valid).toBe(true);
+        expect(validateCommand(
+            state.core,
+            command('SELECT_ABILITY', '0', { abilityId: 'wild-growth-2-main' }),
+            'offensiveRoll',
+        ).valid).toBe(false);
+
+        state.core.dice = state.core.dice.map((die, index) => {
+            const values = [1, 2, 4, 4, 5];
+            return {
+                ...die,
+                ownerId: '0',
+                value: values[index] ?? 1,
+                symbol: index < 2 ? TREANT_DICE_FACE_IDS.BRANCH : TREANT_DICE_FACE_IDS.LEAF,
+                symbols: [index < 2 ? TREANT_DICE_FACE_IDS.BRANCH : TREANT_DICE_FACE_IDS.LEAF],
+            };
+        });
+
+        const wildGrowthAvailable = getAvailableAbilityIds(state.core, '0', 'offensiveRoll');
+        expect(wildGrowthAvailable).toContain('wild-growth-2-main');
+        expect(wildGrowthAvailable).not.toContain('wild-roar');
+        expect(validateCommand(
+            state.core,
+            command('SELECT_ABILITY', '0', { abilityId: 'wild-growth-2-main' }),
+            'offensiveRoll',
+        ).valid).toBe(true);
     });
 
     it('树灵主动动作应拒绝非法 actionIndex 或未知 passive 且不消耗 token', () => {

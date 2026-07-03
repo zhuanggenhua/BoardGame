@@ -393,6 +393,8 @@ export interface BuriedCardOnBase {
 
 /** 场上的基地 */
 export interface BaseInPlay {
+    /** 运行时基地实例身份；槽位编号只表示当前位置，不表示长期身份。 */
+    instanceId?: string;
     defId: string;
     minions: MinionOnBase[];
     /** 持续行动卡列表 */
@@ -772,6 +774,8 @@ export interface SmashUpCore {
     turnPhase?: string;
     /** UID 自增计数器 */
     nextUid: number;
+    /** 运行时基地实例 id 自增计数器。 */
+    nextBaseInstanceId?: number;
     /** 游戏结果 */
     gameResult?: GameOverResult;
 
@@ -855,10 +859,14 @@ export interface SmashUpCore {
     movedToBasesThisTurn?: Record<number, Record<PlayerId, boolean>>;
     /** 海盗 POD：私掠者每回合一次触发追踪（minionUid 列表） */
     buccaneerPodUsedUids?: string[];
-    /** 临时临界点修正（回合结束自动清零，baseIndex → delta） */
+    /** 临时临界点修正（回合结束自动清零，旧存档兼容：baseIndex → delta） */
     tempBreakpointModifiers?: Record<number, number>;
-    /** 临时玩家-基地总力量修正（回合开始自动清零，baseIndex → playerId → delta） */
+    /** 临时临界点修正（运行时基地实例 id → delta） */
+    tempBreakpointModifiersByBaseId?: Record<string, number>;
+    /** 临时玩家-基地总力量修正（回合开始自动清零，旧存档兼容：baseIndex → playerId → delta） */
     tempBasePowerModifiers?: Record<number, Record<PlayerId, number>>;
+    /** 临时玩家-基地总力量修正（运行时基地实例 id → playerId → delta） */
+    tempBasePowerModifiersByBaseId?: Record<string, Record<PlayerId, number>>;
     /**
      * 本回合各限制组在各基地的 special 能力使用记录
      * key = limitGroup（如 'ninja_special'），value = 已使用的 baseIndex 列表
@@ -1326,6 +1334,7 @@ export interface BaseClearedEvent extends GameEvent<'su:base_cleared'> {
     payload: {
         baseIndex: number;
         baseDefId: string;
+        baseInstanceId?: string;
     };
 }
 
@@ -1413,6 +1422,8 @@ export interface BaseReplacedEvent extends GameEvent<'su:base_replaced'> {
         baseIndex: number;
         oldBaseDefId: string;
         newBaseDefId: string;
+        oldBaseInstanceId?: string;
+        newBaseInstanceId?: string;
         /** 为 true 时保留基地上的随从和 ongoing，仅替换 defId（如 terraform） */
         keepCards?: boolean;
         /** 某些效果会在后续事件里显式重写 baseDeck/baseDiscard，允许跳过 newBaseDefId 不在 baseDeck 的告警。 */
@@ -1608,6 +1619,8 @@ export interface AllFactionsSelectedEvent extends GameEvent<'su:all_factions_sel
         bases?: BaseInPlay[];
         /** 按派系筛选后的基地牌库 */
         baseDeck?: string[];
+        /** 场上基地初始化后下一个运行时基地实例序号 */
+        nextBaseInstanceId?: number;
         /** 起手无随从的玩家列表（规则：若无随从“可”重抽一次） */
         mulliganPlayers?: PlayerId[];
     };
@@ -1995,6 +2008,7 @@ export interface TempBasePowerModifiedEvent extends GameEvent<typeof SU_EVENTS.T
     payload: {
         playerId: PlayerId;
         baseIndex: number;
+        baseInstanceId?: string;
         amount: number;
         reason: string;
     };
@@ -2020,6 +2034,7 @@ export interface PermanentPowerAddedEvent extends GameEvent<typeof SU_EVENTS.PER
 export interface BreakpointModifiedEvent extends GameEvent<typeof SU_EVENTS.BREAKPOINT_MODIFIED> {
     payload: {
         baseIndex: number;
+        baseInstanceId?: string;
         delta: number;
         reason: string;
     };

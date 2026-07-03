@@ -68,7 +68,11 @@ export function createStartedFirstScenarioCore(playerIds: string[] = ['0', '1', 
     let core = BetrayalDomain.setup(playerIds, BETRAYAL_FIXED_RANDOM);
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
-    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', { scenarioId: 'first-scenario' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', { scenarioId: 'first-scenario' });
+    core.eventOrder = [
+        { name: '测试中性事件', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+    ];
+    return core;
 }
 
 export function createFirstScenarioHauntCore(): BetrayalCore {

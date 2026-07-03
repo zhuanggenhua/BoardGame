@@ -57,6 +57,12 @@ import type { PlayerId } from '../../../engine/types';
 import { SU_EVENTS, SU_EVENT_TYPES, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
 import { getBaseDef, getMinionDef, getCardDef, getFactionTitan } from '../data/cards';
 import {
+    bindEntityScopedValue,
+    clearEntityScopedValue,
+    createEntityId,
+    resolveEntityRef,
+} from '../../../engine/primitives';
+import {
     buildCardInstanceFromObjectRef,
     enrichCardInstanceWithObjectRef,
     getCardTransferObjectRef,
@@ -80,6 +86,83 @@ function buildCompletedDraftPlayers(
     playerSelections: Record<PlayerId, string[]>,
 ): PlayerId[] {
     return turnOrder.filter((playerId) => (playerSelections[playerId] ?? []).length >= 2);
+}
+
+function removeTempBreakpointModifierAtBaseIndex(
+    modifiers: Record<number, number> | undefined,
+    baseIndex: number,
+): Record<number, number> | undefined {
+    if (!modifiers) return undefined;
+    const adjusted = Object.entries(modifiers).reduce<Record<number, number>>((acc, [rawIndex, delta]) => {
+        const index = Number(rawIndex);
+        if (!Number.isInteger(index) || index === baseIndex) return acc;
+        acc[index > baseIndex ? index - 1 : index] = delta;
+        return acc;
+    }, {});
+    return Object.keys(adjusted).length > 0 ? adjusted : undefined;
+}
+
+function removeTempBasePowerModifierAtBaseIndex(
+    modifiers: Record<number, Record<PlayerId, number>> | undefined,
+    baseIndex: number,
+): Record<number, Record<PlayerId, number>> | undefined {
+    if (!modifiers) return undefined;
+    const adjusted = Object.entries(modifiers).reduce<Record<number, Record<PlayerId, number>>>((acc, [rawIndex, deltaByPlayer]) => {
+        const index = Number(rawIndex);
+        if (!Number.isInteger(index) || index === baseIndex) return acc;
+        acc[index > baseIndex ? index - 1 : index] = deltaByPlayer;
+        return acc;
+    }, {});
+    return Object.keys(adjusted).length > 0 ? adjusted : undefined;
+}
+
+function insertTempBreakpointModifierBaseSlot(
+    modifiers: Record<number, number> | undefined,
+    baseIndex: number,
+): Record<number, number> | undefined {
+    if (!modifiers) return undefined;
+    const adjusted = Object.entries(modifiers).reduce<Record<number, number>>((acc, [rawIndex, delta]) => {
+        const index = Number(rawIndex);
+        if (!Number.isInteger(index)) return acc;
+        acc[index >= baseIndex ? index + 1 : index] = delta;
+        return acc;
+    }, {});
+    return Object.keys(adjusted).length > 0 ? adjusted : undefined;
+}
+
+function insertTempBasePowerModifierBaseSlot(
+    modifiers: Record<number, Record<PlayerId, number>> | undefined,
+    baseIndex: number,
+): Record<number, Record<PlayerId, number>> | undefined {
+    if (!modifiers) return undefined;
+    const adjusted = Object.entries(modifiers).reduce<Record<number, Record<PlayerId, number>>>((acc, [rawIndex, deltaByPlayer]) => {
+        const index = Number(rawIndex);
+        if (!Number.isInteger(index)) return acc;
+        acc[index >= baseIndex ? index + 1 : index] = deltaByPlayer;
+        return acc;
+    }, {});
+    return Object.keys(adjusted).length > 0 ? adjusted : undefined;
+}
+
+function createNextBaseInstanceId(state: SmashUpCore): { instanceId: string; nextBaseInstanceId: number } {
+    const ordinal = state.nextBaseInstanceId ?? ((state.bases?.length ?? 0) + 1);
+    return {
+        instanceId: createEntityId('smashup:base', ordinal),
+        nextBaseInstanceId: ordinal + 1,
+    };
+}
+
+function resolveBaseInstanceId(state: SmashUpCore, baseIndex: number, explicitBaseInstanceId?: string): string | undefined {
+    if (explicitBaseInstanceId) {
+        const result = resolveEntityRef(
+            { entityId: explicitBaseInstanceId, kind: 'smashup:base' },
+            state.bases
+                .filter((base): base is BaseInPlay & { instanceId: string } => !!base.instanceId)
+                .map(base => ({ ...base, entityId: base.instanceId, kind: 'smashup:base' as const })),
+        );
+        if (result.ok) return result.entity.entityId;
+    }
+    return state.bases[baseIndex]?.instanceId;
 }
 
 function getNextDraftPlayerIndex(
@@ -397,7 +480,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ALL_FACTIONS_SELECTED: {
-            const { readiedPlayers, nextUid, bases, baseDeck } = event.payload;
+            const { readiedPlayers, nextUid, bases, baseDeck, nextBaseInstanceId } = event.payload;
             const newPlayers: Record<PlayerId, PlayerState> = { ...state.players };
             const titans: TitanState[] = [];
             const titansEnabled = (state.enabledExpansions ?? ['titans']).includes('titans');
@@ -450,6 +533,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 titans,
                 bases: bases ?? state.bases,
                 baseDeck: baseDeck ?? state.baseDeck,
+                nextBaseInstanceId: nextBaseInstanceId ?? state.nextBaseInstanceId,
             };
         }
 
@@ -1305,6 +1389,20 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     .filter(i => i !== baseIndex)
                     .map(i => i > baseIndex ? i - 1 : i)
                 : undefined;
+            const newTempBreakpointModifiers = removeTempBreakpointModifierAtBaseIndex(
+                state.tempBreakpointModifiers,
+                baseIndex,
+            );
+            const newTempBasePowerModifiers = removeTempBasePowerModifierAtBaseIndex(
+                state.tempBasePowerModifiers,
+                baseIndex,
+            );
+            const newTempBreakpointModifiersByBaseId = scoredBase.instanceId
+                ? clearEntityScopedValue(state.tempBreakpointModifiersByBaseId, scoredBase.instanceId)
+                : state.tempBreakpointModifiersByBaseId;
+            const newTempBasePowerModifiersByBaseId = scoredBase.instanceId
+                ? clearEntityScopedValue(state.tempBasePowerModifiersByBaseId, scoredBase.instanceId)
+                : state.tempBasePowerModifiersByBaseId;
             return {
                 ...state,
                 players: newPlayers,
@@ -1312,6 +1410,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 titans: newTitans,
                 baseDiscard: newBaseDiscard,
                 scoringEligibleBaseIndices: newEligible?.length ? newEligible : undefined,
+                tempBreakpointModifiers: newTempBreakpointModifiers,
+                tempBreakpointModifiersByBaseId: newTempBreakpointModifiersByBaseId,
+                tempBasePowerModifiers: newTempBasePowerModifiers,
+                tempBasePowerModifiersByBaseId: newTempBasePowerModifiersByBaseId,
             };
         }
 
@@ -1890,7 +1992,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.BASE_REPLACED: {
-            const { baseIndex, oldBaseDefId, newBaseDefId, keepCards, allowMissingFromBaseDeck } = (event as BaseReplacedEvent).payload;
+            const {
+                baseIndex,
+                oldBaseDefId,
+                newBaseDefId,
+                keepCards,
+                allowMissingFromBaseDeck,
+                newBaseInstanceId,
+            } = (event as BaseReplacedEvent).payload;
             // ✅ 修复：使用 indexOf + slice 移除第一个匹配的基地，而不是 filter
             // 原因：filter 会移除所有匹配的基地，如果 baseDeck 中有重复基地会出错
             // 而且 scoreOneBase 中已经用 slice(1) 移除了第一个基地，这里应该保持一致
@@ -1921,9 +2030,12 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             
             // keepCards 模式：仅替换 defId，保留随从和 ongoing，旧 defId 回牌库
             if (keepCards) {
+                const allocatedBaseIdentity = createNextBaseInstanceId(state);
+                const replacementId = newBaseInstanceId ?? allocatedBaseIdentity.instanceId;
+                const nextBaseInstanceId = newBaseInstanceId ? state.nextBaseInstanceId : allocatedBaseIdentity.nextBaseInstanceId;
                 const updatedBases = state.bases.map((base, i) => {
                     if (i !== baseIndex) return base;
-                    return { ...base, defId: newBaseDefId };
+                    return { ...base, instanceId: replacementId, defId: newBaseDefId };
                 });
                 const removedTitanUids = new Set(
                     (state.titans ?? [])
@@ -1950,6 +2062,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     ...state,
                     bases: updatedBases,
                     baseDeck: [...newBaseDeck, oldBaseDefId],
+                    ...(nextBaseInstanceId ? { nextBaseInstanceId } : {}),
                     ...(updatedTitans ? { titans: updatedTitans } : {}),
                     ...(removedTitanUids.size > 0
                         ? {
@@ -1964,7 +2077,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 };
             }
             // 默认模式：插入新空基地（配合 BASE_SCORED 删除旧基地后使用）
+            const nextBaseIdentity = newBaseInstanceId
+                ? { instanceId: newBaseInstanceId, nextBaseInstanceId: state.nextBaseInstanceId }
+                : createNextBaseInstanceId(state);
             const newBase: BaseInPlay = {
+                instanceId: nextBaseIdentity.instanceId,
                 defId: newBaseDefId,
                 minions: [],
                 ongoingActions: [],
@@ -1989,15 +2106,26 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const adjustedEligible = prevEligible
                 ? prevEligible.map(i => i >= baseIndex ? i + 1 : i)
                 : undefined;
+            const adjustedTempBreakpointModifiers = insertTempBreakpointModifierBaseSlot(
+                state.tempBreakpointModifiers,
+                baseIndex,
+            );
+            const adjustedTempBasePowerModifiers = insertTempBasePowerModifierBaseSlot(
+                state.tempBasePowerModifiers,
+                baseIndex,
+            );
             return {
                 ...state,
                 bases: newBases,
                 titans: adjustedTitans,
                 baseDeck: newBaseDeck,
+                ...(nextBaseIdentity.nextBaseInstanceId ? { nextBaseInstanceId: nextBaseIdentity.nextBaseInstanceId } : {}),
                 beforeScoringTriggeredBases: cleanedBeforeScoring.length > 0 ? cleanedBeforeScoring : undefined,
                 whenScoringTriggeredBases: cleanedWhenScoring.length > 0 ? cleanedWhenScoring : undefined,
                 afterScoringTriggeredBases: cleanedAfterScoring.length > 0 ? cleanedAfterScoring : undefined,
                 ...(adjustedEligible ? { scoringEligibleBaseIndices: adjustedEligible } : {}),
+                tempBreakpointModifiers: adjustedTempBreakpointModifiers,
+                tempBasePowerModifiers: adjustedTempBasePowerModifiers,
             };
         }
 
@@ -3444,21 +3572,44 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 临界点临时修正（回合结束自动清零）
         case SU_EVENTS.BREAKPOINT_MODIFIED: {
-            const { baseIndex, delta } = (event as BreakpointModifiedEvent).payload;
+            const { baseIndex, baseInstanceId, delta } = (event as BreakpointModifiedEvent).payload;
             const prev = state.tempBreakpointModifiers ?? {};
+            const resolvedBaseInstanceId = resolveBaseInstanceId(state, baseIndex, baseInstanceId);
+            const prevByBaseId = state.tempBreakpointModifiersByBaseId ?? {};
+            const nextByBaseId = resolvedBaseInstanceId
+                ? bindEntityScopedValue(
+                    prevByBaseId,
+                    { entityId: resolvedBaseInstanceId, kind: 'smashup:base' },
+                    (prevByBaseId[resolvedBaseInstanceId] ?? 0) + delta,
+                )
+                : state.tempBreakpointModifiersByBaseId;
             return {
                 ...state,
                 tempBreakpointModifiers: {
                     ...prev,
                     [baseIndex]: (prev[baseIndex] ?? 0) + delta,
                 },
+                tempBreakpointModifiersByBaseId: nextByBaseId,
             };
         }
 
         case SU_EVENTS.TEMP_BASE_POWER_MODIFIED: {
-            const { baseIndex, playerId, amount } = (event as TempBasePowerModifiedEvent).payload;
+            const { baseIndex, baseInstanceId, playerId, amount } = (event as TempBasePowerModifiedEvent).payload;
             const prev = state.tempBasePowerModifiers ?? {};
             const basePrev = prev[baseIndex] ?? {};
+            const resolvedBaseInstanceId = resolveBaseInstanceId(state, baseIndex, baseInstanceId);
+            const prevByBaseId = state.tempBasePowerModifiersByBaseId ?? {};
+            const basePrevById = resolvedBaseInstanceId ? (prevByBaseId[resolvedBaseInstanceId] ?? {}) : {};
+            const nextByBaseId = resolvedBaseInstanceId
+                ? bindEntityScopedValue(
+                    prevByBaseId,
+                    { entityId: resolvedBaseInstanceId, kind: 'smashup:base' },
+                    {
+                        ...basePrevById,
+                        [playerId]: (basePrevById[playerId] ?? 0) + amount,
+                    },
+                )
+                : state.tempBasePowerModifiersByBaseId;
             return {
                 ...state,
                 tempBasePowerModifiers: {
@@ -3468,6 +3619,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         [playerId]: (basePrev[playerId] ?? 0) + amount,
                     },
                 },
+                tempBasePowerModifiersByBaseId: nextByBaseId,
             };
         }
 

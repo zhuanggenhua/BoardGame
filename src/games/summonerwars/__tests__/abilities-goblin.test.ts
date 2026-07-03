@@ -103,7 +103,7 @@ function makeBeastRider(id: string): UnitCard {
   };
 }
 
-/** 创建投石手卡牌（凶残） */
+/** 创建部落投石手卡牌 */
 function makeSlinger(id: string): UnitCard {
   return {
     id, cardType: 'unit', name: '部落投石手', unitClass: 'common',
@@ -283,6 +283,46 @@ describe('部落抓附手 - 禁足 (immobile)', () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain('禁足');
   });
+
+  it('[immobile/L4] 只拒绝本单位普通移动入口，不影响其它单位移动', () => {
+    const state = createGoblinState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-grabber',
+      card: makeGrabber('test-grabber'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 5, col: 2 }, {
+      cardId: 'test-rider',
+      card: makeBeastRider('test-rider'),
+      owner: '0',
+    });
+
+    state.phase = 'move';
+    state.currentPlayer = '0';
+    state.players['0'].moveCount = 0;
+
+    const fullState = { core: state, sys: {} as any };
+    const immobileMove = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      payload: { from: { row: 4, col: 2 }, to: { row: 4, col: 3 } },
+      playerId: '0',
+      timestamp: fixedTimestamp,
+    });
+    const normalMove = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      payload: { from: { row: 5, col: 2 }, to: { row: 5, col: 3 } },
+      playerId: '0',
+      timestamp: fixedTimestamp,
+    });
+
+    expect(getValidMoveTargetsEnhanced(state, { row: 4, col: 2 })).toEqual([]);
+    expect(immobileMove.valid).toBe(false);
+    expect(immobileMove.error).toContain('禁足');
+    expect(normalMove.valid).toBe(true);
+  });
 });
 
 // ============================================================================
@@ -460,6 +500,36 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
     expect(chargeEvents.length).toBe(0);
   });
 
+  it('冲锋非直线3格移动会被真实移动门禁拒绝', () => {
+    const state = createGoblinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'test-rider',
+      card: makeBeastRider('test-rider'),
+      owner: '0',
+    });
+
+    state.phase = 'move';
+    state.currentPlayer = '0';
+    state.players['0'].moveCount = 0;
+
+    const result = SummonerWarsDomain.validate({ core: state, sys: {} as any }, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      payload: {
+        from: { row: 4, col: 1 },
+        to: { row: 3, col: 3 },
+      },
+      playerId: '0',
+      timestamp: fixedTimestamp,
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('无法移动');
+    expect(state.board[4][1].unit?.cardId).toBe('test-rider');
+    expect(state.board[4][1].unit?.chargeBonusThisTurn).toBeUndefined();
+  });
+
   it('冲锋加成反映在 calculateEffectiveStrength 中', () => {
     const state = createGoblinState();
     const rider: BoardUnit = {
@@ -513,23 +583,29 @@ describe('野兽骑手 - 冲锋 (charge)', () => {
 // 凶残 (ferocity) 测试
 // ============================================================================
 
-describe('部落投石手 - 凶残 (ferocity)', () => {
-  it('hasFerocityAbility 对有 ferocity 技能的单位返回 true', () => {
-    const slinger: BoardUnit = {
-      cardId: 'test', card: makeSlinger('test'), owner: '0',
+describe('凶残 (ferocity)', () => {
+  it('史米革和部落投石手都承载 ferocity', () => {
+    const smirg: BoardUnit = {
+      cardId: 'test-smirg', card: makeSmirg('test-smirg'), owner: '0',
       position: { row: 0, col: 0 }, damage: 0, boosts: 0,
       hasMoved: false, hasAttacked: false,
     };
+    const slinger: BoardUnit = {
+      cardId: 'test-slinger', card: makeSlinger('test-slinger'), owner: '0',
+      position: { row: 0, col: 0 }, damage: 0, boosts: 0,
+      hasMoved: false, hasAttacked: false,
+    };
+    expect(hasFerocityAbilityBase(smirg)).toBe(true);
     expect(hasFerocityAbilityBase(slinger)).toBe(true);
   });
 
-  it('凶残单位可以在攻击次数用完后仍然攻击', () => {
+  it('史米革可以在攻击次数用完后仍然攻击', () => {
     const state = createGoblinState();
     clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
 
     placeUnit(state, { row: 4, col: 2 }, {
-      cardId: 'test-slinger',
-      card: makeSlinger('test-slinger'),
+      cardId: 'test-smirg',
+      card: makeSmirg('test-smirg'),
       owner: '0',
     });
 
@@ -544,7 +620,7 @@ describe('部落投石手 - 凶残 (ferocity)', () => {
     state.players['0'].attackCount = 3; // 已用完3次攻击
     state.players['0'].hasAttackedEnemy = true;
 
-    // 验证凶残单位仍可攻击
+    // 验证凶猛单位仍可攻击
     const fullState = { core: state, sys: {} as any };
     const result = SummonerWarsDomain.validate(fullState, {
       type: SW_COMMANDS.DECLARE_ATTACK,
@@ -555,13 +631,13 @@ describe('部落投石手 - 凶残 (ferocity)', () => {
     expect(result.valid).toBe(true);
   });
 
-  it('非凶残单位在攻击次数用完后不能攻击', () => {
+  it('部落投石手在攻击次数用完后仍可作为凶残单位额外攻击', () => {
     const state = createGoblinState();
     clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
 
     placeUnit(state, { row: 4, col: 2 }, {
-      cardId: 'test-rider',
-      card: makeBeastRider('test-rider'), // 无凶残
+      cardId: 'test-slinger',
+      card: makeSlinger('test-slinger'),
       owner: '0',
     });
 
@@ -583,7 +659,7 @@ describe('部落投石手 - 凶残 (ferocity)', () => {
       playerId: '0',
       timestamp: fixedTimestamp,
     });
-    expect(result.valid).toBe(false);
+    expect(result.valid).toBe(true);
   });
 
 });

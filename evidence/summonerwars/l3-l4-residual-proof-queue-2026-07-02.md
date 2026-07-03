@@ -1,17 +1,19 @@
 # 召唤师战争 L3/L4 残余补证队列（2026-07-02）
 
+> 当前状态（2026-07-03 / C86）：本文件已从“待执行残余队列”转为“已完成残余补证索引 + 条件性专项入口”。C85 已纠正 C80/C84 的来源越权口径；C86 进一步纠正“审计要回卡图/回录入层”的误读。普通续跑不得再按本文件旧的“下一步”字样寻找常规残余任务，也不得为 `ferocity` / `entangle` 自动启动卡图、OCR、Wiki、网页文本或在线文本包复核；这两个对象只是不允许继续宣称已证实修复，若要裁定归属，必须单独进入数据录入/对象归属复核任务。
+
 ## 续跑口径
 
 - 本文件只消费已 `locked` 的数据录入合同和已完成的首轮实现对照矩阵，不重新读图片/OCR，不重新录入规则。
 - `locked` 对象若在 L3/L4 对照中暴露合同缺字段、来源冲突或对象归属不清，必须先降级为 `blocked` 或 `disputed` 并回写 evidence，再回录入层补合同。
 - `disputed` 对象只做归属裁定；未裁定前不得写规则断言测试、不得修机制。
-- 本队列不代表全量审计完成；它是首轮实现对照后的真实入口、刷新/回放、重复消费和共享链补证入口。
+- 本队列原本不代表全量审计完成；C84 后它只作为已完成补证索引和条件性专项入口，不再表示仍有常规残余补证任务。
 
 ## 更新后的继续规则
 
 - 数据录入要在 `locked` 之前做好：主真相源、完整单对象图/可读裁图、对象归属、规则原文、原子子句、索引入口、对照差异和未决项都必须已经落表。
 - `locked` 不是“以后继续补录入”的标记，而是后续实现审计可以消费的合同；普通续跑不得把 `locked` 对象重新送回图片/OCR/重新抄规则。
-- 后续继续时先读本队列和对应实现对照矩阵，按 `下一步` 列做真实入口、刷新/回放、重复消费、行动经济或共享链补证。
+- 后续继续时先读本队列、主 evidence 第 143-149 节、对应实现对照矩阵和 `continuation-task-state.json` 的最新状态；只有发现具体症状、官方规则冲突或合同字段缺口时，才新增对象级专项。
 - 如果执行到某个 `locked` 对象时发现合同字段缺失、来源互相冲突、对象归属不清，先停止该对象的实现补证，把状态降级并回写 evidence；只有这种情况才回录入层。
 - 如果对象仍是 `disputed`，只做归属裁定；归属未定前不写规则断言测试、不修机制、不用实现现状反推卡面规则。
 - 本轮用户纠偏的结论是：录入质量靠合同字段守门，不靠后续反复读图续命；继续推进要消费已锁合同，而不是重做录入。
@@ -21,8 +23,8 @@
 | 分类 | 数量 | 说明 |
 | --- | ---: | --- |
 | 已完成 L4 专项 | 4 | 雌狮「威势」、贾穆德「威势」、瑟拉·艾德温「城塞之力」、城塞圣武士「裁决」 |
-| 已锁规则原文并完成首轮实现对照 | 62 | 后续按本队列做 L3/L4 残余补证 |
-| disputed 对象归属待裁定 | 2 | 史米革/部落投石手「凶猛」（`ferocity`）、城塞骑士「缠绕/缠斗」（`entangle`） |
+| 已锁规则原文并完成实现层补证 | 62 | C85 后不再把 `ferocity` / `entangle` 计入已锁/已裁定对象 |
+| disputed 对象归属待裁定 | 2 | 史米革/部落投石手「凶猛」（`ferocity`）、城塞骑士「缠斗」（`entangle`）不得按 C80/C84 宣称已证实修复；是否复核归属需另启数据录入/对象归属任务 |
 | 待建合同 | 0 | 普通续跑不回录入层 |
 
 ## 已完成 L4 补证
@@ -60,10 +62,19 @@
 | L4-31 | `ranged` | 清风弓箭手「远射」 | 真实声明攻击命令入口沿用 4 格清晰直线合同：敌方建筑目标可攻击，路径中间有卡牌阻挡时拒绝，4 格内非直线目标拒绝 | `abilities-trickster.test.ts` 目标测试通过 |
 | L4-32 | `divine_shield` | 科琳·布莱顿「神圣护盾」 | 真实声明攻击入口只保护科琳友方城塞目标，不为敌方城塞目标触发；护盾减攻只作用本次攻击，下一次独立攻击重新按攻击者原始战力掷骰 | `abilities-paladin-new.test.ts` 目标测试通过 |
 | L4-33 | `aerial_strike` | 葛拉克「浮空术」 | 只影响开始移动时 2 格内的友方士兵，不影响敌方士兵；真实移动入口允许该士兵本次移动穿越路径中间卡牌 | `abilities-trickster.test.ts` 目标测试通过 |
+| L4-34 | `guardian` | 城塞骑士「守卫」 | 相邻敌方守卫存在时，攻击目标必须是守卫单位本身；不能改攻非守卫单位，也不能改攻建筑 | `abilities-paladin.test.ts` 目标测试通过 |
+| L4-35 | `immobile` | 部落抓附手「禁足」 | 普通移动目标清单为空；真实移动命令被禁足门禁拒绝；同场其它非禁足单位普通移动不受影响 | `abilities-goblin.test.ts` 目标测试通过 |
+| L4-36 | `blood_rage` | 亡灵战士「血腥狂怒」 | 真实攻击击杀后只产生 1 次血腥狂怒充能并落到最终 boosts=1；事件流回放时同一充能事件不会被 UI 反馈重复消费 | `abilities-necromancer-execute.test.ts` 与 `useGameEvents.test.ts` 目标测试通过 |
+| L4-37 | `blood_rage_decay` | 亡灵战士「血腥狂怒」回合末清理 | 真实抽牌阶段结束进入回合末清理；3 充能降到 1，1 充能由 reducer 夹到 0，0 充能不触发衰减事件 | `interaction-chain-comprehensive.test.ts` 目标测试通过 |
+| L4-38 | `power_boost` | 布拉夫 / 亡灵战士「力量强化」 | 补齐亡灵战士承载链：0/3/8 充能分别得到基础战力 2、战力 5、战力 7，并在 breakdown 中以 `power_boost` 来源记录 +3 / +5 上限 | `abilities-necromancer-execute.test.ts` 目标测试通过 |
+| L4-39 | `power_up` | 蒙威尊者「力量强化」 | 补齐蒙威尊者承载链：0/3/8 充能分别得到基础战力 1、战力 4、战力 6，并在 breakdown 中以 `power_up` 来源记录 +3 / +5 上限 | `abilities-barbaric.test.ts` 目标测试通过 |
+| L4-40 | `rage` | 古尔-达斯「暴怒」 | 补齐古尔-达斯承载链：0/3 伤害分别得到基础战力 2、战力 5，并在 breakdown 中以 `rage` 来源记录 +3 | `entity-chain-integrity.test.ts` 目标测试通过 |
+| L4-41 | `evasion` | 掷术师「迷魂」 | 同骰面对照有/无迷魂时，special 面触发后最终 hits 和 `UNIT_DAMAGED.damage` 均减少 1，并产生 `DAMAGE_REDUCED value=1` | `entity-chain-integrity.test.ts` 目标测试通过 |
+| L4-42 | `charge` / `ice_ram` / `stable` | 野兽骑手「冲锋」、寒冰冲撞、卡拉「稳固」 | 冲锋补真实移动门禁与非直线 3 格负向；寒冰冲撞补建筑目标负向并沿用稳固只伤不推拉代表链；稳固补普通移动不受影响边界 | `abilities-goblin.test.ts`、`interaction-chain-comprehensive.test.ts`、`abilities-trickster.test.ts` 目标测试通过 |
 
 ## P0 必须优先补的 L4 队列
 
-| 队列 | 对象 | 中文对象 | 残余补证点 | 现有证据入口 | 下一步 |
+| 队列 | 对象 | 中文对象 | 原残余补证点 | 现有证据入口 | 当前边界 |
 | --- | --- | --- | --- | --- | --- |
 | L4-01 | `rapid_fire` | 梅肯达·露、边境弓箭手「连续射击」 | 确认后只授予一次额外攻击；刷新/回放不重复授予 | `b1-p1-implementation-diff-matrix` | 已完成真实入口与重复响应补证；若后续扩大，只补 UI eventStream 回放不重复打开确认 |
 | L4-02 | `mind_transmission` | 古尔壮「心灵传念」 | 选择友方士兵后只授予目标一次额外攻击；刷新/回放不重复授予 | `b1-p1-implementation-diff-matrix` | 已完成真实入口与重复响应补证；若后续扩大，只补 UI eventStream 回放不重复打开选择 |
@@ -88,31 +99,32 @@
 
 | 代表链 | 覆盖对象 | 中文对象 | 本轮补证点 | 当前状态 |
 | --- | --- | --- | --- | --- |
-| P1-FORCE-STABLE-01 | `stable` / `high_telekinesis` / `telekinesis` / `ice_ram` | 卡拉「稳固」、卡拉「高阶念力」、清风法师「念力」、寒冰冲撞 | 已消费 locked 合同，不回图片/OCR；新增高阶念力不能推动稳固目标、寒冰冲撞仍造成 1 点伤害但不强制移动稳固目标两条代表链断言；定向测试 `稳固|stable|高阶念力|寒冰冲撞|ice_ram|high_telekinesis` 通过，2 个测试文件、6 passed / 65 skipped | 已补代表链；`withdraw` 的直线/空格 Force 细则仍保留规则书核对，不因本轮代表链硬判 |
+| P1-FORCE-STABLE-01 | `stable` / `high_telekinesis` / `telekinesis` / `ice_ram` | 卡拉「稳固」、卡拉「高阶念力」、清风法师「念力」、寒冰冲撞 | 已消费 locked 合同，不回图片/OCR；新增高阶念力不能推动稳固目标、寒冰冲撞仍造成 1 点伤害但不强制移动稳固目标、寒冰冲撞排除建筑目标、稳固不影响普通移动等断言；定向测试 `冲锋|charge|ice_ram|寒冰冲撞|stable|稳固` 通过，3 个测试文件、16 passed / 222 skipped | 已补到 L4；`withdraw` 的直线/空格 Force 细则仍保留规则书核对，不因本轮代表链硬判 |
 | P1-MOVE-CHOICE-01 | `grab` / `ancestral_bond` / `structure_shift` | 部落抓附手「抓附」、阿布亚·石「祖灵纽带」、斯瓦拉「结构迁移」 | 已消费 locked 合同，不回图片/OCR；新增「抓附」真实入口断言，覆盖友方从相邻处移动后生成跟随选择、确认后只移动一次、交互收口、重复响应不二次移动；定向测试 `grab|抓附` 通过，1 passed / 128 skipped | 已补移动后选择代表链中的「抓附」真实入口；`prepare`、`inspire`、`illusion`、`spirit_bond` 已有各自首轮/专项证据，后续继续补 `vanish` 或低风险边界，不把本代表链当全量完成 |
 | P1-ACTIVE-CHOICE-01 | `vanish` | 思尼克斯「狡黠」 | 已消费 locked 合同，不回图片/OCR；新增真实入口断言，覆盖无目标发动后只列入友方 0 费用单位、确认后交换位置、交互收口、重复响应不二次交换、同回合二次使用拒绝；定向测试 `vanish|狡黠|神出鬼没` 通过，5 passed / 125 skipped | 已补主动选目标能力的真实入口和次数门禁；后续若扩大，只补 UI eventStream 回放不重复打开选择 |
 | P1-STATIC-STATS-01 | `life_up` / `radiant_shot` / `frost_bolt` / `greater_frost_bolt` / `fortress_elite` | 生命强化、光辉射击、寒冰箭、高阶寒冰箭、城塞精英 | 已消费 locked 合同，不回图片/OCR；新增静态数值读取代表链断言，覆盖敌方/超距/非相邻不计入、奇数魔力向下取整、生命强化按当前充能动态读取且最多 +5；定向测试 `radiant_shot|frost_bolt|greater_frost_bolt|fortress_elite|life_up|静态数值|辉光射击|寒冰箭|高阶寒冰箭|城塞精英|生命强化` 通过，1 个测试文件，9 passed / 90 skipped | 已补静态数值代表链当前 L4；`power_boost`、`power_up`、`rage` 保留首轮证明，后续只在发现战力拆解/UI 展示层分叉时追加专项 |
-| P1-MOVE-PATH-01 | `climb` / `flying` / `swift` / `slow` / `trample` / `rebound` | 攀爬、飞行、迅捷、缓慢、践踏、缠斗 | 已消费 locked 合同，不回图片/OCR；新增移动穿越/相邻代表链断言，覆盖攀爬可穿建筑但不穿单位、飞行可穿单位和建筑、迅捷只加距离不穿阻挡、缓慢只允许 1 格、践踏只伤害路径中间被穿越单位、缠斗仅在相邻敌方远离时触发且靠近/仍相邻不触发；定向测试 `movement|trample|rebound|climb|flying|swift|slow|移动|践踏|缠斗|攀爬|飞行|迅捷|缓慢` 通过，1 个测试文件，13 passed / 89 skipped | 已补移动与相邻通用链当前 L4；`evasion` 保留首轮攻击减伤证明，后续只在攻击展示/UI 回放分叉时追加专项；`entangle` 仍 disputed，不纳入本代表链 |
+| P1-MOVE-PATH-01 | `climb` / `flying` / `swift` / `slow` / `trample` / `rebound` / `evasion` | 攀爬、飞行、迅捷、缓慢、践踏、缠斗、迷魂 | 已消费 locked 合同，不回图片/OCR；新增移动穿越/相邻代表链断言，覆盖攀爬可穿建筑但不穿单位、飞行可穿单位和建筑、迅捷只加距离不穿阻挡、缓慢只允许 1 格、践踏只伤害路径中间被穿越单位、缠斗仅在相邻敌方远离时触发且靠近/仍相邻不触发；另补迷魂真实攻击最终伤害落点，确认 special 面触发后 hits 与 `UNIT_DAMAGED.damage` 均减少 1；定向测试 `movement|trample|rebound|climb|flying|swift|slow|移动|践踏|缠斗|攀爬|飞行|迅捷|缓慢` 通过，1 个测试文件，13 passed / 89 skipped；`evasion|迷魂` 通过，1 个测试文件，4 passed / 102 skipped | 已补移动与相邻/攻击减伤通用链当前 L4；后续只在攻击展示/UI 回放分叉时追加专项；不得用该代表链裁定城塞骑士 `entangle` 归属 |
+| P1-DISPUTED-FIX-01 | `ferocity` / `entangle` | 史米革/部落投石手「凶猛」、城塞骑士「缠斗」 | C85 后撤销“官方在线文本包已裁定”口径；C86 明确普通审计不自动回卡图或录入层。现有配置/测试改动只能视为待裁定候选，不得汇报为已证实修复。 | 现有测试通过只能证明候选配置下的行为，不证明真实归属；若要裁定归属，需另启数据录入/对象归属复核任务 | `disputed-待归属复核任务` |
 
-| 代表链 | 对象 | 中文对象 | 合并理由 | 下一步 |
+| 代表链 | 对象 | 中文对象 | 合并理由 | 当前边界 |
 | --- | --- | --- | --- | --- |
-| Force / 稳固通用规则来源 | `withdraw`、`high_telekinesis`、`telekinesis`、`structure_shift`、`stable` | 凯鲁尊者「撤退」、卡拉「高阶念力」、清风法师「念力」、斯瓦拉「结构迁移」、卡拉「稳固」 | 多个对象共享 Force/推拉/稳固语义；先补通用规则来源，再决定是否需要逐对象 L4 | 建一份 Force/稳固来源补证，不用回图片层 |
+| Force / 稳固通用规则来源 | `withdraw`、`high_telekinesis`、`telekinesis`、`structure_shift`、`stable` | 凯鲁尊者「撤退」、卡拉「高阶念力」、清风法师「念力」、斯瓦拉「结构迁移」、卡拉「稳固」 | 已查本地实现层：`helpers.ts` 中普通 Force 按上/下/左/右任选方向、每格必须在界内且为空、单位和建筑阻挡；旧 `push/pull` 按来源方向推断的 helper 已标 deprecated。本地实现口径清晰，但这仍不是官方规则真相源。 | 保持为“通用规则来源专项”：不回图片/OCR，不阻塞已 locked 对象 L4；后续若找到官方 Force 规则与本地实现冲突，再单独降级 Force 细则并开最小测试/修复。 |
 | 阶段开始/结束自动能力 | `blood_rune`、`guidance`、`blood_rage_decay` | 布拉夫「血符文」、瓦伦蒂娜「指引」、亡灵战士「血腥狂怒」回合末清理 | 都是阶段或回合钩子；史米革「魔力成瘾」、瓦伦蒂娜「指引」、布拉夫「血符文」已完成 L4，剩余残余仅为低风险回合末清理边界或后续 UI 回放专项 | `blood_rage_decay` 低风险边界后续按代表链补；`magic_addiction`、`guidance`、`blood_rune` 后续只在发现 UI 回放重复触发时追加专项 |
 | 移动后可选/强制选择 | `prepare`、`inspire`、`illusion`、`spirit_bond`、`grab` | 准备、鼓舞、幻象、祖灵交流、抓附 | 都依赖移动阶段或移动后真实入口；已补「抓附」「幻象」「祖灵交流」真实入口、交互收口和重复响应证据；本轮补齐「准备」完整管线行动经济和「鼓舞」移动后目标全集边界 | 该代表链已完成当前 L4；后续只在 UI eventStream 回放重复展示时追加专项，不回录入 |
-| 静态数值读取 | `power_boost`、`power_up`、`life_up`、`rage`、`radiant_shot`、`frost_bolt`、`greater_frost_bolt`、`fortress_elite`、`speed_up` | 力量强化、生命强化、暴怒、光辉射击、寒冰箭、高阶寒冰箭、城塞精英、速度强化 | 静态计算或按当前资源读取；已补 `life_up`、`radiant_shot`、`frost_bolt`、`greater_frost_bolt`、`fortress_elite` 的动态读取/负向边界；已补 `speed_up` 超过 5 充能仍最多 +5 移动；`power_boost`、`power_up`、`rage` 首轮证明仍有效 | 该代表链已完成当前 L4；后续只在战力/移动力拆解或 UI 展示层出现分叉时追加专项，不回录入 |
-| 移动与相邻通用链 | `climb`、`flying`、`swift`、`slow`、`rebound`、`evasion`、`trample` | 攀爬、飞行、迅捷、缓慢、缠斗、迷魂、践踏 | 已补攀爬/飞行/迅捷/缓慢/践踏/缠斗的真实移动入口或负向边界；迷魂保留首轮攻击减伤证明 | 该代表链已完成当前 L4；后续只在攻击展示、移动 UI 回放或对象类型合同出现分叉时追加专项，不回录入 |
+| 静态数值读取 | `power_boost`、`power_up`、`life_up`、`rage`、`radiant_shot`、`frost_bolt`、`greater_frost_bolt`、`fortress_elite`、`speed_up` | 力量强化、生命强化、暴怒、光辉射击、寒冰箭、高阶寒冰箭、城塞精英、速度强化 | 静态计算或按当前资源读取；已补 `life_up`、`radiant_shot`、`frost_bolt`、`greater_frost_bolt`、`fortress_elite` 的动态读取/负向边界；已补 `speed_up` 超过 5 充能仍最多 +5 移动；已补 `power_boost`、`power_up`、`rage` 的来源拆解或上限边界 | 该代表链已完成当前 L4；后续只在战力/移动力拆解或 UI 展示层出现分叉时追加专项，不回录入 |
+| 移动与相邻通用链 | `climb`、`flying`、`swift`、`slow`、`rebound`、`evasion`、`trample` | 攀爬、飞行、迅捷、缓慢、缠斗、迷魂、践踏 | 已补攀爬/飞行/迅捷/缓慢/践踏/缠斗的真实移动入口或负向边界；已补迷魂 special 面触发后的真实攻击最终伤害落点 | 该代表链已完成当前 L4；后续只在攻击展示、移动 UI 回放或对象类型合同出现分叉时追加专项，不回录入 |
 | 召唤/死亡奖励链 | `fire_sacrifice_summon`、`soulless`、`living_gate`、`mobile_structure`、`gather_power` | 火祀召唤、无魂、活体传送门、活体结构、聚能 | 已补活体传送门作为特殊召唤入口时的归属边界和聚能后续触发，确认敌方活体传送门不提供己方召唤位、祖灵法师被召唤后只给自身位置充能 1 次；已补无魂真实击杀后的最终魔力状态边界，确认无魂击杀不加魔力、普通击杀加魔力；已补火祀召唤真实交互候选过滤、最终落位和重复响应不二次结算；已补活体结构移动后结构消费者读取新位置且旧位置不残留 | 当前已完成召唤入口、火祀召唤、活体结构和无魂死亡奖励代表链；后续只在发现 UI 展示、eventStream 重放或其它低风险对象有特殊入口绕过时追加专项 |
 
 ## disputed 队列
 
 | 对象 | 中文对象 | 当前状态 | 禁止动作 | 下一步 |
 | --- | --- | --- | --- | --- |
-| `ferocity` | 史米革/部落投石手「凶猛」 | 官方 Relentless 只锁到史米革，部落投石手归属未证明 | 不写规则断言测试、不修机制、不判通过 | 先裁定部落投石手是否承载该能力 |
-| `entangle` | 城塞骑士「缠绕/缠斗」 | 本地城塞骑士挂能力，但官方缓存不能证明城塞骑士承载 Engage/Entangle | 不写规则断言测试、不修机制、不判通过 | 先裁定城塞骑士是否承载该能力 |
+| `ferocity` | 史米革 / 部落投石手「凶猛」 | `disputed-待归属复核任务` | 不得把在线文本包或测试通过当作归属证明；不得汇报为已证实修复 | 不在普通审计中自动回卡图/重录 |
+| `entangle` | 城塞骑士「缠斗」 | `disputed-待归属复核任务` | 不得把在线文本包或测试通过当作归属证明；不得汇报为已证实修复 | 不在普通审计中自动回卡图/重录 |
 
-## 续跑顺序
+## 条件性专项入口
 
-1. `rapid_fire` 与 `mind_transmission` 已完成真实入口和重复响应补证；后续只在发现 UI eventStream 回放风险时追加 UI 层专项。
-2. `infection`、`soul_transfer`、`life_drain`、`high_telekinesis_instead`、`telekinesis_instead` 已完成 B4 真实交互闭环补证；后续只在发现 UI eventStream 回放风险时追加 UI 层专项。
-3. 阶段推进类中 `feed_beast`、`ice_shards`、`magic_addiction`、`guidance`、`blood_rune` 已完成 L4；`revive_undead` 真实交互链已完成 L4；`ancestral_bond` 移动后真实入口已完成 L4；`frost_axe` 移动附加到攻击消费已完成 L4；`healing` 攻击前治疗与清理已完成 L4；`holy_arrow` 攻击前多选与临时加成已完成 L4；`structure_shift` 移动后两步真实入口与重复响应已完成 L4；`illusion` 移动阶段开始复制入口已完成 L4；`spirit_bond` 移动后强制二选一已完成 L4；`prepare` 完整管线行动经济已完成 L4；`inspire` 移动后目标全集边界已完成 L4；下一步继续后续残余代表链，不回录入层。
-4. 静态数值、移动穿越、活体结构等低风险对象只按代表链补边界，不逐项重做录入。
+1. `rapid_fire` 与 `mind_transmission` 已完成真实入口和重复响应补证；只有后续发现 UI eventStream 回放风险时，才追加 UI 层专项。
+2. `infection`、`soul_transfer`、`life_drain`、`high_telekinesis_instead`、`telekinesis_instead` 已完成 B4 真实交互闭环补证；只有后续发现 UI eventStream 回放风险时，才追加 UI 层专项。
+3. 阶段推进类中 `feed_beast`、`ice_shards`、`magic_addiction`、`guidance`、`blood_rune` 已完成 L4；`revive_undead`、`ancestral_bond`、`frost_axe`、`healing`、`holy_arrow`、`structure_shift`、`illusion`、`spirit_bond`、`prepare`、`inspire`、`charge`、`ice_ram`、`stable` 等已补到 L4，不再作为常规残余队列继续清点。
+4. 静态数值、移动穿越、活体结构等低风险对象已按代表链补边界；后续只在发现战力/移动力展示分叉、eventStream 重放、官方规则来源冲突或合同字段缺口时追加专项，不逐项重做录入。

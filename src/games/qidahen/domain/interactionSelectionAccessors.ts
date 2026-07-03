@@ -465,6 +465,7 @@ export function getQidahenPendingTargetActionForCore(
         isActive: (currentCore) => currentCore.turnPhase === 'resolve-pending',
         readInteraction: getQidahenPendingTargetActionFromInteraction,
         readCore: (currentCore) => currentCore.pendingTargetAction,
+        preferInteraction: false,
     });
 }
 

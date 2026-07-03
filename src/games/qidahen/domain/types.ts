@@ -783,6 +783,12 @@ export interface ResolvePendingActionCommand extends Command<'RESOLVE_PENDING_AC
     };
 }
 
+export interface PlayTacticCardCommand extends Command<'PLAY_TACTIC_CARD'> {
+    payload: {
+        cardId: string;
+    };
+}
+
 export interface ResolvePostBattleDecisionCommand extends Command<'RESOLVE_POST_BATTLE_DECISION'> {
     payload: {
         choiceId: string;
@@ -864,6 +870,7 @@ export type QidahenCommand =
     | ExecuteSelectedActionCommand
     | ExecuteActionCommand
     | ResolvePendingActionCommand
+    | PlayTacticCardCommand
     | ResolvePostBattleDecisionCommand
     | ResolveKhanEdictChoiceCommand
     | ResolveDiplomacyChoiceCommand
@@ -994,6 +1001,13 @@ export interface PendingActionResolvedEvent extends GameEvent<'PENDING_ACTION_RE
     };
 }
 
+export interface TacticCardPlayedEvent extends GameEvent<'TACTIC_CARD_PLAYED'> {
+    payload: {
+        playerId: PlayerId;
+        cardId: string;
+    };
+}
+
 export interface PostBattleDecisionResolvedEvent extends GameEvent<'POST_BATTLE_DECISION_RESOLVED'> {
     payload: {
         playerId: PlayerId;
@@ -1091,6 +1105,7 @@ export type QidahenEvent =
     | InternalDispatchResolvedEvent
     | SelectedActionExecutedEvent
     | PendingActionResolvedEvent
+    | TacticCardPlayedEvent
     | PostBattleDecisionResolvedEvent
     | KhanEdictChoiceResolvedEvent
     | DiplomacyChoiceResolvedEvent
@@ -1119,6 +1134,7 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     EXECUTE_SELECTED_ACTION: ExecuteSelectedActionCommand['payload'];
     EXECUTE_ACTION: ExecuteActionCommand['payload'];
     RESOLVE_PENDING_ACTION: ResolvePendingActionCommand['payload'];
+    PLAY_TACTIC_CARD: PlayTacticCardCommand['payload'];
     RESOLVE_POST_BATTLE_DECISION: ResolvePostBattleDecisionCommand['payload'];
     RESOLVE_KHAN_EDICT_CHOICE: ResolveKhanEdictChoiceCommand['payload'];
     RESOLVE_DIPLOMACY_CHOICE: ResolveDiplomacyChoiceCommand['payload'];

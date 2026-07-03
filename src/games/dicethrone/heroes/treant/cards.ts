@@ -14,7 +14,7 @@ import {
     TREANT_SFX_HEAVY,
     TREANT_SFX_LIGHT,
     VENGEFUL_VINES_2,
-    WILD_GROWTH_2,
+    WILD_ROAR_2,
 } from './abilities';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
@@ -192,7 +192,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-wild-growth-2', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(29),
-        effects: [replaceAbility('wild-growth', WILD_GROWTH_2, 2, cardText('upgrade-wild-growth-2', 'description'))],
+        effects: [replaceAbility('wild-roar', WILD_ROAR_2, 2, cardText('upgrade-wild-growth-2', 'description'))],
     },
     {
         id: 'upgrade-shattering-fist-2',

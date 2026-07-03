@@ -510,7 +510,10 @@ export function getTempBasePowerModifier(
     baseIndex: number,
     playerId: PlayerId,
 ): number {
-    return state.tempBasePowerModifiers?.[baseIndex]?.[playerId] ?? 0;
+    const baseInstanceId = state.bases[baseIndex]?.instanceId;
+    return (baseInstanceId ? state.tempBasePowerModifiersByBaseId?.[baseInstanceId]?.[playerId] : undefined)
+        ?? state.tempBasePowerModifiers?.[baseIndex]?.[playerId]
+        ?? 0;
 }
 
 // ============================================================================
@@ -1317,7 +1320,10 @@ export function getEffectiveBreakpoint(
     }
 
     // 加上临时临界点修正（如 dino_rampage）
-    const tempDelta = state.tempBreakpointModifiers?.[baseIndex] ?? 0;
+    const baseInstanceId = state.bases[baseIndex]?.instanceId;
+    const tempDelta = (baseInstanceId ? state.tempBreakpointModifiersByBaseId?.[baseInstanceId] : undefined)
+        ?? state.tempBreakpointModifiers?.[baseIndex]
+        ?? 0;
     return Math.max(0, baseDef.breakpoint + total + tempDelta);
 }
 

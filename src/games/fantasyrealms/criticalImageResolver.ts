@@ -2,11 +2,13 @@ import type { CriticalImageResolver, CriticalImageResolverResult } from '../../c
 import {
     FANTASY_REALMS_CARD_ATLAS_PATH,
     FANTASY_REALMS_CARD_BACK_PATH,
+    FANTASY_REALMS_CURSED_HOARD_CARD_BACK_PATH,
 } from './ui/cardAtlas';
 
 const FANTASY_REALMS_CRITICAL_IMAGE_PATHS = [
     FANTASY_REALMS_CARD_ATLAS_PATH,
     FANTASY_REALMS_CARD_BACK_PATH,
+    FANTASY_REALMS_CURSED_HOARD_CARD_BACK_PATH,
 ];
 
 export const fantasyRealmsCriticalImageResolver: CriticalImageResolver = (): CriticalImageResolverResult => ({

@@ -1,5 +1,7 @@
 # 召唤师战争机制全面审计启动记录（2026-07-02）
 
+> 当前状态说明（2026-07-03 / C91）：本文前半部分保留 2026-07-02 审计启动和分批推进时的历史过程，早期“仍缺 / 未完成 / 下一步 / 仍为 disputed”表述不代表最新状态。继续任务时先看最新第 143-156 节、`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md`、各批次 `implementation-diff` 矩阵和 `temp/summonerwars-audit/continuation-task-state.json` 的 C91。C85 已修正 C80/C84 的来源越权口径；C86 进一步修正“审计必须回卡图/回录入层”的错误口径；C89 纠正“像是数据没录入”的错误表达；C90 明确中文录入优先中文汇报；C91 明确原文列必须填逐字原文，找不到就写“未找到原文记录”，不得用状态句顶替。
+
 ## 1. 基本信息
 
 - 对象：召唤师战争卡牌 / 技能 / 自动触发 / 交互链机制
@@ -2177,7 +2179,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 实现链路：`src/games/summonerwars/domain/abilities.ts` / `abilities-barbaric.ts` 定义对应能力；`abilityResolver.ts` 统一读取充能、伤害和 `maxBonus`；`execute.ts` 处理召唤后聚能；`flowHooks.ts` 在回合结束触发 `blood_rage_decay`；`reduce.ts` 对 `UNIT_CHARGED` 做非负夹取。
 - 既有证明：`abilities-barbaric.test.ts` 覆盖 `power_up`、`life_up`、`gather_power`；`abilities-goblin.test.ts` 覆盖布拉夫 `power_boost`；`abilities-necromancer-execute.test.ts` 覆盖亡灵战士真实攻击击杀后 `blood_rage` 状态充能；`entity-chain-integrity.test.ts` 覆盖 `rage`、`blood_rage`、`gather_power`、`blood_rage_decay` 正负路径。
 - 验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/entity-chain-integrity.test.ts src/games/summonerwars/__tests__/abilities-barbaric.test.ts src/games/summonerwars/__tests__/abilities-goblin.test.ts src/games/summonerwars/__tests__/abilities-necromancer-execute.test.ts --configLoader native -t "rage|blood_rage|blood_rage_decay|gather_power|power_boost|power_up|life_up|暴怒|血腥狂怒|聚能|力量强化|生命强化"` 通过，4 个测试文件通过，28 passed / 196 skipped。
-- B6 矩阵状态：`blood_rage`、`blood_rage_decay`、`gather_power`、`power_boost`、`power_up`、`life_up`、`rage` 均回写为 `match-with-proof`；B6 首轮实现对照没有 `proof-needed`，没有 `fixed-with-proof`。
+- B6 矩阵状态：`blood_rage`、`blood_rage_decay`、`gather_power`、`power_boost`、`power_up`、`life_up`、`rage` 均已升级为 `match-with-L4-proof`；B6 当前没有 `match-with-proof`、`proof-needed` 或 `fixed-with-proof` 残留。
 - 续跑边界：B6 收口不代表全量补审完成；下一步继续后续 locked 批次实现对照，不回录入层。只有发现合同缺字段、来源冲突或对象归属不清时，才允许把对象降级为 `blocked` / `disputed` 后补录入合同。
 
 ## 99. B7 移动穿越与相邻离开对象实现对照收口（2026-07-02）
@@ -2188,7 +2190,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 实现链路：`abilities-goblin.ts`、`abilities-frost.ts`、`abilities-trickster.ts` 定义移动与相邻能力；`helpers.ts` 的 `getUnitMoveEnhancements` / `canMoveToEnhanced` / `getEntangleUnits` / `getEvasionUnits` 消费移动距离、穿越和相邻单位集合；`execute.ts` 在移动、推拉和攻击结算中发出践踏伤害、缠斗伤害和迷魂减伤。
 - 既有证明：`abilities-goblin.test.ts` 覆盖攀爬额外移动、穿越建筑、不能穿越单位；`abilities-trickster.test.ts` 覆盖飞行额外移动、穿越卡牌、迅捷额外移动且不能穿越卡牌；`abilities-frost.test.ts` 覆盖缓慢移动距离和践踏致死后续；`entity-chain-integrity.test.ts` 覆盖践踏、迷魂、缠斗的正负路径；`abilities-trickster-execute.test.ts` 覆盖推拉导致远离缠斗单位时伤害落点。
 - 验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/entity-chain-integrity.test.ts src/games/summonerwars/__tests__/abilities-frost.test.ts src/games/summonerwars/__tests__/abilities-goblin.test.ts src/games/summonerwars/__tests__/abilities-trickster.test.ts src/games/summonerwars/__tests__/abilities-trickster-execute.test.ts --configLoader native -t "climb|evasion|flying|rebound|slow|swift|trample|攀爬|迷魂|飞行|缠斗|缓慢|迅捷|践踏"` 通过，5 个测试文件通过，41 passed / 217 skipped。
-- B7 矩阵状态：`climb`、`evasion`、`flying`、`rebound`、`slow`、`swift`、`trample` 均回写为 `match-with-proof`；`entangle` 继续保持 `disputed-skip`，未裁定对象归属前不进入机制修复或规则断言测试。
+- B7 矩阵状态：`climb`、`evasion`、`flying`、`rebound`、`slow`、`swift`、`trample` 均已升级为 `match-with-L4-proof`；`entangle` 继续保持 `disputed-skip`，未裁定对象归属前不进入机制修复或规则断言测试。
 - 续跑边界：B7 收口不代表全量补审完成；下一步继续后续 locked 批次实现对照，不回录入层。只有发现合同缺字段、来源冲突或对象归属不清时，才允许把对象降级为 `blocked` / `disputed` 后补录入合同。
 
 ## 100. B8 静态、召唤与死亡对象实现对照收口（2026-07-02）
@@ -2490,7 +2492,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 已有实现基础：`helpers.ts` 的 `canMoveToEnhanced` 统一读取移动增强、路径阻挡、建筑穿越和单位穿越；`execute.ts` 的 `MOVE_UNIT` 路径发 `UNIT_MOVED`，随后按 `getPassedThroughUnitPositions` 发践踏伤害，并按移动前后与缠斗单位距离判断是否触发缠斗伤害。
 - 本轮新增证据：`entity-chain-integrity.test.ts` 新增 `[movement/L4]` 断言，确认攀爬可穿建筑但不能穿单位；飞行可穿单位和建筑；迅捷可走 3 格空路径但不能穿单位；缓慢可移动 1 格但不能移动 2 格。新增 `[onMove/trample/L4]` 断言，确认真实移动只伤害路径中间被穿越单位，不伤害移动终点外的单位。新增 `[onAdjacentEnemyLeave/rebound/L4]` 断言，确认敌方靠近或移动后仍相邻时不触发缠斗伤害。
 - 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/entity-chain-integrity.test.ts --configLoader native -t "movement|trample|rebound|climb|flying|swift|slow|移动|践踏|缠斗|攀爬|飞行|迅捷|缓慢"` 通过，1 个测试文件通过，13 passed / 89 skipped。
-- 矩阵回写：`evidence/summonerwars/b7-p3-movement-and-adjacency-implementation-diff-matrix-2026-07-02.md` 已将 `climb`、`flying`、`rebound`、`slow`、`swift`、`trample` 升级为 `match-with-L4-proof`；`evasion` 保留首轮 `match-with-proof`；`entangle` 继续 `disputed-skip`，不写规则断言测试、不修机制。
+- 矩阵回写：`evidence/summonerwars/b7-p3-movement-and-adjacency-implementation-diff-matrix-2026-07-02.md` 已将 `climb`、`flying`、`rebound`、`slow`、`swift`、`trample` 升级为 `match-with-L4-proof`；后续第 141 节又将 `evasion` 升级为 `match-with-L4-proof`；`entangle` 继续 `disputed-skip`，不写规则断言测试、不修机制。
 - 后续边界：本轮补的是领域层移动路径和相邻触发，不是 UI 移动动画、eventStream 重放或攻击展示专项；若后续发现这些展示层分叉，再追加专项。下一步继续召唤/死亡奖励链或其它低风险剩余代表链，不回录入层。
 
 ## 126. 活体传送门与聚能召唤入口 L4 代表链补证（2026-07-03）
@@ -2580,3 +2582,252 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-trickster.test.ts --configLoader native -t "aerial_strike|浮空术|葛拉克"` 通过，1 个测试文件通过，8 passed / 41 skipped。
 - 矩阵回写：`evidence/summonerwars/b5-p2-implementation-diff-matrix-2026-07-02.md` 已将 `aerial_strike` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-33。
 - 后续边界：本轮补的是领域层真实移动入口，不是 UI 移动目标高亮、移动动画或 eventStream 回放专项；若后续发现展示层与领域移动门禁分叉，再追加 UI 层专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 134. 城塞骑士「守卫」建筑目标绕过门禁最小修复与 L4 补证（2026-07-03）
+
+本轮继续消费城塞骑士「守卫」（`guardian`）已 locked 合同，没有重新读图片/OCR，也没有重新录入规则。这里发现的是已锁合同和真实攻击声明入口的直接冲突：相邻敌方守卫存在时，旧实现只在目标是单位时检查守卫，导致攻击者可以改攻建筑绕过守卫。
+
+- 已锁合同：「守卫」要求相邻敌方单位攻击时，该次攻击的目标必须是有 Protect 能力的单位。
+- 失败证据：`abilities-paladin.test.ts` 新增 `[guardian/L4] 相邻守卫存在时不能改攻建筑`，修复前失败，表现为攻击者相邻有城塞骑士「守卫」时仍可声明攻击敌方建筑。
+- 最小修复：`validate.ts` 的 `DECLARE_ATTACK` 守卫门禁不再只包在 `targetUnit` 分支里；只要目标不是带 `guardian` 的单位，就检查攻击者相邻是否有可攻击的敌方守卫，若有则拒绝当前攻击目标。这样建筑目标也不能绕过守卫。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-paladin.test.ts --configLoader native -t "guardian|守卫|城塞骑士"` 通过，1 个测试文件通过，7 passed / 28 skipped。
+- 矩阵回写：`evidence/summonerwars/b5-p2-implementation-diff-matrix-2026-07-02.md` 已将 `guardian` 升级为 `fixed-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-34。
+- 后续边界：本轮修的是领域层攻击声明门禁，不是 UI 目标高亮、攻击动画或 eventStream 回放专项；若后续发现展示层仍把建筑作为可点攻击目标，再追加 UI 层专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 135. 部落抓附手「禁足」普通移动入口 L4 补证（2026-07-03）
+
+本轮继续消费部落抓附手「禁足」（`immobile`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是普通移动入口证据；强制移动/放置是否等同“移动”仍需要通用规则合同，本轮不硬判。
+
+- 已锁合同：「禁足」要求本单位不能移动。
+- 已有实现基础：`helpers.ts:isImmobile` 和 `getUnitMoveEnhancements` 识别 `immobile` 后返回不可移动；`canMoveToEnhanced` 因 `isImmobileUnit` 返回 false；`validate.ts` 的 `MOVE_UNIT` 入口直接拒绝带 `immobile` 的单位普通移动。
+- 本轮新增证据：`abilities-goblin.test.ts` 新增 `[immobile/L4]` 断言，确认禁足单位普通移动目标清单为空，真实 `MOVE_UNIT` 命令被禁足门禁拒绝，且同场其它非禁足单位普通移动不受影响。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-goblin.test.ts --configLoader native -t "immobile|禁足|部落抓附手"` 通过，1 个测试文件通过，9 passed / 43 skipped。
+- 矩阵回写：`evidence/summonerwars/b5-p2-implementation-diff-matrix-2026-07-02.md` 已将 `immobile` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-35。
+- 后续边界：本轮补的是领域层普通移动门禁，不是强制移动、放置、UI 可移动目标高亮或 eventStream 回放专项；若后续锁定通用规则说明“强制移动/放置也属于移动”，再单独补审，不从当前合同外推。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 136. 亡灵战士「血腥狂怒」真实击杀与事件回放 L4 补证（2026-07-03）
+
+本轮继续消费亡灵战士「血腥狂怒」（`blood_rage`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是从首轮实现对照证明，升级到真实攻击击杀入口只结算一次充能，以及事件流回放不会让同一充能反馈重复消费。
+
+- 已锁合同：「血腥狂怒」要求你的回合每有一个单位被消灭时，本单位 +1 充能。
+- 已有实现基础：`abilities.ts` 定义 `blood_rage` 为 `onUnitDestroyed` + `addCharge self 1`；死亡后触发入口只扫描当前玩家单位；`abilityResolver.ts` 产生 `UNIT_CHARGED sourceAbilityId='blood_rage'`；`reduce.ts` 将充能事件落到目标单位 boosts；`useGameEvents.ts` 的 `shouldConsumeChargeEvent` 按事件 id 去重 UI 充能反馈。
+- 本轮新增证据：`abilities-necromancer-execute.test.ts` 新增 `[blood_rage/L4] 真实攻击击杀只给亡灵战士结算一次充能`，确认真实 `DECLARE_ATTACK` 击杀敌方单位后，只产生 1 条目标死亡事件、1 条 `blood_rage` 充能事件，且最终亡灵战士 boosts=1。
+- 本轮新增证据：`useGameEvents.test.ts` 新增 `[blood_rage/L4] 事件流回放时同一充能事件不会重复消费`，确认事件流回滚返回同一批事件时，已消费过的充能事件 id 不会再次进入反馈消费。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-necromancer-execute.test.ts src/games/summonerwars/__tests__/useGameEvents.test.ts --configLoader native -t "blood_rage|血腥狂怒|shouldConsumeChargeEvent"` 通过，2 个测试文件通过，4 passed / 52 skipped。
+- 矩阵回写：`evidence/summonerwars/b6-p3-p4-charge-and-stat-implementation-diff-matrix-2026-07-02.md` 已将 `blood_rage` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-36。
+- 后续边界：本轮补的是领域层真实攻击入口和 UI 充能反馈去重 helper，不是完整浏览器重连 E2E、动画帧播放或服务器事件持久化专项；若后续发现真实页面回放仍重复播放动画，再追加 UI/E2E 专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 137. 亡灵战士「血腥狂怒」回合末清理真实阶段入口 L4 补证（2026-07-03）
+
+本轮继续消费亡灵战士「血腥狂怒」回合末清理（`blood_rage_decay`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是从直接 `onTurnEnd` 触发证明，升级到真实抽牌阶段结束的阶段推进入口。
+
+- 已锁合同：「血腥狂怒」同一张卡还要求你的回合结束时移除本单位 2 充能；无充能不触发；1 充能时由 reducer 夹到 0。
+- 已有实现基础：`abilities.ts` 定义 `blood_rage_decay` 为 `onTurnEnd` + `hasCharge >= 1` + `removeCharge self 2`；`flowHooks.ts` 在 draw 阶段退出时触发当前玩家 `onTurnEnd`；`reduce.ts` 对 `UNIT_CHARGED delta=-2` 做非负夹取。
+- 本轮新增证据：`interaction-chain-comprehensive.test.ts` 新增 `[blood_rage_decay/L4] 真实抽牌阶段结束时按当前充能清理亡灵战士`，确认真实 `ADVANCE_PHASE` 从 draw 退出后切到下一玩家 summon，并为 3 充能与 1 充能亡灵战士各发 1 条 `blood_rage_decay` 衰减事件，0 充能单位不触发。
+- 最终状态证据：3 充能单位最终 boosts=1；1 充能单位最终 boosts=0；0 充能单位保持 boosts=0 且仍在原位。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts --configLoader native -t "blood_rage_decay|血腥狂怒"` 通过，1 个测试文件通过，1 passed / 134 skipped。
+- 矩阵回写：`evidence/summonerwars/b6-p3-p4-charge-and-stat-implementation-diff-matrix-2026-07-02.md` 已将 `blood_rage_decay` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-37。
+- 后续边界：本轮补的是领域层真实阶段推进入口，不是完整浏览器重连 E2E、回合结束动画或事件持久化专项；若后续发现真实页面回放重复播放清理反馈，再追加 UI/E2E 专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 138. 亡灵战士「力量强化」数值读取与上限 L4 补证（2026-07-03）
+
+本轮继续消费布拉夫 / 亡灵战士「力量强化」（`power_boost`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是首轮矩阵指出的“亡灵战士专属数值断言”缺口，确保同一 `power_boost` 能力不只在布拉夫承载上有证明。
+
+- 已锁合同：「力量强化」要求每 1 充能 +1 战力，最多 +5；布拉夫与亡灵战士都承载该能力。
+- 已有实现基础：`abilities.ts` 定义 `power_boost` 为 `onDamageCalculation` 下的 `modifyStrength attr=charge maxBonus=5`；`abilityResolver.ts:calculateEffectiveStrength` 按当前单位 boosts 读取充能值，执行 `maxBonus` 上限，并在 modifiers 中记录来源能力。
+- 既有证明：`abilities-goblin.test.ts` 已覆盖布拉夫 0/3/8 充能下的战力与 +5 上限。
+- 本轮新增证据：`abilities-necromancer-execute.test.ts` 新增 `[power_boost/L4] 亡灵战士按当前充能获得战力且最多只加5`，确认亡灵战士 0 充能时最终战力为基础 2 且无 `power_boost` modifier；3 充能时最终战力为 5 且 modifier 来源为 `power_boost`、值为 3；8 充能时最终战力为 7 且 modifier 来源为 `power_boost`、值被封顶为 5。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-necromancer-execute.test.ts --configLoader native -t "power_boost|力量强化|亡灵战士"` 通过，1 个测试文件通过，3 passed / 21 skipped。
+- 矩阵回写：`evidence/summonerwars/b6-p3-p4-charge-and-stat-implementation-diff-matrix-2026-07-02.md` 已将 `power_boost` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-38。
+- 后续边界：本轮补的是领域层数值读取和 breakdown 来源，不是 UI 战力展示、动画或攻击完整 E2E；若后续发现页面展示与领域值分叉，再追加 UI/E2E 专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 139. 蒙威尊者「力量强化」数值读取与上限 L4 补证（2026-07-03）
+
+本轮继续消费蒙威尊者「力量强化」（`power_up`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是从首轮最终战力证明，升级到 `calculateEffectiveStrength` 的来源拆解和 +5 上限证明。
+
+- 已锁合同：「力量强化」要求每 1 充能 +1 战力，最多 +5；蒙威尊者承载本地 `power_up`。
+- 已有实现基础：`abilities-barbaric.ts` 定义 `power_up` 为 `onDamageCalculation` 下的 `modifyStrength attr=charge maxBonus=5`；`abilityResolver.ts:calculateEffectiveStrength` 按当前单位 boosts 读取充能值，执行 `maxBonus` 上限，并在 modifiers 中记录来源能力。
+- 既有证明：`abilities-barbaric.test.ts` 已覆盖蒙威尊者 0/3/8 充能下的最终战力；`interaction-flow-e2e.test.ts` 已覆盖祖灵交流转移充能后攻击战力提升。
+- 本轮新增证据：`abilities-barbaric.test.ts` 新增 `[power_up/L4] 按当前充能获得战力并在拆解中记录+5上限`，确认蒙威尊者 0 充能时最终战力为基础 1 且无 `power_up` modifier；3 充能时最终战力为 4 且 modifier 来源为 `power_up`、值为 3；8 充能时最终战力为 6 且 modifier 来源为 `power_up`、值被封顶为 5。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-barbaric.test.ts --configLoader native -t "power_up|力量强化|蒙威尊者"` 通过，1 个测试文件通过，5 passed / 55 skipped。
+- 矩阵回写：`evidence/summonerwars/b6-p3-p4-charge-and-stat-implementation-diff-matrix-2026-07-02.md` 已将 `power_up` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-39。
+- 后续边界：本轮补的是领域层数值读取和 breakdown 来源，不是 UI 战力展示、动画或攻击完整 E2E；若后续发现页面展示与领域值分叉，再追加 UI/E2E 专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 140. 古尔-达斯「暴怒」数值读取与来源拆解 L4 补证（2026-07-03）
+
+本轮继续消费古尔-达斯「暴怒」（`rage`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是从真实攻击骰数证明，升级到 `calculateEffectiveStrength` 的当前伤害读取和来源拆解证明。
+
+- 已锁合同：「暴怒」要求每 1 伤害 +1 战力；古尔-达斯承载本地 `rage`。
+- 已有实现基础：`abilities.ts` 定义 `rage` 为 `onDamageCalculation` 下的 `modifyStrength attr=damage`；`abilityResolver.ts:calculateEffectiveStrength` 按当前单位 damage 读取已受伤害，并在 modifiers 中记录来源能力。
+- 既有证明：`entity-chain-integrity.test.ts` 已覆盖 2 伤害古尔-达斯真实声明攻击时，攻击骰数为基础 2 + 伤害 2。
+- 本轮新增证据：`entity-chain-integrity.test.ts` 新增 `[onDamageCalculation/rage/L4] 按当前伤害获得战力并在拆解中记录来源`，确认 0 伤害时最终战力为基础 2 且无 `rage` modifier；3 伤害时最终战力为 5 且 modifier 来源为 `rage`、值为 3。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/entity-chain-integrity.test.ts --configLoader native -t "onDamageCalculation/rage|暴怒"` 通过，1 个测试文件通过，2 passed / 103 skipped。
+- 矩阵回写：`evidence/summonerwars/b6-p3-p4-charge-and-stat-implementation-diff-matrix-2026-07-02.md` 已将 `rage` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-40。
+- 后续边界：本轮补的是领域层数值读取和 breakdown 来源，不是 UI 战力展示、动画或攻击完整 E2E；若后续发现页面展示与领域值分叉，再追加 UI/E2E 专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 141. 掷术师「迷魂」真实攻击最终伤害 L4 补证（2026-07-03）
+
+本轮继续消费掷术师「迷魂」（`evasion`）已 locked 合同，没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。这里补的是从“产生减伤事件”升级到真实攻击中最终伤害确实减少。
+
+- 已锁合同：「迷魂」要求相邻敌方攻击任意卡牌时，若本次攻击掷出 1 个或更多 special 面，该次攻击减少 1 点伤害。
+- 已有实现基础：`abilities-trickster.ts` 定义 `evasion` 为相邻敌方攻击触发的 `reduceDamage value=1 condition='onSpecialDice'`；`execute.ts` 在攻击命中计算中检查攻击者相邻敌方 `evasion` 单位，special 面存在时减少 hits，并发 `DAMAGE_REDUCED sourceAbilityId='evasion'`。
+- 既有证明：`entity-chain-integrity.test.ts` 已覆盖 special 面正向产生 `DAMAGE_REDUCED`、无 special 不减伤、迷魂单位不相邻不触发。
+- 本轮新增证据：`entity-chain-integrity.test.ts` 新增 `[onAdjacentEnemyAttack/evasion/L4] special 面触发迷魂后最终伤害减少1`，用固定 special 骰面对照有/无迷魂两条真实 `DECLARE_ATTACK`，确认有迷魂时最终 hits 少 1，`UNIT_DAMAGED.damage` 也少 1，并产生 `DAMAGE_REDUCED value=1 sourceAbilityId='evasion'`。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/entity-chain-integrity.test.ts --configLoader native -t "evasion|迷魂"` 通过，1 个测试文件通过，4 passed / 102 skipped。
+- 矩阵回写：`evidence/summonerwars/b7-p3-movement-and-adjacency-implementation-diff-matrix-2026-07-02.md` 已将 `evasion` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-41。
+- 后续边界：本轮补的是领域层真实攻击最终伤害，不是 UI 伤害数字展示、动画或 eventStream 回放专项；若后续发现展示层与领域伤害分叉，再追加 UI/E2E 专项。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 142. B5「冲锋 / 寒冰冲撞 / 稳固」L4 补证收口（2026-07-03）
+
+本节继续消费 B5 已 `locked` 合同，没有重新读图片/OCR，没有重新录入规则。这里补的是 B5 中仍停留在 `fixed-with-proof` 或代表链状态的实现层边界。
+
+- 野兽骑手「冲锋」：在既有生命周期修复基础上，新增真实 `MOVE_UNIT` 门禁断言，确认非直线 3 格移动被拒绝，且不会产生本回合冲锋战力。
+- 寒冰冲撞：在既有召唤师目标过滤修复基础上，新增建筑目标负向断言，确认建筑不进入目标候选，直接执行也不会对建筑产生 `ice_ram` 伤害；同时沿用稳固目标只受 1 伤、不被强制移动的代表链证据。
+- 卡拉「稳固」：在既有念力/高阶念力/寒冰冲撞 Force 免疫代表链基础上，新增普通移动断言，确认稳固不是移动限制，卡拉仍可正常移动。
+- 新增/更新测试：
+  - `src/games/summonerwars/__tests__/abilities-goblin.test.ts`：`冲锋非直线3格移动会被真实移动门禁拒绝`。
+  - `src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts`：`[ice_ram] 目标选择和执行器应排除召唤师` 同步扩展建筑目标负向。
+  - `src/games/summonerwars/__tests__/abilities-trickster.test.ts`：`稳固不影响本单位普通移动`。
+- 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-goblin.test.ts src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts src/games/summonerwars/__tests__/abilities-trickster.test.ts --configLoader native -t "冲锋|charge|ice_ram|寒冰冲撞|stable|稳固"` 通过，3 个测试文件、16 passed / 222 skipped。
+- 矩阵回写：`evidence/summonerwars/b5-p2-implementation-diff-matrix-2026-07-02.md` 已将 `charge`、`ice_ram` 升级为 `fixed-with-L4-proof`，将 `stable` 升级为 `match-with-L4-proof`；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已新增 L4-42。
+- 后续边界：本轮补的是领域层与交互系统边界，不是 UI 动画或 eventStream 回放专项；`withdraw` 的 Force 直线/空格细则仍只保留规则书核对，不因稳固代表链硬判。`ferocity`、`entangle` 仍为 disputed，不纳入本轮补证。
+
+## 143. 更新后续跑边界确认（2026-07-03）
+
+本节回应“数据录入要做好，后面才不会出问题”的纠偏：录入质量门禁必须发生在合同进入 `locked` 之前；对象已经 `locked` 且正式实现矩阵存在后，普通续跑不得重新读图片、不得 OCR、不得重新录入，只能先做合同字段完整性检查，再进入实现层补证。
+
+- 本轮未重新读图、未 OCR、未 atlas 裁图、未重新抄录规则；只核对了规范、正式矩阵和续跑状态。
+- 已更新并核对的规范入口：`.codex/skill/game-audit-workflow/SKILL.md`、`.codex/skill/data-entry-workflow/SKILL.md`、`.codex/skill/safe-image-reading/SKILL.md`、`docs/ai-rules/data-entry.md` 均已写入 `locked` 后续跑不得无故回录入层的规则。
+- 当前正式矩阵扫描结果：`evidence/summonerwars/*implementation-diff-matrix-2026-07-02.md` 中非 L4 的正式矩阵行为 0。
+- 原保留争议已在第 147 节裁定并最小修复：史米革保留「凶猛」（`ferocity`），部落投石手不承载；城塞骑士只承载「守卫」（`guardian`），不承载 `entangle`。
+- 后续续跑口径：若继续召唤师战争审计，优先从正式矩阵或残余队列中找已 `locked/已裁定` 且需要真实入口/UI/eventStream 证据的对象；不得把“数据录入要做好”解释成对已 `locked/已裁定` 对象重读图片。
+
+## 144. UI/eventStream 回放保护现状复核（2026-07-03）
+
+本节继续消费已 `locked` 合同后的实现层证据，没有重新读图片/OCR，没有重新录入规则，也没有修改机制代码。当时正式实现矩阵中非 L4 且非 `disputed-skip` 的矩阵行为为 0；第 147 节已进一步把原 `disputed-skip` 对象裁定并修复。
+
+- 通用事件游标：`src/engine/hooks/useEventStreamCursor.ts` 已覆盖首次挂载跳过历史事件、Undo/乐观回滚、`visibilitychange`/断线重连空事件流、reconcile 空事件流不重播历史事件等边界。
+- 召唤师战争事件消费侧：`src/games/summonerwars/ui/useGameEvents.ts` 对攻击事件使用 `processedAttackEventIdsRef` 防止同一攻击事件重播攻击动画；对充能事件使用 `processedChargeEventIdsRef` / `shouldConsumeChargeEvent` 防止同一充能事件重复播放充能反馈；回滚或重置时清理攻击队列、骰子状态、死亡临时态、伤害缓冲和视觉门控。
+- 已有测试证据：`useEventStreamCursor.test.ts` 覆盖重连、回滚、reconcile、旧事件恢复不重播；`useGameEvents.test.ts` 覆盖同一充能事件 id 只消费一次，以及血腥狂怒回放场景下不重复消费充能事件；`useGameEvents.rollback.test.tsx` 覆盖乐观回滚后旧攻击事件不重播、后续新攻击事件正常消费；`useMovementTrails.rollback.test.tsx` 覆盖移动轨迹回滚清理。
+- 本轮验证命令：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/engine/hooks/__tests__/useEventStreamCursor.test.ts src/games/summonerwars/__tests__/useGameEvents.test.ts src/games/summonerwars/__tests__/useGameEvents.rollback.test.tsx src/games/summonerwars/__tests__/useMovementTrails.rollback.test.tsx --configLoader native`。
+- 验证结果：4 个测试文件通过，41 passed。
+- 收口边界：这证明当前已有通用 UI/eventStream 回放保护和关键代表链测试，不能据此回头重录数据，也不能把候选展示风险升级成机制 bug。若后续发现某个具体对象在真实页面、动画帧或在线重连中仍重复打开选择/重复播放动画，应另开对象级 UI/E2E 专项，用该真实症状作为前提；在没有具体症状前，不继续补同类领域层测试。
+
+## 145. B1 续跑状态口径修正（2026-07-03）
+
+本节回应“现在不是重新录入数据”的纠偏：B1 五个已 `locked` 对象继续消费现有合同，不重新读图片/OCR，不重新抄录卡图，也不修改机制代码。本轮只修正实现矩阵里的状态口径，避免后续脚本或人工续跑把旧的中间态误判为待重审、待重录或待修复。
+
+- 已更新矩阵：`evidence/summonerwars/b1-p1-implementation-diff-matrix-2026-07-02.md`。
+- 状态修正：凯鲁尊者「撤退」（`withdraw`）、卡拉「高阶念力」（`high_telekinesis`）、清风法师「念力」（`telekinesis`）均按当前实现层证据归入 `match-with-L4-proof`；梅肯达·露/边境弓箭手「连续射击」（`rapid_fire`）与古尔壮「心灵传念」（`mind_transmission`）原本已是 `match-with-L4-proof`。
+- 现实含义：B1 当前没有对象需要回录入层；也没有对象因 B1 矩阵状态需要进入机制修复。
+- Force 细则边界：凯鲁尊者「撤退」、卡拉「高阶念力」、清风法师「念力」涉及的 `Force` 直线/空格约束，只保留为“通用规则来源专项”注记；若后续找到权威规则来源证明当前通用 Force 实现不符，再单独开 Force 细则专项，不得把这解释成已 `locked` 对象需要重新看图或重新录入。
+- 续跑入口：普通继续时先看 `implementation-diff` 矩阵、`l3-l4-residual-proof-queue-2026-07-02.md`、本文件第 143-145 节和 `temp/summonerwars-audit/continuation-task-state.json`；只有发现合同字段缺失、来源冲突或对象归属不清，才回到录入层。
+
+## 146. Force 通用规则来源专项边界复核（2026-07-03）
+
+本节继续执行“数据录入做好，但 locked 后不重录”的口径：本轮没有读取图片、没有 OCR、没有 atlas 裁图，也没有修改机制代码。这里只复核 Force 通用规则来源专项，防止它被误当成 B1/B3 已 locked 对象的重录入口或机制 bug。
+
+- 本地实现层证据：`src/games/summonerwars/domain/helpers.ts` 的 `isForceMovePathClear` 记录普通 Force 路径必须同一行/列，路径含终点都必须为空；`getForceDestinations` 记录玩家可选择上/下/左/右任意方向，与来源单位位置无关，普通 Force 不穿过单位，单位和建筑都阻挡。
+- 本地旧 helper 边界：`getPushPullDirection`、`getPushPullAxes` 已标注为 deprecated，原因是 Force 不应按 source 位置推断方向；新路径应使用 `getForceDestinations`。
+- 证据强度裁定：这些是本地实现与注释证据，只能证明当前实现口径，不足以替代官方 Force 规则真相源。
+- 当前状态：凯鲁尊者「撤退」（`withdraw`）、卡拉「高阶念力」（`high_telekinesis`）、清风法师「念力」（`telekinesis`）、斯瓦拉「结构迁移」（`structure_shift`）在各自实现矩阵中继续按已补 L4 处理；Force 通用规则来源保持为独立专项缺口。
+- 后续边界：只有找到官方规则来源并证明“普通 Force 方向/阻挡/空格”与本地实现冲突时，才单独降级 Force 细则，进入最小失败测试和最小修复；不得因为这个专项未锁官方来源而把已 locked 对象送回图片/OCR/重新录入。
+
+## 147. disputed 归属裁定与配置误挂最小修复（2026-07-03）
+
+本节继续执行“数据录入要做好，但 locked/已裁定后不重录”的口径：本轮没有重新读取图片、没有 OCR、没有 atlas 裁图。处理对象只限前文保留的两个 `disputed` 归属项，并使用官方在线文本包作为归属裁定来源。
+
+- 史米革「凶猛」（`ferocity`）：官方在线文本包中 `Smeg` 邻近同时出现 `Magic Junkie|TEXT` 和 `Relentless|TEXT`；`Relentless` 原文为 “You may choose this unit as an extra attacking unit during your Attack Phase.”。`Horde Slinger` 邻近只锁到单位名/简称，未出现 Relentless/Ferocity 能力文本。裁定结果：史米革承载 `ferocity`，部落投石手不承载。
+- 城塞骑士误挂「缠斗」（`entangle`）：官方在线文本包中 `Citadel Knight` 邻近只出现 `Protect|TEXT`；`Engage|TEXT` 出现在掷术师/Deceiver 邻近，原文为 “Each time an adjacent enemy unit moves or is forced away from this unit, add 1 damage to that enemy.”。裁定结果：城塞骑士只承载 `guardian`/Protect，不承载 Engage/Entangle；官方 Engage 继续由掷术师「缠斗」（`rebound`）合同承载。
+- 最小配置修复：`src/games/summonerwars/config/factions/goblin.ts` 移除部落投石手误挂的 `ferocity`，保留史米革 `magic_addiction` + `ferocity`；`src/games/summonerwars/config/factions/paladin.ts` 移除城塞骑士误挂的 `entangle`，保留 `guardian`。
+- 未扩大范围：没有删除 `abilities-goblin.ts` 中的 `ferocity` 定义，因为史米革仍使用；没有删除 `abilities-paladin.ts` 中的 `entangle` 定义，只标注为未挂载兼容定义，避免把配置误挂修复扩大成共享机制重构。
+- 回归测试：已修正 `abilities-goblin.test.ts` 和 `abilities-paladin.test.ts`，覆盖史米革承载 `ferocity`、部落投石手不承载 `ferocity`、城塞骑士只承载 `guardian`、敌方远离城塞骑士不触发缠斗伤害。
+- 验证命令：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-goblin.test.ts src/games/summonerwars/__tests__/abilities-paladin.test.ts src/games/summonerwars/__tests__/abilities-trickster.test.ts src/games/summonerwars/__tests__/entity-chain-integrity.test.ts --configLoader native -t "ferocity|凶猛|凶残|guardian|守卫|entangle|缠斗|rebound"`。
+- 验证结果：4 个测试文件通过，17 passed / 227 skipped。
+- 当前状态：`ferocity` 与 `entangle` 均已出 `disputed`；68 个风险对象当前为 `4 L4 + 64 locked/已裁定 + 0 disputed + 0 待建合同`。后续继续只消费已锁/已裁定合同做实现层残余补证，不回图片/OCR/重新录入。
+
+## 148. implementation 矩阵清点口径修正（2026-07-03）
+
+本节继续执行“数据录入做好，但 locked/已裁定后不重录”的口径：本轮没有读取图片、没有 OCR、没有 atlas 裁图，没有新增机制修复。这里处理的是续跑清点脚本发现的两个假缺口，避免后续把矩阵格式问题误判成真实机制审计缺口。
+
+- B2 假缺口：`evidence/summonerwars/b2-p1-implementation-diff-matrix-2026-07-02.md` 的“已锁规则基线”是规则合同摘要，不是实现对照矩阵；其中 `prepare`、`inspire` 已在下方正式实现对照矩阵中标为 `match-with-L4-proof`。本轮将规则基线表中的对象 ID 改为非反引号格式，并新增说明，避免脚本把规则基线误扫成 implementation row。
+- B4 假缺口：`evidence/summonerwars/b4-p2-implementation-diff-matrix-2026-07-02.md` 中卡拉「高阶念力」代替攻击（`high_telekinesis_instead`）已由高阶目标范围/行动经济直接断言 + 清风法师「念力」代替攻击（`telekinesis_instead`）二段选择代表链覆盖。本轮将其分流状态统一为 `match-with-L4-proof`，并保留“代表链已补”的说明。
+- 当前清点结果：8 个正式 `implementation-diff` 矩阵共 68 行正式实现对象，非 L4 行为 0。这里的 68 行不含 P0 四个专项对象；P0 四个对象已在 `p0-l4-special-audit-matrix-2026-07-02.md` 和本文件第 143-147 节补到对象级 L4。
+- 验证命令：使用 PowerShell 读取 `evidence/summonerwars/*implementation-diff-matrix-2026-07-02.md`，仅把以 ``| `对象ID` `` 开头的正式实现行纳入扫描，并检查状态是否包含 `match-with-L4-proof`、`fixed-with-L4-proof`、`L4 已补` 或 `disputed`。
+- 验证结果：`TOTAL_NON_L4=0`；`temp/summonerwars-audit/continuation-task-state.json` JSON 解析通过，最新 note 为 C82。
+- 后续边界：普通续跑不再从 B2 `prepare/inspire`、B4 `high_telekinesis_instead` 或 P0 乐观确认/重连缺口继续；若后续出现具体真实页面、事件回放、UI 展示或官方规则来源冲突，再按真实症状或合同降级单独开专项。
+
+## 149. 当前实现矩阵与定向回归验证（2026-07-03）
+
+本节验证 C82 后的当前实现层状态，没有读取图片、没有 OCR、没有重新录入规则，也没有新增机制修复。
+
+- 当前矩阵状态：8 个正式 `implementation-diff` 矩阵共 68 行正式实现对象，非 L4 行为 0；P0 四个专项对象已由 `p0-l4-special-audit-matrix-2026-07-02.md` 和本文件第 143-148 节覆盖。
+- 验证命令：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-barbaric.test.ts src/games/summonerwars/__tests__/abilities-goblin.test.ts src/games/summonerwars/__tests__/abilities-necromancer-execute.test.ts src/games/summonerwars/__tests__/abilities-paladin.test.ts src/games/summonerwars/__tests__/abilities-trickster.test.ts src/games/summonerwars/__tests__/entity-chain-integrity.test.ts src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts src/games/summonerwars/__tests__/useGameEvents.test.ts --configLoader native`。
+- 验证结果：8 个测试文件通过，496 passed。
+- 运行时提示：测试输出中出现的 “无法攻击该目标” 和 “该单位本回合已移动” 是负向断言用例预期触发的验证失败日志，对应友方目标不可攻击、准备后不能再移动，不是测试失败。
+- 当前续跑结论：现有召唤师战争实现矩阵和本轮相关测试已经对齐；普通继续不再从已清零的 implementation 矩阵、P0 乐观/重连缺口、B2 `prepare/inspire` 或 B4 `high_telekinesis_instead` 续跑。后续只有出现具体真实页面症状、事件回放症状、UI 展示分叉、官方规则来源冲突或新的合同字段缺口时，才按对象降级或另开专项。
+
+## 150. C84 残余队列续跑入口收口（2026-07-03）
+
+本节回应“数据录入就要做好，后面才不会出问题”的纠偏：C84 不回图片/OCR/atlas 裁图，也不重新录入规则；这里只把残余队列从旧的常规待办入口收口为已完成索引和条件性专项入口。
+
+- 已更新文件：`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md`。
+- 当前状态：该文件顶部已明确改为“已完成残余补证索引 + 条件性专项入口”；C83 的 8 个正式 implementation-diff 矩阵、68 行正式实现对象、`TOTAL_NON_L4=0` 和 8 个测试文件 496 passed 仍是当前基线。
+- 录入边界：数据录入质量必须发生在对象进入 `locked` / 已裁定之前；进入 `locked` 后，普通续跑只消费合同做实现审计、补证、最小修复和 evidence 回写。
+- 回录入条件：只有发现合同字段缺失、来源互相冲突、对象归属不清，才把该对象降级为 `blocked` 或 `disputed` 并回写 evidence；没有这类证据时，不得把已锁对象送回图片/OCR/重新录入。
+- 后续入口：只有出现具体真实页面症状、事件回放症状、UI 展示分叉、官方规则来源冲突或新的合同字段缺口，才另开对象级专项；旧 notes、旧矩阵和旧 evidence 里的“下一步 / 待执行 / 仍缺”只能作为历史过程，不代表当前常规待办。
+
+## 151. C85 在线文本包越权裁定纠正（2026-07-03）
+
+本节纠正第 147 节和 C80 的错误口径：官方在线文本包、Wiki、网页文本或旧脚本 bundle 不能在实现审计阶段高于本地清晰卡图/已锁录入合同；这类来源只能作为录入阶段的对照源或候选线索。此前把官方在线文本包用于直接裁定史米革/部落投石手「凶猛」（`ferocity`）和城塞骑士「缠斗」（`entangle`）归属，并据此写成“已裁定/已修复”，属于审计阶段越权。
+
+- 规范回写：已更新 `.codex/skill/game-audit-workflow/SKILL.md`、`.codex/skill/data-entry-workflow/SKILL.md` 和 `docs/ai-rules/testing-audit.md`，明确审计阶段不得临时查 Wiki、网页资料、在线文本包、旧脚本 bundle 或第三方数据库来裁定卡面规则、对象归属，且不得把这些来源排到本地清晰卡图之上。
+- 状态纠正：`ferocity` 与 `entangle` 不再按“官方在线文本包已裁定”计为已锁/已裁定对象；当前应降回 `disputed-待本地卡图合同裁定`。
+- 代码边界：`goblin.ts`、`paladin.ts`、`abilities-goblin.ts`、`abilities-paladin.ts`、`validate.ts` 中相关改动不能继续汇报为已证实修复；在本地清晰卡图/已锁合同未裁定前，只能视为待裁定候选改动。
+- 后续要求：若要重新确认这两项，只对史米革/部落投石手「凶猛」（`ferocity`）和城塞骑士「缠斗」（`entangle`）做**定向合同裁定**：用本地清晰卡图、完整单对象图、用户当轮截图或用户明确指定的权威来源裁定对象归属。这里不是全量重新录入，也不是让普通续跑退回图片/OCR；裁定前不得写“修复已完成”或把测试通过当作规则归属证明。
+
+## 152. C86 审计与录入边界再纠正（2026-07-03）
+
+本节纠正 C85 后仍残留的错误表达：把 `ferocity` / `entangle` 写成“必须回本地卡图合同裁定”，仍然会让后续执行者误以为每次审计都要重新读图或重新录入。正确边界如下：
+
+- 普通机制审计不要求重新录入数据，也不默认要求卡图；继续审计时先消费当前已有规则文档、配置、实现、测试、evidence、矩阵和状态文件。
+- 若审计发现来源不足或对象归属冲突，只能登记 `blocked/disputed` 缺口，不能在审计流程里临时查 Wiki、在线文本包、网页文本、卡图或 OCR 来补成权威结论。
+- `ferocity` / `entangle` 当前状态不是“需要马上看卡图”，而是“不能把 C80/C84 的在线文本包裁定当作已证实修复”。是否启动对象归属复核，必须由用户明确进入数据录入/归属裁定任务。
+- 已有相关代码改动仍只能视为待裁定候选改动；普通审计续跑不得基于它们宣称已修复，也不得为了它们自动启动图片读取。
+
+## 153. C88 修复汇报必须同时附规则原文和现有实现（2026-07-03）
+
+本节再次纠正 C87 的错误口径：“能力描述/现有实现描述”不够，后续汇报必须拆成两列：**规则原文/已消费合同原文** 与 **现有实现行为**。只有两者并列，用户才能判断修复是否对齐规则；规则原文未锁定时，不得把实现描述当作原文，也不得报“已证实修复”。
+
+本轮已有相关候选改动对应能力如下：
+
+| 对象 | 能力 | 规则原文/已消费合同原文 | 现有实现行为 | 本轮改动 | 当前状态 |
+|---|---|---|---|---|---|
+| 史米革 / 部落投石手 | 凶猛（`ferocity`） | 规则原文/归属未锁定；C80/C84 的在线文本包裁定已撤销，不能当作审计阶段权威原文 | `ferocity` 当前实现语义为“可作为额外攻击单位” | `goblin.ts` 中部落投石手移除 `ferocity`；`abilities-goblin.ts` 注释改为史米革承载 | 待裁定候选改动，不能汇报为已证实修复 |
+| 城塞骑士 | 缠斗（`entangle`） | 规则原文/归属未锁定；C80/C84 的在线文本包裁定已撤销，不能当作城塞骑士归属证明 | `entangle` 当前实现语义为“相邻敌方远离时造成 1 伤害” | `paladin.ts` 中城塞骑士移除 `entangle`；`abilities-paladin.ts` 改为未挂载兼容定义 | 待裁定候选改动，不能汇报为已证实修复 |
+| 城塞骑士 | 守卫（`guardian`） | 已消费合同原文/子句：相邻敌方攻击时，攻击目标必须是有守卫能力的单位 | `validate.ts` 在声明攻击时检查攻击者相邻敌方守卫；若目标不是守卫且存在可攻击守卫目标，则拒绝攻击 | `validate.ts` 将守卫门禁扩到非守卫目标，包括建筑目标；城塞骑士配置保留 `guardian` | 实现层修复候选/已验证链路的一部分；对外汇报必须同时附规则原文、现有实现和验证证据 |
+
+## 154. C89 已录入合同检索纠正（2026-07-03）
+
+本节纠正 C88 汇报里“像是数据没录入”的错误表达：当前不是用户没有录入数据，而是我没有先把既有录入合同入口查全，就把 `blocked/disputed` 误说成“原文/归属未锁定导致要回录入”。后续继续审计必须先查既有录入合同，不得默认要求重新录入。
+
+- 已找到的录入入口：`evidence/summonerwars/data-entry-source-map-2026-07-02.md` 与 `evidence/summonerwars/data-entry-crop-manifest-2026-07-02.md` 已登记史米革、部落投石手、城塞骑士、掷术师的 atlas 图源、spriteIndex、裁图入口和合同状态。
+- 已找到的规则原文矩阵：`b5-p2-rule-text-lock-matrix-2026-07-02.md` 已锁城塞骑士「守卫」（`guardian`）官方 `Protect` 原文；`b7-p3-movement-and-adjacency-rule-text-lock-matrix-2026-07-02.md` 已锁掷术师「缠斗」（`rebound`）官方 `Engage` 原文。
+- 当前正确结论：史米革/部落投石手「凶猛」（`ferocity`）和城塞骑士「缠斗」（`entangle`）不是“没录入”，而是已有录入入口和候选线索，但合同状态仍为对象归属争议；普通机制审计不得把它们自动拉回重录，也不得把候选改动汇报成已证实修复。
+- 规范回写：`.codex/skill/game-audit-workflow/SKILL.md` 与 `docs/ai-rules/testing-audit.md` 已新增“先查已有录入合同，不得默认判没录入”门禁。
+
+## 155. C90 中文录入优先中文汇报（2026-07-03）
+
+本节补齐 C89 后的汇报口径：召唤师战争录入和本地对象命名以中文为主，后续审计与修复汇报必须优先给用户可直接核对的中文对象、中文能力名和中文规则描述/合同原文；英文官方名、英文原文、能力 id 与代码标识只能作为附证或定位。
+
+- 规范回写：`.codex/skill/game-audit-workflow/SKILL.md` 与 `docs/ai-rules/testing-audit.md` 已新增“中文录入优先中文汇报”门禁。
+- 汇报格式：表格默认列为“对象 / 能力 / 中文规则描述或合同状态 / 英文附证 / 现有实现 / 本轮改动 / 状态”，不得只列英文或 id。
+- 本轮适用对象：史米革/部落投石手「凶猛」、城塞骑士「缠斗」、城塞骑士「守卫」、掷术师「缠斗」。
+
+## 156. C91 原文列不得用状态句顶替（2026-07-03）
+
+本节纠正 C90 表格仍使用“已有录入入口 / 合同未锁定 / 是否承载未锁成可修复合同”这类状态句顶替原文的问题。后续表格中凡列名包含“规则原文 / 合同原文 / 中文规则描述 / 能力描述”，只能填逐字原文；没有找到逐字原文就写“未找到原文记录”，再另列合同状态和已查入口。
+
+- 规范回写：`.codex/skill/game-audit-workflow/SKILL.md` 与 `docs/ai-rules/testing-audit.md` 已新增“原文列必须填原文，不得用状态句顶替”门禁。
+- 本轮表格重列口径：史米革/部落投石手「凶猛」若在现有合同中没有逐字中文原文，原文列写“未找到中文原文记录”；英文候选 `Relentless` 原文只能放在英文附证列，不能冒充中文原文或归属裁定。
+- 城塞骑士「守卫」和掷术师「缠斗」已有英文原文；中文规则描述必须根据已锁子句给出，不得只贴英文或 id。

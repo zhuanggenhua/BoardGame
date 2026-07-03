@@ -78,6 +78,8 @@ const formatQidahenFallbackLogText = (core: QidahenCore, command: Command): stri
             return '执行已选行动';
         case QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION:
             return '结算待决行动';
+        case QIDAHEN_COMMANDS.PLAY_TACTIC_CARD:
+            return '打出战术牌';
         case QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION:
             return '结算战后选择';
         case QIDAHEN_COMMANDS.RESOLVE_KHAN_EDICT_CHOICE:

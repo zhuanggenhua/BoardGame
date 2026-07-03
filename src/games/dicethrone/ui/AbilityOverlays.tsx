@@ -283,6 +283,7 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
         );
         const [allLayouts, setAllLayouts] = React.useState(() => ({
             v1: DICETHRONE_ABILITY_SLOT_LAYOUTS.v1.map(slot => ({ ...slot })),
+            v2OldHero: DICETHRONE_ABILITY_SLOT_LAYOUTS.v2OldHero.map(slot => ({ ...slot })),
             v2: DICETHRONE_ABILITY_SLOT_LAYOUTS.v2.map(slot => ({ ...slot })),
         }));
         const slots = allLayouts[layoutVersion] ?? getAbilitySlotLayoutForCharacter(characterId);

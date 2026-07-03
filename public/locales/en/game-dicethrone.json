@@ -3044,10 +3044,10 @@
     },
     "wild-growth-2": {
       "name": "Wild Growth II",
-      "description": "Large Straight: deal 8 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage.",
+      "description": "2 Branch + 3 Leaf: deal 4 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage.",
       "effects": {
-        "roll5BranchLeafSpirit": "Deal 8 damage and roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
-        "damage8": "Deal 8 damage."
+        "roll5BranchLeafSpirit": "Deal 4 damage and roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+        "damage4": "Deal 4 damage."
       }
     },
     "wild-growth-2-dazzle": {
@@ -3056,6 +3056,22 @@
       "effects": {
         "inflictThorn": "Inflict Thorn.",
         "damage4Unblockable": "Deal 4 undefendable damage."
+      }
+    },
+    "wild-roar": {
+      "name": "Wild Roar",
+      "description": "Large Straight: deal 6 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+      "effects": {
+        "roll5BranchLeafSpirit": "Roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+        "damage6": "Deal 6 damage."
+      }
+    },
+    "wild-roar-2": {
+      "name": "Wild Roar II",
+      "description": "Large Straight: deal 8 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+      "effects": {
+        "roll5BranchLeafSpirit": "Roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+        "damage8": "Deal 8 damage."
       }
     },
     "rooted": {
@@ -4887,8 +4903,8 @@
       "description": "Upgrade Vengeful Vines: small straight; apply Thorn; deal 8 damage."
     },
     "upgrade-wild-growth-2": {
-      "name": "Wild Growth II",
-      "description": "Upgrade Wild Growth: 2 Branch + 3 Leaf; deal 4 damage. You may remove up to 2 Spirits; each removed Spirit adds +4 damage. You may discard Life Sap to make this attack undefendable."
+      "name": "Wild Roar II",
+      "description": "Upgrade Wild Roar: Large Straight deals 8 damage, then roll 5 dice; each Branch +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit."
     },
     "upgrade-shattering-fist-2": {
       "name": "Shattering Fist II",

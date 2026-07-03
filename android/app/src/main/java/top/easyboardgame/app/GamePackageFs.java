@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -132,9 +134,26 @@ final class GamePackageFs {
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
             throw new IOException("创建目录失败");
         }
-        try (FileOutputStream output = new FileOutputStream(file)) {
-            output.write((payload.toString() + "\n").getBytes(StandardCharsets.UTF_8));
+        writeTextAtomically(file, payload.toString() + "\n");
+    }
+
+    static void writeTextAtomically(File file, String text) throws IOException {
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("创建目录失败");
         }
+
+        File tempFile = new File(file.getAbsolutePath() + ".tmp");
+        try (FileOutputStream output = new FileOutputStream(tempFile)) {
+            output.write(text.getBytes(StandardCharsets.UTF_8));
+            output.getFD().sync();
+        }
+        Files.move(
+            tempFile.toPath(),
+            file.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE
+        );
     }
 
     static void writeMetadata(

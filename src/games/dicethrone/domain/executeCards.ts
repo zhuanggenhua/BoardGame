@@ -159,6 +159,7 @@ export function executeCardCommand(
                     payload: {
                         playerId: actingPlayerId,
                         cardId: card.id,
+                        previewRef: card.previewRef,
                         cpCost: 0,
                     },
                     sourceCommandType: command.type,
@@ -187,6 +188,7 @@ export function executeCardCommand(
                 payload: { 
                     playerId: actingPlayerId, 
                     cardId: card.id,
+                    previewRef: card.previewRef,
                     cpCost: card.cpCost,
                 },
                 sourceCommandType: command.type,
@@ -299,6 +301,7 @@ export function executeCardCommand(
                     payload: {
                         playerId: state.activePlayerId,
                         cardId: card.id,
+                        previewRef: card.previewRef,
                         cpCost: 0,
                     },
                     sourceCommandType: command.type,

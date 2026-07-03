@@ -45,6 +45,77 @@ const retreatAndRoutStepValidator = (state: MatchState<unknown>, step: { id: str
     }
 };
 
+const cavalryPlunderStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    switch (step.id) {
+        case 'choose-plunder':
+            return Boolean(core.pendingTargetAction);
+        case 'plunder-result':
+        case 'finish':
+            return Boolean(core.lastSeasonSummary);
+        default:
+            return true;
+    }
+};
+
+const cavalryEvasionStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    switch (step.id) {
+        case 'choose-evasion':
+            return Boolean(core.pendingTargetAction);
+        case 'evasion-result':
+        case 'finish':
+            return (core.lastSeasonSummary?.lines ?? []).some((line) => line.includes('骑兵避战'));
+        default:
+            return true;
+    }
+};
+
+const neutralInvasionStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    switch (step.id) {
+        case 'resolve-neutral':
+            return Boolean(core.pendingTargetAction)
+                && core.pendingTargetAction.targetRuntimeRegionId === 'city-region-20'
+                && core.pendingTargetAction.defenderFactionId === 'neutral';
+        case 'neutral-result':
+        case 'finish':
+            return (core.lastSeasonSummary?.lines ?? []).some((line) => line.includes('中立守军'))
+                || core.regions.some((region) => (
+                    !region.isLogicalRegion
+                    && region.id === 'city-region-20'
+                    && region.controller === 'neutral'
+                    && region.troops > 0
+                    && (region.note ?? '').includes('中立守军')
+                ));
+        default:
+            return true;
+    }
+};
+
+const waterDispatchStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    const pending = core.pendingTargetAction;
+    switch (step.id) {
+        case 'choose-water-target':
+            return core.turnPhase === 'dispatch-targeting'
+                && core.actionWheelPosition === 'wheel-hire'
+                && core.selectedRegionId === 'song-jin';
+        case 'water-boundary':
+            return Boolean(pending)
+                && pending?.sourceRegionId === 'song-jin'
+                && pending?.targetRuntimeRegionId === 'city-region-22'
+                && pending?.attackBoundaryType === 'coast'
+                && pending?.boundaryUnitCap === 2;
+        case 'finish':
+            return Boolean(pending)
+                && pending?.attackBoundaryType === 'coast'
+                && pending?.boundaryUnitCap === 2;
+        default:
+            return true;
+    }
+};
+
 const wheelSharedCostStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
@@ -406,9 +477,10 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
         {
             id: 'tactic-window',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.tacticWindow',
-            highlightTarget: 'qidahen-raid-intent',
-            position: 'left',
-            infoStep: true,
+            highlightTarget: 'qidahen-hand-zone',
+            position: 'bottom',
+            allowedCommands: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
+            advanceOnEvents: [{ type: 'TACTIC_CARD_PLAYED' }],
         },
         {
             id: 'battle-damage',
@@ -538,6 +610,153 @@ const QIDAHEN_RETREAT_AND_ROUT_TUTORIAL: TutorialManifest = {
             id: 'finish',
             content: 'game-qidahen:tutorial.retreatAndRout.steps.finish',
             highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+    ],
+};
+
+const QIDAHEN_CAVALRY_PLUNDER_TUTORIAL: TutorialManifest = {
+    id: 'cavalry-plunder',
+    stepValidator: cavalryPlunderStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.cavalryPlunder.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-plunder',
+            content: 'game-qidahen:tutorial.cavalryPlunder.steps.choosePlunder',
+            highlightTarget: 'qidahen-resolve-pending-action-cavalry-plunder-defender',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            advanceOnEvents: [{ type: 'PENDING_ACTION_RESOLVED', match: { attackerCavalryPlunder: true } }],
+        },
+        {
+            id: 'plunder-result',
+            content: 'game-qidahen:tutorial.cavalryPlunder.steps.plunderResult',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.cavalryPlunder.steps.finish',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+    ],
+};
+
+const QIDAHEN_CAVALRY_EVASION_TUTORIAL: TutorialManifest = {
+    id: 'cavalry-evasion',
+    stepValidator: cavalryEvasionStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.cavalryEvasion.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-evasion',
+            content: 'game-qidahen:tutorial.cavalryEvasion.steps.chooseEvasion',
+            highlightTarget: 'qidahen-resolve-pending-action-cavalry-evasion-city-region-19',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            advanceOnEvents: [{ type: 'PENDING_ACTION_RESOLVED', match: { defenderCavalryEvasion: true } }],
+        },
+        {
+            id: 'evasion-result',
+            content: 'game-qidahen:tutorial.cavalryEvasion.steps.evasionResult',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.cavalryEvasion.steps.finish',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+    ],
+};
+
+const QIDAHEN_NEUTRAL_INVASION_TUTORIAL: TutorialManifest = {
+    id: 'neutral-invasion',
+    stepValidator: neutralInvasionStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.neutralInvasion.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'resolve-neutral',
+            content: 'game-qidahen:tutorial.neutralInvasion.steps.resolveNeutral',
+            highlightTarget: 'qidahen-resolve-pending-action',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            advanceOnEvents: [{ type: 'PENDING_ACTION_RESOLVED' }],
+        },
+        {
+            id: 'neutral-result',
+            content: 'game-qidahen:tutorial.neutralInvasion.steps.neutralResult',
+            highlightTarget: 'qidahen-season-summary',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.neutralInvasion.steps.finish',
+            highlightTarget: 'qidahen-region-city-region-20',
+            position: 'top',
+            infoStep: true,
+        },
+    ],
+};
+
+const QIDAHEN_WATER_DISPATCH_TUTORIAL: TutorialManifest = {
+    id: 'water-dispatch',
+    stepValidator: waterDispatchStepValidator,
+    steps: [
+        {
+            id: 'overview',
+            content: 'game-qidahen:tutorial.waterDispatch.steps.overview',
+            position: 'center',
+            requireAction: false,
+            showMask: true,
+        },
+        {
+            id: 'choose-water-target',
+            content: 'game-qidahen:tutorial.waterDispatch.steps.chooseWaterTarget',
+            highlightTarget: 'qidahen-wheel-dispatch-selection',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
+        },
+        {
+            id: 'water-boundary',
+            content: 'game-qidahen:tutorial.waterDispatch.steps.waterBoundary',
+            highlightTarget: 'qidahen-raid-intent',
+            position: 'left',
+            infoStep: true,
+        },
+        {
+            id: 'finish',
+            content: 'game-qidahen:tutorial.waterDispatch.steps.finish',
+            highlightTarget: 'qidahen-raid-intent',
             position: 'top',
             infoStep: true,
         },
@@ -1082,7 +1301,35 @@ const QIDAHEN_TUTORIALS: TutorialCollection = {
             titleKey: 'tutorial.retreatAndRout.title',
             descriptionKey: 'tutorial.retreatAndRout.description',
             hiddenFromCatalog: true,
+            nextTutorialId: 'cavalry-evasion',
             manifest: QIDAHEN_RETREAT_AND_ROUT_TUTORIAL,
+        },
+        'cavalry-evasion': {
+            titleKey: 'tutorial.cavalryEvasion.title',
+            descriptionKey: 'tutorial.cavalryEvasion.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'cavalry-plunder',
+            manifest: QIDAHEN_CAVALRY_EVASION_TUTORIAL,
+        },
+        'cavalry-plunder': {
+            titleKey: 'tutorial.cavalryPlunder.title',
+            descriptionKey: 'tutorial.cavalryPlunder.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'neutral-invasion',
+            manifest: QIDAHEN_CAVALRY_PLUNDER_TUTORIAL,
+        },
+        'neutral-invasion': {
+            titleKey: 'tutorial.neutralInvasion.title',
+            descriptionKey: 'tutorial.neutralInvasion.description',
+            hiddenFromCatalog: true,
+            nextTutorialId: 'water-dispatch',
+            manifest: QIDAHEN_NEUTRAL_INVASION_TUTORIAL,
+        },
+        'water-dispatch': {
+            titleKey: 'tutorial.waterDispatch.title',
+            descriptionKey: 'tutorial.waterDispatch.description',
+            hiddenFromCatalog: true,
+            manifest: QIDAHEN_WATER_DISPATCH_TUTORIAL,
         },
         'wheel-shared-cost': {
             titleKey: 'tutorial.wheelSharedCost.title',

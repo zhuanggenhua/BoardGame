@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.ProtocolException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -56,6 +58,7 @@ public class GamePackagePlugin extends Plugin {
     static final String NOTIFICATION_PERMISSION_ALIAS = "notifications";
     private static final int HTTP_RANGE_NOT_SATISFIABLE = 416;
     private static final int BUFFER_SIZE = 16 * 1024;
+    private static final int DOWNLOAD_MAX_ATTEMPTS = 4;
     private static final String ERROR_NETWORK_TIMEOUT = "network-timeout";
     private static final String ERROR_HTTP = "http-error";
     private static final String ERROR_RESUME_NOT_SUPPORTED = "resume-not-supported";
@@ -330,7 +333,7 @@ public class GamePackagePlugin extends Plugin {
                 if (GamePackageFs.cleanupBrokenCurrentInstall(getContext(), gameId)) {
                     Log.w(TAG, "getInstallState cleaned-broken-current gameId=" + gameId);
                 }
-                cleanupInactivePackageArtifacts(gameId, null, taskRunning);
+                cleanupInactivePackageArtifacts(gameId, resolveStagingVersionToKeep(payload, taskRecord), taskRunning);
                 Log.i(TAG, "getInstallState empty gameId=" + gameId + " taskRunning=" + taskRunning);
                 result.put("exists", false);
                 call.resolve(result);
@@ -339,7 +342,7 @@ public class GamePackagePlugin extends Plugin {
 
             payload = normalizeStaleInstallState(gameId, payload, taskRunning, taskRecord);
             payload = normalizeInstalledStateAgainstFiles(gameId, payload, taskRunning);
-            cleanupInactivePackageArtifacts(gameId, null, taskRunning);
+            cleanupInactivePackageArtifacts(gameId, resolveStagingVersionToKeep(payload, taskRecord), taskRunning);
 
             result.put("exists", true);
             copyJsonValue(payload, result, "gameId");
@@ -615,6 +618,63 @@ public class GamePackagePlugin extends Plugin {
             return;
         }
 
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
+            try {
+                downloadArchiveOnce(urlValue, targetFile, partFile, expectedChecksum, cancelFlag, gameId, assetPackVersion, attempt);
+                return;
+            } catch (Exception error) {
+                lastError = error;
+                boolean recoverable = isRecoverableDownloadError(error);
+                long partBytes = partFile.exists() ? partFile.length() : 0L;
+                Log.w(
+                    TAG,
+                    "downloadArchive attempt-failed gameId=" + gameId
+                        + " version=" + assetPackVersion
+                        + " attempt=" + attempt
+                        + " maxAttempts=" + DOWNLOAD_MAX_ATTEMPTS
+                        + " recoverable=" + recoverable
+                        + " cancelRequested=" + cancelFlag.get()
+                        + " partExists=" + partFile.exists()
+                        + " partBytes=" + partBytes
+                        + " errorChain=" + summarizeThrowableChain(error),
+                    error
+                );
+                if (cancelFlag.get() || !recoverable || attempt >= DOWNLOAD_MAX_ATTEMPTS) {
+                    throw error;
+                }
+                Log.w(
+                    TAG,
+                    "downloadArchive retry gameId=" + gameId
+                        + " version=" + assetPackVersion
+                        + " attempt=" + attempt
+                        + " nextAttempt=" + (attempt + 1)
+                        + " partBytes=" + partBytes,
+                    error
+                );
+                try {
+                    Thread.sleep(1000L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw interrupted;
+                }
+            }
+        }
+        if (lastError != null) {
+            throw lastError;
+        }
+    }
+
+    private void downloadArchiveOnce(
+        String urlValue,
+        File targetFile,
+        File partFile,
+        String expectedChecksum,
+        AtomicBoolean cancelFlag,
+        String gameId,
+        String assetPackVersion,
+        int attempt
+    ) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(urlValue).openConnection();
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(30000);
@@ -627,6 +687,7 @@ public class GamePackagePlugin extends Plugin {
             TAG,
             "downloadArchive start gameId=" + gameId
                 + " version=" + assetPackVersion
+                + " attempt=" + attempt
                 + " url=" + urlValue
                 + " resumedBytes=" + resumedBytes
                 + " partExists=" + partFile.exists()
@@ -665,6 +726,7 @@ public class GamePackagePlugin extends Plugin {
                 TAG,
                 "downloadArchive response gameId=" + gameId
                     + " version=" + assetPackVersion
+                    + " attempt=" + attempt
                     + " code=" + responseCode
                     + " contentLength=" + connection.getContentLengthLong()
                     + " contentRange=" + connection.getHeaderField("Content-Range")
@@ -743,12 +805,69 @@ public class GamePackagePlugin extends Plugin {
                 TAG,
                 "downloadArchive finished gameId=" + gameId
                     + " version=" + assetPackVersion
+                    + " attempt=" + attempt
                     + " checksumOk=" + (expectedChecksum == null || expectedChecksum.equalsIgnoreCase(actualChecksum))
                     + " actualChecksum=" + actualChecksum
             );
         } finally {
             connection.disconnect();
         }
+    }
+
+    private boolean isRecoverableDownloadError(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            if (
+                current instanceof SocketTimeoutException
+                || current instanceof ProtocolException
+                || current instanceof SocketException
+            ) {
+                return true;
+            }
+
+            String message = current.getMessage();
+            if (message != null) {
+                String lowerMessage = message.toLowerCase();
+                if (
+                    lowerMessage.contains("unexpected end of stream")
+                    || lowerMessage.contains("timeout")
+                    || lowerMessage.contains("connection abort")
+                    || lowerMessage.contains("connection reset")
+                    || lowerMessage.contains("broken pipe")
+                    || lowerMessage.contains("stream was reset")
+                ) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private String summarizeThrowableChain(Throwable error) {
+        if (error == null) {
+            return "none";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        Throwable current = error;
+        int depth = 0;
+        while (current != null && depth < 8) {
+            if (depth > 0) {
+                builder.append(" <- ");
+            }
+            builder.append(current.getClass().getName());
+            String message = current.getMessage();
+            if (message != null && !message.trim().isEmpty()) {
+                builder.append(": ").append(message.trim());
+            }
+            current = current.getCause();
+            depth += 1;
+        }
+        if (current != null) {
+            builder.append(" <- ...");
+        }
+        return builder.toString();
     }
 
     private void extractArchive(File archiveFile, File outputDir, AtomicBoolean cancelFlag) throws IOException {
@@ -1055,6 +1174,29 @@ public class GamePackagePlugin extends Plugin {
                     + " keepPackageVersion=" + (keepPackageVersion != null ? keepPackageVersion : "")
             );
         }
+    }
+
+    private String resolveStagingVersionToKeep(JSONObject payload, AndroidDownloadTaskRecord taskRecord) {
+        if (taskRecord != null && !taskRecord.isTerminal()) {
+            return taskRecord.packageVersion;
+        }
+
+        String status = payload != null ? normalizeNonEmpty(payload.optString("status", null)) : null;
+        if (!"failed".equals(status)) {
+            return null;
+        }
+
+        String errorCode = normalizeNonEmpty(payload.optString("errorCode", null));
+        if (
+            ERROR_CANCELLED.equals(errorCode)
+            || ERROR_NETWORK_TIMEOUT.equals(errorCode)
+            || ERROR_FILE_IO.equals(errorCode)
+            || ERROR_UNKNOWN.equals(errorCode)
+        ) {
+            return normalizeNonEmpty(payload.optString("assetPackVersion", null));
+        }
+
+        return null;
     }
 
     private void copyJsonValue(JSONObject source, JSObject target, String key) {

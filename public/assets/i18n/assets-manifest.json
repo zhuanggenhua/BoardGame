@@ -3634,8 +3634,8 @@
     "zh-CN/betrayal/cards/compressed/omen-front-atlas": {
       "variants": {
         "webp": {
-          "sha256": "71b198209bfbf5f8d7ce7dab32db992d691a2fe527bbd4206d96e44b05106440",
-          "bytes": 695050,
+          "sha256": "a644147a6f62e6490c1c10c1acbf9f5cd7509248c655420a94cc7bb65accfbda",
+          "bytes": 741208,
           "mime": "image/webp"
         }
       }
@@ -3691,6 +3691,15 @@
           "sha256": "955df3ce826ad160b8b808b21b312f5bd7353fc6d43b6355dc2500982cfb7e2f",
           "bytes": 112192,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/event-front-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "09c43d68facfaeb619162c600d95ae91c011c04c29345dcfb9e0c85902e768f5",
+          "bytes": 11641517,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -4603,6 +4612,33 @@
         }
       }
     },
+    "zh-CN/betrayal/rooms/compressed/start-basement-landing": {
+      "variants": {
+        "webp": {
+          "sha256": "27fedf3345931b9c5d517a010e1b9b09d15fc4d70d4c8c022bf3c6bf26e36631",
+          "bytes": 192596,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/compressed/start-triple-room": {
+      "variants": {
+        "webp": {
+          "sha256": "99076698d7ba48126cc8fa6c369108f7f706ab8152fb5793052aa3e6dfe743d5",
+          "bytes": 446494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/compressed/start-upper-landing": {
+      "variants": {
+        "webp": {
+          "sha256": "b5c5f81298915387b0e57c8762db5ff2f23bac8f3234800c2472ab476604a0a2",
+          "bytes": 257668,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/rooms/compressed/sunroom": {
       "variants": {
         "webp": {
@@ -4705,8 +4741,8 @@
     "zh-CN/betrayal/tokens/explorers/compressed/darryl-highla": {
       "variants": {
         "webp": {
-          "sha256": "5bfd4523a43ef7296b7fa4ea2875407453e51bd1906589cc06ffea08efbd268f",
-          "bytes": 32362,
+          "sha256": "284d055691f54901cfb5a88f6e7164e652fa8ac4674f96d5c4f0424102268ae0",
+          "bytes": 31846,
           "mime": "image/webp"
         }
       }
@@ -4732,8 +4768,8 @@
     "zh-CN/betrayal/tokens/explorers/compressed/rebecca-allen": {
       "variants": {
         "webp": {
-          "sha256": "839f6f5e6f18c128d8b811c36251f1509e5d5a80e9f5209a1033400f4ae4e4c9",
-          "bytes": 28626,
+          "sha256": "cb3ceb60ca86bcaa810941b3f607b06de3d6d1439156eeea1047dc906a3471c4",
+          "bytes": 33764,
           "mime": "image/webp"
         }
       }
@@ -5764,6 +5800,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/barbarian/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "ec7ad0fa3384af0cb042acdef0c72ffaf1874e180783c7ca084276438b3f356d",
+          "bytes": 10392432,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/barbarian/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6241,6 +6286,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/monk/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "578b85d200490f441fff0bac4e0c64813da3c4fb306506575ec9e8efb5aa5be7",
+          "bytes": 10482152,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/monk/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6301,6 +6355,15 @@
           "sha256": "320c8f44ce47c201fa3c6e455c31f863ebef971646a61cd2a706da6972251b2f",
           "bytes": 255808,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "7a5181be493f85b090bfd8b291ac818d580450e622dad3c748790f9bf07bb939",
+          "bytes": 10679102,
+          "mime": "image/png"
         }
       }
     },
@@ -6484,6 +6547,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/paladin/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "8c8db55689d4871ee6a6575ac7dfbb97c20ab69a38edd6cbf64849fd9b7f6ee5",
+          "bytes": 9831345,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/paladin/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6532,8 +6604,8 @@
     "zh-CN/dicethrone/images/pyromancer/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "806ebce242a2976dc624522a94128667793cb217ba6c7e863959cf9c511d6462",
-          "bytes": 445434,
+          "sha256": "f2e22ca4a5c1219b70a07a04aee24c3772daa7b45e8336fabf08e6d1312f2a28",
+          "bytes": 431464,
           "mime": "image/webp"
         }
       }
@@ -6553,6 +6625,15 @@
           "sha256": "fe86ef7d0034d0d1c8e6316ebc5963272ef43ea02a2c4b025ffab113b705b34f",
           "bytes": 342550,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "f6121f44c06c076bac3f017e8fffc9b8dfc389cd90851484f97dc813e42e1742",
+          "bytes": 10753329,
+          "mime": "image/png"
         }
       }
     },
@@ -6706,6 +6787,15 @@
           "sha256": "24c1b05b8ab091426ceb99518dd7d8acbe5fafc9ffdb70459a9a5b97c3add1c4",
           "bytes": 307916,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "cf0a1bef74e0a84d1305b6ca3ac0218160d7b99259af6698dbf8cbe66f9a9da7",
+          "bytes": 9007989,
+          "mime": "image/png"
         }
       }
     },
@@ -7096,11 +7186,29 @@
         }
       }
     },
+    "zh-CN/fantasyrealms/cards/backs/compressed/fantasyrealms-cursed-hoard-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "56e5b4d4c186e0153a30f77f7f1dac2224630e03c48d05589742d0ccaf852733",
+          "bytes": 580680,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/fantasyrealms/cards/backs/fantasyrealms-base-card-back": {
       "variants": {
         "png": {
           "sha256": "71b3a9083ca6cd5406154db1f11b3914c0336e818bc0c623ed5015584465f60a",
           "bytes": 2520767,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/cards/backs/fantasyrealms-cursed-hoard-card-back": {
+      "variants": {
+        "png": {
+          "sha256": "224dabd090af43bb040e62a723ebb93c0271692b374792652fa6a5699ad7a045",
+          "bytes": 2932833,
           "mime": "image/png"
         }
       }

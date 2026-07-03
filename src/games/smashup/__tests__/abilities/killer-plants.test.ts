@@ -163,6 +163,49 @@ describe('killer_plant_overgrowth 回合开始临界点修正', () => {
         expect(getEffectiveBreakpoint(modified, 0)).toBe(0);
     });
 
+    it('结算并换上新基地后不应继承旧基地的 0 临界点修正', () => {
+        const state = makeState({
+            currentPlayerIndex: 0,
+            baseDeck: ['base_the_jungle'],
+            bases: [
+                makeBase({
+                    defId: 'base_secret_garden',
+                    ongoingActions: [{ uid: 'og-1', defId: 'killer_plant_overgrowth', ownerId: '0' }],
+                }),
+            ],
+        });
+
+        const modified = reduce(state, {
+            type: SU_EVENTS.BREAKPOINT_MODIFIED,
+            payload: {
+                baseIndex: 0,
+                baseDefId: 'base_secret_garden',
+                delta: -21,
+                reason: 'killer_plant_overgrowth',
+            },
+            timestamp: 0,
+        });
+        expect(getEffectiveBreakpoint(modified, 0)).toBe(0);
+
+        const cleared = reduce(modified, {
+            type: SU_EVENTS.BASE_CLEARED,
+            payload: { baseIndex: 0, baseDefId: 'base_secret_garden' },
+            timestamp: 1,
+        });
+        const replaced = reduce(cleared, {
+            type: SU_EVENTS.BASE_REPLACED,
+            payload: {
+                baseIndex: 0,
+                oldBaseDefId: 'base_secret_garden',
+                newBaseDefId: 'base_the_jungle',
+            },
+            timestamp: 1,
+        });
+
+        expect(replaced.bases[0].defId).toBe('base_the_jungle');
+        expect(getEffectiveBreakpoint(replaced, 0)).toBe(12);
+    });
+
     it('未经过 onTurnStart 时不会提前影响 scoreBases 阶段临界点', () => {
         const state = makeState({
             currentPlayerIndex: 0,

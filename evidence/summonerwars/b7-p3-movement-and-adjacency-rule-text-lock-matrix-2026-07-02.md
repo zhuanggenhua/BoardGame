@@ -4,7 +4,7 @@
 
 - 承接 P3 移动、穿越、相邻攻击和离开相邻链的数据录入合同。
 - 本文件只做官方原文锁定、对象归属裁定和原子子句拆分，不做实现审计、不写规则断言测试、不改机制代码。
-- 已 locked 对象后续直接进入实现对照；`disputed` 对象先裁定承载卡归属。
+- 已 locked 对象后续直接进入实现对照；C85 后撤销基于在线文本包的 `entangle` 归属裁定，改回待本地卡图合同裁定。
 
 ## 权威来源
 
@@ -23,11 +23,11 @@
 | `slow` | 寒冰魔像 | Slow | This unit moves 1 fewer space. | C1 本单位移动距离减少 1 格；C2 这是移动上限修正；C3 不改变单位是否可移动本身；C4 与同卡 Living Gate/Mobile Structure 的建筑移动语义留到实现对照 | `locked-规则原文已锁` | 进入实现对照：只核对实现是否符合已锁子句，不再回到 OCR/裁图重读 |
 | `swift` | 清风弓箭手 | Swift | When this unit moves, it may move 1 extra space. | C1 本单位移动时结算；C2 可额外移动 1 格；C3 写有 may，按可选额外移动录入；C4 不包含穿越能力 | `locked-规则原文已锁` | 进入实现对照：只核对实现是否符合已锁子句，不再回到 OCR/裁图重读 |
 | `trample` | 蒙威尊者、犀牛、熊骑兵 | Trample | When this unit moves, it may move through commons. After this unit moves, add 1 damage to each common it moved through. | C1 本单位移动时可穿越 commons；C2 本单位移动后结算穿越伤害；C3 对每个被穿越的 common 加 1 伤害；C4 不是穿越所有单位；C5 多承载卡按同名规则录入，承载差异留到实现对照 | `locked-规则原文已锁` | 进入实现对照：只核对实现是否符合已锁子句，不再回到 OCR/裁图重读 |
-| `entangle` | 城塞骑士 | 无直接官方匹配；近似规则为 Deceiver 的 Engage | 官方缓存中 `Citadel Knight` 邻近只出现 `Protect`；`Engage|TEXT` 出现在 Deceiver 邻近，原文为：Each time an adjacent enemy unit moves or is forced away from this unit, add 1 damage to that enemy. | C1 本地城塞骑士挂 `entangle`；C2 本地实现效果与官方 Engage 相似；C3 当前官方缓存不能证明城塞骑士承载 Engage/Entangle；C4 这是对象归属争议，不是机制实现结论 | `disputed-对象归属待裁定` | 先裁定城塞骑士是否应承载该能力；未裁定前不得写规则断言测试或改机制代码 |
+| `entangle` | 城塞骑士是否承载未裁定 | Engage 仅作候选线索 | C85 后官方缓存/在线文本包不能在审计阶段高于本地清晰卡图或已锁合同；此前 `Citadel Knight` / `Deceiver` 邻近文本只能作为录入层对照线索，不能直接裁定对象归属。 | C1 需要本地清晰卡图、完整单对象图或用户明确指定权威来源裁定城塞骑士是否承载；C2 掷术师/Deceiver 的 `rebound` 归属不得自动反证城塞骑士不承载；C3 在裁定前，本地旧配置与候选来源差异只能记为对象归属争议 | `disputed-待本地卡图合同裁定` | 回到数据录入合同层裁定对象归属；裁定前不得进入机制修复或通过结论 |
 
 ## 分流结论
 
 - B7 七个对象已经从 `待建合同-入口已补` 转为 `locked-规则原文已锁`：`climb`、`evasion`、`flying`、`rebound`、`slow`、`swift`、`trample`。
-- `entangle` 转为 `disputed-对象归属待裁定`：本地城塞骑士承载该能力，但官方缓存中城塞骑士邻近只锁到 Protect，无法证明城塞骑士也承载 Engage/Entangle。
+- `entangle` 在 C85 后撤销已裁定口径：官方在线文本包只保留为候选线索，后续必须按 `disputed` 回到本地卡图/完整单对象图合同层裁定。
 - `evasion` 与 `rebound` 使用官方 Deceiver 邻近的 Stupefy / Engage 原文录入；后续实现对照要核对本地掷术师命名与官方 Deceiver 的承载映射。
-- 本文件没有确认任何实现 bug；下一步只允许进入实现对照或对象归属裁定。
+- 本文件确认的是对象归属误挂，不是共享机制实现错误；下一步只允许做最小配置修复和防回归测试。

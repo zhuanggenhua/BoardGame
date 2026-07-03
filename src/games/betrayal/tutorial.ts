@@ -30,7 +30,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'objective-and-turn',
             content: 'game-betrayal:tutorial.basicSetup.steps.objectiveAndTurn',
-            highlightTarget: 'betrayal-actions-zone',
+            highlightTarget: 'betrayal-action-move',
             position: 'top',
             infoStep: true,
             viewAs: '0',
@@ -172,7 +172,7 @@ const BETRAYAL_CRIMSON_JACK_OBJECTIVE: TutorialManifest = {
         {
             id: 'hero-goal',
             content: 'game-betrayal:tutorial.crimsonJack.steps.heroGoal',
-            highlightTarget: 'betrayal-actions-zone',
+            highlightTarget: 'betrayal-action-use',
             position: 'top',
             infoStep: true,
             viewAs: '0',

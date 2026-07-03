@@ -744,6 +744,118 @@ describe('smashup', () => {
         expect(dagon?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
     });
 
+    it('丛林之灵输掉 titan clash 时可以移动到已有泰坦的基地，并继续按泰坦交锋收口', () => {
+        const core = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('ally-0', 'robot_microbot_alpha', '0', 2),
+                        makeMinion('enemy-0', 'robot_microbot_alpha', '1', 4),
+                    ],
+                }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-on-base-b', 'robot_microbot_alpha', '1', 4)],
+                }),
+                makeBase({ defId: 'base_c', minions: [] }),
+            ],
+            titans: [
+                {
+                    uid: 'spirit-loop',
+                    defId: 'fairies_spirit_of_the_forest',
+                    faction: 'fairies',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as TitanState,
+                {
+                    uid: 'dagon-loop',
+                    defId: 'innsmouth_dagon',
+                    faction: 'innsmouth',
+                    ownerId: '1',
+                    controllerId: '1',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 2 },
+                } as TitanState,
+                {
+                    uid: 'ancient-lord-loop',
+                    defId: 'vampires_ancient_lord',
+                    faction: 'vampires',
+                    ownerId: '1',
+                    controllerId: '1',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 3 },
+                } as TitanState,
+            ],
+        });
+
+        const post = postProcessSystemEvents(core, [{
+            type: SU_EVENTS.TITAN_PLAYED,
+            payload: {
+                titanUid: 'dagon-loop',
+                defId: 'innsmouth_dagon',
+                ownerId: '1',
+                controllerId: '1',
+                baseIndex: 0,
+                baseDefId: 'base_a',
+                reason: 'test_spirit_clash_follow_up_clash',
+            },
+            timestamp: 32,
+        } as SmashUpEvent], FIXED_RANDOM, makeMatchState(core));
+
+        const prompt = getSimpleChoicePrompt(post.matchState!, 'titan_fairies_spirit_of_the_forest_clash_move');
+        const occupiedMoveOption = getPromptOption(prompt, entry => entry.value?.baseIndex === 1);
+        expect(getPromptOptions(prompt).some(entry => entry.value?.baseIndex === 2)).toBe(true);
+
+        const movedToOccupiedBase = runCommand(
+            post.matchState!,
+            respondCommand(occupiedMoveOption.id, '0'),
+            FIXED_RANDOM,
+        );
+
+        expect(movedToOccupiedBase.finalState.core.titans?.find(titan => titan.uid === 'spirit-loop')?.location).toMatchObject({
+            zone: 'base',
+            baseIndex: 1,
+        });
+
+        const followUpPrompt = getSimpleChoicePrompt(
+            movedToOccupiedBase.finalState,
+            'titan_fairies_spirit_of_the_forest_clash_move',
+        );
+        expect(getPromptOption(followUpPrompt, entry => entry.value?.skip === true)).toBeDefined();
+
+        const removed = respondToPromptOption(
+            movedToOccupiedBase.finalState,
+            entry => entry.value?.skip === true,
+            'Spirit of the Forest follow-up clash skip option',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(removed.success, removed.error).toBe(true);
+        expect(removed.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.TITAN_REMOVED_FROM_PLAY,
+                payload: expect.objectContaining({ titanUid: 'spirit-loop' }),
+            }),
+        ]));
+        expect(removed.finalState.core.titans?.find(titan => titan.uid === 'spirit-loop')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+        expect(removed.finalState.core.titans?.find(titan => titan.uid === 'ancient-lord-loop')?.location).toMatchObject({
+            zone: 'base',
+            baseIndex: 1,
+        });
+        expect(getPromptsBySourceId(
+            removed.finalState,
+            'titan_fairies_spirit_of_the_forest_clash_move',
+        )).toHaveLength(0);
+    });
+
     it('titan_fairies_spirit_of_the_forest_clash_move 的 source titan 若在响应前已离开原基地，不应继续沿旧 prompt 移除当前 live titan', () => {
         const promptCore = makeState({
             bases: [

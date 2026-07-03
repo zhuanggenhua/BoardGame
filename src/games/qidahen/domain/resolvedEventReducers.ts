@@ -33,6 +33,46 @@ import {
 } from './selectedActionExecution';
 import type { QidahenCore, QidahenEvent } from './types';
 
+const resolveQidahenTacticCardPlayedEvent = (
+    state: QidahenCore,
+    event: Extract<QidahenEvent, { type: 'TACTIC_CARD_PLAYED' }>,
+): QidahenCore => {
+    const pendingTargetAction = state.pendingTargetAction;
+    if (!pendingTargetAction) {
+        return state;
+    }
+    const playedCard = state.handCards.find((card) => (
+        card.id === event.payload.cardId
+        && card.faction === pendingTargetAction.attackerFactionId
+        && card.cardKind === 'tactic'
+        && card.status !== 'disabled'
+    ));
+    if (!playedCard) {
+        return state;
+    }
+    const attackerName = state.factions[pendingTargetAction.attackerFactionId]?.name ?? '攻方';
+    const targetName = pendingTargetAction.targetRegionName;
+    const tacticLine = `${attackerName} 打出战术牌「${playedCard.label}」，用于 ${targetName} 战斗。`;
+    return {
+        ...state,
+        handCards: state.handCards.filter((card) => card.id !== playedCard.id),
+        discardPileCount: state.discardPileCount + 1,
+        lastSeasonSummary: {
+            id: `summary-${event.timestamp}`,
+            title: '战术牌',
+            lines: [tacticLine],
+        },
+        actionLog: [
+            ...state.actionLog,
+            {
+                id: `log-${event.timestamp}`,
+                text: tacticLine,
+                timestamp: event.timestamp,
+            },
+        ],
+    };
+};
+
 type QidahenResolvedEventType = QidahenEvent['type'];
 
 interface QidahenResolvedEventReducerSpec<TEventType extends QidahenResolvedEventType = QidahenResolvedEventType> {
@@ -161,6 +201,10 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
             event.payload.cardIds,
             event.timestamp,
         ),
+    ),
+    defineResolvedEventReducer(
+        ['TACTIC_CARD_PLAYED'],
+        resolveQidahenTacticCardPlayedEvent,
     ),
     defineResolvedEventReducer(
         ['PENDING_ACTION_RESOLVED'],

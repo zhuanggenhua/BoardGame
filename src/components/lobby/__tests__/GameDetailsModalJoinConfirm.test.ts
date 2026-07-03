@@ -835,6 +835,29 @@ describe('GameDetailsMobilePackageCard', () => {
         expect(screen.getByText('packageManager.progress.pendingPercent')).toBeInTheDocument();
     });
 
+    it('进行中状态点击主按钮只收起卡片，不取消下载任务', () => {
+        const cancelMock = vi.fn();
+        const collapseMock = vi.fn();
+
+        render(createElement(GameDetailsMobilePackageCard, {
+            gameName: '王权骰铸',
+            state: {
+                status: 'downloading',
+                progressMode: 'determinate',
+                progressPercent: 12,
+            },
+            onInstall: vi.fn(),
+            onCancel: cancelMock,
+            onCollapse: collapseMock,
+        }));
+
+        const buttons = screen.getAllByRole('button', { name: 'common:close' });
+        fireEvent.click(buttons[buttons.length - 1]);
+
+        expect(collapseMock).toHaveBeenCalledTimes(1);
+        expect(cancelMock).not.toHaveBeenCalled();
+    });
+
     it('未安装且回退到 fallback 清单时显示同步失败并保留安装按钮', () => {
         render(createElement(GameDetailsMobilePackageCard, {
             gameName: 'Tic-Tac-Toe',

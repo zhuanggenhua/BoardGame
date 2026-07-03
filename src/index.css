@@ -207,7 +207,85 @@
     pointer-events: none;
 }
 
+.pc-web-mascot__bubble {
+    position: absolute;
+    top: -0.7rem;
+    right: calc(100% - 0.2rem);
+    bottom: auto;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: max-content;
+    max-width: min(18.5rem, calc(100vw - 2rem));
+    padding: 0.72rem 0.95rem;
+    border: 1px solid rgba(86, 61, 36, 0.18);
+    border-radius: 0.95rem;
+    background: rgba(255, 252, 244, 0.96);
+    box-shadow: 0 0.85rem 2rem rgba(50, 34, 18, 0.14);
+    color: #5b4226;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    pointer-events: auto;
+}
+
+.pc-web-mascot__bubble::before {
+    content: '';
+    position: absolute;
+    right: -0.82rem;
+    top: 55%;
+    width: 0;
+    height: 0;
+    border-top: 0.52rem solid transparent;
+    border-bottom: 0.52rem solid transparent;
+    border-left: 0.84rem solid rgba(86, 61, 36, 0.18);
+    transform: translateY(-50%);
+}
+
+.pc-web-mascot__bubble::after {
+    content: '';
+    position: absolute;
+    right: -0.68rem;
+    top: 55%;
+    width: 0;
+    height: 0;
+    border-top: 0.44rem solid transparent;
+    border-bottom: 0.44rem solid transparent;
+    border-left: 0.72rem solid rgba(255, 252, 244, 0.96);
+    transform: translateY(-50%);
+}
+
+.pc-web-mascot__bubble-text {
+    white-space: nowrap;
+}
+
+.pc-web-mascot__group-button {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #8b5a12;
+    font: inherit;
+    font-weight: 800;
+    line-height: 1.2;
+    text-decoration: underline;
+    text-underline-offset: 0.16rem;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: color 160ms ease, text-decoration-thickness 160ms ease;
+}
+
+.pc-web-mascot__group-button:hover {
+    color: #5f3b0c;
+    text-decoration-thickness: 0.12rem;
+}
+
+.pc-web-mascot__group-button:active {
+    color: #3f2607;
+}
+
 .pc-web-mascot__button {
+    position: relative;
+    z-index: 1;
     display: block;
     width: 100%;
     border: 0;
@@ -248,6 +326,30 @@
 @media (min-width: 1024px) {
     .pc-web-mascot {
         display: block;
+    }
+}
+
+@media (max-width: 1180px) {
+    .pc-web-mascot__bubble {
+        top: -1.2rem;
+        right: calc(100% - 0.45rem);
+        left: auto;
+        bottom: auto;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: min(15.5rem, calc(100vw - 1.5rem));
+        transform: none;
+    }
+
+    .pc-web-mascot__bubble::after {
+        right: -0.68rem;
+        top: 55%;
+        bottom: auto;
+        transform: translateY(-50%);
+    }
+
+    .pc-web-mascot__bubble-text {
+        white-space: normal;
     }
 }
 

@@ -23,7 +23,7 @@ import {
     type RefChain,
 } from '../../../engine/testing/entityIntegritySuite';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
-import { getEffectiveLife, getEffectiveStrengthValue, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
+import { calculateEffectiveStrength, getEffectiveLife, getEffectiveStrengthValue, getEffectiveStructureLife, triggerAbilities, triggerAllUnitsAbilities } from '../domain/abilityResolver';
 import {
     isImmobileBase,
     canMoveToEnhanced,
@@ -938,6 +938,81 @@ describe('完整流程验证 (Section 9)', () => {
         }
     });
 
+    it('[onAdjacentEnemyAttack/evasion/L4] special 面触发迷魂后最终伤害减少1', () => {
+        function setupAttack(withEvasion: boolean): SummonerWarsCore {
+            const nextCore = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'necromancer' });
+            clearRect(nextCore, [3, 4, 5], [0, 1, 2, 3, 4, 5]);
+            nextCore.phase = 'attack';
+            nextCore.currentPlayer = '0' as PlayerId;
+
+            putUnit(nextCore, { row: 4, col: 3 }, mkUnit(`evasion-l4-attacker-${withEvasion}`, {
+                strength: 6,
+                faction: 'frost',
+            }), '0');
+            putUnit(nextCore, { row: 4, col: 4 }, mkUnit(`evasion-l4-target-${withEvasion}`, {
+                life: 10,
+                faction: 'necromancer',
+            }), '1');
+
+            if (withEvasion) {
+                putUnit(nextCore, { row: 4, col: 2 }, mkUnit('evasion-l4-dice', {
+                    abilities: ['evasion'],
+                    faction: 'trickster',
+                }), '1');
+            }
+
+            return nextCore;
+        }
+
+        const withoutEvasionCore = setupAttack(false);
+        const withEvasionCore = setupAttack(true);
+        const specialMeleeRandom: RandomFn = { ...testRandom(), random: () => 0.75 };
+
+        const eventsWithoutEvasion = executeCommand(
+            { core: withoutEvasionCore, sys: { flowHalted: false } } as MatchState<SummonerWarsCore>,
+            {
+                type: SW_COMMANDS.DECLARE_ATTACK,
+                payload: { attacker: { row: 4, col: 3 }, target: { row: 4, col: 4 } },
+                timestamp: 0,
+            },
+            specialMeleeRandom
+        );
+        const eventsWithEvasion = executeCommand(
+            { core: withEvasionCore, sys: { flowHalted: false } } as MatchState<SummonerWarsCore>,
+            {
+                type: SW_COMMANDS.DECLARE_ATTACK,
+                payload: { attacker: { row: 4, col: 3 }, target: { row: 4, col: 4 } },
+                timestamp: 0,
+            },
+            specialMeleeRandom
+        );
+
+        const attackWithoutEvasion = eventsWithoutEvasion.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+        const attackWithEvasion = eventsWithEvasion.find(e => e.type === SW_EVENTS.UNIT_ATTACKED);
+        expect(attackWithoutEvasion).toBeDefined();
+        expect(attackWithEvasion).toBeDefined();
+
+        const payloadWithoutEvasion = attackWithoutEvasion!.payload as Record<string, unknown>;
+        const payloadWithEvasion = attackWithEvasion!.payload as Record<string, unknown>;
+        expect((payloadWithEvasion.diceResults as Array<{ marks: string[] }>).some(r => r.marks.includes('special'))).toBe(true);
+
+        const hitsWithoutEvasion = payloadWithoutEvasion.hits as number;
+        const hitsWithEvasion = payloadWithEvasion.hits as number;
+        expect(hitsWithoutEvasion - hitsWithEvasion).toBe(1);
+
+        const reduced = eventsWithEvasion.find(e =>
+            e.type === SW_EVENTS.DAMAGE_REDUCED
+            && (e.payload as Record<string, unknown>).sourceAbilityId === 'evasion'
+        );
+        expect(reduced).toBeDefined();
+        expect((reduced!.payload as Record<string, unknown>).value).toBe(1);
+
+        const damagedWithoutEvasion = eventsWithoutEvasion.find(e => e.type === SW_EVENTS.UNIT_DAMAGED);
+        const damagedWithEvasion = eventsWithEvasion.find(e => e.type === SW_EVENTS.UNIT_DAMAGED);
+        expect((damagedWithoutEvasion!.payload as Record<string, unknown>).damage).toBe(hitsWithoutEvasion);
+        expect((damagedWithEvasion!.payload as Record<string, unknown>).damage).toBe(hitsWithEvasion);
+    });
+
     // ================================================================
     // 7. onAdjacentEnemyLeave — rebound 缠斗伤害
     // ================================================================
@@ -1007,6 +1082,32 @@ describe('完整流程验证 (Section 9)', () => {
         expect(attackEvent).toBeDefined();
         // 有效战力 = 2(base) + 2(damage/rage) = 4
         expect((attackEvent!.payload as Record<string, unknown>).diceCount).toBe(4);
+    });
+
+    it('[onDamageCalculation/rage/L4] 按当前伤害获得战力并在拆解中记录来源', () => {
+        const undamaged = putUnit(core, { row: 4, col: 1 }, mkUnit('gul-das-undamaged', {
+            abilities: ['rage'],
+            strength: 2,
+            faction: 'necromancer',
+            unitClass: 'summoner',
+        }), '0', { damage: 0 });
+        const damaged = putUnit(core, { row: 4, col: 2 }, mkUnit('gul-das-damaged', {
+            abilities: ['rage'],
+            strength: 2,
+            faction: 'necromancer',
+            unitClass: 'summoner',
+        }), '0', { damage: 3 });
+
+        const undamagedStrength = calculateEffectiveStrength(undamaged, core);
+        const damagedStrength = calculateEffectiveStrength(damaged, core);
+
+        expect(undamagedStrength.finalStrength).toBe(2);
+        expect(undamagedStrength.modifiers.find(m => m.source === 'rage')).toBeUndefined();
+
+        expect(damagedStrength.finalStrength).toBe(5);
+        expect(damagedStrength.modifiers).toContainEqual(
+            expect.objectContaining({ source: 'rage', value: 3 })
+        );
     });
 
     // ================================================================

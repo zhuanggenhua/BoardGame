@@ -20,6 +20,7 @@ import {
     getPreloadedImageElement,
     markImageLoaded,
 } from '../../../core';
+import type { DicePhysicsState } from '../../../lib/dice-physics/types';
 
 export interface Dice3DProps {
     value: number;
@@ -61,6 +62,7 @@ export interface DiceField3DProps {
     }>;
     onDieClick?: (dieId: number) => void;
     onProjectedDiceUpdate?: (layouts: ProjectedDiceLayout[]) => void;
+    physicsStates?: DicePhysicsState[];
     scenePreset?: 'spotlight' | 'board-topdown';
     canvasClassName?: string;
 }
@@ -184,11 +186,11 @@ const SPOTLIGHT_SETTLED_TILTS = [
 ] as const;
 
 const BOARD_TOPDOWN_SETTLED_TILTS = [
-    [ -1.08,  0.92, -0.18 ],
-    [ -0.94, -0.76,  0.14 ],
-    [ -1.14,  0.52,  0.22 ],
-    [ -0.9,  -0.96, -0.19 ],
-    [ -1.1,   0.72,  0.12 ],
+    [  0,  0.28,  0 ],
+    [  0, -0.34,  0 ],
+    [  0,  0.16,  0 ],
+    [  0, -0.22,  0 ],
+    [  0,  0.38,  0 ],
 ] as const;
 
 let sharedBoardShadowTexture: THREE.CanvasTexture | null = null;
@@ -754,6 +756,21 @@ function getSettledEuler(value: number): THREE.Euler {
     }
 }
 
+function getBoardTopdownFaceUpQuaternion(value: number): THREE.Quaternion {
+    const targetNormal = (() => {
+        switch (value) {
+            case 1: return new THREE.Vector3(1, 0, 0);
+            case 6: return new THREE.Vector3(-1, 0, 0);
+            case 3: return new THREE.Vector3(0, 1, 0);
+            case 4: return new THREE.Vector3(0, -1, 0);
+            case 2: return new THREE.Vector3(0, 0, 1);
+            case 5: return new THREE.Vector3(0, 0, -1);
+            default: return new THREE.Vector3(0, 1, 0);
+        }
+    })();
+    return new THREE.Quaternion().setFromUnitVectors(targetNormal, new THREE.Vector3(0, 1, 0));
+}
+
 function buildTargetQuaternion(
     value: number,
     index: number,
@@ -765,10 +782,31 @@ function buildTargetQuaternion(
         return base.multiply(tilt);
     }
     if (variant === 'board-topdown') {
-        const tilt = new THREE.Quaternion().setFromEuler(getBoardTopdownTilt(index));
-        return base.multiply(tilt);
+        const base = getBoardTopdownFaceUpQuaternion(value);
+        const tableYaw = new THREE.Quaternion().setFromEuler(getBoardTopdownTilt(index));
+        return tableYaw.multiply(base);
     }
     return base;
+}
+
+function getExternalPhysicsVisualQuaternion(
+    value: number,
+    index: number,
+    physicsState: DicePhysicsState,
+): THREE.Quaternion {
+    const physicsQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(
+            physicsState.motion.rotateX,
+            physicsState.motion.rotateY,
+            physicsState.motion.rotateZ,
+            'XYZ',
+        ),
+    );
+    if (!physicsState.settled) {
+        return physicsQuat;
+    }
+
+    return buildTargetQuaternion(value, index, 'board-topdown');
 }
 
 const parseDegValue = (value: string, fallback = 0) => {
@@ -914,6 +952,9 @@ function createPrototypeDiceMesh({
     shadowMesh.rotation.x = -Math.PI / 2;
     shadowMesh.renderOrder = 1;
     shadowMesh.visible = true;
+    if (variant === 'board-topdown') {
+        shadowMesh.scale.set(1.28, 0.82, 1);
+    }
     const selectionRingMaterial = new THREE.MeshBasicMaterial({
         color: 0xe3ae38,
         transparent: true,
@@ -995,6 +1036,7 @@ export const DiceField3D = ({
     slots,
     onDieClick,
     onProjectedDiceUpdate,
+    physicsStates,
     scenePreset = 'spotlight',
     canvasClassName,
 }: DiceField3DProps) => {
@@ -1002,6 +1044,7 @@ export const DiceField3D = ({
     const underlayCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
     const onDieClickRef = React.useRef(onDieClick);
     const onProjectedDiceUpdateRef = React.useRef(onProjectedDiceUpdate);
+    const physicsStatesRef = React.useRef(physicsStates);
     const stateRef = React.useRef<{
         renderer: THREE.WebGLRenderer;
         composer?: EffectComposer;
@@ -1024,6 +1067,8 @@ export const DiceField3D = ({
             spinY: number;
             spinZ: number;
             wasRolling: boolean;
+            settledVisualX: number | null;
+            settledVisualZ: number | null;
         }>;
         raycaster: THREE.Raycaster;
         pointer: THREE.Vector2;
@@ -1111,6 +1156,10 @@ export const DiceField3D = ({
     }, [onProjectedDiceUpdate]);
 
     React.useEffect(() => {
+        physicsStatesRef.current = physicsStates;
+    }, [physicsStates]);
+
+    React.useEffect(() => {
         const canvas = canvasRef.current;
         const underlayCanvas = underlayCanvasRef.current;
         if (!canvas || !underlayCanvas || !isWebglCapable() || dice.length === 0) return;
@@ -1142,8 +1191,8 @@ export const DiceField3D = ({
         scene.fog = new THREE.FogExp2(0x070b10, scenePreset === 'board-topdown' ? 0.022 : 0.038);
         const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
         if (scenePreset === 'board-topdown') {
-            camera.position.set(-0.38, 8.52, 4.08);
-            camera.lookAt(0.12, -1.02, 0.1);
+            camera.position.set(-0.22, 9.2, 1.18);
+            camera.lookAt(0.08, -1.18, 0.05);
         } else {
             camera.position.set(0, 2.05, 8.15);
             camera.lookAt(0, -0.88, 0);
@@ -1276,6 +1325,8 @@ export const DiceField3D = ({
                 spinY: 0.17 + (index * 0.012),
                 spinZ: 0.05 + (index * 0.008),
                 wasRolling: false,
+                settledVisualX: null,
+                settledVisualZ: null,
             };
         });
 
@@ -1291,15 +1342,15 @@ export const DiceField3D = ({
             underlayCanvas.style.height = `${height}px`;
             camera.aspect = width / height;
             if (scenePreset === 'board-topdown') {
-                camera.position.x = width < 760 ? -0.28 : -0.38;
-                camera.position.z = width < 760 ? 4.22 : 4.08;
-                camera.position.y = width < 760 ? 8.72 : 8.52;
+                camera.position.x = width < 760 ? -0.18 : -0.22;
+                camera.position.z = width < 760 ? 1.34 : 1.18;
+                camera.position.y = width < 760 ? 9.42 : 9.2;
             } else {
                 camera.position.z = width < 760 ? 8.9 : 8.15;
                 camera.position.y = width < 760 ? 2.35 : 2.05;
             }
             if (scenePreset === 'board-topdown') {
-                camera.lookAt(0.12, -1.02, 0.1);
+                camera.lookAt(0.08, -1.18, 0.05);
             }
             camera.updateProjectionMatrix();
             if (scenePreset === 'board-topdown' && composer && outlinePass) {
@@ -1354,8 +1405,13 @@ export const DiceField3D = ({
         const collisionRadius = scenePreset === 'board-topdown' ? 0.9 : 0.78;
 
         const resolveDiceSeparation = () => {
-            for (let i = 0; i < diceItems.length; i += 1) {
-                for (let j = i + 1; j < diceItems.length; j += 1) {
+            const maxIterations = scenePreset === 'board-topdown' ? 8 : 4;
+            const centerX = (xBounds[0] + xBounds[1]) / 2;
+            const centerZ = (zBounds[0] + zBounds[1]) / 2;
+            for (let iteration = 0; iteration < maxIterations; iteration += 1) {
+                let moved = false;
+                for (let i = 0; i < diceItems.length; i += 1) {
+                    for (let j = i + 1; j < diceItems.length; j += 1) {
                     const a = diceItems[i];
                     const b = diceItems[j];
                     const dx = b.posX - a.posX;
@@ -1368,21 +1424,39 @@ export const DiceField3D = ({
                     if (distance >= minDistance) continue;
 
                     const overlap = minDistance - distance;
-                    const nx = dx / distance;
-                    const nz = dz / distance;
-                    const pushX = nx * overlap * 0.5;
-                    const pushZ = nz * overlap * 0.5;
+                    const fallbackAngle = ((i * 1.91) + (j * 2.47) + (iteration * 0.73)) % (Math.PI * 2);
+                    const rawNx = distance <= 0.0002 ? Math.cos(fallbackAngle) : dx / distance;
+                    const rawNz = distance <= 0.0002 ? Math.sin(fallbackAngle) : dz / distance;
+                    const edgeBiasAx = a.posX > centerX ? -0.34 : 0.34;
+                    const edgeBiasBx = b.posX > centerX ? -0.34 : 0.34;
+                    const edgeBiasAz = a.posZ > centerZ ? -0.22 : 0.22;
+                    const edgeBiasBz = b.posZ > centerZ ? -0.22 : 0.22;
+                    const aPushX = ((-rawNx * overlap * 0.5) + (edgeBiasAx * overlap * 0.18));
+                    const aPushZ = ((-rawNz * overlap * 0.5) + (edgeBiasAz * overlap * 0.12));
+                    const bPushX = ((rawNx * overlap * 0.5) + (edgeBiasBx * overlap * 0.18));
+                    const bPushZ = ((rawNz * overlap * 0.5) + (edgeBiasBz * overlap * 0.12));
 
-                    a.posX = THREE.MathUtils.clamp(a.posX - pushX, xBounds[0], xBounds[1]);
-                    a.posZ = THREE.MathUtils.clamp(a.posZ - pushZ, zBounds[0], zBounds[1]);
-                    b.posX = THREE.MathUtils.clamp(b.posX + pushX, xBounds[0], xBounds[1]);
-                    b.posZ = THREE.MathUtils.clamp(b.posZ + pushZ, zBounds[0], zBounds[1]);
+                    const nextAX = THREE.MathUtils.clamp(a.posX + aPushX, xBounds[0], xBounds[1]);
+                    const nextAZ = THREE.MathUtils.clamp(a.posZ + aPushZ, zBounds[0], zBounds[1]);
+                    const nextBX = THREE.MathUtils.clamp(b.posX + bPushX, xBounds[0], xBounds[1]);
+                    const nextBZ = THREE.MathUtils.clamp(b.posZ + bPushZ, zBounds[0], zBounds[1]);
+                    moved = moved
+                        || Math.abs(nextAX - a.posX) > 0.001
+                        || Math.abs(nextAZ - a.posZ) > 0.001
+                        || Math.abs(nextBX - b.posX) > 0.001
+                        || Math.abs(nextBZ - b.posZ) > 0.001;
+                    a.posX = nextAX;
+                    a.posZ = nextAZ;
+                    b.posX = nextBX;
+                    b.posZ = nextBZ;
 
-                    a.velocityX -= pushX * 0.06;
-                    a.velocityZ -= pushZ * 0.06;
-                    b.velocityX += pushX * 0.06;
-                    b.velocityZ += pushZ * 0.06;
+                    a.velocityX += aPushX * 0.06;
+                    a.velocityZ += aPushZ * 0.06;
+                    b.velocityX += bPushX * 0.06;
+                    b.velocityZ += bPushZ * 0.06;
+                    }
                 }
+                if (!moved) break;
             }
         };
 
@@ -1443,6 +1517,26 @@ export const DiceField3D = ({
             callback(layouts);
         };
 
+        const resolveWorldPositionFromPhysicsLayout = (
+            layout: { x: number; y: number },
+            targetY: number,
+            rect: DOMRect,
+        ) => {
+            const ndc = new THREE.Vector2(
+                ((layout.x / Math.max(rect.width, 1)) * 2) - 1,
+                -(((layout.y / Math.max(rect.height, 1)) * 2) - 1),
+            );
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -targetY);
+            const point = new THREE.Vector3();
+            raycaster.setFromCamera(ndc, camera);
+            if (!raycaster.ray.intersectPlane(plane, point)) return null;
+
+            return {
+                x: THREE.MathUtils.clamp(point.x, xBounds[0], xBounds[1]),
+                z: THREE.MathUtils.clamp(point.z, zBounds[0], zBounds[1]),
+            };
+        };
+
         const tick = () => {
             const state = stateRef.current;
             if (!state || state.disposed) return;
@@ -1450,8 +1544,56 @@ export const DiceField3D = ({
             const underlayCtx = underlayCanvas.getContext('2d');
             const stageRect = canvas.getBoundingClientRect();
             const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            const physicsStateMap = new Map(
+                (physicsStatesRef.current ?? []).map((physicsState) => [physicsState.id, physicsState]),
+            );
+            const usesExternalPhysics = scenePreset === 'board-topdown' && physicsStateMap.size > 0;
             diceItems.forEach((item, dieIndex) => {
                 const die = dice[dieIndex];
+                const physicsState = usesExternalPhysics ? physicsStateMap.get(item.dieId) : undefined;
+                if (physicsState) {
+                    const worldPosition = resolveWorldPositionFromPhysicsLayout(
+                        physicsState.layout,
+                        item.baseY,
+                        stageRect,
+                    );
+                    if (worldPosition) {
+                        if (physicsState.settled) {
+                            if (item.settledVisualX == null || item.settledVisualZ == null) {
+                                item.settledVisualX = worldPosition.x;
+                                item.settledVisualZ = worldPosition.z;
+                            }
+                            item.targetX = item.settledVisualX;
+                            item.targetZ = item.settledVisualZ;
+                            item.posX = item.settledVisualX;
+                            item.posZ = item.settledVisualZ;
+                        } else {
+                            item.settledVisualX = null;
+                            item.settledVisualZ = null;
+                            item.targetX = worldPosition.x;
+                            item.targetZ = worldPosition.z;
+                            item.posX += (worldPosition.x - item.posX) * 0.88;
+                            item.posZ += (worldPosition.z - item.posZ) * 0.88;
+                        }
+                    }
+                    item.wasRolling = !physicsState.settled;
+                    item.velocityX = 0;
+                    item.velocityZ = 0;
+                    item.bounceAmplitude = 0;
+                    const visualQuat = getExternalPhysicsVisualQuaternion(die?.value ?? item.faceValue, dieIndex, physicsState);
+                    if (physicsState.settled) {
+                        item.targetQuat.copy(visualQuat);
+                        item.mesh.quaternion.copy(visualQuat);
+                        item.mesh.position.y = item.baseY;
+                    } else {
+                        item.mesh.quaternion.copy(visualQuat);
+                        const motionLift = Math.max(0, physicsState.motion.y - item.baseY);
+                        item.mesh.position.y = item.baseY + THREE.MathUtils.clamp(motionLift, 0, 0.52);
+                    }
+                    item.mesh.position.x = item.posX;
+                    item.mesh.position.z = item.posZ;
+                    return;
+                }
                 const dieRolling = rolling.isRolling || Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
                 const wasRolling = item.wasRolling;
                 if (dieRolling) {
@@ -1521,6 +1663,15 @@ export const DiceField3D = ({
                 }
             });
             resolveDiceSeparation();
+            if (usesExternalPhysics) {
+                diceItems.forEach((item) => {
+                    if (physicsStateMap.get(item.dieId)?.settled !== true) return;
+                    item.targetX = item.posX;
+                    item.targetZ = item.posZ;
+                    item.settledVisualX = item.posX;
+                    item.settledVisualZ = item.posZ;
+                });
+            }
             const debugWindow = window as Window & {
                 __DT_RING_DEBUG__?: Array<{
                     dieId: number;
@@ -1550,8 +1701,8 @@ export const DiceField3D = ({
                 const shadowSpread = scenePreset === 'board-topdown'
                 ? THREE.MathUtils.clamp(1.02 - (lift * 0.42), 0.76, 1.02)
                 : THREE.MathUtils.clamp(1 - (lift * 0.26), 0.78, 1);
-            item.shadowMesh.position.x = item.posX + (scenePreset === 'board-topdown' ? 0.012 : 0);
-            item.shadowMesh.position.z = item.posZ + (scenePreset === 'board-topdown' ? 0.004 : 0);
+            item.shadowMesh.position.x = item.posX + (scenePreset === 'board-topdown' ? 0.018 : 0);
+            item.shadowMesh.position.z = item.posZ + (scenePreset === 'board-topdown' ? 0.026 : 0);
             if (scenePreset === 'board-topdown') {
                 item.selectionRingMaterial.opacity = 0;
                 item.selectionRingGlowMaterial.opacity = 0;
@@ -1568,12 +1719,12 @@ export const DiceField3D = ({
                 item.selectionRingGlowMesh.scale.setScalar(1);
             }
             item.shadowMesh.scale.set(
-                shadowSpread * (scenePreset === 'board-topdown' ? 0.88 : 1),
-                shadowSpread * (scenePreset === 'board-topdown' ? 0.64 : 0.8),
+                shadowSpread * (scenePreset === 'board-topdown' ? 1.18 : 1),
+                shadowSpread * (scenePreset === 'board-topdown' ? 0.78 : 0.8),
                 1,
                 );
                 item.shadowMaterial.opacity = scenePreset === 'board-topdown'
-                    ? THREE.MathUtils.clamp(0.26 - (lift * 0.28), 0.12, 0.26)
+                    ? THREE.MathUtils.clamp(0.42 - (lift * 0.34), 0.18, 0.42)
                     : THREE.MathUtils.clamp(0.18 - (lift * 0.18), 0.06, 0.18);
             });
             if (scenePreset === 'board-topdown' && underlayCtx) {
@@ -1653,7 +1804,18 @@ export const DiceField3D = ({
                 && maxLift <= 0.012
                 && maxTravel <= 0.012
                 && diceItems.every((item) => !item.wasRolling);
-            canvas.dataset.diceSettled = diceSettled ? 'true' : 'false';
+            const externalDiceSettled = usesExternalPhysics
+                ? diceItems.every((item) => physicsStateMap.get(item.dieId)?.settled === true)
+                : diceSettled;
+            const visualDiceSettled = externalDiceSettled
+                && texturesReady
+                && maxLift <= 0.004
+                && maxTravel <= 0.012
+                && diceItems.every((item) => !item.wasRolling);
+            canvas.dataset.diceSettled = externalDiceSettled ? 'true' : 'false';
+            canvas.dataset.diceVisualSettled = visualDiceSettled ? 'true' : 'false';
+            canvas.dataset.dicePhysicsSource = usesExternalPhysics ? 'dice-box-threejs' : 'internal';
+            canvas.dataset.dicePhysicsMode = usesExternalPhysics ? 'physics-only' : 'self-rendered';
             canvas.dataset.diceMaxLift = maxLift.toFixed(4);
             canvas.dataset.diceMaxTravel = maxTravel.toFixed(4);
             canvas.dataset.diceAnyWasRolling = diceItems.some((item) => item.wasRolling) ? 'true' : 'false';
@@ -1763,7 +1925,7 @@ export const DiceField3D = ({
             />
             <canvas
                 ref={canvasRef}
-                className={`absolute inset-0 h-full w-full cursor-pointer ${canvasClassName ?? ''}`}
+                className={`pointer-events-none absolute inset-0 h-full w-full ${canvasClassName ?? ''}`}
                 data-testid="dice-field-3d-canvas"
                 aria-hidden="true"
             />

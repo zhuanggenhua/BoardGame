@@ -4,6 +4,7 @@
 
 import { defineEvents } from '../../../lib/audio/defineEvents';
 import type { GameEvent, PlayerId } from '../../../engine/types';
+import type { CardPreviewRef } from '../../../core';
 import type { DtResponseWindowType } from './core-types';
 import type {
     DieFace,
@@ -477,6 +478,7 @@ export interface CardPlayedEvent extends GameEvent<'CARD_PLAYED'> {
     payload: {
         playerId: PlayerId;
         cardId: string;
+        previewRef?: CardPreviewRef;
         cpCost: number;
     };
 }
@@ -491,6 +493,8 @@ export interface AbilityReplacedEvent extends GameEvent<'ABILITY_REPLACED'> {
         newAbilityDef: AbilityDef;
         /** 触发升级的卡牌 ID（用于从手牌移除） */
         cardId: string;
+        /** 触发升级的卡牌卡面引用（用于跨英雄特写展示） */
+        previewRef?: CardPreviewRef;
         /** 升级后的等级（用于 abilityLevels 追踪） */
         newLevel: number;
     };

@@ -607,9 +607,24 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="tactic-window"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('每场战斗通常只打 1 张');
         await saveScreenshot(page, FIELD_BATTLE_STEP_03);
-        await page.locator('[data-testid="tutorial-next-button"]').click();
+        const beforeTacticCore = await readQidahenCore(page) as {
+            discardPileCount: number;
+            handCards: Array<{ id: string; cardDefId?: string | null }>;
+        };
+        const tacticCard = beforeTacticCore.handCards.find((card) => card.cardDefId === 'tutorial-ming-tactic');
+        expect(tacticCard).toBeTruthy();
+        await page.locator('[data-tutorial-id="tutorial-ming-tactic"]').click();
 
         await expect(page.locator('[data-tutorial-step="battle-damage"]')).toBeVisible({ timeout: 10000 });
+        const afterTacticCore = await readQidahenCore(page) as {
+            discardPileCount: number;
+            handCards: Array<{ id: string }>;
+            lastSeasonSummary?: { title?: string; lines?: string[] } | null;
+        };
+        expect(afterTacticCore.handCards.some((card) => card.id === tacticCard?.id)).toBe(false);
+        expect(afterTacticCore.discardPileCount).toBe(beforeTacticCore.discardPileCount + 1);
+        expect(afterTacticCore.lastSeasonSummary?.title).toBe('战术牌');
+        expect(afterTacticCore.lastSeasonSummary?.lines?.join(' ')).toContain('打出战术牌');
         await expect(page.locator('[data-testid="qidahen-pending-casualty-priority"]')).toContainText('攻方承伤');
         await expect(page.locator('[data-testid="qidahen-pending-casualty-priority"]')).toContainText('低级先损');
         await saveScreenshot(page, FIELD_BATTLE_STEP_04);
@@ -621,6 +636,14 @@ test.describe('七大恨新游戏收口', () => {
         });
 
         await expect(page.locator('[data-tutorial-step="battle-result"]')).toBeVisible({ timeout: 10000 });
+        const battleResultCore = await readQidahenCore(page) as {
+            lastSeasonSummary?: { lines?: string[] } | null;
+        };
+        const battleResultSummary = battleResultCore.lastSeasonSummary?.lines?.join(' ') ?? '';
+        expect(battleResultSummary).toContain('战斗掷骰（野战）');
+        expect(battleResultSummary).toContain('骑兵');
+        expect(battleResultSummary).toContain('步兵');
+        expect(battleResultSummary).toContain('损伤');
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('战后处理');
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('幸存');
         await saveScreenshot(page, FIELD_BATTLE_STEP_04A);
@@ -696,16 +719,17 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="city-battle"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('城战待结算');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('山海关');
-        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('本次出兵 3');
+        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('本次出兵 4');
         await expect(page.locator('[data-testid="qidahen-pending-committed-1"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-pending-committed-2"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-pending-committed-3"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-pending-committed-4"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action"]')).toContainText('断后');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action-rout"]')).toContainText('溃退');
         await resolvePendingActionByCommand(page, {
             attackerCasualtyPriority: 'highest-level',
             defenderCasualtyPriority: 'highest-level',
-            committedTroops: 3,
+            committedTroops: 4,
         });
 
         await expect(page.locator('[data-tutorial-step="city-result"]')).toBeVisible({ timeout: 10000 });
@@ -714,12 +738,36 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="besiege-choice"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-post-battle-choice-besiege"]')).toContainText('围城该区');
+        const beforeBesiegeCore = await readQidahenCore(page);
+        const beforeBesiegeRegions = beforeBesiegeCore.regions as Array<{
+            id: string;
+            controller?: string;
+            cityState?: { troops?: number; population?: number } | null;
+            siegeState?: { attackerFactionId?: string; attackerTroops?: number } | null;
+        }>;
+        const beforeBesiegeShanhaiguan = beforeBesiegeRegions.find((region) => region.id === 'city-region-25');
+        expect(beforeBesiegeShanhaiguan?.controller).toBe('jin');
+        expect(beforeBesiegeShanhaiguan?.cityState).not.toBeNull();
+        expect(beforeBesiegeShanhaiguan?.cityState?.population).toBeGreaterThan(0);
         await saveScreenshot(page, SIEGE_STEP_02);
         await page.locator('[data-testid="qidahen-post-battle-choice-besiege"]').click();
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('这座城最后落成什么状态');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战后围城');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('山海关');
+        const afterBesiegeCore = await readQidahenCore(page);
+        const afterBesiegeRegions = afterBesiegeCore.regions as Array<{
+            id: string;
+            controller?: string;
+            cityState?: { troops?: number; population?: number } | null;
+            siegeState?: { attackerFactionId?: string; attackerTroops?: number } | null;
+        }>;
+        const afterBesiegeShanhaiguan = afterBesiegeRegions.find((region) => region.id === 'city-region-25');
+        expect(afterBesiegeShanhaiguan?.controller).toBe('jin');
+        expect(afterBesiegeShanhaiguan?.cityState).not.toBeNull();
+        expect(afterBesiegeShanhaiguan?.cityState?.population).toBeGreaterThan(0);
+        expect(afterBesiegeShanhaiguan?.siegeState?.attackerFactionId).toBe('ming');
+        expect(afterBesiegeShanhaiguan?.siegeState?.attackerTroops).toBeGreaterThan(0);
     });
 
     test('外交雇佣教程会从真实轮盘入口进入，并完成一次友好标记与雇佣结算', async ({ page }) => {
@@ -824,6 +872,15 @@ test.describe('七大恨新游戏收口', () => {
         await clickWheelMoveUntilTutorialStep(page, 'move-2-one-opponent', 'midyear-tax');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('税赋');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('年中结算');
+        const midyearCore = await readQidahenCore(page);
+        const midyearSummaryText = ((midyearCore.lastSeasonSummary as { lines?: string[] } | null)?.lines ?? []).join(' ');
+        const midyearFactions = midyearCore.factions as Record<string, { defeatMarkers?: number; handCount?: number }>;
+        expect(midyearSummaryText).toContain('土地税赋');
+        expect(midyearSummaryText).toContain('战败标记');
+        expect(midyearSummaryText).toContain('非朝鲜区域');
+        expect(midyearFactions.ming.defeatMarkers).toBe(0);
+        expect(midyearFactions.mongol.defeatMarkers).toBe(0);
+        expect(midyearFactions.jin.defeatMarkers).toBe(0);
         await saveScreenshot(page, SEASON_STEP_01);
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="midyear-characters"]')).toBeVisible({ timeout: 10000 });
@@ -839,9 +896,34 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="new-year-maintenance"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-fortification-maintenance-selection"]')).toContainText('新年防线维护');
+        const beforeNewYearMaintenanceCore = await readQidahenCore(page);
+        const beforeNewYearFactions = beforeNewYearMaintenanceCore.factions as Record<string, { handCount?: number; vp?: number }>;
+        const beforeNewYearOrder = beforeNewYearMaintenanceCore.currentFactionOrder as string[];
+        const beforeNewYearIndex = beforeNewYearMaintenanceCore.currentYearIndex as number;
         await saveScreenshot(page, SEASON_STEP_03);
         await page.locator('[data-testid="qidahen-fortification-maintenance-choice-auto-pay"]').click();
         await expect(page.locator('[data-tutorial-step="new-year-attrition"]')).toBeVisible({ timeout: 10000 });
+        const afterNewYearMaintenanceCore = await readQidahenCore(page);
+        const afterNewYearFactions = afterNewYearMaintenanceCore.factions as Record<string, { handCount?: number; vp?: number; characters?: Array<{ inPlay?: boolean }> }>;
+        const afterNewYearSummary = afterNewYearMaintenanceCore.lastSeasonSummary as { title?: string; lines?: string[] } | null;
+        const afterNewYearSummaryText = (afterNewYearSummary?.lines ?? []).join(' ');
+        const afterNewYearOrder = afterNewYearMaintenanceCore.currentFactionOrder as string[];
+        const afterNewYearCards = afterNewYearMaintenanceCore.yearCards as unknown[];
+        expect(afterNewYearSummary?.title).toBe('新年结算');
+        expect(afterNewYearSummaryText).toContain('维护');
+        expect(afterNewYearSummaryText).toContain('兵力耗损');
+        expect(afterNewYearSummaryText).toContain('获得本年纪年卡');
+        expect(afterNewYearSummaryText).toContain('威望 +1');
+        expect(afterNewYearSummaryText).toContain('非朝鲜区域');
+        expect(afterNewYearMaintenanceCore.currentYearIndex).toBe(beforeNewYearIndex + 1);
+        expect(afterNewYearMaintenanceCore.currentYear).toBe('天命五年 1620');
+        expect(afterNewYearOrder).toEqual(expect.arrayContaining(['ming', 'mongol', 'jin']));
+        expect(afterNewYearOrder).toHaveLength(beforeNewYearOrder.length);
+        expect(afterNewYearCards.length).toBeGreaterThan(0);
+        expect(afterNewYearFactions.ming.handCount).toBeLessThan(beforeNewYearFactions.ming.handCount ?? 0);
+        expect(afterNewYearFactions.mongol.handCount).toBeLessThan(beforeNewYearFactions.mongol.handCount ?? 0);
+        expect(afterNewYearFactions.mongol.vp).toBe((beforeNewYearFactions.mongol.vp ?? 0) + 1);
+        expect(afterNewYearFactions.ming.characters?.some((character) => character.inPlay)).toBe(true);
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="chronology-score"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-chronology-zone"]')).toBeVisible();
@@ -882,6 +964,14 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-korea-zone"]')).toContainText('朝鲜弃牌');
         await expect(page.locator('[data-testid="qidahen-korea-draw-pile"]')).toContainText('9');
         await expect(page.locator('[data-testid="qidahen-korea-discard-pile"]')).toContainText('3');
+        const initialKoreaCore = await readQidahenCore(page);
+        const initialKoreaRegions = initialKoreaCore.regions as { id: string; population?: number }[];
+        const findInitialKoreaRegion = (regionId: string) => initialKoreaRegions.find((region) => region.id === regionId);
+        expect(initialKoreaCore.koreaDeckCount).toBe(9);
+        expect(initialKoreaCore.koreaDiscardCount).toBe(3);
+        expect(findInitialKoreaRegion('xian-xing')?.population).toBe(0);
+        expect(findInitialKoreaRegion('city-region-18')?.population).toBe(0);
+        expect(findInitialKoreaRegion('city-region-29')?.population).toBe(0);
         await saveScreenshot(page, KOREA_STEP_01);
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
@@ -906,6 +996,10 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="korea-attrition"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('朝鲜耗损');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('朝鲜耗损');
+        const koreaAttritionCore = await readQidahenCore(page);
+        const koreaAttritionSummaryText = ((koreaAttritionCore.lastSeasonSummary as { lines?: string[] } | null)?.lines ?? []).join(' ');
+        expect(koreaAttritionSummaryText).toContain('朝鲜耗损');
+        expect(koreaAttritionSummaryText).toContain('非朝鲜区域');
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="shanhaiguan"]')).toBeVisible({ timeout: 10000 });

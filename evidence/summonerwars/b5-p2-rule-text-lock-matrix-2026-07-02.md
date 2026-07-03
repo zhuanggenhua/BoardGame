@@ -4,7 +4,7 @@
 
 - 承接 `rule-text-lock-batch-queue-2026-07-02.md` 的 B5 队列。
 - 本文件只做数据录入合同锁定：锁官方英文原文、对象归属、原子子句和继续边界。
-- 本文件不做实现审计、不写规则断言测试、不改机制代码。
+- 本文件不做实现审计、不写规则断言测试、不改机制代码；C85 后撤销基于在线文本包的 `ferocity` 归属裁定，改回待本地卡图合同裁定。
 
 ## 权威来源
 
@@ -39,7 +39,7 @@
 | `aerial_strike` | 葛拉克 | Levitate | Any friendly common that starts its move within 2 spaces of this unit has Flight during that move. | C1 影响友方士兵；C2 该士兵开始移动时必须在本单位 2 格内；C3 只在该次移动期间获得 Flight；C4 Flight 规则另有官方原文，但本对象锁定的是赋予 Flight 的光环子句 | `locked-规则原文已锁` | 进入实现对照：确认开始移动时距离、友方士兵限制、Flight 持续到本次移动结束、与本地 `flying`/移动穿越规则的边界 |
 | `charge` | 野兽骑手 | Charge | When this unit moves, it may move up to 2 extra spaces if it moves only in one direction. If it moves 3 or more spaces and only in one direction, it has +1 strength until the end of the turn. | C1 本单位移动时结算；C2 若只沿一个方向移动，可最多额外移动 2 格；C3 若移动 3 格或更多且只沿一个方向，本回合结束前 +1 战力；C4 两段效果都受“只沿一个方向”限制 | `locked-规则原文已锁` | 进入实现对照：确认移动距离、直线方向、+1 战力持续到回合结束、无效路径负向场景 |
 | `divine_shield` | 科琳·布莱顿 | Divine Shield | Each time a friendly Citadel unit within 3 spaces of this unit is targeted by an enemy's attack, roll 2 dice. For each [s] rolled, reduce the attacking unit’s strength by 1 during that attack, to a minimum of 1. | C1 每当 3 格内友方城塞单位成为敌方攻击目标时触发；C2 掷 2 个骰子；C3 每个特殊标记使攻击单位本次攻击战力 -1；C4 战力最低为 1；C5 只影响本次攻击 | `locked-规则原文已锁` | 进入实现对照：确认目标窗口、友方城塞限制、3 格距离、骰子数量、最低战力 1、只影响本次攻击 |
-| `ferocity` | 史米革、部落投石手 | Relentless / 未确认 | 官方缓存中 `Relentless|TEXT` 为 You may choose this unit as an extra attacking unit during your Attack Phase.；但该官方条目只在 Smeg 附近命中，未证明部落投石手也承载同一能力。 | C1 若映射为 Relentless，则是在你的攻击阶段可选择本单位作为额外攻击单位；C2 当前冲突点是本地同一 `ferocity` 同时挂在史米革和部落投石手，而官方静态包未提供 `Ferocity|TEXT`，也未证明部落投石手有该能力 | `disputed-对象归属待裁定` | 暂不进入实现修复；先裁定部落投石手是否确实承载该能力，或本地是否把官方无能力单位误挂了 `ferocity` |
+| `ferocity` | 史米革 / 部落投石手归属未裁定 | Relentless 仅作候选线索 | C85 后官方缓存/在线文本包不能在审计阶段高于本地清晰卡图或已锁合同；此前 `Smeg` / `Horde Slinger` 邻近文本只能作为录入层对照线索，不能直接裁定对象归属。 | C1 需要本地清晰卡图、完整单对象图或用户明确指定权威来源裁定史米革是否承载；C2 需要同级来源裁定部落投石手是否承载；C3 在裁定前，本地旧配置与候选来源差异只能记为对象归属争议 | `disputed-待本地卡图合同裁定` | 回到数据录入合同层裁定对象归属；裁定前不得进入机制修复或通过结论 |
 | `fortress_elite` | 瓦伦蒂娜·斯托哈特 | Citadel Champion | This unit has +1 strength for each friendly Citadel unit within 2 spaces. | C1 本单位获得战力加成；C2 每个 2 格内友方城塞单位提供 +1 战力；C3 按当前战斗/计算时状态动态计数；C4 只统计友方城塞单位 | `locked-规则原文已锁` | 进入实现对照：确认城塞标签、友方限制、2 格范围、战力计算时机和动态变化 |
 | `frost_bolt` | 冰霜法师 | Frost Bolt | This unit has +1 strength for each adjacent friendly structure. | C1 本单位获得战力加成；C2 每个相邻友方建筑提供 +1 战力；C3 只统计相邻；C4 只统计友方建筑 | `locked-规则原文已锁` | 进入实现对照：确认相邻范围、友方建筑限制、战力计算时机 |
 | `greater_frost_bolt` | 纳蒂亚娜 | Greater Frost Bolt | This unit has +1 strength for each friendly structure within 2 spaces. | C1 本单位获得战力加成；C2 每个 2 格内友方建筑提供 +1 战力；C3 只统计友方建筑；C4 与 `frost_bolt` 的相邻范围不同 | `locked-规则原文已锁` | 进入实现对照：确认 2 格范围、友方建筑限制、战力计算时机 |
@@ -59,5 +59,5 @@
 ## 继续边界
 
 - B5 十八个对象已完成规则原文 locked；后续不再回到 OCR、裁图重读或实现字段倒推。
-- `ferocity` 当前为 `disputed-对象归属待裁定`：需要先裁定部落投石手是否承载官方 `Relentless` 或本地是否误挂能力。
+- `ferocity` 在 C85 后撤销已裁定口径：官方在线文本包只保留为候选线索，后续必须按 `disputed` 回到本地卡图/完整单对象图合同层裁定。
 - 本文件没有确认任何实现 bug；locked 对象下一步只能进入实现对照和最小验证分流。

@@ -916,6 +916,29 @@ describe('卡拉 - 稳固 (stable)', () => {
     };
     expect(hasStableAbilityBase(normal)).toBe(false);
   });
+
+  it('稳固不影响本单位普通移动', () => {
+    const state = createTricksterState();
+    clearArea(state, [2, 3, 4, 5], [0, 1, 2, 3, 4]);
+    state.phase = 'move';
+    state.currentPlayer = '0';
+    state.players['0'].moveCount = 0;
+
+    placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'test-kara',
+      card: makeKara('test-kara'),
+      owner: '0',
+    });
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.MOVE_UNIT, {
+      from: { row: 4, col: 1 },
+      to: { row: 4, col: 3 },
+    });
+
+    expect(events.filter(e => e.type === SW_EVENTS.UNIT_MOVED)).toHaveLength(1);
+    expect(newState.board[4][1].unit).toBeUndefined();
+    expect(newState.board[4][3].unit?.cardId).toBe('test-kara');
+  });
 });
 
 // ============================================================================

@@ -55,7 +55,7 @@ test.describe('山屋惊魂怪物运行时', () => {
 
         await page.getByTestId('betrayal-action-use').click();
         await expect(page.getByTestId('betrayal-use-status')).toContainText('本回合已用');
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('兔脚');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('书本');
         await expect(page.getByRole('button', { name: /大阶梯.*当前房间.*杰登·琼斯.*狼人/ })).toBeVisible();
         await expect(page.getByTestId('betrayal-room-monster-grand-staircase-werewolf')).toBeVisible();
         await saveScreenshot(page, USE_WITH_MONSTER_SCREENSHOT);

@@ -3995,6 +3995,12 @@ test('opponent common-card spotlight should match actual effect for samurai and 
             stateName: string;
             stateFilename: string;
         }) => {
+            const actorCards = options.actorCharacter === 'samurai' ? SAMURAI_CARDS : GUNSLINGER_CARDS;
+            const expectedPreviewRef = actorCards.find((card) => card.id === options.actorCardId)?.previewRef;
+            if (!expectedPreviewRef || expectedPreviewRef.type !== 'atlas') {
+                throw new Error(`Missing atlas previewRef for ${options.actorCharacter}:${options.actorCardId}`);
+            }
+
             const matchState = await readMatchStateFromDebugPanel(hostPage);
             const injectedState = buildOnlineCommonCardSceneState(matchState, {
                 actorCharacter: options.actorCharacter,
@@ -4094,6 +4100,29 @@ test('opponent common-card spotlight should match actual effect for samurai and 
             }, { timeout: 15000, polling: 200 });
 
             await expect(hostSpotlight).toBeVisible({ timeout: 5000 });
+            const hostCardPlayedEvent = await hostPage.evaluate(({ actorCardId }) => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                const entries = state?.sys?.eventStream?.entries ?? [];
+                const event = [...entries].reverse()
+                    .find((entry: any) => entry.event?.type === 'CARD_PLAYED'
+                        && entry.event?.payload?.cardId === actorCardId);
+                return event?.event?.payload ?? null;
+            }, {
+                actorCardId: options.actorCardId,
+            });
+            expect(hostCardPlayedEvent?.previewRef).toEqual(expectedPreviewRef);
+
+            const spotlightCardFrame = hostSpotlight.locator('[data-card-atlas-frame="true"]').first();
+            await expect(spotlightCardFrame).toBeVisible({ timeout: 5000 });
+            await expect(spotlightCardFrame).toHaveAttribute('data-card-atlas-id', expectedPreviewRef.atlasId);
+            await expect(spotlightCardFrame).toHaveAttribute('data-card-atlas-index', String(expectedPreviewRef.index));
+            await hostPage.waitForFunction(() => {
+                const frame = document.querySelector('[data-testid="card-spotlight-overlay"] [data-card-atlas-frame="true"]');
+                if (!(frame instanceof HTMLElement)) return false;
+                return !frame.classList.contains('atlas-shimmer')
+                    && getComputedStyle(frame).backgroundImage !== 'none';
+            }, undefined, { timeout: 10000, polling: 200 });
+
             await savePageEvidenceScreenshot(
                 hostPage,
                 testInfo,

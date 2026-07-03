@@ -12,7 +12,7 @@ const createBaseState = (): StoredGamePackageState => ({
 });
 
 describe('buildSharedAudioDependencyState', () => {
-    it('公共音频包下载中时不透传百分比到当前游戏卡片', () => {
+    it('公共音频包下载中时透传真实百分比到当前游戏卡片', () => {
         const merged = buildSharedAudioDependencyState(createBaseState(), {
             gameId: 'common-audio',
             runtimeChannel: 'stable',
@@ -23,8 +23,8 @@ describe('buildSharedAudioDependencyState', () => {
         });
 
         expect(merged.status).toBe('downloading');
-        expect(merged.progressMode).toBe('indeterminate');
-        expect(merged.progressPercent).toBeUndefined();
+        expect(merged.progressMode).toBe('determinate');
+        expect(merged.progressPercent).toBe(100);
     });
 
     it('公共音频包失败时仍保留真实失败信息', () => {

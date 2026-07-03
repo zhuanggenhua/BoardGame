@@ -246,6 +246,49 @@ describe('Moon Elf 技能定义', () => {
         expect(result.assertionErrors).toEqual([]);
         expect(result.finalState.core.pendingAttack).toBeNull();
     });
+
+    it('爆裂剑 I 应按 3 + 1×弓 + 1×足计算基础伤害', () => {
+        const random = createQueuedRandom([
+            1, 6, 6, 6, 1,
+            1, 1, 4, 6, 6,
+        ]);
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: testSystems,
+            playerIds: ['0', '1'],
+            random,
+            setup: createMoonElfSetup(),
+            assertFn: assertState,
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: '爆裂剑 I 基础公式',
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'exploding-arrow' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
+                cmd('ADVANCE_PHASE', '1'),
+            ],
+            expect: {
+                turnPhase: 'main2',
+                players: {
+                    '1': {
+                        hp: INITIAL_HEALTH - 3,
+                        statusEffects: { [STATUS_IDS.BLINDED]: 1 },
+                    },
+                },
+            },
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP - 2);
+    });
 });
 
 // ============================================================================
@@ -801,7 +844,7 @@ describe('Moon Elf 自定义动作', () => {
         // 攻击骰 [1,6,6,6,4] = 1弓+3月+1足 → 触发 exploding-arrow
         // 防御骰 [1,1,1,1]（4颗，defensiveRoll rollDiceCount=4）
         // 爆裂箭5骰 = [1,1,1,1,1] = 5弓+0足+0月
-        // 伤害 = 3 + 2×5弓 + 1×0足 = 3 + 10 + 0 = 13
+        // 伤害 = 3 + 1×5弓 + 1×0足 = 3 + 5 + 0 = 8
         // 对手丢失 1×0月 = 0 CP
         // 队列：[攻击骰×5, 防御骰×4, 爆裂箭骰×5] = 14个值
         const random = createQueuedRandom([1, 6, 6, 6, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
@@ -832,9 +875,9 @@ describe('Moon Elf 自定义动作', () => {
                 turnPhase: 'main2',
                 players: {
                     // 爆裂箭5骰：5弓 + 0足 + 0月
-                    // 伤害 = 3 + 2×5 + 1×0 = 13
+                    // 伤害 = 3 + 1×5 + 1×0 = 8
                     '1': { 
-                        hp: INITIAL_HEALTH - 13,
+                        hp: INITIAL_HEALTH - 8,
                         statusEffects: { [STATUS_IDS.BLINDED]: 1 }, // 造成致盲
                     },
                 },

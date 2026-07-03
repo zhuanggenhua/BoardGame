@@ -2,9 +2,7 @@
 
 ## Purpose
 定义引擎层跨游戏复用的纯函数原语库。该层与运行时 `systems` 层并存，负责可组合的计算、容器、注册器与辅助工具，而不是承载整局运行时系统编排。
-
 ## Requirements
-
 ### Requirement: Shared Primitive Library
 引擎 SHALL 提供 `src/engine/primitives/` 作为跨游戏共享原语入口，向游戏层暴露可复用的纯函数和工具模块。
 
@@ -56,6 +54,52 @@
 - **GIVEN** 游戏需要 sprite atlas、ActionLog 伤害来源标注或 UI hints
 - **WHEN** 游戏使用对应的 primitives helper
 - **THEN** 这些辅助能力可以在多个游戏之间共享，而不依赖单一游戏的私有 helper
+
+### Requirement: Engine primitives provide runtime entity identity
+
+The shared engine primitives layer MUST provide a reusable runtime entity identity model for games that need durable references to runtime objects.
+
+The primitive MUST distinguish identity from coordinate and MUST be usable by cards, units, bases, board occupants, tokens, summons, rooms, or other game-defined runtime objects.
+
+#### Scenario: Game defines an entity kind for replaceable objects
+
+- **GIVEN** a game has replaceable board objects
+- **WHEN** the game registers or constructs those objects through the entity identity primitive
+- **THEN** each runtime object receives a deterministic entity id
+- **AND** the object can still expose its current coordinate separately
+
+### Requirement: Entity ref resolution validates kind and lifecycle
+
+The shared resolver for entity references MUST validate entity id, entity kind, and lifecycle validity before returning a target object.
+
+If a compatibility fallback is present, it MUST be treated as diagnostic or migration data unless a game-specific compatibility adapter explicitly permits fallback resolution.
+
+#### Scenario: Kind mismatch is rejected
+
+- **GIVEN** an entity ref says it points to a base
+- **WHEN** the id resolves to a card, token, or another non-base entity
+- **THEN** the resolver rejects the reference
+- **AND** the operation cannot continue against the wrong object kind
+
+#### Scenario: Compatibility fallback does not silently retarget
+
+- **GIVEN** an old saved state contains a fallback coordinate for an entity ref
+- **WHEN** the primary entity id is missing
+- **THEN** the resolver does not automatically use the current occupant of that coordinate
+- **AND** fallback resolution only occurs through an explicit compatibility adapter with definition and lifecycle checks
+
+### Requirement: Coordinate primitives remain available but non-authoritative
+
+The engine primitives layer MUST continue to support coordinates for board traversal, UI layout, hit testing, sorting, and immediate command targeting.
+
+The primitive documentation MUST state that coordinates are current locations, not durable runtime identity.
+
+#### Scenario: UI renders by coordinate after identity resolution
+
+- **GIVEN** a UI needs to render bases left-to-right
+- **WHEN** the domain provides current base entities and their coordinates
+- **THEN** the UI may sort and render by coordinate
+- **AND** any long-lived modifier shown on a base is read from state bound to that base's entity identity
 
 ## Design Decisions
 

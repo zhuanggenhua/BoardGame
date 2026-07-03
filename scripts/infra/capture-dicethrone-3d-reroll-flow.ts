@@ -62,7 +62,16 @@ type BoardDiceEvidence = {
         skinsReady: string | null;
         diceTexturesReady: string | null;
         diceSettled: string | null;
+        dicePhysicsSource: string | null;
+        dicePhysicsMode: string | null;
     } | null;
+    physicsSource: {
+        present: boolean;
+        mode: string | null;
+        settled: string | null;
+        visible: boolean | null;
+        rect: RectEvidence | null;
+    };
     fallbackCount: number;
     diceButtons: BoardDiceButtonEvidence[];
 };
@@ -194,8 +203,11 @@ async function collectBoardDiceEvidence(page: Page, label: string): Promise<Boar
     return page.evaluate((inputLabel) => {
         const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
         const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"], [data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+        const physicsSource = document.querySelector('[data-testid="dicethrone-board-dice-physics-source"]') as HTMLElement | null;
         const stageRectRaw = stage?.getBoundingClientRect();
         const canvasRectRaw = canvas?.getBoundingClientRect();
+        const physicsSourceRectRaw = physicsSource?.getBoundingClientRect();
+        const physicsSourceStyle = physicsSource ? window.getComputedStyle(physicsSource) : null;
         const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
         const dice = state?.core?.dice ?? [];
         const buttons = Array.from(document.querySelectorAll(
@@ -223,7 +235,26 @@ async function collectBoardDiceEvidence(page: Page, label: string): Promise<Boar
                 skinsReady: canvas.dataset.skinsReady ?? null,
                 diceTexturesReady: canvas.dataset.diceTexturesReady ?? null,
                 diceSettled: canvas.dataset.diceSettled ?? null,
+                diceVisualSettled: canvas.dataset.diceVisualSettled ?? null,
+                diceMaxLift: canvas.dataset.diceMaxLift ?? null,
+                diceMaxTravel: canvas.dataset.diceMaxTravel ?? null,
+                dicePhysicsSource: canvas.dataset.dicePhysicsSource ?? null,
+                dicePhysicsMode: canvas.dataset.dicePhysicsMode ?? null,
             } : null,
+            physicsSource: {
+                present: Boolean(physicsSource),
+                mode: physicsSource?.dataset.dicePhysicsMode ?? null,
+                settled: physicsSource?.dataset.diceSettled ?? null,
+                visible: physicsSourceStyle
+                    ? physicsSourceStyle.visibility !== 'hidden' && Number(physicsSourceStyle.opacity || '1') > 0
+                    : null,
+                rect: physicsSourceRectRaw ? {
+                    x: Math.round(physicsSourceRectRaw.x),
+                    y: Math.round(physicsSourceRectRaw.y),
+                    width: Math.round(physicsSourceRectRaw.width),
+                    height: Math.round(physicsSourceRectRaw.height),
+                } : null,
+            },
             fallbackCount: document.querySelectorAll('[data-testid="dicethrone-board-dice-box-fallback"]').length,
             diceButtons: buttons.map((node) => {
                 const rawTestId = node.dataset.testid ?? node.getAttribute('data-testid') ?? '';
@@ -407,20 +438,28 @@ async function logBoardDiceStageGate(page: Page, label: string) {
 }
 
 async function clickCenterDie(page: Page, dieId: number) {
-    await page.evaluate((nextDieId: number) => {
-        const candidates = Array.from(document.querySelectorAll(`[data-testid="die-button-${nextDieId}"]`)) as HTMLElement[];
-        const target = candidates.find((node) => {
-            const rect = node.getBoundingClientRect();
-            const style = window.getComputedStyle(node);
-            return rect.width > 0
-                && rect.height > 0
-                && style.pointerEvents !== 'none'
-                && style.visibility !== 'hidden'
-                && style.display !== 'none';
-        }) ?? null;
-        if (!target) throw new Error(`未找到骰子点击层 ${nextDieId}`);
-        target.click();
+    const point = await page.evaluate((nextDieId: number) => {
+        const target = document.querySelector(
+            `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${nextDieId}"]`,
+        ) as HTMLElement | null;
+        if (!target) return null;
+
+        const rect = target.getBoundingClientRect();
+        const style = window.getComputedStyle(target);
+        if (rect.width <= 0
+            || rect.height <= 0
+            || style.visibility === 'hidden'
+            || style.display === 'none') {
+            return null;
+        }
+
+        return {
+            x: rect.left + (rect.width / 2),
+            y: rect.top + (rect.height / 2),
+        };
     }, dieId);
+    if (!point) throw new Error(`未找到棋盘骰子中心点击点 ${dieId}`);
+    await page.mouse.click(point.x, point.y);
 }
 
 async function dragHandCardToPlay(page: Page, cardId: string) {
@@ -517,8 +556,9 @@ async function waitForBoardDiceProjectionStable(page: Page) {
 }
 
 async function waitForBoardDiceFullySettled(page: Page) {
-    const settled = await page.waitForFunction(() => {
-        const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"], [data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+    const isBoardDiceSettled = () => {
+        const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"]')
+            ?? document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
         if (!canvas) return false;
         const rect = canvas.getBoundingClientRect();
         const texturesOrSkinsReady = canvas.dataset.skinsReady === 'true'
@@ -526,11 +566,18 @@ async function waitForBoardDiceFullySettled(page: Page) {
         return rect.width > 0
             && rect.height > 0
             && texturesOrSkinsReady
-            && canvas.dataset.diceSettled === 'true';
-    }, undefined, { timeout: 12000 }).then(() => true).catch(() => false);
+            && canvas.dataset.diceSettled === 'true'
+            && canvas.dataset.diceVisualSettled === 'true'
+            && Number(canvas.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) <= 0.004
+            && Number(canvas.dataset.diceMaxTravel ?? Number.POSITIVE_INFINITY) <= 0.012;
+    };
+    const settled = await page.waitForFunction(isBoardDiceSettled, undefined, { timeout: 24000 })
+        .then(() => true)
+        .catch(() => page.evaluate(isBoardDiceSettled));
     if (!settled) {
         const debugState = await page.evaluate(() => {
-            const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"], [data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+            const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"]')
+                ?? document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
             const rect = canvas?.getBoundingClientRect();
             return {
                 canvasTestId: canvas?.getAttribute('data-testid') ?? null,
@@ -810,7 +857,10 @@ async function main() {
             }
         }
 
-        console.log('[capture-dt3d] 五颗骰子已选择，等待自动重投完成');
+        await waitForSelectedBoardDiceCount(page, 5);
+        console.log('[capture-dt3d] 五颗骰子已选择，点击确认触发重投');
+        await confirmButton.waitFor({ state: 'visible', timeout: 12000 });
+        await confirmButton.click({ force: true, noWaitAfter: true, timeout: 12000 });
 
         await page.waitForFunction(
             () => {

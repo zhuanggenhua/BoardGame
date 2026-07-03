@@ -24,7 +24,7 @@ import type {
 } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { canMoveToEnhanced } from '../domain/helpers';
-import { getEffectiveStrengthValue, getEffectiveLifeBase } from '../domain/abilityResolver';
+import { calculateEffectiveStrength, getEffectiveStrengthValue, getEffectiveLifeBase } from '../domain/abilityResolver';
 import { getSummonerWarsUIHints } from '../domain/uiHints';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 import { buildUsageKey } from '../domain/utils';
@@ -264,6 +264,47 @@ describe('蒙威尊者 - 力量强化 (power_up)', () => {
 
     const strength = getEffectiveStrengthValue(moka, state);
     expect(strength).toBe(6); // 基础1 + 最多5
+  });
+
+  it('[power_up/L4] 按当前充能获得战力并在拆解中记录+5上限', () => {
+    const state = createBarbaricState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    const noCharge = placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'moka-no-charge',
+      card: makeMoka('moka-no-charge'),
+      owner: '0',
+      boosts: 0,
+    });
+    const threeCharge = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'moka-three-charge',
+      card: makeMoka('moka-three-charge'),
+      owner: '0',
+      boosts: 3,
+    });
+    const eightCharge = placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'moka-eight-charge',
+      card: makeMoka('moka-eight-charge'),
+      owner: '0',
+      boosts: 8,
+    });
+
+    const noChargeStrength = calculateEffectiveStrength(noCharge, state);
+    const threeChargeStrength = calculateEffectiveStrength(threeCharge, state);
+    const eightChargeStrength = calculateEffectiveStrength(eightCharge, state);
+
+    expect(noChargeStrength.finalStrength).toBe(1);
+    expect(noChargeStrength.modifiers.find(m => m.source === 'power_up')).toBeUndefined();
+
+    expect(threeChargeStrength.finalStrength).toBe(4);
+    expect(threeChargeStrength.modifiers).toContainEqual(
+      expect.objectContaining({ source: 'power_up', value: 3 })
+    );
+
+    expect(eightChargeStrength.finalStrength).toBe(6);
+    expect(eightChargeStrength.modifiers).toContainEqual(
+      expect.objectContaining({ source: 'power_up', value: 5 })
+    );
   });
 });
 

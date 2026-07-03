@@ -149,7 +149,6 @@ export const GameDetailsMobilePackageCard = ({
     onInstall,
     onRetry,
     failedActionLabel,
-    onCancel,
     onCollapse,
     presentation = 'install',
     requiredAppVersion,
@@ -181,14 +180,14 @@ export const GameDetailsMobilePackageCard = ({
         : state.manifestSource === 'remote'
             ? t('packageManager.packageSyncCompleted')
             : t('packageManager.packageSyncFailed');
-    const showCancelAction = isInProgress && typeof onCancel === 'function';
-    const actionHandler = showCancelAction
-        ? onCancel
+    const showProgressAction = isInProgress && typeof onCollapse === 'function';
+    const actionHandler = showProgressAction
+        ? onCollapse
         : state.status === 'failed'
             ? (onRetry ?? onInstall)
             : onInstall;
-    const actionLabel = showCancelAction
-        ? t('packageManager.cancelAction')
+    const actionLabel = showProgressAction
+        ? t('common:close')
         : statusMeta.actionLabel;
     const badgeLabel = presentation === 'update-required'
         ? t('packageManager.updateRequiredBadge')
@@ -321,15 +320,15 @@ export const GameDetailsMobilePackageCard = ({
                                 className={[
                                     isHomeV2Style ? 'inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] px-2.5 py-1.5 text-[10px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2' : 'inline-flex cursor-pointer items-center gap-2 rounded-[4px] px-3 py-1.5 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2',
                                     isHomeV2Style
-                                        ? showCancelAction
+                                        ? showProgressAction
                                             ? 'border border-[#9d773f]/30 bg-[#fff4da]/80 text-[#6b4219] hover:bg-[#f4dfb8] focus-visible:ring-[#6b4328]/20'
                                             : 'bg-[#4d2c17] text-[#f5dfbc] hover:bg-[#5d351b] focus-visible:ring-[#6b4328]/24'
-                                        : showCancelAction
+                                        : showProgressAction
                                         ? 'border border-amber-800/25 bg-amber-50/92 text-amber-900 hover:bg-amber-100 focus-visible:ring-amber-900/20'
                                         : 'bg-parchment-base-text text-parchment-card-bg hover:bg-parchment-brown focus-visible:ring-parchment-base-text/30',
                                 ].join(' ')}
                             >
-                                {showCancelAction ? <X size={13} /> : state.status === 'failed' ? <RefreshCw size={13} /> : <Download size={13} />}
+                                {showProgressAction ? <X size={13} /> : state.status === 'failed' ? <RefreshCw size={13} /> : <Download size={13} />}
                                 <span>{actionLabel}</span>
                             </button>
                         </div>

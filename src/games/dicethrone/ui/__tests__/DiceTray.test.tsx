@@ -15,20 +15,24 @@ vi.mock('react-i18next', () => ({
 }));
 
 const dice3DCalls: Array<Record<string, unknown>> = [];
-const boardDiceBoxTrayCalls: Array<Record<string, unknown>> = [];
+const diceField3DCalls: Array<Record<string, unknown>> = [];
+const diceBoxPhysicsSourceCalls: Array<Record<string, unknown>> = [];
 
 vi.mock('../Dice3D', () => ({
     Dice3D: (props: Record<string, unknown>) => {
         dice3DCalls.push(props);
         return <div data-testid="mock-dice-3d" />;
     },
-    DiceField3D: () => <div data-testid="mock-dice-field-3d" />,
+    DiceField3D: (props: Record<string, unknown>) => {
+        diceField3DCalls.push(props);
+        return <div data-testid="mock-dice-field-3d" />;
+    },
 }));
 
-vi.mock('../BoardDiceBoxTray', () => ({
-    BoardDiceBoxTray: (props: Record<string, unknown>) => {
-        boardDiceBoxTrayCalls.push(props);
-        return <div data-testid="mock-board-dice-box-tray" />;
+vi.mock('../../../../lib/dice-physics/DiceBoxPhysicsSource', () => ({
+    DiceBoxPhysicsSource: (props: Record<string, unknown>) => {
+        diceBoxPhysicsSourceCalls.push(props);
+        return <div data-testid="mock-dice-box-physics-source" />;
     },
 }));
 
@@ -44,7 +48,8 @@ const dice: Die[] = [
 describe('DiceTray tutorial anchor', () => {
     it('右侧传统骰盘应保留 dice-tray 教程标记', () => {
         dice3DCalls.length = 0;
-        boardDiceBoxTrayCalls.length = 0;
+        diceField3DCalls.length = 0;
+        diceBoxPhysicsSourceCalls.length = 0;
         render(
             <DiceTray
                 dice={dice}
@@ -61,7 +66,8 @@ describe('DiceTray tutorial anchor', () => {
 
     it('右侧传统骰盘应继续走原来的 Dice3D 链路，而不是强制非 WebGL 平替', () => {
         dice3DCalls.length = 0;
-        boardDiceBoxTrayCalls.length = 0;
+        diceField3DCalls.length = 0;
+        diceBoxPhysicsSourceCalls.length = 0;
         render(
             <DiceTray
                 dice={dice}
@@ -79,7 +85,8 @@ describe('DiceTray tutorial anchor', () => {
 
     it('棋盘内 3D 骰台不应复用 dice-tray 教程标记', () => {
         dice3DCalls.length = 0;
-        boardDiceBoxTrayCalls.length = 0;
+        diceField3DCalls.length = 0;
+        diceBoxPhysicsSourceCalls.length = 0;
         const { container } = render(
             <DiceTray
                 dice={dice}
@@ -92,13 +99,15 @@ describe('DiceTray tutorial anchor', () => {
             />,
         );
 
-        expect(screen.getByTestId('mock-board-dice-box-tray')).toBeInTheDocument();
+        expect(screen.getByTestId('mock-dice-field-3d')).toBeInTheDocument();
+        expect(screen.getByTestId('mock-dice-box-physics-source')).toBeInTheDocument();
         expect(container.querySelector('[data-tutorial-id="dice-tray"]')).toBeNull();
     });
 
-    it('棋盘内 3D 骰台只应收到未锁定骰子', () => {
+    it('棋盘内 3D 骰台和隐藏物理源都只应收到未锁定骰子', () => {
         dice3DCalls.length = 0;
-        boardDiceBoxTrayCalls.length = 0;
+        diceField3DCalls.length = 0;
+        diceBoxPhysicsSourceCalls.length = 0;
         render(
             <DiceTray
                 dice={[
@@ -124,9 +133,13 @@ describe('DiceTray tutorial anchor', () => {
             />,
         );
 
-        expect(boardDiceBoxTrayCalls).toHaveLength(1);
-        expect(boardDiceBoxTrayCalls[0]?.dice).toMatchObject([
-            { id: 0, isKept: false },
+        expect(diceField3DCalls).toHaveLength(1);
+        expect(diceField3DCalls[0]?.dice).toMatchObject([
+            { id: 0, value: 1, definitionId: 'monk-dice' },
+        ]);
+        expect(diceBoxPhysicsSourceCalls).toHaveLength(1);
+        expect(diceBoxPhysicsSourceCalls[0]?.dice).toMatchObject([
+            { id: 0, value: 1 },
         ]);
     });
 

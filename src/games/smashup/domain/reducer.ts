@@ -26,6 +26,7 @@
  */
 
 import type { MatchState, RandomFn } from '../../../engine/types';
+import { createEntityId } from '../../../engine/primitives';
 import type {
     SmashUpCommand,
     SmashUpCore,
@@ -354,7 +355,8 @@ function executeCommand(
                 );
                 const shuffledBasePool = random.shuffle(basePool);
                 const baseCount = core.turnOrder.length + 1;
-                const activeBases: BaseInPlay[] = shuffledBasePool.slice(0, baseCount).map(defId => ({
+                const activeBases: BaseInPlay[] = shuffledBasePool.slice(0, baseCount).map((defId, index) => ({
+                    instanceId: createEntityId('smashup:base', index + 1),
                     defId,
                     minions: [],
                     ongoingActions: [],
@@ -402,6 +404,7 @@ function executeCommand(
                         nextUid,
                         bases: activeBases,
                         baseDeck,
+                        nextBaseInstanceId: activeBases.length + 1,
                         ...(mulliganPlayers.length > 0 ? { mulliganPlayers } : {}),
                     },
                     timestamp: now,

@@ -100,6 +100,21 @@ describe('shouldConsumeChargeEvent', () => {
     expect(shouldConsumeChargeEvent(consumed, 8)).toBe(true);
     expect([...consumed]).toEqual([7, 8]);
   });
+
+  it('[blood_rage/L4] 事件流回放时同一充能事件不会重复消费', () => {
+    const consumed = new Set<number>();
+    const entries = [makeEntry(7), makeEntry(8)];
+
+    const firstPass = entries.filter(entry => shouldConsumeChargeEvent(consumed, entry.id));
+    expect(firstPass.map(entry => entry.id)).toEqual([7, 8]);
+
+    const rollbackDelta = computeEventStreamDelta(entries, 10);
+    expect(rollbackDelta.shouldReset).toBe(true);
+    const replayPass = rollbackDelta.newEntries.filter(entry => shouldConsumeChargeEvent(consumed, entry.id));
+
+    expect(replayPass).toEqual([]);
+    expect([...consumed]).toEqual([7, 8]);
+  });
 });
 
 describe('systemInteractionAdapter', () => {

@@ -1174,11 +1174,13 @@ describe('SummonerWars 系统交互桥接回归', () => {
     const structureFrom = { row: 4, col: 2 };
     const summonerPos = { row: 4, col: 4 };
     const commonPos = { row: 3, col: 3 };
+    const structureTargetPos = { row: 5, col: 3 };
     putUnit(core, structureFrom, mkUnit('mobile-structure', {
       abilities: ['mobile_structure'],
       faction: 'frost',
       unitClass: 'common',
     }), '0');
+    putStructure(core, structureTargetPos, '1');
     const summoner = putUnit(core, summonerPos, mkUnit('ice-ram-summoner', {
       faction: 'barbaric',
       unitClass: 'summoner',
@@ -1214,18 +1216,30 @@ describe('SummonerWars 系统交互桥接回归', () => {
 
     expect(targetPositions).toContainEqual(commonPos);
     expect(targetPositions).not.toContainEqual(summonerPos);
+    expect(targetPositions).not.toContainEqual(structureTargetPos);
 
-    const events = exec(core, SW_COMMANDS.ACTIVATE_ABILITY, {
+    const summonerEvents = exec(core, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'ice_ram',
       sourceUnitId: 'ice_ram',
       targetPosition: summonerPos,
       structurePosition: structurePos,
     });
-    expect(events.some(e =>
+    expect(summonerEvents.some(e =>
       e.type === SW_EVENTS.UNIT_DAMAGED
       && (e.payload as Record<string, unknown>).reason === 'ice_ram'
     )).toBe(false);
     expect(getUnitAt(core, summonerPos)?.instanceId).toBe(summoner.instanceId);
+
+    const structureEvents = exec(core, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'ice_ram',
+      sourceUnitId: 'ice_ram',
+      targetPosition: structureTargetPos,
+      structurePosition: structurePos,
+    });
+    expect(structureEvents.some(e =>
+      e.type === SW_EVENTS.UNIT_DAMAGED
+      && (e.payload as Record<string, unknown>).reason === 'ice_ram'
+    )).toBe(false);
   });
 
   it('[infection] 真实击杀后应生成选弃牌堆疫病体交互并收口到召唤落位', () => {
@@ -3257,6 +3271,57 @@ describe('验证层有效性门控', () => {
     ].filter(Boolean);
     expect(survivors).toHaveLength(1);
     expect(destroyEvents[0]?.payload).toMatchObject({ owner: '0' });
+  });
+
+  it('[blood_rage_decay/L4] 真实抽牌阶段结束时按当前充能清理亡灵战士', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'necromancer', faction1: 'trickster' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'draw';
+    core.currentPlayer = '0';
+
+    const highCharge = putUnit(core, { row: 4, col: 2 }, mkUnit('undead-high-charge', {
+      abilities: ['blood_rage_decay'],
+      faction: 'necromancer',
+    }), '0', { boosts: 3 });
+    const oneCharge = putUnit(core, { row: 4, col: 3 }, mkUnit('undead-one-charge', {
+      abilities: ['blood_rage_decay'],
+      faction: 'necromancer',
+    }), '0', { boosts: 1 });
+    const noCharge = putUnit(core, { row: 4, col: 4 }, mkUnit('undead-no-charge', {
+      abilities: ['blood_rage_decay'],
+      faction: 'necromancer',
+    }), '0', { boosts: 0 });
+
+    const state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: { ...createInitialSystemState(['0', '1'], engineConfig.systems as any), phase: 'draw' },
+    };
+
+    const result = runGamePipeline(state, {
+      type: FLOW_COMMANDS.ADVANCE_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.state.core.currentPlayer).toBe('1');
+    expect(result.state.core.phase).toBe('summon');
+
+    const decayEvents = result.events.filter(
+      e => e.type === SW_EVENTS.UNIT_CHARGED
+        && (e.payload as Record<string, unknown>).sourceAbilityId === 'blood_rage_decay'
+    );
+    expect(decayEvents).toHaveLength(2);
+    expect(decayEvents.map(e => (e.payload as Record<string, unknown>).position)).toEqual([
+      highCharge.position,
+      oneCharge.position,
+    ]);
+    expect(decayEvents.map(e => (e.payload as Record<string, unknown>).delta)).toEqual([-2, -2]);
+
+    expect(result.state.core.board[4][2].unit?.boosts).toBe(1);
+    expect(result.state.core.board[4][3].unit?.boosts).toBe(0);
+    expect(result.state.core.board[4][4].unit?.boosts).toBe(0);
+    expect(result.state.core.board[noCharge.position.row][noCharge.position.col].unit?.card.id).toBe('undead-no-charge');
   });
 
   it('[blood_rune] 进入攻击阶段时应创建强制二选一交互', () => {

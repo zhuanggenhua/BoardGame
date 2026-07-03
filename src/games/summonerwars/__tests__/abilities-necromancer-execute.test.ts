@@ -16,6 +16,7 @@ import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
 import type { SummonerWarsCore, CellCoord, BoardUnit, UnitCard, PlayerId } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
+import { calculateEffectiveStrength } from '../domain/abilityResolver';
 
 // ============================================================================
 // 辅助函数
@@ -972,5 +973,106 @@ describe('亡灵战士 - 血腥狂怒 onUnitDestroyed 充能', () => {
       const warrior = newState.board[3][2].unit;
       expect(warrior).toBeDefined();
       expect(warrior!.boosts).toBeGreaterThan(0);
+  });
+
+  it('[blood_rage/L4] 真实攻击击杀只给亡灵战士结算一次充能', () => {
+    const meleeRandom: RandomFn = { ...createTestRandom(), random: () => 0 };
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-attacker',
+      card: makeEnemy('test-attacker', { strength: 5, faction: 'necromancer' }),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'test-enemy',
+      card: makeEnemy('test-enemy', { life: 1 }),
+      owner: '1',
+    });
+
+    placeUnit(state, { row: 3, col: 2 }, {
+      cardId: 'test-warrior',
+      card: makeUndeadWarrior('test-warrior'),
+      owner: '0',
+      boosts: 0,
+    });
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+    state.players['0'].attackCount = 0;
+    state.players['0'].hasAttackedEnemy = false;
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 4, col: 2 },
+      target: { row: 4, col: 3 },
+    }, meleeRandom);
+
+    const destroyEvents = events.filter(
+      e => e.type === SW_EVENTS.UNIT_DESTROYED
+        && (e.payload as any).cardId === 'test-enemy'
+    );
+    expect(destroyEvents).toHaveLength(1);
+
+    const bloodRageChargeEvents = events.filter(
+      e => e.type === SW_EVENTS.UNIT_CHARGED
+        && (e.payload as any).sourceAbilityId === 'blood_rage'
+        && (e.payload as any).position?.row === 3
+        && (e.payload as any).position?.col === 2
+    );
+    expect(bloodRageChargeEvents).toHaveLength(1);
+    expect((bloodRageChargeEvents[0].payload as any).delta).toBe(1);
+
+    const warrior = newState.board[3][2].unit;
+    expect(warrior).toBeDefined();
+    expect(warrior!.boosts).toBe(1);
+  });
+});
+
+// ============================================================================
+// 亡灵战士 - 力量强化 power_boost 数值读取
+// ============================================================================
+
+describe('亡灵战士 - 力量强化 (power_boost)', () => {
+  it('[power_boost/L4] 亡灵战士按当前充能获得战力且最多只加5', () => {
+    const state = createNecroState();
+    clearArea(state, [3, 4, 5], [1, 2, 3, 4]);
+
+    const noCharge = placeUnit(state, { row: 4, col: 1 }, {
+      cardId: 'undead-no-charge',
+      card: makeUndeadWarrior('undead-no-charge'),
+      owner: '0',
+      boosts: 0,
+    });
+    const threeCharge = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'undead-three-charge',
+      card: makeUndeadWarrior('undead-three-charge'),
+      owner: '0',
+      boosts: 3,
+    });
+    const eightCharge = placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'undead-eight-charge',
+      card: makeUndeadWarrior('undead-eight-charge'),
+      owner: '0',
+      boosts: 8,
+    });
+
+    const noChargeStrength = calculateEffectiveStrength(noCharge, state);
+    const threeChargeStrength = calculateEffectiveStrength(threeCharge, state);
+    const eightChargeStrength = calculateEffectiveStrength(eightCharge, state);
+
+    expect(noChargeStrength.finalStrength).toBe(2);
+    expect(noChargeStrength.modifiers.find(m => m.source === 'power_boost')).toBeUndefined();
+
+    expect(threeChargeStrength.finalStrength).toBe(5);
+    expect(threeChargeStrength.modifiers).toContainEqual(
+      expect.objectContaining({ source: 'power_boost', value: 3 })
+    );
+
+    expect(eightChargeStrength.finalStrength).toBe(7);
+    expect(eightChargeStrength.modifiers).toContainEqual(
+      expect.objectContaining({ source: 'power_boost', value: 5 })
+    );
   });
 });

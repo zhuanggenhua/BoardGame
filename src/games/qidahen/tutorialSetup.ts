@@ -190,6 +190,10 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
     setupSelections: createDefaultSelections('post-sarhu-1619'),
     coreTransform: (initialCore) => {
         const core = cloneCore(initialCore);
+        const [mingTacticCardId] = core.handCards
+            .filter((card) => card.faction === 'ming')
+            .slice(0, 1)
+            .map((card) => card.id);
         core.currentPlayer = '0';
         core.turnLabel = '第 1 轮 · 大明 · 进攻调度';
         core.turnPhase = 'dispatch-targeting';
@@ -204,6 +208,18 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
         core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
+        if (mingTacticCardId) {
+            core.handCards = core.handCards.map((card) => (
+                card.id === mingTacticCardId
+                    ? {
+                        ...card,
+                        label: '大明战术牌',
+                        cardKind: 'tactic' as const,
+                        cardDefId: 'tutorial-ming-tactic',
+                    }
+                    : card
+            ));
+        }
         core.factions.jin.characters = core.factions.jin.characters.map((character) => ({
             ...character,
             inPlay: false,
@@ -273,10 +289,13 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
                     ...region,
                     controller: 'ming',
                     controlLabel: '大明',
-                    troops: 3,
+                    troops: 4,
                     population: 6,
                     siegeState: null,
-                    specialTroops: [],
+                    specialTroops: [
+                        createTroop('ming-siege-cavalry-lv2', '大明攻城骑兵', 'ming', 'cavalry', 1, 2),
+                        createTroop('ming-siege-infantry-lv2', '大明攻城步兵', 'ming', 'infantry', 3, 2),
+                    ],
                 };
             }
             if (region.id === 'city-region-25') {
@@ -287,7 +306,10 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
                     troops: 2,
                     population: 4,
                     siegeState: null,
-                    specialTroops: [],
+                    specialTroops: [
+                        createTroop('jin-city-cavalry-lv2', '后金守城骑兵', 'jin', 'cavalry', 1, 2),
+                        createTroop('jin-city-infantry-lv1', '后金守城步兵', 'jin', 'infantry', 1, 1),
+                    ],
                     cityState: null,
                 };
             }
@@ -317,6 +339,52 @@ const createRetreatAndRoutTutorialPendingAction = (): QidahenPendingTargetAction
     attackPressure: 1,
     attackBoundaryType: 'plain',
     resolutionHint: '这次不会打穿守军。先看断后和溃退这两个撤退选项，再比较它们留下的代价。',
+    defenderPayCost: null,
+});
+
+const createCavalryPlunderTutorialPendingAction = (): QidahenPendingTargetAction => ({
+    actionId: 'raid',
+    battleMode: 'field',
+    title: '骑兵劫掠待结算',
+    attackerFactionId: 'ming',
+    sourceRegionId: 'city-region-16',
+    sourceRegionName: '克什克腾部',
+    targetRegionId: 'city-region-14',
+    targetRegionName: '察哈尔部',
+    targetRuntimeRegionId: 'city-region-14',
+    defenderFactionId: 'jin',
+    defenderLabel: '后金',
+    restriction: '教程样本 · 骑兵劫掠',
+    battleWidth: 3,
+    boundaryUnitCap: null,
+    sourceAvailableTroops: 2,
+    committedTroops: 2,
+    attackPressure: 2,
+    attackBoundaryType: 'plain',
+    resolutionHint: '骑兵可以不参与常规攻击，改为承受炮骑反击后劫掠人口并撤回。',
+    defenderPayCost: null,
+});
+
+const createCavalryEvasionTutorialPendingAction = (): QidahenPendingTargetAction => ({
+    actionId: 'raid',
+    battleMode: 'field',
+    title: '骑兵避战待结算',
+    attackerFactionId: 'ming',
+    sourceRegionId: 'city-region-16',
+    sourceRegionName: '克什克腾部',
+    targetRegionId: 'city-region-14',
+    targetRegionName: '察哈尔部',
+    targetRuntimeRegionId: 'city-region-14',
+    defenderFactionId: 'jin',
+    defenderLabel: '后金',
+    restriction: '教程样本 · 骑兵避战',
+    battleWidth: 3,
+    boundaryUnitCap: null,
+    sourceAvailableTroops: 4,
+    committedTroops: 4,
+    attackPressure: 3,
+    attackBoundaryType: 'plain',
+    resolutionHint: '守方骑兵可以在野战里撤往相邻友方区，不视为战败。',
     defenderPayCost: null,
 });
 
@@ -367,6 +435,282 @@ const createRetreatAndRoutTutorialSetup = (): QidahenTutorialPreset => ({
         });
         core.factions.ming.defeatMarkers = 0;
         core.factions.jin.defeatMarkers = 0;
+        return core;
+    },
+});
+
+const createCavalryEvasionTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 骑兵避战';
+        core.turnPhase = 'resolve-pending';
+        core.wheelActionUsed = true;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-14';
+        core.selectedActionId = 'raid';
+        core.pendingTargetAction = createCavalryEvasionTutorialPendingAction();
+        core.wheelDispatchProgress = null;
+        core.driveTigerConsentSelection = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 4,
+                    population: 2,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    population: 0,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('jin-evasion-cavalry-lv2', '后金骑兵', 'jin', 'cavalry', 2, 2),
+                    ],
+                };
+            }
+            if (region.id === 'city-region-19') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            if (region.id === 'city-region-17' || region.id === 'jinzhou') {
+                return {
+                    ...region,
+                    controller: 'neutral',
+                    controlLabel: '中立',
+                    troops: 0,
+                    population: 0,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
+const createCavalryPlunderTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 骑兵劫掠';
+        core.turnPhase = 'resolve-pending';
+        core.wheelActionUsed = true;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-1-free';
+        core.selectedRegionId = 'city-region-14';
+        core.selectedActionId = 'raid';
+        core.pendingTargetAction = createCavalryPlunderTutorialPendingAction();
+        core.wheelDispatchProgress = null;
+        core.driveTigerConsentSelection = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    population: 2,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('ming-plunder-cavalry-lv2', '大明骑兵', 'ming', 'cavalry', 2, 2),
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 3,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('jin-plunder-infantry-lv1', '后金步兵', 'jin', 'infantry', 1, 1),
+                    ],
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
+const createNeutralInvasionTutorialPendingAction = (): QidahenPendingTargetAction => ({
+    actionId: 'wheel-dispatch',
+    battleMode: 'field',
+    title: '土默特部 中立入侵待结算',
+    attackerFactionId: 'ming',
+    sourceRegionId: 'city-region-24',
+    sourceRegionName: '宁远',
+    targetRegionId: 'city-region-20',
+    targetRegionName: '土默特部',
+    targetRuntimeRegionId: 'city-region-20',
+    defenderFactionId: 'neutral',
+    defenderLabel: '中立',
+    restriction: '教程样本 · 调度进攻中立区',
+    battleWidth: 3,
+    boundaryUnitCap: null,
+    sourceAvailableTroops: 1,
+    committedTroops: 1,
+    attackPressure: 1,
+    attackBoundaryType: 'plain',
+    resolutionHint: '土默特部无人驻守但有人口，结算时会临时生成中立守军。',
+    defenderPayCost: null,
+});
+
+const createNeutralInvasionTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 中立入侵';
+        core.turnPhase = 'resolve-pending';
+        core.wheelActionUsed = true;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-attack';
+        core.selectedWheelMoveId = 'move-3-all-opponents';
+        core.selectedRegionId = 'city-region-24';
+        core.selectedActionId = 'wheel-dispatch';
+        core.pendingTargetAction = createNeutralInvasionTutorialPendingAction();
+        core.wheelDispatchProgress = null;
+        core.driveTigerConsentSelection = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 2,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('ming-neutral-invasion-cavalry-lv1', '大明骑兵', 'ming', 'cavalry', 1, 1),
+                    ],
+                };
+            }
+            if (region.id === 'city-region-20') {
+                return {
+                    ...region,
+                    controller: 'neutral',
+                    controlLabel: '中立',
+                    troops: 0,
+                    population: 3,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+        return core;
+    },
+});
+
+const createWaterDispatchTutorialSetup = (): QidahenTutorialPreset => ({
+    numPlayers: 3,
+    setupSelections: createDefaultSelections('post-sarhu-1619'),
+    coreTransform: (initialCore) => {
+        const core = cloneCore(initialCore);
+        core.currentPlayer = '0';
+        core.turnLabel = '第 1 轮 · 大明 · 水路调度';
+        core.turnPhase = 'dispatch-targeting';
+        core.wheelActionUsed = true;
+        core.factionActionUsed = true;
+        core.actionWheelPosition = 'wheel-hire';
+        core.selectedWheelMoveId = 'move-3-all-opponents';
+        core.selectedRegionId = 'song-jin';
+        core.selectedActionId = 'wheel-dispatch';
+        core.wheelDispatchProgress = null;
+        core.driveTigerConsentSelection = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.regions = updateRegions(core, (region) => {
+            if (region.isLogicalRegion) return region;
+            if (region.id === 'song-jin') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    population: 1,
+                    siegeState: null,
+                    specialTroops: [
+                        createTroop('ming-water-dispatch-cavalry-lv1', '大明骑兵', 'ming', 'cavalry', 3, 1),
+                    ],
+                };
+            }
+            if (region.id === 'city-region-22') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 2,
+                    siegeState: {
+                        attackerFactionId: 'jin',
+                        attackerTroops: 2,
+                        attackerSpecialTroops: [],
+                        sourceRegionId: 'city-region-25',
+                    },
+                    specialTroops: [],
+                };
+            }
+            if (region.id === 'city-region-32') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 1,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
+            if (region.id === 'city-region-29') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 0,
+                    siegeState: null,
+                };
+            }
+            return region;
+        });
         return core;
     },
 });
@@ -922,6 +1266,10 @@ const TUTORIAL_PRESETS: Record<string, QidahenTutorialPreset> = {
     'basic-opening': createBasicTutorialSetup(),
     'attack-and-battle': createAttackAndBattleTutorialSetup(),
     'retreat-and-rout': createRetreatAndRoutTutorialSetup(),
+    'cavalry-evasion': createCavalryEvasionTutorialSetup(),
+    'cavalry-plunder': createCavalryPlunderTutorialSetup(),
+    'neutral-invasion': createNeutralInvasionTutorialSetup(),
+    'water-dispatch': createWaterDispatchTutorialSetup(),
     'wheel-shared-cost': createWheelSharedCostTutorialSetup(),
     'wheel-reclaim': createWheelReclaimTutorialSetup(),
     'wheel-military-farm': createWheelMilitaryFarmTutorialSetup(),

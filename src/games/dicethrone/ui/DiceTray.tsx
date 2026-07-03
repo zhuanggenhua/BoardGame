@@ -11,6 +11,9 @@ import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep
 import { Dice3D, DiceField3D, type ProjectedDiceLayout } from './Dice3D';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { UI_Z_INDEX } from '../../../core';
+import { DiceBoxPhysicsSource } from '../../../lib/dice-physics/DiceBoxPhysicsSource';
+import type { DicePhysicsState } from '../../../lib/dice-physics/types';
+import { DICETHRONE_DICE_BOX_STYLE_PROFILE } from './diceBoxStyleProfiles';
 
 // ============================================================================
 // DiceThrone 骰子交互元数据类型
@@ -92,6 +95,7 @@ const BOARD_DICE_SCATTER_SLOTS = [
 
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 56;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 84;
+const BOARD_DICE_HIT_TARGET_SIZE_PX = 44;
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
@@ -195,14 +199,15 @@ export const DiceTray = ({
     const isModifyMode = dtMeta?.dtType === 'modifyDie';
     const isSelectMode = dtMeta?.dtType === 'selectDie';
     const dieModifyConfig = isModifyMode ? (dtMeta as DtDiceModifyMeta).dieModifyConfig : undefined;
+    const diceOwnerId = dtMeta?.diceOwnerId;
     const isAnyMode = dieModifyConfig?.mode === 'any';
     const isAdjustMode = dieModifyConfig?.mode === 'adjust';
     const adjustRange = dieModifyConfig?.adjustRange ?? { min: -1, max: 1 };
-    const canInteractWithDie = (die: Die): boolean => {
+    const canInteractWithDie = React.useCallback((die: Die): boolean => {
         if (!isInteractionMode) return true;
-        if (!dtMeta?.diceOwnerId) return true;
-        return die.ownerId === undefined || die.ownerId === dtMeta.diceOwnerId;
-    };
+        if (!diceOwnerId) return true;
+        return die.ownerId === undefined || die.ownerId === diceOwnerId;
+    }, [diceOwnerId, isInteractionMode]);
     const resolveOwnerLabel = (die: Die): string | null => {
         if (!die.ownerId || !rootPlayerId) return null;
         return die.ownerId === rootPlayerId ? t('common.self') : t('common.opponent');
@@ -216,11 +221,11 @@ export const DiceTray = ({
     const canAdjustDown = isAdjustMode && totalAdjustment > adjustRange.min;
     const canAdjustUp = isAdjustMode && totalAdjustment < adjustRange.max;
 
-    const isSelected = (dieId: number): boolean => {
+    const isSelected = React.useCallback((dieId: number): boolean => {
         if (isSelectMode) return selectResult?.selectedDiceIds.includes(dieId) ?? false;
         if (isModifyMode) return dieId in (modifyResult?.modifications ?? {});
         return false;
-    };
+    }, [isModifyMode, isSelectMode, modifyResult?.modifications, selectResult?.selectedDiceIds]);
 
     const maxSelectCount = dtMeta?.selectCount ?? 1;
     const currentSelectCount = isSelectMode
@@ -229,6 +234,7 @@ export const DiceTray = ({
     const canSelectMore = currentSelectCount < maxSelectCount;
     const canToggleDieLock = canInteract && rollCount > 0;
     const [centerDiceLayout, setCenterDiceLayout] = React.useState<Record<number, ProjectedDiceLayout>>({});
+    const [dicePhysicsStates, setDicePhysicsStates] = React.useState<DicePhysicsState[]>([]);
     const fieldDice = React.useMemo(
         () => dice.map((die) => ({
             id: die.id,
@@ -240,6 +246,13 @@ export const DiceTray = ({
     const visibleOverlayDice = React.useMemo(
         () => (isBoardPresentation ? dice.filter((d) => !d.isKept) : dice),
         [dice, isBoardPresentation],
+    );
+    const visiblePhysicsDice = React.useMemo(
+        () => visibleOverlayDice.map((die) => ({
+            id: die.id,
+            value: die.value,
+        })),
+        [visibleOverlayDice],
     );
     const selectedDieIdsKey = isSelectMode
         ? (selectResult?.selectedDiceIds ?? []).join('|')
@@ -274,6 +287,30 @@ export const DiceTray = ({
             return changed ? next : prev;
         });
     }, []);
+    const handleDicePhysicsStatesChange = React.useCallback((states: DicePhysicsState[]) => {
+        setDicePhysicsStates((prev) => {
+            if (states.length !== prev.length) return states;
+
+            for (let index = 0; index < states.length; index += 1) {
+                const nextState = states[index];
+                const prevState = prev[index];
+                if (!nextState || !prevState || nextState.id !== prevState.id || nextState.settled !== prevState.settled) {
+                    return states;
+                }
+                if (Math.abs(nextState.layout.x - prevState.layout.x) > 1
+                    || Math.abs(nextState.layout.y - prevState.layout.y) > 1
+                    || Math.abs(nextState.layout.width - prevState.layout.width) > 1
+                    || Math.abs(nextState.layout.height - prevState.layout.height) > 1
+                    || Math.abs(nextState.motion.rotateX - prevState.motion.rotateX) > 0.02
+                    || Math.abs(nextState.motion.rotateY - prevState.motion.rotateY) > 0.02
+                    || Math.abs(nextState.motion.rotateZ - prevState.motion.rotateZ) > 0.02) {
+                    return states;
+                }
+            }
+
+            return prev;
+        });
+    }, []);
 
     const handleRailDieClick = (dieId: number) => {
         // 掷骰结果已进入权威状态后，允许玩家立刻锁骰，
@@ -298,7 +335,7 @@ export const DiceTray = ({
         }
     };
 
-    const handleOverlayDieClick = (dieId: number) => {
+    const handleOverlayDieClick = React.useCallback((dieId: number) => {
         if (isRolling && !isInteractionMode && rollCount === 0) return;
 
         if (isInteractionMode && multistepInteraction) {
@@ -332,7 +369,77 @@ export const DiceTray = ({
         } else if (canToggleDieLock) {
             onToggleLock(dieId);
         }
-    };
+    }, [
+        canAdjustDown,
+        canAdjustUp,
+        canSelectMore,
+        canToggleDieLock,
+        dice,
+        isAdjustMode,
+        isAnyMode,
+        isInteractionMode,
+        isModifyMode,
+        isRolling,
+        isSelectMode,
+        isSelected,
+        modifyResult?.modifications,
+        multistepInteraction,
+        onToggleLock,
+        rollCount,
+    ]);
+
+    const handleBoardPresentationClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        if (!isBoardPresentation) return;
+
+        const stageRect = event.currentTarget.getBoundingClientRect();
+        const clickX = event.clientX;
+        const clickY = event.clientY;
+        let nearestDieId: number | null = null;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        for (const d of visibleOverlayDice) {
+            const selected = isSelected(d.id);
+            const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
+            const canModifyDie = canInteractWithDie(d);
+            const isInactiveDie = isInteractionMode && !canModifyDie;
+            const clickable = isInteractionMode
+                ? ((isAnyMode || isAdjustMode)
+                    ? !isInactiveDie && (canSelectMore || selected || isModified)
+                    : (!isInactiveDie && (canSelectMore || selected)))
+                : canToggleDieLock;
+            if (!clickable) continue;
+
+            const projectedLayout = centerDiceLayout[d.id];
+            if (!projectedLayout) continue;
+
+            const centerX = stageRect.left + projectedLayout.x;
+            const centerY = stageRect.top + projectedLayout.y;
+            const distance = Math.hypot(clickX - centerX, clickY - centerY);
+            const hitRadius = Math.max(resolveBoardOverlayDiceSize(projectedLayout) / 2, BOARD_DICE_HIT_TARGET_SIZE_PX / 2);
+            if (distance <= hitRadius && distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestDieId = d.id;
+            }
+        }
+
+        if (nearestDieId !== null) {
+            handleOverlayDieClick(nearestDieId);
+        }
+    }, [
+        canInteractWithDie,
+        canSelectMore,
+        canToggleDieLock,
+        centerDiceLayout,
+        handleOverlayDieClick,
+        isAdjustMode,
+        isAnyMode,
+        isBoardPresentation,
+        isInteractionMode,
+        isModifyMode,
+        isSelected,
+        modifyResult?.modifications,
+        visibleOverlayDice,
+    ]);
 
     const handleAdjust = (dieId: number, delta: number, currentValue: number) => {
         if (!multistepInteraction) return;
@@ -474,7 +581,7 @@ export const DiceTray = ({
     }
 
     return (
-        <div className={resolvedContainerClassName}>
+        <div className={resolvedContainerClassName} onClick={isBoardPresentation ? handleBoardPresentationClick : undefined}>
             <div className={resolvedTrayInnerClassName}>
                 <DiceField3D
                     dice={isBoardPresentation ? visibleOverlayDice : fieldDice}
@@ -482,12 +589,24 @@ export const DiceTray = ({
                     isRolling={isRolling}
                     rerollingDiceIds={rerollingDiceIds}
                     locale={locale}
-                        characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
-                        slots={isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS}
-                        onDieClick={handleOverlayDieClick}
-                        scenePreset={isBoardPresentation ? 'board-topdown' : 'spotlight'}
-                        onProjectedDiceUpdate={handleProjectedDiceUpdate}
+                    characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
+                    slots={isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS}
+                    onDieClick={handleOverlayDieClick}
+                    physicsStates={isBoardPresentation ? dicePhysicsStates : undefined}
+                    scenePreset={isBoardPresentation ? 'board-topdown' : 'spotlight'}
+                    onProjectedDiceUpdate={handleProjectedDiceUpdate}
                 />
+                {isBoardPresentation && (
+                    <DiceBoxPhysicsSource
+                        dice={visiblePhysicsDice}
+                        isRolling={isRolling}
+                        rerollingDiceIds={rerollingDiceIds}
+                        styleProfile={DICETHRONE_DICE_BOX_STYLE_PROFILE}
+                        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+                        testId="dicethrone-board-dice-physics-source"
+                        onPhysicsStatesChange={handleDicePhysicsStatesChange}
+                    />
+                )}
                 {visibleOverlayDice.map((d, i) => {
                     const selected = isSelected(d.id);
                     const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
@@ -522,12 +641,12 @@ export const DiceTray = ({
                         ? `rotateX(${projectedLayout.rotateX}rad) rotateY(${projectedLayout.rotateY}rad) rotateZ(${projectedLayout.rotateZ}rad)`
                         : undefined;
                     const overlayWidth = isBoardPresentation
-                        ? overlayDiceSize
+                        ? `${BOARD_DICE_HIT_TARGET_SIZE_PX}px`
                         : projectedLayout
                             ? `${centerWidth}px`
                             : resolvedDiceSize;
                     const overlayHeight = isBoardPresentation
-                        ? overlayDiceSize
+                        ? `${BOARD_DICE_HIT_TARGET_SIZE_PX}px`
                         : projectedLayout
                             ? `${centerHeight}px`
                             : resolvedDiceSize;
@@ -539,7 +658,7 @@ export const DiceTray = ({
                         return (
                             <div
                                 key={d.id}
-                                onClick={() => clickable && handleOverlayDieClick(d.id)}
+                                onClick={isBoardPresentation ? undefined : () => clickable && handleOverlayDieClick(d.id)}
                                 data-testid={`die-button-${d.id}`}
                                 data-selected={selected ? 'true' : 'false'}
                                 data-clickable={clickable ? 'true' : 'false'}

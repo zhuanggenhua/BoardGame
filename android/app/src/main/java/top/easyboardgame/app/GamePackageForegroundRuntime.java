@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.ProtocolException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +36,7 @@ final class GamePackageForegroundRuntime {
     private static final String TAG = "GamePkgFgRuntime";
     private static final int HTTP_RANGE_NOT_SATISFIABLE = 416;
     private static final int BUFFER_SIZE = 16 * 1024;
+    private static final int DOWNLOAD_MAX_ATTEMPTS = 4;
 
     private GamePackageForegroundRuntime() {}
 
@@ -448,22 +451,91 @@ final class GamePackageForegroundRuntime {
             return;
         }
 
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
+            try {
+                downloadArchiveOnce(context, taskStore, task, targetFile, partFile, cancelFlag, onProgress, attempt);
+                return;
+            } catch (Exception error) {
+                lastError = error;
+                boolean recoverable = isRecoverableDownloadError(error);
+                long partBytes = partFile.exists() ? partFile.length() : 0L;
+                Log.w(
+                    TAG,
+                    "downloadArchive attempt-failed gameId=" + task.logicalId
+                        + " version=" + task.packageVersion
+                        + " attempt=" + attempt
+                        + " maxAttempts=" + DOWNLOAD_MAX_ATTEMPTS
+                        + " recoverable=" + recoverable
+                        + " cancelRequested=" + cancelFlag.get()
+                        + " partExists=" + partFile.exists()
+                        + " partBytes=" + partBytes
+                        + " errorChain=" + summarizeThrowableChain(error),
+                    error
+                );
+                if (cancelFlag.get() || !recoverable || attempt >= DOWNLOAD_MAX_ATTEMPTS) {
+                    throw error;
+                }
+                Log.w(
+                    TAG,
+                    "downloadArchive retry gameId=" + task.logicalId
+                        + " version=" + task.packageVersion
+                        + " attempt=" + attempt
+                        + " nextAttempt=" + (attempt + 1)
+                        + " partBytes=" + partBytes,
+                    error
+                );
+                try {
+                    Thread.sleep(1000L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw interrupted;
+                }
+            }
+        }
+        if (lastError != null) {
+            throw lastError;
+        }
+    }
+
+    private static void downloadArchiveOnce(
+        Context context,
+        AndroidDownloadTaskStore taskStore,
+        AndroidDownloadTaskRecord task,
+        File targetFile,
+        File partFile,
+        AtomicBoolean cancelFlag,
+        Runnable onProgress,
+        int attempt
+    ) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(task.sourceUrl).openConnection();
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(30000);
         connection.setRequestProperty("Accept", "application/zip,application/octet-stream");
         long resumedBytes = partFile.exists() ? partFile.length() : 0L;
         if (resumedBytes > 0) connection.setRequestProperty("Range", "bytes=" + resumedBytes + "-");
+        Log.i(
+            TAG,
+            "downloadArchive start gameId=" + task.logicalId
+                + " version=" + task.packageVersion
+                + " attempt=" + attempt
+                + " url=" + task.sourceUrl
+                + " resumedBytes=" + resumedBytes
+                + " partExists=" + partFile.exists()
+        );
 
         try {
             int responseCode = connection.getResponseCode();
             boolean appendMode = false;
             if (resumedBytes > 0 && responseCode == HttpURLConnection.HTTP_PARTIAL) {
                 appendMode = true;
+                Log.i(TAG, "downloadArchive resume-accepted gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
             } else if (resumedBytes > 0 && responseCode == HttpURLConnection.HTTP_OK) {
+                Log.w(TAG, "downloadArchive resume-reset gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
                 if (!partFile.delete() && partFile.exists()) throw new IOException("重置续传文件失败");
                 resumedBytes = 0L;
             } else if (resumedBytes > 0 && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
+                Log.w(TAG, "downloadArchive resume-range-not-satisfiable gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
                 if (isChecksumMatch(partFile, task.checksum)) {
                     if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧安装包失败");
                     if (!partFile.renameTo(targetFile)) throw new IOException("恢复已完成资源包失败");
@@ -474,6 +546,17 @@ final class GamePackageForegroundRuntime {
                 if (!partFile.delete() && partFile.exists()) throw new IOException("重置不可续传文件失败");
                 throw new IOException("服务端拒绝续传，且本地临时资源包校验失败");
             }
+            Log.i(
+                TAG,
+                "downloadArchive response gameId=" + task.logicalId
+                    + " version=" + task.packageVersion
+                    + " attempt=" + attempt
+                    + " code=" + responseCode
+                    + " contentLength=" + connection.getContentLengthLong()
+                    + " contentRange=" + connection.getHeaderField("Content-Range")
+                    + " resumedBytes=" + resumedBytes
+                    + " appendMode=" + appendMode
+            );
             if (responseCode < 200 || responseCode >= 300) throw new IOException("下载失败，HTTP " + responseCode);
 
             long totalBytes = resolveTotalBytes(connection, resumedBytes, responseCode);
@@ -517,6 +600,14 @@ final class GamePackageForegroundRuntime {
             if (task.checksum != null && !task.checksum.equalsIgnoreCase(actualChecksum)) throw new IOException("下载包校验失败");
             if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧安装包失败");
             if (!partFile.renameTo(targetFile)) throw new IOException("写入安装包失败");
+            Log.i(
+                TAG,
+                "downloadArchive finished gameId=" + task.logicalId
+                    + " version=" + task.packageVersion
+                    + " attempt=" + attempt
+                    + " checksumOk=" + (task.checksum == null || task.checksum.equalsIgnoreCase(actualChecksum))
+                    + " actualChecksum=" + actualChecksum
+            );
         } finally {
             connection.disconnect();
         }
@@ -620,9 +711,9 @@ final class GamePackageForegroundRuntime {
 
     private static String classifyInstallErrorCode(Exception error) {
         if (error == null) return "unknown";
-        if (error instanceof SocketTimeoutException) return "network-timeout";
-        if (error instanceof ZipException) return "archive-invalid";
-        String message = error.getMessage() != null ? error.getMessage() : "";
+        if (isRecoverableDownloadError(error)) return "network-timeout";
+        if (hasCause(error, ZipException.class)) return "archive-invalid";
+        String message = collectThrowableMessages(error);
         String lower = message.toLowerCase(Locale.ROOT);
         if (lower.contains("http ")) return "http-error";
         if (message.contains("续传")) return "resume-not-supported";
@@ -632,6 +723,81 @@ final class GamePackageForegroundRuntime {
         if (message.contains("压缩包") || message.contains("路径非法")) return "archive-invalid";
         if (error instanceof IOException) return "file-io";
         return "unknown";
+    }
+
+    private static boolean isRecoverableDownloadError(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            if (
+                current instanceof SocketTimeoutException
+                    || current instanceof ProtocolException
+                    || current instanceof SocketException
+            ) {
+                return true;
+            }
+
+            String message = current.getMessage();
+            if (message != null) {
+                String lowerMessage = message.toLowerCase(Locale.ROOT);
+                if (
+                    lowerMessage.contains("unexpected end of stream")
+                        || lowerMessage.contains("timeout")
+                        || lowerMessage.contains("connection abort")
+                        || lowerMessage.contains("connection reset")
+                        || lowerMessage.contains("broken pipe")
+                        || lowerMessage.contains("stream was reset")
+                ) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static boolean hasCause(Throwable error, Class<?> errorClass) {
+        Throwable current = error;
+        while (current != null) {
+            if (errorClass.isInstance(current)) return true;
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static String collectThrowableMessages(Throwable error) {
+        if (error == null) return "";
+        StringBuilder builder = new StringBuilder();
+        Throwable current = error;
+        int depth = 0;
+        while (current != null && depth < 8) {
+            String message = current.getMessage();
+            if (message != null && !message.trim().isEmpty()) {
+                if (builder.length() > 0) builder.append(" <- ");
+                builder.append(message.trim());
+            }
+            current = current.getCause();
+            depth += 1;
+        }
+        return builder.toString();
+    }
+
+    private static String summarizeThrowableChain(Throwable error) {
+        if (error == null) return "none";
+        StringBuilder builder = new StringBuilder();
+        Throwable current = error;
+        int depth = 0;
+        while (current != null && depth < 8) {
+            if (depth > 0) builder.append(" <- ");
+            builder.append(current.getClass().getName());
+            String message = current.getMessage();
+            if (message != null && !message.trim().isEmpty()) {
+                builder.append(": ").append(message.trim());
+            }
+            current = current.getCause();
+            depth += 1;
+        }
+        if (current != null) builder.append(" <- ...");
+        return builder.toString();
     }
 
     private static String safe(String value, String fallback) {

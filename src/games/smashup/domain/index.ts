@@ -5,6 +5,7 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
+import { createEntityId } from '../../../engine/primitives';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import {
     processDestroyMoveCycle,
@@ -964,7 +965,7 @@ export function scoreOneBase(
     const postScoringEvents: SmashUpEvent[] = [];
     const clearEvt: BaseClearedEvent = {
         type: SU_EVENTS.BASE_CLEARED,
-        payload: { baseIndex, baseDefId: scoringBase.defId },
+        payload: { baseIndex, baseDefId: scoringBase.defId, baseInstanceId: scoringBase.instanceId },
         timestamp: now,
     };
     postScoringEvents.push(clearEvt);
@@ -993,6 +994,7 @@ export function scoreOneBase(
                 baseIndex,
                 oldBaseDefId: scoringBase.defId,
                 newBaseDefId,
+                oldBaseInstanceId: scoringBase.instanceId,
             },
             timestamp: now,
         };
@@ -1294,7 +1296,12 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
             shuffledBaseIds = random.shuffle(shuffledBaseIds);
             continue;
         }
-        activeBases.push({ defId, minions: [], ongoingActions: [] });
+        activeBases.push({
+            instanceId: createEntityId('smashup:base', activeBases.length + 1),
+            defId,
+            minions: [],
+            ongoingActions: [],
+        });
     }
     const baseDeck = shuffledBaseIds;
 
@@ -1349,6 +1356,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         triggerQueue: undefined,
         turnNumber: 1,
         nextUid,
+        nextBaseInstanceId: activeBases.length + 1,
         gameResult: undefined,
         factionSelection: {
             takenFactions: [],
@@ -2326,7 +2334,10 @@ function resolveTitanClashEventsOnBase(
         && matchState
     ) {
         const otherBases = state.bases
-            .map((candidateBase, index) => ({ baseIndex: index, label: getBaseDef(candidateBase.defId)?.name ?? `基地 ${index + 1}` }))
+            .map((candidateBase, index) => ({
+                baseIndex: index,
+                label: getBaseDef(candidateBase.defId)?.name ?? `基地 ${index + 1}`,
+            }))
             .filter(candidate => candidate.baseIndex !== loser.location.baseIndex);
         if (otherBases.length > 0) {
             const interaction = createSimpleChoice(

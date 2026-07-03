@@ -114,12 +114,16 @@ export interface BetrayalRoomDiscoveryTemplate {
     tags: string[];
     visualId: Exclude<BetrayalRoomVisualId, 'startTriple' | 'startHallway' | 'upperLanding' | 'basementLanding' | 'entranceHall' | 'foyer' | 'backUpper' | 'backGround' | 'backBasement'>;
     doorways: BetrayalRoomEdge[];
-    discoveryEffect?: 'gainSanity1' | 'gainKnowledge1' | 'drawUntilWeapon';
+    discoveryEffect?: 'gainSanity1' | 'gainKnowledge1' | 'gainMight1' | 'gainSpeed1' | 'drawUntilWeapon' | 'placeObstacleToken';
     endTurnEffect?: 'physicalDamage1' | 'speedCheckFallToBasement' | 'moveToBasementLanding';
     enterEffect?: 'mysticElevator';
 }
 
 export type BetrayalUseEffectSeed =
+    | {
+        mode: 'none';
+        recommendedAction: BetrayalRecommendedAction;
+    }
     | {
         mode: 'move';
         amount: number;
@@ -136,6 +140,21 @@ export type BetrayalUseEffectSeed =
         amount: number;
         traits: BetrayalTraitKey[];
         recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'rolledDamage';
+        dice: number;
+        damageKind: 'physical' | 'mental';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeObstacleToken';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'compound';
+        effects: BetrayalUseEffectSeed[];
+        recommendedAction: BetrayalRecommendedAction;
     };
 
 export interface BetrayalEventResultBranch {
@@ -147,10 +166,19 @@ export interface BetrayalEventResultBranch {
 export interface BetrayalEventSeed {
     name: string;
     effect?: BetrayalUseEffectSeed;
-    roll?: {
-        trait: BetrayalTraitKey;
-        branches: BetrayalEventResultBranch[];
-    };
+    roll?: (
+        | {
+            kind?: 'trait';
+            trait: BetrayalTraitKey;
+            branches: BetrayalEventResultBranch[];
+        }
+        | {
+            kind: 'dice';
+            dice: number;
+            label: string;
+            branches: BetrayalEventResultBranch[];
+        }
+    );
 }
 
 export interface BetrayalMonsterSeed {
@@ -756,6 +784,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['上层', '力量'],
                 visualId: 'gymnasium',
                 doorways: ['north', 'east', 'south'],
+                discoveryEffect: 'gainSpeed1',
             },
             {
                 name: '狭窄通道',
@@ -795,6 +824,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['物资', '翻找'],
                 visualId: 'larder',
                 doorways: ['north', 'east'],
+                discoveryEffect: 'gainMight1',
             },
             {
                 name: '地下湖',
@@ -837,6 +867,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['地下', '物品'],
                 visualId: 'junkRoom',
                 doorways: ['north', 'east'],
+                discoveryEffect: 'placeObstacleToken',
             },
             {
                 name: '爬行空间',
@@ -848,14 +879,221 @@ export const BETRAYAL_DISCOVERY_POOLS = {
         ],
     } satisfies Record<BetrayalRoomSeed['floor'], BetrayalRoomDiscoveryTemplate[]>,
     events: [
-        { name: '回廊顺风', effect: { mode: 'move', amount: 1, recommendedAction: 'move' } },
-        { name: '窃窃低语', effect: { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' } },
-        { name: '旧日手记', effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' } },
-        { name: '滑落阶梯', effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' } },
-        { name: '墙中低语', effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' } },
-        { name: '冷风指路', effect: { mode: 'move', amount: 1, recommendedAction: 'explore' } },
-        { name: '阴影扑面', effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' } },
-        { name: '残留祝福', effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' } },
+        {
+            name: '标本剥制',
+            roll: {
+                trait: 'might',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点物理伤害；放置障碍物',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                {
+                                    mode: 'generalDamage',
+                                    amount: 1,
+                                    traits: ['might', 'speed'],
+                                    recommendedAction: 'endTurn',
+                                },
+                                { mode: 'placeObstacleToken', recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '外星几何',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '失去 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '小丑房间',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '无事发生',
+                        effect: { mode: 'none', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 2 点精神伤害',
+                        effect: {
+                            mode: 'generalDamage',
+                            amount: 2,
+                            traits: ['knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '咬一口！',
+            roll: {
+                trait: 'might',
+                branches: [
+                    {
+                        min: 4,
+                        label: '无事发生',
+                        effect: { mode: 'none', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 2,
+                        label: '受到 1 点物理伤害',
+                        effect: {
+                            mode: 'generalDamage',
+                            amount: 1,
+                            traits: ['might', 'speed'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 3 点物理伤害',
+                        effect: {
+                            mode: 'generalDamage',
+                            amount: 3,
+                            traits: ['might', 'speed'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '电话铃声',
+            roll: {
+                kind: 'dice',
+                dice: 2,
+                label: '投 2 颗骰子',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 3,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 1,
+                        label: '受到一颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到两颗骰子的物理伤害',
+                        effect: { mode: 'rolledDamage', dice: 2, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '磁带播放器',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: {
+                            mode: 'generalDamage',
+                            amount: 1,
+                            traits: ['knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '在你背后！',
+            roll: {
+                trait: 'speed',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点物理伤害',
+                        effect: {
+                            mode: 'generalDamage',
+                            amount: 1,
+                            traits: ['might', 'speed'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '一种怪异的感觉',
+            roll: {
+                kind: 'dice',
+                dice: 2,
+                label: '投 2 颗骰子',
+                branches: [
+                    {
+                        min: 4,
+                        label: '无事发生',
+                        effect: { mode: 'none', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 3,
+                        label: '失去 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                    {
+                        min: 2,
+                        label: '失去 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                    {
+                        min: 1,
+                        label: '失去 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                    {
+                        min: 0,
+                        label: '失去 1 点力量',
+                        effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
     ] satisfies BetrayalEventSeed[],
 };
 

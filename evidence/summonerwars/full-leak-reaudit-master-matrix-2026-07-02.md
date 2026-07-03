@@ -8,6 +8,8 @@
 
 ## 总量与状态
 
+> 当前状态覆盖说明（2026-07-03 / C85）：本文件的“当前继续动作”列是 2026-07-02 全量入队时的推进基线，不再代表 2026-07-03 的最新续跑状态。最新状态以各批次 `rule-text-lock`、`implementation-diff`、`l3-l4-residual-proof-queue-2026-07-02.md`、主 evidence 第 151 节和 `temp/summonerwars-audit/continuation-task-state.json` 为准：C80/C84 中基于官方在线文本包裁定 `ferocity` 与 `entangle` 归属的结论已失效，这两个对象降回 `disputed-待本地卡图合同裁定`；普通续跑不得因本表早期“下一步实现对照”字样回到图片/OCR/重新录入，除非明确进入数据录入合同层裁定这两个 disputed 对象。
+
 | 项目 | 数量 |
 | --- | ---: |
 | 能力风险对象总数 | 68 |
@@ -17,11 +19,13 @@
 | P3 | 13 |
 | P4 | 8 |
 | locked-L4已补 | 4 |
-| locked-规则原文已锁 | 62 |
+| locked-规则原文已锁 / 归属已裁定 | 62 |
 | disputed-对象归属待裁定 | 2 |
 | 待建合同-入口已补 | 0 |
 
 ## 全量补审矩阵
+
+> 阅读门禁：下表用于保留 68 个对象被纳入补审时的对象全集、合同状态和当时继续动作。若要继续执行，应先读取后续批次矩阵和残余队列；不要直接按本表旧的“下一步实现对照”逐行重跑。
 
 | 优先级 | 合同状态 | 对象 | 承载卡牌 | 触发 | 次数 | 风险字段 | 当前继续动作 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -42,7 +46,7 @@
 | P2 | `locked-规则原文已锁` | `charge` | 野兽骑手(goblin-beast-rider) | onMove | - | custom结算；充能/boost | 已锁官方原文 Charge；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `divine_shield` | 科琳·布莱顿(paladin-corin) | passive | - | custom结算 | 已锁官方原文 Divine Shield；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `feed_beast` | 巨食兽(goblin-glutton) | onPhaseEnd | 1 | 每回合次数；custom结算；交互/目标选择 | B3 已锁官方 Feed the Eater 原文；下一步进入实现对照 |
-| P2 | `disputed-对象归属待裁定` | `ferocity` | 史米革(goblin-smirg)、部落投石手(goblin-slinger) | passive | - | custom结算 | 官方 Relentless 仅锁到史米革邻近条目，部落投石手归属未证明；先裁定对象归属，不写机制修复 |
+| P2 | `disputed-待本地卡图合同裁定` | `ferocity` | 史米革(goblin-smirg) / 部落投石手(goblin-slinger)归属未裁定 | passive | - | custom结算 | C85 后不再接受官方在线文本包作为审计阶段归属裁定；现有配置/测试改动只能视为待裁定候选，必须回到本地卡图合同层裁定 |
 | P2 | `locked-规则原文已锁` | `fortress_elite` | 瓦伦蒂娜·斯托哈特(paladin-valentina) | onDamageCalculation | - | custom结算 | 已锁官方原文 Citadel Champion；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `frost_axe` | 寒冰锻造师(frost-ice-smith) | activated | - | custom结算；交互/目标选择 | B3 已锁官方 Frost Axe 原文；下一步进入实现对照 |
 | P2 | `locked-规则原文已锁` | `frost_bolt` | 冰霜法师(frost-mage) | onDamageCalculation | - | custom结算 | 已锁官方原文 Frost Bolt；下一步实现对照，不回录入层 |
@@ -75,7 +79,7 @@
 | P3 | `locked-规则原文已锁` | `blood_rage` | 亡灵战士(necro-undead-warrior) | onUnitDestroyed | - | 充能/boost | B6 已锁官方 Blood Fury：你的回合内单位被消灭则本单位充能；你的回合结束移除 2 充能；进入实现对照 |
 | P3 | `locked-规则原文已锁` | `blood_rage_decay` | 亡灵战士(necro-undead-warrior) | onTurnEnd | - | 资源/状态改写 | B6 已锁官方 Blood Fury 的回合末清理子句：你的回合结束移除 2 充能；与 blood_rage 共享合同 |
 | P3 | `locked-规则原文已锁` | `climb` | 部落攀爬手(goblin-climber) | onMove | - | 资源/状态改写 | B7 已锁官方 Climb：移动时可额外 1 格并穿越建筑；进入实现对照 |
-| P3 | `disputed-对象归属待裁定` | `entangle` | 城塞骑士(paladin-fortress-knight) | onAdjacentEnemyLeave | - | 资源/状态改写 | B7 转 disputed：官方缓存不能证明城塞骑士承载 Engage/Entangle；先裁定对象归属，不写机制修复 |
+| P3 | `disputed-待本地卡图合同裁定` | `entangle` | 城塞骑士(paladin-fortress-knight)是否承载未裁定 | onAdjacentEnemyLeave | - | 资源/状态改写 | C85 后不再接受官方在线文本包作为审计阶段归属裁定；现有配置/测试改动只能视为待裁定候选，必须回到本地卡图合同层裁定 |
 | P3 | `locked-规则原文已锁` | `evasion` | 掷术师(trickster-telekinetic) | onAdjacentEnemyAttack | - | 资源/状态改写 | B7 已锁官方 Stupefy：相邻敌人攻击任意卡且掷出 [s] 时该攻击少加 1 伤害；进入实现对照 |
 | P3 | `locked-规则原文已锁` | `flying` | 葛拉克(trickster-gelak) | onMove | - | 资源/状态改写 | B7 已锁官方 Flight：移动时可额外 1 格并穿越 cards；进入实现对照 |
 | P3 | `locked-规则原文已锁` | `gather_power` | 祖灵法师(barbaric-spirit-mage) | onSummon | - | 充能/boost | B6 已锁官方 Charged：召唤本单位后给本单位充能；进入实现对照 |
@@ -98,14 +102,14 @@
 
 - P0 / `locked-L4已补`：雌狮「威势」、贾穆德「威势」、瑟拉·艾德温「城塞之力」、城塞圣武士「裁决」的 L4 重连/回放专项已补；禁止重新 OCR 或重录。
 - P1 / `locked-规则原文已锁`：B1 五个对象与 B2 两个对象均已锁官方原文并完成首轮实现对照；后续只进入真实入口、刷新/回放、重复消费等 L3/L4 补证。
-- P2 / `locked-规则原文已锁`：36 个对象已完成规则原文锁定和首轮实现对照分批收口；不再按 `blocked` 处理，后续只消费合同做 L3/L4 残余补证。
-- P3/P4 / `locked-规则原文已锁`：P3/P4 locked 对象已完成规则原文锁定和首轮实现对照分批收口；不再按待建合同处理，后续只按风险补真实入口或代表链证据。
-- `disputed-对象归属待裁定`：`ferocity`、`entangle` 仍为对象归属争议；未裁定前不得写规则断言测试、不得修机制。
+- P2 / `locked-规则原文已锁`：35 个对象已完成规则原文锁定和首轮实现对照分批收口；`ferocity` 在 C85 后降回 `disputed-待本地卡图合同裁定`，不得按已裁定处理。
+- P3/P4 / `locked-规则原文已锁`：P3/P4 locked/已裁定对象已完成规则原文锁定和首轮实现对照分批收口；不再按待建合同处理，后续只按风险补真实入口或代表链证据。
+- `disputed-对象归属待裁定`：当前为 2；`ferocity`、`entangle` 必须回到本地清晰卡图/完整单对象图/用户指定权威来源裁定。
 
 ## 下一批执行入口
 
-1. 当前数据录入合同阶段已形成 `4 L4 + 62 locked + 2 disputed + 0 待建合同`；普通续跑不得回图片/OCR 或重新录入。
+1. 当前数据录入合同阶段在 C85 后修正为 `4 L4 + 62 locked/已裁定 + 2 disputed + 0 待建合同`；普通续跑不得回图片/OCR 或重新录入，除非明确进入数据录入合同层裁定 `ferocity` / `entangle`。
 2. 下一步以 `evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 为入口，优先补攻击后额外攻击、真实选择/确认、阶段推进、刷新/回放不重复消费。
 3. 若 L3/L4 对照中发现 locked 合同缺字段、来源冲突或对象归属不清，先把对象回写为 `blocked` 或 `disputed`，再回录入层补合同。
-4. `ferocity`、`entangle` 只做归属裁定；未裁定前不得进入规则断言测试、机制修复或通过结论。
+4. `ferocity`、`entangle` 仍为 disputed；在本地卡图合同未裁定前，不得写“已修复”结论，不得把测试通过当作归属证明。
 5. 只有“已锁合同子句”和“当前实现链路”形成明确冲突时，才写最小失败测试和最小修复。

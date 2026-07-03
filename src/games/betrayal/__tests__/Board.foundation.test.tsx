@@ -556,6 +556,23 @@ describe('Betrayal Board foundation', () => {
         expect(basementLanding?.doorways.map((doorway) => doorway.connectsToRoomId)).toContain('grand-staircase');
     });
 
+    it('房间障碍物标记会显示在对应房间格上', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        const hallway = core.rooms.find((room) => room.id === 'hallway')!;
+        hallway.markerTokens = ['obstacle'];
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        const marker = screen.getByTestId('betrayal-room-marker-hallway-obstacle');
+        expect(marker).toBeInTheDocument();
+        expect(within(marker).getByAltText('障碍物')).toHaveAttribute('data-src', 'betrayal/markers/obstacle');
+    });
+
     it('当前房间是神秘电梯时才显示并执行房间效果按钮', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const elevatorRoom = core.rooms.find((room) => room.id === 'upper-landing')!;

@@ -3,6 +3,9 @@ import { fireEvent, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AbilityOverlays } from '../AbilityOverlays';
+import { getAbilitySlotLayoutForCharacter, getPlayerBoardLayoutVersion } from '../abilitySlotLayout';
+import { getUpgradeCardForAbilityLevel } from '../abilityOverlayHelpers';
+
 
 const mockUseCoarsePointer = vi.fn(() => false);
 vi.mock('react-i18next', () => ({
@@ -15,7 +18,7 @@ vi.mock('react-i18next', () => ({
     },
 }));
 
-vi.mock('../../../components/common/media/CardPreview', () => ({
+vi.mock('../../../../components/common/media/CardPreview', () => ({
     CardPreview: ({ previewRef, className }: { previewRef?: { atlasId?: string; index?: number }; className?: string }) => (
         <div
             data-testid="mock-card-preview"
@@ -62,7 +65,7 @@ describe('AbilityOverlays', () => {
         const onMagnifyCard = vi.fn();
         const { container } = renderAbilityOverlays({ onMagnifyCard });
 
-        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
+        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
         expect(fistSlot).not.toBeNull();
 
         fireEvent.click(fistSlot!);
@@ -81,7 +84,7 @@ describe('AbilityOverlays', () => {
             onMagnifyCard,
         });
 
-        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
+        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
         expect(fistSlot).not.toBeNull();
 
         fireEvent.click(fistSlot!);
@@ -100,10 +103,10 @@ describe('AbilityOverlays', () => {
             onMagnifyCard,
         });
 
-        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
+        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
         expect(fistSlot).not.toBeNull();
 
-        fireEvent.click(getByTestId('dt-upgrade-magnify-button-fist'));
+        fireEvent.click(getByTestId('dt-upgrade-magnify-button-calm'));
 
         expect(onMagnifyCard).toHaveBeenCalledTimes(1);
         expect(onMagnifyCard.mock.calls[0]?.[0]).toMatchObject({ id: 'card-thrust-punch-2' });
@@ -121,7 +124,7 @@ describe('AbilityOverlays', () => {
             onMagnifyCard,
         });
 
-        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
+        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
         expect(fistSlot).not.toBeNull();
         expect(fistSlot).toHaveAttribute('data-should-highlight', 'true');
 
@@ -137,7 +140,7 @@ describe('AbilityOverlays', () => {
             canHighlight: true,
         });
 
-        const highlight = getByTestId('dt-ability-highlight-fist');
+        const highlight = getByTestId('dt-ability-highlight-calm');
         expect(highlight.className).toContain('inset-0');
         expect(highlight.className).toContain('rounded-lg');
         expect(highlight.className).toContain('animate-pulse');
@@ -153,7 +156,7 @@ describe('AbilityOverlays', () => {
             selectedAbilityId: 'fist-technique',
         });
 
-        const selected = getByTestId('dt-ability-selected-fist');
+        const selected = getByTestId('dt-ability-selected-calm');
         expect(selected.className).toContain('rounded-lg');
         expect(selected.style.borderWidth).toBe('2.5px');
         expect(selected.style.borderColor).toBe('rgb(251, 191, 36)');
@@ -174,6 +177,114 @@ describe('AbilityOverlays', () => {
         expect(highlight.style.borderWidth).toBe('2px');
         expect(highlight.style.borderColor).toBe('rgb(34, 211, 238)');
         expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.94)');
+    });
+
+    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应落在同一物理槽位', () => {
+        const cases = [
+            {
+                characterId: 'monk',
+                slotId: 'calm',
+                baseAbilityId: 'fist-technique',
+                resolvedAbilityId: 'fist-technique-2-3',
+                abilityLevels: { 'fist-technique': 2 },
+                upgradeCardId: 'card-thrust-punch-2',
+                previewIndex: 12,
+            },
+            {
+                characterId: 'barbarian',
+                slotId: 'meditate',
+                baseAbilityId: 'slap',
+                resolvedAbilityId: 'slap-2-3',
+                abilityLevels: { slap: 2 },
+                upgradeCardId: 'card-slap-2',
+                previewIndex: 14,
+            },
+            {
+                characterId: 'pyromancer',
+                slotId: 'combo',
+                baseAbilityId: 'fireball',
+                resolvedAbilityId: 'fireball-2-3',
+                abilityLevels: { fireball: 2 },
+                upgradeCardId: 'card-fireball-2',
+                previewIndex: 6,
+            },
+            {
+                characterId: 'moon_elf',
+                slotId: 'meditate',
+                baseAbilityId: 'longbow',
+                resolvedAbilityId: 'longbow-3-2',
+                abilityLevels: { longbow: 2 },
+                upgradeCardId: 'upgrade-longbow-2',
+                previewIndex: 14,
+            },
+            {
+                characterId: 'shadow_thief',
+                slotId: 'lotus',
+                baseAbilityId: 'dagger-strike',
+                resolvedAbilityId: 'dagger-strike-3-2',
+                abilityLevels: { 'dagger-strike': 2 },
+                upgradeCardId: 'upgrade-dagger-strike-2',
+                previewIndex: 7,
+            },
+            {
+                characterId: 'paladin',
+                slotId: 'chi',
+                baseAbilityId: 'holy-light',
+                resolvedAbilityId: 'holy-light',
+                abilityLevels: { 'holy-light': 2 },
+                upgradeCardId: 'card-holy-light-2',
+                previewIndex: 7,
+            },
+        ];
+
+        for (const entry of cases) {
+            const upgradeCard = getUpgradeCardForAbilityLevel(entry.characterId, entry.baseAbilityId, 2);
+            expect(upgradeCard?.id, `${entry.characterId} 的升级牌应来自真实卡牌数据`).toBe(entry.upgradeCardId);
+            expect(upgradeCard?.previewRef).toMatchObject({
+                type: 'atlas',
+                atlasId: `dicethrone:${entry.characterId}-cards`,
+                index: entry.previewIndex,
+            });
+
+            const onSelectAbility = vi.fn();
+            const { container, unmount } = renderAbilityOverlays({
+                characterId: entry.characterId,
+                availableAbilityIds: [entry.resolvedAbilityId],
+                canSelect: true,
+                onSelectAbility,
+                abilityLevels: entry.abilityLevels,
+            });
+
+            const slot = container.querySelector(`[data-ability-slot="${entry.slotId}"]`);
+            expect(slot, `${entry.characterId} 的 ${entry.baseAbilityId} 应落在 ${entry.slotId}`).not.toBeNull();
+            expect(slot).toHaveAttribute('data-base-ability-id', entry.baseAbilityId);
+            expect(slot).toHaveAttribute('data-resolved-ability-id', entry.resolvedAbilityId);
+            expect(slot).toHaveAttribute('data-can-click', 'true');
+            expect(slot?.querySelector('[data-testid="mock-card-preview"]')).toHaveAttribute(
+                'data-atlas-id',
+                `dicethrone:${entry.characterId}-cards`,
+            );
+            expect(slot?.querySelector('[data-testid="mock-card-preview"]')).toHaveAttribute(
+                'data-preview-index',
+                String(entry.previewIndex),
+            );
+
+            fireEvent.click(slot!);
+            expect(onSelectAbility).toHaveBeenCalledWith(entry.resolvedAbilityId);
+            unmount();
+        }
+    });
+
+    it('旧英雄 v2 玩家面板应使用旧英雄横向技能槽坐标，不复用新英雄分栏坐标', () => {
+        expect(getPlayerBoardLayoutVersion('pyromancer')).toBe('v2OldHero');
+        expect(getPlayerBoardLayoutVersion('gunslinger')).toBe('v2');
+
+        const oldHeroSlots = getAbilitySlotLayoutForCharacter('pyromancer');
+        const fireballSlot = oldHeroSlots.find(slot => slot.id === 'combo');
+        expect(fireballSlot).toMatchObject({ x: 0.70, y: 42.05, w: 20.70, h: 38.44 });
+
+        const rightTopSlot = oldHeroSlots.find(slot => slot.id === 'sky');
+        expect(rightTopSlot).toMatchObject({ x: 55.50, y: 1.28, w: 20.70, h: 39.11 });
     });
 
     it('Ninja v2 中间两列应把 shadow-step / smoke-screen 落到正确视觉槽位', () => {

@@ -137,6 +137,9 @@ const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId
     // 不可防御标签：跳过防御阶段
     if (variantTags.includes('unblockable') || abilityTags.includes('unblockable')) return false;
 
+    // 灵魂燃烧的红圈伤害属于不可防御伤害；仍保留伤害修正卡对第一段攻击伤害的修正。
+    if (abilityId.startsWith('soul-burn') || match.ability.id === 'soul-burn' || match.variant?.id?.startsWith('soul-burn')) return false;
+
     // 无伤害效果的技能不进入防御阶段
     if (!playerAbilityHasDamage(state, attackerId, abilityId)) return false;
 

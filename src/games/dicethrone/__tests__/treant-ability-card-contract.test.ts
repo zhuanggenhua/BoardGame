@@ -8,7 +8,7 @@ import { resolveAttack, resolveOffensivePreDefenseEffects } from '../domain/atta
 import { resolveEffectsToEvents } from '../domain/effects';
 import { getChoiceEffectHandler } from '../domain/choiceEffects';
 import { getAvailableAbilityIds } from '../domain/rules';
-import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CARE_2, VENGEFUL_VINES_2, WILD_GROWTH_2 } from '../heroes/treant/abilities';
+import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CARE_2, VENGEFUL_VINES_2, WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';
 import { TREANT_CARDS } from '../heroes/treant/cards';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
@@ -41,6 +41,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(getAbilitySlotIdForCharacter('treant', 'wild-growth')).toBe('lotus');
         expect(getAbilitySlotIdForCharacter('treant', 'vengeful-vines')).toBe('combo');
         expect(getAbilitySlotIdForCharacter('treant', 'nature-touch')).toBe('lightning');
+        expect(getAbilitySlotIdForCharacter('treant', 'wild-roar')).toBe('lightning');
         expect(getAbilitySlotIdForCharacter('treant', 'rooted')).toBe('meditate');
 
         expect(slotContainsAbilityIdForCharacter('treant', 'sky', 'quiet-cultivation')).toBe(true);
@@ -89,7 +90,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             { id: 'upgrade-shattering-fist-3', targetAbilityId: 'shattering-fist', newAbilityLevel: 3 },
             { id: 'upgrade-nature-touch-2', targetAbilityId: 'nature-touch', newAbilityLevel: 2 },
             { id: 'upgrade-vengeful-vines-2', targetAbilityId: 'vengeful-vines', newAbilityLevel: 2 },
-            { id: 'upgrade-wild-growth-2', targetAbilityId: 'wild-growth', newAbilityLevel: 2 },
+            { id: 'upgrade-wild-growth-2', targetAbilityId: 'wild-roar', newAbilityLevel: 2 },
             { id: 'upgrade-shattering-fist-2', targetAbilityId: 'shattering-fist', newAbilityLevel: 2 },
         ] as const;
 
@@ -126,6 +127,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             'wild-growth-2-main',
             'wild-growth-2-dazzle',
         ]);
+        expect(WILD_ROAR_2.trigger?.type).toBe('largeStraight');
     });
 
     it('Rooted 防御应按树枝与树灵总数防止伤害，不再按树枝反击或逐骰发 token', () => {
@@ -882,9 +884,9 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
 
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         const damageEvent = attackEvents.find(event => event.type === 'DAMAGE_DEALT');
-        expect((damageEvent as any).payload.amount).toBe(10);
+        expect((damageEvent as any).payload.amount).toBe(6);
         next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
     });
 
     it('Wild Growth 基础版应在 2 树枝 + 3 树叶骰面下以 2 基伤结算，并允许移除 1 树灵加伤', () => {
@@ -983,9 +985,9 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
 
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         const damageEvent = attackEvents.find(event => event.type === 'DAMAGE_DEALT');
-        expect((damageEvent as any).payload.amount).toBe(10);
+        expect((damageEvent as any).payload.amount).toBe(6);
         next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
     });
 
     it('Wild Growth II 的 displayOnly 奖励骰应在养成选择后通过真实 SKIP 链清空，不把展示态残留为最终权威状态', () => {
@@ -1035,7 +1037,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         next = applyEvents(next, attackEvents);
 
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
         expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
         expect(next.pendingAttack).toBeNull();
@@ -1056,7 +1058,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.pendingBonusDiceSettlement).toBeUndefined();
         expect(next.pendingAttack).toBeNull();
         expect(next.pendingDamage).toBeUndefined();
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
         expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
     });

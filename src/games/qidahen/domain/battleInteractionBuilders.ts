@@ -46,7 +46,10 @@ function buildQidahenPendingTargetInteraction(
             targetType: 'button',
             autoResolveIfSingle: false,
             subtitle: `守方 ${pendingTargetAction.defenderLabel} · 本次出兵 ${pendingTargetAction.committedTroops}`,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
+            allowedCommands: [
+                QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+                QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            ],
         },
     ) as QidahenPendingTargetInteraction;
 

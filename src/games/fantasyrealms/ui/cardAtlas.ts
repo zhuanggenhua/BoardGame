@@ -3,10 +3,17 @@ import { buildLocalizedImageSet } from '../../../core/AssetLoader';
 
 export const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
 export const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
+export const FANTASY_REALMS_CURSED_HOARD_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-cursed-hoard-card-back.png';
 
 type AtlasPosition = {
     column: number;
     row: number;
+};
+
+type AtlasFrame = AtlasPosition & {
+    image: string;
+    columns: number;
+    rows: number;
 };
 
 // @atlas-contract 基础版中文卡图 fantasyrealms-base-cards-atlas.png 使用 10x7 网格；
@@ -67,23 +74,80 @@ const FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID: Record<string, AtlasPosition> = 
     'flame-wildfire': { column: 7, row: 6 },
 };
 
+// @atlas-contract 诅咒宝藏/新花色中文扩展牌正面来自 fantasyrealms-base-cards-atlas.png 使用的同一张总图；
+// 源图为 D:\gongzuo\webgame\gameasset\幻想国度加扩\Mods\Images\所有卡牌.png，尺寸 4096x4026。
+// 注意：扩展牌.png 是诅咒物品卡组，不是地牢/天使/食尸鬼这组新花色正面图。
+const FANTASY_REALMS_CURSED_HOARD_CARD_ATLAS_POSITION_BY_ID: Record<string, AtlasPosition> = {
+    'building-dungeon': { column: 8, row: 0 },
+    'outsider-angel': { column: 0, row: 0 },
+    'building-bell-tower-ch': { column: 1, row: 0 },
+    'building-castle': { column: 2, row: 0 },
+    'building-chapel': { column: 3, row: 0 },
+    'building-crypt': { column: 4, row: 0 },
+    'undead-dark-queen': { column: 5, row: 0 },
+    'undead-death-knight': { column: 6, row: 0 },
+    'outsider-demon': { column: 7, row: 0 },
+    'flood-fountain-of-life-ch': { column: 9, row: 0 },
+    'land-garden': { column: 0, row: 1 },
+    'outsider-genie': { column: 1, row: 1 },
+    'undead-ghoul': { column: 2, row: 1 },
+    'flood-great-flood-ch': { column: 3, row: 1 },
+    'outsider-judge': { column: 4, row: 1 },
+    'outsider-leprechaun': { column: 5, row: 1 },
+    'undead-lich': { column: 6, row: 1 },
+    'wild-mirage-ch': { column: 7, row: 1 },
+    'wizard-necromancer-ch': { column: 8, row: 1 },
+    'army-rangers-ch': { column: 9, row: 1 },
+    'undead-specter': { column: 0, row: 2 },
+    'wild-shapeshifter-ch': { column: 1, row: 2 },
+    'artifact-world-tree-ch': { column: 2, row: 2 },
+};
+
+const FANTASY_REALMS_CARD_ATLAS_FRAME_BY_ID: Record<string, AtlasFrame> = {
+    ...Object.fromEntries(
+        Object.entries(FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID).map(([cardId, position]) => [
+            cardId,
+            {
+                ...position,
+                image: FANTASY_REALMS_CARD_ATLAS_PATH,
+                columns: 10,
+                rows: 7,
+            },
+        ]),
+    ),
+    ...Object.fromEntries(
+        Object.entries(FANTASY_REALMS_CURSED_HOARD_CARD_ATLAS_POSITION_BY_ID).map(([cardId, position]) => [
+            cardId,
+            {
+                ...position,
+                image: FANTASY_REALMS_CARD_ATLAS_PATH,
+                columns: 10,
+                rows: 7,
+            },
+        ]),
+    ),
+};
+
 export function getFantasyRealmsCardFaceStyle(cardId: string, locale?: string): CSSProperties | null {
-    const position = FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId];
-    if (!position) {
+    const frame = FANTASY_REALMS_CARD_ATLAS_FRAME_BY_ID[cardId];
+    if (!frame) {
         return null;
     }
 
     return {
-        backgroundImage: buildLocalizedImageSet(FANTASY_REALMS_CARD_ATLAS_PATH, locale),
-        backgroundSize: '1000% 700%',
-        backgroundPosition: `${(position.column / 9) * 100}% ${(position.row / 6) * 100}%`,
+        backgroundImage: buildLocalizedImageSet(frame.image, locale),
+        backgroundSize: `${frame.columns * 100}% ${frame.rows * 100}%`,
+        backgroundPosition: `${(frame.column / (frame.columns - 1)) * 100}% ${(frame.row / (frame.rows - 1)) * 100}%`,
         backgroundRepeat: 'no-repeat',
     };
 }
 
-export function getFantasyRealmsCardBackStyle(locale?: string): CSSProperties {
+export function getFantasyRealmsCardBackStyle(locale?: string, useCursedHoardBack = false): CSSProperties {
     return {
-        backgroundImage: buildLocalizedImageSet(FANTASY_REALMS_CARD_BACK_PATH, locale),
+        backgroundImage: buildLocalizedImageSet(
+            useCursedHoardBack ? FANTASY_REALMS_CURSED_HOARD_CARD_BACK_PATH : FANTASY_REALMS_CARD_BACK_PATH,
+            locale,
+        ),
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

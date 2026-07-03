@@ -195,11 +195,11 @@ function handleLongbowBonusCheck3(context: CustomActionContext): DiceThroneEvent
 // ============================================================================
 
 /**
- * 鐖嗚绠?I锛氭姇鎺?楠帮紝閫犳垚 3 + 2脳寮?+ 1脳瓒?浼ゅ锛屽鎵嬩涪澶?1脳鏈?CP锛岄€犳垚鑷寸洸
+ * 鐖嗚绠?I锛氭姇鎺?楠帮紝閫犳垚 3 + 1脳寮?+ 1脳瓒?浼ゅ锛屽鎵嬩涪澶?1脳鏈?CP锛岄€犳垚鑷寸洸
  * 
  * 鍥剧墖瑙勫垯锛?
  * - 鎺烽5楠?
- * - 閫犳垚 3 + 2脳寮撻潰鏁?+ 1脳瓒抽潰鏁?浼ゅ
+ * - 閫犳垚 3 + 1脳寮撻潰鏁?+ 1脳瓒抽潰鏁?浼ゅ
  * - 鍙﹀瀵规墜涓㈠け 1脳鏈堥潰鏁?CP
  * - 閫犳垚鑷寸洸
  */
@@ -207,7 +207,7 @@ function handleExplodingArrowResolve1(context: CustomActionContext): DiceThroneE
     return resolveExplodingArrowMultiDie(
         context,
         'bonusDie.effect.explodingArrow.result',
-        2,
+        1,
         1,
         false,
     );

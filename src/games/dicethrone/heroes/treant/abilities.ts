@@ -271,10 +271,10 @@ export const WILD_GROWTH_2: AbilityDef = {
     variants: [
         {
             id: 'wild-growth-2-main',
-            trigger: { type: 'largeStraight' },
+            trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.LEAF]: 3 } },
             effects: [
                 customEffect('treant-wild-growth-2-main', 'opponent', abilityEffectText('wild-growth-2', 'roll5BranchLeafSpirit')),
-                damage(8, abilityEffectText('wild-growth-2', 'damage8')),
+                damage(4, abilityEffectText('wild-growth-2', 'damage4')),
             ],
             priority: 1,
         },
@@ -288,6 +288,29 @@ export const WILD_GROWTH_2: AbilityDef = {
             ],
             priority: 0,
         },
+    ],
+};
+
+const WILD_ROAR: AbilityDef = {
+    id: 'wild-roar',
+    name: abilityText('wild-roar', 'name'),
+    type: 'offensive',
+    description: abilityText('wild-roar', 'description'),
+    sfxKey: TREANT_SFX_GROWTH,
+    trigger: { type: 'largeStraight' },
+    effects: [
+        customEffect('treant-wild-growth-2-main', 'opponent', abilityEffectText('wild-roar', 'roll5BranchLeafSpirit')),
+        damage(6, abilityEffectText('wild-roar', 'damage6')),
+    ],
+};
+
+export const WILD_ROAR_2: AbilityDef = {
+    ...WILD_ROAR,
+    name: abilityText('wild-roar-2', 'name'),
+    description: abilityText('wild-roar-2', 'description'),
+    effects: [
+        customEffect('treant-wild-growth-2-main', 'opponent', abilityEffectText('wild-roar-2', 'roll5BranchLeafSpirit')),
+        damage(8, abilityEffectText('wild-roar-2', 'damage8')),
     ],
 };
 
@@ -353,6 +376,7 @@ export const TREANT_ABILITIES: AbilityDef[] = [
     NATURE_TOUCH,
     QUIET_CULTIVATION,
     WILD_GROWTH,
+    WILD_ROAR,
     ROOTED,
     FOREST_AWAKENS,
 ];

@@ -98,6 +98,13 @@ const boardBonusDieLogger = createScopedLogger('DT_BOARD_BONUS_DIE');
 const LOCKED_DIE_RETURN_ANIMATION_MS = 520;
 const DUEL_ATTACKER_DIE_ID = 1;
 
+type LockedDieReturnRect = {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+};
+
 type LockedDieReturnAnimation = {
     key: string;
     die: {
@@ -105,8 +112,8 @@ type LockedDieReturnAnimation = {
         value: number;
         definitionId?: string;
     };
-    from: DOMRectReadOnly;
-    to: DOMRectReadOnly;
+    from: LockedDieReturnRect;
+    to: LockedDieReturnRect;
     active: boolean;
 };
 
@@ -204,10 +211,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     ) as DiceThroneMoveMap;
     const { t, i18n } = useTranslation('game-dicethrone');
     const { boardDice3dEnabled } = useDiceThroneDisplayPreference();
-    const pendingLockedDieReturnAnimationsRef = React.useRef<Map<number, {
-        die: LockedDieReturnAnimation['die'];
-        from: DOMRectReadOnly;
-    }>>(new Map());
     const [lockedDieReturnAnimations, setLockedDieReturnAnimations] = React.useState<LockedDieReturnAnimation[]>([]);
     useTutorialBridge(rawG.sys.tutorial, dispatch);
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep: nextTutorialStep } = useTutorial();
@@ -582,6 +585,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     localReducer: (current: unknown, step: unknown) =>
                         diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep),
                     toCommands: diceSelectToCommands,
+                    maxSteps: undefined,
+                    minSteps: 1,
                     allowedDieIds: originalData.allowedDieIds,
                     completedDieIds: originalData.completedDieIds,
                 },
@@ -1152,68 +1157,81 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         const baseDice = G.dice.filter((die) => !die.isKept);
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
     }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
-    const railDice = rightSidebarDice;
+    const resolveLockedDieReturnTarget = React.useCallback((dieId: number, from: LockedDieReturnRect): LockedDieReturnRect => {
+        const targetNode = document.querySelector(
+            `[data-tutorial-id="dice-tray"] [data-testid="die-button-${dieId}"]`,
+        );
+        const targetRect = targetNode?.getBoundingClientRect();
+        if (targetRect && targetRect.width > 0 && targetRect.height > 0) {
+            return {
+                left: targetRect.left,
+                top: targetRect.top,
+                width: targetRect.width,
+                height: targetRect.height,
+            };
+        }
+
+        return {
+            left: from.left + from.width + 220,
+            top: from.top,
+            width: from.width,
+            height: from.height,
+        };
+    }, []);
+
     const queueLockedDieReturnAnimation = React.useCallback((dieId: number) => {
         const sourceNode = document.querySelector(
             `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`,
         );
         const die = G.dice.find((candidate) => candidate.id === dieId);
-        if (!sourceNode || !die || die.isKept) return;
-        const from = sourceNode.getBoundingClientRect();
-        if (from.width <= 0 || from.height <= 0) return;
-        pendingLockedDieReturnAnimationsRef.current.set(dieId, {
+        if (!die || die.isKept) return;
+        const sourceRect = sourceNode?.getBoundingClientRect();
+        const stageRect = document.querySelector('[data-testid="dicethrone-board-dice-stage"]')?.getBoundingClientRect();
+        const from = sourceRect && sourceRect.width > 0 && sourceRect.height > 0
+            ? {
+                left: sourceRect.left,
+                top: sourceRect.top,
+                width: sourceRect.width,
+                height: sourceRect.height,
+            }
+            : stageRect && stageRect.width > 0 && stageRect.height > 0
+                ? {
+                    left: stageRect.left + (stageRect.width / 2) - 34,
+                    top: stageRect.top + (stageRect.height / 2) - 34,
+                    width: 68,
+                    height: 68,
+                }
+                : null;
+        if (!from) return;
+        const key = `${dieId}-${Date.now()}`;
+        setLockedDieReturnAnimations((current) => [...current, {
+            key,
             die: {
                 id: die.id,
                 value: die.value,
                 definitionId: die.definitionId,
             },
             from,
-        });
-    }, [G.dice]);
-
-    React.useEffect(() => {
-        const pending = pendingLockedDieReturnAnimationsRef.current;
-        if (pending.size === 0 || !showRailDiceTray) return;
-
-        const nextAnimations: LockedDieReturnAnimation[] = [];
-        for (const [dieId, pendingAnimation] of pending) {
-            const targetNode = document.querySelector(
-                `[data-tutorial-id="dice-tray"] [data-testid="die-button-${dieId}"]`,
-            );
-            if (!targetNode) continue;
-            const to = targetNode.getBoundingClientRect();
-            if (to.width <= 0 || to.height <= 0) continue;
-            nextAnimations.push({
-                key: `${dieId}-${Date.now()}-${nextAnimations.length}`,
-                die: pendingAnimation.die,
-                from: pendingAnimation.from,
-                to,
-                active: false,
+            to: resolveLockedDieReturnTarget(dieId, from),
+            active: false,
+        }]);
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                setLockedDieReturnAnimations((current) => current.map((animation) => (
+                    animation.key === key
+                        ? {
+                            ...animation,
+                            to: resolveLockedDieReturnTarget(dieId, from),
+                            active: true,
+                        }
+                        : animation
+                )));
             });
-            pending.delete(dieId);
-        }
-
-        if (nextAnimations.length === 0) return;
-
-        setLockedDieReturnAnimations((current) => [...current, ...nextAnimations]);
-        const frameId = window.requestAnimationFrame(() => {
-            setLockedDieReturnAnimations((current) => current.map((animation) => (
-                nextAnimations.some((nextAnimation) => nextAnimation.key === animation.key)
-                    ? { ...animation, active: true }
-                    : animation
-            )));
         });
-        const timeoutId = window.setTimeout(() => {
-            setLockedDieReturnAnimations((current) => current.filter(
-                (animation) => !nextAnimations.some((nextAnimation) => nextAnimation.key === animation.key),
-            ));
-        }, LOCKED_DIE_RETURN_ANIMATION_MS + 80);
-
-        return () => {
-            window.cancelAnimationFrame(frameId);
-            window.clearTimeout(timeoutId);
-        };
-    }, [railDice, showRailDiceTray]);
+        window.setTimeout(() => {
+            setLockedDieReturnAnimations((current) => current.filter((animation) => animation.key !== key));
+        }, LOCKED_DIE_RETURN_ANIMATION_MS + 700);
+    }, [G.dice, resolveLockedDieReturnTarget]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||

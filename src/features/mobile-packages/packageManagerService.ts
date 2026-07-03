@@ -142,6 +142,10 @@ export const buildSharedAudioDependencyState = (
     baseState: StoredGamePackageState,
     sharedState: StoredGamePackageState,
 ): StoredGamePackageState => {
+    const hasSharedProgressPercent = typeof sharedState.progressPercent === 'number';
+    const sharedProgressMode = sharedState.progressMode
+        ?? (hasSharedProgressPercent ? 'determinate' : 'indeterminate');
+
     if (sharedState.status === 'installed') {
         return mergeGamePackageState(baseState, {
             status: 'queued',
@@ -154,9 +158,9 @@ export const buildSharedAudioDependencyState = (
 
     return mergeGamePackageState(baseState, {
         status: sharedState.status,
-        // 公共音频包是当前游戏包的前置依赖，不应把它的百分比伪装成当前游戏自己的下载进度。
-        progressMode: sharedState.status === 'failed' ? sharedState.progressMode : 'indeterminate',
-        progressPercent: sharedState.status === 'failed' ? sharedState.progressPercent : undefined,
+        // 公共音频包是安装链路的一部分，前台必须显示真实下载进度，避免用户误以为卡住。
+        progressMode: sharedProgressMode,
+        progressPercent: sharedProgressMode === 'determinate' ? sharedState.progressPercent : undefined,
         errorCode: sharedState.status === 'failed' ? sharedState.errorCode : undefined,
         errorMessage: sharedState.status === 'failed'
             ? `公共音频包安装失败：${sharedState.errorMessage ?? '未知错误'}`
@@ -301,12 +305,20 @@ const getCurrentOrStoredState = (
     return normalizedState;
 };
 
-const stopActiveInstall = (gameId: string) => {
+const stopActiveInstall = (gameId: string, reason = 'unspecified') => {
     const handle = activeInstallRegistry.get(gameId);
     if (!handle) {
+        logMobileRuntimeCritical('PackageManagerService', 'stop-active-install-no-handle', {
+            gameId,
+            reason,
+        });
         return;
     }
 
+    logMobileRuntimeCritical('PackageManagerService', 'stop-active-install-calling-cancel', {
+        gameId,
+        reason,
+    });
     handle.cancel();
     activeInstallRegistry.delete(gameId);
     stopNativeProgressPolling(gameId);
@@ -501,7 +513,7 @@ export const resetGamePackageState = (
         gameId,
         hasExplicitFallbackState: Boolean(fallbackState),
     });
-    stopActiveInstall(gameId);
+    stopActiveInstall(gameId, 'resetGamePackageState');
     const resolvedFallback = fallbackState ?? fallbackCache.get(gameId);
     if (!resolvedFallback) {
         throw new Error(`[MobilePackages] 缺少 ${gameId} 的 fallbackState`);
@@ -532,6 +544,8 @@ export const cancelGamePackageInstall = async (
         gameId,
         hasExplicitFallbackState: Boolean(fallbackState),
         hasActiveInstallHandle: activeInstallRegistry.has(gameId),
+        currentCachedState: stateCache.get(gameId),
+        sourceStack: new Error('PackageManagerService.cancelGamePackageInstall source').stack,
     });
     const resolvedFallback = fallbackState ?? fallbackCache.get(gameId);
     if (!resolvedFallback) {
@@ -539,7 +553,7 @@ export const cancelGamePackageInstall = async (
     }
 
     fallbackCache.set(gameId, resolvedFallback);
-    stopActiveInstall(gameId);
+    stopActiveInstall(gameId, 'cancelGamePackageInstall');
     await cancelNativeGamePackageInstall(gameId);
     return refreshGamePackageStateFromNativeTask(gameId, resolvedFallback);
 };

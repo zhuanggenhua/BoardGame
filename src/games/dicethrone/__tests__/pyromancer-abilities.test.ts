@@ -11,6 +11,12 @@ import { pyromancerDiceDefinition } from '../heroes/pyromancer/diceConfig';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
 import { DiceThroneDomain } from '../domain';
 import { TOKEN_IDS, STATUS_IDS, PYROMANCER_DICE_FACE_IDS } from '../domain/ids';
+import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
+import { execute } from '../domain/execute';
+import { reduce } from '../domain/reducer';
+import { resolveAttack } from '../domain/attack';
+import { createQueuedRandom } from './test-utils';
+import { createCharacterDice, initHeroState } from '../domain/characters';
 import type { RandomFn } from '../../../engine/types';
 
 const fixedRandom: RandomFn = {
@@ -77,6 +83,66 @@ describe('Pyromancer 技能定义', () => {
             const hasVariantEffects = ability.variants && ability.variants.some(v => v.effects && v.effects.length > 0);
             expect(hasDirectEffects || hasVariantEffects).toBe(true);
         }
+    });
+});
+
+const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
+    events.reduce((current, event) => reduce(current, event), core);
+
+describe('Pyromancer 灵魂燃烧伤害语义', () => {
+    it('灵魂燃烧应按火焰精通数量对所有对手造成不可防御附属伤害且不吃攻击修正', () => {
+        const random = createQueuedRandom([1]);
+        const state = {
+            core: DiceThroneDomain.setup(['0', '1', '2'], random),
+            sys: { phase: 'offensiveRoll' },
+        };
+        state.core.selectedCharacters = { '0': 'pyromancer', '1': 'monk', '2': 'ninja' } as any;
+        state.core.players = {
+            '0': initHeroState('0', 'pyromancer', random),
+            '1': initHeroState('1', 'monk', random),
+            '2': initHeroState('2', 'ninja', random),
+        };
+        state.core.players['0'].tokens[TOKEN_IDS.FIRE_MASTERY] = 2;
+        state.core.dice = createCharacterDice('pyromancer');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            ownerId: '0',
+            value: index < 2 ? 4 : 1,
+            symbol: index < 2 ? PYROMANCER_DICE_FACE_IDS.FIERY_SOUL : PYROMANCER_DICE_FACE_IDS.FIRE,
+            symbols: [index < 2 ? PYROMANCER_DICE_FACE_IDS.FIERY_SOUL : PYROMANCER_DICE_FACE_IDS.FIRE],
+        }));
+
+        const selectEvents = execute(state, {
+            type: 'SELECT_ABILITY',
+            playerId: '0',
+            payload: { abilityId: 'soul-burn' },
+            timestamp: 100,
+        }, createQueuedRandom([1]));
+        const selected = applyEvents(state.core, selectEvents);
+
+        expect(selected.pendingAttack?.isDefendable).toBe(false);
+        selected.pendingAttack = {
+            ...selected.pendingAttack!,
+            defenderId: '1',
+            bonusDamage: 3,
+        };
+
+        const damageEvents = resolveAttack(
+            selected,
+            createQueuedRandom([1]),
+            { includePreDefense: false },
+            101,
+        ).filter((event): event is Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }> => event.type === 'DAMAGE_DEALT');
+        const collateralHits = damageEvents.filter(event => event.payload.amount === 2);
+
+        expect(damageEvents).toHaveLength(2);
+        expect(collateralHits.map(event => event.payload.targetId).sort()).toEqual(['1', '2']);
+        expect(collateralHits.every(event => event.payload.unblockable === true)).toBe(true);
+        expect(collateralHits.every(event => event.payload.damageScope === 'direct')).toBe(true);
     });
 });
 

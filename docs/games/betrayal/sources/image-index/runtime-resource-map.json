@@ -96,6 +96,12 @@
     "status": "runtime"
   },
   {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg",
+    "sourceFile": "D:/gongzuo/webgame/gameasset/山屋惊魂(小黑屋)第三版（渣图汉化自用)/Mods/Images/httpssteamusercontentaakamaihdnetugc1925869443038951245F454F087E26E7B3812E15CAFC9C941BD5ED49D66.jpg",
+    "meaning": "事件正面 atlas 外部录入真相源：6076x6376，原始文件 11641517 bytes，SHA256 09C43D68FACFAEB619162C600D95AE91C011C04C29345DCFB9E0C85902E768F5；用户指出该 TTS 图片目录包含事件牌和其它山屋素材。已复制到运行时 atlas、生成 compressed webp、写入 manifest 并完成远端 HEAD 200 回查；24 张 6x4 裁图已由子代理直读，23 张为正面事件牌候选、1 张为事件牌背面，逐事件合同见 evidence/betrayal/betrayal-event-card-ingest-2026-07-03.md",
+    "status": "runtime-source-subagent-read-partial-not-locked"
+  },
+  {
     "target": "public/assets/i18n/zh-CN/betrayal/cards/traitor-reference-zh.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938615303CA9D0058D99360DA524CC34B0256E629B091196.png",
     "meaning": "中文叛徒参考卡",

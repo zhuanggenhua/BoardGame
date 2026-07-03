@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { MatchState } from '../../src/engine/types';
 import { evaluateFantasyRealmsScore, FantasyRealmsDomain } from '../../src/games/fantasyrealms/domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore } from '../../src/games/fantasyrealms/domain';
-import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
+import { ALL_FANTASY_REALMS_CARDS, OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { initContext, waitForTestHarness } from '../helpers/common';
 
@@ -35,7 +35,7 @@ const applyCommand = (core: FantasyRealmsCore, command: FantasyRealmsCommand) =>
 };
 
 const byId = (cardId: string) => {
-    const card = OFFICIAL_FANTASY_REALMS_CARDS.find((entry) => entry.id === cardId);
+    const card = ALL_FANTASY_REALMS_CARDS.find((entry) => entry.id === cardId);
     if (!card) {
         throw new Error(`Unknown Fantasy Realms card: ${cardId}`);
     }
@@ -452,6 +452,61 @@ const duelFullHandDrawCore = (): FantasyRealmsCore => {
 
 const multiplayerOpeningCore = (): FantasyRealmsCore => FantasyRealmsDomain.setup(['0', '1', '2'], random);
 
+const cursedHoardAtlasCore = (): FantasyRealmsCore => {
+    const baseCore = FantasyRealmsDomain.setup(['0', '1'], random, {
+        expansion: 'cursed-hoard-suits',
+        variant: 'standard',
+    });
+
+    return {
+        ...baseCore,
+        currentPlayer: '0',
+        turn: 4,
+        stage: 'discard',
+        drawPile: [
+            byId('outsider-angel'),
+            byId('undead-ghoul'),
+            byId('building-bell-tower-ch'),
+            ...OFFICIAL_FANTASY_REALMS_CARDS.slice(20).map((card) => ({ ...card })),
+        ],
+        discardPile: [
+            byId('building-castle'),
+            byId('outsider-demon'),
+        ],
+        players: {
+            ...baseCore.players,
+            '0': {
+                ...baseCore.players['0']!,
+                hand: [
+                    byId('building-dungeon'),
+                    byId('outsider-angel'),
+                    byId('undead-ghoul'),
+                    byId('army-elven-archers'),
+                    byId('artifact-gem-of-order'),
+                    byId('beast-unicorn'),
+                    byId('flame-candle'),
+                    byId('weather-rainstorm'),
+                    byId('leader-queen'),
+                ],
+                score: 0,
+                scoreBreakdown: [],
+            },
+            '1': {
+                ...baseCore.players['1']!,
+                hand: OFFICIAL_FANTASY_REALMS_CARDS.slice(9, 17).map((card) => ({ ...card })),
+                score: 0,
+                scoreBreakdown: [],
+            },
+        },
+        setupConfig: {
+            ...baseCore.setupConfig,
+            cursedHoardSuitsEnabled: true,
+            variant: 'standard',
+        },
+        focusCardId: 'building-dungeon',
+    };
+};
+
 async function injectCore(
     page: Page,
     core: FantasyRealmsCore,
@@ -680,6 +735,51 @@ async function getHandCardCountByAtlasId(page: Page, cardId: string) {
 
 test.describe('FantasyRealms live flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
+
+    test('诅咒宝藏新花色牌在真实牌桌使用正式总图而不是文字占位', async ({ browser }, testInfo) => {
+        test.setTimeout(90000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const context = await browser.newContext();
+        await initContext(context, {
+            gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+            apiServerBaseURL: process.env.PW_API_SERVER_URL,
+            skipImageGate: true,
+        });
+        const page = await context.newPage();
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await openFantasyRealmsTestPage(page, baseURL);
+            await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
+
+            await injectCore(page, cursedHoardAtlasCore());
+            await expect(page.getByText('你的回合')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-hand-row')).toBeVisible();
+
+            const extensionCardIds = ['building-dungeon', 'outsider-angel', 'undead-ghoul'];
+            for (const cardId of extensionCardIds) {
+                const card = page.locator(
+                    `[data-testid="fantasyrealms-hand-row"] [data-testid="fantasyrealms-card"][data-atlas-card-id="${cardId}"]`,
+                );
+                await expect(card, `${cardId} 应出现在玩家手牌真实页面中`).toHaveCount(1);
+                await expect(card).toHaveAttribute('data-card-renderer', 'atlas');
+                await expect(card).toHaveAttribute('data-atlas-card-id', cardId);
+                const backgroundImage = await card.evaluate((element) => window.getComputedStyle(element).backgroundImage);
+                expect(backgroundImage).toContain('fantasyrealms-base-cards-atlas');
+            }
+
+            const fallbackExtensionCards = await page
+                .locator('[data-testid="fantasyrealms-hand-row"] [data-testid="fantasyrealms-card"][data-card-renderer="fallback"]')
+                .evaluateAll((cards) => cards.map((card) => card.getAttribute('data-atlas-card-id')));
+            expect(fallbackExtensionCards.filter((cardId) => extensionCardIds.includes(cardId ?? ''))).toEqual([]);
+
+            const evidencePath = getEvidenceScreenshotPath(testInfo, '01-诅咒宝藏新花色牌真实总图');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await page.screenshot({ path: evidencePath, fullPage: false });
+        } finally {
+            await context.close().catch(() => {});
+        }
+    });
 
     test('抓牌弃牌关键阶段截图链保持同一套正式 UI', async ({ browser }, testInfo) => {
         test.setTimeout(90000);

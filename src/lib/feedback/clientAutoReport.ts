@@ -175,6 +175,17 @@ function isBrowserExtensionInjectionNoise(payload: ClientAutoReportPayload): boo
         || normalizedMessage.includes('func sseerror not found');
 }
 
+function isCloudflareBeaconNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}\n${payload.jsStack ?? ''}\n${payload.errorSource ?? ''}`.toLowerCase();
+    if (!normalizedStack.includes('static.cloudflareinsights.com/beacon.min.js')) {
+        return false;
+    }
+
+    return normalizedMessage === "cannot read properties of undefined (reading 'readystate')"
+        || normalizedMessage === 'cannot read properties of undefined (reading "readystate")';
+}
+
 function isAnonymousTopLevelDocumentSource(errorSource: string): boolean {
     if (typeof window === 'undefined') {
         return false;
@@ -221,7 +232,6 @@ function isAnonymousInjectedWindowErrorNoise(payload: ClientAutoReportPayload): 
         return false;
     }
 
-    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
     const normalizedName = payload.errorName.trim().toLowerCase();
     const isUndefinedGlobal = normalizedName === 'referenceerror'
         && /^[a-z_$][a-z0-9_$]* is not defined$/i.test(payload.errorMessage.trim());
@@ -262,6 +272,9 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isBrowserExtensionInjectionNoise(payload)) {
+        return true;
+    }
+    if (isCloudflareBeaconNoise(payload)) {
         return true;
     }
     if (isAnonymousInjectedWindowErrorNoise(payload)) {

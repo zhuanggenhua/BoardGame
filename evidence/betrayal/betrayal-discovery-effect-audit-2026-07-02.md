@@ -4,16 +4,16 @@
 
 当前山屋惊魂可以进入审计阶段，但第一批运行态审计结论必须写成：**发现池对象真相已成型，具体效果实现未收口**。
 
-本轮审计已把房间、物品、预兆、事件放在同一套“对象真相 + 具体效果实现”口径下核对。当前代码已经建立 43 间房、11 张物品、9 张预兆、8 张事件的发现池；基础房间图合同已覆盖 32 个对象键，其中阁楼命中客房图面、书房/图书馆共用图书室 frame/hash，均已在合同中保留 frame-note，剩余 11 间仍待建合同。运行态已覆盖 11 个房间效果：火炉房、倒塌房间、洗衣滑槽、神秘电梯、礼拜堂、密道楼梯、墓园、器械库、书房、图书馆、长廊；另有 21 个对象键锁定为无房间文字效果或带 frame-note 的无文字效果。物品/预兆保持逐卡局部 L3；事件仍是项目占位通用模型，不能判为逐事件牌效果收口。因此当前结论是“房间发现池进入分批审计和局部 L3 补证阶段”，不能判为全部房间/卡牌效果已完成。
+本轮审计已把房间、物品、预兆、事件放在同一套“对象真相 + 具体效果实现”口径下核对。当前代码已经建立 43 间房、11 张物品、9 张预兆、7 张官方事件的发现池；43 间基础房间图合同已全部锁定。frame-note 当前分为两类：阁楼命中客房图面，属于待正确图源复核的资源归属缺口；书房/图书馆共用图书室 frame/hash，按同一图书室效果复用保留。运行态已覆盖 15 个房间效果：火炉房、倒塌房间、洗衣滑槽、神秘电梯、礼拜堂、密道楼梯、墓园、地下洞窟、器械库、书房、图书馆、长廊、储物间、体育馆、杂物间；另有 28 个对象键锁定为无房间文字效果或带 frame-note 的无文字效果。物品/预兆保持逐卡局部 L3；事件牌图源已定位并接入素材链，子代理直读合同已锁 20 张、partial 3 张、blocked 1 张；当前运行时首批只接入 7 张 locked 且现有引擎可完整表达的官方事件，不能判为全部事件牌效果收口，也不得把旧占位事件或 OCR 候选当 locked 规则合同。
 
 ## 范围与真相源
 
 | 范围 | 当前对象数 | 规则真相源 | 代码真相源 | 当前结论 |
 | --- | ---: | --- | --- | --- |
-| 房间发现池 | 43 间 | 基础规则书：发现新房间时必须先结算房间文字效果，再抽事件/物品/预兆 | `src/games/betrayal/scenarioConfig.ts` 的 `BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor` + `game.ts` 的发现/结束回合/进入触发房间效果结算 | 有房间名、提示、标签、图集、门位；32 个对象键已有基础房间图合同，11 个房间效果已进运行态；阁楼、书房/图书馆保留 frame-note；剩余 11 间仍待建合同 |
+| 房间发现池 | 43 间 | 基础规则书：发现新房间时必须先结算房间文字效果，再抽事件/物品/预兆；基础房间图完整裁图合同 | `src/games/betrayal/scenarioConfig.ts` 的 `BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor` + `game.ts` 的发现/结束回合/进入触发房间效果结算 + `Board.tsx` 的障碍物标记渲染 | 有房间名、提示、标签、图集、门位；43 间基础房间图合同已锁定；15 个房间效果已进运行态；阁楼仍缺正确阁楼图源复核；书房/图书馆按同一图书室 frame/hash 保留 |
 | 物品牌 | 11 张 | 基础规则书：抽到物品后读文本并持有；特殊行动可选，默认每回合一次，本回合新获得不能用；正式物品牌正面 atlas 裁图 | `BETRAYAL_DISCOVERY_POOLS.possessions.item` + `possessionAtlas.ts` + `temp/betrayal-possession-contract-crops/manifest.json` | 11 张发现池物品玩家可见显示名已按卡图合同对齐；legacy id 保留；奇怪的药品、急救包、地图、手电筒、头戴耳机、砍刀、骨制钥匙、兔脚均已有对应机制证据；地图的 legacy 复用对象按同一地图合同处理；物品层剩余风险主要是未来新增投骰入口必须复用兔脚最近投骰窗口，以及首剧本补充对象不得自动并入发现池通过结论 |
 | 预兆牌 | 9 张 | 基础规则书：抽到预兆后读文本并持有；每次抽预兆必须进行 haunt roll；正式预兆牌正面 atlas 裁图 | `BETRAYAL_DISCOVERY_POOLS.possessions.omen` + `possessionAtlas.ts` + `ROOM_EXPLORED` | 9 张预兆玩家可见显示名已按卡图合同对齐；`omen-book` 作为 legacy id 保留；haunt roll 是预兆抽牌通用规则，不属于单卡效果；书本、狗、面具、头骨、圣符、盔甲、雕像、指环、匕首均已有对应机制证据；剩余风险是后续新增探索场景特例、非攻击致死来源、多目标页面入口或新检定消费者时，必须复用已有机制并补回归 |
-| 事件牌 | 8 张 | 基础规则书：抽到事件后必须读牌面文本并执行；若有属性检定，只读并执行对应结果 | `BETRAYAL_DISCOVERY_POOLS.events` + `ROOM_EXPLORED` 事件结算 | 当前 8 张事件是项目内占位事件名 + 通用移动/属性效果，不是官方事件卡原文；只能证明事件抽取/弃牌/通用结算框架，不能写成逐事件牌效果通过 |
+| 事件牌 | 7 张已接入运行时，另有 16 张正面候选未接入 | 基础规则书：抽到事件后必须读牌面文本并执行；若有属性检定，只读并执行对应结果；外部 TTS 素材源 `D:/gongzuo/webgame/gameasset/山屋惊魂(小黑屋)第三版（渣图汉化自用)/Mods/Images/httpssteamusercontentaakamaihdnetugc1925869443038951245F454F087E26E7B3812E15CAFC9C941BD5ED49D66.jpg` 已定位为事件正面 atlas 源；事件录入合同 `evidence/betrayal/betrayal-event-card-ingest-2026-07-03.md` | `BETRAYAL_DISCOVERY_POOLS.events` + `ROOM_EXPLORED` 事件结算；`docs/games/betrayal/sources/image-index/runtime-resource-map.json` 已登记 `event-front-atlas.jpg` 来源；`public/assets/i18n/zh-CN/betrayal/assets-manifest.json` 已登记 `cards/event-front-atlas` 与 `cards/compressed/event-front-atlas`；远端压缩图 HEAD 200 | 旧 8 张项目占位事件已从运行时发现池移除；当前接入标本剥制、外星几何、小丑房间、咬一口！、磁带播放器、在你背后！、一种怪异的感觉 7 张官方 locked 事件，并补 `none`、属性检定、固定投骰、组合效果、障碍物放置、物理/精神通用伤害分支测试；其余 locked 事件因骰数伤害、抽物品、选择属性、作祟触发、多效果等引擎能力未扩展，仍不得写成已实现 |
 
 ## 官方规则依据
 
@@ -46,15 +46,26 @@
 | 裂隙（chasm） | 房间 | `temp/betrayal-room-contract-batch-2026-07-03/14-chasm-裂隙.jpg`，SHA256 `AFFBC395C5F4F8EA451EFD04441C4B5242F796AB30EAC36B41956157738C2D7E`；场景特例见 `docs/games/betrayal/sources/official/betrayal-3e-traitors-tome-en.md:414-415`、`439-444` | 无房间文字；可见房间名 `深渊 / CHASM`；可见 1 个预兆牌图标 | C1 无需要执行的房间文字效果；C2 发现/进入该房间本身不触发文字规则；C3 仅存在预兆牌图标信息 | `visualId=chasm`; `frameIndex=14`; `hasRoomTextEffect=false`; `cardIcons=[omen]`; `effectKind=none`; `name_note=图中文字译名为“深渊”，当前代码名为“裂隙”`; `scene_note=场景书特例不得当作基础房间效果` | locked-no-effect |
 | 地下湖（undergroundLake） | 房间 | `temp/betrayal-room-contract-batch-2026-07-03/18-undergroundLake-地下湖.jpg`，SHA256 `F0B1A720C0A190280057CF2E6C5477E3E010C6666965C28AF526284193E2BA34`；场景特例见 `docs/games/betrayal/sources/official/betrayal-3e-secrets-of-survival-en.md:1469-1480`、`1498-1501` | 无房间文字；可见房间名 `地下湖 / UNDERGROUND LAKE`；可见 1 个预兆牌图标 | C1 无需要执行的房间文字效果；C2 发现/进入该房间本身不触发文字规则；C3 仅存在预兆牌图标信息 | `visualId=undergroundLake`; `frameIndex=18`; `hasRoomTextEffect=false`; `cardIcons=[omen]`; `effectKind=none`; `scene_note=场景书特例不得当作基础房间效果` | locked-no-effect |
 | 密道楼梯（secretStaircase） | 房间 | `temp/betrayal-room-contract-batch-2026-07-03/20-secretStaircase-密道楼梯.jpg`，SHA256 `3C6C3BC638025BE6C6313B025B64F7EA8E6873297705978E5D809E689D94521C`；场景特例见 `docs/games/betrayal/sources/official/betrayal-3e-secrets-of-survival-en.md:1831-1834` | 中文：通向门厅。英文：Leads to the Hallway. | C1 该房间提供通往门厅的固定连通关系 | `visualId=secretStaircase`; `frameIndex=20`; `trigger=static_link`; `effectKind=fixed_link`; `linkTargetRoomZh=门厅`; `linkTargetRoomEn=Hallway`; `name_note=图中文字译名为“秘密楼梯”，当前代码名为“密道楼梯”`; `scene_note=场景书特例不得当作基础房间效果` | locked |
+| 储物间（larder） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/10-larder.jpg`，SHA256 `B04379E0507BAE78C5396EF6A63751E4FB9BE5F5B89D12C628ED8B9BE289B3B5` | 英文：When you discover this tile, gain 1 Might. | C1 发现本板块时获得 1 点力量 | `visualId=larder`; `trigger=discover_tile`; `actor=discovering_explorer`; `statGain={trait:"might", amount:1}`; `frame-note=图面为 LARDER/食物储藏室，当前代码中文名为储物间` | locked-room-text |
+| 地下洞窟（undergroundCavern） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/16-undergroundCavern.jpg`，SHA256 `48EE81EFD5477D98BD3779EF8BAB310CB22DCAD282F47816BBB4ED392518901A` | 英文：Leads to the Graveyard. | C1 该房间提供通往墓园的固定连通关系 | `visualId=undergroundCavern`; `trigger=static_link`; `effectKind=fixed_link`; `linkTargetRoomZh=墓园`; `linkTargetRoomEn=Graveyard`; `targetVisualId=graveyard`; `frame-note=图面为 UNDERGROUND CAVERN/地下洞穴，当前代码中文名为地下洞窟` | locked-room-text |
+| 仪式室（ritualRoom） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/17-ritualRoom.jpg`，SHA256 `9D273255628F2489B91BF701715270452BD98E589DFC28588B230D70BD8284A2` | 无房间文字效果 | 不适用 | `visualId=ritualRoom`; `trigger=none`; `effectKind=none`; `frame-note=图面为 RITUAL ROOM/仪式房间，当前代码中文名为仪式室` | locked-no-room-text |
+| 地下墓穴（catacombs） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/19-catacombs.jpg`，SHA256 `FE1D460C50B15D46B00BEFD32928D998846F389D332AA21FD3870BFB9D7FAC66` | 无房间文字效果 | 不适用 | `visualId=catacombs`; `trigger=none`; `effectKind=none` | locked-no-room-text |
+| 杂物间（junkRoom） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/27-junkRoom.jpg`，SHA256 `6ACD73D8364778F50A8CA9F6D17A044EC5318A2609409C396C59ED8F0D6481AA` | 英文：When you discover this tile, place an Obstacle token on it. | C1 发现本板块时在该板块放置 1 个障碍物标记 | `visualId=junkRoom`; `trigger=discover_tile`; `target=this_tile`; `tokenPlacement=Obstacle token`; `frame-note=图面为 JUNK ROOM/杂乱的房间，当前代码中文名为杂物间` | locked-room-text |
+| 管风琴室（organRoom） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/32-organRoom.jpg`，SHA256 `8E179CCADCACBBAC5205B2B06BDD20B573A242F2246AAE81C9C9BFE404C35DD7` | 无房间文字效果 | 不适用 | `visualId=organRoom`; `trigger=none`; `effectKind=none`; `frame-note=图面为 ORGAN ROOM/风琴室，当前代码中文名为管风琴室` | locked-no-room-text |
+| 隔音室（soundproofedRoom） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/33-soundproofedRoom.jpg`，SHA256 `763CD331FA4C3A9454E65E86DD3968AB066DB8FD48E29488B0B0E220CC65F951` | 无房间文字效果 | 不适用 | `visualId=soundproofedRoom`; `trigger=none`; `effectKind=none` | locked-no-room-text |
+| 爬行空间（crawlspace） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/36-crawlspace.jpg`，SHA256 `18D3B1AA04E3BF8C78D27575B525E168E8A7F540BDB509A12F799DDE42018CE6` | 无房间文字效果 | 不适用 | `visualId=crawlspace`; `trigger=none`; `effectKind=none`; `frame-note=图面为 CRAWLSPACE/管道夹层，当前代码中文名为爬行空间` | locked-no-room-text |
+| 游戏室（gameRoom） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/37-gameRoom.jpg`，SHA256 `40261E2A69CB4BB0C53C632EA983EBE05BA8286A702B22BD1714FBADB749FA29` | 无房间文字效果 | 不适用 | `visualId=gameRoom`; `trigger=none`; `effectKind=none` | locked-no-room-text |
+| 体育馆（gymnasium） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/38-gymnasium.jpg`，SHA256 `C5C9C04458AC7920B88E0F857258301F440E556F9AD147C48FAE4DF360CEC126` | 英文：When you discover this tile, gain 1 Speed. | C1 发现本板块时获得 1 点速度 | `visualId=gymnasium`; `trigger=discover_tile`; `actor=discovering_explorer`; `statGain={trait:"speed", amount:1}`; `frame-note=图面为 GYMNASIUM/健身房，当前代码中文名为体育馆` | locked-room-text |
+| 狭窄通道（crampedPassageway） | 房间 | `temp/betrayal-room-contract-batch4-ascii-2026-07-03/40-crampedPassageway.jpg`，SHA256 `A8A975D793F5022EA15152B4AEF3F5BF0A428362B4C9076CFC59E0C4428DE53B` | 无房间文字效果 | 不适用 | `visualId=crampedPassageway`; `trigger=none`; `effectKind=none`; `frame-note=图面为 CRAMPED PASSAGEWAY/逼仄的通道，当前代码中文名为狭窄通道` | locked-no-room-text |
 
 ## 审计总表
 
 | 对象层 | 对象真相/归属 | 具体效果实现 | 当前等级 | Finding |
 | --- | --- | --- | --- | --- |
-| 43 间房 | 已列入发现池；按楼层拆为一层 18、上层 15、地下 10；每间有 `visualId` 与 `doorways`；32 个对象键已有基础房间图合同，含阁楼命中客房图面、书房/图书馆共用图书室 frame/hash 两类 frame-note | `BetrayalRoomDiscoveryTemplate.discoveryEffect` 已承载礼拜堂发现时 +1 神志、书房/图书馆发现时 +1 知识、器械库发现时从物品牌堆展示直到武器；`endTurnEffect` 已承载 3 个结束回合效果；`enterEffect=mysticElevator` 已承载神秘电梯进入触发；`resolveConnectedRoomIds` 已承载密道楼梯->门厅、墓园->地下洞窟、长廊->舞厅固定连通 | L3 局部通过：11 个房间效果已运行态验证；21 个对象键锁定为无房间文字效果或带 frame-note 的无文字效果；剩余 11 间仍待建合同 | 后续重点转为剩余 11 间合同录入、frame-note 裁定与新增合同后的最小运行态补证 |
+| 43 间房 | 已列入发现池；按楼层拆为一层 18、上层 15、地下 10；每间有 `visualId` 与 `doorways`；43 个对象键已有基础房间图合同，含阁楼命中客房图面、书房/图书馆共用图书室 frame/hash、储物间/体育馆等译名差异 frame-note | `BetrayalRoomDiscoveryTemplate.discoveryEffect` 已承载礼拜堂 +1 神志、书房/图书馆 +1 知识、储物间 +1 力量、体育馆 +1 速度、器械库展示至武器、杂物间放置障碍物；`endTurnEffect` 已承载 3 个结束回合效果；`enterEffect=mysticElevator` 已承载神秘电梯进入触发；`resolveConnectedRoomIds` 已承载密道楼梯->门厅、墓园<->地下洞窟、长廊->舞厅固定连通；`Board.tsx` 已显示房间障碍物标记；移动消费层已按“离开带障碍物板块需要 2 点移动”校验并扣减 | L3 局部通过：15 个房间效果已运行态验证；28 个对象键锁定为无房间文字效果或带 frame-note 的无文字效果 | 后续只保留阁楼正确图源复核、新增场景特例时的对象级回归，以及未来新增障碍物来源时复用同一移动消费者 |
 | 11 张物品 | 已在 item 牌堆；可进入持有区；使用命令存在一次/回合与本回合新获得不可立即使用门禁 | 已从正式物品牌正面裁图补录卡面合同；玩家可见显示名已对齐卡面标题；历史 `id` 继续作为 legacy alias 使用；奇怪的药品与急救包已接入 `healTraits` 专属效果、使用后移出持有区；地图已接入埋葬后放置到已发现板块；手电筒已接入事件属性检定额外骰；头戴耳机已接入精神伤害减免和通用伤害负向边界；砍刀已接入显式武器攻击；骨制钥匙已接入领域穿墙移动并补真实页面移动模式入口；兔脚已接入事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护后的单骰重掷、每回合一次门禁和对应结算回写 | L3 局部通过：11 张发现池物品都有对象合同和至少一个对应机制证据；奇怪的药品、急救包、地图、砍刀、骨制钥匙已有真实页面入口或攻击/移动入口验证；手电筒、头戴耳机、兔脚已有领域层或页面基础入口验证 | 物品层当前口径已更新为逐卡局部 L3；剩余风险收窄为未来新增投骰消费者必须复用兔脚窗口、legacy 复用对象不得重复脑补新机制、首剧本补充对象仍需单独登记 |
-| 9 张预兆 | 已在 omen 牌堆；抽预兆会推进 haunt 相关计数 | 已从正式预兆牌正面裁图补录卡面合同；玩家可见显示名已对齐卡面标题；`omen-book` 继续作为 legacy alias 使用；书本、狗、面具、头骨、圣符、盔甲、雕像、指环、匕首均已从通用占位拆出对应机制：常驻检定、特殊行动、死亡替代、防具减伤、探索替换、事件跳过或攻击武器 | L3 局部通过：9 张发现池预兆都有对象合同和对应机制证据；狗、面具、圣符、雕像、指环、匕首已补真实页面入口或攻击/探索入口验证；书本、头骨、盔甲已有领域层消费者验证 | haunt roll 只属于抽预兆通用规则；剩余风险收窄为后续新增非攻击致死、探索场景特例、多目标 UI 或新检定消费者时，必须接入既有单卡机制并补回归 |
-| 8 张事件 | 已在 event 牌堆；探索到事件房间时会抽取并写入弃牌数 | 当前配置只有项目占位事件名和通用 `move/trait` 即时数值模型；规则书只证明事件牌通用流程，未提供这 8 张牌的牌面原文、结果表、选择分支或逐事件结算合同 | L2 对象归属 + 通用占位效果，不是逐事件效果收口 | 8 张事件都未锁真实卡图/官方原文；后续不得把 `回廊顺风`、`窃窃低语` 等占位配置当官方事件牌继续实现 |
+| 9 张预兆 | 已在 omen 牌堆；抽预兆会推进 haunt 相关计数 | 已从正式预兆牌正面裁图补录卡面合同；玩家可见显示名已对齐卡面标题；`omen-book` 继续作为 legacy alias 使用；书本、狗、面具、头骨、圣符、盔甲、雕像、指环、匕首均已从通用占位拆出对应机制：常驻检定、特殊行动、死亡替代、防具减伤、探索替换、事件跳过或攻击武器；狗、圣符、雕像不再从通用 `USE_POSSESSION` 主动加成入口生效 | L3 局部通过：9 张发现池预兆都有对象合同和对应机制证据；狗、面具、圣符、雕像、指环、匕首已补真实页面入口或攻击/探索入口验证；书本、头骨、盔甲已有领域层消费者验证 | haunt roll 只属于抽预兆通用规则；剩余风险收窄为后续新增非攻击致死、探索场景特例、多目标 UI 或新检定消费者时，必须接入既有单卡机制并补回归 |
+| 7 张官方事件 | 已在 event 牌堆；探索到事件房间时会抽取、按属性检定或固定 2 骰分支结算并写入弃牌数 | 标本剥制、外星几何、小丑房间、咬一口！、磁带播放器、在你背后！、一种怪异的感觉已按事件录入合同接入；补 `none` 效果表示“无事发生”；物理/精神伤害沿用 `generalDamage` 指定受伤属性族；固定 2 骰事件可记录为最近投骰并被兔脚重掷回写分支；标本剥制的失败分支通过组合效果同时结算物理伤害和当前板块障碍物 | L3 局部通过：7 张 locked 且当前引擎可表达的官方事件已运行态接入；不是全事件牌收口 | 其余 locked 事件仍因引擎能力缺口未接入，partial/blocked 事件不得进入运行时 |
 
 ## 房间效果审计表
 
@@ -80,29 +91,29 @@
 | ground | 器械库（armory） | north/east/south | 无 | 已实现：`discoveryEffect=drawUntilWeapon`，发现时从物品牌堆顶展示直到武器，拿取武器并埋葬其余展示牌；已有领域测试覆盖拿砍刀、埋急救包、扣物品牌堆 |
 | upper | 塔楼（tower） | south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
 | upper | 雕像走廊（statuaryCorridor） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 阁楼（attic） | south/west | 无 | frame-note：当前裁图实际文字为客房/GUEST QUARTERS，按图片文字锁为无房间文字效果；阁楼对象归属仍需后续裁定，不得当作无争议独立图面 |
-| upper | 书房（study） | north/east | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；frame-note：图片实际文字为图书室/LIBRARY，与图书馆共 frame/hash；已有领域测试 |
+| upper | 阁楼（attic） | south/west | 无 | `roomAtlas.ts` 当前把阁楼和客房都映射到 room-front-atlas frame 23；`23-guestQuarters-客房.jpg`、`23-guestQuarters.jpg`、`23-attic.jpg` 三份裁图 SHA256 均为 `0E12AF83BFE3C7A3B64EF91C82F21F86BC25883D0ABB23FAB984AD1249943CE0`，证明当前阁楼裁图和客房裁图完全同源。当前只能锁定“阁楼对象使用了客房图面且无房间文字效果”，不能判定为正确阁楼图面；进入资源归属复核队列 |
+| upper | 书房（study） | north/east | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；`roomAtlas.ts` 当前把书房和图书馆都映射到 room-front-atlas frame 25，按同一图书室/LIBRARY 效果复用保留；已有领域测试 |
 | upper | 长廊（gallery） | north/south | 无 | 已实现：固定连通舞厅；`resolveConnectedRoomIds` 会在长廊与已发现舞厅之间加入移动目标；已有领域测试 |
 | upper | 图书馆（library） | south/west | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；已有领域测试 |
 | upper | 冬季卧室（winterBedroom） | east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
 | upper | 倒塌房间（collapsedRoom） | north/south | 无 | 已实现：`endTurnEffect=speedCheckFallToBasement`，结束回合速度检定失败时移至地下室起始点并承受 1 骰物理伤害；已有领域测试覆盖失败分支 |
 | upper | 烧焦房间（charredRoom） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 管风琴室（organRoom） | north/east/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| upper | 隔音室（soundproofedRoom） | north/east/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| upper | 游戏室（gameRoom） | north/east/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| upper | 体育馆（gymnasium） | north/east/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| upper | 狭窄通道（crampedPassageway） | north/east/south/west | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
+| upper | 管风琴室（organRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为风琴室 |
+| upper | 隔音室（soundproofedRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| upper | 游戏室（gameRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| upper | 体育馆（gymnasium） | north/east/south | 无 | 已实现：`discoveryEffect=gainSpeed1`，发现板块时让发现者获得 1 点速度；已有领域测试 |
+| upper | 狭窄通道（crampedPassageway） | north/east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为逼仄的通道 |
 | upper | 神秘电梯（mysticElevator） | north/east/south/west | 无 | 已实现：`enterEffect=mysticElevator`，当前探索者在神秘电梯时可点房间效果按钮，投 2 骰后按 4+/3/2/0-1 将电梯移动到对应楼层开放门口；`usedRoomEffectIdsThisTurn` 限制每回合一次；已有领域测试与页面测试 |
 | basement | 洗衣滑槽（laundryChute） | north/east | 无 | 已实现：`endTurnEffect=moveToBasementLanding`，结束回合在本板块时将探险者放置到地下室起始点；已有领域测试 |
 | basement | 裂隙（chasm） | north/south | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；图中文字译名为“深渊”，当前代码名为“裂隙” |
-| basement | 储物间（larder） | north/east | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
+| basement | 储物间（larder） | north/east | 无 | 已实现：`discoveryEffect=gainMight1`，发现板块时让发现者获得 1 点力量；已有领域测试；frame-note：图面译名为食物储藏室 |
 | basement | 地下湖（undergroundLake） | north/west | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；场景书特例不得当作基础房间效果 |
-| basement | 地下洞窟（undergroundCavern） | east/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| basement | 仪式室（ritualRoom） | west/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| basement | 地下墓穴（catacombs） | north/south | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
+| basement | 地下洞窟（undergroundCavern） | east/south | 无 | 已实现：固定连通墓园；`resolveConnectedRoomIds` 会在地下洞窟与墓园之间加入双向移动目标；已有领域测试；frame-note：图面译名为地下洞穴 |
+| basement | 仪式室（ritualRoom） | west/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为仪式房间 |
+| basement | 地下墓穴（catacombs） | north/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
 | basement | 密道楼梯（secretStaircase） | north/east | 无 | 已实现：固定连通门厅；`resolveConnectedRoomIds` 会在密道楼梯与门厅之间加入双向移动目标；已有领域测试 |
-| basement | 杂物间（junkRoom） | north/east | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
-| basement | 爬行空间（crawlspace） | north/east | 无 | 缺房间效果字段；未见触发/检定/状态结算 |
+| basement | 杂物间（junkRoom） | north/east | 无 | 已实现：`discoveryEffect=placeObstacleToken`，发现板块时在房间上放置障碍物标记；离开带障碍物标记的板块需要 2 点移动，移动不足会被拒绝；已有领域消费者测试与页面标记渲染测试；frame-note：图面译名为杂乱的房间 |
+| basement | 爬行空间（crawlspace） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为管道夹层 |
 
 ## 物品/预兆具体效果实现审计表
 
@@ -136,11 +147,11 @@
 | 匕首（dagger） | Dagger / 匕首 | `temp/betrayal-possession-contract-crops/omen-dagger-full.jpg` | 武器。它闻起来有强烈的血腥味。是你的血。当你使用匕首进行攻击时，失去1点速度。本次攻击多投掷两颗额外的骰子。（你每次攻击只能使用一把武器。你不允许在本回合将已经使用过的武器进行交易） | C1：该预兆是武器。C2：使用匕首攻击时触发。C3：失去 1 点速度。C4：本次攻击额外投 2 骰。C5：每次攻击只能用一把武器。C6：本回合已用武器不能交易。 | 时机=使用匕首攻击时；目标=本次攻击；消耗=失去 1 点速度；类型=武器/攻击修正。 | C1-C6 L3 局部通过 | `HAUNT_ATTACK` 现在只能在攻击命令显式带 `weaponCardId=dagger` 时额外投 2 颗骰，并在结算后让攻击者失去 1 点速度；`USE_POSSESSION` 不再把匕首当通用力量 +1 主动使用牌；未声明使用匕首时不会自动加骰或扣速度；已使用匕首会写入本回合已用持有物 |
 | 指环（ring） | Ring / 指环 | `temp/betrayal-possession-contract-crops/omen-ring-full.jpg` | 武器。它自绕成型。你的神志检定结果+1。当你使用戒指进行攻击时，你和防御者皆使用神志属性而非力量属性进行投骰。失败者承受精神伤害。（你每次攻击只能使用一把武器。你不允许在本回合将已经使用过的武器进行交易） | C1：该预兆是武器。C2：持有时神志检定结果 +1。C3：使用指环攻击时双方用神志而非力量投骰。C4：失败者承受精神伤害。C5：每次攻击只能用一把武器。C6：本回合已用武器不能交易。 | 时机=持有常驻/使用指环攻击时；目标=攻击者和防御者；消耗=无；类型=常驻加成+武器/攻击属性替换。 | C1-C6 L3 局部通过 | `rollTraitCheck` 已把指环 C2 接入神志检定被动加成，并由驱魔杰克覆盖；`HAUNT_ATTACK` 现在只能在攻击命令显式带 `weaponCardId=ring` 时让双方用神志对攻，并按精神伤害结算失败者；`USE_POSSESSION` 不再把指环当通用神志 +1 主动使用牌；未声明使用指环时不会自动改用神志或造成精神伤害；已使用指环会写入本回合已用持有物 |
 | 盔甲（armor） | Armor / 盔甲 | `temp/betrayal-possession-contract-crops/omen-armor-full.jpg` | 锈迹斑斑，但牢固可靠。无论何时你承受任何物理伤害，降低1点伤害值。（本盔甲无法阻挡通用伤害，或是对力量/速度属性的直接降低） | C1：承受物理伤害时触发。C2：物理伤害 -1。C3：不能阻挡通用伤害。C4：不能阻挡力量/速度直接降低。 | 时机=承受物理伤害时；目标=持有者；消耗=无；类型=常驻防具/减伤。 | C1-C4 L3 局部通过 | `applyPhysicalDamage` 已按盔甲持有状态把物理伤害降低 1 点，并由火炉房物理伤害入口证明；盔甲不再作为主动使用牌进入默认移动效果，且不会阻挡事件导致的力量直接降低；新增通用伤害事件入口证明盔甲不会减免通用伤害。 |
-| 雕像（idol） | Idol / 雕像 | `temp/betrayal-possession-contract-crops/omen-idol-full.jpg` | 这个神像是由一种奇怪的、磨损的石头制成的。你不能完全弄清楚它本来想表达什麼。你的力量检定结果+1。当你发现一张带有事件符号的板块时，你可以选择不抽取一张事件卡。 | C1：持有时力量检定结果 +1。C2：发现带事件符号板块时可触发。C3：可选择不抽事件卡。 | 时机=持有常驻/发现事件符号板块时；目标=该次事件抽取；消耗=无；类型=常驻加成+探索场景特例。 | C1-C3 L3 局部通过 | C1 已通过事件力量检定消费者证明：雕像持有者进行事件力量检定时结果 +1；`EXPLORE_ROOM` 的 `useIdol` 分支已覆盖 C2-C3：持有且非本回合刚获得雕像时，发现事件符号板块可跳过事件抽取，事件不会进入弃牌，也不会结算属性降低或移动等事件效果；无雕像或非事件符号板块声明会被拒绝 |
+| 雕像（idol） | Idol / 雕像 | `temp/betrayal-possession-contract-crops/omen-idol-full.jpg` | 这个神像是由一种奇怪的、磨损的石头制成的。你不能完全弄清楚它本来想表达什麼。你的力量检定结果+1。当你发现一张带有事件符号的板块时，你可以选择不抽取一张事件卡。 | C1：持有时力量检定结果 +1。C2：发现带事件符号板块时可触发。C3：可选择不抽事件卡。 | 时机=持有常驻/发现事件符号板块时；目标=该次事件抽取；消耗=无；类型=常驻加成+探索场景特例。 | C1-C3 L3 局部通过 | C1 已通过事件力量检定消费者证明：雕像持有者进行事件力量检定时结果 +1；`EXPLORE_ROOM` 的 `useIdol` 分支已覆盖 C2-C3：持有且非本回合刚获得雕像时，发现事件符号板块可跳过事件抽取，事件不会进入弃牌，也不会结算属性降低或移动等事件效果；无雕像或非事件符号板块声明会被拒绝；通用 `USE_POSSESSION` 入口会拒绝把雕像当成知识加成牌 |
 
 预兆卡底部“抽取时进行作祟检定；作祟已开始则跳过”属于预兆抽牌通用规则，不能计入单卡效果通过。它应由 `ROOM_EXPLORED` 的预兆抽取/haunt roll 框架审计，不能替代上表里的每张预兆自身能力。
 
-补充：`USE_EFFECTS` 里仍有 `holy-medallion / dark-omen / cross / matches` 四个效果键没有出现在当前发现池或首剧本起始持有物中。本轮只把它们登记为历史残留或未来占位候选，不纳入 20 张发现池牌的通过结论。
+补充：`USE_EFFECTS` 里原有的 `holy-medallion / dark-omen / cross / matches` 四个效果键没有出现在当前发现池或首剧本起始持有物中。本轮已把它们移出运行时效果表，并补负向测试证明未确认对象不会从通用使用入口获得效果；它们不纳入 20 张发现池牌的通过结论。
 
 ### 持有物合同状态
 
@@ -159,30 +170,27 @@
 | 发现池物品 | 11 张物品 | 牌名、牌堆归属、持有区入口、正式卡面裁图、卡面原文、原子子句、结构化字段、显示名裁定；奇怪的药品已补运行态治疗与埋葬测试证据；急救包 C1-C3 已补自己/同板块队友治疗与异板块拒绝测试证据；地图 C1-C2 已补已发现板块放置与未发现板块拒绝测试证据；手电筒 C1 已补事件属性检定加骰测试证据；头戴耳机 C1-C3 已补精神伤害减免、通用伤害负向边界和直接属性降低负向测试证据；砍刀 C1-C3 已补显式武器攻击 +1、非声明不自动加成、不能通用使用和已用不能交易测试证据；骨制钥匙 C1-C4 已补领域穿墙、投骰、空白埋葬、不能发现新房间和真实页面手动入口测试证据；兔脚已补事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护的单骰明细、每回合一次重掷门禁和对应结算回写测试证据 | 未来新增投骰入口的兔脚最近投骰窗口复用；地图/手电筒 legacy 复用对象不得被当作新卡脑补新机制；首剧本补充对象需独立登记 | `locked-display / mechanism-l3-local` | 11 张发现池物品已进入逐卡局部 L3；后续重点是扩展新消费者时补回归，而不是重复读取卡图或重复裁定显示名 |
 | 发现池预兆 | 9 张预兆 | 牌名、牌堆归属、持有区入口、haunt roll 触发框架、正式卡面裁图、卡面原文、原子子句、结构化字段、显示名裁定；书本 C1-C5、头骨 C1-C5、狗 C1-C6、面具 C1-C6、圣符 C1-C5、指环 C1-C6、盔甲 C1-C4、匕首 C1-C6、雕像 C1-C3 均已有运行态或页面入口测试证据 | 后续新增非攻击致死来源、探索场景特例、多目标页面入口或新检定消费者时，必须接入既有单卡机制并补回归 | `locked-display / mechanism-l3-local` | 9 张发现池预兆已进入逐卡局部 L3；haunt roll 仍只算抽预兆通用规则，不能替代单卡效果证据 |
 | 首剧本起始持有物 | 手电筒、地图等补充对象 | 起始持有物归属、卡面复用关系、显示名裁定；手电筒已按卡面合同接入事件属性检定加骰；地图已按卡面合同接入埋葬后放置效果 | 其它补充对象真实单卡能力实现与测试证据 | `locked-display / mechanism-in-progress` | 作为补充对象登记；手电筒和地图已按合同推进，其它补充对象仍不能并入通过结论 |
-| 历史/未来占位键 | `holy-medallion / dark-omen / cross / matches` | 仅存在于 `USE_EFFECTS` 映射 | 当前发现池和首剧本起始持有物均未引用 | `blocked` | 先确认是否仍是有效对象；未确认前不纳入审计通过范围 |
+| 历史/未来占位键 | `holy-medallion / dark-omen / cross / matches` | 原仅存在于 `USE_EFFECTS` 映射 | 当前发现池和首剧本起始持有物均未引用；已从运行时效果表移除 | `not-in-scope / guarded` | 后续只有取得真实卡面或配置入口后，才能重新登记为正式对象并补对象合同与效果回归 |
 
-本轮已检索 `docs/games/betrayal/sources/official/` 下的规则书、幸存者手册和叛徒之书 Markdown；它们能证明物品/预兆的通用抽取、持有、特殊行动、武器规则和 haunt roll 框架。当前 20 张发现池物品/预兆的完整卡面原文已改由正式卡图裁图合同补齐，玩家可见显示名也已按卡面合同对齐；奇怪的药品和急救包已经从 `resolveUseEffect` 通用数值占位拆成逐卡专属 `healTraits` 机制，地图已经拆成逐卡专属 `placeExplorer` 机制，骨制钥匙已经从通用移动占位拆入 `MOVE_TO_ROOM` 的穿墙移动分支，兔脚已经移除通用移动占位，并在领域层补入事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护的单骰明细、重掷命令和对应分支/伤害/死亡保护回写；真实页面基础入口已接入；未来新增投骰入口仍需复用最近投骰窗口并补回归；砍刀、匕首和指环已经从通用属性占位拆入 `HAUNT_ATTACK` 显式武器机制。预兆常驻检定加成已从 `resolveUseEffect` 的通用属性/移动占位拆入 `rollTraitCheck`：书本/头骨覆盖知识检定，狗/面具覆盖速度检定，圣符/指环覆盖神志检定；圣符发现板块替换已拆入 `EXPLORE_ROOM` 的可选探索分支；雕像力量检定 +1 已通过事件力量检定消费者证明；雕像跳过事件抽取已接入探索场景特例。下一步不再是继续读图或裁定显示名，而是按同一口径继续拆常驻、特殊行动、武器、防具、场景特例、死亡替代和重掷等真实机制。
+本轮已检索 `docs/games/betrayal/sources/official/` 下的规则书、幸存者手册和叛徒之书 Markdown；它们能证明物品/预兆的通用抽取、持有、特殊行动、武器规则和 haunt roll 框架。当前 20 张发现池物品/预兆的完整卡面原文已改由正式卡图裁图合同补齐，玩家可见显示名也已按卡面合同对齐；奇怪的药品和急救包已经从 `resolveUseEffect` 通用数值占位拆成逐卡专属 `healTraits` 机制，地图已经拆成逐卡专属 `placeExplorer` 机制，骨制钥匙已经从通用移动占位拆入 `MOVE_TO_ROOM` 的穿墙移动分支，兔脚已经移除通用移动占位，并在领域层补入事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护的单骰明细、重掷命令和对应分支/伤害/死亡保护回写；真实页面基础入口已接入；未来新增投骰入口仍需复用最近投骰窗口并补回归；砍刀、匕首和指环已经从通用属性占位拆入 `HAUNT_ATTACK` 显式武器机制。预兆常驻检定加成已从 `resolveUseEffect` 的通用属性/移动占位拆入 `rollTraitCheck`：书本/头骨覆盖知识检定，狗/面具覆盖速度检定，圣符/指环覆盖神志检定；狗、圣符、雕像均已从通用 `USE_POSSESSION` 主动加成入口移除；圣符发现板块替换已拆入 `EXPLORE_ROOM` 的可选探索分支；雕像力量检定 +1 已通过事件力量检定消费者证明；雕像跳过事件抽取已接入探索场景特例。下一步不再是继续读图或裁定显示名，而是按同一口径继续拆常驻、特殊行动、武器、防具、场景特例、死亡替代和重掷等真实机制。
 
 ## 事件具体效果实现审计表
 
 | 类型 | 事件 | 对象真相/结算入口 | 当前实现 | 审计结论 |
 | --- | --- | --- | --- | --- |
-| 事件 | 回廊顺风 | 抽到即弃置/结算 | 当前配置只有 `move +1` 通用即时效果 | 只有通用移动增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
-| 事件 | 窃窃低语 | 抽到即弃置/结算 | 当前配置只有 `sanity -1` 通用即时效果 | 只有通用属性增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
-| 事件 | 旧日手记 | 抽到即弃置/结算 | 当前配置只有 `knowledge +1` 通用即时效果 | 只有通用属性增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
-| 事件 | 滑落阶梯 | 抽到即弃置/结算 | 当前配置只有 `speed -1` 通用即时效果 | 只有通用属性增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
-| 事件 | 墙中低语 | 抽到即弃置/结算 | 当前配置只有 `knowledge -1` 通用即时效果 | 只有通用属性增减；真实事件卡原文、检定、结果表、成功/失败分支未锁 |
-| 事件 | 冷风指路 | 抽到即弃置/结算 | 当前配置只有 `move +1` 通用即时效果 | 只有通用移动增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
-| 事件 | 阴影扑面 | 抽到即弃置/结算 | 当前配置只有 `might -1` 通用即时效果 | 只有通用属性增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
-| 事件 | 残留祝福 | 抽到即弃置/结算 | 当前配置只有 `sanity +1` 通用即时效果 | 只有通用属性增减；真实事件卡原文、检定、选择、成功/失败分支未锁 |
+| 事件 | 外星几何 | index 10 locked；知识检定，4+ 知识+1，0-3 速度-1 | `BETRAYAL_DISCOVERY_POOLS.events` 已接入；`ROOM_EXPLORED` 会投知识检定、选择分支并应用属性变化 | L3 局部通过：成功/失败分支已有领域测试；不代表其它事件自动通过 |
+| 事件 | 小丑房间 | index 11 locked；神志检定，4+ 无事发生，0-3 精神伤害2 | 已新增 `none` 效果表示“无事发生”；精神伤害用 `generalDamage` 指向知识/神志属性族 | L3 局部通过：无事发生和精神伤害分支已有领域测试；不代表其它精神伤害事件自动通过 |
+| 事件 | 咬一口！ | index 13 locked；力量检定，4+ 无事发生，2-3 物理伤害1，0-1 物理伤害3 | 已接入运行时；物理伤害用 `generalDamage` 指向力量/速度属性族 | L3 局部通过：共享已测 `none` 与通用伤害结算；仍需后续补单卡可视化或 E2E 证据 |
+| 事件 | 磁带播放器 | index 1 locked；神志检定，4+ 知识+1，0-3 精神伤害1 | 已接入运行时；复用事件属性检定和精神伤害模型 | L3 局部通过：共享属性检定和通用伤害结算；不代表磁带原文展示逐字收口 |
+| 事件 | 在你背后！ | index 19 locked；速度检定，4+ 神志+1，0-3 物理伤害1 | 已接入运行时；复用事件属性检定和物理伤害模型 | L3 局部通过：共享属性检定和通用伤害结算；不代表所有速度检定事件已完成 |
 
 ### 事件合同状态
 
 | 批次 | 对象 | 已锁字段 | 未锁字段 | 合同状态 | 下一步 |
 | --- | --- | --- | --- | --- | --- |
-| 发现池事件 | 8 张事件 | 事件名、事件牌堆归属、探索抽取入口、弃牌计数、通用 `move/trait` 即时效果结算 | 官方事件卡原文、检定属性、结果档位、选择分支、失败路径、是否结束行动 | `blocked` | 需要完整事件卡图或官方事件卡文本后，才能进入逐事件机制实现 |
+| 发现池事件 | 7 张已接入官方事件 + 16 张未接入正面候选 + 1 张背面 | 事件正面 atlas 图源、运行时素材链、子代理直读合同；标本剥制、外星几何、小丑房间、咬一口！、磁带播放器、在你背后！、一种怪异的感觉已接入运行时 | partial 的 index 6/8/9 关键结果档；其余 locked 事件所需的骰数伤害、抽物品、选择属性、作祟触发、多效果分支等引擎能力；index 23 为背面不可录入 | `first-7-runtime-l3-local / remaining-engine-and-contract-open` | 继续按事件录入合同接入下一批；不得用旧占位事件凑数，也不得把 7 张局部通过写成全事件牌收口 |
 
-本轮已检索 `docs/games/betrayal/sources/official/` 下的规则书、幸存者手册和叛徒之书 Markdown。它们能证明事件牌的通用抽取与“读文本并执行”规则，但没有提供当前 8 张事件牌的完整卡面原文。因此，本轮不能继续把事件配置里的通用移动/属性数值升级为官方逐事件效果实现。
+本轮已检索 `docs/games/betrayal/sources/official/` 下的规则书、幸存者手册和叛徒之书 Markdown。它们能证明事件牌的通用抽取与“读文本并执行”规则；逐事件真相源改由用户提供的事件牌正面 atlas 和子代理直读合同承载。当前只允许消费已锁定且引擎可表达的事件合同，不能继续把历史占位配置里的通用移动/属性数值升级为官方逐事件效果实现。
 
 ## 代码证据
 
@@ -190,7 +198,7 @@
 - `END_TURN -> TURN_ENDED` 已承载房间结束回合效果结果，并在事件归约里写入权威状态：物理伤害会落到探索者属性，移动/放置会落到探索者房间。
 - `USE_ROOM_EFFECT -> ROOM_EFFECT_USED` 已承载神秘电梯效果：按 2 骰结果筛选开放门口楼层，移动神秘电梯房间板块，并用 `usedRoomEffectIdsThisTurn` 做每回合一次门禁。
 - 探索房间结算会更新房间基础数据、消耗牌堆、写入最近发现；事件牌当前只按配置里的通用 `move/trait` 即时效果结算，没有真实卡面原文、检定结果表或选择分支合同。
-- 物品/预兆牌池对象当前保留 `id / name / kind` 作为对象入口，逐卡卡面原文和子句已经写入本 evidence；运行时代码已把奇怪的药品和急救包拆成 `healTraits` 专属特殊行动，把地图拆成 `placeExplorer` 放置行动，把骨制钥匙拆成领域穿墙移动并补真实页面入口，把砍刀/匕首/指环拆成显式武器，把书本/狗/面具/头骨/圣符/指环的检定加成拆入 `rollTraitCheck`，把书本特殊行动拆成下一次非战斗检定替换状态，把圣符发现板块替换拆入 `EXPLORE_ROOM` 可选分支，把狗特殊行动拆入 4 格内多牌交易和本回合收到禁用状态，把盔甲拆成物理伤害入口的被动减伤，把头戴耳机拆成精神伤害入口的被动减伤，并新增通用伤害事件结算入口证明盔甲/头戴耳机都不会减免通用伤害；兔脚已移除错误移动占位，并已在领域层覆盖事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护后的单骰重掷、每回合一次和对应结算回写；未来新增投骰入口仍需复用最近投骰窗口并补回归。其余子句仍未拆成特殊行动、场景特例和重掷等真实机制。
+- 物品/预兆牌池对象当前保留 `id / name / kind` 作为对象入口，逐卡卡面原文和子句已经写入本 evidence；运行时代码已把奇怪的药品和急救包拆成 `healTraits` 专属特殊行动，把地图拆成 `placeExplorer` 放置行动，把骨制钥匙拆成领域穿墙移动并补真实页面入口，把砍刀/匕首/指环拆成显式武器，把书本/狗/面具/头骨/圣符/指环的检定加成拆入 `rollTraitCheck`，把书本特殊行动拆成下一次非战斗检定替换状态，把圣符发现板块替换拆入 `EXPLORE_ROOM` 可选分支，把狗特殊行动拆入 4 格内多牌交易和本回合收到禁用状态，把盔甲拆成物理伤害入口的被动减伤，把头戴耳机拆成精神伤害入口的被动减伤，并新增通用伤害事件结算入口证明盔甲/头戴耳机都不会减免通用伤害；狗、圣符、雕像均已从通用 `USE_POSSESSION` 主动加成入口移除；兔脚已移除错误移动占位，并已在领域层覆盖事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护后的单骰重掷、每回合一次和对应结算回写；未来新增投骰入口仍需复用最近投骰窗口并补回归。其余子句仍未拆成特殊行动、场景特例和重掷等真实机制。
 - `USE_POSSESSION` 有基本门禁：当前探索者必须持有该牌、同回合不能重复使用、本回合新获得不能立刻使用；但这只是特殊行动通用门禁，不等于逐卡效果实现。
 - `Board.tsx` 已不再维护独立的前端预览效果映射；持有物卡面预览和领域结算现在都复用 `game.ts` 的 `resolveUseEffect`，避免 UI 预览与真实结算出现双重真相。
 
@@ -219,10 +227,10 @@
 | 兔脚 C1-C2 重掷入口 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“兔脚不能被主动使用成移动加成，真实重掷必须等待骰子明细窗口”“兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支结算”“兔脚重掷后若跨过事件检定阈值，会撤销旧分支并应用新分支”“兔脚可以重掷神秘电梯刚投过的一颗骰子并重算楼层”“兔脚可以重掷刚刚攻击投骰的一颗骰子，并按新结果回算非致死攻击伤害”“兔脚可以重掷倒塌房间结束回合速度检定，并按新结果回算坠落”“兔脚可以重掷头骨死亡保护的一颗骰子，并按新结果阻止死亡” | 证明兔脚不再产生“移动 +1”假效果；事件属性检定、神秘电梯房间投骰、攻击投骰、倒塌房间结束回合速度检定和头骨死亡保护会记录单颗骰子；兔脚能选择刚投过的一颗骰子重掷；同回合二次使用被拒绝；重掷后会按新总点数回写事件分支、神秘电梯楼层移动、非致死攻击伤害、倒塌房间坠落结果或头骨死亡保护结果 | 当前证明领域层事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定、头骨死亡保护重掷与真实页面基础入口；未来新增投骰入口仍需复用最近投骰窗口并补回归 |
 | 头戴耳机 C1-C3 精神减伤与负向边界 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“头戴耳机会把承受的精神伤害降低 1 点”“头戴耳机不会阻挡对知识属性的直接降低，也不能被主动使用成通用移动效果”“盔甲和头戴耳机不会阻挡通用伤害” | 证明头戴耳机持有者承受精神伤害时会降低 1 点伤害值，且被动防具不会被主动使用成默认移动效果 | 已证明不会阻挡知识直接降低，也不会阻挡通用伤害；这是防具负向边界，不代表事件牌逐卡效果全部收口 |
 | 书本 C1-C5 知识检定被动与下一次非战斗检定替换 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“书本会让知识检定结果 +1，并影响调查杰克和研究法阵”“书本每回合一次：失去 1 点神志，并让下一次非战斗检定可用知识替换”“书本替换只作用于非战斗检定，不会让战斗对攻改用知识” | 证明书本持有者的知识检定结果 +1 会进入调查杰克和研究法阵；主动使用书本会失去 1 点神志，设置并消费下一次非战斗检定替换；同回合二次使用被拒绝；战斗对攻不会改用知识 | 当前只覆盖首剧本里的非战斗检定消费者；若后续新增其它非战斗检定入口，需要复用同一替换状态补回归 |
-| 狗 C1-C6 速度检定被动与 4 格内交易行动 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“狗和面具会让倒塌房间速度检定结果 +1”“狗每回合一次，可与 4 格内玩家交易任意数量物品或预兆”“狗交易沿用正常交易限制：已用牌不能交易，收到的牌本回合不能立刻使用”；`src/games/betrayal/__tests__/Board.foundation.test.tsx` 的“狗会在真实页面选择 4 格内目标并交易多张牌” | 证明狗持有者的速度检定 +1 会进入倒塌房间速度检定；狗特殊交易每回合一次，可与 4 格内玩家交易多张物品或预兆；本回合已使用持有物不能交易；收牌方本回合不能立刻使用刚收到的持有物；真实页面可选择 4 格内目标并勾选多张交易牌后派发狗交易命令 | 领域层 C1-C6 + 页面 4 格内多牌交易入口 L3 局部通过；不覆盖面具的同板块群体移动行动 |
+| 狗 C1-C6 速度检定被动与 4 格内交易行动 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“狗和面具会让倒塌房间速度检定结果 +1”“狗每回合一次，可与 4 格内玩家交易任意数量物品或预兆”“狗交易沿用正常交易限制：已用牌不能交易，收到的牌本回合不能立刻使用”“狗、圣符和雕像不能被通用使用入口误当成主动加成”；`src/games/betrayal/__tests__/Board.foundation.test.tsx` 的“狗会在真实页面选择 4 格内目标并交易多张牌” | 证明狗持有者的速度检定 +1 会进入倒塌房间速度检定；狗特殊交易每回合一次，可与 4 格内玩家交易多张物品或预兆；本回合已使用持有物不能交易；收牌方本回合不能立刻使用刚收到的持有物；通用 `USE_POSSESSION` 入口会拒绝把狗当成移动加成牌；真实页面可选择 4 格内目标并勾选多张交易牌后派发狗交易命令 | 领域层 C1-C6 + 页面 4 格内多牌交易入口 L3 局部通过；不覆盖面具的同板块群体移动行动 |
 | 面具 C1-C6 速度检定被动与同板块群体移动行动 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“狗和面具会让倒塌房间速度检定结果 +1”“面具每回合一次，会把同板块其他探险者和怪物移动到已发现相邻板块，且不能发现新板块”“面具可以把同板块不同目标分别移动到不同已发现相邻板块”；`src/games/betrayal/__tests__/Board.foundation.test.tsx` 的“面具会在真实页面给同板块队友和怪物分别选择相邻板块” | 证明面具持有者的速度检定 +1 会进入倒塌房间结束回合速度检定；主动使用面具每回合一次，能移动同板块其他探险者和怪物到已发现相邻板块，能按目标分别移动到相同或不同的已发现相邻板块，并拒绝未发现板块目标；真实页面可为同板块队友和怪物分别选择相邻板块，使用后棋盘 token 分别移动到各自目标房间 | 领域层 C1-C6 + 页面逐目标分配入口 L3 局部通过；不代表其它预兆特殊行动或其它多目标 UI 已自动通过 |
 | 头骨 C1-C5 知识检定与死亡替代 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“头骨会让知识检定结果 +1，并影响调查杰克”“头骨在探索者将要死亡前投 3 骰，4-6 时不死亡并把所有属性调至濒死”“头骨死亡前投 3 骰为 0-3 时仍正常死亡”“头骨不能被主动使用成通用知识加成” | 证明头骨持有者的知识检定 +1 会进入调查杰克知识检定；将死前 3 骰 4-6 会阻止死亡并把四项属性调至濒死；0-3 会正常死亡；头骨不会再走通用主动使用加成 | 当前只覆盖攻击伤害导致死亡的消费者；若后续新增非攻击致死来源，需要复用同一死亡前替代入口补回归 |
-| 圣符 C1-C5 神志检定被动与发现板块替换 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“圣符和指环会让驱魔神志检定结果 +1”“圣符发现板块时可埋葬第一张板块并继续发现下一张，且不结算第一张效果”“没有圣符或本回合刚获得圣符时，不能声明埋葬发现板块” | 证明圣符持有者的神志检定 +1 会进入驱魔杰克神志检定；发现板块时可声明跳过/埋葬第一张房间模板并继续发现下一张；第一张房间不会结算房间效果或抽牌；无圣符或本回合刚获得圣符时会被拒绝 | 领域探索命令分支与真实页面探索声明入口 L3 局部通过；不代表其它探索场景特例自动通过 |
+| 圣符 C1-C5 神志检定被动与发现板块替换 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“圣符和指环会让驱魔神志检定结果 +1”“圣符发现板块时可埋葬第一张板块并继续发现下一张，且不结算第一张效果”“没有圣符或本回合刚获得圣符时，不能声明埋葬发现板块”“狗、圣符和雕像不能被通用使用入口误当成主动加成” | 证明圣符持有者的神志检定 +1 会进入驱魔杰克神志检定；发现板块时可声明跳过/埋葬第一张房间模板并继续发现下一张；第一张房间不会结算房间效果或抽牌；无圣符或本回合刚获得圣符时会被拒绝；通用 `USE_POSSESSION` 入口会拒绝把圣符当成神志加成牌 | 领域探索命令分支与真实页面探索声明入口 L3 局部通过；不代表其它探索场景特例自动通过 |
 | 指环 C2 神志检定被动 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“圣符和指环会让驱魔神志检定结果 +1” | 证明指环持有者的神志检定 +1 会进入驱魔杰克神志检定，并能在阈值边界完成首剧本 | 不覆盖指环作为武器时的神志攻击、精神伤害和交易限制 |
 | 盔甲 C1-C4 物理减伤与负向边界 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“盔甲会把承受的物理伤害降低 1 点”“盔甲不会阻挡对力量属性的直接降低”“盔甲是被动物理减伤防具，不能被主动使用成通用移动效果”“盔甲和头戴耳机不会阻挡通用伤害” | 证明盔甲持有者承受物理伤害时会降低 1 点伤害值，且被动防具不会被主动使用成默认移动效果 | 已证明不会阻挡力量直接降低，也不会阻挡通用伤害；这是防具负向边界，不代表事件牌逐卡效果全部收口 |
 | 魔法相机 C1 知识检定替代 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“魔法相机会让知识检定改用更高的神志属性，且不能被主动使用成通用属性加成” | 证明魔法相机持有者进行知识检定时可改用更高的神志属性，并覆盖调查杰克、研究法阵两个知识检定入口 | 当前只覆盖 C1 常驻替代属性；没有把魔法相机扩展成主动使用牌 |
@@ -230,45 +238,49 @@
 | 匕首 C1-C6 攻击武器 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“匕首只能作为攻击武器显式使用，会失去 1 点速度并额外投 2 颗骰”“未声明使用匕首时，不会只因持有武器自动额外投骰或失去速度”；`src/games/betrayal/__tests__/Board.foundation.test.tsx` 的“匕首会在真实页面攻击入口选择武器并传入攻击命令” | 证明匕首不再走通用持有物使用按钮；只有攻击命令显式声明使用匕首时，本次攻击额外投 2 颗骰，攻击者失去 1 点速度；未声明使用时不会自动加骰或扣速度；命令结构一次只能声明一把武器；已使用匕首会写入本回合已用持有物；真实页面攻击入口可选择匕首并把武器声明传给攻击命令 | 领域层 + 页面武器声明入口 L3 局部通过；不代表其它预兆特殊行动 |
 | 指环 C1-C6 攻击武器 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 的“指环只能作为攻击武器显式使用，双方改用神志对攻并造成精神伤害”“未声明使用指环时，不会只因持有武器自动改用神志或造成精神伤害”；`src/games/betrayal/__tests__/Board.foundation.test.tsx` 的“指环会在真实页面攻击入口选择武器并传入攻击命令” | 证明指环不再走通用持有物使用按钮；只有攻击命令显式声明使用指环时，双方改用神志对攻，失败者承受精神伤害；未声明使用时不会自动改用神志或造成精神伤害；命令结构一次只能声明一把武器；已使用指环会写入本回合已用持有物；真实页面攻击入口可选择指环并把武器声明传给攻击命令 | 领域层 + 页面武器声明入口 L3 局部通过；不覆盖圣符探索替换、狗/面具特殊行动等其它预兆能力 |
 
-测试层当前同样支持本轮结论：现有测试主要覆盖对象存在、发现池消费、haunt 框架、通用使用门禁、11 个已锁房间效果、物品/预兆逐卡局部机制、真实页面基础入口以及教程入口。本轮新增领域回归覆盖长廊固定连通舞厅、图书馆/书房发现时 +1 知识、器械库展示物品牌直到武器并埋葬其余展示牌；它仍不覆盖剩余 11 间房的基础房间图合同，也不能证明未来新增投骰、致死、探索特例、多目标页面入口或新检定消费者自动通过。
+测试层当前同样支持本轮结论：现有测试主要覆盖对象存在、发现池消费、haunt 框架、通用使用门禁、15 个已锁房间效果、物品/预兆逐卡局部机制、真实页面基础入口以及教程入口。本轮新增领域回归覆盖储物间发现时 +1 力量、体育馆发现时 +1 速度、杂物间发现时放置障碍物标记、离开障碍物板块时的 2 点移动成本，狗、圣符、雕像不能被通用使用入口误当成主动加成，以及 4 个未确认历史占位键不会从通用使用入口获得效果；页面基础回归覆盖障碍物标记会显示在对应房间格上。它仍不能证明未来新增投骰、致死、探索特例、多目标页面入口或新检定消费者自动通过。
 
 ## 本轮验证结果
 
 | 验证项 | 命令 | 本轮结果 | 审计含义 |
 | --- | --- | --- | --- |
-| 领域单测（本轮重跑） | `$env:NODE_OPTIONS='--max-old-space-size=8192'; node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts --configLoader native` | 1 个测试文件通过，83 条测试通过 | 证明本轮新增长廊固定连通、图书馆/书房发现加知识、器械库抽至武器并埋葬其余展示牌，以及既有山屋领域运行态仍通过；页面基础与教程测试需在最终全量验证中另行重跑 |
+| 领域、页面基础与教程单测（本轮重跑） | `$env:NODE_OPTIONS='--max-old-space-size=8192'; node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts src/games/betrayal/__tests__/Board.foundation.test.tsx src/games/betrayal/__tests__/tutorial.test.ts --configLoader native` | 3 个测试文件通过，113 条测试通过 | 证明本轮新增储物间 +1 力量、体育馆 +1 速度、杂物间放置障碍物标记、离开障碍物板块需要 2 点移动、狗/圣符/雕像不能被通用使用入口误当成主动加成、4 个未确认历史占位键不会从通用使用入口获得效果、障碍物标记页面渲染，以及既有山屋领域运行态、页面基础入口和教程入口仍通过 |
 | TypeScript 类型检查 | `$env:NODE_OPTIONS='--max-old-space-size=8192'; npx tsc --noEmit --pretty false --incremental false` | 通过 | 证明本轮兔脚事件属性检定、神秘电梯房间投骰、攻击投骰非致死伤害回算、倒塌房间结束回合速度检定和头骨死亡保护重掷、页面基础入口、通用伤害事件效果类型、显示名、legacy id、事件/房间效果相关类型仍能整体编译；不证明运行时页面 E2E 已通过。未加内存上限的同进程串联命令曾触发 Node OOM，应记为环境/内存阻塞，不是业务断言失败 |
-| E2E 复核：核心交互、怪物同场、持有区、预兆图集 | `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-core-interactions.e2e.ts`、`monster-runtime.e2e.ts`、`inventory-density.e2e.ts`、`omen-atlas.e2e.ts`；随后以 `PW_E2E_SERVICE_REUSE=isolated` 重跑 `omen-atlas.e2e.ts --grep "真实预兆牌"` | 当前阻塞在 Playwright/前端运行环境：页面或 worker 进程在用例断言前崩溃，日志包含 `JavaScript heap out of memory`、`Page crashed`、`worker process exited unexpectedly (code=134/3221226505)` | 这不是山屋惊魂业务断言失败，也不能记为 E2E 通过；后续需要在释放内存或修复 E2E runtime/worker 内存参数后重跑真实页面验证 |
+| Diff 空白检查 | `git diff --check -- .codex/skill/safe-image-reading/SKILL.md .codex/skill/data-entry-workflow/SKILL.md .codex/skill/game-audit-workflow/SKILL.md docs/ai-rules/data-entry.md docs/ai-rules/ui-ux.md evidence/betrayal/betrayal-discovery-effect-audit-2026-07-02.md src/games/betrayal e2e/betrayal` | 通过 | 证明本轮规范、山屋代码、山屋 E2E 和审计 evidence 的 diff 没有尾随空白或 conflict marker |
+| E2E 复核：基础流程 | `$env:NODE_OPTIONS='--max-old-space-size=8192'; $env:BG_NODE_MAX_OLD_SPACE_SIZE='4096'; $env:CODEX_MANAGED_BY_NPM='1'; node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/basic-flow.e2e.ts` | 1 条 Playwright 测试通过 | 证明真实页面从角色选择确认进入恶兆前运行时、打开持有物预览、使用书本并写入反馈的基础链路当前可跑通；这是基础流程入口证据，不等于全部房间/卡牌/事件具体效果收口 |
+| E2E 复核：未知房间探索 | `$env:NODE_OPTIONS='--max-old-space-size=8192'; $env:BG_NODE_MAX_OLD_SPACE_SIZE='4096'; $env:CODEX_MANAGED_BY_NPM='1'; node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/explore-unknown-room.e2e.ts` | 1 条 Playwright 测试通过 | 证明当前真实页面里“从牌桌入口选择未知房间并翻开新房间”链路可跑通；这是发现入口 E2E 证据，不等于全部房间/卡牌效果 E2E 收口 |
+| E2E 复核：核心交互、怪物同场、持有区、预兆图集 | `$env:NODE_OPTIONS='--max-old-space-size=8192'; $env:BG_NODE_MAX_OLD_SPACE_SIZE='4096'; $env:CODEX_MANAGED_BY_NPM='1'; node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/first-scenario-core-interactions.e2e.ts`、`monster-runtime.e2e.ts`、`inventory-density.e2e.ts`、`omen-atlas.e2e.ts` | 交易确认修复后再次全量重跑通过：核心交互 4 条、怪物同场 1 条、持有区 2 条、预兆图集 1 条，合计 8 条 Playwright 测试通过 | 证明真实页面的交易、调查杰克、研究法阵、英雄攻击叛徒、怪物同场、持有区密度和预兆图集入口当前可跑通；这些仍是页面入口和局部资源证据，不等于全部房间/卡牌/事件具体效果收口 |
+| E2E 复核：交易交互 | `$env:NODE_OPTIONS='--max-old-space-size=8192'; $env:BG_NODE_MAX_OLD_SPACE_SIZE='4096'; $env:CODEX_MANAGED_BY_NPM='1'; node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/first-scenario-trade-interaction.e2e.ts` | 交易确认修复后再次重跑通过，1 条 Playwright 测试通过；本轮修正确认按钮在物品和目标已选齐后仍只进入“选择确认”而未派发交易命令的问题 | 证明真实页面可选物品、选择目标并一次确认交易，且活动日志和双方持有物权威状态同步更新；这是交易入口证据，不等于每张持有物效果全部收口 |
 
 ## Finding 与执行队列
 
 | 优先级 | Finding | 现实影响 | 下一步 |
 | --- | --- | --- | --- |
-| P0 | 房间效果进入第二批收口 | 11 个已锁房间效果已可执行；32 个对象键已有合同，其中 21 个为无文字或带 frame-note 无文字；剩余 11 间房仍未锁基础房间图合同 | 继续建立剩余 11 间合同状态；frame-note 对象先裁定归属再扩实现 |
+| P0 | 房间基础合同已锁定，阁楼进入资源真相源阻塞 | 43 间基础房间图合同已锁定；15 个房间效果已进入运行态；28 个对象键为无房间文字效果或带 frame-note 的无文字效果；障碍物移动成本消费者已接入；书房/图书馆按同一图书室 frame/hash 复用保留；`src/games/betrayal/roomAtlas.ts` 当前把阁楼和客房都映射到 frame 23；本轮复核 `temp/betrayal-room-contract-batch2-2026-07-03/23-guestQuarters-客房.jpg`、`temp/betrayal-room-contract-batch2-ascii-2026-07-03/23-guestQuarters.jpg`、`temp/betrayal-room-contract-batch3-ascii-2026-07-03/23-attic.jpg` 三份裁图大小一致，且此前 SHA256 完全一致，不能证明存在正确阁楼图面 | 不再重复读这 43 张房间图；阁楼只允许在取得新的正确阁楼图源、或明确决定删除/替换该对象映射后继续处理；在此之前不得把阁楼判为正确资源通过 |
 | P0 | 物品/预兆已从“录入合同”推进到逐卡局部 L3 | 玩家拿到真实牌名后，11 张发现池物品和 9 张发现池预兆均已有对应机制证据；但这些结论仍是当前消费者范围内的局部 L3，不等于未来新增投骰、致死、探索特例、多目标页面入口自动通过 | 继续按对象机制扩消费者和回归；legacy id 只服务兼容，不再阻塞机制审计，也不得把已完成对象误写成“其余机制未做” |
-| P0 | 事件仍缺真实卡面/官方原文合同 | 当前事件只有项目占位名和通用即时数值模型；规则书只证明事件通用流程，不能证明这 8 张占位事件就是官方事件牌 | 先取得真实事件卡图/官方原文，再建立逐事件原文子句表；未锁官方原文前不得把通用数值模型写成规则通过，也不得继续扩写占位事件效果 |
-| P1 | `USE_POSSESSION` 通用按钮容易吞掉武器/常驻/特殊行动差异 | 武器、常驻效果、特殊行动可能被同一种“使用”语义错误处理 | 拆分 `specialAction / passive / weapon / scenarioSpecific` 效果类型 |
+| P0 | 事件牌已从图源定位推进到首批官方运行态接入 | 事件牌正面 atlas 已由用户素材目录定位并接入素材链：`D:/gongzuo/webgame/gameasset/山屋惊魂(小黑屋)第三版（渣图汉化自用)/Mods/Images/httpssteamusercontentaakamaihdnetugc1925869443038951245F454F087E26E7B3812E15CAFC9C941BD5ED49D66.jpg`，文件为 6076x6376、SHA256 `09C43D68FACFAEB619162C600D95AE91C011C04C29345DCFB9E0C85902E768F5`。本轮已复制为 `public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg`，生成 `cards/compressed/event-front-atlas.webp`，上传 `official/i18n/zh-CN/betrayal/cards/compressed/event-front-atlas.webp`，远端 HEAD 200。子代理直读合同已锁 20 张、partial 3 张、blocked 1 张；运行时已移除旧 8 张项目占位事件，首批接入标本剥制、外星几何、小丑房间、咬一口！、磁带播放器、在你背后！、一种怪异的感觉 7 张官方事件 | 下一步不是找图源或沿用占位事件，而是继续按合同接入下一批 locked 事件；涉及骰数伤害、抽物品、选择属性、作祟触发、多效果分支的事件，需要先补引擎能力和回归。partial/blocked 事件不得进入运行时 |
+| P1 | `USE_POSSESSION` 通用按钮已从发现池预兆场景特例中收口 | 狗、圣符、雕像已移出通用 `USE_POSSESSION` 主动加成入口；武器、常驻效果、特殊行动不再被这三张预兆误当成同一种“使用”语义 | 后续新增持有物仍按 `specialAction / passive / weapon / scenarioSpecific` 分流，并补对应负向回归 |
 | P1 | 预兆 haunt roll 不能替代单卡能力证据 | 抽预兆能触发 haunt；当前 9 张发现池预兆已有各自局部机制证据，但后续新增消费者仍不能只拿 haunt roll 当通过 | 预兆审计表继续同时覆盖 haunt roll 和单卡能力；新增场景特例、致死来源或页面入口时必须补对象级回归 |
 
 ## 后续审计入口
 
-1. 先建立房间效果真相表：43 间房逐项补“是否有房间文字效果 / 触发时机 / 目标 / 检定 / 成败 / 清理 / 不适用原因”。
+1. 房间基础合同已锁定：后续不再重复读这 43 张房间图；只在合同缺字段、对象归属冲突或用户要求复核时回到录入层。
 2. 对物品/预兆逐卡合同做机制审计：20 张发现池牌的玩家可见显示名已对齐卡图合同，legacy id 保留；下一步直接按卡面子句拆机制，不再重复读图或停在命名裁定。
-3. 对事件牌先补真相源：当前 8 张事件配置只能当项目占位；没有真实事件卡图/官方原文前，不得继续扩写占位事件效果，也不得把通用数值模型写成事件牌规则通过。
+3. 对事件牌继续走录入和实现双轨：事件正面 atlas 已接入素材链并上传压缩图，子代理直读合同已回写，运行时首批接入 7 张可完整表达的官方事件；下一步按 `evidence/betrayal/betrayal-event-card-ingest-2026-07-03.md` 继续补 partial 字段或扩展引擎能力后接入更多 locked 事件。未完成合同或能力前，不得继续扩写占位事件效果，也不得把 7 张局部通过写成全事件牌规则通过。
 4. 后续任何“发现池已审计”汇报必须同时说明：空间/牌堆归属是否审完，具体效果实现是否审完；不得再用前者替代后者。
 5. 当前不应直接脑补实现所有房间/卡牌效果；实现前必须先锁定卡面/房间文字真相源。
 
 ## 下一批录入合同执行清单
 
-这张清单是后续继续审计的前置门禁。没有形成 `locked / partial / blocked / disputed` 合同前，不得把任何房间或卡牌效果写进运行时代码。
+这张清单是后续继续审计的前置门禁。房间基础合同当前已全部形成 `locked-room-text` 或 `locked-no-room-text`；后续新增卡牌/事件或新增房间图时，仍必须先建合同再写运行时代码。
 
 | 批次 | 对象范围 | 主真相源 | 必填字段 | 进入实现审计条件 |
 | --- | --- | --- | --- | --- |
 | R1 房间效果优先批 | 倒塌房间、火炉房、神秘电梯、洗衣滑槽 | 基础房间图完整单对象裁图；规则书已点名这些房间存在特殊效果，只能作为候选锚点 | 房间名、官方房间文字、触发时机、目标、检定/支付、结果分支、伤害/移动、叛徒例外、清理、抽卡标记 | 已锁定 4/4；已进入实现审计并补最小领域/页面测试 |
-| R2 房间效果全量批 | 剩余 11 间房 + frame-note 裁定对象 | 基础房间图完整单对象裁图；当前 `scenarioConfig.ts` 只提供对象名、楼层、门位、图集 | 是否有房间文字效果、触发时机、不适用原因、门位/楼层/图集索引、frame/hash 是否命中正确对象 | 32 个对象键已有合同；剩余 11 间继续锁定，阁楼/书房等 frame-note 对象不得当作无争议独立图面 |
+| R2 房间效果全量批 | 原剩余 11 间房 + frame-note 对象 | 基础房间图完整单对象裁图；当前 `scenarioConfig.ts` 提供对象名、楼层、门位、图集 | 是否有房间文字效果、触发时机、不适用原因、门位/楼层/图集索引、frame/hash 是否命中正确对象 | 已锁定 11/11；其中储物间、地下洞窟、杂物间、体育馆进入运行态补证；仪式室、地下墓穴、管风琴室、隔音室、爬行空间、游戏室、狭窄通道锁为无房间文字效果；书房/图书馆按同一图书室 frame/hash 保留，阁楼仍需正确阁楼图源复核 |
 | C1 物品牌批 | 11 张物品 | 物品牌完整单卡图；本轮裁图合同已回写逐卡表；玩家可见显示名已按卡图合同对齐 | 卡名、官方原文、使用时机、目标、常驻/特殊行动/武器、消耗/弃置、限制、清理 | 录入合同已完成第一轮：11 张 locked-display；下一步是机制实现审计 |
 | C2 预兆牌批 | 9 张预兆 | 预兆牌完整单卡图；规则书提供抽预兆和 haunt roll 通用规则；玩家可见显示名已按卡图合同对齐 | 卡名、官方原文、持有后效果、haunt roll 关系、常驻/特殊行动/武器/场景特例、限制、清理 | 录入合同已完成第一轮：9 张 locked-display；下一步是单卡能力机制实现审计，haunt roll 继续按通用抽预兆框架审计 |
-| C3 事件牌批 | 8 张事件 | 事件牌完整单卡图；规则书提供事件读文本、执行指令、结果表通用规则 | 事件名、官方原文、检定属性、结果档位、每档效果、弃置、结束回合/继续行动 | 真实卡面原文未锁前，当前 `move/trait` 数值只能算占位，不能判规则通过 |
+| C3 事件牌批 | 23 张正面候选事件牌图 + 1 张背面；当前代码首批接入 7 张官方事件 | 事件牌正面 atlas：`public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg`，来源为 `D:/gongzuo/webgame/gameasset/山屋惊魂(小黑屋)第三版（渣图汉化自用)/Mods/Images/httpssteamusercontentaakamaihdnetugc1925869443038951245F454F087E26E7B3812E15CAFC9C941BD5ED49D66.jpg`；远端压缩图 `https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/cards/compressed/event-front-atlas.webp` HEAD 200；事件录入合同 `evidence/betrayal/betrayal-event-card-ingest-2026-07-03.md`；规则书提供事件读文本、执行指令、结果表通用规则 | 事件名、官方原文、检定属性、结果档位、每档效果、弃置、结束回合/继续行动、atlas 裁切格位、来源 hash、引擎能力映射 | `first-7-runtime-l3-local / remaining-engine-and-contract-open`：子代理直读合同已锁 20 张、partial 3 张、blocked 1 张；标本剥制、外星几何、小丑房间、咬一口！、磁带播放器、在你背后！、一种怪异的感觉已接入运行时；其余事件需要先补合同缺口或引擎能力 |
 
 ## 图片处理执行口径
 
@@ -279,3 +291,5 @@
 | 实现验收 | 用户当前需求是确认某个已实现效果是否符合图片/官方文本；对象名；实现入口；图片需要回答是否满足预期 | 是否满足预期、失败点、最小证据；不转写无关文字 | 测试覆盖审计或对应实现 evidence |
 
 本轮已经确认：图片链路曾因本地 JPG 读取和上下文溢出失败，后续同一路径不得继续硬试。继续审计时只把图片读取用于当前需求：录入时返回可落表字段，验收时返回是否满足预期和失败点。若仍失败，只阻塞具体对象字段，不阻塞已经能从官方文本和代码配置确认的对象真相。
+
+本轮补充确认：Gemini CLI 与 Claude CLI 读取本地事件裁图均超时，不能作为当前会话的稳定图片子代理入口；已改走本地 EasyOCR。EasyOCR 输出只能作为候选录入材料，必须经过人工或更稳定视觉复核后才能把具体事件牌字段标为 `locked`。

@@ -9,6 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -304,7 +306,12 @@ final class AndroidDownloadTaskStore {
         }
 
         try {
-            JSONObject root = new JSONObject(readText(registryFile));
+            String rawText = readText(registryFile);
+            if (rawText.trim().isEmpty()) {
+                Log.w(TAG, "readAllLocked ignored empty registry file path=" + registryFile.getAbsolutePath());
+                return records;
+            }
+            JSONObject root = new JSONObject(rawText);
             JSONArray tasks = root.optJSONArray("tasks");
             if (tasks == null) {
                 return records;
@@ -337,12 +344,29 @@ final class AndroidDownloadTaskStore {
 
             JSONObject root = new JSONObject();
             root.put("tasks", tasks);
-            try (FileOutputStream output = new FileOutputStream(registryFile)) {
-                output.write((root.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
-            }
+            writeTextAtomically(registryFile, root.toString(2) + "\n");
         } catch (Exception error) {
             Log.w(TAG, "writeAllLocked failed", error);
         }
+    }
+
+    private void writeTextAtomically(File targetFile, String text) throws IOException {
+        File parent = targetFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("创建下载注册表目录失败");
+        }
+
+        File tempFile = new File(targetFile.getAbsolutePath() + ".tmp");
+        try (FileOutputStream output = new FileOutputStream(tempFile)) {
+            output.write(text.getBytes(StandardCharsets.UTF_8));
+            output.getFD().sync();
+        }
+        Files.move(
+            tempFile.toPath(),
+            targetFile.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE
+        );
     }
 
     private void promoteNextQueuedLocked(List<AndroidDownloadTaskRecord> records, long now) {

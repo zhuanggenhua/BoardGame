@@ -18,6 +18,7 @@ import { SU_EVENT_TYPES } from './types';
 import { buildValidatedMoveEvents, getTitanByController } from './abilityHelpers';
 
 export interface SmashUpScoringBaseRef {
+    baseInstanceId?: string;
     slotIndex: number;
     baseDefId: string;
 }
@@ -95,6 +96,7 @@ export function createScoringBaseRef(core: SmashUpCore, slotIndex: number): Smas
     const base = core.bases[slotIndex];
     if (!base) return undefined;
     return {
+        baseInstanceId: base.instanceId,
         slotIndex,
         baseDefId: base.defId,
     };
@@ -105,6 +107,9 @@ export function isSameScoringBaseRef(
     right: SmashUpScoringBaseRef | undefined,
 ): boolean {
     if (!left || !right) return false;
+    if (left.baseInstanceId || right.baseInstanceId) {
+        return !!left.baseInstanceId && left.baseInstanceId === right.baseInstanceId;
+    }
     return left.slotIndex === right.slotIndex && left.baseDefId === right.baseDefId;
 }
 
@@ -336,6 +341,10 @@ export function resolveScoringBaseRefSlotIndex(
     baseRef: SmashUpScoringBaseRef | undefined,
 ): number | undefined {
     if (!baseRef) return undefined;
+    if (baseRef.baseInstanceId) {
+        const instanceIndex = state.core.bases.findIndex((candidate) => candidate?.instanceId === baseRef.baseInstanceId);
+        return instanceIndex >= 0 ? instanceIndex : undefined;
+    }
     const slotBase = state.core.bases[baseRef.slotIndex];
     if (slotBase?.defId === baseRef.baseDefId) {
         return baseRef.slotIndex;

@@ -277,6 +277,7 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
             'nature-touch': 1,
             'quiet-cultivation': 1,
             'wild-growth': 1,
+            'wild-roar': 1,
             'rooted': 1,
             'forest-awakens': 1,
         },

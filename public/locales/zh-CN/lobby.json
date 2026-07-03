@@ -213,7 +213,10 @@
   "mascot": {
     "container_label": "易桌游看板娘",
     "button_label": "点击看板娘",
-    "image_alt": "易桌游看板娘"
+    "image_alt": "易桌游看板娘",
+    "community_welcome": "欢迎进群交流：",
+    "copy_success": "群号已复制",
+    "copy_failed": "复制失败，请手动复制群号"
   },
   "viewportDebug": {
     "title": "真机视口诊断",

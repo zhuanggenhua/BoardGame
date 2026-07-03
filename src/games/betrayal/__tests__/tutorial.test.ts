@@ -28,7 +28,7 @@ describe('Betrayal 教程配置', () => {
         const setupStep = manifest?.steps.find((step) => step.id === 'setup-runtime');
         expect(setupStep?.aiActions).toHaveLength(1);
         expect(setupStep?.aiActions?.[0]?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
-        expect(manifest?.steps.find((step) => step.id === 'objective-and-turn')?.highlightTarget).toBe('betrayal-actions-zone');
+        expect(manifest?.steps.find((step) => step.id === 'objective-and-turn')?.highlightTarget).toBe('betrayal-action-move');
         expect(manifest?.steps.find((step) => step.id === 'traits-and-speed')?.highlightTarget).toBe('betrayal-current-traits');
         expect(manifest?.steps.find((step) => step.id === 'moves-remaining')?.highlightTarget).toBe('betrayal-moves-remaining');
     });
@@ -56,7 +56,7 @@ describe('Betrayal 教程配置', () => {
     it('haunt 章节会直接指向第一剧本目标与真实收尾入口', () => {
         const objectiveManifest = tutorialCatalog.tutorials['crimson-jack-objective']?.manifest;
         const hauntActionsManifest = tutorialCatalog.tutorials['haunt-actions-and-finish']?.manifest;
-        expect(objectiveManifest?.steps.find((step) => step.id === 'hero-goal')?.highlightTarget).toBe('betrayal-actions-zone');
+        expect(objectiveManifest?.steps.find((step) => step.id === 'hero-goal')?.highlightTarget).toBe('betrayal-action-use');
         expect(objectiveManifest?.steps.find((step) => step.id === 'traitor-goal')?.highlightTarget).toBe('betrayal-room-board');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-reference-entry');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'exorcise-jack')?.allowedCommands).toEqual(['EXORCISE_JACK']);

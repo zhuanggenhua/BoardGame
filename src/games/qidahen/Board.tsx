@@ -3659,6 +3659,7 @@ const HandZone: React.FC<{
     onToggleHandLimitDiscardCard: (cardId: string) => void;
     onSelectSunYuanhuaTechCard: (cardId: string) => void;
     onSelectGaoDiDispatchCard: (cardId: string) => void;
+    onPlayTacticCard: (cardId: string) => void;
     onPreviewActionFromHandCard: (card: QidahenHandCard) => void;
     onMagnifyCard?: (target: QidahenMagnifyTarget) => void;
     isTutorialTargetAllowed?: (targetId: string | null | undefined) => boolean;
@@ -3675,6 +3676,7 @@ const HandZone: React.FC<{
     onToggleHandLimitDiscardCard,
     onSelectSunYuanhuaTechCard,
     onSelectGaoDiDispatchCard,
+    onPlayTacticCard,
     onPreviewActionFromHandCard,
     onMagnifyCard,
     isTutorialTargetAllowed,
@@ -3721,6 +3723,14 @@ const HandZone: React.FC<{
                         const selectableForSunYuanhua = sunYuanhuaSelection?.candidateCardIds.includes(card.id) ?? false;
                         const gaoDiSelection = core.gaoDiDispatchSelection;
                         const selectableForGaoDi = gaoDiSelection?.candidateCardIds.includes(card.id) ?? false;
+                        const selectableForTactic = !actionPaymentPreviewVisible
+                            && !selectableForHandLimit
+                            && !selectableForSunYuanhua
+                            && !selectableForGaoDi
+                            && core.pendingTargetAction != null
+                            && core.pendingTargetAction.attackerFactionId === card.faction
+                            && card.cardKind === 'tactic'
+                            && card.status !== 'disabled';
                         const tutorialTargetId = getQidahenHandCardTutorialTargetId(card);
                         const tutorialAllowed = (isTutorialTargetAllowed?.(tutorialTargetId) ?? true)
                             || (tutorialTargetId !== card.id && (isTutorialTargetAllowed?.(card.id) ?? false));
@@ -3745,6 +3755,8 @@ const HandZone: React.FC<{
                                         ? () => onSelectSunYuanhuaTechCard(card.id)
                                     : selectableForGaoDi
                                         ? () => onSelectGaoDiDispatchCard(card.id)
+                                    : selectableForTactic && tutorialAllowed
+                                        ? () => onPlayTacticCard(card.id)
                                     : selectableForDirectHandAction
                                         ? () => onPreviewActionFromHandCard(card)
                                     : selectableForActionPayment
@@ -4625,6 +4637,13 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         dispatch(QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, { cardId });
     }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
+    const playTacticCard = React.useCallback((cardId: string) => {
+        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.PLAY_TACTIC_CARD) || !isTutorialTargetAllowed(cardId)) {
+            return;
+        }
+        dispatch(QIDAHEN_COMMANDS.PLAY_TACTIC_CARD, { cardId });
+    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
+
     const previewActionFromHandCard = React.useCallback((card: QidahenHandCard) => {
         const actionId = getQidahenDirectActionIdForHandCard(card);
         if (!actionId || !factionStageAvailable || actionPaymentPreviewVisible || card.status === 'disabled') {
@@ -5109,6 +5128,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onToggleHandLimitDiscardCard={toggleHandLimitDiscardCard}
                 onSelectSunYuanhuaTechCard={selectSunYuanhuaTechCard}
                 onSelectGaoDiDispatchCard={selectGaoDiDispatchCard}
+                onPlayTacticCard={playTacticCard}
                 onPreviewActionFromHandCard={previewActionFromHandCard}
                 onMagnifyCard={setMagnifyTarget}
             />

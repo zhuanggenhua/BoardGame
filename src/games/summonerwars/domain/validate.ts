@@ -477,25 +477,23 @@ export function validateCommand(
       }
       if (!canAttackEnhanced(core, attackerPos, targetPos)) return { valid: false, error: '无法攻击该目标' };
 
-      // 守卫检查：如果攻击者相邻有敌方守卫单位，必须攻击守卫单位
+      // 守卫检查：如果攻击者相邻有敌方守卫单位，目标必须是守卫单位本身。
+      // 规则原文限制的是“攻击目标”，因此攻击建筑也不能绕过相邻守卫。
       const targetUnit = getUnitAt(core, targetPos);
-      if (targetUnit) {
-        const targetHasGuardian = getUnitAbilities(targetUnit, core).includes('guardian');
-        if (!targetHasGuardian) {
-          // 目标不是守卫，检查攻击者相邻是否有敌方守卫
-          const adjDirs = [
-            { row: -1, col: 0 }, { row: 1, col: 0 },
-            { row: 0, col: -1 }, { row: 0, col: 1 },
-          ];
-          for (const d of adjDirs) {
-            const adjPos = { row: attackerPos.row + d.row, col: attackerPos.col + d.col };
-            if (adjPos.row < 0 || adjPos.row >= BOARD_ROWS || adjPos.col < 0 || adjPos.col >= BOARD_COLS) continue;
-            const adjUnit = getUnitAt(core, adjPos);
-            if (adjUnit && adjUnit.owner !== playerId
-              && getUnitAbilities(adjUnit, core).includes('guardian')
-              && canAttackEnhanced(core, attackerPos, adjPos)) {
-              return { valid: false, error: '相邻有守卫单位，必须攻击守卫单位' };
-            }
+      const targetHasGuardian = !!targetUnit && getUnitAbilities(targetUnit, core).includes('guardian');
+      if (!targetHasGuardian) {
+        const adjDirs = [
+          { row: -1, col: 0 }, { row: 1, col: 0 },
+          { row: 0, col: -1 }, { row: 0, col: 1 },
+        ];
+        for (const d of adjDirs) {
+          const adjPos = { row: attackerPos.row + d.row, col: attackerPos.col + d.col };
+          if (adjPos.row < 0 || adjPos.row >= BOARD_ROWS || adjPos.col < 0 || adjPos.col >= BOARD_COLS) continue;
+          const adjUnit = getUnitAt(core, adjPos);
+          if (adjUnit && adjUnit.owner !== playerId
+            && getUnitAbilities(adjUnit, core).includes('guardian')
+            && canAttackEnhanced(core, attackerPos, adjPos)) {
+            return { valid: false, error: '相邻有守卫单位，必须攻击守卫单位' };
           }
         }
       }

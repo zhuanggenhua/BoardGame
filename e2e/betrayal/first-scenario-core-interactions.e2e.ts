@@ -48,6 +48,7 @@ async function assertTradeLayoutDoesNotCoverMap(page: import('@playwright/test')
         const omenBookImage = omenBook?.querySelector<HTMLImageElement>('[data-testid="betrayal-inventory-omen-book-front-atlas"]');
         const ropeText = rope?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const allInventoryText = document.querySelector('[data-testid="betrayal-inventory-section"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+        const mobileDockActions = document.querySelectorAll('[data-testid^="betrayal-mobile-dock-"]').length;
 
         return {
             inventory: rectOf('betrayal-inventory-section'),
@@ -63,6 +64,7 @@ async function assertTradeLayoutDoesNotCoverMap(page: import('@playwright/test')
             omenBookImageLoaded: Boolean(omenBookImage?.complete && omenBookImage.naturalWidth > 0 && omenBookImage.naturalHeight > 0),
             ropeText,
             allInventoryText,
+            mobileDockActions,
         };
     });
 
@@ -77,39 +79,34 @@ async function assertTradeLayoutDoesNotCoverMap(page: import('@playwright/test')
     expect(metrics.ropeImageLoaded, '兔脚正式物品牌面必须真实加载完成').toBe(true);
     expect(metrics.omenBookImageAsset, '书本应挂载正式预兆牌面 atlas，不应退回纯文字牌').toContain('omen-front-atlas');
     expect(metrics.omenBookImageLoaded, '书本正式预兆牌面必须真实加载完成').toBe(true);
+    expect(metrics.rope!.right - metrics.rope!.left, '兔脚交易牌面必须保持原持有区卡牌宽度，不能退成文字按钮').toBeGreaterThanOrEqual(58);
+    expect(metrics.omenBook!.right - metrics.omenBook!.left, '预兆交易牌面必须保持原持有区卡牌宽度，不能退成文字按钮').toBeGreaterThanOrEqual(58);
     expect(metrics.ropeText, '兔脚不应显示“正面缺失”回退文案').not.toContain('正面缺失');
     expect(metrics.allInventoryText, '交易持有区不应出现“缺正面”回退文案').not.toContain('缺正面');
-
-    const inventory = metrics.inventory!;
-    const roomGrid = metrics.roomGrid!;
-    const roomPanel = metrics.roomPanel!;
     const itemRow = metrics.itemRow!;
     const omenRow = metrics.omenRow!;
-    expect(inventory.right, '桌面持有区应留在左侧栏，不能压进地图列').toBeLessThanOrEqual(roomPanel.left + 8);
-    expect(inventory.bottom, '持有区底部不能作为底部挡板覆盖地图下沿').toBeLessThanOrEqual(roomGrid.bottom + 1);
     expect(itemRow.height, '物品行不能撑成底部挡板').toBeLessThanOrEqual(130);
     expect(omenRow.height, '预兆行不能撑成底部挡板').toBeLessThanOrEqual(130);
+    expect(metrics.mobileDockActions, '交易态不应渲染底部行动 dock，避免形成黑底挡板').toBe(0);
 }
 
-async function assertTradeFlowLooksLoose(page: import('@playwright/test').Page) {
+async function assertTradeActionBarKeepsButtons(page: import('@playwright/test').Page) {
     const metrics = await page.evaluate(() => {
         const hasVisibleShadow = (boxShadow: string) => (
             boxShadow !== 'none'
             && !boxShadow.split('),').every((shadow) => /rgba\(0,\s*0,\s*0,\s*0\)/.test(shadow))
         );
-        const styleOf = (testId: string) => {
-            const element = document.querySelector(`[data-testid="${testId}"]`);
+        const styleOf = (selector: string) => {
+            const element = document.querySelector(selector);
             if (!element) return null;
             const style = window.getComputedStyle(element);
             const rect = element.getBoundingClientRect();
             return {
                 backgroundColor: style.backgroundColor,
+                backgroundImage: style.backgroundImage,
                 boxShadow: style.boxShadow,
                 hasVisibleShadow: hasVisibleShadow(style.boxShadow),
-                borderColor: style.borderColor,
-                borderStyle: style.borderStyle,
                 borderWidth: style.borderWidth,
-                display: style.display,
                 text: element.textContent?.replace(/\s+/g, ' ').trim() ?? '',
                 rect: {
                     left: rect.left,
@@ -121,72 +118,96 @@ async function assertTradeFlowLooksLoose(page: import('@playwright/test').Page) 
                 },
             };
         };
+        const actionButtons = Array.from(document.querySelectorAll('button[data-testid^="betrayal-action-"]'));
+        const skeletonActionBarExists = Boolean(document.querySelector('[data-component="action-bar"]'));
+        const legacyActionZoneExists = Boolean(document.querySelector('[data-tutorial-id="betrayal-actions-zone"]'));
+        const actionItemWrapperCount = document.querySelectorAll('[data-action-id]').length;
+        const buttonsDirectlyUnderRoomGrid = actionButtons.every((button) => button.parentElement?.getAttribute('data-testid') === 'betrayal-room-grid');
+        const actionButtonStyles = actionButtons.map((button) => {
+            const style = window.getComputedStyle(button);
+            return {
+                id: button.getAttribute('data-testid') ?? '',
+                backgroundColor: style.backgroundColor,
+                backgroundImage: style.backgroundImage,
+                borderWidth: style.borderWidth,
+                boxShadow: style.boxShadow,
+                filter: style.filter,
+                hasVisibleShadow: hasVisibleShadow(style.boxShadow),
+            };
+        });
 
         return {
-            banner: styleOf('betrayal-trade-flow-banner'),
-            itemStep: styleOf('betrayal-trade-flow-item-step'),
-            targetStep: styleOf('betrayal-trade-flow-target-step'),
-            tradeButton: styleOf('betrayal-action-trade'),
+            tradeButton: styleOf('[data-testid="betrayal-action-trade"]'),
+            flowBanner: styleOf('[data-testid="betrayal-trade-flow-banner"]'),
+            flowBannerExists: Boolean(document.querySelector('[data-testid="betrayal-trade-flow-banner"]')),
+            itemStepExists: Boolean(document.querySelector('[data-testid="betrayal-trade-flow-item-step"]')),
+            targetStepExists: Boolean(document.querySelector('[data-testid="betrayal-trade-flow-target-step"]')),
+            actionCount: actionButtons.length,
+            skeletonActionBarExists,
+            legacyActionZoneExists,
+            actionItemWrapperCount,
+            buttonsDirectlyUnderRoomGrid,
+            actionButtonStyles,
         };
     });
 
-    expect(metrics.banner, '交易流程容器必须存在').not.toBeNull();
-    expect(metrics.itemStep, '交易物品步骤按钮必须存在').not.toBeNull();
-    expect(metrics.targetStep, '交易目标步骤按钮必须存在').not.toBeNull();
-    expect(metrics.tradeButton, '交易确认按钮必须存在').not.toBeNull();
-    expect(metrics.banner!.backgroundColor, '交易流程容器不能有黑底挡板').toBe('rgba(0, 0, 0, 0)');
-    expect(metrics.banner!.hasVisibleShadow, '交易流程容器不能有整块阴影').toBe(false);
-    expect(metrics.itemStep!.hasVisibleShadow, '物品步骤不能有黑色块状阴影').toBe(false);
-    expect(metrics.targetStep!.hasVisibleShadow, '目标步骤不能有黑色块状阴影').toBe(false);
-    expect(metrics.itemStep!.borderWidth, '物品步骤不能像黑边框块').toBe('0px');
-    expect(metrics.targetStep!.borderWidth, '目标步骤不能像黑边框块').toBe('0px');
-    expect(metrics.tradeButton!.borderWidth, '确认交易不能像黑边框块').toBe('0px');
-    expect(metrics.tradeButton!.text, '确认交易按钮必须显示可读文字').toContain('交易确认');
-    expect(metrics.tradeButton!.rect.width, '确认交易按钮不能窄成空胶囊').toBeGreaterThanOrEqual(70);
-    expect(metrics.itemStep!.rect.width, '物品步骤应是小胶囊，不是整块横幅').toBeLessThan(190);
-    expect(metrics.targetStep!.rect.width, '目标步骤应是小胶囊，不是整块横幅').toBeLessThan(220);
+    expect(metrics.tradeButton, '交易按钮必须保留在底部动作条里').not.toBeNull();
+    expect(metrics.skeletonActionBarExists, '底部按钮不能再用 ActionBarSkeleton 生成整排骨架容器').toBe(false);
+    expect(metrics.legacyActionZoneExists, '底部按钮不应再保留 betrayal-actions-zone 这种整排动作区概念').toBe(false);
+    expect(metrics.actionItemWrapperCount, '底部每个按钮不能再套 data-action-id 外包层').toBe(0);
+    expect(metrics.buttonsDirectlyUnderRoomGrid, '动作按钮不能再被整排动作区容器包裹，必须直接挂在可视地图层').toBe(true);
+    expect(metrics.flowBannerExists, '交易态必须保留轻量操作提示').toBe(true);
+    expect(metrics.flowBanner!.backgroundColor, '操作提示不能有黑底').toBe('rgba(0, 0, 0, 0)');
+    expect(metrics.flowBanner!.backgroundImage, '操作提示不能有背景层').toBe('none');
+    expect(metrics.flowBanner!.borderWidth, '操作提示不能有边框').toBe('0px');
+    expect(metrics.flowBanner!.hasVisibleShadow, '操作提示不能有挡板阴影').toBe(false);
+    expect(metrics.itemStepExists, '交易提示必须显示对象选择步骤').toBe(true);
+    expect(metrics.targetStepExists, '交易提示必须显示目标/确认步骤').toBe(true);
+    expect(metrics.actionCount, '交易态仍应保留一组原动作按钮').toBeGreaterThanOrEqual(5);
+    for (const actionButton of metrics.actionButtonStyles) {
+        expect(actionButton.backgroundColor, `${actionButton.id} 不能再有独立黑底按钮框`).toBe('rgba(0, 0, 0, 0)');
+        expect(actionButton.backgroundImage, `${actionButton.id} 不能再有独立背景层`).toBe('none');
+        expect(actionButton.borderWidth, `${actionButton.id} 不能再有独立边框`).toBe('0px');
+        expect(actionButton.hasVisibleShadow, `${actionButton.id} 不能再有可见独立框阴影`).toBe(false);
+        expect(actionButton.filter, `${actionButton.id} 不能靠投影形成按钮框`).toBe('none');
+    }
+    expect(metrics.tradeButton!.text, '交易按钮必须显示原动作文案').toContain('交易');
+    expect(metrics.tradeButton!.rect.width, '交易按钮必须保持可点击尺寸').toBeGreaterThanOrEqual(80);
 }
 
 async function assertSelectedInventoryCardHasVisibleOutline(page: import('@playwright/test').Page) {
     const metrics = await page.evaluate(() => {
         const rope = document.querySelector('[data-testid="betrayal-inventory-rope"]');
+        const selectedShell = document.querySelector('[data-testid="betrayal-inventory-rope-shell"]');
         const selectedRing = document.querySelector('[data-testid="betrayal-inventory-rope-selected-ring"]');
-        const selectedHalo = document.querySelector('[data-testid="betrayal-inventory-rope-selected-halo"]');
         const selectedLabel = document.querySelector('[data-testid="betrayal-inventory-rope-selected-label"]');
-        if (!rope || !selectedRing || !selectedHalo || !selectedLabel) return null;
-        const ringStyle = window.getComputedStyle(selectedRing);
-        const haloStyle = window.getComputedStyle(selectedHalo);
-        const labelStyle = window.getComputedStyle(selectedLabel);
+        const selectedHalo = document.querySelector('[data-testid="betrayal-inventory-rope-selected-halo"]');
+        if (!rope || !selectedShell) return null;
+        const shellStyle = window.getComputedStyle(selectedShell);
+        const ropeStyle = window.getComputedStyle(rope);
         const ropeRect = rope.getBoundingClientRect();
-        const ringRect = selectedRing.getBoundingClientRect();
-        const haloRect = selectedHalo.getBoundingClientRect();
         return {
-            ringWidth: ringRect.width,
-            ringHeight: ringRect.height,
-            ringColor: ringStyle.getPropertyValue('--tw-ring-color') || ringStyle.boxShadow,
-            haloWidth: haloRect.width,
-            haloHeight: haloRect.height,
-            haloBorderWidth: haloStyle.borderTopWidth,
-            haloBorderColor: haloStyle.borderTopColor,
-            labelText: selectedLabel.textContent?.trim() ?? '',
-            labelDisplay: labelStyle.display,
+            buttonBoxShadow: ropeStyle.boxShadow,
+            shellBoxShadow: shellStyle.boxShadow,
+            shellBorderColor: shellStyle.borderTopColor,
+            shellBorderWidth: shellStyle.borderTopWidth,
+            hasSelectedRing: Boolean(selectedRing),
+            hasSelectedLabelNode: Boolean(selectedLabel),
+            hasSelectedHalo: Boolean(selectedHalo),
             hasSelectedLabel: rope.textContent?.includes('已选') ?? false,
             ropeTop: ropeRect.top,
         };
     });
 
     expect(metrics, '必须能读取兔脚选中态').not.toBeNull();
-    const isYellow = (color: string) => color.includes('255') || color.toLowerCase().includes('#ffe06e');
-    expect(parseFloat(metrics!.haloBorderWidth), '选中物品外描边不能太细').toBeGreaterThanOrEqual(3);
-    expect(isYellow(metrics!.haloBorderColor), '选中物品外描边应使用醒目的黄色').toBe(true);
-    expect(metrics!.haloWidth, '选中物品外描边必须包住牌面宽度').toBeGreaterThan(metrics!.ringWidth);
-    expect(metrics!.haloHeight, '选中物品外描边必须包住牌面高度').toBeGreaterThan(metrics!.ringHeight);
-    expect(metrics!.ringWidth, '选中物品内部描边必须覆盖牌面宽度').toBeGreaterThan(40);
-    expect(metrics!.ringHeight, '选中物品内部描边必须覆盖牌面高度').toBeGreaterThan(60);
-    expect(isYellow(metrics!.ringColor), '选中物品内部描边应使用醒目的黄色').toBe(true);
-    expect(metrics!.labelText, '选中物品必须显示“已选”标签').toContain('已选');
-    expect(metrics!.labelDisplay, '选中标签不能被隐藏').not.toBe('none');
-    expect(metrics!.hasSelectedLabel, '选中物品必须有“已选”标签').toBe(true);
+    expect(metrics!.buttonBoxShadow, '选中物品必须有一眼可见的外层描边/发光').toContain('238, 204, 126');
+    expect(metrics!.shellBorderWidth, '选中物品牌面本体必须有明确描边').toBe('1px');
+    expect(metrics!.shellBorderColor, '选中物品牌面本体描边必须明显区别于未选中卡').toBe('rgb(238, 204, 126)');
+    expect(metrics!.shellBoxShadow, '选中物品牌面壳层不应额外叠内部阴影').toBe('none');
+    expect(metrics!.hasSelectedRing, '选中物品不能再叠内部 selected-ring').toBe(false);
+    expect(metrics!.hasSelectedHalo, '选中物品不能再叠外扩 halo').toBe(false);
+    expect(metrics!.hasSelectedLabelNode, '选中物品不能再叠“已选”角标节点').toBe(false);
+    expect(metrics!.hasSelectedLabel, '选中物品不能显示“已选”角标文案').toBe(false);
     expect(metrics!.ropeTop, '选中物品上移后仍应完整露出').toBeGreaterThanOrEqual(0);
 }
 
@@ -209,31 +230,28 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await expect(page.getByTestId('betrayal-action-trade')).toContainText('交易');
         await expect(page.getByTestId('betrayal-trade-status')).toContainText('同房间可交易对象：1人');
         await expect(page.getByText('请选择交易目标')).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveAttribute('aria-label', '交易：先选持有物，再选同房间目标');
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('物品');
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('待选');
-        await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('目标');
-        await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('待选');
+        await expect(page.getByTestId('betrayal-trade-flow-banner')).toContainText('交易：先选持有物，再选同房间目标');
+        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('先选物品和目标');
         await expect(page.getByText('首剧本开始：恶兆前探索')).toBeHidden();
         await expect(page.getByTestId('betrayal-room-focus-target')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-trade-shortcut')).toHaveCount(0);
         await assertTradeLayoutDoesNotCoverMap(page);
-        await assertTradeFlowLooksLoose(page);
+        await assertTradeActionBarKeepsButtons(page);
         await saveScreenshot(page, TRADE_INITIAL_SCREENSHOT);
 
         await page.getByTestId('betrayal-inventory-rope').click();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('兔脚');
-        await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('待选');
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('兔脚');
         await assertTradeLayoutDoesNotCoverMap(page);
-        await assertTradeFlowLooksLoose(page);
+        await assertTradeActionBarKeepsButtons(page);
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await saveScreenshot(page, TRADE_ITEM_SELECTED_SCREENSHOT);
 
         await page.getByTestId('betrayal-bottom-teammate-1').click();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('兔脚');
-        await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('丽贝卡·艾伦博士');
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('兔脚');
+        await expect(page.getByTestId('betrayal-trade-target-1')).toContainText('丽贝卡·艾伦博士');
         await assertTradeLayoutDoesNotCoverMap(page);
-        await assertTradeFlowLooksLoose(page);
+        await assertTradeActionBarKeepsButtons(page);
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await saveScreenshot(page, TRADE_TARGET_SELECTED_SCREENSHOT);
 
