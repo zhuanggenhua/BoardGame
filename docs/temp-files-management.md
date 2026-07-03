@@ -40,6 +40,8 @@
 - 测试报告（`*-report.json`、`*-results.json`）
 - 差异文件（`*-diff.txt`）
 - HTML 测试页面（`test-*.html`）
+- AI 读图、OCR、截图裁切、图集切片等中间图片必须放在 `temp/` 或 `tmp/` 子目录下，例如 `temp/safe-image-reading/<batch>/`
+- 禁止在仓库根目录创建 `.tmp_*`、`tmp_*`、`safe_image_*` 这类临时图片目录；如果工具产生了这类目录，提交前必须移动到 `temp/` 或 `tmp/`
 - 数据录入中间产物：
   - OCR 中间图、裁图合同图、标注图
   - 临时拆分 sheet、临时 hand preview、临时 atlas
@@ -82,6 +84,8 @@ wiki-*.html
 *-diff.txt
 temp_*.txt
 tmp_*.txt
+.tmp_*/
+tmp_*/
 
 # 临时日志文件
 _vitest_*.log
@@ -121,6 +125,7 @@ test-out.txt
 2. **代码审查**：直接在 `docs/reviews/` 创建，命名格式 `review-<date>-<topic>.md`
 3. **临时脚本**：直接在 `scripts/temp/` 创建，命名格式 `test-<purpose>.mjs`
 4. **临时数据**：直接在 `temp/` 创建，任意命名
+5. **临时图片 / 裁图 / OCR 中间产物**：直接在 `temp/<purpose>/` 或 `tmp/<purpose>/` 下创建；不得在仓库根目录创建 `.tmp_*`、`tmp_*` 目录
 
 ### 清理临时文件
 - **定期清理**：每个 Sprint 结束时清理 `temp/` 和 `test-results/`
@@ -130,7 +135,7 @@ test-out.txt
 ### 提交前检查
 运行以下命令检查是否有临时文件未被忽略：
 ```bash
-git status | grep -E "(BUG-|DEBUG-|fix-|test-|wiki-|temp_|tmp_|_vitest)"
+git status | grep -E "(BUG-|DEBUG-|fix-|test-|wiki-|temp_|tmp_|\\.tmp_|_vitest)"
 ```
 
 如果有输出，说明有临时文件需要处理。

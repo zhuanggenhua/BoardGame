@@ -71,6 +71,7 @@ coverage
 # 临时文件
 .tmp
 .tmp-*
+.tmp_*/
 .temp
 *.tmp
 nul
@@ -175,6 +176,7 @@ uploads/
 # 临时文件和开发中间产物
 temp/
 tmp/
+tmp_*/
 *.tmp
 .worktrees/
 .claude/worktrees/
