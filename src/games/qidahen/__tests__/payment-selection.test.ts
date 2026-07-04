@@ -10654,6 +10654,151 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.regions.find((region) => region.id === 'city-region-14')?.note).toContain('撤退断后损失 1');
     });
 
+    it('巴雅喇打出后会让本次进攻守方所有部队防御等级 -1', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 巴雅喇',
+            battleWidth: 4,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 4,
+            committedTroops: 4,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 4,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-bayara-card',
+                label: '巴雅喇',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1602-bayara',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1602-bayara'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 4,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv4',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 4,
+                            level: 4,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 3,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv3',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 3,
+                        },
+                        {
+                            id: 'jin-cavalry-lv2',
+                            label: '后金骑兵',
+                            faction: 'jin',
+                            troopKind: 'cavalry',
+                            count: 1,
+                            level: 2,
+                        },
+                        {
+                            id: 'jin-artillery-lv2',
+                            label: '后金炮兵',
+                            faction: 'jin',
+                            troopKind: 'artillery',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-bayara-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const defenderRolls = (resolved.postBattleSelection?.battleRolls?.stages ?? [])
+            .flatMap((stage) => stage.defenderRolls);
+
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1602-bayara',
+                label: '巴雅喇',
+                side: 'defender',
+                troopKind: 'infantry',
+                levelBonus: -1,
+            }),
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1602-bayara',
+                label: '巴雅喇',
+                side: 'defender',
+                troopKind: 'cavalry',
+                levelBonus: -1,
+            }),
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1602-bayara',
+                label: '巴雅喇',
+                side: 'defender',
+                troopKind: 'artillery',
+                levelBonus: -1,
+            }),
+        ]));
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('巴雅喇：本次进攻中守方所有部队防御等级 -1');
+        expect(defenderRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'infantry', level: 2 }),
+            expect.objectContaining({ troopKind: 'cavalry', level: 1 }),
+            expect.objectContaining({ troopKind: 'artillery', level: 1 }),
+        ]));
+    });
+
     it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         setFactionCharactersInPlay(core, 'jin', []);

@@ -37,6 +37,7 @@ const WUZHEN_CHAOHA_CARD_DEF_ID = 'qidahen-atlas05-1644-wuzhen-chaoha';
 const CAVALRY_CHARGE_CARD_DEF_ID = 'qidahen-atlas05-1618-cavalry-charge';
 const WAR_CHARIOT_FORMATION_CARD_DEF_ID = 'qidahen-atlas05-1645-war-chariot-formation';
 const JIRINAI_INFANTRY_CARD_DEF_ID = 'qidahen-atlas05-1640-jirinai-infantry';
+const BAYARA_CARD_DEF_ID = 'qidahen-atlas05-1602-bayara';
 
 const resolveQidahenTacticCardPlayedEvent = (
     state: QidahenCore,
@@ -64,6 +65,7 @@ const resolveQidahenTacticCardPlayedEvent = (
     const isWuzhenChaoha = playedCard.cardDefId === WUZHEN_CHAOHA_CARD_DEF_ID;
     const isCavalryCharge = playedCard.cardDefId === CAVALRY_CHARGE_CARD_DEF_ID;
     const isWarChariotFormation = playedCard.cardDefId === WAR_CHARIOT_FORMATION_CARD_DEF_ID;
+    const isBayaraAttack = playedCard.cardDefId === BAYARA_CARD_DEF_ID;
     const isJirinaiInfantryAttackingMing = playedCard.cardDefId === JIRINAI_INFANTRY_CARD_DEF_ID
         && pendingTargetAction.battleMode === 'field'
         && pendingTargetAction.defenderFactionId === 'ming';
@@ -73,9 +75,11 @@ const resolveQidahenTacticCardPlayedEvent = (
             ? '骑兵冲锋：本次野战中攻方每个骑兵部队额外掷 2 颗骰。'
             : isWarChariotFormation
                 ? '战车阵：本次战斗中攻方步兵防御等级 +1。'
-                : isJirinaiInfantryAttackingMing
-                    ? '机里耐步兵：本次野战中进攻明军的攻方每个步兵部队额外掷 1 颗骰。'
-                    : null;
+                : isBayaraAttack
+                    ? '巴雅喇：本次进攻中守方所有部队防御等级 -1。'
+                    : isJirinaiInfantryAttackingMing
+                        ? '机里耐步兵：本次野战中进攻明军的攻方每个步兵部队额外掷 1 颗骰。'
+                        : null;
     const tacticLines = [tacticLine, tacticRulesLine, tacticEffectLine].filter((line): line is string => !!line);
     const tacticLogText = tacticLines.join(' ');
     const tacticModifiers = [
@@ -111,6 +115,16 @@ const resolveQidahenTacticCardPlayedEvent = (
                 levelBonus: 1,
             }]
             : []),
+        ...(isBayaraAttack
+            ? (['infantry', 'cavalry', 'artillery'] as const).map((troopKind) => ({
+                id: `tactic-${event.timestamp}-${playedCard.id}-${troopKind}`,
+                sourceCardDefId: playedCard.cardDefId ?? null,
+                label: playedCard.label,
+                side: 'defender' as const,
+                troopKind,
+                levelBonus: -1,
+            }))
+            : []),
         ...(isJirinaiInfantryAttackingMing
             ? [{
                 id: `tactic-${event.timestamp}-${playedCard.id}`,
@@ -125,7 +139,7 @@ const resolveQidahenTacticCardPlayedEvent = (
     ];
     return {
         ...state,
-        pendingTargetAction: isWuzhenChaoha || isCavalryCharge || isWarChariotFormation || isJirinaiInfantryAttackingMing
+        pendingTargetAction: isWuzhenChaoha || isCavalryCharge || isWarChariotFormation || isBayaraAttack || isJirinaiInfantryAttackingMing
             ? {
                 ...pendingTargetAction,
                 tacticModifiers,
@@ -134,6 +148,7 @@ const resolveQidahenTacticCardPlayedEvent = (
                     isWuzhenChaoha ? '鸟真超哈：攻方步兵骰子等级 +1' : null,
                     isCavalryCharge ? '骑兵冲锋：攻方骑兵每部队额外掷 2 骰' : null,
                     isWarChariotFormation ? '战车阵：攻方步兵防御等级 +1' : null,
+                    isBayaraAttack ? '巴雅喇：守方所有部队防御等级 -1' : null,
                     isJirinaiInfantryAttackingMing ? '机里耐步兵：攻方步兵每部队额外掷 1 骰' : null,
                 ].filter(Boolean).join(' · '),
                 resolutionHint: [
@@ -141,6 +156,7 @@ const resolveQidahenTacticCardPlayedEvent = (
                     isWuzhenChaoha ? '鸟真超哈步兵+1' : null,
                     isCavalryCharge ? '骑兵冲锋骑兵+2骰' : null,
                     isWarChariotFormation ? '战车阵步兵防御+1' : null,
+                    isBayaraAttack ? '巴雅喇守方-1' : null,
                     isJirinaiInfantryAttackingMing ? '机里耐步兵步兵+1骰' : null,
                 ].filter(Boolean).join(' · '),
             }
