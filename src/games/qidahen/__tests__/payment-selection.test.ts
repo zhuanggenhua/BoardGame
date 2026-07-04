@@ -347,8 +347,8 @@ describe('七大恨支付手牌选择', () => {
         ]);
     });
 
-    it('atlas05 普通手牌真相表只解析通过验收的事件、军备和战术身份', () => {
-        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(45);
+    it('atlas05 普通手牌真相表只解析通过验收的事件、军备、战术和银两身份', () => {
+        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(47);
 
         const eventCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(0);
         expect(eventCard).toMatchObject({
@@ -409,6 +409,15 @@ describe('七大恨支付手牌选择', () => {
             cardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1623-mongol-nobles-congress'],
         });
+
+        const promotedFirstSilverCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(24);
+        expect(promotedFirstSilverCard).toMatchObject({
+            cardKind: 'silver',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1624-silver',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1624-silver'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedFirstSilverCard!)).toBeNull();
 
         const promotedJadeCasketCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(25);
         expect(promotedJadeCasketCard).toMatchObject({
@@ -541,6 +550,15 @@ describe('七大恨支付手牌选择', () => {
         });
         expect(getQidahenDirectActionIdForHandCard(promotedWesternBastionCard!)).toBe('upgrade-armament');
 
+        const promotedSecondSilverCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(43);
+        expect(promotedSecondSilverCard).toMatchObject({
+            cardKind: 'silver',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1643-silver',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1643-silver'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedSecondSilverCard!)).toBeNull();
+
         const promotedWuzhenChaohaCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(44);
         expect(promotedWuzhenChaohaCard).toMatchObject({
             cardKind: 'tactic',
@@ -564,7 +582,6 @@ describe('七大恨支付手牌选择', () => {
         });
         expect(getQidahenDirectActionIdForHandCard(promotedLinkedMusketsCard!)).toBe('upgrade-armament');
 
-        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(43)).toBeNull();
         expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(47)).toBeNull();
     });
 

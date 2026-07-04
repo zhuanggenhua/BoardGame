@@ -1077,7 +1077,9 @@ test.describe('DiceThrone hand card preview regression', () => {
     const evidenceDir = ensureEvidenceDir();
 
     const legacyScenarios = [
-      { heroId: 'monk', cardId: 'card-thrust-punch-2', abilityId: 'fist-technique' },
+      { heroId: 'monk', cardId: 'card-thrust-punch-2', abilityId: 'fist-technique', expectedSlotId: 'fist' },
+      { heroId: 'monk', cardId: 'card-mahayana-2', abilityId: 'harmony', expectedSlotId: 'combo' },
+      { heroId: 'monk', cardId: 'card-lotus-bloom-2', abilityId: 'lotus-palm', expectedSlotId: 'lightning' },
       { heroId: 'barbarian', cardId: 'card-slap-2', abilityId: 'slap' },
       { heroId: 'pyromancer', cardId: 'card-fireball-2', abilityId: 'fireball' },
       { heroId: 'pyromancer', cardId: 'card-magma-armor-2', abilityId: 'magma-armor' },
@@ -1097,6 +1099,14 @@ test.describe('DiceThrone hand card preview regression', () => {
         });
         await waitForHandAnimationSettled(page);
         await expectUpgradeStableOnPlayerBoard(page, game, scenario.abilityId, scenario.cardId);
+        if ('expectedSlotId' in scenario) {
+          const stateAfterUpgrade = await readState(game);
+          const characterId = stateAfterUpgrade?.core?.selectedCharacters?.['0'];
+          const playerBoardFace = stateAfterUpgrade?.core?.players?.['0']?.playerBoardFace;
+          const slotId = await resolveAbilitySlotId(page, scenario.abilityId, { characterId, playerBoardFace });
+          expect(slotId, `${scenario.cardId} 应落在 ${scenario.expectedSlotId} 物理槽`).toBe(scenario.expectedSlotId);
+          await expect(page.locator(`[data-upgrade-preview-slot="${scenario.expectedSlotId}"]`).first()).toBeVisible({ timeout: 10000 });
+        }
         await page.screenshot({
           path: join(evidenceDir, `legacy-${scenario.heroId}-${scenario.abilityId}-upgrade-stable.png`),
           fullPage: true,

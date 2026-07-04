@@ -263,11 +263,6 @@ const validateRollDice = (
         return fail('defense_ability_not_selected');
     }
 
-    // 产品特例：枪手 duel 在防御阶段只能“直接结束防御”进入对掷结算，不允许手动掷防御骰。
-    if (phase === 'defensiveRoll' && state.pendingAttack?.defenseAbilityId === 'duel') {
-        return fail('defense_roll_disabled_for_duel');
-    }
-
     if (phase === 'defensiveRoll' && state.rollCount > 0) {
         const rerollDieLimit = getDefenseRerollDieLimit(state);
         if (typeof rerollDieLimit === 'number') {

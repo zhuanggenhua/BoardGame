@@ -65,6 +65,17 @@ async function saveBoardDiceStageScreenshot(
     await stage.screenshot({ path: screenshotPath });
 }
 
+async function saveSettingsPanelScreenshot(
+    panel: ReturnType<Page['getByTestId']>,
+    name: string,
+    testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
+) {
+    await expect(panel).toBeVisible({ timeout: 5000 });
+    const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await panel.screenshot({ path: screenshotPath });
+}
+
 async function waitForBoardDiceSettled(page: Page): Promise<void> {
     await expect(page.getByTestId('dice-field-3d-canvas')).toBeVisible({ timeout: 8000 });
     const readDebugState = async () => page.evaluate(() => {
@@ -271,6 +282,50 @@ function getVisualMoveDistance(current: DiceRectSnapshot, baseline: DiceRectSnap
 }
 
 test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
+    test('设置面板 3D 骰子开关点击前后应真实切换', async ({ page, game }, testInfo) => {
+        await page.addInitScript((storageKey) => {
+            localStorage.removeItem(storageKey);
+            localStorage.setItem('hud_fab_position', JSON.stringify({
+                leftPercent: 0.82,
+                topPercent: 0.66,
+            }));
+        }, BOARD_DICE_3D_STORAGE_KEY);
+
+        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: [],
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'main1',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+            },
+        });
+
+        const settingsPanel = await openFabSettingsPanel(page);
+        const board3dToggle = settingsPanel.getByRole('switch', { name: /棋盘内 3D 骰子|Board 3D Dice/i }).first();
+        await expect(board3dToggle).toBeVisible({ timeout: 5000 });
+        await expect(board3dToggle).toHaveAttribute('aria-checked', 'false');
+        await expect(settingsPanel.getByText(/已关闭|Disabled/i)).toBeVisible({ timeout: 5000 });
+        await saveSettingsPanelScreenshot(settingsPanel, '00-3D骰子开关-点击前', testInfo);
+
+        await board3dToggle.click();
+
+        await expect(board3dToggle).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
+        await expect(settingsPanel.getByText(/已开启|Enabled/i)).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => {
+            return await page.evaluate((storageKey) => localStorage.getItem(storageKey), BOARD_DICE_3D_STORAGE_KEY);
+        }, { timeout: 5000 }).toBe('true');
+        await saveSettingsPanelScreenshot(settingsPanel, '01-3D骰子开关-点击后', testInfo);
+    });
+
     test('默认关闭，打开后切到棋盘 3D 骰子，重投时不是原地静止', async ({ page, game }, testInfo) => {
         await page.addInitScript((storageKey) => {
             localStorage.removeItem(storageKey);

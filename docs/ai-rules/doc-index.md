@@ -5,7 +5,7 @@
 | 场景 / 行为 | 必须阅读的文档 | 关注重点 |
 | :--- | :--- | :--- |
 | **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-action-log.md` § 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
-| **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` | 压缩指令、扫描参数、清单校验、图片链路/裁剪规范 |
+| **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` + `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` | 压缩指令、扫描参数、清单校验、图片链路/裁剪规范、关键图片预加载、音频运行时合同 |
 | **需求交接式安全图片处理 / 视觉子代理 / OCR / 图集裁图核对** (图片文字读取、卡图/房间图规则录入、图片验收、读图卡死后继续任务) | `.codex/skill/safe-image-reading/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 主线程把用户当前需求、业务对象、图片需要补足的字段/判断点和结果用途交给短子代理或本地 OCR；录入需求返回官方原文、原子子句、结构化规则字段并写入 evidence/真相表；验收/对比需求只返回是否满足用户预期、失败点和最小证据；不得返回 base64/markdown 图片，也不得产出无关过程说明 |
 | **新增派系 / 新英雄 / 新角色** (从素材做到可玩、含录入/资源/机制/审计/E2E) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 这是新增批次的默认入口；先走项目 skill，再按 `gameId` 进入专项 workflow；默认包含对象级全面审计、evidence 留档与真实入口 E2E，不需要等用户额外提醒 |
 | **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |
@@ -17,7 +17,7 @@
 | **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
-| **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
+| **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `.codex/skill/feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
 | **修规则 bug / 规则回归 / 等级效果不一致** (卡牌、技能、Token、状态、阶段、伤害、资源、升级版/基础版差异) | `.codex/skill/rule-bug-fix-workflow/SKILL.md` + `docs/ai-rules/rule-contract-audit.md` + `docs/ai-rules/regression-closeout.md` | 第一门禁是判断已有录入合同是否被实现正确消费；只有合同缺失、未锁或与反馈冲突才回图面/规则源；修复必须同步回写中文/英文描述、静态定义、测试和 evidence；回归收口必须说明同类扩审与漏审原因 |
 | **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/testing-audit-core-principles.md` + `docs/ai-rules/testing-audit-dimensions.md` + `docs/ai-rules/audit-evidence-template.md` + `docs/ai-rules/regression-closeout.md` | 先读入口和核心原则，过 fail-close 门禁：最终权威状态、流程收口、共享链来源、来源例外；再按 D 维度库选择适用维度，建对象清单、锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审复盘按回归收口文档归因，不要只补单对象 |
@@ -26,7 +26,7 @@
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图、AI 自己核图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；AI 核图前先过图片上下文预算门禁；E2E 汇报必须附截图路径 |
 | **教程 / 新手引导设计** (tutorial/onboarding、教程看不懂、只在教按钮、需要重做教学结构) | `.codex/skill/tutorial-workflow/SKILL.md` + `docs/ai-rules/tutorial-design.md` + `.codex/skill/game-audit-workflow/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先读该游戏规则真相源，再走教程 workflow：先出完整文案，用户确认后才实施；再核目标、收益、真实案例、计分因果、真实交互与截图证据 |
 | **打开图片 / 给我看图 / 截图真正打开到本机 / 读图卡死** | `.codex/skill/screenshot-delivery/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先区分 AI 核图和用户开图；`view_image` / `Viewed Image` 只算 AI 看图，不算打开；AI 自己看图必须先检查大小/尺寸/数量，必要时只读轻量预览/OCR/contact sheet；用户说“打开图/我自己看”则直接用 `npm run verify:open-image` 或系统图片查看器打开目标图，回复附成功证据和绝对路径 |
-| **首屏关键素材 / 图片预加载** (为什么没素材进度、为什么首帧抖动、atlas/牌背/桌面图是否必须预热) | `docs/ai-rules/critical-image-gate.md` + `docs/ai-rules/asset-pipeline.md` | 只要首屏依赖正式图片就必须配 `criticalImageResolver.ts`；真实房间页要能走到 `loadingAssets`；不要把“有图片资源”误当成“已配置首屏关键素材” |
+| **首屏关键素材 / 图片预加载** (为什么没素材进度、为什么首帧抖动、atlas/牌背/桌面图是否必须预热) | `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/asset-pipeline.md` | 只要首屏依赖正式图片就必须配 `criticalImageResolver.ts`；真实房间页要能走到 `loadingAssets`；不要把“有图片资源”误当成“已配置首屏关键素材” |
 | **E2E 太慢 / 长链拆分 / 从主页起跑是否合理** | `docs/ai-rules/e2e-verification.md` | 先看三板斧、入口分层、组合式验证、时长预算；默认不要把主页漏斗和游戏流程绑成一条巨型 E2E |
 | **测试驱动是不是一直在写测试 / 为什么 45 分钟还没推进实现** | `docs/ai-rules/e2e-verification.md` + `docs/automated-testing.md` | 先看“长链不是默认调试循环”“15 分钟定位预算”“先状态注入锁定位点，再做最窄回归” |
 | **开发前端 / 新增游戏** (引擎/组件) | `docs/framework/frontend.md` | 系统复用 (Ability/Status)、动画组件、解耦规范 |
@@ -52,8 +52,8 @@
 | **游戏结束检测** (gameover/胜负判定) | `docs/ai-rules/engine-gameover.md` | `sys.gameover` 唯一来源，管线自动检测，Board 读 `G.sys.gameover`，禁止读 core/ctx |
 | **传输层/Board Props** (socket/dispatch/Provider) | `docs/ai-rules/engine-transport.md` | `GameBoardProps` 契约，无 `ctx` prop，`dispatch` 命令分发，`GameProvider`/`LocalGameProvider` |
 | **乐观更新/延迟优化** (optimistic/latency/预测) | `docs/ai-rules/engine-transport.md` + `docs/ai-rules/engine-visual-events.md` | Random Probe 自动检测、AnimationMode、骰子动画最短播放时间（UI 层保护）、EventStream 水位线、pending replay、`latencyConfig.ts` |
-| **挑选/查找/对接音效** (查 key、换音效、补预加载、试听收口) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/audio-usage.md` | 先走项目音频 workflow；skill 负责查找链路、汇报和收口，文档负责架构合同与命令入口 |
-| **从外部导入新音效素材** (新增音频资源) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/add-audio.md` | skill 负责执行步骤与收口；文档负责目录、命名、产物、压缩、registry、中文友好名和 `/dev/audio` 验收合同 |
+| **挑选/查找/对接音效** (查 key、换音效、补预加载、试听收口) | `.codex/skill/audio-integration/SKILL.md` + `docs/ai-rules/audio-assets.md` + `docs/audio/audio-usage.md` | 先走项目音频 workflow；skill 负责查找链路、汇报和收口，文档负责运行时合同、架构合同与命令入口 |
+| **从外部导入新音效素材** (新增音频资源) | `.codex/skill/audio-integration/SKILL.md` + `docs/ai-rules/audio-assets.md` + `docs/audio/add-audio.md` | skill 负责执行步骤与收口；文档负责目录、命名、产物、压缩、registry、运行时合同、中文友好名和 `/dev/audio` 验收合同 |
 | **音频不播放 / AudioContext** (浏览器兼容) | `docs/ai-rules/golden-rules.md` § AudioContext | `ctx.resume()` 异步竞态、HTML5 Audio vs WebAudio 区别 |
 | **状态同步/存储调优** (16MB 限制) | `docs/mongodb-16mb-fix.md` | 状态裁剪策略、Log 限制、Undo 快照优化 |
 | **复杂任务规划** (多文件/长流程) | `D:\codex-home\skills\planning-with-files\SKILL.md` | 必须维护 `task_plan.md`，定期转存 `findings.md` |

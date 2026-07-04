@@ -204,12 +204,21 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'monk',
-                slotId: 'lightning',
+                slotId: 'combo',
                 baseAbilityId: 'harmony',
                 resolvedAbilityId: 'harmony',
                 abilityLevels: { harmony: 2 },
                 upgradeCardId: 'card-mahayana-2',
                 previewIndex: 11,
+            },
+            {
+                characterId: 'monk',
+                slotId: 'lightning',
+                baseAbilityId: 'lotus-palm',
+                resolvedAbilityId: 'lotus-palm',
+                abilityLevels: { 'lotus-palm': 2 },
+                upgradeCardId: 'card-lotus-bloom-2',
+                previewIndex: 10,
             },
             {
                 characterId: 'barbarian',
@@ -477,7 +486,8 @@ describe('AbilityOverlays', () => {
         const cases = [
             { characterId: 'monk', abilityId: 'fist-technique', slotId: 'fist' },
             { characterId: 'monk', abilityId: 'taiji-combo', slotId: 'sky' },
-            { characterId: 'monk', abilityId: 'harmony', slotId: 'lightning' },
+            { characterId: 'monk', abilityId: 'harmony', slotId: 'combo' },
+            { characterId: 'monk', abilityId: 'lotus-palm', slotId: 'lightning' },
             { characterId: 'barbarian', abilityId: 'slap', slotId: 'fist' },
             { characterId: 'barbarian', abilityId: 'suppress', slotId: 'lotus' },
             { characterId: 'barbarian', abilityId: 'violent-assault', slotId: 'lightning' },

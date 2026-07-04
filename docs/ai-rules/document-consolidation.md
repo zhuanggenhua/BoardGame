@@ -39,6 +39,7 @@
 | 2026-07-04 | `docs/ai-rules/engine-systems.md` § 传输层、游戏结束、SimpleChoice、动画/EventStream/特写、ActionLog | `docs/ai-rules/engine-transport.md` + `docs/ai-rules/engine-gameover.md` + `docs/ai-rules/engine-simple-choice.md` + `docs/ai-rules/engine-visual-events.md` + `docs/ai-rules/engine-action-log.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将被 `doc-index.md` 直接引用的引擎系统章节无损搬到专项短文档；`engine-systems.md` 原位置改为入口摘要，避免引擎总览继续承载系统百科。 |
 | 2026-07-04 | `docs/ai-rules/engine-systems.md` § 通用能力框架、伤害计算管线、DiceThrone Token ActiveUse、SmashUp pendingSave | `docs/ai-rules/engine-ability-framework.md` + `docs/ai-rules/engine-damage-pipeline.md` + `docs/games/dicethrone/token-active-use-custom-action.md` + `docs/games/smashup/destroy-pending-save.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将跨游戏能力/伤害原语留在 `docs/ai-rules`，把 DiceThrone 和 SmashUp 的单游戏 runtime 合同下沉到游戏目录；`engine-systems.md` 只保留入口摘要。 |
 | 2026-07-04 | `docs/ai-rules/ui-ux.md` § UI 动画设计原则、多端布局策略 | `docs/ai-rules/ui-animation-patterns.md` + `docs/ai-rules/ui-responsive-layout.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将动画触发/结果揭示事件身份与双端布局/单位选择规则拆到专项短文档；`ui-ux.md` 只保留入口摘要、审美、组件单一来源和游戏 UI 特化规则。 |
+| 2026-07-04 | `docs/ai-rules/asset-pipeline.md` § 关键图片预加载、音频资源规范 | `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将 `criticalImageResolver`、两阶段预加载、教程资源裁剪、图集初始化与音频运行时架构、共享音频包路径合同、音效触发路径拆到专项短文档；`asset-pipeline.md` 只保留资源总览、图片链路、R2/CDN 和 App 素材包入口。 |
 
 ## 后续候选批次
 

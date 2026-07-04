@@ -9,8 +9,8 @@
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
-test.describe('DiceThrone Volley 5 Dice Display', () => {
-    test('should display 5 dice in BonusDieOverlay when using Volley card', async ({ page, game }, testInfo) => {
+test.describe('骰子王座万箭齐发五骰展示', () => {
+    test('万箭齐发使用奖励骰结算时整屏展示五颗骰子', async ({ page, game }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
         await game.openTestGame('dicethrone');
 
@@ -81,7 +81,7 @@ test.describe('DiceThrone Volley 5 Dice Display', () => {
         ).toHaveCount(0);
 
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '01-volley-5-dice-display'),
+            path: getEvidenceScreenshotPath(testInfo, '01-万箭齐发五骰-整屏结果图'),
             fullPage: false,
         });
         const diceBounds = await overlay
@@ -137,8 +137,8 @@ test.describe('DiceThrone Volley 5 Dice Display', () => {
         }
 
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '02-volley-5-dice-overlay'),
-            clip,
+            path: getEvidenceScreenshotPath(testInfo, '02-万箭齐发五骰-整屏几何核验后'),
+            fullPage: false,
         });
 
         const state = await game.getState();

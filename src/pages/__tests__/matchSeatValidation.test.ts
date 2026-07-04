@@ -179,6 +179,7 @@ const buildOnlineAiSeatState = (args?: {
 const createOnlineAiMarkerEngineConfig = (): Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> => ({
     gameId: 'dicethrone',
     onlineAiRecovery: {
+        activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
         resolveCurrentPlayerId: ({ state, phase, fallbackPlayerId }) => {
             if (phase !== 'defensiveRoll') {
                 return fallbackPlayerId;
@@ -4397,6 +4398,46 @@ describe('resolveForceEndTurnForStalledAi', () => {
         expect(candidate?.resolution.action.commands).toEqual([
             { type: 'ADVANCE_PHASE', payload: {} },
         ]);
+    });
+
+    it('DiceThrone 防御阶段应按防御方识别 AI 强制结束候选', () => {
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: {
+                core: {
+                    activePlayerId: '0',
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        isDefendable: true,
+                        sourceAbilityId: 'fist-technique-5',
+                        defenseAbilityId: 'duel',
+                    },
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'defensiveRoll',
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        });
+
+        expect(candidate).toMatchObject({
+            playerId: '1',
+            reason: 'active-turn-legal-only',
+            legalActionOnly: true,
+        });
     });
 
     it('交互收口确认后，仅在 AI 仍持有回合且界面已解锁时才补发 ADVANCE_PHASE', () => {

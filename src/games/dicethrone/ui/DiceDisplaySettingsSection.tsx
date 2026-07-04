@@ -13,7 +13,7 @@ export function DiceDisplaySettingsSection({ t: _t }: GameRuntimeSettingsSection
                 <div className="text-xs font-bold uppercase tracking-wider text-amber-200">{t('hud.diceDisplay.title')}</div>
                 <div className="mt-1 text-[11px] text-white/55">{t('hud.diceDisplay.hint')}</div>
             </div>
-            <label className="flex w-full items-center justify-between gap-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-left cursor-pointer">
+            <div className="flex w-full items-center justify-between gap-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-left">
                 <div className="min-w-0">
                     <div className="text-xs font-bold text-white">{t('hud.diceDisplay.board3d')}</div>
                     <div className="mt-1 text-[11px] text-white/55">{t('hud.diceDisplay.board3dHint')}</div>
@@ -39,7 +39,7 @@ export function DiceDisplaySettingsSection({ t: _t }: GameRuntimeSettingsSection
                         />
                     </button>
                 </div>
-            </label>
+            </div>
         </div>
     );
 }

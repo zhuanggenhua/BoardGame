@@ -1710,6 +1710,47 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('抢手 AI 在 defensiveRoll 已选决斗后应正常掷防御骰，而不是卡在无合法动作', async () => {
+        const state = createHeroMatchup('monk', 'gunslinger')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.rollCount = 0;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 1;
+        state.core.rollConfirmed = false;
+        state.core.dice = state.core.dice.slice(0, 1);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            isDefendable: true,
+            sourceAbilityId: 'fist-technique-5',
+            defenseAbilityId: 'duel',
+        };
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+        expect(actions.some((action) => action.kind === 'select-ability')).toBe(false);
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'roll-dice',
+        }));
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:gunslinger-defense-roll',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('roll-dice');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'ROLL_DICE',
+        });
+    });
+
     it('防御阶段掷骰后若已选防御技能，AI 不应再暴露 select-ability，避免循环切换', () => {
         const state = createHeroMatchup('monk', 'shadow_thief')(['0', '1'], fixedRandom);
         state.sys.phase = 'defensiveRoll';

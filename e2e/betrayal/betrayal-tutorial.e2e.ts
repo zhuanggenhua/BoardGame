@@ -117,6 +117,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await page.goto('/play/betrayal/tutorial/traitor-path', { waitUntil: 'domcontentloaded' });
         await waitForBetrayalPageReady(page);
         await waitForHauntRuntime(page, 30000);
+        await waitForStep(page, 'setup-traitor-turn');
+        await clickNext(page);
+
         await waitForStep(page, 'traitor-objective');
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('达里尔·海拉');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('击倒全部英雄');
