@@ -99,9 +99,10 @@ function buildShowcaseData(
 
     // 获取基础技能ID（用于查找槽位和等级）
     const baseAbilityId = match.ability.id;
+    const attackerPlayerBoardFace = state.players[pendingAttack.attackerId]?.playerBoardFace;
     
     // 使用基础ID查找槽位
-    const slotId = getAbilitySlotIdForCharacter(attackerCharId, baseAbilityId);
+    const slotId = getAbilitySlotIdForCharacter(attackerCharId, baseAbilityId, attackerPlayerBoardFace);
 
     // 使用基础ID查找等级
     const attackerLevels = abilityLevels[pendingAttack.attackerId] ?? {};
@@ -114,7 +115,7 @@ function buildShowcaseData(
 
     return {
         attackerCharacterId: attackerCharId,
-        attackerPlayerBoardFace: state.players[pendingAttack.attackerId]?.playerBoardFace,
+        attackerPlayerBoardFace,
         sourceAbilityId,
         slotId,
         upgradePreviewRef,

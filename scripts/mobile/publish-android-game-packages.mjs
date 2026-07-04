@@ -41,6 +41,7 @@ const explicitGameId = readArgValue('game', '');
 const explicitVersion = readArgValue('version', '');
 const dryRun = hasFlag('dry-run');
 const manifestOnly = hasFlag('manifest-only');
+const indexManifestOnly = hasFlag('index-manifest-only');
 const reuseSharedAudio = hasFlag('reuse-shared-audio');
 const buildTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
 const assetsRoot = path.join(rootDir, 'public', 'assets');
@@ -407,13 +408,38 @@ const loadRemoteSharedAudioPackResult = async () => {
     };
 };
 
+const resolveRemoteFullAssetPack = (gameId, assetPack) => {
+    const version = assetPack?.fallbackVersion ?? assetPack?.version;
+    const url = assetPack?.fallbackUrl ?? assetPack?.url;
+    const checksum = assetPack?.fallbackChecksum ?? assetPack?.checksum;
+    const bytes = assetPack?.fallbackBytes ?? assetPack?.bytes;
+
+    if (!version || !url || !checksum) {
+        throw new Error(`远端游戏 manifest 缺少完整 ZIP 兜底信息，无法执行 manifest/index-only: ${gameId}`);
+    }
+
+    return {
+        version,
+        url,
+        checksum,
+        bytes,
+    };
+};
+
 const loadRemoteGameManifest = async (gameId) => {
     const manifest = await fetchRemoteJson(`${assetsBaseUrl}/mobile-packages/android/${channel}/games/${gameId}.json`);
-    if (!manifest?.assetPack?.version || !manifest?.assetPack?.url || !manifest?.assetPack?.checksum) {
+    if (!manifest?.assetPack?.version) {
         throw new Error(`远端游戏 manifest 不完整，无法执行 manifest-only: ${gameId}`);
     }
+    resolveRemoteFullAssetPack(gameId, manifest.assetPack);
     return manifest;
 };
+
+const buildIndexOnlyPackageVersion = (gameId, fileIndexChecksum) => (
+    explicitVersion
+        ? explicitVersion
+        : `${packageJson.version}-${gameId}-idx-${fileIndexChecksum.slice(0, 12)}`
+);
 
 const publishSharedAudioPackage = async () => {
     const { includedFiles } = buildSharedAudioPackageEntries();
@@ -538,20 +564,92 @@ const publishSingleGamePackage = async (gameId, sharedAudioPackResult) => {
     };
 };
 
+const publishSingleGameIndexManifest = async (gameId, sharedAudioPackResult) => {
+    const remoteManifest = await loadRemoteGameManifest(gameId);
+    const { includedFiles } = buildGamePackageEntries(gameId);
+    const provisionalVersion = explicitVersion || `${packageJson.version}-${gameId}-idx-pending`;
+    const provisionalFileIndexPayload = await buildFileIndexPayload(includedFiles, provisionalVersion);
+    const fileIndexChecksum = hashJsonPayload(provisionalFileIndexPayload);
+    const packageVersion = buildIndexOnlyPackageVersion(gameId, fileIndexChecksum);
+    const fileIndexPayload = await buildFileIndexPayload(includedFiles, packageVersion);
+    const fileIndexJson = stringifyJsonWithTrailingNewline(fileIndexPayload);
+    const finalFileIndexChecksum = hashJsonPayload(fileIndexPayload);
+    const assetPack = remoteManifest.assetPack;
+    const fallbackAssetPack = resolveRemoteFullAssetPack(gameId, assetPack);
+    const fileIndexKey = `${packagePrefix}/file-index/${gameId}/${packageVersion}.json`;
+    const versionManifestKey = `${packagePrefix}/manifests/${gameId}/${packageVersion}.json`;
+    const latestManifestKey = `${packagePrefix}/games/${gameId}.json`;
+    const fileIndexUrl = `${assetsBaseUrl}/mobile-packages/android/${channel}/file-index/${encodeURIComponent(gameId)}/${encodeURIComponent(packageVersion)}.json`;
+    const manifest = buildGameManifestPayload({
+        gameId,
+        packageVersion,
+        checksum: null,
+        bytes: null,
+        fileCount: includedFiles.length,
+        fileIndexUrl,
+        fileIndexChecksum: finalFileIndexChecksum,
+        sharedAudioPackResult,
+        modulePack: remoteManifest.modulePack ?? null,
+    });
+
+    delete manifest.assetPack.url;
+    delete manifest.assetPack.checksum;
+    delete manifest.assetPack.bytes;
+    manifest.assetPack.fallbackUrl = fallbackAssetPack.url;
+    manifest.assetPack.fallbackVersion = fallbackAssetPack.version;
+    manifest.assetPack.fallbackChecksum = fallbackAssetPack.checksum;
+    manifest.assetPack.fallbackBytes = fallbackAssetPack.bytes;
+    manifest.assetPack.diffOnly = true;
+
+    if (!dryRun) {
+        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
+        await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+    }
+
+    return {
+        gameId,
+        packageVersion,
+        zipBytes: null,
+        fileCount: includedFiles.length,
+        checksum: null,
+        bundleKey: null,
+        fileIndexKey,
+        fileIndexUrl,
+        fileIndexChecksum: finalFileIndexChecksum,
+        latestManifestKey,
+        bundleUrl: null,
+        fallbackVersion: fallbackAssetPack.version,
+        fallbackBundleUrl: fallbackAssetPack.url,
+        indexManifestOnly: true,
+    };
+};
+
 const publishGameManifestOnly = async (gameId, sharedAudioPackResult) => {
     const remoteManifest = await loadRemoteGameManifest(gameId);
     const assetPack = remoteManifest.assetPack;
+    const fallbackAssetPack = resolveRemoteFullAssetPack(gameId, assetPack);
     const manifest = buildGameManifestPayload({
         gameId,
         packageVersion: assetPack.version,
-        checksum: assetPack.checksum,
-        bytes: assetPack.bytes,
+        checksum: assetPack.checksum ?? null,
+        bytes: assetPack.bytes ?? null,
         fileCount: assetPack.fileCount,
         fileIndexUrl: assetPack.fileIndexUrl,
         fileIndexChecksum: assetPack.fileIndexChecksum,
         sharedAudioPackResult,
         modulePack: remoteManifest.modulePack ?? null,
     });
+    if (assetPack.diffOnly) {
+        delete manifest.assetPack.url;
+        delete manifest.assetPack.checksum;
+        delete manifest.assetPack.bytes;
+        manifest.assetPack.diffOnly = true;
+        manifest.assetPack.fallbackUrl = fallbackAssetPack.url;
+        manifest.assetPack.fallbackVersion = fallbackAssetPack.version;
+        manifest.assetPack.fallbackChecksum = fallbackAssetPack.checksum;
+        manifest.assetPack.fallbackBytes = fallbackAssetPack.bytes;
+    }
     const versionManifestKey = `${packagePrefix}/manifests/${gameId}/${assetPack.version}.json`;
     const latestManifestKey = `${packagePrefix}/games/${gameId}.json`;
 
@@ -563,12 +661,12 @@ const publishGameManifestOnly = async (gameId, sharedAudioPackResult) => {
     return {
         gameId,
         packageVersion: assetPack.version,
-        zipBytes: assetPack.bytes,
+        zipBytes: assetPack.bytes ?? null,
         fileCount: assetPack.fileCount,
-        checksum: assetPack.checksum,
-        bundleKey: `${packagePrefix}/bundles/${gameId}/${assetPack.version}.zip`,
+        checksum: assetPack.checksum ?? null,
+        bundleKey: assetPack.url ? `${packagePrefix}/bundles/${gameId}/${assetPack.version}.zip` : null,
         latestManifestKey,
-        bundleUrl: assetPack.url,
+        bundleUrl: assetPack.url ?? null,
         manifestOnly: true,
     };
 };
@@ -581,12 +679,12 @@ if (targetGames.length === 0) {
     throw new Error('没有发现 package-managed 游戏，无法发布游戏包。');
 }
 
-const sharedAudioPackResult = (manifestOnly || reuseSharedAudio)
+const sharedAudioPackResult = (manifestOnly || indexManifestOnly || reuseSharedAudio)
     ? await loadRemoteSharedAudioPackResult()
     : await publishSharedAudioPackage();
 
 if (sharedAudioPackResult) {
-    if (manifestOnly || reuseSharedAudio) {
+    if (manifestOnly || indexManifestOnly || reuseSharedAudio) {
         console.log('公共音频包已复用远端 latest manifest');
     } else {
         console.log(dryRun ? '公共音频包预演完成（未上传）' : '公共音频包已发布');
@@ -612,9 +710,13 @@ if (sharedAudioPackResult) {
 for (const gameId of targetGames) {
     const result = manifestOnly
         ? await publishGameManifestOnly(gameId, sharedAudioPackResult)
+        : indexManifestOnly
+            ? await publishSingleGameIndexManifest(gameId, sharedAudioPackResult)
         : await publishSingleGamePackage(gameId, sharedAudioPackResult);
     if (manifestOnly) {
         console.log(dryRun ? '游戏 manifest 预演完成（未上传）' : '游戏 manifest 已补刷');
+    } else if (indexManifestOnly) {
+        console.log(dryRun ? '游戏 file-index/manifest 差异刷新预演完成（未上传 ZIP）' : '游戏 file-index/manifest 已差异刷新（未上传 ZIP）');
     } else {
         console.log(dryRun ? '游戏包预演完成（未上传）' : '游戏包已发布');
     }
@@ -623,15 +725,25 @@ for (const gameId of targetGames) {
     console.log(`packageVersion=${result.packageVersion}`);
     console.log(`zipBytes=${result.zipBytes}`);
     console.log(`fileCount=${result.fileCount}`);
+    if (result.bundleKey) {
         console.log(`bundleKey=${result.bundleKey}`);
+    }
         if (result.fileIndexKey) {
             console.log(`fileIndexKey=${result.fileIndexKey}`);
         }
         console.log(`latestManifestKey=${result.latestManifestKey}`);
+    if (result.bundleUrl) {
         console.log(`bundleUrl=${result.bundleUrl}`);
+    }
         console.log(`checksum=${result.checksum}`);
         if (result.fileIndexChecksum) {
             console.log(`fileIndexChecksum=${result.fileIndexChecksum}`);
+        }
+        if (result.fallbackVersion) {
+            console.log(`fallbackZipVersion=${result.fallbackVersion}`);
+        }
+        if (result.fallbackBundleUrl) {
+            console.log(`fallbackBundleUrl=${result.fallbackBundleUrl}`);
         }
         console.log('---');
     }

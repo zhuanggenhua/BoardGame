@@ -229,6 +229,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                         characterId={props.viewCharacterId}
                                         playerBoardFace={props.viewPlayerBoardFace}
                                         locale={props.locale}
+                                        slotScope="magnified-preview"
                                     />
                                 )}
                             </div>

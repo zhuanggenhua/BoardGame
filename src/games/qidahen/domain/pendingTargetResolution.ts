@@ -642,6 +642,7 @@ const resolvePendingBattleWithoutDefenders = (
     state: QidahenCore,
     pendingTargetAction: QidahenPendingTargetAction,
     battleRegion: QidahenRuntimeRegion,
+    currentBattleMode: 'field' | 'city',
     effectiveDefenderTroops: number,
     battleRegionSnapshotTroops: number,
     verb: string,
@@ -668,7 +669,10 @@ const resolvePendingBattleWithoutDefenders = (
             logText: `${state.factions[pendingTargetAction.attackerFactionId].name} 自 ${pendingTargetAction.sourceRegionName ?? '前线'} ${verb} ${dependencies.getActionRuleDisplayRegionName(battleRegion, battleRegion.name)} 解围，围城军已空，等待战后进驻。`,
             postBattleSelection: dependencies.buildPostBattleSelection(
                 state,
-                pendingTargetAction,
+                {
+                    ...pendingTargetAction,
+                    battleMode: currentBattleMode,
+                },
                 battleRegion,
                 pendingTargetAction.committedTroops,
                 0,
@@ -713,7 +717,10 @@ const resolvePendingBattleWithoutDefenders = (
         logText: `${state.factions[pendingTargetAction.attackerFactionId].name} 自 ${pendingTargetAction.sourceRegionName ?? '前线'} ${verb} ${dependencies.getActionRuleDisplayRegionName(battleRegion, battleRegion.name)}${cavalryEvasionText}，投入 ${pendingTargetAction.committedTroops} 部队，区域无守军，等待战后处理。`,
         postBattleSelection: dependencies.buildPostBattleSelection(
             state,
-            pendingTargetAction,
+            {
+                ...pendingTargetAction,
+                battleMode: currentBattleMode,
+            },
             battleRegion,
             pendingTargetAction.committedTroops,
             0,
@@ -1214,6 +1221,7 @@ const resolvePendingBattleTargetAction = (
         state,
         pendingTargetAction,
         battleRegion,
+        currentBattleMode,
         effectiveDefenderTroops,
         battleRegionSnapshot.troops,
         verb,
@@ -1671,6 +1679,7 @@ const resolvePendingCapturedBattleFollowup = (
     battleOutcomeText: string,
     structuredBattleText: string,
     battleRolls: QidahenBattleRolls | null | undefined,
+    currentBattleMode: 'field' | 'city',
     remainingTroops: number,
     survivingAttackers: number,
     isCityRegion = false,
@@ -1747,7 +1756,10 @@ const resolvePendingCapturedBattleFollowup = (
         continuedPendingTargetAction: null,
         postBattleSelection: dependencies.buildPostBattleSelection(
             state,
-            pendingTargetAction,
+            {
+                ...pendingTargetAction,
+                battleMode: currentBattleMode,
+            },
             battleRegion,
             survivingAttackers,
             attackerLoss,
@@ -1929,6 +1941,7 @@ const resolvePendingGenericBattleOutcome = (
             battleOutcomeText,
             structuredBattleText,
             battleRolls,
+            currentBattleMode,
             remainingTroops,
             survivingAttackers,
             isCityRegion,

@@ -297,7 +297,6 @@ export const CenterBoard = ({
                             />
                         </motion.div>
                     )}
-                    {diceStage}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}
@@ -373,6 +372,7 @@ export const CenterBoard = ({
                     </div>
                 </div>
             </div>
+            {diceStage}
         </div>
     );
 };

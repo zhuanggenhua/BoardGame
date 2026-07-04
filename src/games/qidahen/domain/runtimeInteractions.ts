@@ -12,6 +12,25 @@ import {
 } from './interactionBuilders';
 import type { QidahenCore } from './types';
 
+export function clearQidahenRuntimeInteractionCurrent(
+    state: MatchState<QidahenCore>,
+): MatchState<QidahenCore> {
+    const interactionState = state.sys.interaction;
+    if (!interactionState?.current) {
+        return state;
+    }
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            interaction: {
+                ...interactionState,
+                current: undefined,
+            },
+        },
+    };
+}
+
 function syncQidahenSpecificInteraction(
     state: MatchState<QidahenCore>,
     sourceId: QidahenInteractionSourceId,

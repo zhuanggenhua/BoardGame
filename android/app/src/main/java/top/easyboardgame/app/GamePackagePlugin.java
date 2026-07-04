@@ -512,6 +512,8 @@ public class GamePackagePlugin extends Plugin {
         String assetBaseUrl = normalizeNonEmpty(call.getString("assetBaseUrl"));
         String fileIndexUrl = normalizeNonEmpty(call.getString("fileIndexUrl"));
         String fileIndexChecksum = normalizeChecksum(call.getString("fileIndexChecksum"));
+        Boolean allowFullFallbackValue = call.getBoolean("allowFullFallback");
+        boolean allowFullFallback = allowFullFallbackValue == null || allowFullFallbackValue;
         Log.i(
             TAG,
             "installGamePackage requested gameId=" + gameId
@@ -529,7 +531,7 @@ public class GamePackagePlugin extends Plugin {
             return;
         }
         final String resolvedRuntimeChannel = runtimeChannel != null ? runtimeChannel : "stable";
-        if (assetPackUrl == null) {
+        if (assetPackUrl == null && (!incrementalMode || allowFullFallback)) {
             call.reject("缺少 assetPackUrl");
             return;
         }
@@ -566,6 +568,7 @@ public class GamePackagePlugin extends Plugin {
                 assetBaseUrl,
                 fileIndexUrl,
                 fileIndexChecksum,
+                allowFullFallback,
                 archiveFile.getAbsolutePath(),
                 archivePartFile.getAbsolutePath()
             )
@@ -583,6 +586,7 @@ public class GamePackagePlugin extends Plugin {
             assetBaseUrl,
             fileIndexUrl,
             fileIndexChecksum,
+            allowFullFallback,
             archiveFile.getAbsolutePath(),
             archivePartFile.getAbsolutePath()
         );

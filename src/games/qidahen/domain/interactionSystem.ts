@@ -13,6 +13,7 @@ import {
 } from './turnActionInteractionEventHandlers';
 import type { QidahenCore } from './types';
 import {
+    clearQidahenRuntimeInteractionCurrent,
     syncQidahenRuntimeInteractionState,
 } from './runtimeInteractions';
 
@@ -53,8 +54,15 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
 
         afterEvents: ({ state, events, random }): HookResult<QidahenCore> | void => {
             let nextState = state;
+            let shouldClearRuntimeInteractionCurrent = false;
 
             for (const event of events) {
+                if (
+                    event.type === 'PENDING_ACTION_RESOLVED'
+                    || event.type === 'POST_BATTLE_DECISION_RESOLVED'
+                ) {
+                    shouldClearRuntimeInteractionCurrent = true;
+                }
                 if (event.type !== INTERACTION_EVENTS.RESOLVED) {
                     continue;
                 }
@@ -67,7 +75,10 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
                 }
             }
 
-            const syncedState = syncQidahenRuntimeInteractionState(nextState);
+            const stateReadyForSync = shouldClearRuntimeInteractionCurrent
+                ? clearQidahenRuntimeInteractionCurrent(nextState)
+                : nextState;
+            const syncedState = syncQidahenRuntimeInteractionState(stateReadyForSync);
             if (syncedState === state) {
                 return;
             }

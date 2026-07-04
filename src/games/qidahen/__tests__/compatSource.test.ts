@@ -3542,13 +3542,14 @@ describe('Qidahen compatibility source guards', () => {
         expect(initialCoreSetupSource).not.toContain('const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard[\'previewRef\']> = {');
         expect(initialCoreSetupSource).not.toContain('const buildInitialHandCards = (');
 
-        expect(handCardStateSource).toContain('qidahenMingHandPreview,');
-        expect(handCardStateSource).toContain('qidahenMongolHandPreview,');
-        expect(handCardStateSource).toContain('qidahenJinHandPreview,');
+        expect(handCardStateSource).toContain('qidahenAtlas05OrdinaryHandPreview,');
+        expect(handCardStateSource).toContain("import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from './ordinaryHandCardIdentities';");
+        expect(handCardStateSource).toContain("import { resolveQidahenAtlas05OrdinaryHandCardIdentity } from './handCardIdentity';");
         expect(handCardStateSource).toContain("import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';");
         expect(handCardStateSource).toContain("const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];");
-        expect(handCardStateSource).toContain('const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;');
-        expect(handCardStateSource).toContain('const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard[\'previewRef\']> = {');
+        expect(handCardStateSource).toContain('const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_COUNT = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.length;');
+        expect(handCardStateSource).not.toContain('const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;');
+        expect(handCardStateSource).not.toContain('const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard[\'previewRef\']> = {');
         expect(handCardStateSource).toContain('export const buildInitialHandCards = (');
         expect(handCardStateSource).toContain('export const buildDrawnHandCards = (');
         expect(handCardStateSource).toContain('export const getFactionDrawPileCount = (');

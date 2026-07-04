@@ -32,6 +32,15 @@ type TestGameController = {
   getState?: () => Promise<any>;
 };
 
+type AbilitySlotResolutionOptions = {
+  characterId?: string;
+  playerBoardFace?: string;
+};
+
+type AbilitySlotResolutionInput = AbilitySlotResolutionOptions & {
+  abilityId: string;
+};
+
 const EVIDENCE_DIR = join(
   process.cwd(),
   'test-results',
@@ -326,19 +335,60 @@ async function waitForUpgradeApplied(
   }
 }
 
-async function resolveAbilitySlotId(page: Page, abilityId: string): Promise<string | null> {
-  return await page.evaluate(async (targetAbilityId) => {
-    const { getAbilitySlotId } = await import('/src/games/dicethrone/ui/abilitySlotMapping.ts');
+async function resolveAbilitySlotId(
+  page: Page,
+  abilityId: string,
+  options?: AbilitySlotResolutionOptions,
+): Promise<string | null> {
+  return await page.evaluate(async ({
+    abilityId: targetAbilityId,
+    characterId: requestedCharacterId,
+    playerBoardFace: requestedPlayerBoardFace,
+  }: AbilitySlotResolutionInput) => {
+    const {
+      getAbilitySlotId,
+      getAbilitySlotIdForCharacter,
+    } = await import('/src/games/dicethrone/ui/abilitySlotMapping.ts');
+    const activeBoard = document.querySelector('[data-testid="player-board-surface"] [data-ability-slot-scope="main-board"]')?.closest('[data-testid="player-board-surface"]');
+    const inferredCharacterId = activeBoard?.getAttribute('data-character-id') ?? null;
+    const inferredPlayerBoardFace = activeBoard
+      ?.querySelector('[data-testid="player-board-face-shell"]')
+      ?.getAttribute('data-player-board-face') ?? null;
+    const characterId = requestedCharacterId ?? inferredCharacterId;
+    const rawPlayerBoardFace = requestedPlayerBoardFace ?? inferredPlayerBoardFace;
+    const playerBoardFace = rawPlayerBoardFace === 'normal' || rawPlayerBoardFace === 'cursed'
+      ? rawPlayerBoardFace
+      : undefined;
+    if (characterId) {
+      return getAbilitySlotIdForCharacter(characterId, targetAbilityId, playerBoardFace) ?? null;
+    }
     return getAbilitySlotId(targetAbilityId) ?? null;
-  }, abilityId);
+  }, { abilityId, ...options });
 }
 
-async function clickAbilitySlot(page: Page, abilityId: string): Promise<void> {
-  const slotId = await resolveAbilitySlotId(page, abilityId);
+async function clickAbilitySlot(
+  page: Page,
+  abilityId: string,
+  options?: AbilitySlotResolutionOptions,
+): Promise<void> {
+  const slotId = await resolveAbilitySlotId(page, abilityId, options);
   expect(slotId, `${abilityId} 未映射到技能槽`).toBeTruthy();
-  const slot = page.locator(`[data-testid="player-board-surface"] [data-ability-slot="${slotId}"]`).first();
+  const slot = page.locator(`[data-testid="player-board-surface"] [data-ability-slot-scope="main-board"][data-ability-slot="${slotId}"]`).first();
   await expect(slot).toBeVisible({ timeout: 10000 });
   await slot.click({ force: true });
+}
+
+async function clickCurrentPlayerAbilitySlot(
+  page: Page,
+  game: TestGameController,
+  abilityId: string,
+  playerId = '0',
+): Promise<void> {
+  const state = await readState(game);
+  await clickAbilitySlot(page, abilityId, {
+    characterId: state?.core?.selectedCharacters?.[playerId],
+    playerBoardFace: state?.core?.players?.[playerId]?.playerBoardFace,
+  });
 }
 
 async function chooseAbilityVariant(page: Page, label: string | RegExp): Promise<void> {
@@ -362,12 +412,15 @@ async function expectUpgradeStableOnPlayerBoard(
   abilityId: string,
   cardId: string,
 ): Promise<void> {
-  const slotId = await resolveAbilitySlotId(page, abilityId);
+  const state = await readState(game);
+  const characterId = state?.core?.selectedCharacters?.['0'];
+  const playerBoardFace = state?.core?.players?.['0']?.playerBoardFace;
+  const slotId = await resolveAbilitySlotId(page, abilityId, { characterId, playerBoardFace });
   expect(slotId, `${abilityId} 未映射到技能槽`).toBeTruthy();
   await expect(page.locator(`[data-upgrade-preview-slot="${slotId}"]`).first()).toBeVisible({ timeout: 10000 });
 
-  const state = await readState(game);
-  const player = state?.core?.players?.['0'];
+  const stateAfter = await readState(game);
+  const player = stateAfter?.core?.players?.['0'];
   expect(getDiscardIds(player), `${cardId} 不应留在弃牌堆`).not.toContain(cardId);
   expect(player?.upgradeCardByAbilityId?.[abilityId]?.cardId ?? null, `${abilityId} 应登记升级卡`).toBe(cardId);
 }
@@ -1049,6 +1102,56 @@ test.describe('DiceThrone hand card preview regression', () => {
         });
       });
     }
+  });
+
+  test('老派系旧面板升级后点击卡图物理槽应触发正确技能', async ({ page, game }) => {
+    test.setTimeout(180000);
+    const evidenceDir = ensureEvidenceDir();
+
+    await setupHeroScene(page, game, 'monk', ['card-thrust-punch-2'], {
+      opponentHeroId: 'barbarian',
+    });
+    await clickHandCard(page, 'card-thrust-punch-2');
+    await waitForUpgradeApplied(page, game, 'fist-technique', 2, null, 'card-thrust-punch-2', {
+      expectedHandIdsAfter: [],
+    });
+    await waitForHandAnimationSettled(page);
+    await expectUpgradeStableOnPlayerBoard(page, game, 'fist-technique', 'card-thrust-punch-2');
+
+    const stateAfterUpgrade = await readState(game);
+    const characterId = stateAfterUpgrade?.core?.selectedCharacters?.['0'];
+    const playerBoardFace = stateAfterUpgrade?.core?.players?.['0']?.playerBoardFace;
+    const slotId = await resolveAbilitySlotId(page, 'fist-technique', { characterId, playerBoardFace });
+    expect(slotId, '僧侣拳法应落在旧面板 calm 物理槽').toBe('calm');
+
+    await injectOffensiveRollDice(page, game, [1, 1, 1, 1, 1], '0', 'monk-dice');
+    await clickCurrentPlayerAbilitySlot(page, game, 'fist-technique');
+
+    await expect.poll(async () => {
+      const state = await readState(game);
+      const expectedDamage = await page.evaluate(async () => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const matchState = harness?.state?.get?.();
+        if (!matchState?.core?.pendingAttack) return null;
+        const { getPendingAttackExpectedDamage } = await import('/src/games/dicethrone/domain/utils.ts');
+        return getPendingAttackExpectedDamage(matchState.core, matchState.core.pendingAttack);
+      });
+
+      return {
+        reject: await page.evaluate(() => (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null),
+        sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+        expectedDamage,
+      };
+    }, { timeout: 15000 }).toMatchObject({
+      reject: null,
+      sourceAbilityId: 'fist-technique-2-5',
+      expectedDamage: 9,
+    });
+
+    await page.screenshot({
+      path: join(evidenceDir, 'legacy-monk-fist-technique-upgraded-slot-click.png'),
+      fullPage: true,
+    });
   });
 
   test('gunslinger 专属升级牌应逐张可打出并正确升级到基础技能', async ({ page, game }) => {

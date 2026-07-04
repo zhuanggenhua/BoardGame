@@ -246,6 +246,7 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
         playerBoardFace?: HeroState['playerBoardFace'];
         locale?: string;
         onMagnifyCard?: (card: AbilityCard) => void;
+        slotScope?: 'main-board' | 'magnified-preview';
         playerTokens?: Record<string, number>;  // 新增：玩家的 token 状态（用于显示被动能力激活状态）
     }
 
@@ -263,6 +264,7 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
         playerBoardFace,
         locale,
         onMagnifyCard,
+        slotScope = 'main-board',
         playerTokens: _playerTokens,
     }, ref) => {
         const { t } = useTranslation('game-dicethrone');
@@ -405,7 +407,9 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
                             <div
                                 key={slot.id}
                                 data-ability-slot={slot.id}
+                                data-ability-slot-scope={slotScope}
                                 data-passive-ability="true"
+                                data-upgrade-preview-slot={passiveUpgradeCard ? slot.id : undefined}
                                 data-upgrade-card-interactive={passiveUpgradeCard ? 'true' : 'false'}
                                 onMouseDown={(e) => isEditing ? handleMouseDown(e, slot.id, 'move') : undefined}
                                 className={`
@@ -477,8 +481,10 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
                         <div
                             key={slot.id}
                             data-ability-slot={slot.id}
+                            data-ability-slot-scope={slotScope}
                             data-resolved-ability-id={isResolved ?? ''}
                             data-base-ability-id={baseAbilityId ?? ''}
+                            data-upgrade-preview-slot={upgradeCard ? slot.id : undefined}
                             data-can-click={canClick ? 'true' : 'false'}
                             data-should-highlight={shouldHighlight ? 'true' : 'false'}
                             data-is-selected={isAbilitySelected ? 'true' : 'false'}

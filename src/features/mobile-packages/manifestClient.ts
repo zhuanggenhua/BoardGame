@@ -133,6 +133,7 @@ interface RemotePackInfo {
     fileCount?: number | null;
     fileIndexUrl?: string | null;
     fileIndexChecksum?: string | null;
+    diffOnly?: boolean | null;
 }
 
 interface RemoteGamePackageManifest {
@@ -200,6 +201,7 @@ const applyRemotePack = (
         | 'assetPackChecksum'
         | 'assetPackFileIndexUrl'
         | 'assetPackFileIndexChecksum'
+        | 'assetPackDiffOnly'
         | 'modulePackBytes'
         | 'assetPackBytes'
         | 'modulePackFileCount'
@@ -214,6 +216,7 @@ const applyRemotePack = (
     const fallbackChecksum = type === 'module' ? fallback.modulePackChecksum : fallback.assetPackChecksum;
     const fallbackFileIndexUrl = type === 'module' ? undefined : fallback.assetPackFileIndexUrl;
     const fallbackFileIndexChecksum = type === 'module' ? undefined : fallback.assetPackFileIndexChecksum;
+    const fallbackDiffOnly = type === 'module' ? undefined : fallback.assetPackDiffOnly;
     const fallbackBytes = type === 'module' ? fallback.modulePackBytes : fallback.assetPackBytes;
     const fallbackFileCount = type === 'module' ? fallback.modulePackFileCount : fallback.assetPackFileCount;
 
@@ -225,19 +228,24 @@ const applyRemotePack = (
             checksum: undefined,
             fileIndexUrl: undefined,
             fileIndexChecksum: undefined,
+            diffOnly: undefined,
             bytes: undefined,
             fileCount: undefined,
         };
     }
 
+    const remoteDiffOnly = remotePack?.diffOnly === true;
+    const shouldUseFallbackBundle = !remoteDiffOnly;
+
     return {
         id: normalizeOptionalString(remotePack?.id) ?? fallbackId,
         version: normalizeOptionalString(remotePack?.version) ?? fallbackVersion,
-        url: normalizeOptionalHttpUrl(remotePack?.url) ?? fallbackUrl,
-        checksum: normalizeOptionalString(remotePack?.checksum) ?? fallbackChecksum,
+        url: normalizeOptionalHttpUrl(remotePack?.url) ?? (shouldUseFallbackBundle ? fallbackUrl : undefined),
+        checksum: normalizeOptionalString(remotePack?.checksum) ?? (shouldUseFallbackBundle ? fallbackChecksum : undefined),
         fileIndexUrl: normalizeOptionalHttpUrl(remotePack?.fileIndexUrl) ?? fallbackFileIndexUrl,
         fileIndexChecksum: normalizeOptionalString(remotePack?.fileIndexChecksum) ?? fallbackFileIndexChecksum,
-        bytes: normalizeOptionalRemoteNumber(remotePack?.bytes) ?? fallbackBytes,
+        diffOnly: typeof remotePack?.diffOnly === 'boolean' ? remotePack.diffOnly : fallbackDiffOnly,
+        bytes: normalizeOptionalRemoteNumber(remotePack?.bytes) ?? (shouldUseFallbackBundle ? fallbackBytes : undefined),
         fileCount: normalizeOptionalRemoteNumber(remotePack?.fileCount) ?? fallbackFileCount,
     };
 };
@@ -291,6 +299,7 @@ const mapRemoteManifest = (
         assetPackChecksum: assetPack.checksum,
         assetPackFileIndexUrl: assetPack.fileIndexUrl,
         assetPackFileIndexChecksum: assetPack.fileIndexChecksum,
+        assetPackDiffOnly: assetPack.diffOnly,
         sharedAudioPackId: sharedAudioPack.id,
         sharedAudioPackVersion: sharedAudioPack.version,
         sharedAudioPackUrl: sharedAudioPack.url,

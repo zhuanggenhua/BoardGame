@@ -23,7 +23,7 @@
 | `sky` | 左下紫色独立槽，不属于普通技能列 | `quiet-cultivation` | passive / 非普通技能候选 | 旧共享语义误把它混入普通技能槽，现已纠正 |
 | `lotus` | 下排普通技能槽 | `wild-growth` | offensive | 与 Treant v2 图面一致 |
 | `combo` | 中排普通技能槽 | `vengeful-vines` | offensive | 与 Treant v2 图面一致 |
-| `lightning` | 上排普通技能槽 | `nature-touch` | offensive | 与 Treant v2 图面一致 |
+| `lightning` | 上排普通技能槽 | `nature-touch`；2026-07-03 代码侧临时同时放行 `wild-roar` 以承接大顺子升级卡反馈 | offensive | 当前完整玩家板槽位合同仍只锁到 `nature-touch`；`wild-roar` 的完整玩家板槽位归属需后续用玩家板清晰裁图补证，不得用本行当最终图面合同 |
 | `meditate` | 右下独立防御槽 | `rooted` | defensive | 真实防御位，不是旧 `calm` 语义 |
 | `calm` | Treant 图面不承载 `rooted` | 空 / 不命中 `rooted` | empty / 非 `rooted` | 不能再让运行时自动补成“最像的旧防御槽” |
 

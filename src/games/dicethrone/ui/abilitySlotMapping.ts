@@ -216,9 +216,13 @@ export function getAbilitySlotId(abilityId: string): string | null {
     return null;
 }
 
-export function getAbilitySlotIdForCharacter(characterId: string | undefined | null, abilityId: string): string | null {
+export function getAbilitySlotIdForCharacter(
+    characterId: string | undefined | null,
+    abilityId: string,
+    playerBoardFace?: HeroState['playerBoardFace'],
+): string | null {
     for (const slotId of Object.keys(ABILITY_SLOT_MAP)) {
-        if (slotContainsAbilityIdForCharacter(characterId, slotId, abilityId)) {
+        if (slotContainsAbilityIdForCharacter(characterId, slotId, abilityId, playerBoardFace)) {
             return slotId;
         }
     }

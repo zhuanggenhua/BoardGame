@@ -483,7 +483,11 @@ export const useGamePackageState = ({
                 hasAssetPackUrl: Boolean(installManifest.assetPackUrl),
             });
 
-            if (!installManifest.assetPackUrl && hasRemoteGamePackageManifestEndpoint) {
+            const canInstallDiffOnlyAssetPack = Boolean(
+                installManifest.assetPackDiffOnly
+                && installManifest.assetPackFileIndexUrl
+            );
+            if (!installManifest.assetPackUrl && !canInstallDiffOnlyAssetPack && hasRemoteGamePackageManifestEndpoint) {
                 logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-re-resolve', {
                     gameId,
                     reason: 'missing-asset-pack-url',
@@ -503,7 +507,7 @@ export const useGamePackageState = ({
                 }
             }
 
-            if (!installManifest.assetPackUrl) {
+            if (!installManifest.assetPackUrl && !canInstallDiffOnlyAssetPack) {
                 logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-manifest-still-missing-url', {
                     gameId,
                     manifestSource: installManifest.source,
@@ -516,6 +520,8 @@ export const useGamePackageState = ({
                 gameId,
                 manifestSource: installManifest.source,
                 hasAssetPackUrl: Boolean(installManifest.assetPackUrl),
+                assetPackDiffOnly: installManifest.assetPackDiffOnly === true,
+                hasAssetPackFileIndexUrl: Boolean(installManifest.assetPackFileIndexUrl),
             });
             const state = await startGamePackageInstall(installManifest, t('packageManager.runtimeUnsupported'));
             logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-finished', {

@@ -16,10 +16,12 @@ import {
 import {
     BETRAYAL_FIXED_RANDOM,
     createBetrayalCommand,
+    createBetrayalScriptedRandom,
     createFirstScenarioHauntCore,
     createJackSpiritPostReviveAttackReadyCore,
     playFirstScenarioToSurvivorVictory,
 } from '../testing/firstScenarioTestUtils';
+import { BETRAYAL_DISCOVERY_POOLS } from '../scenarioConfig';
 import gameLocale from '../../../../public/locales/zh-CN/game-betrayal.json';
 import commonLocale from '../../../../public/locales/zh-CN/common.json';
 
@@ -88,6 +90,48 @@ function HarnessBoard({ initialCore, playerID = '0', matchData }: BoardHarnessPr
             return;
         }
         const nextCore = BetrayalDomain.execute(stateOf(core), command, BETRAYAL_FIXED_RANDOM)
+            .reduce((currentCore, event) => BetrayalDomain.reduce(currentCore, event), core);
+        setCore(nextCore);
+    }, [core, playerID]);
+
+    return (
+        <ToastProvider>
+            <TutorialProvider>
+                <GameModeProvider mode="local">
+                    <Board
+                        G={{
+                            core,
+                            sys: {} as MatchState<unknown>['sys'],
+                        } as MatchState<Record<string, unknown>>}
+                        dispatch={dispatch as never}
+                        playerID={playerID}
+                        matchData={matchData}
+                        isConnected
+                    />
+                </GameModeProvider>
+            </TutorialProvider>
+        </ToastProvider>
+    );
+}
+
+function HarnessBoardWithRandom({ initialCore, playerID = '0', matchData }: BoardHarnessProps) {
+    const [core, setCore] = React.useState(initialCore);
+
+    const dispatch = React.useCallback(<K extends keyof typeof BETRAYAL_COMMANDS extends infer _ ? string : never>(
+        type: K,
+        payload: unknown,
+    ) => {
+        const command = createBetrayalCommand(
+            type as never,
+            playerID,
+            payload as never,
+            Date.now(),
+        );
+        const validation = BetrayalDomain.validate(stateOf(core), command);
+        if (!validation.valid) {
+            return;
+        }
+        const nextCore = BetrayalDomain.execute(stateOf(core), command, createBetrayalScriptedRandom(2, 2, 2, 2))
             .reduce((currentCore, event) => BetrayalDomain.reduce(currentCore, event), core);
         setCore(nextCore);
     }, [core, playerID]);
@@ -210,7 +254,7 @@ describe('Betrayal Board foundation', () => {
         core.turnStartInventoryCardIds = ['map'];
 
         render(
-            <HarnessBoard
+            <HarnessBoardWithRandom
                 initialCore={core}
                 matchData={defaultMatchData}
             />,
@@ -251,7 +295,7 @@ describe('Betrayal Board foundation', () => {
         core.turnStartInventoryCardIds = ['medical-kit'];
 
         render(
-            <HarnessBoard
+            <HarnessBoardWithRandom
                 initialCore={core}
                 matchData={defaultMatchData}
             />,
@@ -301,7 +345,7 @@ describe('Betrayal Board foundation', () => {
         });
 
         render(
-            <HarnessBoard
+            <HarnessBoardWithRandom
                 initialCore={core}
                 matchData={defaultMatchData}
             />,
@@ -729,5 +773,399 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-focus-target'));
 
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用指环');
+    });
+
+    it('上古旧宅待选事件能在真实页面选择属性、目标板块和通用伤害', () => {
+        const oldMansion = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '上古旧宅');
+        expect(oldMansion?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'hallway',
+            traits: {
+                ...core.currentExplorer.traits,
+                speed: 4,
+                might: 4,
+                knowledge: 4,
+                sanity: 4,
+            },
+            inventory: [],
+        };
+        core.activeRoomId = 'hallway';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        core.pendingEventChoice = {
+            id: 'test-old-mansion-choice',
+            playerId: '0',
+            sourceTitle: '上古旧宅',
+            effect: oldMansion!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('上古旧宅');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-might'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-room-hallway'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('力量检定');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('放置到门厅');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 1（力量）');
+    });
+
+    it('肉质苔癣待选事件能在真实页面跳过可选效果', () => {
+        const fleshMoss = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '肉质苔癣');
+        expect(fleshMoss?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.pendingEventChoice = {
+            id: 'test-flesh-moss-choice',
+            playerId: '0',
+            sourceTitle: '肉质苔癣',
+            acceptLabel: '大口吸入芳香',
+            declineLabel: '不吸入芳香',
+            effect: fleshMoss!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('肉质苔癣');
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toHaveTextContent('大口吸入芳香');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('无事发生');
+    });
+
+    it('大宅饿了待选事件能在真实页面选择属性并跳过作祟检定', () => {
+        const hungryHouse = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了');
+        expect(hungryHouse?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.pendingEventChoice = {
+            id: 'test-hungry-house-choice',
+            playerId: '0',
+            sourceTitle: '大宅饿了',
+            acceptLabel: '进行作祟检定',
+            declineLabel: '跳过作祟检定',
+            effect: hungryHouse!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('大宅饿了');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
+    });
+
+    it('蜘蛛！待选事件能在真实页面选择属性和相邻已发现板块', () => {
+        const spider = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '蜘蛛！');
+        expect(spider?.roll).toBeTruthy();
+        const successBranch = spider!.roll!.branches.find((branch) => branch.min === 4);
+        expect(successBranch?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'hallway',
+            traits: {
+                ...core.currentExplorer.traits,
+                sanity: 5,
+                speed: 4,
+            },
+            inventory: [],
+        };
+        core.activeRoomId = 'hallway';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        core.pendingEventChoice = {
+            id: 'test-spider-adjacent-choice',
+            playerId: '0',
+            sourceTitle: '蜘蛛！',
+            effect: successBranch!.effect,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('蜘蛛！');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-room-grand-staircase'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('速度 +1');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('放置到大阶梯');
+    });
+
+    it('吊死鬼待选事件能在真实页面选择奖励属性', () => {
+        const hangingTree = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '吊死鬼');
+        expect(hangingTree?.effect?.mode).toBe('allTraitChecks');
+        const allPassEffect = hangingTree!.effect!.mode === 'allTraitChecks'
+            ? hangingTree!.effect!.allPassEffect
+            : null;
+        expect(allPassEffect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.pendingEventChoice = {
+            id: 'test-hanging-tree-trait-choice',
+            playerId: '0',
+            sourceTitle: '吊死鬼',
+            effect: allPassEffect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('吊死鬼');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
+    });
+
+    it('一条秘密通道待选事件能在真实页面选择第二目标板块', () => {
+        const secretPassage = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一条秘密通道');
+        expect(secretPassage?.roll?.branches).toBeTruthy();
+        const successBranch = secretPassage!.roll!.branches.find((branch) => branch.min === 5);
+        expect(successBranch?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'ground-north',
+            traits: {
+                ...core.currentExplorer.traits,
+                knowledge: 4,
+            },
+            inventory: [],
+        };
+        core.activeRoomId = 'ground-north';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        core.pendingEventChoice = {
+            id: 'test-secret-passage-room-choice',
+            playerId: '0',
+            sourceTitle: '一条秘密通道',
+            effect: successBranch!.effect,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('一条秘密通道');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-room-hallway'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('在当前板块放置秘密通道标志物');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('在门厅放置秘密通道标志物');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
+    });
+
+    it('脑状食品待选事件能在真实页面选择奖励属性和通用伤害属性', () => {
+        const brainFood = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '脑状食品');
+        expect(brainFood?.roll?.branches).toBeTruthy();
+        const rewardBranch = brainFood!.roll!.branches.find((branch) => branch.min === 5);
+        const damageBranch = brainFood!.roll!.branches.find((branch) => branch.min === 0);
+        expect(rewardBranch?.effect).toBeTruthy();
+        expect(damageBranch?.effect).toBeTruthy();
+
+        const rewardCore = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        rewardCore.pendingEventChoice = {
+            id: 'test-brain-food-reward-choice',
+            playerId: '0',
+            sourceTitle: '脑状食品',
+            effect: rewardBranch!.effect,
+        };
+
+        const rewardRender = render(
+            <HarnessBoardWithRandom
+                initialCore={rewardCore}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('脑状食品');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('速度 +1');
+        rewardRender.unmount();
+
+        const damageCore = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        damageCore.pendingEventChoice = {
+            id: 'test-brain-food-damage-choice',
+            playerId: '0',
+            sourceTitle: '脑状食品',
+            effect: damageBranch!.effect,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={damageCore}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('脑状食品');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-knowledge'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 2（力量、知识）');
+    });
+
+    it('夜幕众星待选事件能在真实页面选择检定属性', () => {
+        const nightStars = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '夜幕众星');
+        expect(nightStars?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            traits: {
+                ...core.currentExplorer.traits,
+                knowledge: 4,
+            },
+            inventory: [],
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        core.pendingEventChoice = {
+            id: 'test-night-stars-trait-choice',
+            playerId: '0',
+            sourceTitle: '夜幕众星',
+            effect: nightStars!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('夜幕众星');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识检定');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 -1');
+    });
+
+    it('一抹鲜红待选事件能在真实页面跳过作祟检定并结算伤害', () => {
+        const crimsonSplash = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一抹鲜红');
+        expect(crimsonSplash?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.pendingEventChoice = {
+            id: 'test-crimson-splash-choice',
+            playerId: '0',
+            sourceTitle: '一抹鲜红',
+            acceptLabel: '进行作祟检定',
+            declineLabel: '跳过作祟检定',
+            effect: crimsonSplash!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('一抹鲜红');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('物理伤害');
+    });
+
+    it('一瓶微尘待选事件能在真实页面跳过作祟检定并结算双属性变化', () => {
+        const dustyVial = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘');
+        expect(dustyVial?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.pendingEventChoice = {
+            id: 'test-dusty-vial-choice',
+            playerId: '0',
+            sourceTitle: '一瓶微尘',
+            acceptLabel: '进行作祟检定',
+            declineLabel: '跳过作祟检定',
+            effect: dustyVial!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('一瓶微尘');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('力量 -1');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('神志 +1');
+    });
+
+    it('说“茄子”！待选事件能在真实页面跳过作祟检定并抽取物品', () => {
+        const sayCheese = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！');
+        expect(sayCheese?.effect).toBeTruthy();
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.possessionOrderByKind.item = [{ id: 'camera', name: '魔法相机', kind: 'item' }];
+        core.currentExplorer.inventory = [];
+        core.currentExplorerInventory = [];
+        core.pendingEventChoice = {
+            id: 'test-say-cheese-choice',
+            playerId: '0',
+            sourceTitle: '说“茄子”！',
+            acceptLabel: '进行作祟检定',
+            declineLabel: '跳过作祟检定',
+            effect: sayCheese!.effect!,
+        };
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('说“茄子”！');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
+
+        expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('抽取一张物品卡');
+        expect(within(screen.getByTestId('betrayal-inventory-row-item')).getByText('魔法相机')).toBeInTheDocument();
     });
 });

@@ -6,7 +6,15 @@ import { syncQidahenCurrentCoreSelections } from '../domain/coreDerivedState';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { getQidahenCurrentWheelDispatchSelectionForCore, getQidahenInternalDispatchSelectionForCore } from '../domain/dispatchSelectionBuilders';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';
+import {
+    getQidahenDirectActionIdForHandCard,
+    resolveQidahenAtlas05OrdinaryHandCardIdentity,
+} from '../domain/handCardIdentity';
 import { buildDrawnHandCards } from '../domain/handCardState';
+import {
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
+} from '../domain/ordinaryHandCardIdentities';
 import { resolveQidahenFortificationMaintenanceInteractionChoice } from '../domain/fortificationMaintenance';
 import { createInitialCore } from '../domain/initialCoreSetup';
 import { resolveQidahenPostBattleInteractionChoice } from '../domain/pendingBattleFlow';
@@ -255,67 +263,185 @@ describe('七大恨支付手牌选择', () => {
         expect(factionHandCards(core, 'jin')).toHaveLength(10);
     });
 
-    it('剧本一开局手牌预览会绑定各势力正式牌库图集', () => {
+    it('剧本一开局普通手牌预览会绑定 atlas05 正式普通手牌图集', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const allVisibleHandCards = [
+            ...factionHandCards(core, 'ming'),
+            ...factionHandCards(core, 'mongol'),
+            ...factionHandCards(core, 'jin'),
+        ];
 
-        for (const [index, card] of factionHandCards(core, 'ming').entries()) {
+        for (const [index, card] of allVisibleHandCards.entries()) {
             expect(card.previewRef).toMatchObject({
                 type: 'atlas',
-                atlasId: 'qidahen:ming-hand-preview',
-                index,
-            });
-        }
-        for (const [index, card] of factionHandCards(core, 'mongol').entries()) {
-            expect(card.previewRef).toMatchObject({
-                type: 'atlas',
-                atlasId: 'qidahen:mongol-hand-preview',
-                index,
-            });
-        }
-        for (const [index, card] of factionHandCards(core, 'jin').entries()) {
-            expect(card.previewRef).toMatchObject({
-                type: 'atlas',
-                atlasId: 'qidahen:jin-hand-preview',
-                index,
+                atlasId: 'qidahen:atlas05-ordinary-hand-preview',
+                index: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[index]?.atlasIndex,
             });
         }
     });
 
-    it('剧本一开局正式手牌会带可审计规则对象身份，而不是全部停留在 unknown 壳', () => {
+    it('剧本一开局正式手牌会消费 atlas05 通过验收的普通手牌身份', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const allVisibleHandCards = [
+            ...factionHandCards(core, 'ming'),
+            ...factionHandCards(core, 'mongol'),
+            ...factionHandCards(core, 'jin'),
+        ];
 
-        expect(factionHandCards(core, 'ming').every((card) => card.previewKind === 'character')).toBe(true);
-        expect(factionHandCards(core, 'ming').every((card) => card.cardKind === 'character')).toBe(true);
-        expect(factionHandCards(core, 'mongol').slice(0, 3).every((card) => card.previewKind === 'scenario')).toBe(true);
-        expect(factionHandCards(core, 'mongol').slice(0, 3).every((card) => card.cardKind === 'scenario')).toBe(true);
-        expect(factionHandCards(core, 'mongol').slice(3).every((card) => card.previewKind === 'chronology')).toBe(true);
-        expect(factionHandCards(core, 'mongol').slice(3).every((card) => card.cardKind === 'chronology')).toBe(true);
-        expect(factionHandCards(core, 'jin').slice(0, 10).every((card) => card.previewKind === 'character')).toBe(true);
-        expect(factionHandCards(core, 'jin').slice(0, 10).every((card) => card.cardKind === 'character')).toBe(true);
-        expect(factionHandCards(core, 'jin').every((card) => card.previewKind !== 'unknown')).toBe(true);
-        expect(factionHandCards(core, 'jin').every((card) => card.cardKind !== 'unknown')).toBe(true);
+        expect(allVisibleHandCards.every((card) => card.previewKind === 'unknown')).toBe(true);
+        expect(allVisibleHandCards.every((card) => card.cardKind !== 'unknown')).toBe(true);
+        expect(allVisibleHandCards.map((card) => card.cardDefId)).toEqual(
+            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+                .slice(0, allVisibleHandCards.length)
+                .map((identity) => identity.cardDefId),
+        );
+        expect(allVisibleHandCards.map((card) => card.label)).toEqual(
+            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+                .slice(0, allVisibleHandCards.length)
+                .map((identity) => identity.displayName),
+        );
+        expect(allVisibleHandCards.map((card) => card.rulesSummary)).toEqual(
+            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+                .slice(0, allVisibleHandCards.length)
+                .map((identity) => (
+                    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId]
+                )),
+        );
         expect(factionHandCards(core, 'ming').map((card) => card.cardDefId)).toEqual([
-            'ming-character-xiong-tingbi',
-            'ming-character-sun-chengzong',
-            'ming-character-sun-yuanhua',
-            'ming-character-mao-wenlong',
+            'qidahen-atlas05-1600-counter-spy-plot',
+            'qidahen-atlas05-1601-defeat-in-detail',
+            'qidahen-atlas05-1602-bayara',
+            'qidahen-atlas05-1603-infantry-armor',
         ]);
-        expect(factionHandCards(core, 'mongol')[0]?.previewIdentityId).toBe('mongol-scenario-dingmao-rebellion-1627');
-        expect(factionHandCards(core, 'jin')[0]?.previewIdentityId).toBe('jin-character-yang-guli');
-        expect(factionHandCards(core, 'mongol').some((card) => card.cardKind === 'event')).toBe(false);
-        expect(factionHandCards(core, 'ming').some((card) => card.cardKind === 'armament')).toBe(false);
+        expect(factionHandCards(core, 'ming')[2]?.cardKind).toBe('tactic');
+        expect(factionHandCards(core, 'ming')[3]?.cardKind).toBe('armament');
+        expect(factionHandCards(core, 'ming')[3]?.armamentId).toBe('infantry-armor');
+        expect(factionHandCards(core, 'jin').some((card) => card.cardKind === 'armament')).toBe(true);
     });
 
-    it('正式局后续摸牌会延续同一套最小预览身份合同', () => {
+    it('正式局后续摸牌会继续沿 atlas05 通过验收序列发放普通手牌', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const drawn = buildDrawnHandCards(core, 'jin', 2);
         const nextCards = drawn.slice(-2);
+        const firstDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[10];
+        const secondDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[11];
 
         expect(nextCards).toHaveLength(2);
-        expect(nextCards.every((card) => card.previewKind === 'card-back')).toBe(true);
-        expect(nextCards.every((card) => card.cardKind === 'card-back')).toBe(true);
-        expect(nextCards[0]?.previewIdentityId).toBe('jin-card-back-0');
-        expect(nextCards[1]?.previewIdentityId).toBe('jin-card-back-1');
+        expect(nextCards[0]?.previewRef).toMatchObject({
+            type: 'atlas',
+            atlasId: 'qidahen:atlas05-ordinary-hand-preview',
+            index: firstDrawnIdentity?.atlasIndex,
+        });
+        expect(nextCards[1]?.previewRef).toMatchObject({
+            type: 'atlas',
+            atlasId: 'qidahen:atlas05-ordinary-hand-preview',
+            index: secondDrawnIdentity?.atlasIndex,
+        });
+        expect(nextCards.map((card) => card.cardDefId)).toEqual([
+            firstDrawnIdentity?.cardDefId,
+            secondDrawnIdentity?.cardDefId,
+        ]);
+        expect(nextCards.map((card) => card.cardKind)).toEqual([
+            firstDrawnIdentity?.cardKind,
+            secondDrawnIdentity?.cardKind,
+        ]);
+    });
+
+    it('atlas05 普通手牌真相表只解析通过验收的事件、军备和战术身份', () => {
+        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(30);
+
+        const eventCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(0);
+        expect(eventCard).toMatchObject({
+            cardKind: 'event',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1600-counter-spy-plot',
+            previewKind: 'unknown',
+        });
+        expect(getQidahenDirectActionIdForHandCard(eventCard!)).toBeNull();
+
+        const armamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(3);
+        expect(armamentCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'infantry-armor',
+            cardDefId: 'qidahen-atlas05-1603-infantry-armor',
+            previewKind: 'unknown',
+        });
+        expect(getQidahenDirectActionIdForHandCard(armamentCard!)).toBe('upgrade-armament');
+
+        const tacticCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(2);
+        expect(tacticCard).toMatchObject({
+            cardKind: 'tactic',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1602-bayara',
+            previewKind: 'unknown',
+        });
+        expect(getQidahenDirectActionIdForHandCard(tacticCard!)).toBeNull();
+
+        const secondPassedArmamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(19);
+        expect(secondPassedArmamentCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'cavalry-armor',
+            cardDefId: 'qidahen-atlas05-1619-cavalry-armor-alt',
+            previewKind: 'unknown',
+        });
+        expect(getQidahenDirectActionIdForHandCard(secondPassedArmamentCard!)).toBe('upgrade-armament');
+
+        const promotedEventCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(23);
+        expect(promotedEventCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1623-mongol-nobles-congress'],
+        });
+
+        const promotedArmamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(26);
+        expect(promotedArmamentCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'artillery-tech',
+            cardDefId: 'qidahen-atlas05-1626-artillery-tech',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1626-artillery-tech'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedArmamentCard!)).toBe('upgrade-armament');
+
+        const promotedTributeCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(33);
+        expect(promotedTributeCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1633-tribute-edict',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1633-tribute-edict'],
+        });
+
+        const promotedGinsengCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(30);
+        expect(promotedGinsengCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1630-ginseng-and-sable',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1630-ginseng-and-sable'],
+        });
+
+        const promotedNortheastArmyCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(31);
+        expect(promotedNortheastArmyCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1631-northeast-army',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1631-northeast-army'],
+        });
+
+        const promotedMongolDroughtCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(38);
+        expect(promotedMongolDroughtCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1638-mongol-drought-alt',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1638-mongol-drought-alt'],
+        });
+
+        const promotedCavalryFirearmCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(39);
+        expect(promotedCavalryFirearmCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'cavalry-firearm',
+            cardDefId: 'qidahen-atlas05-1639-cavalry-firearm',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1639-cavalry-firearm'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedCavalryFirearmCard!)).toBe('upgrade-armament');
+
+        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(43)).toBeNull();
+
+        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(7)).toBeNull();
     });
 
     it('剧本一开局已开发军备遵循规则设置', () => {

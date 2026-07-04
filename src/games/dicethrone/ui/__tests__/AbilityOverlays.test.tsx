@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AbilityOverlays } from '../AbilityOverlays';
 import { getAbilitySlotLayoutForCharacter, getPlayerBoardLayoutVersion } from '../abilitySlotLayout';
 import { getUpgradeCardForAbilityLevel } from '../abilityOverlayHelpers';
+import { getAbilitySlotIdForCharacter } from '../abilitySlotMapping';
 
 
 const mockUseCoarsePointer = vi.fn(() => false);
@@ -374,6 +375,63 @@ describe('AbilityOverlays', () => {
         expect(ultimateSlot).toHaveAttribute('data-base-ability-id', 'merciless-plunder');
         expect(ultimateSlot).toHaveAttribute('data-resolved-ability-id', 'merciless-plunder');
         expect(ultimateSlot).toHaveAttribute('data-should-highlight', 'true');
+    });
+
+    it('咒缚海盗槽位查找应按当前面板面向区分人类面和诅咒面', () => {
+        expect(getAbilitySlotIdForCharacter('cursed_pirate', 'verdict-command', 'normal')).toBe('lightning');
+        expect(getAbilitySlotIdForCharacter('cursed_pirate', 'verdict-command', 'cursed')).toBeNull();
+        expect(getAbilitySlotIdForCharacter('cursed_pirate', 'soul-command', 'normal')).toBeNull();
+        expect(getAbilitySlotIdForCharacter('cursed_pirate', 'soul-command', 'cursed')).toBe('lightning');
+    });
+
+    it('旧英雄和新英雄槽位查找应与面板覆盖层使用同一物理槽位', () => {
+        const cases = [
+            { characterId: 'monk', abilityId: 'fist-technique', slotId: 'calm' },
+            { characterId: 'barbarian', abilityId: 'slap', slotId: 'meditate' },
+            { characterId: 'pyromancer', abilityId: 'fireball', slotId: 'combo' },
+            { characterId: 'moon_elf', abilityId: 'longbow', slotId: 'meditate' },
+            { characterId: 'shadow_thief', abilityId: 'dagger-strike', slotId: 'lotus' },
+            { characterId: 'paladin', abilityId: 'holy-light', slotId: 'chi' },
+            { characterId: 'zhanshujia', abilityId: 'strategic-shift', slotId: 'calm' },
+            { characterId: 'artificer', abilityId: 'overclock', slotId: 'lightning' },
+        ];
+
+        for (const entry of cases) {
+            expect(
+                getAbilitySlotIdForCharacter(entry.characterId, entry.abilityId),
+                `${entry.characterId} 的 ${entry.abilityId} 应落在 ${entry.slotId}`,
+            ).toBe(entry.slotId);
+        }
+    });
+
+    it('技能槽 DOM 应区分主面板和放大预览，避免升级卡飞错目标', () => {
+        const { container, rerender } = renderAbilityOverlays();
+        expect(container.querySelector('[data-ability-slot="calm"]')).toHaveAttribute(
+            'data-ability-slot-scope',
+            'main-board',
+        );
+
+        rerender(
+            <div style={{ position: 'relative', width: 1200, height: 900 }}>
+                <AbilityOverlays
+                    isEditing={false}
+                    availableAbilityIds={[]}
+                    canSelect={false}
+                    canHighlight={false}
+                    onSelectAbility={vi.fn()}
+                    abilityLevels={{ 'fist-technique': 2 }}
+                    characterId="monk"
+                    locale="zh-CN"
+                    onMagnifyCard={vi.fn()}
+                    slotScope="magnified-preview"
+                />
+            </div>
+        );
+
+        expect(container.querySelector('[data-ability-slot="calm"]')).toHaveAttribute(
+            'data-ability-slot-scope',
+            'magnified-preview',
+        );
     });
 
 });

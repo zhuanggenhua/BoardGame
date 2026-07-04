@@ -47,6 +47,11 @@ node scripts/mobile/release-android.mjs ota --channel gray --dry-run
 node scripts/mobile/release-android.mjs native --channel stable --bump patch
 ```
 
+- 真机测试默认也使用正式包名与正式应用名：
+  - `appId = top.easyboardgame.app`
+  - `appName = 易桌游`
+  - 禁止为了“测试方便”默认改成 `top.easyboardgame.app.debug` 或“易桌游测试”。只有明确需要与正式包并存安装时，才允许单独走测试壳。
+
 只发游戏包：
 
 ```bash

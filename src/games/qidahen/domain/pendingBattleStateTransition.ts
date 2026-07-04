@@ -135,7 +135,10 @@ export const applyPendingActionResolutionToBattleFlowState = (
         ].slice(0, 6),
     });
     return dependencies.advanceTurnIfReady(
-        dependencies.syncFactionActionWindow(resolvedState, currentFactionId),
+        dependencies.syncFactionActionWindow(
+            resolvedState,
+            currentFactionId,
+        ),
         timestamp,
     );
 };
@@ -184,7 +187,10 @@ export const applyPostBattleDecisionResolutionToBattleFlowState = (
         ].slice(0, 6),
     });
     return dependencies.advanceTurnIfReady(
-        dependencies.syncFactionActionWindow(resolvedState, currentFactionId),
+        dependencies.syncFactionActionWindow(
+            resolvedState,
+            currentFactionId,
+        ),
         timestamp,
     );
 };

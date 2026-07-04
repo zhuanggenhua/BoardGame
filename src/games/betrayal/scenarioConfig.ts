@@ -136,15 +136,73 @@ export type BetrayalUseEffectSeed =
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'chosenTrait';
+        amount: number;
+        allowedTraits: BetrayalTraitKey[];
+        chosenTrait?: BetrayalTraitKey;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'healChosenTrait';
+        allowedTraits: BetrayalTraitKey[];
+        chosenTrait?: BetrayalTraitKey;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'generalDamage';
         amount: number;
         traits: BetrayalTraitKey[];
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'generalDamageChoice';
+        amount: number;
+        allowedTraits: BetrayalTraitKey[];
+        selectedTraits?: BetrayalTraitKey[];
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'rolledDamage';
         dice: number;
+        rolls?: number[];
         damageKind: 'physical' | 'mental';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'drawPossession';
+        kind: BetrayalInventoryKind;
+        drawnCard?: BetrayalInventorySeed;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInRoom';
+        roomId: string;
+        roomName: string;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInDiscoveredRoomByVisualId';
+        visualIds: BetrayalRoomVisualId[];
+        roomNames: string[];
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInDiscoveredRoomByFloor';
+        targetRoomScope: 'anyDiscovered' | 'groundDiscovered' | 'basementDiscovered';
+        targetRoomId?: string;
+        targetRoomName?: string;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInFloorStartingRoom';
+        floor: BetrayalRoomFloor;
+        roomName: string;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInAdjacentRoom';
+        targetRoomId?: string;
+        targetRoomName?: string;
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -152,8 +210,62 @@ export type BetrayalUseEffectSeed =
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'placeSecretPassageToken';
+        targetRoomScope?: 'anyOtherDiscovered' | 'groundDiscovered' | 'basementDiscovered';
+        targetRoomId?: string;
+        targetRoomName?: string;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'compound';
         effects: BetrayalUseEffectSeed[];
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'optionalEventRoll';
+        acceptLabel: string;
+        declineLabel: string;
+        roll: {
+            kind: 'dice';
+            dice: number;
+            label: string;
+            branches: BetrayalEventResultBranch[];
+        };
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'optionalHauntRoll';
+        acceptLabel: string;
+        declineLabel: string;
+        successHauntId: number;
+        successHauntTriggerLabel?: string;
+        successTraitorSelection?: 'current-explorer' | 'magic-camera-owner';
+        successLabel: string;
+        failureEffect: BetrayalUseEffectSeed;
+        skippedOrStartedEffect: BetrayalUseEffectSeed;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'chooseTraitRoll';
+        prompt: string;
+        allowedTraits: BetrayalTraitKey[];
+        branches: BetrayalEventResultBranch[];
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'allTraitChecks';
+        name: string;
+        traits: BetrayalTraitKey[];
+        passMin: number;
+        failAmount: number;
+        results?: {
+            trait: BetrayalTraitKey;
+            total: number;
+            dice: number[];
+            passiveBonus: number;
+            passed: boolean;
+        }[];
+        allPassEffect: BetrayalUseEffectSeed;
         recommendedAction: BetrayalRecommendedAction;
     };
 
@@ -305,7 +417,7 @@ export const BETRAYAL_SHARED_PRE_HAUNT_SETUP = {
     initialDeckCounts: {
         omen: 9,
         item: 11,
-        event: 8,
+        event: 23,
     } satisfies Record<BetrayalDeckKind, number>,
     startingRoomLayout: [
         {
@@ -910,6 +1022,21 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             },
         },
         {
+            name: '说“茄子”！',
+            effect: {
+                mode: 'optionalHauntRoll',
+                acceptLabel: '进行作祟检定',
+                declineLabel: '跳过作祟检定',
+                successHauntId: 33,
+                successHauntTriggerLabel: '说“茄子”！',
+                successTraitorSelection: 'magic-camera-owner',
+                successLabel: '翻开作祟剧本33，魔法相机持有者成为奸徒；否则你成为奸徒',
+                failureEffect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                skippedOrStartedEffect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                recommendedAction: 'use',
+            },
+        },
+        {
             name: '外星几何',
             roll: {
                 trait: 'knowledge',
@@ -984,6 +1111,23 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             },
         },
         {
+            name: '吊死鬼',
+            effect: {
+                mode: 'allTraitChecks',
+                name: '吊死鬼',
+                traits: ['might', 'speed', 'knowledge', 'sanity'],
+                passMin: 2,
+                failAmount: 1,
+                allPassEffect: {
+                    mode: 'chosenTrait',
+                    amount: 1,
+                    allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                    recommendedAction: 'explore',
+                },
+                recommendedAction: 'use',
+            },
+        },
+        {
             name: '电话铃声',
             roll: {
                 kind: 'dice',
@@ -1009,6 +1153,386 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                         min: 0,
                         label: '受到两颗骰子的物理伤害',
                         effect: { mode: 'rolledDamage', dice: 2, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '小机器人',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 5,
+                        label: '抽取一张物品卡',
+                        effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的物理伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '嘎吱的木门',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 5,
+                        label: '放置到上层起始板块',
+                        effect: {
+                            mode: 'placeExplorerInFloorStartingRoom',
+                            floor: 'upper',
+                            roomName: '上层起始点',
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 3,
+                        label: '放置到地面层起始板块',
+                        effect: {
+                            mode: 'placeExplorerInFloorStartingRoom',
+                            floor: 'ground',
+                            roomName: '地面层起始点',
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '放置到地下室起始板块',
+                        effect: {
+                            mode: 'placeExplorerInFloorStartingRoom',
+                            floor: 'basement',
+                            roomName: '地下室起始点',
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '脑状食品',
+            roll: {
+                trait: 'might',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点力量或速度',
+                        effect: {
+                            mode: 'chosenTrait',
+                            amount: 1,
+                            allowedTraits: ['might', 'speed'],
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 1,
+                        label: '获得 1 点速度并失去 1 点神志',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                                { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 2 点通用伤害',
+                        effect: {
+                            mode: 'generalDamageChoice',
+                            amount: 2,
+                            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '上古旧宅',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择速度或力量进行检定',
+                allowedTraits: ['speed', 'might'],
+                recommendedAction: 'use',
+                branches: [
+                    {
+                        min: 5,
+                        label: '放置到任意板块',
+                        effect: {
+                            mode: 'placeExplorerInDiscoveredRoomByFloor',
+                            targetRoomScope: 'anyDiscovered',
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 3,
+                        label: '放置到任意地面层板块，并受到 1 点通用伤害',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                {
+                                    mode: 'placeExplorerInDiscoveredRoomByFloor',
+                                    targetRoomScope: 'groundDiscovered',
+                                    recommendedAction: 'endTurn',
+                                },
+                                {
+                                    mode: 'generalDamageChoice',
+                                    amount: 1,
+                                    allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                                    recommendedAction: 'endTurn',
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '放置到任意地下室板块，并受到 1 点精神伤害',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                {
+                                    mode: 'placeExplorerInDiscoveredRoomByFloor',
+                                    targetRoomScope: 'basementDiscovered',
+                                    recommendedAction: 'endTurn',
+                                },
+                                {
+                                    mode: 'generalDamage',
+                                    amount: 1,
+                                    traits: ['knowledge', 'sanity'],
+                                    recommendedAction: 'endTurn',
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '肉质苔癣',
+            effect: {
+                mode: 'optionalEventRoll',
+                acceptLabel: '大口吸入芳香',
+                declineLabel: '不吸入芳香',
+                recommendedAction: 'use',
+                roll: {
+                    kind: 'dice',
+                    dice: 2,
+                    label: '投 2 颗骰子',
+                    branches: [
+                        {
+                            min: 3,
+                            label: '获得 1 点任意属性',
+                            effect: {
+                                mode: 'chosenTrait',
+                                amount: 1,
+                                allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                                recommendedAction: 'explore',
+                            },
+                        },
+                        {
+                            min: 0,
+                            label: '受到一颗骰子的精神伤害',
+                            effect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                        },
+                    ],
+                },
+            },
+        },
+        {
+            name: '夜幕众星',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择一项属性进行检定',
+                allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                recommendedAction: 'use',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点所选属性',
+                        effect: {
+                            mode: 'chosenTrait',
+                            amount: 1,
+                            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 4,
+                        label: '失去 1 点所选属性',
+                        effect: {
+                            mode: 'chosenTrait',
+                            amount: -1,
+                            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '治疗所选属性',
+                        effect: {
+                            mode: 'healChosenTrait',
+                            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                            recommendedAction: 'explore',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '一抹鲜红',
+            effect: {
+                mode: 'optionalHauntRoll',
+                acceptLabel: '进行作祟检定',
+                declineLabel: '跳过作祟检定',
+                successHauntId: 1,
+                successHauntTriggerLabel: 'A Splash of Crimson',
+                successLabel: '翻开作祟剧本1，你成为叛徒',
+                failureEffect: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                skippedOrStartedEffect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '一瓶微尘',
+            effect: {
+                mode: 'optionalHauntRoll',
+                acceptLabel: '进行作祟检定',
+                declineLabel: '跳过作祟检定',
+                successHauntId: 3,
+                successHauntTriggerLabel: 'A Dusty Vial',
+                successLabel: '翻开作祟剧本3，成为作祟揭露者',
+                failureEffect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                skippedOrStartedEffect: {
+                    mode: 'compound',
+                    effects: [
+                        { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                        { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    ],
+                    recommendedAction: 'endTurn',
+                },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '大宅饿了',
+            effect: {
+                mode: 'optionalHauntRoll',
+                acceptLabel: '进行作祟检定',
+                declineLabel: '跳过作祟检定',
+                successHauntId: 12,
+                successLabel: '翻开作祟剧本12，作祟揭露者为当前探险者',
+                failureEffect: { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+                skippedOrStartedEffect: {
+                    mode: 'chosenTrait',
+                    amount: 1,
+                    allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                    recommendedAction: 'explore',
+                },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '一条秘密通道',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 5,
+                        label: '在任意另一板块放置另一个秘密通道标志物，获得 1 点知识',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'explore',
+                            effects: [
+                                { mode: 'placeSecretPassageToken', recommendedAction: 'explore' },
+                                {
+                                    mode: 'placeSecretPassageToken',
+                                    targetRoomScope: 'anyOtherDiscovered',
+                                    recommendedAction: 'explore',
+                                },
+                                { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                            ],
+                        },
+                    },
+                    {
+                        min: 3,
+                        label: '在任意地面层板块放置另一个秘密通道标志物',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'placeSecretPassageToken', recommendedAction: 'endTurn' },
+                                {
+                                    mode: 'placeSecretPassageToken',
+                                    targetRoomScope: 'groundDiscovered',
+                                    recommendedAction: 'endTurn',
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '在任意地下室板块放置另一个秘密通道标志物，失去 1 点神志',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'placeSecretPassageToken', recommendedAction: 'endTurn' },
+                                {
+                                    mode: 'placeSecretPassageToken',
+                                    targetRoomScope: 'basementDiscovered',
+                                    recommendedAction: 'endTurn',
+                                },
+                                { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '最深的壁橱',
+            roll: {
+                trait: 'speed',
+                branches: [
+                    {
+                        min: 4,
+                        label: '抽取一张物品卡',
+                        effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 1,
+                        label: '受到 1 点精神伤害',
+                        effect: {
+                            mode: 'generalDamage',
+                            amount: 1,
+                            traits: ['knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的物理伤害，并放置到地下室起始点',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                                {
+                                    mode: 'placeExplorerInRoom',
+                                    roomId: 'basement-landing',
+                                    roomName: '地下室起始点',
+                                    recommendedAction: 'endTurn',
+                                },
+                            ],
+                        },
                     },
                 ],
             },
@@ -1060,6 +1584,51 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             },
         },
         {
+            name: '蜘蛛！',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志或速度，并放置到相邻板块',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'explore',
+                            effects: [
+                                {
+                                    mode: 'chosenTrait',
+                                    amount: 1,
+                                    allowedTraits: ['sanity', 'speed'],
+                                    recommendedAction: 'explore',
+                                },
+                                {
+                                    mode: 'placeExplorerInAdjacentRoom',
+                                    recommendedAction: 'explore',
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        min: 2,
+                        label: '获得 1 点速度并失去 1 点神志',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                                { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '失去 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
             name: '一种怪异的感觉',
             roll: {
                 kind: 'dice',
@@ -1090,6 +1659,42 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                         min: 0,
                         label: '失去 1 点力量',
                         effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '葬礼',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 2,
+                        label: '失去 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                    {
+                        min: 0,
+                        label: '失去 1 点神志及 1 点力量；若墓园或地下墓穴已发现，将探险者放置在上述板块之一',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                                { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                {
+                                    mode: 'placeExplorerInDiscoveredRoomByVisualId',
+                                    visualIds: ['graveyard', 'catacombs'],
+                                    roomNames: ['墓园', '地下墓穴'],
+                                    recommendedAction: 'endTurn',
+                                },
+                            ],
+                        },
                     },
                 ],
             },

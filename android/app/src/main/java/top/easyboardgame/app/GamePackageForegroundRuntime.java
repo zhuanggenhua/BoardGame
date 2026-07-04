@@ -58,6 +58,10 @@ final class GamePackageForegroundRuntime {
         }
     }
 
+    private interface IncrementalFileProgressListener {
+        void onProgress(long fileDownloadedBytes);
+    }
+
     static void runTask(
         Context context,
         AndroidDownloadTaskStore taskStore,
@@ -123,6 +127,10 @@ final class GamePackageForegroundRuntime {
         try {
             executeIncrementalGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         } catch (IncrementalFallbackException error) {
+            if (!task.allowFullFallback) {
+                Log.w(TAG, "incremental install failed without full fallback taskId=" + task.taskId + " reason=" + error.getMessage());
+                throw error;
+            }
             Log.w(TAG, "incremental install fallback taskId=" + task.taskId + " reason=" + error.getMessage());
             executeFullGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         }
@@ -201,6 +209,7 @@ final class GamePackageForegroundRuntime {
 
         List<RemoteFileEntry> changedEntries = computeChangedEntries(currentAssetsDir, localFiles, remoteEntries);
         Set<String> remotePaths = buildRemotePathSet(remoteEntries);
+        addIncrementalPartPaths(remotePaths, changedEntries);
         Log.i(
             TAG,
             "incremental-plan gameId=" + gameId
@@ -213,7 +222,6 @@ final class GamePackageForegroundRuntime {
         File stagingAssetsDir = GamePackageFs.resolveStagingAssetsDir(context, gameId, resolvedPackageVersion);
         try {
             GamePackageFs.cleanupStagingDirectories(context, gameId, resolvedPackageVersion);
-            GamePackageFs.deleteRecursively(stagingDir);
             if (!stagingAssetsDir.mkdirs() && !stagingAssetsDir.exists()) throw new IOException("创建增量暂存目录失败");
 
             GamePackageFs.copyDirectoryContents(currentAssetsDir, stagingAssetsDir);
@@ -227,22 +235,26 @@ final class GamePackageForegroundRuntime {
                     + " changedFiles=" + changedEntries.size()
                     + " totalBytes=" + totalBytes
             );
-            long downloadedBytes = 0L;
-            taskStore.updateRunningProgress(task.taskId, 0L, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
-            emitInstallState(context, gameId, "downloading", totalBytes > 0 ? 0 : null, totalBytes > 0 ? "determinate" : "indeterminate", null, null, task.packageVersion, null, null);
+            long downloadedBytes = estimateExistingIncrementalBytes(stagingAssetsDir, changedEntries);
+            taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+            emitIncrementalDownloadProgress(context, gameId, task.packageVersion, downloadedBytes, totalBytes);
+            final long progressTotalBytes = totalBytes;
 
             for (RemoteFileEntry entry : changedEntries) {
                 if (cancelFlag.get()) throw new IOException("安装已取消");
                 File targetFile = resolveFileWithinRoot(stagingAssetsDir, entry.path);
-                downloadIncrementalFile(cancelFlag, assetBaseUrl, entry, targetFile);
-                downloadedBytes += Math.max(entry.size, targetFile.length());
+                downloadedBytes -= estimateExistingIncrementalEntryBytes(targetFile, entry);
+                if (downloadedBytes < 0L) downloadedBytes = 0L;
+                final long completedBeforeEntry = downloadedBytes;
+                downloadIncrementalFile(cancelFlag, assetBaseUrl, entry, targetFile, fileDownloadedBytes -> {
+                    long currentDownloadedBytes = completedBeforeEntry + clampIncrementalEntryBytes(fileDownloadedBytes, entry);
+                    taskStore.updateRunningProgress(task.taskId, currentDownloadedBytes, progressTotalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+                    emitIncrementalDownloadProgress(context, gameId, task.packageVersion, currentDownloadedBytes, progressTotalBytes);
+                    onProgress.run();
+                });
+                downloadedBytes = completedBeforeEntry + clampIncrementalEntryBytes(targetFile.length(), entry);
                 taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
-                if (totalBytes > 0L) {
-                    int percent = (int) Math.max(0, Math.min(100, Math.round((downloadedBytes * 100f) / totalBytes)));
-                    emitInstallState(context, gameId, "downloading", percent, "determinate", null, null, task.packageVersion, null, null);
-                } else {
-                    emitInstallState(context, gameId, "downloading", null, "indeterminate", null, null, task.packageVersion, null, null);
-                }
+                emitIncrementalDownloadProgress(context, gameId, task.packageVersion, downloadedBytes, totalBytes);
                 onProgress.run();
             }
 
@@ -265,11 +277,15 @@ final class GamePackageForegroundRuntime {
             emitInstallState(context, gameId, "installed", 100, "determinate", null, null, task.packageVersion, currentAssetsDir.getAbsolutePath(), installedAt);
             GamePackageFs.cleanupStagingDirectories(context, gameId, null);
             onProgress.run();
-        } catch (IncrementalFallbackException error) {
-            GamePackageFs.deleteRecursively(stagingDir);
-            throw error;
         } catch (Exception error) {
-            GamePackageFs.deleteRecursively(stagingDir);
+            Log.w(
+                TAG,
+                "incremental-install failed-keep-staging gameId=" + gameId
+                    + " version=" + resolvedPackageVersion
+                    + " stagingDir=" + stagingDir.getAbsolutePath()
+                    + " errorChain=" + summarizeThrowableChain(error),
+                error
+            );
             throw new IncrementalFallbackException(error.getMessage() != null ? error.getMessage() : "增量安装失败");
         }
     }
@@ -345,47 +361,205 @@ final class GamePackageForegroundRuntime {
         AtomicBoolean cancelFlag,
         String assetBaseUrl,
         RemoteFileEntry entry,
-        File targetFile
+        File targetFile,
+        IncrementalFileProgressListener progressListener
     ) throws Exception {
         File parent = targetFile.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) throw new IOException("创建目录失败");
 
-        for (int attempt = 1; attempt <= 3; attempt += 1) {
-            if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧文件失败");
-            HttpURLConnection connection = (HttpURLConnection) new URL(buildRemoteAssetFileUrl(assetBaseUrl, entry.path)).openConnection();
-            connection.setConnectTimeout(15000);
-            connection.setReadTimeout(30000);
+        if (targetFile.isFile() && targetFile.length() == entry.size && isChecksumMatch(targetFile, entry.hash)) {
+            Log.i(TAG, "incremental-file already-complete path=" + entry.path + " bytes=" + targetFile.length());
+            return;
+        }
+
+        File partFile = new File(targetFile.getAbsolutePath() + ".part");
+        if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧增量文件失败");
+
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
             try {
-                int responseCode = connection.getResponseCode();
-                if (responseCode < 200 || responseCode >= 300) {
-                    if (attempt >= 3) throw new IncrementalFallbackException("增量文件下载失败，HTTP " + responseCode);
-                    continue;
-                }
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                try (
-                    InputStream input = new BufferedInputStream(connection.getInputStream());
-                    BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(targetFile))
-                ) {
-                    byte[] buffer = new byte[BUFFER_SIZE];
-                    int read;
-                    while ((read = input.read(buffer)) != -1) {
-                        if (cancelFlag.get()) throw new IOException("安装已取消");
-                        output.write(buffer, 0, read);
-                        digest.update(buffer, 0, read);
-                    }
-                }
-                String actualChecksum = bytesToHex(digest.digest());
-                if (!entry.hash.equalsIgnoreCase(actualChecksum)) {
-                    if (attempt >= 3) throw new IncrementalFallbackException("增量文件校验失败");
-                    continue;
-                }
+                downloadIncrementalFileOnce(cancelFlag, assetBaseUrl, entry, targetFile, partFile, attempt, progressListener);
                 return;
-            } finally {
-                connection.disconnect();
+            } catch (Exception error) {
+                lastError = error;
+                boolean recoverable = isRecoverableDownloadError(error);
+                long partBytes = partFile.exists() ? partFile.length() : 0L;
+                Log.w(
+                    TAG,
+                    "incremental-file attempt-failed path=" + entry.path
+                        + " attempt=" + attempt
+                        + " maxAttempts=" + DOWNLOAD_MAX_ATTEMPTS
+                        + " recoverable=" + recoverable
+                        + " cancelRequested=" + cancelFlag.get()
+                        + " partExists=" + partFile.exists()
+                        + " partBytes=" + partBytes
+                        + " expectedBytes=" + entry.size
+                        + " errorChain=" + summarizeThrowableChain(error),
+                    error
+                );
+                if (cancelFlag.get() || !recoverable || attempt >= DOWNLOAD_MAX_ATTEMPTS) {
+                    throw error;
+                }
+                try {
+                    Thread.sleep(1000L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw interrupted;
+                }
             }
         }
 
-        throw new IncrementalFallbackException("增量文件连续下载失败");
+        throw lastError != null ? lastError : new IncrementalFallbackException("增量文件连续下载失败");
+    }
+
+    private static void downloadIncrementalFileOnce(
+        AtomicBoolean cancelFlag,
+        String assetBaseUrl,
+        RemoteFileEntry entry,
+        File targetFile,
+        File partFile,
+        int attempt,
+        IncrementalFileProgressListener progressListener
+    ) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(buildRemoteAssetFileUrl(assetBaseUrl, entry.path)).openConnection();
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(30000);
+        long resumedBytes = partFile.exists() ? partFile.length() : 0L;
+        if (resumedBytes > 0L) connection.setRequestProperty("Range", "bytes=" + resumedBytes + "-");
+        Log.i(
+            TAG,
+            "incremental-file start path=" + entry.path
+                + " attempt=" + attempt
+                + " resumedBytes=" + resumedBytes
+                + " expectedBytes=" + entry.size
+        );
+
+        try {
+            int responseCode = connection.getResponseCode();
+            boolean appendMode = false;
+            if (resumedBytes > 0L && responseCode == HttpURLConnection.HTTP_PARTIAL) {
+                appendMode = true;
+                Log.i(TAG, "incremental-file resume-accepted path=" + entry.path + " resumedBytes=" + resumedBytes);
+            } else if (resumedBytes > 0L && responseCode == HttpURLConnection.HTTP_OK) {
+                Log.w(TAG, "incremental-file resume-reset path=" + entry.path + " resumedBytes=" + resumedBytes);
+                if (!partFile.delete() && partFile.exists()) throw new IOException("重置增量续传文件失败");
+                resumedBytes = 0L;
+            } else if (resumedBytes > 0L && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
+                Log.w(TAG, "incremental-file resume-range-not-satisfiable path=" + entry.path + " resumedBytes=" + resumedBytes);
+                if (partFile.length() == entry.size && isChecksumMatch(partFile, entry.hash)) {
+                    if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧增量文件失败");
+                    if (!partFile.renameTo(targetFile)) throw new IOException("恢复已完成增量文件失败");
+                    return;
+                }
+                if (!partFile.delete() && partFile.exists()) throw new IOException("重置不可续传增量文件失败");
+                throw new IOException("服务端拒绝增量续传，且本地临时文件校验失败");
+            }
+
+            Log.i(
+                TAG,
+                "incremental-file response path=" + entry.path
+                    + " attempt=" + attempt
+                    + " code=" + responseCode
+                    + " contentLength=" + connection.getContentLengthLong()
+                    + " contentRange=" + connection.getHeaderField("Content-Range")
+                    + " resumedBytes=" + resumedBytes
+                    + " appendMode=" + appendMode
+            );
+            if (responseCode < 200 || responseCode >= 300) throw new IOException("增量文件下载失败，HTTP " + responseCode);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            if (appendMode) {
+                try (InputStream existingInput = new BufferedInputStream(new FileInputStream(partFile))) {
+                    byte[] existingBuffer = new byte[BUFFER_SIZE];
+                    int existingRead;
+                    while ((existingRead = existingInput.read(existingBuffer)) != -1) digest.update(existingBuffer, 0, existingRead);
+                }
+            }
+
+            try (
+                InputStream input = new BufferedInputStream(connection.getInputStream());
+                BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(partFile, appendMode))
+            ) {
+                byte[] buffer = new byte[BUFFER_SIZE];
+                int read;
+                long downloadedBytes = resumedBytes;
+                int lastPercent = entry.size > 0L
+                    ? (int) Math.max(0, Math.min(100, Math.round((downloadedBytes * 100f) / entry.size)))
+                    : -1;
+                progressListener.onProgress(downloadedBytes);
+                while ((read = input.read(buffer)) != -1) {
+                    if (cancelFlag.get()) throw new IOException("安装已取消");
+                    output.write(buffer, 0, read);
+                    digest.update(buffer, 0, read);
+                    downloadedBytes += read;
+                    if (entry.size > 0L) {
+                        int percent = (int) Math.max(0, Math.min(100, Math.round((downloadedBytes * 100f) / entry.size)));
+                        if (percent != lastPercent) {
+                            lastPercent = percent;
+                            progressListener.onProgress(downloadedBytes);
+                        }
+                    } else {
+                        progressListener.onProgress(downloadedBytes);
+                    }
+                }
+            }
+
+            String actualChecksum = bytesToHex(digest.digest());
+            if (!entry.hash.equalsIgnoreCase(actualChecksum)) throw new IOException("增量文件校验失败");
+            if (entry.size > 0L && partFile.length() != entry.size) {
+                throw new IOException("增量文件大小不符");
+            }
+            if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧增量文件失败");
+            if (!partFile.renameTo(targetFile)) throw new IOException("写入增量文件失败");
+            progressListener.onProgress(targetFile.length());
+            Log.i(
+                TAG,
+                "incremental-file finished path=" + entry.path
+                    + " attempt=" + attempt
+                    + " bytes=" + targetFile.length()
+                    + " checksumOk=true"
+            );
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static long estimateExistingIncrementalBytes(File stagingAssetsDir, List<RemoteFileEntry> changedEntries) throws Exception {
+        long bytes = 0L;
+        for (RemoteFileEntry entry : changedEntries) {
+            File targetFile = resolveFileWithinRoot(stagingAssetsDir, entry.path);
+            bytes += estimateExistingIncrementalEntryBytes(targetFile, entry);
+        }
+        return bytes;
+    }
+
+    private static long estimateExistingIncrementalEntryBytes(File targetFile, RemoteFileEntry entry) throws Exception {
+        File partFile = new File(targetFile.getAbsolutePath() + ".part");
+        long bytes = partFile.isFile() ? partFile.length() : 0L;
+        if (bytes <= 0L && targetFile.isFile() && targetFile.length() == entry.size && isChecksumMatch(targetFile, entry.hash)) {
+            bytes = targetFile.length();
+        }
+        return clampIncrementalEntryBytes(bytes, entry);
+    }
+
+    private static long clampIncrementalEntryBytes(long bytes, RemoteFileEntry entry) {
+        if (entry.size > 0L) return Math.max(0L, Math.min(bytes, entry.size));
+        return Math.max(0L, bytes);
+    }
+
+    private static void emitIncrementalDownloadProgress(
+        Context context,
+        String gameId,
+        String packageVersion,
+        long downloadedBytes,
+        long totalBytes
+    ) {
+        if (totalBytes > 0L) {
+            int percent = (int) Math.max(0, Math.min(100, Math.round((downloadedBytes * 100f) / totalBytes)));
+            emitInstallState(context, gameId, "downloading", percent, "determinate", null, null, packageVersion, null, null);
+        } else {
+            emitInstallState(context, gameId, "downloading", null, "indeterminate", null, null, packageVersion, null, null);
+        }
     }
 
     private static void verifyMergedFiles(File stagingAssetsDir, List<RemoteFileEntry> remoteEntries) throws Exception {
@@ -413,6 +587,12 @@ final class GamePackageForegroundRuntime {
             paths.add(entry.path);
         }
         return paths;
+    }
+
+    private static void addIncrementalPartPaths(Set<String> remotePaths, List<RemoteFileEntry> changedEntries) {
+        for (RemoteFileEntry entry : changedEntries) {
+            remotePaths.add(entry.path + ".part");
+        }
     }
 
     private static String buildRemoteAssetFileUrl(String assetBaseUrl, String relativePath) {

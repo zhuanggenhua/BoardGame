@@ -93,16 +93,23 @@ const BOARD_DICE_SCATTER_SLOTS = [
     { left: '85%', top: '54%', rotate: '-17deg', zIndex: 3, world: { x: 2.08, y: -1.07, z: 0.9 } },
 ];
 
-const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 56;
-const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 84;
-const BOARD_DICE_HIT_TARGET_SIZE_PX = 44;
+const BOARD_DICE_PHYSICS_LAYOUT_BOUNDS = {
+    left: 0.08,
+    top: 0.18,
+    width: 0.84,
+    height: 0.64,
+};
+
+const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
+const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
+const BOARD_DICE_HIT_TARGET_SIZE_PX = 38;
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
 }
 
 function resolveBoardOverlayDiceSize(layout?: ProjectedDiceLayout): number {
-    if (!layout) return 68;
+    if (!layout) return 52;
 
     const heightProgress = clampNumber((layout.height - 46) / 120, 0, 1);
     const stretchedWidthRatio = clampNumber((layout.width / Math.max(layout.height, 1)) - 1, 0, 1.8);
@@ -593,6 +600,7 @@ export const DiceTray = ({
                     slots={isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS}
                     onDieClick={handleOverlayDieClick}
                     physicsStates={isBoardPresentation ? dicePhysicsStates : undefined}
+                    physicsLayoutBounds={isBoardPresentation ? BOARD_DICE_PHYSICS_LAYOUT_BOUNDS : undefined}
                     scenePreset={isBoardPresentation ? 'board-topdown' : 'spotlight'}
                     onProjectedDiceUpdate={handleProjectedDiceUpdate}
                 />
@@ -1039,7 +1047,7 @@ export const BoardDiceStage = ({
 
     return (
         <div
-            className="pointer-events-auto absolute inset-x-[7%] top-[16%] bottom-[8%]"
+            className="pointer-events-auto absolute left-[28%] right-[38%] top-[43%] bottom-[25%]"
             style={{ zIndex: UI_Z_INDEX.hud + 5 }}
             data-testid="dicethrone-board-dice-stage"
             data-board-magnify-ignore="true"

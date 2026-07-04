@@ -2308,6 +2308,7 @@ function resolveTitanClashEventsOnBase(
     now: number,
     challengerTitanUid?: string,
     matchState?: MatchState<SmashUpCore>,
+    spiritOfForestVisitedBaseIndices: number[] = [],
 ): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     const base = state.bases[baseIndex];
     const baseDef = base ? getBaseDef(base.defId) : undefined;
@@ -2333,6 +2334,7 @@ function resolveTitanClashEventsOnBase(
         && loser.location.zone === 'base'
         && matchState
     ) {
+        const visitedBaseIndices = new Set(spiritOfForestVisitedBaseIndices);
         const otherBases = state.bases
             .map((candidateBase, index) => ({
                 baseIndex: index,
@@ -2340,6 +2342,21 @@ function resolveTitanClashEventsOnBase(
             }))
             .filter(candidate => candidate.baseIndex !== loser.location.baseIndex);
         if (otherBases.length > 0) {
+            const baseTargetOptions = buildBaseTargetOptions(otherBases, state).map(option => {
+                if (!visitedBaseIndices.has(option.value.baseIndex)) return option;
+                return {
+                    ...option,
+                    _ai: {
+                        ...(option._ai ?? {}),
+                        tags: [...(option._ai?.tags ?? []), 'spirit-of-forest-clash-chain-visited-base'],
+                        effectIntent: 'move' as const,
+                        targetKind: 'base' as const,
+                        forcedTargetPolicy: 'must-avoid' as const,
+                        priorityHint: -120,
+                        derivedFrom: 'inferred' as const,
+                    },
+                };
+            });
             const interaction = createSimpleChoice(
                 `titan_fairies_spirit_of_the_forest_clash_move_${now}`,
                 loser.controllerId,
@@ -2352,7 +2369,7 @@ function resolveTitanClashEventsOnBase(
                         value: { skip: true },
                         displayMode: 'button' as const,
                     },
-                    ...buildBaseTargetOptions(otherBases, state),
+                    ...baseTargetOptions,
                 ],
                 {
                     sourceId: 'titan_fairies_spirit_of_the_forest_clash_move',
@@ -2370,6 +2387,7 @@ function resolveTitanClashEventsOnBase(
                         continuationContext: {
                             titanUid: loser.uid,
                             fromBaseIndex: loser.location.baseIndex,
+                            visitedBaseIndices: [...visitedBaseIndices],
                         },
                     },
                 }),
@@ -2414,7 +2432,20 @@ function resolveTitanClashEvents(
         return { events: [], matchState };
     }
 
-    return resolveTitanClashEventsOnBase(state, baseIndex, event.timestamp ?? 0, event.payload.titanUid, matchState);
+    const spiritOfForestVisitedBaseIndices = event.type === SU_EVENT_TYPES.TITAN_MOVED
+        && Array.isArray(event.payload.metadata?.spiritOfTheForestClashVisitedBaseIndices)
+        ? event.payload.metadata.spiritOfTheForestClashVisitedBaseIndices
+            .filter((value): value is number => typeof value === 'number')
+        : [];
+
+    return resolveTitanClashEventsOnBase(
+        state,
+        baseIndex,
+        event.timestamp ?? 0,
+        event.payload.titanUid,
+        matchState,
+        spiritOfForestVisitedBaseIndices,
+    );
 }
 
 function resolveDeferredPecosBillClashEvents(

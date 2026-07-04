@@ -27,6 +27,7 @@ const TUTORIAL_STEP_12 = `${TUTORIAL_DIR}/12-教程第12步-完成基础回合�
 const WHEEL_COST_STEP_01 = `${TUTORIAL_DIR}/13-轮盘第1步-先看走3会让两家对手摸牌.png`;
 const WHEEL_COST_STEP_02 = `${TUTORIAL_DIR}/14-轮盘第2步-看蒙古后金手牌同时增加.png`;
 const WHEEL_COST_STEP_03 = `${TUTORIAL_DIR}/15-轮盘第3步-进入进攻调度入口.png`;
+const WHEEL_COST_STEP_04 = `${TUTORIAL_DIR}/15g-轮盘第7步-主章节续到开垦教程.png`;
 const WHEEL_RECLAIM_STEP_01 = `${TUTORIAL_DIR}/15a-开垦第1步-先把轮盘推进到开垦.png`;
 const WHEEL_RECLAIM_STEP_02 = `${TUTORIAL_DIR}/15b-开垦第2步-看己方控制区人口增加.png`;
 const WHEEL_MILITARY_FARM_STEP_01 = `${TUTORIAL_DIR}/15c-军屯第1步-先把轮盘推进到军屯.png`;
@@ -51,6 +52,7 @@ const ROUT_STEP_01 = `${TUTORIAL_DIR}/28-撤退第1步-先看断后和溃退入�
 const ROUT_STEP_02 = `${TUTORIAL_DIR}/29-撤退第2步-看溃退后的残部清空与战败标记.png`;
 const SIEGE_STEP_01 = `${TUTORIAL_DIR}/30-攻城第1步-真实守城宣告入口.png`;
 const SIEGE_STEP_02 = `${TUTORIAL_DIR}/31-攻城第2步-选择围城该区.png`;
+const SIEGE_STEP_03 = `${TUTORIAL_DIR}/31a-攻城第3步-同章选择占领该区.png`;
 const DIPLOMACY_STEP_01 = `${TUTORIAL_DIR}/32-外交第1步-从轮盘进入外交雇佣.png`;
 const DIPLOMACY_STEP_02 = `${TUTORIAL_DIR}/33-外交第2步-先放置友好标记.png`;
 const DIPLOMACY_STEP_02A = `${TUTORIAL_DIR}/33a-外交第2a步-翻为附庸.png`;
@@ -341,7 +343,10 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('进入哪一种系统');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('推进补回手牌');
         await page.locator('[data-testid="tutorial-next-button"]').click();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveCount(0, { timeout: 10000 });
+        await expect(page).toHaveURL(/\/play\/qidahen\/tutorial\/wheel-reclaim$/, { timeout: 10000 });
+        await expect(page.locator('[data-tutorial-step="overview"]')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('开垦不是回合外奖励');
+        await saveScreenshot(page, WHEEL_COST_STEP_04);
     });
 
     test('轮盘开垦教程会真实展示人口增加的结果', async ({ page }) => {
@@ -768,6 +773,58 @@ test.describe('七大恨新游戏收口', () => {
         expect(afterBesiegeShanhaiguan?.cityState?.population).toBeGreaterThan(0);
         expect(afterBesiegeShanhaiguan?.siegeState?.attackerFactionId).toBe('ming');
         expect(afterBesiegeShanhaiguan?.siegeState?.attackerTroops).toBeGreaterThan(0);
+    });
+
+    test('攻城教程同章占领对照会在攻下城市后真正改控制权', async ({ page }) => {
+        await setChineseLocale(page);
+        await disableAudio(page);
+        await page.addInitScript(() => {
+            (window as HarnessWindow).__E2E_TEST_MODE__ = true;
+        });
+
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await page.goto('/play/qidahen/tutorial/siege-and-occupation', { waitUntil: 'domcontentloaded' });
+
+        await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
+        await expect(page.locator('[data-tutorial-step="overview"]')).toBeVisible({ timeout: 15000 });
+        await page.locator('[data-testid="tutorial-next-button"]').click();
+
+        await expect(page.locator('[data-tutorial-step="defend-city"]')).toBeVisible({ timeout: 10000 });
+        await page.locator('[data-testid="qidahen-resolve-pending-action-defender-hold-city"]').click();
+
+        await expect(page.locator('[data-tutorial-step="city-battle"]')).toBeVisible({ timeout: 10000 });
+        await resolvePendingActionByCommand(page, {
+            attackerCasualtyPriority: 'highest-level',
+            defenderCasualtyPriority: 'highest-level',
+            committedTroops: 4,
+        });
+
+        await expect(page.locator('[data-tutorial-step="city-result"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('已被突破');
+        await page.locator('[data-testid="tutorial-next-button"]').click();
+
+        await expect(page.locator('[data-tutorial-step="besiege-choice"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-post-battle-choice-occupy"]')).toContainText('占领该区');
+        await page.locator('[data-testid="qidahen-post-battle-choice-occupy"]').click();
+
+        await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('这座城最后落成什么状态');
+        await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战后占领');
+        await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('山海关');
+        await saveScreenshot(page, SIEGE_STEP_03);
+        const afterOccupyCore = await readQidahenCore(page);
+        const afterOccupyRegions = afterOccupyCore.regions as Array<{
+            id: string;
+            controller?: string;
+            troops?: number;
+            cityState?: { troops?: number; population?: number } | null;
+            siegeState?: { attackerFactionId?: string; attackerTroops?: number } | null;
+        }>;
+        const occupiedShanhaiguan = afterOccupyRegions.find((region) => region.id === 'city-region-25');
+        expect(occupiedShanhaiguan?.controller).toBe('ming');
+        expect(occupiedShanhaiguan?.troops).toBeGreaterThan(0);
+        expect(occupiedShanhaiguan?.cityState).toBeNull();
+        expect(occupiedShanhaiguan?.siegeState).toBeNull();
     });
 
     test('外交雇佣教程会从真实轮盘入口进入，并完成一次友好标记与雇佣结算', async ({ page }) => {

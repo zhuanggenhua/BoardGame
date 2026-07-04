@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import { AnimatePresence, animate, motion, motionValue, type MotionValue } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { AbilityCard, TurnPhase } from '../types';
+import type { HeroState } from '../domain/types';
 import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
 import { ENGINE_NOTIFICATION_EVENT, type EngineNotificationDetail } from '../../../engine/notifications';
 import { CardPreview } from '../../../components/common/media/CardPreview';
@@ -190,6 +191,7 @@ export const HandArea = ({
     onMagnifyCard,
     respondableCardIds,
     characterId,
+    playerBoardFace,
 }: {
     hand: AbilityCard[];
     locale?: string;
@@ -214,6 +216,7 @@ export const HandArea = ({
     /** 响应窗口中可响应的卡牌 ID 集合（用于高亮） */
     respondableCardIds?: Set<string>;
     characterId?: string;
+    playerBoardFace?: HeroState['playerBoardFace'];
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isCoarsePointer = useCoarsePointer();
@@ -332,7 +335,9 @@ export const HandArea = ({
         if (!handAreaRef.current) {
             return { x: 0, y: -window.innerHeight * 0.4 };
         }
-        const slotEl = document.querySelector(`[data-ability-slot="${slotId}"]`) as HTMLElement | null;
+        const slotEl = document.querySelector(
+            `[data-ability-slot-scope="main-board"][data-ability-slot="${slotId}"]`,
+        ) as HTMLElement | null;
         if (!slotEl) {
             return { x: 0, y: -window.innerHeight * 0.4 };
         }
@@ -456,7 +461,9 @@ export const HandArea = ({
                 // 从卡牌效果中提取目标技能 ID
                 const replaceAction = card.effects?.find(e => e.action?.type === 'replaceAbility')?.action;
                 const targetAbilityId = replaceAction?.type === 'replaceAbility' ? replaceAction.targetAbilityId : undefined;
-                const slotId = targetAbilityId ? getAbilitySlotIdForCharacter(characterId, targetAbilityId) : null;
+                const slotId = targetAbilityId
+                    ? getAbilitySlotIdForCharacter(characterId, targetAbilityId, playerBoardFace)
+                    : null;
 
                 if (slotId) {
                     setFlyingOutCard(createFlyingOutCard({
@@ -489,7 +496,7 @@ export const HandArea = ({
             }
             clearPendingPlay();
         }
-    }, [characterId, clearPendingPlay, createFlyingOutCard, handKeys]);
+    }, [characterId, clearPendingPlay, createFlyingOutCard, handKeys, playerBoardFace]);
 
     // 监听引擎通知：处理卡牌回弹（错误显示由全局 EngineNotificationListener 处理）
     React.useEffect(() => {

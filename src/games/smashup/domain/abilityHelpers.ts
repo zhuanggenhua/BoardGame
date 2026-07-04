@@ -416,6 +416,7 @@ export function moveTitan(
     reason: string,
     now: number,
     toBaseDefId?: string,
+    metadata?: Record<string, unknown>,
 ): TitanMovedEvent {
     return {
         type: SU_EVENTS.TITAN_MOVED,
@@ -425,6 +426,7 @@ export function moveTitan(
             fromBaseIndex,
             toBaseIndex,
             ...(toBaseDefId ? { toBaseDefId } : {}),
+            ...(metadata ? { metadata } : {}),
             reason,
         },
         timestamp: now,

@@ -274,6 +274,15 @@
         }
       }
     },
+    "cards/atlases/compressed/ordinary-hand-atlas05": {
+      "variants": {
+        "webp": {
+          "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
+          "bytes": 2640142,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/atlases/jin-faction-deck-atlas": {
       "variants": {
         "jpg": {
@@ -306,6 +315,15 @@
         "jpg": {
           "sha256": "edbad441b175a40904971be908a690d337e11db75bb5f35e346fda1dd53fb80f",
           "bytes": 2255009,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "cards/atlases/ordinary-hand-atlas05": {
+      "variants": {
+        "jpg": {
+          "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
+          "bytes": 4138087,
           "mime": "image/jpeg"
         }
       }

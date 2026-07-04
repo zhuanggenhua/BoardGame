@@ -61,6 +61,7 @@ final class AndroidDownloadTaskStore {
         String assetBaseUrl,
         String fileIndexUrl,
         String fileIndexChecksum,
+        boolean allowFullFallback,
         String destinationPath,
         String partialPath
     ) {
@@ -88,6 +89,7 @@ final class AndroidDownloadTaskStore {
                 assetBaseUrl,
                 fileIndexUrl,
                 fileIndexChecksum,
+                allowFullFallback,
                 destinationPath,
                 partialPath,
                 now

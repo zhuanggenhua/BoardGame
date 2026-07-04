@@ -287,11 +287,59 @@ node scripts/mobile/publish-android-game-packages.mjs --channel stable --game di
 npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 ```
 
-当前脚本会上传：
+首次发布、强制重建或需要完整兜底包时，当前脚本会上传：
 
 - `official/mobile-packages/android/<channel>/bundles/<gameId>/<version>.zip`
+- `official/mobile-packages/android/<channel>/file-index/<gameId>/<version>.json`
 - `official/mobile-packages/android/<channel>/manifests/<gameId>/<version>.json`
 - `official/mobile-packages/android/<channel>/games/<gameId>.json`
+
+### R2 单文件资源更新
+
+日常只替换少量游戏资源时，不应默认重发完整 ZIP。正确链路是：
+
+1. 上传变更后的 R2 单文件对象，例如 `official/i18n/zh-CN/dicethrone/.../compressed/player-board.webp`
+2. 刷新目标游戏的 `file-index/<gameId>/<version>.json`
+3. 刷新 `games/<gameId>.json` 指到新的差异索引版本
+4. App 读取远端 `file-index`，与本地 `installed-files-index.json` 比对，只下载新增或哈希变化文件
+
+本地预演某个资源路径会触发哪个 App 素材包刷新：
+
+```bash
+node scripts/assets/upload-to-r2.js --android-package-publish-plan official/i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp
+```
+
+普通游戏资源变更的预期命令应包含：
+
+```bash
+node scripts/mobile/publish-android-game-packages.mjs --game dicethrone --reuse-shared-audio --index-manifest-only
+```
+
+也可以直接预演差异索引刷新：
+
+```bash
+node scripts/mobile/publish-android-game-packages.mjs --channel stable --game dicethrone --reuse-shared-audio --index-manifest-only --dry-run
+```
+
+`--index-manifest-only` 只上传新的 `file-index` 和 manifest，不上传 `bundles/<gameId>/<version>.zip`。该 manifest 的 `assetPack.diffOnly` 为 `true`，普通 `assetPack.url/checksum/bytes` 不应指向旧 ZIP；旧完整 ZIP 信息只能作为显式 fallback 字段保留，避免“更新成功但实际装回旧素材”的假结果。
+
+共享音频变更暂时仍按完整共享包刷新处理；这属于兜底路径，不等同于单游戏资源的文件级差异更新。
+
+验收时必须拆开三件事：
+
+- R2 单文件对象是否已上传并可访问
+- `games/<gameId>.json` 是否已指向新的 `file-index` 版本
+- 真机 App 是否只下载 changed 文件，并且本地哈希与远端 `file-index` 一致
+
+### 真机验证默认使用正式包
+
+本项目 Android 真机测试默认直接覆盖正式包：
+
+- `applicationId` 必须保持 `top.easyboardgame.app`
+- 应用名必须保持 `易桌游`
+- `package_name` 和 `custom_url_scheme` 必须保持 `top.easyboardgame.app`
+
+禁止为了排障或自测，默认把主线改成 `top.easyboardgame.app.debug` / `易桌游测试`。这会改变数据目录、URL scheme、下载任务记录和自动更新入口，导致测试结果不能代表正式用户环境。只有用户明确要求“并存安装一个测试包”时，才允许临时使用 debug 壳；该结果必须标为测试壳结果，不能当成正式包验收。
 
 ### 游戏包 / 共享包路径合同（强制）
 

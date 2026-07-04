@@ -1,163 +1,133 @@
 ## Context
-- 项目已有 `asset-manifest` 规范，为每个资源变体记录 `sha256` 哈希，但该 manifest 主要用于构建侧校验与缓存策略，尚未在移动端包安装链路中直接消费。
-- 当前 `GamePackage` 安装流程：拉取发布清单 → 全量下载 asset pack zip → 解压 → 校验 checksum → 完成。每次更新都是全量下载。
-- 游戏资源以图片（atlas/webp/avif）和音频（ogg/mp3）为主，单文件粒度已足够节省带宽——通常一次版本更新只变更 10-30% 的文件。
-- `@capgo/capacitor-updater` 的 delta update 仅覆盖 web bundle（dist.zip），不覆盖游戏资源包，无法复用。
+- 当前发布侧已经不是空白状态：`scripts/mobile/publish-android-game-packages.mjs` 会从 `public/assets` 中筛选 package-managed 游戏资源，生成完整 ZIP、`file-index/*.json`，并把 `fileIndexUrl/fileIndexChecksum` 写入游戏包 manifest。
+- 当前 R2 单文件上传链路也已经能识别受影响的 package-managed 游戏：`scripts/assets/upload-to-r2.js` 会把资源上传到 `official/<relativePath>`，并在检测到游戏资源变更后调用 `publish-android-game-packages.mjs --game <gameId> --reuse-shared-audio`。
+- 当前客户端 JS 侧已具备增量入口：`nativeGamePackagePlugin.ts` 在 manifest 有 `assetPackFileIndexUrl` 时调用 `installGamePackageIncremental`，旧原生壳不支持该方法时回退全量安装。
+- 当前 Android 原生侧已具备任务字段和入口壳：`GamePackagePlugin.installGamePackageIncremental`、`AndroidDownloadTaskRecord.installMode/fileIndexUrl/fileIndexChecksum/assetBaseUrl`、`GamePackageFs.INSTALLED_FILES_INDEX_FILE` 已存在。
+- 当前缺口不是“从零新增 file-index”，而是：日常 R2 单文件更新后仍默认重发完整 ZIP；提案、任务和验收没有把“真实差异安装”与“全量兜底刷新”分开。
 
 ## Goals / Non-Goals
 - Goals:
-  - 游戏资源包更新时，客户端仅下载本地未安装或哈希不一致的文件，跳过未变更文件。
-  - 增量安装结果与全量安装结果等价——本地文件集合与校验状态完全一致。
-  - 增量安装失败时自动回退到全量安装，用户无需手动干预。
-  - 支持跨版本跳转（用户从 v1 直接更新到 v3，不需要先装 v2）。
-  - 文件级索引由构建侧自动生成，随发布清单一起部署，无需人工维护。
+  - R2 单文件资源更新后，能刷新对应游戏或共享音频包的远端 `file-index` 与最新 manifest，不把完整 ZIP 重发作为默认动作。
+  - App 更新 package-managed 游戏素材时，根据远端 `file-index` 与本地 `installed-files-index.json` 只下载新增或哈希变化文件。
+  - 差异安装完成后，本地 `current/assets` 的完整文件集合、路径合同和哈希结果必须等价于同版本全量 ZIP 安装。
+  - 完整 ZIP 保留为首装、历史客户端兼容、增量不可用、索引损坏、文件下载失败或校验失败时的 fallback。
+  - 发布/验收口径必须区分“差异更新已完成”和“全量 ZIP 兜底已刷新”，避免再把兜底当成根因修复。
 - Non-Goals:
-  - 不做字节级 diff（bsdiff/bspatch），文件级粒度对游戏资源已足够。
-  - 不改变 module pack 的安装方式（module pack 通常较小，仍走全量）。
-  - 不改变 APK 本体的更新方式（APK 更新走应用商店或全量下载）。
-  - 不做增量卸载/回滚——回滚走全量重装上一版本。
-  - 不引入 Capgo/Capawesome 等第三方增量服务。
+  - 不做字节级 patch（bsdiff/bspatch）；本轮只做文件级差异。
+  - 不改变 APK / AAB 原生应用更新方式。
+  - 不改变 OTA web bundle 更新方式。
+  - 不删除现有完整 ZIP 发布能力。
+  - 不要求一次性迁移所有历史已安装包；没有本地索引或索引损坏的设备继续走全量兜底。
 
 ## Decisions
 
-### Decision: 文件级哈希索引作为增量依据
-- 每个 asset pack 版本发布时，额外生成一份 `file-index.json`，包含：
-  - `version`: asset pack 版本
-  - `files`: `Array<{ path: string, hash: string, size: number }>`
-  - `totalSize`: 所有文件总字节数
-- 客户端对比本地已安装文件的 hash，仅下载 `files` 列表中 hash 不匹配或本地缺失的文件。
+### Decision: 远端 file-index 是 App 素材包更新真相源
+- R2 上的单文件对象负责承载实际素材内容，`mobile-packages/android/<channel>/file-index/...json` 负责描述目标版本完整文件集合，`games/<gameId>.json` 负责把 App 指到当前目标版本。
+- `assetPack.url` 指向完整 ZIP，但在已有索引和本地安装状态可用时不再代表默认下载路径。
 - 理由：
-  - 与现有 `asset-manifest` 的 sha256 体系对齐，无需引入新哈希算法。
-  - 文件级粒度对游戏资源（图片/音频）已足够，通常节省 70-90% 带宽。
-  - 支持跨版本跳转：只要本地有旧版文件且 hash 匹配，即可复用。
+  - 当前发布脚本已经生成 `fileIndexUrl/fileIndexChecksum`，继续使用这条已有链路风险最低。
+  - 商业游戏常见做法也是 CDN 内容对象 + 版本 catalog / manifest + 文件或 bundle 级差异更新，完整包只作为 bootstrap/fallback。
 
-### Decision: 增量下载走单文件 URL 而非 patch 包
-- 服务端不需要生成 patch 包，只需将 asset pack 的文件按原始目录结构部署到 CDN。
-- 客户端增量下载时，直接请求 `assetsBaseUrl + '/' + file.path`，逐文件下载。
-- **已验证 CDN 条件**：R2 已通过 `upload-to-r2.js` 将资源逐文件上传到 `official/` 前缀下，`assetsBaseUrl`（默认 `https://assets.easyboardgame.top/official`）可直接按路径访问单文件，无需调整 CDN 部署。
+### Decision: `assets:upload` 默认触发索引/manifest 差异刷新
+- 当 `upload-to-r2.js` 上传 package-managed 游戏资源后，后续动作应按影响范围刷新：
+  - 单个游戏资源变化：刷新该游戏的远端 `file-index` 与 `games/<gameId>.json`。
+  - 共享音频变化：刷新共享音频索引，并刷新依赖共享音频的游戏 manifest 指针。
+  - 强制重建、首次发布、兼容兜底：允许继续生成并上传完整 ZIP。
+- 需要为发布脚本提供 index/manifest-only 路径，避免“为了改一张图重新上传 400MB ZIP”成为默认行为。
 - 理由：
-  - 无需服务端维护多版本 patch 文件，CDN 部署零额外成本。
-  - 天然支持跨版本跳转。
-  - 单文件下载失败可单独重试，不需要整个 patch 重下。
+  - 用户实际资源使用 R2，不是本地文件；只改本地资源不能算修复完成。
+  - 如果每次小素材替换都重发完整 ZIP，App 即使能更新，也不是差异化更新。
 
-### Decision: 原生插件负责增量合并
-- `GamePackage` 原生插件新增 `installGamePackageIncremental` 方法：
-  - 输入：gameId、fileIndex（变更文件列表）、assetBaseUrl
-  - 行为：逐文件下载到临时目录，下载完成后与本地已有文件合并，校验后原子切换
-- 原生层维护已安装文件的 hash 记录（`installed-files-index.json`），用于增量对比。
+### Decision: 原生侧负责文件级下载、合并、裁剪和原子切换
+- Android 原生层使用远端 `file-index` 与本地 `installed-files-index.json` 生成变更列表。
+- 变更文件从 `assetBaseUrl + '/' + file.path` 下载；未变更文件从当前安装目录复制到 staging。
+- 合并完成后按远端 `file-index` 校验完整文件集合，删除远端索引中不存在的旧文件，再原子切换到 `current/assets`。
 - 理由：
-  - 原生层有文件系统直接访问权，合并与原子切换更可靠。
-  - 避免 JS 层大量文件 I/O 操作的性能瓶颈。
+  - 原生层拥有可靠文件系统权限和后台下载队列，适合处理大文件、断点/失败、临时目录和原子切换。
+  - JS 层只负责决策、状态订阅和回退，不应承担大量本地文件 I/O。
 
-### Decision: 增量失败自动回退全量
-- 增量安装过程中若出现以下情况，自动回退到全量安装：
-  - 文件索引获取失败
-  - 单文件下载连续失败 3 次
-  - 合并后校验不通过
-  - 本地已安装文件索引缺失（首次安装或索引损坏）
-- 回退时清理临时文件，走原有 `installGamePackage` 全量流程。
+### Decision: fallback 必须显式标注为兜底
+- 以下情况走完整 ZIP：
+  - 远端 manifest 缺少 `fileIndexUrl`。
+  - 本地没有可用 `installed-files-index.json`。
+  - 远端 `file-index` 下载或 `fileIndexChecksum` 校验失败。
+  - 单文件下载失败超过重试上限。
+  - 合并后完整校验失败。
+  - 当前原生壳不支持 `installGamePackageIncremental`。
+- 文档、日志、用户汇报里必须称为“回退全量 / 兜底刷新”，不能称为“差异更新完成”。
 - 理由：
-  - 保证可用性优先——增量是优化，不是必须。
-  - 避免增量链路 bug 阻塞用户正常安装。
-
-### Decision: 构建侧自动生成 file-index.json
-- 在现有 asset pack 构建脚本后追加一步：遍历 asset pack 目录，计算每个文件的 sha256，输出 `file-index.json`。
-- `file-index.json` 与 asset pack zip 一起上传到 CDN，URL 写入发布清单的 `fileIndexUrl` 字段。
-- 理由：
-  - 自动化，无需人工维护。
-  - 与现有构建发布流程无缝衔接。
+  - 全量 ZIP 能恢复可用性，但不能证明差异链路生效。
+  - 这次 DiceThrone 素材事故的关键教训就是不能把本地或兜底结果当成真实 App 更新链路已闭环。
 
 ## Architecture
 
-### 发布清单扩展
-```typescript
-// ResolvedGamePackageManifest 新增字段
-interface ResolvedGamePackageManifest {
-  // ... 现有字段
-  fileIndexUrl?: string;     // 文件级哈希索引 JSON 的下载 URL
-  fileIndexChecksum?: string; // file-index.json 自身的 sha256
-}
+### 当前已存在链路
+```text
+public/assets
+  ├─ upload-to-r2.js -> official/<relativePath> 单文件对象
+  └─ publish-android-game-packages.mjs
+       ├─ bundles/<gameId>/<version>.zip
+       ├─ file-index/<gameId>/<version>.json
+       └─ games/<gameId>.json assetPack.fileIndexUrl
+
+App JS
+  └─ nativeGamePackagePlugin.ts
+       ├─ 有 assetPackFileIndexUrl -> installGamePackageIncremental
+       └─ 增量接口不可用 -> installGamePackage 全量
+
+Android native
+  ├─ AndroidDownloadTaskRecord installMode/fileIndexUrl/fileIndexChecksum/assetBaseUrl
+  ├─ GamePackageFs installed-files-index.json
+  └─ 需要补强真实文件级下载、合并、裁剪、校验、原子切换验收
 ```
 
-发布清单 JSON 示例（`publish-android-game-packages.mjs` 的 `buildGameManifestPayload` 输出）：
-```json
-{
-  "gameId": "dicethrone",
-  "assetPack": {
-    "id": "dicethrone",
-    "version": "1.2.0-dicethrone-pkg-2026-04-18",
-    "url": "https://assets.easyboardgame.top/official/mobile-packages/android/stable/bundles/dicethrone/1.2.0-dicethrone-pkg-2026-04-18.zip",
-    "checksum": "sha256-abc...",
-    "bytes": 52428800,
-    "fileCount": 320,
-    "fileIndexUrl": "https://assets.easyboardgame.top/official/mobile-packages/android/stable/file-index/dicethrone/1.2.0-dicethrone-pkg-2026-04-18.json",
-    "fileIndexChecksum": "sha256-def..."
-  }
-}
+### 目标发布流
+```text
+替换一张 DiceThrone 火法玩家面板
+  1. 压缩并上传 R2 单文件对象
+  2. 检测到该路径属于 dicethrone
+  3. 重新生成 dicethrone 目标 file-index
+  4. 更新 mobile-packages/android/<channel>/games/dicethrone.json
+  5. 不默认上传新的完整 ZIP
+  6. App 拉取 manifest 后只下载火法面板相关变更文件
 ```
 
-### 文件级索引格式
-```json
-{
-  "version": "1.0.0",
-  "assetPackVersion": "2.3.0",
-  "files": [
-    { "path": "dicethrone/images/monk/ability-cards/01.avif", "hash": "sha256-abc123", "size": 12345 },
-    { "path": "dicethrone/images/monk/ability-cards/01.webp", "hash": "sha256-def456", "size": 23456 }
-  ],
-  "totalSize": 52428800
-}
+### 目标安装流
+```text
+远端 file-index + 本地 installed-files-index
+  -> 计算 changedFiles / removedFiles / reusedFiles
+  -> changedFiles 从 R2 单文件 URL 下载到 staging/assets
+  -> reusedFiles 从 current/assets 复制到 staging/assets
+  -> removedFiles 不进入 staging
+  -> 按远端 file-index 校验完整 staging/assets
+  -> 写 staging/installed-files-index.json
+  -> 原子切换 staging -> current
 ```
 
-### 已安装文件索引格式
-```json
-{
-  "assetPackVersion": "2.2.0",
-  "files": {
-    "dicethrone/images/monk/ability-cards/01.avif": "sha256-abc123",
-    "dicethrone/images/monk/ability-cards/01.webp": "sha256-def456"
-  },
-  "updatedAt": 1713456789000
-}
-```
-
-### 增量安装流程
-1. 客户端拉取发布清单，发现 `fileIndexUrl` 存在且本地有已安装文件索引。
-2. 下载 `file-index.json`，与本地已安装文件索引对比，生成变更文件列表（新增 + hash 变更）。
-3. 调用 `installGamePackageIncremental`，传入变更文件列表 + `assetsBaseUrl`。
-4. 原生层逐文件下载到临时目录，下载 URL 为 `assetsBaseUrl + '/' + file.path`（与 `upload-to-r2.js` 上传路径一致）。
-5. 下载完成后与本地已有文件合并（复用未变更文件）。
-6. 合并完成后校验所有文件 hash，通过则原子切换到新版本。
-7. 校验失败或下载失败 → 清理临时文件 → 回退到全量安装。
-
-### 增量下载 URL 映射
-| file-index.json 中的 path | 增量下载 URL |
-|---|---|
-| `dicethrone/images/monk/compressed/ability-cards/01.avif` | `https://assets.easyboardgame.top/official/dicethrone/images/monk/compressed/ability-cards/01.avif` |
-| `atlas-configs/dicethrone/ability-cards-common.atlas.json` | `https://assets.easyboardgame.top/official/atlas-configs/dicethrone/ability-cards-common.atlas.json` |
-| `i18n/zh-CN/dicethrone/cards.json` | `https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/cards.json` |
-
-这与 `shouldIncludeInGamePackage` 的路径匹配规则一致，也与 `upload-to-r2.js` 的 R2 key（`official/` + relativePath）一致。
-
-### 全量安装兼容
-- 若发布清单无 `fileIndexUrl`，或本地无已安装文件索引，直接走全量安装。
-- 全量安装完成后，原生层自动生成已安装文件索引，为后续增量更新做准备。
+### 路径合同
+- `file-index.files[].path` 必须继续使用相对于 `public/assets` 的路径，例如：
+  - `i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp`
+  - `atlas-configs/dicethrone/ability-cards-common.atlas.json`
+  - `common/audio/bgm/...`
+- R2 单文件对象 key 必须是 `official/` + 上述相对路径。
+- 原生落盘必须是 `current/assets/` + 上述相对路径。
+- H5 通过 `readInstalledAsset(gameId, relativePath)` 读取时也必须传同一份相对路径。
 
 ## Risks / Trade-offs
-- 文件级索引本身有体积（大型游戏可能数千文件，索引 JSON 约 50-200KB），但相比节省的下载带宽可忽略。
-- 增量安装的文件下载是串行的（逐文件），首次全量安装的 zip 下载是并行的（单连接大文件）。对于大量小文件变更的场景，增量可能比全量慢。缓解：原生层可并发下载多个文件。
-- 已安装文件索引损坏会导致回退全量，需要确保索引写入的原子性。
-- ~~CDN 需要支持按文件路径直接访问 asset pack 内容~~ **已确认 R2 支持按路径直接访问，无需调整。**
+- `assets:upload` 触发 manifest/index-only 后，如果没有同时保留完整 ZIP 兜底，旧客户端可能无法更新；因此完整 ZIP 不能删除，只是不作为默认小素材更新路径。
+- 对大量小文件变更，文件级下载可能比单 ZIP 慢；需要限制并发数并保留全量 fallback。
+- 本地 `installed-files-index.json` 是差异更新关键状态，必须原子写入；损坏时应清楚回退全量。
+- 如果远端单文件对象和 `file-index` 不一致，App 可能下载到错误版本；发布脚本必须在更新 manifest 前完成远端对象回查或至少校验目标哈希。
 
 ## Migration Plan
-1. 构建侧：新增 file-index.json 生成脚本，随 asset pack 一起发布到 CDN。
-2. 发布清单：新增 `fileIndexUrl` / `fileIndexChecksum` 字段，向后兼容（缺失时走全量）。
-3. 原生插件：新增 `installGamePackageIncremental` + 已安装文件索引管理。
-4. JS 层：`packageManagerService` 增量/全量决策逻辑。
-5. 验证：先在单个游戏（如 tictactoe，资源最少）上端到端验证增量安装。
-6. 推广：逐步为所有 package-managed 游戏启用增量更新。
+1. 调整 OpenSpec 与文档口径：明确当前已有 `file-index` 基础设施，目标是接通差异更新闭环。
+2. 扩展发布脚本：增加 index/manifest-only 或等价模式，允许 R2 单文件更新后刷新目标 manifest 而不上传完整 ZIP。
+3. 调整 `upload-to-r2.js`：默认对 package-managed 资源变更触发差异索引刷新；只有显式参数或必要场景才重发完整 ZIP。
+4. 补强 Android 原生安装：实现或核准真实文件级 diff、单文件下载、复用、裁剪、完整校验和原子切换。
+5. 补状态与日志：区分 `incremental`、`full fallback`、`full bootstrap`，让用户和日志能看出这次到底下载了多少变更文件。
+6. 验证 DiceThrone 单图替换：替换火法玩家面板后，R2 单文件、远端 manifest/file-index、App 安装日志和本地文件哈希都证明只下载差异文件。
 
 ## Open Questions
-- ~~CDN 当前是否已将 asset pack 内容按原始目录结构暴露为可逐文件访问？~~ **已确认：R2 已逐文件上传到 `official/` 前缀，支持按路径直接访问。**
-- 是否需要为增量下载设置并发数上限，避免大量并发请求冲击 CDN？
-- 已安装文件索引的存储位置：跟随 asset pack 本地目录，还是独立存储？
+- index/manifest-only 是否仍生成一个“逻辑版本号”，还是使用 file-index checksum 作为素材包内容版本？
+- 单文件下载并发数默认设为多少，才能兼顾弱网稳定性和速度？
+- 共享音频变化时，是否允许只刷新共享音频包 manifest，并让游戏 manifest 指针复用最新共享音频版本，而不刷新每个游戏的独立 assetPack 版本？

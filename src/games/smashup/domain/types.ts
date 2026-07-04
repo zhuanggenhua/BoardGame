@@ -1217,6 +1217,7 @@ export interface TitanMovedEvent extends GameEvent<typeof SU_EVENTS.TITAN_MOVED>
         toBaseIndex: number;
         /** 目标基地 defId（可选） */
         toBaseDefId?: string;
+        metadata?: Record<string, unknown>;
         reason: string;
     };
 }

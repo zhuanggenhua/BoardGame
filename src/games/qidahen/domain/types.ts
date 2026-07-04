@@ -540,6 +540,7 @@ export interface QidahenHandCard {
     cardKind?: 'unknown' | 'event' | 'armament' | 'tactic' | 'silver' | 'character' | 'scenario' | 'chronology' | 'card-back';
     armamentId?: QidahenArmamentId | null;
     cardDefId?: string | null;
+    rulesSummary?: string | null;
     previewKind?: 'unknown' | 'character' | 'scenario' | 'chronology' | 'card-back';
     previewIdentityId?: string | null;
 }

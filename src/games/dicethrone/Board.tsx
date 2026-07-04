@@ -1651,18 +1651,22 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         // 产生伤害时会找不到自己的技能槽位，退回到 opponentHeader。
         let baseAbilityId = abilityId;
         let ownerCharacterId: string | undefined;
+        let ownerPlayerBoardFace: (typeof G.players)[string]['playerBoardFace'] | undefined;
         for (const pid of Object.keys(G.players)) {
             const match = findPlayerAbility(G, pid, abilityId);
             if (match) {
                 baseAbilityId = match.ability.id;
                 ownerCharacterId = G.selectedCharacters?.[pid];
+                ownerPlayerBoardFace = G.players[pid]?.playerBoardFace;
                 break;
             }
         }
 
-        const slotId = getAbilitySlotIdForCharacter(ownerCharacterId, baseAbilityId);
+        const slotId = getAbilitySlotIdForCharacter(ownerCharacterId, baseAbilityId, ownerPlayerBoardFace);
         if (!slotId) return getElementCenter(opponentHeaderRef.current);
-        const element = document.querySelector(`[data-ability-slot="${slotId}"]`) as HTMLElement | null;
+        const element = document.querySelector(
+            `[data-ability-slot-scope="main-board"][data-ability-slot="${slotId}"]`,
+        ) as HTMLElement | null;
         // 技能槽在 DOM 中存在 → 从技能槽飞出（自己的技能）
         // 技能槽不存在 → 说明是对手的技能，从对手悬浮窗飞出
         return element ? getElementCenter(element) : getElementCenter(opponentHeaderRef.current);
@@ -1723,7 +1727,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             const match = findPlayerAbility(G, rollerId, abilityId);
             const baseAbilityId = match?.ability.id ?? abilityId;
             const rollerCharacterId = G.selectedCharacters?.[rollerId];
-            const slotId = getAbilitySlotIdForCharacter(rollerCharacterId, baseAbilityId);
+            const rollerPlayerBoardFace = G.players[rollerId]?.playerBoardFace;
+            const slotId = getAbilitySlotIdForCharacter(rollerCharacterId, baseAbilityId, rollerPlayerBoardFace);
             if (slotId) {
                 const mapping = ABILITY_SLOT_MAP[slotId];
                 if (mapping) {
@@ -1732,7 +1737,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         if (!abilityMatch) {
                             return false;
                         }
-                        return slotContainsAbilityIdForCharacter(rollerCharacterId, slotId, abilityMatch.ability.id);
+                        return slotContainsAbilityIdForCharacter(
+                            rollerCharacterId,
+                            slotId,
+                            abilityMatch.ability.id,
+                            rollerPlayerBoardFace,
+                        );
                     });
                     if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
                         const options: AbilityChoiceOption[] = [];
@@ -2271,6 +2281,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 onMagnifyCard={(card) => setMagnifiedCard(card)}
                                 respondableCardIds={respondableCardIds}
                                 characterId={handOwner.characterId}
+                                playerBoardFace={handOwner.playerBoardFace}
                             />
                         </>
                     );

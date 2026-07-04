@@ -46,6 +46,7 @@ export interface ResolvedGamePackageManifest {
     sharedAudioPackChecksum?: string;
     assetPackFileIndexChecksum?: string;
     sharedAudioPackFileIndexChecksum?: string;
+    assetPackDiffOnly?: boolean;
     modulePackBytes?: number;
     assetPackBytes?: number;
     sharedAudioPackBytes?: number;

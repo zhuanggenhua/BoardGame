@@ -828,23 +828,22 @@ describe('smashup', () => {
             'titan_fairies_spirit_of_the_forest_clash_move',
         );
         expect(getPromptOption(followUpPrompt, entry => entry.value?.skip === true)).toBeDefined();
+        const returnToPreviousBaseOption = getPromptOption(followUpPrompt, entry => entry.value?.baseIndex === 0);
+        expect(returnToPreviousBaseOption).toBeDefined();
+        expect(returnToPreviousBaseOption._ai?.forcedTargetPolicy).toBe('must-avoid');
+        expect(getPromptOptions(followUpPrompt).some(entry => entry.value?.baseIndex === 2)).toBe(true);
 
         const removed = respondToPromptOption(
             movedToOccupiedBase.finalState,
-            entry => entry.value?.skip === true,
-            'Spirit of the Forest follow-up clash skip option',
+            entry => entry.value?.baseIndex === 2,
+            'Spirit of the Forest follow-up clash move to unvisited empty base option',
             '0',
             FIXED_RANDOM,
         );
         expect(removed.success, removed.error).toBe(true);
-        expect(removed.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: SU_EVENTS.TITAN_REMOVED_FROM_PLAY,
-                payload: expect.objectContaining({ titanUid: 'spirit-loop' }),
-            }),
-        ]));
         expect(removed.finalState.core.titans?.find(titan => titan.uid === 'spirit-loop')?.location).toMatchObject({
-            zone: 'setaside',
+            zone: 'base',
+            baseIndex: 2,
         });
         expect(removed.finalState.core.titans?.find(titan => titan.uid === 'ancient-lord-loop')?.location).toMatchObject({
             zone: 'base',
@@ -852,6 +851,137 @@ describe('smashup', () => {
         });
         expect(getPromptsBySourceId(
             removed.finalState,
+            'titan_fairies_spirit_of_the_forest_clash_move',
+        )).toHaveLength(0);
+    });
+
+    it('丛林之灵输掉连续 titan clash 时，AI 不会在两个已有泰坦基地间无限往返', async () => {
+        const core = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('ally-0', 'robot_microbot_alpha', '0', 2),
+                        makeMinion('enemy-0', 'robot_microbot_alpha', '1', 4),
+                    ],
+                }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-on-base-b', 'robot_microbot_alpha', '1', 4)],
+                }),
+            ],
+            titans: [
+                {
+                    uid: 'spirit-two-base-loop',
+                    defId: 'fairies_spirit_of_the_forest',
+                    faction: 'fairies',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as TitanState,
+                {
+                    uid: 'dagon-two-base-loop',
+                    defId: 'innsmouth_dagon',
+                    faction: 'innsmouth',
+                    ownerId: '1',
+                    controllerId: '1',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 2 },
+                } as TitanState,
+                {
+                    uid: 'ancient-lord-two-base-loop',
+                    defId: 'vampires_ancient_lord',
+                    faction: 'vampires',
+                    ownerId: '1',
+                    controllerId: '1',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 3 },
+                } as TitanState,
+            ],
+        });
+
+        const post = postProcessSystemEvents(core, [{
+            type: SU_EVENTS.TITAN_PLAYED,
+            payload: {
+                titanUid: 'dagon-two-base-loop',
+                defId: 'innsmouth_dagon',
+                ownerId: '1',
+                controllerId: '1',
+                baseIndex: 0,
+                baseDefId: 'base_a',
+                reason: 'test_spirit_clash_two_base_loop',
+            },
+            timestamp: 33,
+        } as SmashUpEvent], FIXED_RANDOM, makeMatchState(core));
+
+        const prompt = getSimpleChoicePrompt(post.matchState!, 'titan_fairies_spirit_of_the_forest_clash_move');
+        const moveToOccupiedBase = getPromptOption(prompt, entry => entry.value?.baseIndex === 1);
+
+        const movedToOccupiedBase = runCommand(
+            post.matchState!,
+            respondCommand(moveToOccupiedBase.id, '0'),
+            FIXED_RANDOM,
+        );
+
+        expect(movedToOccupiedBase.finalState.core.titans?.find(titan => titan.uid === 'spirit-two-base-loop')?.location).toMatchObject({
+            zone: 'base',
+            baseIndex: 1,
+        });
+
+        const followUpPrompt = getSimpleChoicePrompt(
+            movedToOccupiedBase.finalState,
+            'titan_fairies_spirit_of_the_forest_clash_move',
+        );
+        const returnToPreviousBaseOption = getPromptOption(followUpPrompt, entry => entry.value?.baseIndex === 0);
+        expect(returnToPreviousBaseOption._ai?.forcedTargetPolicy).toBe('must-avoid');
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: movedToOccupiedBase.finalState,
+        });
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide({
+            gameId: 'smashup',
+            matchId: 'test-spirit-of-forest-ai-clash-loop',
+            playerId: '0',
+            visibleState: movedToOccupiedBase.finalState,
+            interaction: {
+                id: followUpPrompt.id,
+                kind: 'simple-choice',
+                sourceId: 'titan_fairies_spirit_of_the_forest_clash_move',
+                playerId: '0',
+                options: getPromptOptions(followUpPrompt),
+            },
+            responseWindow: null,
+            legalActions,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            difficulty: resolveAiDifficultyProfile('normal'),
+            source: 'local',
+        });
+        const chosenAction = legalActions.find((action) => action.actionId === decision?.actionId);
+        expect(chosenAction).toBeDefined();
+        const chosenOption = chosenAction?.metadata?.optionValue as { baseIndex?: number; skip?: boolean } | undefined;
+        expect(chosenOption).not.toMatchObject({ baseIndex: 0 });
+
+        const chosenCommand = chosenAction!.commands[0] as SmashUpCommand;
+        const resolved = runCommand(
+            movedToOccupiedBase.finalState,
+            { ...chosenCommand, playerId: followUpPrompt.playerId } as SmashUpCommand,
+            FIXED_RANDOM,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        const resolvedSpiritLocation = resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-two-base-loop')?.location;
+        if (chosenOption?.skip === true) {
+            expect(resolvedSpiritLocation).toMatchObject({ zone: 'setaside' });
+        } else {
+            expect(resolvedSpiritLocation).not.toMatchObject({ zone: 'base', baseIndex: 0 });
+        }
+        expect(getPromptsBySourceId(
+            resolved.finalState,
             'titan_fairies_spirit_of_the_forest_clash_move',
         )).toHaveLength(0);
     });

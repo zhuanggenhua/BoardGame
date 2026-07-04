@@ -616,7 +616,11 @@ export const startGamePackageInstall = (
         gameId: manifest.gameId,
         manifest,
     });
-    if (!manifest.assetPackUrl) {
+    const canInstallDiffOnlyAssetPack = Boolean(
+        manifest.assetPackDiffOnly
+        && manifest.assetPackFileIndexUrl
+    );
+    if (!manifest.assetPackUrl && !canInstallDiffOnlyAssetPack) {
         const fallbackState = fallbackCache.get(manifest.gameId) ?? {
             gameId: manifest.gameId,
             runtimeChannel: manifest.runtimeChannel,

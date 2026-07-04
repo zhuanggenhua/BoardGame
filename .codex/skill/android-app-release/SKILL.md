@@ -36,12 +36,13 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
   3. 直接下载线上 APK 验包
 - 禁止停在“我已经本地打好了”。
 
-### 2.2 release 默认必须是正式壳
+### 2.2 release 与真机测试默认必须是正式壳
 
-- `prepare-release / build-release / build-bundle` 默认必须落到：
+- `prepare-release / build-release / build-bundle / 真机安装测试 / 下载链路测试` 默认必须落到：
   - `appId = top.easyboardgame.app`
   - `appName = 易桌游`
-- `debug / run / sync` 才允许默认测试壳。
+- 本项目日常真机验证直接使用正式包名和正式应用名，避免测试壳与正式壳的数据目录、下载任务、自动更新入口、URL scheme 不一致。
+- `debug / run / sync` 不得擅自切成 `top.easyboardgame.app.debug`。只有用户当轮明确要求“并存安装测试包 / debug 包 / 不覆盖正式包”时，才允许使用测试壳，并且最终汇报必须标明不是正式包验证。
 - 只要用户目标是对外发布，任何 `debug / 测试 / qa / dev` 壳都视为失败产物。
 
 ### 2.3 线上验包必须看 APK 本体，不只看 latest.json

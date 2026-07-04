@@ -48,26 +48,24 @@
   - 攻城、外交、年中、新年这些 `highlightTarget = qidahen-season-summary` 的信息步骤会显示真实结算摘要，而不是被前景交互面板压掉。
   - 年中/新年教程按真实行动座位切换视角；新年防线维护由大明座位的真实维护按钮承接，不再靠测试旁路命令顶替。E2E 已补核心状态断言：年中后三方战败标记归零；新年后蒙古支付手牌获得本年纪年卡并威望 +1；年份推进到天命五年 1620，纪年卡区刷新，大明新年人物进入出场状态。
   - 朝鲜章节已覆盖朝鲜朝贡后的牌库/弃牌堆、朝鲜区人口为 0 的核心状态断言、朝鲜耗损摘要结果，以及新年摘要中的“非朝鲜区域”控制区统计；水路已由 `water-dispatch` 隐藏续章补真实调度入口：大明骑兵调度从皮岛通过海岸/水路解围东江，同时展示 `皮岛 → 东江 → 登莱` 的纯水路续航候选，并确认陆路后续目标不会进入玩家候选。
-  - 攻城章节已把 `守城宣告` 从说明态改为真实按钮入口：城市被攻击前会出现 `守城避战 / 出城野战`，点击 `守城避战` 后才进入城战待结算；骑兵城战减值已由真实城战摘要承接。
+  - 攻城章节已把 `守城宣告` 从说明态改为真实按钮入口：城市被攻击前会出现 `守城避战 / 出城野战`，点击 `守城避战` 后才进入城战待结算；骑兵城战减值已由真实城战摘要承接。E2E 已补围城后核心状态断言：山海关仍由后金控制，城内人口状态保留，大明只成为外围围城方；`31a-攻城第3步-同章选择占领该区.png` 已补同章占领对照，证明攻下城市后选择占领会把山海关控制权改为大明，并清空城内状态与围城状态。
   - 外交章节已把 `友好标记 / 翻为附庸 / 移除他方控制标记` 都改为真实操作步骤；`33b-外交第2b步-移除他方控制标记.jpg` 已证明东江目标与 `移除控制标记` 按钮由真实外交面板承接。
 - 当前应判定为：**教程有问题，正式流程交互建模也有问题；不能只改教程。**
 
 ## 当前正式阻塞
 
-- 当前不能把七大恨正式局说成“规则书级手牌一级入口已具备”。
-- 阻塞不是文案不够，而是正式局手牌对象只补到了“atlas 中可证明的非行动牌身份”，现用 atlas 本身仍不是“普通手牌”真相源：
+- 当前仍不能把七大恨正式局说成“规则书级手牌一级入口已具备”。
+- 阻塞不再是“完全没有普通手牌图集或确认行”：2026-07-04 已确认 atlas05 是普通手牌图集，并把 30 张 `passed` 普通手牌接入正式发牌/预览流。但这只是局部接入，仍不是完整普通手牌全集真相源：
   - `src/games/qidahen/domain/handCardState.ts`
-    - 正式局初始手牌与摸牌会经 `resolveQidahenFormalHandCardIdentity` 绑定可审计身份。
+    - 正式局初始手牌与摸牌现在按 atlas05 的 30 张已确认普通手牌连续发放，并引用 `qidahen:atlas05-ordinary-hand-preview`。
+    - 运行态手牌 `label` 已使用 atlas05 人工确认中文牌名，而不是继续显示“大明/后金/蒙古 手牌 N”占位名；放大预览、无障碍标签与战术牌结算摘要会直接复用这些中文牌名。
+    - 运行态手牌 `rulesSummary` 已携带 30 张已确认牌的规则效果摘要，作为人工录入矩阵反写后的可审计说明字段；这只是把真相源带入手牌对象，不等于完整实现事件效果全集、战术时机或银两资源链。
   - `src/games/qidahen/domain/handCardIdentity.ts`
-    - 当前已能稳定识别 atlas 中可直接读到的对象：
-      - 大明/后金人物牌：`cardKind: 'character'`
-      - 蒙古剧本卡：`cardKind: 'scenario'`
-      - 蒙古纪年卡：`cardKind: 'chronology'`
-      - 后金牌背：`cardKind: 'card-back'`
-    - 这些身份只说明“这张牌是什么规则对象”，不说明它可以作为 `执行事件 / 升级军备` 的直点入口。
-    - 当前仍未能从正式素材中建立普通 `event / armament / tactic / silver` 牌的完整映射。
+    - `resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)` 只解析人工确认的 30 张 `event / armament / tactic`，并返回对应中文牌名、牌类、`cardDefId / armamentId` 与规则效果摘要；未确认、partial、blocked 行不入正式运行时。
+    - `resolveQidahenFormalHandCardIdentity(factionId, previewIndex)` 仍保留旧 16-frame faction preview seam 的最小身份解析，供旧合同和排障对照使用。
+    - 当前仍未能建立普通 `event / armament / tactic / silver` 牌的完整全集映射；银两目前没有满足正式反写门槛。
   - `src/games/qidahen/domain/initialCoreSetup.ts`
-    - 正式开局已建立 atlas 可证明对象的最小规则身份，但仍没有普通事件牌/军备牌定义目录。
+    - 正式开局会消费 atlas05 30 张普通手牌确认行；这证明“可反写确认行”已经进入运行时，但不证明整副普通手牌全集完成。
   - `src/games/qidahen/tutorialSetup.ts`
     - 只有教程注入态会手动补 `event / armament / tactic / silver`
   - `temp/qidahen-hand-sheets/*.png`
@@ -112,12 +110,12 @@
     - 剩余候选人工复核清单已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-human-review-checklist.md`；它把 12 张候选的人工确认字段固定为中文牌名、牌类、规则效果、军备目标和排除原因，但当前仍没有任何行达到正式规则映射门槛。
     - 外部文本来源搜索已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-external-source-search.md`；多轮公开搜索已经覆盖中英文泛词、牌表词、牌类词，以及“大汗令箭 / 火炮技术”等精确词，仍没有找到可追溯逐牌牌表，命中结果主要是百科、单词、歌曲、知乎/无关页面或搜索噪音。
     - 结构化素材来源复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-structured-source-recheck.md`；运行时资源清单只有资源路径层级，TTS JSON 仍只有 CardID 顺序、图集键、辅助卡和军备状态对象名称，不能提供普通事件、军备、战术、银两逐牌规则字段。
-    - 本地素材逐牌来源穷尽复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-local-asset-source-exhaustion.md`；素材目录只发现 62 个 JPG、9 个 PNG、1 个 TTS JSON 和 1 个规则 PDF，没有额外文本牌表、结构化表格或压缩包可补普通手牌逐牌字段；图片元数据和运行时 manifest 键复查也没有发现普通手牌牌类命名线索。
+    - 本地素材逐牌来源旧复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-local-asset-source-exhaustion.md`；但该结论只覆盖当时的单卡候选、旧 preview seam 和结构化文本来源，不再能概括完整 `Images` 目录。2026-07-04 重新利用完整 `Images` 后，已确认 atlas05 是普通手牌图集；当前口径应改为“已有普通手牌图集、30 张确认行和正式运行时接入，但全集、银两和部分行动语义仍未闭环”。
     - 疑似单卡素材 OCR 小批量试跑已沉淀到 `docs/games/qidahen/workflows/qidahen-hand-card-single-card-ocr-probe.md`；33 张候选经 PIL + EasyOCR 试跑后，普通牌类关键词独占命中为 0，混合普通/非普通命中为 0，4 张命中人物或下野等非普通线索，23 张只有低信息 OCR 文本，6 张没有 OCR 文本；后续按需求交接式安全读图流程验收全部 33 张候选，得到 30 张非普通手牌/非手牌素材排除和 3 张纯色底块阻塞；本批没有产生可反写正式手牌规则映射的逐牌真相源。
     - 完成依据决策矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-truth-source-decision-matrix.md`；当前所有已核来源都被判定为不能单独或合并关闭 `2.4`。
-    - 正式映射反写契约已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-formal-mapping-contract.md`；它只规定人工确认后如何落到 `cardKind / cardDefId / armamentId` 和 `QidahenArmamentId`，当前没有任何确认行可反写。
-    - `npm run verify:qidahen:handcards` 已沉淀为普通手牌真相源门禁入口：先校验 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json` 的 33 张安全读图验收产物，再校验人工录入矩阵反写门槛。当前图片验收输出 `passed=0 / failed=30 / blocked=3 / partial=0`，人工录入反写校验输出“已确认行数：0”，两者共同明确“不允许反写正式手牌规则映射”，并检查 OpenSpec `2.4 / 4.5` 必须保持未完成。
-    - 人工录入反写校验脚本已沉淀为 `scripts/verify/qidahen-hand-card-manual-entry.mjs`；它覆盖 49 张 OCR 候选人工录入矩阵、12 张剩余候选复核清单、完整 CardID 人工录入矩阵和运行时图集候选人工录入矩阵，当前脚本输出“已确认行数：0”，并明确“不允许反写正式手牌规则映射”；2026-07-03 已补强为无确认普通手牌行时同步检查 OpenSpec `2.4 / 4.5` 必须保持未完成，防止候选 OCR 或人工录入入口被误当正式入口闭环。
+    - 正式映射反写契约已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-formal-mapping-contract.md`；它只规定人工确认后如何落到 `cardKind / cardDefId / armamentId` 和 `QidahenArmamentId`，2026-07-04 之前没有确认行可反写；当前 atlas05 已有 23 张确认行，下一步应按该契约接入正式映射。
+    - `npm run verify:qidahen:handcards` 已沉淀为普通手牌真相源门禁入口：先校验 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json`，再校验人工录入矩阵反写门槛。2026-07-04 当前图片验收输出 `passed=30 / failed=0 / blocked=8 / partial=10`，人工录入反写校验输出“已确认行数：30”；这证明完整 `Images` 目录中的 atlas05 已经产生可反写的普通手牌真相源，但尚不足以勾选 OpenSpec `2.4 / 4.5`。
+    - 人工录入反写校验脚本已沉淀为 `scripts/verify/qidahen-hand-card-manual-entry.mjs`；它覆盖 49 张 OCR 候选人工录入矩阵、12 张剩余候选复核清单、完整 CardID 人工录入矩阵、运行时图集候选人工录入矩阵，以及 2026-07-04 新增的 atlas05 普通手牌人工录入矩阵。当前脚本已校验 atlas05 的 30 张确认行，能检查中文牌名、牌类、规则效果摘要和军备目标是否满足反写门槛。
     - TTS CardID 位置清单已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-position-map.md`；它只能提供 `deckId / index / row / col / 出现次数`，不能提供牌名、牌类、效果或军备目标；2026-07-03 交叉核验还确认 `deckId 13 / 16 / 17` 的图集哈希分别命中蒙古、纪年、朝鲜整版图集，不等价于当前运行时正式手牌预览使用的三套 faction atlas。
     - TTS CardID 完整人工录入矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md`；它把 10 个牌组段展开为 143 行出现记录、99 个唯一图集位置，后续已按哈希交叉证据和低分辨率安全核读结果全部回填为“已排除”，只能作为 TTS 牌组复核归档，不能作为正式规则映射依据。
     - 2026-07-03 已继续回填 TTS CardID 完整人工录入矩阵：143 行全部按已有证据排除，其中 28 条运行时图集候选已安全核读排除，111 条纪年/朝鲜或非正式手牌图集由哈希证据排除，4 条 1x1 `CardCustom` 小牌组对象没有牌名、说明、牌类或效果字段；仍没有普通事件、军备、战术或银两确认行。
@@ -125,7 +123,7 @@
     - 运行时图集候选安全复核入口已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-safe-review.md`；本地脚本只生成 28 条候选的小尺寸缩略图与标题裁切索引，避免直接读取大图，但这仍只是人工/OCR 入口，不是正式规则映射。
     - 运行时图集候选小图 OCR 尝试已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-ocr-attempt.md`；本轮定位到路径编码与内存/显存不足问题，未获得稳定逐牌 OCR 结果，后续改用低分辨率安全预览逐批核读。
     - 运行时图集候选与既有 OCR 线索交叉表已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-existing-ocr-crosswalk.md`；`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-priority-review.md` 已记录 28 条候选的逐批安全预览核读结果，所有候选均已排除，且没有任何行达到人工确认反写门槛。
-- 因此当前正式局已修正“可证明非行动牌仍是 unknown 壳”的问题，但仍不具备：
+- 因此当前正式局已修正“可证明非行动牌仍是 unknown 壳”的问题，并且 atlas05 已提供普通手牌抽样真相源；30 张已确认普通手牌已经进入正式发牌/摸牌、预览流与运行态规则摘要字段。但正式运行态仍不具备：
   - 按规则书直接打出哪张事件牌
   - 按规则书直接打出哪张军备牌
   - 以真实手牌对象承接一级手牌行动入口
@@ -133,7 +131,7 @@
   - `执行事件` 仍然只能判定为正式一级入口缺口
   - `升级军备` 已去掉抽象势力行动按钮，但仍只能判定为已识别军备牌的局部真实入口
   - 任何“正式局已经能从真实手牌直接打牌”的口径都不成立
-  - OpenSpec `2.4` 不得因为已经核过 TTS 素材而勾选；当前核验结论是“普通手牌真相源仍缺”，不是“正式手牌入口已完成”
+  - OpenSpec `2.4` 不得因为 atlas05 已有 30 张确认行、领域层解析函数和正式发牌/预览接入而勾选；当前核验结论是“普通手牌真相源与局部运行时接入已打开缺口，但事件效果全集、战术时机和银两资源链仍未完成”，不是“正式手牌入口已完成”
 
 ## 规则骨架
 
@@ -510,7 +508,8 @@
 - `temp/qidahen-hand-sheets/jin-sheet.png`
   - 肉眼可见当前后金 atlas 前排是人物牌，后排直接出现牌背，说明它连可见对象全集都未闭合
 - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images`
-  - 原始素材目录按 `event / armament / tactic / silver / 事件 / 军备 / 战术 / 银两 / deck / atlas` 方向复核后，没有找到另一套可直接接入的正式普通手牌资源组
+  - 2026-07-04 重新核对后，确认 `httpcloud3steamusercontentcomugc102169903669356559588DEAD347E28EC522FA222DB84DF3E941A092647.jpg` 对应 TTS `deckKey 16`，是普通手牌 atlas05，不应继续按“纪年图集”或“没有普通手牌素材”口径描述。
+  - 已按安全读图流程生成单牌裁图和分块验收图，并锁定 23 张普通手牌确认行，覆盖事件、军备、战术三类；银两仍为 blocked/partial 证据，不得反写正式真相表。验收结论覆盖写入 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json` 与 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.md`。
 
 ### 当前教程侧的直接证据
 
@@ -539,15 +538,15 @@
 1. 当前“正式开局还没有稳定直打事件/军备入口”不是单句文案问题。
 2. 如果要把正式 UI 改回规则书口径，前提不只是补 `cardKind` 映射，而是先拿到真正属于普通手牌集合的素材合同，再把正式局手牌对象提升成可稳定识别类别与定义的对象。
 3. 在这件事没做之前，教程和审计都必须把它明确记成**正式流程缺口**，不能默认“只是 UI 还没高亮一下”。
-4. 在 atlas 裁切合同和卡牌真相表落地前，任何“真实手牌入口”“正式可直接打出事件牌/军备牌”的说法都不成立。
-5. 2026-07-02 的 TTS Workshop 核验进一步证明，当前最准确的阻塞描述不是“还缺几张卡的映射”，而是“现用 faction atlas 与 TTS deck 数据都不能直接充当普通手牌真相源”。
+4. atlas05 已经给出 23 张可正式反写的普通手牌真相源，因此“没有素材/没有任何确认行”的旧结论不再成立。
+5. atlas05 已确认通过项覆盖事件、战术、军备三类普通手牌，并已完成 `cardKind / cardDefId / armamentId` 局部运行时接入和定向测试；银两仍为 blocked/partial 证据，事件效果全集与战术时机也未闭环，因此“真实手牌入口全集”“正式可直接打出所有事件牌/军备牌”的完成口径仍不成立。
 
 ### 2026-07-02 运行时 atlas preview 合同核验（正式手牌阻塞）
 
 - 运行时证据：`src/games/qidahen/ui/cardAtlas.ts` 的 faction atlas 帧由 `buildFrames(topXs, leftYs)` 组装，当前合同只覆盖顶行 `topXs` 与左列 `leftYs` 的 16 个预览帧，而不是三张 10x7 原图的完整 60/70 张全牌面。
 - 发牌证据：`src/games/qidahen/domain/handCardState.ts` 固定 `QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16`，并通过 `resolveQidahenFormalHandCardIdentity` 只为这些 preview index 补 atlas 中可审计的非行动牌身份。
-- 结论：现有运行时 preview seam 可证明人物、剧本、纪年、牌背等少量非行动牌身份，但不能作为普通事件牌、军备牌、战术牌、银两牌的正式逐牌真相源；2.4 仍受完整裁切合同、逐牌牌表或 OCR 复核阻塞。
-- 素材状态：`docs/games/qidahen/workflows/qidahen-hand-card-truth-source-candidates.md` 已沉淀本轮可提交审计结论；TTS 结构化字段复核再次确认 `deckId 13 / 16 / 17` 缺逐牌 `Nickname / Description`，且 2026-07-03 交叉核验确认这些 deckId 命中的图集不等价于当前运行时 faction hand preview atlas；`deckId 26 / 27 / 28` 只是 1x1 军备状态对象；`docs/games/qidahen/workflows/qidahen-hand-card-manual-entry-matrix.md` 已把 49 张 OCR 候选转成可提交人工录入矩阵，并已通过低分辨率安全标题预览完成剩余待复核候选回填，49 张均未形成普通事件、军备、战术或银两确认行；`docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-position-map.md` 与 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md` 已把 TTS CardID 转成位置清单和完整出现记录，且完整矩阵 143 行已按哈希交叉证据和低分辨率安全核读结果全部排除，但仍没有任何普通事件、军备、战术或银两确认行，也不能直接映射到正式手牌预览帧；`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-tts-crosswalk.md` 与 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-manual-entry-matrix.md` 已把可能命中正式运行时手牌图集的候选收窄为 28 条，且 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-priority-review.md` 已通过低分辨率安全预览把 28 条全部核读并排除为人物牌、纪年/剧本类牌或人物效果相关非普通牌；因此运行时 faction hand preview atlas 候选链已被证伪，不能关闭普通事件、军备、战术、银两真相源缺口；`docs/games/qidahen/workflows/qidahen-hand-card-high-priority-title-review.md`、`docs/games/qidahen/workflows/qidahen-hand-card-medium-priority-title-review.md`、`docs/games/qidahen/workflows/qidahen-hand-card-low-priority-title-review.md`、`docs/games/qidahen/workflows/qidahen-hand-card-unreadable-title-review.md` 已记录 49 张候选的安全核读入口；`docs/games/qidahen/workflows/qidahen-hand-card-easyocr-batch-review.md` 已记录 49 张候选的本地批量 OCR 文本线索；`docs/games/qidahen/workflows/qidahen-hand-card-ocr-keyword-triage.md`、`docs/games/qidahen/workflows/qidahen-hand-card-nonordinary-exclusion-candidates.md`、`docs/games/qidahen/workflows/qidahen-hand-card-remaining-manual-review-queue.md`、`docs/games/qidahen/workflows/qidahen-hand-card-remaining-review-subtriage.md` 与 `docs/games/qidahen/workflows/qidahen-hand-card-final-candidate-safe-ocr.md` 已记录关键词分流、误判风险、非普通手牌排除候选、剩余 12 张人工复核队列、二次文本分流和最后未分流候选安全 OCR。本地裁切图、候选清单、安全标题预览和 OCR 输出只作为辅助输入；当前仍没有任何候选行完成普通手牌中文牌名、牌类、效果与军备目标确认，后续仍需要补逐牌牌表或其他可审计普通手牌来源后再闭环。
+- 结论：现有运行时 preview seam 可证明人物、剧本、纪年、牌背等少量非行动牌身份，但它不是普通手牌全集入口；普通事件牌、军备牌、战术牌的逐牌真相源已由 atlas05 打开，并且 23 张 confirmed/passed 行已进入正式发牌/摸牌与预览流，运行态手牌名称也已改为对应中文牌名；银两牌仍未满足正式反写门槛，事件效果全集、战术时机和银两资源链仍未完成。
+- 素材状态：`docs/games/qidahen/workflows/qidahen-hand-card-atlas05-manual-entry-matrix.md` 已新增 atlas05 普通手牌人工录入矩阵；`test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json` 当前记录 23 张 passed 普通手牌、12 张 partial、13 张 blocked，`npm run verify:qidahen:handcards` 已通过。旧的 49 张 OCR 候选、TTS CardID 完整矩阵和运行时 faction preview 候选仍保留为排除证据；它们不能覆盖 atlas05 这一新发现，也不能再支持“本地没有任何普通手牌确认行”的结论。当前已完成 23 张确认行的正式运行时接入和定向测试；后续仍需补齐银两、事件效果全集和战术时机后，才能关闭 2.4 / 4.5。
 
 ## 后续实施门禁
 
@@ -800,7 +799,7 @@
    - 高第/王化贞人物调度等待态已阻断“非候选地图点击反写来源区”：高第选牌后保留原选择，王化贞保留原来源选择，只把点击写到 `explicitRegionId`
    - 待结算战斗与战后选择已阻断“结果区覆盖显式浏览焦点”：`pendingTargetAction / postBattleSelection` 继续承接真实战斗目标，地图误点与后续结算只保留到 `explicitRegionId`
 5. 这轮已经完成 OpenSpec 2.5 的字段级拆分：默认聚焦、已锁来源、当前目标和展示锚点都有独立持久语义；`selectedRegionId` 仍保留为旧界面焦点兼容入口，但不再承担全部真相。
-6. 仍不能把七大恨判成“新游戏接近收工”，原因集中在 2.4 与 4.5：正式手牌行动全集仍缺普通事件/军备/战术/银两真相源；教程规则覆盖已补骑兵避战、骑兵劫掠、中立入侵、水路调度、“水路后不能再接陆路”的玩家视角候选证据、骑兵城战减值摘要证据与战术牌真实打出，但这些教程注入态不能替代正式普通手牌全集。4.5 必须继续保持未完成。
+6. 仍不能把七大恨判成“新游戏接近收工”，原因集中在 2.4 与 4.5：正式手牌行动全集仍缺银两、事件效果全集与战术时机闭环；教程规则覆盖已补骑兵避战、骑兵劫掠、中立入侵、水路调度、“水路后不能再接陆路”的玩家视角候选证据、骑兵城战减值摘要证据、战术牌真实打出、攻城同章占领对照，以及轮盘主章节完成后自动续到开垦隐藏续章的 `15g` 证据，但这些教程注入态不能替代正式普通手牌全集。4.5 必须继续保持未完成。
 
 ### C. 当前不能靠 UI 小修冒充完成的问题
 
@@ -810,10 +809,11 @@
 2. 正式局仍缺：
    - 规则书口径的“打出哪张事件牌”
    - 规则书口径的“打出哪张军备牌”
-3. 这不是按钮文案问题，而是正式手牌对象只补到了 atlas 可证明身份：
+3. 这不是按钮文案问题，而是正式手牌对象只补到了 atlas05 已确认普通手牌的局部身份：
    - 人物 / 剧本 / 纪年 / 牌背已能稳定记录 `cardKind / cardDefId`
-   - 普通事件牌 / 军备牌 / 战术牌 / 银两仍没有稳定卡名、卡类和军备目标映射
-4. 在正式手牌真相表补齐前，不得把教程里的 `event-action / armament-upgrade` 示例链说成“正式局手牌一级入口已经完成”。
+   - atlas05 的 23 张已确认普通事件 / 军备 / 战术牌已能稳定记录 `cardKind / cardDefId / armamentId`
+   - 银两、事件效果全集和战术时机仍没有完整运行时闭环
+4. 在正式手牌真相表与行动语义补齐前，不得把教程里的 `event-action / armament-upgrade` 示例链说成“正式局手牌一级入口已经完成”。
 
 ### D. 当前收工门槛
 
@@ -859,7 +859,7 @@
   - 只要教程步骤高亮 `qidahen-season-summary`，即使前景还有主动交互面板，也会保留真实摘要。
   - 这覆盖攻城、外交、年中、新年、朝鲜耗损这类“看结果”的教程信息步骤。
 - 当前 `e2e/qidahen/qidahen-closeout.e2e.ts` 不再断言这些步骤没有摘要，而是断言摘要里出现真实结果词：
-  - 攻城：`战后围城`、`山海关`
+  - 攻城：`战后围城`、`战后占领`、`山海关`
   - 外交：`轮盘外交/雇佣`、`外交 1：宁远 已放置 大明友好标记`、`外交 2：宁远 已翻为 大明附庸`、`外交 3：东江 的控制标记已移除`、`雇佣军`
   - 年中：`年中结算`
   - 新年：`新年结算`
@@ -868,6 +868,10 @@
   - 年中摘要正文断言 `土地税赋 / 战败标记 / 非朝鲜区域`，同时读核心状态确认大明、蒙古、后金三方战败标记均归零。
   - 新年防线维护后断言摘要标题为 `新年结算`，正文包含 `维护 / 兵力耗损 / 获得本年纪年卡 / 威望 +1 / 非朝鲜区域`。
   - 同一 E2E 还读核心状态确认年份推进到 `天命五年 1620`、三方顺位数组有效、纪年卡区刷新、蒙古手牌减少且威望 +1、大明新年人物出场。
+- 2026-07-03 已继续补强攻城/山海关 E2E 核心状态证据：
+  - 城战后进入围城选择时，山海关仍由后金控制，城内人口状态保留。
+  - 选择 `围城该区` 后，山海关仍由后金控制，城内人口状态继续保留，同时 `siegeState.attackerFactionId` 为大明且围城兵力大于 0。
+  - 2026-07-04 已追加同章占领对照：同一攻城教程从守城宣告、城战待结算进入战后选择后点击 `占领该区`，摘要写入 `战后占领 / 山海关`，核心状态断言山海关控制权改为大明、城内状态与围城状态清空。该证据关闭“攻下所有城市后占领成功”的教程同章对照缺口。
 - 这只能证明“教程看结果的承接物已回到真实摘要”，不能外推出正式手牌行动全集已经完成。
 
 ### 2. 当前玩家文案里仍有明显作者旁白腔

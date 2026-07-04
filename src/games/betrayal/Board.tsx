@@ -32,6 +32,7 @@ import type {
     BetrayalRoomNode,
     BetrayalTraitKey,
     PossessionUseEffectProfile,
+    UseEffectProfile,
 } from './game';
 import {
     BETRAYAL_COMMANDS,
@@ -79,6 +80,9 @@ type PreviewState = {
     selectedInventoryTargetPlayerId: string | null;
     selectedInventoryTargetRoomId: string | null;
     selectedMaskTargetRoomIdsByTokenId: Record<string, string>;
+    selectedEventTrait: BetrayalTraitKey | null;
+    selectedEventTargetRoomId: string | null;
+    selectedEventDamageTraits: BetrayalTraitKey[];
     useHolySymbolForExplore: boolean;
     useIdolForExplore: boolean;
     tradeSelectionTouched: boolean;
@@ -311,6 +315,9 @@ function createInitialPreviewState(core: BetrayalCore): PreviewState {
         selectedInventoryTargetPlayerId: null,
         selectedInventoryTargetRoomId: null,
         selectedMaskTargetRoomIdsByTokenId: {},
+        selectedEventTrait: null,
+        selectedEventTargetRoomId: null,
+        selectedEventDamageTraits: [],
         useHolySymbolForExplore: false,
         useIdolForExplore: false,
         tradeSelectionTouched: false,
@@ -742,6 +749,118 @@ function resolveSelectedDogTradeCardIds(
 ): string[] {
     const inventoryCardIds = new Set(inventory.map((card) => card.id));
     return selectedCardIds.filter((cardId) => inventoryCardIds.has(cardId) && cardId !== 'dog');
+}
+
+function resolveEventTraitChoices(effect: UseEffectProfile): BetrayalTraitKey[] {
+    if (effect.mode === 'chooseTraitRoll') {
+        return effect.allowedTraits;
+    }
+    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
+        return effect.chosenTrait ? [] : effect.allowedTraits;
+    }
+    if (effect.mode === 'compound') {
+        return effect.effects.flatMap(resolveEventTraitChoices);
+    }
+    return [];
+}
+
+function resolveEventPreviewEffect(
+    core: BetrayalCore,
+    effect: UseEffectProfile,
+    selectedTrait: BetrayalTraitKey | null,
+): UseEffectProfile | null {
+    if (effect.mode !== 'chooseTraitRoll') {
+        return effect;
+    }
+    if (!selectedTrait || !effect.allowedTraits.includes(selectedTrait)) {
+        return null;
+    }
+    const previewTotal = core.currentExplorer.traits[selectedTrait];
+    return [...effect.branches]
+        .sort((left, right) => right.min - left.min)
+        .find((branch) => previewTotal >= branch.min)
+        ?.effect ?? effect.branches[effect.branches.length - 1]?.effect ?? null;
+}
+
+function resolveEventTargetRooms(core: BetrayalCore, effect: UseEffectProfile | null): BetrayalRoomNode[] {
+    if (!effect) {
+        return [];
+    }
+    if (effect.mode === 'compound') {
+        return effect.effects.flatMap((childEffect) => resolveEventTargetRooms(core, childEffect));
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
+        return core.rooms.filter((room) => (
+            room.state === 'discovered'
+            && (
+                effect.targetRoomScope === 'anyDiscovered'
+                || (effect.targetRoomScope === 'groundDiscovered' && room.floor === 'ground')
+                || (effect.targetRoomScope === 'basementDiscovered' && room.floor === 'basement')
+            )
+        ));
+    }
+    if (effect.mode === 'placeExplorerInAdjacentRoom') {
+        const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
+        if (!currentRoom) {
+            return [];
+        }
+        const connectedRoomIds = new Set(currentRoom.connectedRoomIds);
+        for (const doorway of currentRoom.doorways) {
+            if (doorway.connectsToRoomId) {
+                connectedRoomIds.add(doorway.connectsToRoomId);
+            }
+        }
+        return core.rooms.filter((room) => room.state === 'discovered' && connectedRoomIds.has(room.id));
+    }
+    if (effect.mode === 'placeSecretPassageToken') {
+        if (!effect.targetRoomScope) {
+            return [];
+        }
+        return core.rooms.filter((room) => (
+            room.state === 'discovered'
+            && room.id !== core.currentExplorer.roomId
+            && !(room.tokens ?? []).some((token) => token.kind === 'secretPassage')
+            && (
+                !effect.targetRoomScope
+                || effect.targetRoomScope === 'anyOtherDiscovered'
+                || (effect.targetRoomScope === 'groundDiscovered' && room.floor === 'ground')
+                || (effect.targetRoomScope === 'basementDiscovered' && room.floor === 'basement')
+            )
+        ));
+    }
+    return [];
+}
+
+function resolveEventGeneralDamageChoice(effect: UseEffectProfile | null): Extract<UseEffectProfile, { mode: 'generalDamageChoice' }> | null {
+    if (!effect) {
+        return null;
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        return effect;
+    }
+    if (effect.mode === 'compound') {
+        for (const childEffect of effect.effects) {
+            const damageChoice = resolveEventGeneralDamageChoice(childEffect);
+            if (damageChoice) {
+                return damageChoice;
+            }
+        }
+    }
+    return null;
+}
+
+function resolveEventActionEffect(
+    effect: UseEffectProfile,
+    accept: boolean,
+): UseEffectProfile {
+    if (!accept && effect.mode === 'optionalHauntRoll') {
+        return effect.skippedOrStartedEffect;
+    }
+    return effect;
+}
+
+function mergeEventTraitChoices(...choices: BetrayalTraitKey[][]): BetrayalTraitKey[] {
+    return Array.from(new Set(choices.flat()));
 }
 
 function ExplorerPentagonCard({
@@ -1847,6 +1966,40 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         && selectedInventoryUseEffect.target === 'selfOrSameRoomExplorer'
         ? previewState.selectedInventoryTargetPlayerId ?? healTargetExplorers[0]?.playerId ?? null
         : null;
+    const pendingEventChoice = core.pendingEventChoice;
+    const pendingEventActionEffect = pendingEventChoice
+        ? resolveEventActionEffect(pendingEventChoice.effect, true)
+        : null;
+    const pendingEventDeclineEffect = pendingEventChoice
+        ? resolveEventActionEffect(pendingEventChoice.effect, false)
+        : null;
+    const pendingEventAcceptTraitChoices = pendingEventActionEffect
+        ? resolveEventTraitChoices(pendingEventActionEffect)
+        : [];
+    const pendingEventDeclineTraitChoices = pendingEventDeclineEffect
+        ? resolveEventTraitChoices(pendingEventDeclineEffect)
+        : [];
+    const pendingEventTraitChoices = mergeEventTraitChoices(pendingEventAcceptTraitChoices, pendingEventDeclineTraitChoices);
+    const selectedEventTrait = pendingEventTraitChoices.includes(previewState.selectedEventTrait!)
+        ? previewState.selectedEventTrait
+        : pendingEventTraitChoices[0] ?? null;
+    const pendingEventPreviewEffect = pendingEventActionEffect
+        ? resolveEventPreviewEffect(core, pendingEventActionEffect, selectedEventTrait)
+        : null;
+    const pendingEventTargetRooms = resolveEventTargetRooms(core, pendingEventPreviewEffect);
+    const selectedEventTargetRoomId = pendingEventTargetRooms.some((room) => room.id === previewState.selectedEventTargetRoomId)
+        ? previewState.selectedEventTargetRoomId
+        : pendingEventTargetRooms[0]?.id ?? null;
+    const pendingEventDamageChoice = resolveEventGeneralDamageChoice(pendingEventPreviewEffect);
+    const selectedEventDamageTraits = pendingEventDamageChoice
+        ? previewState.selectedEventDamageTraits.filter((trait) => pendingEventDamageChoice.allowedTraits.includes(trait)).slice(0, pendingEventDamageChoice.amount)
+        : [];
+    const pendingEventReady = Boolean(pendingEventChoice)
+        && (!pendingEventAcceptTraitChoices.length || Boolean(selectedEventTrait))
+        && (!pendingEventTargetRooms.length || Boolean(selectedEventTargetRoomId))
+        && (!pendingEventDamageChoice || selectedEventDamageTraits.length === pendingEventDamageChoice.amount);
+    const pendingEventCanDecline = Boolean(pendingEventChoice?.declineLabel)
+        && (!pendingEventDeclineTraitChoices.length || Boolean(selectedEventTrait));
 
     React.useEffect(() => {
         if (inventoryPreviewCardId && !previewInventoryCard) {
@@ -2353,6 +2506,56 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             selectedInventoryTargetPlayerId: playerId,
         }));
     }, []);
+
+    const handleSelectEventTrait = React.useCallback((trait: BetrayalTraitKey) => {
+        setPreviewState((previousState) => ({
+            ...previousState,
+            selectedEventTrait: trait,
+            selectedEventTargetRoomId: null,
+            selectedEventDamageTraits: [],
+        }));
+    }, []);
+
+    const handleSelectEventTargetRoom = React.useCallback((roomId: string) => {
+        setPreviewState((previousState) => ({
+            ...previousState,
+            selectedEventTargetRoomId: roomId,
+        }));
+    }, []);
+
+    const handleToggleEventDamageTrait = React.useCallback((trait: BetrayalTraitKey) => {
+        setPreviewState((previousState) => {
+            const selected = new Set(previousState.selectedEventDamageTraits);
+            if (selected.has(trait)) {
+                selected.delete(trait);
+            } else {
+                selected.add(trait);
+            }
+            return {
+                ...previousState,
+                selectedEventDamageTraits: Array.from(selected),
+            };
+        });
+    }, []);
+
+    const handleResolveEventChoice = (accept: boolean) => {
+        if (!pendingEventChoice || (accept ? !pendingEventReady : !pendingEventCanDecline)) {
+            return;
+        }
+        dispatchCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, {
+            ...(selectedEventTrait ? { trait: selectedEventTrait } : {}),
+            ...(selectedEventTargetRoomId ? { targetRoomId: selectedEventTargetRoomId } : {}),
+            ...(selectedEventDamageTraits.length > 0 ? { traits: selectedEventDamageTraits } : {}),
+            accept,
+        });
+        setPreviewState((previousState) => ({
+            ...previousState,
+            selectedEventTrait: null,
+            selectedEventTargetRoomId: null,
+            selectedEventDamageTraits: [],
+            interactionMode: 'default',
+        }));
+    };
 
     const handleSelectAttackWeapon = React.useCallback((cardId: string | null) => {
         setPreviewState((previousState) => ({
@@ -3250,8 +3453,90 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 ) : null}
                             </div>
 
-                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || selectedCardCanUseRabbitFoot || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
+                            {(pendingEventChoice || roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || selectedCardCanUseRabbitFoot || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
                                 <div className="relative z-30 mb-2 flex flex-wrap items-center gap-1.5 px-2 pb-1 pt-1">
+                                    {pendingEventChoice ? (
+                                        <div
+                                            data-testid="betrayal-event-choice-panel"
+                                            className="inline-flex max-w-[min(780px,calc(100vw-2rem))] flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+                                        >
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{pendingEventChoice.sourceTitle}</span>
+                                            {pendingEventTraitChoices.map((trait) => {
+                                                const isSelectedTrait = selectedEventTrait === trait;
+                                                return (
+                                                    <button
+                                                        key={trait}
+                                                        type="button"
+                                                        onClick={() => handleSelectEventTrait(trait)}
+                                                        data-testid={`betrayal-event-choice-trait-${trait}`}
+                                                        className={`min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-semibold shadow-none transition ${
+                                                            isSelectedTrait
+                                                                ? 'text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4'
+                                                                : 'text-[#d6c498] hover:text-[#f0dfad]'
+                                                        }`}
+                                                    >
+                                                        {TRAIT_LABEL_LOCAL[trait]}
+                                                    </button>
+                                                );
+                                            })}
+                                            {pendingEventTargetRooms.map((room) => {
+                                                const isSelectedRoom = selectedEventTargetRoomId === room.id;
+                                                return (
+                                                    <button
+                                                        key={room.id}
+                                                        type="button"
+                                                        onClick={() => handleSelectEventTargetRoom(room.id)}
+                                                        data-testid={`betrayal-event-choice-room-${room.id}`}
+                                                        className={`min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-semibold shadow-none transition ${
+                                                            isSelectedRoom
+                                                                ? 'text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4'
+                                                                : 'text-[#d6c498] hover:text-[#f0dfad]'
+                                                        }`}
+                                                    >
+                                                        {room.name}
+                                                    </button>
+                                                );
+                                            })}
+                                            {pendingEventDamageChoice ? pendingEventDamageChoice.allowedTraits.map((trait) => {
+                                                const isSelectedDamageTrait = selectedEventDamageTraits.includes(trait);
+                                                return (
+                                                    <button
+                                                        key={trait}
+                                                        type="button"
+                                                        onClick={() => handleToggleEventDamageTrait(trait)}
+                                                        data-testid={`betrayal-event-choice-damage-${trait}`}
+                                                        className={`min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-semibold shadow-none transition ${
+                                                            isSelectedDamageTrait
+                                                                ? 'text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4'
+                                                                : 'text-[#d6c498] hover:text-[#f0dfad]'
+                                                        }`}
+                                                    >
+                                                        {TRAIT_LABEL_LOCAL[trait]}
+                                                    </button>
+                                                );
+                                            }) : null}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleResolveEventChoice(true)}
+                                                disabled={!pendingEventReady}
+                                                data-testid="betrayal-event-choice-confirm"
+                                                className="min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-bold text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4 shadow-none transition hover:text-[#f6ffc4] disabled:text-[#7a6a4a] disabled:no-underline"
+                                            >
+                                                {pendingEventChoice.acceptLabel ?? '确认'}
+                                            </button>
+                                            {pendingEventChoice.declineLabel ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleResolveEventChoice(false)}
+                                                    disabled={!pendingEventCanDecline}
+                                                    data-testid="betrayal-event-choice-decline"
+                                                    className="min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-bold text-[#d6c498] underline decoration-[#8e7650] underline-offset-4 shadow-none transition hover:text-[#f0dfad] disabled:text-[#7a6a4a] disabled:no-underline"
+                                                >
+                                                    {pendingEventChoice.declineLabel}
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                     {roomFocusState ? (
                                         <button
                                             type="button"
@@ -3635,6 +3920,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         src={ASSETS.marker.obstacle}
                                                         locale={effectiveLocale}
                                                         alt={t('board.rooms.obstacle')}
+                                                        className="h-5 w-5 object-contain"
+                                                        draggable={false}
+                                                    />
+                                                </span>
+                                            ) : null}
+                                            {room.markerTokens?.includes('secretPassage') ? (
+                                                <span
+                                                    data-testid={`betrayal-room-marker-${room.id}-secret-passage`}
+                                                    className="pointer-events-none absolute bottom-2 left-9 z-20 grid h-6 w-6 place-items-center rounded-full border border-[#71b7aa] bg-[rgba(7,22,20,0.84)] shadow-[0_0_12px_rgba(113,183,170,0.42)]"
+                                                    title="秘密通道"
+                                                >
+                                                    <OptimizedImage
+                                                        src={ASSETS.marker.portal}
+                                                        locale={effectiveLocale}
+                                                        alt="秘密通道"
                                                         className="h-5 w-5 object-contain"
                                                         draggable={false}
                                                     />

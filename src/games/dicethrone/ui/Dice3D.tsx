@@ -63,6 +63,12 @@ export interface DiceField3DProps {
     onDieClick?: (dieId: number) => void;
     onProjectedDiceUpdate?: (layouts: ProjectedDiceLayout[]) => void;
     physicsStates?: DicePhysicsState[];
+    physicsLayoutBounds?: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
     scenePreset?: 'spotlight' | 'board-topdown';
     canvasClassName?: string;
 }
@@ -186,12 +192,15 @@ const SPOTLIGHT_SETTLED_TILTS = [
 ] as const;
 
 const BOARD_TOPDOWN_SETTLED_TILTS = [
-    [  0,  0.28,  0 ],
-    [  0, -0.34,  0 ],
-    [  0,  0.16,  0 ],
-    [  0, -0.22,  0 ],
-    [  0,  0.38,  0 ],
+    [  0.006,  0.16,  0.004 ],
+    [ -0.005, -0.18, -0.004 ],
+    [  0.004,  0.1,  0.002 ],
+    [ -0.006, -0.13,  0.003 ],
+    [  0.004,  0.2, -0.003 ],
 ] as const;
+
+const BOARD_TOPDOWN_VISUAL_SCALE = 0.62;
+const BOARD_TOPDOWN_COLLISION_RADIUS = 0.56;
 
 let sharedBoardShadowTexture: THREE.CanvasTexture | null = null;
 type OutlineShaderMaterial = THREE.ShaderMaterial & {
@@ -756,21 +765,6 @@ function getSettledEuler(value: number): THREE.Euler {
     }
 }
 
-function getBoardTopdownFaceUpQuaternion(value: number): THREE.Quaternion {
-    const targetNormal = (() => {
-        switch (value) {
-            case 1: return new THREE.Vector3(1, 0, 0);
-            case 6: return new THREE.Vector3(-1, 0, 0);
-            case 3: return new THREE.Vector3(0, 1, 0);
-            case 4: return new THREE.Vector3(0, -1, 0);
-            case 2: return new THREE.Vector3(0, 0, 1);
-            case 5: return new THREE.Vector3(0, 0, -1);
-            default: return new THREE.Vector3(0, 1, 0);
-        }
-    })();
-    return new THREE.Quaternion().setFromUnitVectors(targetNormal, new THREE.Vector3(0, 1, 0));
-}
-
 function buildTargetQuaternion(
     value: number,
     index: number,
@@ -782,9 +776,7 @@ function buildTargetQuaternion(
         return base.multiply(tilt);
     }
     if (variant === 'board-topdown') {
-        const base = getBoardTopdownFaceUpQuaternion(value);
-        const tableYaw = new THREE.Quaternion().setFromEuler(getBoardTopdownTilt(index));
-        return tableYaw.multiply(base);
+        return new THREE.Quaternion().setFromEuler(getBoardTopdownTilt(index));
     }
     return base;
 }
@@ -891,11 +883,12 @@ function createPrototypeDiceMesh({
         8,
         variant === 'board-topdown' ? 0.26 : 0.16,
     );
-    const materials = PROTOTYPE_FACE_MATERIAL_ORDER.map((faceId) => {
+    const materials = PROTOTYPE_FACE_MATERIAL_ORDER.map((faceId, materialIndex) => {
+        const displayFaceId = variant === 'board-topdown' && materialIndex === 2 ? value : faceId;
         const texture = createPrototypeFaceTexture(
-            faceId,
+            displayFaceId,
             atlasImage,
-            resolveFallbackLabel(faceId, definitionId),
+            resolveFallbackLabel(displayFaceId, definitionId),
         );
         return new THREE.MeshStandardMaterial({
             map: texture,
@@ -1037,6 +1030,7 @@ export const DiceField3D = ({
     onDieClick,
     onProjectedDiceUpdate,
     physicsStates,
+    physicsLayoutBounds,
     scenePreset = 'spotlight',
     canvasClassName,
 }: DiceField3DProps) => {
@@ -1045,6 +1039,7 @@ export const DiceField3D = ({
     const onDieClickRef = React.useRef(onDieClick);
     const onProjectedDiceUpdateRef = React.useRef(onProjectedDiceUpdate);
     const physicsStatesRef = React.useRef(physicsStates);
+    const physicsLayoutBoundsRef = React.useRef(physicsLayoutBounds);
     const stateRef = React.useRef<{
         renderer: THREE.WebGLRenderer;
         composer?: EffectComposer;
@@ -1117,7 +1112,7 @@ export const DiceField3D = ({
             item.outlineMaterial.uniforms.uSolid.value = 0;
             item.outlineMaterial.uniforms.uEdgeOnly.value = isBoardTopdown ? 1 : 0;
             item.outlineShell.renderOrder = 0;
-            item.outlineShell.scale.setScalar(selected && isBoardTopdown ? 1.038 : 1.058);
+            item.outlineShell.scale.setScalar(selected && isBoardTopdown ? BOARD_TOPDOWN_VISUAL_SCALE * 1.038 : 1.058);
             item.outlineShell.visible = !isBoardTopdown;
             item.highlightMaterial.uniforms.uColor.value.set(0xffc15a);
             item.highlightMaterial.uniforms.uOpacity.value = selected && isBoardTopdown ? 0 : 0;
@@ -1126,12 +1121,16 @@ export const DiceField3D = ({
             item.highlightMaterial.uniforms.uSolid.value = 0;
             item.highlightMaterial.uniforms.uEdgeOnly.value = isBoardTopdown ? 1 : 0;
             item.highlightShell.renderOrder = 0;
-            item.highlightShell.scale.setScalar(selected && isBoardTopdown ? 1.052 : 1.076);
+            item.highlightShell.scale.setScalar(selected && isBoardTopdown ? BOARD_TOPDOWN_VISUAL_SCALE * 1.052 : 1.076);
             item.highlightShell.visible = !isBoardTopdown;
-            item.mesh.scale.setScalar(0.96);
+            item.mesh.scale.setScalar(isBoardTopdown ? BOARD_TOPDOWN_VISUAL_SCALE : 0.96);
             item.shadowMaterial.opacity = isBoardTopdown ? 0.34 : 0.58;
             item.shadowMesh.visible = true;
-            item.shadowMesh.scale.set(1.06, 0.76, 1);
+            item.shadowMesh.scale.set(
+                isBoardTopdown ? BOARD_TOPDOWN_VISUAL_SCALE * 1.32 : 1.06,
+                isBoardTopdown ? BOARD_TOPDOWN_VISUAL_SCALE * 0.76 : 0.76,
+                1,
+            );
             item.selectionRingMaterial.opacity = 0;
             item.selectionRingMesh.visible = false;
             item.selectionRingGlowMaterial.opacity = 0;
@@ -1158,6 +1157,10 @@ export const DiceField3D = ({
     React.useEffect(() => {
         physicsStatesRef.current = physicsStates;
     }, [physicsStates]);
+
+    React.useEffect(() => {
+        physicsLayoutBoundsRef.current = physicsLayoutBounds;
+    }, [physicsLayoutBounds]);
 
     React.useEffect(() => {
         const canvas = canvasRef.current;
@@ -1189,10 +1192,10 @@ export const DiceField3D = ({
 
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x070b10, scenePreset === 'board-topdown' ? 0.022 : 0.038);
-        const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+        const camera = new THREE.PerspectiveCamera(scenePreset === 'board-topdown' ? 29 : 34, 1, 0.1, 100);
         if (scenePreset === 'board-topdown') {
-            camera.position.set(-0.22, 9.2, 1.18);
-            camera.lookAt(0.08, -1.18, 0.05);
+            camera.position.set(-0.18, 5.9, 3.45);
+            camera.lookAt(0.04, -1.42, 0.36);
         } else {
             camera.position.set(0, 2.05, 8.15);
             camera.lookAt(0, -0.88, 0);
@@ -1302,8 +1305,12 @@ export const DiceField3D = ({
             item.mesh.castShadow = false;
             item.mesh.receiveShadow = false;
             item.shadowMesh.position.set(worldX, floor.position.y + 0.01, worldZ);
-            item.shadowMesh.scale.set(1.06, 0.76, 1);
-            item.mesh.scale.setScalar(scenePreset === 'board-topdown' ? 0.96 : 1.04);
+            item.shadowMesh.scale.set(
+                scenePreset === 'board-topdown' ? BOARD_TOPDOWN_VISUAL_SCALE * 1.32 : 1.06,
+                scenePreset === 'board-topdown' ? BOARD_TOPDOWN_VISUAL_SCALE * 0.76 : 0.76,
+                1,
+            );
+            item.mesh.scale.setScalar(scenePreset === 'board-topdown' ? BOARD_TOPDOWN_VISUAL_SCALE : 1.04);
             item.mesh.userData.dieId = die.id;
             item.mesh.userData.index = index;
             diceGroup.add(item.shadowMesh);
@@ -1342,15 +1349,15 @@ export const DiceField3D = ({
             underlayCanvas.style.height = `${height}px`;
             camera.aspect = width / height;
             if (scenePreset === 'board-topdown') {
-                camera.position.x = width < 760 ? -0.18 : -0.22;
-                camera.position.z = width < 760 ? 1.34 : 1.18;
-                camera.position.y = width < 760 ? 9.42 : 9.2;
+                camera.position.x = width < 760 ? -0.14 : -0.18;
+                camera.position.z = width < 760 ? 3.62 : 3.45;
+                camera.position.y = width < 760 ? 6.18 : 5.9;
             } else {
                 camera.position.z = width < 760 ? 8.9 : 8.15;
                 camera.position.y = width < 760 ? 2.35 : 2.05;
             }
             if (scenePreset === 'board-topdown') {
-                camera.lookAt(0.08, -1.18, 0.05);
+                camera.lookAt(0.04, -1.42, 0.36);
             }
             camera.updateProjectionMatrix();
             if (scenePreset === 'board-topdown' && composer && outlinePass) {
@@ -1384,12 +1391,15 @@ export const DiceField3D = ({
             diceItems.forEach((item, dieIndex) => {
                 const die = dice[dieIndex];
                 PROTOTYPE_FACE_MATERIAL_ORDER.forEach((faceId, materialIndex) => {
+                    const displayFaceId = scenePreset === 'board-topdown' && materialIndex === 2
+                        ? (die?.value ?? item.faceValue)
+                        : faceId;
                     const material = item.materials[materialIndex];
                     material.map?.dispose();
                     material.map = createPrototypeFaceTexture(
-                        faceId,
+                        displayFaceId,
                         atlasImage,
-                        resolveFallbackLabel(faceId, die?.definitionId),
+                        resolveFallbackLabel(displayFaceId, die?.definitionId),
                     );
                     material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
                     material.needsUpdate = true;
@@ -1402,7 +1412,7 @@ export const DiceField3D = ({
 
         const xBounds: [number, number] = scenePreset === 'board-topdown' ? [-2.26, 2.26] : [-2.35, 2.35];
         const zBounds: [number, number] = scenePreset === 'board-topdown' ? [-1.62, 1.5] : [-0.88, 0.88];
-        const collisionRadius = scenePreset === 'board-topdown' ? 0.9 : 0.78;
+        const collisionRadius = scenePreset === 'board-topdown' ? BOARD_TOPDOWN_COLLISION_RADIUS : 0.78;
 
         const resolveDiceSeparation = () => {
             const maxIterations = scenePreset === 'board-topdown' ? 8 : 4;
@@ -1522,9 +1532,16 @@ export const DiceField3D = ({
             targetY: number,
             rect: DOMRect,
         ) => {
+            const layoutBounds = physicsLayoutBoundsRef.current;
+            const sourceX = layoutBounds
+                ? (layoutBounds.left + ((layout.x / Math.max(rect.width, 1)) * layoutBounds.width)) * rect.width
+                : layout.x;
+            const sourceY = layoutBounds
+                ? (layoutBounds.top + ((layout.y / Math.max(rect.height, 1)) * layoutBounds.height)) * rect.height
+                : layout.y;
             const ndc = new THREE.Vector2(
-                ((layout.x / Math.max(rect.width, 1)) * 2) - 1,
-                -(((layout.y / Math.max(rect.height, 1)) * 2) - 1),
+                ((sourceX / Math.max(rect.width, 1)) * 2) - 1,
+                -(((sourceY / Math.max(rect.height, 1)) * 2) - 1),
             );
             const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -targetY);
             const point = new THREE.Vector3();
@@ -1702,7 +1719,7 @@ export const DiceField3D = ({
                 ? THREE.MathUtils.clamp(1.02 - (lift * 0.42), 0.76, 1.02)
                 : THREE.MathUtils.clamp(1 - (lift * 0.26), 0.78, 1);
             item.shadowMesh.position.x = item.posX + (scenePreset === 'board-topdown' ? 0.018 : 0);
-            item.shadowMesh.position.z = item.posZ + (scenePreset === 'board-topdown' ? 0.026 : 0);
+            item.shadowMesh.position.z = item.posZ + (scenePreset === 'board-topdown' ? 0.018 : 0);
             if (scenePreset === 'board-topdown') {
                 item.selectionRingMaterial.opacity = 0;
                 item.selectionRingGlowMaterial.opacity = 0;
@@ -1719,12 +1736,12 @@ export const DiceField3D = ({
                 item.selectionRingGlowMesh.scale.setScalar(1);
             }
             item.shadowMesh.scale.set(
-                shadowSpread * (scenePreset === 'board-topdown' ? 1.18 : 1),
-                shadowSpread * (scenePreset === 'board-topdown' ? 0.78 : 0.8),
+                shadowSpread * (scenePreset === 'board-topdown' ? BOARD_TOPDOWN_VISUAL_SCALE * 1.32 : 1),
+                shadowSpread * (scenePreset === 'board-topdown' ? BOARD_TOPDOWN_VISUAL_SCALE * 0.76 : 0.8),
                 1,
                 );
                 item.shadowMaterial.opacity = scenePreset === 'board-topdown'
-                    ? THREE.MathUtils.clamp(0.42 - (lift * 0.34), 0.18, 0.42)
+                    ? THREE.MathUtils.clamp(0.5 - (lift * 0.36), 0.22, 0.5)
                     : THREE.MathUtils.clamp(0.18 - (lift * 0.18), 0.06, 0.18);
             });
             if (scenePreset === 'board-topdown' && underlayCtx) {
@@ -1766,25 +1783,35 @@ export const DiceField3D = ({
                         1,
                     );
                     const centerX = (minPixelX + maxPixelX) * 0.5;
-                    const centerY = (minPixelY + maxPixelY) * 0.5;
-                    const radius = Math.max(
-                        Math.max(bboxWidth, bboxHeight) * THREE.MathUtils.lerp(0.5, 0.47, depthProgress),
-                        22,
+                    const radiusX = Math.max(
+                        bboxWidth * THREE.MathUtils.lerp(0.52, 0.48, depthProgress),
+                        23,
                     );
-                    const shadowLineWidth = Math.max(2.7, radius * 0.06);
-                    const mainLineWidth = Math.max(1.6, radius * 0.034);
+                    const radiusY = Math.max(
+                        bboxHeight * THREE.MathUtils.lerp(0.22, 0.2, depthProgress),
+                        9,
+                    );
+                    const arcCenterY = maxPixelY - (bboxHeight * THREE.MathUtils.lerp(0.08, 0.06, depthProgress));
+                    const shadowLineWidth = Math.max(4.2, radiusX * 0.08);
+                    const mainLineWidth = Math.max(2.8, radiusX * 0.048);
+                    const startAngle = Math.PI * 1.06;
+                    const endAngle = Math.PI * 1.94;
+                    underlayCtx.save();
+                    underlayCtx.translate(centerX, arcCenterY);
+                    underlayCtx.scale(1, radiusY / radiusX);
                     underlayCtx.beginPath();
                     underlayCtx.lineCap = 'round';
                     underlayCtx.lineWidth = shadowLineWidth;
-                    underlayCtx.strokeStyle = `rgba(96, 48, 10, ${THREE.MathUtils.lerp(0.22, 0.16, depthProgress).toFixed(3)})`;
-                    underlayCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    underlayCtx.strokeStyle = `rgba(96, 48, 10, ${THREE.MathUtils.lerp(0.34, 0.24, depthProgress).toFixed(3)})`;
+                    underlayCtx.arc(0, 0, radiusX, startAngle, endAngle);
                     underlayCtx.stroke();
                     underlayCtx.beginPath();
                     underlayCtx.lineCap = 'round';
                     underlayCtx.lineWidth = mainLineWidth;
-                    underlayCtx.strokeStyle = `rgba(243, 190, 74, ${THREE.MathUtils.lerp(0.94, 0.82, depthProgress).toFixed(3)})`;
-                    underlayCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    underlayCtx.strokeStyle = `rgba(243, 190, 74, ${THREE.MathUtils.lerp(0.98, 0.88, depthProgress).toFixed(3)})`;
+                    underlayCtx.arc(0, 0, radiusX, startAngle, endAngle);
                     underlayCtx.stroke();
+                    underlayCtx.restore();
                 }
             }
             const maxLift = diceItems.reduce(

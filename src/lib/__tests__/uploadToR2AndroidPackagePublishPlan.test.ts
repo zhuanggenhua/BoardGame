@@ -23,7 +23,7 @@ const runPublishPlan = (...assetPaths: string[]) => {
 };
 
 describe('upload-to-r2 安卓素材包刷新预演', () => {
-    it('DiceThrone 游戏资源上传后应刷新 DiceThrone 安卓素材包并复用共享音频包', () => {
+    it('DiceThrone 游戏资源上传后应只刷新 DiceThrone 差异索引并复用共享音频包', () => {
         const result = runPublishPlan(
             'official/i18n/zh-CN/dicethrone/images/barbarian/compressed/player-board.webp',
             'official/atlas-configs/dicethrone/ability-cards-common.atlas.json',
@@ -32,7 +32,7 @@ describe('upload-to-r2 安卓素材包刷新预演', () => {
         expect(result.status).toBe(0);
         expect(result.output).toContain('游戏资源变更: dicethrone');
         expect(result.output).toContain('共享音频变更: 否');
-        expect(result.output).toContain('scripts/mobile/publish-android-game-packages.mjs --game dicethrone --reuse-shared-audio');
+        expect(result.output).toContain('scripts/mobile/publish-android-game-packages.mjs --game dicethrone --reuse-shared-audio --index-manifest-only');
     });
 
     it('共享音频上传后应刷新共享音频包和全部游戏 manifest', () => {
@@ -45,6 +45,6 @@ describe('upload-to-r2 安卓素材包刷新预演', () => {
         expect(result.output).toContain('游戏资源变更: dicethrone');
         expect(result.output).toContain('共享音频变更: 是');
         expect(result.output).toContain('scripts/mobile/publish-android-game-packages.mjs');
-        expect(result.output).not.toContain('--game dicethrone --reuse-shared-audio');
+        expect(result.output).not.toContain('--game dicethrone --reuse-shared-audio --index-manifest-only');
     });
 });

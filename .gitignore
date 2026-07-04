@@ -226,6 +226,7 @@ wiki-*.html
 *-results.json
 *-diff.txt
 temp_*.txt
+tmp-*.txt
 tmp_*.txt
 
 # 临时日志文件（应移到 test-results/）

@@ -46,7 +46,7 @@ export type BetrayalRecommendedAction = ConfigRecommendedAction;
 type BetrayalRoomEndTurnEffect = NonNullable<BetrayalRoomDiscoveryTemplate['endTurnEffect']>;
 type BetrayalRoomEnterEffect = 'mysticElevator';
 type BetrayalRoomDiscoveryEffect = NonNullable<BetrayalRoomDiscoveryTemplate['discoveryEffect']>;
-export type BetrayalRoomMarkerToken = 'obstacle';
+export type BetrayalRoomMarkerToken = 'obstacle' | 'secretPassage';
 
 export interface BetrayalInventoryCard {
     id: string;
@@ -162,7 +162,9 @@ export interface BetrayalRecentRollState {
     latestLabel: string;
     eventEffectSnapshot?: {
         traitsBeforeEffect: BetrayalExplorerSummary['traits'];
+        roomIdBeforeEffect: string;
         damageRolls: number[];
+        drawnCards: BetrayalInventoryCard[];
     };
     roomId?: string;
     roomsBeforeRoll?: BetrayalRoomNode[];
@@ -204,6 +206,23 @@ export interface BetrayalRecentRollState {
     consumedRabbitFootCardIds: string[];
 }
 
+export interface BetrayalPendingEventChoiceState {
+    id: string;
+    playerId: string;
+    sourceTitle: string;
+    acceptLabel?: string;
+    declineLabel?: string;
+    effect: UseEffectProfile;
+}
+
+export interface BetrayalAllTraitCheckResult {
+    trait: BetrayalTraitKey;
+    total: number;
+    dice: number[];
+    passiveBonus: number;
+    passed: boolean;
+}
+
 export interface BetrayalEndgameResult {
     hauntId: 'crimson-jack-returns';
     hauntTitle: string;
@@ -231,6 +250,7 @@ export interface BetrayalScenarioRuntimeStatus {
     nextHauntPlayerId: string | null;
     hauntRollThreshold: number;
     omensDiscovered: number;
+    hauntCardNumber: number | null;
     hauntTriggerLabel: string | null;
     jackSpiritReleased: boolean;
     jackSpiritRoomId: string | null;
@@ -275,7 +295,13 @@ export interface BetrayalCore {
         sourceCardId: string;
         replacementTrait: BetrayalTraitKey;
     } | null;
+    pendingEventChoice: BetrayalPendingEventChoiceState | null;
     recentRoll: BetrayalRecentRollState | null;
+    recentAllTraitCheck: {
+        sourceTitle: string;
+        playerId: string;
+        results: BetrayalAllTraitCheckResult[];
+    } | null;
     latestDiscovery: BetrayalDiscoverySummary | null;
     latestDiscoveryOwnerPlayerId: string | null;
     highlightedDeckKind: BetrayalDeckKind | null;
@@ -292,6 +318,7 @@ export const BETRAYAL_COMMANDS = {
     EXPLORE_ROOM: 'EXPLORE_ROOM',
     USE_POSSESSION: 'USE_POSSESSION',
     USE_RABBIT_FOOT: 'USE_RABBIT_FOOT',
+    RESOLVE_EVENT_CHOICE: 'RESOLVE_EVENT_CHOICE',
     USE_ROOM_EFFECT: 'USE_ROOM_EFFECT',
     TRADE_POSSESSION: 'TRADE_POSSESSION',
     LOOT_CORPSE: 'LOOT_CORPSE',
@@ -322,6 +349,7 @@ export type BetrayalCommandMap = {
         targetRoomIdsByTokenId?: Record<string, string>;
     };
     [BETRAYAL_COMMANDS.USE_RABBIT_FOOT]: { cardId?: string; dieIndex?: number };
+    [BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE]: { accept?: boolean; trait?: BetrayalTraitKey; traits?: BetrayalTraitKey[]; targetRoomId?: string };
     [BETRAYAL_COMMANDS.USE_ROOM_EFFECT]: Record<string, never>;
     [BETRAYAL_COMMANDS.TRADE_POSSESSION]: { cardId?: string; cardIds?: string[]; targetPlayerId?: string; useDog?: boolean };
     [BETRAYAL_COMMANDS.LOOT_CORPSE]: { sourcePlayerId?: string; cardId?: string };
@@ -347,6 +375,7 @@ const EVENTS = {
     SCENARIO_STARTED: 'SCENARIO_STARTED',
     EXPLORER_MOVED: 'EXPLORER_MOVED',
     ROOM_EXPLORED: 'ROOM_EXPLORED',
+    EVENT_CHOICE_RESOLVED: 'EVENT_CHOICE_RESOLVED',
     POSSESSION_USED: 'POSSESSION_USED',
     RABBIT_FOOT_USED: 'RABBIT_FOOT_USED',
     ROOM_EFFECT_USED: 'ROOM_EFFECT_USED',
@@ -406,6 +435,28 @@ type BetrayalEvent =
         logText: string;
         hauntTriggered?: boolean;
     }>
+    | GameEvent<typeof EVENTS.EVENT_CHOICE_RESOLVED, {
+        playerId: string;
+        sourceTitle: string;
+        accepted: boolean;
+        hauntTriggered?: boolean;
+        hauntTraitorPlayerId?: string;
+        hauntCardNumber?: number;
+        hauntTriggerLabel?: string;
+        eventEffect?: UseEffectProfile;
+        eventRoll?: {
+            kind?: 'trait' | 'dice';
+            trait?: BetrayalTraitKey;
+            total: number;
+            label: string;
+            rollLabel?: string;
+            dice?: number[];
+            passiveBonus?: number;
+            branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
+        };
+        discovery: BetrayalDiscoverySummary;
+        logText: string;
+    }>
     | GameEvent<typeof EVENTS.POSSESSION_USED, {
         playerId: string;
         cardId: string;
@@ -420,6 +471,7 @@ type BetrayalEvent =
         cardId: string;
         dieIndex: number;
         newPip: number;
+        eventRerollEffect?: UseEffectProfile;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.ROOM_EFFECT_USED, { playerId: string; effect: BetrayalRoomEnterEffectResult; logText: string }>
@@ -433,7 +485,9 @@ type BetrayalEvent =
     }>
     | GameEvent<typeof EVENTS.HAUNT_TRIGGERED, {
         traitorPlayerId: string;
+        hauntRevealerPlayerId?: string;
         nextPlayerId: string;
+        hauntCardNumber?: number;
         hauntTriggerLabel: string;
         logText: string;
     }>
@@ -684,17 +738,315 @@ function resolveRoomEndTurnEffect(room: BetrayalRoomNode | null | undefined): Be
 function cloneEventTemplate(event: EventTemplate): EventTemplate {
     return {
         ...event,
-        effect: event.effect ? { ...event.effect } : undefined,
+        effect: event.effect ? cloneUseEffect(event.effect) : undefined,
         roll: event.roll
             ? {
                 ...event.roll,
                 branches: event.roll.branches.map((branch) => ({
                     ...branch,
-                    effect: { ...branch.effect },
+                    effect: cloneUseEffect(branch.effect),
                 })),
             }
             : undefined,
     };
+}
+
+function cloneUseEffect(effect: UseEffectProfile): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map(cloneUseEffect),
+        };
+    }
+    if (effect.mode === 'optionalEventRoll') {
+        return {
+            ...effect,
+            roll: {
+                ...effect.roll,
+                branches: effect.roll.branches.map((branch) => ({
+                    ...branch,
+                    effect: cloneUseEffect(branch.effect),
+                })),
+            },
+        };
+    }
+    if (effect.mode === 'optionalHauntRoll') {
+        return {
+            ...effect,
+            failureEffect: cloneUseEffect(effect.failureEffect),
+            skippedOrStartedEffect: cloneUseEffect(effect.skippedOrStartedEffect),
+        };
+    }
+    if (effect.mode === 'chooseTraitRoll') {
+        return {
+            ...effect,
+            allowedTraits: [...effect.allowedTraits],
+            branches: effect.branches.map((branch) => ({
+                ...branch,
+                effect: cloneUseEffect(branch.effect),
+            })),
+        };
+    }
+    if (effect.mode === 'allTraitChecks') {
+        return {
+            ...effect,
+            traits: [...effect.traits],
+            results: effect.results?.map((result) => ({
+                ...result,
+                dice: [...result.dice],
+            })),
+            allPassEffect: cloneUseEffect(effect.allPassEffect),
+        };
+    }
+    if (effect.mode === 'generalDamage') {
+        return { ...effect, traits: [...effect.traits] };
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        return {
+            ...effect,
+            allowedTraits: [...effect.allowedTraits],
+            selectedTraits: effect.selectedTraits ? [...effect.selectedTraits] : undefined,
+        };
+    }
+    if (effect.mode === 'chosenTrait') {
+        return { ...effect, allowedTraits: [...effect.allowedTraits] };
+    }
+    if (effect.mode === 'healChosenTrait') {
+        return { ...effect, allowedTraits: [...effect.allowedTraits] };
+    }
+    if (effect.mode === 'rolledDamage') {
+        return { ...effect, rolls: effect.rolls ? [...effect.rolls] : undefined };
+    }
+    if (effect.mode === 'drawPossession') {
+        return {
+            ...effect,
+            drawnCard: effect.drawnCard ? { ...effect.drawnCard } : undefined,
+        };
+    }
+    return { ...effect };
+}
+
+function effectNeedsTraitChoice(effect: UseEffectProfile): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some(effectNeedsTraitChoice);
+    }
+    return effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait' || effect.mode === 'generalDamageChoice';
+}
+
+function effectHasUnresolvedTraitChoice(effect: UseEffectProfile): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some(effectHasUnresolvedTraitChoice);
+    }
+    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
+        return !effect.chosenTrait;
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        return !effect.selectedTraits || effect.selectedTraits.length !== effect.amount;
+    }
+    return false;
+}
+
+function effectHasUnresolvedChosenTraitChoice(effect: UseEffectProfile): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some(effectHasUnresolvedChosenTraitChoice);
+    }
+    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
+        return !effect.chosenTrait;
+    }
+    return false;
+}
+
+function effectHasUnresolvedGeneralDamageChoice(effect: UseEffectProfile): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some(effectHasUnresolvedGeneralDamageChoice);
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        return !effect.selectedTraits || effect.selectedTraits.length !== effect.amount;
+    }
+    return false;
+}
+
+function effectNeedsAdjacentRoomChoice(effect: UseEffectProfile): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some(effectNeedsAdjacentRoomChoice);
+    }
+    return effect.mode === 'placeExplorerInAdjacentRoom' && !effect.targetRoomId;
+}
+
+function effectNeedsRoomTargetChoice(effect: UseEffectProfile): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some(effectNeedsRoomTargetChoice);
+    }
+    return (
+        (
+            effect.mode === 'placeSecretPassageToken'
+            || effect.mode === 'placeExplorerInDiscoveredRoomByFloor'
+        )
+        && Boolean(effect.targetRoomScope)
+        && !effect.targetRoomId
+    );
+}
+
+function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffectProfile, targetRoomId: string): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some((childEffect) => effectAllowsRoomTargetChoice(core, childEffect, targetRoomId));
+    }
+    if (
+        (
+            effect.mode !== 'placeSecretPassageToken'
+            && effect.mode !== 'placeExplorerInDiscoveredRoomByFloor'
+        )
+        || !effect.targetRoomScope
+    ) {
+        return false;
+    }
+    const targetRoom = core.rooms.find((room) => room.id === targetRoomId);
+    if (!targetRoom || targetRoom.state !== 'discovered') {
+        return false;
+    }
+    if (effect.mode === 'placeSecretPassageToken' && targetRoom.markerTokens?.includes('secretPassage')) {
+        return false;
+    }
+    if (effect.targetRoomScope === 'anyDiscovered') {
+        return true;
+    }
+    if (effect.targetRoomScope === 'anyOtherDiscovered') {
+        return targetRoom.id !== core.currentExplorer.roomId;
+    }
+    if (effect.targetRoomScope === 'groundDiscovered') {
+        return targetRoom.floor === 'ground';
+    }
+    return targetRoom.floor === 'basement';
+}
+
+function effectAllowsAdjacentRoomChoice(core: BetrayalCore, targetRoomId: string): boolean {
+    const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
+    const targetRoom = core.rooms.find((room) => room.id === targetRoomId);
+    if (!currentRoom || !targetRoom || targetRoom.state !== 'discovered') {
+        return false;
+    }
+    return resolveConnectedRoomIds(core.rooms, currentRoom.id).has(targetRoom.id);
+}
+
+function effectAllowsChosenTrait(effect: UseEffectProfile, trait: BetrayalTraitKey): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some((childEffect) => effectAllowsChosenTrait(childEffect, trait));
+    }
+    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
+        return effect.allowedTraits.includes(trait);
+    }
+    return false;
+}
+
+function effectAllowsGeneralDamageTraits(
+    effect: UseEffectProfile,
+    traits: BetrayalTraitKey[] | undefined,
+): boolean {
+    if (effect.mode === 'compound') {
+        return effect.effects.some((childEffect) => effectAllowsGeneralDamageTraits(childEffect, traits));
+    }
+    if (effect.mode !== 'generalDamageChoice') {
+        return false;
+    }
+    if (!traits || traits.length !== effect.amount) {
+        return false;
+    }
+    return traits.every((trait) => effect.allowedTraits.includes(trait));
+}
+
+function resolveChooseTraitRollPreviewEffect(
+    core: BetrayalCore,
+    effect: Extract<UseEffectProfile, { mode: 'chooseTraitRoll' }>,
+    selectedTrait: BetrayalTraitKey,
+): UseEffectProfile {
+    const previewRollTotal = resolveNonCombatTraitCheckValue(core, core.currentExplorer, selectedTrait);
+    const previewBranch = resolveEventBranch(effect.branches, previewRollTotal);
+    return applyChosenTraitToEffect(cloneUseEffect(previewBranch.effect), selectedTrait);
+}
+
+function applyAdjacentRoomChoiceToEffect(
+    core: BetrayalCore,
+    effect: UseEffectProfile,
+    targetRoomId?: string,
+): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map((childEffect) => applyAdjacentRoomChoiceToEffect(core, childEffect, targetRoomId)),
+        };
+    }
+    if (
+        effect.mode === 'placeExplorerInAdjacentRoom'
+        && targetRoomId
+        && effectAllowsAdjacentRoomChoice(core, targetRoomId)
+    ) {
+        const targetRoom = core.rooms.find((room) => room.id === targetRoomId)!;
+        return { ...effect, targetRoomId, targetRoomName: targetRoom.name };
+    }
+    return effect;
+}
+
+function applyRoomTargetChoiceToEffect(
+    core: BetrayalCore,
+    effect: UseEffectProfile,
+    targetRoomId?: string,
+): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map((childEffect) => applyRoomTargetChoiceToEffect(core, childEffect, targetRoomId)),
+        };
+    }
+    if (
+        (
+            effect.mode === 'placeSecretPassageToken'
+            || effect.mode === 'placeExplorerInDiscoveredRoomByFloor'
+        )
+        && targetRoomId
+        && effectAllowsRoomTargetChoice(core, effect, targetRoomId)
+    ) {
+        const targetRoom = core.rooms.find((room) => room.id === targetRoomId)!;
+        return { ...effect, targetRoomId, targetRoomName: targetRoom.name };
+    }
+    return effect;
+}
+
+function applyChosenTraitToEffect(effect: UseEffectProfile, trait?: BetrayalTraitKey): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map((childEffect) => applyChosenTraitToEffect(childEffect, trait)),
+        };
+    }
+    if (
+        trait
+        && (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait')
+        && effect.allowedTraits.includes(trait)
+    ) {
+        return { ...effect, chosenTrait: trait };
+    }
+    return effect;
+}
+
+function applyGeneralDamageTraitsToEffect(
+    effect: UseEffectProfile,
+    traits?: BetrayalTraitKey[],
+): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map((childEffect) => applyGeneralDamageTraitsToEffect(childEffect, traits)),
+        };
+    }
+    if (
+        effect.mode === 'generalDamageChoice'
+        && traits
+        && traits.length === effect.amount
+        && traits.every((trait) => effect.allowedTraits.includes(trait))
+    ) {
+        return { ...effect, selectedTraits: [...traits] };
+    }
+    return effect;
 }
 
 function createShuffledDiscoveryState(random: RandomFn) {
@@ -868,6 +1220,21 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                 consumedRabbitFootCardIds: [...core.recentRoll.consumedRabbitFootCardIds],
             }
             : null,
+        pendingEventChoice: core.pendingEventChoice
+            ? {
+                ...core.pendingEventChoice,
+                effect: cloneUseEffect(core.pendingEventChoice.effect),
+            }
+            : null,
+        recentAllTraitCheck: core.recentAllTraitCheck
+            ? {
+                ...core.recentAllTraitCheck,
+                results: core.recentAllTraitCheck.results.map((result) => ({
+                    ...result,
+                    dice: [...result.dice],
+                })),
+            }
+            : null,
         latestDiscovery: core.latestDiscovery ? { ...core.latestDiscovery } : null,
         activityLog: core.activityLog.map((entry) => ({ ...entry })),
         turnEndedByDiscovery: core.turnEndedByDiscovery,
@@ -914,6 +1281,7 @@ function createInitialScenarioRuntimeStatus(): BetrayalScenarioRuntimeStatus {
         nextHauntPlayerId: null,
         hauntRollThreshold: 5,
         omensDiscovered: 0,
+        hauntCardNumber: null,
         hauntTriggerLabel: null,
         jackSpiritReleased: false,
         jackSpiritRoomId: null,
@@ -1024,7 +1392,9 @@ function makeBaseCore(playerIds: string[], phase: BetrayalPhase, random: RandomF
         turnStartInventoryCardIds: currentExplorer.inventory.map((card) => card.id),
         receivedCardIdsThisTurnByPlayerId: {},
         nextNonCombatTraitReplacement: null,
+        pendingEventChoice: null,
         recentRoll: null,
+        recentAllTraitCheck: null,
         latestDiscovery: null,
         latestDiscoveryOwnerPlayerId: null,
         highlightedDeckKind: null,
@@ -1177,6 +1547,12 @@ function healTraitorForHaunt(explorer: BetrayalExplorerSummary): void {
     healExplorerToTemplate(explorer);
     explorer.traits.might += 2;
     explorer.traits.speed += 2;
+}
+
+function resolveMagicCameraOwnerPlayerId(core: BetrayalCore): string | null {
+    return getAllExplorers(core)
+        .find((explorer) => explorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'camera'))
+        ?.playerId ?? null;
 }
 
 function shouldDeadTraitorControlJackSpirit(core: BetrayalCore, playerId: string): boolean {
@@ -1644,17 +2020,58 @@ function resolveAttackRerollOutcome(
 function createEventEffectSnapshot(core: BetrayalCore): EventEffectSnapshot {
     return {
         traitsBeforeEffect: { ...core.currentExplorer.traits },
+        roomIdBeforeEffect: core.currentExplorer.roomId,
         damageRolls: [],
+        drawnCards: [],
     };
+}
+
+function rollAllTraitChecks(
+    explorer: BetrayalExplorerSummary,
+    traits: BetrayalTraitKey[],
+    passMin: number,
+    random: RandomFn,
+): BetrayalAllTraitCheckResult[] {
+    return traits.map((trait) => {
+        const result = rollEventTraitCheckWithDice(random, explorer, trait);
+        return {
+            trait,
+            total: result.total,
+            dice: result.dice,
+            passiveBonus: result.passiveBonus,
+            passed: result.total >= passMin,
+        };
+    });
 }
 
 function snapshotEventEffect(core: BetrayalCore, snapshot: EventEffectSnapshot | undefined): EventEffectSnapshot {
     return snapshot ?? createEventEffectSnapshot(core);
 }
 
+function revertEventSideEffects(core: BetrayalCore, effect: UseEffectProfile): void {
+    if (effect.mode === 'compound') {
+        for (const childEffect of [...effect.effects].reverse()) {
+            revertEventSideEffects(core, childEffect);
+        }
+        return;
+    }
+    if (effect.mode === 'placeObstacleToken') {
+        const room = core.rooms.find((item) => item.id === core.currentExplorer.roomId);
+        if (room?.markerTokens) {
+            room.markerTokens = room.markerTokens.filter((token) => token !== 'obstacle');
+        }
+    }
+}
+
 function revertEventEffect(core: BetrayalCore, effect: UseEffectProfile, snapshot?: EventEffectSnapshot): void {
     if (snapshot) {
         core.currentExplorer.traits = { ...snapshot.traitsBeforeEffect };
+        core.currentExplorer.roomId = snapshot.roomIdBeforeEffect;
+        revertEventSideEffects(core, effect);
+        for (const drawnCard of snapshot.drawnCards) {
+            core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== drawnCard.id);
+            core.deckCounts[drawnCard.kind] += 1;
+        }
         return;
     }
     if (effect.mode === 'none') {
@@ -1681,7 +2098,48 @@ function revertEventEffect(core: BetrayalCore, effect: UseEffectProfile, snapsho
         core.currentExplorer.traits[effect.trait] -= effect.amount;
         return;
     }
+    if (effect.mode === 'chosenTrait') {
+        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
+        if (appliedTrait) {
+            core.currentExplorer.traits[appliedTrait] -= effect.amount;
+        }
+        return;
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        for (const trait of [...(effect.selectedTraits ?? effect.allowedTraits)].reverse()) {
+            core.currentExplorer.traits[trait] += 1;
+        }
+        return;
+    }
+    if (effect.mode === 'healChosenTrait') {
+        return;
+    }
+    if (effect.mode === 'optionalEventRoll') {
+        return;
+    }
+    if (effect.mode === 'chooseTraitRoll') {
+        return;
+    }
     if (effect.mode === 'rolledDamage') {
+        return;
+    }
+    if (effect.mode === 'drawPossession') {
+        if (effect.drawnCard) {
+            core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== effect.drawnCard!.id);
+            core.deckCounts[effect.kind] += 1;
+        }
+        return;
+    }
+    if (effect.mode === 'placeExplorerInRoom') {
+        return;
+    }
+    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
+        return;
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
+        return;
+    }
+    if (effect.mode === 'placeExplorerInAdjacentRoom') {
         return;
     }
     for (const trait of [...effect.traits].reverse()) {
@@ -1764,6 +2222,14 @@ function applyEventEffect(
         }
         return nextSnapshot;
     }
+    if (effect.mode === 'placeSecretPassageToken') {
+        const roomId = effect.targetRoomId ?? core.currentExplorer.roomId;
+        const room = core.rooms.find((item) => item.id === roomId);
+        if (room) {
+            room.markerTokens = Array.from(new Set([...(room.markerTokens ?? []), 'secretPassage']));
+        }
+        return nextSnapshot;
+    }
     if (effect.mode === 'move') {
         core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + effect.amount));
         return nextSnapshot;
@@ -1772,11 +2238,57 @@ function applyEventEffect(
         core.currentExplorer.traits[effect.trait] += effect.amount;
         return nextSnapshot;
     }
+    if (effect.mode === 'chosenTrait') {
+        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
+        if (appliedTrait) {
+            core.currentExplorer.traits[appliedTrait] += effect.amount;
+        }
+        return nextSnapshot;
+    }
+    if (effect.mode === 'healChosenTrait') {
+        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
+        if (appliedTrait) {
+            healExplorerTraitsToTemplate(core.currentExplorer, [appliedTrait]);
+        }
+        return nextSnapshot;
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        applyGeneralDamage(core.currentExplorer, effect.amount, effect.selectedTraits ?? effect.allowedTraits);
+        return nextSnapshot;
+    }
+    if (effect.mode === 'optionalEventRoll') {
+        return nextSnapshot;
+    }
+    if (effect.mode === 'optionalHauntRoll') {
+        return nextSnapshot;
+    }
+    if (effect.mode === 'chooseTraitRoll') {
+        return nextSnapshot;
+    }
+    if (effect.mode === 'allTraitChecks') {
+        if (!effect.results && !random) {
+            throw new Error('allTraitChecks requires random');
+        }
+        const results = effect.results ?? rollAllTraitChecks(core.currentExplorer, effect.traits, effect.passMin, random!);
+        const failedTraits = results.filter((result) => !result.passed).map((result) => result.trait);
+        for (const trait of failedTraits) {
+            applyTraitLoss(core.currentExplorer, [trait], effect.failAmount);
+        }
+        if (failedTraits.length === 0 && !effectHasUnresolvedTraitChoice(effect.allPassEffect)) {
+            applyEventEffect(core, effect.allPassEffect, random, nextSnapshot);
+        }
+        core.recentAllTraitCheck = {
+            sourceTitle: effect.name,
+            playerId: core.currentExplorer.playerId,
+            results,
+        };
+        return nextSnapshot;
+    }
     if (effect.mode === 'rolledDamage') {
-        if (!random) {
+        if (!effect.rolls && !random) {
             throw new Error('rolledDamage requires random');
         }
-        const damageRolls = rollDicePips(random, effect.dice);
+        const damageRolls = effect.rolls ?? rollDicePips(random!, effect.dice);
         nextSnapshot.damageRolls.push(...damageRolls);
         const amount = damageRolls.reduce((sum, pip) => sum + pip, 0);
         if (effect.damageKind === 'physical') {
@@ -1786,8 +2298,124 @@ function applyEventEffect(
         }
         return nextSnapshot;
     }
+    if (effect.mode === 'drawPossession') {
+        const drawnCard = effect.drawnCard
+            ? cloneInventoryCard(effect.drawnCard)
+            : createDrawnCard(core, effect.kind);
+        core.currentExplorer.inventory = [...core.currentExplorer.inventory, drawnCard];
+        core.deckCounts[effect.kind] = Math.max(0, core.deckCounts[effect.kind] - 1);
+        nextSnapshot.drawnCards.push(drawnCard);
+        return nextSnapshot;
+    }
+    if (effect.mode === 'placeExplorerInRoom') {
+        core.currentExplorer.roomId = effect.roomId;
+        return nextSnapshot;
+    }
+    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
+        const targetRoom = core.rooms.find((room) => room.floor === effect.floor && room.startingTile);
+        if (targetRoom) {
+            core.currentExplorer.roomId = targetRoom.id;
+        }
+        return nextSnapshot;
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
+        const targetRoom = core.rooms.find((room) => (
+            room.state === 'discovered' && effect.visualIds.includes(room.visualId)
+        ));
+        if (targetRoom) {
+            core.currentExplorer.roomId = targetRoom.id;
+        }
+        return nextSnapshot;
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
+        const targetRoom = effect.targetRoomId
+            ? core.rooms.find((room) => room.id === effect.targetRoomId && room.state === 'discovered')
+            : null;
+        if (targetRoom && effectAllowsRoomTargetChoice(core, effect, targetRoom.id)) {
+            core.currentExplorer.roomId = targetRoom.id;
+        }
+        return nextSnapshot;
+    }
+    if (effect.mode === 'placeExplorerInAdjacentRoom') {
+        const targetRoom = effect.targetRoomId
+            ? core.rooms.find((room) => room.id === effect.targetRoomId && room.state === 'discovered')
+            : null;
+        if (targetRoom && effectAllowsAdjacentRoomChoice(core, targetRoom.id)) {
+            core.currentExplorer.roomId = targetRoom.id;
+        }
+        return nextSnapshot;
+    }
     applyGeneralDamage(core.currentExplorer, effect.amount, effect.traits);
     return nextSnapshot;
+}
+
+function materializeEventEffect(
+    effect: UseEffectProfile,
+    random: RandomFn,
+    explorer: BetrayalExplorerSummary,
+): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map((childEffect) => materializeEventEffect(childEffect, random, explorer)),
+        };
+    }
+    if (effect.mode === 'optionalEventRoll') {
+        return cloneUseEffect(effect);
+    }
+    if (effect.mode === 'optionalHauntRoll') {
+        return cloneUseEffect(effect);
+    }
+    if (effect.mode === 'chooseTraitRoll') {
+        return cloneUseEffect(effect);
+    }
+    if (effect.mode === 'allTraitChecks') {
+        const results = rollAllTraitChecks(explorer, effect.traits, effect.passMin, random);
+        const hasFailure = results.some((result) => !result.passed);
+        return {
+            ...effect,
+            traits: [...effect.traits],
+            results,
+            recommendedAction: hasFailure ? 'endTurn' : effect.allPassEffect.recommendedAction,
+            allPassEffect: cloneUseEffect(effect.allPassEffect),
+        };
+    }
+    if (effect.mode === 'generalDamage') {
+        return { ...effect, traits: [...effect.traits] };
+    }
+    if (effect.mode === 'generalDamageChoice') {
+        return {
+            ...effect,
+            allowedTraits: [...effect.allowedTraits],
+            selectedTraits: effect.selectedTraits ? [...effect.selectedTraits] : undefined,
+        };
+    }
+    if (effect.mode === 'chosenTrait') {
+        return { ...effect, allowedTraits: [...effect.allowedTraits] };
+    }
+    if (effect.mode === 'healChosenTrait') {
+        return { ...effect, allowedTraits: [...effect.allowedTraits] };
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
+        return {
+            ...effect,
+            visualIds: [...effect.visualIds],
+            roomNames: [...effect.roomNames],
+        };
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
+        return { ...effect };
+    }
+    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
+        return { ...effect };
+    }
+    if (effect.mode === 'placeExplorerInAdjacentRoom') {
+        return { ...effect };
+    }
+    if (effect.mode === 'rolledDamage' && !effect.rolls) {
+        return { ...effect, rolls: rollDicePips(random, effect.dice) };
+    }
+    return { ...effect };
 }
 
 function isAttackWeaponCard(card: BetrayalInventoryCard): boolean {
@@ -2598,11 +3226,58 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     if (effect.mode === 'generalDamage') {
         return `通用伤害 ${effect.amount}`;
     }
+    if (effect.mode === 'generalDamageChoice') {
+        const selected = effect.selectedTraits?.map((trait) => TRAIT_LABEL[trait]).join('、');
+        return selected
+            ? `通用伤害 ${effect.amount}（${selected}）`
+            : `通用伤害 ${effect.amount}`;
+    }
     if (effect.mode === 'placeObstacleToken') {
         return '放置障碍物';
     }
+    if (effect.mode === 'placeSecretPassageToken') {
+        return `在${effect.targetRoomName ?? '当前板块'}放置秘密通道标志物`;
+    }
     if (effect.mode === 'rolledDamage') {
         return `受到 ${effect.dice} 颗骰子的${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
+    }
+    if (effect.mode === 'drawPossession') {
+        return `抽取一张${effect.kind === 'item' ? '物品' : '预兆'}卡`;
+    }
+    if (effect.mode === 'chosenTrait') {
+        const trait = effect.chosenTrait ?? effect.allowedTraits[0];
+        return `${trait ? TRAIT_LABEL[trait] : '任意属性'} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
+    }
+    if (effect.mode === 'healChosenTrait') {
+        const trait = effect.chosenTrait ?? effect.allowedTraits[0];
+        return `治疗${trait ? TRAIT_LABEL[trait] : '任意属性'}`;
+    }
+    if (effect.mode === 'placeExplorerInRoom') {
+        return `放置到${effect.roomName}`;
+    }
+    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
+        return `放置到${effect.roomName}`;
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
+        return `放置到${effect.roomNames.join('或')}`;
+    }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
+        return `放置到${effect.targetRoomName ?? '目标板块'}`;
+    }
+    if (effect.mode === 'placeExplorerInAdjacentRoom') {
+        return `放置到${effect.targetRoomName ?? '相邻板块'}`;
+    }
+    if (effect.mode === 'optionalEventRoll') {
+        return `可选择${effect.acceptLabel}`;
+    }
+    if (effect.mode === 'optionalHauntRoll') {
+        return `可选择${effect.acceptLabel}`;
+    }
+    if (effect.mode === 'chooseTraitRoll') {
+        return effect.prompt;
+    }
+    if (effect.mode === 'allTraitChecks') {
+        return '每项属性各检定一次';
     }
     if (effect.mode === 'compound') {
         return effect.effects.map(formatEffectLabel).join('；');
@@ -2714,6 +3389,107 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     if (core.phase !== 'preHaunt') {
         return { valid: false, error: '当前不在运行时阶段。' };
     }
+        if (command.type === BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE) {
+            const pending = core.pendingEventChoice;
+            if (!pending || pending.playerId !== command.playerId) {
+                return { valid: false, error: '当前没有待结算的事件选择。' };
+            }
+            if (
+                effectNeedsAdjacentRoomChoice(pending.effect)
+                && (!command.payload.targetRoomId || !effectAllowsAdjacentRoomChoice(core, command.payload.targetRoomId))
+            ) {
+                return { valid: false, error: '该事件必须选择一个已发现的相邻板块。' };
+            }
+            if (
+                effectNeedsRoomTargetChoice(pending.effect)
+                && (!command.payload.targetRoomId || !effectAllowsRoomTargetChoice(core, pending.effect, command.payload.targetRoomId))
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效目标板块。' };
+            }
+            if (
+                effectHasUnresolvedChosenTraitChoice(pending.effect)
+                && (!command.payload.trait || !effectAllowsChosenTrait(pending.effect, command.payload.trait))
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效属性。' };
+            }
+            if (
+                effectHasUnresolvedGeneralDamageChoice(pending.effect)
+                && !effectAllowsGeneralDamageTraits(pending.effect, command.payload.traits)
+            ) {
+                return { valid: false, error: '该事件必须选择足够的受伤属性。' };
+            }
+            if (pending.effect.mode === 'chooseTraitRoll') {
+                if (!command.payload.trait || !pending.effect.allowedTraits.includes(command.payload.trait)) {
+                    return { valid: false, error: '该事件必须选择一个有效属性。' };
+                }
+                const previewEffect = resolveChooseTraitRollPreviewEffect(core, pending.effect, command.payload.trait);
+                if (
+                    effectNeedsRoomTargetChoice(previewEffect)
+                    && (!command.payload.targetRoomId || !effectAllowsRoomTargetChoice(core, previewEffect, command.payload.targetRoomId))
+                ) {
+                    return { valid: false, error: '该事件必须选择一个有效目标板块。' };
+                }
+                if (
+                    effectNeedsAdjacentRoomChoice(previewEffect)
+                    && (!command.payload.targetRoomId || !effectAllowsAdjacentRoomChoice(core, command.payload.targetRoomId))
+                ) {
+                    return { valid: false, error: '该事件必须选择一个已发现的相邻板块。' };
+                }
+                if (
+                    effectHasUnresolvedGeneralDamageChoice(previewEffect)
+                    && !effectAllowsGeneralDamageTraits(previewEffect, command.payload.traits)
+                ) {
+                    return { valid: false, error: '该事件必须选择足够的受伤属性。' };
+                }
+                return { valid: true };
+        }
+        if (pending.effect.mode === 'allTraitChecks') {
+            if (
+                effectHasUnresolvedChosenTraitChoice(pending.effect.allPassEffect)
+                && (!command.payload.trait || !effectAllowsChosenTrait(pending.effect.allPassEffect, command.payload.trait))
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效属性。' };
+            }
+            if (
+                effectHasUnresolvedGeneralDamageChoice(pending.effect.allPassEffect)
+                && !effectAllowsGeneralDamageTraits(pending.effect.allPassEffect, command.payload.traits)
+            ) {
+                return { valid: false, error: '该事件必须选择足够的受伤属性。' };
+            }
+            return { valid: true };
+        }
+        if (pending.effect.mode === 'optionalHauntRoll') {
+            if (
+                !command.payload.accept
+                && effectNeedsTraitChoice(pending.effect.skippedOrStartedEffect)
+                && (
+                    (
+                        effectHasUnresolvedChosenTraitChoice(pending.effect.skippedOrStartedEffect)
+                        && (!command.payload.trait || !effectAllowsChosenTrait(pending.effect.skippedOrStartedEffect, command.payload.trait))
+                    )
+                    || (
+                        effectHasUnresolvedGeneralDamageChoice(pending.effect.skippedOrStartedEffect)
+                        && !effectAllowsGeneralDamageTraits(pending.effect.skippedOrStartedEffect, command.payload.traits)
+                    )
+                )
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效属性。' };
+            }
+            return { valid: true };
+        }
+        if (command.payload.accept && pending.effect.mode === 'optionalEventRoll') {
+            const chosenTraitEffect = pending.effect.roll.branches
+                .flatMap((branch) => branch.effect.mode === 'chosenTrait' ? [branch.effect] : [])
+                .at(0);
+            if (
+                chosenTraitEffect
+                && (!command.payload.trait || !chosenTraitEffect.allowedTraits.includes(command.payload.trait))
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效属性。' };
+            }
+        }
+        return { valid: true };
+    }
     if (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT) {
         const card = resolveRabbitFootCard(core, command.payload.cardId, command.playerId);
         if (!card) {
@@ -2735,6 +3511,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         core.turnEndedByDiscovery
         && command.type !== BETRAYAL_COMMANDS.END_TURN
         && command.type !== BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+        && command.type !== BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
     ) {
         return { valid: false, error: '探索新房间后回合已经结束。' };
     }
@@ -3255,7 +4032,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 if (!eventEffect) {
                     throw new Error(`event ${eventCard.name} has no resolvable effect`);
                 }
-                const effectLabel = formatEffectLabel(eventEffect);
+                const materializedEventEffect = materializeEventEffect(eventEffect, random, core.currentExplorer);
+                const effectLabel = formatEffectLabel(materializedEventEffect);
                 const eventRollLabel = eventCard.roll
                     ? eventRollKind === 'dice'
                         ? eventCard.roll.label
@@ -3281,7 +4059,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     },
                     deckKind,
                     ...roomDiscoveryCards,
-                    eventEffect,
+                    eventEffect: materializedEventEffect,
                     eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch
                         ? {
                             kind: eventRollKind,
@@ -3426,12 +4204,262 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const dieIndex = command.payload.dieIndex ?? 0;
             const previousPip = core.recentRoll?.dice[dieIndex] ?? 0;
             const newPip = rollBetrayalPip(random);
+            const nextDice = core.recentRoll ? [...core.recentRoll.dice] : [];
+            if (core.recentRoll) {
+                nextDice[dieIndex] = newPip;
+            }
+            const nextEventBranch = core.recentRoll
+                && (core.recentRoll.kind === 'eventTraitCheck' || core.recentRoll.kind === 'eventDiceRoll')
+                && core.recentRoll.branchThresholds
+                ? resolveEventBranch(core.recentRoll.branchThresholds, nextDice.reduce((sum, pip) => sum + pip, 0) + core.recentRoll.passiveBonus)
+                : null;
             return [nowEvent(EVENTS.RABBIT_FOOT_USED, {
                 playerId: command.playerId,
                 cardId: card.id,
                 dieIndex,
                 newPip,
+                eventRerollEffect: nextEventBranch ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer) : undefined,
                 logText: `${actor.displayName}使用兔脚重掷一颗骰子：${previousPip} → ${newPip}`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE: {
+            const pending = core.pendingEventChoice!;
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            if (pending.effect.mode === 'optionalHauntRoll') {
+                if (!command.payload.accept || core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered) {
+                    const traitSelectedEffect = applyChosenTraitToEffect(pending.effect.skippedOrStartedEffect, command.payload.trait);
+                    const selectedEffect = applyGeneralDamageTraitsToEffect(traitSelectedEffect, command.payload.traits);
+                    const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                    const effectLabel = formatEffectLabel(eventEffect);
+                    return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                        playerId: command.playerId,
+                        sourceTitle: pending.sourceTitle,
+                        accepted: false,
+                        eventEffect,
+                        discovery: {
+                            kind: 'event',
+                            title: pending.sourceTitle,
+                            summary: pending.declineLabel ?? '跳过作祟检定',
+                            detail: effectLabel,
+                            tone: 'warning',
+                        },
+                        logText: `${actor.displayName}选择${pending.declineLabel ?? '跳过作祟检定'}：${pending.sourceTitle}（${effectLabel}）`,
+                    }, timestamp)];
+                }
+                const dice = rollDicePips(random, resolveHauntRollTotal(core));
+                const rollTotal = dice.reduce((sum, pip) => sum + pip, 0);
+                const hauntTriggered = rollTotal >= core.scenarioRuntime.hauntRollThreshold;
+                const hauntTraitorPlayerId = hauntTriggered
+                    ? pending.effect.successTraitorSelection === 'magic-camera-owner'
+                        ? resolveMagicCameraOwnerPlayerId(core) ?? command.playerId
+                        : command.playerId
+                    : undefined;
+                const eventEffect = hauntTriggered
+                    ? { mode: 'none' as const, recommendedAction: 'endTurn' as const }
+                    : materializeEventEffect(pending.effect.failureEffect, random, core.currentExplorer);
+                const effectLabel = hauntTriggered ? pending.effect.successLabel : formatEffectLabel(eventEffect);
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: true,
+                    hauntTriggered,
+                    hauntTraitorPlayerId,
+                    hauntCardNumber: hauntTriggered ? pending.effect.successHauntId : undefined,
+                    hauntTriggerLabel: hauntTriggered
+                        ? pending.effect.successHauntTriggerLabel ?? pending.sourceTitle
+                        : undefined,
+                    eventEffect,
+                    eventRoll: {
+                        kind: 'dice',
+                        total: rollTotal,
+                        label: hauntTriggered ? pending.effect.successLabel : formatEffectLabel(pending.effect.failureEffect),
+                        rollLabel: '作祟检定',
+                        dice,
+                        passiveBonus: 0,
+                        branchThresholds: [
+                            {
+                                min: core.scenarioRuntime.hauntRollThreshold,
+                                label: pending.effect.successLabel,
+                                effect: { mode: 'none', recommendedAction: 'endTurn' },
+                            },
+                            {
+                                min: 0,
+                                label: formatEffectLabel(pending.effect.failureEffect),
+                                effect: cloneUseEffect(pending.effect.failureEffect),
+                            },
+                        ],
+                    },
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: pending.effect.acceptLabel,
+                        detail: `作祟检定 ${rollTotal}：${effectLabel}`,
+                        tone: hauntTriggered ? 'warning' : 'accent',
+                    },
+                    logText: `${actor.displayName}进行作祟检定：${pending.sourceTitle}（作祟检定 ${rollTotal}，${effectLabel}）`,
+                }, timestamp)];
+            }
+            if (pending.effect.mode === 'chooseTraitRoll') {
+                const selectedTrait = command.payload.trait!;
+                const rollResult = rollEventTraitCheckWithDice(random, core.currentExplorer, selectedTrait);
+                const rollTotal = rollResult.total;
+                const eventBranch = resolveEventBranch(pending.effect.branches, rollTotal);
+                const branchEffect = cloneUseEffect(eventBranch.effect);
+                const selectedTraitEffect = applyChosenTraitToEffect(branchEffect, selectedTrait);
+                const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+                const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+                const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                const effectLabel = formatEffectLabel(eventEffect);
+                const rollLabel = `${TRAIT_LABEL[selectedTrait]}检定`;
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: true,
+                    eventEffect,
+                    eventRoll: {
+                        kind: 'trait',
+                        trait: selectedTrait,
+                        total: rollTotal,
+                        label: eventBranch.label,
+                        rollLabel,
+                        dice: rollResult.dice,
+                        passiveBonus: rollResult.passiveBonus,
+                        branchThresholds: pending.effect.branches.map((branch) => {
+                            const branchSnapshotEffect = branch.label === eventBranch.label
+                                ? selectedEffect
+                                : branch.effect;
+                            return {
+                                ...branch,
+                                effect: cloneUseEffect(branchSnapshotEffect),
+                            };
+                        }),
+                    },
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: pending.effect.prompt,
+                        detail: `${rollLabel} ${rollTotal}：${eventBranch.label}；${effectLabel}`,
+                        tone: eventEffect.mode === 'generalDamage'
+                            || eventEffect.mode === 'rolledDamage'
+                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
+                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
+                            ? 'warning'
+                            : 'accent',
+                    },
+                    logText: `${actor.displayName}选择${TRAIT_LABEL[selectedTrait]}：${pending.sourceTitle}（${rollLabel} ${rollTotal}，${effectLabel}）`,
+                }, timestamp)];
+            }
+            if (pending.effect.mode === 'allTraitChecks') {
+                const traitSelectedEffect = applyChosenTraitToEffect(pending.effect.allPassEffect, command.payload.trait);
+                const selectedEffect = applyGeneralDamageTraitsToEffect(traitSelectedEffect, command.payload.traits);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                const effectLabel = formatEffectLabel(eventEffect);
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: true,
+                    eventEffect,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: '每项属性均通过',
+                        detail: `每项属性均通过；${effectLabel}`,
+                        tone: 'accent',
+                    },
+                    logText: `${actor.displayName}选择${command.payload.trait ? TRAIT_LABEL[command.payload.trait] : '任意属性'}：${pending.sourceTitle}（${effectLabel}）`,
+                }, timestamp)];
+            }
+            if (
+                effectHasUnresolvedTraitChoice(pending.effect)
+                || effectNeedsAdjacentRoomChoice(pending.effect)
+                || effectNeedsRoomTargetChoice(pending.effect)
+            ) {
+                const selectedTraitEffect = applyChosenTraitToEffect(pending.effect, command.payload.trait);
+                const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+                const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+                const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                const effectLabel = formatEffectLabel(eventEffect);
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: true,
+                    eventEffect,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: '选择事件效果',
+                        detail: effectLabel,
+                        tone: eventEffect.mode === 'generalDamage'
+                            || eventEffect.mode === 'rolledDamage'
+                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
+                            ? 'warning'
+                            : 'accent',
+                    },
+                    logText: `${actor.displayName}选择事件效果：${pending.sourceTitle}（${effectLabel}）`,
+                }, timestamp)];
+            }
+            if (!command.payload.accept || pending.effect.mode !== 'optionalEventRoll') {
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: false,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: pending.declineLabel ?? '不执行',
+                        detail: '无事发生',
+                        tone: 'accent',
+                    },
+                    logText: `${actor.displayName}选择${pending.declineLabel ?? '不执行'}：${pending.sourceTitle}`,
+                }, timestamp)];
+            }
+
+            const rollResult = rollEventFixedDice(random, pending.effect.roll.dice);
+            const rollTotal = rollResult.total;
+            const eventBranch = resolveEventBranch(pending.effect.roll.branches, rollTotal);
+            const branchEffect = cloneUseEffect(eventBranch.effect);
+            const selectedTraitEffect = applyChosenTraitToEffect(branchEffect, command.payload.trait);
+            const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+            const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+            const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+            const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+            const effectLabel = formatEffectLabel(eventEffect);
+            return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                playerId: command.playerId,
+                sourceTitle: pending.sourceTitle,
+                accepted: true,
+                eventEffect,
+                eventRoll: {
+                    kind: 'dice',
+                    total: rollTotal,
+                    label: eventBranch.label,
+                    rollLabel: pending.effect.roll.label,
+                    dice: rollResult.dice,
+                    passiveBonus: rollResult.passiveBonus,
+                    branchThresholds: pending.effect.roll.branches.map((branch) => {
+                        const branchSnapshotEffect = branch.label === eventBranch.label
+                            ? selectedEffect
+                            : branch.effect;
+                        return {
+                            ...branch,
+                            effect: cloneUseEffect(branchSnapshotEffect),
+                        };
+                    }),
+                },
+                discovery: {
+                    kind: 'event',
+                    title: pending.sourceTitle,
+                    summary: pending.acceptLabel,
+                    detail: `${pending.effect.roll.label} ${rollTotal}：${eventBranch.label}；${effectLabel}`,
+                    tone: eventEffect.mode === 'generalDamage'
+                        || eventEffect.mode === 'rolledDamage'
+                        || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
+                        ? 'warning'
+                        : 'accent',
+                },
+                logText: `${actor.displayName}选择${pending.acceptLabel}：${pending.sourceTitle}（${pending.effect.roll.label} ${rollTotal}，${effectLabel}）`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
@@ -3860,6 +4888,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.highlightedDeckKind = null;
             core.latestDiscovery = null;
             core.latestDiscoveryOwnerPlayerId = null;
+            core.pendingEventChoice = null;
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,
@@ -3919,6 +4948,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.highlightedDeckKind = event.payload.deckKind;
             core.latestDiscovery = { ...event.payload.discovery };
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            core.pendingEventChoice = null;
             core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
                 ? {
                     id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
@@ -3955,20 +4985,57 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
 
             if (event.payload.skippedEventWithIdol) {
                 // 雕像仍消耗这次事件牌堆顺序，但不抽取、不弃置、不结算事件效果。
+            } else if (event.payload.deckKind === 'event' && (
+                event.payload.eventEffect?.mode === 'optionalEventRoll'
+                || event.payload.eventEffect?.mode === 'optionalHauntRoll'
+                || event.payload.eventEffect?.mode === 'chooseTraitRoll'
+                || Boolean(
+                    event.payload.eventEffect
+                    && (
+                        effectHasUnresolvedTraitChoice(event.payload.eventEffect)
+                        || effectNeedsAdjacentRoomChoice(event.payload.eventEffect)
+                        || effectNeedsRoomTargetChoice(event.payload.eventEffect)
+                    )
+                )
+                || (
+                    event.payload.eventEffect?.mode === 'allTraitChecks'
+                    && Boolean(event.payload.eventEffect.results?.every((result) => result.passed))
+                    && effectHasUnresolvedTraitChoice(event.payload.eventEffect.allPassEffect)
+                )
+            )) {
+                core.discardCounts.event += 1;
+                if (event.payload.eventEffect.mode === 'allTraitChecks') {
+                    applyEventEffect(core, event.payload.eventEffect);
+                }
+                core.pendingEventChoice = {
+                    id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
+                    playerId: event.payload.playerId,
+                    sourceTitle: event.payload.discovery.title,
+                    acceptLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
+                        || event.payload.eventEffect.mode === 'optionalHauntRoll'
+                        ? event.payload.eventEffect.acceptLabel
+                        : undefined,
+                    declineLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
+                        || event.payload.eventEffect.mode === 'optionalHauntRoll'
+                        ? event.payload.eventEffect.declineLabel
+                        : undefined,
+                    effect: cloneUseEffect(event.payload.eventEffect),
+                };
+                core.turnEndedByDiscovery = false;
             } else if (!core.turnEndedByDiscovery && event.payload.deckKind === 'event' && event.payload.eventEffect) {
                 core.discardCounts.event += 1;
-                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect, undefined);
+                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
                 if (core.recentRoll) {
                     core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
+                core.turnEndedByDiscovery = event.payload.eventEffect.recommendedAction === 'endTurn';
             } else if (event.payload.deckKind === 'event' && event.payload.eventEffect) {
                 core.discardCounts.event += 1;
-                if (event.payload.eventEffect.mode !== 'move') {
-                    const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect, random);
-                    if (core.recentRoll) {
-                        core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
-                    }
+                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
+                if (core.recentRoll) {
+                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
+                core.turnEndedByDiscovery = event.payload.eventEffect.recommendedAction === 'endTurn';
             } else if (event.payload.drawnCard) {
                 core.currentExplorer.inventory = [...core.currentExplorer.inventory, cloneInventoryCard(event.payload.drawnCard)];
             }
@@ -3986,8 +5053,62 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 nextCore = reduceEvent(nextCore, nowEvent(EVENTS.HAUNT_TRIGGERED, {
                     traitorPlayerId: hauntRevealerPlayerId,
                     nextPlayerId,
+                    hauntCardNumber: 1,
                     hauntTriggerLabel: scenario.hauntTriggerLabel,
                     logText: scenario.logs.hauntTriggered,
+                }, event.timestamp));
+            }
+            return nextCore;
+        }
+        case EVENTS.EVENT_CHOICE_RESOLVED: {
+            core.pendingEventChoice = null;
+            core.latestDiscovery = { ...event.payload.discovery };
+            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
+                ? {
+                    id: `${event.payload.playerId}-${event.payload.sourceTitle}-${event.timestamp}`,
+                    kind: event.payload.eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
+                    playerId: event.payload.playerId,
+                    sourceTitle: event.payload.sourceTitle,
+                    trait: event.payload.eventRoll.trait,
+                    rollLabel: event.payload.eventRoll.rollLabel,
+                    dice: [...event.payload.eventRoll.dice],
+                    passiveBonus: event.payload.eventRoll.passiveBonus ?? 0,
+                    branchThresholds: event.payload.eventRoll.branchThresholds.map((branch) => ({
+                        ...branch,
+                        effect: cloneUseEffect(branch.effect),
+                    })),
+                    latestLabel: event.payload.eventRoll.label,
+                    consumedRabbitFootCardIds: [],
+                }
+                : null;
+            if (event.payload.eventEffect) {
+                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
+                if (core.recentRoll) {
+                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
+                }
+            }
+            core.turnEndedByDiscovery = event.payload.eventEffect?.recommendedAction === 'endTurn';
+            const synced = syncCurrentExplorerProjection(core);
+            let nextCore = {
+                ...synced,
+                recommendedAction: resolveRecommendedAction(synced),
+                activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
+            };
+            if (event.payload.hauntTriggered) {
+                const scenario = scenarioConfigById(core.scenarioId);
+                const hauntRevealerPlayerId = event.payload.playerId;
+                const hauntTraitorPlayerId = event.payload.hauntTraitorPlayerId ?? hauntRevealerPlayerId;
+                const nextPlayerId = rotateToNextLivingPlayer(core, hauntRevealerPlayerId);
+                nextCore = reduceEvent(nextCore, nowEvent(EVENTS.HAUNT_TRIGGERED, {
+                    traitorPlayerId: hauntTraitorPlayerId,
+                    hauntRevealerPlayerId,
+                    nextPlayerId,
+                    hauntCardNumber: event.payload.hauntCardNumber,
+                    hauntTriggerLabel: event.payload.hauntTriggerLabel ?? scenario.hauntTriggerLabel,
+                    logText: event.payload.hauntCardNumber && event.payload.hauntCardNumber !== 1
+                        ? `作祟触发：剧本${event.payload.hauntCardNumber}（${event.payload.hauntTriggerLabel ?? event.payload.sourceTitle}）`
+                        : scenario.logs.hauntTriggered,
                 }, event.timestamp));
             }
             return nextCore;
@@ -4015,13 +5136,14 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     revertEventEffect(core, previousEffect, recentRoll.eventEffectSnapshot);
                 }
                 const nextBranch = resolveEventBranch(recentRoll.branchThresholds, nextTotal);
-                const nextSnapshot = applyEventEffect(core, nextBranch.effect, random);
+                const nextEffect = event.payload.eventRerollEffect ?? nextBranch.effect;
+                const nextSnapshot = applyEventEffect(core, nextEffect);
                 nextRoll.latestLabel = nextBranch.label;
                 nextRoll.eventEffectSnapshot = nextSnapshot;
                 core.recentRoll = nextRoll;
                 core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
                 if (core.latestDiscovery && core.latestDiscovery.title === nextRoll.sourceTitle) {
-                    const effectLabel = formatEffectLabel(nextBranch.effect);
+                    const effectLabel = formatEffectLabel(nextEffect);
                     const rerollLabel = recentRoll.rollLabel
                         ?? (recentRoll.kind === 'eventTraitCheck' && recentRoll.trait
                             ? `${TRAIT_LABEL[recentRoll.trait]}检定`
@@ -4370,9 +5492,10 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
         case EVENTS.HAUNT_TRIGGERED: {
             core.phase = 'haunt';
             core.scenarioRuntime.hauntTriggered = true;
-            core.scenarioRuntime.hauntRevealerPlayerId = event.payload.traitorPlayerId;
+            core.scenarioRuntime.hauntRevealerPlayerId = event.payload.hauntRevealerPlayerId ?? event.payload.traitorPlayerId;
             core.scenarioRuntime.traitorPlayerId = event.payload.traitorPlayerId;
             core.scenarioRuntime.nextHauntPlayerId = event.payload.nextPlayerId;
+            core.scenarioRuntime.hauntCardNumber = event.payload.hauntCardNumber ?? null;
             core.scenarioRuntime.hauntTriggerLabel = event.payload.hauntTriggerLabel;
             core.movesRemaining = 4;
             core.usedCardIdsThisTurn = [];

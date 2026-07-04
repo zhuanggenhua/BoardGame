@@ -7957,7 +7957,7 @@ export function registerTitanInteractionHandlers(): void {
     registerInteractionHandler('titan_fairies_spirit_of_the_forest_clash_move', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { skip?: boolean; baseIndex?: number; baseDefId?: string } | undefined;
         const continuation = (data as {
-            continuationContext?: { titanUid?: string; fromBaseIndex?: number };
+            continuationContext?: { titanUid?: string; fromBaseIndex?: number; visitedBaseIndices?: number[] };
         } | undefined)?.continuationContext;
         const titan = continuation?.titanUid ? getTitanByUid(state.core, continuation.titanUid) : undefined;
         if (
@@ -7975,6 +7975,10 @@ export function registerTitanInteractionHandlers(): void {
             && continuation?.fromBaseIndex !== undefined
             && selected.baseIndex !== continuation.fromBaseIndex
         ) {
+            const visitedBaseIndices = Array.isArray(continuation.visitedBaseIndices)
+                ? continuation.visitedBaseIndices.filter((baseIndex): baseIndex is number => typeof baseIndex === 'number')
+                : [];
+            const nextVisitedBaseIndices = [...new Set([...visitedBaseIndices, continuation.fromBaseIndex])];
             return {
                 state,
                 events: [
@@ -7986,6 +7990,7 @@ export function registerTitanInteractionHandlers(): void {
                         'fairies_spirit_of_the_forest_clash_move',
                         timestamp,
                         selected.baseDefId,
+                        { spiritOfTheForestClashVisitedBaseIndices: nextVisitedBaseIndices },
                     ),
                 ],
             };

@@ -6,9 +6,7 @@ const QIDAHEN_MONGOL_ATLAS_ID = 'qidahen:mongol-hand-preview';
 const QIDAHEN_JIN_ATLAS_ID = 'qidahen:jin-hand-preview';
 const QIDAHEN_CHRONOLOGY_ATLAS_ID = 'qidahen:chronology-preview';
 const QIDAHEN_KOREA_ATLAS_ID = 'qidahen:korea-special-preview';
-const QIDAHEN_MING_CARD_BACK = 'qidahen/cards/backs/ming-card-back';
-const QIDAHEN_MONGOL_CARD_BACK = 'qidahen/cards/backs/mongol-card-back';
-const QIDAHEN_JIN_CARD_BACK = 'qidahen/cards/backs/jin-card-back';
+const QIDAHEN_ATLAS05_ORDINARY_HAND_ATLAS_ID = 'qidahen:atlas05-ordinary-hand-preview';
 
 const buildFrames = (
     topXs: number[],
@@ -90,6 +88,20 @@ registerCardAtlasSource(QIDAHEN_KOREA_ATLAS_ID, {
     },
 });
 
+registerCardAtlasSource(QIDAHEN_ATLAS05_ORDINARY_HAND_ATLAS_ID, {
+    image: 'qidahen/cards/atlases/ordinary-hand-atlas05',
+    config: {
+        imageW: 4798,
+        imageH: 4625,
+        frames: buildFrames(
+            [0, 476, 952, 1428, 1904, 2380, 2856, 3332, 3808, 4284],
+            [661, 1322, 1983, 2644, 3305, 3966],
+            476,
+            661,
+        ),
+    },
+});
+
 export const qidahenMingHandPreview = (index: number): CardPreviewRef => ({
     type: 'atlas',
     atlasId: QIDAHEN_MING_ATLAS_ID,
@@ -120,10 +132,17 @@ export const qidahenKoreaSpecialPreview = (index: number): CardPreviewRef => ({
     index,
 });
 
+export const qidahenAtlas05OrdinaryHandPreview = (index: number): CardPreviewRef => ({
+    type: 'atlas',
+    atlasId: QIDAHEN_ATLAS05_ORDINARY_HAND_ATLAS_ID,
+    index,
+});
+
 export const QIDAHEN_CARD_ATLAS_IDS = {
     MING_HAND: QIDAHEN_MING_ATLAS_ID,
     MONGOL_HAND: QIDAHEN_MONGOL_ATLAS_ID,
     JIN_HAND: QIDAHEN_JIN_ATLAS_ID,
     CHRONOLOGY: QIDAHEN_CHRONOLOGY_ATLAS_ID,
     KOREA_SPECIAL: QIDAHEN_KOREA_ATLAS_ID,
+    ATLAS05_ORDINARY_HAND: QIDAHEN_ATLAS05_ORDINARY_HAND_ATLAS_ID,
 } as const;

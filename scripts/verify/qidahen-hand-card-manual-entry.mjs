@@ -19,6 +19,10 @@ const FILES = [
     label: '运行时图集候选人工录入矩阵',
     path: 'docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-manual-entry-matrix.md',
   },
+  {
+    label: 'atlas05 普通手牌人工录入矩阵',
+    path: 'docs/games/qidahen/workflows/qidahen-hand-card-atlas05-manual-entry-matrix.md',
+  },
 ];
 
 const TASKS_FILE = 'openspec/changes/refactor-qidahen-formal-core-loop-and-tutorial-coverage/tasks.md';

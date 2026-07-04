@@ -48,7 +48,7 @@
   - 仅用于核对的 slot 单图、拼图、人工审查导出
 
 ### 7. 应删除的文件
-- Git 临时文件（`temp_*.txt`、`tmp_*.txt`）
+- Git 临时文件（`temp_*.txt`、`tmp_*.txt`、`tmp-*.txt`）
 - 临时状态文件（`threshold`、`edge_check.txt`、`scan_results.txt`）
 - 临时计划文档（`findings.md`、`progress.md`、`task_plan.md`）
 
@@ -83,6 +83,7 @@ wiki-*.html
 *-results.json
 *-diff.txt
 temp_*.txt
+tmp-*.txt
 tmp_*.txt
 .tmp_*/
 tmp_*/
@@ -124,7 +125,7 @@ test-out.txt
 1. **Bug 分析**：直接在 `docs/bugs/` 创建，命名格式 `BUG-<issue-name>.md`
 2. **代码审查**：直接在 `docs/reviews/` 创建，命名格式 `review-<date>-<topic>.md`
 3. **临时脚本**：直接在 `scripts/temp/` 创建，命名格式 `test-<purpose>.mjs`
-4. **临时数据**：直接在 `temp/` 创建，任意命名
+4. **临时数据 / 诊断日志**：直接在 `temp/` 创建，任意命名；真机日志、下载日志、排障日志不得写在仓库根目录
 5. **临时图片 / 裁图 / OCR 中间产物**：直接在 `temp/<purpose>/` 或 `tmp/<purpose>/` 下创建；不得在仓库根目录创建 `.tmp_*`、`tmp_*` 目录
 
 ### 清理临时文件
@@ -135,7 +136,7 @@ test-out.txt
 ### 提交前检查
 运行以下命令检查是否有临时文件未被忽略：
 ```bash
-git status | grep -E "(BUG-|DEBUG-|fix-|test-|wiki-|temp_|tmp_|\\.tmp_|_vitest)"
+git status | grep -E "(BUG-|DEBUG-|fix-|test-|wiki-|temp_|tmp_|tmp-|\\.tmp_|_vitest)"
 ```
 
 如果有输出，说明有临时文件需要处理。

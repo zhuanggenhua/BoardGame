@@ -28,6 +28,7 @@ final class AndroidDownloadTaskRecord {
     String assetBaseUrl;
     String fileIndexUrl;
     String fileIndexChecksum;
+    boolean allowFullFallback;
     String destinationPath;
     String partialPath;
     String status;
@@ -53,6 +54,7 @@ final class AndroidDownloadTaskRecord {
         String assetBaseUrl,
         String fileIndexUrl,
         String fileIndexChecksum,
+        boolean allowFullFallback,
         String destinationPath,
         String partialPath,
         long now
@@ -71,6 +73,7 @@ final class AndroidDownloadTaskRecord {
         record.assetBaseUrl = assetBaseUrl;
         record.fileIndexUrl = fileIndexUrl;
         record.fileIndexChecksum = fileIndexChecksum;
+        record.allowFullFallback = allowFullFallback;
         record.destinationPath = destinationPath;
         record.partialPath = partialPath;
         record.status = STATUS_QUEUED;
@@ -99,6 +102,7 @@ final class AndroidDownloadTaskRecord {
         record.assetBaseUrl = optNullableString(payload, "assetBaseUrl");
         record.fileIndexUrl = optNullableString(payload, "fileIndexUrl");
         record.fileIndexChecksum = optNullableString(payload, "fileIndexChecksum");
+        record.allowFullFallback = !payload.has("allowFullFallback") || payload.optBoolean("allowFullFallback", true);
         record.destinationPath = optNullableString(payload, "destinationPath");
         record.partialPath = optNullableString(payload, "partialPath");
         record.status = payload.optString("status", STATUS_QUEUED);
@@ -127,6 +131,7 @@ final class AndroidDownloadTaskRecord {
         putNullable(payload, "assetBaseUrl", assetBaseUrl);
         putNullable(payload, "fileIndexUrl", fileIndexUrl);
         putNullable(payload, "fileIndexChecksum", fileIndexChecksum);
+        payload.put("allowFullFallback", allowFullFallback);
         putNullable(payload, "destinationPath", destinationPath);
         putNullable(payload, "partialPath", partialPath);
         payload.put("status", safeString(status));

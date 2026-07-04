@@ -1,45 +1,48 @@
 import {
-    qidahenJinHandPreview,
-    qidahenMingHandPreview,
-    qidahenMongolHandPreview,
+    qidahenAtlas05OrdinaryHandPreview,
 } from '../ui/cardAtlas';
-import { resolveQidahenFormalHandCardIdentity } from './handCardIdentity';
+import { resolveQidahenAtlas05OrdinaryHandCardIdentity } from './handCardIdentity';
+import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from './ordinaryHandCardIdentities';
 import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';
 
-const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;
+const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_COUNT = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.length;
 
 const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
 
-const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard['previewRef']> = {
-    ming: qidahenMingHandPreview,
-    mongol: qidahenMongolHandPreview,
-    jin: qidahenJinHandPreview,
+const buildAtlas05OrdinaryHandCard = (
+    atlasSequenceIndex: number,
+): Pick<QidahenHandCard, 'label' | 'previewRef' | 'cardKind' | 'armamentId' | 'cardDefId' | 'rulesSummary' | 'previewKind' | 'previewIdentityId'> => {
+    const identity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[
+        atlasSequenceIndex % QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_COUNT
+    ];
+    return {
+        label: identity.displayName,
+        previewRef: qidahenAtlas05OrdinaryHandPreview(identity.atlasIndex),
+        ...resolveQidahenAtlas05OrdinaryHandCardIdentity(identity.atlasIndex)!,
+    };
 };
 
 export const buildInitialHandCards = (
     factions: QidahenCore['factions'],
 ): QidahenCore['handCards'] => {
     let nextId = 1;
+    let nextAtlasSequenceIndex = 0;
     return factionOrder.flatMap((factionId) => {
-        const previewForFaction = factionHandPreviewById[factionId];
         const visibleCardCount = factionId === 'ming'
             ? factions[factionId].handCount + 1
             : factions[factionId].handCount;
         return Array.from({ length: visibleCardCount }, (_, index) => {
             const cardId = `hand-${nextId}`;
             nextId += 1;
-            const identity = resolveQidahenFormalHandCardIdentity(
-                factionId,
-                index % QIDAHEN_FACTION_HAND_PREVIEW_COUNT,
-            );
+            const ordinaryHandCard = buildAtlas05OrdinaryHandCard(nextAtlasSequenceIndex);
+            nextAtlasSequenceIndex += 1;
             return {
                 id: cardId,
                 label: `${factions[factionId].name} 手牌 ${index + 1}`,
                 faction: factionId,
-                previewRef: previewForFaction(index % QIDAHEN_FACTION_HAND_PREVIEW_COUNT),
                 accent: factionId,
                 status: index < factions[factionId].handCount ? 'payable' as const : 'idle' as const,
-                ...identity,
+                ...ordinaryHandCard,
             };
         });
     });
@@ -60,18 +63,16 @@ export const buildDrawnHandCards = (
     }, 0);
     const factionCardCount = state.handCards.filter((card) => card.faction === factionId).length;
     const previewBase = (state.factions[factionId].discardPileCount ?? 0) + factionCardCount;
-    const previewForFaction = factionHandPreviewById[factionId];
     const nextCards = Array.from({ length: drawCards }, (_, index) => {
-        const previewIndex = (previewBase + index) % QIDAHEN_FACTION_HAND_PREVIEW_COUNT;
-        const identity = resolveQidahenFormalHandCardIdentity(factionId, previewIndex);
+        const atlasSequenceIndex = previewBase + index;
+        const ordinaryHandCard = buildAtlas05OrdinaryHandCard(atlasSequenceIndex);
         return {
             id: `hand-${currentMaxIndex + index + 1}`,
             label: `${state.factions[factionId].name} 手牌 ${factionCardCount + index + 1}`,
             faction: factionId,
-            previewRef: previewForFaction(previewIndex),
             accent: factionId,
             status: 'payable' as const,
-            ...identity,
+            ...ordinaryHandCard,
         };
     });
     return [...state.handCards, ...nextCards];

@@ -157,7 +157,7 @@ function formatAndroidPackagePublishCommands(plan) {
   }
 
   return plan.gameIds.map((gameId) => (
-    `${process.execPath} scripts/mobile/publish-android-game-packages.mjs --game ${gameId} --reuse-shared-audio`
+    `${process.execPath} scripts/mobile/publish-android-game-packages.mjs --game ${gameId} --reuse-shared-audio --index-manifest-only`
   ));
 }
 
@@ -185,13 +185,13 @@ function publishAndroidPackagesForUploadedAssets(gameIds, hasSharedAudioChanges)
     return;
   }
 
-  console.log(`\n📱 检测到安卓素材包资源变更，刷新 ${gameIds.size} 个游戏包 manifest...`);
+  console.log(`\n📱 检测到安卓素材包资源变更，刷新 ${gameIds.size} 个游戏 file-index/manifest 差异索引（不重发完整 ZIP）...`);
 
   const sortedGameIds = Array.from(gameIds).sort((left, right) => left.localeCompare(right));
   for (const gameId of sortedGameIds) {
     const result = spawnSync(
       process.execPath,
-      ['scripts/mobile/publish-android-game-packages.mjs', '--game', gameId, '--reuse-shared-audio'],
+      ['scripts/mobile/publish-android-game-packages.mjs', '--game', gameId, '--reuse-shared-audio', '--index-manifest-only'],
       {
         cwd: process.cwd(),
         env: process.env,
@@ -201,7 +201,7 @@ function publishAndroidPackagesForUploadedAssets(gameIds, hasSharedAudioChanges)
     );
 
     if (result.status !== 0) {
-      throw new Error(`安卓素材包发布失败: ${gameId}`);
+      throw new Error(`安卓素材包差异索引刷新失败: ${gameId}`);
     }
   }
 }

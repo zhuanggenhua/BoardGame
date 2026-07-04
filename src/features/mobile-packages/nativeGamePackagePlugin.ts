@@ -86,11 +86,12 @@ type NativeGamePackagePlugin = {
         runtimeChannel: string;
         assetPackId?: string;
         assetPackVersion?: string;
-        assetPackUrl: string;
+        assetPackUrl?: string;
         assetPackChecksum?: string;
         assetBaseUrl: string;
         fileIndexUrl: string;
         fileIndexChecksum?: string;
+        allowFullFallback?: boolean;
     }): Promise<{
         accepted?: boolean;
         taskId?: string;
@@ -277,6 +278,10 @@ const shouldFallbackToFullInstallFromBridgeError = (error: unknown) => {
 
     return INCREMENTAL_INSTALL_UNAVAILABLE_PATTERNS.some((pattern) => pattern.test(normalizedMessage));
 };
+
+const buildDiffOnlyFallbackBlockedMessage = () => (
+    '当前 App 版本不支持素材包差异安装，且该素材包版本没有对应完整 ZIP 兜底。请更新 App 后再安装。'
+);
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -739,7 +744,7 @@ export const createNativeGamePackageInstallHandle = async (
         return null;
     }
 
-    if (!manifest.assetPackUrl) {
+    if (!manifest.assetPackUrl && !manifest.assetPackDiffOnly) {
         logMobileRuntimeCritical('NativeGamePackagePlugin', 'missing-asset-pack-url', {
             gameId: manifest.gameId,
             source: manifest.source,
@@ -864,15 +869,20 @@ export const createNativeGamePackageInstallHandle = async (
                         runtimeChannel: manifest.runtimeChannel,
                         assetPackId: manifest.assetPackId,
                         assetPackVersion: manifest.assetPackVersion,
-                        assetPackUrl: manifest.assetPackUrl!,
+                        assetPackUrl: manifest.assetPackUrl,
                         assetPackChecksum: manifest.assetPackChecksum,
                         assetBaseUrl: resolvedAssetsBaseUrl,
                         fileIndexUrl: manifest.assetPackFileIndexUrl,
                         fileIndexChecksum: manifest.assetPackFileIndexChecksum,
+                        allowFullFallback: manifest.assetPackDiffOnly !== true,
                     });
                 } catch (error) {
                     if (!shouldFallbackToFullInstallFromBridgeError(error)) {
                         throw error;
+                    }
+
+                    if (manifest.assetPackDiffOnly) {
+                        throw new Error(buildDiffOnlyFallbackBlockedMessage());
                     }
 
                     logMobileRuntimeCritical('NativeGamePackagePlugin', 'install-incremental-unavailable-fallback', {

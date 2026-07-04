@@ -506,6 +506,26 @@ async function waitForRollUiSettled(page: Page) {
     await page.waitForTimeout(420);
 }
 
+async function setDiceFocusedScreenshotMode(page: Page, enabled: boolean) {
+    await page.evaluate((shouldEnable) => {
+        const styleId = 'dt-dice-focused-screenshot-style';
+        document.getElementById(styleId)?.remove();
+        if (!shouldEnable) return;
+
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            [data-testid^="dt-ability-highlight-"],
+            [data-testid^="dt-ability-selected-"] {
+                opacity: 0 !important;
+                box-shadow: none !important;
+                border-color: transparent !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }, enabled);
+}
+
 async function waitForBoardDiceProjectionStable(page: Page) {
     await page.waitForFunction(() => {
         const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
@@ -521,8 +541,8 @@ async function waitForBoardDiceProjectionStable(page: Page) {
         const validRects = rects.every((rect, index) => {
             const node = buttons[index];
             return node.dataset.renderMode === 'engine'
-                && rect.width >= 42
-                && rect.height >= 42
+                && rect.width >= 36
+                && rect.height >= 36
                 && rect.width <= 110
                 && rect.height <= 110
                 && rect.left >= stageRect.left - 4
@@ -796,9 +816,11 @@ async function main() {
         await waitForBoardDiceProjectionStable(page);
         await waitForBoardDiceFullySettled(page);
         await closeMagnifyOverlayIfPresent(page);
+        await setDiceFocusedScreenshotMode(page, true);
         await logBoardVisualState(page, 'before-save-03');
         evidence.rolled = await collectBoardDiceEvidence(page, 'before-save-03');
         await saveScreenshot(page, SCREENSHOTS.rolled);
+        await setDiceFocusedScreenshotMode(page, false);
         await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-rolled', diagnostics }]);
         await writeRunManifest({
             status: 'running',
@@ -817,7 +839,7 @@ async function main() {
                 .filter((node) => {
                     const element = node as HTMLElement;
                     const rect = element.getBoundingClientRect();
-                    return rect.width >= 40 && rect.height >= 40;
+                    return rect.width >= 36 && rect.height >= 36;
                 }).length;
             return interaction?.kind === 'multistep-choice'
                 && meta?.dtType === 'selectDie'
@@ -843,9 +865,11 @@ async function main() {
                 await waitForBoardDiceFullySettled(page);
                 await page.waitForTimeout(180);
                 await closeMagnifyOverlayIfPresent(page);
+                await setDiceFocusedScreenshotMode(page, true);
                 await logBoardVisualState(page, 'before-save-04-two');
                 evidence.selectedTwo = await collectBoardDiceEvidence(page, 'before-save-04-two');
                 await saveScreenshot(page, SCREENSHOTS.selectedTwo);
+                await setDiceFocusedScreenshotMode(page, false);
                 await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-selected-two', diagnostics }]);
                 await writeRunManifest({
                     status: 'running',
@@ -886,9 +910,11 @@ async function main() {
         await waitForBoardDiceFullySettled(page);
         await page.waitForTimeout(180);
         await closeMagnifyOverlayIfPresent(page);
+        await setDiceFocusedScreenshotMode(page, true);
         await logBoardVisualState(page, 'before-save-05');
         evidence.rerolled = await collectBoardDiceEvidence(page, 'before-save-05');
         await saveScreenshot(page, SCREENSHOTS.rerolled);
+        await setDiceFocusedScreenshotMode(page, false);
         await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-rerolled', diagnostics }]);
         await writeRunManifest({
             status: 'completed',

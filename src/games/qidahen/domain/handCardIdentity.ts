@@ -1,4 +1,8 @@
 import type { QidahenFactionId, QidahenHandCard } from './types';
+import {
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX,
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
+} from './ordinaryHandCardIdentities';
 
 export type QidahenHandCardPreviewKind =
     | 'unknown'
@@ -9,7 +13,7 @@ export type QidahenHandCardPreviewKind =
 
 type QidahenFormalHandCardIdentity = Pick<
     QidahenHandCard,
-    'cardKind' | 'armamentId' | 'cardDefId' | 'previewKind' | 'previewIdentityId'
+    'cardKind' | 'armamentId' | 'cardDefId' | 'rulesSummary' | 'previewKind' | 'previewIdentityId'
 >;
 
 const knownPreviewCard = (
@@ -20,6 +24,7 @@ const knownPreviewCard = (
     cardKind,
     armamentId: null,
     cardDefId,
+    rulesSummary: null,
     previewKind,
     previewIdentityId: cardDefId,
 });
@@ -84,6 +89,23 @@ export const resolveQidahenFormalHandCardIdentity = (
         cardDefId: identity.cardDefId,
         previewKind: identity.previewKind,
         previewIdentityId: identity.previewIdentityId,
+    };
+};
+
+export const resolveQidahenAtlas05OrdinaryHandCardIdentity = (
+    atlasIndex: number,
+): QidahenFormalHandCardIdentity | null => {
+    const identity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX.get(atlasIndex);
+    if (!identity) {
+        return null;
+    }
+    return {
+        cardKind: identity.cardKind,
+        armamentId: identity.armamentId,
+        cardDefId: identity.cardDefId,
+        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+        previewKind: 'unknown',
+        previewIdentityId: identity.cardDefId,
     };
 };
 
