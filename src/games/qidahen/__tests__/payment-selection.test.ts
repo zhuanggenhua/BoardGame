@@ -10998,6 +10998,121 @@ describe('七大恨支付手牌选择', () => {
         ]));
     });
 
+    it('机里耐步兵打出后会让进攻明军的攻方步兵每部队额外掷 1 颗骰', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'jin',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-14',
+            sourceRegionName: '区域 14',
+            targetRegionId: 'city-region-16',
+            targetRegionName: '区域 16',
+            targetRuntimeRegionId: 'city-region-16',
+            defenderFactionId: 'ming',
+            defenderLabel: '大明',
+            restriction: '测试 · 机里耐步兵',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const jinCard = core.handCards.find((card) => card.faction === 'jin');
+        expect(jinCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...jinCard!,
+                id: 'test-jirinai-infantry-card',
+                label: '机里耐步兵',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1640-jirinai-infantry'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '1',
+            payload: { cardId: 'test-jirinai-infantry-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+                label: '机里耐步兵',
+                side: 'attacker',
+                troopKind: 'infantry',
+                levelBonus: 0,
+                diceCountBonus: 1,
+            }),
+        ]);
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('机里耐步兵：本次野战中进攻明军的攻方每个步兵部队额外掷 1 颗骰');
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4/4/4/4=16/守4=4');
+        expect(infantryStage?.attackerRolls).toHaveLength(4);
+        expect(infantryStage?.attackerRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]));
+        expect(infantryStage?.defenderRolls).toHaveLength(1);
+    });
+
     it('结构化攻方可选择低级部队优先承伤以保留精锐木块', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.pendingTargetAction = {
