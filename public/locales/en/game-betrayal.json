@@ -288,6 +288,7 @@
         "setupRuntime": "The next steps jump into a real pre-haunt runtime state for the first scenario.",
         "useBook": "Use the book first. The held item is already selected; the magnifier on the card only opens the large preview.",
         "useRope": "Use the rope first. It grants extra movement so you can keep the room exploration going.",
+        "openMoveTargets": "Now choose Move. The move button highlights real reachable rooms, not tutorial overlays.",
         "moveToHallway": "Now move to the Hallway. Green targets are real reachable rooms, not tutorial overlays.",
         "moveToGrandStaircase": "Now move to the Grand Staircase. Green targets are real reachable rooms, not tutorial overlays.",
         "exploreUpper": "Then use Explore to reveal the next room. Exploration really triggers an event, item, or omen.",

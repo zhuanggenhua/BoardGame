@@ -144,6 +144,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await saveScreenshot(page, STEP_09);
 
         await page.getByTestId('betrayal-action-use').click();
+        await waitForStep(page, 'open-move-targets');
+        await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
+        await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
+        await page.getByTestId('betrayal-action-move').click();
         await waitForStep(page, 'move-to-hallway');
         await expect(page.getByTestId('betrayal-room-move-target-hallway')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();

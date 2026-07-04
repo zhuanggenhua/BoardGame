@@ -3146,10 +3146,10 @@
     },
     "poison-blade-2": {
       "name": "Poison Blade II",
-      "description": "Small Straight: roll 1 die; Ninja Blade inflicts 1 Delayed Poison, Shuriken or Mask inflicts 2 Delayed Poison, then deal 9 damage.",
+      "description": "Small Straight: roll 1 die; Ninja Blade inflicts 1 Delayed Poison, Shuriken or Mask inflicts 2 Delayed Poison, then deal 5 damage.",
       "effects": {
         "roll1DieApplyPoison": "Roll 1 die; Ninja Blade inflicts 1 Delayed Poison; Shuriken or Mask inflicts 2 Delayed Poison",
-        "damage9": "Deal 9 damage"
+        "damage5": "Deal 5 damage"
       }
     },
     "shadow-step": {
@@ -4999,7 +4999,7 @@
     },
     "upgrade-poison-blade-2": {
       "name": "Poison Blade II",
-      "description": "Upgrade Poison Blade: Small Straight rolls 1 die; Ninja Blade inflicts 1 Delayed Poison, Shuriken or Mask inflicts 2 Delayed Poison, then deal 9 damage."
+      "description": "Upgrade Poison Blade: Small Straight rolls 1 die; Ninja Blade inflicts 1 Delayed Poison, Shuriken or Mask inflicts 2 Delayed Poison, then deal 5 damage."
     },
     "upgrade-death-blossom-2": {
       "name": "Death Blossom II",

@@ -103,6 +103,103 @@ const buildCavalryFirearmBattleCore = (): QidahenCore => {
     };
 };
 
+const buildArtilleryTechBattleCore = (): QidahenCore => {
+    const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
+    return {
+        ...core,
+        factions: {
+            ...core.factions,
+            ming: {
+                ...core.factions.ming,
+                armaments: core.factions.ming.armaments.map((armament) => (
+                    armament.id === 'artillery-tech'
+                        ? { ...armament, level: 1 }
+                        : armament
+                )),
+                characters: core.factions.ming.characters.map((character) => (
+                    character.id === 'ming-sun-yuanhua' || character.id === 'ming-yuan-chonghuan'
+                        ? { ...character, inPlay: false }
+                        : character
+                )),
+            },
+            jin: {
+                ...core.factions.jin,
+                characters: core.factions.jin.characters.map((character) => (
+                    character.id === 'jin-nurhaci' || character.id === 'jin-eidu'
+                        ? { ...character, inPlay: false }
+                        : character
+                )),
+            },
+        },
+        pendingTargetAction: {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 火炮技术',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        },
+        regions: core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-artillery-lv2',
+                            label: '大明炮兵',
+                            faction: 'ming',
+                            troopKind: 'artillery',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        }),
+    };
+};
+
 const buildWesternBastionBattleCore = (): QidahenCore => {
     const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
     return {
@@ -293,6 +390,28 @@ const buildLinkedMusketsBattleCore = (): QidahenCore => {
 };
 
 describe('七大恨战斗军备效果', () => {
+    it('火炮技术升级后会让每个炮兵额外掷 1 颗骰', () => {
+        const core = buildArtilleryTechBattleCore();
+        const rolls = createQidahenStructuredBattleRolls(
+            core,
+            core.pendingTargetAction!,
+            testRandom,
+            {
+                defenderHoldCity: false,
+                defenderSortieBattle: false,
+                defenderCavalryEvasion: false,
+                attackerCavalryPlunder: false,
+            },
+        );
+        const artilleryStage = rolls?.stages.find((stage) => stage.phase === 'artillery');
+
+        expect(rolls?.summary).toContain('炮兵 攻4/4/4/4=16/守-=0');
+        expect(artilleryStage?.attackerRolls).toHaveLength(4);
+        expect(artilleryStage?.attackerRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'artillery', level: 2, dieSides: 8 }),
+        ]));
+    });
+
     it('骑兵火器升级后会让野战骑兵阶段每个骑兵额外掷 1 颗骰', () => {
         const core = buildCavalryFirearmBattleCore();
         const rolls = createQidahenStructuredBattleRolls(

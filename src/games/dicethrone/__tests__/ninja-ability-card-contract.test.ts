@@ -105,8 +105,8 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(en.abilities['shadow-fang-2'].description).not.toContain('deal 9 damage');
         expect(en.cards['upgrade-shadow-fang-2'].description).not.toBe('Upgrade Shadow Fang.');
 
-        expect(en.abilities['poison-blade-2'].description).toContain('deal 9 damage');
-        expect(en.cards['upgrade-poison-blade-2'].description).toContain('deal 9 damage');
+        expect(en.abilities['poison-blade-2'].description).toContain('deal 5 damage');
+        expect(en.cards['upgrade-poison-blade-2'].description).toContain('deal 5 damage');
 
         expect(en.abilities['death-blossom-2'].description).toContain('reroll up to 2 dice');
         expect(en.abilities['death-blossom-2'].description).toContain('undefendable');
@@ -1106,7 +1106,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.pendingDamage).toBeUndefined();
     });
 
-    it('毒刃 II 在奖励骰投出忍刀时应完成 1 个慢性中毒 + 9 点伤害的完整攻击收口', () => {
+    it('毒刃 II 在奖励骰投出忍刀时应完成 1 个慢性中毒 + 5 点伤害的完整攻击收口', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
         state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
@@ -1130,10 +1130,10 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(events.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toBe(true);
         expect(events.some(event => event.type === 'ATTACK_RESOLVED')).toBe(true);
         expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(21);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
     });
 
-    it('毒刃 II 在奖励骰投出手里剑或面具时应完成 2 个慢性中毒 + 9 点伤害的完整攻击收口', () => {
+    it('毒刃 II 在奖励骰投出手里剑或面具时应完成 2 个慢性中毒 + 5 点伤害的完整攻击收口', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
         state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
@@ -1157,7 +1157,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(events.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toBe(true);
         expect(events.some(event => event.type === 'ATTACK_RESOLVED')).toBe(true);
         expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(2);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(21);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
     });
 
     it('死亡盛放 II 应通过共享奖励骰链限制为至多重掷 2 次，并在双面具时施加慢性中毒且改成不可防御', () => {

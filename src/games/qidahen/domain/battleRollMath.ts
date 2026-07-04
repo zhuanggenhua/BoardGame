@@ -130,6 +130,9 @@ const getBattleRollArmamentDiceCountBonus = (
     if (!unit.structured || !unit.factionId) {
         return 0;
     }
+    if (phase === 'artillery' && unit.troopKind === 'artillery') {
+        return getArmamentLevel(state, unit.factionId, 'artillery-tech') > 0 ? 1 : 0;
+    }
     if (!cityBattle && phase === 'cavalry' && unit.troopKind === 'cavalry') {
         return getArmamentLevel(state, unit.factionId, 'cavalry-firearm') > 0 ? 1 : 0;
     }

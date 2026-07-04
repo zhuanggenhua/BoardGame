@@ -42,6 +42,8 @@ describe('Betrayal 教程配置', () => {
             'move-to-hallway',
             'explore-upper',
         ]);
+        expect(manifest?.steps.map((step) => step.id)).toContain('open-move-targets');
+        expect(manifest?.steps.find((step) => step.id === 'open-move-targets')?.highlightTarget).toBe('betrayal-action-move');
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
             ['USE_POSSESSION'],
             ['MOVE_TO_ROOM'],

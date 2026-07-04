@@ -11783,7 +11783,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.actionLog.map((entry) => entry.text).join(' | ')).not.toContain('炮兵 攻4->6=6/守-=0');
     });
 
-    it('孙元化与袁崇焕同时在场时会让大明炮兵战斗掷骰点数加 2', () => {
+    it('孙元化与袁崇焕同时在场时会让大明每颗炮兵战斗骰点数加 2', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.pendingTargetAction = {
             actionId: 'raid',
@@ -11874,8 +11874,8 @@ describe('七大恨支付手牌选择', () => {
             payload: {},
         });
 
-        expect(resolved.actionLog.map((entry) => entry.text).join(' | ')).toContain('炮兵 攻4->6=6/守-=0');
-        expect(resolved.actionLog.map((entry) => entry.text).join(' | ')).toContain('攻方造成 3 损伤');
+        expect(resolved.actionLog.map((entry) => entry.text).join(' | ')).toContain('炮兵 攻4->6/4->6=12/守-=0');
+        expect(resolved.actionLog.map((entry) => entry.text).join(' | ')).toContain('攻方造成 5 损伤');
     });
 
     it('待结算进攻可选择少投入部队并按选择数量进入战后处理', () => {

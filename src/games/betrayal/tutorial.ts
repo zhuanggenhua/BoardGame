@@ -111,6 +111,13 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
             viewAs: '0',
         },
         {
+            id: 'open-move-targets',
+            content: 'game-betrayal:tutorial.moveExploreUse.steps.openMoveTargets',
+            highlightTarget: 'betrayal-action-move',
+            position: 'top',
+            viewAs: '0',
+        },
+        {
             id: 'move-to-hallway',
             content: 'game-betrayal:tutorial.moveExploreUse.steps.moveToHallway',
             highlightTarget: 'betrayal-room-move-target-hallway',
