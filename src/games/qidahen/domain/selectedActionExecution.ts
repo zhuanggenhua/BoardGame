@@ -35,6 +35,8 @@ type QidahenPreparedSelectedActionResult =
         currentFactionId: QidahenFactionId;
         nextFactions: QidahenCore['factions'];
         paidHandCards: QidahenCore['handCards'];
+        selectedEventActionCardLabel: string | null;
+        selectedEventActionRulesSummary: string | null;
         selectedHandActionCardLabel: string | null;
         selectedPaymentResourceLabels: string[];
         selectedArmamentId: QidahenArmamentId | null;
@@ -126,6 +128,8 @@ export const executeQidahenSelectedAction = (
         currentFactionId,
         nextFactions: preparedFactions,
         paidHandCards,
+        selectedEventActionCardLabel,
+        selectedEventActionRulesSummary,
         selectedHandActionCardLabel,
         selectedPaymentResourceLabels,
         selectedArmamentId,
@@ -147,6 +151,8 @@ export const executeQidahenSelectedAction = (
         currentFactionId,
         actionId,
         actionLabel,
+        selectedEventActionCardLabel,
+        selectedEventActionRulesSummary,
         spentCardCount,
         selectedPaymentResourceLabels,
         timestamp,

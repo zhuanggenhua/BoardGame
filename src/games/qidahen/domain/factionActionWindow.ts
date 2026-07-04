@@ -20,6 +20,13 @@ const upgradeArmamentActionChoice: QidahenActionChoice = {
     detail: '弃 1 张手牌，选择一项已开发军备进行升级。',
 };
 
+const playEventCardActionChoice: QidahenActionChoice = {
+    id: 'play-event-card',
+    label: '执行事件',
+    cost: 1,
+    detail: '打出 1 张已确认事件牌，并记录该事件牌的规则摘要；完整事件效果仍需逐张实现。',
+};
+
 const defaultActionIdByFaction: Record<QidahenFactionId, string> = {
     ming: 'grant-pardon',
     mongol: 'khan-edict',
@@ -58,7 +65,7 @@ export const getActionChoicesForFaction = (factionId: QidahenFactionId): Qidahen
 );
 
 export const getActionChoiceById = (actionId: string): QidahenActionChoice | undefined => (
-    [upgradeArmamentActionChoice, ...factionOrder.flatMap((factionId) => actionChoiceCatalog[factionId])]
+    [upgradeArmamentActionChoice, playEventCardActionChoice, ...factionOrder.flatMap((factionId) => actionChoiceCatalog[factionId])]
         .find((choice) => choice.id === actionId)
 );
 

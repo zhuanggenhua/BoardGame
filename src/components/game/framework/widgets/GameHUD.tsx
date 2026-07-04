@@ -181,7 +181,10 @@ export const GameHUD = ({
 
     const locale = i18n.language;
     const { stack, openModal, closeModal, closeTop } = useModalStack();
-    const { unreadTotal, requests, ensureRealtimeConnection } = useOptionalSocial();
+    const optionalSocial = useOptionalSocial();
+    const unreadTotal = optionalSocial?.unreadTotal ?? 0;
+    const requests = optionalSocial?.requests ?? [];
+    const ensureRealtimeConnection = optionalSocial?.ensureRealtimeConnection ?? (() => undefined);
     const [copied, setCopied] = useState(false);
     const [isForceEndingAiPhase, setIsForceEndingAiPhase] = useState(false);
     const [isForceDismissingPopup, setIsForceDismissingPopup] = useState(false);

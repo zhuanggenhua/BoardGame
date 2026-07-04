@@ -1884,8 +1884,13 @@ test.describe('Lobby E2E', () => {
             const entryScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-entry-visible');
             await page.screenshot({ path: entryScreenshotPath, fullPage: true });
 
-            await packageToggle.click();
             const confirmModal = page.getByTestId('game-details-mobile-package-install-confirm-modal');
+            await packageToggle.click();
+            const packageCard = page.getByTestId('game-details-mobile-package-card');
+            await expect(packageCard).toBeVisible({ timeout: 10000 });
+            await expect(packageCard).toHaveAttribute('data-status', 'not-installed', { timeout: 10000 });
+            await expect(packageCard).toContainText(/安装游戏包|Install Pack/, { timeout: 10000 });
+            await packageCard.getByRole('button', { name: /安装游戏包|Install Pack/ }).click();
             await expect(confirmModal).toBeVisible({ timeout: 10000 });
             await expect(confirmModal).toContainText('下载');
             await expect(confirmModal).toContainText('tictactoe-assets-e2e', { timeout: 10000 });
@@ -1900,24 +1905,23 @@ test.describe('Lobby E2E', () => {
             const downloadingScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-downloading');
             await page.screenshot({ path: downloadingScreenshotPath, fullPage: true });
 
-            const installedCard = page.getByTestId('game-details-mobile-package-card');
-            await expect(installedCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
-            await expect(installedCard).toContainText(/e2e-2026-05-25-assets|同步完成|Sync complete/, { timeout: 10000 });
+            await expect(packageCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
+            await expect(packageCard).toContainText(/e2e-2026-05-25-assets|同步完成|Sync complete/, { timeout: 10000 });
             await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toContainText('e2e-2026-05-25-assets');
             await page.waitForTimeout(250);
             const installedScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed');
             await page.screenshot({ path: installedScreenshotPath, fullPage: true });
 
             await page.getByTestId('game-details-mobile-package-card-dismiss').click();
-            await expect(installedCard).toHaveCount(0);
+            await expect(packageCard).toHaveCount(0);
             await expect(packageToggle).toBeVisible({ timeout: 10000 });
             await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toContainText('e2e-2026-05-25-assets');
             const installedToggleScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed-toggle-visible');
             await page.screenshot({ path: installedToggleScreenshotPath, fullPage: true });
 
             await packageToggle.click();
-            await expect(installedCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
-            await expect(installedCard).toContainText('卸载素材包', { timeout: 10000 });
+            await expect(packageCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
+            await expect(packageCard).toContainText('卸载素材包', { timeout: 10000 });
             const uninstallScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed-uninstall-expanded');
             await page.screenshot({ path: uninstallScreenshotPath, fullPage: true });
         } finally {

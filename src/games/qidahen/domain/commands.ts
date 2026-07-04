@@ -144,6 +144,7 @@ const isValidQidahenDirectHandActionSource = (
 
 const requiresQidahenDirectHandActionSource = (actionId: string): boolean => (
     actionId === 'upgrade-armament'
+    || actionId === 'play-event-card'
 );
 
 const isQidahenTacticCardPlayableForPendingBattle = (

@@ -69,6 +69,7 @@ const buildQidahenSelectedActionFollowUpLogText = (
     state: QidahenCore,
     currentFactionName: string,
     actionLabel: string,
+    selectedEventActionCardLabel: string | null,
     spentCardCount: number,
     selectedPaymentResourceLabels: readonly string[],
     resolution: QidahenSelectedActionFollowUpResolutionResult,
@@ -97,6 +98,9 @@ const buildQidahenSelectedActionFollowUpLogText = (
     }
     if (resolution.lastSeasonSummary?.lines[0]) {
         return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}。${resolution.lastSeasonSummary.lines[0]}`;
+    }
+    if (selectedEventActionCardLabel) {
+        return `${currentFactionName} 执行 ${actionLabel}「${selectedEventActionCardLabel}」，弃 ${spentCardCount} 张牌${paymentResourceText}。`;
     }
     return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}。`;
 };
@@ -195,6 +199,8 @@ export const resolveQidahenSelectedActionFollowUp = (
     currentFactionId: QidahenFactionId,
     actionId: string,
     actionLabel: string,
+    selectedEventActionCardLabel: string | null,
+    selectedEventActionRulesSummary: string | null,
     spentCardCount: number,
     selectedPaymentResourceLabels: readonly string[],
     timestamp: number,
@@ -217,10 +223,19 @@ export const resolveQidahenSelectedActionFollowUp = (
         actionId,
         selectionResolution.selectedRegionId,
     );
+    const eventActionSummary = actionId === 'play-event-card' && selectedEventActionCardLabel
+        ? dependencies.buildSeasonSummary('执行事件', timestamp, [
+            `打出事件牌：${selectedEventActionCardLabel}。`,
+            selectedEventActionRulesSummary
+                ? `规则摘要：${selectedEventActionRulesSummary}`
+                : '规则摘要：当前事件牌没有可追溯摘要。',
+            '完整事件效果仍待逐张实现，本次只完成正式打出入口和审计记录。',
+        ])
+        : null;
     const resolution: QidahenSelectedActionFollowUpResolutionResult = {
         driveTigerDispatchSelection: selectionResolution.driveTigerDispatchSelection,
         khanEdictSelection: selectionResolution.khanEdictSelection,
-        lastSeasonSummary: selectionResolution.lastSeasonSummary,
+        lastSeasonSummary: eventActionSummary ?? selectionResolution.lastSeasonSummary,
         maShiTradeSelection: selectionResolution.maShiTradeSelection,
         pendingTargetAction: pendingResolution.pendingTargetAction,
         recruitSelection: selectionResolution.recruitSelection,
@@ -230,6 +245,7 @@ export const resolveQidahenSelectedActionFollowUp = (
         state,
         state.factions[currentFactionId].name,
         actionLabel,
+        selectedEventActionCardLabel,
         spentCardCount,
         selectedPaymentResourceLabels,
         resolution,

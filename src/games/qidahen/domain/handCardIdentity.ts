@@ -118,6 +118,9 @@ export const getQidahenDirectActionIdForHandCard = (
     if (card.cardKind === 'event' && card.cardDefId?.includes('khan-edict')) {
         return 'khan-edict';
     }
+    if (card.cardKind === 'event' && card.cardDefId) {
+        return 'play-event-card';
+    }
     return null;
 };
 

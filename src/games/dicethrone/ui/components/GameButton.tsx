@@ -56,10 +56,14 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
         : clickSoundKey;
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        if (!disabled && resolvedClickSoundKey) {
-            playSound(resolvedClickSoundKey);
-        }
         onClick?.(event);
+        if (!disabled && resolvedClickSoundKey) {
+            try {
+                playSound(resolvedClickSoundKey);
+            } catch {
+                // 音效失败不应阻断按钮的真实游戏动作。
+            }
+        }
     };
 
     return (

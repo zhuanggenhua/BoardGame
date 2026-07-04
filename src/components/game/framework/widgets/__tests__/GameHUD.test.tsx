@@ -39,6 +39,13 @@ vi.mock('../../../../../services/matchSocket', () => ({
         on: vi.fn(),
         off: vi.fn(),
         emit: vi.fn(),
+        joinChat: vi.fn(),
+        leaveChat: vi.fn(),
+        subscribeChat: vi.fn(() => vi.fn()),
+        subscribeChatHistory: vi.fn(() => vi.fn()),
+        joinEmotes: vi.fn(),
+        leaveEmotes: vi.fn(),
+        subscribeEmote: vi.fn(() => vi.fn()),
     },
 }));
 

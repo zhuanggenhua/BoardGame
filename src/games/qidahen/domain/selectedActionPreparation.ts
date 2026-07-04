@@ -33,6 +33,8 @@ interface QidahenSelectedActionPreparedState {
     currentFactionId: ReturnType<typeof getFactionIdByPlayerId>;
     nextFactions: QidahenCore['factions'];
     paidHandCards: QidahenCore['handCards'];
+    selectedEventActionCardLabel: string | null;
+    selectedEventActionRulesSummary: string | null;
     selectedHandActionCardLabel: string | null;
     selectedPaymentResourceLabels: string[];
     selectedArmamentId: QidahenArmamentId | null;
@@ -70,6 +72,13 @@ export function prepareQidahenSelectedAction(
     const selectedCardIds = new Set(spentCardIds);
     const spentCardCount = spentCardIds.length;
     const selectedArmamentId = dependencies.resolveSelectedArmamentIdFromCards(state.handCards, spentCardIds);
+    const selectedEventActionCard = actionId === 'play-event-card'
+        ? state.handCards.find((card) => (
+            spentCardIds.includes(card.id)
+            && card.cardKind === 'event'
+            && card.cardDefId != null
+        )) ?? null
+        : null;
     const selectedHandActionCardLabel = actionId === 'upgrade-armament'
         ? state.handCards.find((card) => (
             spentCardIds.includes(card.id)
@@ -122,6 +131,8 @@ export function prepareQidahenSelectedAction(
             },
         },
         paidHandCards: state.handCards.filter((card) => !selectedCardIds.has(card.id)),
+        selectedEventActionCardLabel: selectedEventActionCard?.label ?? null,
+        selectedEventActionRulesSummary: selectedEventActionCard?.rulesSummary ?? null,
         selectedHandActionCardLabel,
         selectedPaymentResourceLabels,
         selectedArmamentId,

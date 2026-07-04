@@ -357,7 +357,7 @@ describe('七大恨支付手牌选择', () => {
             cardDefId: 'qidahen-atlas05-1600-counter-spy-plot',
             previewKind: 'unknown',
         });
-        expect(getQidahenDirectActionIdForHandCard(eventCard!)).toBeNull();
+        expect(getQidahenDirectActionIdForHandCard(eventCard!)).toBe('play-event-card');
 
         const sevenGrievancesCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(9);
         expect(sevenGrievancesCard).toMatchObject({
@@ -367,7 +367,7 @@ describe('七大恨支付手牌选择', () => {
             previewKind: 'unknown',
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1609-seven-grievances'],
         });
-        expect(getQidahenDirectActionIdForHandCard(sevenGrievancesCard!)).toBeNull();
+        expect(getQidahenDirectActionIdForHandCard(sevenGrievancesCard!)).toBe('play-event-card');
 
         const armamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(3);
         expect(armamentCard).toMatchObject({
@@ -861,6 +861,64 @@ describe('七大恨支付手牌选择', () => {
 
             expect(executed.factions.ming.armaments.find((armament) => armament.id === identity.armamentId)?.level).toBe(2);
             expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(identity.displayName);
+        }
+    });
+
+    it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件记录层', () => {
+        const eventIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .filter((identity) => identity.cardKind === 'event');
+        expect(eventIdentities.length).toBeGreaterThan(0);
+
+        for (const identity of eventIdentities) {
+            const core = QidahenDomain.setup(['0', '1', '2'], random);
+            const [sourceCard] = factionHandCards(core, 'ming');
+            expect(sourceCard).toBeDefined();
+            const mappedCore: QidahenCore = {
+                ...core,
+                handCards: core.handCards.map((card) => (
+                    card.id === sourceCard.id
+                        ? {
+                            ...card,
+                            label: identity.displayName,
+                            cardKind: identity.cardKind,
+                            armamentId: identity.armamentId,
+                            cardDefId: identity.cardDefId,
+                            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+                        }
+                        : card
+                )),
+            };
+            const mappedSourceCard = mappedCore.handCards.find((card) => card.id === sourceCard.id)!;
+
+            expect(getQidahenDirectActionIdForHandCard(mappedSourceCard)).toBe('play-event-card');
+
+            const previewed = apply(mappedCore, {
+                type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+                playerId: '0',
+                payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+            });
+            expect(previewed.selectedHandActionCardId).toBe(sourceCard.id);
+            expect(previewed.selectedPaymentCardIds).toEqual([sourceCard.id]);
+            expect(previewed.payment).toMatchObject({
+                required: 1,
+                selected: 1,
+                prompt: '需弃 1 / 已选 1',
+            });
+
+            const executed = apply(previewed, {
+                type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+                playerId: '0',
+                payload: {},
+            });
+
+            expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+            expect(executed.discardPileCount).toBe(core.discardPileCount + 1);
+            expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+            expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(`打出事件牌：${identity.displayName}`);
+            expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(
+                QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+            );
+            expect(executed.actionLog[0]?.text).toContain(`执行事件「${identity.displayName}」`);
         }
     });
 

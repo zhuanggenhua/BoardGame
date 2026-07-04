@@ -52,9 +52,6 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                     <h2 className="mt-2 font-serif text-3xl font-bold text-[#433422]">
                         {tLobby('matchRoom.tutorialCatalog.title')}
                     </h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6f5d45]">
-                        {tLobby('matchRoom.tutorialCatalog.description')}
-                    </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                     {entries.map(([tutorialId, entry], index) => {

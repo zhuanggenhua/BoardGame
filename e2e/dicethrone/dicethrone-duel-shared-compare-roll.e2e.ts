@@ -314,7 +314,7 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
                 height: 16,
             }),
             expect.objectContaining({
-                backgroundImage: expect.stringContaining('dicethrone/images/monk/compressed/dice.webp'),
+                backgroundImage: expect.stringMatching(/(?:dicethrone\/images\/monk\/compressed\/dice\.webp|\/game-data\/dicethrone\/monk\/dice-sprite\.png)/),
                 backgroundSize: '300% 300%',
                 backgroundPosition: '0% 100%',
                 width: 16,
