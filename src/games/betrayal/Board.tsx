@@ -104,9 +104,6 @@ const ROOM_TILE_STEP_Y = 184;
 const ROOM_CANVAS_PADDING = 8;
 const ROOM_CANVAS_MIN_WIDTH = 780;
 const ROOM_CANVAS_MIN_HEIGHT = 560;
-const ACTION_BUTTON_MAP_OFFSET_X = 43;
-const ACTION_BUTTON_MAP_STEP_X = 74;
-const ACTION_BUTTON_MAP_OFFSET_Y = ROOM_CANVAS_PADDING + (3 * ROOM_TILE_STEP_Y) + ROOM_TILE_SIZE - 98;
 
 const EXPLORER_BOARD_MARKER_RANGE: Record<BetrayalTraitKey, { from: { x: number; y: number }; to: { x: number; y: number } }> = {
     might: { from: { x: 14.5, y: 44.5 }, to: { x: 35.5, y: 23.5 } },
@@ -4033,30 +4030,28 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     );
                                     })}
                                 </div>
-                                {visibleActionItems.length > 0 ? (
-                                    <>
-                                        {core.recommendedAction === 'trade' ? (
-                                            <div
-                                                data-testid="betrayal-trade-flow-banner"
-                                                className="pointer-events-none absolute left-1/2 top-0 z-40 flex -translate-x-1/2 items-center gap-2 rounded-none border-0 bg-transparent px-0 py-0 text-[13px] font-semibold tracking-[0.06em] text-[#f3e0a6]"
-                                                style={{
-                                                    transform: `translate(-50%, ${ACTION_BUTTON_MAP_OFFSET_Y - 24}px)`,
-                                                    textShadow: '0 1px 2px rgba(0,0,0,0.85), 0 0 12px rgba(238,204,126,0.36)',
-                                                }}
+                            </div>
+                            {visibleActionItems.length > 0 ? (
+                                <div className="pointer-events-none absolute inset-x-0 bottom-2 z-50 hidden flex-col items-center justify-end gap-1 md:flex">
+                                    {core.recommendedAction === 'trade' ? (
+                                        <div
+                                            data-testid="betrayal-trade-flow-banner"
+                                            className="pointer-events-none flex items-center gap-2 rounded-none border-0 bg-transparent px-0 py-0 text-[13px] font-semibold tracking-[0.06em] text-[#f3e0a6]"
+                                            style={{
+                                                textShadow: '0 1px 2px rgba(0,0,0,0.85), 0 0 12px rgba(238,204,126,0.36)',
+                                            }}
+                                        >
+                                            <span data-testid="betrayal-trade-flow-item-step">{tradeInstructionText}</span>
+                                            <span
+                                                data-testid="betrayal-trade-flow-target-step"
+                                                className={tradeSelectionReady ? 'text-[#f6ffc4]' : 'text-[#d6c498]'}
                                             >
-                                                <span data-testid="betrayal-trade-flow-item-step">{tradeInstructionText}</span>
-                                                <span
-                                                    data-testid="betrayal-trade-flow-target-step"
-                                                    className={tradeSelectionReady ? 'text-[#f6ffc4]' : 'text-[#d6c498]'}
-                                                >
-                                                    {tradeSelectionReady ? t('board.status.tradeFlowConfirm') : t('board.status.tradeFlowChoose')}
-                                                </span>
-                                            </div>
-                                        ) : null}
+                                                {tradeSelectionReady ? t('board.status.tradeFlowConfirm') : t('board.status.tradeFlowChoose')}
+                                            </span>
+                                        </div>
+                                    ) : null}
+                                    <div className="pointer-events-auto flex items-end justify-center gap-5">
                                         {visibleActionItems.map((action) => {
-                                            const buttonIndex = visibleActionItems.findIndex((item) => item.id === action.id);
-                                            const totalButtons = Math.max(visibleActionItems.length, 1);
-                                            const centerOffset = ACTION_BUTTON_MAP_OFFSET_X + ((buttonIndex - ((totalButtons - 1) / 2)) * ACTION_BUTTON_MAP_STEP_X);
                                             const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
                                             const isRecommended = action.id === core.recommendedAction
                                                 || (previewState.interactionMode === 'move' && action.id === 'move');
@@ -4078,7 +4073,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     data-testid={`betrayal-action-${action.id}`}
                                                     data-tutorial-id={`betrayal-action-${action.id}`}
                                                     title={actionCueText}
-                                                    className={`pointer-events-auto absolute left-1/2 top-0 z-40 flex min-h-[72px] min-w-[80px] flex-col items-center justify-center gap-1 rounded-[5px] border-0 bg-transparent px-1.5 py-2 text-[13px] font-bold uppercase tracking-[0.08em] shadow-none transition ${
+                                                    className={`flex min-h-[72px] min-w-[80px] flex-col items-center justify-center gap-1 rounded-[5px] border-0 bg-transparent px-1.5 py-2 text-[13px] font-bold uppercase tracking-[0.08em] shadow-none transition ${
                                                         action.disabled
                                                             ? 'cursor-not-allowed text-[#5f584d] opacity-55'
                                                             : isRecommended
@@ -4086,7 +4081,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                 : 'text-[#ead8a8] hover:text-[#fff0ba]'
                                                     }`}
                                                     style={{
-                                                        transform: `translate(calc(-50% + ${centerOffset}px), ${ACTION_BUTTON_MAP_OFFSET_Y}px)`,
                                                         backgroundColor: 'transparent',
                                                         backgroundImage: 'none',
                                                         border: 0,
@@ -4103,9 +4097,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 </button>
                                             );
                                         })}
-                                    </>
-                                ) : null}
-                            </div>
+                                    </div>
+                                </div>
+                            ) : null}
                         </article>
 
                     </section>

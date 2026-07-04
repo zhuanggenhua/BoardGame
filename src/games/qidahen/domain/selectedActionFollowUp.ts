@@ -96,11 +96,12 @@ const buildQidahenSelectedActionFollowUpLogText = (
     if (resolution.pendingTargetAction) {
         return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}，进入 ${resolution.pendingTargetAction.title}（${resolution.pendingTargetAction.resolutionHint}）。`;
     }
+    if (selectedEventActionCardLabel) {
+        const eventSummaryText = resolution.lastSeasonSummary?.lines[0] ?? '';
+        return `${currentFactionName} 执行 ${actionLabel}「${selectedEventActionCardLabel}」，弃 ${spentCardCount} 张牌${paymentResourceText}。${eventSummaryText}`;
+    }
     if (resolution.lastSeasonSummary?.lines[0]) {
         return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}。${resolution.lastSeasonSummary.lines[0]}`;
-    }
-    if (selectedEventActionCardLabel) {
-        return `${currentFactionName} 执行 ${actionLabel}「${selectedEventActionCardLabel}」，弃 ${spentCardCount} 张牌${paymentResourceText}。`;
     }
     return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}。`;
 };

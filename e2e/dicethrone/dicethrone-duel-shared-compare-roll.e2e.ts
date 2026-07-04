@@ -55,6 +55,10 @@ const dispatchHarnessCommand = async (
     playerId: string,
     payload: Record<string, unknown> = {},
 ) => {
+    await page.waitForFunction(
+        () => (window as any).__BG_TEST_HARNESS__?.command?.isRegistered?.() === true,
+        { timeout: 15000 },
+    );
     await page.evaluate(async ({ commandType, commandPlayerId, commandPayload }) => {
         await (window as any).__BG_TEST_HARNESS__!.command.dispatch({
             type: commandType,
