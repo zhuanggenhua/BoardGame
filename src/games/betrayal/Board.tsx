@@ -3929,12 +3929,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 <span
                                                     data-testid={`betrayal-room-marker-${room.id}-secret-passage`}
                                                     className="pointer-events-none absolute bottom-2 left-9 z-20 grid h-6 w-6 place-items-center rounded-full border border-[#71b7aa] bg-[rgba(7,22,20,0.84)] shadow-[0_0_12px_rgba(113,183,170,0.42)]"
-                                                    title="秘密通道"
+                                                    title={t('board.rooms.secretPassage')}
                                                 >
                                                     <OptimizedImage
                                                         src={ASSETS.marker.portal}
                                                         locale={effectiveLocale}
-                                                        alt="秘密通道"
+                                                        alt={t('board.rooms.secretPassage')}
                                                         className="h-5 w-5 object-contain"
                                                         draggable={false}
                                                     />

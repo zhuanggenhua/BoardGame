@@ -1104,7 +1104,7 @@ test.describe('DiceThrone hand card preview regression', () => {
     }
   });
 
-  test('老派系旧面板升级后点击卡图物理槽应触发正确技能', async ({ page, game }) => {
+  test('老派系升级后点击新面板卡图物理槽应触发正确技能', async ({ page, game }) => {
     test.setTimeout(180000);
     const evidenceDir = ensureEvidenceDir();
 
@@ -1122,7 +1122,7 @@ test.describe('DiceThrone hand card preview regression', () => {
     const characterId = stateAfterUpgrade?.core?.selectedCharacters?.['0'];
     const playerBoardFace = stateAfterUpgrade?.core?.players?.['0']?.playerBoardFace;
     const slotId = await resolveAbilitySlotId(page, 'fist-technique', { characterId, playerBoardFace });
-    expect(slotId, '僧侣拳法应落在旧面板 calm 物理槽').toBe('calm');
+    expect(slotId, '僧侣拳法应落在 v2 面板重新录入的 calm 物理槽').toBe('calm');
 
     await injectOffensiveRollDice(page, game, [1, 1, 1, 1, 1], '0', 'monk-dice');
     await clickCurrentPlayerAbilitySlot(page, game, 'fist-technique');

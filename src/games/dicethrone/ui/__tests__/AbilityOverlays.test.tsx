@@ -180,7 +180,7 @@ describe('AbilityOverlays', () => {
         expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.94)');
     });
 
-    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应落在同一物理槽位', () => {
+    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应按重新录入的技能槽位同源', () => {
         const cases = [
             {
                 characterId: 'monk',
@@ -276,16 +276,16 @@ describe('AbilityOverlays', () => {
         }
     });
 
-    it('旧英雄 v2 玩家面板应使用旧英雄横向技能槽坐标，不复用新英雄分栏坐标', () => {
-        expect(getPlayerBoardLayoutVersion('pyromancer')).toBe('v2OldHero');
+    it('旧英雄 v2 玩家面板应复用新英雄分栏坐标，只通过技能槽录入区分技能位置', () => {
+        expect(getPlayerBoardLayoutVersion('pyromancer')).toBe('v2');
         expect(getPlayerBoardLayoutVersion('gunslinger')).toBe('v2');
 
         const oldHeroSlots = getAbilitySlotLayoutForCharacter('pyromancer');
         const fireballSlot = oldHeroSlots.find(slot => slot.id === 'combo');
-        expect(fireballSlot).toMatchObject({ x: 0.70, y: 42.05, w: 20.70, h: 38.44 });
+        expect(fireballSlot).toMatchObject({ x: 67.67, y: 21.41, w: 16.02, h: 38.33 });
 
         const rightTopSlot = oldHeroSlots.find(slot => slot.id === 'sky');
-        expect(rightTopSlot).toMatchObject({ x: 55.50, y: 1.28, w: 20.70, h: 39.11 });
+        expect(rightTopSlot).toMatchObject({ x: 0.57, y: 59.55, w: 15.54, h: 38.57 });
     });
 
     it('Ninja v2 中间两列应把 shadow-step / smoke-screen 落到正确视觉槽位', () => {
