@@ -396,9 +396,9 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // 聚宝盆 I（新版：抽Card面数量牌+Shadow弃牌）
+    // 聚宝盆 I（新版：只抽Card面数量牌，Shadow不弃牌）
     // ========================================================================
-    describe('shadow_thief-cornucopia (聚宝盆I：抽Card面数量牌+Shadow弃牌)', () => {
+    describe('shadow_thief-cornucopia (聚宝盆I：抽Card面数量牌)', () => {
         it('2个Card面抽2牌', () => {
             const dice = [5, 5, 1, 2, 3].map(v => createShadowDie(v)); // 2 card
             const state = createState({ dice });
@@ -422,7 +422,7 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(2);
         });
 
-        it('有Shadow面时弃对手1牌', () => {
+        it('有Shadow面时也不弃对手牌', () => {
             const dice = [5, 5, 6, 1, 2].map(v => createShadowDie(v)); // 2 card + 1 shadow
             const state = createState({ dice, defenderHand: [{ id: 'h1' }, { id: 'h2' }] });
             const handler = getCustomActionHandler('shadow_thief-cornucopia')!;
@@ -431,7 +431,7 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             }));
 
             expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(2);
-            expect(eventsOfType(events, 'CARD_DISCARDED')).toHaveLength(1);
+            expect(eventsOfType(events, 'CARD_DISCARDED')).toHaveLength(0);
         });
 
         it('无Shadow面时不弃牌', () => {
@@ -446,9 +446,9 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             expect(eventsOfType(events, 'CARD_DISCARDED')).toHaveLength(0);
         });
 
-        it('对手手牌为空时有Shadow也不弃牌', () => {
+        it('对手有手牌时仍不会因为Shadow弃牌', () => {
             const dice = [5, 5, 6, 1, 2].map(v => createShadowDie(v)); // 2 card + 1 shadow
-            const state = createState({ dice, defenderHand: [] });
+            const state = createState({ dice, defenderHand: [{ id: 'h1' }] });
             const handler = getCustomActionHandler('shadow_thief-cornucopia')!;
             const events = handler(buildCtx(state, 'shadow_thief-cornucopia', {
                 random: () => 0,

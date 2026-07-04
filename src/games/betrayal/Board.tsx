@@ -574,7 +574,6 @@ const ROOM_VISUAL_BY_ID: Partial<Record<BetrayalRoomVisualId, BetrayalRoomTileVi
     basementLanding: BETRAYAL_ROOM_TILE_VISUALS.startBasementLanding,
     conservatory: BETRAYAL_ROOM_TILE_VISUALS.conservatory,
     bedroom: BETRAYAL_ROOM_TILE_VISUALS.bedroom,
-    attic: BETRAYAL_ROOM_TILE_VISUALS.attic,
     study: BETRAYAL_ROOM_TILE_VISUALS.study,
     gallery: BETRAYAL_ROOM_TILE_VISUALS.gallery,
     entranceHall: BETRAYAL_ROOM_TILE_VISUALS.startEntranceHall,

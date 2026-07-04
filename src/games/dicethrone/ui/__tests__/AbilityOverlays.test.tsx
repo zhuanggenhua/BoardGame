@@ -66,7 +66,7 @@ describe('AbilityOverlays', () => {
         const onMagnifyCard = vi.fn();
         const { container } = renderAbilityOverlays({ onMagnifyCard });
 
-        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
+        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
         expect(fistSlot).not.toBeNull();
 
         fireEvent.click(fistSlot!);
@@ -85,7 +85,7 @@ describe('AbilityOverlays', () => {
             onMagnifyCard,
         });
 
-        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
+        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
         expect(fistSlot).not.toBeNull();
 
         fireEvent.click(fistSlot!);
@@ -104,10 +104,10 @@ describe('AbilityOverlays', () => {
             onMagnifyCard,
         });
 
-        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
+        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
         expect(fistSlot).not.toBeNull();
 
-        fireEvent.click(getByTestId('dt-upgrade-magnify-button-calm'));
+        fireEvent.click(getByTestId('dt-upgrade-magnify-button-fist'));
 
         expect(onMagnifyCard).toHaveBeenCalledTimes(1);
         expect(onMagnifyCard.mock.calls[0]?.[0]).toMatchObject({ id: 'card-thrust-punch-2' });
@@ -125,7 +125,7 @@ describe('AbilityOverlays', () => {
             onMagnifyCard,
         });
 
-        const fistSlot = container.querySelector('[data-ability-slot="calm"]');
+        const fistSlot = container.querySelector('[data-ability-slot="fist"]');
         expect(fistSlot).not.toBeNull();
         expect(fistSlot).toHaveAttribute('data-should-highlight', 'true');
 
@@ -135,19 +135,20 @@ describe('AbilityOverlays', () => {
         expect(onMagnifyCard).not.toHaveBeenCalled();
     });
 
-    it('高亮壳层保留统一描边结构，并为角色注入对应颜色', () => {
+    it('高亮壳层保留统一描边结构，并用撞色提示可选技能', () => {
         const { getByTestId } = renderAbilityOverlays({
             availableAbilityIds: ['fist-technique'],
             canHighlight: true,
         });
 
-        const highlight = getByTestId('dt-ability-highlight-calm');
+        const highlight = getByTestId('dt-ability-highlight-fist');
         expect(highlight.className).toContain('inset-0');
         expect(highlight.className).toContain('rounded-lg');
         expect(highlight.className).toContain('animate-pulse');
         expect(highlight.style.borderWidth).toBe('2px');
-        expect(highlight.style.borderColor).toBe('rgb(245, 158, 11)');
-        expect(highlight.style.boxShadow).toContain('rgba(245,158,11,0.92)');
+        expect(highlight.style.borderColor).toBe('rgb(34, 211, 238)');
+        expect(highlight.style.boxShadow).toContain('rgba(236,72,153,0.88)');
+        expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.68)');
     });
 
     it('选中态描边会沿用角色色并比普通高亮更强一档', () => {
@@ -157,7 +158,7 @@ describe('AbilityOverlays', () => {
             selectedAbilityId: 'fist-technique',
         });
 
-        const selected = getByTestId('dt-ability-selected-calm');
+        const selected = getByTestId('dt-ability-selected-fist');
         expect(selected.className).toContain('rounded-lg');
         expect(selected.style.borderWidth).toBe('2.5px');
         expect(selected.style.borderColor).toBe('rgb(251, 191, 36)');
@@ -177,14 +178,15 @@ describe('AbilityOverlays', () => {
         expect(highlight.className).toContain('rounded-lg');
         expect(highlight.style.borderWidth).toBe('2px');
         expect(highlight.style.borderColor).toBe('rgb(34, 211, 238)');
-        expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.94)');
+        expect(highlight.style.boxShadow).toContain('rgba(236,72,153,0.88)');
+        expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.68)');
     });
 
-    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应按重新录入的技能槽位同源', () => {
+    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应沿用通用技能槽位语义', () => {
         const cases = [
             {
                 characterId: 'monk',
-                slotId: 'calm',
+                slotId: 'fist',
                 baseAbilityId: 'fist-technique',
                 resolvedAbilityId: 'fist-technique-2-3',
                 abilityLevels: { 'fist-technique': 2 },
@@ -193,7 +195,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'barbarian',
-                slotId: 'meditate',
+                slotId: 'fist',
                 baseAbilityId: 'slap',
                 resolvedAbilityId: 'slap-2-3',
                 abilityLevels: { slap: 2 },
@@ -202,7 +204,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'pyromancer',
-                slotId: 'combo',
+                slotId: 'fist',
                 baseAbilityId: 'fireball',
                 resolvedAbilityId: 'fireball-2-3',
                 abilityLevels: { fireball: 2 },
@@ -210,8 +212,17 @@ describe('AbilityOverlays', () => {
                 previewIndex: 6,
             },
             {
-                characterId: 'moon_elf',
+                characterId: 'pyromancer',
                 slotId: 'meditate',
+                baseAbilityId: 'magma-armor',
+                resolvedAbilityId: 'magma-armor',
+                abilityLevels: { 'magma-armor': 2 },
+                upgradeCardId: 'card-magma-armor-2',
+                previewIndex: 0,
+            },
+            {
+                characterId: 'moon_elf',
+                slotId: 'fist',
                 baseAbilityId: 'longbow',
                 resolvedAbilityId: 'longbow-3-2',
                 abilityLevels: { longbow: 2 },
@@ -220,7 +231,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'shadow_thief',
-                slotId: 'lotus',
+                slotId: 'fist',
                 baseAbilityId: 'dagger-strike',
                 resolvedAbilityId: 'dagger-strike-3-2',
                 abilityLevels: { 'dagger-strike': 2 },
@@ -229,7 +240,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'paladin',
-                slotId: 'chi',
+                slotId: 'calm',
                 baseAbilityId: 'holy-light',
                 resolvedAbilityId: 'holy-light',
                 abilityLevels: { 'holy-light': 2 },
@@ -386,12 +397,13 @@ describe('AbilityOverlays', () => {
 
     it('旧英雄和新英雄槽位查找应与面板覆盖层使用同一物理槽位', () => {
         const cases = [
-            { characterId: 'monk', abilityId: 'fist-technique', slotId: 'calm' },
-            { characterId: 'barbarian', abilityId: 'slap', slotId: 'meditate' },
-            { characterId: 'pyromancer', abilityId: 'fireball', slotId: 'combo' },
-            { characterId: 'moon_elf', abilityId: 'longbow', slotId: 'meditate' },
-            { characterId: 'shadow_thief', abilityId: 'dagger-strike', slotId: 'lotus' },
-            { characterId: 'paladin', abilityId: 'holy-light', slotId: 'chi' },
+            { characterId: 'monk', abilityId: 'fist-technique', slotId: 'fist' },
+            { characterId: 'barbarian', abilityId: 'slap', slotId: 'fist' },
+            { characterId: 'pyromancer', abilityId: 'fireball', slotId: 'fist' },
+            { characterId: 'pyromancer', abilityId: 'magma-armor', slotId: 'meditate' },
+            { characterId: 'moon_elf', abilityId: 'longbow', slotId: 'fist' },
+            { characterId: 'shadow_thief', abilityId: 'dagger-strike', slotId: 'fist' },
+            { characterId: 'paladin', abilityId: 'holy-light', slotId: 'calm' },
             { characterId: 'zhanshujia', abilityId: 'strategic-shift', slotId: 'calm' },
             { characterId: 'artificer', abilityId: 'overclock', slotId: 'lightning' },
         ];
@@ -406,7 +418,7 @@ describe('AbilityOverlays', () => {
 
     it('技能槽 DOM 应区分主面板和放大预览，避免升级卡飞错目标', () => {
         const { container, rerender } = renderAbilityOverlays();
-        expect(container.querySelector('[data-ability-slot="calm"]')).toHaveAttribute(
+        expect(container.querySelector('[data-ability-slot="fist"]')).toHaveAttribute(
             'data-ability-slot-scope',
             'main-board',
         );
@@ -428,7 +440,7 @@ describe('AbilityOverlays', () => {
             </div>
         );
 
-        expect(container.querySelector('[data-ability-slot="calm"]')).toHaveAttribute(
+        expect(container.querySelector('[data-ability-slot="fist"]')).toHaveAttribute(
             'data-ability-slot-scope',
             'magnified-preview',
         );

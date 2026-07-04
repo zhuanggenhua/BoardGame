@@ -161,6 +161,7 @@ export function getUsableTokensForOffensiveRollEnd(
     return (state.tokenDefinitions ?? []).filter(def => {
         if (!def.activeUse?.timing?.includes('onOffensiveRollEnd')) return false;
         if ((player.tokens[def.id] ?? 0) <= 0) return false;
+        if (state.pendingAttack?.offensiveRollEndTokenIdsUsed?.includes(def.id)) return false;
         
         // 暴击门控：伤害≥5
         if (def.id === TOKEN_IDS.CRIT && expectedDamage < 5) return false;

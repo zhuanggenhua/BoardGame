@@ -55,17 +55,17 @@
 ## 当前正式阻塞
 
 - 当前仍不能把七大恨正式局说成“规则书级手牌一级入口已具备”。
-- 阻塞不再是“完全没有普通手牌图集或确认行”：2026-07-04 已确认 atlas05 是普通手牌图集，并把 30 张 `passed` 普通手牌接入正式发牌/预览流。但这只是局部接入，仍不是完整普通手牌全集真相源：
+- 阻塞不再是“完全没有普通手牌图集或确认行”：2026-07-04 已确认 atlas05 是普通手牌图集，并把 33 张 `passed` 普通手牌接入正式发牌/预览流。但这只是局部接入，仍不是完整普通手牌全集真相源：
   - `src/games/qidahen/domain/handCardState.ts`
-    - 正式局初始手牌与摸牌现在按 atlas05 的 30 张已确认普通手牌连续发放，并引用 `qidahen:atlas05-ordinary-hand-preview`。
+    - 正式局初始手牌与摸牌现在按 atlas05 的 33 张已确认普通手牌连续发放，并引用 `qidahen:atlas05-ordinary-hand-preview`。
     - 运行态手牌 `label` 已使用 atlas05 人工确认中文牌名，而不是继续显示“大明/后金/蒙古 手牌 N”占位名；放大预览、无障碍标签与战术牌结算摘要会直接复用这些中文牌名。
-    - 运行态手牌 `rulesSummary` 已携带 30 张已确认牌的规则效果摘要，作为人工录入矩阵反写后的可审计说明字段；这只是把真相源带入手牌对象，不等于完整实现事件效果全集、战术时机或银两资源链。
+    - 运行态手牌 `rulesSummary` 已携带 33 张已确认牌的规则效果摘要，作为人工录入矩阵反写后的可审计说明字段；这只是把真相源带入手牌对象，不等于完整实现事件效果全集、战术时机或银两资源链。
   - `src/games/qidahen/domain/handCardIdentity.ts`
-    - `resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)` 只解析人工确认的 30 张 `event / armament / tactic`，并返回对应中文牌名、牌类、`cardDefId / armamentId` 与规则效果摘要；未确认、partial、blocked 行不入正式运行时。
+    - `resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)` 只解析人工确认的 33 张 `event / armament / tactic`，并返回对应中文牌名、牌类、`cardDefId / armamentId` 与规则效果摘要；未确认、partial、blocked 行不入正式运行时。
     - `resolveQidahenFormalHandCardIdentity(factionId, previewIndex)` 仍保留旧 16-frame faction preview seam 的最小身份解析，供旧合同和排障对照使用。
     - 当前仍未能建立普通 `event / armament / tactic / silver` 牌的完整全集映射；银两目前没有满足正式反写门槛。
   - `src/games/qidahen/domain/initialCoreSetup.ts`
-    - 正式开局会消费 atlas05 30 张普通手牌确认行；这证明“可反写确认行”已经进入运行时，但不证明整副普通手牌全集完成。
+    - 正式开局会消费 atlas05 33 张普通手牌确认行；这证明“可反写确认行”已经进入运行时，但不证明整副普通手牌全集完成。
   - `src/games/qidahen/tutorialSetup.ts`
     - 只有教程注入态会手动补 `event / armament / tactic / silver`
   - `temp/qidahen-hand-sheets/*.png`
@@ -110,12 +110,12 @@
     - 剩余候选人工复核清单已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-human-review-checklist.md`；它把 12 张候选的人工确认字段固定为中文牌名、牌类、规则效果、军备目标和排除原因，但当前仍没有任何行达到正式规则映射门槛。
     - 外部文本来源搜索已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-external-source-search.md`；多轮公开搜索已经覆盖中英文泛词、牌表词、牌类词，以及“大汗令箭 / 火炮技术”等精确词，仍没有找到可追溯逐牌牌表，命中结果主要是百科、单词、歌曲、知乎/无关页面或搜索噪音。
     - 结构化素材来源复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-structured-source-recheck.md`；运行时资源清单只有资源路径层级，TTS JSON 仍只有 CardID 顺序、图集键、辅助卡和军备状态对象名称，不能提供普通事件、军备、战术、银两逐牌规则字段。
-    - 本地素材逐牌来源旧复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-local-asset-source-exhaustion.md`；但该结论只覆盖当时的单卡候选、旧 preview seam 和结构化文本来源，不再能概括完整 `Images` 目录。2026-07-04 重新利用完整 `Images` 后，已确认 atlas05 是普通手牌图集；当前口径应改为“已有普通手牌图集、30 张确认行和正式运行时接入，但全集、银两和部分行动语义仍未闭环”。
+    - 本地素材逐牌来源旧复查已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-local-asset-source-exhaustion.md`；但该结论只覆盖当时的单卡候选、旧 preview seam 和结构化文本来源，不再能概括完整 `Images` 目录。2026-07-04 重新利用完整 `Images` 后，已确认 atlas05 是普通手牌图集；当前口径应改为“已有普通手牌图集、33 张确认行和正式运行时接入，但全集、银两和部分行动语义仍未闭环”。
     - 疑似单卡素材 OCR 小批量试跑已沉淀到 `docs/games/qidahen/workflows/qidahen-hand-card-single-card-ocr-probe.md`；33 张候选经 PIL + EasyOCR 试跑后，普通牌类关键词独占命中为 0，混合普通/非普通命中为 0，4 张命中人物或下野等非普通线索，23 张只有低信息 OCR 文本，6 张没有 OCR 文本；后续按需求交接式安全读图流程验收全部 33 张候选，得到 30 张非普通手牌/非手牌素材排除和 3 张纯色底块阻塞；本批没有产生可反写正式手牌规则映射的逐牌真相源。
     - 完成依据决策矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-truth-source-decision-matrix.md`；当前所有已核来源都被判定为不能单独或合并关闭 `2.4`。
     - 正式映射反写契约已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-formal-mapping-contract.md`；它只规定人工确认后如何落到 `cardKind / cardDefId / armamentId` 和 `QidahenArmamentId`，2026-07-04 之前没有确认行可反写；当前 atlas05 已有 23 张确认行，下一步应按该契约接入正式映射。
-    - `npm run verify:qidahen:handcards` 已沉淀为普通手牌真相源门禁入口：先校验 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json`，再校验人工录入矩阵反写门槛。2026-07-04 当前图片验收输出 `passed=30 / failed=0 / blocked=8 / partial=10`，人工录入反写校验输出“已确认行数：30”；这证明完整 `Images` 目录中的 atlas05 已经产生可反写的普通手牌真相源，但尚不足以勾选 OpenSpec `2.4 / 4.5`。
-    - 人工录入反写校验脚本已沉淀为 `scripts/verify/qidahen-hand-card-manual-entry.mjs`；它覆盖 49 张 OCR 候选人工录入矩阵、12 张剩余候选复核清单、完整 CardID 人工录入矩阵、运行时图集候选人工录入矩阵，以及 2026-07-04 新增的 atlas05 普通手牌人工录入矩阵。当前脚本已校验 atlas05 的 30 张确认行，能检查中文牌名、牌类、规则效果摘要和军备目标是否满足反写门槛。
+    - `npm run verify:qidahen:handcards` 已沉淀为普通手牌真相源门禁入口：先校验 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json`，再校验人工录入矩阵反写门槛。2026-07-04 当前图片验收输出 `passed=33 / failed=0 / blocked=7 / partial=8`，人工录入反写校验输出“已确认行数：33”；这证明完整 `Images` 目录中的 atlas05 已经产生可反写的普通手牌真相源，但尚不足以勾选 OpenSpec `2.4 / 4.5`。
+    - 人工录入反写校验脚本已沉淀为 `scripts/verify/qidahen-hand-card-manual-entry.mjs`；它覆盖 49 张 OCR 候选人工录入矩阵、12 张剩余候选复核清单、完整 CardID 人工录入矩阵、运行时图集候选人工录入矩阵，以及 2026-07-04 新增的 atlas05 普通手牌人工录入矩阵。当前脚本已校验 atlas05 的 33 张确认行，能检查中文牌名、牌类、规则效果摘要和军备目标是否满足反写门槛。
     - TTS CardID 位置清单已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-position-map.md`；它只能提供 `deckId / index / row / col / 出现次数`，不能提供牌名、牌类、效果或军备目标；2026-07-03 交叉核验还确认 `deckId 13 / 16 / 17` 的图集哈希分别命中蒙古、纪年、朝鲜整版图集，不等价于当前运行时正式手牌预览使用的三套 faction atlas。
     - TTS CardID 完整人工录入矩阵已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md`；它把 10 个牌组段展开为 143 行出现记录、99 个唯一图集位置，后续已按哈希交叉证据和低分辨率安全核读结果全部回填为“已排除”，只能作为 TTS 牌组复核归档，不能作为正式规则映射依据。
     - 2026-07-03 已继续回填 TTS CardID 完整人工录入矩阵：143 行全部按已有证据排除，其中 28 条运行时图集候选已安全核读排除，111 条纪年/朝鲜或非正式手牌图集由哈希证据排除，4 条 1x1 `CardCustom` 小牌组对象没有牌名、说明、牌类或效果字段；仍没有普通事件、军备、战术或银两确认行。
@@ -123,7 +123,7 @@
     - 运行时图集候选安全复核入口已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-safe-review.md`；本地脚本只生成 28 条候选的小尺寸缩略图与标题裁切索引，避免直接读取大图，但这仍只是人工/OCR 入口，不是正式规则映射。
     - 运行时图集候选小图 OCR 尝试已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-ocr-attempt.md`；本轮定位到路径编码与内存/显存不足问题，未获得稳定逐牌 OCR 结果，后续改用低分辨率安全预览逐批核读。
     - 运行时图集候选与既有 OCR 线索交叉表已沉淀为 `docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-existing-ocr-crosswalk.md`；`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-priority-review.md` 已记录 28 条候选的逐批安全预览核读结果，所有候选均已排除，且没有任何行达到人工确认反写门槛。
-- 因此当前正式局已修正“可证明非行动牌仍是 unknown 壳”的问题，并且 atlas05 已提供普通手牌抽样真相源；30 张已确认普通手牌已经进入正式发牌/摸牌、预览流与运行态规则摘要字段。但正式运行态仍不具备：
+- 因此当前正式局已修正“可证明非行动牌仍是 unknown 壳”的问题，并且 atlas05 已提供普通手牌抽样真相源；33 张已确认普通手牌已经进入正式发牌/摸牌、预览流与运行态规则摘要字段。但正式运行态仍不具备：
   - 按规则书直接打出哪张事件牌
   - 按规则书直接打出哪张军备牌
   - 以真实手牌对象承接一级手牌行动入口
@@ -131,7 +131,7 @@
   - `执行事件` 仍然只能判定为正式一级入口缺口
   - `升级军备` 已去掉抽象势力行动按钮，但仍只能判定为已识别军备牌的局部真实入口
   - 任何“正式局已经能从真实手牌直接打牌”的口径都不成立
-  - OpenSpec `2.4` 不得因为 atlas05 已有 30 张确认行、领域层解析函数和正式发牌/预览接入而勾选；当前核验结论是“普通手牌真相源与局部运行时接入已打开缺口，但事件效果全集、战术时机和银两资源链仍未完成”，不是“正式手牌入口已完成”
+  - OpenSpec `2.4` 不得因为 atlas05 已有 33 张确认行、领域层解析函数和正式发牌/预览接入而勾选；当前核验结论是“普通手牌真相源与局部运行时接入已打开缺口，但事件效果全集、战术时机和银两资源链仍未完成”，不是“正式手牌入口已完成”
 
 ## 规则骨架
 
@@ -545,8 +545,8 @@
 
 - 运行时证据：`src/games/qidahen/ui/cardAtlas.ts` 的 faction atlas 帧由 `buildFrames(topXs, leftYs)` 组装，当前合同只覆盖顶行 `topXs` 与左列 `leftYs` 的 16 个预览帧，而不是三张 10x7 原图的完整 60/70 张全牌面。
 - 发牌证据：`src/games/qidahen/domain/handCardState.ts` 固定 `QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16`，并通过 `resolveQidahenFormalHandCardIdentity` 只为这些 preview index 补 atlas 中可审计的非行动牌身份。
-- 结论：现有运行时 preview seam 可证明人物、剧本、纪年、牌背等少量非行动牌身份，但它不是普通手牌全集入口；普通事件牌、军备牌、战术牌的逐牌真相源已由 atlas05 打开，并且 23 张 confirmed/passed 行已进入正式发牌/摸牌与预览流，运行态手牌名称也已改为对应中文牌名；银两牌仍未满足正式反写门槛，事件效果全集、战术时机和银两资源链仍未完成。
-- 素材状态：`docs/games/qidahen/workflows/qidahen-hand-card-atlas05-manual-entry-matrix.md` 已新增 atlas05 普通手牌人工录入矩阵；`test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json` 当前记录 23 张 passed 普通手牌、12 张 partial、13 张 blocked，`npm run verify:qidahen:handcards` 已通过。旧的 49 张 OCR 候选、TTS CardID 完整矩阵和运行时 faction preview 候选仍保留为排除证据；它们不能覆盖 atlas05 这一新发现，也不能再支持“本地没有任何普通手牌确认行”的结论。当前已完成 23 张确认行的正式运行时接入和定向测试；后续仍需补齐银两、事件效果全集和战术时机后，才能关闭 2.4 / 4.5。
+- 结论：现有运行时 preview seam 可证明人物、剧本、纪年、牌背等少量非行动牌身份，但它不是普通手牌全集入口；普通事件牌、军备牌、战术牌的逐牌真相源已由 atlas05 打开，并且 33 张 confirmed/passed 行已进入正式发牌/摸牌与预览流，运行态手牌名称也已改为对应中文牌名；银两牌仍未满足正式反写门槛，事件效果全集、战术时机和银两资源链仍未完成。
+- 素材状态：`docs/games/qidahen/workflows/qidahen-hand-card-atlas05-manual-entry-matrix.md` 已新增 atlas05 普通手牌人工录入矩阵；`test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json` 当前记录 33 张 passed 普通手牌、8 张 partial、7 张 blocked，`npm run verify:qidahen:handcards` 已通过。旧的 49 张 OCR 候选、TTS CardID 完整矩阵和运行时 faction preview 候选仍保留为排除证据；它们不能覆盖 atlas05 这一新发现，也不能再支持“本地没有任何普通手牌确认行”的结论。当前已完成 33 张确认行的正式运行时接入和定向测试；后续仍需补齐银两、事件效果全集和战术时机后，才能关闭 2.4 / 4.5。
 
 ## 后续实施门禁
 

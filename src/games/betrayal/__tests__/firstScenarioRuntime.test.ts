@@ -69,7 +69,7 @@ describe('Betrayal first scenario runtime', () => {
             'dagger',
         ]);
         expect(new Set([...itemIds, ...omenIds]).size).toBe(itemIds.length + omenIds.length);
-        expect(allDiscoveryRooms).toHaveLength(43);
+        expect(allDiscoveryRooms).toHaveLength(42);
         expect(allDiscoveryRooms.every((room) => room.doorways.length > 0)).toBe(true);
 
         for (const card of [

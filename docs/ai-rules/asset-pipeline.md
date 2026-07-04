@@ -297,6 +297,9 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 4. **全量 ZIP 只能作为 bootstrap / 兼容兜底**：完整游戏 ZIP 适合作为首次安装、清缓存重建、旧客户端不支持差异下载、或大量资源重排后的兜底包。若当前工具链暂时只能重发整包，最终汇报必须明确写成“当前工具链全量重发，不是差异化更新”，不得包装成商业级素材热更新已完成。
 5. **单一真相的版本号应来自内容索引**：素材包版本应由 file-index checksum、内容哈希集合或明确的资源版本生成；时间戳只能作为发布审计信息。禁止把时间戳 ZIP 版本当成唯一真相，否则同一内容会产生多个等价包，App 难以判断是否真有差异。
 6. **商业游戏常见做法口径**：正式项目通常采用 CDN 上的内容寻址对象、版本 manifest、按资源组拆分 bundle、文件级或 chunk 级 patch；客户端只拉新增/变更 bundle，旧 bundle 留在本地缓存。大包全量下载一般只用于首装、强制修复或跨大版本迁移，不用于每次小素材替换。
+7. **Android 游戏包只发布压缩运行时交付物**：`mobile-packages/android` 的游戏包媒体文件只能来自 `compressed/` 目录下的 `.webp` / `.ogg`；运行时 JSON/SVG 配置可入包，但不得携带源图片、源音频、设计源文件或临时文件。`.png/.jpg/.jpeg/.mp3/.wav/.psd/.ai/.aseprite/.kra/.xcf/.tmp/.bak` 以及路径中含 `temp/tmp/bak/backup/old/copy/副本/临时/测试/test` 的文件一律不得进入 file-index 或 ZIP。源文件可以留在本地资源树用于再压缩，但不能随 App 素材包发布。
+8. **共享音频包只发布压缩 OGG**：Android 共享音频包 `common-audio` 只允许 `common/audio/**/compressed/*.ogg` 进入 file-index 或 ZIP。`public/assets/common/audio/registry.json`、`phrase-mappings.zh-CN.json` 等构建/开发用配置不进入共享音频包；运行时音频映射由 App 内置的精简注册表提供。若未来确需把某个配置随包下发，必须先明确它是运行时配置而非素材源文件，并补四层路径合同与回归测试。
+9. **重复素材必须收口到路径合同，不能只在发布层盲删**：发现同哈希重复文件时，先判断每条路径是否仍被运行时代码、manifest、图集配置或历史客户端引用；只有确认某条路径是旧别名/废弃路径，且运行时不再请求它，才允许从发布候选中排除或迁移。禁止单纯按哈希去重导致客户端按旧路径请求时缺图。
 
 ### assets-manifest 生成模式（强制）
 

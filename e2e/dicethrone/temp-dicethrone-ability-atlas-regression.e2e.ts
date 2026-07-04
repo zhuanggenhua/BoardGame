@@ -1080,6 +1080,7 @@ test.describe('DiceThrone hand card preview regression', () => {
       { heroId: 'monk', cardId: 'card-thrust-punch-2', abilityId: 'fist-technique' },
       { heroId: 'barbarian', cardId: 'card-slap-2', abilityId: 'slap' },
       { heroId: 'pyromancer', cardId: 'card-fireball-2', abilityId: 'fireball' },
+      { heroId: 'pyromancer', cardId: 'card-magma-armor-2', abilityId: 'magma-armor' },
       { heroId: 'moon_elf', cardId: 'upgrade-longbow-2', abilityId: 'longbow' },
       { heroId: 'shadow_thief', cardId: 'upgrade-dagger-strike-2', abilityId: 'dagger-strike' },
       { heroId: 'paladin', cardId: 'card-holy-strike-2', abilityId: 'holy-strike' },
@@ -1104,6 +1105,148 @@ test.describe('DiceThrone hand card preview regression', () => {
     }
   });
 
+  test('圣骑士满升级牌端到端截图', async ({ page, game }) => {
+    test.setTimeout(120000);
+    const evidenceDir = ensureEvidenceDir();
+    const screenshotPath = join(evidenceDir, 'legacy-paladin-full-upgrades-board.png');
+
+    await game.openTestGame('dicethrone');
+    await page.evaluate(async () => {
+      const harness = (window as any).__BG_TEST_HARNESS__;
+      const state = harness?.state?.get?.();
+      if (!harness || !state) {
+        throw new Error('TestHarness state not ready');
+      }
+
+      const [{ initHeroState }, { PALADIN_CARDS }, abilitiesModule] = await Promise.all([
+        import('/src/games/dicethrone/domain/characters.ts'),
+        import('/src/games/dicethrone/heroes/paladin/cards.ts'),
+        import('/src/games/dicethrone/heroes/paladin/abilities.ts'),
+      ]);
+
+      const random = {
+        random: () => 0.5,
+        d: (max: number) => Math.min(max, 1),
+        range: (min: number, _max: number) => min,
+        shuffle: <T,>(array: T[]) => [...array],
+      };
+      const paladinBase = initHeroState('0', 'paladin', random as any);
+      const opponentBase = initHeroState('1', 'monk', random as any);
+
+      const upgradeSpecs = [
+        { abilityId: 'holy-defense', level: 3, cardId: 'card-holy-defense-3', def: abilitiesModule.HOLY_DEFENSE_3 },
+        { abilityId: 'holy-light', level: 2, cardId: 'card-holy-light-2', def: abilitiesModule.HOLY_LIGHT_2 },
+        { abilityId: 'righteous-combat', level: 3, cardId: 'card-righteous-combat-3', def: abilitiesModule.RIGHTEOUS_COMBAT_3 },
+        { abilityId: 'blessing-of-might', level: 2, cardId: 'card-blessing-of-might-2', def: abilitiesModule.BLESSING_OF_MIGHT_2 },
+        { abilityId: 'holy-strike', level: 2, cardId: 'card-holy-strike-2', def: abilitiesModule.HOLY_STRIKE_2 },
+        { abilityId: 'vengeance', level: 2, cardId: 'card-vengeance-2', def: abilitiesModule.VENGEANCE_2 },
+        { abilityId: 'righteous-prayer', level: 2, cardId: 'card-righteous-prayer-2', def: abilitiesModule.RIGHTEOUS_PRAYER_2 },
+        { abilityId: 'tithes', level: 2, cardId: 'card-tithes-2', def: abilitiesModule.PALADIN_TITHES_UPGRADED },
+      ];
+
+      const upgradeCards = new Map(PALADIN_CARDS.map((card: any) => [card.id, card]));
+      const abilityLevels = { ...(paladinBase.abilityLevels ?? {}) };
+      const upgradeCardByAbilityId = { ...(paladinBase.upgradeCardByAbilityId ?? {}) };
+      const upgradedAbilities = paladinBase.abilities.map((ability: any) => {
+        const spec = upgradeSpecs.find((entry) => entry.abilityId === ability.id);
+        if (!spec) return ability;
+        const card = upgradeCards.get(spec.cardId) as any;
+        if (!card) {
+          throw new Error(`${spec.cardId} not found`);
+        }
+        abilityLevels[spec.abilityId] = spec.level;
+        upgradeCardByAbilityId[spec.abilityId] = {
+          cardId: spec.cardId,
+          cpCost: card.cpCost,
+        };
+        return JSON.parse(JSON.stringify(spec.def));
+      });
+
+      harness.state.set({
+        ...state,
+        sys: {
+          ...state.sys,
+          phase: 'main1',
+          interaction: {
+            current: undefined,
+            queue: [],
+          },
+          eventStream: {
+            ...(state.sys?.eventStream ?? {}),
+            entries: [],
+          },
+        },
+        core: {
+          ...state.core,
+          activePlayerId: '0',
+          hostStarted: true,
+          selectedCharacters: {
+            ...(state.core.selectedCharacters ?? {}),
+            '0': 'paladin',
+            '1': 'monk',
+          },
+          pendingAttack: null,
+          pendingDamage: undefined,
+          pendingBonusDiceSettlement: undefined,
+          rollCount: 0,
+          rollConfirmed: false,
+          players: {
+            ...state.core.players,
+            '0': {
+              ...paladinBase,
+              hand: [],
+              discard: [],
+              abilities: upgradedAbilities,
+              abilityLevels,
+              upgradeCardByAbilityId,
+              resources: {
+                ...paladinBase.resources,
+                cp: 20,
+                hp: 50,
+              },
+            },
+            '1': {
+              ...opponentBase,
+              hand: [],
+              discard: [],
+              resources: {
+                ...opponentBase.resources,
+                cp: 2,
+                hp: 50,
+              },
+            },
+          },
+        },
+      });
+      (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    });
+
+    await game.waitForPhase('main1', 10000);
+    await expect.poll(async () => {
+      const state = await readState(game);
+      const player = state?.core?.players?.['0'];
+      return {
+        characterId: state?.core?.selectedCharacters?.['0'] ?? null,
+        upgradedCount: Object.keys(player?.upgradeCardByAbilityId ?? {}).length,
+        holyDefenseCard: player?.upgradeCardByAbilityId?.['holy-defense']?.cardId ?? null,
+        holyLightCard: player?.upgradeCardByAbilityId?.['holy-light']?.cardId ?? null,
+      };
+    }, { timeout: 10000 }).toMatchObject({
+      characterId: 'paladin',
+      upgradedCount: 8,
+      holyDefenseCard: 'card-holy-defense-3',
+      holyLightCard: 'card-holy-light-2',
+    });
+
+    const expectedSlots = ['chi', 'sky', 'lotus', 'combo', 'lightning', 'calm', 'meditate'];
+    for (const slotId of expectedSlots) {
+      await expect(page.locator(`[data-upgrade-preview-slot="${slotId}"]`).first()).toBeVisible({ timeout: 10000 });
+    }
+
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`[E2E-SCREENSHOT] ${screenshotPath}`);
+  });
+
   test('老派系升级后点击新面板卡图物理槽应触发正确技能', async ({ page, game }) => {
     test.setTimeout(180000);
     const evidenceDir = ensureEvidenceDir();
@@ -1122,7 +1265,7 @@ test.describe('DiceThrone hand card preview regression', () => {
     const characterId = stateAfterUpgrade?.core?.selectedCharacters?.['0'];
     const playerBoardFace = stateAfterUpgrade?.core?.players?.['0']?.playerBoardFace;
     const slotId = await resolveAbilitySlotId(page, 'fist-technique', { characterId, playerBoardFace });
-    expect(slotId, '僧侣拳法应落在 v2 面板重新录入的 calm 物理槽').toBe('calm');
+    expect(slotId, '僧侣拳法应落在 v2 面板通用 fist 物理槽').toBe('fist');
 
     await injectOffensiveRollDice(page, game, [1, 1, 1, 1, 1], '0', 'monk-dice');
     await clickCurrentPlayerAbilitySlot(page, game, 'fist-technique');

@@ -30,6 +30,18 @@ export type ChoiceEffectHandler = (context: ChoiceEffectContext) => Partial<Dice
  */
 const choiceEffectHandlers: Map<string, ChoiceEffectHandler> = new Map();
 
+function markOffensiveRollEndTokenUsed(state: DiceThroneCore, tokenId: string): {
+    offensiveRollEndTokenIdsUsed: string[];
+    offensiveRollEndTokenResolved: boolean;
+} {
+    const used = state.pendingAttack?.offensiveRollEndTokenIdsUsed ?? [];
+    const nextUsed = used.includes(tokenId) ? used : [...used, tokenId];
+    return {
+        offensiveRollEndTokenIdsUsed: nextUsed,
+        offensiveRollEndTokenResolved: false,
+    };
+}
+
 export function hasCurrentChoiceAnchor(state: DiceThroneCore, sourceAbilityId?: string): boolean {
     return typeof sourceAbilityId === 'string'
         && sourceAbilityId.length > 0
@@ -92,7 +104,9 @@ registerChoiceEffectHandler('use-crit', ({ state, playerId }) => {
     const currentCrit = player.tokens[TOKEN_IDS.CRIT] ?? 0;
     if (currentCrit <= 0) return undefined;
 
-    // 消耗暴击 Token，增加 +4 伤害，标记 Token 选择已完成
+    const tokenProgress = markOffensiveRollEndTokenUsed(state, TOKEN_IDS.CRIT);
+
+    // 消耗暴击 Token，增加 +4 伤害，并允许继续选择其它攻击后 Token
     return {
         players: {
             ...state.players,
@@ -104,7 +118,7 @@ registerChoiceEffectHandler('use-crit', ({ state, playerId }) => {
         pendingAttack: {
             ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
             bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + 4,
-            offensiveRollEndTokenResolved: true,
+            ...tokenProgress,
         },
     };
 });
@@ -119,7 +133,9 @@ registerChoiceEffectHandler('use-accuracy', ({ state, playerId }) => {
     const currentAccuracy = player.tokens[TOKEN_IDS.ACCURACY] ?? 0;
     if (currentAccuracy <= 0) return undefined;
 
-    // 消耗精准 Token，使攻击不可防御，标记 Token 选择已完成
+    const tokenProgress = markOffensiveRollEndTokenUsed(state, TOKEN_IDS.ACCURACY);
+
+    // 消耗精准 Token，使攻击不可防御，并允许继续选择其它攻击后 Token
     return {
         players: {
             ...state.players,
@@ -131,7 +147,7 @@ registerChoiceEffectHandler('use-accuracy', ({ state, playerId }) => {
         pendingAttack: {
             ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
             isDefendable: false,
-            offensiveRollEndTokenResolved: true,
+            ...tokenProgress,
         },
     };
 });

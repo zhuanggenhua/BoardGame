@@ -348,7 +348,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('atlas05 普通手牌真相表只解析通过验收的事件、军备和战术身份', () => {
-        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(30);
+        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(33);
 
         const eventCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(0);
         expect(eventCard).toMatchObject({
@@ -438,6 +438,29 @@ describe('七大恨支付手牌选择', () => {
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1639-cavalry-firearm'],
         });
         expect(getQidahenDirectActionIdForHandCard(promotedCavalryFirearmCard!)).toBe('upgrade-armament');
+
+        const promotedRedCoatCannonCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(34);
+        expect(promotedRedCoatCannonCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'artillery-tech',
+            cardDefId: 'qidahen-atlas05-1634-red-coat-cannon',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1634-red-coat-cannon'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedRedCoatCannonCard!)).toBe('upgrade-armament');
+
+        const promotedSteadfastDefenseCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(35);
+        expect(promotedSteadfastDefenseCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1635-steadfast-defense',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1635-steadfast-defense'],
+        });
+
+        const promotedChevalDeFriseCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(36);
+        expect(promotedChevalDeFriseCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1636-cheval-de-frise',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1636-cheval-de-frise'],
+        });
 
         expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(43)).toBeNull();
 

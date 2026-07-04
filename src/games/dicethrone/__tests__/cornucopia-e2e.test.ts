@@ -1,6 +1,6 @@
 /**
  * 聚宝盆端到端测试
- * 验证弃牌效果是否生效
+ * 验证一级只抽牌，二级才追加弃牌/CP效果
  */
 
 import { describe, it, expect } from 'vitest';
@@ -61,8 +61,8 @@ function createShadowThiefFourPlayerState(playerIds: PlayerId[], random: RandomF
     return state;
 }
 
-describe('聚宝盆弃牌效果端到端测试', () => {
-    it('聚宝盆 I 级：2 Card + 1 Shadow → 抽2牌 + 对手弃1牌', () => {
+describe('聚宝盆效果端到端测试', () => {
+    it('聚宝盆 I 级：2 Card + 1 Shadow → 只抽2牌，不弃对手牌', () => {
         // 骰子序列：进攻掷骰 5 次 → [5,5,6,1,2] = 2 Card + 1 Shadow + 2 Dagger
         const queuedRandom = createQueuedRandom([5, 5, 6, 1, 2]);
         
@@ -86,7 +86,7 @@ describe('聚宝盆弃牌效果端到端测试', () => {
         });
 
         const result = runner.run({
-            name: '聚宝盆 I 级弃牌效果',
+            name: '聚宝盆 I 级只抽牌不弃牌',
             commands: [
                 cmd('ADVANCE_PHASE', '0'), // main1 → offensiveRoll
                 cmd('ROLL_DICE', '0'),     // 掷骰 → [5,5,6,1,2]
@@ -101,10 +101,7 @@ describe('聚宝盆弃牌效果端到端测试', () => {
                         // 玩家0应该抽了2张牌（1×2个Card面 = 2张）
                         handCount: 2,
                     },
-                    '1': {
-                        // 玩家1应该弃了1张牌（1个Shadow面）
-                        handCount: player1InitialHandCount - 1,
-                    },
+                    '1': { handCount: player1InitialHandCount },
                 },
             },
         });
@@ -120,13 +117,7 @@ describe('聚宝盆弃牌效果端到端测试', () => {
         console.log(`CARD_DISCARDED 事件数: ${cardDiscardedEvents.length}`);
 
         expect(cardDrawnEvents.length).toBe(2); // 抽2张牌（1×2个Card面）
-        expect(cardDiscardedEvents.length).toBe(1); // 弃1张牌
-
-        // 验证弃牌事件的 playerId 是玩家1
-        const discardEvent = cardDiscardedEvents[0].event;
-        expect(discardEvent.payload.playerId).toBe('1');
-
-        console.log(`✅ 聚宝盆弃牌效果正常工作`);
+        expect(cardDiscardedEvents.length).toBe(0);
     });
 
     it('聚宝盆 I 级：2 Card + 0 Shadow → 抽2牌 + 不弃牌', () => {
@@ -178,9 +169,11 @@ describe('聚宝盆弃牌效果端到端测试', () => {
         console.log(`✅ 无Shadow时不弃牌`);
     });
 
-    it('4 人模式：targetingRoll 结算后仍应按攻击骰快照触发聚宝盆', () => {
-        const queuedRandom = createQueuedRandom([5, 5, 6, 1, 2, 1]);
+    it('4 人模式：一级不要求 targetingRoll，只抽牌不弃任一对手牌', () => {
+        const queuedRandom = createQueuedRandom([5, 5, 6, 1, 2]);
 
+        let player1InitialHandCount = 0;
+        let player2InitialHandCount = 0;
         let player3InitialHandCount = 0;
 
         const runner = new GameTestRunner({
@@ -191,6 +184,8 @@ describe('聚宝盆弃牌效果端到端测试', () => {
             setup: (playerIds, random) => {
                 const state = createShadowThiefFourPlayerState(playerIds, random);
                 state.core.players['0'].hand = [];
+                player1InitialHandCount = state.core.players['1'].hand.length;
+                player2InitialHandCount = state.core.players['2'].hand.length;
                 player3InitialHandCount = state.core.players['3'].hand.length;
                 return state;
             },
@@ -199,22 +194,21 @@ describe('聚宝盆弃牌效果端到端测试', () => {
         });
 
         const result = runner.run({
-            name: '聚宝盆 4 人 targetingRoll 回归',
+            name: '聚宝盆 I 级 4 人不要求 targetingRoll 且不弃牌回归',
             commands: [
                 ...advanceTo('offensiveRoll', '0'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'cornucopia' }),
                 cmd('ADVANCE_PHASE', '0'),
-                cmd('ROLL_DICE', '0'),
-                cmd('CONFIRM_ROLL', '0'),
-                cmd('ADVANCE_PHASE', '0'),
             ],
             expect: {
                 turnPhase: 'main2',
                 players: {
                     '0': { handCount: 2 },
-                    '3': { handCount: player3InitialHandCount - 1 },
+                    '1': { handCount: player1InitialHandCount },
+                    '2': { handCount: player2InitialHandCount },
+                    '3': { handCount: player3InitialHandCount },
                 },
             },
         });
@@ -226,6 +220,6 @@ describe('聚宝盆弃牌效果端到端测试', () => {
         const cardDiscardedEvents = eventStream.filter(e => e.event.type === 'CARD_DISCARDED');
 
         expect(cardDrawnEvents.length).toBe(2);
-        expect(cardDiscardedEvents.length).toBe(1);
+        expect(cardDiscardedEvents.length).toBe(0);
     });
 });

@@ -205,6 +205,49 @@ describe('圣骑士 GTR 技能覆盖', () => {
             });
             expect(result.assertionErrors).toEqual([]);
         });
+
+        it('同时拥有暴击和精准时应允许连续使用两个 Token', () => {
+            const random = createQueuedRandom([1, 2, 3, 4, 5, 6, 6, 6]);
+            const setup = (playerIds: PlayerId[], rng: RandomFn): MatchState<DiceThroneCore> => {
+                const base = createPaladinSetup()(playerIds, rng);
+                const attacker = base.core.players['0'];
+                attacker.tokens[TOKEN_IDS.CRIT] = 1;
+                attacker.tokens[TOKEN_IDS.ACCURACY] = 1;
+                return base;
+            };
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain, systems: testSystems,
+                playerIds: ['0', '1'], random,
+                setup, assertFn: assertState, silent: true,
+            });
+            const result = runner.run({
+                name: '神圣冲击 同时使用暴击和精准',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'holy-strike-small' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': {
+                            hp: 51,
+                            tokens: {
+                                [TOKEN_IDS.CRIT]: 0,
+                                [TOKEN_IDS.ACCURACY]: 0,
+                            },
+                        },
+                        '1': { hp: 41 },
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
     });
 
     // ========================================================================
@@ -277,6 +320,45 @@ describe('圣骑士 GTR 技能覆盖', () => {
                             tokens: { [TOKEN_IDS.CRIT]: 1 },
                         },
                         '1': { hp: 42 },
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('基础版已有暴击时应先允许使用旧暴击，再获得新的暴击和 2 CP', () => {
+            const random = createQueuedRandom([6, 6, 6, 6, 1, 6, 6, 6]);
+            const setup = (playerIds: PlayerId[], rng: RandomFn): MatchState<DiceThroneCore> => {
+                const base = createPaladinSetup()(playerIds, rng);
+                base.core.players['0'].tokens[TOKEN_IDS.CRIT] = 1;
+                return base;
+            };
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain, systems: testSystems,
+                playerIds: ['0', '1'], random,
+                setup, assertFn: assertState, silent: true,
+            });
+            const result = runner.run({
+                name: '正义祈祷 先使用旧暴击再获得新暴击',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': {
+                            cp: INITIAL_CP + 2,
+                            tokens: { [TOKEN_IDS.CRIT]: 1 },
+                        },
+                        '1': { hp: 38 },
                     },
                 },
             });

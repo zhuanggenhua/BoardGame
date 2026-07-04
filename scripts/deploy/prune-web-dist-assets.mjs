@@ -17,6 +17,9 @@ const COMMON_ASSET_DIR_NAMES_TO_REMOVE = ['images', 'logos', 'audio'];
 export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   'assets-manifest.json',
   'zh-CN/dicethrone/assets-manifest.json',
+  // Android 测试壳/首装场景还没有下载 package-managed 游戏包；
+  // 首页书页缩略图必须保留最小压缩产物，不能把 DiceThrone 大图整包塞回内置资源。
+  'zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
   'zh-CN/dicethrone/images/artificial/status-icons-atlas.json',
   'zh-CN/dicethrone/images/barbarian/status-icons-atlas.json',
   'zh-CN/dicethrone/images/cursed/status-icons-atlas.json',

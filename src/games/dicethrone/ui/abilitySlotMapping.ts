@@ -15,74 +15,8 @@ export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] 
 };
 
 const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>> = {
-    // 旧英雄切到 v2 玩家面板后，物理技能格顺序跟旧面板不同。
-    // 点击高亮必须和升级卡叠图共用这套物理顺序，否则会出现“点 A 技能、亮 B 位置”的错位。
-    monk: {
-        fist: ['meditation'],
-        chi: ['calm-water'],
-        sky: ['thunder-strike'],
-        lotus: ['taiji-combo'],
-        combo: ['lotus-palm'],
-        lightning: ['harmony'],
-        calm: ['fist-technique'],
-        meditate: ['zen-forget'],
-        ultimate: ['transcendence'],
-    },
-    barbarian: {
-        fist: ['thick-skin'],
-        chi: ['reckless-strike'],
-        sky: ['suppress'],
-        lotus: ['steadfast'],
-        combo: ['violent-assault'],
-        lightning: ['powerful-strike'],
-        calm: ['all-out-strike'],
-        meditate: ['slap'],
-        ultimate: ['rage'],
-    },
-    pyromancer: {
-        fist: ['magma-armor'],
-        chi: ['pyro-blast'],
-        sky: ['meteor'],
-        lotus: ['meteor'],
-        combo: ['fireball'],
-        lightning: ['burn-down'],
-        calm: ['soul-burn'],
-        meditate: ['fiery-combo'],
-        ultimate: ['ultimate-inferno'],
-    },
-    moon_elf: {
-        fist: ['elusive-step'],
-        chi: ['eclipse'],
-        sky: ['blinding-shot'],
-        lotus: ['entangling-shot'],
-        combo: ['exploding-arrow'],
-        lightning: ['covering-fire'],
-        calm: ['covert-fire'],
-        meditate: ['longbow'],
-        ultimate: ['lunar-eclipse'],
-    },
-    shadow_thief: {
-        fist: ['pickpocket'],
-        chi: ['kidney-shot'],
-        sky: ['shadow-defense'],
-        lotus: ['dagger-strike'],
-        combo: ['shadow-dance'],
-        lightning: ['steal'],
-        calm: ['cornucopia'],
-        meditate: ['fearless-riposte'],
-        ultimate: ['shadow-shank'],
-    },
-    paladin: {
-        fist: ['holy-defense'],
-        chi: ['holy-light'],
-        sky: ['righteous-combat'],
-        lotus: ['blessing-of-might'],
-        combo: ['righteous-combat'],
-        lightning: ['vengeance'],
-        calm: ['holy-strike'],
-        meditate: ['righteous-prayer'],
-        ultimate: ['unyielding-faith'],
-    },
+    // 旧六角色的新版面板仍沿用通用槽位语义；不要在这里整体重排。
+    // 这里只保留新版角色、双面角色等确实需要特化的槽位。
     // Ninja v2 玩家面板的中间四格与旧共享语义不同：
     // top-right 两格分别是毒刃 / 暗影步，bottom-left 两格分别是死亡盛放 / 烟雾阵。
     ninja: {

@@ -249,38 +249,22 @@ function handleShadowDanceRoll({ targetId, sourceAbilityId, state, timestamp, ra
     return events;
 }
 
-/** 聚宝盆 I：抽 Card面数量 牌，若有Shadow弃对手1牌 */
-function handleCornucopia({ attackerId, ctx, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
+/** 聚宝盆 I：抽 Card 面数量牌。弃对手牌是 II 级效果。 */
+function handleCornucopia({ attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     const faceCounts = getOffensiveAttackFaceCounts(state);
-    const defenderId = ctx.defenderId;
 
     const cardCount = faceCounts[FACE.CARD] || 0;
-    const hasShadow = (faceCounts[FACE.SHADOW] || 0) > 0;
 
     // 抽 Card 面数量的牌
     if (cardCount > 0 && random) {
         events.push(...buildDrawEvents(state, attackerId, cardCount, random, 'ABILITY_EFFECT', timestamp, sourceAbilityId));
     }
 
-    // 若有 Shadow，弃对手1牌
-    if (hasShadow && random) {
-        const opponentHand = state.players[defenderId]?.hand || [];
-        if (opponentHand.length > 0) {
-            const idx = Math.floor(random.random() * opponentHand.length);
-            events.push({
-                type: 'CARD_DISCARDED',
-                payload: { playerId: defenderId, cardId: opponentHand[idx].id },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: timestamp + 1
-            } as CardDiscardedEvent);
-        }
-    }
-
     return events;
 }
 
-/** 聚宝盆（旧）：若有Shadow丢弃对手1卡 - 保留向后兼容 */
+/** 历史兼容旧事件：旧聚宝盆分支的 Shadow 弃牌，不是当前一级聚宝盆入口。 */
 function handleCornucopiaDiscard({ ctx, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     const faceCounts = getOffensiveAttackFaceCounts(state);
     const hasShadow = (faceCounts[FACE.SHADOW] || 0) > 0;
@@ -784,10 +768,7 @@ export function registerShadowThiefCustomActions(): void {
     });
     registerCustomActionHandler('shadow_thief-shadow-dance-roll', handleShadowDanceRoll, { categories: ['dice', 'damage'] });
     registerCustomActionHandler('shadow_thief-shadow-dance-roll-2', handleShadowDanceRoll2, { categories: ['dice', 'damage', 'resource', 'card'] });
-    registerCustomActionHandler('shadow_thief-cornucopia', handleCornucopia, {
-        categories: ['card', 'other'],
-        requiresSelectedDefender: true,
-    });
+    registerCustomActionHandler('shadow_thief-cornucopia', handleCornucopia, { categories: ['card'] });
     registerCustomActionHandler('shadow_thief-cornucopia-discard', handleCornucopiaDiscard, { categories: ['other'] });
     registerCustomActionHandler('shadow_thief-cornucopia-2', handleCornucopia2, {
         categories: ['card', 'resource', 'other'],

@@ -2179,7 +2179,7 @@
     },
     "cornucopia": {
       "name": "聚宝盆",
-      "description": "2 卡牌触发：每有 1 个卡牌面便抽 1 张牌；若有暗影面，则随机弃掉对手 1 张牌。"
+      "description": "2 卡牌触发：每有 1 个卡牌面便抽 1 张牌。"
     },
     "shadow-shank": {
       "name": "暗影穿刺",

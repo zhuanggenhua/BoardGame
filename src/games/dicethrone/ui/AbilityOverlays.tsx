@@ -62,15 +62,25 @@ type AbilityHighlightTone = {
 };
 
 const DEFAULT_ABILITY_HIGHLIGHT_TONE: AbilityHighlightTone = {
-    highlightBorderColor: '#ff3347',
-    highlightRimColor: 'rgba(255,255,255,0.34)',
-    highlightGlowColor: 'rgba(255,51,71,0.94)',
-    highlightHaloColor: 'rgba(255,51,71,0.56)',
+    highlightBorderColor: '#22d3ee',
+    highlightRimColor: 'rgba(255,255,255,0.58)',
+    highlightGlowColor: 'rgba(236,72,153,0.88)',
+    highlightHaloColor: 'rgba(34,211,238,0.68)',
     selectedBorderColor: '#e11d48',
     selectedRimColor: 'rgba(255,255,255,0.42)',
     selectedGlowColor: 'rgba(225,29,72,0.98)',
     selectedHaloColor: 'rgba(225,29,72,0.64)',
     selectedPulseBorderColor: 'rgba(255,244,246,0.78)',
+};
+
+const CONTRAST_ABILITY_HIGHLIGHT_TONE: Pick<
+    AbilityHighlightTone,
+    'highlightBorderColor' | 'highlightRimColor' | 'highlightGlowColor' | 'highlightHaloColor'
+> = {
+    highlightBorderColor: '#22d3ee',
+    highlightRimColor: 'rgba(255,255,255,0.58)',
+    highlightGlowColor: 'rgba(236,72,153,0.88)',
+    highlightHaloColor: 'rgba(34,211,238,0.68)',
 };
 
 const ABILITY_HIGHLIGHT_TONES: Partial<Record<string, Partial<AbilityHighlightTone>>> = {
@@ -198,6 +208,8 @@ const ABILITY_HIGHLIGHT_TONES: Partial<Record<string, Partial<AbilityHighlightTo
 const getAbilityHighlightTone = (characterId?: string): AbilityHighlightTone => ({
     ...DEFAULT_ABILITY_HIGHLIGHT_TONE,
     ...(characterId ? ABILITY_HIGHLIGHT_TONES[characterId] : undefined),
+    // 可选技能必须用撞色提示，不能跟角色面板主题色同色。
+    ...CONTRAST_ABILITY_HIGHLIGHT_TONE,
 });
 
 const buildAbilityHighlightStyle = (

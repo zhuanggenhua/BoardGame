@@ -658,7 +658,10 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
             tokenActiveUseTiming === 'onOffensiveRollEnd'
             || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
         );
-    const shouldAutoResolveOffensiveRollEndChoice = isOffensiveRollEndChoice && customId !== 'use-ninjutsu';
+    const shouldAutoResolveOffensiveRollEndChoice = isOffensiveRollEndChoice
+        && customId !== 'use-ninjutsu'
+        && customId !== 'use-crit'
+        && customId !== 'use-accuracy';
 
     if (
         sourceAbilityId

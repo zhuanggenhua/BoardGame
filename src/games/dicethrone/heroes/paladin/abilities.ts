@@ -25,14 +25,16 @@ const heal = (value: number, description: string): AbilityEffect => ({
     action: { type: 'heal', target: 'self', value },
 });
 
-const grantToken = (tokenId: string, value: number, description: string): AbilityEffect => ({
+const grantToken = (tokenId: string, value: number, description: string, opts?: { timing?: EffectTiming }): AbilityEffect => ({
     description,
     action: { type: 'grantToken', target: 'self', tokenId, value },
+    timing: opts?.timing,
 });
 
-const cpGain = (value: number, description: string): AbilityEffect => ({
+const cpGain = (value: number, description: string, opts?: { timing?: EffectTiming }): AbilityEffect => ({
     description,
     action: { type: 'custom', target: 'self', customActionId: 'gain-cp', params: { amount: value } },
+    timing: opts?.timing,
 });
 
 // ----------------------------------------------------------------------------
@@ -250,8 +252,8 @@ export const RIGHTEOUS_PRAYER_2: AbilityDef = {
             tags: ['unblockable'],
             effects: [
                 damage(8, abilityEffectText('righteous-prayer-2', 'damage8Unblockable'), { tags: ['unblockable'] }),
-                grantToken(TOKEN_IDS.CRIT, 1, abilityEffectText('righteous-prayer-2', 'gainCrit')),
-                cpGain(2, abilityEffectText('righteous-prayer-2', 'gain2CP')),
+                grantToken(TOKEN_IDS.CRIT, 1, abilityEffectText('righteous-prayer-2', 'gainCrit'), { timing: 'postDamage' }),
+                cpGain(2, abilityEffectText('righteous-prayer-2', 'gain2CP'), { timing: 'postDamage' }),
             ],
             priority: 1
         }
@@ -425,8 +427,8 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         trigger: { type: 'diceSet', faces: { [FACES.PRAY]: 4 } },
         effects: [
             damage(8, abilityEffectText('righteous-prayer', 'damage8')),
-            grantToken(TOKEN_IDS.CRIT, 1, abilityEffectText('righteous-prayer', 'gainCrit')),
-            cpGain(2, abilityEffectText('righteous-prayer', 'gain2CP')),
+            grantToken(TOKEN_IDS.CRIT, 1, abilityEffectText('righteous-prayer', 'gainCrit'), { timing: 'postDamage' }),
+            cpGain(2, abilityEffectText('righteous-prayer', 'gain2CP'), { timing: 'postDamage' }),
         ]
     },
 

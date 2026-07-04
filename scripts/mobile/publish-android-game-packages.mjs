@@ -18,6 +18,33 @@ const packageJson = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 
 const args = process.argv.slice(2);
 const SHARED_AUDIO_PACK_GAME_ID = 'common-audio';
 const SHARED_AUDIO_PREFIX = 'common/audio/';
+const COMPRESSED_DIR_NAME = 'compressed';
+const COMPRESSED_EXTENSIONS = new Set(['.webp', '.ogg']);
+const DIRECT_ASSET_EXTENSIONS = new Set(['.json', '.svg']);
+const SOURCE_ASSET_EXTENSIONS = new Set([
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.mp3',
+    '.wav',
+    '.psd',
+    '.ai',
+    '.aseprite',
+    '.kra',
+    '.xcf',
+    '.tmp',
+    '.bak',
+]);
+const TEMPORARY_ASSET_NAME_PATTERN = /(^|[/._ -])(?:temp|tmp|bak|backup|old|copy|副本|临时|测试|test)([/._ -]|$)/i;
+const LEGACY_DICETHRONE_COMPRESSED_ALIASES = new Set([
+    '人类面板.webp',
+    '手牌.webp',
+    '提示卡.webp',
+    '提示板.webp',
+    '玩家面板.webp',
+    '面板.webp',
+    '骰子.webp',
+]);
 const STABLE_ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const tempZipRoot = path.join(tmpdir(), 'boardgame-mobile-packages');
 const runId = `${process.pid}-${Date.now()}`;
@@ -153,9 +180,65 @@ const discoverPackageManagedGames = () => {
 
 const shouldIncludeInGamePackage = (relativePath, gameId) => {
     const normalized = relativePath.replace(/\\/g, '/');
-    return normalized.startsWith(`${gameId}/`)
+    if (!(normalized.startsWith(`${gameId}/`)
         || normalized.startsWith(`atlas-configs/${gameId}/`)
-        || /^i18n\/[^/]+\/[^/]+\//.test(normalized) && normalized.includes(`/${gameId}/`);
+        || /^i18n\/[^/]+\/[^/]+\//.test(normalized) && normalized.includes(`/${gameId}/`))) {
+        return false;
+    }
+
+    const extension = path.extname(normalized).toLowerCase();
+    if (SOURCE_ASSET_EXTENSIONS.has(extension) || TEMPORARY_ASSET_NAME_PATTERN.test(normalized)) {
+        return false;
+    }
+
+    if (DIRECT_ASSET_EXTENSIONS.has(extension)) {
+        return true;
+    }
+
+    const parts = normalized.split('/');
+    if (
+        gameId === 'dicethrone'
+        && parts.includes(COMPRESSED_DIR_NAME)
+        && parts.length >= 2
+        && parts[parts.length - 2] === COMPRESSED_DIR_NAME
+        && LEGACY_DICETHRONE_COMPRESSED_ALIASES.has(parts[parts.length - 1])
+    ) {
+        return false;
+    }
+
+    return parts.includes(COMPRESSED_DIR_NAME) && COMPRESSED_EXTENSIONS.has(extension);
+};
+
+const isSourceOrTemporaryAssetPath = (relativePath) => {
+    const normalized = relativePath.replace(/\\/g, '/');
+    const extension = path.extname(normalized).toLowerCase();
+    return SOURCE_ASSET_EXTENSIONS.has(extension) || TEMPORARY_ASSET_NAME_PATTERN.test(normalized);
+};
+
+const isCompressedRuntimeMediaPath = (relativePath) => {
+    const normalized = relativePath.replace(/\\/g, '/');
+    const extension = path.extname(normalized).toLowerCase();
+    const parts = normalized.split('/');
+    return COMPRESSED_EXTENSIONS.has(extension) && parts.includes(COMPRESSED_DIR_NAME);
+};
+
+const assertGamePackageEntriesArePublishable = (includedFiles, gameId) => {
+    const blockedFiles = includedFiles
+        .map((entry) => entry.relativePath)
+        .filter((relativePath) => {
+            const extension = path.extname(relativePath).toLowerCase();
+            if (isSourceOrTemporaryAssetPath(relativePath)) return true;
+            if (COMPRESSED_EXTENSIONS.has(extension) && !isCompressedRuntimeMediaPath(relativePath)) return true;
+            return false;
+        });
+
+    if (blockedFiles.length > 0) {
+        throw new Error([
+            `${gameId} Android 游戏包候选资源包含非压缩交付物或临时/源素材，已中断发布。`,
+            ...blockedFiles.slice(0, 20).map((relativePath) => `- ${relativePath}`),
+            blockedFiles.length > 20 ? `... 还有 ${blockedFiles.length - 20} 个` : '',
+        ].filter(Boolean).join('\n'));
+    }
 };
 
 const buildGamePackageEntries = (gameId) => {
@@ -167,12 +250,44 @@ const buildGamePackageEntries = (gameId) => {
         }))
         .filter((entry) => shouldIncludeInGamePackage(entry.relativePath, gameId))
         .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+    assertGamePackageEntriesArePublishable(includedFiles, gameId);
     return { includedFiles };
 };
 
 const shouldIncludeInSharedAudioPackage = (relativePath) => {
     const normalized = relativePath.replace(/\\/g, '/');
-    return normalized === 'common/audio' || normalized.startsWith(SHARED_AUDIO_PREFIX);
+    if (!normalized.startsWith(SHARED_AUDIO_PREFIX)) {
+        return false;
+    }
+
+    const extension = path.extname(normalized).toLowerCase();
+    const parts = normalized.split('/');
+    return extension === '.ogg'
+        && parts.includes(COMPRESSED_DIR_NAME)
+        && !SOURCE_ASSET_EXTENSIONS.has(extension)
+        && !TEMPORARY_ASSET_NAME_PATTERN.test(normalized);
+};
+
+const assertSharedAudioPackageEntriesArePublishable = (includedFiles) => {
+    const blockedFiles = includedFiles
+        .map((entry) => entry.relativePath)
+        .filter((relativePath) => {
+            const normalized = relativePath.replace(/\\/g, '/');
+            return !normalized.startsWith(SHARED_AUDIO_PREFIX)
+                || path.extname(normalized).toLowerCase() !== '.ogg'
+                || !isCompressedRuntimeMediaPath(normalized)
+                || isSourceOrTemporaryAssetPath(normalized)
+                || normalized.endsWith('/registry.json')
+                || normalized.endsWith('/phrase-mappings.zh-CN.json');
+        });
+
+    if (blockedFiles.length > 0) {
+        throw new Error([
+            'Android 共享音频包候选资源包含非压缩 OGG 或构建/开发配置，已中断发布。',
+            ...blockedFiles.slice(0, 20).map((relativePath) => `- ${relativePath}`),
+            blockedFiles.length > 20 ? `... 还有 ${blockedFiles.length - 20} 个` : '',
+        ].filter(Boolean).join('\n'));
+    }
 };
 
 const buildSharedAudioPackageEntries = () => {
@@ -184,6 +299,7 @@ const buildSharedAudioPackageEntries = () => {
         }))
         .filter((entry) => shouldIncludeInSharedAudioPackage(entry.relativePath))
         .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+    assertSharedAudioPackageEntriesArePublishable(includedFiles);
     return { includedFiles };
 };
 

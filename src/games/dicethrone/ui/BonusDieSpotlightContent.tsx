@@ -172,8 +172,10 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute inset-[-0.8vw] rounded-[1.2vw] animate-pulse pointer-events-none"
-                        style={{ boxShadow: `0 0 2.5vw 1vw ${FACE_GLOW_COLORS[face]}` }}
+                        className="absolute inset-0 rounded-[1.2vw] animate-pulse pointer-events-none"
+                        style={{
+                            boxShadow: `0 0 clamp(18px, 1.7vw, 34px) clamp(4px, 0.34vw, 8px) ${FACE_GLOW_COLORS[face]}`,
+                        }}
                     />
                 )}
             </div>

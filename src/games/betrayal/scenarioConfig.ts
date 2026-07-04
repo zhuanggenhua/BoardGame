@@ -18,7 +18,6 @@ export type BetrayalRoomVisualId =
     | 'tower'
     | 'statuaryCorridor'
     | 'bedroom'
-    | 'attic'
     | 'study'
     | 'gallery'
     | 'entranceHall'
@@ -816,13 +815,6 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 tags: ['上层', '走廊'],
                 visualId: 'statuaryCorridor',
                 doorways: ['north', 'east', 'south'],
-            },
-            {
-                name: '阁楼',
-                hint: '狭窄昏暗，像是能翻出旧物的上层房间',
-                tags: ['上层', '杂物'],
-                visualId: 'attic',
-                doorways: ['south', 'west'],
             },
             {
                 name: '书房',

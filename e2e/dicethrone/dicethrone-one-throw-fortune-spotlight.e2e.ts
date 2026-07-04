@@ -51,41 +51,22 @@ async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
     await page.mouse.move(2, 2);
 }
 
-async function waitForRolling3DFrame(page: Page, dieContentTestId = '[data-testid="bonus-die-spotlight-content"]'): Promise<void> {
+async function waitForRollingSpotlightFrame(page: Page, dieContentTestId = '[data-testid="bonus-die-spotlight-content"]'): Promise<void> {
     await expect.poll(async () => page.locator(dieContentTestId).first().evaluate((node) => {
         const content = node as HTMLElement;
-        const diceRoot = content.querySelector('[data-testid="dice-3d"]') as HTMLElement | null;
-        const cube = content.querySelector('.dice3d-preserve-3d') as HTMLElement | null;
-        if (!diceRoot || !cube) {
+        const face = content.querySelector('[data-testid="bonus-die-spotlight-face"]') as HTMLElement | null;
+        if (!face) {
             return false;
         }
 
-        const rootRect = diceRoot.getBoundingClientRect();
-        const getFaceRect = (faceId: string) => {
-            const face = diceRoot.querySelector(`[data-face-id="${faceId}"]`) as HTMLElement | null;
-            return face?.getBoundingClientRect() ?? null;
-        };
+        const rect = face.getBoundingClientRect();
+        const transform = getComputedStyle(face).transform;
 
-        const leftRect = getFaceRect('4');
-        const rightRect = getFaceRect('3');
-        const topRect = getFaceRect('2');
-        const bottomRect = getFaceRect('5');
-        const frontRect = getFaceRect('1');
-
-        const maxSideWidth = Math.max(leftRect?.width ?? 0, rightRect?.width ?? 0);
-        const maxVerticalHeight = Math.max(topRect?.height ?? 0, bottomRect?.height ?? 0);
-        const frontWidth = frontRect?.width ?? 0;
-
-        if ((content.dataset.isRolling ?? '') !== 'true' || rootRect.width <= 0) {
+        if ((content.dataset.isRolling ?? '') !== 'true' || rect.width <= 0 || rect.height <= 0) {
             return false;
         }
 
-        const sideVisibleEnough = maxSideWidth > rootRect.width * 0.14;
-        const verticalVisibleEnough = maxVerticalHeight > rootRect.width * 0.14;
-        const frontNotFullFace = frontWidth < rootRect.width * 0.96;
-        const has3DTransform = getComputedStyle(cube).transform !== 'none';
-
-        return has3DTransform && frontNotFullFace && (sideVisibleEnough || verticalVisibleEnough);
+        return transform !== 'none';
     }), { timeout: 3000, intervals: [50, 50, 50, 50, 100, 100] }).toBe(true);
 }
 
@@ -157,7 +138,7 @@ test('opponent one throw fortune spotlight should visibly roll before settling',
         })), { timeout: 2000 }).toMatchObject({
             isRolling: 'true',
         });
-        await waitForRolling3DFrame(hostPage, '[data-testid="bonus-die-spotlight-content"]');
+        await waitForRollingSpotlightFrame(hostPage, '[data-testid="bonus-die-spotlight-content"]');
 
         await hostPage.screenshot({
             path: getEvidenceScreenshotPath(testInfo, '01-opponent-one-throw-fortune-rolling'),

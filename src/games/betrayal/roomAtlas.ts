@@ -73,7 +73,6 @@ export const BETRAYAL_ROOM_TILE_VISUALS = {
     statuaryCorridor: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 2),
     conservatory: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 7),
     bedroom: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 31),
-    attic: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 23),
     study: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 25),
     gallery: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 3),
     ballroom: buildRoomTileVisual('betrayal/rooms/room-front-atlas', ROOM_FRONT_ATLAS, 4),

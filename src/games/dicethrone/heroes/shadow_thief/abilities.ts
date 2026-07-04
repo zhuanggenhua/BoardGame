@@ -108,7 +108,7 @@ export const SHADOW_THIEF_ABILITIES: AbilityDef[] = [
         ]
     },
     // 聚宝盆 (Cornucopia) I
-    // 抽 1×Card面 牌，若有Shadow弃对手1牌
+    // 每有 1 个 Card 面便抽 1 张牌；弃对手牌是 II 级效果
     {
         id: 'cornucopia',
         name: abilityText('cornucopia', 'name'),

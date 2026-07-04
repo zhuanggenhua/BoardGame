@@ -270,6 +270,8 @@ export interface PendingAttack {
     duelAttackerDieValue?: number;
     /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
     offensiveRollEndTokenResolved?: boolean;
+    /** 攻击掷骰阶段结束时已经使用过的 Token，允许暴击和精准在同一次攻击中连续使用。 */
+    offensiveRollEndTokenIdsUsed?: string[];
     /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */
     followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */

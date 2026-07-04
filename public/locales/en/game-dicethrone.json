@@ -1636,7 +1636,7 @@
     },
     "cornucopia": {
       "name": "Cornucopia",
-      "description": "2 Card: Draw 1×Card face cards; if Shadow face present, opponent discards 1 (random)"
+      "description": "2 Card: Draw 1 card for each Card face"
     },
     "shadow-shank": {
       "name": "Shadow Shank",
@@ -1686,7 +1686,7 @@
     },
     "cornucopia-2": {
       "name": "Cornucopia II",
-      "description": "2 Card: Draw per Card face, discard per Shadow face, gain CP per Bag face"
+      "description": "2 Card: Draw 1 card for each Card face; if any Shadow face is present, discard 1 card; if any Bag face is present, gain 1 CP"
     },
     "shadow-defense-2": {
       "name": "Shadow Defense II",
