@@ -3522,7 +3522,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 data-testid="betrayal-event-choice-confirm"
                                                 className="min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-bold text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4 shadow-none transition hover:text-[#f6ffc4] disabled:text-[#7a6a4a] disabled:no-underline"
                                             >
-                                                {pendingEventChoice.acceptLabel ?? t('common:confirm')}
+                                                {pendingEventChoice.acceptLabel ?? t('common:button.confirm')}
                                             </button>
                                             {pendingEventChoice.declineLabel ? (
                                                 <button
