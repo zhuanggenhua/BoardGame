@@ -7,9 +7,11 @@
  */
 
 import { test, expect } from '../framework';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
 test.describe('DiceThrone Volley 5 Dice Display', () => {
-    test('should display 5 dice in BonusDieOverlay when using Volley card', async ({ page, game }) => {
+    test('should display 5 dice in BonusDieOverlay when using Volley card', async ({ page, game }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -64,11 +66,16 @@ test.describe('DiceThrone Volley 5 Dice Display', () => {
         const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
         await expect(overlay).toBeVisible({ timeout: 5000 });
 
-        const bonusDice = overlay.locator('.dice3d-perspective');
+        const bonusDice = overlay.locator('[data-testid="bonus-die-spotlight-content"]');
         await expect(bonusDice).toHaveCount(5, { timeout: 5000 });
         await expect(
             page.getByRole('button', { name: /Confirm Damage|Continue|确认伤害|继续/i }),
         ).toHaveCount(0);
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '01-volley-5-dice-display'),
+            fullPage: false,
+        });
 
         const state = await game.getState();
         const settlement = state?.core?.pendingBonusDiceSettlement;

@@ -1108,7 +1108,15 @@ test.describe('DiceThrone hand card preview regression', () => {
   test('圣骑士满升级牌端到端截图', async ({ page, game }) => {
     test.setTimeout(120000);
     const evidenceDir = ensureEvidenceDir();
+    const beforeScreenshotPath = join(evidenceDir, 'legacy-paladin-before-upgrades-board.png');
     const screenshotPath = join(evidenceDir, 'legacy-paladin-full-upgrades-board.png');
+
+    await setupHeroScene(page, game, 'paladin', [], {
+      opponentHeroId: 'monk',
+    });
+    await expect(page.locator('[data-testid="player-board-surface"][data-character-id="paladin"]').first()).toBeVisible({ timeout: 10000 });
+    await page.screenshot({ path: beforeScreenshotPath, fullPage: true });
+    console.log(`[E2E-SCREENSHOT] ${beforeScreenshotPath}`);
 
     await game.openTestGame('dicethrone');
     await page.evaluate(async () => {

@@ -59,6 +59,7 @@
 - `generated-design-implementation`
 - `merge-decision-package`
 - `merge-pr-workflow`
+- `rule-bug-fix-workflow`
 - `screenshot-delivery`
 - `smashup-faction-addition`
 - `sticker-imagegen`

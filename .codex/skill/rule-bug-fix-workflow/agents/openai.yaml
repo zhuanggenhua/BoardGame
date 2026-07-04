@@ -1,0 +1,4 @@
+interface:
+  display_name: "规则 Bug 修复流程"
+  short_description: "规则反馈、合同核对、修复与回归收口"
+  default_prompt: "使用 $rule-bug-fix-workflow 处理当前规则反馈，先核对录入合同，再修实现并完成回归收口。"

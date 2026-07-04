@@ -19,7 +19,8 @@
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
 | **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
-| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先过 fail-close 审计门禁：最终权威状态、流程收口、共享链来源、来源例外；再建对象清单，锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
+| **修规则 bug / 规则回归 / 等级效果不一致** (卡牌、技能、Token、状态、阶段、伤害、资源、升级版/基础版差异) | `.codex/skill/rule-bug-fix-workflow/SKILL.md` + `docs/ai-rules/rule-contract-audit.md` + `docs/ai-rules/regression-closeout.md` | 第一门禁是判断已有录入合同是否被实现正确消费；只有合同缺失、未锁或与反馈冲突才回图面/规则源；修复必须同步回写中文/英文描述、静态定义、测试和 evidence；回归收口必须说明同类扩审与漏审原因 |
+| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` + `docs/ai-rules/regression-closeout.md` | 先过 fail-close 审计门禁：最终权威状态、流程收口、共享链来源、来源例外；再建对象清单，锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审复盘按回归收口文档归因，不要只补单对象 |
 | **处理 UI 回归恢复 / 功能开关双分支** (改回原来、默认关闭必须完全旧实现、开启后新体验单独成立、不能混用) | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/ui-ux.md` | 先锁 `last known good / first known bad`，直接阅读并恢复旧代码；若当前已混在同一组件里，先把关闭态拆回旧合同，再挂开启态；关闭态与开启态按两份并列正式合同实现和验收，只允许共享非视觉适配层 |
 | **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；禁止把游戏特化语义退回共享默认 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图、AI 自己核图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；AI 核图前先过图片上下文预算门禁；E2E 汇报必须附截图路径 |
@@ -41,7 +42,7 @@
 | **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-systems.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
 | **卡牌特写队列** (其他玩家打出卡牌展示) | `docs/ai-rules/engine-systems.md` § 卡牌特写队列 | `useCardSpotlightQueue` + `CardSpotlightQueue`，EventStream 驱动，点击关闭，队列上限 |
 | **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-systems.md` § 序列特效 | pushSequence API、delayAfter、cancelSequence、适用场景 |
-| **新增/审查/修复游戏机制实现** (技能/Token/事件卡/被动/机制 bug) | `docs/ai-rules/engine-systems.md` § 描述→实现全链路审查 | 修 bug 也必须先锁权威描述并拆成原子效果；逐效果检查六层链路，禁止只测注册或凭实现文案猜规则 |
+| **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/engine-systems.md` § 描述→实现全链路审查 | 新增或主动审查机制时，先锁权威描述并拆成原子效果；逐效果检查六层链路，禁止只测注册或凭实现文案猜规则。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
 | **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分 |
 | **用户明确裁定 / 与规则书或既有实现偏离的需求** | `docs/user-stories/README.md` | 先把用户描述沉淀为独立真相参考；项目级需求放 `docs/user-stories/project/`，游戏级需求统一放 `docs/games/<gameId>/user-stories/` |
 | **新游戏设计阶段** (领域建模/决策点/引擎缺口) | `docs/ai-rules/engine-systems.md` § 领域建模前置审查 | 规则→领域模型→实现，禁止跳过建模；术语映射、决策点识别、引擎缺口分析 |

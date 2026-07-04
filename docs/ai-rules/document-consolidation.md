@@ -30,6 +30,7 @@
 | 2026-06-09 | `AGENTS.md` § 测试编写规范 / 验证测试 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/doc-index.md` | 有结构性收口 | 根文件改成“测试分层 + 文档路由 + 红线”，把三板斧定义、主页/进局分层、长链预算、组合式验证下沉到二级文档。 |
 | 2026-06-09 | 当前对话关于“测试太慢 / 三板斧失守 / 根 AGENTS 渐进式披露”的复盘 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/doc-index.md` | 有约束增强 | 新增“15 分钟定位预算”“长链不得作为默认调试循环”“同一目标最多二次自然链后必须拆合同”，并把“为什么慢 / 是否还在推进实现”的入口也路由到二级文档。 |
 | 2026-06-14 | `docs/ai-rules/ui-ux.md` 中误放的“实施中状态呈现”规则 | `docs/framework/frontend.md` § 实施中状态横幅 + `docs/ai-rules/doc-index.md` | 无语义放宽 | 将 `statusTag='under_construction'` 必须复用 `ImplementationStatusRibbon` 的规则从通用 UI/UX 审美规范迁到前端框架组件合同；`doc-index` 只保留路由入口。 |
+| 2026-07-04 | `docs/ai-rules/testing-audit.md` 顶部规则 bug 合同门禁、回归处理与漏审复盘口径 | `docs/ai-rules/rule-contract-audit.md` + `docs/ai-rules/regression-closeout.md` + `.codex/skill/rule-bug-fix-workflow/SKILL.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，有职责拆分 | 将“先判断录入合同是否被实现正确消费”“冲突才回图面/规则源”“修复必须回写合同入口”“回归漏审复盘与同类扩审”拆到短文档和项目 skill；`testing-audit.md` 头部只保留路由摘要，避免同一规则在大文档中继续扩写。 |
 
 ## 后续候选批次
 
