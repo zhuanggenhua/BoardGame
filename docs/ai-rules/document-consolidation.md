@@ -31,15 +31,17 @@
 | 2026-06-09 | 当前对话关于“测试太慢 / 三板斧失守 / 根 AGENTS 渐进式披露”的复盘 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/doc-index.md` | 有约束增强 | 新增“15 分钟定位预算”“长链不得作为默认调试循环”“同一目标最多二次自然链后必须拆合同”，并把“为什么慢 / 是否还在推进实现”的入口也路由到二级文档。 |
 | 2026-06-14 | `docs/ai-rules/ui-ux.md` 中误放的“实施中状态呈现”规则 | `docs/framework/frontend.md` § 实施中状态横幅 + `docs/ai-rules/doc-index.md` | 无语义放宽 | 将 `statusTag='under_construction'` 必须复用 `ImplementationStatusRibbon` 的规则从通用 UI/UX 审美规范迁到前端框架组件合同；`doc-index` 只保留路由入口。 |
 | 2026-07-04 | `docs/ai-rules/testing-audit.md` 顶部规则 bug 合同门禁、回归处理与漏审复盘口径 | `docs/ai-rules/rule-contract-audit.md` + `docs/ai-rules/regression-closeout.md` + `.codex/skill/rule-bug-fix-workflow/SKILL.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，有职责拆分 | 将“先判断录入合同是否被实现正确消费”“冲突才回图面/规则源”“修复必须回写合同入口”“回归漏审复盘与同类扩审”拆到短文档和项目 skill；`testing-audit.md` 头部只保留路由摘要，避免同一规则在大文档中继续扩写。 |
+| 2026-07-04 | `docs/ai-rules/testing-audit.md` § D 维度库、维度选择指南、输出格式 | `docs/ai-rules/testing-audit-dimensions.md` + `docs/ai-rules/doc-index.md` + `.codex/skill/game-audit-workflow/SKILL.md` | 无语义放宽，纯拆分 | 将 D1-D57 细则从大文档无损搬到独立维度库；`testing-audit.md` 只保留入口摘要，审计 skill 与索引改为显式读取维度库。 |
+| 2026-07-04 | `docs/ai-rules/testing-audit-dimensions.md` § 需要展开的关键维度 | `docs/ai-rules/testing-audit-dimensions-semantics-interaction.md` + `docs/ai-rules/testing-audit-dimensions-resource-timing.md` + `docs/ai-rules/testing-audit-dimensions-state-pipeline.md` + `docs/ai-rules/testing-audit-dimensions-deferred-interaction.md` + `docs/ai-rules/testing-audit-dimensions.md` 索引 | 无语义放宽，纯拆分 | 将超大 D 维度细则按主题拆成分卷；入口维度库只保留分卷索引、摘要表、选择指南和输出格式，避免后续审计每次加载整本细则。 |
+| 2026-07-04 | `docs/ai-rules/testing-audit.md` § 核心原则 / 交互入口语义矩阵 / 技能完整流程矩阵 | `docs/ai-rules/testing-audit-core-principles.md` + `docs/ai-rules/testing-audit.md` 入口摘要 | 无语义放宽，纯拆分 | 将 fail-close 速查、全面审计完成定义、录入/图片/旧 evidence 边界、交互入口语义矩阵和技能完整流程矩阵无损搬到核心原则短文档；`testing-audit.md` 只保留入口摘要与证据分层。 |
+| 2026-07-04 | `docs/ai-rules/testing-audit.md` § E2E 测试框架规范 / 流程截图证据链 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/testing-audit.md` 入口摘要 | 无语义放宽，纯归并 | 将流程截图证据链、奖励骰/特写截图、生效时机判定、成功路径和对外口径门禁并入 E2E 专文；`testing-audit.md` 只保留 E2E 路由入口。 |
+| 2026-07-04 | `docs/ai-rules/testing-audit.md` § 描述→实现全链路审查规范 | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/doc-index.md` + `docs/ai-rules/engine-systems.md` 入口摘要 | 无语义放宽，纯拆分 | 将权威描述锁定、原子断言、交互链拆分、八层追踪、grep 消费点和复杂语义模式搬到专项短文档；`testing-audit.md` 只保留专项路由入口，`engine-systems.md` 不再误指审计大文档为唯一权威。 |
+| 2026-07-04 | `docs/ai-rules/engine-systems.md` § 传输层、游戏结束、SimpleChoice、动画/EventStream/特写、ActionLog | `docs/ai-rules/engine-transport.md` + `docs/ai-rules/engine-gameover.md` + `docs/ai-rules/engine-simple-choice.md` + `docs/ai-rules/engine-visual-events.md` + `docs/ai-rules/engine-action-log.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将被 `doc-index.md` 直接引用的引擎系统章节无损搬到专项短文档；`engine-systems.md` 原位置改为入口摘要，避免引擎总览继续承载系统百科。 |
 
 ## 后续候选批次
 
 1. `AGENTS.md` 的部署/Android OTA 细则：应下沉到 `.codex/skill/android-app-release/SKILL.md`、`docs/deploy.md` 和 `docs/mobile-release.md`，根文件只保留触发入口。
 2. `AGENTS.md` 的 UI/UX 规范：应下沉到 `docs/ai-rules/ui-ux.md` 与项目 UI/UX skill，根文件只保留“UI 改动先读哪里”。
-3. `testing-audit.md` 的 E2E 框架规范：应与 `docs/ai-rules/e2e-verification.md` 去重，保留审计证据分层在原文。
-4. `testing-audit.md` 的 D 维度库：应拆成 `docs/ai-rules/testing-audit-dimensions.md` 或继续由 `game-audit-workflow` references 承载。
-5. `engine-systems.md` 的 ActionLog、GameOver、SimpleChoice、动画表现：应按系统拆成更短文档，由 `doc-index.md` 路由。
-
 ## 本轮事故回代
 
 这次“余牌查询开启但正式对局点牌堆无响应”的流程问题，暴露的是两个层面：

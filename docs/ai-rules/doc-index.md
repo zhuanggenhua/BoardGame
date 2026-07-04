@@ -4,7 +4,7 @@
 
 | 场景 / 行为 | 必须阅读的文档 | 关注重点 |
 | :--- | :--- | :--- |
-| **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-systems.md` § ActionLogSystem 使用规范 → 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
+| **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-action-log.md` § 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
 | **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` | 压缩指令、扫描参数、清单校验、图片链路/裁剪规范 |
 | **需求交接式安全图片处理 / 视觉子代理 / OCR / 图集裁图核对** (图片文字读取、卡图/房间图规则录入、图片验收、读图卡死后继续任务) | `.codex/skill/safe-image-reading/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 主线程把用户当前需求、业务对象、图片需要补足的字段/判断点和结果用途交给短子代理或本地 OCR；录入需求返回官方原文、原子子句、结构化规则字段并写入 evidence/真相表；验收/对比需求只返回是否满足用户预期、失败点和最小证据；不得返回 base64/markdown 图片，也不得产出无关过程说明 |
 | **新增派系 / 新英雄 / 新角色** (从素材做到可玩、含录入/资源/机制/审计/E2E) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 这是新增批次的默认入口；先走项目 skill，再按 `gameId` 进入专项 workflow；默认包含对象级全面审计、evidence 留档与真实入口 E2E，不需要等用户额外提醒 |
@@ -20,9 +20,9 @@
 | **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
 | **修规则 bug / 规则回归 / 等级效果不一致** (卡牌、技能、Token、状态、阶段、伤害、资源、升级版/基础版差异) | `.codex/skill/rule-bug-fix-workflow/SKILL.md` + `docs/ai-rules/rule-contract-audit.md` + `docs/ai-rules/regression-closeout.md` | 第一门禁是判断已有录入合同是否被实现正确消费；只有合同缺失、未锁或与反馈冲突才回图面/规则源；修复必须同步回写中文/英文描述、静态定义、测试和 evidence；回归收口必须说明同类扩审与漏审原因 |
-| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` + `docs/ai-rules/regression-closeout.md` | 先过 fail-close 审计门禁：最终权威状态、流程收口、共享链来源、来源例外；再建对象清单，锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审复盘按回归收口文档归因，不要只补单对象 |
+| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/testing-audit-core-principles.md` + `docs/ai-rules/testing-audit-dimensions.md` + `docs/ai-rules/audit-evidence-template.md` + `docs/ai-rules/regression-closeout.md` | 先读入口和核心原则，过 fail-close 门禁：最终权威状态、流程收口、共享链来源、来源例外；再按 D 维度库选择适用维度，建对象清单、锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审复盘按回归收口文档归因，不要只补单对象 |
 | **处理 UI 回归恢复 / 功能开关双分支** (改回原来、默认关闭必须完全旧实现、开启后新体验单独成立、不能混用) | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/ui-ux.md` | 先锁 `last known good / first known bad`，直接阅读并恢复旧代码；若当前已混在同一组件里，先把关闭态拆回旧合同，再挂开启态；关闭态与开启态按两份并列正式合同实现和验收，只允许共享非视觉适配层 |
-| **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；禁止把游戏特化语义退回共享默认 |
+| **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` + `docs/ai-rules/testing-audit-core-principles.md` + `docs/ai-rules/testing-audit-dimensions.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；按核心原则和 D 维度库选择共享抽象、时序、状态消费、UI 消费等适用维度；禁止把游戏特化语义退回共享默认 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图、AI 自己核图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；AI 核图前先过图片上下文预算门禁；E2E 汇报必须附截图路径 |
 | **教程 / 新手引导设计** (tutorial/onboarding、教程看不懂、只在教按钮、需要重做教学结构) | `.codex/skill/tutorial-workflow/SKILL.md` + `docs/ai-rules/tutorial-design.md` + `.codex/skill/game-audit-workflow/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先读该游戏规则真相源，再走教程 workflow：先出完整文案，用户确认后才实施；再核目标、收益、真实案例、计分因果、真实交互与截图证据 |
 | **打开图片 / 给我看图 / 截图真正打开到本机 / 读图卡死** | `.codex/skill/screenshot-delivery/SKILL.md` + `docs/ai-rules/e2e-verification.md` | 先区分 AI 核图和用户开图；`view_image` / `Viewed Image` 只算 AI 看图，不算打开；AI 自己看图必须先检查大小/尺寸/数量，必要时只读轻量预览/OCR/contact sheet；用户说“打开图/我自己看”则直接用 `npm run verify:open-image` 或系统图片查看器打开目标图，回复附成功证据和绝对路径 |
@@ -39,18 +39,18 @@
 | **新增作弊/调试指令** | `docs/debug-tool-refactor.md` | 游戏专属调试配置的解耦注入方式 |
 | **粒子特效开发** (Canvas 2D 引擎) | `docs/particle-engine.md` | API、预设字段、性能优化、视觉质量规则、新增检查清单 |
 | **新增棋盘特效** (FX 系统) | `docs/ai-rules/animation-effects.md` § 引擎级 FX 系统 | FxRegistry 注册、FxBus push/pushSequence、FxRenderer 适配器、新增流程 |
-| **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-systems.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
-| **卡牌特写队列** (其他玩家打出卡牌展示) | `docs/ai-rules/engine-systems.md` § 卡牌特写队列 | `useCardSpotlightQueue` + `CardSpotlightQueue`，EventStream 驱动，点击关闭，队列上限 |
+| **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-visual-events.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
+| **卡牌特写队列** (其他玩家打出卡牌展示) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 | `useCardSpotlightQueue` + `CardSpotlightQueue`，EventStream 驱动，点击关闭，队列上限 |
 | **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-systems.md` § 序列特效 | pushSequence API、delayAfter、cancelSequence、适用场景 |
-| **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/engine-systems.md` § 描述→实现全链路审查 | 新增或主动审查机制时，先锁权威描述并拆成原子效果；逐效果检查六层链路，禁止只测注册或凭实现文案猜规则。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
+| **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/engine-systems.md` | 新增或主动审查机制时，先锁权威描述并拆成原子断言；逐交互链检查定义、注册、执行、状态、消耗、验证、UI、i18n、测试。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
 | **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分 |
 | **用户明确裁定 / 与规则书或既有实现偏离的需求** | `docs/user-stories/README.md` | 先把用户描述沉淀为独立真相参考；项目级需求放 `docs/user-stories/project/`，游戏级需求统一放 `docs/games/<gameId>/user-stories/` |
 | **新游戏设计阶段** (领域建模/决策点/引擎缺口) | `docs/ai-rules/engine-systems.md` § 领域建模前置审查 | 规则→领域模型→实现，禁止跳过建模；术语映射、决策点识别、引擎缺口分析 |
 | **大杀四方 POD 系统** (POD 卡牌/自动映射/数据一致性) | `docs/refactor/pod-system-architecture.md` + `src/games/smashup/rule/POD-SYSTEM.md` | 数据层完整定义不继承，能力层自动映射+选择性覆盖，审计脚本检查一致性 |
 | **判断是否有活跃交互 / 阻止手牌操作** (interactionBusy/disableInteraction) | `docs/ai-rules/engine-systems.md` § 框架复用优先 → `useIsInteractionBusy` | 所有"等待玩家输入"走 `sys.interaction`，Board 层用此 Hook 统一判断，禁止自建 UI 状态机 |
-| **游戏结束检测** (gameover/胜负判定) | `docs/ai-rules/engine-systems.md` § 游戏结束检测 | `sys.gameover` 唯一来源，管线自动检测，Board 读 `G.sys.gameover`，禁止读 core/ctx |
-| **传输层/Board Props** (socket/dispatch/Provider) | `docs/ai-rules/engine-systems.md` § 传输层架构 | `GameBoardProps` 契约，无 `ctx` prop，`dispatch` 命令分发，`GameProvider`/`LocalGameProvider` |
-| **乐观更新/延迟优化** (optimistic/latency/预测) | `docs/ai-rules/engine-systems.md` § 乐观更新引擎 | Random Probe 自动检测、AnimationMode、骰子动画最短播放时间（UI 层保护）、EventStream 水位线、pending replay、`latencyConfig.ts` |
+| **游戏结束检测** (gameover/胜负判定) | `docs/ai-rules/engine-gameover.md` | `sys.gameover` 唯一来源，管线自动检测，Board 读 `G.sys.gameover`，禁止读 core/ctx |
+| **传输层/Board Props** (socket/dispatch/Provider) | `docs/ai-rules/engine-transport.md` | `GameBoardProps` 契约，无 `ctx` prop，`dispatch` 命令分发，`GameProvider`/`LocalGameProvider` |
+| **乐观更新/延迟优化** (optimistic/latency/预测) | `docs/ai-rules/engine-transport.md` + `docs/ai-rules/engine-visual-events.md` | Random Probe 自动检测、AnimationMode、骰子动画最短播放时间（UI 层保护）、EventStream 水位线、pending replay、`latencyConfig.ts` |
 | **挑选/查找/对接音效** (查 key、换音效、补预加载、试听收口) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/audio-usage.md` | 先走项目音频 workflow；skill 负责查找链路、汇报和收口，文档负责架构合同与命令入口 |
 | **从外部导入新音效素材** (新增音频资源) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/add-audio.md` | skill 负责执行步骤与收口；文档负责目录、命名、产物、压缩、registry、中文友好名和 `/dev/audio` 验收合同 |
 | **音频不播放 / AudioContext** (浏览器兼容) | `docs/ai-rules/golden-rules.md` § AudioContext | `ctx.resume()` 异步竞态、HTML5 Audio vs WebAudio 区别 |

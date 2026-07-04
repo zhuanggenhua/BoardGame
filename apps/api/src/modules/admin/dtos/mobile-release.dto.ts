@@ -16,6 +16,12 @@ export class AndroidOtaReleaseDto {
 
     @IsOptional()
     @IsString()
+    @MaxLength(96)
+    @Matches(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?(?:-ota-[0-9TZ.-]+)?$/)
+    version?: string;
+
+    @IsOptional()
+    @IsString()
     @MaxLength(64)
     @Matches(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/)
     otaVersionBase?: string;
@@ -133,6 +139,12 @@ export class DeployUpdatePreviewDto {
     @IsOptional()
     @IsIn(['stable', 'gray', 'edge'])
     channel?: AndroidOtaChannel;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(96)
+    @Matches(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?(?:-ota-[0-9TZ.-]+)?$/)
+    version?: string;
 
     @IsOptional()
     @IsString()

@@ -500,6 +500,9 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
                         const isUpgraded = passiveBaseId
                             ? (abilityLevels?.[passiveBaseId] ?? 1) > 1
                             : false;
+                        const passiveResolvedId = passiveBaseId && slotContainsAbilityIdForCharacter(characterId, slot.id, passiveBaseId, playerBoardFace)
+                            ? passiveBaseId
+                            : null;
                         const passiveUpgradeCard = isUpgraded ? passiveCard : undefined;
                         const passiveInspectKey = `passive-${characterId}-${slot.id}-${passiveUpgradeCard?.id ?? 'none'}`;
                         const mapping = ABILITY_SLOT_MAP[slot.id];
@@ -510,6 +513,12 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
                                 key={slot.id}
                                 data-ability-slot={slot.id}
                                 data-ability-slot-scope={slotScope}
+                                data-resolved-ability-id={passiveResolvedId ?? ''}
+                                data-base-ability-id={passiveBaseId ?? ''}
+                                data-can-click="false"
+                                data-should-highlight="false"
+                                data-is-selected="false"
+                                data-is-activating="false"
                                 data-passive-ability="true"
                                 data-upgrade-preview-slot={passiveUpgradeCard ? slot.id : undefined}
                                 data-upgrade-card-interactive={passiveUpgradeCard ? 'true' : 'false'}

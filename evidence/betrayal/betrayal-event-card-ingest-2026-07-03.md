@@ -115,6 +115,18 @@
 
 旧占位事件 `回廊顺风 / 窃窃低语 / 旧日手记 / 滑落阶梯 / 墙中低语 / 冷风指路 / 阴影扑面 / 残留祝福` 不再作为首剧本事件发现池数据。它们只能作为历史样板理解，不能覆盖用户提供的事件牌 atlas，也不得作为官方事件牌录入完成的证据。
 
+## 页面承接 E2E 补证
+
+2026-07-04 按 `docs/ai-rules/e2e-verification.md` 和 `docs/ai-rules/testing-audit.md` 重审后，事件牌页面承接口径已拆成两层：`Board.foundation.test.tsx` 只作为组件/React 层承接证据，不能替代真实浏览器 E2E；真实浏览器 E2E 由 `e2e/betrayal/event-choice-coverage.e2e.ts` 承接。
+
+- 覆盖矩阵：`evidence/betrayal/betrayal-event-e2e-coverage-2026-07-04.md`
+- Playwright 命令：`node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/event-choice-coverage.e2e.ts`
+- 结果：12 条 Playwright 测试通过。
+- 覆盖判断：23 张 locked 官方事件逐张登记；其中 11 张需要页面选择承接，全部已有真实浏览器 E2E；`脑状食品` 含“奖励属性选择”和“通用伤害属性选择”两条不同页面链，因此实际 E2E 为 12 条。其余 12 张是自动投骰、自动属性变化、自动伤害、自动抽牌、固定放置或复合自动效果，不需要页面按钮选择。
+- 截图证据目录：`D:\gongzuo\webgame\BoardGame\evidence\山屋惊魂-事件牌页面承接E2E`，共 24 张“选择前/结算后”截图。
+
+此补证只证明当前 23 张 locked 官方事件的运行态和必要页面选择链已按当前矩阵收口；不代表作祟剧本 1/3/12/33 完整玩法已实现，也不代表未来新增事件图源自动通过。
+
 ## 下一步录入门槛
 
 1. 旧 6x4 index 8 已改由 TTS 9x5 `CardID=37221` 补锁为 `上古旧宅`：0-2 档为放置到任意地下室板块并受到 1 点精神伤害。index 6“脑状食品”和 index 9“说“茄子”！”已由深裁图补锁，并已接入运行时。后续仍不得用旧占位事件或 OCR 候选脑补任何未锁字段。

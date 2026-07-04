@@ -68,6 +68,14 @@ test.describe('DiceThrone Volley 5 Dice Display', () => {
 
         const bonusDice = overlay.locator('[data-testid="bonus-die-spotlight-content"]');
         await expect(bonusDice).toHaveCount(5, { timeout: 5000 });
+        await expect.poll(async () => overlay
+            .locator('[data-testid^="bonus-die-reroll-option-"]')
+            .evaluateAll((nodes) => nodes.filter((node) => {
+                const element = node as HTMLElement;
+                const rect = element.getBoundingClientRect();
+                const opacity = Number.parseFloat(getComputedStyle(element).opacity || '0');
+                return rect.width > 40 && rect.height > 40 && opacity > 0.98;
+            }).length), { timeout: 3000 }).toBe(5);
         await expect(
             page.getByRole('button', { name: /Confirm Damage|Continue|确认伤害|继续/i }),
         ).toHaveCount(0);
@@ -75,6 +83,62 @@ test.describe('DiceThrone Volley 5 Dice Display', () => {
         await page.screenshot({
             path: getEvidenceScreenshotPath(testInfo, '01-volley-5-dice-display'),
             fullPage: false,
+        });
+        const diceBounds = await overlay
+            .locator('[data-testid^="bonus-die-reroll-option-"]')
+            .evaluateAll((nodes) => nodes.map((node) => {
+                const rect = (node as HTMLElement).getBoundingClientRect();
+                return {
+                    left: rect.left,
+                    top: rect.top,
+                    right: rect.right,
+                    bottom: rect.bottom,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            }));
+        expect(diceBounds).toHaveLength(5);
+
+        const diceGroupBounds = diceBounds.reduce((bounds, rect) => ({
+            left: Math.min(bounds.left, rect.left),
+            top: Math.min(bounds.top, rect.top),
+            right: Math.max(bounds.right, rect.right),
+            bottom: Math.max(bounds.bottom, rect.bottom),
+        }), {
+            left: Number.POSITIVE_INFINITY,
+            top: Number.POSITIVE_INFINITY,
+            right: Number.NEGATIVE_INFINITY,
+            bottom: Number.NEGATIVE_INFINITY,
+        });
+        const viewport = page.viewportSize() ?? { width: 1920, height: 1080 };
+        const screenshotPadding = 32;
+        const clip = {
+            x: Math.max(0, Math.floor(diceGroupBounds.left - screenshotPadding)),
+            y: Math.max(0, Math.floor(diceGroupBounds.top - screenshotPadding)),
+            width: Math.min(
+                viewport.width,
+                Math.ceil((diceGroupBounds.right - diceGroupBounds.left) + screenshotPadding * 2),
+            ),
+            height: Math.min(
+                viewport.height,
+                Math.ceil((diceGroupBounds.bottom - diceGroupBounds.top) + screenshotPadding * 2),
+            ),
+        };
+        clip.width = Math.min(clip.width, viewport.width - clip.x);
+        clip.height = Math.min(clip.height, viewport.height - clip.y);
+
+        for (const rect of diceBounds) {
+            expect(rect.width).toBeGreaterThan(40);
+            expect(rect.height).toBeGreaterThan(40);
+            expect(rect.left).toBeGreaterThanOrEqual(clip.x);
+            expect(rect.top).toBeGreaterThanOrEqual(clip.y);
+            expect(rect.right).toBeLessThanOrEqual(clip.x + clip.width);
+            expect(rect.bottom).toBeLessThanOrEqual(clip.y + clip.height);
+        }
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '02-volley-5-dice-overlay'),
+            clip,
         });
 
         const state = await game.getState();

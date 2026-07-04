@@ -367,6 +367,10 @@ export class AdminMobileReleaseService {
 
     private buildOtaReleaseArgs(dto: AndroidOtaReleaseDto) {
         const args = ['ota', '--channel', dto.channel];
+        const version = dto.version?.trim();
+        if (version) {
+            args.push('--version', version);
+        }
         const otaVersionBase = dto.otaVersionBase?.trim();
         if (otaVersionBase) {
             args.push('--ota-version-base', otaVersionBase);
@@ -447,6 +451,8 @@ export class AdminMobileReleaseService {
             parsed: {
                 workflowRunId: result?.workflow_run_id ? String(result.workflow_run_id) : '',
                 workflowUrl,
+                bundleVersion: workflowInputs.version,
+                version: workflowInputs.version,
                 gitRef: workflowInputs.git_ref,
                 channel: workflowInputs.channel,
             },
@@ -462,6 +468,7 @@ export class AdminMobileReleaseService {
                 `skip_latest=${workflowInputs.skip_latest}`,
                 `force_update=${workflowInputs.force_update}`,
                 `expected_base_version=${workflowInputs.expected_base_version}`,
+                `version=${workflowInputs.version || '(auto)'}`,
                 `ota_version_base=${workflowInputs.ota_version_base || '(default)'}`,
                 `url=${workflowUrl}`,
             ].join('\n'),
@@ -472,6 +479,7 @@ export class AdminMobileReleaseService {
         const inputs: Record<string, string> = {
             channel: dto.channel,
             git_ref: gitRef,
+            version: dto.version?.trim() || '',
             expected_base_version: packageVersion,
             ota_version_base: dto.otaVersionBase?.trim() || '',
             dry_run: dto.dryRun ? 'true' : 'false',
@@ -642,6 +650,7 @@ export class AdminMobileReleaseService {
     private buildDeployUpdateOtaDto(dto: DeployUpdatePreviewDto): AndroidOtaReleaseDto {
         return {
             channel: dto.channel ?? 'stable',
+            version: dto.version,
             otaVersionBase: dto.otaVersionBase,
             forceUpdate: dto.forceUpdate ?? true,
             dryRun: false,

@@ -9,7 +9,8 @@ description: "BoardGame 项目规则 bug 修复 workflow。用于用户反馈卡
 
 - 合同门禁：`docs/ai-rules/rule-contract-audit.md`
 - 回归收口：`docs/ai-rules/regression-closeout.md`
-- 全面审计：`docs/ai-rules/testing-audit.md`
+- 全面审计入口：`docs/ai-rules/testing-audit.md`
+- 全面审计核心原则与矩阵：`docs/ai-rules/testing-audit-core-principles.md`
 - 录入复核：`.codex/skill/data-entry-workflow/SKILL.md`
 - 全面游戏审计：`.codex/skill/game-audit-workflow/SKILL.md`
 - 不确定入口时：`docs/ai-rules/doc-index.md`
@@ -67,4 +68,3 @@ description: "BoardGame 项目规则 bug 修复 workflow。用于用户反馈卡
 - 改动覆盖：实现、测试、中文/英文描述、evidence 或用户故事。
 - 验证命令与结果。
 - 同类扩审范围与漏审复盘。
-

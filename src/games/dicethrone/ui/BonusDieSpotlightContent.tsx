@@ -9,15 +9,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { DieFace } from '../types';
+import { Dice3D } from './Dice3D';
 import { resolveBonusDieText } from './bonusDieTranslation';
 import { useResultRevealAnimation } from '../../../hooks/ui/useResultRevealAnimation';
-import {
-    buildSpriteBackgroundImage,
-    DICE_BG_SIZE,
-    getBonusFaceLabel,
-    getDiceSpriteAssetPath,
-    getDiceSpritePosition,
-} from './assets';
 
 interface BonusDieSpotlightContentProps {
     value: number;
@@ -99,22 +93,6 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
     }, [t, i18n, effectKey, effectParams, face]);
     const shouldRenderEffectText = !hideEffectText && Boolean(effectText);
     const definitionId = characterId ? `${characterId}-dice` : undefined;
-    const spriteAssetPath = React.useMemo(
-        () => getDiceSpriteAssetPath(definitionId, characterId),
-        [characterId, definitionId],
-    );
-    const spriteBackgroundImage = React.useMemo(
-        () => buildSpriteBackgroundImage(spriteAssetPath, locale),
-        [locale, spriteAssetPath],
-    );
-    const spritePosition = React.useMemo(() => getDiceSpritePosition(value), [value]);
-    const faceLabel = React.useMemo(
-        () => getBonusFaceLabel(value, t as (key: string, options?: Record<string, string | number>) => string, { face, definitionId }),
-        [definitionId, face, t, value],
-    );
-    const resolvedSize = size.startsWith('clamp(') || size.startsWith('min(') || size.startsWith('max(')
-        ? size
-        : `clamp(72px, ${size}, 176px)`;
 
     return (
         <div
@@ -125,59 +103,15 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
             data-is-rolling={isRolling ? 'true' : 'false'}
         >
             <div className="relative">
-                <motion.div
-                    data-testid="bonus-die-spotlight-face"
-                    initial={animateOnMount ? { rotate: -8, scale: 0.88 } : false}
-                    animate={isRolling
-                        ? {
-                            rotate: [0, 12, -10, 8, -6, 0],
-                            scale: [1, 0.96, 1.02, 0.98, 1],
-                            y: [0, -8, 4, -3, 0],
-                        }
-                        : {
-                            rotate: 0,
-                            scale: 1,
-                            y: 0,
-                        }}
-                    transition={isRolling
-                        ? {
-                            duration: Math.max(rollingDurationMs / 1000, 0.55),
-                            ease: 'easeInOut',
-                            times: [0, 0.18, 0.38, 0.62, 0.82, 1],
-                        }
-                        : {
-                            duration: 0.24,
-                            ease: 'easeOut',
-                        }}
-                    className="relative overflow-hidden rounded-[1.2vw] border border-white/25 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_rgba(255,255,255,0.06)_45%,_rgba(10,14,24,0.92)_100%)] shadow-[0_1.2vw_2.4vw_rgba(0,0,0,0.42)]"
-                    style={{
-                        width: resolvedSize,
-                        height: resolvedSize,
-                    }}
-                >
-                    <div
-                        className="absolute inset-[7%] rounded-[1vw] border border-white/12 bg-white"
-                        style={{
-                            backgroundImage: spriteBackgroundImage,
-                            backgroundSize: DICE_BG_SIZE,
-                            backgroundPosition: `${spritePosition.xPos}% ${spritePosition.yPos}%`,
-                            backgroundRepeat: 'no-repeat',
-                        }}
-                    />
-                    <div className="pointer-events-none absolute inset-x-[12%] top-[10%] h-[18%] rounded-full bg-white/40 blur-[0.35vw]" />
-                    <div className="pointer-events-none absolute inset-[5%] rounded-[1.05vw] shadow-[inset_0_-0.4vw_0.8vw_rgba(15,23,42,0.22)]" />
-                    <span className="sr-only">{faceLabel}</span>
-                </motion.div>
-                {!isRolling && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="absolute inset-0 rounded-[1.2vw] animate-pulse pointer-events-none"
-                        style={{
-                            boxShadow: `0 0 clamp(18px, 1.7vw, 34px) clamp(4px, 0.34vw, 8px) ${FACE_GLOW_COLORS[face]}`,
-                        }}
-                    />
-                )}
+                <Dice3D
+                    value={value}
+                    isRolling={isRolling}
+                    size={size}
+                    locale={locale}
+                    variant="spotlight"
+                    characterId={characterId}
+                    definitionId={definitionId}
+                />
             </div>
 
             <AnimatePresence>

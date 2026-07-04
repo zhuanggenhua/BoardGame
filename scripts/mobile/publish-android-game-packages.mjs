@@ -45,6 +45,11 @@ const LEGACY_DICETHRONE_COMPRESSED_ALIASES = new Set([
     '面板.webp',
     '骰子.webp',
 ]);
+const LEGACY_DICETHRONE_EMOTE_COMPRESSED_PATHS = new Set([
+    'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
+    'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
+]);
+const SMASHUP_POD_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/en\/smashup\/(?:cards|pod-assets)\/compressed\/(tts_atlas_[^/]+)\.webp$/;
 const STABLE_ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const tempZipRoot = path.join(tmpdir(), 'boardgame-mobile-packages');
 const runId = `${process.pid}-${Date.now()}`;
@@ -178,6 +183,48 @@ const discoverPackageManagedGames = () => {
     return Array.from(new Set(results)).sort((left, right) => left.localeCompare(right));
 };
 
+const loadSmashUpPodAtlasRuntimePackagePaths = (() => {
+    let cached = null;
+    return () => {
+        if (cached) return cached;
+
+        const englishMapPath = path.join(rootDir, 'src', 'games', 'smashup', 'data', 'englishAtlasMap.json');
+        const atlasCatalogPath = path.join(rootDir, 'src', 'games', 'smashup', 'domain', 'atlasCatalog.ts');
+        if (!existsSync(englishMapPath) || !existsSync(atlasCatalogPath)) {
+            throw new Error('缺少大杀四方 POD 图集路径合同文件，无法生成 Android 游戏包。');
+        }
+
+        const englishMap = JSON.parse(readFileSync(englishMapPath, 'utf8'));
+        const atlasCatalogSource = readFileSync(atlasCatalogPath, 'utf8');
+        const overrides = new Map(
+            [...atlasCatalogSource.matchAll(/(tts_atlas_[A-Za-z0-9_]+):\s*'smashup\/cards\/([^']+)'/g)]
+                .map((match) => [match[1], `smashup/cards/${match[2]}`]),
+        );
+        const atlasIds = new Set(
+            Object.values(englishMap)
+                .map((entry) => entry?.atlasId)
+                .filter((atlasId) => typeof atlasId === 'string' && atlasId.startsWith('tts_atlas_')),
+        );
+
+        cached = new Set(
+            [...atlasIds].map((atlasId) => {
+                const runtimeBasePath = overrides.get(atlasId) ?? `smashup/pod-assets/${atlasId}`;
+                const parts = runtimeBasePath.split('/');
+                const fileName = parts.pop();
+                return `i18n/en/${parts.join('/')}/compressed/${fileName}.webp`;
+            }),
+        );
+        return cached;
+    };
+})();
+
+const isPublishableSmashUpPodAtlasPath = (relativePath) => {
+    const normalized = relativePath.replace(/\\/g, '/');
+    const match = normalized.match(SMASHUP_POD_ATLAS_RELATIVE_PATH_PATTERN);
+    if (!match) return true;
+    return loadSmashUpPodAtlasRuntimePackagePaths().has(normalized);
+};
+
 const shouldIncludeInGamePackage = (relativePath, gameId) => {
     const normalized = relativePath.replace(/\\/g, '/');
     if (!(normalized.startsWith(`${gameId}/`)
@@ -195,7 +242,15 @@ const shouldIncludeInGamePackage = (relativePath, gameId) => {
         return true;
     }
 
+    if (gameId === 'smashup' && !isPublishableSmashUpPodAtlasPath(normalized)) {
+        return false;
+    }
+
     const parts = normalized.split('/');
+    if (gameId === 'dicethrone' && LEGACY_DICETHRONE_EMOTE_COMPRESSED_PATHS.has(normalized)) {
+        return false;
+    }
+
     if (
         gameId === 'dicethrone'
         && parts.includes(COMPRESSED_DIR_NAME)

@@ -59,6 +59,11 @@ const sourceAssetExtensions = new Set([
 ]);
 
 const temporaryAssetNamePattern = /(^|[/._ -])(?:temp|tmp|bak|backup|old|copy|副本|临时|测试|test)([/._ -]|$)/i;
+const smashUpPodAtlasRelativePathPattern = /^i18n\/en\/smashup\/(?:cards|pod-assets)\/compressed\/(tts_atlas_[^/]+)\.webp$/;
+const legacyDiceThroneEmoteCompressedPaths = new Set([
+    'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
+    'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
+]);
 
 const getPackageManagedGameIds = () => {
     const gamesRoot = path.join(process.cwd(), 'src', 'games');
@@ -86,7 +91,44 @@ const fileSha256 = (filePath: string) => createHash('sha256')
     .update(readFileSync(filePath))
     .digest('hex');
 
-const isCompressedDeliveryPath = (relativePath: string) => {
+const getSmashUpPodAtlasRuntimePackagePaths = (() => {
+    let cached: Set<string> | null = null;
+    return () => {
+        if (cached) return cached;
+
+        const englishMapPath = path.join(process.cwd(), 'src', 'games', 'smashup', 'data', 'englishAtlasMap.json');
+        const atlasCatalogPath = path.join(process.cwd(), 'src', 'games', 'smashup', 'domain', 'atlasCatalog.ts');
+        const englishMap = JSON.parse(readFileSync(englishMapPath, 'utf8')) as Record<string, { atlasId?: string }>;
+        const atlasCatalogSource = readFileSync(atlasCatalogPath, 'utf8');
+        const overrides = new Map(
+            [...atlasCatalogSource.matchAll(/(tts_atlas_[A-Za-z0-9_]+):\s*'smashup\/cards\/([^']+)'/g)]
+                .map((match) => [match[1], `smashup/cards/${match[2]}`]),
+        );
+        const atlasIds = new Set(
+            Object.values(englishMap)
+                .map((entry) => entry.atlasId)
+                .filter((atlasId): atlasId is string => typeof atlasId === 'string' && atlasId.startsWith('tts_atlas_')),
+        );
+
+        cached = new Set(
+            [...atlasIds].map((atlasId) => {
+                const runtimeBasePath = overrides.get(atlasId) ?? `smashup/pod-assets/${atlasId}`;
+                const parts = runtimeBasePath.split('/');
+                const fileName = parts.pop();
+                return `i18n/en/${parts.join('/')}/compressed/${fileName}.webp`;
+            }),
+        );
+        return cached;
+    };
+})();
+
+const isPublishableSmashUpPodAtlasPath = (relativePath: string) => {
+    const normalized = relativePath.replace(/\\/g, '/');
+    if (!smashUpPodAtlasRelativePathPattern.test(normalized)) return true;
+    return getSmashUpPodAtlasRuntimePackagePaths().has(normalized);
+};
+
+const isCompressedDeliveryPath = (relativePath: string, gameId?: string) => {
     const normalized = relativePath.replace(/\\/g, '/');
     const extension = path.extname(normalized).toLowerCase();
     if (sourceAssetExtensions.has(extension) || temporaryAssetNamePattern.test(normalized)) {
@@ -97,7 +139,15 @@ const isCompressedDeliveryPath = (relativePath: string) => {
         return true;
     }
 
+    if (gameId === 'smashup' && !isPublishableSmashUpPodAtlasPath(normalized)) {
+        return false;
+    }
+
     const parts = normalized.split('/');
+    if (gameId === 'dicethrone' && legacyDiceThroneEmoteCompressedPaths.has(normalized)) {
+        return false;
+    }
+
     if (
         parts.includes('compressed')
         && parts.at(-2) === 'compressed'
@@ -155,7 +205,7 @@ describe('Android 游戏包素材内容', () => {
         for (const gameId of getPackageManagedGameIds()) {
             const packageFiles = allAssetPaths
                 .filter((relativePath) => isGamePackagePath(relativePath, gameId))
-                .filter(isCompressedDeliveryPath);
+                .filter((relativePath) => isCompressedDeliveryPath(relativePath, gameId));
 
             const blockedFiles = packageFiles.filter((relativePath) => {
                 const extension = path.extname(relativePath).toLowerCase();
@@ -189,7 +239,7 @@ describe('Android 游戏包素材内容', () => {
             .map((gameId) => {
                 const packageFiles = allAssetPaths
                     .filter((relativePath) => isGamePackagePath(relativePath, gameId))
-                    .filter(isCompressedDeliveryPath);
+                    .filter((relativePath) => isCompressedDeliveryPath(relativePath, gameId));
                 const rows = packageFiles
                     .filter((relativePath) => /\.(?:webp|ogg|svg|json)$/i.test(relativePath))
                     .map((relativePath) => ({
@@ -212,15 +262,33 @@ describe('Android 游戏包素材内容', () => {
             .filter((entry) => entry.duplicateGroups > 0);
 
         expect(duplicateSummary.map(({ gameId, duplicateGroups }) => ({ gameId, duplicateGroups }))).toEqual([
-            { gameId: 'dicethrone', duplicateGroups: 3 },
+            { gameId: 'dicethrone', duplicateGroups: 1 },
             { gameId: 'qidahen', duplicateGroups: 1 },
-            { gameId: 'smashup', duplicateGroups: 139 },
+            { gameId: 'smashup', duplicateGroups: 2 },
             { gameId: 'summonerwars', duplicateGroups: 1 },
         ]);
-        expect(duplicateSummary.find((entry) => entry.gameId === 'dicethrone')?.duplicateBytes).toBeGreaterThan(300_000);
+        expect(duplicateSummary.find((entry) => entry.gameId === 'dicethrone')?.duplicateBytes).toBeLessThan(10_000);
         expect(duplicateSummary.find((entry) => entry.gameId === 'qidahen')?.duplicateBytes).toBeGreaterThan(40_000);
-        expect(duplicateSummary.find((entry) => entry.gameId === 'smashup')?.duplicateBytes).toBeGreaterThan(300_000_000);
+        expect(duplicateSummary.find((entry) => entry.gameId === 'smashup')?.duplicateBytes).toBeLessThan(3_000_000);
         expect(duplicateSummary.find((entry) => entry.gameId === 'summonerwars')?.duplicateBytes).toBeGreaterThan(200_000);
+    });
+
+    it('SmashUp 游戏包候选资源应只保留运行时会请求的 POD 图集路径', () => {
+        const assetsRoot = path.join(process.cwd(), 'public', 'assets');
+        const smashUpPackageFiles = walkFiles(assetsRoot)
+            .map((fullPath) => path.relative(assetsRoot, fullPath).replace(/\\/g, '/'))
+            .filter((relativePath) => isGamePackagePath(relativePath, 'smashup'))
+            .filter((relativePath) => isCompressedDeliveryPath(relativePath, 'smashup'));
+        const totalBytes = smashUpPackageFiles.reduce((sum, relativePath) => (
+            sum + statSync(path.join(assetsRoot, relativePath)).size
+        ), 0);
+
+        expect(smashUpPackageFiles.length).toBe(74);
+        expect(totalBytes).toBeLessThan(100 * 1024 * 1024);
+        expect(smashUpPackageFiles).toContain('i18n/en/smashup/cards/compressed/tts_atlas_0b888d02fd.webp');
+        expect(smashUpPackageFiles).toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0157978c57.webp');
+        expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/cards/compressed/tts_atlas_0157978c57.webp');
+        expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0b888d02fd.webp');
     });
 
     it('DiceThrone 游戏包候选资源不应包含未压缩图片源文件', () => {
@@ -228,16 +296,20 @@ describe('Android 游戏包素材内容', () => {
         const diceThronePackageFiles = walkFiles(assetsRoot)
             .map((fullPath) => path.relative(assetsRoot, fullPath).replace(/\\/g, '/'))
             .filter(isDiceThronePackagePath)
-            .filter(isCompressedDeliveryPath);
+            .filter((relativePath) => isCompressedDeliveryPath(relativePath, 'dicethrone'));
 
         const rawImageFiles = diceThronePackageFiles.filter((relativePath) => /\.(?:png|jpe?g)$/i.test(relativePath));
         const totalBytes = diceThronePackageFiles.reduce((sum, relativePath) => {
             return sum + statSync(path.join(assetsRoot, relativePath)).size;
         }, 0);
 
-        expect(diceThronePackageFiles.length).toBe(117);
+        expect(diceThronePackageFiles.length).toBe(115);
         expect(rawImageFiles).toEqual([]);
         expect(totalBytes).toBeLessThan(30 * 1024 * 1024);
+        expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp');
+        expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v2.webp');
+        expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp');
+        expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v2.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/images/cursed/compressed/玩家面板.webp');
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/images/cursed/compressed/player-board.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/images/artificial/compressed/手牌.webp');
@@ -268,6 +340,6 @@ describe('Android 游戏包素材内容', () => {
         expect(output).toContain('游戏 file-index/manifest 差异刷新预演完成（未上传 ZIP）');
         expect(output).toContain('gameId=dicethrone');
         expect(output).toContain('zipBytes=null');
-        expect(output).toContain('fileCount=117');
+        expect(output).toContain('fileCount=115');
     });
 });

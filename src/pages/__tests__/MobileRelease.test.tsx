@@ -113,8 +113,16 @@ describe('MobileReleasePage', () => {
             expect(screen.getByRole('button', { name: 'admin.mobileReleasePage.actions.execute_deploy_update' })).toBeEnabled();
         });
 
+        const sectionHeadings = screen.getAllByRole('heading', { level: 2 });
+        expect(sectionHeadings.map((heading) => heading.textContent).slice(0, 2)).toEqual([
+            'admin.mobileReleasePage.deployUpdate.title',
+            'admin.mobileReleasePage.ota.title',
+        ]);
         expect(screen.queryByText('admin.mobileReleasePage.deployUpdate.confirm_label')).toBeNull();
 
+        fireEvent.change(screen.getAllByLabelText('admin.mobileReleasePage.form.ota_bundle_version')[0], {
+            target: { value: '6.0.0-ota-2026-07-04T01-00-00-000Z' },
+        });
         fireEvent.click(screen.getByRole('button', { name: 'admin.mobileReleasePage.actions.execute_deploy_update' }));
 
         await waitFor(() => {
@@ -124,8 +132,11 @@ describe('MobileReleasePage', () => {
             );
         });
         expect(executeBody).toMatchObject({
+            version: '6.0.0-ota-2026-07-04T01-00-00-000Z',
             confirmText: '确认部署',
         });
+        expect(await screen.findByText('admin.mobileReleasePage.result.server_log')).toBeTruthy();
+        expect(screen.getByText('done')).toBeTruthy();
     });
 
     it('回滚执行按钮不再要求先输入确认文字', async () => {

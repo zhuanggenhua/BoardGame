@@ -54,19 +54,21 @@ async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
 async function waitForRollingSpotlightFrame(page: Page, dieContentTestId = '[data-testid="bonus-die-spotlight-content"]'): Promise<void> {
     await expect.poll(async () => page.locator(dieContentTestId).first().evaluate((node) => {
         const content = node as HTMLElement;
-        const face = content.querySelector('[data-testid="bonus-die-spotlight-face"]') as HTMLElement | null;
-        if (!face) {
+        const dice = content.querySelector('[data-testid="dice-3d"]') as HTMLElement | null;
+        const rotatingLayer = content.querySelector('.dice3d-preserve-3d') as HTMLElement | null;
+        if (!dice) {
             return false;
         }
 
-        const rect = face.getBoundingClientRect();
-        const transform = getComputedStyle(face).transform;
+        const rect = dice.getBoundingClientRect();
+        const transform = rotatingLayer ? getComputedStyle(rotatingLayer).transform : '';
+        const animationClass = rotatingLayer?.className ?? '';
 
         if ((content.dataset.isRolling ?? '') !== 'true' || rect.width <= 0 || rect.height <= 0) {
             return false;
         }
 
-        return transform !== 'none';
+        return transform !== 'none' || animationClass.includes('animate-dice3d');
     }), { timeout: 3000, intervals: [50, 50, 50, 50, 100, 100] }).toBe(true);
 }
 

@@ -19,7 +19,7 @@ description: "项目通用新增派系/角色/英雄完整交付 workflow。用�
 ### 默认执行口径（强制）
 
 - **新派系 / 新角色 / 新英雄默认就是全面审计留档**：只要任务语义是“新增派系/新增角色/新增英雄/从素材做到可玩/新对象接入”，且用户没有明确把范围缩成“只录入 / 只修一个 bug / 只做静态接入”，就默认必须把**对象级全面审计 + evidence 留档**作为交付物的一部分执行完，不需要再次询问“要不要补审 / 要不要审计 / 要不要留文档”。
-- **新增任务里的“全面审计”不得由执行者自定义缩写**：只要在新增派系/新英雄任务里对外使用“审计 / 全面审计 / 深入审计 / 收口审计 / 做到底 / 已审计完成”这些口径，具体要审什么、做到哪一层、什么情况下才算完成，必须回到 `docs/ai-rules/testing-audit.md`、`docs/ai-rules/audit-evidence-template.md` 和对应游戏专项 workflow 执行；不得由执行者自己口头定义成“我这轮补了几条测试 / 看了几张截图 / 跑了几条代表链，所以这就算全面审计”。
+- **新增任务里的“全面审计”不得由执行者自定义缩写**：只要在新增派系/新英雄任务里对外使用“审计 / 全面审计 / 深入审计 / 收口审计 / 做到底 / 已审计完成”这些口径，具体要审什么、做到哪一层、什么情况下才算完成，必须回到 `docs/ai-rules/testing-audit.md`、`docs/ai-rules/testing-audit-core-principles.md`、`docs/ai-rules/testing-audit-dimensions.md`、`docs/ai-rules/audit-evidence-template.md` 和对应游戏专项 workflow 执行；不得由执行者自己口头定义成“我这轮补了几条测试 / 看了几张截图 / 跑了几条代表链，所以这就算全面审计”。
 - **全面审计的最小交付清单必须服从审计文档**：至少要按审计文档要求落到对象全集、规则子句表、完整技能流程矩阵、命中 D 维度、`L0/L1/L2/L3/L4` 证据层级、必要时的 `L4 共享链判等矩阵`、旧 evidence / 旧结论回写；缺任一项，只能降级成“专项审计 / 抽样审计 / 代表性验证 / 仍有残余范围”，不得继续叫“全面审计完成”。
 - **修出漏项后必须自动扩审兄弟对象**：如果在新增批次中发现某个对象存在录入错、共享消费合同错、实现漏项、L3/L4 证据缺口或旧审计失效，默认必须继续按同维度扩审同批兄弟对象，并同步回写 evidence；不能只修用户点名对象后停下来，把“剩下要不要继续”再抛回用户。
 - **direct E2E 不能拿中间态冒充收口**：凡新增对象的真实入口链路包含变体选择、simple-choice、奖励骰、防御重投、response window、pendingDamage、deferred/finalize 或其他中间态，L3/L4 证据都必须继续打到最终权威状态；`prompt/modal 出现`、`slot 可点`、`pendingAttack.sourceAbilityId 命中`、`pendingBonusDiceSettlement 存在`、`customAction 被调起` 只能算入口或中间态证据，不能写成玩法收口。
@@ -40,7 +40,9 @@ description: "项目通用新增派系/角色/英雄完整交付 workflow。用�
 - 数据录入：`docs/ai-rules/data-entry.md`
 - 资源链路：`docs/ai-rules/asset-pipeline.md`
 - 机制/引擎：`docs/ai-rules/engine-systems.md`
-- 审计维度：`docs/ai-rules/testing-audit.md`
+- 审计入口：`docs/ai-rules/testing-audit.md`
+- 审计核心原则与矩阵：`docs/ai-rules/testing-audit-core-principles.md`
+- 审计维度：`docs/ai-rules/testing-audit-dimensions.md`
 - 测试规范：`docs/testing-best-practices.md`、`docs/automated-testing.md`
 - UI 改动：`docs/ai-rules/ui-ux.md`
 

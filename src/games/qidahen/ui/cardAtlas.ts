@@ -18,6 +18,20 @@ const buildFrames = (
     ...leftYs.map((y) => ({ x: 0, y, width: frameWidth, height: frameHeight })),
 ]);
 
+const buildGridFrames = (
+    columns: number,
+    rows: number,
+    frameWidth: number,
+    frameHeight: number,
+) => Array.from({ length: rows }, (_, row) => (
+    Array.from({ length: columns }, (_, column) => ({
+        x: column * frameWidth,
+        y: row * frameHeight,
+        width: frameWidth,
+        height: frameHeight,
+    }))
+)).flat();
+
 registerCardAtlasSource(QIDAHEN_MING_ATLAS_ID, {
     image: 'qidahen/cards/atlases/ming-faction-deck-atlas',
     config: {
@@ -93,12 +107,7 @@ registerCardAtlasSource(QIDAHEN_ATLAS05_ORDINARY_HAND_ATLAS_ID, {
     config: {
         imageW: 4798,
         imageH: 4625,
-        frames: buildFrames(
-            [0, 476, 952, 1428, 1904, 2380, 2856, 3332, 3808, 4284],
-            [661, 1322, 1983, 2644, 3305, 3966],
-            476,
-            661,
-        ),
+        frames: buildGridFrames(10, 7, 476, 661),
     },
 });
 

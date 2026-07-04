@@ -348,7 +348,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('atlas05 普通手牌真相表只解析通过验收的事件、军备和战术身份', () => {
-        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(33);
+        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(45);
 
         const eventCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(0);
         expect(eventCard).toMatchObject({
@@ -358,6 +358,16 @@ describe('七大恨支付手牌选择', () => {
             previewKind: 'unknown',
         });
         expect(getQidahenDirectActionIdForHandCard(eventCard!)).toBeNull();
+
+        const sevenGrievancesCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(9);
+        expect(sevenGrievancesCard).toMatchObject({
+            cardKind: 'event',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1609-seven-grievances',
+            previewKind: 'unknown',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1609-seven-grievances'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(sevenGrievancesCard!)).toBeNull();
 
         const armamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(3);
         expect(armamentCard).toMatchObject({
@@ -377,6 +387,13 @@ describe('七大恨支付手牌选择', () => {
         });
         expect(getQidahenDirectActionIdForHandCard(tacticCard!)).toBeNull();
 
+        const establishedMongolBannersCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(7);
+        expect(establishedMongolBannersCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1607-establish-mongol-banners',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1607-establish-mongol-banners'],
+        });
+
         const secondPassedArmamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(19);
         expect(secondPassedArmamentCard).toMatchObject({
             cardKind: 'armament',
@@ -393,6 +410,13 @@ describe('七大恨支付手牌选择', () => {
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1623-mongol-nobles-congress'],
         });
 
+        const promotedJadeCasketCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(25);
+        expect(promotedJadeCasketCard).toMatchObject({
+            cardKind: 'event',
+            cardDefId: 'qidahen-atlas05-1625-jade-casket-unearthed',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1625-jade-casket-unearthed'],
+        });
+
         const promotedArmamentCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(26);
         expect(promotedArmamentCard).toMatchObject({
             cardKind: 'armament',
@@ -401,6 +425,15 @@ describe('七大恨支付手牌选择', () => {
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1626-artillery-tech'],
         });
         expect(getQidahenDirectActionIdForHandCard(promotedArmamentCard!)).toBe('upgrade-armament');
+
+        const promotedInfantryArmorAltCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(27);
+        expect(promotedInfantryArmorAltCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'infantry-armor',
+            cardDefId: 'qidahen-atlas05-1627-infantry-armor-alt',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1627-infantry-armor-alt'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedInfantryArmorAltCard!)).toBe('upgrade-armament');
 
         const promotedTributeCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(33);
         expect(promotedTributeCard).toMatchObject({
@@ -423,11 +456,25 @@ describe('七大恨支付手牌选择', () => {
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1631-northeast-army'],
         });
 
-        const promotedMongolDroughtCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(38);
+        const promotedPincerAdvanceCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(32);
+        expect(promotedPincerAdvanceCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1632-pincer-advance',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1632-pincer-advance'],
+        });
+
+        const promotedMongolDroughtCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(37);
         expect(promotedMongolDroughtCard).toMatchObject({
             cardKind: 'event',
-            cardDefId: 'qidahen-atlas05-1638-mongol-drought-alt',
-            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1638-mongol-drought-alt'],
+            cardDefId: 'qidahen-atlas05-1637-mongol-drought-alt',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1637-mongol-drought-alt'],
+        });
+
+        const promotedChainCannonCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(38);
+        expect(promotedChainCannonCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1638-chain-cannon-formation',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1638-chain-cannon-formation'],
         });
 
         const promotedCavalryFirearmCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(39);
@@ -438,6 +485,13 @@ describe('七大恨支付手牌选择', () => {
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1639-cavalry-firearm'],
         });
         expect(getQidahenDirectActionIdForHandCard(promotedCavalryFirearmCard!)).toBe('upgrade-armament');
+
+        const promotedJirinaiInfantryCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(40);
+        expect(promotedJirinaiInfantryCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1640-jirinai-infantry'],
+        });
 
         const promotedRedCoatCannonCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(34);
         expect(promotedRedCoatCannonCard).toMatchObject({
@@ -462,9 +516,56 @@ describe('七大恨支付手牌选择', () => {
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1636-cheval-de-frise'],
         });
 
-        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(43)).toBeNull();
+        const promotedInfantryCavalryCombinedCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(28);
+        expect(promotedInfantryCavalryCombinedCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1628-infantry-cavalry-combined',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1628-infantry-cavalry-combined'],
+        });
 
-        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(7)).toBeNull();
+        const promotedCavalryArmorThirdCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(41);
+        expect(promotedCavalryArmorThirdCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'cavalry-armor',
+            cardDefId: 'qidahen-atlas05-1641-cavalry-armor-third',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1641-cavalry-armor-third'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedCavalryArmorThirdCard!)).toBe('upgrade-armament');
+
+        const promotedWesternBastionCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(42);
+        expect(promotedWesternBastionCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'western-bastion',
+            cardDefId: 'qidahen-atlas05-1642-western-bastion',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1642-western-bastion'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedWesternBastionCard!)).toBe('upgrade-armament');
+
+        const promotedWuzhenChaohaCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(44);
+        expect(promotedWuzhenChaohaCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1644-wuzhen-chaoha',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1644-wuzhen-chaoha'],
+        });
+
+        const promotedWarChariotFormationCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(45);
+        expect(promotedWarChariotFormationCard).toMatchObject({
+            cardKind: 'tactic',
+            cardDefId: 'qidahen-atlas05-1645-war-chariot-formation',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1645-war-chariot-formation'],
+        });
+
+        const promotedLinkedMusketsCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(46);
+        expect(promotedLinkedMusketsCard).toMatchObject({
+            cardKind: 'armament',
+            armamentId: 'long-barreled-musket',
+            cardDefId: 'qidahen-atlas05-1646-linked-muskets',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1646-linked-muskets'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(promotedLinkedMusketsCard!)).toBe('upgrade-armament');
+
+        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(43)).toBeNull();
+        expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(47)).toBeNull();
     });
 
     it('剧本一开局已开发军备遵循规则设置', () => {

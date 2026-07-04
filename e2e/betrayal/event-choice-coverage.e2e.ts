@@ -273,7 +273,7 @@ test.describe('山屋惊魂事件牌真实页面选择承接', () => {
             await injectCore(page, eventCase.buildCore());
             await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
             await expect(page.getByTestId('betrayal-event-choice-panel')).toContainText(eventCase.title);
-            await saveScreenshot(page, `${screenshotBase}-选择前.png`);
+            await saveScreenshot(page, `${screenshotBase}-选择前.jpg`);
 
             for (const testId of eventCase.actions) {
                 await page.getByTestId(testId).click();
@@ -290,7 +290,7 @@ test.describe('山屋惊魂事件牌真实页面选择承接', () => {
             if (eventCase.title === '说“茄子”！') {
                 await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText('魔法相机');
             }
-            await saveScreenshot(page, `${screenshotBase}-结算后.png`);
+            await saveScreenshot(page, `${screenshotBase}-结算后.jpg`);
             assertNoFatalFrontendErrors([{ label: `betrayal-event-choice-${eventCase.screenshotSlug}`, diagnostics }]);
         });
     }

@@ -182,7 +182,7 @@ describe('AbilityOverlays', () => {
         expect(highlight.style.boxShadow).toContain('rgba(238,61,34,0.56)');
     });
 
-    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应沿用通用技能槽位语义', () => {
+    it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应按底图物理槽位录入', () => {
         const cases = [
             {
                 characterId: 'monk',
@@ -194,13 +194,40 @@ describe('AbilityOverlays', () => {
                 previewIndex: 12,
             },
             {
+                characterId: 'monk',
+                slotId: 'sky',
+                baseAbilityId: 'taiji-combo',
+                resolvedAbilityId: 'taiji-combo',
+                abilityLevels: { 'taiji-combo': 2 },
+                upgradeCardId: 'card-combo-punch-2',
+                previewIndex: 9,
+            },
+            {
+                characterId: 'monk',
+                slotId: 'lightning',
+                baseAbilityId: 'harmony',
+                resolvedAbilityId: 'harmony',
+                abilityLevels: { harmony: 2 },
+                upgradeCardId: 'card-mahayana-2',
+                previewIndex: 11,
+            },
+            {
                 characterId: 'barbarian',
-                slotId: 'fist',
-                baseAbilityId: 'slap',
-                resolvedAbilityId: 'slap-2-3',
-                abilityLevels: { slap: 2 },
-                upgradeCardId: 'card-slap-2',
-                previewIndex: 14,
+                slotId: 'lotus',
+                baseAbilityId: 'suppress',
+                resolvedAbilityId: 'suppress',
+                abilityLevels: { suppress: 2 },
+                upgradeCardId: 'card-suppress-2',
+                previewIndex: 7,
+            },
+            {
+                characterId: 'barbarian',
+                slotId: 'lightning',
+                baseAbilityId: 'violent-assault',
+                resolvedAbilityId: 'violent-assault',
+                abilityLevels: { 'violent-assault': 2 },
+                upgradeCardId: 'card-violent-assault-2',
+                previewIndex: 9,
             },
             {
                 characterId: 'pyromancer',
@@ -213,6 +240,24 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'pyromancer',
+                slotId: 'lotus',
+                baseAbilityId: 'burn-down',
+                resolvedAbilityId: 'burn-down',
+                abilityLevels: { 'burn-down': 2 },
+                upgradeCardId: 'card-burn-down-2',
+                previewIndex: 8,
+            },
+            {
+                characterId: 'pyromancer',
+                slotId: 'lightning',
+                baseAbilityId: 'meteor',
+                resolvedAbilityId: 'meteor',
+                abilityLevels: { meteor: 2 },
+                upgradeCardId: 'card-meteor-2',
+                previewIndex: 5,
+            },
+            {
+                characterId: 'pyromancer',
                 slotId: 'meditate',
                 baseAbilityId: 'magma-armor',
                 resolvedAbilityId: 'magma-armor',
@@ -222,30 +267,58 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'moon_elf',
-                slotId: 'fist',
-                baseAbilityId: 'longbow',
-                resolvedAbilityId: 'longbow-3-2',
-                abilityLevels: { longbow: 2 },
-                upgradeCardId: 'upgrade-longbow-2',
-                previewIndex: 14,
+                slotId: 'sky',
+                baseAbilityId: 'covering-fire',
+                resolvedAbilityId: 'covering-fire',
+                abilityLevels: { 'covering-fire': 2 },
+                upgradeCardId: 'upgrade-covering-fire-2',
+                previewIndex: 11,
+            },
+            {
+                characterId: 'moon_elf',
+                slotId: 'combo',
+                baseAbilityId: 'entangling-shot',
+                resolvedAbilityId: 'entangling-shot',
+                abilityLevels: { 'entangling-shot': 2 },
+                upgradeCardId: 'upgrade-entangling-shot-2',
+                previewIndex: 8,
             },
             {
                 characterId: 'shadow_thief',
-                slotId: 'fist',
-                baseAbilityId: 'dagger-strike',
-                resolvedAbilityId: 'dagger-strike-3-2',
-                abilityLevels: { 'dagger-strike': 2 },
-                upgradeCardId: 'upgrade-dagger-strike-2',
-                previewIndex: 7,
+                slotId: 'sky',
+                baseAbilityId: 'steal',
+                resolvedAbilityId: 'steal',
+                abilityLevels: { steal: 2 },
+                upgradeCardId: 'upgrade-steal-2',
+                previewIndex: 11,
+            },
+            {
+                characterId: 'shadow_thief',
+                slotId: 'lightning',
+                baseAbilityId: 'shadow-defense',
+                resolvedAbilityId: 'shadow-defense',
+                abilityLevels: { 'shadow-defense': 2 },
+                upgradeCardId: 'upgrade-shadow-defense-2',
+                previewIndex: 4,
             },
             {
                 characterId: 'paladin',
-                slotId: 'calm',
-                baseAbilityId: 'holy-light',
-                resolvedAbilityId: 'holy-light',
-                abilityLevels: { 'holy-light': 2 },
-                upgradeCardId: 'card-holy-light-2',
-                previewIndex: 7,
+                slotId: 'fist',
+                baseAbilityId: 'tithes',
+                resolvedAbilityId: 'tithes',
+                abilityLevels: { tithes: 2 },
+                upgradeCardId: 'card-tithes-2',
+                previewIndex: 6,
+                canClick: false,
+            },
+            {
+                characterId: 'paladin',
+                slotId: 'meditate',
+                baseAbilityId: 'holy-defense',
+                resolvedAbilityId: 'holy-defense',
+                abilityLevels: { 'holy-defense': 2 },
+                upgradeCardId: 'card-holy-defense-2',
+                previewIndex: 5,
             },
         ];
 
@@ -271,7 +344,8 @@ describe('AbilityOverlays', () => {
             expect(slot, `${entry.characterId} 的 ${entry.baseAbilityId} 应落在 ${entry.slotId}`).not.toBeNull();
             expect(slot).toHaveAttribute('data-base-ability-id', entry.baseAbilityId);
             expect(slot).toHaveAttribute('data-resolved-ability-id', entry.resolvedAbilityId);
-            expect(slot).toHaveAttribute('data-can-click', 'true');
+            const expectCanClick = entry.canClick ?? true;
+            expect(slot).toHaveAttribute('data-can-click', expectCanClick ? 'true' : 'false');
             expect(slot?.querySelector('[data-testid="mock-card-preview"]')).toHaveAttribute(
                 'data-atlas-id',
                 `dicethrone:${entry.characterId}-cards`,
@@ -282,7 +356,11 @@ describe('AbilityOverlays', () => {
             );
 
             fireEvent.click(slot!);
-            expect(onSelectAbility).toHaveBeenCalledWith(entry.resolvedAbilityId);
+            if (expectCanClick) {
+                expect(onSelectAbility).toHaveBeenCalledWith(entry.resolvedAbilityId);
+            } else {
+                expect(onSelectAbility).not.toHaveBeenCalled();
+            }
             unmount();
         }
     });
@@ -398,12 +476,24 @@ describe('AbilityOverlays', () => {
     it('旧英雄和新英雄槽位查找应与面板覆盖层使用同一物理槽位', () => {
         const cases = [
             { characterId: 'monk', abilityId: 'fist-technique', slotId: 'fist' },
+            { characterId: 'monk', abilityId: 'taiji-combo', slotId: 'sky' },
+            { characterId: 'monk', abilityId: 'harmony', slotId: 'lightning' },
             { characterId: 'barbarian', abilityId: 'slap', slotId: 'fist' },
+            { characterId: 'barbarian', abilityId: 'suppress', slotId: 'lotus' },
+            { characterId: 'barbarian', abilityId: 'violent-assault', slotId: 'lightning' },
             { characterId: 'pyromancer', abilityId: 'fireball', slotId: 'fist' },
+            { characterId: 'pyromancer', abilityId: 'burn-down', slotId: 'lotus' },
+            { characterId: 'pyromancer', abilityId: 'meteor', slotId: 'lightning' },
             { characterId: 'pyromancer', abilityId: 'magma-armor', slotId: 'meditate' },
             { characterId: 'moon_elf', abilityId: 'longbow', slotId: 'fist' },
+            { characterId: 'moon_elf', abilityId: 'covering-fire', slotId: 'sky' },
+            { characterId: 'moon_elf', abilityId: 'entangling-shot', slotId: 'combo' },
             { characterId: 'shadow_thief', abilityId: 'dagger-strike', slotId: 'fist' },
+            { characterId: 'shadow_thief', abilityId: 'steal', slotId: 'sky' },
+            { characterId: 'shadow_thief', abilityId: 'shadow-defense', slotId: 'lightning' },
+            { characterId: 'paladin', abilityId: 'tithes', slotId: 'fist' },
             { characterId: 'paladin', abilityId: 'holy-light', slotId: 'calm' },
+            { characterId: 'paladin', abilityId: 'holy-defense', slotId: 'meditate' },
             { characterId: 'zhanshujia', abilityId: 'strategic-shift', slotId: 'calm' },
             { characterId: 'artificer', abilityId: 'overclock', slotId: 'lightning' },
         ];

@@ -1061,6 +1061,8 @@
       },
       "form": {
         "channel": "发布渠道",
+        "ota_bundle_version": "OTA 内部版本号",
+        "ota_bundle_version_placeholder": "留空自动生成，例如 6.0.0-ota-2026-07-04T01-00-00-000Z",
         "ota_version_base": "OTA 内部游标基线",
         "force_update": "强制客户端下载后切换",
         "skip_latest": "只上传包，不覆盖当前入口清单",
@@ -1133,7 +1135,9 @@
         "job_status": "任务状态",
         "exit_code": "退出码",
         "bundle_version": "Bundle 游标",
-        "zip_bytes": "ZIP 字节数"
+        "zip_bytes": "ZIP 字节数",
+        "server_log": "服务器执行日志",
+        "no_output": "服务器暂未返回日志"
       },
       "status": {
         "ready": "已配置",

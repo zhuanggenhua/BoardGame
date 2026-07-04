@@ -93,6 +93,16 @@ type PublishResponse = {
     output: string;
 };
 
+const getExecutionProgressPercent = (result: PublishResponse | null) => {
+    if (!result) return 0;
+    if (result.status === 'succeeded') return 100;
+    if (result.status === 'failed') return 100;
+    if (result.status === 'running') return 55;
+    if (result.status === 'queued') return 12;
+    if (result.mode === 'preview' || result.mode === 'dry-run') return 100;
+    return result.ok ? 100 : 0;
+};
+
 const CHANNELS = ['stable', 'gray', 'edge'] as const;
 const BUMP_OPTIONS = ['', 'patch', 'minor', 'major'] as const;
 const DEPLOY_UPDATE_CONFIRM_TEXT = '确认部署';
@@ -145,6 +155,7 @@ export default function MobileReleasePage() {
     const [busyAction, setBusyAction] = useState<string | null>(null);
     const [lastResult, setLastResult] = useState<PublishResponse | null>(null);
 
+    const [otaBundleVersion, setOtaBundleVersion] = useState('');
     const [otaVersionBase, setOtaVersionBase] = useState('6.0.0');
     const [otaForceUpdate, setOtaForceUpdate] = useState(true);
     const [otaSkipLatest, setOtaSkipLatest] = useState(false);
@@ -292,6 +303,7 @@ export default function MobileReleasePage() {
     };
 
     const runningText = busyAction ? pageT('actions.running') : null;
+    const executionProgressPercent = getExecutionProgressPercent(lastResult);
 
     return (
         <div className="h-full overflow-y-auto bg-zinc-50 p-6 lg:p-8">
@@ -336,11 +348,97 @@ export default function MobileReleasePage() {
                     />
                 </div>
 
+                {lastResult ? (
+                    <ExecutionLogPanel
+                        pageT={pageT}
+                        result={lastResult}
+                        progressPercent={executionProgressPercent}
+                    />
+                ) : null}
+
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                     <div className="space-y-6">
-                        <ReleaseSection icon={<Rocket size={18} className="text-indigo-600" />} title={pageT('ota.title')}>
-                            <div className="grid gap-4 md:grid-cols-2">
+                        <ReleaseSection icon={<Server size={18} className="text-emerald-600" />} title={pageT('deployUpdate.title')}>
+                            <div className="grid gap-4 md:grid-cols-4">
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.tag')}</span>
+                                    <input
+                                        value={deployUpdateTag}
+                                        onChange={(event) => setDeployUpdateTag(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder={pageT('deployUpdate.tag_placeholder')}
+                                    />
+                                </label>
                                 <ChannelSelect pageT={pageT} channel={channel} onChange={setChannel} />
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_bundle_version')}</span>
+                                    <input
+                                        value={otaBundleVersion}
+                                        onChange={(event) => setOtaBundleVersion(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder={pageT('form.ota_bundle_version_placeholder')}
+                                    />
+                                </label>
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_version_base')}</span>
+                                    <input
+                                        value={otaVersionBase}
+                                        onChange={(event) => setOtaVersionBase(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="6.0.0"
+                                    />
+                                </label>
+                            </div>
+                            <CheckboxRow>
+                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
+                            </CheckboxRow>
+                            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
+                                {pageT('deployUpdate.description')}
+                            </div>
+                            <ActionRow>
+                                <ActionButton
+                                    icon={<CheckCircle2 size={16} />}
+                                    disabled={!canPreviewDeployUpdate}
+                                    onClick={() => void runAction('deploy-update-preview', '/mobile-release/deploy/update/preview', {
+                                        tag: deployUpdateTag.trim() || undefined,
+                                        channel,
+                                        version: otaBundleVersion.trim() || undefined,
+                                        otaVersionBase: otaVersionBase.trim() || undefined,
+                                        forceUpdate: otaForceUpdate,
+                                    }, 'toast.preview_success')}
+                                >
+                                    {busyAction === 'deploy-update-preview' ? runningText : pageT('actions.preview_command')}
+                                </ActionButton>
+                                <ActionButton
+                                    icon={<Rocket size={16} />}
+                                    variant="primary"
+                                    disabled={!canExecuteDeployUpdate}
+                                    onClick={() => void runAction('deploy-update-execute', '/mobile-release/deploy/update/execute', {
+                                        tag: deployUpdateTag.trim() || undefined,
+                                        channel,
+                                        version: otaBundleVersion.trim() || undefined,
+                                        otaVersionBase: otaVersionBase.trim() || undefined,
+                                        forceUpdate: otaForceUpdate,
+                                        confirmText: DEPLOY_UPDATE_CONFIRM_TEXT,
+                                    }, 'toast.deploy_update_success')}
+                                >
+                                    {busyAction === 'deploy-update-execute' ? runningText : pageT('actions.execute_deploy_update')}
+                                </ActionButton>
+                            </ActionRow>
+                        </ReleaseSection>
+
+                        <ReleaseSection icon={<Rocket size={18} className="text-indigo-600" />} title={pageT('ota.title')}>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <ChannelSelect pageT={pageT} channel={channel} onChange={setChannel} />
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_bundle_version')}</span>
+                                    <input
+                                        value={otaBundleVersion}
+                                        onChange={(event) => setOtaBundleVersion(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder={pageT('form.ota_bundle_version_placeholder')}
+                                    />
+                                </label>
                                 <label className="space-y-1.5">
                                     <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_version_base')}</span>
                                     <input
@@ -361,6 +459,7 @@ export default function MobileReleasePage() {
                                     disabled={!canRunOta}
                                     onClick={() => void runAction('ota-dry-run', '/mobile-release/android/ota/publish', {
                                         channel,
+                                        version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
                                         forceUpdate: otaForceUpdate,
                                         dryRun: true,
@@ -375,6 +474,7 @@ export default function MobileReleasePage() {
                                     disabled={!canPublishOta}
                                     onClick={() => void runAction('ota-publish', '/mobile-release/android/ota/publish', {
                                         channel,
+                                        version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
                                         forceUpdate: otaForceUpdate,
                                         dryRun: false,
@@ -495,64 +595,6 @@ export default function MobileReleasePage() {
                             </ActionRow>
                         </ReleaseSection>
 
-                        <ReleaseSection icon={<Server size={18} className="text-emerald-600" />} title={pageT('deployUpdate.title')}>
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <label className="space-y-1.5">
-                                    <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.tag')}</span>
-                                    <input
-                                        value={deployUpdateTag}
-                                        onChange={(event) => setDeployUpdateTag(event.target.value)}
-                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                        placeholder={pageT('deployUpdate.tag_placeholder')}
-                                    />
-                                </label>
-                                <ChannelSelect pageT={pageT} channel={channel} onChange={setChannel} />
-                                <label className="space-y-1.5">
-                                    <span className="text-sm font-medium text-zinc-600">{pageT('form.ota_version_base')}</span>
-                                    <input
-                                        value={otaVersionBase}
-                                        onChange={(event) => setOtaVersionBase(event.target.value)}
-                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                        placeholder="6.0.0"
-                                    />
-                                </label>
-                            </div>
-                            <CheckboxRow>
-                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
-                            </CheckboxRow>
-                            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
-                                {pageT('deployUpdate.description')}
-                            </div>
-                            <ActionRow>
-                                <ActionButton
-                                    icon={<CheckCircle2 size={16} />}
-                                    disabled={!canPreviewDeployUpdate}
-                                    onClick={() => void runAction('deploy-update-preview', '/mobile-release/deploy/update/preview', {
-                                        tag: deployUpdateTag.trim() || undefined,
-                                        channel,
-                                        otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
-                                    }, 'toast.preview_success')}
-                                >
-                                    {busyAction === 'deploy-update-preview' ? runningText : pageT('actions.preview_command')}
-                                </ActionButton>
-                                <ActionButton
-                                    icon={<Rocket size={16} />}
-                                    variant="primary"
-                                    disabled={!canExecuteDeployUpdate}
-                                    onClick={() => void runAction('deploy-update-execute', '/mobile-release/deploy/update/execute', {
-                                        tag: deployUpdateTag.trim() || undefined,
-                                        channel,
-                                        otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
-                                        confirmText: DEPLOY_UPDATE_CONFIRM_TEXT,
-                                    }, 'toast.deploy_update_success')}
-                                >
-                                    {busyAction === 'deploy-update-execute' ? runningText : pageT('actions.execute_deploy_update')}
-                                </ActionButton>
-                            </ActionRow>
-                        </ReleaseSection>
-
                         <ReleaseSection icon={<RotateCcw size={18} className="text-amber-600" />} title={pageT('rollback.title')}>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <label className="space-y-1.5">
@@ -629,34 +671,58 @@ export default function MobileReleasePage() {
                     </aside>
                 </div>
 
-                {lastResult ? (
-                    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-bold text-zinc-900">{pageT('result.title')}</h2>
-                        <div className="grid gap-3 text-sm md:grid-cols-6">
-                            <ResultField label={pageT('result.kind')} value={lastResult.kind ?? '-'} />
-                            <ResultField label={pageT('result.mode')} value={lastResult.mode} />
-                            <ResultField label={pageT('result.job_status')} value={lastResult.status ?? '-'} />
-                            <ResultField label={pageT('result.exit_code')} value={lastResult.exitCode == null ? '-' : String(lastResult.exitCode)} />
-                            <ResultField label={pageT('result.bundle_version')} value={lastResult.parsed?.bundleVersion ?? lastResult.parsed?.version ?? '-'} />
-                            <ResultField label={pageT('result.zip_bytes')} value={lastResult.parsed?.zipBytes ?? lastResult.parsed?.apkBytes ?? '-'} />
-                        </div>
-                        {lastResult.target ? (
-                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                                <div className="font-semibold">{pageT('rollback.target_title')}</div>
-                                <div className="mt-1">{lastResult.target.description}</div>
-                                {lastResult.target.tag ? (
-                                    <div className="mt-1 font-mono text-xs">{lastResult.target.tag}{lastResult.target.revision ? ` · ${lastResult.target.revision}` : ''}</div>
-                                ) : null}
-                            </div>
-                        ) : null}
-                        <div className="mt-4 break-all rounded-lg bg-zinc-50 p-3 font-mono text-xs text-zinc-700">{lastResult.command}</div>
-                        <pre className="mt-4 max-h-80 overflow-auto rounded-lg bg-zinc-950 p-4 text-xs text-zinc-100">
-                            {lastResult.output}
-                        </pre>
-                    </section>
-                ) : null}
             </div>
         </div>
+    );
+}
+
+function ExecutionLogPanel({
+    pageT,
+    result,
+    progressPercent,
+}: {
+    pageT: (key: string, options?: Record<string, unknown>) => string;
+    result: PublishResponse;
+    progressPercent: number;
+}) {
+    const isFailed = isFailedResult(result);
+    return (
+        <section className={`rounded-xl border p-6 shadow-sm ${isFailed ? 'border-red-200 bg-red-50' : 'border-zinc-200 bg-white'}`}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-bold text-zinc-900">{pageT('result.title')}</h2>
+                <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-bold text-white">
+                    {progressPercent}%
+                </span>
+            </div>
+            <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-200">
+                <div
+                    className={`h-full transition-all ${isFailed ? 'bg-red-600' : 'bg-emerald-600'}`}
+                    style={{ width: `${progressPercent}%` }}
+                />
+            </div>
+            <div className="grid gap-3 text-sm md:grid-cols-6">
+                <ResultField label={pageT('result.kind')} value={result.kind ?? '-'} />
+                <ResultField label={pageT('result.mode')} value={result.mode} />
+                <ResultField label={pageT('result.job_status')} value={result.status ?? '-'} />
+                <ResultField label={pageT('result.exit_code')} value={result.exitCode == null ? '-' : String(result.exitCode)} />
+                <ResultField label={pageT('result.bundle_version')} value={result.parsed?.bundleVersion ?? result.parsed?.version ?? '-'} />
+                <ResultField label={pageT('result.zip_bytes')} value={result.parsed?.zipBytes ?? result.parsed?.apkBytes ?? '-'} />
+            </div>
+            {result.target ? (
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                    <div className="font-semibold">{pageT('rollback.target_title')}</div>
+                    <div className="mt-1">{result.target.description}</div>
+                    {result.target.tag ? (
+                        <div className="mt-1 font-mono text-xs">{result.target.tag}{result.target.revision ? ` · ${result.target.revision}` : ''}</div>
+                    ) : null}
+                </div>
+            ) : null}
+            <div className="mt-4 break-all rounded-lg bg-zinc-50 p-3 font-mono text-xs text-zinc-700">{result.command}</div>
+            <div className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">{pageT('result.server_log')}</div>
+            <pre className="mt-2 max-h-[32rem] overflow-auto rounded-lg bg-zinc-950 p-4 text-xs leading-5 text-zinc-100">
+                {result.output || pageT('result.no_output')}
+            </pre>
+        </section>
     );
 }
 

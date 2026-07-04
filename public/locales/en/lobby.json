@@ -1061,6 +1061,8 @@
       },
       "form": {
         "channel": "Channel",
+        "ota_bundle_version": "OTA Bundle Version",
+        "ota_bundle_version_placeholder": "Leave empty to auto-generate, e.g. 6.0.0-ota-2026-07-04T01-00-00-000Z",
         "ota_version_base": "OTA Cursor Base",
         "force_update": "Force switch after download",
         "skip_latest": "Upload only, do not update latest",
@@ -1133,7 +1135,9 @@
         "job_status": "Job Status",
         "exit_code": "Exit Code",
         "bundle_version": "Bundle Cursor",
-        "zip_bytes": "ZIP Bytes"
+        "zip_bytes": "ZIP Bytes",
+        "server_log": "Server Execution Log",
+        "no_output": "No server log returned yet"
       },
       "status": {
         "ready": "Configured",
