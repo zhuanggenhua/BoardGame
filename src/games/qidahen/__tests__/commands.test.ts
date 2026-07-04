@@ -602,6 +602,21 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             playerId: '0',
             payload: { cardId: mingEventCardId },
         })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: tacticCardId },
+        })).toEqual({ valid: true });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: fieldOnlyTacticCardId },
+        })).toEqual({ valid: true });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: defenderOnlyTacticCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
         const cityBattleState = syncQidahenRuntimeInteractionState(clearQidahenRuntimeInteractionCurrent({
             ...state,
             core: {
