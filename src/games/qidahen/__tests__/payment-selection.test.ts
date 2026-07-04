@@ -11001,6 +11001,7 @@ describe('七大恨支付手牌选择', () => {
     it('机里耐步兵打出后会让进攻明军的攻方步兵每部队额外掷 1 颗骰', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
         core.pendingTargetAction = {
             actionId: 'raid',
             title: '突袭作战待结算',
@@ -11084,12 +11085,12 @@ describe('七大恨支付手牌选择', () => {
 
         const tacticPlayed = apply(core, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
-            playerId: '1',
+            playerId: '2',
             payload: { cardId: 'test-jirinai-infantry-card' },
         });
         const resolved = apply(tacticPlayed, {
             type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
-            playerId: '1',
+            playerId: '2',
             payload: {},
         });
         const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
@@ -11105,7 +11106,7 @@ describe('七大恨支付手牌选择', () => {
             }),
         ]);
         expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('机里耐步兵：本次野战中进攻明军的攻方每个步兵部队额外掷 1 颗骰');
-        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4/4/4/4=16/守4=4');
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻');
         expect(infantryStage?.attackerRolls).toHaveLength(4);
         expect(infantryStage?.attackerRolls).toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),

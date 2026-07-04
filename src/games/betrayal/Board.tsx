@@ -1651,7 +1651,7 @@ function EndgameScreen({
 
 export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale }: Props) {
     const { t } = useTranslation(['game-betrayal', 'common']);
-    const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
+    const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep } = useTutorial();
     useTutorialBridge(G?.sys?.tutorial, dispatch as (type: string, payload?: unknown) => void);
     const effectiveLocale = locale || 'zh-CN';
     const baseCore = React.useMemo(
@@ -2416,6 +2416,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     }, [dispatchCommand, skeletonKeyMoveTargetRoomIds]);
 
     const handleMoveAction = React.useCallback(() => {
+        const shouldAdvanceOpenMoveTutorial = isTutorialActive
+            && tutorialStep?.id === 'open-move-targets'
+            && previewState.interactionMode !== 'move'
+            && core.movesRemaining > 0
+            && moveTargetRooms.length > 0;
         setPreviewState((previousState) => {
             if (previousState.interactionMode === 'move') {
                 return {
@@ -2431,7 +2436,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 interactionMode: 'move',
             };
         });
-    }, [core.movesRemaining, moveTargetRooms.length]);
+        if (shouldAdvanceOpenMoveTutorial) {
+            nextStep('auto');
+        }
+    }, [core.movesRemaining, isTutorialActive, moveTargetRooms.length, nextStep, previewState.interactionMode, tutorialStep?.id]);
 
     const handleExploreAction = React.useCallback(() => {
         setPreviewState((previousState) => {
