@@ -4,6 +4,7 @@ import { BETRAYAL_COMMANDS } from './game';
 import {
     createFirstScenarioHauntCore,
     createFirstScenarioReadyToExorciseCore,
+    createFirstScenarioReadyToTraitorVictoryCore,
     createStartedFirstScenarioCore,
 } from './testing/firstScenarioTestUtils';
 
@@ -253,6 +254,55 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
     ],
 };
 
+const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
+    id: 'traitor-path',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-traitor-turn',
+            content: 'game-betrayal:tutorial.traitorPath.steps.setupTraitorTurn',
+            position: 'center',
+            showMask: true,
+            viewAs: '2',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createFirstScenarioReadyToTraitorVictoryCore().core ?? createFirstScenarioReadyToTraitorVictoryCore(),
+                    },
+                },
+            ],
+        },
+        {
+            id: 'traitor-objective',
+            content: 'game-betrayal:tutorial.traitorPath.steps.traitorObjective',
+            highlightTarget: 'betrayal-scenario-reference',
+            position: 'left',
+            infoStep: true,
+            viewAs: '2',
+        },
+        {
+            id: 'attack-hero',
+            content: 'game-betrayal:tutorial.traitorPath.steps.attackHero',
+            highlightTarget: 'betrayal-room-board',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.HAUNT_ATTACK],
+            advanceOnEvents: [{ type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } }],
+            viewAs: '2',
+        },
+        {
+            id: 'traitor-finish',
+            content: 'game-betrayal:tutorial.traitorPath.steps.traitorFinish',
+            highlightTarget: 'betrayal-endgame-screen',
+            position: 'center',
+            infoStep: true,
+            viewAs: '2',
+        },
+    ],
+};
+
 const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
     defaultTutorialId: 'basic-setup-and-turn',
     tutorials: {
@@ -275,6 +325,11 @@ const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
             titleKey: 'tutorial.hauntActions.title',
             descriptionKey: 'tutorial.hauntActions.description',
             manifest: BETRAYAL_HAUNT_ACTIONS_AND_FINISH,
+        },
+        'traitor-path': {
+            titleKey: 'tutorial.traitorPath.title',
+            descriptionKey: 'tutorial.traitorPath.description',
+            manifest: BETRAYAL_TRAITOR_PATH,
         },
     },
 };

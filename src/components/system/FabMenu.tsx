@@ -100,6 +100,11 @@ export const shouldTrackFabButtonRect = ({
     hasContent: boolean;
 }) => showTooltip || showPreview || (isActive && hasContent);
 
+export const shouldAllowFabDragFromTarget = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return true;
+    return !target.closest('[data-fab-panel-interactive="true"]');
+};
+
 export const FabMenu = ({
     items,
     position: initialPosition = 'bottom-right',
@@ -274,7 +279,10 @@ export const FabMenu = ({
         });
     };
 
-    const handlePointerDownCapture = () => {
+    const handlePointerDownCapture = (event: React.PointerEvent) => {
+        if (!shouldAllowFabDragFromTarget(event.target)) {
+            return;
+        }
         didDragRef.current = false;
     };
 
@@ -855,6 +863,7 @@ const Panel = ({
                                 ? 'border-white/10 bg-black/95 text-white shadow-black/70'
                                 : 'border-[#d3ccba] bg-[#fcfbf9]/98 text-[#433422] shadow-[#433422]/20'}
                         `}
+                        data-fab-panel-interactive="true"
                         data-testid={`fab-panel-${item.id}`}
                     >
                         <div className="px-4 pt-4">
@@ -909,6 +918,8 @@ const Panel = ({
                         [verticalPlacement === 'top' ? 'top' : 'bottom']: 0,
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    data-fab-panel-interactive="true"
                     data-testid={`fab-panel-${item.id}`}
                 >
                     {panelHeading}

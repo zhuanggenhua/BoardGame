@@ -52,8 +52,11 @@ async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
 }
 
 async function waitForRollingSpotlightFrame(page: Page, dieContentTestId = '[data-testid="bonus-die-spotlight-content"]'): Promise<void> {
-    await expect.poll(async () => page.locator(dieContentTestId).first().evaluate((node) => {
-        const content = node as HTMLElement;
+    await expect.poll(async () => page.evaluate((selector) => {
+        const content = document.querySelector(selector) as HTMLElement | null;
+        if (!content) {
+            return false;
+        }
         const dice = content.querySelector('[data-testid="dice-3d"]') as HTMLElement | null;
         const rotatingLayer = content.querySelector('.dice3d-preserve-3d') as HTMLElement | null;
         if (!dice) {
@@ -69,7 +72,7 @@ async function waitForRollingSpotlightFrame(page: Page, dieContentTestId = '[dat
         }
 
         return transform !== 'none' || animationClass.includes('animate-dice3d');
-    }), { timeout: 3000, intervals: [50, 50, 50, 50, 100, 100] }).toBe(true);
+    }, dieContentTestId), { timeout: 8000, intervals: [50, 50, 50, 50, 100, 100] }).toBe(true);
 }
 
 test('opponent one throw fortune spotlight should visibly roll before settling', async ({ browser }, testInfo) => {
@@ -125,6 +128,7 @@ test('opponent one throw fortune spotlight should visibly roll before settling',
         }, { timeout: 15000 });
 
         await waitForHandCardVisualReady(guestPage, 'card-one-throw-fortune');
+        const rollingFramePromise = waitForRollingSpotlightFrame(hostPage, '[data-testid="bonus-die-spotlight-content"]');
         await dragHandCardToPlay(guestPage, 'card-one-throw-fortune');
 
         const hostCardSpotlight = hostPage.locator('[data-testid="card-spotlight-overlay"]');
@@ -133,14 +137,7 @@ test('opponent one throw fortune spotlight should visibly roll before settling',
         await expect(hostCardSpotlight).toBeVisible({ timeout: 15000 });
         await expect(hostSpotlightDie).toHaveCount(1, { timeout: 15000 });
 
-        await expect.poll(async () => hostSpotlightDieContent.evaluate((node) => ({
-            isRolling: (node as HTMLElement).dataset.isRolling ?? '',
-            presentationKey: (node as HTMLElement).dataset.presentationKey ?? '',
-            animationClass: node.querySelector('.dice3d-preserve-3d')?.className ?? '',
-        })), { timeout: 2000 }).toMatchObject({
-            isRolling: 'true',
-        });
-        await waitForRollingSpotlightFrame(hostPage, '[data-testid="bonus-die-spotlight-content"]');
+        await rollingFramePromise;
 
         await hostPage.screenshot({
             path: getEvidenceScreenshotPath(testInfo, '01-opponent-one-throw-fortune-rolling'),

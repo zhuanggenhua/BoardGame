@@ -15,6 +15,7 @@ import {
 const EVIDENCE_DIR = 'evidence/betrayal-first-scenario-corpse-loot';
 const READY_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-第一剧本-搜尸前.png`;
 const LOOTED_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-第一剧本-搜尸后.png`;
+const BLOCKED_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-第一剧本-搜尸二次限制.png`;
 
 test.describe('山屋惊魂第一剧本搜尸边界', () => {
     test('同房间尸体可通过正式搜尸动作拿走 1 张牌', async ({ page, context }) => {
@@ -39,6 +40,10 @@ test.describe('山屋惊魂第一剧本搜尸边界', () => {
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/尸体|拿走|匕首|黑暗预兆/i);
         await expect(page.getByTestId('betrayal-action-trade')).toContainText('交易');
         await saveScreenshot(page, LOOTED_SCREENSHOT);
+
+        await expect(page.getByTestId('betrayal-action-trade')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-trade-status')).toContainText(/当前没有同房间队友|没有/);
+        await saveScreenshot(page, BLOCKED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-first-scenario-corpse-loot', diagnostics }]);
     });

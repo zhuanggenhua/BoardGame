@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 
 const SPOTLIGHT_CARD_WIDTH = '16vw';
 const SPOTLIGHT_CARD_ASPECT_RATIO = 0.61;
+const BONUS_DIE_VISIBLE_ROLL_DURATION_MS = 1600;
 
 /** 汇总文本组件（显示伤害加成等信息） */
 const SummaryText: React.FC<{
@@ -179,6 +180,7 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                                             effectParams={die.effectParams}
                                             locale={locale}
                                             size="10vw"
+                                            rollingDurationMs={BONUS_DIE_VISIBLE_ROLL_DURATION_MS + index * 120}
                                             presentationKey={die.presentationKey}
                                             characterId={die.characterId}
                                             compact={true}

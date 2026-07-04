@@ -63,7 +63,7 @@
   - `src/games/qidahen/domain/handCardIdentity.ts`
     - `resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)` 只解析人工确认的 45 张 `event / armament / tactic`，并返回对应中文牌名、牌类、`cardDefId / armamentId` 与规则效果摘要；未确认、blocked 行不入正式运行时。
     - `resolveQidahenFormalHandCardIdentity(factionId, previewIndex)` 仍保留旧 16-frame faction preview seam 的最小身份解析，供旧合同和排障对照使用。
-    - 当前仍未能建立普通 `event / armament / tactic / silver` 牌的完整全集映射；银两目前没有满足正式反写门槛。
+    - 当前仍未能建立普通 `event / armament / tactic / silver` 牌的完整全集映射；银两目前没有满足正式反写门槛。2026-07-04 已用 161KB 完整 10x7 网格邻格诊断图复核最后 3 张 blocked：idx25 / idx44 只是银两图形，idx48 仍是边缘窄条，均不能进入正式运行时。
   - `src/games/qidahen/domain/initialCoreSetup.ts`
     - 正式开局会消费 atlas05 45 张普通手牌确认行；这证明“可反写确认行”已经进入运行时，但不证明整副普通手牌全集完成。
   - `src/games/qidahen/tutorialSetup.ts`

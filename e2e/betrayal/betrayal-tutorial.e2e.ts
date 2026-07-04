@@ -19,6 +19,8 @@ const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.png`;
 const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.png`;
 const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-haunt收尾前.png`;
 const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-终局页.png`;
+const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.png`;
+const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.png`;
 
 const waitForStep = async (page: Parameters<typeof test>[0]['page'], stepId: string, timeout = 15000) => {
     await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
@@ -47,8 +49,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
 
         const basicTutorialEntry = page.getByTestId('tutorial-catalog-entry-basic-setup-and-turn');
         const hauntTutorialEntry = page.getByTestId('tutorial-catalog-entry-haunt-actions-and-finish');
+        const traitorTutorialEntry = page.getByTestId('tutorial-catalog-entry-traitor-path');
         await expect(basicTutorialEntry).toBeVisible({ timeout: 30000 });
         await expect(hauntTutorialEntry).toBeVisible();
+        await expect(traitorTutorialEntry).toBeVisible();
         await expect(page.getByText('教程目录')).toBeVisible();
         await saveScreenshot(page, STEP_00);
         await basicTutorialEntry.click();
@@ -109,6 +113,26 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });
         await expect(endgameScreen).toContainText('幸存者逃脱');
         await saveScreenshot(page, STEP_06);
+
+        await page.goto('/play/betrayal/tutorial/traitor-path', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+        await waitForHauntRuntime(page, 30000);
+        await waitForStep(page, 'traitor-objective');
+        await expect(page.getByTestId('betrayal-status-chip')).toContainText('达里尔·海拉');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('击倒全部英雄');
+        await clickNext(page);
+
+        await waitForStep(page, 'attack-hero');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toContainText(/攻击/);
+        await saveScreenshot(page, STEP_07);
+        await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]);
+        await page.getByTestId('betrayal-room-focus-target').click();
+
+        await waitForStep(page, 'traitor-finish', 30000);
+        const traitorEndgameScreen = page.getByTestId('betrayal-endgame-screen');
+        await expect(traitorEndgameScreen).toBeVisible({ timeout: 30000 });
+        await expect(traitorEndgameScreen).toContainText('叛徒得逞');
+        await saveScreenshot(page, STEP_08);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial', diagnostics }]);
     });

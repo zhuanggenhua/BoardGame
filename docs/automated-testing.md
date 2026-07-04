@@ -1,6 +1,6 @@
 # 自动化测试
 
-> 本文档是项目唯一的测试规范文档。引擎层审计工具的详细规范见 `docs/ai-rules/engine-systems.md`「引擎测试工具总览」节。
+> 本文档是项目唯一的测试规范文档。引擎层审计工具的详细规范见 `docs/ai-rules/engine-systems.md` 的引擎层系统与原语清单。
 
 ## 目录
 
@@ -153,7 +153,7 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 ### 引擎层审计工具（`src/engine/testing/`）
 
 > **GameTestRunner 行为测试是最优先、最可靠的测试手段**。审计工具是补充，用于批量覆盖 GameTestRunner 无法高效覆盖的注册表引用完整性和交互链完整性。
-> 详细规范见 `docs/ai-rules/engine-systems.md`「引擎测试工具总览」节。
+> 详细规范见 `docs/ai-rules/engine-systems.md` 的引擎层系统与原语清单。
 
 | 工具 | 文件 | 用途 |
 |------|------|------|

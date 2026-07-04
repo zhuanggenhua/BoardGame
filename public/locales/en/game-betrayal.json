@@ -313,6 +313,16 @@
         "exorciseJack": "Execute the real exorcise action now. A success leads straight into the actual endgame screen.",
         "endgameReview": "This is the real hero-side finish for the first scenario, not a tutorial-only end screen."
       }
+    },
+    "traitorPath": {
+      "title": "Traitor View and Finish",
+      "description": "Enter the first scenario from the traitor's turn and finish the real attack chain.",
+      "steps": {
+        "setupTraitorTurn": "This chapter jumps directly to Daryl's real traitor turn. The heroes are near defeat, so the traitor line can finish from the real board.",
+        "traitorObjective": "The traitor is not studying circles. The goal is to defeat every hero; if the traitor falls first, Jack's Spirit may take over and try to return.",
+        "attackHero": "Use the real room focus entry to attack a hero in the same room. This resolves through the normal opposed attack and damage rules, not a tutorial-only button.",
+        "traitorFinish": "This is the true traitor-side finish for the first scenario. The tutorial now covers both required first-scenario viewpoints."
+      }
     }
   }
 }

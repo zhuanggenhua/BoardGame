@@ -1,0 +1,168 @@
+# UI 动画设计规范
+
+> 来源：从 `docs/ai-rules/ui-ux.md` 无损拆出。本文档承载 UI 动画触发、结果揭示和表现层事件身份规则；`ui-ux.md` 只保留入口摘要。
+
+## UI 动画设计原则（强制）
+
+> **核心原则：动画应由数据/状态变化驱动，而非由 UI 事件直接触发**。尤其是涉及命令验证的操作，必须等待验证成功后再启动动画。
+
+### 两种动画触发模式
+
+**数据驱动动画（Data-Driven Animation）**：
+- **定义**：通过 `useEffect` 监听状态字段变化，状态变化时启动动画
+- **适用场景**：所有需要命令验证的操作（投掷骰子、打出卡牌、激活技能等）
+- **优势**：动画只在操作真正成功后播放，验证失败时不会出现"动画已播放但操作未生效"的不一致
+
+**事件驱动动画（Event-Driven Animation）**：
+- **定义**：在 `onClick` 等事件处理器中直接设置动画状态
+- **适用场景**：纯 UI 交互，不涉及命令验证（如展开/折叠面板、切换标签页、hover 效果）
+- **风险**：若用于需要验证的操作，验证失败时动画已播放，造成视觉欺骗
+
+### 正确模式（数据驱动）
+
+```typescript
+// ✅ 正确：监听 rollCount 变化启动动画
+const [isRolling, setIsRolling] = React.useState(false);
+const prevRollCountRef = React.useRef(rollCount);
+
+React.useEffect(() => {
+    if (rollCount !== prevRollCountRef.current) {
+        const prevCount = prevRollCountRef.current;
+        prevRollCountRef.current = rollCount;
+        
+        // rollCount 增加 → 投掷成功，开始动画
+        if (rollCount > prevCount) {
+            setIsRolling(true);
+            // 安全超时：防止服务器长时间无响应
+            const timer = setTimeout(() => setIsRolling(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }
+}, [rollCount, isRolling]);
+
+const handleRollClick = () => {
+    if (!canInteract) return;
+    // 不在这里设置 isRolling，而是在 rollCount 变化时设置
+    // 这样可以避免命令验证失败时动画已经开始播放
+    dispatch(COMMANDS.ROLL_DICE, {});
+};
+```
+
+### 反模式（事件驱动）
+
+```typescript
+// ❌ 错误：onClick 中直接设置动画状态
+const handleRollClick = () => {
+    if (!canInteract) return;
+    setIsRolling(true);  // ← 动画立即开始
+    dispatch(COMMANDS.ROLL_DICE, {});  // ← 命令可能验证失败
+    // 问题：验证失败时动画已播放，但骰子值未变化
+};
+```
+
+### 与乐观更新引擎的关系
+
+项目使用乐观更新引擎（`OptimisticEngine`），客户端会立即预测状态变化。但预测可能失败（如命令验证失败、随机数不一致），此时会回滚到服务端确认的状态。
+
+- **乐观更新成功**：`rollCount` 立即增加 → `useEffect` 检测到变化 → 启动动画
+- **乐观更新失败**：`rollCount` 不变或回滚 → `useEffect` 不触发动画 → 视觉与状态一致
+- **关键**：动画依赖最终状态（`rollCount`），而非用户操作（`onClick`），确保动画只在操作真正生效时播放
+
+### 阶段转换清理（强制）
+
+当游戏阶段转换时（如从进攻阶段进入防御阶段），必须立即清理上一阶段的动画状态，防止动画残留。
+
+```typescript
+// ✅ 正确：阶段转换时清理动画状态
+React.useEffect(() => {
+    if (currentPhase === 'defensiveRoll' || currentPhase === 'offensiveRoll') {
+        // 进入新阶段时立即清除投掷动画状态
+        if (isRolling) {
+            setIsRolling(false);
+        }
+    }
+}, [currentPhase, isRolling, setIsRolling]);
+```
+
+### 最短播放时间保护（可选）
+
+乐观更新会瞬间产生新状态，但动画需要一定时间才能完整播放。可以记录动画开始时刻，在状态变化时检查是否已过最短时间，未过则延迟停止。
+
+```typescript
+const MIN_ROLL_ANIMATION_MS = 800;
+const rollStartTimeRef = React.useRef<number>(0);
+
+React.useEffect(() => {
+    if (rollCount > prevCount) {
+        setIsRolling(true);
+        rollStartTimeRef.current = Date.now();
+    } else if (isRolling) {
+        const elapsed = Date.now() - rollStartTimeRef.current;
+        const remaining = MIN_ROLL_ANIMATION_MS - elapsed;
+        if (remaining <= 0) {
+            setIsRolling(false);
+        } else {
+            const timer = setTimeout(() => setIsRolling(false), remaining);
+            return () => clearTimeout(timer);
+        }
+    }
+}, [rollCount, isRolling]);
+```
+
+### 新增 UI 交互检查清单
+
+开发新的 UI 交互时，必须回答以下问题：
+
+1. **这个操作需要命令验证吗？**
+   - 是 → 使用数据驱动动画（监听状态变化）
+   - 否 → 可以使用事件驱动动画（onClick 直接设置）
+
+2. **动画状态的唯一真实来源是什么？**
+   - 必须是引擎层状态字段（如 `rollCount`、`G.core.xxx`）
+   - 禁止依赖 UI 层临时状态（如 `isButtonClicked`）
+
+3. **阶段转换时需要清理动画状态吗？**
+   - 是 → 在 `useEffect` 中监听 `currentPhase` 并清理
+   - 否 → 确认动画不会跨阶段残留
+
+4. **动画是否需要最短播放时间保护？**
+   - 是 → 记录开始时刻，延迟停止
+   - 否 → 状态变化时立即停止
+
+### 可重播结果动画的事件身份规则（强制）
+
+> 适用于“同一个结果值也可能需要再次播放完整动画”的场景，如掷骰特写、翻牌揭示、抽牌亮相、结算浮层中的单次结果展示。
+
+- **随机结果揭示交互不得静默跳过（强制）**：凡是规则层刚刚产生了一次需要玩家感知的随机结果，例如额外投骰、重掷结果、翻牌揭示、抽牌亮相、结算型 reveal，这类都属于**结果揭示交互**，不是普通背景状态刷新。只要结果已经发生，UI 就必须给出可感知的特写/揭示承载；禁止因为同批次又弹了 choice、prompt、response-window、after-event follow-up 或其它 overlay，就把这次结果直接静默结算掉。唯一允许压住前台特写的情况，是该结果已经被另一条更高优先级、同语义的专用承载完整接管，例如阻塞式奖励骰重掷 modal 已经展示了同一批骰子。
+- **不要用结果值本身推断“是否发生了新事件”**：如果动画的语义是“系统刚刚产生了一次新结果”，则 `value` / `face` / `amount` 只代表**最终停留结果**，不能作为“要不要重播动画”的唯一依据。
+- **必须区分两类信号**：
+  - **结果状态**：最后展示什么，例如骰子最后停在 `4`。
+  - **事件身份**：这是第几次展示/第几次重掷/哪一次结算，例如 `settlementId + rerollCount`、`eventStream entry id`、`timestamp`、`nonce`。
+- **判定标准（强制）**：若以下任一条件成立，组件必须消费独立的事件身份信号，而不能只监听结果值变化：
+  - 组件可能在父层复用，不会因新事件自动卸载重挂载；
+  - 新事件的结果可能与上一次完全相同；
+  - 用户看到的是“一次性结果揭示过程”，而不是稳定状态持续展示。
+- **优先级顺序（强制）**：
+  1. 优先复用领域层或 EventStream 已有的稳定事件 ID；
+  2. 其次使用结算对象自带的序号/重掷 key；
+  3. 最后才允许在展示聚合层生成局部 `presentationKey` / `nonce`。
+- **禁止反模式**：
+  - 仅凭 `value !== prevValue` 决定是否重播掷骰/翻牌/揭示动画；
+  - 依赖 React “通常会重挂载”这种偶然行为；
+  - 在多个父组件里各自手搓一套“如果没动就不播/强制 setTimeout 重播”的分叉逻辑。
+- **推荐模式**：
+  - 组件 API 显式区分 `value` 与 `presentationKey`（或等价命名）；
+  - `value` 决定落点，`presentationKey` 决定是否开始一轮新的表现生命周期；
+  - 若动画只允许针对局部目标重播（如多骰中只重掷一颗），则用“目标索引 + 事件身份”组合成局部 key，而不是重播全部对象。
+
+### 结果动画的架构落点（强制）
+
+- **这是表现层模式，不是业务补丁**：`presentationKey` 的职责是表达“新的可见事件已经发生”，不应被视为临时兜底字段；业务状态里不得为了 UI 动画额外保存 `animationKey` 这类纯表现字段。
+- **统一 seam**：React 结果揭示动画优先复用 `src/hooks/ui/useResultRevealAnimation.ts`，不要在组件里重复维护 `previousValueRef + setTimeout + isRolling` 组合。
+- **长期方向**：同一类结果展示组件应收敛到统一触发契约。对于跨游戏可复用的“结果揭示型”组件，优先定义通用 props 语义，而不是每个游戏自行发明一套布尔开关或局部 timer。
+- **审查门禁**：当用户反馈“只有结果没有过程”“同样结果第二次不动了”“重掷后直接跳最终值”时，必须先检查该组件是否缺少事件身份信号，再决定是否改动画样式或时长。
+
+### 参考实现
+
+- **DiceThrone 骰子投掷动画**：`src/games/dicethrone/ui/DiceTray.tsx`（`DiceActions` 组件）
+- **阶段转换清理**：`src/games/dicethrone/Board.tsx`（`useEffect` 监听 `currentPhase`）

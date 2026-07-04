@@ -37,6 +37,8 @@
 | 2026-07-04 | `docs/ai-rules/testing-audit.md` § E2E 测试框架规范 / 流程截图证据链 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/testing-audit.md` 入口摘要 | 无语义放宽，纯归并 | 将流程截图证据链、奖励骰/特写截图、生效时机判定、成功路径和对外口径门禁并入 E2E 专文；`testing-audit.md` 只保留 E2E 路由入口。 |
 | 2026-07-04 | `docs/ai-rules/testing-audit.md` § 描述→实现全链路审查规范 | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/doc-index.md` + `docs/ai-rules/engine-systems.md` 入口摘要 | 无语义放宽，纯拆分 | 将权威描述锁定、原子断言、交互链拆分、八层追踪、grep 消费点和复杂语义模式搬到专项短文档；`testing-audit.md` 只保留专项路由入口，`engine-systems.md` 不再误指审计大文档为唯一权威。 |
 | 2026-07-04 | `docs/ai-rules/engine-systems.md` § 传输层、游戏结束、SimpleChoice、动画/EventStream/特写、ActionLog | `docs/ai-rules/engine-transport.md` + `docs/ai-rules/engine-gameover.md` + `docs/ai-rules/engine-simple-choice.md` + `docs/ai-rules/engine-visual-events.md` + `docs/ai-rules/engine-action-log.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将被 `doc-index.md` 直接引用的引擎系统章节无损搬到专项短文档；`engine-systems.md` 原位置改为入口摘要，避免引擎总览继续承载系统百科。 |
+| 2026-07-04 | `docs/ai-rules/engine-systems.md` § 通用能力框架、伤害计算管线、DiceThrone Token ActiveUse、SmashUp pendingSave | `docs/ai-rules/engine-ability-framework.md` + `docs/ai-rules/engine-damage-pipeline.md` + `docs/games/dicethrone/token-active-use-custom-action.md` + `docs/games/smashup/destroy-pending-save.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将跨游戏能力/伤害原语留在 `docs/ai-rules`，把 DiceThrone 和 SmashUp 的单游戏 runtime 合同下沉到游戏目录；`engine-systems.md` 只保留入口摘要。 |
+| 2026-07-04 | `docs/ai-rules/ui-ux.md` § UI 动画设计原则、多端布局策略 | `docs/ai-rules/ui-animation-patterns.md` + `docs/ai-rules/ui-responsive-layout.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将动画触发/结果揭示事件身份与双端布局/单位选择规则拆到专项短文档；`ui-ux.md` 只保留入口摘要、审美、组件单一来源和游戏 UI 特化规则。 |
 
 ## 后续候选批次
 

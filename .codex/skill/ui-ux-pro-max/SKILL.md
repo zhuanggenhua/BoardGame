@@ -23,6 +23,8 @@ description: "BoardGame 的 UI/UX overlay。先使用全局 ui-ux-pro-max 获取
 ## 先做什么
 
 1. 先看 `docs/ai-rules/ui-ux.md`
+2. 若涉及动画、结果揭示、重播或阶段切换，读 `docs/ai-rules/ui-animation-patterns.md`
+3. 若涉及双端、移动端、响应式、固定牌桌缩放或单位选择，读 `docs/ai-rules/ui-responsive-layout.md`
 2. 再按需要看：
    - `design-system/game-ui/MASTER.md`
    - `design-system/game-ui/source-families.md`

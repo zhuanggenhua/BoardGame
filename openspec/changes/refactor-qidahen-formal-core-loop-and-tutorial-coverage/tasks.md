@@ -49,6 +49,7 @@
   - 2026-07-04 已继续用低体积单卡对齐样本升级 4 张 atlas05 争议牌：`步骑联合`、`骑兵铁甲`、`西式棱堡`、`战车阵`。流程为先生成 #28/#29/#42/#43/#45/#46 contact sheet、标题合辑与正文合辑，再只把字段完整且与矩阵行列/裁图文件对齐的四张写入正式真相表；`鸟真超哈` 仍因标题不够稳保持 partial，不进入正式映射。
   - 2026-07-04 已修正 atlas05 普通手牌预览帧合同：`qidahen:atlas05-ordinary-hand-preview` 从旧的顶行+左列 preview seam 改为完整 10x7 网格，`atlasIndex` 现在按 `(row - 1) * 10 + (col - 1)` 对齐完整图集格子；同时纠正 `成立蒙八旗` 为 CardID 1607 / atlasIndex 7，并把 `玉匣出土`、`步兵铁甲`、`分进合击`、`链炮阵`、`机里耐步兵`、`鸟真超哈`、`连环火铳` 等字段完整候选写入正式真相表。当前 atlas05 验收为 `passed=45 / failed=0 / blocked=3 / partial=0`，但银两资源链和完整行动语义仍未闭环。
   - 2026-07-04 已按运行时完整 10x7 网格重裁 #10 `七大恨` 并读取 236KB 低体积对照图：牌名、事件牌类和完整规则效果摘要均可读，已从 partial 升级为 passed 并写入正式真相表；#48 仍只读到边缘窄条，继续 blocked。
+  - 2026-07-04 已读取 161KB 完整 10x7 网格邻格诊断图复核最后 3 张 blocked：idx25 / idx44 的目标格均为银两图形，缺牌名、牌类按钮和规则效果字段；idx48 的目标格仍只有边缘窄条，不能锁定牌名、牌类或完整效果。当前 atlas05 仍为 `passed=45 / failed=0 / blocked=3 / partial=0`，blocked 只作复核证据，不进入正式真相表。
   - 2026-07-03 已新增运行时图集候选小图 OCR 尝试记录：`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-ocr-attempt.md`。EasyOCR 路径编码问题已定位并绕过，但随后受内存/显存不足影响，未稳定完成 28 条候选识别；该记录只能作为阻塞证据，不能作为 2.4 完成依据。
   - 2026-07-03 已新增运行时图集候选与既有 OCR 线索交叉表：`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-existing-ocr-crosswalk.md`。28 条候选全部命中既有 OCR/核读线索，但 24 条带非普通手牌线索，2 条只有普通关键词仍缺人工确认，2 条低信息；不能作为 2.4 完成依据。
   - 2026-07-03 已新增运行时图集候选最小人工确认队列：`docs/games/qidahen/workflows/qidahen-hand-card-runtime-atlas-priority-review.md`。该步骤曾把可优先人工核读的候选从 28 条收窄为 4 条：后金 CardID 1508、大明 CardID 202、蒙古 CardID 1300、蒙古 CardID 1302；后续单张低分辨率安全预览已确认这些行均为人物牌或纪年/剧本类牌，不能反写正式手牌规则映射。

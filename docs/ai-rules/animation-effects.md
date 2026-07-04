@@ -2,7 +2,7 @@
 
 > 本文档是 `AGENTS.md` 的补充，包含动效技术选型、Canvas 粒子引擎、特效组件的完整规范。
 > **触发条件**：开发/修改任何动画、特效、粒子效果时阅读。
-> **引擎层动画架构**（表现与逻辑分离、`useVisualStateBuffer`、`useVisualSequenceGate`）见 `docs/ai-rules/engine-systems.md`「动画表现与逻辑分离规范」节。
+> **引擎层动画架构**（表现与逻辑分离、`useVisualStateBuffer`、`useVisualSequenceGate`）见 `docs/ai-rules/engine-visual-events.md`。
 
 ---
 

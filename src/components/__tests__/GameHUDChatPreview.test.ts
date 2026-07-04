@@ -11,7 +11,14 @@ import {
     resolveGameHudPhase,
     trimChatMessages,
 } from '../game/framework/widgets/GameHUD';
-import { MOBILE_FAB_VISIBLE_ITEM_LIMIT, resolveFabLayerZIndex, resolveFabSatellitesToRender, resolveMobileFabOverflowWarning, shouldTrackFabButtonRect } from '../system/FabMenu';
+import {
+    MOBILE_FAB_VISIBLE_ITEM_LIMIT,
+    resolveFabLayerZIndex,
+    resolveFabSatellitesToRender,
+    resolveMobileFabOverflowWarning,
+    shouldAllowFabDragFromTarget,
+    shouldTrackFabButtonRect,
+} from '../system/FabMenu';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
 
@@ -243,6 +250,20 @@ describe('FabMenu helpers', () => {
             isActive: false,
             hasContent: false,
         })).toBe(true);
+    });
+
+    it('设置面板内的滑块拖动不应触发悬浮球拖拽', () => {
+        const panel = document.createElement('div');
+        panel.setAttribute('data-fab-panel-interactive', 'true');
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        panel.appendChild(slider);
+
+        const button = document.createElement('button');
+
+        expect(shouldAllowFabDragFromTarget(slider)).toBe(false);
+        expect(shouldAllowFabDragFromTarget(panel)).toBe(false);
+        expect(shouldAllowFabDragFromTarget(button)).toBe(true);
     });
 
     it('恢复保存的越界百分比位置时会收回到视口内并要求回写存储', () => {

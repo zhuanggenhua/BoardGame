@@ -1781,7 +1781,7 @@ const commandTypes = [
 ### 4.4 ActionLog + 卡牌预览（避免重复说明，按权威实现做）
 
 **强制先读（权威单一来源）**：
-- `docs/ai-rules/engine-systems.md`（ActionLogSystem 使用规范）
+- `docs/ai-rules/engine-action-log.md`（ActionLogSystem 使用规范）
 - `evidence/dicethrone/action-log-card-preview.md`（卡牌预览注册表模式 + 数据流说明）
 
 **你在新游戏里只需要做这些（最小闭环）**：

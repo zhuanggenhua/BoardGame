@@ -10,6 +10,7 @@ describe('Betrayal 教程配置', () => {
             'move-explore-use',
             'crimson-jack-objective',
             'haunt-actions-and-finish',
+            'traitor-path',
         ]);
     });
 
@@ -56,11 +57,23 @@ describe('Betrayal 教程配置', () => {
     it('haunt 章节会直接指向第一剧本目标与真实收尾入口', () => {
         const objectiveManifest = tutorialCatalog.tutorials['crimson-jack-objective']?.manifest;
         const hauntActionsManifest = tutorialCatalog.tutorials['haunt-actions-and-finish']?.manifest;
+        const traitorManifest = tutorialCatalog.tutorials['traitor-path']?.manifest;
         expect(objectiveManifest?.steps.find((step) => step.id === 'hero-goal')?.highlightTarget).toBe('betrayal-action-use');
         expect(objectiveManifest?.steps.find((step) => step.id === 'traitor-goal')?.highlightTarget).toBe('betrayal-room-board');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-reference-entry');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'exorcise-jack')?.allowedCommands).toEqual(['EXORCISE_JACK']);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'endgame-review')?.highlightTarget).toBe('betrayal-endgame-screen');
+        expect(traitorManifest?.steps.map((step) => step.id)).toEqual([
+            'setup-traitor-turn',
+            'traitor-objective',
+            'attack-hero',
+            'traitor-finish',
+        ]);
+        expect(traitorManifest?.steps.find((step) => step.id === 'setup-traitor-turn')?.viewAs).toBe('2');
+        expect(traitorManifest?.steps.find((step) => step.id === 'attack-hero')?.allowedCommands).toEqual(['HAUNT_ATTACK']);
+        expect(traitorManifest?.steps.find((step) => step.id === 'attack-hero')?.advanceOnEvents).toEqual([
+            { type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } },
+        ]);
     });
 
     it('中文教程文案会聚焦真实运行时里的第一批规则理解点', () => {
@@ -73,5 +86,7 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.crimsonJack.steps.heroGoal).toContain('驱魔法阵');
         expect(zhCNLocale.tutorial.hauntActions.steps.exorciseJack).toContain('真实的驱魔动作');
         expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('真实收尾');
+        expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('击倒全部英雄');
+        expect(zhCNLocale.tutorial.traitorPath.steps.attackHero).toContain('正式对攻');
     });
 });

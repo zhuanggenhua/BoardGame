@@ -41,12 +41,13 @@
 | **新增棋盘特效** (FX 系统) | `docs/ai-rules/animation-effects.md` § 引擎级 FX 系统 | FxRegistry 注册、FxBus push/pushSequence、FxRenderer 适配器、新增流程 |
 | **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-visual-events.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
 | **卡牌特写队列** (其他玩家打出卡牌展示) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 | `useCardSpotlightQueue` + `CardSpotlightQueue`，EventStream 驱动，点击关闭，队列上限 |
-| **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-systems.md` § 序列特效 | pushSequence API、delayAfter、cancelSequence、适用场景 |
+| **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-visual-events.md` | pushSequence API、delayAfter、cancelSequence、适用场景 |
 | **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/engine-systems.md` | 新增或主动审查机制时，先锁权威描述并拆成原子断言；逐交互链检查定义、注册、执行、状态、消耗、验证、UI、i18n、测试。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
-| **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分 |
+| **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` + `docs/games/dicethrone/token-active-use-custom-action.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分；Token 主动使用依赖 custom action 时必须显式声明 |
 | **用户明确裁定 / 与规则书或既有实现偏离的需求** | `docs/user-stories/README.md` | 先把用户描述沉淀为独立真相参考；项目级需求放 `docs/user-stories/project/`，游戏级需求统一放 `docs/games/<gameId>/user-stories/` |
-| **新游戏设计阶段** (领域建模/决策点/引擎缺口) | `docs/ai-rules/engine-systems.md` § 领域建模前置审查 | 规则→领域模型→实现，禁止跳过建模；术语映射、决策点识别、引擎缺口分析 |
+| **新游戏设计阶段** (领域建模/决策点/引擎缺口) | `docs/ai-rules/engine-systems.md` § 领域建模前置审查 + `docs/ai-rules/engine-ability-framework.md` | 规则→领域模型→实现，禁止跳过建模；术语映射、决策点识别、引擎能力缺口分析；能力/约束系统读专项文档 |
 | **大杀四方 POD 系统** (POD 卡牌/自动映射/数据一致性) | `docs/refactor/pod-system-architecture.md` + `src/games/smashup/rule/POD-SYSTEM.md` | 数据层完整定义不继承，能力层自动映射+选择性覆盖，审计脚本检查一致性 |
+| **大杀四方消灭触发链 / pendingSave** (`processDestroyTriggers` / `PREVENT_DESTROY_SOURCE_IDS` / 防止消灭交互) | `docs/games/smashup/destroy-pending-save.md` + `src/games/smashup/rule/ENGINE_GUIDE.md` | onDestroy 与防止消灭交互顺序、pendingSave 白名单合同、matchState 链式传递；不要把 SmashUp 当前 runtime 例外提升成跨游戏通用规则 |
 | **判断是否有活跃交互 / 阻止手牌操作** (interactionBusy/disableInteraction) | `docs/ai-rules/engine-systems.md` § 框架复用优先 → `useIsInteractionBusy` | 所有"等待玩家输入"走 `sys.interaction`，Board 层用此 Hook 统一判断，禁止自建 UI 状态机 |
 | **游戏结束检测** (gameover/胜负判定) | `docs/ai-rules/engine-gameover.md` | `sys.gameover` 唯一来源，管线自动检测，Board 读 `G.sys.gameover`，禁止读 core/ctx |
 | **传输层/Board Props** (socket/dispatch/Provider) | `docs/ai-rules/engine-transport.md` | `GameBoardProps` 契约，无 `ctx` prop，`dispatch` 命令分发，`GameProvider`/`LocalGameProvider` |
@@ -59,15 +60,15 @@
 | **AI 规范文档整理** (压缩根 AGENTS、拆分大文档、去重但不丢内容) | `docs/ai-rules/document-consolidation.md` + `.codex/skill/README.md` | 统一到单一入口；记录来源、目标、语义变化和冲突裁决 |
 | **根 AGENTS 该写到什么粒度** (渐进式披露 / 路由优先 / 只保留触发入口) | `docs/ai-rules/document-consolidation.md` + 本文件 | 根文件只保留“何时触发、先看哪里、哪些红线不能越过”；细节下沉到二级文档 |
 | **向用户索要保留/合并/真相源拍板** (是不是二选一、能不能都保留、哪边先翻正) | `.codex/skill/merge-decision-package/SKILL.md` + `AGENTS.md` §1.1 | 先回答能不能都保留；按正式实现/候选实现/过程材料拆开；结论先行，用户只需决定一句话 |
-| **UI/UX 设计** (配色/组件/动效) | `.codex/skill/ui-ux-pro-max/SKILL.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统与验收口径 |
+| **UI/UX 设计** (配色/组件/动效) | `.codex/skill/ui-ux-pro-max/SKILL.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-animation-patterns.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统、动画触发合同与验收口径 |
 | **新游戏位图设计稿 / 设计批准门禁** (先看图、先出 PNG/JPG/WebP、批准后才进骨架/前端) | `.codex/skill/boardgame-ui-imagegen/SKILL.md` + `.codex/skill/create-new-game/SKILL.md` | 设计稿默认是图片不是页面；Step1 结构、Step2 布局收敛、Step3 风格、Step4 分界面逐步批准；Step2 默认收成 1 张布局定稿，只有用户明确要求时才做多版对比；设计稿未批前不得启动服务、不得写运行页；前端实现必须等骨架完成 |
-| **游戏主交互槽位 / 手牌区 / waiting / prompt / rail 抢位** (主交互被挤压、双主焦点、来源家族、交互壳层重排) | `docs/ai-rules/ui-ux.md` + `design-system/game-ui/MASTER.md` + `.codex/skill/ui-ux-pro-max/SKILL.md` | 先写 `主交互槽位五联单`；来源家族必须能回查到真实文件/截图；验收必须证明主交互槽位前中后不漂移、临时 UI 不侵入主槽位、页面没有双主焦点 |
+| **游戏主交互槽位 / 手牌区 / waiting / prompt / rail 抢位** (主交互被挤压、双主焦点、来源家族、交互壳层重排) | `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-responsive-layout.md` + `design-system/game-ui/MASTER.md` + `.codex/skill/ui-ux-pro-max/SKILL.md` | 先写 `主交互槽位五联单`；来源家族必须能回查到真实文件/截图；验收必须证明主交互槽位前中后不漂移、临时 UI 不侵入主槽位、页面没有双主焦点 |
 | **显示游戏实施状态** (`statusTag` / `under_construction` / 实施中横幅) | `docs/framework/frontend.md` § 实施中状态横幅 | 游戏目录、详情缩略图、选角卡面等用户可见入口，只要展示“实施中”，必须复用共享斜条组件 `ImplementationStatusRibbon`，禁止降级成普通标签/小字提示 |
 | **七大恨区域工具 / 红线 truth / 工作区清点** | `docs/games/qidahen/workflows/qidahen-region-mask-truth-sources.md` | 先区分正式边界输入、默认页自动反推红线、`manual-boundary-user` 手工候选、历史 overlay/证据图，再决定截图、修图或清理 |
 | **七大恨区域拓扑 / 正式区与运行时区分层** | `docs/games/qidahen/workflows/qidahen-region-topology-truth-sources.md` | 先区分印刷正式区、运行时逻辑区、`printedRegionIds` 显式映射，再决定该改正式闭合区还是 runtime 拆分 |
 | **七大恨主棋盘 UI / 生图约束** (共享行动指示器、特殊区域、年份或回合卡位、主行动模型) | `.codex/skill/boardgame-ui-imagegen/SKILL.md` + `docs/games/qidahen/workflows/qidahen-ui-imagegen-rules.md` | 先读通用生图 skill 的共性约束，再读七大恨专项约束；单游戏专名只允许留在七大恨专项文档，不得回写到通用层 |
 | **生图设计稿 → 实现设计稿** (AI 生成 UI mockup 后按图实现/复刻) | `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | 真实内容盘点、禁止无中生有、目标稿复看、关键几何比例量测、E2E 截图证据 |
-| **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
+| **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-responsive-layout.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 Skill `--design-system`，再 `design-system/` | 见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |
 | **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` | 交互原则、反馈规范、动画时长、状态清晰 |
 | **选择成熟交互来源家族** (prompt / waiting / 手牌区 / 右侧 rail / setup 壳层) | `design-system/game-ui/source-families.md` | 先从批准家族中选型；复用仓内成熟不变量；找不到家族前不得发明正式交互模式 |
