@@ -4,6 +4,7 @@ import {
     isQidahenCityRuntimeRegion,
     resolveQidahenPrimaryRuntimeRegionId,
 } from './regionConfig';
+import { getArmamentLevel } from './armamentStateAccessors';
 import { hasActiveCharacter } from './characterPresenceAccessors';
 import type { QidahenCore, QidahenFactionId } from './types';
 
@@ -55,6 +56,7 @@ export interface QidahenReachableRuntimeRegion {
 interface FindReachableOptions {
     allowEndOnNonFriendly?: boolean;
     allowPassThroughNonFriendly?: boolean;
+    movementProfileId?: QidahenMovementProfileId | null;
 }
 
 const QIDAHEN_MOVEMENT_PROFILES: QidahenMovementProfile[] = [
@@ -99,6 +101,7 @@ const getEffectiveMovementBudget = (
     state: QidahenCore,
     factionId: QidahenFactionId,
     movementBudget: number,
+    movementProfileId?: QidahenMovementProfileId | null,
 ): number => (
     movementBudget
     + (
@@ -108,6 +111,12 @@ const getEffectiveMovementBudget = (
     )
     + (
         factionId === 'jin' && hasActiveCharacter(state, 'jin', 'jin-manggultai')
+            ? 1
+            : 0
+    )
+    + (
+        (movementProfileId === 'cavalry' || movementProfileId === 'dispatch-cavalry')
+        && getArmamentLevel(state, factionId, 'horse-breeding') > 0
             ? 1
             : 0
     )
@@ -195,7 +204,7 @@ export const findQidahenReachableRuntimeRegions = (
     options: FindReachableOptions = {},
 ): QidahenReachableRuntimeRegion[] => {
     const startRegion = findRuntimeRegion(state, startRegionId);
-    const effectiveMovementBudget = getEffectiveMovementBudget(state, factionId, movementBudget);
+    const effectiveMovementBudget = getEffectiveMovementBudget(state, factionId, movementBudget, options.movementProfileId);
     if (!startRegion || effectiveMovementBudget <= 0) {
         return [];
     }

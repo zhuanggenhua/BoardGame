@@ -311,4 +311,51 @@ describe('七大恨移动规则 helper', () => {
             totalTravelCost: 5,
         });
     });
+
+    it('骏马育种升级后只让骑兵移动档位 +1，不影响步兵调度档位', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.factions = {
+            ...core.factions,
+            ming: {
+                ...core.factions.ming,
+                armaments: core.factions.ming.armaments.map((armament) => (
+                    armament.id === 'horse-breeding'
+                        ? { ...armament, level: 1 }
+                        : armament
+                )),
+            },
+        };
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-10' || region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                };
+            }
+            if (region.id === 'city-region-19') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                };
+            }
+            return region;
+        });
+
+        const cavalryReachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'ming', 4, {
+            movementProfileId: 'dispatch-cavalry',
+        });
+        const infantryReachable = findQidahenReachableRuntimeRegions(core, 'city-region-10', 'ming', 4, {
+            movementProfileId: 'dispatch-infantry',
+        });
+
+        expect(cavalryReachable.find((item) => item.regionId === 'city-region-19')).toMatchObject({
+            totalTravelCost: 5,
+        });
+        expect(infantryReachable.some((item) => item.regionId === 'city-region-19')).toBe(false);
+    });
 });

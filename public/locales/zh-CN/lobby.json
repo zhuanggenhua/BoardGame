@@ -1143,7 +1143,7 @@
         "progress_queued": "任务已提交，等待部署执行器开始执行",
         "progress_running": "部署任务运行中，等待服务器返回阶段日志",
         "progress_pulling": "正在拉取镜像层：{{detail}}",
-        "progress_downloading": "正在下载镜像层，进度来自 Docker 拉取日志",
+        "progress_downloading": "正在下载镜像层，进度来自容器镜像拉取日志",
         "progress_starting": "镜像已拉取，正在启动服务并执行部署检查",
         "progress_succeeded": "任务已完成",
         "progress_failed": "任务失败，请查看服务器执行日志",

@@ -983,7 +983,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(dispatchSelectionSource).toContain('const buildSiegeContinueDispatchSelection = (');
         expect(dispatchSelectionSource).toContain('getRegionSiegeAttackerForceSnapshot(region, factionId)');
         expect(dispatchSelectionSource).toContain('getMovableTroopCountForProfile(sourceSnapshot, movementProfileId)');
-        expect(dispatchSelectionSource).toContain('findQidahenReachableRuntimeRegions(state, sourceRegion.id, attackerFactionId, movementProfile.movementBudget)');
+        expect(dispatchSelectionSource).toContain('findQidahenReachableRuntimeRegions(');
+        expect(dispatchSelectionSource).toContain('{ movementProfileId }');
         expect(dispatchSelectionSource).toContain('export const getQidahenInternalDispatchSelectionForCore = (');
         expect(selectionBuildersSource).not.toContain("} from './dispatchSelectionBuilders';");
         expect(selectionBuildersSource).not.toContain('buildDriveTigerDispatchSelection,');

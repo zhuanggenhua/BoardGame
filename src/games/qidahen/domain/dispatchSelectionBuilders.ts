@@ -544,7 +544,13 @@ export const buildWheelDispatchSelectionFromRegionSemantics = (
     const attackRule = getQidahenAttackRuleConfig(
         actionId === 'drive-tiger' ? 'drive-tiger' : 'wheel-dispatch',
     );
-    const reachableTargets = findQidahenReachableRuntimeRegions(state, sourceRegion.id, attackerFactionId, movementProfile.movementBudget)
+    const reachableTargets = findQidahenReachableRuntimeRegions(
+        state,
+        sourceRegion.id,
+        attackerFactionId,
+        movementProfile.movementBudget,
+        { movementProfileId },
+    )
         .filter((target) => {
             const targetRuntimeRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === target.regionId);
             return targetRuntimeRegion
