@@ -2,7 +2,8 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import MobileReleasePage, { getDeployProgressSnapshot } from '../admin/MobileRelease';
+import MobileReleasePage from '../admin/MobileRelease';
+import { getDeployProgressSnapshot } from '../admin/mobileReleaseProgress';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
