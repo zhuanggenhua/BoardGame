@@ -123,9 +123,9 @@ export const MONK_ABILITY_SNAPSHOTS: WikiAbilitySnapshot[] = [
   { heroId: 'monk', abilityId: 'harmony', level: 1, wikiName: 'Harmony', wikiDescription: 'Deal 5 damage. On hit: gain 2 Chi.', wikiDamage: 5, wikiTrigger: 'Small Straight' },
   { heroId: 'monk', abilityId: 'harmony', level: 2, wikiName: 'Harmony II', wikiDescription: 'Deal 6 damage. On hit: gain 3 Chi.', wikiDamage: 6, wikiTrigger: 'Small Straight' },
 
-  // --- Lotus Palm ---
-  { heroId: 'monk', abilityId: 'lotus-palm', level: 1, wikiName: 'Lotus Palm', wikiDescription: 'You may spend 2 Chi to make this attack unblockable. Deal 5 damage. On hit: Chi cap +1, fill Chi to max.', wikiDamage: 5, wikiTrigger: '4 Lotus' },
-  { heroId: 'monk', abilityId: 'lotus-palm', level: 2, wikiName: 'Lotus Palm II', wikiDescription: '3 Lotus: Deal 2 unblockable damage, on hit gain 1 Evasive and 2 Chi. 4 Lotus: Deal 6 damage, on hit Chi cap +1 and gain 6 Chi. 5 Lotus: Deal 10 damage, on hit fill Chi to max.', wikiDamage: 2, wikiTrigger: '3/4/5 Lotus', wikiTags: ['unblockable'] },
+  // --- Lotus Bloom ---
+  { heroId: 'monk', abilityId: 'lotus-palm', level: 1, wikiName: 'Lotus Bloom', wikiDescription: 'You may spend 2 Chi to make this attack unblockable. Deal 5 damage. On hit: Chi cap +1, fill Chi to max.', wikiDamage: 5, wikiTrigger: '4 Lotus' },
+  { heroId: 'monk', abilityId: 'lotus-palm', level: 2, wikiName: 'Lotus Bloom II', wikiDescription: '3 Lotus: Deal 2 unblockable damage, on hit gain 1 Evasive and 2 Chi. 4 Lotus: Deal 6 undefendable damage, on hit Chi cap +1 and gain 6 Chi.', wikiDamage: 2, wikiTrigger: '3/4 Lotus', wikiTags: ['unblockable'] },
 
   // --- Taiji Combo ---
   { heroId: 'monk', abilityId: 'taiji-combo', level: 1, wikiName: 'Taiji Combo', wikiDescription: 'Roll 1 die: Fist +2 damage, Palm +3 damage, Chi gain 2 Chi, Lotus choose Evasive or Purify. Deal 6 damage.', wikiDamage: 6, wikiTrigger: '3 Fists + 1 Palm' },
@@ -424,7 +424,7 @@ export const MONK_CARD_SNAPSHOTS: WikiCardSnapshot[] = [
   { cardId: 'card-zen-fist-2', heroId: 'monk', wikiName: 'Calm Water II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Calm Water to level II.', wikiType: 'upgrade' },
   { cardId: 'card-storm-assault-2', heroId: 'monk', wikiName: 'Thunder Strike II', wikiCpCost: 1, wikiTiming: 'main', wikiDescription: 'Upgrade Thunder Strike to level II.', wikiType: 'upgrade' },
   { cardId: 'card-combo-punch-2', heroId: 'monk', wikiName: 'Taiji Combo II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Taiji Combo to level II.', wikiType: 'upgrade' },
-  { cardId: 'card-lotus-bloom-2', heroId: 'monk', wikiName: 'Lotus Palm II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Lotus Palm to level II.', wikiType: 'upgrade' },
+  { cardId: 'card-lotus-bloom-2', heroId: 'monk', wikiName: 'Lotus Bloom II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Lotus Bloom to level II.', wikiType: 'upgrade' },
   { cardId: 'card-mahayana-2', heroId: 'monk', wikiName: 'Harmony II', wikiCpCost: 1, wikiTiming: 'main', wikiDescription: 'Upgrade Harmony to level II.', wikiType: 'upgrade' },
   { cardId: 'card-thrust-punch-2', heroId: 'monk', wikiName: 'Fist Technique II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Fist Technique to level II.', wikiType: 'upgrade' },
   { cardId: 'card-thrust-punch-3', heroId: 'monk', wikiName: 'Fist Technique III', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Fist Technique to level III.', wikiType: 'upgrade' },

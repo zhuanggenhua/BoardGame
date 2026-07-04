@@ -4,6 +4,7 @@ import {
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import { getActionChoiceById } from './factionActionWindow';
+import { getQidahenPaymentResourceLabel } from './factionActionWindow';
 import { getFactionIdByPlayerId } from './factionTurnAccessors';
 import { getMarriageSubjugationBlockedReason } from './pendingTargetActionBuilder';
 import type {
@@ -33,7 +34,7 @@ interface QidahenSelectedActionPreparedState {
     nextFactions: QidahenCore['factions'];
     paidHandCards: QidahenCore['handCards'];
     selectedHandActionCardLabel: string | null;
-    selectedSilverPaymentCardLabels: string[];
+    selectedPaymentResourceLabels: string[];
     selectedArmamentId: QidahenArmamentId | null;
     spentCardCount: number;
 }
@@ -76,9 +77,10 @@ export function prepareQidahenSelectedAction(
             && card.armamentId === selectedArmamentId
         ))?.label ?? null
         : null;
-    const selectedSilverPaymentCardLabels = state.handCards
-        .filter((card) => spentCardIds.includes(card.id) && card.cardKind === 'silver')
-        .map((card) => card.label);
+    const selectedPaymentResourceLabels = state.handCards
+        .filter((card) => spentCardIds.includes(card.id))
+        .map((card) => getQidahenPaymentResourceLabel(card))
+        .filter((label): label is string => label != null);
     const actionLabel = getActionChoiceById(actionId)?.label ?? actionId;
     const marriageSubjugationBlockedReason = actionId === 'marriage-subjugation'
         ? getMarriageSubjugationBlockedReason(
@@ -121,7 +123,7 @@ export function prepareQidahenSelectedAction(
         },
         paidHandCards: state.handCards.filter((card) => !selectedCardIds.has(card.id)),
         selectedHandActionCardLabel,
-        selectedSilverPaymentCardLabels,
+        selectedPaymentResourceLabels,
         selectedArmamentId,
         spentCardCount,
     };

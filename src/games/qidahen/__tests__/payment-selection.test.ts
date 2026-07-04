@@ -2074,6 +2074,124 @@ describe('七大恨支付手牌选择', () => {
         }
     });
 
+    it('后金弃封贡敕书支付普通行动时，会按 2 张银两计入支付值', () => {
+        const tributeEdictIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .find((identity) => identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict');
+        expect(tributeEdictIdentity).toMatchObject({
+            displayName: '封贡敕书',
+            cardKind: 'event',
+        });
+
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [paymentCard] = factionHandCards(core, 'jin');
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedActionId: 'marriage-subjugation',
+            confirmedActionId: 'marriage-subjugation',
+            actionChoices: getActionChoicesForFaction('jin'),
+            selectedPaymentCardIds: [],
+            payment: {
+                required: 2,
+                selected: 0,
+                prompt: '需弃 2 / 已选 0',
+            },
+            handCards: core.handCards.map((card) => (
+                card.id === paymentCard.id
+                    ? {
+                        ...card,
+                        label: tributeEdictIdentity!.displayName,
+                        cardKind: tributeEdictIdentity!.cardKind,
+                        armamentId: tributeEdictIdentity!.armamentId,
+                        cardDefId: tributeEdictIdentity!.cardDefId,
+                        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[tributeEdictIdentity!.cardDefId],
+                    }
+                    : card
+            )),
+        };
+
+        const paid = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '2',
+            payload: { cardId: paymentCard.id },
+        });
+
+        expect(paid.selectedPaymentCardIds).toEqual([paymentCard.id]);
+        expect(paid.payment).toMatchObject({
+            required: 2,
+            selected: 2,
+            prompt: '需弃 2 / 已选 2',
+        });
+        expect(QidahenDomain.validate(stateOf(paid), {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        })).toEqual({ valid: true });
+
+        const capped = apply(paid, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '2',
+            payload: { cardId: factionHandCards(paid, 'jin').find((card) => card.id !== paymentCard.id)!.id },
+        });
+        expect(capped.selectedPaymentCardIds).toEqual([paymentCard.id]);
+
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(executed.actionLog[0]?.text).toContain('封贡敕书（视作 2 张银两）');
+    });
+
+    it('大明弃封贡敕书支付普通行动时，仍只按 1 张手牌计入支付值', () => {
+        const tributeEdictIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .find((identity) => identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict');
+        expect(tributeEdictIdentity).toBeDefined();
+
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [paymentCard, secondPaymentCard] = factionHandCards(core, 'ming');
+        const mappedCore: QidahenCore = {
+            ...core,
+            handCards: core.handCards.map((card) => (
+                card.id === paymentCard.id
+                    ? {
+                        ...card,
+                        label: tributeEdictIdentity!.displayName,
+                        cardKind: tributeEdictIdentity!.cardKind,
+                        armamentId: tributeEdictIdentity!.armamentId,
+                        cardDefId: tributeEdictIdentity!.cardDefId,
+                        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[tributeEdictIdentity!.cardDefId],
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'recruit' },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCard.id },
+        });
+
+        expect(previewed.payment).toMatchObject({
+            required: 1,
+            selected: 0,
+            prompt: '需弃 1 / 已选 0',
+        });
+        expect(paid.payment).toMatchObject({
+            required: 1,
+            selected: 1,
+            prompt: '需弃 1 / 已选 1',
+        });
+        expect(secondPaymentCard).toBeDefined();
+    });
+
     it('切换行动会清空已选支付牌并按新花费重算', () => {
         const selected = apply(QidahenDomain.setup(['0', '1', '2'], random), {
             type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,

@@ -96,7 +96,7 @@
   - ✅ 已通过 emergency skip + 领域兜底清理 pendingAttack。
 
 ### 8.2 customActions
-- **monk**：固定 2 选项（太极/净化、莲花掌等）或条件满足才生成。
+- **monk**：固定 2 选项（太极/净化、花开见佛等）或条件满足才生成。
 - **pyromancer**：slider 模式固定 confirm + skip。
 - **gunslinger**：决斗胜利时固定 2 选项。
 > ✅ 均无空选项风险。

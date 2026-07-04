@@ -563,7 +563,7 @@ export interface HeroState {
     statusEffects: Record<string, number>;
     /** 可消耗道具（太极、闪避、净化） */
     tokens: TokenState;
-    /** Token 堆叠上限（可被技能永久提高，如莲花掌） */
+    /** Token 堆叠上限（可被技能永久提高，如花开见佛） */
     tokenStackLimits: Record<string, number>;
     /**
      * 工匠机器人状态。

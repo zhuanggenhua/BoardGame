@@ -43,16 +43,16 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
         : tutorialCatalog.defaultTutorialId;
 
     return (
-        <div className="flex h-full w-full items-center justify-center bg-[#120f0c] px-6 py-8 text-[#f4ead4]">
-            <div className="w-full max-w-5xl rounded-[28px] border border-[#4f3d24] bg-[linear-gradient(180deg,rgba(46,32,18,0.96),rgba(24,17,10,0.96))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.42)] md:p-8">
+        <div className="flex h-full w-full items-center justify-center bg-[#24180d] px-6 py-8 text-[#433422]">
+            <div className="w-full max-w-5xl rounded-[16px] border border-[#8c7b64]/35 bg-[#f4ecd8] p-6 shadow-[0_18px_48px_rgba(67,52,34,0.22)] md:p-8">
                 <div className="mb-6">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d5b98a]">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8c7b64]">
                         {tLobby('matchRoom.tutorialCatalog.eyebrow')}
                     </div>
-                    <h2 className="mt-2 text-3xl font-bold text-[#f8f0df]">
+                    <h2 className="mt-2 font-serif text-3xl font-bold text-[#433422]">
                         {tLobby('matchRoom.tutorialCatalog.title')}
                     </h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#d6c6aa]">
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6f5d45]">
                         {tLobby('matchRoom.tutorialCatalog.description')}
                     </p>
                 </div>
@@ -73,37 +73,37 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                                 type="button"
                                 data-testid={`tutorial-catalog-entry-${tutorialId}`}
                                 onClick={() => navigate(`/play/${stage.gameId}/tutorial/${tutorialId}`)}
-                                className="group flex min-h-[168px] flex-col rounded-[22px] border border-[#5d482a] bg-[rgba(255,248,233,0.04)] p-5 text-left transition hover:border-[#c9a96d] hover:bg-[rgba(255,248,233,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8b67b]"
+                                className="group flex min-h-[168px] cursor-pointer flex-col rounded-[10px] border border-[#8c7b64]/32 bg-[#f9f1df] p-5 text-left shadow-[0_2px_8px_rgba(67,52,34,0.05)] transition-colors duration-200 hover:border-[#8c7b64]/60 hover:bg-[#fff6e5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]"
                             >
                                 <div className="flex items-start justify-between gap-4">
-                                    <div className="text-sm font-semibold tracking-[0.16em] text-[#c9a96d]">
+                                    <div className="text-sm font-semibold tracking-[0.16em] text-[#8c7b64]">
                                         {String(index + 1).padStart(2, '0')}
                                     </div>
                                     <div className="flex flex-wrap justify-end gap-2">
                                         {isCompleted ? (
                                             <span
-                                                className="rounded-full border border-[#6fbf8d] bg-[rgba(83,165,112,0.16)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#b9f2c9]"
+                                                className="rounded border border-[#556b2f]/35 bg-[#556b2f]/10 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#556b2f]"
                                                 aria-label={tLobby('matchRoom.tutorialCatalog.completed')}
                                             >
                                                 ✓ {tLobby('matchRoom.tutorialCatalog.completed')}
                                             </span>
                                         ) : null}
                                         {isDefault ? (
-                                            <span className="rounded-full border border-[#8e6d3b] bg-[rgba(201,169,109,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f0d7a1]">
+                                            <span className="rounded border border-[#d4af37]/45 bg-[#d4af37]/12 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#7a5a17]">
                                                 {tLobby('matchRoom.tutorialCatalog.recommended')}
                                             </span>
                                         ) : null}
                                     </div>
                                 </div>
-                                <div className="mt-5 text-2xl font-bold leading-tight text-[#f8f0df]">
+                                <div className="mt-5 font-serif text-2xl font-bold leading-tight text-[#433422]">
                                     {title}
                                 </div>
                                 {description ? (
-                                    <div className="mt-3 text-sm leading-6 text-[#d6c6aa]">
+                                    <div className="mt-3 text-sm leading-6 text-[#6f5d45]">
                                         {description}
                                     </div>
                                 ) : null}
-                                <div className="mt-auto pt-5 text-sm font-semibold text-[#f0d7a1]">
+                                <div className="mt-auto pt-5 text-sm font-semibold text-[#7a5a17]">
                                     {tLobby('matchRoom.tutorialCatalog.enter')}
                                 </div>
                             </button>

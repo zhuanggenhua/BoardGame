@@ -968,6 +968,49 @@ describe('useGameImplementationReady', () => {
         expect(mockLoadGameImplementation).toHaveBeenCalledWith('smashup', { includeTutorial: true });
     });
 
+    it('多章节教程目录路由只加载 tutorialCatalog 时也会就绪', async () => {
+        const tutorialCatalog = {
+            defaultTutorialId: 'smashup-basic',
+            tutorials: {
+                'smashup-basic': { manifest: { id: 'smashup-basic', steps: [] } },
+                'cowboys-duel': { manifest: { id: 'smashup-cowboys-duel', steps: [] } },
+            },
+        };
+        const implementation = {
+            engineConfig: {},
+            board: () => null,
+            tutorialCatalog,
+        };
+        const mockSubscribeGameImplementationReady = vi.fn(() => vi.fn());
+        const mockGetGameImplementation = vi.fn(() => implementation);
+        const mockHasGameTutorialLoader = vi.fn(() => true);
+        const mockResolveGameTutorialManifest = vi.fn((_: string, tutorialId?: string) => {
+            if (!tutorialId) return null;
+            return tutorialCatalog.tutorials[tutorialId as keyof typeof tutorialCatalog.tutorials]?.manifest ?? null;
+        });
+        const mockLoadGameImplementation = vi.fn().mockResolvedValueOnce(implementation);
+
+        vi.doMock('../../games/registry', () => ({
+            getGameImplementation: mockGetGameImplementation,
+            hasGameTutorialLoader: mockHasGameTutorialLoader,
+            loadGameImplementation: mockLoadGameImplementation,
+            resolveGameTutorialManifest: mockResolveGameTutorialManifest,
+            subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
+        }));
+
+        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { result } = renderHook(() => useGameImplementationReady('smashup', {
+            includeTutorial: true,
+        }));
+
+        await waitFor(() => {
+            expect(result.current.isGameImplementationReady).toBe(true);
+        });
+
+        expect(result.current.gameImplementationError).toBeNull();
+        expect(mockLoadGameImplementation).not.toHaveBeenCalled();
+    });
+
     it('子教程不存在时返回明确错误，不静默回落到默认教程', async () => {
         const tutorialCatalog = {
             defaultTutorialId: 'smashup-basic',

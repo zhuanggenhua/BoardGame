@@ -177,7 +177,7 @@ test.describe('DiceThrone E2E', () => {
         }
     });
 
-    test('Online match: Monk Lotus Palm choice consumes Taiji', async ({ browser }, testInfo) => {
+    test('Online match: Monk Lotus Bloom choice consumes Taiji', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
 
@@ -194,7 +194,7 @@ test.describe('DiceThrone E2E', () => {
             const monkNextPhase = monkPage.locator('[data-tutorial-id="advance-phase-button"]');
             const monkActive = await monkNextPhase.isEnabled({ timeout: 3000 }).catch(() => false);
             if (!monkActive) {
-                test.skip(true, '非预期起始玩家，无法覆盖莲花掌选择');
+                test.skip(true, '非预期起始玩家，无法覆盖花开见佛选择');
             }
 
             const monkPlayerId = getPlayerIdFromUrl(monkPage, '0');
@@ -221,7 +221,7 @@ test.describe('DiceThrone E2E', () => {
                 .filter({ has: monkPage.locator('div.animate-pulse[class*="border-"]') });
             const hasHighlight = await highlightedSlots.first().isVisible({ timeout: 8000 }).catch(() => false);
             if (!hasHighlight) {
-                test.skip(true, '未触发莲花掌技能');
+                test.skip(true, '未触发花开见佛技能');
             }
             await highlightedSlots.first().click();
 

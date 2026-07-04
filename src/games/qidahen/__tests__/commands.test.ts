@@ -743,12 +743,31 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId].includes('只能于守城时使用')
         ));
         expect(defenderOnlyIdentities.map((identity) => identity.displayName)).toEqual(['坚守不屈']);
+        const triggerOnlyIdentities = tacticIdentities.filter((identity) => {
+            const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
+            return rulesSummary.includes('敌人增援时') || rulesSummary.includes('取消对手宣告的附兵劫掠');
+        });
+        expect(triggerOnlyIdentities.map((identity) => identity.displayName)).toEqual(['偷袭与伏击', '诈败诱敌']);
+        const phaseOnlyIdentities = tacticIdentities.filter((identity) => {
+            const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
+            return rulesSummary.includes('野战步兵阶段使用')
+                || rulesSummary.includes('野战骑兵阶段使用')
+                || rulesSummary.includes('提前在炮兵阶段');
+        });
+        expect(phaseOnlyIdentities.map((identity) => identity.displayName)).toEqual(['箭如雨下', '乌真超哈']);
         const cityBlockedIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
-            return isCityBlockedSummary(rulesSummary) || rulesSummary.includes('只能于守城时使用');
+            return isCityBlockedSummary(rulesSummary)
+                || rulesSummary.includes('只能于守城时使用')
+                || rulesSummary.includes('敌人增援时')
+                || rulesSummary.includes('取消对手宣告的附兵劫掠')
+                || rulesSummary.includes('野战步兵阶段使用')
+                || rulesSummary.includes('野战骑兵阶段使用')
+                || rulesSummary.includes('提前在炮兵阶段');
         });
         expect(cityBlockedIdentities.map((identity) => identity.displayName)).toEqual(expect.arrayContaining([
             '箭如雨下',
+            '偷袭与伏击',
             '骑兵冲锋',
             '步骑联合',
             '分进合击',
@@ -756,6 +775,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             '拒马',
             '链炮阵',
             '鸟真超哈',
+            '诈败诱敌',
         ]));
         const fieldState = buildBattleState('field');
         const cityState = buildBattleState('city');
@@ -763,7 +783,19 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }
-        for (const identity of cityBlockedIdentities.filter((identity) => !defenderOnlyIdentities.includes(identity))) {
+        for (const identity of triggerOnlyIdentities) {
+            expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+            expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        }
+        for (const identity of phaseOnlyIdentities) {
+            expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+            expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        }
+        for (const identity of cityBlockedIdentities.filter((identity) => (
+            !defenderOnlyIdentities.includes(identity)
+            && !triggerOnlyIdentities.includes(identity)
+            && !phaseOnlyIdentities.includes(identity)
+        ))) {
             expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: true });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }

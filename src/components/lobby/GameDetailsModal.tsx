@@ -130,6 +130,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         requestInstall: requestGamePackageInstall,
         dismissInstall: dismissGamePackageInstall,
         cancelInstall: cancelGamePackageInstall,
+        uninstallInstall: uninstallGamePackageInstall,
         confirmInstall: confirmGamePackageInstall,
         retryInstall: retryGamePackageInstall,
         notificationPermissionAction: packageNotificationPermissionAction,
@@ -163,7 +164,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             status: 'not-installed' as const,
         }
         : packageInstallCardState;
-    const shouldShowMobilePackageCard = isPackageManagedMobileGame && !shouldShowInstalledPackageVersionBadge;
+    const shouldShowMobilePackageCard = isPackageManagedMobileGame;
     const [isMobilePackageCardExpanded, setIsMobilePackageCardExpanded] = useState(false);
     const shouldAutoExpandMobilePackageCard = packageInstallCardState.status === 'queued'
         || packageInstallCardState.status === 'manifest'
@@ -589,6 +590,25 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         gameDisplayName,
         gameId,
         packageInstallCardState.status,
+    ]);
+
+    const handleUninstallPackageInstall = useCallback(() => {
+        logger.info('[GameDetailsModal] 卸载游戏素材包', {
+            gameId,
+            gameName: gameDisplayName,
+            status: packageInstallCardState.status,
+        });
+        void Promise.resolve(uninstallGamePackageInstall()).catch((error) => {
+            logMobileRuntimeCritical('GameDetailsModal', 'uninstall-package-install-failed', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+    }, [
+        gameDisplayName,
+        gameId,
+        packageInstallCardState.status,
+        uninstallGamePackageInstall,
     ]);
 
     const handleConfirmPackageInstall = useCallback(async () => {
@@ -1955,6 +1975,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                         state={mobilePackageCardDisplayState}
                                         onInstall={handleOpenMobilePackageInstall}
                                         onRetry={handleRetryPackageInstall}
+                                        onUninstall={handleUninstallPackageInstall}
                                         failedActionLabel={packageInstallFailedActionLabel}
                                         onCancel={handleCancelPackageInstall}
                                         onCollapse={() => setIsMobilePackageCardExpanded(false)}

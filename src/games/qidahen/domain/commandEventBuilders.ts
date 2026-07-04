@@ -5,7 +5,10 @@ import type {
     QidahenCore,
     QidahenEvent,
 } from './types';
-import { getActionChoiceById } from './factionActionWindow';
+import {
+    getActionChoiceById,
+    getQidahenHandCardPaymentValue,
+} from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import {
     getQidahenDiplomacySelectionFromInteraction,
@@ -64,10 +67,16 @@ const getAutoPaymentCardIds = (
         return [];
     }
     const currentFactionId = getCurrentFactionId(state);
-    return state.handCards
-        .filter((card) => card.faction === currentFactionId && card.status !== 'disabled')
-        .slice(0, action.cost)
-        .map((card) => card.id);
+    const paymentCardIds: string[] = [];
+    let paymentValue = 0;
+    for (const card of state.handCards.filter((card) => card.faction === currentFactionId && card.status !== 'disabled')) {
+        if (paymentValue >= action.cost) {
+            break;
+        }
+        paymentCardIds.push(card.id);
+        paymentValue += getQidahenHandCardPaymentValue(card);
+    }
+    return paymentCardIds;
 };
 
 const buildQidahenSelectedActionExecutedEvent = (

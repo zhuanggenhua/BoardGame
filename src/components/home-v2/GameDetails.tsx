@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, BookOpen, Download, HardDriveDownload, LoaderCircle, Plus, RefreshCw, Search } from 'lucide-react';
 import { type GameConfig } from '../../config/games.config';
-import { UI_Z_INDEX } from '../../core';
+import { preloadWarmImages, resolveCriticalImages, UI_Z_INDEX } from '../../core';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -60,6 +60,8 @@ import {
     resolveGameDescription,
 } from '../lobby/gameDetailsContent';
 import { logger } from '../../lib/logger';
+import { ensureGameCriticalImageResolverLoaded, prefetchGameImplementation } from '../../games/registry';
+import { prefetchOnlineMatchRoute } from '../../lib/prefetchPlayRoute';
 
 type HomeV2Translate = TFunction<['lobby', 'common']>;
 type GameConfigWithDraftMeta = GameConfig & {
@@ -67,6 +69,23 @@ type GameConfigWithDraftMeta = GameConfig & {
     description?: string;
 };
 type HomeV2DetailTab = 'lobby' | 'changelog' | 'reviews' | 'leaderboard';
+
+const prewarmInitialGameImages = (gameId: string, locale: string, source: string) => {
+    void ensureGameCriticalImageResolverLoaded(gameId)
+        .then(() => {
+            const resolved = resolveCriticalImages(gameId, undefined, locale);
+            const criticalPaths = [...new Set(resolved.critical)];
+            if (criticalPaths.length > 0) {
+                preloadWarmImages(criticalPaths, locale, gameId);
+            }
+        })
+        .catch((error: unknown) => {
+            logger.warn(`[HomeV2Detail] ${source} 提前加载关键素材失败`, {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+};
 
 const getDisplayName = (game: GameConfig, t: HomeV2Translate) => {
     const draftMeta = game as GameConfigWithDraftMeta;
@@ -594,7 +613,7 @@ export interface LeftProps {
 }
 
 const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: () => void }) => {
-    const { t } = useTranslation(['lobby', 'common']);
+    const { t, i18n } = useTranslation(['lobby', 'common']);
     const navigate = useNavigate();
     const isCompactLandscape = useHomeV2CompactLandscape();
 
@@ -625,6 +644,14 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
     const secondaryParagraph = editorialParagraphs[1] || '';
 
     const handleTutorial = () => {
+        const gameId = game.id;
+        prewarmInitialGameImages(gameId, i18n.language, '进入教程');
+        void prefetchGameImplementation(gameId, { includeTutorial: true }).catch((error: unknown) => {
+            logger.warn('[HomeV2Detail] 进入教程时提前加载教程 runtime 失败', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
         navigate(`/play/${game.id}/tutorial`);
     };
 
@@ -854,6 +881,7 @@ export const Right = ({ game }: RightProps) => {
         requestInstall: requestGamePackageInstall,
         dismissInstall: dismissGamePackageInstall,
         cancelInstall: cancelGamePackageInstall,
+        uninstallInstall: uninstallGamePackageInstall,
         confirmInstall: confirmGamePackageInstall,
         retryInstall: retryGamePackageInstall,
         notificationPermissionAction: packageNotificationPermissionAction,
@@ -1066,6 +1094,15 @@ export const Right = ({ game }: RightProps) => {
         });
     }, [cancelGamePackageInstall, gameId]);
 
+    const handleUninstallPackageInstall = React.useCallback(() => {
+        void Promise.resolve(uninstallGamePackageInstall()).catch((error) => {
+            logMobileRuntimeCritical('HomeV2Detail', 'uninstall-package-install-failed', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+    }, [gameId, uninstallGamePackageInstall]);
+
     const handleConfirmPackageInstall = React.useCallback(async () => {
         if (isConfirmingPackageInstall) {
             return;
@@ -1276,6 +1313,19 @@ export const Right = ({ game }: RightProps) => {
     const openCreateRoom = async () => {
         if (!game || isPreparingCreateRoom) return;
         setIsPreparingCreateRoom(true);
+        prewarmInitialGameImages(game.id, i18n.language, '打开创建房间');
+        void prefetchGameImplementation(game.id, { includeTutorial: false }).catch((error: unknown) => {
+            logger.warn('[HomeV2Detail] 打开创建房间时提前加载游戏 runtime 失败', {
+                gameId: game.id,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+        void prefetchOnlineMatchRoute().catch((error: unknown) => {
+            logger.warn('[HomeV2Detail] 打开创建房间时提前加载房间页路由失败', {
+                gameId: game.id,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
         try {
             const namespace = `game-${game.id}`;
             if (!i18n.hasLoadedNamespace(namespace)) {
@@ -1300,6 +1350,19 @@ export const Right = ({ game }: RightProps) => {
         if (!game) return;
         createRoomInFlightRef.current = true;
         setIsLoading(true);
+        prewarmInitialGameImages(game.id, i18n.language, '提交创建房间');
+        void prefetchGameImplementation(game.id, { includeTutorial: false }).catch((error: unknown) => {
+            logger.warn('[HomeV2Detail] 提交创建房间时提前加载游戏 runtime 失败', {
+                gameId: game.id,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+        void prefetchOnlineMatchRoute().catch((error: unknown) => {
+            logger.warn('[HomeV2Detail] 提交创建房间时提前加载房间页路由失败', {
+                gameId: game.id,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
         try {
             writeLocalMatchPreferences(game, stripAiSeatsFromLocalMatchPreferences({
                 numPlayers: config.numPlayers,
@@ -1668,6 +1731,7 @@ export const Right = ({ game }: RightProps) => {
                         state={mobilePackageCardDisplayState}
                         onInstall={handleOpenMobilePackageInstall}
                         onRetry={handleRetryPackageInstall}
+                        onUninstall={handleUninstallPackageInstall}
                         failedActionLabel={packageInstallFailedActionLabel}
                         onCancel={handleCancelPackageInstall}
                         onCollapse={() => setIsMobilePackageCardExpanded(false)}

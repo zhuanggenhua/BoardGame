@@ -481,7 +481,20 @@ describe('formatDiceThroneActionEntry', () => {
         expect(compareRollEntry).toBeTruthy();
         expect(compareRollEntry?.segments.some((seg) => seg.type === 'i18n' && (seg as { key: string }).key === 'actionLog.compareRollPrefix')).toBe(true);
         expect(compareRollEntry?.segments.some((seg) => seg.type === 'i18n' && (seg as { key: string }).key === 'compareRoll.gunslingerDuel.win')).toBe(true);
-        expect(compareRollEntry?.segments.some((seg) => seg.type === 'diceResult')).toBe(true);
+        const diceSegments = compareRollEntry?.segments.filter((seg) => seg.type === 'diceResult') as Array<{
+            type: 'diceResult';
+            spriteRows: number;
+            dice: Array<{ value: number; col: number; row: number }>;
+        }>;
+        expect(diceSegments).toHaveLength(2);
+        expect(diceSegments[0]).toMatchObject({
+            spriteRows: 3,
+            dice: [{ value: 6, col: 2, row: 2 }],
+        });
+        expect(diceSegments[1]).toMatchObject({
+            spriteRows: 3,
+            dice: [{ value: 1, col: 0, row: 2 }],
+        });
     });
 
     it('效果 entries 的 timestamp 严格大于命令 entry（newest-first 排序正确）', () => {

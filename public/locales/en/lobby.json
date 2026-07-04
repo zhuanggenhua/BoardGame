@@ -314,6 +314,7 @@
     "installedCompletedBadge": "Completed",
     "installedVersionBadge": "Completed · {{version}}",
     "installAction": "Install Pack",
+    "uninstallAction": "Uninstall Assets",
     "homeV2UpdateAppShort": "Update App",
     "homeV2DownloadingShort": "Downloading",
     "homeV2RetryShort": "Retry",

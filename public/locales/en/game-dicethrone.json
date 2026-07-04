@@ -1147,7 +1147,7 @@
     "evasiveOrPurify": "Choose a status effect to gain",
     "evasiveOrPurifyToken": "Choose a token to gain",
     "lotusPalmUnblockable": {
-      "title": "Lotus Palm",
+      "title": "Lotus Bloom",
       "pay2": "Spend 2 Taiji to make this attack undefendable",
       "skip": "Do not spend Taiji"
     },
@@ -1442,7 +1442,7 @@
     "fist": "Fist Technique",
     "chi": "Zen Forget",
     "sky": "Harmony",
-    "lotus": "Lotus Palm",
+    "lotus": "Lotus Bloom",
     "combo": "Taiji Combo",
     "lightning": "Thunder Strike",
     "calm": "Calm Water",
@@ -1519,7 +1519,7 @@
       }
     },
     "lotus-palm": {
-      "name": "Lotus Palm",
+      "name": "Lotus Bloom",
       "description": "Lotus blooms, Taiji perfected",
       "effects": {
         "damage5": "Deal 5 damage",
@@ -1528,10 +1528,11 @@
       }
     },
     "lotus-palm-2": {
-      "name": "Lotus Palm II",
-      "description": "4 Lotus: Deal 6 undefendable damage, gain 6 Chi. Way of Lotus (3 Lotus): Deal 2 undefendable damage, gain Evasive and 2 Chi."
+      "name": "Lotus Bloom II",
+      "description": "4 Lotus: Deal 6 undefendable damage, then Chi stack limit +1 and gain 6 Chi. Way of Lotus (3 Lotus): Deal 2 undefendable damage, then gain Evasive and 2 Chi."
     },
     "lotus-palm-2-3": {
+      "name": "Way of Lotus",
       "effects": {
         "damage2": "Deal 2 undefendable damage",
         "gainEvasive": "Gain 1 Evasive token",
@@ -1539,15 +1540,10 @@
       }
     },
     "lotus-palm-2-4": {
+      "name": "Lotus Bloom II",
       "effects": {
         "damage6": "Deal 6 undefendable damage",
-        "taijiCapMax": "Gain 6 Taiji tokens"
-      }
-    },
-    "lotus-palm-2-5": {
-      "effects": {
-        "damage10": "Deal 10 undefendable damage",
-        "taijiCapMax": "Gain 6 Taiji tokens"
+        "taijiCapUp": "Chi cap +1 and gain 6 Chi"
       }
     },
     "taiji-combo": {

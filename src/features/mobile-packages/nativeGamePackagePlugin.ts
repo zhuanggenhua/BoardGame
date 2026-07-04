@@ -137,6 +137,11 @@ type NativeGamePackagePlugin = {
         size?: number;
     }>;
     cancelInstall(options: { gameId: string }): Promise<void>;
+    uninstallGamePackage(options: { gameId: string }): Promise<{
+        gameId?: string;
+        status?: NativeInstallLifecycleStatus;
+        updatedAt?: number;
+    }>;
     addListener(
         eventName: 'installStateChanged',
         listenerFunc: (event: {
@@ -697,6 +702,49 @@ export const cancelNativeGamePackageInstall = async (gameId: string): Promise<bo
             error: error instanceof Error ? error.message : String(error),
         });
         return false;
+    }
+};
+
+export const uninstallNativeGamePackage = async (
+    gameId: string,
+): Promise<Partial<StoredGamePackageState> | null> => {
+    const plugin = getNativePlugin();
+    if (!plugin) {
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'uninstall-no-native-plugin', {
+            gameId,
+        });
+        return null;
+    }
+
+    try {
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'uninstall-dispatching', {
+            gameId,
+        });
+        const result = await plugin.uninstallGamePackage({ gameId });
+        const nextState: Partial<StoredGamePackageState> = {
+            gameId,
+            status: normalizeNativeInstallStatus(result.status, 'not-installed') ?? 'not-installed',
+            progressPercent: undefined,
+            progressMode: undefined,
+            installedVersion: undefined,
+            localAssetBaseUrl: undefined,
+            errorCode: undefined,
+            errorMessage: undefined,
+            updatedAt: typeof result.updatedAt === 'number' && Number.isFinite(result.updatedAt)
+                ? result.updatedAt
+                : Date.now(),
+        };
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'uninstall-dispatched', {
+            gameId,
+            nextState,
+        });
+        return nextState;
+    } catch (error) {
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'uninstall-failed', {
+            gameId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
     }
 };
 

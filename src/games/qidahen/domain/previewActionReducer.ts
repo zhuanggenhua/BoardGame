@@ -1,5 +1,6 @@
 import {
     buildPaymentState,
+    computeQidahenSelectedPaymentValue,
     getActionChoiceById,
 } from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
@@ -48,7 +49,7 @@ const reduceQidahenPreviewActionConfirmed = (
         confirmedActionId: actionId,
         selectedPaymentCardIds,
         selectedHandActionCardId: sourceCard?.id ?? null,
-        payment: buildPaymentState(actionId, selectedPaymentCardIds.length),
+        payment: buildPaymentState(actionId, computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds)),
     });
 };
 

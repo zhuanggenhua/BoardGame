@@ -312,6 +312,54 @@ public class GamePackagePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void uninstallGamePackage(PluginCall call) {
+        String gameId = normalizeNonEmpty(call.getString("gameId"));
+        if (gameId == null) {
+            call.reject("缺少 gameId");
+            return;
+        }
+
+        AndroidDownloadTaskRecord record = taskStore.getLatestByTarget(AndroidDownloadTaskRecord.KIND_GAME_PACKAGE, gameId);
+        if (record != null && !record.isTerminal()) {
+            Log.w(TAG, "uninstallGamePackage cancel-active-task gameId=" + gameId + " taskId=" + record.taskId);
+            AndroidDownloadForegroundService.startManagedIntent(
+                getContext(),
+                AndroidDownloadForegroundService.buildCancelIntent(getContext(), record.taskId)
+            );
+        }
+
+        executor.execute(() -> {
+            try {
+                File currentDir = GamePackageFs.resolveCurrentDir(getContext(), gameId);
+                File stateFile = resolveStateFile(gameId);
+                File stagingRootDir = GamePackageFs.resolveStagingRootDir(getContext(), gameId);
+                deleteRecursively(currentDir);
+                if (stateFile.exists() && !stateFile.delete()) {
+                    Log.w(TAG, "uninstallGamePackage delete-state-failed gameId=" + gameId + " path=" + stateFile.getAbsolutePath());
+                }
+                deleteRecursively(stagingRootDir);
+
+                JSONObject payload = new JSONObject();
+                long updatedAt = System.currentTimeMillis();
+                payload.put("gameId", gameId);
+                payload.put("status", "not-installed");
+                payload.put("updatedAt", updatedAt);
+                GamePackageInstallEventHub.dispatch(payload);
+
+                JSObject result = new JSObject();
+                result.put("gameId", gameId);
+                result.put("status", "not-installed");
+                result.put("updatedAt", updatedAt);
+                Log.i(TAG, "uninstallGamePackage success gameId=" + gameId);
+                resolveOnMainThread(call, result);
+            } catch (Exception error) {
+                Log.e(TAG, "uninstallGamePackage failed gameId=" + gameId, error);
+                rejectOnMainThread(call, "卸载游戏素材包失败", error);
+            }
+        });
+    }
+
+    @PluginMethod
     public void getInstallState(PluginCall call) {
         String gameId = normalizeNonEmpty(call.getString("gameId"));
         if (gameId == null) {

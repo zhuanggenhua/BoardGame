@@ -115,7 +115,7 @@ function handleOneThrowFortuneCp({ targetId, sourceAbilityId, state, timestamp, 
 }
 
 
-/** 莲花掌：可花费2太极令此次攻击不可防御 */
+/** 花开见佛：可花费2太极令此次攻击不可防御 */
 function handleLotusPalmUnblockableChoice({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const taijiCount = state.players[targetId]?.tokens?.[TOKEN_IDS.TAIJI] ?? 0;
     if (taijiCount < 2) return [];
@@ -135,7 +135,7 @@ function handleLotusPalmUnblockableChoice({ targetId, sourceAbilityId, state, ti
     } as ChoiceRequestedEvent];
 }
 
-/** 莲花掌：太极上限+1，并立即补满太极 */
+/** 花开见佛：太极上限+1，并立即补满太极 */
 function handleLotusPalmTaijiCapUpAndFill({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const player = state.players[targetId];
     if (!player) return [];

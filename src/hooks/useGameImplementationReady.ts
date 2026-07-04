@@ -45,7 +45,8 @@ const isImplementationReady = (
         return Boolean(resolveGameTutorialManifest(gameId, tutorialId));
     }
 
-    return Boolean(implementation.tutorial) || !hasGameTutorialLoader(gameId);
+    return Boolean(implementation.tutorial || implementation.tutorialCatalog)
+        || !hasGameTutorialLoader(gameId);
 };
 
 export function useGameImplementationReady(

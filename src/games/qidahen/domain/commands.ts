@@ -15,6 +15,8 @@ import {
     getQidahenRecruitSelectionForCore,
 } from './interactionSelectionAccessors';
 import {
+    computeQidahenSelectedPaymentValue,
+    getQidahenHandCardPaymentValue,
     hasRemainingFactionAction,
 } from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
@@ -149,6 +151,15 @@ const isQidahenTacticCardPlayableForPendingBattle = (
     pendingTargetAction: NonNullable<QidahenCore['pendingTargetAction']>,
 ): boolean => {
     const rulesSummary = card.rulesSummary ?? '';
+    if (
+        rulesSummary.includes('敌人增援时')
+        || rulesSummary.includes('取消对手宣告的附兵劫掠')
+        || rulesSummary.includes('野战步兵阶段使用')
+        || rulesSummary.includes('野战骑兵阶段使用')
+        || rulesSummary.includes('提前在炮兵阶段')
+    ) {
+        return false;
+    }
     if (rulesSummary.includes('只能于守城时使用')) {
         return false;
     }
@@ -392,7 +403,8 @@ export function validate(
             ) {
                 return { valid: false, error: 'noUpgradableArmament' };
             }
-            return state.core.selectedPaymentCardIds.length >= state.core.payment.required && state.core.payment.required > 0
+            return computeQidahenSelectedPaymentValue(state.core.handCards, state.core.selectedPaymentCardIds) >= state.core.payment.required
+                && state.core.payment.required > 0
                 ? { valid: true }
                 : { valid: false, error: 'paymentIncomplete' };
         case QIDAHEN_COMMANDS.EXECUTE_ACTION: {
@@ -417,7 +429,7 @@ export function validate(
                 return { valid: false, error: 'noUpgradableArmament' };
             }
             const payableCards = state.core.handCards.filter((card) => card.faction === currentFactionId && card.status !== 'disabled');
-            return payableCards.length >= action.cost
+            return payableCards.reduce((total, card) => total + getQidahenHandCardPaymentValue(card), 0) >= action.cost
                 ? { valid: true }
                 : { valid: false, error: 'paymentIncomplete' };
         }

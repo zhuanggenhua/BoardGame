@@ -2,6 +2,7 @@ import type {
     QidahenActionChoice,
     QidahenCore,
     QidahenFactionId,
+    QidahenHandCard,
     QidahenPaymentState,
 } from './types';
 import { hasActiveCharacter } from './characterPresenceAccessors';
@@ -10,6 +11,7 @@ import {
 } from './factionTurnAccessors';
 
 const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
+const tributeEdictCardDefId = 'qidahen-atlas05-1633-tribute-edict';
 
 const upgradeArmamentActionChoice: QidahenActionChoice = {
     id: 'upgrade-armament',
@@ -66,15 +68,42 @@ export const getDefaultActionIdForFaction = (factionId: QidahenFactionId): strin
 
 export const buildPaymentState = (
     selectedActionId: string,
-    selectedCardCount = 0,
+    selectedPaymentValue = 0,
 ): QidahenPaymentState => {
     const action = getActionChoiceById(selectedActionId) ?? actionChoiceCatalog.ming[0];
-    const selected = Math.min(selectedCardCount, action.cost);
+    const selected = Math.min(selectedPaymentValue, action.cost);
     return {
         required: action.cost,
         selected,
         prompt: `需弃 ${action.cost} / 已选 ${selected}`,
     };
+};
+
+export const getQidahenHandCardPaymentValue = (
+    card: Pick<QidahenHandCard, 'faction' | 'cardDefId'>,
+): number => (
+    (card.faction === 'jin' || card.faction === 'mongol') && card.cardDefId === tributeEdictCardDefId
+        ? 2
+        : 1
+);
+
+export const getQidahenPaymentResourceLabel = (
+    card: Pick<QidahenHandCard, 'faction' | 'cardDefId' | 'cardKind' | 'label'>,
+): string | null => {
+    if (getQidahenHandCardPaymentValue(card) > 1) {
+        return `${card.label}（视作 2 张银两）`;
+    }
+    return card.cardKind === 'silver' ? card.label : null;
+};
+
+export const computeQidahenSelectedPaymentValue = (
+    handCards: readonly QidahenHandCard[],
+    selectedCardIds: readonly string[],
+): number => {
+    const selectedCardIdSet = new Set(selectedCardIds);
+    return handCards.reduce((total, card) => (
+        selectedCardIdSet.has(card.id) ? total + getQidahenHandCardPaymentValue(card) : total
+    ), 0);
 };
 
 export const buildTurnLabel = (
@@ -155,6 +184,6 @@ export const syncFactionActionWindow = (
         actionChoices,
         selectedActionId,
         confirmedActionId,
-        payment: buildPaymentState(selectedActionId, state.selectedPaymentCardIds.length),
+        payment: buildPaymentState(selectedActionId, computeQidahenSelectedPaymentValue(state.handCards, state.selectedPaymentCardIds)),
     };
 };

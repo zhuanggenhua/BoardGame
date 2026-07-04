@@ -150,7 +150,6 @@ const LOTUS_PALM_2: AbilityDef = {
     variants: [
         { id: 'lotus-palm-2-3', trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 3 } }, effects: [damage(2, abilityEffectText('lotus-palm-2-3', 'damage2')), grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('lotus-palm-2-3', 'gainEvasive'), { timing: 'postDamage', condition: { type: 'onHit' } }), grantToken(TOKEN_IDS.TAIJI, 2, abilityEffectText('lotus-palm-2-3', 'gainTaiji2'), { timing: 'postDamage', condition: { type: 'onHit' } })], priority: 0 },
         { id: 'lotus-palm-2-4', trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 4 } }, effects: [damage(6, abilityEffectText('lotus-palm-2-4', 'damage6')), { description: abilityEffectText('lotus-palm-2-4', 'taijiCapUp'), action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-2-taiji-cap-up-and-grant6' }, timing: 'postDamage', condition: { type: 'onHit' } }], priority: 1 },
-        { id: 'lotus-palm-2-5', trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 5 } }, effects: [damage(10, abilityEffectText('lotus-palm-2-5', 'damage10')), grantToken(TOKEN_IDS.TAIJI, 6, abilityEffectText('lotus-palm-2-5', 'taijiCapMax'), { timing: 'postDamage', condition: { type: 'onHit' } })], priority: 2 },
     ],
 };
 

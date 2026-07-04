@@ -1297,7 +1297,7 @@ export const reduce = (
 // Choice Effect 处理器注册
 // ============================================================================
 
-/** 莲花掌：花费2太极使攻击不可防御 */
+/** 花开见佛：花费2太极使攻击不可防御 */
 registerChoiceEffectHandler('lotus-palm-unblockable-pay', ({ state }) => {
     if (state.pendingAttack?.sourceAbilityId === 'lotus-palm') {
         return {

@@ -314,6 +314,7 @@
     "installedCompletedBadge": "已完成",
     "installedVersionBadge": "已完成 · {{version}}",
     "installAction": "安装游戏包",
+    "uninstallAction": "卸载素材包",
     "homeV2UpdateAppShort": "更新 App",
     "homeV2DownloadingShort": "下载中",
     "homeV2RetryShort": "重试",

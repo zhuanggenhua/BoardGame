@@ -1520,12 +1520,15 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('return [buildQidahenSelectedActionExecutedEvent(');
         expect(indexSource).not.toContain('export function buildQidahenCommandEvents(');
         expect(commandEventBuildersSource).toContain("import { QIDAHEN_COMMANDS } from './commands';");
-        expect(commandEventBuildersSource).toContain("import { getActionChoiceById } from './factionActionWindow';");
+        expect(commandEventBuildersSource).toContain('getActionChoiceById,');
+        expect(commandEventBuildersSource).toContain('getQidahenHandCardPaymentValue,');
         expect(commandEventBuildersSource).toContain("import { getCurrentFactionId } from './factionTurnAccessors';");
         expect(commandEventBuildersSource).not.toContain('export type QidahenCommandEventBuilder = (');
         expect(commandEventBuildersSource).not.toContain('export interface QidahenCommandEventBuilderSpec {');
         expect(commandEventBuildersSource).toContain('type QidahenSelectedActionExecuteCommand =');
         expect(commandEventBuildersSource).toContain('const getAutoPaymentCardIds = (');
+        expect(commandEventBuildersSource).toContain('let paymentValue = 0;');
+        expect(commandEventBuildersSource).toContain('paymentValue += getQidahenHandCardPaymentValue(card);');
         expect(commandEventBuildersSource).not.toContain('export const buildQidahenSelectedActionExecutedEvent = (');
         expect(commandEventBuildersSource).toContain("type: 'SELECTED_ACTION_EXECUTED',");
         expect(commandEventBuildersSource).toContain("actionId: state.confirmedActionId ?? state.selectedActionId,");
@@ -1952,7 +1955,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('export function buildQidahenCommandEvents(');
 
         expect(commandEventBuildersSource).toContain("import { QIDAHEN_COMMANDS } from './commands';");
-        expect(commandEventBuildersSource).toContain("import { getActionChoiceById } from './factionActionWindow';");
+        expect(commandEventBuildersSource).toContain('getActionChoiceById,');
+        expect(commandEventBuildersSource).toContain('getQidahenHandCardPaymentValue,');
         expect(commandEventBuildersSource).toContain("import { getCurrentFactionId } from './factionTurnAccessors';");
         expect(commandEventBuildersSource).not.toContain("} from './commandEventBuilderContracts';");
         expect(commandEventBuildersSource).not.toContain('export type QidahenCommandEventBuilder = (');
@@ -2170,7 +2174,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(previewActionReducerSource).toContain('selectedActionId: actionId,');
         expect(previewActionReducerSource).toContain('confirmedActionId: actionId,');
         expect(previewActionReducerSource).toContain('selectedPaymentCardIds,');
-        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, selectedPaymentCardIds.length),');
+        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds)),');
         expect(previewActionReducerSource).toContain("export const resolveQidahenPreviewActionCancelledEvent = (");
         expect(previewActionReducerSource).not.toContain("const grantPardonSourceRegion = actionId === 'grant-pardon'");
         expect(previewActionReducerSource).not.toContain("const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')");
@@ -2622,7 +2626,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('const upgradeArmamentActionChoice: QidahenActionChoice = {');
         expect(indexSource).not.toContain('const actionChoiceCatalog: Record<QidahenFactionId, QidahenActionChoice[]> = {');
         expect(indexSource).not.toContain("import { getActionChoiceById } from './factionActionWindow';");
-        expect(commandEventBuildersSource).toContain("import { getActionChoiceById } from './factionActionWindow';");
+        expect(commandEventBuildersSource).toContain('getActionChoiceById,');
+        expect(commandEventBuildersSource).toContain('getQidahenHandCardPaymentValue,');
         expect(indexSource).not.toContain('const buildPaymentState = (selectedActionId: string, selectedCardCount = 0): QidahenPaymentState => {');
         expect(indexSource).not.toContain('const buildTurnLabel = (');
         expect(indexSource).not.toContain('const hasRemainingFactionAction = (');
@@ -2638,6 +2643,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(factionActionWindowSource).toContain('export const getActionChoiceById = (');
         expect(factionActionWindowSource).toContain('export const getDefaultActionIdForFaction = (');
         expect(factionActionWindowSource).toContain('export const buildPaymentState = (');
+        expect(factionActionWindowSource).toContain('export const getQidahenHandCardPaymentValue = (');
+        expect(factionActionWindowSource).toContain('export const computeQidahenSelectedPaymentValue = (');
         expect(factionActionWindowSource).toContain('export const buildTurnLabel = (');
         expect(factionActionWindowSource).toContain('export const hasRemainingFactionAction = (');
         expect(factionActionWindowSource).toContain('export const isFactionActionTurnComplete = (');
@@ -4871,7 +4878,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);');
         expect(commandEventBuildersSource).toContain('sourceHandCardId: command.payload.sourceHandCardId ?? null,');
         expect(previewActionReducerSource).toContain('selectedHandActionCardId: sourceCard?.id ?? null,');
-        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, selectedPaymentCardIds.length),');
+        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds)),');
         expect(selectionInputStateSource).toContain('if (state.selectedHandActionCardId === cardId) {');
         expect(commandsSource).toContain('getQidahenDirectActionIdForHandCard(sourceCard) === actionId');
         expect(stateCommitSource).toContain('selectedHandActionCardId: null,');

@@ -1,4 +1,4 @@
-import { AlertTriangle, Download, HardDriveDownload, LoaderCircle, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, Download, HardDriveDownload, LoaderCircle, RefreshCw, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
     hasUsableInstalledGamePackageVersion,
@@ -15,6 +15,7 @@ interface GameDetailsMobilePackageCardProps {
     state: GamePackageCardState;
     onInstall: () => void;
     onRetry?: () => void;
+    onUninstall?: () => void;
     failedActionLabel?: string;
     onCancel?: () => void;
     onCollapse?: () => void;
@@ -125,7 +126,7 @@ const getStatusMeta = (
             return {
                 title: t('packageManager.installedTitle'),
                 description: t('packageManager.installedHint', { game: gameName }),
-                actionLabel: null,
+                actionLabel: t('packageManager.uninstallAction'),
                 icon: HardDriveDownload,
                 iconClassName: '',
                 iconToneClassName: 'border-emerald-700/20 bg-emerald-50/70 text-emerald-900',
@@ -148,6 +149,7 @@ export const GameDetailsMobilePackageCard = ({
     state,
     onInstall,
     onRetry,
+    onUninstall,
     failedActionLabel,
     onCollapse,
     presentation = 'install',
@@ -185,7 +187,9 @@ export const GameDetailsMobilePackageCard = ({
         ? onCollapse
         : state.status === 'failed'
             ? (onRetry ?? onInstall)
-            : onInstall;
+            : state.status === 'installed' && onUninstall
+                ? onUninstall
+                : onInstall;
     const actionLabel = showProgressAction
         ? t('common:close')
         : statusMeta.actionLabel;
@@ -328,7 +332,13 @@ export const GameDetailsMobilePackageCard = ({
                                         : 'bg-parchment-base-text text-parchment-card-bg hover:bg-parchment-brown focus-visible:ring-parchment-base-text/30',
                                 ].join(' ')}
                             >
-                                {showProgressAction ? <X size={13} /> : state.status === 'failed' ? <RefreshCw size={13} /> : <Download size={13} />}
+                                {showProgressAction
+                                    ? <X size={13} />
+                                    : state.status === 'failed'
+                                        ? <RefreshCw size={13} />
+                                        : state.status === 'installed'
+                                            ? <Trash2 size={13} />
+                                            : <Download size={13} />}
                                 <span>{actionLabel}</span>
                             </button>
                         </div>

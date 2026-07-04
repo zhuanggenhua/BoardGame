@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { TOKEN_IDS, DICE_FACE_IDS, STATUS_IDS } from '../domain/ids';
+import { TOKEN_IDS, DICE_FACE_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { DiceThroneCore, Die, HeroState, DiceThroneEvent } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
@@ -230,7 +230,7 @@ describe('僧侣 Custom Action 运行时行为断言', () => {
     // ========================================================================
     // lotus-palm-unblockable-choice: 太极>=2时弹出选择
     // ========================================================================
-    describe('lotus-palm-unblockable-choice (莲花掌不可防御)', () => {
+    describe('lotus-palm-unblockable-choice (花开见佛不可防御)', () => {
         it('太极>=2时弹出选择', () => {
             const state = createState({ taiji: 3 });
             const handler = getCustomActionHandler('lotus-palm-unblockable-choice')!;
@@ -255,7 +255,7 @@ describe('僧侣 Custom Action 运行时行为断言', () => {
     // ========================================================================
     // lotus-palm-taiji-cap-up-and-fill: 太极上限+1并补满
     // ========================================================================
-    describe('lotus-palm-taiji-cap-up-and-fill (莲花掌上限+1)', () => {
+    describe('lotus-palm-taiji-cap-up-and-fill (花开见佛上限+1)', () => {
         it('上限4→5，太极2→5', () => {
             const state = createState({ taiji: 2, taijiLimit: 4 });
             const handler = getCustomActionHandler('lotus-palm-taiji-cap-up-and-fill')!;

@@ -170,7 +170,7 @@ export const getDiceSpriteUrls = (definitionId?: string, characterId: string = '
 
 // @atlas-contract dice.webp 3x3（上行空白），仅使用下两行 6 格；
 // 已人工查看图片：上行从左到右为 2/4/5，下行从左到右为 1/3/6。
-const DICE_ATLAS: {
+export const DICE_ATLAS: {
     cols: number;
     rows: number;
     faceMap: Record<number, { col: number; row: number }>;

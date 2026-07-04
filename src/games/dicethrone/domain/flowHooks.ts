@@ -1743,7 +1743,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             //
             // 覆盖场景：
             //   - offensiveRollEnd Token 选择（CRIT/ACCURACY）→ offensiveRollEndTokenResolved=true
-            //   - preDefense 选择（如莲花掌花费太极使攻击不可防御）→ isDefendable=false
+            //   - preDefense 选择（如花开见佛花费太极使攻击不可防御）→ isDefendable=false
             //
             // 例外：dt:token-response 的 resolveInteraction 也产生 SYS_INTERACTION_RESOLVED，
             // 但此时 pendingAttack 为 null（已结算），不会误阻塞。

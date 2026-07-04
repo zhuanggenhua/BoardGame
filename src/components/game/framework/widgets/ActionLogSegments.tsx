@@ -84,7 +84,7 @@ const DiceResultSegment: React.FC<{
     const bgSize = `${safeCols * 100}% ${safeRows * 100}%`;
 
     return (
-        <span className="inline-flex items-center gap-0.5 align-middle">
+        <span className="inline-flex items-center gap-0.5 align-middle" data-testid="action-log-dice-result">
             {dice.map((die, i) => {
                 const col = typeof die === 'object' && die !== null && typeof die.col === 'number' ? die.col : 0;
                 const row = typeof die === 'object' && die !== null && typeof die.row === 'number' ? die.row : 0;
@@ -94,6 +94,7 @@ const DiceResultSegment: React.FC<{
                     <span
                         key={i}
                         className="inline-block w-4 h-4 rounded-[2px] bg-slate-800 border border-white/20"
+                        data-testid="action-log-die-icon"
                         style={{
                             backgroundImage: bgImage,
                             backgroundSize: bgSize,

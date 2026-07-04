@@ -1861,25 +1861,26 @@ test.describe('Lobby E2E', () => {
             await tictactoeCard.click();
             await waitForHomeV2FlipMode(page, 'detail');
 
-            await expect(page.getByTestId('home-v2-mobile-package-region')).toBeVisible({ timeout: 10000 });
+            const packageRegion = page.getByTestId('home-v2-mobile-package-region');
+            const packageToggle = page.getByTestId('home-v2-mobile-package-toggle');
+            await expect(packageRegion).toHaveCount(1);
+            await expect(packageToggle).toBeVisible({ timeout: 10000 });
             await expect.poll(async () => {
                 const leftPageBox = await page.getByTestId('home-v2-detail-left-page').boundingBox();
-                const packageRegionBox = await page.getByTestId('home-v2-mobile-package-region').boundingBox();
-                if (!leftPageBox || !packageRegionBox) {
+                const packageToggleBox = await packageToggle.boundingBox();
+                if (!leftPageBox || !packageToggleBox) {
                     return 'missing';
                 }
 
-                const packageCenterX = packageRegionBox.x + packageRegionBox.width / 2;
-                const packageCenterY = packageRegionBox.y + packageRegionBox.height / 2;
+                const packageCenterX = packageToggleBox.x + packageToggleBox.width / 2;
+                const packageCenterY = packageToggleBox.y + packageToggleBox.height / 2;
                 const isInLeftBottomCorner = packageCenterX < leftPageBox.x + leftPageBox.width * 0.24
                     && packageCenterY > leftPageBox.y + leftPageBox.height * 0.82;
                 return isInLeftBottomCorner ? 'left-bottom' : `x=${Math.round(packageCenterX)},y=${Math.round(packageCenterY)}`;
             }, {
                 timeout: 10000,
-                message: 'HomeV2 下载入口应位于左页左下角',
+                message: 'HomeV2 包管理悬浮按钮应位于左页左下角',
             }).toBe('left-bottom');
-            const packageToggle = page.getByTestId('home-v2-mobile-package-toggle');
-            await expect(packageToggle).toBeVisible({ timeout: 10000 });
             const entryScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-entry-visible');
             await page.screenshot({ path: entryScreenshotPath, fullPage: true });
 
@@ -1906,6 +1907,19 @@ test.describe('Lobby E2E', () => {
             await page.waitForTimeout(250);
             const installedScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed');
             await page.screenshot({ path: installedScreenshotPath, fullPage: true });
+
+            await page.getByTestId('game-details-mobile-package-card-dismiss').click();
+            await expect(installedCard).toHaveCount(0);
+            await expect(packageToggle).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toContainText('e2e-2026-05-25-assets');
+            const installedToggleScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed-toggle-visible');
+            await page.screenshot({ path: installedToggleScreenshotPath, fullPage: true });
+
+            await packageToggle.click();
+            await expect(installedCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
+            await expect(installedCard).toContainText('卸载素材包', { timeout: 10000 });
+            const uninstallScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed-uninstall-expanded');
+            await page.screenshot({ path: uninstallScreenshotPath, fullPage: true });
         } finally {
             await context.close();
         }

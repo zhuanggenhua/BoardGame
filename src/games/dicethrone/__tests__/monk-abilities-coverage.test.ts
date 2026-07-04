@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { MONK_CARDS } from '../heroes/monk/cards';
 import { MONK_ABILITIES } from '../heroes/monk/abilities';
 import type { AbilityCard } from '../domain/types';
+import zhCN from '../../../../public/locales/zh-CN/game-dicethrone.json';
 
 const getReplaceAction = (card: AbilityCard) => (
     card.effects?.find(effect => effect.action?.type === 'replaceAbility')?.action as {
@@ -52,5 +53,27 @@ describe('Monk 升级卡覆盖测试', () => {
             expect(action?.targetAbilityId).toBe(expectation.target);
             expect(action?.newAbilityLevel).toBe(expectation.level);
         }
+    });
+
+    it('花开见佛 II 只录入卡图可见的 3/4 莲花分支名', () => {
+        const card = MONK_CARDS.find(item => item.id === 'card-lotus-bloom-2');
+        expect(card).toBeDefined();
+        const action = getReplaceAction(card!);
+        const variants = action?.newAbilityDef?.variants ?? [];
+
+        expect(variants.map(variant => variant.id)).toEqual(['lotus-palm-2-3', 'lotus-palm-2-4']);
+        expect(variants.map(variant => variant.trigger)).toEqual([
+            { type: 'diceSet', faces: { lotus: 3 } },
+            { type: 'diceSet', faces: { lotus: 4 } },
+        ]);
+        expect(variants).not.toContainEqual(expect.objectContaining({ id: 'lotus-palm-2-5' }));
+
+        expect(zhCN.abilities['lotus-palm'].name).toBe('花开见佛');
+        expect(zhCN.abilities['lotus-palm-2'].name).toBe('花开见佛 II');
+        expect(zhCN.abilities['lotus-palm-2-3'].name).toBe('莲花之道');
+        expect(zhCN.abilities['lotus-palm-2-4'].name).toBe('花开见佛 II');
+        expect(zhCN.cards['card-lotus-bloom-2'].name).toBe('花开见佛 II');
+        expect(zhCN.abilities['lotus-palm-2'].description).not.toContain('见微知著');
+        expect(zhCN.cards['card-lotus-bloom-2'].description).not.toContain('见微知著');
     });
 });

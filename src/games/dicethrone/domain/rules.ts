@@ -166,7 +166,7 @@ export const getAttackMaxDuplicateValueCount = (state: DiceThroneCore): number =
 );
 
 /**
- * 获取玩家某个 Token 的堆叠上限（支持技能永久提高上限，如莲花掌）
+ * 获取玩家某个 Token 的堆叠上限（支持技能永久提高上限，如花开见佛）
  * - player.tokenStackLimits 优先
  * - 回退到 tokenDefinitions.stackLimit
  * - stackLimit=0 表示无限

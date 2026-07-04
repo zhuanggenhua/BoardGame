@@ -61,7 +61,7 @@ DiceThrone 当前已明确落地的交互类型共 6 类：
 - 命中样例：
   - `src/games/dicethrone/domain/customActions/monk.ts`
     - 清修 III：二选一获得 `闪避 / 净化`
-    - 莲花掌：支付 2 太极或跳过
+    - 花开见佛：支付 2 太极或跳过
   - `src/games/dicethrone/domain/customActions/pyromancer.ts`
     - 花费任意数量 CP 换火焰专精，用 slider 选择数值
 - 判定：

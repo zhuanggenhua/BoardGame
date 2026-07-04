@@ -36,7 +36,7 @@ type QidahenPreparedSelectedActionResult =
         nextFactions: QidahenCore['factions'];
         paidHandCards: QidahenCore['handCards'];
         selectedHandActionCardLabel: string | null;
-        selectedSilverPaymentCardLabels: string[];
+        selectedPaymentResourceLabels: string[];
         selectedArmamentId: QidahenArmamentId | null;
         spentCardCount: number;
     };
@@ -127,7 +127,7 @@ export const executeQidahenSelectedAction = (
         nextFactions: preparedFactions,
         paidHandCards,
         selectedHandActionCardLabel,
-        selectedSilverPaymentCardLabels,
+        selectedPaymentResourceLabels,
         selectedArmamentId,
         spentCardCount,
     } = preparation;
@@ -148,7 +148,7 @@ export const executeQidahenSelectedAction = (
         actionId,
         actionLabel,
         spentCardCount,
-        selectedSilverPaymentCardLabels,
+        selectedPaymentResourceLabels,
         timestamp,
         executionResolution.selectedRegionId,
         executionResolution.lastSeasonSummary,

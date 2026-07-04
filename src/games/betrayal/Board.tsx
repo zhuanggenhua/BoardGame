@@ -93,8 +93,8 @@ type RoomGridDragState = {
     isDragging: boolean;
     startX: number;
     startY: number;
-    scrollLeft: number;
-    scrollTop: number;
+    startPanX: number;
+    startPanY: number;
     hasMoved: boolean;
 };
 
@@ -1670,13 +1670,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [referenceSide, setReferenceSide] = React.useState<'front' | 'back'>('front');
     const [roomPreviewId, setRoomPreviewId] = React.useState<string | null>(null);
     const [inventoryPreviewCardId, setInventoryPreviewCardId] = React.useState<string | null>(null);
+    const [roomGridPan, setRoomGridPan] = React.useState({ x: 0, y: 0 });
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
     const roomGridDragRef = React.useRef<RoomGridDragState>({
         isDragging: false,
         startX: 0,
         startY: 0,
-        scrollLeft: 0,
-        scrollTop: 0,
+        startPanX: 0,
+        startPanY: 0,
         hasMoved: false,
     });
 
@@ -1758,23 +1759,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const previewRoomVisual = previewRoom
         ? resolveRoomTileVisual(previewRoom, previewRoom.state === 'discovered')
         : null;
-    const focusActiveRoomInView = React.useCallback(() => {
-        const roomGrid = roomGridRef.current;
-        if (!roomGrid) {
-            return;
-        }
-        const activeRoomShell = roomGrid.querySelector<HTMLElement>(`[data-testid="betrayal-room-shell-${core.activeRoomId}"]`);
-        if (!activeRoomShell) {
-            return;
-        }
-        activeRoomShell.scrollIntoView({
-            block: 'nearest',
-            inline: 'nearest',
-            behavior: 'auto',
-        });
-    }, [core.activeRoomId]);
-
-    const focusRoomInView = React.useCallback((roomId: string, behavior: ScrollBehavior = 'smooth') => {
+    const focusRoomInView = React.useCallback((roomId: string) => {
         const roomGrid = roomGridRef.current;
         if (!roomGrid) {
             return;
@@ -1783,12 +1768,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (!roomShell) {
             return;
         }
-        roomShell.scrollIntoView({
-            block: 'nearest',
-            inline: 'nearest',
-            behavior,
-        });
+        const gridRect = roomGrid.getBoundingClientRect();
+        const roomRect = roomShell.getBoundingClientRect();
+        const deltaX = (gridRect.left + (gridRect.width / 2)) - (roomRect.left + (roomRect.width / 2));
+        const deltaY = (gridRect.top + (gridRect.height / 2)) - (roomRect.top + (roomRect.height / 2));
+        setRoomGridPan((previousPan) => ({
+            x: previousPan.x + deltaX,
+            y: previousPan.y + deltaY,
+        }));
     }, []);
+
+    const focusActiveRoomInView = React.useCallback(() => {
+        focusRoomInView(core.activeRoomId);
+    }, [core.activeRoomId, focusRoomInView]);
+
+    const roomCanvasTransformStyle = React.useMemo(() => ({
+        ...roomCanvasStyle,
+        transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0)`,
+        transformOrigin: 'center center',
+    }), [roomCanvasStyle, roomGridPan.x, roomGridPan.y]);
 
     React.useEffect(() => {
         if (core.phase !== 'preHaunt') {
@@ -2324,13 +2322,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             isDragging: true,
             startX: event.clientX,
             startY: event.clientY,
-            scrollLeft: grid.scrollLeft,
-            scrollTop: grid.scrollTop,
+            startPanX: roomGridPan.x,
+            startPanY: roomGridPan.y,
             hasMoved: false,
         };
         grid.setPointerCapture(event.pointerId);
         grid.setAttribute('data-drag-ready', 'true');
-    }, []);
+    }, [roomGridPan.x, roomGridPan.y]);
 
     const handleRoomGridPointerMove = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         const grid = roomGridRef.current;
@@ -2348,8 +2346,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (dragState.hasMoved) {
             event.preventDefault();
         }
-        grid.scrollLeft = dragState.scrollLeft - deltaX;
-        grid.scrollTop = dragState.scrollTop - deltaY;
+        setRoomGridPan({
+            x: dragState.startPanX + deltaX,
+            y: dragState.startPanY + deltaY,
+        });
     }, []);
 
     const handleRoomGridPointerEnd = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
@@ -3094,7 +3094,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     return (
         <div
             data-testid="betrayal-board"
-            className="relative flex h-full min-h-full flex-col overflow-x-hidden overflow-y-auto bg-[#0c1512] text-[#f1e8d4] xl:overflow-hidden"
+            className="relative h-full min-h-full overflow-hidden bg-[#0c1512] text-[#f1e8d4]"
             style={{
                 backgroundImage: [
                     'radial-gradient(circle at top, rgba(146, 116, 58, 0.18), transparent 30%)',
@@ -3102,49 +3102,32 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ].join(','),
             }}
         >
-            <div className="mx-auto flex h-full min-h-full w-full max-w-[1800px] flex-col gap-3 px-3 py-3 md:gap-4 md:px-5 md:py-4">
-                <header className="relative overflow-hidden border border-[rgba(114,91,52,0.56)] bg-[linear-gradient(180deg,rgba(10,16,14,0.985),rgba(8,13,11,0.95))] shadow-[0_18px_34px_rgba(0,0,0,0.28)]">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.32),transparent)]" />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+            <div className="relative h-full min-h-full w-full overflow-hidden px-3 py-3 md:px-4 md:py-4">
+                <header className="pointer-events-none absolute left-[310px] right-[236px] top-3 z-30 hidden lg:block">
                     <div
-                        className="grid min-h-[108px] grid-cols-[minmax(260px,1fr)_minmax(250px,1.12fr)_minmax(312px,1fr)] items-stretch divide-x divide-[rgba(77,64,44,0.92)]"
+                        className="relative min-h-[58px]"
                         data-testid="betrayal-runtime-header-grid"
                     >
-                        <div className="relative flex items-center px-4">
-                            <div className="pointer-events-none absolute inset-y-2 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.36),transparent)]" />
-                            <div className="pointer-events-none absolute inset-y-2 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.16),transparent)]" />
-                            <OptimizedImage
-                                src={ASSETS.titleBanner}
-                                locale={effectiveLocale}
-                                alt={t('title')}
-                                className="h-16 w-full max-w-[340px] object-contain object-left"
-                                draggable={false}
-                            />
-                        </div>
-                        <div className="relative flex flex-col items-center justify-center px-6 py-4 text-center">
-                            <div className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
-                            <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
+                        <div className="absolute left-1/2 top-0 flex min-w-[210px] -translate-x-1/2 flex-col items-center justify-center rounded-[8px] border border-[rgba(114,91,52,0.36)] bg-[rgba(8,13,11,0.68)] px-5 py-2 text-center shadow-[0_14px_30px_rgba(0,0,0,0.2)] backdrop-blur-md">
                             <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">{t('board.hud.phaseLabel')}</span>
-                            <span className="mt-1 text-[28px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
+                            <span className="mt-0.5 text-[21px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
                                 {phaseLabel}
                             </span>
                         </div>
-                        <div className="relative flex items-center justify-end gap-4 px-5" data-testid="betrayal-status-chip">
-                            <div className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
-                            <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
+                        <div className="absolute right-0 top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md" data-testid="betrayal-status-chip">
                             <div className="text-right">
                                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">{t('board.hud.turnLabel')}</div>
-                                <div className="mt-1 text-[21px] font-semibold uppercase tracking-[0.14em] text-[#f0d29a]">
+                                <div className="mt-0.5 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#f0d29a]">
                                     {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
                                 </div>
                             </div>
                             <div
-                                className="grid h-[72px] w-[72px] place-items-center rounded-full border border-[#756244] bg-[radial-gradient(circle_at_35%_30%,rgba(190,233,97,0.22),rgba(20,28,18,0.94)_72%)] text-center shadow-[0_0_18px_rgba(130,177,76,0.18)]"
+                                className="grid h-[50px] w-[50px] place-items-center rounded-full border border-[#756244] bg-[radial-gradient(circle_at_35%_30%,rgba(190,233,97,0.22),rgba(20,28,18,0.94)_72%)] text-center shadow-[0_0_18px_rgba(130,177,76,0.18)]"
                                 data-tutorial-id="betrayal-moves-remaining"
                             >
                                 <div>
-                                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b5ef42]">{t('board.hud.moveLabel')}</div>
-                                    <div className="text-[28px] font-bold text-[#c8f05e]">{core.movesRemaining}</div>
+                                    <div className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#b5ef42]">{t('board.hud.moveLabel')}</div>
+                                    <div className="text-[20px] font-bold text-[#c8f05e]">{core.movesRemaining}</div>
                                     <span className="sr-only">
                                         {t('board.status.movesRemaining', { count: core.movesRemaining })}
                                     </span>
@@ -3154,9 +3137,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </div>
                 </header>
 
-                <main className="relative grid min-h-0 flex-1 gap-3 overflow-y-auto pb-[12rem] xl:grid-cols-[286px_minmax(0,1fr)_216px] xl:overflow-hidden xl:pb-0">
-                    <section className="relative z-10 order-2 grid min-h-0 content-start gap-2 xl:order-1 xl:overflow-visible">
-                        <article className="relative overflow-visible bg-transparent px-1 py-1 xl:min-h-[860px]">
+                <main className="absolute inset-0 overflow-hidden">
+                    <section className="pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible">
+                        <article className="pointer-events-auto relative overflow-visible bg-transparent px-1 py-1">
                             <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1 xl:mx-0">
                                 <div className="relative mx-auto w-full max-w-[188px]">
                                     <div className="pointer-events-none absolute inset-[12%] rounded-full bg-[rgba(77,138,92,0.18)] blur-3xl" />
@@ -3349,7 +3332,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         id="betrayal-inventory-section"
                         data-testid="betrayal-inventory-section"
                         data-tutorial-id="betrayal-inventory-zone"
-                        className="order-4 mt-1 px-0.5 xl:absolute xl:bottom-0 xl:left-1 xl:z-20 xl:mt-0 xl:w-[calc(62px*5.35+0.5rem*4+0.75rem)] xl:max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] xl:px-0"
+                        className="pointer-events-auto absolute bottom-2 left-1 z-40 mt-0 w-[calc(62px*5.35+0.5rem*4+0.75rem)] max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] px-0"
                     >
                         <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:pr-4">
                             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
@@ -3401,7 +3384,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         ) : null}
                     </div>
 
-                    <section className="relative z-0 order-1 grid content-start gap-3 xl:order-2 xl:min-h-0 xl:grid-rows-[minmax(0,1fr)_auto]">
+                    <section className="absolute inset-0 z-10 grid min-h-0">
                         <div className="sr-only">
                             <span data-testid="betrayal-action-cue">{actionCueText}</span>
                             <span data-testid="betrayal-trade-status">{tradeStatusText}</span>
@@ -3412,7 +3395,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             id="betrayal-room-panel"
                             data-testid="betrayal-room-panel"
                             data-tutorial-id="betrayal-room-board"
-                            className="order-1 flex min-h-[500px] flex-col bg-transparent p-0 md:min-h-[580px] xl:min-h-0"
+                            className="flex min-h-0 flex-col bg-transparent p-0"
                         >
                             <div className="sr-only">
                                 <span data-testid="betrayal-room-latest-feedback">
@@ -3453,7 +3436,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </div>
 
                             {(pendingEventChoice || roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || selectedCardCanUseRabbitFoot || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
-                                <div className="relative z-30 mb-2 flex flex-wrap items-center gap-1.5 px-2 pb-1 pt-1">
+                                <div className="pointer-events-auto absolute left-1/2 top-[86px] z-50 flex max-w-[min(880px,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1">
                                     {pendingEventChoice ? (
                                         <div
                                             data-testid="betrayal-event-choice-panel"
@@ -3776,7 +3759,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                             <div
                                 ref={roomGridRef}
-                                className="relative min-h-[500px] flex-1 cursor-grab touch-none overflow-auto overscroll-contain bg-transparent [scrollbar-color:#7a6240_rgba(8,12,10,0.72)] active:cursor-grabbing sm:min-h-[540px] md:min-h-[580px]"
+                                className="relative min-h-0 flex-1 cursor-grab touch-none overflow-hidden bg-transparent active:cursor-grabbing"
                                 data-testid="betrayal-room-grid"
                                 aria-label={t('board.sections.rooms')}
                                 onPointerDown={handleRoomGridPointerDown}
@@ -3785,9 +3768,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 onPointerCancel={handleRoomGridPointerEnd}
                             >
                                 <div
-                                    className="relative mx-auto xl:ml-0 xl:mr-auto"
+                                    className="relative mx-auto will-change-transform xl:ml-0 xl:mr-auto"
                                     data-testid="betrayal-room-canvas"
-                                    style={roomCanvasStyle}
+                                    style={roomCanvasTransformStyle}
                                 >
                                 {core.rooms.map((room) => {
                                     const tone = FLOOR_TONE[room.floor];
@@ -4127,7 +4110,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                     </section>
 
-                    <section className="relative z-10 order-3 flex min-h-0 flex-col gap-2 px-1 py-1 md:px-1 xl:order-3 xl:overflow-y-auto">
+                    <section className="pointer-events-auto absolute bottom-3 right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1">
                         <article
                             id="betrayal-decks-section"
                             className="relative ml-auto w-full max-w-[198px] overflow-visible bg-transparent px-0 pb-2 pt-3"
@@ -4376,38 +4359,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                 {previewRoom && previewRoomVisual ? (
                     <div
-                        className="absolute inset-0 z-30 flex items-end justify-center bg-[rgba(3,6,5,0.72)] p-3 md:items-center md:p-6"
+                        className="absolute inset-0 z-50 grid place-items-center bg-[rgba(3,6,5,0.76)] p-4"
                         data-testid="betrayal-room-preview-overlay"
+                        onClick={() => setRoomPreviewId(null)}
                     >
-                        <div className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-[760px] flex-col overflow-hidden rounded-[22px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] shadow-[0_24px_60px_rgba(0,0,0,0.46)]">
-                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#4d3f2b] bg-[rgba(16,23,20,0.98)] px-4 py-3 md:px-5">
-                                <div>
-                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
-                                        {t('board.rooms.preview')}
-                                    </div>
-                                    <div className="mt-1 text-sm text-[#e7dcc3]">
-                                        {previewRoom.name}
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomPreviewId(null)}
-                                    data-testid="betrayal-room-preview-close"
-                                    className="rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
-                                >
-                                    {t('board.reference.close')}
-                                </button>
-                            </div>
-                            <div className="overflow-auto p-3 md:p-5">
-                                <div className="flex items-center justify-center overflow-hidden rounded-[18px] border border-[#5a4a33] bg-[rgba(10,14,12,0.82)]">
-                                    <RoomTileSprite
-                                        visual={previewRoomVisual}
-                                        locale={effectiveLocale}
-                                        alt={previewRoom.name}
-                                        className="aspect-square w-full max-w-[72vh] md:max-w-[78vh]"
-                                    />
-                                </div>
-                            </div>
+                        <div
+                            className="pointer-events-auto max-h-[92vh] max-w-[92vw]"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <span className="sr-only">{t('board.rooms.preview')} {previewRoom.name}</span>
+                            <RoomTileSprite
+                                visual={previewRoomVisual}
+                                locale={effectiveLocale}
+                                alt={previewRoom.name}
+                                className="aspect-square h-[min(92vh,92vw)] w-[min(92vh,92vw)] max-h-[92vh] max-w-[92vw] drop-shadow-[0_26px_70px_rgba(0,0,0,0.55)]"
+                            />
                         </div>
                     </div>
                 ) : null}
@@ -4427,14 +4393,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
                             }}
                         >
-                            <button
-                                type="button"
-                                onClick={() => setInventoryPreviewCardId(null)}
-                                data-testid="betrayal-inventory-preview-close"
-                                className="absolute -right-3 -top-3 z-10 rounded-full bg-[rgba(9,13,12,0.88)] px-3 py-1.5 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
-                            >
-                                {t('board.reference.close')}
-                            </button>
                             <div className="pointer-events-none">
                                 {renderInventoryCard(previewInventoryCard, { layout: 'preview', testId: 'betrayal-inventory-preview-card' })}
                             </div>

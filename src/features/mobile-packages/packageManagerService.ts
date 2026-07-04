@@ -11,6 +11,7 @@ import {
     ensureNativeDownloadNotificationPermission,
     listInstalledNativeGamePackages,
     readNativeGamePackageInstallState,
+    uninstallNativeGamePackage,
 } from './nativeGamePackagePlugin';
 import { normalizeGamePackageAssetBaseUrl } from './assetBaseUrl';
 import { isSharedAudioPackGameId, SHARED_AUDIO_PACK_GAME_ID, SHARED_AUDIO_PACK_ID } from './sharedAudioPack';
@@ -556,6 +557,42 @@ export const cancelGamePackageInstall = async (
     stopActiveInstall(gameId, 'cancelGamePackageInstall');
     await cancelNativeGamePackageInstall(gameId);
     return refreshGamePackageStateFromNativeTask(gameId, resolvedFallback);
+};
+
+export const uninstallGamePackage = async (
+    gameId: string,
+    fallbackState?: StoredGamePackageState,
+): Promise<StoredGamePackageState> => {
+    logMobileRuntimeCritical('PackageManagerService', 'uninstall-entered', {
+        gameId,
+        hasExplicitFallbackState: Boolean(fallbackState),
+        currentCachedState: stateCache.get(gameId),
+    });
+    const resolvedFallback = fallbackState ?? fallbackCache.get(gameId);
+    if (!resolvedFallback) {
+        throw new Error(`[MobilePackages] 缺少 ${gameId} 的 fallbackState`);
+    }
+
+    fallbackCache.set(gameId, resolvedFallback);
+    stopActiveInstall(gameId, 'uninstallGamePackage');
+    stopNativeProgressPolling(gameId);
+    const nativeState = await uninstallNativeGamePackage(gameId);
+    const nextState = mergeGamePackageState(resolvedFallback, {
+        ...(nativeState ?? {}),
+        status: 'not-installed',
+        progressPercent: undefined,
+        progressMode: undefined,
+        installedVersion: undefined,
+        localAssetBaseUrl: undefined,
+        errorCode: undefined,
+        errorMessage: undefined,
+        updatedAt: nativeState?.updatedAt ?? Date.now(),
+    });
+
+    clearStoredGamePackageState(gameId);
+    applyAssetBaseOverride(gameId, undefined);
+    emitState(nextState);
+    return nextState;
 };
 
 export const hydrateInstalledNativeGamePackages = async () => {

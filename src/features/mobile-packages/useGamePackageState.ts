@@ -19,6 +19,7 @@ import {
     startGamePackageInstall,
     subscribeGamePackageState,
     syncGamePackageState,
+    uninstallGamePackage,
 } from './packageManagerService';
 import type { GamePackageCardState, PendingGamePackageInstall, ResolvedGamePackageManifest } from './types';
 import {
@@ -44,6 +45,7 @@ interface UseGamePackageStateResult {
     requestInstall: () => void;
     dismissInstall: () => void;
     cancelInstall: () => void | Promise<void>;
+    uninstallInstall: () => void | Promise<void>;
     confirmInstall: () => Promise<void>;
     retryInstall: () => void;
     notificationPermissionAction: 'retry' | 'settings' | null;
@@ -450,6 +452,25 @@ export const useGamePackageState = ({
         setPendingInstall(null);
     }, [cardState.status, gameId]);
 
+    const uninstallInstall = useCallback(async () => {
+        requestSerialRef.current += 1;
+        logMobileRuntimeCritical('UseGamePackageState', 'uninstall-install', {
+            gameId,
+            latestRequestSerial: requestSerialRef.current,
+            currentStatus: cardState.status,
+        });
+        setPendingInstall(null);
+        try {
+            const nextState = await uninstallGamePackage(gameId, fallbackState);
+            setCardState(toGamePackageCardState(nextState));
+        } catch (error) {
+            logMobileRuntimeCritical('UseGamePackageState', 'uninstall-install-failed', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }, [cardState.status, fallbackState, gameId]);
+
     const confirmInstall = useCallback(async () => {
         logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-clicked', {
             gameId,
@@ -576,6 +597,7 @@ export const useGamePackageState = ({
         requestInstall,
         dismissInstall,
         cancelInstall,
+        uninstallInstall,
         confirmInstall,
         retryInstall,
         notificationPermissionAction,

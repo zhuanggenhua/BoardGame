@@ -53,7 +53,7 @@ import { diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
 import { isCardPlayableInResponseWindow } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
-import { ASSETS } from './ui/assets';
+import { ASSETS, DICE_ATLAS } from './ui/assets';
 import {
     isManualSetupSelectionEnabledForSeat,
     registerGameAiRuntime,
@@ -217,19 +217,17 @@ function formatDiceThroneActionEntry({
         if (!participant.characterId) return null;
         const spriteAsset = getDiceDefinition(`${participant.characterId}-dice`)?.assets?.spriteSheet
             ?? ASSETS.DICE_SPRITE(participant.characterId);
-        const SPRITE_COLS = 3;
-        const SPRITE_ROWS = 2;
         const value = Math.max(1, Math.min(6, participant.roll));
-        const zeroBased = value - 1;
+        const mapping = DICE_ATLAS.faceMap[value] ?? DICE_ATLAS.faceMap[1];
         return {
             type: 'diceResult',
             spriteAsset,
-            spriteCols: SPRITE_COLS,
-            spriteRows: SPRITE_ROWS,
+            spriteCols: DICE_ATLAS.cols,
+            spriteRows: DICE_ATLAS.rows,
             dice: [{
                 value,
-                col: zeroBased % SPRITE_COLS,
-                row: Math.floor(zeroBased / SPRITE_COLS),
+                col: mapping.col,
+                row: mapping.row,
             }],
         };
     };

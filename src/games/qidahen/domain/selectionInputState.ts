@@ -3,7 +3,10 @@ import {
     resolveSelectedArmamentIdFromCards,
 } from './armamentLowFidelity';
 import { getCurrentFactionId } from './factionTurnAccessors';
-import { buildPaymentState } from './factionActionWindow';
+import {
+    buildPaymentState,
+    computeQidahenSelectedPaymentValue,
+} from './factionActionWindow';
 import { resolveQidahenHandLimitDiscard } from './handLimitDiscard';
 import { isSunYuanhuaEnabled } from './characterAbilitySemantics';
 import {
@@ -110,7 +113,7 @@ const toggleQidahenPaymentCard = (
         return state.selectedPaymentCardIds.filter((selectedId) => selectedId !== cardId);
     }
 
-    if (state.selectedPaymentCardIds.length >= state.payment.required) {
+    if (computeQidahenSelectedPaymentValue(state.handCards, state.selectedPaymentCardIds) >= state.payment.required) {
         return state.selectedPaymentCardIds;
     }
 
@@ -186,7 +189,10 @@ export const reduceQidahenSelectionInputEvent = (
             return dependencies.updateTurnLabel({
                 ...state,
                 selectedPaymentCardIds,
-                payment: buildPaymentState(state.confirmedActionId ?? state.selectedActionId, selectedPaymentCardIds.length),
+                payment: buildPaymentState(
+                    state.confirmedActionId ?? state.selectedActionId,
+                    computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds),
+                ),
             });
         }
         case 'HAND_LIMIT_DISCARD_CARD_SELECTED':

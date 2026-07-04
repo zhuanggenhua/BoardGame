@@ -55,8 +55,8 @@ const dispatchHarnessCommand = async (
     playerId: string,
     payload: Record<string, unknown> = {},
 ) => {
-    await page.evaluate(({ commandType, commandPlayerId, commandPayload }) => {
-        (window as any).__BG_TEST_HARNESS__!.command.dispatch({
+    await page.evaluate(async ({ commandType, commandPlayerId, commandPayload }) => {
+        await (window as any).__BG_TEST_HARNESS__!.command.dispatch({
             type: commandType,
             playerId: commandPlayerId,
             payload: commandPayload,
@@ -176,6 +176,7 @@ const buildSharedDuelState = (state: DtState): DtState => {
             bonusDamage: 0,
             sourceAbilityId: 'harmony',
             defenseAbilityId: 'duel',
+            duelAttackerDieValue: 1,
         },
     };
 
@@ -266,8 +267,9 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
             path: getEvidenceScreenshotPath(testInfo, 'host-opponent-sees-duel-compare-roll'),
             fullPage: false,
         });
-        await guestPage.getByTestId('compare-roll-overlay').screenshot({
+        await guestPage.screenshot({
             path: getEvidenceScreenshotPath(testInfo, 'guest-gunslinger-sees-duel-compare-roll'),
+            fullPage: false,
         });
 
         await guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' }).click();
@@ -287,6 +289,38 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
                 && /(赢得了对决|won the duel)/i.test(text),
             );
         }, { timeout: 10000 }).toBe(true);
+        const duelLogRow = hostPage.locator('[data-testid="hud-action-log-row"]').filter({
+            hasText: /(对掷结果|Roll-off result)/,
+        }).filter({
+            hasText: /(赢得了对决|won the duel)/i,
+        }).first();
+        const duelDiceIcons = duelLogRow.locator('[data-testid="action-log-die-icon"]');
+        await expect(duelDiceIcons).toHaveCount(2, { timeout: 5000 });
+        await expect.poll(async () => duelDiceIcons.evaluateAll((icons) => icons.map((icon) => {
+            const style = window.getComputedStyle(icon);
+            return {
+                backgroundImage: style.backgroundImage,
+                backgroundSize: style.backgroundSize,
+                backgroundPosition: style.backgroundPosition,
+                width: (icon as HTMLElement).offsetWidth,
+                height: (icon as HTMLElement).offsetHeight,
+            };
+        })), { timeout: 5000 }).toEqual([
+            expect.objectContaining({
+                backgroundImage: expect.stringContaining('dicethrone/images/gunslinger/compressed/dice.webp'),
+                backgroundSize: '300% 300%',
+                backgroundPosition: '100% 100%',
+                width: 16,
+                height: 16,
+            }),
+            expect.objectContaining({
+                backgroundImage: expect.stringContaining('dicethrone/images/monk/compressed/dice.webp'),
+                backgroundSize: '300% 300%',
+                backgroundPosition: '0% 100%',
+                width: 16,
+                height: 16,
+            }),
+        ]);
         await actionLogPanel.screenshot({
             path: getEvidenceScreenshotPath(testInfo, 'host-opponent-action-log-shows-duel-result'),
         });
