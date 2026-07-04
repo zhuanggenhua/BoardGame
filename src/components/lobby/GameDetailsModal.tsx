@@ -166,7 +166,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         : packageInstallCardState;
     const shouldShowMobilePackageCard = isPackageManagedMobileGame;
     const [isMobilePackageCardExpanded, setIsMobilePackageCardExpanded] = useState(false);
-    const shouldAutoExpandMobilePackageCard = packageInstallCardState.status === 'queued'
+    const shouldAutoExpandMobilePackageCard = hasMobilePackageUpdateAvailable
+        || packageInstallCardState.status === 'queued'
         || packageInstallCardState.status === 'manifest'
         || packageInstallCardState.status === 'downloading'
         || packageInstallCardState.status === 'verifying';
