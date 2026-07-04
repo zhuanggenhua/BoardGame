@@ -1062,7 +1062,7 @@
       "form": {
         "channel": "发布渠道",
         "ota_bundle_version": "OTA 内部版本号",
-        "ota_bundle_version_placeholder": "留空自动生成，例如 6.0.0-ota-2026-07-04T01-00-00-000Z",
+        "ota_bundle_version_placeholder": "留空则按游标基线和当前时间自动生成，也可以手动填写完整内部版本号",
         "ota_version_base": "OTA 内部游标基线",
         "force_update": "强制客户端下载后切换",
         "skip_latest": "只上传包，不覆盖当前入口清单",
