@@ -10,6 +10,23 @@ export const EVIDENCE_SCREENSHOT_QUALITY = 90;
 export interface EvidenceScreenshotOptions {
     subdir?: string;
     filename?: string;
+    /** 新增或本轮重跑的主证据截图应开启，运行时硬卡英文/抽象命名。 */
+    requireChineseName?: boolean;
+}
+
+const CJK_CHARACTER_REGEX = /[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/;
+
+function assertChineseEvidenceSegment(value: string, label: string): void {
+    if (CJK_CHARACTER_REGEX.test(value)) return;
+    throw new Error(
+        `证据截图${label}必须使用中文业务命名：${value}。` +
+        '请用中文直说游戏、流程、交互阶段或结果，不要只用英文/编号/抽象名。',
+    );
+}
+
+function shouldRequireChineseEvidenceName(options?: Pick<EvidenceScreenshotOptions, 'requireChineseName'>): boolean {
+    return options?.requireChineseName === true
+        || process.env.EVIDENCE_SCREENSHOT_REQUIRE_CHINESE_NAMES === '1';
 }
 
 function getEvidenceScreenshotGameId(testInfo: TestInfo): string {
@@ -55,17 +72,30 @@ export function getEvidenceScreenshotFileSubdir(testInfo: TestInfo): string {
     return `${gameId}/${fileSubdir}`;
 }
 
-export function getEvidenceScreenshotCaseSubdir(testInfo: TestInfo): string {
+export function getEvidenceScreenshotCaseSubdir(
+    testInfo: TestInfo,
+    options: Pick<EvidenceScreenshotOptions, 'requireChineseName'> = {},
+): string {
     const fileSubdir = getEvidenceScreenshotFileSubdir(testInfo);
     const caseSubdir = sanitizeEvidencePathSegment(testInfo.title || 'unnamed-test') || 'unnamed-test';
+    if (shouldRequireChineseEvidenceName(options)) {
+        assertChineseEvidenceSegment(caseSubdir, '用例目录名');
+    }
     return `${fileSubdir}/${caseSubdir}`;
 }
 
-export function getEvidenceScreenshotDir(testInfo: TestInfo, subdir?: string): string {
+export function getEvidenceScreenshotDir(
+    testInfo: TestInfo,
+    subdir?: string,
+    options: Pick<EvidenceScreenshotOptions, 'requireChineseName'> = {},
+): string {
     const fallbackDir = getEvidenceScreenshotFileSubdir(testInfo);
     const evidenceSubdir = subdir
         ? sanitizeEvidenceSubdir(subdir) || fallbackDir
-        : getEvidenceScreenshotCaseSubdir(testInfo);
+        : getEvidenceScreenshotCaseSubdir(testInfo, options);
+    if (subdir && shouldRequireChineseEvidenceName(options)) {
+        assertChineseEvidenceSegment(evidenceSubdir, '自定义目录名');
+    }
 
     // 证据截图统一锚定到仓库工作目录，避免混用 rootDir / cwd 导致输出目录漂移。
     return join(process.cwd(), 'test-results', 'evidence-screenshots', evidenceSubdir);
@@ -76,10 +106,13 @@ export function getEvidenceScreenshotPath(
     name: string,
     options: EvidenceScreenshotOptions = {},
 ): string {
-    const dir = getEvidenceScreenshotDir(testInfo, options.subdir);
+    const dir = getEvidenceScreenshotDir(testInfo, options.subdir, options);
     const filename =
         options.filename ??
         `${sanitizeEvidencePathSegment(name) || 'screenshot'}${EVIDENCE_SCREENSHOT_EXTENSION}`;
+    if (shouldRequireChineseEvidenceName(options)) {
+        assertChineseEvidenceSegment(filename, '文件名');
+    }
     return join(dir, sanitizeEvidenceFileName(filename));
 }
 

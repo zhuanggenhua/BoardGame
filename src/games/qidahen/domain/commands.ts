@@ -144,6 +144,27 @@ const requiresQidahenDirectHandActionSource = (actionId: string): boolean => (
     actionId === 'upgrade-armament'
 );
 
+const isQidahenTacticCardPlayableForPendingBattle = (
+    card: Pick<QidahenCore['handCards'][number], 'rulesSummary'>,
+    pendingTargetAction: NonNullable<QidahenCore['pendingTargetAction']>,
+): boolean => {
+    const rulesSummary = card.rulesSummary ?? '';
+    if (
+        pendingTargetAction.battleMode === 'city'
+        && (
+            rulesSummary.includes('不能在攻城、守城时使用')
+            || rulesSummary.includes('只能于野战时使用')
+            || rulesSummary.includes('野战时才能使用')
+            || rulesSummary.includes('野战步兵阶段使用')
+            || rulesSummary.includes('野战骑兵阶段')
+            || rulesSummary.includes('只能于守城时使用')
+        )
+    ) {
+        return false;
+    }
+    return true;
+};
+
 export function validate(
     state: MatchState<QidahenCore>,
     command: QidahenCommand,
@@ -425,6 +446,7 @@ export function validate(
                 && card.faction === pendingTargetAction.attackerFactionId
                 && card.cardKind === 'tactic'
                 && card.status !== 'disabled'
+                && isQidahenTacticCardPlayableForPendingBattle(card, pendingTargetAction)
             ))
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };

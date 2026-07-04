@@ -35,6 +35,8 @@ type QidahenPreparedSelectedActionResult =
         currentFactionId: QidahenFactionId;
         nextFactions: QidahenCore['factions'];
         paidHandCards: QidahenCore['handCards'];
+        selectedHandActionCardLabel: string | null;
+        selectedSilverPaymentCardLabels: string[];
         selectedArmamentId: QidahenArmamentId | null;
         spentCardCount: number;
     };
@@ -60,6 +62,7 @@ interface QidahenSelectedActionExecutionDependencies {
         factions: QidahenCore['factions'],
         currentFactionId: QidahenFactionId,
         selectedArmamentId: QidahenArmamentId | null,
+        selectedHandActionCardLabel: string | null,
         timestamp: number,
     ) => {
         factions: QidahenCore['factions'];
@@ -123,6 +126,8 @@ export const executeQidahenSelectedAction = (
         currentFactionId,
         nextFactions: preparedFactions,
         paidHandCards,
+        selectedHandActionCardLabel,
+        selectedSilverPaymentCardLabels,
         selectedArmamentId,
         spentCardCount,
     } = preparation;
@@ -131,6 +136,7 @@ export const executeQidahenSelectedAction = (
         actionId,
         currentFactionId,
         selectedArmamentId,
+        selectedHandActionCardLabel,
         preparedFactions,
         timestamp,
         dependencies,
@@ -142,6 +148,7 @@ export const executeQidahenSelectedAction = (
         actionId,
         actionLabel,
         spentCardCount,
+        selectedSilverPaymentCardLabels,
         timestamp,
         executionResolution.selectedRegionId,
         executionResolution.lastSeasonSummary,

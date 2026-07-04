@@ -114,12 +114,23 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(endgameScreen).toContainText('幸存者逃脱');
         await saveScreenshot(page, STEP_06);
 
-        await page.goto('/play/betrayal/tutorial/traitor-path', { waitUntil: 'domcontentloaded' });
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial', diagnostics }]);
+    });
+
+    test('叛徒视角教程会从独立章节进入真实攻击和终局', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-traitor-path');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal/tutorial', { waitUntil: 'domcontentloaded' });
+
+        const traitorTutorialEntry = page.getByTestId('tutorial-catalog-entry-traitor-path');
+        await expect(traitorTutorialEntry).toBeVisible({ timeout: 30000 });
+        await traitorTutorialEntry.click();
         await waitForBetrayalPageReady(page);
         await waitForHauntRuntime(page, 30000);
-        await waitForStep(page, 'setup-traitor-turn');
-        await clickNext(page);
-
         await waitForStep(page, 'traitor-objective');
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('达里尔·海拉');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('击倒全部英雄');
@@ -137,6 +148,6 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(traitorEndgameScreen).toContainText('叛徒得逞');
         await saveScreenshot(page, STEP_08);
 
-        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial', diagnostics }]);
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-traitor-path', diagnostics }]);
     });
 });

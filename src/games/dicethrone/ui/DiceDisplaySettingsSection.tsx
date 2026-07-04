@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Switch from '@radix-ui/react-switch';
 import { useTranslation } from 'react-i18next';
 import type { GameRuntimeSettingsSectionProps } from '../../gameRuntimeAdapter';
 import { useDiceThroneDisplayPreference } from './useDiceThroneDisplayPreference';
@@ -22,22 +23,19 @@ export function DiceDisplaySettingsSection({ t: _t }: GameRuntimeSettingsSection
                     <span className={`text-[10px] font-bold ${boardDice3dEnabled ? 'text-emerald-200' : 'text-white/60'}`}>
                         {boardDice3dEnabled ? t('hud.diceDisplay.enabled') : t('hud.diceDisplay.disabled')}
                     </span>
-                    <button
-                        type="button"
-                        role="switch"
+                    <Switch.Root
+                        checked={boardDice3dEnabled}
+                        onCheckedChange={() => toggleBoardDice3d()}
                         aria-label={t('hud.diceDisplay.board3d')}
-                        aria-checked={boardDice3dEnabled}
-                        onClick={toggleBoardDice3d}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full border border-white/10 transition-colors ${
-                            boardDice3dEnabled ? 'bg-emerald-500/70' : 'bg-white/15'
-                        }`}
+                        data-testid="dicethrone-board-3d-toggle"
+                        className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full border border-white/10 bg-white/15 transition-colors data-[state=checked]:bg-emerald-500/80"
                     >
-                        <span
-                            className={`pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-[0_1px_6px_rgba(0,0,0,0.35)] transition-transform ${
-                                boardDice3dEnabled ? 'translate-x-5' : ''
-                            }`}
+                        <Switch.Thumb
+                            data-testid="dicethrone-board-3d-toggle-thumb"
+                            className="block h-5 w-5 rounded-full bg-white shadow-[0_1px_6px_rgba(0,0,0,0.35)] transition-transform duration-180"
+                            style={{ transform: boardDice3dEnabled ? 'translateX(22px)' : 'translateX(2px)' }}
                         />
-                    </button>
+                    </Switch.Root>
                 </div>
             </div>
         </div>

@@ -75,7 +75,7 @@ async function waitForRollingSpotlightFrame(page: Page, dieContentTestId = '[dat
     }, dieContentTestId), { timeout: 8000, intervals: [50, 50, 50, 50, 100, 100] }).toBe(true);
 }
 
-test('opponent one throw fortune spotlight should visibly roll before settling', async ({ browser }, testInfo) => {
+test('一掷千金奖励骰特写会先旋转再停下', async ({ browser }, testInfo) => {
     test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
 
     await clearEvidenceScreenshotsForTest(testInfo);
@@ -140,7 +140,7 @@ test('opponent one throw fortune spotlight should visibly roll before settling',
         await rollingFramePromise;
 
         await hostPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '01-opponent-one-throw-fortune-rolling'),
+            path: getEvidenceScreenshotPath(testInfo, '01-一掷千金奖励骰-旋转中整屏', { requireChineseName: true }),
             fullPage: false,
         });
 
@@ -153,13 +153,13 @@ test('opponent one throw fortune spotlight should visibly roll before settling',
         });
 
         await hostPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '02-opponent-one-throw-fortune-settled'),
+            path: getEvidenceScreenshotPath(testInfo, '02-一掷千金奖励骰-停稳后整屏', { requireChineseName: true }),
             fullPage: false,
         });
 
         await expect(hostCardSpotlight).toHaveCount(0, { timeout: 7000 });
         await hostPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '03-opponent-one-throw-fortune-closed'),
+            path: getEvidenceScreenshotPath(testInfo, '03-一掷千金奖励骰-关闭后整屏', { requireChineseName: true }),
             fullPage: false,
         });
 

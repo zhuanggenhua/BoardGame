@@ -98,7 +98,7 @@
    - `basic-flow` 覆盖“角色选择确认到恶兆前运行时”；
    - `first-scenario` 覆盖“真实 haunt 运行时到幸存者终局收尾”；
    - `first-scenario-traitor-victory` 覆盖“真实 haunt 运行时到叛徒终局收尾”；
-   - `betrayal-tutorial` 覆盖“真实角色选择 -> 真实教程章节 -> 第一剧本英雄线收尾 -> 真实终局”；
+   - `betrayal-tutorial` 覆盖“真实角色选择 -> 真实教程章节 -> 第一剧本英雄线收尾 / 叛徒最小攻击收尾 -> 真实终局”；
    - `omen-atlas` 覆盖“预兆持有区使用正式正面图集”；
    - `inventory-density` 覆盖“持有区高密度物品与预兆仍能渲染”；
    - `monster-runtime` 覆盖“玩家、队友与怪物同场的真实运行时”；
@@ -106,7 +106,7 @@
    - `first-scenario-core-interactions` 覆盖“真实牌桌里交易、调查杰克、研究法阵、英雄攻击叛徒”。
 2. 第一剧本三条关键 haunt 边界真实页面证据也已经成立：
    其中：
-   - `first-scenario-corpse-loot` 覆盖“同房间尸体搜刮”的正式动作入口与回合内消耗；
+   - `first-scenario-corpse-loot` 覆盖“同房间尸体搜刮”的正式动作入口、回合内消耗与二次搜尸限制；
    - `first-scenario-jack-spirit-revive` 覆盖“Jack's Spirit 回尸体房间后通过正式结束回合触发叛徒复活”；
    - `first-scenario-jack-spirit-post-revive-attack` 覆盖“叛徒复活后通过正式房间焦点入口继续攻击同房间英雄”。
 3. 当前规则真相已明确三条：恶兆前正式 domain setup 以 `Entrance Hall` 为探索者共同起点；起始 ground 拓扑必须显式保留 `Ground Floor Staircase / Hallway / Entrance Hall` 三个房间节点，且 `Basement Landing <-> Ground Floor Staircase <-> Upper Landing` 的特殊连接必须按规则存在；`haunt roll` 必须按“所有玩家当前持有的恶兆总数”掷骰，而不是按历史抽牌次数偷算。
@@ -116,16 +116,16 @@
 7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E：
    - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
    - 默认教程是 `basic-setup-and-turn`
-   - 当前已补 4 个短章：`basic-setup-and-turn`、`move-explore-use`、`crimson-jack-objective`、`haunt-actions-and-finish`
+   - 当前已补 5 个短章：`basic-setup-and-turn`、`move-explore-use`、`crimson-jack-objective`、`haunt-actions-and-finish`、`traitor-path`
    - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`
    - `Board.tsx` 已把角色选择、动作区、持有区、房间区、帮助入口和终局挂上真实 `data-tutorial-id`
    - `e2e/betrayal/betrayal-tutorial.e2e.ts` 已通过，截图证据位于 `evidence/betrayal-tutorial/`
-   - 教程 / manifest / 生命周期 / 动作条相关单测也已重新通过：
-     - `node scripts/infra/vitest-cli-safe.mjs run src/components/game/framework/__tests__/ActionBarSkeleton.test.tsx src/engine/systems/__tests__/CheatSystem.test.ts src/games/__tests__/betrayalManifestIntegration.test.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/matchRoomStageRuntimeModelBuilders.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx --configLoader native`
-     - 结果：`7 passed / 31 passed`
+   - 教程 / 生命周期 / 教程阶段运行时相关单测也已重新通过：
+     - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx --configLoader native`
+     - 结果：`4 passed / 34 passed`
 8. 当前教程仍是“首轮基础教程”，不是完整规则书：
-   - 已覆盖真实角色选择、恶兆前主循环、第一剧本英雄目标与英雄线收尾
-   - 叛徒视角、更复杂 haunt 分支和更多剧本仍留待后续子教程
+   - 已覆盖真实角色选择、恶兆前主循环、第一剧本英雄目标、英雄线收尾，以及第一剧本叛徒视角的最小攻击 / 终局收尾
+   - 更复杂 haunt 分支、更多剧本与完整规则书式教学仍留待后续子教程
 9. 首剧本里的 `Stalk the Prey` 已按规则补到“本回合未攻击前才能用、每回合只能用一次、且不消耗普通移动”；后续若别的剧本继续复用更复杂的 line-of-sight 语义，再继续抽成共享正式规则，不允许回退到提示层或注入绕过。
 10. 当前正式发现池已经收口到 42 间房、11 张物品、9 张预兆，并接入 23 张已锁定且当前引擎可完整表达的官方事件；阁楼因当前房间正面图集没有独立图面，已从运行时发现池移除。发现池 / 效果审计当前发布口径已收口：15 个房间效果、27 个无房间文字效果或 frame-note 房间、11 张物品、9 张预兆、23 张官方事件均已有对象合同和当前范围验证证据。后续重点不再是补发现池审计，而是继续补更多作祟剧本、房间背面 / 楼层板资源合同以及新增对象的独立审计。事件牌不能再用旧占位事件凑数；新增事件只能来自已锁定合同和对应引擎能力。
 11. 再处理扫描 PDF 的 OCR 或人工录入，把规则文本沉淀成可实现的结构化文档。

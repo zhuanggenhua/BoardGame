@@ -18,7 +18,7 @@
 | `docs/ai-rules/testing-audit.md` | 超大，混合审计原则、D 维度、E2E、历史教训、输出模板 | 拆成审计入口、维度库、证据模板、E2E 专项 |
 | `docs/ai-rules/engine-systems.md` | 引擎总览、领域层、UI 提示、动画、ActionLog 等多个主题混放 | 按系统主题拆分，doc-index 做入口 |
 | `docs/automated-testing.md` + `docs/testing-best-practices.md` | 测试执行、结构门禁、E2E 口径与 AGENTS 有重叠 | 归并测试入口，保留工具细节 |
-| `.codex/skill/create-new-game/SKILL.md` | 单个 skill 体量过大，混有参考资料 | 拆 references，SKILL 只保留流程骨架 |
+| `.codex/skill/create-new-game/SKILL.md` | 已完成首轮 references 拆分，主 skill 保留流程骨架与按需读取入口 | 后续只在新增职责混杂时继续下沉 references |
 
 ## 已完成迁移
 
@@ -39,7 +39,9 @@
 | 2026-07-04 | `docs/ai-rules/engine-systems.md` § 传输层、游戏结束、SimpleChoice、动画/EventStream/特写、ActionLog | `docs/ai-rules/engine-transport.md` + `docs/ai-rules/engine-gameover.md` + `docs/ai-rules/engine-simple-choice.md` + `docs/ai-rules/engine-visual-events.md` + `docs/ai-rules/engine-action-log.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将被 `doc-index.md` 直接引用的引擎系统章节无损搬到专项短文档；`engine-systems.md` 原位置改为入口摘要，避免引擎总览继续承载系统百科。 |
 | 2026-07-04 | `docs/ai-rules/engine-systems.md` § 通用能力框架、伤害计算管线、DiceThrone Token ActiveUse、SmashUp pendingSave | `docs/ai-rules/engine-ability-framework.md` + `docs/ai-rules/engine-damage-pipeline.md` + `docs/games/dicethrone/token-active-use-custom-action.md` + `docs/games/smashup/destroy-pending-save.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将跨游戏能力/伤害原语留在 `docs/ai-rules`，把 DiceThrone 和 SmashUp 的单游戏 runtime 合同下沉到游戏目录；`engine-systems.md` 只保留入口摘要。 |
 | 2026-07-04 | `docs/ai-rules/ui-ux.md` § UI 动画设计原则、多端布局策略 | `docs/ai-rules/ui-animation-patterns.md` + `docs/ai-rules/ui-responsive-layout.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将动画触发/结果揭示事件身份与双端布局/单位选择规则拆到专项短文档；`ui-ux.md` 只保留入口摘要、审美、组件单一来源和游戏 UI 特化规则。 |
+| 2026-07-04 | `docs/ai-rules/ui-ux.md` § UI 改动分级、样式/布局边界、真实截图、主交互槽位、UI 回归恢复 | `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/doc-index.md` + `.codex/skill/ui-ux-pro-max/SKILL.md` | 无语义放宽，纯拆分 | 将 UI 改动前置门禁与验收口径拆到专项短文档；`ui-ux.md` 主体只保留审美准则、组件单一来源、动画/响应式入口和游戏 UI 特化范式，项目 UI overlay 改为先读门禁文档。 |
 | 2026-07-04 | `docs/ai-rules/asset-pipeline.md` § 关键图片预加载、音频资源规范 | `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` + `docs/ai-rules/doc-index.md` | 无语义放宽，纯拆分 | 将 `criticalImageResolver`、两阶段预加载、教程资源裁剪、图集初始化与音频运行时架构、共享音频包路径合同、音效触发路径拆到专项短文档；`asset-pipeline.md` 只保留资源总览、图片链路、R2/CDN 和 App 素材包入口。 |
+| 2026-07-04 | `.codex/skill/create-new-game/SKILL.md` § 流程边界、前置门禁、机制/数据设计、UI 实现、收尾启用 | `.codex/skill/create-new-game/references/workflow-boundaries.md` + `preflight-gates.md` + `mechanics-data-design.md` + `ui-implementation-gates.md` + `finalization-checklist.md` | 无语义放宽，纯拆分 | 将 1800+ 行新游戏 workflow 拆成主入口 + references；主 `SKILL.md` 保留触发、必读索引、阶段骨架和按需读取规则，长门禁按职责分卷，避免每次触发加载整本。 |
 
 ## 后续候选批次
 

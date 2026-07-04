@@ -1779,7 +1779,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(armamentUpgradeResolutionSource).toContain('const resolvedState = dependencies.applyVictoryStatus({');
         expect(armamentUpgradeResolutionSource).toContain('return dependencies.advanceTurnIfReady(');
         expect(armamentUpgradeResolutionSource).toContain('dependencies.syncFactionActionWindow(resolvedState, currentFactionId),');
-        expect(armamentUpgradeResolutionSource).toContain("lastSeasonSummary: dependencies.buildSeasonSummary('升级军备', timestamp, [");
+        expect(armamentUpgradeResolutionSource).toContain('const sourceCardLine = selectedHandActionCardLabel');
+        expect(armamentUpgradeResolutionSource).toContain('`打出军备牌：${selectedHandActionCardLabel}。`');
+        expect(armamentUpgradeResolutionSource).toContain("lastSeasonSummary: dependencies.buildSeasonSummary(");
+        expect(armamentUpgradeResolutionSource).toContain("'升级军备',");
         expect(armamentUpgradeResolutionSource).toContain("summaryLines: ['孙元化本次放弃弃牌打科技。'],");
         expect(armamentUpgradeResolutionSource).toContain('const removedCardIds = new Set(selection.selectedCardIds.slice(0, selection.requiredCardCount));');
 

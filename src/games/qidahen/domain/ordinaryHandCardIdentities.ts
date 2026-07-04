@@ -391,6 +391,22 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES = [
         cardKind: 'armament',
         armamentId: 'long-barreled-musket',
     },
+    {
+        atlasIndex: 50,
+        cardId: 1650,
+        cardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
+        displayName: '乌真超哈',
+        cardKind: 'tactic',
+        armamentId: null,
+    },
+    {
+        atlasIndex: 60,
+        cardId: 1660,
+        cardDefId: 'qidahen-atlas05-1660-feigned-retreat-lure-enemy',
+        displayName: '诈败诱敌',
+        cardKind: 'tactic',
+        armamentId: null,
+    },
 ] as const satisfies readonly QidahenAtlas05OrdinaryHandCardIdentity[];
 
 export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX = new Map(
@@ -445,6 +461,8 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID = {
     'qidahen-atlas05-1644-wuzhen-chaoha': '不能在攻城、守城时使用；战斗中我方步兵骰子等级 +1；后金、蒙古使用效果同上。',
     'qidahen-atlas05-1645-war-chariot-formation': '本次战斗中步兵部队防御等级 +1；后金、蒙古使用效果同上。',
     'qidahen-atlas05-1646-linked-muskets': '野战步兵阶段敌方结算掷骰时我方先结算；使用拒马、步骑联合后无效；步兵部队掷骰数 +1；后金、蒙古使用无效果。',
+    'qidahen-atlas05-1650-wuzhen-chaoha-special': '效果 8；指定 1 个步兵部队，使其提前在炮兵阶段进行攻击；每所毁 1 张「火炮技术」，这个被指定的步兵部队攻击等级 +1；该部队仍可以享受其他步兵部队加成，可以承受伤害。大明、蒙古使用效果同上。',
+    'qidahen-atlas05-1660-feigned-retreat-lure-enemy': '效果 8；取消对手宣告的附兵劫掠，敌方附兵直接投入战斗并照常撤退。大明、蒙古使用效果同上。',
 } as const satisfies Record<
     typeof QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[number]['cardDefId'],
     string

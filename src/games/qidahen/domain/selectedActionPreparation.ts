@@ -32,6 +32,8 @@ interface QidahenSelectedActionPreparedState {
     currentFactionId: ReturnType<typeof getFactionIdByPlayerId>;
     nextFactions: QidahenCore['factions'];
     paidHandCards: QidahenCore['handCards'];
+    selectedHandActionCardLabel: string | null;
+    selectedSilverPaymentCardLabels: string[];
     selectedArmamentId: QidahenArmamentId | null;
     spentCardCount: number;
 }
@@ -67,6 +69,16 @@ export function prepareQidahenSelectedAction(
     const selectedCardIds = new Set(spentCardIds);
     const spentCardCount = spentCardIds.length;
     const selectedArmamentId = dependencies.resolveSelectedArmamentIdFromCards(state.handCards, spentCardIds);
+    const selectedHandActionCardLabel = actionId === 'upgrade-armament'
+        ? state.handCards.find((card) => (
+            spentCardIds.includes(card.id)
+            && card.cardKind === 'armament'
+            && card.armamentId === selectedArmamentId
+        ))?.label ?? null
+        : null;
+    const selectedSilverPaymentCardLabels = state.handCards
+        .filter((card) => spentCardIds.includes(card.id) && card.cardKind === 'silver')
+        .map((card) => card.label);
     const actionLabel = getActionChoiceById(actionId)?.label ?? actionId;
     const marriageSubjugationBlockedReason = actionId === 'marriage-subjugation'
         ? getMarriageSubjugationBlockedReason(
@@ -108,6 +120,8 @@ export function prepareQidahenSelectedAction(
             },
         },
         paidHandCards: state.handCards.filter((card) => !selectedCardIds.has(card.id)),
+        selectedHandActionCardLabel,
+        selectedSilverPaymentCardLabels,
         selectedArmamentId,
         spentCardCount,
     };

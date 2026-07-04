@@ -30,6 +30,9 @@
 - 只要 `player-board` 能直接看出技能槽 / 被动槽 / 防御槽 / 终极槽 / 展示槽 / 空槽 的图面分布，必须在录入阶段逐槽建立 `玩家板图面合同`，并把每个槽位的运行时对象、允许状态和是否可交互写清楚。
 - 禁止用“共享槽位名看起来像”“旧英雄同名位置应该一样”“先按感觉映射，后面再审”来补录槽位；槽位合同必须由本英雄本图直出，不能靠猜。
 - 任何 `ui/abilitySlotMapping.ts` / `AbilityOverlays.tsx` 这类槽位消费链，必须能回指到该合同表；若合同表缺行、缺空槽、缺被动/防御槽说明，录入不得收口。
+- 旧英雄迁到新版面板、新英雄复用旧坐标、或任何“共享坐标 + 专属底图标题”的场景，必须把“物理槽坐标”和“槽位对应技能”分开录入。共享坐标只说明格子在哪里，不说明格子里是谁；每个物理槽必须按当前底图中文标题建立 `slotId -> abilityId` 合同。
+- 升级牌覆盖槽位不能按 `abilities.ts` 里的基础技能英文名或旧共享槽位语义猜。必须逐张读取运行时升级牌的 `replaceAbility(targetAbilityId)`，再用升级牌中文名、目标技能 id、玩家板中文槽位标题三者对齐；三者缺一时合同只能标 `blocked/disputed`，不得标 `locked`。
+- 一旦发现某张升级牌盖错槽、点错槽或和底图标题不一致，默认必须横扫同英雄、同批次和同一共享槽位消费链的全部升级牌；最低覆盖 `cards.ts` 全部 `type='upgrade'` 且 `replaceAbility` 的条目、`abilityOverlayHelpers.ts` 覆盖槽、`abilitySlotMapping.ts` 点击/高亮反查槽，以及 E2E 真实升级稳定态。禁止只修用户点名的一张卡后收口。
 - 只要用户反馈的是“某张卡的图和效果对不上”“怀疑枪手/忍者这类角色卡牌录入错了”“怀疑 atlas/索引用错”，必须先直接打开对应 `ability-cards` 主真相源里的完整单卡，再去看 `cards.ts`、`abilities.ts`、AI、日志或测试。没完成这步前，只能说“代码层暂未发现分叉”，不能裁定“不是录入错误”。
 - 对 Dice Throne 角色，`public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/ability-cards.webp` 或对应正式 atlas 永远是卡牌语义主真相源；`temp/dicethrone-intake/<hero>/ability-card-slots/*.webp` 之类临时裁片只能辅助读字，不能单独推翻正式 atlas 读法。
 

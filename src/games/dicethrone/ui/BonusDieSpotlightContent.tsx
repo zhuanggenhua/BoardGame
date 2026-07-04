@@ -108,7 +108,7 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
                     isRolling={isRolling}
                     size={size}
                     locale={locale}
-                    variant="spotlight"
+                    variant="default"
                     characterId={characterId}
                     definitionId={definitionId}
                 />

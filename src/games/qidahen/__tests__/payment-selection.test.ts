@@ -348,7 +348,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('atlas05 普通手牌真相表只解析通过验收的事件、军备、战术和银两身份', () => {
-        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(47);
+        expect(QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES).toHaveLength(49);
 
         const eventCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(0);
         expect(eventCard).toMatchObject({
@@ -583,6 +583,24 @@ describe('七大恨支付手牌选择', () => {
         expect(getQidahenDirectActionIdForHandCard(promotedLinkedMusketsCard!)).toBe('upgrade-armament');
 
         expect(resolveQidahenAtlas05OrdinaryHandCardIdentity(47)).toBeNull();
+
+        const wuzhenChaohaSpecialCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(50);
+        expect(wuzhenChaohaSpecialCard).toMatchObject({
+            cardKind: 'tactic',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1650-wuzhen-chaoha-special'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(wuzhenChaohaSpecialCard!)).toBeNull();
+
+        const feignedRetreatCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(60);
+        expect(feignedRetreatCard).toMatchObject({
+            cardKind: 'tactic',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1660-feigned-retreat-lure-enemy',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1660-feigned-retreat-lure-enemy'],
+        });
+        expect(getQidahenDirectActionIdForHandCard(feignedRetreatCard!)).toBeNull();
     });
 
     it('剧本一开局已开发军备遵循规则设置', () => {
@@ -784,6 +802,66 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.selectedHandActionCardId).toBeNull();
         expect(executed.handCards.some((card) => card.id === armamentCard.id)).toBe(false);
         expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+    });
+
+    it('atlas05 已确认军备牌全集都能直点升级军备并指向对应军备', () => {
+        const armamentIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .filter((identity) => identity.cardKind === 'armament');
+        expect(armamentIdentities).toHaveLength(12);
+
+        for (const identity of armamentIdentities) {
+            const core = QidahenDomain.setup(['0', '1', '2'], random);
+            const [sourceCard, paymentCard] = factionHandCards(core, 'ming');
+            expect(sourceCard).toBeDefined();
+            expect(paymentCard).toBeDefined();
+            const mappedCore: QidahenCore = {
+                ...core,
+                factions: {
+                    ...core.factions,
+                    ming: {
+                        ...core.factions.ming,
+                        armaments: core.factions.ming.armaments.map((armament) => ({
+                            ...armament,
+                            level: armament.id === identity.armamentId ? 1 : 0,
+                        })),
+                    },
+                },
+                handCards: core.handCards.map((card) => (
+                    card.id === sourceCard.id
+                        ? {
+                            ...card,
+                            label: identity.displayName,
+                            cardKind: identity.cardKind,
+                            armamentId: identity.armamentId,
+                            cardDefId: identity.cardDefId,
+                            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+                        }
+                        : card
+                )),
+            };
+            const mappedSourceCard = mappedCore.handCards.find((card) => card.id === sourceCard.id)!;
+
+            expect(getQidahenDirectActionIdForHandCard(mappedSourceCard)).toBe('upgrade-armament');
+
+            const previewed = apply(mappedCore, {
+                type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+                playerId: '0',
+                payload: { actionId: 'upgrade-armament', sourceHandCardId: sourceCard.id },
+            });
+            const paid = apply(previewed, {
+                type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+                playerId: '0',
+                payload: { cardId: paymentCard.id },
+            });
+            const executed = apply(paid, {
+                type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+                playerId: '0',
+                payload: {},
+            });
+
+            expect(executed.factions.ming.armaments.find((armament) => armament.id === identity.armamentId)?.level).toBe(2);
+            expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(identity.displayName);
+        }
     });
 
     it('手牌直点来源必须匹配当前势力和动作，不能把任意手牌伪装成事件或军备入口', () => {
@@ -1946,6 +2024,54 @@ describe('七大恨支付手牌选择', () => {
             selected: 1,
             prompt: '需弃 3 / 已选 1',
         });
+    });
+
+    it('atlas05 银两作为支付牌被消费时，会在执行记录里保留资源牌身份', () => {
+        const silverIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .filter((identity) => identity.cardKind === 'silver');
+        expect(silverIdentities).toHaveLength(2);
+
+        for (const identity of silverIdentities) {
+            const core = QidahenDomain.setup(['0', '1', '2'], random);
+            const [paymentCard] = factionHandCards(core, 'ming');
+            const mappedCore: QidahenCore = {
+                ...core,
+                handCards: core.handCards.map((card) => (
+                    card.id === paymentCard.id
+                        ? {
+                            ...card,
+                            label: identity.displayName,
+                            cardKind: identity.cardKind,
+                            armamentId: identity.armamentId,
+                            cardDefId: identity.cardDefId,
+                            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+                        }
+                        : card
+                )),
+            };
+
+            expect(getQidahenDirectActionIdForHandCard(mappedCore.handCards.find((card) => card.id === paymentCard.id)!)).toBeNull();
+
+            const previewed = apply(mappedCore, {
+                type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+                playerId: '0',
+                payload: { actionId: 'recruit' },
+            });
+            const paid = apply(previewed, {
+                type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+                playerId: '0',
+                payload: { cardId: paymentCard.id },
+            });
+            expect(paid.selectedPaymentCardIds).toEqual([paymentCard.id]);
+
+            const executed = apply(paid, {
+                type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+                playerId: '0',
+                payload: {},
+            });
+            expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+            expect(executed.actionLog[0]?.text).toContain('银两资源牌 1 张：银两');
+        }
     });
 
     it('切换行动会清空已选支付牌并按新花费重算', () => {

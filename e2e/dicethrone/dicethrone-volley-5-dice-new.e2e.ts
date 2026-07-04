@@ -81,7 +81,7 @@ test.describe('骰子王座万箭齐发五骰展示', () => {
         ).toHaveCount(0);
 
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '01-万箭齐发五骰-整屏结果图'),
+            path: getEvidenceScreenshotPath(testInfo, '01-万箭齐发五骰-整屏结果图', { requireChineseName: true }),
             fullPage: false,
         });
         const diceBounds = await overlay
@@ -137,7 +137,7 @@ test.describe('骰子王座万箭齐发五骰展示', () => {
         }
 
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '02-万箭齐发五骰-整屏几何核验后'),
+            path: getEvidenceScreenshotPath(testInfo, '02-万箭齐发五骰-整屏几何核验后', { requireChineseName: true }),
             fullPage: false,
         });
 

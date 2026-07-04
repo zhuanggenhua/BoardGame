@@ -225,6 +225,20 @@ async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): P
     )).toHaveCount(dieIds.length);
 }
 
+async function readBoard3dToggleThumbCenterX(page: Page): Promise<number> {
+    return await page.evaluate(() => {
+        const thumb = document.querySelector('[data-testid="dicethrone-board-3d-toggle-thumb"]') as HTMLElement | null;
+        if (!thumb) {
+            throw new Error('未找到 3D 骰子开关圆球');
+        }
+        const rect = thumb.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            throw new Error('3D 骰子开关圆球不可见');
+        }
+        return rect.left + rect.width / 2;
+    });
+}
+
 type DiceRectSnapshot = {
     dieId: number;
     x: number | null;
@@ -314,12 +328,16 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(board3dToggle).toBeVisible({ timeout: 5000 });
         await expect(board3dToggle).toHaveAttribute('aria-checked', 'false');
         await expect(settingsPanel.getByText(/已关闭|Disabled/i)).toBeVisible({ timeout: 5000 });
+        const thumbBeforeX = await readBoard3dToggleThumbCenterX(page);
         await saveSettingsPanelScreenshot(settingsPanel, '00-3D骰子开关-点击前', testInfo);
 
         await board3dToggle.click();
 
         await expect(board3dToggle).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
         await expect(settingsPanel.getByText(/已开启|Enabled/i)).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => {
+            return await readBoard3dToggleThumbCenterX(page);
+        }, { timeout: 5000 }).toBeGreaterThan(thumbBeforeX + 12);
         await expect.poll(async () => {
             return await page.evaluate((storageKey) => localStorage.getItem(storageKey), BOARD_DICE_3D_STORAGE_KEY);
         }, { timeout: 5000 }).toBe('true');

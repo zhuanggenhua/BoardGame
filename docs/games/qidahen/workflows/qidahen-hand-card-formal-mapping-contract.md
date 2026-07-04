@@ -1,6 +1,6 @@
 # 七大恨普通手牌正式映射反写契约
 
-> 这份契约只定义“人工确认后的结果应如何反写到正式领域层”。2026-07-04 已有 atlas05 的 47 张普通手牌达到人工确认门槛，并已接入正式发牌/预览流；但当前只是普通手牌真相源局部推进，事件效果全集、战术时机和完整行动语义仍未闭环，因此本文件不得被理解为已经完成正式手牌一级入口。
+> 这份契约只定义“人工确认后的结果应如何反写到正式领域层”。2026-07-04 已有 atlas05 的 49 张普通手牌达到人工确认门槛，并已接入正式发牌/预览流；但当前只是普通手牌真相源局部推进，事件效果全集、战术时机和完整行动语义仍未闭环，因此本文件不得被理解为已经完成正式手牌一级入口。
 
 ## 当前运行时落点
 
@@ -19,16 +19,16 @@
 - `src/games/qidahen/domain/handCardIdentity.ts`
   - `resolveQidahenFormalHandCardIdentity(factionId, previewIndex)`
   - 当前仍保留 16 个 faction preview seam 的最小身份解析，供旧合同和排障对照使用。
-  - `resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)` 读取 atlas05 已确认普通手牌真相表，正式发牌/摸牌现在已消费这 47 张确认行。
+  - `resolveQidahenAtlas05OrdinaryHandCardIdentity(atlasIndex)` 读取 atlas05 已确认普通手牌真相表，正式发牌/摸牌现在已消费这 49 张确认行。
 - `src/games/qidahen/domain/ordinaryHandCardIdentities.ts`
-  - 当前承载 atlas05 的 47 张已确认普通手牌规则身份。
+  - 当前承载 atlas05 的 49 张已确认普通手牌规则身份。
   - 只允许来自人工确认矩阵的行进入，不得把 OCR 候选直接填进这里。
 - `src/games/qidahen/domain/handCardState.ts`
-  - 正式开局手牌与后续摸牌已按 atlas05 的 47 张 `passed` 真相表连续发放。
+  - 正式开局手牌与后续摸牌已按 atlas05 的 49 张 `passed` 真相表连续发放。
   - 只消费人工确认行；`partial / blocked` 行不会进入正式手牌身份或预览。
 - `src/games/qidahen/ui/cardAtlas.ts`
   - 已注册 `qidahen:atlas05-ordinary-hand-preview`，指向 `qidahen/cards/atlases/ordinary-hand-atlas05`。
-  - 该图集使用 10x7 网格合同，当前正式运行时只引用 47 张已确认普通手牌帧。
+  - 该图集使用 10x7 网格合同，当前正式运行时只引用 49 张已确认普通手牌帧。
 - `src/games/qidahen/domain/types.ts`
   - `QidahenHandCard.cardKind / cardDefId / armamentId`
   - `QidahenArmamentId` 限定军备目标枚举。
@@ -77,19 +77,19 @@
 
 - `npm run verify:qidahen:handcards`
   - 先运行图片验收产物校验，再运行人工录入反写校验。
-  - 当前已有 `passed=47` 图片候选和 47 张“已确认”普通手牌行；脚本通过证明确认行满足反写字段门槛，仍需结合定向单测证明正式运行时接入。
+  - 当前已有 `passed=49` 图片候选和 49 张“已确认”普通手牌行；脚本通过证明确认行满足反写字段门槛，仍需结合定向单测证明正式运行时接入。
 - `scripts/verify/qidahen-hand-card-image-validation.mjs`
   - 读取 `test-results/evidence-image-validation/qidahen-formal-handcard-2.4.json`。
   - 校验图片条目统计、逐项状态、子代理结果和主线程抽样对照记录。
-  - 当前 `passed=47` 时仍要求结合人工录入反写校验和定向测试，不能单独据此勾选 OpenSpec `2.4 / 4.5`。
+  - 当前 `passed=49` 时仍要求结合人工录入反写校验和定向测试，不能单独据此勾选 OpenSpec `2.4 / 4.5`。
 - `scripts/verify/qidahen-hand-card-manual-entry.mjs`
   - 读取 `qidahen-hand-card-manual-entry-matrix.md`、`qidahen-hand-card-human-review-checklist.md`、`qidahen-hand-card-tts-cardid-full-manual-entry-matrix.md`、`qidahen-hand-card-runtime-atlas-manual-entry-matrix.md` 和 `qidahen-hand-card-atlas05-manual-entry-matrix.md`。
   - 只校验“已确认”行是否满足反写字段门槛。
-  - 当前已确认行数为 23；该脚本只验证人工录入字段完整性，不代表已经可以勾选 OpenSpec `2.4`。
+  - 当前已确认行数为 49；该脚本只验证人工录入字段完整性，不代表已经可以勾选 OpenSpec `2.4`。
 
 ## 当前裁决
 
-- atlas05 当前已有 47 张人工确认行满足反写输入门槛。
-- 当前已经新增领域层 atlas05 普通手牌真相表、解析函数、正式图集资源和运行时发牌/摸牌接入；支付单测证明初始手牌与后续摸牌会消费这 47 张 `passed` 普通手牌身份。
+- atlas05 当前已有 49 张人工确认行满足反写输入门槛。
+- 当前已经新增领域层 atlas05 普通手牌真相表、解析函数、正式图集资源和运行时发牌/摸牌接入；支付单测证明初始手牌与后续摸牌会消费这 49 张 `passed` 普通手牌身份。
 - 本契约继续约束后续反写入口和验收门槛，避免把 OCR 文本、文件路径、教程注入态或低保真预览身份误写进正式逻辑。
 - OpenSpec `2.4` 和 `4.5` 继续保持未完成：事件效果全集、战术时机和完整行动语义仍未闭环。

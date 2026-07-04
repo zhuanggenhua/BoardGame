@@ -22,18 +22,19 @@ description: "BoardGame 的 UI/UX overlay。先使用全局 ui-ux-pro-max 获取
 
 ## 先做什么
 
-1. 先看 `docs/ai-rules/ui-ux.md`
-2. 若涉及动画、结果揭示、重播或阶段切换，读 `docs/ai-rules/ui-animation-patterns.md`
-3. 若涉及双端、移动端、响应式、固定牌桌缩放或单位选择，读 `docs/ai-rules/ui-responsive-layout.md`
-2. 再按需要看：
+1. 先看 `docs/ai-rules/ui-change-gates.md`
+2. 再看 `docs/ai-rules/ui-ux.md`
+3. 若涉及动画、结果揭示、重播或阶段切换，读 `docs/ai-rules/ui-animation-patterns.md`
+4. 若涉及双端、移动端、响应式、固定牌桌缩放或单位选择，读 `docs/ai-rules/ui-responsive-layout.md`
+5. 再按需要看：
    - `design-system/game-ui/MASTER.md`
    - `design-system/game-ui/source-families.md`
    - `design-system/styles/*.md`
    - `design-system/games/<gameId>.md`
    - 若这轮会改 prompt / waiting / 手牌区 / 右侧 rail / HUD 主选择层，先专门核对 `主交互槽位五联单`、`来源家族`、`双主焦点`、`主交互槽位前中后不漂移` 这些门禁
-3. 若是 AI 设计稿落地，补读 `docs/ai-rules/generated-design-implementation.md`
-4. 若是新游戏或棋盘 UI 生图，改走 `.codex/skill/boardgame-ui-imagegen/SKILL.md`
-5. 若是游戏移动端适配，改走 `.codex/skill/adapt-game-mobile/SKILL.md`
+6. 若是 AI 设计稿落地，补读 `docs/ai-rules/generated-design-implementation.md`
+7. 若是新游戏或棋盘 UI 生图，改走 `.codex/skill/boardgame-ui-imagegen/SKILL.md`
+8. 若是游戏移动端适配，改走 `.codex/skill/adapt-game-mobile/SKILL.md`
 
 ## 本项目补充规则
 
@@ -73,4 +74,4 @@ description: "BoardGame 的 UI/UX overlay。先使用全局 ui-ux-pro-max 获取
 
 ## 命令与资料
 
-若需要全局设计系统检索或脚本示例，回到全局 `ui-ux-pro-max` 读取其原始说明与脚本入口，不在本项目重复抄一份。
+若需要全局设计系统检索或脚本示例，回到全局 `ui-ux-pro-max` 读取其原始说明与脚本入口，不在本项目重复抄一份。项目内 UI 改动门禁、主交互槽位、截图验收和回归恢复只维护在 `docs/ai-rules/ui-change-gates.md`，不要在本 skill 继续扩写同类长规则。

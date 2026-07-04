@@ -2,37 +2,37 @@
 
 > 对象：第一剧本 `Crimson Jack Returns`
 > 目的：把“已经真实跑通到哪”和“还没被真实证据证明到哪”分开，避免把局部通过误说成整剧本已完整完成。
-> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/betrayal-tutorial/`。
+> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
 
 ## 当前结论
 
 - 第一剧本的英雄主线已经具备“真实页面可进入、真实 haunt 可推进、真实终局可到达”的闭环证据。
 - 第一剧本的叛徒主线现在也已经具备“真实 `Haunt` 页面可进入、真实叛徒收尾可触发、真实终局可到达”的独立页面证据。
 - `Jack's Spirit` 复活叛徒后，已经具备“真实页面继续攻击同房间英雄并推进回合”的独立页面证据。
-- `Board.tsx` 这轮修正房间焦点优先级与正式可见入口后，第一剧本与教程相关的最小真实回归矩阵已经在当前 `main` 现场重新串行通过。
+- 教程已补入第一剧本叛徒视角独立章节，能从真实教程进入叛徒攻击并到达真实终局。
+- 尸体搜刮已经补到二次限制：第一次搜尸后，同一正式动作位会回到普通交易且显示没有可搜尸 / 可交易对象。
+- 第一剧本与教程相关的最小真实回归矩阵已经在当前 `main` 现场重新串行通过。
 - 因此，当前可以说“第一剧本英雄线与叛徒线的最小可玩闭环都已成立”；但仍不能扩大成“第一剧本所有边界交互都已完整验收”。
 
 ## 当前现场的最新回归结果
 
-> 回归时间：`2026-06-29`
+> 回归时间：`2026-07-04`
 > 回归现场：`D:\gongzuo\webgame\BoardGame`
-> 目的：确认这轮 `Board.tsx` 修正没有把既有真实链路打回去。
+> 目的：确认教程 + 第一剧本必要部分，而不是扩大成整游戏完成审计。
 
-- 已串行通过的真实 E2E：
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/basic-flow.e2e.ts`
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario.e2e.ts`
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-traitor-victory.e2e.ts`
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts`
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-corpse-loot.e2e.ts`
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-jack-spirit-revive.e2e.ts`
-  - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/first-scenario-jack-spirit-post-revive-attack.e2e.ts`
+- 本轮已通过的定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx --configLoader native`：`4 files / 34 tests passed`
+  - `node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts`：`2 tests passed`
+  - `node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/first-scenario-corpse-loot.e2e.ts`：`1 test passed`
+  - `npm run typecheck -- --pretty false`：通过
+  - `npx eslint src/games/betrayal/tutorial.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario-corpse-loot.e2e.ts`：0 error
+  - `git diff --check -- src/games/betrayal/tutorial.ts public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json src/games/betrayal/__tests__/tutorial.test.ts e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario-corpse-loot.e2e.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx`：通过，仅 LF/CRLF 提示
 - 当前结论：
-  - 房间焦点现在会优先给 `Haunt` 战斗动作，而不是被“单一移动目标”抢走。
-  - 复活后的继续攻击入口现在是正式可见、可点的页面入口，不再只靠隐藏承接位存在。
-  - 这轮改动没有把恶兆前主流程、第一剧本英雄线、叛徒线、教程线和三条边界链路打回去。
+  - 教程已经从 4 个短章扩到 5 个短章，新增叛徒视角最小收尾章节。
+  - 叛徒视角教程不是只写配置，已经通过真实页面攻击和终局截图证据。
+  - 搜尸边界不是只验证第一次成功，已经补到二次限制的真实页面证据。
 - 执行备注：
-  - `run-e2e-command` 这轮若并发启动，会先撞 `heavy-task-guard`，随后还可能撞 `.tmp/e2e-preflight-cache.json` 文件锁；
-  - 因此上面这组真实 E2E 证据都应按串行方式复跑与复核，不能把并发失败误判成业务链路失败。
+  - 这次只声明“教程 + 第一剧本必要部分”已收口，不声明全事件牌、全房间资源、更多剧本或山屋整游戏完成。
 
 ## 已有真实页面证据
 
@@ -57,14 +57,16 @@
   - 正式运行时里可以推进到英雄胜利终局；
   - 终局页来自真实游戏页，不是单独伪造页面。
 
-### 3. 教程复用真实第一剧本英雄线
+### 3. 教程复用真实第一剧本英雄线与叛徒最小收尾
 
 - 证据：
   - `e2e/betrayal/betrayal-tutorial.e2e.ts`
   - `evidence/betrayal-tutorial/betrayal-tutorial-e2e-test.md`
 - 已证明：
   - 教程没有另起教学壳层，而是复用真实角色选择、真实运行时和真实终局；
-  - 教程最小链路可从第一剧本英雄线收尾进入真实终局。
+  - 教程最小链路可从第一剧本英雄线收尾进入真实终局；
+  - `traitor-path` 章节可从叛徒视角进入真实攻击并到达真实叛徒终局；
+  - 关键截图：`evidence/betrayal-tutorial/07-山屋惊魂-教程-叛徒视角攻击前.jpg`、`evidence/betrayal-tutorial/08-山屋惊魂-教程-叛徒终局页.jpg`。
 
 ### 4. 第一剧本叛徒线到真实终局
 
@@ -84,7 +86,9 @@
 - 已证明：
   - 同房间尸体可通过正式底部 `搜尸` 动作进入搜刮链；
   - 搜刮后当前玩家持有区会真实增加 1 张牌；
-  - 同一动作位会从 `搜尸` 收回到普通 `交易`，说明本回合搜刮态已被消耗。
+  - 同一动作位会从 `搜尸` 收回到普通 `交易`，说明本回合搜刮态已被消耗；
+  - 二次尝试时交易按钮保持不可用，并显示没有可搜尸 / 可交易对象；
+  - 关键截图：`evidence/betrayal-first-scenario-corpse-loot/03-山屋惊魂-第一剧本-搜尸二次限制.jpg`。
 
 ### 6. Jack's Spirit 回尸体房间后的复活边界
 
@@ -137,14 +141,14 @@
 
 ## 当前还没被真实页面证明的部分
 
-1. 第一剧本更多边界交互的真实 UI 证明
-   - 例如更多搜尸边界，目前仍主要是规则层自动化验证。
+1. 第一剧本更多复杂边界交互的真实 UI 证明
+   - 当前必要的搜尸一次成功与二次限制已经有真实页面证据；更多非必要复杂分支仍不在本轮范围内。
 
-2. 多视角教程
-   - 当前教程只承诺英雄线；叛徒视角还没有独立教程章节和真实截图证据。
+2. 更复杂教程分支
+   - 当前教程覆盖英雄线和叛徒视角最小收尾；更多剧本、更多 haunt 分支和完整规则书式教学仍未覆盖。
 
 ## 当前建议
 
-1. 如果后续目标是“可合并到主分支”，当前完成度已经足够支撑“第一剧本最小可玩闭环已成立”的表述。
-2. 如果后续目标是“第一剧本正式完结验收”，下一优先项应是补边界交互的真实 UI 证据，而不是继续回头补主胜负链。
-3. 当前可以明确说“第一剧本双主线都已有真实页面闭环证据”，但仍不要扩大成“全部边界完整验收通过”。
+1. 如果后续目标只要求“教程 + 第一剧本必要部分”，当前完成度已经足够支撑“必要部分已收口”的表述。
+2. 如果后续目标升级为“第一剧本正式完结验收”，下一优先项才是继续补更多复杂边界交互的真实 UI 证据。
+3. 当前可以明确说“教程覆盖英雄线和叛徒最小收尾，第一剧本双主线都有真实页面闭环证据”，但仍不要扩大成“山屋整游戏完成”。

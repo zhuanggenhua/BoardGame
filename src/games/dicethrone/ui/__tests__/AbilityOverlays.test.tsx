@@ -4,11 +4,95 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AbilityOverlays } from '../AbilityOverlays';
 import { getAbilitySlotLayoutForCharacter, getPlayerBoardLayoutVersion } from '../abilitySlotLayout';
-import { getUpgradeCardForAbilityLevel } from '../abilityOverlayHelpers';
+import { getSlotAbilityId, getUpgradeCardForAbilityLevel } from '../abilityOverlayHelpers';
 import { getAbilitySlotIdForCharacter } from '../abilitySlotMapping';
+import { BARBARIAN_CARDS } from '../../heroes/barbarian/cards';
+import { MONK_CARDS } from '../../heroes/monk/cards';
+import { MOON_ELF_CARDS } from '../../heroes/moon_elf/cards';
+import { PALADIN_CARDS } from '../../heroes/paladin/cards';
+import { PYROMANCER_CARDS } from '../../heroes/pyromancer/cards';
+import { SHADOW_THIEF_CARDS } from '../../heroes/shadow_thief/cards';
 
 
 const mockUseCoarsePointer = vi.fn(() => false);
+const LEGACY_HERO_SLOT_CONTRACTS = {
+    monk: {
+        'fist-technique': 'fist',
+        'zen-forget': 'chi',
+        'taiji-combo': 'sky',
+        'thunder-strike': 'lotus',
+        harmony: 'combo',
+        'lotus-palm': 'lightning',
+        'calm-water': 'calm',
+        meditation: 'meditate',
+        transcendence: 'ultimate',
+    },
+    barbarian: {
+        slap: 'fist',
+        'all-out-strike': 'chi',
+        steadfast: 'sky',
+        suppress: 'lotus',
+        'powerful-strike': 'combo',
+        'violent-assault': 'lightning',
+        'reckless-strike': 'calm',
+        'thick-skin': 'meditate',
+        rage: 'ultimate',
+    },
+    pyromancer: {
+        fireball: 'fist',
+        'soul-burn': 'chi',
+        'fiery-combo': 'sky',
+        'burn-down': 'lotus',
+        'pyro-blast': 'combo',
+        meteor: 'lightning',
+        ignite: 'calm',
+        'magma-armor': 'meditate',
+        'ultimate-inferno': 'ultimate',
+    },
+    moon_elf: {
+        longbow: 'fist',
+        'covert-fire': 'chi',
+        'covering-fire': 'sky',
+        'exploding-arrow': 'lotus',
+        'entangling-shot': 'combo',
+        eclipse: 'lightning',
+        'blinding-shot': 'calm',
+        'elusive-step': 'meditate',
+        'lunar-eclipse': 'ultimate',
+    },
+    shadow_thief: {
+        'dagger-strike': 'fist',
+        pickpocket: 'chi',
+        steal: 'sky',
+        'kidney-shot': 'lotus',
+        'shadow-dance': 'combo',
+        'shadow-defense': 'lightning',
+        cornucopia: 'calm',
+        'fearless-riposte': 'meditate',
+        'shadow-shank': 'ultimate',
+    },
+    paladin: {
+        tithes: 'fist',
+        vengeance: 'chi',
+        'righteous-combat': 'sky',
+        'blessing-of-might': 'lotus',
+        'holy-strike': 'combo',
+        'righteous-prayer': 'lightning',
+        'holy-light': 'calm',
+        'holy-defense': 'meditate',
+        'unyielding-faith': 'ultimate',
+    },
+} as const;
+
+const LEGACY_HERO_CARDS = {
+    monk: MONK_CARDS,
+    barbarian: BARBARIAN_CARDS,
+    pyromancer: PYROMANCER_CARDS,
+    moon_elf: MOON_ELF_CARDS,
+    shadow_thief: SHADOW_THIEF_CARDS,
+    paladin: PALADIN_CARDS,
+} as const;
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string) => key,
@@ -513,6 +597,34 @@ describe('AbilityOverlays', () => {
                 getAbilitySlotIdForCharacter(entry.characterId, entry.abilityId),
                 `${entry.characterId} 的 ${entry.abilityId} 应落在 ${entry.slotId}`,
             ).toBe(entry.slotId);
+        }
+    });
+
+    it('旧六角色全部升级牌应按玩家板图面合同覆盖同一物理槽位', () => {
+        for (const [characterId, cards] of Object.entries(LEGACY_HERO_CARDS)) {
+            const contract = LEGACY_HERO_SLOT_CONTRACTS[characterId as keyof typeof LEGACY_HERO_SLOT_CONTRACTS];
+            for (const card of cards) {
+                if (card.type !== 'upgrade') continue;
+                for (const effect of card.effects ?? []) {
+                    const action = effect.action;
+                    if (action?.type !== 'replaceAbility') continue;
+
+                    const abilityId = action.targetAbilityId;
+                    const expectedSlotId = contract[abilityId as keyof typeof contract];
+                    expect(
+                        expectedSlotId,
+                        `${characterId} 的升级牌 ${card.id} -> ${abilityId} 必须先登记玩家板图面合同`,
+                    ).toBeTruthy();
+                    expect(
+                        getSlotAbilityId(characterId, expectedSlotId),
+                        `${characterId} 的升级牌 ${card.id} 应覆盖 ${expectedSlotId} 物理槽`,
+                    ).toBe(abilityId);
+                    expect(
+                        getAbilitySlotIdForCharacter(characterId, abilityId),
+                        `${characterId} 的升级牌 ${card.id} 点击/高亮反查应回到同一物理槽`,
+                    ).toBe(expectedSlotId);
+                }
+            }
         }
     });
 

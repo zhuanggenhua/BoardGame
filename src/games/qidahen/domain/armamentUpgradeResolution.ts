@@ -82,6 +82,7 @@ export const resolveQidahenSelectedArmamentUpgradeExecution = (
     factions: QidahenCore['factions'],
     currentFactionId: QidahenFactionId,
     selectedArmamentId: QidahenArmamentId | null,
+    selectedHandActionCardLabel: string | null,
     timestamp: number,
     dependencies: QidahenArmamentUpgradeResolutionDependencies = {
         buildSeasonSummary,
@@ -102,12 +103,20 @@ export const resolveQidahenSelectedArmamentUpgradeExecution = (
     const upgradedArmamentLine = upgradeResult.upgradedArmament
         ? `${state.factions[currentFactionId].name}将${upgradeResult.upgradedArmament.name}升级到${upgradeResult.upgradedArmament.level}级。`
         : `${state.factions[currentFactionId].name} 当前没有可升级军备。`;
+    const sourceCardLine = selectedHandActionCardLabel
+        ? `打出军备牌：${selectedHandActionCardLabel}。`
+        : null;
 
     return {
         factions: nextFactions,
-        lastSeasonSummary: dependencies.buildSeasonSummary('升级军备', timestamp, [
-            `${upgradedArmamentLine} 军备升级完成。`,
-        ]),
+        lastSeasonSummary: dependencies.buildSeasonSummary(
+            '升级军备',
+            timestamp,
+            [
+                ...(sourceCardLine ? [sourceCardLine] : []),
+                `${upgradedArmamentLine} 军备升级完成。`,
+            ],
+        ),
     };
 };
 

@@ -21,6 +21,7 @@ interface QidahenSelectedActionExecutionResolutionDependencies {
         factions: QidahenCore['factions'],
         currentFactionId: QidahenFactionId,
         selectedArmamentId: QidahenArmamentId | null,
+        selectedHandActionCardLabel: string | null,
         timestamp: number,
     ) => {
         factions: QidahenCore['factions'];
@@ -40,6 +41,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
     actionId: string,
     currentFactionId: QidahenFactionId,
     selectedArmamentId: QidahenArmamentId | null,
+    selectedHandActionCardLabel: string | null,
     factions: QidahenCore['factions'],
     timestamp: number,
     dependencies: QidahenSelectedActionExecutionResolutionDependencies,
@@ -55,6 +57,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
             nextFactions,
             currentFactionId,
             selectedArmamentId,
+            selectedHandActionCardLabel,
             timestamp,
         );
         nextFactions = upgradeResolution.factions;

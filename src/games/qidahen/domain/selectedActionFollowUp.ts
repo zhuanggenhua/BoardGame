@@ -70,27 +70,31 @@ const buildQidahenSelectedActionFollowUpLogText = (
     currentFactionName: string,
     actionLabel: string,
     spentCardCount: number,
+    selectedSilverPaymentCardLabels: readonly string[],
     resolution: QidahenSelectedActionFollowUpResolutionResult,
 ): string => {
+    const silverPaymentText = selectedSilverPaymentCardLabels.length > 0
+        ? `（其中银两资源牌 ${selectedSilverPaymentCardLabels.length} 张：${selectedSilverPaymentCardLabels.join('、')}）`
+        : '';
     if (resolution.recruitSelection) {
-        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌，进入征召军队建军选择。`;
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}，进入征召军队建军选择。`;
     }
     if (resolution.maShiTradeSelection) {
-        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌，进入马市贸易建兵数量选择。`;
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}，进入马市贸易建兵数量选择。`;
     }
     if (resolution.khanEdictSelection) {
-        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌，进入令箭效果选择。`;
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}，进入令箭效果选择。`;
     }
     if (resolution.driveTigerDispatchSelection) {
-        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌，等待 ${state.factions[resolution.driveTigerDispatchSelection.attackerFactionId].name} 决定是否同意受大明指挥。`;
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}，等待 ${state.factions[resolution.driveTigerDispatchSelection.attackerFactionId].name} 决定是否同意受大明指挥。`;
     }
     if (resolution.pendingTargetAction) {
-        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌，进入 ${resolution.pendingTargetAction.title}（${resolution.pendingTargetAction.resolutionHint}）。`;
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}，进入 ${resolution.pendingTargetAction.title}（${resolution.pendingTargetAction.resolutionHint}）。`;
     }
     if (resolution.lastSeasonSummary?.lines[0]) {
-        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌。${resolution.lastSeasonSummary.lines[0]}`;
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}。${resolution.lastSeasonSummary.lines[0]}`;
     }
-    return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌。`;
+    return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${silverPaymentText}。`;
 };
 
 const buildQidahenSelectedActionFollowUpStateTransition = (
@@ -188,6 +192,7 @@ export const resolveQidahenSelectedActionFollowUp = (
     actionId: string,
     actionLabel: string,
     spentCardCount: number,
+    selectedSilverPaymentCardLabels: readonly string[],
     timestamp: number,
     baseSelectedRegionId: string,
     baseLastSeasonSummary: QidahenSeasonSummary | null,
@@ -222,6 +227,7 @@ export const resolveQidahenSelectedActionFollowUp = (
         state.factions[currentFactionId].name,
         actionLabel,
         spentCardCount,
+        selectedSilverPaymentCardLabels,
         resolution,
     );
     const stateTransition = buildQidahenSelectedActionFollowUpStateTransition(resolution);

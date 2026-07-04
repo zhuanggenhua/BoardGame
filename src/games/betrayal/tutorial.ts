@@ -165,7 +165,7 @@ const BETRAYAL_CRIMSON_JACK_OBJECTIVE: TutorialManifest = {
         {
             id: 'haunt-reveal',
             content: 'game-betrayal:tutorial.crimsonJack.steps.hauntReveal',
-            highlightTarget: 'betrayal-scenario-reference',
+            highlightTarget: 'betrayal-reference-entry',
             position: 'left',
             infoStep: true,
             viewAs: '0',
@@ -277,7 +277,7 @@ const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
         {
             id: 'traitor-objective',
             content: 'game-betrayal:tutorial.traitorPath.steps.traitorObjective',
-            highlightTarget: 'betrayal-scenario-reference',
+            highlightTarget: 'betrayal-reference-entry',
             position: 'left',
             infoStep: true,
             viewAs: '2',

@@ -18,7 +18,10 @@ import { getActionChoicesForFaction } from '../domain/factionActionWindow';
 import { getQidahenCurrentWheelDispatchSelectionForCore } from '../domain/dispatchSelectionBuilders';
 import type { QidahenCore, QidahenEvent } from '../domain/types';
 import { engineConfig } from '../game';
-import { syncQidahenRuntimeInteractionState } from '../domain/runtimeInteractions';
+import {
+    clearQidahenRuntimeInteractionCurrent,
+    syncQidahenRuntimeInteractionState,
+} from '../domain/runtimeInteractions';
 
 const commandsSource = readFileSync(resolve(__dirname, '..', 'domain', 'commands.ts'), 'utf-8');
 
@@ -495,6 +498,8 @@ describe('Qidahen Commands 交互宿主门禁', () => {
     it('战术牌命令只能在待结算战斗中由攻方打出自己的战术牌', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
         const tacticCardId = 'ming-tactic-test-card';
+        const fieldOnlyTacticCardId = 'ming-field-only-tactic-test-card';
+        const defenderOnlyTacticCardId = 'ming-defender-only-tactic-test-card';
         const jinTacticCardId = 'jin-tactic-test-card';
         const mingEventCardId = 'ming-event-test-card';
         const mingCards = core.handCards.filter((card) => card.faction === 'ming');
@@ -536,6 +541,27 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 cardKind: 'tactic',
                 armamentId: null,
                 cardDefId: 'test-ming-tactic',
+                rulesSummary: '不能在攻城、守城时使用；战斗中我方步兵骰子等级 +1。',
+            },
+            {
+                ...mingCards[1]!,
+                id: fieldOnlyTacticCardId,
+                label: '大明野战限定战术牌',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'test-ming-field-only-tactic',
+                rulesSummary: '只能于野战时使用；可以再移动最多 2 个没有参战的部队进入战斗。',
+            },
+            {
+                ...mingCards[2]!,
+                id: defenderOnlyTacticCardId,
+                label: '大明守城限定战术牌',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'test-ming-defender-only-tactic',
+                rulesSummary: '只能于守城时使用；对手本次攻城掷骰结果除以 2。',
             },
             {
                 ...jinCard!,
@@ -547,7 +573,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 cardDefId: 'test-jin-tactic',
             },
             {
-                ...mingCards[1]!,
+                ...mingCards[3]!,
                 id: mingEventCardId,
                 label: '大明事件牌',
                 status: 'payable',
@@ -575,6 +601,31 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '0',
             payload: { cardId: mingEventCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        const cityBattleState = syncQidahenRuntimeInteractionState(clearQidahenRuntimeInteractionCurrent({
+            ...state,
+            core: {
+                ...state.core,
+                pendingTargetAction: {
+                    ...state.core.pendingTargetAction!,
+                    battleMode: 'city',
+                },
+            },
+        }));
+        expect(QidahenDomain.validate(cityBattleState, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: tacticCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        expect(QidahenDomain.validate(cityBattleState, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: fieldOnlyTacticCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        expect(QidahenDomain.validate(cityBattleState, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: defenderOnlyTacticCardId },
         })).toEqual({ valid: false, error: 'unknownPaymentCard' });
         expect(QidahenDomain.validate({
             ...state,
