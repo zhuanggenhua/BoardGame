@@ -1362,7 +1362,7 @@ describe('GameDetailsModal create room ai entry', () => {
         expect(screen.queryByText('packageManager.installAction')).toBeNull();
     });
 
-    it('点击悬浮下载按钮后展开卡片，并可再次收起', () => {
+    it('点击悬浮下载按钮后展开卡片，并可通过外层叉收起', () => {
         render(createElement(GameDetailsModal, baseProps));
 
         fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
@@ -1370,9 +1370,10 @@ describe('GameDetailsModal create room ai entry', () => {
         expect(screen.getByTestId('game-details-mobile-package-card')).toBeInTheDocument();
         expect(screen.getByText('packageManager.installAction')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByTestId('game-details-mobile-package-card-dismiss'));
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-card-collapse'));
 
         expect(screen.queryByTestId('game-details-mobile-package-card')).toBeNull();
+        expect(screen.getByTestId('game-details-mobile-package-toggle')).toBeInTheDocument();
     });
 
     it('打开详情后会预取远端素材包状态，并在下载卡片上显示同步完成', async () => {
@@ -2013,14 +2014,29 @@ describe('GameDetailsModal create room ai entry', () => {
         });
     });
 
-    it('已下载 package-managed 游戏时，不再展开安装卡片，只在标题右侧显示绿色版本号', () => {
+    it('已下载 package-managed 游戏时，默认保留删除素材包圆球入口且不展开卡片', () => {
         markGamePackageInstalled('dicethrone', 'test-asset-pack-v1');
         render(createElement(GameDetailsModal, baseProps));
 
-        expect(screen.queryByTestId('game-details-mobile-package-toggle')).toBeNull();
+        expect(screen.getByTestId('game-details-mobile-package-toggle')).toBeInTheDocument();
         expect(screen.queryByTestId('game-details-mobile-package-card')).toBeNull();
         expect(screen.getByTestId('game-details-title')).toHaveAttribute('data-installed-version', 'v1');
         expect(screen.queryByText('packageManager.installedTitle')).toBeNull();
+    });
+
+    it('已下载 package-managed 游戏展开删除素材包卡片后，可通过外层叉收起', () => {
+        markGamePackageInstalled('dicethrone', 'test-asset-pack-v1');
+        render(createElement(GameDetailsModal, baseProps));
+
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+
+        expect(screen.getByTestId('game-details-mobile-package-card')).toBeInTheDocument();
+        expect(screen.getByText('packageManager.installedTitle')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-card-collapse'));
+
+        expect(screen.queryByTestId('game-details-mobile-package-card')).toBeNull();
+        expect(screen.getByTestId('game-details-mobile-package-toggle')).toBeInTheDocument();
     });
 
     it('已安装旧版本 package-managed 游戏时，会重新显示下载安装入口', async () => {

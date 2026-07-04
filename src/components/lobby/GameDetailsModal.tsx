@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useMemo, useCallback, useEffectEvent, type
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { AlertTriangle, Download, HardDriveDownload, Info, LoaderCircle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Download, HardDriveDownload, Info, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import * as matchApi from '../../services/matchApi';
 import { getLocalMatchPreferences, updateLocalMatchPreferences } from '../../api/user-settings';
 import { useAuth } from '../../contexts/AuthContext';
@@ -169,8 +169,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const shouldAutoExpandMobilePackageCard = packageInstallCardState.status === 'queued'
         || packageInstallCardState.status === 'manifest'
         || packageInstallCardState.status === 'downloading'
-        || packageInstallCardState.status === 'verifying'
-        || hasInstalledPackageForMobileGame;
+        || packageInstallCardState.status === 'verifying';
     const detailTabs = useMemo(() => ([
         {
             id: 'lobby' as const,
@@ -1970,6 +1969,16 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                 <div
                                     className="pointer-events-auto absolute bottom-0 left-0 w-[min(20rem,calc(100vw-5rem))] origin-bottom-left scale-100 opacity-100 transition-all duration-200 ease-out md:w-[18rem]"
                                 >
+                                    <button
+                                        type="button"
+                                        data-testid="game-details-mobile-package-card-collapse"
+                                        onClick={() => setIsMobilePackageCardExpanded(false)}
+                                        className="absolute -right-3 -top-3 z-10 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-parchment-card-border/45 bg-parchment-card-bg text-parchment-base-text shadow-[0_8px_18px_rgba(56,41,22,0.2)] transition-colors hover:bg-parchment-base-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment-base-text/25"
+                                        aria-label={t('common:close')}
+                                        title={t('common:close')}
+                                    >
+                                        <X size={16} strokeWidth={2.2} />
+                                    </button>
                                     <GameDetailsMobilePackageCard
                                         gameName={gameDisplayName}
                                         state={mobilePackageCardDisplayState}
@@ -1978,7 +1987,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                         onUninstall={handleUninstallPackageInstall}
                                         failedActionLabel={packageInstallFailedActionLabel}
                                         onCancel={handleCancelPackageInstall}
-                                        onCollapse={() => setIsMobilePackageCardExpanded(false)}
                                         presentation={isAppUpdateRequiredForMobileGame ? 'update-required' : 'install'}
                                         requiredAppVersion={gameManifest?.mobileDelivery?.requiredAppVersion}
                                         className=""
