@@ -16,9 +16,9 @@ import {
     resolveFabLayerZIndex,
     resolveFabSatellitesToRender,
     resolveMobileFabOverflowWarning,
-    shouldAllowFabDragFromTarget,
     shouldTrackFabButtonRect,
 } from '../system/FabMenu';
+import { shouldAllowFabDragFromTarget } from '../system/fabDrag';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
 

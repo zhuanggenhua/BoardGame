@@ -10,6 +10,7 @@ import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../games/mobileSupport';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { logger } from '../../lib/logger';
+import { shouldAllowFabDragFromTarget } from './fabDrag';
 import { resolveExpandedFabLayout } from './fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from './fabPosition';
 
@@ -99,11 +100,6 @@ export const shouldTrackFabButtonRect = ({
     isActive: boolean;
     hasContent: boolean;
 }) => showTooltip || showPreview || (isActive && hasContent);
-
-export const shouldAllowFabDragFromTarget = (target: EventTarget | null) => {
-    if (!(target instanceof Element)) return true;
-    return !target.closest('[data-fab-panel-interactive="true"]');
-};
 
 export const FabMenu = ({
     items,
