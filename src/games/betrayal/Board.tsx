@@ -4032,7 +4032,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             </div>
                             {visibleActionItems.length > 0 ? (
-                                <div className="pointer-events-none absolute inset-x-0 bottom-2 z-50 hidden flex-col items-center justify-end gap-1 md:flex">
+                                <div className="pointer-events-none absolute inset-x-0 bottom-1 z-50 hidden flex-col items-center justify-end gap-0.5 md:flex">
                                     {core.recommendedAction === 'trade' ? (
                                         <div
                                             data-testid="betrayal-trade-flow-banner"
@@ -4073,7 +4073,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     data-testid={`betrayal-action-${action.id}`}
                                                     data-tutorial-id={`betrayal-action-${action.id}`}
                                                     title={actionCueText}
-                                                    className={`flex min-h-[72px] min-w-[80px] flex-col items-center justify-center gap-1 rounded-[5px] border-0 bg-transparent px-1.5 py-2 text-[13px] font-bold uppercase tracking-[0.08em] shadow-none transition ${
+                                                    className={`flex min-h-[48px] min-w-[80px] flex-col items-center justify-end gap-0.5 rounded-[5px] border-0 bg-transparent px-1.5 py-1 text-[13px] font-bold uppercase tracking-[0.08em] shadow-none transition ${
                                                         action.disabled
                                                             ? 'cursor-not-allowed text-[#5f584d] opacity-55'
                                                             : isRecommended
