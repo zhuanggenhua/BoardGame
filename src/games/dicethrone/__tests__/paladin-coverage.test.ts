@@ -27,6 +27,7 @@ import {
     createQueuedRandom,
     assertState,
     cmd,
+    respondToPrompt,
 } from './test-utils';
 import type { DiceThroneCore } from '../domain/types';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
@@ -229,10 +230,13 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'holy-strike-small' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
                 ],
-                expect: {
+            });
+            const afterCrit = respondToPrompt(result.finalState, 'option-0', '0', random, ['0', '1']);
+            expect(afterCrit.success).toBe(true);
+            const afterAccuracy = respondToPrompt(afterCrit.state, 'option-0', '0', random, ['0', '1']);
+            expect(afterAccuracy.success).toBe(true);
+            expect(assertState(afterAccuracy.state, {
                     turnPhase: 'main2',
                     players: {
                         '0': {
@@ -244,8 +248,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                         },
                         '1': { hp: 41 },
                     },
-                },
-            });
+                })).toEqual([]);
             expect(result.assertionErrors).toEqual([]);
         });
     });
@@ -346,7 +349,18 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                ],
+            });
+            const afterCrit = respondToPrompt(result.finalState, 'option-0', '0', random, ['0', '1']);
+            expect(afterCrit.success).toBe(true);
+            const runnerAfterCrit = new GameTestRunner({
+                domain: DiceThroneDomain, systems: testSystems,
+                playerIds: ['0', '1'], random,
+                setup: () => afterCrit.state, assertFn: assertState, silent: true,
+            });
+            const settled = runnerAfterCrit.run({
+                name: '正义祈祷 旧暴击响应后防御结算',
+                commands: [
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
@@ -363,6 +377,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                 },
             });
             expect(result.assertionErrors).toEqual([]);
+            expect(settled.assertionErrors).toEqual([]);
         });
 
         it('基础版在接近上限时应钳制到 CP_MAX，不应因技能直接回满之外的异常值', () => {

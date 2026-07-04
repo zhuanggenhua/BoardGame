@@ -62,25 +62,15 @@ type AbilityHighlightTone = {
 };
 
 const DEFAULT_ABILITY_HIGHLIGHT_TONE: AbilityHighlightTone = {
-    highlightBorderColor: '#22d3ee',
-    highlightRimColor: 'rgba(255,255,255,0.58)',
-    highlightGlowColor: 'rgba(236,72,153,0.88)',
-    highlightHaloColor: 'rgba(34,211,238,0.68)',
+    highlightBorderColor: '#ff3347',
+    highlightRimColor: 'rgba(255,255,255,0.34)',
+    highlightGlowColor: 'rgba(255,51,71,0.94)',
+    highlightHaloColor: 'rgba(255,51,71,0.56)',
     selectedBorderColor: '#e11d48',
     selectedRimColor: 'rgba(255,255,255,0.42)',
     selectedGlowColor: 'rgba(225,29,72,0.98)',
     selectedHaloColor: 'rgba(225,29,72,0.64)',
     selectedPulseBorderColor: 'rgba(255,244,246,0.78)',
-};
-
-const CONTRAST_ABILITY_HIGHLIGHT_TONE: Pick<
-    AbilityHighlightTone,
-    'highlightBorderColor' | 'highlightRimColor' | 'highlightGlowColor' | 'highlightHaloColor'
-> = {
-    highlightBorderColor: '#22d3ee',
-    highlightRimColor: 'rgba(255,255,255,0.58)',
-    highlightGlowColor: 'rgba(236,72,153,0.88)',
-    highlightHaloColor: 'rgba(34,211,238,0.68)',
 };
 
 const ABILITY_HIGHLIGHT_TONES: Partial<Record<string, Partial<AbilityHighlightTone>>> = {
@@ -205,12 +195,113 @@ const ABILITY_HIGHLIGHT_TONES: Partial<Record<string, Partial<AbilityHighlightTo
     },
 };
 
-const getAbilityHighlightTone = (characterId?: string): AbilityHighlightTone => ({
-    ...DEFAULT_ABILITY_HIGHLIGHT_TONE,
-    ...(characterId ? ABILITY_HIGHLIGHT_TONES[characterId] : undefined),
-    // 可选技能必须用撞色提示，不能跟角色面板主题色同色。
-    ...CONTRAST_ABILITY_HIGHLIGHT_TONE,
-});
+type RgbColor = { r: number; g: number; b: number };
+
+const parseHexColor = (color: string): RgbColor | null => {
+    const normalized = color.trim().replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+    return {
+        r: Number.parseInt(normalized.slice(0, 2), 16),
+        g: Number.parseInt(normalized.slice(2, 4), 16),
+        b: Number.parseInt(normalized.slice(4, 6), 16),
+    };
+};
+
+const toHexChannel = (value: number): string => (
+    Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0')
+);
+
+const rgbToHsl = ({ r, g, b }: RgbColor): { h: number; s: number; l: number } => {
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+    const max = Math.max(rn, gn, bn);
+    const min = Math.min(rn, gn, bn);
+    const delta = max - min;
+    const l = (max + min) / 2;
+    const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+    let h = 0;
+
+    if (delta !== 0) {
+        if (max === rn) h = 60 * (((gn - bn) / delta) % 6);
+        else if (max === gn) h = 60 * ((bn - rn) / delta + 2);
+        else h = 60 * ((rn - gn) / delta + 4);
+    }
+
+    return { h: (h + 360) % 360, s, l };
+};
+
+const hslToRgb = ({ h, s, l }: { h: number; s: number; l: number }): RgbColor => {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    let rn = 0;
+    let gn = 0;
+    let bn = 0;
+
+    if (h < 60) [rn, gn, bn] = [c, x, 0];
+    else if (h < 120) [rn, gn, bn] = [x, c, 0];
+    else if (h < 180) [rn, gn, bn] = [0, c, x];
+    else if (h < 240) [rn, gn, bn] = [0, x, c];
+    else if (h < 300) [rn, gn, bn] = [x, 0, c];
+    else [rn, gn, bn] = [c, 0, x];
+
+    return {
+        r: (rn + m) * 255,
+        g: (gn + m) * 255,
+        b: (bn + m) * 255,
+    };
+};
+
+const toRgbString = ({ r, g, b }: RgbColor, alpha: number): string => (
+    `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${alpha})`
+);
+
+const toHexString = ({ r, g, b }: RgbColor): string => (
+    `#${toHexChannel(r)}${toHexChannel(g)}${toHexChannel(b)}`
+);
+
+const buildComplementaryHighlightTone = (baseColor: string): Pick<
+    AbilityHighlightTone,
+    'highlightBorderColor' | 'highlightRimColor' | 'highlightGlowColor' | 'highlightHaloColor'
+> => {
+    const parsed = parseHexColor(baseColor);
+    if (!parsed) {
+        return {
+            highlightBorderColor: baseColor,
+            highlightRimColor: 'rgba(255,255,255,0.58)',
+            highlightGlowColor: 'rgba(255,255,255,0.88)',
+            highlightHaloColor: 'rgba(255,255,255,0.54)',
+        };
+    }
+
+    const baseHsl = rgbToHsl(parsed);
+    const contrastRgb = hslToRgb({
+        h: (baseHsl.h + 180) % 360,
+        s: Math.max(baseHsl.s, 0.72),
+        l: Math.min(Math.max(baseHsl.l, 0.46), 0.58),
+    });
+
+    return {
+        highlightBorderColor: toHexString(contrastRgb),
+        highlightRimColor: 'rgba(255,255,255,0.58)',
+        highlightGlowColor: toRgbString(contrastRgb, 0.9),
+        highlightHaloColor: toRgbString(contrastRgb, 0.56),
+    };
+};
+
+const getAbilityHighlightTone = (characterId?: string): AbilityHighlightTone => {
+    const roleTone = {
+        ...DEFAULT_ABILITY_HIGHLIGHT_TONE,
+        ...(characterId ? ABILITY_HIGHLIGHT_TONES[characterId] : undefined),
+    };
+
+    return {
+        ...roleTone,
+        // 可选技能用角色主题色的互补色；选中态继续保留角色主题色。
+        ...buildComplementaryHighlightTone(roleTone.highlightBorderColor),
+    };
+};
 
 const buildAbilityHighlightStyle = (
     tone: AbilityHighlightTone,

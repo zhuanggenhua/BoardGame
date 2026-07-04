@@ -1161,6 +1161,20 @@ test.describe('DiceThrone hand card preview regression', () => {
         };
         return JSON.parse(JSON.stringify(spec.def));
       });
+      const tithesCard = upgradeCards.get('card-tithes-2') as any;
+      if (!tithesCard) {
+        throw new Error('card-tithes-2 not found');
+      }
+      abilityLevels.tithes = 2;
+      upgradeCardByAbilityId.tithes = {
+        cardId: 'card-tithes-2',
+        cpCost: tithesCard.cpCost,
+      };
+      const upgradedPassiveAbilities = (paladinBase.passiveAbilities ?? []).map((ability: any) => (
+        ability.id === 'tithes'
+          ? JSON.parse(JSON.stringify(abilitiesModule.PALADIN_TITHES_UPGRADED))
+          : ability
+      ));
 
       harness.state.set({
         ...state,
@@ -1197,6 +1211,7 @@ test.describe('DiceThrone hand card preview regression', () => {
               hand: [],
               discard: [],
               abilities: upgradedAbilities,
+              passiveAbilities: upgradedPassiveAbilities,
               abilityLevels,
               upgradeCardByAbilityId,
               resources: {
@@ -1238,7 +1253,7 @@ test.describe('DiceThrone hand card preview regression', () => {
       holyLightCard: 'card-holy-light-2',
     });
 
-    const expectedSlots = ['chi', 'sky', 'lotus', 'combo', 'lightning', 'calm', 'meditate'];
+    const expectedSlots = ['fist', 'chi', 'sky', 'lotus', 'combo', 'lightning', 'calm', 'meditate'];
     for (const slotId of expectedSlots) {
       await expect(page.locator(`[data-upgrade-preview-slot="${slotId}"]`).first()).toBeVisible({ timeout: 10000 });
     }

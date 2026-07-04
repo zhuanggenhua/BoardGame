@@ -135,7 +135,7 @@ describe('AbilityOverlays', () => {
         expect(onMagnifyCard).not.toHaveBeenCalled();
     });
 
-    it('高亮壳层保留统一描边结构，并用撞色提示可选技能', () => {
+    it('高亮壳层保留统一描边结构，并用角色主题色的互补色提示可选技能', () => {
         const { getByTestId } = renderAbilityOverlays({
             availableAbilityIds: ['fist-technique'],
             canHighlight: true,
@@ -146,9 +146,9 @@ describe('AbilityOverlays', () => {
         expect(highlight.className).toContain('rounded-lg');
         expect(highlight.className).toContain('animate-pulse');
         expect(highlight.style.borderWidth).toBe('2px');
-        expect(highlight.style.borderColor).toBe('rgb(34, 211, 238)');
-        expect(highlight.style.boxShadow).toContain('rgba(236,72,153,0.88)');
-        expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.68)');
+        expect(highlight.style.borderColor).toBe('rgb(11, 98, 245)');
+        expect(highlight.style.boxShadow).toContain('rgba(11,98,245,0.9)');
+        expect(highlight.style.boxShadow).toContain('rgba(11,98,245,0.56)');
     });
 
     it('选中态描边会沿用角色色并比普通高亮更强一档', () => {
@@ -177,9 +177,9 @@ describe('AbilityOverlays', () => {
         const highlight = getByTestId('dt-ability-highlight-ultimate');
         expect(highlight.className).toContain('rounded-lg');
         expect(highlight.style.borderWidth).toBe('2px');
-        expect(highlight.style.borderColor).toBe('rgb(34, 211, 238)');
-        expect(highlight.style.boxShadow).toContain('rgba(236,72,153,0.88)');
-        expect(highlight.style.boxShadow).toContain('rgba(34,211,238,0.68)');
+        expect(highlight.style.borderColor).toBe('rgb(238, 61, 34)');
+        expect(highlight.style.boxShadow).toContain('rgba(238,61,34,0.9)');
+        expect(highlight.style.boxShadow).toContain('rgba(238,61,34,0.56)');
     });
 
     it('旧英雄切到 v2 玩家面板后，技能点击和升级叠图应沿用通用技能槽位语义', () => {
