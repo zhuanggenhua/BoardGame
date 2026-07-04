@@ -19,6 +19,10 @@ import { getQidahenCurrentWheelDispatchSelectionForCore } from '../domain/dispat
 import type { QidahenCore, QidahenEvent } from '../domain/types';
 import { engineConfig } from '../game';
 import {
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
+} from '../domain/ordinaryHandCardIdentities';
+import {
     clearQidahenRuntimeInteractionCurrent,
     syncQidahenRuntimeInteractionState,
 } from '../domain/runtimeInteractions';
@@ -665,6 +669,104 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         expect(result.state.core.discardPileCount).toBe(core.discardPileCount + 1);
         expect(result.state.core.lastSeasonSummary?.title).toBe('战术牌');
         expect(result.state.core.lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');
+    });
+
+    it('atlas05 战术牌时机门禁会按当前攻方战术窗口拦截城战禁用和守城专用牌', () => {
+        const tacticIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .filter((identity) => identity.cardKind === 'tactic');
+        expect(tacticIdentities).toHaveLength(19);
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const baseMingCard = baseCore.handCards.find((card) => card.faction === 'ming');
+        expect(baseMingCard).toBeTruthy();
+        const tacticCards = tacticIdentities.map((identity) => ({
+            ...baseMingCard!,
+            id: `atlas05-tactic-${identity.atlasIndex}`,
+            label: identity.displayName,
+            status: 'payable' as const,
+            cardKind: 'tactic' as const,
+            armamentId: null,
+            cardDefId: identity.cardDefId,
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+        }));
+        const buildBattleState = (battleMode: 'field' | 'city'): MatchState<QidahenCore> => {
+            const core = {
+                ...QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+                turnPhase: 'resolve-pending' as const,
+                handCards: tacticCards,
+                pendingTargetAction: {
+                    actionId: 'wheel-dispatch' as const,
+                    battleMode,
+                    targetKind: 'region' as const,
+                    title: '调度进攻待结算',
+                    attackerFactionId: 'ming' as const,
+                    sourceRegionId: 'city-region-16',
+                    sourceRegionName: '克什克腾部',
+                    targetRegionId: 'city-region-14',
+                    targetRegionName: '察哈尔',
+                    targetRuntimeRegionId: 'city-region-14',
+                    defenderFactionId: 'jin' as const,
+                    defenderLabel: '后金',
+                    restriction: '测试 · atlas05 战术牌',
+                    battleWidth: 3,
+                    boundaryUnitCap: null,
+                    sourceAvailableTroops: 2,
+                    committedTroops: 2,
+                    movementProfileId: 'dispatch-cavalry',
+                    attackPressure: 2,
+                    attackBoundaryType: 'plain',
+                    resolutionHint: '克什克腾部 → 察哈尔 · 平原 3',
+                    defenderPayCost: null,
+                },
+            };
+            return syncQidahenRuntimeInteractionState({
+                core,
+                sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+            });
+        };
+        const validateTactic = (state: MatchState<QidahenCore>, cardDefId: string) => {
+            const card = tacticCards.find((candidate) => candidate.cardDefId === cardDefId);
+            expect(card).toBeTruthy();
+            return QidahenDomain.validate(state, {
+                type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+                playerId: '0',
+                payload: { cardId: card!.id },
+            });
+        };
+        const isCityBlockedSummary = (rulesSummary: string): boolean => (
+            rulesSummary.includes('不能在攻城、守城时使用')
+            || rulesSummary.includes('只能于野战时使用')
+            || rulesSummary.includes('野战时才能使用')
+            || rulesSummary.includes('野战步兵阶段使用')
+            || rulesSummary.includes('野战骑兵阶段')
+        );
+        const defenderOnlyIdentities = tacticIdentities.filter((identity) => (
+            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId].includes('只能于守城时使用')
+        ));
+        expect(defenderOnlyIdentities.map((identity) => identity.displayName)).toEqual(['坚守不屈']);
+        const cityBlockedIdentities = tacticIdentities.filter((identity) => {
+            const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
+            return isCityBlockedSummary(rulesSummary) || rulesSummary.includes('只能于守城时使用');
+        });
+        expect(cityBlockedIdentities.map((identity) => identity.displayName)).toEqual(expect.arrayContaining([
+            '箭如雨下',
+            '骑兵冲锋',
+            '步骑联合',
+            '分进合击',
+            '坚守不屈',
+            '拒马',
+            '链炮阵',
+            '鸟真超哈',
+        ]));
+        const fieldState = buildBattleState('field');
+        const cityState = buildBattleState('city');
+        for (const identity of defenderOnlyIdentities) {
+            expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+            expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        }
+        for (const identity of cityBlockedIdentities.filter((identity) => !defenderOnlyIdentities.includes(identity))) {
+            expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: true });
+            expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        }
     });
 
     it('新年维护命令校验现在可以只依赖 interaction current，而不是 core.fortificationMaintenanceSelection', () => {
