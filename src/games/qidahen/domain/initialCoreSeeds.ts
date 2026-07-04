@@ -130,6 +130,7 @@ export const createInitialRuntimeRegionSummaries = (): QidahenCore['regions'] =>
                     : `${regionConfig.name} · 邻接 ${region.adjacentRegionIds.length} 区 · 初始移动代价已按边界类型生成，可继续微调。`),
             siegeState: null,
             cityState: null,
+            eventMarkers: [],
             specialTroops: regionConfig.initialSpecialTroops.map((stack) => ({
                 ...stack,
                 pieceIds: stack.pieceIds ? [...stack.pieceIds] : undefined,

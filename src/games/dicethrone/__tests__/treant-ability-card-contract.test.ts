@@ -41,11 +41,13 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(getAbilitySlotIdForCharacter('treant', 'wild-growth')).toBe('lotus');
         expect(getAbilitySlotIdForCharacter('treant', 'vengeful-vines')).toBe('combo');
         expect(getAbilitySlotIdForCharacter('treant', 'nature-touch')).toBe('lightning');
-        expect(getAbilitySlotIdForCharacter('treant', 'wild-roar')).toBe('lightning');
+        expect(getAbilitySlotIdForCharacter('treant', 'wild-roar')).toBe('calm');
         expect(getAbilitySlotIdForCharacter('treant', 'rooted')).toBe('meditate');
 
         expect(slotContainsAbilityIdForCharacter('treant', 'sky', 'quiet-cultivation')).toBe(true);
         expect(slotContainsAbilityIdForCharacter('treant', 'sky', 'vengeful-vines')).toBe(false);
+        expect(slotContainsAbilityIdForCharacter('treant', 'lightning', 'wild-roar')).toBe(false);
+        expect(slotContainsAbilityIdForCharacter('treant', 'calm', 'wild-roar')).toBe(true);
         expect(slotContainsAbilityIdForCharacter('treant', 'calm', 'rooted')).toBe(false);
         expect(slotContainsAbilityIdForCharacter('treant', 'meditate', 'rooted')).toBe(true);
     });
@@ -127,7 +129,10 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             'wild-growth-2-main',
             'wild-growth-2-dazzle',
         ]);
-        expect(WILD_ROAR_2.trigger?.type).toBe('largeStraight');
+        expect(WILD_ROAR_2.variants?.map(variant => variant.id)).toEqual([
+            'wild-roar-2-main',
+            'wild-roar-2-dazzle',
+        ]);
     });
 
     it('Rooted 防御应按树枝与树灵总数防止伤害，不再按树枝反击或逐骰发 token', () => {
@@ -800,12 +805,12 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         }
     });
 
-    it('Wild Growth II 应在 2 树枝 + 2 树灵骰面下暴露乱花迷眼分支', () => {
+    it('Wild Roar II 应在 2 树枝 + 2 树灵骰面下暴露乱花迷眼分支', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         const treant = state.core.players['0'];
-        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-growth');
-        treant.abilities[abilityIndex] = WILD_GROWTH_2;
-        treant.abilityLevels['wild-growth'] = 2;
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-roar');
+        treant.abilities[abilityIndex] = WILD_ROAR_2;
+        treant.abilityLevels['wild-roar'] = 2;
         state.core.activePlayerId = '0';
         state.core.rollDiceCount = 5;
         state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
@@ -823,22 +828,22 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         }));
 
         const available = getAvailableAbilityIds(state.core, '0', 'offensiveRoll');
-        expect(available).toContain('wild-growth-2-dazzle');
-        expect(available).not.toContain('wild-growth-2-main');
+        expect(available).toContain('wild-roar-2-dazzle');
+        expect(available).not.toContain('wild-roar-2-main');
     });
 
-    it('Wild Growth II 的乱花迷眼分支应施加刺藤并造成 4 点不可防御伤害', () => {
+    it('Wild Roar II 的乱花迷眼分支应施加刺藤并造成 4 点不可防御伤害', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         const treant = state.core.players['0'];
-        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-growth');
-        treant.abilities[abilityIndex] = WILD_GROWTH_2;
-        treant.abilityLevels['wild-growth'] = 2;
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-roar');
+        treant.abilities[abilityIndex] = WILD_ROAR_2;
+        treant.abilityLevels['wild-roar'] = 2;
         state.core.players['1'].tokens[TOKEN_IDS.THORN] = 0;
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
         state.core.pendingAttack = {
             attackerId: '0',
             defenderId: '1',
-            sourceAbilityId: 'wild-growth-2-dazzle',
+            sourceAbilityId: 'wild-roar-2-dazzle',
             isDefendable: false,
             damage: 0,
         };

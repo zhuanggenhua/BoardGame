@@ -308,9 +308,28 @@ export const WILD_ROAR_2: AbilityDef = {
     ...WILD_ROAR,
     name: abilityText('wild-roar-2', 'name'),
     description: abilityText('wild-roar-2', 'description'),
-    effects: [
-        customEffect('treant-wild-growth-2-main', 'opponent', abilityEffectText('wild-roar-2', 'roll5BranchLeafSpirit')),
-        damage(8, abilityEffectText('wild-roar-2', 'damage8')),
+    trigger: undefined,
+    effects: undefined,
+    variants: [
+        {
+            id: 'wild-roar-2-main',
+            trigger: { type: 'largeStraight' },
+            effects: [
+                customEffect('treant-wild-growth-2-main', 'opponent', abilityEffectText('wild-roar-2', 'roll5BranchLeafSpirit')),
+                damage(8, abilityEffectText('wild-roar-2', 'damage8')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'wild-roar-2-dazzle',
+            trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.SPIRIT]: 2 } },
+            tags: ['unblockable'],
+            effects: [
+                grantToken('opponent', TOKEN_IDS.THORN, 1, abilityEffectText('wild-roar-2-dazzle', 'inflictThorn')),
+                damage(4, abilityEffectText('wild-roar-2-dazzle', 'damage4Unblockable'), { unblockable: true }),
+            ],
+            priority: 0,
+        },
     ],
 };
 

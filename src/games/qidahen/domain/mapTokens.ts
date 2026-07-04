@@ -42,6 +42,7 @@ const mapTokenOffsetByRole = {
     population: { x: 18, y: 10 },
     control: { x: 18, y: -16 },
     diplomacy: { x: -18, y: -16 },
+    marker: { x: -18, y: -16 },
 } as const;
 
 const clampMapTokenCoordinate = (value: number): number => Math.max(0.02, Math.min(0.98, value));
@@ -211,6 +212,19 @@ export const syncQidahenMapTokensFromRegions = (
                     type: 'control',
                     faction: region.diplomacyMarkerFaction,
                     imageSrc: diplomacyMarkerImageByFaction[region.diplomacyMarkerFaction][region.diplomacyMarkerSide],
+                    size: 27,
+                });
+            }
+
+            for (const [index, marker] of region.eventMarkers.entries()) {
+                const point = getMapTokenPoint(region, 'marker');
+                nextTokens.push({
+                    id: marker.id,
+                    x: clampMapTokenCoordinate(point.x + (index * 14) / QIDAHEN_MAP_WIDTH),
+                    y: clampMapTokenCoordinate(point.y + (index * 14) / QIDAHEN_MAP_HEIGHT),
+                    type: 'marker',
+                    faction: 'neutral',
+                    imageSrc: marker.imageSrc,
                     size: 27,
                 });
             }

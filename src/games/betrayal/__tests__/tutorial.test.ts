@@ -38,8 +38,8 @@ describe('Betrayal 教程配置', () => {
         const manifest = tutorialCatalog.tutorials['move-explore-use']?.manifest;
         const actionSteps = manifest?.steps.filter((step) => step.requireAction) ?? [];
         expect(actionSteps.map((step) => step.id)).toEqual([
-            'use-rope',
-            'move-to-grand-staircase',
+            'use-book',
+            'move-to-hallway',
             'explore-upper',
         ]);
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
@@ -48,10 +48,11 @@ describe('Betrayal 教程配置', () => {
             ['EXPLORE_ROOM'],
         ]);
         expect(actionSteps.map((step) => step.allowedTargets ?? null)).toEqual([
-            ['rope'],
-            ['grand-staircase'],
+            ['omen-book'],
+            ['hallway'],
             null,
         ]);
+        expect(actionSteps[0]?.highlightTarget).toBe('betrayal-action-use');
     });
 
     it('haunt 章节会直接指向第一剧本目标与真实收尾入口', () => {

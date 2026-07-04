@@ -1669,6 +1669,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [inventoryPreviewCardId, setInventoryPreviewCardId] = React.useState<string | null>(null);
     const [roomGridPan, setRoomGridPan] = React.useState({ x: 0, y: 0 });
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
+    const hasCenteredInitialRoomGridRef = React.useRef(false);
     const roomGridDragRef = React.useRef<RoomGridDragState>({
         isDragging: false,
         startX: 0,
@@ -1756,28 +1757,41 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const previewRoomVisual = previewRoom
         ? resolveRoomTileVisual(previewRoom, previewRoom.state === 'discovered')
         : null;
-    const focusRoomInView = React.useCallback((roomId: string) => {
+    const focusRoomsInView = React.useCallback((roomIds: string[]) => {
         const roomGrid = roomGridRef.current;
         if (!roomGrid) {
-            return;
+            return false;
         }
-        const roomShell = roomGrid.querySelector<HTMLElement>(`[data-testid="betrayal-room-shell-${roomId}"]`);
-        if (!roomShell) {
-            return;
+        const roomShells = roomIds
+            .map((roomId) => roomGrid.querySelector<HTMLElement>(`[data-testid="betrayal-room-shell-${roomId}"]`))
+            .filter((roomShell): roomShell is HTMLElement => Boolean(roomShell));
+        if (roomShells.length === 0) {
+            return false;
         }
         const gridRect = roomGrid.getBoundingClientRect();
-        const roomRect = roomShell.getBoundingClientRect();
-        const deltaX = (gridRect.left + (gridRect.width / 2)) - (roomRect.left + (roomRect.width / 2));
-        const deltaY = (gridRect.top + (gridRect.height / 2)) - (roomRect.top + (roomRect.height / 2));
+        const roomRects = roomShells.map((roomShell) => roomShell.getBoundingClientRect());
+        const left = Math.min(...roomRects.map((roomRect) => roomRect.left));
+        const right = Math.max(...roomRects.map((roomRect) => roomRect.right));
+        const top = Math.min(...roomRects.map((roomRect) => roomRect.top));
+        const bottom = Math.max(...roomRects.map((roomRect) => roomRect.bottom));
+        const deltaX = (gridRect.left + (gridRect.width / 2)) - ((left + right) / 2);
+        const deltaY = (gridRect.top + (gridRect.height / 2)) - ((top + bottom) / 2);
         setRoomGridPan((previousPan) => ({
             x: previousPan.x + deltaX,
             y: previousPan.y + deltaY,
         }));
+        return true;
     }, []);
 
+    const focusRoomInView = React.useCallback((roomId: string) => focusRoomsInView([roomId]), [focusRoomsInView]);
+
     const focusActiveRoomInView = React.useCallback(() => {
-        focusRoomInView(core.activeRoomId);
+        return focusRoomInView(core.activeRoomId);
     }, [core.activeRoomId, focusRoomInView]);
+
+    const focusInitialExplorerRoomInView = React.useCallback(() => {
+        return focusRoomInView(core.currentExplorer.roomId) || focusActiveRoomInView();
+    }, [core.currentExplorer.roomId, focusActiveRoomInView, focusRoomInView]);
 
     const roomCanvasTransformStyle = React.useMemo(() => ({
         ...roomCanvasStyle,
@@ -1787,13 +1801,18 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     React.useEffect(() => {
         if (core.phase !== 'preHaunt') {
+            hasCenteredInitialRoomGridRef.current = false;
+            setRoomGridPan({ x: 0, y: 0 });
+            return undefined;
+        }
+        if (hasCenteredInitialRoomGridRef.current) {
             return undefined;
         }
         const frameId = window.requestAnimationFrame(() => {
-            focusActiveRoomInView();
+            hasCenteredInitialRoomGridRef.current = focusInitialExplorerRoomInView();
         });
         return () => window.cancelAnimationFrame(frameId);
-    }, [core.activeRoomId, core.phase, focusActiveRoomInView]);
+    }, [core.phase, focusInitialExplorerRoomInView]);
 
     const phaseItems = React.useMemo(
         () => [
@@ -2829,8 +2848,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             }
             : undefined;
         return (
-            <button
+            <div
                 key={`${options.layout}-${item.id}`}
+                className={`group relative ${isCompact ? 'shrink-0' : 'w-full'}`}
+                style={{ ...cardWidthStyle, ...compactStackStyle }}
+            >
+            <button
                 type="button"
                 onClick={() => {
                     if (isPreview) {
@@ -2844,25 +2867,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         selectedMaskTargetRoomIdsByTokenId: {},
                         tradeSelectionTouched: true,
                     }));
-                    setInventoryPreviewCardId((previousCardId) => (
-                        core.recommendedAction === 'trade'
-                            ? null
-                            : previousCardId === item.id && isSelected
-                                ? null
-                                : item.id
-                    ));
                 }}
                 data-testid={options.testId}
-                title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击放大`}
-                className={`relative overflow-hidden text-left transition ${
+                title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击选择`}
+                className={`relative w-full overflow-hidden text-left transition ${
                     showSelectedState
                         ? 'z-20 -translate-y-0.5 shadow-[0_0_0_2px_rgba(238,204,126,0.92),0_0_0_5px_rgba(238,204,126,0.2),0_0_20px_rgba(238,204,126,0.3)]'
                         : isPreview
                             ? 'z-10'
                             : 'z-10 hover:-translate-y-0.5'
-                } ${isCompact ? 'shrink-0' : 'w-full'}`}
+                }`}
                 aria-pressed={isPreview ? undefined : isSelected}
-                style={{ ...cardWidthStyle, ...compactStackStyle }}
             >
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
@@ -3060,6 +3075,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     )}
                 </div>
             </button>
+                {!isPreview && options.testId ? (
+                    <button
+                        type="button"
+                        data-testid={`${options.testId}-magnify`}
+                        aria-label={`放大查看${item.name}`}
+                        title={`放大查看${item.name}`}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setInventoryPreviewCardId(item.id);
+                        }}
+                        className={`absolute ${isCompact ? 'right-1 top-1 h-6 w-6' : 'right-2 top-2 h-8 w-8'} z-30 inline-flex items-center justify-center rounded-full border border-[rgba(238,204,126,0.52)] bg-[rgba(18,15,12,0.86)] text-[#f3dfab] opacity-100 shadow-[0_8px_18px_rgba(0,0,0,0.34)] transition hover:border-[#f1d68d] hover:bg-[rgba(35,27,18,0.94)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd17c] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100`}
+                    >
+                        <Search size={isCompact ? 13 : 16} aria-hidden="true" />
+                    </button>
+                ) : null}
+            </div>
         );
     };
 
@@ -3100,12 +3131,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             }}
         >
             <div className="relative h-full min-h-full w-full overflow-hidden px-3 py-3 md:px-4 md:py-4">
-                <header className="pointer-events-none absolute left-[310px] right-[236px] top-3 z-30 hidden lg:block">
+                <header className="pointer-events-none absolute inset-x-4 top-3 z-30 hidden lg:block">
                     <div
                         className="relative min-h-[58px]"
                         data-testid="betrayal-runtime-header-grid"
                     >
-                        <div className="absolute left-1/2 top-0 flex min-w-[210px] -translate-x-1/2 flex-col items-center justify-center rounded-[8px] border border-[rgba(114,91,52,0.36)] bg-[rgba(8,13,11,0.68)] px-5 py-2 text-center shadow-[0_14px_30px_rgba(0,0,0,0.2)] backdrop-blur-md">
+                        <div className="fixed left-1/2 top-3 flex min-w-[210px] -translate-x-1/2 flex-col items-center justify-center rounded-[8px] border border-[rgba(114,91,52,0.36)] bg-[rgba(8,13,11,0.68)] px-5 py-2 text-center shadow-[0_14px_30px_rgba(0,0,0,0.2)] backdrop-blur-md">
                             <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">{t('board.hud.phaseLabel')}</span>
                             <span className="mt-0.5 text-[21px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
                                 {phaseLabel}

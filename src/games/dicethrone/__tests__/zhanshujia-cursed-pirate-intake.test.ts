@@ -278,8 +278,8 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
             sky: 'war-monger',
             lotus: 'drum-movement',
             combo: 'flanking',
-            lightning: 'expand-battlefield',
-            calm: 'strategic-shift',
+            lightning: 'strategic-shift',
+            calm: 'expand-battlefield',
             meditate: 'countermeasures',
             ultimate: 'high-ground',
         });

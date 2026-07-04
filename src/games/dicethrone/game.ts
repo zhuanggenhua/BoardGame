@@ -215,8 +215,7 @@ function formatDiceThroneActionEntry({
         roll: number;
     }): ActionLogSegment | null => {
         if (!participant.characterId) return null;
-        const spriteAsset = getDiceDefinition(`${participant.characterId}-dice`)?.assets?.spriteSheet
-            ?? ASSETS.DICE_SPRITE(participant.characterId);
+        const spriteAsset = ASSETS.DICE_SPRITE(participant.characterId);
         const value = Math.max(1, Math.min(6, participant.roll));
         const mapping = DICE_ATLAS.faceMap[value] ?? DICE_ATLAS.faceMap[1];
         return {

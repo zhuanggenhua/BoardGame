@@ -488,10 +488,12 @@ describe('formatDiceThroneActionEntry', () => {
         }>;
         expect(diceSegments).toHaveLength(2);
         expect(diceSegments[0]).toMatchObject({
+            spriteAsset: 'dicethrone/images/gunslinger/dice',
             spriteRows: 3,
             dice: [{ value: 6, col: 2, row: 2 }],
         });
         expect(diceSegments[1]).toMatchObject({
+            spriteAsset: 'dicethrone/images/monk/dice',
             spriteRows: 3,
             dice: [{ value: 1, col: 0, row: 2 }],
         });

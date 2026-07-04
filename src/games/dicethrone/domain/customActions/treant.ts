@@ -57,7 +57,7 @@ const WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
     5: 'treant-wild-growth-2-cultivate-5-resolve',
 };
 const WILD_GROWTH_SOURCE_IDS = ['wild-growth'] as const;
-const WILD_GROWTH_2_MAIN_SOURCE_IDS = ['wild-growth-2-main', 'wild-roar'] as const;
+const WILD_GROWTH_2_MAIN_SOURCE_IDS = ['wild-growth-2-main', 'wild-roar', 'wild-roar-2-main'] as const;
 const SHATTERING_FIST_SOURCE_IDS = ['shattering-fist-3', 'shattering-fist-4', 'shattering-fist-5'] as const;
 const NATURE_TOUCH_SOURCE_IDS = ['nature-touch', 'nature-touch-2-main'] as const;
 const NATURE_TOUCH_2_MERCY_SOURCE_IDS = ['nature-touch-2-mercy'] as const;

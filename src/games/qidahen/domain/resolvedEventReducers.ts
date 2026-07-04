@@ -33,6 +33,10 @@ import {
 } from './selectedActionExecution';
 import type { QidahenCore, QidahenEvent } from './types';
 
+const WUZHEN_CHAOHA_CARD_DEF_ID = 'qidahen-atlas05-1644-wuzhen-chaoha';
+const CAVALRY_CHARGE_CARD_DEF_ID = 'qidahen-atlas05-1618-cavalry-charge';
+const WAR_CHARIOT_FORMATION_CARD_DEF_ID = 'qidahen-atlas05-1645-war-chariot-formation';
+
 const resolveQidahenTacticCardPlayedEvent = (
     state: QidahenCore,
     event: Extract<QidahenEvent, { type: 'TACTIC_CARD_PLAYED' }>,
@@ -53,20 +57,87 @@ const resolveQidahenTacticCardPlayedEvent = (
     const attackerName = state.factions[pendingTargetAction.attackerFactionId]?.name ?? '攻方';
     const targetName = pendingTargetAction.targetRegionName;
     const tacticLine = `${attackerName} 打出战术牌「${playedCard.label}」，用于 ${targetName} 战斗。`;
+    const tacticRulesLine = playedCard.rulesSummary
+        ? `效果摘要：${playedCard.rulesSummary}`
+        : null;
+    const isWuzhenChaoha = playedCard.cardDefId === WUZHEN_CHAOHA_CARD_DEF_ID;
+    const isCavalryCharge = playedCard.cardDefId === CAVALRY_CHARGE_CARD_DEF_ID;
+    const isWarChariotFormation = playedCard.cardDefId === WAR_CHARIOT_FORMATION_CARD_DEF_ID;
+    const tacticEffectLine = isWuzhenChaoha
+        ? '鸟真超哈：本次野战中攻方步兵骰子等级 +1。'
+        : isCavalryCharge
+            ? '骑兵冲锋：本次野战中攻方每个骑兵部队额外掷 2 颗骰。'
+            : isWarChariotFormation
+                ? '战车阵：本次战斗中攻方步兵防御等级 +1。'
+                : null;
+    const tacticLines = [tacticLine, tacticRulesLine, tacticEffectLine].filter((line): line is string => !!line);
+    const tacticLogText = tacticLines.join(' ');
+    const tacticModifiers = [
+        ...(pendingTargetAction.tacticModifiers ?? []),
+        ...(isWuzhenChaoha
+            ? [{
+                id: `tactic-${event.timestamp}-${playedCard.id}`,
+                sourceCardDefId: playedCard.cardDefId ?? null,
+                label: playedCard.label,
+                side: 'attacker' as const,
+                troopKind: 'infantry' as const,
+                levelBonus: 1,
+            }]
+            : []),
+        ...(isCavalryCharge
+            ? [{
+                id: `tactic-${event.timestamp}-${playedCard.id}`,
+                sourceCardDefId: playedCard.cardDefId ?? null,
+                label: playedCard.label,
+                side: 'attacker' as const,
+                troopKind: 'cavalry' as const,
+                levelBonus: 0,
+                diceCountBonus: 2,
+            }]
+            : []),
+        ...(isWarChariotFormation
+            ? [{
+                id: `tactic-${event.timestamp}-${playedCard.id}`,
+                sourceCardDefId: playedCard.cardDefId ?? null,
+                label: playedCard.label,
+                side: 'attacker' as const,
+                troopKind: 'infantry' as const,
+                levelBonus: 1,
+            }]
+            : []),
+    ];
     return {
         ...state,
+        pendingTargetAction: isWuzhenChaoha || isCavalryCharge || isWarChariotFormation
+            ? {
+                ...pendingTargetAction,
+                tacticModifiers,
+                restriction: [
+                    pendingTargetAction.restriction,
+                    isWuzhenChaoha ? '鸟真超哈：攻方步兵骰子等级 +1' : null,
+                    isCavalryCharge ? '骑兵冲锋：攻方骑兵每部队额外掷 2 骰' : null,
+                    isWarChariotFormation ? '战车阵：攻方步兵防御等级 +1' : null,
+                ].filter(Boolean).join(' · '),
+                resolutionHint: [
+                    pendingTargetAction.resolutionHint,
+                    isWuzhenChaoha ? '鸟真超哈步兵+1' : null,
+                    isCavalryCharge ? '骑兵冲锋骑兵+2骰' : null,
+                    isWarChariotFormation ? '战车阵步兵防御+1' : null,
+                ].filter(Boolean).join(' · '),
+            }
+            : pendingTargetAction,
         handCards: state.handCards.filter((card) => card.id !== playedCard.id),
         discardPileCount: state.discardPileCount + 1,
         lastSeasonSummary: {
             id: `summary-${event.timestamp}`,
             title: '战术牌',
-            lines: [tacticLine],
+            lines: tacticLines,
         },
         actionLog: [
             ...state.actionLog,
             {
                 id: `log-${event.timestamp}`,
-                text: tacticLine,
+                text: tacticLogText,
                 timestamp: event.timestamp,
             },
         ],

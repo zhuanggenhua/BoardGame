@@ -204,11 +204,12 @@ describe('DiceThrone Treant Token 机制', () => {
         }));
 
         const largeStraightAvailable = getAvailableAbilityIds(state.core, '0', 'offensiveRoll');
-        expect(largeStraightAvailable).toContain('wild-roar');
+        expect(largeStraightAvailable).toContain('wild-roar-2-main');
         expect(largeStraightAvailable).not.toContain('wild-growth-2-main');
+        expect(largeStraightAvailable).not.toContain('wild-roar-2-dazzle');
         expect(validateCommand(
             state.core,
-            command('SELECT_ABILITY', '0', { abilityId: 'wild-roar' }),
+            command('SELECT_ABILITY', '0', { abilityId: 'wild-roar-2-main' }),
             'offensiveRoll',
         ).valid).toBe(true);
         expect(validateCommand(
@@ -234,6 +235,33 @@ describe('DiceThrone Treant Token 机制', () => {
         expect(validateCommand(
             state.core,
             command('SELECT_ABILITY', '0', { abilityId: 'wild-growth-2-main' }),
+            'offensiveRoll',
+        ).valid).toBe(true);
+
+        state.core.dice = state.core.dice.map((die, index) => {
+            const values = [1, 2, 4, 6, 6];
+            const symbols = [
+                TREANT_DICE_FACE_IDS.BRANCH,
+                TREANT_DICE_FACE_IDS.BRANCH,
+                TREANT_DICE_FACE_IDS.LEAF,
+                TREANT_DICE_FACE_IDS.SPIRIT,
+                TREANT_DICE_FACE_IDS.SPIRIT,
+            ];
+            return {
+                ...die,
+                ownerId: '0',
+                value: values[index] ?? 1,
+                symbol: symbols[index] ?? TREANT_DICE_FACE_IDS.BRANCH,
+                symbols: [symbols[index] ?? TREANT_DICE_FACE_IDS.BRANCH],
+            };
+        });
+
+        const dazzleAvailable = getAvailableAbilityIds(state.core, '0', 'offensiveRoll');
+        expect(dazzleAvailable).toContain('wild-roar-2-dazzle');
+        expect(dazzleAvailable).not.toContain('wild-growth-2-main');
+        expect(validateCommand(
+            state.core,
+            command('SELECT_ABILITY', '0', { abilityId: 'wild-roar-2-dazzle' }),
             'offensiveRoll',
         ).valid).toBe(true);
     });

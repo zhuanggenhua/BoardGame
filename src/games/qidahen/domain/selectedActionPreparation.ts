@@ -31,9 +31,12 @@ interface QidahenSelectedActionPreparationDependencies {
 interface QidahenSelectedActionPreparedState {
     actionLabel: string;
     currentFactionId: ReturnType<typeof getFactionIdByPlayerId>;
+    discardedCardCount: number;
     nextFactions: QidahenCore['factions'];
     paidHandCards: QidahenCore['handCards'];
+    selectedEventActionCardDefId: string | null;
     selectedEventActionCardLabel: string | null;
+    selectedEventActionCardRemovedFromGame: boolean;
     selectedEventActionRulesSummary: string | null;
     selectedHandActionCardLabel: string | null;
     selectedPaymentResourceLabels: string[];
@@ -79,6 +82,11 @@ export function prepareQidahenSelectedAction(
             && card.cardDefId != null
         )) ?? null
         : null;
+    const selectedEventActionCardRemovedFromGame = Boolean(
+        selectedEventActionCard?.rulesSummary?.includes('使用后移出游戏')
+        || selectedEventActionCard?.rulesSummary?.includes('持续事件'),
+    );
+    const discardedCardCount = Math.max(0, spentCardCount - (selectedEventActionCardRemovedFromGame ? 1 : 0));
     const selectedHandActionCardLabel = actionId === 'upgrade-armament'
         ? state.handCards.find((card) => (
             spentCardIds.includes(card.id)
@@ -122,16 +130,19 @@ export function prepareQidahenSelectedAction(
         kind: 'prepared',
         actionLabel,
         currentFactionId,
+        discardedCardCount,
         nextFactions: {
             ...state.factions,
             [currentFactionId]: {
                 ...state.factions[currentFactionId],
                 handCount: Math.max(0, state.factions[currentFactionId].handCount - spentCardCount),
-                discardPileCount: Math.max(0, state.factions[currentFactionId].discardPileCount ?? 0) + spentCardCount,
+                discardPileCount: Math.max(0, state.factions[currentFactionId].discardPileCount ?? 0) + discardedCardCount,
             },
         },
         paidHandCards: state.handCards.filter((card) => !selectedCardIds.has(card.id)),
+        selectedEventActionCardDefId: selectedEventActionCard?.cardDefId ?? null,
         selectedEventActionCardLabel: selectedEventActionCard?.label ?? null,
+        selectedEventActionCardRemovedFromGame,
         selectedEventActionRulesSummary: selectedEventActionCard?.rulesSummary ?? null,
         selectedHandActionCardLabel,
         selectedPaymentResourceLabels,

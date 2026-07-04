@@ -747,6 +747,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(mapTokensSource).not.toContain('const getMapTokenBaseId = (');
         expect(mapTokensSource).not.toContain('const getMapArmyImageSrcForPiece = (');
         expect(mapTokensSource).toContain('const baseId = legacyMapTokenBaseIdByRegion[region.id] ?? region.id;');
+        expect(mapTokensSource).toContain("type: 'marker',");
+        expect(mapTokensSource).toContain("imageSrc: marker.imageSrc,");
         expect(mapTokensSource).toContain('imageSrc: getMapArmyImageSrc(region.controller, {');
         expect(mapTokensSource).toContain('id: piece.sourceStackId,');
         expect(mapTokensSource).toContain('troopKind: piece.troopKind,');
@@ -1847,7 +1849,11 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionFollowUpSource).toContain('const selectedRegion = state.regions.find((region) => region.id === baseSelectedRegionId);');
         expect(selectedActionFollowUpSource).toContain("if (actionId === 'recruit' && !recruitSelection) {");
         expect(selectedActionFollowUpSource).toContain("if (actionId === 'ma-shi-trade' && !maShiTradeSelection) {");
-        expect(selectedActionFollowUpSource).toContain("const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')");
+        expect(selectedActionFollowUpSource).toContain("const CROSS_MOUNTAINS_CARD_DEF_ID = 'qidahen-atlas05-1614-cross-mountains';");
+        expect(selectedActionFollowUpSource).toContain("const pendingActionId = actionId === 'play-event-card' && selectedEventActionCardDefId === CROSS_MOUNTAINS_CARD_DEF_ID");
+        expect(selectedActionFollowUpSource).toContain("const pendingTargetAction = (pendingActionId === 'raid' || pendingActionId === 'marriage-subjugation')");
+        expect(selectedActionFollowUpSource).toContain("pendingActionId,");
+        expect(selectedActionFollowUpSource).toContain("applyCrossMountainsBoundaryEffect(pendingTargetAction)");
 
         expect(selectedActionPreparationSource).toContain("import { getActionChoiceById } from './factionActionWindow';");
         expect(selectedActionPreparationSource).toContain("import { getFactionIdByPlayerId } from './factionTurnAccessors';");

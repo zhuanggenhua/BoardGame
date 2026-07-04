@@ -121,6 +121,10 @@ BG_DEPLOY_RUNNER_URL=http://host.docker.internal:18761
 BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
 ```
 
+> **后台镜像拉取超时口径**：`boardgame-deploy-runner` 安装脚本会在宿主机环境文件里设置 `DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0`，也就是不再让 `deploy-image.sh` 用默认 300 秒中断单次 `docker pull`。后台部署仍由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS` 的整步超时兜底，默认 20 分钟；如果需要更短或更长的整体部署保护，应改 runner 的整步超时，而不是恢复 300 秒镜像拉取内层超时。
+>
+> **后台进度日志口径**：runner 环境同时设置 `COMPOSE_PROGRESS=plain` 与 `DOCKER_CLI_HINTS=false`，让 Docker Compose 输出适合后台轮询展示的纯文本拉取阶段，而不是只适合终端刷新的动态进度。
+
 然后按正常部署链路更新 `boardgame-web` 容器，让环境变量进入容器：
 
 ```bash

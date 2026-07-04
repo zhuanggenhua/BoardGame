@@ -33,7 +33,9 @@ export const SHIMMER_BG: React.CSSProperties = {
 const AUTO_RETRY_MAX = 5;           // 最多自动重试 5 轮
 const AUTO_RETRY_BASE_MS = 2000;    // 首次 2s
 const AUTO_RETRY_MAX_MS = 30000;    // 上限 30s
-const LOCAL_CANDIDATE_TIMEOUT_MS = 3000;
+// Vite 开发 / E2E 首次加载大型本地图集可能超过 10 秒。
+// 先等本地真实加载或报错收敛，再切到远端 CDN 候选。
+const LOCAL_CANDIDATE_TIMEOUT_MS = 20_000;
 const REMOTE_CANDIDATE_TIMEOUT_MS = 8000;
 
 /** 计算指数退避延迟（带 ±25% 抖动，避免多图同时重试雪崩） */

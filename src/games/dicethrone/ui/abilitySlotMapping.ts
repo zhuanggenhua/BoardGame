@@ -42,9 +42,9 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
     pyromancer: {
         fist: ['fireball'],
         chi: ['soul-burn'],
-        sky: ['fiery-combo'],
+        sky: ['pyro-blast'],
         lotus: ['burn-down'],
-        combo: ['pyro-blast'],
+        combo: ['fiery-combo'],
         lightning: ['meteor'],
         calm: ['ignite'],
         meditate: ['magma-armor'],
@@ -92,13 +92,13 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         lightning: ['shadow-step'],
     },
     // Treant v2 玩家面板采用独立被动槽，且右下角防御位在 meditate。
-    // 旧实现曾错误复用共享语义，导致 passive / defense 高亮错位。
+    // 每个技能必须按玩家板图面物理槽录入；wild-roar 在 calm，不能并到 nature-touch。
     treant: {
         sky: ['quiet-cultivation'],
         lotus: ['wild-growth'],
         combo: ['vengeful-vines'],
-        lightning: ['nature-touch', 'wild-roar'],
-        calm: ['__treant-unmapped-calm__'],
+        lightning: ['nature-touch'],
+        calm: ['wild-roar'],
         meditate: ['rooted'],
     },
     zhanshujia: {
@@ -107,8 +107,8 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         sky: ['war-monger'],
         lotus: ['drum-movement'],
         combo: ['flanking'],
-        lightning: ['expand-battlefield'],
-        calm: ['strategic-shift'],
+        lightning: ['strategic-shift'],
+        calm: ['expand-battlefield'],
         meditate: ['countermeasures'],
         ultimate: ['high-ground'],
     },
@@ -205,6 +205,33 @@ export function slotContainsAbilityIdForCharacter(
         return override.includes(baseAbilityId);
     }
     return slotContainsAbilityId(slotId, abilityId);
+}
+
+export function getSlotBaseAbilityIdForCharacter(
+    characterId: string | undefined | null,
+    slotId: string,
+    playerBoardFace?: HeroState['playerBoardFace'],
+): string | undefined {
+    if (characterId === 'cursed_pirate' && playerBoardFace === 'normal') {
+        return CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES[slotId]?.[0];
+    }
+    const override = CHARACTER_SLOT_ABILITY_OVERRIDES[characterId ?? '']?.[slotId];
+    if (override) {
+        return override[0];
+    }
+    const sharedSlotIds = ABILITY_SLOT_MAP[slotId]?.ids;
+    if (!sharedSlotIds) {
+        return undefined;
+    }
+
+    const heroData = HEROES_DATA[characterId ?? ''];
+    if (!heroData) {
+        return sharedSlotIds[0];
+    }
+    const abilities = heroData.getAbilitiesForFace && playerBoardFace
+        ? heroData.getAbilitiesForFace(playerBoardFace)
+        : heroData.abilities;
+    return sharedSlotIds.find(id => abilities.some(ability => ability.id === id)) ?? sharedSlotIds[0];
 }
 
 export function getAbilitySlotId(abilityId: string): string | null {

@@ -5,6 +5,11 @@ import {
     resolveQidahenRuleRegionConfig,
 } from './regionConfig';
 import { hasActiveCharacter } from './characterPresenceAccessors';
+import {
+    isQidahenHanRuntimeRegionId,
+    isQidahenJurchenRuntimeRegionId,
+    isQidahenMongolRuntimeRegionId,
+} from './regionEthnicity';
 import type { QidahenCore, QidahenFactionId } from './types';
 
 const ACTION_RULE_REGION_NAME_OVERRIDES: Partial<Record<string, string>> = {
@@ -67,6 +72,24 @@ export const getEffectiveHomelandController = (
     state: QidahenCore,
     regionId: string,
 ): QidahenFactionId | 'neutral' => {
+    if (
+        isQidahenHanRuntimeRegionId(regionId)
+        && (state.factions.jin.armaments.find((armament) => armament.id === 'han-banners')?.level ?? 0) > 0
+    ) {
+        return 'jin';
+    }
+    if (
+        isQidahenJurchenRuntimeRegionId(regionId)
+        && (state.factions.jin.armaments.find((armament) => armament.id === 'manzhou-banners')?.level ?? 0) > 0
+    ) {
+        return 'jin';
+    }
+    if (
+        isQidahenMongolRuntimeRegionId(regionId)
+        && (state.factions.jin.armaments.find((armament) => armament.id === 'mongol-banners')?.level ?? 0) > 0
+    ) {
+        return 'jin';
+    }
     if (
         QISAI_NOYAN_HOMELAND_REGION_IDS.has(regionId)
         && hasActiveCharacter(state, 'mongol', 'mongol-qisai-noyan')

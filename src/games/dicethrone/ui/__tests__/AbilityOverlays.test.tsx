@@ -4,94 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AbilityOverlays } from '../AbilityOverlays';
 import { getAbilitySlotLayoutForCharacter, getPlayerBoardLayoutVersion } from '../abilitySlotLayout';
-import { getSlotAbilityId, getUpgradeCardForAbilityLevel } from '../abilityOverlayHelpers';
+import { HERO_CARDS_MAP, getSlotAbilityId, getUpgradeCardForAbilityLevel } from '../abilityOverlayHelpers';
 import { getAbilitySlotIdForCharacter } from '../abilitySlotMapping';
-import { BARBARIAN_CARDS } from '../../heroes/barbarian/cards';
-import { MONK_CARDS } from '../../heroes/monk/cards';
-import { MOON_ELF_CARDS } from '../../heroes/moon_elf/cards';
-import { PALADIN_CARDS } from '../../heroes/paladin/cards';
-import { PYROMANCER_CARDS } from '../../heroes/pyromancer/cards';
-import { SHADOW_THIEF_CARDS } from '../../heroes/shadow_thief/cards';
 
 
 const mockUseCoarsePointer = vi.fn(() => false);
-const LEGACY_HERO_SLOT_CONTRACTS = {
-    monk: {
-        'fist-technique': 'fist',
-        'zen-forget': 'chi',
-        'taiji-combo': 'sky',
-        'thunder-strike': 'lotus',
-        harmony: 'combo',
-        'lotus-palm': 'lightning',
-        'calm-water': 'calm',
-        meditation: 'meditate',
-        transcendence: 'ultimate',
-    },
-    barbarian: {
-        slap: 'fist',
-        'all-out-strike': 'chi',
-        steadfast: 'sky',
-        suppress: 'lotus',
-        'powerful-strike': 'combo',
-        'violent-assault': 'lightning',
-        'reckless-strike': 'calm',
-        'thick-skin': 'meditate',
-        rage: 'ultimate',
-    },
-    pyromancer: {
-        fireball: 'fist',
-        'soul-burn': 'chi',
-        'fiery-combo': 'sky',
-        'burn-down': 'lotus',
-        'pyro-blast': 'combo',
-        meteor: 'lightning',
-        ignite: 'calm',
-        'magma-armor': 'meditate',
-        'ultimate-inferno': 'ultimate',
-    },
-    moon_elf: {
-        longbow: 'fist',
-        'covert-fire': 'chi',
-        'covering-fire': 'sky',
-        'exploding-arrow': 'lotus',
-        'entangling-shot': 'combo',
-        eclipse: 'lightning',
-        'blinding-shot': 'calm',
-        'elusive-step': 'meditate',
-        'lunar-eclipse': 'ultimate',
-    },
-    shadow_thief: {
-        'dagger-strike': 'fist',
-        pickpocket: 'chi',
-        steal: 'sky',
-        'kidney-shot': 'lotus',
-        'shadow-dance': 'combo',
-        'shadow-defense': 'lightning',
-        cornucopia: 'calm',
-        'fearless-riposte': 'meditate',
-        'shadow-shank': 'ultimate',
-    },
-    paladin: {
-        tithes: 'fist',
-        vengeance: 'chi',
-        'righteous-combat': 'sky',
-        'blessing-of-might': 'lotus',
-        'holy-strike': 'combo',
-        'righteous-prayer': 'lightning',
-        'holy-light': 'calm',
-        'holy-defense': 'meditate',
-        'unyielding-faith': 'ultimate',
-    },
-} as const;
-
-const LEGACY_HERO_CARDS = {
-    monk: MONK_CARDS,
-    barbarian: BARBARIAN_CARDS,
-    pyromancer: PYROMANCER_CARDS,
-    moon_elf: MOON_ELF_CARDS,
-    shadow_thief: SHADOW_THIEF_CARDS,
-    paladin: PALADIN_CARDS,
-} as const;
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -333,12 +250,21 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'pyromancer',
-                slotId: 'lotus',
-                baseAbilityId: 'burn-down',
-                resolvedAbilityId: 'burn-down',
-                abilityLevels: { 'burn-down': 2 },
-                upgradeCardId: 'card-burn-down-2',
-                previewIndex: 8,
+                slotId: 'sky',
+                baseAbilityId: 'pyro-blast',
+                resolvedAbilityId: 'pyro-blast',
+                abilityLevels: { 'pyro-blast': 2 },
+                upgradeCardId: 'card-pyro-blast-2',
+                previewIndex: 3,
+            },
+            {
+                characterId: 'pyromancer',
+                slotId: 'combo',
+                baseAbilityId: 'fiery-combo',
+                resolvedAbilityId: 'fiery-combo',
+                abilityLevels: { 'fiery-combo': 2 },
+                upgradeCardId: 'card-hot-streak-2',
+                previewIndex: 14,
             },
             {
                 characterId: 'pyromancer',
@@ -576,6 +502,8 @@ describe('AbilityOverlays', () => {
             { characterId: 'barbarian', abilityId: 'suppress', slotId: 'lotus' },
             { characterId: 'barbarian', abilityId: 'violent-assault', slotId: 'lightning' },
             { characterId: 'pyromancer', abilityId: 'fireball', slotId: 'fist' },
+            { characterId: 'pyromancer', abilityId: 'pyro-blast', slotId: 'sky' },
+            { characterId: 'pyromancer', abilityId: 'fiery-combo', slotId: 'combo' },
             { characterId: 'pyromancer', abilityId: 'burn-down', slotId: 'lotus' },
             { characterId: 'pyromancer', abilityId: 'meteor', slotId: 'lightning' },
             { characterId: 'pyromancer', abilityId: 'magma-armor', slotId: 'meditate' },
@@ -588,7 +516,12 @@ describe('AbilityOverlays', () => {
             { characterId: 'paladin', abilityId: 'tithes', slotId: 'fist' },
             { characterId: 'paladin', abilityId: 'holy-light', slotId: 'calm' },
             { characterId: 'paladin', abilityId: 'holy-defense', slotId: 'meditate' },
-            { characterId: 'zhanshujia', abilityId: 'strategic-shift', slotId: 'calm' },
+            { characterId: 'treant', abilityId: 'wild-growth', slotId: 'lotus' },
+            { characterId: 'treant', abilityId: 'vengeful-vines', slotId: 'combo' },
+            { characterId: 'treant', abilityId: 'nature-touch', slotId: 'lightning' },
+            { characterId: 'treant', abilityId: 'wild-roar', slotId: 'calm' },
+            { characterId: 'zhanshujia', abilityId: 'strategic-shift', slotId: 'lightning' },
+            { characterId: 'zhanshujia', abilityId: 'expand-battlefield', slotId: 'calm' },
             { characterId: 'artificer', abilityId: 'overclock', slotId: 'lightning' },
         ];
 
@@ -600,9 +533,9 @@ describe('AbilityOverlays', () => {
         }
     });
 
-    it('旧六角色全部升级牌应按玩家板图面合同覆盖同一物理槽位', () => {
-        for (const [characterId, cards] of Object.entries(LEGACY_HERO_CARDS)) {
-            const contract = LEGACY_HERO_SLOT_CONTRACTS[characterId as keyof typeof LEGACY_HERO_SLOT_CONTRACTS];
+    it('全部替换型升级牌应按玩家板图面合同覆盖同一物理槽位', () => {
+        let checkedUpgradeCount = 0;
+        for (const [characterId, cards] of Object.entries(HERO_CARDS_MAP)) {
             for (const card of cards) {
                 if (card.type !== 'upgrade') continue;
                 for (const effect of card.effects ?? []) {
@@ -610,22 +543,24 @@ describe('AbilityOverlays', () => {
                     if (action?.type !== 'replaceAbility') continue;
 
                     const abilityId = action.targetAbilityId;
-                    const expectedSlotId = contract[abilityId as keyof typeof contract];
+                    const expectedSlotId = getAbilitySlotIdForCharacter(characterId, abilityId);
                     expect(
                         expectedSlotId,
-                        `${characterId} 的升级牌 ${card.id} -> ${abilityId} 必须先登记玩家板图面合同`,
+                        `${characterId} 的升级牌 ${card.id} -> ${abilityId} 必须命中玩家板图面物理槽`,
                     ).toBeTruthy();
                     expect(
-                        getSlotAbilityId(characterId, expectedSlotId),
+                        getSlotAbilityId(characterId, expectedSlotId!),
                         `${characterId} 的升级牌 ${card.id} 应覆盖 ${expectedSlotId} 物理槽`,
                     ).toBe(abilityId);
                     expect(
                         getAbilitySlotIdForCharacter(characterId, abilityId),
                         `${characterId} 的升级牌 ${card.id} 点击/高亮反查应回到同一物理槽`,
                     ).toBe(expectedSlotId);
+                    checkedUpgradeCount += 1;
                 }
             }
         }
+        expect(checkedUpgradeCount).toBe(108);
     });
 
     it('技能槽 DOM 应区分主面板和放大预览，避免升级卡飞错目标', () => {

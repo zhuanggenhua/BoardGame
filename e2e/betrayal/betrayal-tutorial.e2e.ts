@@ -21,6 +21,8 @@ const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-haunt收尾前.png`;
 const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-终局页.png`;
 const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.png`;
 const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.png`;
+const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-第二章使用书本前.png`;
+const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-第二章使用后移动.png`;
 
 const waitForStep = async (page: Parameters<typeof test>[0]['page'], stepId: string, timeout = 15000) => {
     await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
@@ -115,6 +117,39 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await saveScreenshot(page, STEP_06);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial', diagnostics }]);
+    });
+
+    test('移动探索教程用真实使用按钮推进到移动步骤', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-move-explore-use');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await page.goto('/play/betrayal/tutorial/move-explore-use', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
+            .waitFor({ state: 'visible', timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+        if (setupStepVisible) {
+            await clickNext(page);
+        }
+        await waitForStep(page, 'use-book');
+        await expect(page.getByTestId('betrayal-action-use')).toBeVisible();
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('书本');
+        await expect(page.getByTestId('betrayal-inventory-omen-book')).toBeVisible();
+        await expect(page.getByTestId('betrayal-inventory-omen-book-magnify')).toBeVisible();
+        await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
+        await saveScreenshot(page, STEP_09);
+
+        await page.getByTestId('betrayal-action-use').click();
+        await waitForStep(page, 'move-to-hallway');
+        await expect(page.getByTestId('betrayal-room-move-target-hallway')).toBeVisible();
+        await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
+        await saveScreenshot(page, STEP_10);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-move-explore-use', diagnostics }]);
     });
 
     test('叛徒视角教程会从独立章节进入真实攻击和终局', async ({ page, context }) => {

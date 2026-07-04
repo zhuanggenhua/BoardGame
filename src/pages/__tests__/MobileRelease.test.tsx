@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import MobileReleasePage from '../admin/MobileRelease';
+import MobileReleasePage, { getDeployProgressSnapshot } from '../admin/MobileRelease';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -82,6 +82,7 @@ describe('MobileReleasePage', () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         cleanup();
         vi.unstubAllGlobals();
     });
@@ -137,6 +138,29 @@ describe('MobileReleasePage', () => {
         });
         expect(await screen.findByText('admin.mobileReleasePage.result.server_log')).toBeTruthy();
         expect(screen.getByText('done')).toBeTruthy();
+    });
+
+    it('Docker 拉取日志会驱动部署进度而不是固定 55%', () => {
+        const progress = getDeployProgressSnapshot({
+            ok: true,
+            mode: 'execute',
+            jobId: 'job-1',
+            status: 'running',
+            exitCode: null,
+            command: 'bash scripts/deploy/deploy-image.sh update',
+            output: [
+                'Pulling 11/16',
+                'web Pulling',
+                'cd0647388d7f Downloading [=================>                                 ]  1.522MB/4.369MB',
+            ].join('\n'),
+        });
+
+        expect(progress).toEqual({
+            percent: 63,
+            labelKey: 'result.progress_pulling',
+            detail: '11/16',
+        });
+        expect(progress.percent).not.toBe(55);
     });
 
     it('回滚执行按钮不再要求先输入确认文字', async () => {

@@ -34,9 +34,13 @@
 - 升级牌覆盖槽位不能按 `abilities.ts` 里的基础技能英文名或旧共享槽位语义猜。必须逐张读取运行时升级牌的 `replaceAbility(targetAbilityId)`，再用升级牌中文名、目标技能 id、玩家板中文槽位标题三者对齐；三者缺一时合同只能标 `blocked/disputed`，不得标 `locked`。
 - 一旦发现某张升级牌盖错槽、点错槽或和底图标题不一致，默认必须横扫同英雄、同批次和同一共享槽位消费链的全部升级牌；最低覆盖 `cards.ts` 全部 `type='upgrade'` 且 `replaceAbility` 的条目、`abilityOverlayHelpers.ts` 覆盖槽、`abilitySlotMapping.ts` 点击/高亮反查槽，以及 E2E 真实升级稳定态。禁止只修用户点名的一张卡后收口。
 - 只要用户反馈的是“某张卡的图和效果对不上”“怀疑枪手/忍者这类角色卡牌录入错了”“怀疑 atlas/索引用错”，必须先直接打开对应 `ability-cards` 主真相源里的完整单卡，再去看 `cards.ts`、`abilities.ts`、AI、日志或测试。没完成这步前，只能说“代码层暂未发现分叉”，不能裁定“不是录入错误”。
+- 这里的“打开图片”只表示把图片交给用户在外部看图工具里复核；它不是 AI 自己完成验收。用户要求“打开给我看”时，优先用系统默认图片查看器或 PureRef 等外部工具打开，不能用“我在聊天里看到了图”冒充用户侧打开。
+- AI 验收必须单独完成：先由 AI 自己读取/核对正式图面，写出图面可见文字、分支结构、数值和当前实现差异，再标记 `passed/locked`。如果只是把图打开给用户看，还没有完成这份判断，只能写“已打开待用户复核”，不得写“已验收”。
 - 对 Dice Throne 角色，`public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/ability-cards.webp` 或对应正式 atlas 永远是卡牌语义主真相源；`temp/dicethrone-intake/<hero>/ability-card-slots/*.webp` 之类临时裁片只能辅助读字，不能单独推翻正式 atlas 读法。
 - 桌游卡牌、玩家板和提示板默认存在唯一官方图面真相源。只要用户口径、现有实现、i18n、测试快照或旧 evidence 任意两者不一致，默认先判为“录入合同可能错或实现消费可能错”，必须回完整单卡/玩家板/提示板重新录入；禁止把用户随口提到的词直接写成官方卡名、分支名、规则字段或测试期望。
 - 重新录入前必须先形成最小字段合同：对象、正式图源路径、正式 atlas/index 或槽位、完整单对象裁图路径、图面可见原文、分支/槽位结构、当前实现差异、合同状态。缺这份合同时不得继续改运行时数据。
+- 对“共享坐标 + 不同英雄底图”的槽位系统，`slotId` 只能表示物理位置，不能表示该英雄的技能名。任何覆盖层、点击反查、高亮反查、测试断言都必须消费同一份 `当前英雄 + 物理槽 -> 玩家板图面技能` 合同；禁止在不同文件各维护一套看似等价的槽位表。
+- 发现某个 `replaceAbility` 升级牌错槽后，必须把同类问题视为批量录入风险：至少重跑全英雄替换型升级牌矩阵、重新生成玩家板槽位裁图或 contact sheet，并把当前测试覆盖数量写进 evidence；代表样本通过不等于全量通过。
 
 ## 权威来源分工
 
@@ -280,6 +284,8 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 如果正式 `ability-cards.webp` 看起来和老角色不同，先做“逐格对照 + 旧角色合同比对 + 真实 UI 验证”；只有这些证据都证明现有 atlas 合同不成立时，才允许讨论新 atlas 配置或 `previewRef.type = 'image'`
 - 必须先把手牌卡分清：`type = 'action'` 表示“打出后直接结算卡牌自身效果”；`type = 'upgrade'` 才表示“替换玩家面板上的基础技能”
 - 升级卡可以替换一个基础技能定义，而这个基础技能定义内部可以有多个 `variants`；但这些 `variants` 不是新的手牌卡对象，也不会自动占用新的卡图索引
+- 批量审计升级牌时，不能只扫描 `cards.ts` 里的本地变量。`replaceAbility(targetAbilityId, NEW_ABILITY_DEF, level, ...)` 的 `NEW_ABILITY_DEF` 很多来自同角色 `abilities.ts` 导入；审计脚本必须同时解析 `cards.ts` 与 `abilities.ts`，再读取替换后技能定义的 `variants`、custom action、奖励骰和条件分支。只看 `cards.ts` 会漏掉战术家 `摇鼓运动 II` 这类复合升级牌。
+- 生成“高风险候选清单”后，必须和正式单卡裁图总表对账：每个已知复合排版、上下子区、显式 variants 的升级牌都必须在清单中有行。若 contact sheet 肉眼可见下半区分支但清单没列，先修审计脚本，不得把“清单未命中”当成该牌无风险。
 - Dice Throne 老派系里大量升级都属于“复合升级”：
   - `monk/card-thrust-punch-2/3 -> fist-technique`
   - `barbarian/upgrade-slap-2/3 -> slap`

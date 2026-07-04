@@ -16,6 +16,8 @@ import { BLINK_2, DEATH_BLOSSOM_2, GOING_FORWARD_2, POISON_BLADE_2, SHADOW_FANG_
 import { DiceThroneDomain } from '../domain';
 import { executePipeline } from '../../../engine/pipeline';
 import { createHeroMatchup, createQueuedRandom, getSimpleChoicePrompt, respondToPrompt, testSystems } from './test-utils';
+import zhCN from '../../../../public/locales/zh-CN/game-dicethrone.json';
+import en from '../../../../public/locales/en/game-dicethrone.json';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -74,6 +76,44 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         timestamp: 100,
     } as any);
 
+    it('Ninja 高风险升级牌文案必须同步卡图语义，不得保留旧占位或旧数值', () => {
+        expect(zhCN.cards['upgrade-blink-2'].description).toContain('若投出手里剑，造成 2 点伤害');
+        expect(zhCN.cards['upgrade-blink-2'].description).not.toContain('每个手里剑');
+
+        expect(en.abilities['slash-2'].description).toContain('4/6/8 damage');
+        expect(en.abilities['slash-2'].description).toContain('gain 1 Ninjutsu');
+        expect(en.abilities['slash-2'].description).not.toContain('6/7/8 damage');
+        expect(en.cards['upgrade-slash-2'].description).not.toBe('Upgrade Slash.');
+
+        expect(en.abilities['going-forward-2'].description).toContain('reroll 1');
+        expect(en.abilities['going-forward-2'].description).toContain('6 or less');
+        expect(en.abilities['going-forward-2'].description).toContain('Blood on the Tip');
+        expect(en.cards['upgrade-going-forward-2'].description).not.toBe('Upgrade Going Forward.');
+
+        expect(en.abilities['shadow-step-2'].description).toContain('deal 5 undefendable damage');
+        expect(en.abilities['shadow-step-2'].description).toContain('Strangle');
+        expect(en.abilities['shadow-step-2'].description).not.toContain('deal 7 undefendable damage');
+        expect(en.cards['upgrade-shadow-step-2'].description).not.toBe('Upgrade Shadow Step.');
+
+        expect(en.abilities['smoke-screen-2'].description).toContain('Kuji-kiri');
+        expect(en.abilities['smoke-screen-2'].description).toContain('choose the same opponent twice');
+        expect(en.cards['upgrade-smoke-screen-2'].description).not.toBe('Upgrade Smoke Screen.');
+
+        expect(en.abilities['shadow-fang-2'].description).toContain('gain 1 Smoke Bomb');
+        expect(en.abilities['shadow-fang-2'].description).toContain('Deceive');
+        expect(en.abilities['shadow-fang-2'].description).toContain('deal 8 damage');
+        expect(en.abilities['shadow-fang-2'].description).not.toContain('deal 9 damage');
+        expect(en.cards['upgrade-shadow-fang-2'].description).not.toBe('Upgrade Shadow Fang.');
+
+        expect(en.abilities['poison-blade-2'].description).toContain('deal 9 damage');
+        expect(en.cards['upgrade-poison-blade-2'].description).toContain('deal 9 damage');
+
+        expect(en.abilities['death-blossom-2'].description).toContain('reroll up to 2 dice');
+        expect(en.abilities['death-blossom-2'].description).toContain('undefendable');
+        expect(en.abilities['death-blossom-2'].description).toContain('Delayed Poison');
+        expect(en.cards['upgrade-death-blossom-2'].description).not.toBe('Upgrade Death Blossom.');
+    });
+
     it('Ninja v2 面板槽位应按角色实图映射四个中间技能槽', () => {
         expect(getAbilitySlotIdForCharacter('ninja', 'poison-blade')).toBe('combo');
         expect(getAbilitySlotIdForCharacter('ninja', 'death-blossom')).toBe('sky');
@@ -85,8 +125,8 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(slotContainsAbilityIdForCharacter('ninja', 'lightning', 'shadow-step')).toBe(true);
         expect(slotContainsAbilityIdForCharacter('ninja', 'lightning', 'smoke-screen')).toBe(false);
 
-        expect(getAbilitySlotIdForCharacter('moon_elf', 'entangling-shot')).toBe('sky');
-        expect(getAbilitySlotIdForCharacter('monk', 'taiji-combo')).toBe('combo');
+        expect(getAbilitySlotIdForCharacter('moon_elf', 'entangling-shot')).toBe('combo');
+        expect(getAbilitySlotIdForCharacter('monk', 'taiji-combo')).toBe('sky');
     });
 
     it('Ninja 的骰面合同应分别命中烟雾阵和暗影步，不应互相串槽', () => {
@@ -1066,7 +1106,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.pendingDamage).toBeUndefined();
     });
 
-    it('毒刃 II 在奖励骰投出忍刀时应完成 1 个慢性中毒 + 5 点伤害的完整攻击收口', () => {
+    it('毒刃 II 在奖励骰投出忍刀时应完成 1 个慢性中毒 + 9 点伤害的完整攻击收口', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
         state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
@@ -1090,10 +1130,10 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(events.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toBe(true);
         expect(events.some(event => event.type === 'ATTACK_RESOLVED')).toBe(true);
         expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(21);
     });
 
-    it('毒刃 II 在奖励骰投出手里剑或面具时应完成 2 个慢性中毒 + 5 点伤害的完整攻击收口', () => {
+    it('毒刃 II 在奖励骰投出手里剑或面具时应完成 2 个慢性中毒 + 9 点伤害的完整攻击收口', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
         state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
@@ -1117,7 +1157,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(events.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toBe(true);
         expect(events.some(event => event.type === 'ATTACK_RESOLVED')).toBe(true);
         expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(2);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(21);
     });
 
     it('死亡盛放 II 应通过共享奖励骰链限制为至多重掷 2 次，并在双面具时施加慢性中毒且改成不可防御', () => {

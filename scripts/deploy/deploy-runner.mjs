@@ -334,7 +334,7 @@ function runDeployJob(job, args) {
     job.startedAt = new Date().toISOString();
     runJobProcess(job, 'bash', [deployScriptPath(), ...args], (deployCode) => {
         finishJob(job, deployCode);
-    }, {}, {
+    }, deployProcessEnv(), {
         label: 'deploy',
         timeoutMs: deployStepTimeoutMs,
     });
@@ -357,10 +357,17 @@ function runDeployAndMobileReleaseJob(job, deployArgs, mobileArgs) {
             label: 'Android OTA',
             timeoutMs: mobileReleaseStepTimeoutMs,
         });
-    }, {}, {
+    }, deployProcessEnv(), {
         label: 'deploy',
         timeoutMs: deployStepTimeoutMs,
     });
+}
+
+function deployProcessEnv() {
+    return {
+        COMPOSE_PROGRESS: process.env.COMPOSE_PROGRESS || 'plain',
+        DOCKER_CLI_HINTS: process.env.DOCKER_CLI_HINTS || 'false',
+    };
 }
 
 function runJobProcess(job, command, args, onExit, extraEnv = {}, options = {}) {

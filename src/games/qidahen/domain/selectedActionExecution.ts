@@ -33,9 +33,12 @@ type QidahenPreparedSelectedActionResult =
         kind: 'prepared';
         actionLabel: string;
         currentFactionId: QidahenFactionId;
+        discardedCardCount: number;
         nextFactions: QidahenCore['factions'];
         paidHandCards: QidahenCore['handCards'];
+        selectedEventActionCardDefId: string | null;
         selectedEventActionCardLabel: string | null;
+        selectedEventActionCardRemovedFromGame: boolean;
         selectedEventActionRulesSummary: string | null;
         selectedHandActionCardLabel: string | null;
         selectedPaymentResourceLabels: string[];
@@ -82,6 +85,7 @@ interface QidahenSelectedActionExecutionDependencies {
         input: {
             actionId: string;
             currentFactionId: QidahenFactionId;
+            discardedCardCount: number;
             factions: QidahenCore['factions'];
             followUp: {
                 actionLogText: string;
@@ -126,9 +130,12 @@ export const executeQidahenSelectedAction = (
     const {
         actionLabel,
         currentFactionId,
+        discardedCardCount,
         nextFactions: preparedFactions,
         paidHandCards,
+        selectedEventActionCardDefId,
         selectedEventActionCardLabel,
+        selectedEventActionCardRemovedFromGame,
         selectedEventActionRulesSummary,
         selectedHandActionCardLabel,
         selectedPaymentResourceLabels,
@@ -139,6 +146,7 @@ export const executeQidahenSelectedAction = (
         state,
         actionId,
         currentFactionId,
+        selectedEventActionCardDefId,
         selectedArmamentId,
         selectedHandActionCardLabel,
         preparedFactions,
@@ -151,8 +159,11 @@ export const executeQidahenSelectedAction = (
         currentFactionId,
         actionId,
         actionLabel,
+        selectedEventActionCardDefId,
         selectedEventActionCardLabel,
+        selectedEventActionCardRemovedFromGame,
         selectedEventActionRulesSummary,
+        discardedCardCount,
         spentCardCount,
         selectedPaymentResourceLabels,
         timestamp,
@@ -163,6 +174,7 @@ export const executeQidahenSelectedAction = (
     return dependencies.commitSelectedActionState(state, {
         actionId,
         currentFactionId,
+        discardedCardCount,
         factions: executionResolution.factions,
         followUp,
         paidHandCards,

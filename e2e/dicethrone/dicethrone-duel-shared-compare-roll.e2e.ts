@@ -318,13 +318,28 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
                 height: 16,
             }),
             expect.objectContaining({
-                backgroundImage: expect.stringMatching(/(?:dicethrone\/images\/monk\/compressed\/dice\.webp|\/game-data\/dicethrone\/monk\/dice-sprite\.png)/),
+                backgroundImage: expect.stringContaining('dicethrone/images/monk/compressed/dice.webp'),
                 backgroundSize: '300% 300%',
                 backgroundPosition: '0% 100%',
                 width: 16,
                 height: 16,
             }),
         ]);
+        await expect.poll(async () => duelDiceIcons.evaluateAll(async (icons) => {
+            const loadChecks = icons.map((icon) => new Promise<boolean>((resolve) => {
+                const style = window.getComputedStyle(icon);
+                const url = style.backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1];
+                if (!url) {
+                    resolve(false);
+                    return;
+                }
+                const image = new Image();
+                image.onload = () => resolve(image.naturalWidth > 0 && image.naturalHeight > 0);
+                image.onerror = () => resolve(false);
+                image.src = url;
+            }));
+            return Promise.all(loadChecks);
+        }), { timeout: 5000 }).toEqual([true, true]);
         await actionLogPanel.screenshot({
             path: getEvidenceScreenshotPath(testInfo, 'host-opponent-action-log-shows-duel-result'),
         });

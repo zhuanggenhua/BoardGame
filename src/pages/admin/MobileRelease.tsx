@@ -93,14 +93,98 @@ type PublishResponse = {
     output: string;
 };
 
-const getExecutionProgressPercent = (result: PublishResponse | null) => {
-    if (!result) return 0;
-    if (result.status === 'succeeded') return 100;
-    if (result.status === 'failed') return 100;
-    if (result.status === 'running') return 55;
-    if (result.status === 'queued') return 12;
-    if (result.mode === 'preview' || result.mode === 'dry-run') return 100;
-    return result.ok ? 100 : 0;
+export type DeployProgressSnapshot = {
+    percent: number;
+    labelKey: string;
+    detail?: string;
+};
+
+const clampProgressPercent = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+
+const parseByteSize = (rawValue: string, rawUnit: string) => {
+    const value = Number.parseFloat(rawValue);
+    if (!Number.isFinite(value)) return null;
+    const unit = rawUnit.toLowerCase();
+    const multiplier = unit === 'b'
+        ? 1
+        : unit === 'kb'
+            ? 1024
+            : unit === 'mb'
+                ? 1024 * 1024
+                : unit === 'gb'
+                    ? 1024 * 1024 * 1024
+                    : null;
+    return multiplier == null ? null : value * multiplier;
+};
+
+const parseDockerDownloadRatio = (line: string) => {
+    const match = /Downloading\s+\[[^\]]+\]\s+([0-9.]+)\s*([kmg]?b)\/([0-9.]+)\s*([kmg]?b)/i.exec(line);
+    if (!match) return null;
+    const downloaded = parseByteSize(match[1], match[2]);
+    const total = parseByteSize(match[3], match[4]);
+    if (downloaded == null || total == null || total <= 0) return null;
+    return Math.max(0, Math.min(1, downloaded / total));
+};
+
+export const getDeployProgressSnapshot = (result: PublishResponse | null): DeployProgressSnapshot => {
+    if (!result) {
+        return { percent: 0, labelKey: 'result.progress_idle' };
+    }
+    if (result.status === 'succeeded') {
+        return { percent: 100, labelKey: 'result.progress_succeeded' };
+    }
+    if (result.status === 'failed') {
+        return { percent: 100, labelKey: 'result.progress_failed' };
+    }
+    if (result.mode === 'preview' || result.mode === 'dry-run') {
+        return { percent: 100, labelKey: 'result.progress_done' };
+    }
+    if (result.status === 'queued') {
+        return { percent: 12, labelKey: 'result.progress_queued' };
+    }
+
+    const output = result.output || '';
+    const pullSummaryMatches = [...output.matchAll(/Pulling\s+(\d+)\/(\d+)/g)];
+    const latestPullSummary = pullSummaryMatches.at(-1);
+    if (latestPullSummary) {
+        const completed = Number.parseInt(latestPullSummary[1], 10);
+        const total = Number.parseInt(latestPullSummary[2], 10);
+        if (Number.isFinite(completed) && Number.isFinite(total) && total > 0) {
+            return {
+                percent: clampProgressPercent(15 + (completed / total) * 70),
+                labelKey: 'result.progress_pulling',
+                detail: `${completed}/${total}`,
+            };
+        }
+    }
+
+    const lines = output.split(/\r?\n/).filter(Boolean);
+    const downloadRatios = lines.map(parseDockerDownloadRatio).filter((ratio): ratio is number => ratio != null);
+    if (downloadRatios.length > 0) {
+        const activeRatio = Math.max(...downloadRatios);
+        return {
+            percent: clampProgressPercent(20 + activeRatio * 55),
+            labelKey: 'result.progress_downloading',
+        };
+    }
+
+    const completedLayers = lines.filter((line) => /\b(Already exists|Pull complete|Pulled)\b/.test(line)).length;
+    if (completedLayers > 0) {
+        return {
+            percent: clampProgressPercent(Math.min(80, 18 + completedLayers * 4)),
+            labelKey: 'result.progress_pulling',
+            detail: `${completedLayers}`,
+        };
+    }
+
+    if (/启动|重启|up -d|Started|Running|healthy|smoke|health/i.test(output)) {
+        return { percent: 88, labelKey: 'result.progress_starting' };
+    }
+
+    if (result.status === 'running') {
+        return { percent: 25, labelKey: 'result.progress_running' };
+    }
+    return { percent: result.ok ? 100 : 0, labelKey: result.ok ? 'result.progress_done' : 'result.progress_idle' };
 };
 
 const CHANNELS = ['stable', 'gray', 'edge'] as const;
@@ -149,6 +233,10 @@ export default function MobileReleasePage() {
     );
     const { token } = useAuth();
     const toast = useToast();
+    const toastError = toast.error;
+    const toastSuccess = toast.success;
+    const statusFailedMessage = pageT('toast.status_failed');
+    const publishFailedMessage = pageT('toast.publish_failed');
     const [channel, setChannel] = useState<typeof CHANNELS[number]>('stable');
     const [status, setStatus] = useState<AndroidReleaseStatus | null>(null);
     const [loading, setLoading] = useState(true);
@@ -185,16 +273,16 @@ export default function MobileReleasePage() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!response.ok) {
-                throw new Error(await readApiError(response, pageT('toast.status_failed')));
+                throw new Error(await readApiError(response, statusFailedMessage));
             }
             const data = await response.json() as AndroidReleaseStatus;
             setStatus(data);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : pageT('toast.status_failed'));
+            toastError(error instanceof Error ? error.message : statusFailedMessage);
         } finally {
             setLoading(false);
         }
-    }, [channel, pageT, toast, token]);
+    }, [channel, statusFailedMessage, toastError, token]);
 
     useEffect(() => {
         void fetchStatus();
@@ -284,7 +372,7 @@ export default function MobileReleasePage() {
         setBusyAction(actionKey);
         setLastResult(null);
         try {
-            const data = await postJson(path, body, pageT('toast.publish_failed'));
+            const data = await postJson(path, body, publishFailedMessage);
             if (data) {
                 setLastResult(data);
                 const finalData = data.jobId ? await waitForDeployJob(data) : data;
@@ -292,18 +380,18 @@ export default function MobileReleasePage() {
                 if (isFailedResult(finalData)) {
                     throw new Error(pageT('toast.job_failed'));
                 }
-                toast.success(pageT(successKey));
+                toastSuccess(pageT(successKey));
                 await fetchStatus();
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : pageT('toast.publish_failed'));
+            toastError(error instanceof Error ? error.message : publishFailedMessage);
         } finally {
             setBusyAction(null);
         }
     };
 
     const runningText = busyAction ? pageT('actions.running') : null;
-    const executionProgressPercent = getExecutionProgressPercent(lastResult);
+    const executionProgressSnapshot = getDeployProgressSnapshot(lastResult);
 
     return (
         <div className="h-full overflow-y-auto bg-zinc-50 p-6 lg:p-8">
@@ -352,7 +440,7 @@ export default function MobileReleasePage() {
                     <ExecutionLogPanel
                         pageT={pageT}
                         result={lastResult}
-                        progressPercent={executionProgressPercent}
+                        progress={executionProgressSnapshot}
                     />
                 ) : null}
 
@@ -679,26 +767,30 @@ export default function MobileReleasePage() {
 function ExecutionLogPanel({
     pageT,
     result,
-    progressPercent,
+    progress,
 }: {
     pageT: (key: string, options?: Record<string, unknown>) => string;
     result: PublishResponse;
-    progressPercent: number;
+    progress: DeployProgressSnapshot;
 }) {
     const isFailed = isFailedResult(result);
+    const progressLabel = pageT(progress.labelKey, progress.detail ? { detail: progress.detail } : undefined);
     return (
         <section className={`rounded-xl border p-6 shadow-sm ${isFailed ? 'border-red-200 bg-red-50' : 'border-zinc-200 bg-white'}`}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-zinc-900">{pageT('result.title')}</h2>
                 <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-bold text-white">
-                    {progressPercent}%
+                    {progress.percent}%
                 </span>
             </div>
             <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-200">
                 <div
                     className={`h-full transition-all ${isFailed ? 'bg-red-600' : 'bg-emerald-600'}`}
-                    style={{ width: `${progressPercent}%` }}
+                    style={{ width: `${progress.percent}%` }}
                 />
+            </div>
+            <div className="mb-4 rounded-lg bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700">
+                {progressLabel}
             </div>
             <div className="grid gap-3 text-sm md:grid-cols-6">
                 <ResultField label={pageT('result.kind')} value={result.kind ?? '-'} />

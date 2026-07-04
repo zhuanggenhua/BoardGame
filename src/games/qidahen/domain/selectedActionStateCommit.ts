@@ -42,6 +42,7 @@ interface QidahenSelectedActionStateCommitFollowUp {
 interface QidahenSelectedActionStateCommitInput {
     actionId: string;
     currentFactionId: QidahenFactionId;
+    discardedCardCount: number;
     factions: QidahenCore['factions'];
     followUp: QidahenSelectedActionStateCommitFollowUp;
     paidHandCards: QidahenCore['handCards'];
@@ -61,11 +62,11 @@ export function commitQidahenSelectedActionState(
     const {
         actionId,
         currentFactionId,
+        discardedCardCount,
         factions,
         followUp,
         paidHandCards,
         regions,
-        spentCardCount,
         timestamp,
     } = input;
     const hasHuangtaijiBonus = currentFactionId === 'jin' && hasActiveCharacter(state, 'jin', 'jin-huangtaiji');
@@ -92,7 +93,7 @@ export function commitQidahenSelectedActionState(
         bonusFactionActionUsed: usedBonusFactionAction,
         lastFactionActionId: actionId,
         payment: buildPaymentState(actionId, 0),
-        discardPileCount: state.discardPileCount + spentCardCount,
+        discardPileCount: state.discardPileCount + discardedCardCount,
         drawPileCount: state.drawPileCount,
         handCards: paidHandCards,
         regions,

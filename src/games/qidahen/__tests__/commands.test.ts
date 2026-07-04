@@ -669,6 +669,8 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         expect(result.state.core.discardPileCount).toBe(core.discardPileCount + 1);
         expect(result.state.core.lastSeasonSummary?.title).toBe('战术牌');
         expect(result.state.core.lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');
+        expect(result.state.core.lastSeasonSummary?.lines.join(' ')).toContain('战斗中我方步兵骰子等级 +1');
+        expect(result.state.core.actionLog.at(-1)?.text).toContain('战斗中我方步兵骰子等级 +1');
     });
 
     it('atlas05 战术牌时机门禁会按当前攻方战术窗口拦截城战禁用和守城专用牌', () => {

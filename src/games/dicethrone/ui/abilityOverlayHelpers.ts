@@ -14,6 +14,7 @@ import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import type { HeroState } from '../domain/types';
+import { getSlotBaseAbilityIdForCharacter } from './abilitySlotMapping';
 
 export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     monk: MONK_CARDS,
@@ -31,172 +32,12 @@ export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     artificer: ARTIFICER_CARDS,
 };
 
-const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
-    monk: {
-        fist: 'fist-technique',
-        chi: 'zen-forget',
-        sky: 'taiji-combo',
-        lotus: 'thunder-strike',
-        combo: 'harmony',
-        lightning: 'lotus-palm',
-        calm: 'calm-water',
-        meditate: 'meditation',
-        ultimate: 'transcendence',
-    },
-    pyromancer: {
-        fist: 'fireball',
-        chi: 'soul-burn',
-        sky: 'fiery-combo',
-        lotus: 'burn-down',
-        combo: 'pyro-blast',
-        lightning: 'meteor',
-        calm: 'ignite',
-        meditate: 'magma-armor',
-        ultimate: 'ultimate-inferno',
-    },
-    barbarian: {
-        fist: 'slap',
-        chi: 'all-out-strike',
-        sky: 'steadfast',
-        lotus: 'suppress',
-        combo: 'powerful-strike',
-        lightning: 'violent-assault',
-        calm: 'reckless-strike',
-        meditate: 'thick-skin',
-        ultimate: 'rage',
-    },
-    paladin: {
-        fist: 'tithes',
-        chi: 'vengeance',
-        sky: 'righteous-combat',
-        lotus: 'blessing-of-might',
-        combo: 'holy-strike',
-        lightning: 'righteous-prayer',
-        calm: 'holy-light',
-        meditate: 'holy-defense',
-        ultimate: 'unyielding-faith',
-    },
-    moon_elf: {
-        fist: 'longbow',
-        chi: 'covert-fire',
-        sky: 'covering-fire',
-        lotus: 'exploding-arrow',
-        combo: 'entangling-shot',
-        lightning: 'eclipse',
-        calm: 'blinding-shot',
-        meditate: 'elusive-step',
-        ultimate: 'lunar-eclipse',
-    },
-    shadow_thief: {
-        fist: 'dagger-strike',
-        chi: 'pickpocket',
-        sky: 'steal',
-        lotus: 'kidney-shot',
-        combo: 'shadow-dance',
-        lightning: 'shadow-defense',
-        calm: 'cornucopia',
-        meditate: 'fearless-riposte',
-        ultimate: 'shadow-shank',
-    },
-    gunslinger: {
-        fist: 'revolver',
-        chi: 'bounty-hunter',
-        sky: 'quick-draw',
-        lotus: 'take-cover',
-        combo: 'showdown',
-        lightning: 'deadeye',
-        calm: 'fan-the-hammer',
-        meditate: 'duel',
-        ultimate: 'fill-em-with-lead',
-    },
-    samurai: {
-        fist: 'katana-slice',
-        chi: 'wakizashi',
-        sky: 'bushido',
-        lotus: 'solemnity',
-        combo: 'budo',
-        lightning: 'samurai-slot-06',
-        calm: 'masamune',
-        meditate: 'stand-tall',
-        ultimate: 'samurai-ultimate',
-    },
-    treant: {
-        fist: 'shattering-fist',
-        chi: 'tend-care',
-        sky: 'quiet-cultivation',
-        lotus: 'wild-growth',
-        combo: 'vengeful-vines',
-        lightning: 'nature-touch',
-        meditate: 'rooted',
-        ultimate: 'forest-awakens',
-    },
-    ninja: {
-        fist: 'slash',
-        chi: 'going-forward',
-        sky: 'death-blossom',
-        lotus: 'smoke-screen',
-        combo: 'poison-blade',
-        lightning: 'shadow-step',
-        calm: 'shadow-fang',
-        meditate: 'blink',
-        ultimate: 'ninja-assassinate',
-    },
-    zhanshujia: {
-        fist: 'sabre-thrust',
-        chi: 'carpet-bombing',
-        sky: 'war-monger',
-        lotus: 'drum-movement',
-        combo: 'flanking',
-        lightning: 'expand-battlefield',
-        calm: 'strategic-shift',
-        meditate: 'countermeasures',
-        ultimate: 'high-ground',
-    },
-    cursed_pirate: {
-        fist: 'soul-stab',
-        chi: 'marked-for-death',
-        sky: 'cursed',
-        lotus: 'deep-sea-dive',
-        combo: 'breath-of-death',
-        lightning: 'soul-command',
-        calm: 'undead-claw',
-        meditate: 'still-wet-behind-ears',
-        ultimate: 'merciless-curse',
-    },
-    artificer: {
-        fist: 'wrench-strike',
-        chi: 'schematics',
-        sky: 'collect-parts',
-        lotus: 'eureka',
-        combo: 'activate-bots',
-        lightning: 'overclock',
-        calm: 'shock-bot',
-        meditate: 'tinker',
-        ultimate: 'maximum-power',
-    },
-};
-
-const CURSED_PIRATE_NORMAL_SLOT_TO_ABILITY: Record<string, string> = {
-    fist: 'cutlass-stab',
-    chi: 'make-your-mark',
-    sky: 'human-cursed',
-    lotus: 'walk-the-plank',
-    combo: 'light-the-fuse',
-    lightning: 'verdict-command',
-    calm: 'astonishing',
-    meditate: 'human-still-wet-behind-ears',
-    ultimate: 'merciless-plunder',
-};
-
 export function getSlotAbilityId(
     characterId: string,
     slotId: string,
     playerBoardFace?: HeroState['playerBoardFace'],
 ): string | undefined {
-    if (characterId === 'cursed_pirate' && playerBoardFace === 'normal') {
-        return CURSED_PIRATE_NORMAL_SLOT_TO_ABILITY[slotId];
-    }
-    return HERO_SLOT_TO_ABILITY[characterId]?.[slotId];
+    return getSlotBaseAbilityIdForCharacter(characterId, slotId, playerBoardFace);
 }
 
 export function getUpgradeCardForAbilityLevel(characterId: string, abilityId: string, level: number): AbilityCard | undefined {

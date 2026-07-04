@@ -118,6 +118,16 @@ interface QidahenCityState {
     specialTroops: QidahenSpecialTroopStack[];
 }
 
+export type QidahenRegionEventMarkerKind = 'drought' | 'jala';
+
+export interface QidahenRegionEventMarker {
+    id: string;
+    kind: QidahenRegionEventMarkerKind;
+    label: string;
+    sourceCardDefId: string;
+    imageSrc?: string;
+}
+
 interface QidahenRegionSummary {
     id: string;
     name: string;
@@ -135,6 +145,7 @@ interface QidahenRegionSummary {
     note: string;
     siegeState: QidahenSiegeState | null;
     cityState: QidahenCityState | null;
+    eventMarkers: QidahenRegionEventMarker[];
     specialTroops: QidahenSpecialTroopStack[];
     adjacentRegionIds: string[];
     travelCostByRegionId: Record<string, number>;
@@ -236,6 +247,17 @@ export interface QidahenPendingTargetAction {
     attackBoundaryType: string;
     resolutionHint: string;
     defenderPayCost: number | null;
+    tacticModifiers?: QidahenBattleTacticModifier[];
+}
+
+export interface QidahenBattleTacticModifier {
+    id: string;
+    sourceCardDefId: string | null;
+    label: string;
+    side: 'attacker' | 'defender';
+    troopKind: QidahenTroopKind;
+    levelBonus: number;
+    diceCountBonus?: number;
 }
 
 export interface QidahenWheelDispatchCandidate {
@@ -559,7 +581,7 @@ export interface QidahenMapToken {
     id: string;
     x: number;
     y: number;
-    type: 'army' | 'population' | 'control';
+    type: 'army' | 'population' | 'control' | 'marker';
     faction: QidahenFactionId | 'neutral';
     imageSrc?: string;
     size?: number;

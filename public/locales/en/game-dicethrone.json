@@ -2567,9 +2567,9 @@
     },
     "meditation-3": {
       "name": "Meditation III",
-      "description": "During Defensive Roll Phase, roll 5 dice. Gain Taiji tokens based on results, and may gain Evasive or Purify tokens. Deal 3 damage for each [Fist].",
+      "description": "During Defensive Roll Phase, roll 5 dice. Gain Taiji tokens from Taiji faces; if Taiji and Lotus are both present, gain Evasive or Purify. Deal 1 damage for each Fist face.",
       "taijiByResult": "Gain Taiji tokens based on results",
-      "damageByFist": "Deal 3 damage for each [Fist]"
+      "damageByFist": "Deal 1 damage for each Fist face"
     },
     "revolver": {
       "name": "Revolver",
@@ -3064,10 +3064,18 @@
     },
     "wild-roar-2": {
       "name": "Wild Roar II",
-      "description": "Large Straight: deal 8 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+      "description": "Large Straight: deal 8 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage.",
       "effects": {
         "roll5BranchLeafSpirit": "Roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
         "damage8": "Deal 8 damage."
+      }
+    },
+    "wild-roar-2-dazzle": {
+      "name": "Dazzle Bloom",
+      "description": "2 Branch + 2 Spirit: inflict Thorn and deal 4 undefendable damage.",
+      "effects": {
+        "inflictThorn": "Inflict Thorn.",
+        "damage4Unblockable": "Deal 4 undefendable damage."
       }
     },
     "rooted": {
@@ -3103,7 +3111,13 @@
     },
     "slash-2": {
       "name": "Slash II",
-      "description": "3/4/5 Ninja Blade deal 6/7/8 damage."
+      "description": "3/4/5 Ninja Blade deal 4/6/8 damage; if you rolled 3 of the same number, gain 1 Ninjutsu.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage6": "Deal 6 damage",
+        "damage8": "Deal 8 damage",
+        "gainNinjutsuOnThreeKind": "If you rolled 3 of the same number, gain 1 Ninjutsu"
+      }
     },
     "going-forward": {
       "name": "Going Forward",
@@ -3115,7 +3129,12 @@
     },
     "going-forward-2": {
       "name": "Going Forward II",
-      "description": "4 Shuriken: deal 7 damage."
+      "description": "4 Shuriken: roll 2 dice and deal damage equal to the total; you may reroll 1 of those dice; if the final total is 6 or less, this attack becomes undefendable. Blood on the Tip (3 Shuriken): roll 1 die and deal direct damage equal to the value rolled.",
+      "effects": {
+        "roll2DiceDamageTotalRerollUnblockable": "Roll 2 dice and deal damage equal to the total; you may reroll 1 die; if the final total is 6 or less, this attack becomes undefendable",
+        "resolveRolledDamage": "Deal damage based on the roll result",
+        "bleedRollDirectDamage": "Roll 1 die; deal direct damage equal to the value rolled"
+      }
     },
     "poison-blade": {
       "name": "Poison Blade",
@@ -3127,7 +3146,11 @@
     },
     "poison-blade-2": {
       "name": "Poison Blade II",
-      "description": "Small Straight: apply Delayed Poison and deal 6 undefendable damage."
+      "description": "Small Straight: roll 1 die; Ninja Blade inflicts 1 Delayed Poison, Shuriken or Mask inflicts 2 Delayed Poison, then deal 9 damage.",
+      "effects": {
+        "roll1DieApplyPoison": "Roll 1 die; Ninja Blade inflicts 1 Delayed Poison; Shuriken or Mask inflicts 2 Delayed Poison",
+        "damage9": "Deal 9 damage"
+      }
     },
     "shadow-step": {
       "name": "Shadow Step",
@@ -3140,7 +3163,12 @@
     },
     "shadow-step-2": {
       "name": "Shadow Step II",
-      "description": "4 Mask: gain Smoke Bomb, apply 2 Delayed Poison, and deal 7 undefendable damage."
+      "description": "4 Mask: gain 1 Smoke Bomb, inflict 2 Delayed Poison, and deal 5 undefendable damage. Strangle (3 Mask): gain 3 Ninjutsu; inflict 2 Delayed Poison on 1 opponent.",
+      "effects": {
+        "gainSmokeBomb": "Gain 1 Smoke Bomb",
+        "inflictDelayedPoison2": "Inflict 2 Delayed Poison",
+        "damage5Unblockable": "Deal 5 undefendable damage"
+      }
     },
     "death-blossom": {
       "name": "Death Blossom",
@@ -3151,7 +3179,11 @@
     },
     "death-blossom-2": {
       "name": "Death Blossom II",
-      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice and add damage or gain Ninjutsu by result."
+      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice; deal 1 damage per Ninja Blade plus 2 damage per Shuriken; if you roll 1 Mask, this attack becomes undefendable; if you roll 2 Masks, inflict Delayed Poison; you may reroll up to 2 dice.",
+      "effects": {
+        "roll5DiceDamageMaskBonusesReroll2": "Roll 5 dice; deal 1 damage per Ninja Blade plus 2 damage per Shuriken; if you roll 1 Mask, this attack becomes undefendable; if you roll 2 Masks, inflict Delayed Poison; you may reroll up to 2 dice",
+        "resolveRolledDamage": "Deal damage based on the bonus dice result"
+      }
     },
     "smoke-screen": {
       "name": "Smoke Screen",
@@ -3164,7 +3196,10 @@
     },
     "smoke-screen-2": {
       "name": "Smoke Screen II",
-      "description": "Gain Smoke Bomb and 3 Ninjutsu, then apply Delayed Poison."
+      "description": "1 Ninja Blade + 2 Shuriken + 1 Mask: 1 player gains 1 Smoke Bomb and 3 Ninjutsu; inflict 1 Delayed Poison on 1 opponent. Kuji-kiri (3 Shuriken + 2 Mask): deal 4 direct damage to 2 opponents; you may choose the same opponent twice.",
+      "effects": {
+        "grantSmokeBombNinjutsu3Poison": "1 player gains 1 Smoke Bomb and 3 Ninjutsu; inflict 1 Delayed Poison on 1 opponent"
+      }
     },
     "shadow-fang": {
       "name": "Shadow Fang",
@@ -3176,7 +3211,12 @@
     },
     "shadow-fang-2": {
       "name": "Shadow Fang II",
-      "description": "Large Straight: gain 2 Ninjutsu and deal 9 damage."
+      "description": "Large Straight: gain 1 Smoke Bomb and 2 Ninjutsu, then deal 8 damage. Deceive (2 Ninja Blade + 2 Mask): gain 1 Smoke Bomb and deal 2 undefendable damage.",
+      "effects": {
+        "gainSmokeBomb": "Gain 1 Smoke Bomb",
+        "gainNinjutsu2": "Gain 2 Ninjutsu",
+        "damage8": "Deal 8 damage"
+      }
     },
     "blink": {
       "name": "Blink",
@@ -3187,7 +3227,10 @@
     },
     "blink-2": {
       "name": "Blink II",
-      "description": "Defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
+      "description": "Defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb.",
+      "effects": {
+        "resolveDefense": "Defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb"
+      }
     },
     "ninja-assassinate": {
       "name": "Assassinate",
@@ -4023,11 +4066,11 @@
     },
     "card-zen-fist-2": {
       "name": "Zen Fist II",
-      "description": "Large Straight: Deal 7 damage, gain Evasive and 3 Chi, inflict Stun. Way of the Monk (Fist+Palm+Taiji+Lotus): Gain 2 Evasive, deal 3 undefendable damage."
+      "description": "Large Straight: Deal 7 damage, gain Evasive and 3 Chi, inflict Knockdown. Way of the Monk (Fist+Palm+Taiji+Lotus): Gain 2 Evasive, deal 3 undefendable damage."
     },
     "card-storm-assault-2": {
       "name": "Storm Assault II",
-      "description": "Roll 3 dice; deal damage equal to sum. Spend 1 Chi to reroll any die. If sum ≥12, inflict Stun."
+      "description": "Roll 3 dice; deal damage equal to sum. Spend 1 Chi to reroll any die. If sum ≥12, inflict Knockdown."
     },
     "card-combo-punch-2": {
       "name": "Combo Punch II",
@@ -4043,7 +4086,7 @@
     },
     "card-thrust-punch-2": {
       "name": "Thrust Punch II",
-      "description": "2 Fist: 7 damage / 3 Fist: 8 damage / 4 Fist: 9 damage."
+      "description": "3/4/5 Fists: deal 7/8/9 damage."
     },
     "card-thrust-punch-3": {
       "name": "Thrust Punch III",
@@ -4900,7 +4943,7 @@
     },
     "upgrade-wild-growth-2": {
       "name": "Wild Roar II",
-      "description": "Upgrade Wild Roar: Large Straight deals 8 damage, then roll 5 dice; each Branch +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit."
+      "description": "Upgrade Wild Roar: Large Straight deals 8 damage, then roll 5 dice; each Branch +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage."
     },
     "upgrade-shattering-fist-2": {
       "name": "Shattering Fist II",
@@ -4916,19 +4959,19 @@
     },
     "upgrade-blink-2": {
       "name": "Blink II",
-      "description": "Upgrade Blink: defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; each Shuriken deals 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
+      "description": "Upgrade Blink: defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
     },
     "upgrade-going-forward-2": {
       "name": "Going Forward II",
-      "description": "Upgrade Going Forward."
+      "description": "Upgrade Going Forward: 4 Shuriken rolls 2 dice and deals damage equal to the total; you may reroll 1 die; if the final total is 6 or less, this attack becomes undefendable. Blood on the Tip (3 Shuriken): roll 1 die and deal direct damage equal to the value rolled."
     },
     "upgrade-slash-2": {
       "name": "Slash II",
-      "description": "Upgrade Slash."
+      "description": "Upgrade Slash: 3/4/5 Ninja Blade deal 4/6/8 damage; if you rolled 3 of the same number, gain 1 Ninjutsu."
     },
     "upgrade-shadow-step-2": {
       "name": "Shadow Step II",
-      "description": "Upgrade Shadow Step."
+      "description": "Upgrade Shadow Step: 4 Mask gains 1 Smoke Bomb, inflicts 2 Delayed Poison, and deals 5 undefendable damage. Strangle (3 Mask): gain 3 Ninjutsu; inflict 2 Delayed Poison on 1 opponent."
     },
     "ninja-card-shuriken": {
       "name": "Shuriken!",
@@ -4948,19 +4991,19 @@
     },
     "upgrade-smoke-screen-2": {
       "name": "Smoke Screen II",
-      "description": "Upgrade Smoke Screen."
+      "description": "Upgrade Smoke Screen: 1 Ninja Blade + 2 Shuriken + 1 Mask lets 1 player gain 1 Smoke Bomb and 3 Ninjutsu, then inflicts 1 Delayed Poison on 1 opponent. Kuji-kiri (3 Shuriken + 2 Mask): deal 4 direct damage to 2 opponents; you may choose the same opponent twice."
     },
     "upgrade-shadow-fang-2": {
       "name": "Shadow Fang II",
-      "description": "Upgrade Shadow Fang."
+      "description": "Upgrade Shadow Fang: Large Straight gains 1 Smoke Bomb and 2 Ninjutsu, then deals 8 damage. Deceive (2 Ninja Blade + 2 Mask): gain 1 Smoke Bomb and deal 2 undefendable damage."
     },
     "upgrade-poison-blade-2": {
       "name": "Poison Blade II",
-      "description": "Upgrade Poison Blade."
+      "description": "Upgrade Poison Blade: Small Straight rolls 1 die; Ninja Blade inflicts 1 Delayed Poison, Shuriken or Mask inflicts 2 Delayed Poison, then deal 9 damage."
     },
     "upgrade-death-blossom-2": {
       "name": "Death Blossom II",
-      "description": "Upgrade Death Blossom."
+      "description": "Upgrade Death Blossom: 3 Ninja Blade + 2 Shuriken rolls 5 dice; deal 1 damage per Ninja Blade plus 2 damage per Shuriken; 1 Mask makes this attack undefendable; 2 Masks inflict Delayed Poison; you may reroll up to 2 dice."
     },
     "ninja-card-vanish": {
       "name": "Vanish!",

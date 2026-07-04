@@ -242,6 +242,31 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('移动到上层起始点');
     });
 
+    it('持有区卡牌本体只负责选择，独立放大镜负责打开大图', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            inventory: [{ id: 'rope', name: '兔脚', kind: 'item' }],
+        };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['rope'];
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('betrayal-inventory-rope'));
+        expect(screen.getByTestId('betrayal-inventory-rope')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
+
+        fireEvent.click(screen.getByTestId('betrayal-inventory-rope-magnify'));
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
+        expect(screen.getByTestId('betrayal-inventory-preview-card')).toHaveTextContent('兔脚');
+    });
+
     it('地图会在真实页面选择已发现板块并放置当前探索者', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer = {

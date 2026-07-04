@@ -143,7 +143,7 @@ export const POISON_BLADE_2: AbilityDef = {
     description: abilityText('poison-blade-2', 'description'),
     effects: [
         customEffect('ninja-poison-blade-2', 'opponent', abilityEffectText('poison-blade-2', 'roll1DieApplyPoison')),
-        damage(5, abilityEffectText('poison-blade-2', 'damage5')),
+        damage(9, abilityEffectText('poison-blade-2', 'damage9')),
     ],
 };
 

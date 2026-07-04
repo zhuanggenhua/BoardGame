@@ -1,6 +1,7 @@
 import { buildDriveTigerDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';
 import { buildPendingTargetAction } from './pendingTargetActionBuilder';
 import { getQidahenExplicitRegionSelectionSemantics } from './regionFocusSemantics';
+import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
 import {
     buildKhanEdictSelectionFromRegionSemantics,
     buildMaShiTradeSelectionFromRegionSemantics,
@@ -65,11 +66,40 @@ interface QidahenSelectedActionPendingFollowUpResolutionResult {
     selectedRegionId: string;
 }
 
+const CROSS_MOUNTAINS_CARD_DEF_ID = 'qidahen-atlas05-1614-cross-mountains';
+
+const applyCrossMountainsBoundaryEffect = (
+    pendingTargetAction: QidahenPendingTargetAction | null,
+): QidahenPendingTargetAction | null => {
+    if (
+        !pendingTargetAction
+        || (pendingTargetAction.attackBoundaryType !== 'mountain' && pendingTargetAction.attackBoundaryType !== 'wall-convex')
+    ) {
+        return pendingTargetAction;
+    }
+    const plainMeta = getQidahenBoundaryTypeMeta('plain');
+    const battleWidth = plainMeta.battleWidth;
+    const boundaryUnitCap = plainMeta.unitCap;
+    const attackPressure = Math.min(pendingTargetAction.committedTroops, battleWidth);
+    return {
+        ...pendingTargetAction,
+        battleWidth,
+        boundaryUnitCap,
+        attackPressure,
+        attackBoundaryType: 'plain',
+        restriction: `${pendingTargetAction.restriction} · 翻山越岭：长城、山脉边界视为平原`,
+        resolutionHint: `${pendingTargetAction.sourceRegionName ?? '前线'} → ${pendingTargetAction.targetRegionName} · 平原 ${battleWidth} · 投${pendingTargetAction.committedTroops}/压${attackPressure} · 翻山越岭`,
+    };
+};
+
 const buildQidahenSelectedActionFollowUpLogText = (
     state: QidahenCore,
     currentFactionName: string,
     actionLabel: string,
     selectedEventActionCardLabel: string | null,
+    selectedEventActionCardRemovedFromGame: boolean,
+    selectedEventActionRulesSummary: string | null,
+    discardedCardCount: number,
     spentCardCount: number,
     selectedPaymentResourceLabels: readonly string[],
     resolution: QidahenSelectedActionFollowUpResolutionResult,
@@ -97,7 +127,18 @@ const buildQidahenSelectedActionFollowUpLogText = (
         return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}，进入 ${resolution.pendingTargetAction.title}（${resolution.pendingTargetAction.resolutionHint}）。`;
     }
     if (selectedEventActionCardLabel) {
-        const eventSummaryText = resolution.lastSeasonSummary?.lines[0] ?? '';
+        const eventSummaryText = resolution.lastSeasonSummary?.lines.find((line) => line.startsWith('结算效果：'))
+            ?? resolution.lastSeasonSummary?.lines[0]
+            ?? '';
+        if (selectedEventActionCardRemovedFromGame) {
+            const discardedText = discardedCardCount > 0
+                ? `，另弃 ${discardedCardCount} 张牌`
+                : '';
+            const cardDestinationText = selectedEventActionRulesSummary?.includes('持续事件')
+                ? '打出为持续事件，不进入弃牌堆'
+                : '打出并移出游戏';
+            return `${currentFactionName} 执行 ${actionLabel}「${selectedEventActionCardLabel}」，${cardDestinationText}${discardedText}。${eventSummaryText}`;
+        }
         return `${currentFactionName} 执行 ${actionLabel}「${selectedEventActionCardLabel}」，弃 ${spentCardCount} 张牌${paymentResourceText}。${eventSummaryText}`;
     }
     if (resolution.lastSeasonSummary?.lines[0]) {
@@ -176,21 +217,27 @@ const resolveQidahenSelectedActionPendingFollowUpResolution = (
     state: QidahenCore,
     currentFactionId: QidahenFactionId,
     actionId: string,
+    selectedEventActionCardDefId: string | null,
     baseSelectedRegionId: string,
 ): QidahenSelectedActionPendingFollowUpResolutionResult => {
     const selectedRegion = state.regions.find((region) => region.id === baseSelectedRegionId);
-    const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')
+    const pendingActionId = actionId === 'play-event-card' && selectedEventActionCardDefId === CROSS_MOUNTAINS_CARD_DEF_ID
+        ? 'raid'
+        : actionId;
+    const pendingTargetAction = (pendingActionId === 'raid' || pendingActionId === 'marriage-subjugation')
         ? buildPendingTargetAction(
             state,
             currentFactionId,
-            actionId,
+            pendingActionId,
             selectedRegion,
             baseSelectedRegionId,
         )
         : null;
 
     return {
-        pendingTargetAction,
+        pendingTargetAction: selectedEventActionCardDefId === CROSS_MOUNTAINS_CARD_DEF_ID
+            ? applyCrossMountainsBoundaryEffect(pendingTargetAction)
+            : pendingTargetAction,
         selectedRegionId: baseSelectedRegionId,
     };
 };
@@ -200,8 +247,11 @@ export const resolveQidahenSelectedActionFollowUp = (
     currentFactionId: QidahenFactionId,
     actionId: string,
     actionLabel: string,
+    selectedEventActionCardDefId: string | null,
     selectedEventActionCardLabel: string | null,
+    selectedEventActionCardRemovedFromGame: boolean,
     selectedEventActionRulesSummary: string | null,
+    discardedCardCount: number,
     spentCardCount: number,
     selectedPaymentResourceLabels: readonly string[],
     timestamp: number,
@@ -222,15 +272,23 @@ export const resolveQidahenSelectedActionFollowUp = (
         state,
         currentFactionId,
         actionId,
+        selectedEventActionCardDefId,
         selectionResolution.selectedRegionId,
     );
+    const eventEffectLines = baseLastSeasonSummary?.lines ?? [];
     const eventActionSummary = actionId === 'play-event-card' && selectedEventActionCardLabel
         ? dependencies.buildSeasonSummary('执行事件', timestamp, [
             `打出事件牌：${selectedEventActionCardLabel}。`,
             selectedEventActionRulesSummary
                 ? `规则摘要：${selectedEventActionRulesSummary}`
                 : '规则摘要：当前事件牌没有可追溯摘要。',
-            '完整事件效果仍待逐张实现，本次只完成正式打出入口和审计记录。',
+            ...eventEffectLines.map((line) => `结算效果：${line}`),
+            selectedEventActionCardRemovedFromGame
+                ? selectedEventActionRulesSummary?.includes('持续事件')
+                    ? '持续事件：此牌未进入弃牌堆，按持续事件留在场上。'
+                    : '使用后移出游戏：此牌未进入弃牌堆。'
+                : '使用后进入当前势力弃牌堆。',
+            '其它完整事件效果仍待逐张实现。',
         ])
         : null;
     const resolution: QidahenSelectedActionFollowUpResolutionResult = {
@@ -247,6 +305,9 @@ export const resolveQidahenSelectedActionFollowUp = (
         state.factions[currentFactionId].name,
         actionLabel,
         selectedEventActionCardLabel,
+        selectedEventActionCardRemovedFromGame,
+        selectedEventActionRulesSummary,
+        discardedCardCount,
         spentCardCount,
         selectedPaymentResourceLabels,
         resolution,
