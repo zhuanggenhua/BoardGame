@@ -14,7 +14,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import type { ActionBarAction } from '../../core/ui/types';
-import { getLocalizedImageCandidateUrls } from '../../core';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import {
@@ -1310,7 +1309,7 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
     customColorset: {
         name: 'betrayal-house-aged-bone',
         foreground: '#2b2418',
-        background: ['#f4ecd0', '#cfc09a', '#8a7658', '#f6e5b5'],
+        ['background']: ['#f4ecd0', '#cfc09a', '#8a7658', '#f6e5b5'],
         outline: '#fff1c2',
         texture: 'none',
         material: 'plastic',
@@ -1342,15 +1341,7 @@ function createHouseDieFaceCanvas(image: HTMLImageElement): HTMLCanvasElement {
     return canvas;
 }
 
-async function loadHouseDieSkin(locale: string): Promise<DiceBoxDieSkin> {
-    const images = await Promise.all([0, 1, 2].map(async (pip) => {
-        const candidates = getLocalizedImageCandidateUrls(`betrayal/dice/house-die-${pip}`, locale);
-        const image = new Image();
-        image.decoding = 'async';
-        image.src = candidates[0] ?? `/assets/i18n/${locale}/betrayal/dice/compressed/house-die-${pip}.webp`;
-        await image.decode();
-        return image;
-    }));
+function buildHouseDieSkin(locale: string, images: Record<number, HTMLImageElement>): DiceBoxDieSkin {
     const faceCanvases: Record<number, HTMLCanvasElement> = {};
     const faceImages: Record<number, HTMLImageElement> = {};
 
@@ -1384,19 +1375,34 @@ function BetrayalHouseDice3DGroup({
     );
     const diceKey = React.useMemo(() => `${roll.id}:${diceInputs.join(',')}`, [diceInputs, roll.id]);
     const [engineState, setEngineState] = React.useState<'loading' | 'ready' | 'fallback'>('loading');
+    const [loadedDieFaces, setLoadedDieFaces] = React.useState<Record<number, HTMLImageElement>>({});
+    const loadedDieFaceCount = React.useMemo(
+        () => [0, 1, 2].filter((pip) => Boolean(loadedDieFaces[pip])).length,
+        [loadedDieFaces],
+    );
+
+    const handleDieFaceLoad = React.useCallback((pip: number, event: React.SyntheticEvent<HTMLImageElement>) => {
+        const image = event.currentTarget;
+        if (!image.naturalWidth || !image.naturalHeight) return;
+        setLoadedDieFaces((current) => (
+            current[pip] === image
+                ? current
+                : { ...current, [pip]: image }
+        ));
+    }, []);
 
     React.useEffect(() => {
         let cancelled = false;
         const init = async () => {
             const container = containerRef.current;
-            if (!container) return;
+            if (!container || loadedDieFaceCount < 3) return;
             setEngineState('loading');
             try {
                 const engine = await DiceBoxThreeEngine.create(container, {
                     styleProfile: BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
                     rendererMode: 'debug-visible',
                 });
-                const skin = await loadHouseDieSkin(locale);
+                const skin = buildHouseDieSkin(locale, loadedDieFaces);
                 if (cancelled) {
                     engine.destroy();
                     return;
@@ -1424,7 +1430,7 @@ function BetrayalHouseDice3DGroup({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [diceInputs, diceKey, locale]);
+    }, [diceInputs, diceKey, loadedDieFaceCount, loadedDieFaces, locale]);
 
     return (
         <div
@@ -1438,6 +1444,20 @@ function BetrayalHouseDice3DGroup({
                 data-dice-physics-source={engineState === 'ready' ? 'dice-box-threejs' : engineState}
                 className="absolute inset-0"
             />
+            <div className="sr-only" aria-hidden="true">
+                {[0, 1, 2].map((pip) => (
+                    <OptimizedImage
+                        key={`house-die-skin-${pip}`}
+                        src={`betrayal/dice/house-die-${pip}`}
+                        alt=""
+                        aria-hidden="true"
+                        locale={locale}
+                        placeholder={false}
+                        draggable={false}
+                        onLoad={(event) => handleDieFaceLoad(pip, event)}
+                    />
+                ))}
+            </div>
             {engineState !== 'ready' ? (
                 <div className="absolute inset-0 flex items-center justify-center gap-2">
                     {roll.dice.map((pip, dieIndex) => {

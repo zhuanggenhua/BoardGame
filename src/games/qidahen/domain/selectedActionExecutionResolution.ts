@@ -71,6 +71,12 @@ interface QidahenRegionMarkerEventConfig {
     isTargetRegion: (regionId: string) => boolean;
 }
 
+const QIDAHEN_SEVEN_GRIEVANCES_BANNER_ARMAMENT_IDS: QidahenArmamentId[] = [
+    'han-banners',
+    'manzhou-banners',
+    'mongol-banners',
+];
+
 interface QidahenSelectedActionExecutionResolutionResult {
     factions: QidahenCore['factions'];
     lastSeasonSummary: QidahenSeasonSummary | null;
@@ -382,8 +388,16 @@ export const resolveQidahenSelectedActionExecutionResolution = (
         && selectedEventActionCardDefId === 'qidahen-atlas05-1609-seven-grievances'
     ) {
         const selectedRegion = nextRegions.find((region) => region.id === nextSelectedRegionId);
-        if (selectedRegion && getEffectiveHomelandController(state, selectedRegion.id) === 'jin') {
-            const addedTroops = 2;
+        if (
+            selectedRegion
+            && selectedRegion.controller === 'jin'
+            && getEffectiveHomelandController(state, selectedRegion.id) === 'jin'
+        ) {
+            const activeBannerCount = QIDAHEN_SEVEN_GRIEVANCES_BANNER_ARMAMENT_IDS
+                .filter((armamentId) => (
+                    (nextFactions.jin.armaments.find((armament) => armament.id === armamentId)?.level ?? 0) > 0
+                )).length;
+            const addedTroops = 2 + activeBannerCount;
             nextRegions = nextRegions.map((region) => (
                 region.id === selectedRegion.id
                     ? addSpecialTroopStackToRegion({
@@ -391,7 +405,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
                         troops: region.troops + addedTroops,
                         note: [
                             region.note,
-                            '七大恨：在后金本土建立 2 个 3 级主力步兵。',
+                            `七大恨：在后金本土建立 ${addedTroops} 个 3 级主力步兵。`,
                         ].filter(Boolean).join(' '),
                     }, buildRegularTroopStack('jin', 'seven-grievances', addedTroops, 3))
                     : region
@@ -404,7 +418,9 @@ export const resolveQidahenSelectedActionExecutionResolution = (
                 },
             };
             nextLastSeasonSummary = dependencies.buildSeasonSummary('七大恨', timestamp, [
-                `在 ${selectedRegion.name} 建立 2 个 3 级后金步兵。`,
+                activeBannerCount > 0
+                    ? `已生效 ${activeBannerCount} 张八旗事件，七大恨在 ${selectedRegion.name} 建立 ${addedTroops} 个 3 级后金步兵。`
+                    : `在 ${selectedRegion.name} 建立 2 个 3 级后金步兵。`,
             ]);
         } else {
             nextLastSeasonSummary = dependencies.buildSeasonSummary('七大恨', timestamp, [

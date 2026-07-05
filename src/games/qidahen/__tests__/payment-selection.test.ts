@@ -2064,6 +2064,78 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.actionLog[0]?.text).toContain('在 建州 建立 2 个 3 级后金步兵');
     });
 
+    it('后金已打出三旗时，七大恨会按每张八旗多建 1 个 3 级步兵', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1609-seven-grievances'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-13',
+            factions: {
+                ...core.factions,
+                jin: {
+                    ...core.factions.jin,
+                    armaments: core.factions.jin.armaments.map((armament) => (
+                        armament.id === 'han-banners'
+                        || armament.id === 'manzhou-banners'
+                        || armament.id === 'mongol-banners'
+                            ? { ...armament, level: 1 }
+                            : armament
+                    )),
+                },
+            },
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '七大恨',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1609-seven-grievances',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+        const baseRegion = mappedCore.regions.find((region) => region.id === 'city-region-13')!;
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const nextRegion = executed.regions.find((region) => region.id === 'city-region-13')!;
+
+        expect(nextRegion.troops).toBe(baseRegion.troops + 5);
+        expect(nextRegion.specialTroops).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'jin-seven-grievances-regular-infantry-lv3',
+                faction: 'jin',
+                troopKind: 'infantry',
+                count: 5,
+                level: 3,
+            }),
+        ]));
+        expect(executed.pieces.filter((piece) => (
+            piece.regionId === 'city-region-13'
+            && piece.sourceStackId === 'jin-seven-grievances-regular-infantry-lv3'
+            && piece.location === 'field'
+        ))).toHaveLength(5);
+        expect(executed.factions.jin.troops).toBe(core.factions.jin.troops + 5);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('已生效 3 张八旗事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('建立 5 个 3 级后金步兵');
+        expect(executed.actionLog[0]?.text).toContain('执行事件「七大恨」');
+        expect(executed.actionLog[0]?.text).toContain('建立 5 个 3 级后金步兵');
+    });
+
     it('蒙古打出七大恨会按牌面无效果处理并移出游戏，不建立部队也不进弃牌堆', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const [sourceCard] = factionHandCards(core, 'mongol');
