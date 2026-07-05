@@ -35,6 +35,7 @@ export interface DiceBoxDieSkin {
     id: string;
     faceCanvases: Record<number, HTMLCanvasElement>;
     faceImages?: Record<number, HTMLImageElement>;
+    faceLabels?: Record<number, string>;
 }
 
 export interface DiceBoxEngineConfig {
@@ -314,21 +315,31 @@ export class DiceBoxThreeEngine {
     private applyPrimarySkinToDicePreset(): void {
         const primarySkin = this.dieSkins.find(Boolean);
         const faceImages = primarySkin?.faceImages;
-        if (!primarySkin || !faceImages || this.activePresetSkinId === primarySkin.id) return;
+        const faceLabels = primarySkin?.faceLabels;
+        if (!primarySkin || (!faceImages && !faceLabels) || this.activePresetSkinId === primarySkin.id) return;
 
         const preset = this.box.DiceFactory?.get('d6');
         if (!preset) return;
 
-        preset.labels = [
-            '',
-            '',
-            faceImages[1],
-            faceImages[2],
-            faceImages[3],
-            faceImages[4],
-            faceImages[5],
-            faceImages[6],
-        ];
+        preset.labels = faceLabels
+            ? [
+                faceLabels[1] ?? '',
+                faceLabels[2] ?? '',
+                faceLabels[3] ?? '',
+                faceLabels[4] ?? '',
+                faceLabels[5] ?? '',
+                faceLabels[6] ?? '',
+            ]
+            : [
+                '',
+                '',
+                faceImages![1],
+                faceImages![2],
+                faceImages![3],
+                faceImages![4],
+                faceImages![5],
+                faceImages![6],
+            ];
         if (this.box.DiceFactory?.materials_cache) {
             this.box.DiceFactory.materials_cache = {};
         }

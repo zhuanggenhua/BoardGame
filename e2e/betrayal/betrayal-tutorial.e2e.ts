@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { resolve } from 'path';
 import {
     assertNoFatalFrontendErrors,
@@ -19,7 +19,8 @@ const STEP_02 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-剩余移动.png`;
 const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.png`;
 const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.png`;
 const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-haunt收尾前.png`;
-const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-终局页.png`;
+const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-驱魔神志检定骰盘.png`;
+const STEP_06B = `${EVIDENCE_DIR}/06B-山屋惊魂-教程-驱魔成功后的终局页.png`;
 const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.png`;
 const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.png`;
 const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-第二章使用书本前.png`;
@@ -44,6 +45,61 @@ const expectImageLoaded = async (locator: ReturnType<Parameters<typeof test>[0][
         const image = node instanceof HTMLImageElement ? node : node.querySelector('img');
         return Boolean(image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
     })).toBe(true);
+};
+
+const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
+    const diceGroup = rollPanel.getByTestId('betrayal-house-dice-3d-group');
+    await expect(diceGroup).toBeVisible();
+    await expect(diceGroup).toHaveAttribute('data-render-mode', 'betrayal-house-dice-box-visible');
+    await expect(diceGroup).toHaveAttribute('data-dice-count', /[1-9]/);
+    await expect.poll(async () => diceGroup.getAttribute('data-dice-physics-ready'), { timeout: 10000 }).toBe('true');
+
+    const physicsSource = rollPanel.getByTestId('betrayal-house-dice-physics-source');
+    await expect(physicsSource).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
+    await expect(physicsSource).toHaveAttribute('data-dice-physics-mode', 'debug-visible');
+    await expect(physicsSource).toHaveAttribute('data-dice-face-system', 'betrayal-house-0-1-2-skin');
+    await expect.poll(async () => diceGroup.evaluate((node) => {
+        const canvases = Array.from(node.querySelectorAll('canvas'))
+            .filter((canvas): canvas is HTMLCanvasElement => canvas instanceof HTMLCanvasElement);
+        const source = node.querySelector('[data-testid="betrayal-house-dice-physics-source"]') as HTMLElement | null;
+        if (source?.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
+        if (source?.dataset.diceFaceSystem !== 'betrayal-house-0-1-2-skin') return false;
+
+        return canvases.some((canvas) => {
+            const rect = canvas.getBoundingClientRect();
+            const style = window.getComputedStyle(canvas);
+            return rect.width >= 160
+                && rect.height >= 120
+                && style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && Number(style.opacity || '1') > 0.5;
+        });
+    }), { timeout: 10000 }).toBe(true);
+};
+
+const expectDiscoveryPanelDoesNotCoverRollModifier = async (discoveryReveal: Locator, modifierCard: Locator) => {
+    await expect(modifierCard).toBeVisible();
+    await expect(discoveryReveal).toHaveAttribute('data-allows-inventory-roll-modifiers', 'true');
+    const hitTarget = await modifierCard.evaluate((node) => {
+        const card = node as HTMLElement;
+        const rect = card.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const elementAtCenter = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
+        const cardAtCenter = elementAtCenter?.closest('[data-testid="betrayal-inventory-rope"]');
+        const discoveryAtCenter = elementAtCenter?.closest('[data-testid="betrayal-discovery-panel"]');
+        return {
+            cardWidth: rect.width,
+            cardHeight: rect.height,
+            cardHit: cardAtCenter === card,
+            discoveryHit: Boolean(discoveryAtCenter),
+            topTestId: elementAtCenter?.dataset.testid ?? null,
+        };
+    });
+    expect(hitTarget.cardWidth).toBeGreaterThan(24);
+    expect(hitTarget.cardHeight).toBeGreaterThan(24);
+    expect(hitTarget.discoveryHit).toBe(false);
+    expect(hitTarget.cardHit).toBe(true);
 };
 
 const clickNext = async (page: Parameters<typeof test>[0]['page']) => {
@@ -152,32 +208,25 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await saveScreenshot(page, STEP_05);
         await page.getByTestId('betrayal-action-use').click();
 
+        const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
+        await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
+        const exorciseRollPanel = exorciseRollReview.getByTestId('betrayal-recent-roll-panel');
+        await expect(exorciseRollPanel).toBeVisible();
+        await expect(exorciseRollPanel).toContainText('驱魔');
+        await expect(exorciseRollPanel).toContainText('神志检定');
+        await expect(exorciseRollReview.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
+        await expect(page.getByTestId('betrayal-endgame-screen')).toBeHidden();
+        await expectVisiblePhysicalDiceBox(exorciseRollPanel);
+        await saveScreenshot(page, STEP_06);
+        await page.getByTestId('betrayal-exorcise-roll-continue').click();
+
         await waitForStep(page, 'endgame-review', 30000);
         const endgameScreen = page.getByTestId('betrayal-endgame-screen');
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });
         await expect(endgameScreen).toContainText('幸存者逃脱');
-        const exorciseRollPanel = page.getByTestId('betrayal-recent-roll-panel');
-        await expect(exorciseRollPanel).toBeVisible();
-        await expect(exorciseRollPanel).toContainText('驱魔');
-        await expect(exorciseRollPanel).toContainText('神志检定');
-        await expect(page.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
-        const exorciseDiceGroup = exorciseRollPanel.getByTestId('betrayal-house-dice-3d-group');
-        await expect(exorciseDiceGroup).toBeVisible();
-        await expect(exorciseDiceGroup).toHaveAttribute('data-render-mode', 'dice-box-threejs');
-        await expect(exorciseRollPanel.getByTestId('betrayal-house-dice-3d-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
-        const recentRollDice = page.locator('[data-testid^="betrayal-recent-roll-die-"]');
-        const loadedDiceAssets = await recentRollDice.evaluateAll((diceNodes) => diceNodes.map((node) => {
-            return {
-                asset: node.getAttribute('data-asset-src'),
-                renderMode: node.getAttribute('data-render-mode'),
-            };
-        }));
-        expect(loadedDiceAssets.length).toBeGreaterThan(0);
-        for (const die of loadedDiceAssets) {
-            expect(die.asset).toMatch(/^betrayal\/dice\/house-die-[0-2]$/);
-            expect(die.renderMode).toBe('dice-box-threejs');
-        }
-        await saveScreenshot(page, STEP_06);
+        await expect(exorciseRollReview).toBeHidden();
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toBeHidden();
+        await saveScreenshot(page, STEP_06B);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial', diagnostics }]);
     });
@@ -240,42 +289,71 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect.poll(async () => tutorialOverlayCard.evaluate((node) => (node as HTMLElement).innerText)).toBe('下一步');
         const discoveryReveal = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryReveal).toBeVisible();
+        await expect(discoveryReveal).toHaveAttribute('data-allows-inventory-roll-modifiers', 'true');
+        const rabbitFootCard = page.getByTestId('betrayal-inventory-rope');
+        await expect(rabbitFootCard).toBeVisible();
+        await expect(rabbitFootCard).toHaveAttribute('data-roll-modifier-available', 'true');
+        await expect(page.getByTestId('betrayal-inventory-rope-roll-modifier')).toBeVisible();
+        await expectDiscoveryPanelDoesNotCoverRollModifier(discoveryReveal, rabbitFootCard);
         const discoveryRollPanel = discoveryReveal.getByTestId('betrayal-recent-roll-panel');
         await expect(discoveryRollPanel).toBeVisible();
         await expect(discoveryRollPanel).toContainText('外星几何');
         await expect(discoveryRollPanel).toContainText('知识检定');
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
-        const discoveryDiceGroup = discoveryRollPanel.getByTestId('betrayal-house-dice-3d-group');
-        await expect(discoveryDiceGroup).toBeVisible();
-        await expect(discoveryDiceGroup).toHaveAttribute('data-render-mode', 'dice-box-threejs');
-        await expect(discoveryRollPanel.getByTestId('betrayal-house-dice-3d-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
-        const discoveryRollDice = discoveryReveal.locator('[data-testid^="betrayal-recent-roll-die-"]');
-        const discoveryDiceAssets = await discoveryRollDice.evaluateAll((diceNodes) => diceNodes.map((node) => {
+        await expectVisiblePhysicalDiceBox(discoveryRollPanel);
+        const rollPanelLayout = await discoveryRollPanel.evaluate((node) => {
+            const panel = node as HTMLElement;
+            const dice = panel.querySelector('[data-testid="betrayal-house-dice-3d-group"]') as HTMLElement | null;
+            const canvas = Array.from(dice?.querySelectorAll('canvas') ?? [])
+                .filter((candidate): candidate is HTMLCanvasElement => candidate instanceof HTMLCanvasElement)
+                .sort((left, right) => {
+                    const leftRect = left.getBoundingClientRect();
+                    const rightRect = right.getBoundingClientRect();
+                    return (rightRect.width * rightRect.height) - (leftRect.width * leftRect.height);
+                })[0] ?? null;
+            const total = panel.querySelector('[data-testid="betrayal-recent-roll-total"]') as HTMLElement | null;
+            const panelRect = panel.getBoundingClientRect();
+            const diceRect = dice?.getBoundingClientRect();
+            const canvasRect = canvas?.getBoundingClientRect();
+            const totalRect = total?.getBoundingClientRect();
             return {
-                src: node.getAttribute('data-asset-src'),
-                renderMode: node.getAttribute('data-render-mode'),
+                panelHeight: panelRect.height,
+                diceWidth: diceRect?.width ?? 0,
+                diceHeight: diceRect?.height ?? 0,
+                canvasWidth: canvasRect?.width ?? 0,
+                canvasHeight: canvasRect?.height ?? 0,
+                totalTop: totalRect ? totalRect.top - panelRect.top : 0,
+                staticDiceImages: panel.querySelectorAll('[data-testid^="betrayal-recent-roll-die-"] img').length,
             };
-        }));
-        expect(discoveryDiceAssets.length).toBeGreaterThan(0);
-        for (const die of discoveryDiceAssets) {
-            expect(die.src).toMatch(/betrayal\/dice\/house-die-[0-2]/);
-            expect(die.renderMode).toBe('dice-box-threejs');
-        }
+        });
+        expect(rollPanelLayout.diceHeight / rollPanelLayout.panelHeight).toBeGreaterThan(0.54);
+        expect(rollPanelLayout.totalTop / rollPanelLayout.panelHeight).toBeGreaterThan(0.58);
+        expect(rollPanelLayout.canvasWidth).toBeGreaterThanOrEqual(160);
+        expect(rollPanelLayout.canvasHeight).toBeGreaterThanOrEqual(120);
+        expect(rollPanelLayout.staticDiceImages).toBe(0);
         const discoveryGeometry = await discoveryReveal.evaluate((node) => {
-            const rect = node.getBoundingClientRect();
+            const panel = node as HTMLElement;
+            const rect = panel.getBoundingClientRect();
+            const content = panel.querySelector('[data-testid="betrayal-discovery-panel-content"]') as HTMLElement | null;
+            const contentRect = content?.getBoundingClientRect();
             return {
-                centerX: rect.left + rect.width / 2,
-                centerY: rect.top + rect.height / 2,
-                viewportCenterX: window.innerWidth / 2,
+                panelCenterX: rect.left + rect.width / 2,
+                panelCenterY: rect.top + rect.height / 2,
+                contentCenterX: contentRect ? contentRect.left + contentRect.width / 2 : 0,
+                contentCenterY: contentRect ? contentRect.top + contentRect.height / 2 : 0,
                 viewportCenterY: window.innerHeight / 2,
                 width: rect.width,
                 height: rect.height,
+                contentWidth: contentRect?.width ?? 0,
+                contentHeight: contentRect?.height ?? 0,
             };
         });
-        expect(Math.abs(discoveryGeometry.centerX - discoveryGeometry.viewportCenterX)).toBeLessThanOrEqual(24);
-        expect(Math.abs(discoveryGeometry.centerY - discoveryGeometry.viewportCenterY)).toBeLessThanOrEqual(48);
+        expect(Math.abs(discoveryGeometry.contentCenterX - discoveryGeometry.panelCenterX)).toBeLessThanOrEqual(24);
+        expect(Math.abs(discoveryGeometry.panelCenterY - discoveryGeometry.viewportCenterY)).toBeLessThanOrEqual(48);
         expect(discoveryGeometry.width).toBeGreaterThan(300);
         expect(discoveryGeometry.height).toBeGreaterThan(320);
+        expect(discoveryGeometry.contentWidth).toBeGreaterThan(300);
+        expect(discoveryGeometry.contentHeight).toBeGreaterThan(320);
         const discoveryFrontAtlas = discoveryReveal.getByTestId('betrayal-discovery-card-front-atlas');
         await expect(discoveryFrontAtlas).toBeVisible();
         await expect(discoveryFrontAtlas).toHaveAttribute('data-asset-src', /betrayal\/cards\/(event-front-atlas|item-front-atlas|omen-front-atlas)/);

@@ -16,11 +16,9 @@ import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
-import {
-    DiceBoxThreeEngine,
-    type DiceBoxDieSkin,
-    type DiceBoxStyleProfile,
-} from '../../lib/dice-box-threejs/engine';
+import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSource';
+import type { DiceBoxDieSkin } from '../../lib/dice-box-threejs/engine';
+import type { DiceBoxStyleProfile } from '../../lib/dice-box-threejs/engine';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
@@ -1316,191 +1314,129 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
     },
 } satisfies DiceBoxStyleProfile;
 
-const HOUSE_DIE_FACE_BY_D6_VALUE: Record<number, number> = {
-    1: 0,
-    2: 0,
-    3: 1,
-    4: 1,
-    5: 2,
-    6: 2,
-};
+const BETRAYAL_HOUSE_DICE_FACE_SYSTEM = 'betrayal-house-0-1-2-skin';
 
-function createHouseDieFaceCanvas(image: HTMLImageElement): HTMLCanvasElement {
+function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
-    const context = canvas.getContext('2d');
-    if (!context) return canvas;
+    const ctx = canvas.getContext('2d')!;
+    const gradient = ctx.createRadialGradient(96, 76, 16, 128, 128, 148);
+    gradient.addColorStop(0, '#fff2c2');
+    gradient.addColorStop(0.42, '#d6bd7a');
+    gradient.addColorStop(1, '#8a612f');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.strokeStyle = '#2e2117';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(14, 14, 228, 228);
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(27, 27, 202, 202);
 
-    context.fillStyle = '#eadfbf';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 20, 20, 216, 216);
-    context.strokeStyle = 'rgba(74, 56, 30, 0.46)';
-    context.lineWidth = 8;
-    context.strokeRect(10, 10, 236, 236);
+    const pipPositions: Record<0 | 1 | 2, Array<[number, number]>> = {
+        0: [],
+        1: [[128, 128]],
+        2: [[88, 88], [168, 168]],
+    };
+
+    for (const [x, y] of pipPositions[value]) {
+        ctx.beginPath();
+        ctx.arc(x, y, 28, 0, Math.PI * 2);
+        ctx.fillStyle = '#21170f';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x - 7, y - 8, 9, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,241,194,0.36)';
+        ctx.fill();
+    }
+
     return canvas;
 }
 
-function buildHouseDieSkin(locale: string, images: Record<number, HTMLImageElement>): DiceBoxDieSkin {
-    const faceCanvases: Record<number, HTMLCanvasElement> = {};
-    const faceImages: Record<number, HTMLImageElement> = {};
-
-    for (const d6Value of [1, 2, 3, 4, 5, 6]) {
-        const image = images[HOUSE_DIE_FACE_BY_D6_VALUE[d6Value]];
-        faceImages[d6Value] = image;
-        faceCanvases[d6Value] = createHouseDieFaceCanvas(image);
-    }
-
+function createBetrayalHouseDiceSkin(): DiceBoxDieSkin {
+    const zero = createBetrayalHouseDieFaceCanvas(0);
+    const one = createBetrayalHouseDieFaceCanvas(1);
+    const two = createBetrayalHouseDieFaceCanvas(2);
     return {
-        id: `betrayal-house-die-${locale}`,
-        faceCanvases,
-        faceImages,
+        id: BETRAYAL_HOUSE_DICE_FACE_SYSTEM,
+        faceCanvases: {
+            1: zero,
+            2: zero,
+            3: one,
+            4: one,
+            5: two,
+            6: two,
+        },
+        faceLabels: {
+            1: '0',
+            2: '0',
+            3: '1',
+            4: '1',
+            5: '2',
+            6: '2',
+        },
+        faceImages: undefined,
     };
 }
 
 function BetrayalHouseDice3DGroup({
     roll,
     className = '',
-    locale,
 }: {
     roll: BetrayalRecentRollState;
     className?: string;
     locale: string;
 }) {
-    const containerRef = React.useRef<HTMLDivElement | null>(null);
-    const engineRef = React.useRef<DiceBoxThreeEngine | null>(null);
     const diceInputs = React.useMemo(
-        () => roll.dice.map((pip) => Math.max(1, Math.min(6, (pip * 2) + 1))),
+        () => roll.dice.map((pip, index) => ({
+            id: index + 1,
+            value: Math.max(1, Math.min(6, (pip * 2) + 1)),
+        })),
         [roll.dice],
     );
-    const diceKey = React.useMemo(() => `${roll.id}:${diceInputs.join(',')}`, [diceInputs, roll.id]);
-    const [engineState, setEngineState] = React.useState<'loading' | 'ready' | 'fallback'>('loading');
-    const [loadedDieFaces, setLoadedDieFaces] = React.useState<Record<number, HTMLImageElement>>({});
-    const loadedDieFaceCount = React.useMemo(
-        () => [0, 1, 2].filter((pip) => Boolean(loadedDieFaces[pip])).length,
-        [loadedDieFaces],
+    const dieSkins = React.useMemo(
+        () => roll.dice.map(() => createBetrayalHouseDiceSkin()),
+        [roll.dice],
     );
-
-    const handleDieFaceLoad = React.useCallback((pip: number, event: React.SyntheticEvent<HTMLImageElement>) => {
-        const image = event.currentTarget;
-        if (!image.naturalWidth || !image.naturalHeight) return;
-        setLoadedDieFaces((current) => (
-            current[pip] === image
-                ? current
-                : { ...current, [pip]: image }
-        ));
-    }, []);
-
-    React.useEffect(() => {
-        let cancelled = false;
-        const init = async () => {
-            const container = containerRef.current;
-            if (!container || loadedDieFaceCount < 3) return;
-            setEngineState('loading');
-            try {
-                const engine = await DiceBoxThreeEngine.create(container, {
-                    styleProfile: BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
-                    rendererMode: 'debug-visible',
-                });
-                const skin = buildHouseDieSkin(locale, loadedDieFaces);
-                if (cancelled) {
-                    engine.destroy();
-                    return;
-                }
-                engineRef.current = engine;
-                engine.setDieSkins(diceInputs.map(() => skin));
-                engine.resize();
-                await engine.rollToValues(diceInputs);
-                if (!cancelled) {
-                    setEngineState('ready');
-                }
-            } catch {
-                if (!cancelled) {
-                    engineRef.current?.destroy();
-                    engineRef.current = null;
-                    setEngineState('fallback');
-                }
-            }
-        };
-
-        void init();
-
-        return () => {
-            cancelled = true;
-            engineRef.current?.destroy();
-            engineRef.current = null;
-        };
-    }, [diceInputs, diceKey, loadedDieFaceCount, loadedDieFaces, locale]);
+    const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
 
     return (
         <div
             data-testid="betrayal-house-dice-3d-group"
-            data-render-mode={engineState === 'ready' ? 'dice-box-threejs' : engineState}
-            className={`relative h-[132px] min-w-[300px] overflow-hidden rounded-[14px] border border-[rgba(211,179,109,0.3)] bg-[radial-gradient(circle_at_50%_70%,rgba(101,75,34,0.32),rgba(10,12,9,0.92)_70%)] ${className}`}
+            data-render-mode="betrayal-house-dice-box-visible"
+            data-dice-physics-ready={hasPhysicsState ? 'true' : 'false'}
+            data-dice-count={roll.dice.length}
+            className={`relative min-h-0 overflow-hidden rounded-[14px] border border-[rgba(211,179,109,0.3)] bg-[radial-gradient(circle_at_50%_70%,rgba(101,75,34,0.32),rgba(10,12,9,0.92)_70%)] ${className}`}
         >
-            <div
-                ref={containerRef}
-                data-testid="betrayal-house-dice-3d-canvas"
-                data-dice-physics-source={engineState === 'ready' ? 'dice-box-threejs' : engineState}
-                className="absolute inset-0"
+            <DiceBoxPhysicsSource
+                dice={diceInputs}
+                isRolling
+                styleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
+                dieSkins={dieSkins}
+                testId="betrayal-house-dice-physics-source"
+                rendererMode="debug-visible"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                dataAttributes={{
+                    'data-dice-face-system': BETRAYAL_HOUSE_DICE_FACE_SYSTEM,
+                    'data-dice-model-source': 'dice-box-d6-with-betrayal-0-1-2-skin',
+                }}
+                onPhysicsStatesChange={(states) => {
+                    setHasPhysicsState(states.length > 0);
+                }}
             />
-            <div className="sr-only" aria-hidden="true">
-                {[0, 1, 2].map((pip) => (
-                    <OptimizedImage
-                        key={`house-die-skin-${pip}`}
-                        src={`betrayal/dice/house-die-${pip}`}
-                        alt=""
-                        aria-hidden="true"
-                        locale={locale}
-                        placeholder={false}
-                        draggable={false}
-                        onLoad={(event) => handleDieFaceLoad(pip, event)}
-                    />
+            <div className="sr-only">
+                {roll.dice.map((pip, dieIndex) => (
+                    <span
+                        key={`${roll.id}-${dieIndex}`}
+                        data-testid={`betrayal-recent-roll-die-${dieIndex}`}
+                        data-render-mode="betrayal-house-die-dice-box-visible"
+                        data-dice-physics-source={hasPhysicsState ? 'dice-box-threejs' : 'pending'}
+                    >
+                        {pip}
+                    </span>
                 ))}
             </div>
-            {engineState !== 'ready' ? (
-                <div className="absolute inset-0 flex items-center justify-center gap-2">
-                    {roll.dice.map((pip, dieIndex) => {
-                        const clampedPip = Math.max(0, Math.min(2, pip));
-                        const dieAsset = `betrayal/dice/house-die-${clampedPip}`;
-                        return (
-                            <span
-                                key={`${roll.id}-${dieIndex}`}
-                                data-testid={`betrayal-recent-roll-die-${dieIndex}`}
-                                data-asset-src={dieAsset}
-                                data-render-mode="betrayal-house-die-fallback"
-                                className="grid h-12 w-12 place-items-center rounded-[9px] border border-[rgba(237,222,180,0.62)] bg-[rgba(234,223,191,0.94)]"
-                            >
-                                <OptimizedImage
-                                    src={dieAsset}
-                                    alt=""
-                                    aria-hidden="true"
-                                    locale="zh-CN"
-                                    draggable={false}
-                                    className="h-full w-full object-contain"
-                                />
-                            </span>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="sr-only">
-                    {roll.dice.map((pip, dieIndex) => {
-                        const clampedPip = Math.max(0, Math.min(2, pip));
-                        const dieAsset = `betrayal/dice/house-die-${clampedPip}`;
-                        return (
-                            <span
-                                key={`${roll.id}-${dieIndex}`}
-                                data-testid={`betrayal-recent-roll-die-${dieIndex}`}
-                                data-asset-src={dieAsset}
-                                data-render-mode="dice-box-threejs"
-                            >
-                                {clampedPip}
-                            </span>
-                        );
-                    })}
-                </div>
-            )}
         </div>
     );
 }
@@ -1553,36 +1489,43 @@ function RecentRollPanel({
 }) {
     const { t } = useTranslation('game-betrayal');
     const bonusLabel = roll.passiveBonus > 0 ? `+${roll.passiveBonus}` : String(roll.passiveBonus);
+    const totalLabel = t('board.roll.total', { value: resolveRecentRollTotal(roll) });
+    const bonusText = roll.passiveBonus !== 0 ? t('board.roll.bonus', { value: bonusLabel }) : t('board.roll.noBonus');
 
     return (
         <div
             data-testid="betrayal-recent-roll-panel"
             data-tutorial-id="betrayal-recent-roll-panel"
-            className={`pointer-events-none border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(22,18,12,0.96),rgba(9,12,10,0.94))] px-3 py-2 text-[#f3e0a6] shadow-[0_14px_34px_rgba(0,0,0,0.38)] ${className}`}
+            className={`pointer-events-none min-h-[260px] border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(22,18,12,0.96),rgba(9,12,10,0.94))] p-3 text-[#f3e0a6] shadow-[0_14px_34px_rgba(0,0,0,0.38)] ${className}`}
         >
-            <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                    {showSource ? (
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c9a35e]">{roll.sourceTitle}</div>
-                    ) : null}
-                    <div className="mt-0.5 text-[13px] font-semibold text-[#fff1b8]">{roll.rollLabel ?? t('board.roll.fallbackLabel')}</div>
+            <div className="grid h-full min-h-[236px] grid-rows-[minmax(158px,2fr)_minmax(62px,1fr)] gap-2">
+                <BetrayalHouseDice3DGroup roll={roll} locale={effectiveLocale} className={`h-full w-full min-w-0 ${diceClassName ?? ''}`} />
+                <div className="grid min-h-0 grid-cols-[1fr_auto] gap-x-3 gap-y-1 rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.58)] px-3 py-2">
+                    <div className="min-w-0">
+                        {showSource ? (
+                            <div className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">{roll.sourceTitle}</div>
+                        ) : null}
+                        <div className="mt-0.5 truncate text-[13px] font-semibold text-[#fff1b8]">{roll.rollLabel ?? t('board.roll.fallbackLabel')}</div>
+                    </div>
+                    <div data-testid="betrayal-recent-roll-total" className="self-center whitespace-nowrap text-[15px] font-bold text-[#eef4a8]">
+                        {totalLabel}
+                    </div>
+                    <div className="min-w-0 text-[12px] text-[#d6c498]">
+                        <span data-testid="betrayal-recent-roll-bonus">{bonusText}</span>
+                    </div>
+                    {showOutcome ? (
+                        <div className="self-center truncate text-right text-[12px] font-semibold text-[#fff1b8]">{roll.latestLabel}</div>
+                    ) : (
+                        <span className="sr-only">{roll.latestLabel}</span>
+                    )}
                 </div>
-                <BetrayalHouseDice3DGroup roll={roll} locale={effectiveLocale} className={diceClassName} />
             </div>
-            <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[#d6c498]">
-                {roll.passiveBonus !== 0 ? (
-                    <span data-testid="betrayal-recent-roll-bonus">{t('board.roll.bonus', { value: bonusLabel })}</span>
-                ) : (
-                    <span>{t('board.roll.noBonus')}</span>
-                )}
-                <span data-testid="betrayal-recent-roll-total" className="font-semibold text-[#eef4a8]">
-                    {t('board.roll.total', { value: resolveRecentRollTotal(roll) })}
-                </span>
-                {showOutcome ? (
-                    <span className="font-semibold text-[#fff1b8]">{roll.latestLabel}</span>
-                ) : (
-                    <span className="sr-only">{roll.latestLabel}</span>
-                )}
+            <div className="sr-only">
+                {showSource ? <span>{roll.sourceTitle}</span> : null}
+                <span>{roll.rollLabel ?? t('board.roll.fallbackLabel')}</span>
+                <span>{bonusText}</span>
+                <span>{totalLabel}</span>
+                <span>{roll.latestLabel}</span>
             </div>
         </div>
     );
@@ -1615,6 +1558,10 @@ function EndgameScreen({
     const roomsExploredCount = result?.stats.roomsExplored ?? core.rooms.filter((room) => room.state === 'discovered').length;
     const omensDrawnCount = result?.stats.omensDrawn ?? 0;
     const eventsDrawnCount = result?.stats.eventsDrawn ?? 0;
+    const shouldShowEndgameRecentRoll = Boolean(core.recentRoll)
+        && !(core.recentRoll?.kind === 'hauntActionTraitCheck'
+            && core.recentRoll.sourceTitle === '驱魔'
+            && core.recentRoll.trait === 'sanity');
 
     return (
         <div
@@ -1776,7 +1723,7 @@ function EndgameScreen({
                         <section className="relative flex min-h-0 flex-col items-center justify-start gap-3 px-3">
                             <div className="pointer-events-none absolute left-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
                             <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
-                            {core.recentRoll ? (
+                            {shouldShowEndgameRecentRoll && core.recentRoll ? (
                                 <RecentRollPanel
                                     roll={core.recentRoll}
                                     className="relative z-10 w-full max-w-[520px]"
@@ -2009,6 +1956,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [referenceSide, setReferenceSide] = React.useState<ReferencePageId>('front');
     const [roomPreviewId, setRoomPreviewId] = React.useState<string | null>(null);
     const [inventoryPreviewCardId, setInventoryPreviewCardId] = React.useState<string | null>(null);
+    const [confirmedExorciseRollId, setConfirmedExorciseRollId] = React.useState<string | null>(null);
     const [roomGridPan, setRoomGridPan] = React.useState({ x: 0, y: 0 });
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
     const hasCenteredInitialRoomGridRef = React.useRef(false);
@@ -2020,7 +1968,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         startPanY: 0,
         hasMoved: false,
     });
-    const referencePages = React.useMemo(() => resolveReferencePages(baseCore), [baseCore]);
+    const isEndgameExorciseRollReview = baseCore.phase === 'endgame'
+        && baseCore.recentRoll?.kind === 'hauntActionTraitCheck'
+        && baseCore.recentRoll.sourceTitle === '驱魔'
+        && baseCore.recentRoll.trait === 'sanity'
+        && confirmedExorciseRollId !== baseCore.recentRoll.id;
+    const core = React.useMemo<BetrayalCore>(() => (
+        isEndgameExorciseRollReview
+            ? {
+                ...baseCore,
+                phase: 'haunt',
+                recommendedAction: 'endTurn',
+                endgameResult: null,
+            }
+            : baseCore
+    ), [baseCore, isEndgameExorciseRollReview]);
+    const referencePages = React.useMemo(() => resolveReferencePages(core), [core]);
     const currentReferencePage = referencePages.find((page) => page.id === referenceSide) ?? referencePages[0]!;
 
     React.useEffect(() => {
@@ -2095,7 +2058,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const handleStartScenario = React.useCallback(() => {
         dispatchCommand(BETRAYAL_COMMANDS.START_SCENARIO, { scenarioId: baseCore.scenarioId });
     }, [baseCore.scenarioId, dispatchCommand]);
-    const core = baseCore;
     const roomOccupants = React.useMemo(() => buildRoomOccupants(core), [core]);
     const roomMonsters = React.useMemo(() => buildRoomMonsters(core), [core]);
     const roomCanvasStyle = React.useMemo(() => resolveRoomCanvasStyle(core.rooms), [core.rooms]);
@@ -2393,6 +2355,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedCardCanUseRabbitFoot = selectedInventoryCard
         ? canUseRabbitFootForRecentRoll(core, core.currentExplorer.playerId, selectedInventoryCard.id)
         : false;
+    const rollModifierCardIds = React.useMemo(
+        () => new Set(core.currentExplorerInventory
+            .filter((card) => canUseRabbitFootForRecentRoll(core, core.currentExplorer.playerId, card.id))
+            .map((card) => card.id)),
+        [core],
+    );
     const selectedCardNeedsTargetRoom = selectedInventoryUseEffect?.mode === 'moveOthersInRoom';
     const selectedCardUseDisabled = Boolean(selectedInventoryCard && (
         (!selectedInventoryUseEffect && !selectedCardCanUseRabbitFoot)
@@ -2538,7 +2506,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     );
     const latestDiscoveryTitle = core.latestDiscovery?.title;
     const latestDiscoveryKindLabel = core.latestDiscovery
-        ? t(`board.discovery.${core.latestDiscovery.kind}Card`)
+        ? {
+            event: t('board.discovery.eventCard'),
+            item: t('board.discovery.itemCard'),
+            omen: t('board.discovery.omenCard'),
+        }[core.latestDiscovery.kind]
         : '';
     const latestDiscoveryVisual = React.useMemo(
         () => resolveDiscoveryAtlasVisual(core.latestDiscovery, core.currentExplorerInventory),
@@ -3204,6 +3176,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         const isFocus = options.layout === 'focus';
         const isPreview = options.layout === 'preview';
         const isCompact = options.layout === 'compact';
+        const canModifyRecentRoll = !isPreview && rollModifierCardIds.has(item.id);
         const isTradeCompact = isCompact && Boolean(frontVisual) && core.recommendedAction === 'trade';
         const isDenseNoFrontCompact = isCompact && !frontVisual && Boolean(options.compactDenseNoFront);
         const isCompactDenseOmen = isDenseNoFrontCompact && item.kind === 'omen';
@@ -3247,6 +3220,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     }));
                 }}
                 data-testid={options.testId}
+                data-roll-modifier-available={canModifyRecentRoll ? 'true' : 'false'}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击选择`}
                 className={`relative w-full overflow-hidden text-left transition ${
                     showSelectedState
@@ -3254,9 +3228,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         : isPreview
                             ? 'z-10'
                             : 'z-10 hover:-translate-y-0.5'
-                }`}
+                } ${canModifyRecentRoll ? 'ring-2 ring-[#eef4a8] ring-offset-2 ring-offset-[#11100c] shadow-[0_0_22px_rgba(238,244,168,0.32)]' : ''}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
+                {canModifyRecentRoll ? (
+                    <div
+                        data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
+                        className={`absolute left-2 top-2 z-20 rounded-full border border-[#eef4a8] bg-[rgba(34,42,18,0.92)] ${isCompact ? 'px-1.5 py-0.5 text-[8px]' : 'px-2 py-0.5 text-[10px]'} font-bold tracking-[0.08em] text-[#eef4a8] shadow-[0_0_14px_rgba(238,244,168,0.28)]`}
+                    >
+                        {t('board.discovery.rollModifierTag')}
+                    </div>
+                ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
@@ -3487,10 +3469,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         );
     }
 
-    if (baseCore.phase === 'endgame') {
+    if (core.phase === 'endgame') {
         return (
             <EndgameScreen
-                core={baseCore}
+                core={core}
                 matchData={matchData}
                 effectiveLocale={effectiveLocale}
             />
@@ -3842,9 +3824,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     data-card-testid="betrayal-discovery-card-reveal"
                                     data-tutorial-id="betrayal-latest-discovery"
                                     aria-label={`${latestDiscoveryKindLabel} ${core.latestDiscovery!.title}`}
-                                    className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center px-4 py-16"
+                                    data-allows-inventory-roll-modifiers={rollModifierCardIds.size > 0 ? 'true' : 'false'}
+                                    className={`pointer-events-none absolute inset-y-0 left-0 z-50 flex items-center justify-center px-4 py-16 ${
+                                        rollModifierCardIds.size > 0
+                                            ? 'right-0 md:right-[236px] md:pr-2'
+                                            : 'right-0'
+                                    }`}
                                 >
-                                    <div className="flex max-h-[calc(100vh-8rem)] w-[min(900px,calc(100vw-2rem))] flex-col items-center justify-center gap-5 md:flex-row">
+                                    <div
+                                        data-testid="betrayal-discovery-panel-content"
+                                        className={`flex max-h-[calc(100vh-8rem)] flex-col items-center justify-center gap-5 md:flex-row ${
+                                        rollModifierCardIds.size > 0
+                                            ? 'w-[min(900px,calc(100vw-2rem))] md:w-[min(780px,calc(100vw-18rem))]'
+                                            : 'w-[min(900px,calc(100vw-2rem))]'
+                                    }`}
+                                    >
                                         <div className="w-[min(340px,calc(100vw-2rem))] shrink-0 md:w-[340px]">
                                             <span className="sr-only" data-testid="betrayal-discovery-detail">
                                                 {core.latestDiscovery!.summary}
@@ -3879,11 +3873,34 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             ) : null}
 
                             {core.recentRoll && !pendingEventChoice && !shouldShowLatestDiscovery ? (
-                                <RecentRollPanel
-                                    roll={core.recentRoll}
-                                    className="absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2"
-                                    effectiveLocale={effectiveLocale}
-                                />
+                                isEndgameExorciseRollReview ? (
+                                    <div
+                                        data-testid="betrayal-exorcise-roll-review"
+                                        data-tutorial-id="betrayal-exorcise-roll-review"
+                                        className="pointer-events-auto absolute left-1/2 top-[70px] z-50 flex w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center gap-3"
+                                    >
+                                        <RecentRollPanel
+                                            roll={core.recentRoll}
+                                            className="w-full"
+                                            diceClassName="min-h-[240px]"
+                                            effectiveLocale={effectiveLocale}
+                                        />
+                                        <button
+                                            type="button"
+                                            data-testid="betrayal-exorcise-roll-continue"
+                                            className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                                            onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
+                                        >
+                                            {t('board.endgame.enterEndgame')}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <RecentRollPanel
+                                        roll={core.recentRoll}
+                                        className="absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2"
+                                        effectiveLocale={effectiveLocale}
+                                    />
+                                )
                             ) : null}
 
                             {pendingEventChoice ? (

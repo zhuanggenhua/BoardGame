@@ -412,6 +412,30 @@ export interface QidahenMaShiTradeSelection {
     choices: QidahenMaShiTradeChoice[];
 }
 
+export interface QidahenGrantPardonChoice {
+    id: string;
+    sourceRegionId: string;
+    sourceRegionName: string;
+    targetRegionId: string;
+    targetRegionName: string;
+    targetFactionId: QidahenFactionId | 'neutral';
+    targetFactionName: string;
+    label: string;
+    detail: string;
+}
+
+export interface QidahenGrantPardonSelection {
+    title: string;
+    summary: string;
+    preferredSourceRegionId: string | null;
+    sourceRegionId: string | null;
+    sourceRegionName: string | null;
+    displayAnchorRegionId: string | null;
+    displayAnchorRegionName: string | null;
+    selectedChoiceId: string | null;
+    choices: QidahenGrantPardonChoice[];
+}
+
 export interface QidahenDriveTigerConsentChoice {
     id: 'accept' | 'decline';
     label: string;
@@ -722,6 +746,7 @@ export interface QidahenCore {
         | 'internal-dispatch-choice'
         | 'recruit-choice'
         | 'ma-shi-trade-choice'
+        | 'grant-pardon-choice'
         | 'khan-edict-choice'
         | 'diplomacy-choice'
         | 'drive-tiger-consent'
@@ -749,6 +774,7 @@ export interface QidahenCore {
     selectedHandActionCardId: string | null;
     recruitSelection: QidahenRecruitSelection | null;
     maShiTradeSelection: QidahenMaShiTradeSelection | null;
+    grantPardonSelection: QidahenGrantPardonSelection | null;
     khanEdictSelection: QidahenKhanEdictSelection | null;
     diplomacyProgress: QidahenDiplomacyProgress | null;
     handLimitDiscardSelection: QidahenHandLimitDiscardSelection | null;

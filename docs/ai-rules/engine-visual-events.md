@@ -86,26 +86,59 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 
 特效/动画/音效消费必须用 `getEventStreamEntries(G)`（EventStreamSystem），禁止用 `getEvents(G)`（LogSystem）。原因：LogSystem 持久化全量日志刷新后完整恢复，EventStream 实时消费通道带自增 `id`，撤销时清空。
 
+### 视觉事件消费策略（强制）
+
+EventStream 不是单一语义的“历史列表”。同一条事件被不同 UI 消费者使用时，必须先声明消费者语义，再决定是否跳过历史、是否排队、是否允许合并。
+
+| 策略 | 现实含义 | 消费规则 | 典型场景 |
+|------|----------|----------|----------|
+| `requiredSequence` | 必须完整播放的动画序列 | 只能按 EventStream `id` / 游标 / 已消费事件 ID 控制；禁止用 `Date.now()` 或事件 `timestamp` 丢弃 | 攻击、受伤、摧毁、连锁结算动画 |
+| `transientNotification` | 临时提示或展示浮层 | 首次挂载跳过已有基线，只消费页面打开后进入 EventStream 的新事件；Undo/回滚时清空队列 | 行动卡特写、揭示浮层、toast |
+| `derivedCurrentState` | 当前 UI 状态重建 | 不走播放队列；从当前状态或必要历史事件重建当前显示 | 修正值、持续状态、高亮状态 |
+| `instantFeedback` | 轻量即时反馈 | 可按消费者规则合并、限流或弱化，但不能阻塞核心结算 | 音效、轻量闪烁、飘字 |
+
+新游戏接入视觉事件时必须明确属于上述哪一类。不要把“事件类型”当成唯一规则：事件类型可以参与筛选，但真正决定消费方式的是消费者语义。
+
+**禁止事项**
+
+- ❌ 禁止用 `Date.now()`、页面加载时间或事件 `timestamp` 过滤 `requiredSequence`，否则 AI 行动过快或服务端重放时会丢必播动画。
+- ❌ 禁止把临时提示的“跳过进房旧事件”逻辑复制到攻击/受伤/摧毁动画上。
+- ❌ 禁止让 `derivedCurrentState` 走播放队列；这类 UI 应重建当前状态，而不是重播历史动画。
+
+**框架入口**
+
+```typescript
+import { useVisualEventStream } from '../../components/game/framework';
+
+const { consumeNew } = useVisualEventStream({
+  entries: getEventStreamEntries(G),
+  strategy: 'requiredSequence',
+});
+```
+
 ### 乐观引擎兼容（强制理解）
 
 乐观引擎的 `processCommand` / `reconcile` 过程中，`setState` 会被多次调用。`wait-confirm` 模式会剥离 EventStream（entries 暂时为空），这不是 Undo 回退。`useEventStreamCursor` 已内置处理：entries 为空时保持游标不变，只有当 entries 的最大 ID 真正回退（小于游标值）时才判定为 Undo 回退。消费者无需额外处理。
 
 ### 首次挂载跳过历史事件（强制）
 
-> 所有消费 EventStream 的 Hook/Effect 必须遵循，无例外。
+> 适用于 `transientNotification` 等临时提示消费者。`requiredSequence` 仍然首次挂载跳过已有基线，但后续新事件必须按 EventStream ID 完整消费，不能再叠加时间戳过滤。
 
 **模式 A：过滤式消费（推荐，处理多条新事件）**
 
-使用引擎层通用 hook `useEventStreamCursor`（`src/engine/hooks/useEventStreamCursor.ts`），
+优先使用视觉事件策略 hook `useVisualEventStream`（`src/components/game/framework/hooks/useVisualEventStream.ts`），
 自动处理首次挂载跳过历史 + Undo 恢复重置游标。
 所有判断在 `consumeNew()` 内同步完成，不依赖 useEffect 时序，
 消费者用 `useEffect` 或 `useLayoutEffect` 均可。
 
 简单场景（不需要 reset 清理）：
 ```typescript
-import { useEventStreamCursor } from '../../../engine/hooks';
+import { useVisualEventStream } from '../../../components/game/framework';
 
-const { consumeNew } = useEventStreamCursor({ entries: eventStreamEntries });
+const { consumeNew } = useVisualEventStream({
+  entries: eventStreamEntries,
+  strategy: 'transientNotification',
+});
 
 useEffect(() => {
   const { entries: newEntries } = consumeNew();
@@ -116,7 +149,10 @@ useEffect(() => {
 
 需要 Undo 回退清理（攻击队列/技能模式等）：
 ```typescript
-const { consumeNew } = useEventStreamCursor({ entries });
+const { consumeNew } = useVisualEventStream({
+  entries,
+  strategy: 'requiredSequence',
+});
 
 useLayoutEffect(() => {
   const { entries: newEntries, didReset } = consumeNew();
@@ -147,7 +183,7 @@ useEffect(() => {
 
 **禁止**：初始值为 `null/-1` 且无首次挂载跳过逻辑；仅靠 `mountedRef` 守卫（后续 state 变化仍会重播）。
 
-**检查清单**：① 是否使用 `useEventStreamCursor` 通用 hook？② `consumeNew` 返回的 `didReset` 是否被正确处理（需要清理 UI 状态的场景）？③ 模式 B 的 `useRef` 初始值是否为 `currentEntry?.id ?? null`？④ `consumeNew` 是否在依赖数组中？
+**检查清单**：① 是否使用 `useVisualEventStream` 并声明正确策略？② `requiredSequence` 是否只按 EventStream ID/游标消费，未使用时间戳过滤？③ `transientNotification` 是否跳过首次挂载基线并在 reset/rollback 时清空队列？④ `consumeNew` 返回的 `didReset` 是否被正确处理（需要清理 UI 状态的场景）？⑤ 模式 B 的 `useRef` 初始值是否为 `currentEntry?.id ?? null`？⑥ `consumeNew` 是否在依赖数组中？
 
 **参考**：模式 A → `dicethrone/hooks/useCardSpotlight.ts`（简单）、`summonerwars/ui/useGameEvents.ts`（含 didReset 清理）；模式 B → `lib/audio/useGameAudio.ts`
 

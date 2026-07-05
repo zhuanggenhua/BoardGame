@@ -140,7 +140,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'roll',
         description: cardText('card-just-this', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        playCondition: { phase: 'defensiveRoll', requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: cardEffectText('card-just-this', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {

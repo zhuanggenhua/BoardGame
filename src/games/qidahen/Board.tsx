@@ -347,7 +347,7 @@ const _buildQidahenPrimaryStageHeadline = (
         if (core.wheelActionUsed) {
             return '轮盘已完成';
         }
-        return '轮盘行动';
+        return '轮盘落点行动';
     }
     if (primaryStageMode === 'faction') {
         if (core.factionActionUsed) {
@@ -5031,7 +5031,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             {showTopWheelPrompt ? (
                 <TopPromptBanner
                     testId="qidahen-wheel-next-step-banner"
-                    title={t('board.actions.wheelNextStepTitle', { defaultValue: '轮盘行动' })}
+                    title={t('board.actions.wheelNextStepTitle', { defaultValue: '轮盘落点行动' })}
                     hint={t('board.actions.wheelNextStepHint', { defaultValue: '选择轮盘格' })}
                     badgeLabel={t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘' })}
                     tone="wheel"

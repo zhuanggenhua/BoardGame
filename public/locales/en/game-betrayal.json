@@ -36,6 +36,7 @@
       "rematch": "Rematch",
       "lobby": "Lobby",
       "logs": "Logs",
+      "enterEndgame": "Enter Endgame",
       "victory": "Victory",
       "defeat": "Defeat",
       "survivorsEscaped": "Survivors Escaped",
@@ -240,7 +241,8 @@
       "omenCard": "Omen Card",
       "eventResolved": "Immediate effect",
       "addedToInventory": "Added to inventory",
-      "readyToUse": "Selected and ready to use"
+      "readyToUse": "Selected and ready to use",
+      "rollModifierTag": "Modify Dice"
     },
     "roll": {
       "fallbackLabel": "Dice Roll",

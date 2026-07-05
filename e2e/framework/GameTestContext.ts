@@ -450,11 +450,29 @@ export class GameTestContext {
     }
 
     private async detectGameLoadError(timeout = 800): Promise<string | null> {
-        const errorScreen = this.page.locator('[data-bg-friendly-screen="true"]');
+        const errorScreen = this.page.locator('[data-bg-friendly-screen="true"], [data-testid="game-page-rescue-gate"]');
+        const rescueTitle = this.page.getByText('页面没有正常显示');
         const isVisible = await errorScreen.isVisible({ timeout }).catch(() => false);
-        if (!isVisible) return null;
-        const text = await errorScreen.innerText().catch(() => '游戏加载失败');
+        const titleVisible = isVisible ? false : await rescueTitle.isVisible({ timeout: 100 }).catch(() => false);
+        if (!isVisible && !titleVisible) return null;
+        const text = isVisible
+            ? await errorScreen.innerText().catch(() => '游戏加载失败')
+            : await rescueTitle.innerText().catch(() => '页面没有正常显示');
         return text.replace(/\s+/g, ' ').trim();
+    }
+
+    private async recoverGameLoadError(timeout = 800): Promise<boolean> {
+        const loadError = await this.detectGameLoadError(timeout);
+        if (!loadError) return false;
+
+        const reloadButton = this.page.getByRole('button', { name: /刷新重试/i });
+        if (await reloadButton.isVisible({ timeout: 300 }).catch(() => false)) {
+            await reloadButton.click().catch(() => this.page.reload({ waitUntil: 'domcontentloaded' }));
+        } else {
+            await this.page.reload({ waitUntil: 'domcontentloaded' });
+        }
+        await this.page.waitForTimeout(1200);
+        return true;
     }
 
     /**
@@ -502,6 +520,10 @@ export class GameTestContext {
 
             try {
                 await this.gotoWithRetry(url, navigationTimeout);
+                const recoveredLoadError = await this.recoverGameLoadError(800);
+                if (recoveredLoadError) {
+                    await this.gotoWithRetry(url, navigationTimeout);
+                }
                 const readyTimeout = Math.max(1000, deadline - Date.now());
                 await this.waitForTestHarness(readyTimeout);
                 await this.page.waitForFunction(

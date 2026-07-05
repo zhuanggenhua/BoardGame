@@ -2,7 +2,7 @@
  * 召唤师战争 - 游戏事件流消费 Hook
  * 
  * 使用 EventStreamSystem 消费事件，驱动动画/特效/音效
- * 使用引擎层 useEventStreamCursor 管理游标（自动处理首次挂载跳过 + Undo 重置）
+ * 使用视觉事件消费策略管理游标（攻击动画是必播序列，不能用时间戳过滤丢弃）
  */
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
@@ -21,7 +21,7 @@ import { playSound } from '../../../lib/audio/useGameAudio';
 import { resolveDamageSoundKey, resolveDestroySoundKey } from '../audio.config';
 import type { UseVisualSequenceGateReturn } from '../../../components/game/framework/hooks/useVisualSequenceGate';
 import { useVisualStateBuffer } from '../../../components/game/framework/hooks/useVisualStateBuffer';
-import { useEventStreamCursor } from '../../../engine/hooks';
+import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { swAttackDebugLog } from './attackDebug';
 import { isTestEnvironment } from '../../../engine/testing/environment';
 
@@ -247,9 +247,12 @@ export function useGameEvents({
   const EVENT_BATCH_WARN = 20;
   const EVENT_BATCH_STEP = 10;
 
-  // 通用游标（同步处理首次挂载跳过 + Undo 重置）
+  // 必播序列游标：攻击/伤害动画按 EventStream id 消费，不能用事件 timestamp 判定是否丢弃。
   const entries = getEventStreamEntries(G);
-  const { consumeNew } = useEventStreamCursor({ entries });
+  const { consumeNew } = useVisualEventStream({
+    entries,
+    strategy: 'requiredSequence',
+  });
   const activeSwInteractionType = (() => {
     const currentInteraction = G.sys.interaction?.current as {
       kind?: string;

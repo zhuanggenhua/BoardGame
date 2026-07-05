@@ -44,14 +44,14 @@ const LIFE_BADGE_STYLE: React.CSSProperties = {
   paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.001)`,
 };
 const MAGNIFY_BUTTON_STYLE: React.CSSProperties = {
-  top: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.002)`,
-  right: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.002)`,
-  width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.014)`,
-  height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.014)`,
+  top: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.006)`,
+  right: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.006)`,
+  width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.04)`,
+  height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.04)`,
 };
 const MAGNIFY_ICON_STYLE: React.CSSProperties = {
-  width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.008)`,
-  height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.008)`,
+  width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
+  height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
 };
 
 /** 计算格子位置（百分比） */
@@ -556,83 +556,89 @@ const UnitCell: React.FC<{
       layout="position"
     >
       <div
-        className={`relative w-[85%] group transition-[background-color,box-shadow] duration-200 rounded-lg ${!isMyUnit ? 'rotate-180' : ''} ${
+        className={`relative w-[85%] group transition-transform duration-200 ${!isMyUnit ? 'rotate-180' : ''} ${
+          isUnitSelected ? 'scale-105 -translate-y-[5%]' : ''
+        }`}
+        style={isUnitSelected ? { zIndex: BOARD_GRID_Z.overlay } : undefined}
+      >
+        <div
+          className={`relative rounded-lg transition-[background-color,box-shadow] duration-200 ${
           isUnitSelected
-            ? 'ring-2 ring-amber-400 shadow-[0_15px_30px_rgba(0,0,0,0.6),0_0_12px_rgba(251,191,36,0.6)] scale-105 -translate-y-[5%]'
+            ? 'ring-2 ring-amber-400 shadow-[0_15px_30px_rgba(0,0,0,0.6),0_0_12px_rgba(251,191,36,0.6)]'
             : cardHighlight
               ? cardHighlight
               : isMyUnit && props.actionableUnitPositions.some(p => p.row === row && p.col === col)
                 ? 'ring-2 ring-green-400 shadow-[0_10px_20px_rgba(0,0,0,0.4),0_0_10px_rgba(74,222,128,0.5)]'
                 : 'hover:ring-1 hover:ring-white/40 shadow-[0_4px_12px_rgba(0,0,0,0.5),0_12px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.6),0_20px_40px_rgba(0,0,0,0.5)]'
-        } ${getBuffGlowStyle(unit, core.players[unit.owner]?.activeEvents ?? [], core)}`}
-        style={isUnitSelected ? { zIndex: BOARD_GRID_Z.overlay } : undefined}
-      >
-        {/* 技能准备就绪指示器（青色波纹） */}
-        {isMyUnit && props.abilityReadyPositions.some(p => p.row === row && p.col === col) && !isUnitSelected && (
-          <AbilityReadyIndicator />
-        )}
-        
-        <CardSprite
-          atlasId={spriteConfig.atlasId}
-          frameIndex={spriteConfig.frameIndex}
-          className="rounded"
-        />
-        {/* 伤害红色遮罩 - 统一从底部向上长（对手卡旋转后自动变为从顶部向下） */}
-        {damage > 0 && (
-          <div
-            className="absolute inset-x-0 bottom-0 rounded-b pointer-events-none"
-            style={{
-              height: `${Math.min(damageRatio * 100, 100)}%`,
-              background: `linear-gradient(to top, rgba(220,38,38,${0.25 + damageRatio * 0.45}) 0%, rgba(185,28,28,${0.05 + damageRatio * 0.15}) 100%)`,
-              transition: 'height 0.3s ease-out',
-            }}
-          />
-        )}
-        {/* 悬停显示生命值 - 保持正向可读 */}
-        <div
-          className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyUnit ? 'rotate-180' : ''}`}
-          style={{ zIndex: BOARD_GRID_Z.overlay }}
+          } ${getBuffGlowStyle(unit, core.players[unit.owner]?.activeEvents ?? [], core)}`}
         >
-          <span
-            className={`font-bold rounded ${damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white'}`}
-            style={LIFE_BADGE_STYLE}
-          >
-            {life - damage}/{life}
-          </span>
-        </div>
-        {/* 充能指示器 - 统一右上角（对手卡旋转后自动变为左下角） */}
-        {normalizeUnitBoosts(unit.boosts) > 0 && (() => {
-          const boosts = normalizeUnitBoosts(unit.boosts);
-          const rows: number[][] = [];
-          for (let i = 0; i < boosts; i += 5) {
-            rows.push(Array.from({ length: Math.min(5, boosts - i) }, (_, j) => i + j));
-          }
-          return (
+          {/* 技能准备就绪指示器（青色波纹） */}
+          {isMyUnit && props.abilityReadyPositions.some(p => p.row === row && p.col === col) && !isUnitSelected && (
+            <AbilityReadyIndicator />
+          )}
+
+          <CardSprite
+            atlasId={spriteConfig.atlasId}
+            frameIndex={spriteConfig.frameIndex}
+            className="rounded"
+          />
+          {/* 伤害红色遮罩 - 统一从底部向上长（对手卡旋转后自动变为从顶部向下） */}
+          {damage > 0 && (
             <div
-              className="absolute top-[3%] right-[3%] items-end flex flex-col gap-[2%] pointer-events-none"
-              style={{ zIndex: BOARD_GRID_Z.overlay }}
+              className="absolute inset-x-0 bottom-0 rounded-b pointer-events-none"
+              style={{
+                height: `${Math.min(damageRatio * 100, 100)}%`,
+                background: `linear-gradient(to top, rgba(220,38,38,${0.25 + damageRatio * 0.45}) 0%, rgba(185,28,28,${0.05 + damageRatio * 0.15}) 100%)`,
+                transition: 'height 0.3s ease-out',
+              }}
+            />
+          )}
+          {/* 悬停显示生命值 - 保持正向可读 */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyUnit ? 'rotate-180' : ''}`}
+            style={{ zIndex: BOARD_GRID_Z.overlay }}
+          >
+            <span
+              className={`font-bold rounded ${damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white'}`}
+              style={LIFE_BADGE_STYLE}
             >
-              {rows.map((r, ri) => (
-                <div key={ri} className="flex gap-[3%]">
-                  {r.map(idx => (
-                    <div
-                      key={idx}
-                      className="relative w-[15%]"
-                      style={{ width: '15%', minWidth: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.008)` }}
-                    >
+              {life - damage}/{life}
+            </span>
+          </div>
+          {/* 充能指示器 - 统一右上角（对手卡旋转后自动变为左下角） */}
+          {normalizeUnitBoosts(unit.boosts) > 0 && (() => {
+            const boosts = normalizeUnitBoosts(unit.boosts);
+            const rows: number[][] = [];
+            for (let i = 0; i < boosts; i += 5) {
+              rows.push(Array.from({ length: Math.min(5, boosts - i) }, (_, j) => i + j));
+            }
+            return (
+              <div
+                className="absolute top-[3%] right-[3%] items-end flex flex-col gap-[2%] pointer-events-none"
+                style={{ zIndex: BOARD_GRID_Z.overlay }}
+              >
+                {rows.map((r, ri) => (
+                  <div key={ri} className="flex gap-[3%]">
+                    {r.map(idx => (
                       <div
-                        className="block w-full rounded-full bg-blue-400 border border-blue-200 shadow-[0_0_4px_rgba(96,165,250,0.9)]"
-                        style={{ height: 0, paddingTop: '100%' }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          );
-        })()}
-        {/* 战力增幅指示器 - 右下角，需跳过附加卡名条区域 */}
-        <StrengthBoostIndicator unit={unit} core={core} attachedCount={unit.attachedCards?.length ?? 0} />
+                        key={idx}
+                        className="relative w-[15%]"
+                        style={{ width: '15%', minWidth: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.008)` }}
+                      >
+                        <div
+                          className="block w-full rounded-full bg-blue-400 border border-blue-200 shadow-[0_0_4px_rgba(96,165,250,0.9)]"
+                          style={{ height: 0, paddingTop: '100%' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          {/* 战力增幅指示器 - 右下角，需跳过附加卡名条区域 */}
+          <StrengthBoostIndicator unit={unit} core={core} attachedCount={unit.attachedCards?.length ?? 0} />
+        </div>
         {/* 放大镜按钮 - 保持正向可读 */}
         {showDesktopMagnifyButton && (
           <button
@@ -744,44 +750,48 @@ const StructureCell: React.FC<{
       }}
     >
       <motion.div
-        className={`relative w-[85%] group transition-shadow rounded-lg ${!isMyStructure ? 'rotate-180' : ''} ${cardHighlight
-          ? cardHighlight
-          : 'shadow-[0_4px_12px_rgba(0,0,0,0.5),0_12px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.6),0_20px_40px_rgba(0,0,0,0.5)]'
-        }`}
+        className={`relative w-[85%] group ${!isMyStructure ? 'rotate-180' : ''}`}
         initial={isNew ? { opacity: 0, scale: 1.1 } : false}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ type: 'spring', stiffness: 100, damping: 20 }}
       >
-        <CardSprite
-          atlasId={spriteConfig.atlasId}
-          frameIndex={spriteConfig.frameIndex}
-          className="rounded"
-        />
-        {/* 伤害红色遮罩 - 统一从底部向上长（对手建筑旋转后自动变为从顶部向下） */}
-        {damage > 0 && (() => {
-          const damageRatio = damage / life;
-          return (
-            <div
-              className="absolute inset-x-0 bottom-0 rounded-b pointer-events-none"
-              style={{
-                height: `${Math.min(damageRatio * 100, 100)}%`,
-                background: `linear-gradient(to top, rgba(220,38,38,${0.25 + damageRatio * 0.45}) 0%, rgba(185,28,28,${0.05 + damageRatio * 0.15}) 100%)`,
-                transition: 'height 0.3s ease-out',
-              }}
-            />
-          );
-        })()}
-        {/* 悬停显示生命值 - 保持正向可读 */}
         <div
-          className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyStructure ? 'rotate-180' : ''}`}
-          style={{ zIndex: BOARD_GRID_Z.overlay }}
+          className={`relative rounded-lg transition-shadow ${cardHighlight
+            ? cardHighlight
+            : 'shadow-[0_4px_12px_rgba(0,0,0,0.5),0_12px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.6),0_20px_40px_rgba(0,0,0,0.5)]'
+          }`}
         >
-          <span
-            className={`font-bold rounded ${damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white'}`}
-            style={LIFE_BADGE_STYLE}
+          <CardSprite
+            atlasId={spriteConfig.atlasId}
+            frameIndex={spriteConfig.frameIndex}
+            className="rounded"
+          />
+          {/* 伤害红色遮罩 - 统一从底部向上长（对手建筑旋转后自动变为从顶部向下） */}
+          {damage > 0 && (() => {
+            const damageRatio = damage / life;
+            return (
+              <div
+                className="absolute inset-x-0 bottom-0 rounded-b pointer-events-none"
+                style={{
+                  height: `${Math.min(damageRatio * 100, 100)}%`,
+                  background: `linear-gradient(to top, rgba(220,38,38,${0.25 + damageRatio * 0.45}) 0%, rgba(185,28,28,${0.05 + damageRatio * 0.15}) 100%)`,
+                  transition: 'height 0.3s ease-out',
+                }}
+              />
+            );
+          })()}
+          {/* 悬停显示生命值 - 保持正向可读 */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyStructure ? 'rotate-180' : ''}`}
+            style={{ zIndex: BOARD_GRID_Z.overlay }}
           >
-            {life - damage}/{life}
-          </span>
+            <span
+              className={`font-bold rounded ${damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white'}`}
+              style={LIFE_BADGE_STYLE}
+            >
+              {life - damage}/{life}
+            </span>
+          </div>
         </div>
         {/* 放大镜按钮 - 保持正向可读 */}
         {showDesktopMagnifyButton && (

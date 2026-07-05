@@ -18,6 +18,134 @@ import {
 } from './test-utils';
 
 describe('抬一手（card-give-hand）响应窗口触发', () => {
+    it('防御阶段：防御方自己的防御掷骰阶段可打出“就这？”防御阶段牌', () => {
+        const random = createQueuedRandom([
+            1, 1, 1, 4, 5, // 进攻方投骰
+            3, 3, 3, 3, 3, // 防御方投骰
+            4, 4, 4, 4, 4, // “就这？”额外重投
+        ]);
+        const runner = createRunner(random, false);
+
+        const result1 = runner.run({
+            name: '推进到防御方已投骰未确认',
+            setup: createSetupWithHand(['card-just-this'], {
+                playerId: '1',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['0'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-3' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+            ],
+        });
+
+        expect(result1.finalState.sys.phase).toBe('defensiveRoll');
+        expect(result1.finalState.core.activePlayerId).toBe('0');
+        expect(result1.finalState.core.pendingAttack?.defenderId).toBe('1');
+        expect(result1.finalState.core.players['1'].hand.map((card) => card.id)).toContain('card-just-this');
+
+        const result2 = runner.run({
+            name: '防御方打出“就这？”额外重投自己的防御骰',
+            setup: () => result1.finalState,
+            commands: [
+                cmd('PLAY_CARD', '1', { cardId: 'card-just-this' }),
+            ],
+        });
+
+        expect(result2.finalState.core.players['1'].hand.map((card) => card.id)).not.toContain('card-just-this');
+        expect(result2.finalState.sys.interaction?.current).toBeDefined();
+    });
+
+    it('“就这？”不是红色即时牌：进攻掷骰阶段和非防御掷骰者都不能打出', () => {
+        const offensiveRandom = createQueuedRandom([
+            1, 1, 1, 4, 5, // 进攻方投骰
+        ]);
+        const offensiveRunner = createRunner(offensiveRandom, false);
+
+        const offensiveRollState = offensiveRunner.run({
+            name: '进攻方已投骰时持有“就这？”',
+            setup: createSetupWithHand(['card-just-this'], {
+                playerId: '0',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['1'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+            ],
+        });
+
+        expect(offensiveRollState.finalState.sys.phase).toBe('offensiveRoll');
+        expect(offensiveRollState.finalState.core.rollCount).toBe(1);
+        expect(offensiveRollState.finalState.core.players['0'].hand.map((card) => card.id)).toContain('card-just-this');
+
+        const offensiveAttempt = offensiveRunner.run({
+            name: '进攻掷骰阶段不能打出“就这？”',
+            setup: () => offensiveRollState.finalState,
+            commands: [
+                cmd('PLAY_CARD', '0', { cardId: 'card-just-this' }),
+            ],
+        });
+
+        expect(offensiveAttempt.finalState.core.players['0'].hand.map((card) => card.id)).toContain('card-just-this');
+        expect(offensiveAttempt.finalState.sys.interaction?.current).toBeFalsy();
+
+        const defensiveRandom = createQueuedRandom([
+            1, 1, 1, 4, 5, // 进攻方投骰
+            3, 3, 3, 3, 3, // 防御方投骰
+        ]);
+        const defensiveRunner = createRunner(defensiveRandom, false);
+
+        const defensiveRollState = defensiveRunner.run({
+            name: '进入防御方已投骰状态但进攻方持有“就这？”',
+            setup: createSetupWithHand(['card-just-this'], {
+                playerId: '0',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['1'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-3' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+            ],
+        });
+
+        expect(defensiveRollState.finalState.sys.phase).toBe('defensiveRoll');
+        expect(defensiveRollState.finalState.core.pendingAttack?.defenderId).toBe('1');
+        expect(defensiveRollState.finalState.core.rollCount).toBe(1);
+        expect(defensiveRollState.finalState.core.players['0'].hand.map((card) => card.id)).toContain('card-just-this');
+
+        const wrongPlayerAttempt = defensiveRunner.run({
+            name: '防御掷骰阶段非当前防御掷骰者不能打出“就这？”',
+            setup: () => defensiveRollState.finalState,
+            commands: [
+                cmd('PLAY_CARD', '0', { cardId: 'card-just-this' }),
+            ],
+        });
+
+        expect(wrongPlayerAttempt.finalState.core.players['0'].hand.map((card) => card.id)).toContain('card-just-this');
+        expect(wrongPlayerAttempt.finalState.sys.interaction?.current).toBeFalsy();
+    });
+
     it('进攻阶段：防御方确认骰面后，进攻方可在响应窗口打出抬一手', () => {
         // 僧侣骰子面：fist=1,2; taiji=4,5
         // 投出 [1,1,1,4,5] → 3个fist → 可选 fist-technique-3（4点伤害）

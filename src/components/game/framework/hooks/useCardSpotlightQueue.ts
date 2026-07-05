@@ -12,7 +12,7 @@
 
 import { useReducer, useEffect, useRef, useCallback } from 'react';
 import type { EventStreamEntry, GameEvent, PlayerId } from '../../../../engine/types';
-import { useEventStreamCursor } from '../../../../engine/hooks';
+import { useVisualEventStream, type VisualEventConsumptionStrategy } from './useVisualEventStream';
 
 // ============================================================================
 // 类型
@@ -44,8 +44,13 @@ export interface UseCardSpotlightQueueConfig<TData = unknown> {
     extractCard: (event: GameEvent) => { playerId: PlayerId; cardData: TData } | null;
     /** 队列上限（默认 5） */
     maxQueue?: number;
-    /** 忽略早于该时间戳的历史事件，避免进房/恢复时重播旧特写 */
-    ignoreEventsBefore?: number;
+    /**
+     * 视觉事件消费策略。
+     *
+     * 卡牌特写属于临时提示，默认跳过首次挂载时已有的事件基线，
+     * 只展示页面打开后新进入 EventStream 的事件。
+     */
+    eventStrategy?: Extract<VisualEventConsumptionStrategy, 'transientNotification'>;
 }
 
 /** Hook 返回值 */
@@ -111,7 +116,7 @@ export function useCardSpotlightQueue<TData = unknown>(
         triggerEventTypes,
         extractCard,
         maxQueue = 5,
-        ignoreEventsBefore,
+        eventStrategy = 'transientNotification',
     } = config;
 
     const [queue, dispatch] = useReducer(spotlightQueueReducer<TData>, []);
@@ -122,8 +127,9 @@ export function useCardSpotlightQueue<TData = unknown>(
         triggerSetRef.current = new Set(triggerEventTypes);
     }, [triggerEventTypes]);
 
-    const { consumeNew } = useEventStreamCursor({
+    const { consumeNew } = useVisualEventStream({
         entries,
+        strategy: eventStrategy,
         consumeOnReconcile,
     });
 
@@ -136,16 +142,6 @@ export function useCardSpotlightQueue<TData = unknown>(
 
         for (const entry of newEntries) {
             if (!triggerSetRef.current.has(entry.event.type)) continue;
-            if (typeof ignoreEventsBefore === 'number') {
-                const eventTimestamp = entry.event.timestamp;
-                if (
-                    typeof eventTimestamp !== 'number'
-                    || !Number.isFinite(eventTimestamp)
-                    || eventTimestamp < ignoreEventsBefore
-                ) {
-                    continue;
-                }
-            }
 
             const extracted = extractCard(entry.event);
             if (!extracted) continue;
@@ -169,7 +165,7 @@ export function useCardSpotlightQueue<TData = unknown>(
                 maxQueue,
             });
         }
-    }, [entries, consumeNew, currentPlayerId, extractCard, maxQueue, ignoreEventsBefore]);
+    }, [entries, consumeNew, currentPlayerId, extractCard, maxQueue]);
 
     const dismiss = useCallback((id: string) => {
         dispatch({ type: 'dismiss', id });

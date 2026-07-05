@@ -226,7 +226,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('khanEdictSelection == null');
         expect(boardSource).toContain('emphasized={wheelStageAvailable}');
         expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
-        expect(boardSource).toContain('轮盘行动');
+        expect(boardSource).toContain('轮盘落点行动');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
         expect(boardSource).toContain("defaultValue: '选择轮盘格'");

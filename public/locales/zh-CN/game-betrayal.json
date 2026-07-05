@@ -36,6 +36,7 @@
       "rematch": "重赛",
       "lobby": "大厅",
       "logs": "日志",
+      "enterEndgame": "进入终局",
       "victory": "胜利",
       "defeat": "失败",
       "survivorsEscaped": "幸存者逃脱",
@@ -241,7 +242,8 @@
       "omenCard": "预兆牌",
       "eventResolved": "即时生效",
       "addedToInventory": "已加入持有区",
-      "readyToUse": "已选中，可直接使用"
+      "readyToUse": "已选中，可直接使用",
+      "rollModifierTag": "改骰"
     },
     "roll": {
       "fallbackLabel": "投骰",

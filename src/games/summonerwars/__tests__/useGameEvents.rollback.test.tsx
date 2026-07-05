@@ -152,4 +152,57 @@ describe('useGameEvents rollback consumer', () => {
       expect(onDiceRollSound).toHaveBeenCalledTimes(2);
     });
   });
+
+  it('required sequence 应按事件流 id 消费新攻击事件，不因旧 timestamp 跳过必播动画', async () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+        {children}
+      </EventStreamRollbackContext.Provider>
+    );
+
+    const gate = makeGate();
+    const fxBus = { push: vi.fn() } as unknown as FxBus;
+    const pushDestroyEffect = vi.fn();
+    const onDiceRollSound = vi.fn();
+    const baselineEntry = makeAttackEntry(10, 2);
+    const newEntryWithOldTimestamp = {
+      ...makeAttackEntry(11, 4),
+      event: {
+        ...makeAttackEntry(11, 4).event,
+        timestamp: 1,
+      },
+    } as EventStreamEntry;
+
+    const { result, rerender } = renderHook(
+      ({ entries }: { entries: EventStreamEntry[] }) =>
+        useGameEvents({
+          G: makeState(entries),
+          core: makeState(entries) as any,
+          myPlayerId: '0',
+          currentPhase: 'battle',
+          pushDestroyEffect,
+          fxBus,
+          onDiceRollSound,
+          gate,
+        }),
+      {
+        initialProps: { entries: [baselineEntry] },
+        wrapper,
+      },
+    );
+
+    await act(async () => {});
+    expect(result.current.diceResult).toBeNull();
+    expect(gate.beginSequence).not.toHaveBeenCalled();
+
+    act(() => {
+      rerender({ entries: [baselineEntry, newEntryWithOldTimestamp] });
+    });
+
+    await waitFor(() => {
+      expect(result.current.diceResult?.hits).toBe(4);
+      expect(gate.beginSequence).toHaveBeenCalledTimes(1);
+      expect(onDiceRollSound).toHaveBeenCalledTimes(1);
+    });
+  });
 });

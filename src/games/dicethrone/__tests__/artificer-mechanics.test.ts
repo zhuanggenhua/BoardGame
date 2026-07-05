@@ -157,6 +157,16 @@ const createArtificerCardPlayState = (cardId: string) => {
     return state;
 };
 
+const createOpponentTurnArtificerCardPlayState = (cardId: string) => {
+    const state = createHeroMatchup('monk', 'artificer')(['0', '1'], fixedRandom);
+    state.sys.phase = 'main1';
+    state.core.activePlayerId = '0';
+    state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+    state.core.players['1'].tokens[TOKEN_IDS.SYNTH] = 0;
+    state.core.players['1'].hand = [getArtificerCard(cardId)];
+    return state;
+};
+
 const setArtificerBot = (
     state: DiceThroneCore,
     playerId: string,
@@ -1306,6 +1316,29 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.players['3'].statusEffects[STATUS_IDS.NANOBOMB]).toBe(1);
     });
 
+    it('万能电流作为红色即时牌在普通对方回合也可打出并结算合成器', () => {
+        const state = createOpponentTurnArtificerCardPlayState('card-artificer-overdrive');
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('PLAY_CARD', '1', { cardId: 'card-artificer-overdrive' }),
+            createQueuedRandom([4]),
+            ['0', '1'],
+        );
+
+        expect(state.sys.phase).toBe('main1');
+        expect(state.core.activePlayerId).toBe('0');
+        expect(result.success).toBe(true);
+        expect(eventsOfType(result.events as DiceThroneEvent[], 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
+            value: 4,
+            face: 'gear',
+            effectKey: 'bonusDie.effect.artificerOverdriveGear',
+        });
+        expect(result.state.core.players['1'].hand.map(card => card.id)).not.toContain('card-artificer-overdrive');
+        expect(result.state.core.players['1'].discard.map(card => card.id)).toContain('card-artificer-overdrive');
+        expect(result.state.core.players['1'].tokens[TOKEN_IDS.SYNTH]).toBe(1);
+    });
+
     it('这玩意儿真棒按骰值一半向上取整获得合成器', () => {
         const state = createArtificerCardPlayState('card-artificer-perfectly-calibrated');
         const events = execute(state, command('PLAY_CARD', '0', {
@@ -1319,6 +1352,29 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated',
         });
         expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(3);
+    });
+
+    it('这玩意儿真棒作为红色即时牌在普通对方回合也可打出并结算合成器', () => {
+        const state = createOpponentTurnArtificerCardPlayState('card-artificer-perfectly-calibrated');
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('PLAY_CARD', '1', { cardId: 'card-artificer-perfectly-calibrated' }),
+            createQueuedRandom([5]),
+            ['0', '1'],
+        );
+
+        expect(state.sys.phase).toBe('main1');
+        expect(state.core.activePlayerId).toBe('0');
+        expect(result.success).toBe(true);
+        expect(eventsOfType(result.events as DiceThroneEvent[], 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
+            value: 5,
+            face: 'gear',
+            effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated',
+        });
+        expect(result.state.core.players['1'].hand.map(card => card.id)).not.toContain('card-artificer-perfectly-calibrated');
+        expect(result.state.core.players['1'].discard.map(card => card.id)).toContain('card-artificer-perfectly-calibrated');
+        expect(result.state.core.players['1'].tokens[TOKEN_IDS.SYNTH]).toBe(3);
     });
 
     it('电路图 II 额外获得 2 CP', () => {

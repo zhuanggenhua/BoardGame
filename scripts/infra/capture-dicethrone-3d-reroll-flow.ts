@@ -28,6 +28,9 @@ const SCREENSHOTS = {
     selected: `${OUT_DIR}/04-打出选任意骰子重投卡牌-选择所有骰子.png`,
     rerolled: `${OUT_DIR}/05-点击重投后.png`,
 } as const;
+const REROLL_CARD_ID = 'card-i-can-again';
+const REROLL_CARD_LABEL = '还能再来';
+const REROLL_DICE_COUNT = 5;
 const RUN_MANIFEST = `${OUT_DIR}/_latest-run.json`;
 type ScreenshotKey = keyof typeof SCREENSHOTS;
 
@@ -662,15 +665,15 @@ async function applyRerollFlowScene(page: Page) {
     const nextState = JSON.parse(JSON.stringify(initial)) as CaptureHarnessState;
 
     const cardCatalog = CHARACTER_DATA_MAP.monk.getStartingDeck(PREPARE_RANDOM);
-    const justThis = cardCatalog.find((card) => card.id === 'card-just-this');
-    if (!justThis) {
-        throw new Error('未找到 card-just-this');
+    const rerollCard = cardCatalog.find((card) => card.id === REROLL_CARD_ID);
+    if (!rerollCard) {
+        throw new Error(`未找到 ${REROLL_CARD_ID}`);
     }
 
     const player0 = initHeroState('0', 'monk', PREPARE_RANDOM);
     const player1 = initHeroState('1', 'barbarian', PREPARE_RANDOM);
-    player0.hand = [{ ...justThis }];
-    player0.deck = player0.deck.filter((card) => card.id !== 'card-just-this');
+    player0.hand = [{ ...rerollCard }];
+    player0.deck = player0.deck.filter((card) => card.id !== REROLL_CARD_ID);
     player0.discard = [];
     player0.resources[RESOURCE_IDS.CP] = 2;
     player0.resources[RESOURCE_IDS.HP] = 50;
@@ -830,21 +833,15 @@ async function main() {
         });
         console.log('[capture-dt3d] 已保存 03');
 
-        console.log('[capture-dt3d] 真实打出“就这？”进入选骰交互');
-        await dragHandCardToPlay(page, 'card-just-this');
-        await page.waitForFunction(() => {
+        console.log(`[capture-dt3d] 真实打出“${REROLL_CARD_LABEL}”进入选骰交互`);
+        await dragHandCardToPlay(page, REROLL_CARD_ID);
+        await page.waitForFunction(({ rerollDiceCount }) => {
             const interaction = (window as Window).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current;
             const meta = interaction?.data?.meta;
-            const selectableDice = Array.from(document.querySelectorAll('[data-testid^="die-button-"]'))
-                .filter((node) => {
-                    const element = node as HTMLElement;
-                    const rect = element.getBoundingClientRect();
-                    return rect.width >= 36 && rect.height >= 36;
-                }).length;
             return interaction?.kind === 'multistep-choice'
                 && meta?.dtType === 'selectDie'
-                && (meta?.selectCount === 5 || selectableDice >= 5);
-        }, undefined, { timeout: 8000 });
+                && meta?.selectCount === rerollDiceCount;
+        }, { rerollDiceCount: REROLL_DICE_COUNT }, { timeout: 8000 });
         console.log('[capture-dt3d] 已通过真实打牌进入选骰交互');
         await waitForBoardDiceProjectionStable(page);
         await waitForBoardDiceFullySettled(page);
@@ -853,7 +850,7 @@ async function main() {
 
         for (const dieId of [0, 1, 2, 3, 4]) {
             await waitForCenterDieAttached(page, dieId);
-            if (dieId === 4) {
+            if (dieId === REROLL_DICE_COUNT - 1) {
                 await setDiceThroneDiceValues(page, [6, 6, 6, 6, 6]);
             }
             await clickCenterDie(page, dieId);
@@ -881,13 +878,29 @@ async function main() {
             }
         }
 
-        await waitForSelectedBoardDiceCount(page, 5);
-        console.log('[capture-dt3d] 五颗骰子已选择，点击确认触发重投');
+        await waitForSelectedBoardDiceCount(page, REROLL_DICE_COUNT);
+        await waitForBoardDiceFullySettled(page);
+        await page.waitForTimeout(180);
+        await closeMagnifyOverlayIfPresent(page);
+        await setDiceFocusedScreenshotMode(page, true);
+        await logBoardVisualState(page, 'before-save-04-all');
+        evidence.selected = await collectBoardDiceEvidence(page, 'before-save-04-all');
+        await saveScreenshot(page, SCREENSHOTS.selected);
+        await setDiceFocusedScreenshotMode(page, false);
+        await assertNoFatalFrontendErrors([{ label: 'capture-dt3d-saved-selected-all', diagnostics }]);
+        await writeRunManifest({
+            status: 'running',
+            startedAt,
+            currentStep: 'saved-selected-all',
+            evidence,
+        });
+        console.log('[capture-dt3d] 已保存 04-all');
+        console.log(`${REROLL_DICE_COUNT} 颗骰子已选择，点击确认触发重投`);
         await confirmButton.waitFor({ state: 'visible', timeout: 12000 });
         await confirmButton.click({ force: true, noWaitAfter: true, timeout: 12000 });
 
         await page.waitForFunction(
-            () => {
+            ({ rerollCardId, rerollDiceCount }) => {
                 const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
                 const interaction = state?.sys?.interaction?.current;
                 const handIds = (state?.core?.players?.['0']?.hand ?? []).map((card: { id: string }) => card.id);
@@ -895,10 +908,10 @@ async function main() {
                     .slice(-12)
                     .map((entry: { event?: { type?: string } }) => entry.event?.type);
                 return !interaction
-                    && !handIds.includes('card-just-this')
-                    && lastEventTypes.filter((type: string) => type === 'DIE_REROLLED').length >= 5;
+                    && !handIds.includes(rerollCardId)
+                    && lastEventTypes.filter((type: string) => type === 'DIE_REROLLED').length >= rerollDiceCount;
             },
-            undefined,
+            { rerollCardId: REROLL_CARD_ID, rerollDiceCount: REROLL_DICE_COUNT },
             { timeout: 8000 },
         );
         await page.waitForFunction(() => {

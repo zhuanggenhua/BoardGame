@@ -13,7 +13,7 @@ function createEntry(id: number, event: GameEvent): EventStreamEntry {
 }
 
 describe('useCardSpotlightQueue', () => {
-    it('can ignore historical events that predate the current page session', async () => {
+    it('transient notification skips events that already exist when the page session mounts', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) =>
             React.createElement(
                 EventStreamRollbackContext.Provider,
@@ -42,7 +42,6 @@ describe('useCardSpotlightQueue', () => {
             ({ entries }: { entries: EventStreamEntry[] }) => useCardSpotlightQueue<{ defId: string }>({
                 entries,
                 triggerEventTypes: ['ACTION_PLAYED'],
-                ignoreEventsBefore: 2000,
                 extractCard: (event) => {
                     const payload = event.payload as { playerId?: string; defId?: string };
                     return payload.playerId && payload.defId
@@ -51,12 +50,10 @@ describe('useCardSpotlightQueue', () => {
                 },
             }),
             {
-                initialProps: { entries: [] },
+                initialProps: { entries: [historicalEntry] },
                 wrapper,
             },
         );
-
-        rerender({ entries: [historicalEntry] });
 
         await act(async () => {});
         expect(result.current.queue).toEqual([]);
@@ -69,7 +66,7 @@ describe('useCardSpotlightQueue', () => {
         });
     });
 
-    it('skips timestamp-less historical events when the current page session has a time floor', async () => {
+    it('transient notification uses EventStream cursor instead of event timestamp to detect new events', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) =>
             React.createElement(
                 EventStreamRollbackContext.Provider,
@@ -90,7 +87,6 @@ describe('useCardSpotlightQueue', () => {
                 playerId: '1',
                 defId: 'tricksters_disruption',
             },
-            timestamp: 3000,
         } as GameEvent);
 
         const { result, rerender } = renderHook(
@@ -98,7 +94,6 @@ describe('useCardSpotlightQueue', () => {
                 entries,
                 triggerEventTypes: ['ACTION_PLAYED'],
                 consumeOnReconcile: true,
-                ignoreEventsBefore: 2000,
                 extractCard: (event) => {
                     const payload = event.payload as { playerId?: string; defId?: string };
                     return payload.playerId && payload.defId
@@ -107,12 +102,10 @@ describe('useCardSpotlightQueue', () => {
                 },
             }),
             {
-                initialProps: { entries: [] },
+                initialProps: { entries: [staleEntry] },
                 wrapper,
             },
         );
-
-        rerender({ entries: [staleEntry] });
 
         await act(async () => {});
         expect(result.current.queue).toEqual([]);

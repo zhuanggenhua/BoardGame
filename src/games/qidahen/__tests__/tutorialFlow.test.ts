@@ -17,6 +17,7 @@ import QIDAHEN_TUTORIALS from '../tutorial';
 import { buildQidahenTutorialSetupData } from '../tutorialSetup';
 import { QidahenDomain } from '../domain';
 import { createQidahenInteractionSystem } from '../domain/interactionSystem';
+import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from '../domain/ordinaryHandCardIdentities';
 
 const random: RandomFn = {
     random: () => 0.5,
@@ -178,11 +179,25 @@ describe('qidahen tutorial flow', () => {
         ]));
     });
 
-    it('基础教程从正式开局真实示范手牌上限、轮盘推进、一次手牌行动和一次轮盘行动', () => {
+    it('基础教程从正式开局真实示范手牌上限、公共轮盘推进、一次手牌行动和一次轮盘落点行动', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['basic-opening']?.manifest;
         expect(manifest).toBeTruthy();
 
         let state = buildStateForTutorial('basic-opening');
+        const initialMingHandCards = (state.core as any).handCards
+            .filter((card: any) => card.faction === 'ming')
+            .slice(0, 4);
+        const expectedAtlas05Cards = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.slice(0, 4);
+        expect(initialMingHandCards.map((card: any) => card.label)).toEqual(
+            expectedAtlas05Cards.map((card) => card.displayName),
+        );
+        expect(initialMingHandCards.map((card: any) => card.cardDefId)).toEqual(
+            expectedAtlas05Cards.map((card) => card.cardDefId),
+        );
+        expect(initialMingHandCards.map((card: any) => card.cardKind)).toEqual(
+            expectedAtlas05Cards.map((card) => card.cardKind),
+        );
+        expect(initialMingHandCards.map((card: any) => card.label).join('|')).not.toMatch(/教程|大明事件牌|大明战术牌|银两牌/);
 
         state = dispatch(state, {
             type: TUTORIAL_COMMANDS.START,
@@ -377,8 +392,9 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('tactic-window');
 
-        const tacticCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'tutorial-ming-tactic');
+        const tacticCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1615-arrows-like-rain');
         expect(tacticCard?.cardKind).toBe('tactic');
+        expect(tacticCard?.label).toBe('箭如雨下');
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '0',
@@ -631,8 +647,9 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('choose-action');
         expect((state.core as any).factions.ming.armaments.find((armament: any) => armament.id === 'artillery-tech')?.level).toBe(1);
-        const mingArmamentCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'tutorial-ming-artillery-tech-upgrade');
+        const mingArmamentCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1626-artillery-tech');
         expect(mingArmamentCard?.cardKind).toBe('armament');
+        expect(mingArmamentCard?.label).toBe('火炮技术');
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
@@ -690,8 +707,8 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('choose-action');
         expect((state.core as any).selectedActionId).toBe('khan-edict');
-        const mongolEventCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'tutorial-mongol-khan-edict-event');
-        expect(mongolEventCard?.cardKind).toBe('event');
+        expect((state.core as any).actionChoices.map((action: any) => action.id)).toContain('khan-edict');
+        expect((state.core as any).handCards.map((card: any) => card.label).join('|')).not.toMatch(/大汗令箭事件牌|蒙古银两牌|蒙古战术牌/);
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,

@@ -220,7 +220,12 @@ describe('卡牌展示系统', () => {
         });
 
         it('公开展示在没有 playerID 的页面也应可见', async () => {
-            render(React.createElement(RevealOverlay, {
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries: [],
+                currentPlayerId: null,
+            }));
+
+            rerender(React.createElement(RevealOverlay, {
                 entries: [makeRevealEntry({ id: 2, viewerPlayerId: 'all' })],
                 currentPlayerId: null,
             }));
@@ -229,7 +234,12 @@ describe('卡牌展示系统', () => {
         });
 
         it('私有展示只应出现在归属玩家页面', async () => {
-            render(React.createElement(RevealOverlay, {
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries: [],
+                currentPlayerId: '1',
+            }));
+
+            rerender(React.createElement(RevealOverlay, {
                 entries: [makeRevealEntry({ id: 3, viewerPlayerId: '1' })],
                 currentPlayerId: '1',
             }));
@@ -238,20 +248,32 @@ describe('卡牌展示系统', () => {
         });
 
         it('展示标题应优先显示玩家昵称', async () => {
-            render(React.createElement(RevealOverlay, {
+            const playerNames = {
+                '0': '阿土',
+                '1': '老王',
+            };
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries: [],
+                currentPlayerId: '0',
+                playerNames,
+            }));
+
+            rerender(React.createElement(RevealOverlay, {
                 entries: [makeRevealEntry({ id: 4, viewerPlayerId: 'all' })],
                 currentPlayerId: '0',
-                playerNames: {
-                    '0': '阿土',
-                    '1': '老王',
-                },
+                playerNames,
             }));
 
             expect(await screen.findByText('老王 的手牌')).toBeInTheDocument();
         });
 
         it('揭示卡片应有显式高度，避免旧 WebView 下只剩横条', async () => {
-            render(React.createElement(RevealOverlay, {
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries: [],
+                currentPlayerId: '0',
+            }));
+
+            rerender(React.createElement(RevealOverlay, {
                 entries: [makeRevealEntry({ id: 5, viewerPlayerId: 'all' })],
                 currentPlayerId: '0',
             }));
@@ -262,11 +284,10 @@ describe('卡牌展示系统', () => {
             expect(preview?.style.height).toContain('vw');
         });
 
-        it('早于当前页面会话的历史展示不应自动盖住牌桌', async () => {
+        it('页面挂载时已有的历史展示不应自动盖住牌桌，后续新展示应可见', async () => {
             const { rerender } = render(React.createElement(RevealOverlay, {
                 entries: [makeRevealEntry({ id: 6, viewerPlayerId: 'all', timestamp: 1000 })],
                 currentPlayerId: '0',
-                ignoreEventsBefore: 2000,
             }));
 
             await Promise.resolve();
@@ -275,10 +296,9 @@ describe('卡牌展示系统', () => {
             rerender(React.createElement(RevealOverlay, {
                 entries: [
                     makeRevealEntry({ id: 6, viewerPlayerId: 'all', timestamp: 1000 }),
-                    makeRevealEntry({ id: 7, viewerPlayerId: 'all', timestamp: 3000 }),
+                    makeRevealEntry({ id: 7, viewerPlayerId: 'all' }),
                 ],
                 currentPlayerId: '0',
-                ignoreEventsBefore: 2000,
             }));
 
             expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();

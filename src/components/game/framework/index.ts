@@ -50,6 +50,7 @@ export {
     useDragCard,
     useAutoSkipPhase,
     useVisualSequenceGate,
+    useVisualEventStream,
     useCardSpotlightQueue,
 } from './hooks';
 export { buildMatchPlayerViewModel, useMatchPlayerViewModel } from './useMatchPlayerViewModel';
@@ -60,6 +61,9 @@ export type {
     UseResourceTrayConfig,
     UseAutoSkipPhaseConfig,
     UseVisualSequenceGateReturn,
+    UseVisualEventStreamConfig,
+    UseVisualEventStreamReturn,
+    VisualEventConsumptionStrategy,
     SpotlightItem,
     UseCardSpotlightQueueConfig,
     UseCardSpotlightQueueReturn,

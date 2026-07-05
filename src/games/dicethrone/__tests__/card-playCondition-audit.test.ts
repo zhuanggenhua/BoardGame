@@ -241,6 +241,16 @@ describe('卡牌 playCondition 一致性审计', () => {
             });
         });
 
+        it('card-just-this 必须限定为当前防御掷骰者在防御投掷阶段使用', () => {
+            const card = COMMON_CARDS.find(c => c.id === 'card-just-this')!;
+            expect(card.playCondition).toEqual({
+                phase: 'defensiveRoll',
+                requireIsRoller: true,
+                requireDiceExists: true,
+                requireHasRolled: true,
+            });
+        });
+
         it('card-me-too 必须有最少骰子数量限制', () => {
             const card = COMMON_CARDS.find(c => c.id === 'card-me-too')!;
             expect(card.playCondition).toEqual({

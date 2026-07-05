@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray, shouldUseBoardDiceStage } from '../diceStagePolicy';
+import { canInteractHandForCurrentBoard, canPlayHandCardsForCurrentBoard } from '../handPlayPolicy';
 
 const baseParams = {
     isSpectator: false,
@@ -94,5 +95,43 @@ describe('diceStagePolicy', () => {
             { id: 0, isKept: false },
             { id: 1, isKept: true },
         ]);
+    });
+});
+
+describe('handPlayPolicy', () => {
+    it('自己的手牌不应因为当前是对方回合或对手视角而禁止拖动打红色即时牌', () => {
+        expect(canInteractHandForCurrentBoard({
+            isSpectator: false,
+        })).toBe(true);
+    });
+
+    it('观察者不能操作手牌', () => {
+        expect(canInteractHandForCurrentBoard({
+            isSpectator: true,
+        })).toBe(false);
+    });
+
+    it('防御方在自己的防御掷骰阶段，即使不是当前回合玩家也应允许打改自己骰子的手牌', () => {
+        expect(canPlayHandCardsForCurrentBoard({
+            isSpectator: false,
+            isActivePlayer: false,
+            isResponder: false,
+            isDirectDiceActor: false,
+            currentPhase: 'defensiveRoll',
+            rootPid: '1',
+            rollerId: '1',
+        })).toBe(true);
+    });
+
+    it('非掷骰方且非响应者不应因为防御阶段而被放行打手牌', () => {
+        expect(canPlayHandCardsForCurrentBoard({
+            isSpectator: false,
+            isActivePlayer: false,
+            isResponder: false,
+            isDirectDiceActor: false,
+            currentPhase: 'defensiveRoll',
+            rootPid: '0',
+            rollerId: '1',
+        })).toBe(false);
     });
 });

@@ -82,6 +82,7 @@ import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import { useDiceThroneDisplayPreference } from './ui/useDiceThroneDisplayPreference';
 import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray, shouldUseBoardDiceStage } from './ui/diceStagePolicy';
+import { canInteractHandForCurrentBoard, canPlayHandCardsForCurrentBoard } from './ui/handPlayPolicy';
 import { resolveCharacterIdFromDiceDefinitionId } from './ui/assets';
 import { useSyncedModalStackEntry } from '../../hooks/ui/useSyncedModalStackEntry';
 import { TokenResponseModal } from './ui/TokenResponseModal';
@@ -814,6 +815,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 响应窗口状态已在上方声明（380-381行），这里直接使用
     const responseWindow = access.responseWindow;
     const isResponder = isManualSelfResponseWindow;
+    const canPlayHandCards = canPlayHandCardsForCurrentBoard({
+        isSpectator,
+        isActivePlayer,
+        isResponder,
+        isDirectDiceActor,
+        currentPhase,
+        rootPid,
+        rollerId,
+    });
+    const canInteractHand = canInteractHandForCurrentBoard({ isSpectator });
 
     // （variant 选择弹窗由 onSelectAbility 回调触发，不需要自动弹出）
 
@@ -2264,8 +2275,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                     advanceTutorialIfNeeded('discard-pile');
                                 }}
                                 onError={(msg) => { playDeniedSound(); toast.warning(msg, undefined, { dedupeKey: 'dicethrone.handArea.error' }); }}
-                                canInteract={isResponder || isDirectDiceActor || isSelfView}
-                                canPlayCards={isActivePlayer || isResponder || isDirectDiceActor}
+                                canInteract={canInteractHand}
+                                canPlayCards={canPlayHandCards}
                                 drawDeckRef={drawDeckRef}
                                 discardPileRef={discardPileRef}
                                 undoCardId={lastUndoCardId}

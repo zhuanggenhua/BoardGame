@@ -22,6 +22,13 @@ export type { UseVisualSequenceGateReturn } from './useVisualSequenceGate';
 export { useVisualStateBuffer } from './useVisualStateBuffer';
 export type { UseVisualStateBufferReturn } from './useVisualStateBuffer';
 
+export { useVisualEventStream } from './useVisualEventStream';
+export type {
+    UseVisualEventStreamConfig,
+    UseVisualEventStreamReturn,
+    VisualEventConsumptionStrategy,
+} from './useVisualEventStream';
+
 export { useCardSpotlightQueue } from './useCardSpotlightQueue';
 export type {
     SpotlightItem,

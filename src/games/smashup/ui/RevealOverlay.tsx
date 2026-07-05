@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { useEventStreamRollback } from '../../../engine/hooks/EventStreamRollbackContext';
+import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { getCardDef, getBaseDef, resolveCardName } from '../data/cards';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
 import type { EventStreamEntry, PlayerId } from '../../../engine/types';
@@ -48,7 +48,6 @@ interface RevealOverlayProps {
     currentPlayerId: PlayerId | null;
     playerNames?: Record<string, string>;
     suppressionRules?: RevealSuppressionRule[];
-    ignoreEventsBefore?: number;
 }
 
 const AUTO_DISMISS_MS = 15_000;
@@ -153,14 +152,15 @@ export function shouldSuppressRevealItem(item: RevealItem, suppressionRules: Rev
 // 组件
 // ============================================================================
 
-export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressionRules = [], ignoreEventsBefore }: RevealOverlayProps) {
+export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressionRules = [] }: RevealOverlayProps) {
     const { t } = useTranslation('game-smashup');
     const [queue, setQueue] = useState<RevealItem[]>([]);
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastSeenIdRef = useRef<number>(-1);
-    const rollback = useEventStreamRollback();
-    const lastRollbackSeqRef = useRef<number>(rollback.seq);
+    const { consumeNew } = useVisualEventStream({
+        entries,
+        strategy: 'transientNotification',
+    });
 
     const TRIGGER_EVENTS = useMemo(() => new Set([
         SU_EVENTS.REVEAL_HAND,
@@ -168,57 +168,28 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
     ]), []);
 
     useEffect(() => {
-        if (rollback.seq === lastRollbackSeqRef.current) {
-            return;
-        }
-
-        lastRollbackSeqRef.current = rollback.seq;
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-        setQueue([]);
-        setMagnifyTarget(null);
-        lastSeenIdRef.current = rollback.watermark ?? -1;
-    }, [rollback.seq, rollback.watermark]);
-
-    useEffect(() => {
         if (suppressionRules.length === 0) return;
         setQueue((prev) => prev.filter((item) => !shouldSuppressRevealItem(item, suppressionRules)));
     }, [suppressionRules]);
 
-    // 消费新事件
-    // 注意：展示 UI 需要显示历史的展示事件，所以不跳过历史事件
-    // 不使用 useEventStreamCursor（它会跳过历史事件），直接管理游标
+    // 消费新事件：揭示浮层属于临时提示，首次挂载跳过已有基线，只显示页面打开后的新展示。
     useEffect(() => {
-        // 检测 Undo 回退：最大 ID 回退时重置队列和游标
-        if (entries.length > 0) {
-            const maxId = entries[entries.length - 1].id;
-            if (maxId < lastSeenIdRef.current) {
-                setQueue([]);
-                lastSeenIdRef.current = maxId;
-                return;
+        const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+
+        if (didReset || didOptimisticRollback) {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
             }
+            setQueue([]);
+            setMagnifyTarget(null);
         }
 
-        // 过滤新事件（id > lastSeenId）
-        const newEntries = entries.filter(e => e.id > lastSeenIdRef.current);
-
         if (newEntries.length === 0) return;
-
-        // 更新游标
-        lastSeenIdRef.current = newEntries[newEntries.length - 1].id;
 
         const newItems: RevealItem[] = [];
         for (const entry of newEntries) {
             if (!TRIGGER_EVENTS.has(entry.event.type)) {
-                continue;
-            }
-            if (
-                typeof ignoreEventsBefore === 'number'
-                && typeof entry.event.timestamp === 'number'
-                && entry.event.timestamp < ignoreEventsBefore
-            ) {
                 continue;
             }
             const p = entry.event.payload as {
@@ -259,7 +230,7 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
         if (visibleItems.length > 0) {
             setQueue(prev => [...prev, ...visibleItems].slice(-5));
         }
-    }, [entries, currentPlayerId, suppressionRules, TRIGGER_EVENTS, ignoreEventsBefore]);
+    }, [consumeNew, currentPlayerId, suppressionRules, TRIGGER_EVENTS]);
 
     const visibleQueue = useMemo(
         () => queue.filter((item) => !shouldSuppressRevealItem(item, suppressionRules)),

@@ -130,7 +130,7 @@
       "primaryStageTagWheel": "Wheel Action",
       "primaryStageTagFaction": "Hand Action",
       "primaryStageFactionTitle": "Hand Action",
-      "primaryStageWheelTitle": "Execute Wheel Action",
+      "primaryStageWheelTitle": "Execute Wheel-Result Action",
       "mapDirectClick": "Map target",
       "mapClickable": "Choose target",
       "mapDirectClickHint": "Click a target to continue.",
@@ -144,7 +144,7 @@
       "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
       "primaryActionSelectPrompt": "Hand action",
       "wheelNextStepBadge": "Next",
-      "wheelNextStepTitle": "Wheel action",
+      "wheelNextStepTitle": "Wheel-result action",
       "wheelNextStepHint": "Choose a wheel segment",
       "wheelExecutePrompt": "Choose a wheel segment",
       "directExecute": "Execute now",
@@ -271,20 +271,20 @@
   "tutorial": {
     "basic": {
       "title": "Opening, Wheel, And The First Turn",
-      "description": "The formal opening resolves hand limit, the shared wheel, one hand action, and one wheel action.",
+      "description": "The formal opening resolves hand limit, the shared wheel push, one hand action, and one wheel-result action.",
       "steps": {
         "welcome": "Seven Hatreds has three victory paths: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige first.",
         "handLimit": "At the start of every turn, check hand limit first. Ming may keep 15 cards; Later Jin and the Mongols may keep 10. Pick the excess card from the hand area and confirm the discard.",
         "handResource": "Cards are your main resource. Event cards resolve when played, armament cards need one extra discard, tactic cards are used only in battle, and silver cards serve only as payment.",
-        "wheelFirst": "After tidying the hand, rotate the shared wheel first. Moving it by 1, 2, or 3 spaces decides not only whether other players draw, but also which kind of wheel action you can enter next.",
-        "wheelMove": "Choose how far to move the wheel this turn.",
-        "afterWheel": "Once the wheel is resolved, this turn still has two parts left: one hand action and one wheel action. The current player chooses which of those two parts to do first.",
+        "wheelFirst": "After tidying the hand, push the shared wheel first. Moving it by 1, 2, or 3 spaces decides not only whether other players draw, but also which action gate this turn lands on next.",
+        "wheelMove": "Choose how far to push the shared wheel this turn. This is the wheel push, not the wheel-result action.",
+        "afterWheel": "Once the shared wheel push is resolved, this turn still has two parts left: one hand action and one wheel-result action. The current player chooses which of those two parts to do first.",
         "pickAction": "Hand action: Grant Pardon. It pulls adjacent enemy troops into Ming control and changes ownership on the map directly.",
         "payCards": "Discard 3 cards to pay for this Grant Pardon.",
         "actionResult": "Ownership on the map has already changed. Hand resources have turned into direct board control.",
         "moraleLevel": "The number on each troop is both level and morale. Higher level means stronger dice in battle; only when a troop falls to 0 does it rout away.",
-        "wheelAction": "The wheel action is now resolved. Wherever the wheel lands, it pushes you into Reclaim and Farm, Diplomacy and Hire, Attack and Dispatch, or Recruit and Train.",
-        "finish": "The first-turn skeleton is: check hand limit, rotate the shared wheel, then complete one hand action and one wheel action."
+        "wheelAction": "The wheel-result action is now resolved. Wherever the shared wheel lands, it takes you into Reclaim and Farm, Diplomacy and Hire, Attack and Dispatch, or Recruit and Train.",
+        "finish": "The first-turn skeleton is: check hand limit, push the shared wheel, then complete one hand action and one wheel-result action."
       }
     },
     "attackAndBattle": {
@@ -367,13 +367,13 @@
     },
     "wheelSharedCost": {
       "title": "Wheel Branches And Development Actions",
-      "description": "Longer wheel movement refills opponents and pushes the turn into armaments, events, diplomacy, and hiring systems.",
+      "description": "Longer shared-wheel movement refills opponents and lands the turn in attack, dispatch, diplomacy, or hiring systems.",
       "steps": {
-        "overview": "Wheel movement is never free. The farther you move, the more cards your opponents recover, and the more it pushes you into a different system entry.",
-        "chooseMove": "Pick \"All opponents draw 2, move 3.\"",
-        "drawResult": "After moving 3 spaces, both the Mongols and Later Jin each drew 2 cards.",
-        "dispatchReady": "Once that cost is paid, the wheel also pushes this turn into the attack / dispatch entry. The point here is not to fight immediately, but to see that the wheel has moved you into a different system gate.",
-        "finish": "The wheel does more than move a few spaces. It decides which system this turn will enter, and who gets cards back because of that push."
+        "overview": "The shared-wheel push is never free. The farther you move, the more cards your opponents recover, and the more it changes this turn's landing gate.",
+        "chooseMove": "Pick the shared-wheel move \"All opponents draw 2, move 3.\" This is still the wheel push, not the fight itself.",
+        "drawResult": "After the shared wheel moves 3 spaces, both the Mongols and Later Jin each draw 2 cards.",
+        "dispatchReady": "Once that cost is paid, this turn's wheel-result action is Attack / Dispatch. The point here is not to fight immediately, but to see how the shared wheel brings you into another system gate.",
+        "finish": "The shared wheel does more than move a few spaces. It decides which wheel-result action this turn will enter, and who gets cards back because of that push."
       }
     },
     "wheelReclaim": {
@@ -419,14 +419,14 @@
     },
     "eventAction": {
       "title": "Khan's Edict",
-      "description": "Khan's Edict resolves through payment, effect choice, and result, with the discard and map change landing together.",
+      "description": "Khan's Edict is the Mongol faction action. It resolves through payment, effect choice, and result, with the discard and map change landing together.",
       "steps": {
-        "overview": "An event card is not just payment fodder. Once played, it immediately turns its printed effect into this turn's real action.",
-        "chooseAction": "Play this Khan's Edict event card. After it fires, you still discard 1 more hand card before choosing which effect it resolves.",
+        "overview": "Mongol faction actions are also paid with hand cards. Khan's Edict turns this action into recruit/training or diplomacy/hire.",
+        "chooseAction": "Click the Khan's Edict faction action on the right. After it starts, discard 1 hand card to enter the effect choice.",
         "payCards": "Pick 1 card from the hand at the bottom, then confirm the action.",
-        "chooseEffect": "The event is now live. Choose Recruit / Train here to turn this event into a real troop gain.",
-        "result": "The result has landed: Khan's Edict raised Mongol troops at Shanhaiguan from 2 to 4, so this event has already changed live board strength.",
-        "finish": "That is the event-action rhythm: spend a card to fire it, then let the printed effect change the live position immediately."
+        "chooseEffect": "Choose Recruit / Train here to turn the action into a real troop gain.",
+        "result": "The result has landed: Khan's Edict raised Mongol troops at Shanhaiguan from 2 to 4, so this action has already changed live board strength.",
+        "finish": "That is the faction-action rhythm: spend a card to fire it, then let the action effect change the live position immediately."
       }
     },
     "diplomacy": {

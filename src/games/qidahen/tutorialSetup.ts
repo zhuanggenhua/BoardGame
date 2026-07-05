@@ -1,9 +1,15 @@
 import type { GameSetupSelections } from '../setupOptions';
 import { applyQidahenPregameChoiceDefaults } from './roomSetup';
 import { buildWheelDispatchSelectionFromWheel } from './domain/dispatchSelectionBuilders';
+import {
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
+    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
+    type QidahenAtlas05OrdinaryHandCardIdentity,
+} from './domain/ordinaryHandCardIdentities';
 import type {
     QidahenCore,
     QidahenFactionId,
+    QidahenHandCard,
     QidahenPendingTargetAction,
     QidahenScenarioId,
     QidahenSpecialTroopStack,
@@ -24,6 +30,33 @@ type QidahenTutorialPreset = {
 };
 
 const cloneCore = (core: QidahenCore): QidahenCore => structuredClone(core);
+
+const getAtlas05TutorialHandCardIdentity = (
+    cardDefId: string,
+): QidahenAtlas05OrdinaryHandCardIdentity => {
+    const identity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((card) => card.cardDefId === cardDefId);
+    if (!identity) {
+        throw new Error(`Missing atlas05 tutorial hand card identity: ${cardDefId}`);
+    }
+    return identity;
+};
+
+const applyAtlas05TutorialHandCardIdentity = (
+    card: QidahenHandCard,
+    cardDefId: string,
+): QidahenHandCard => {
+    const identity = getAtlas05TutorialHandCardIdentity(cardDefId);
+    return {
+        ...card,
+        label: identity.displayName,
+        cardKind: identity.cardKind,
+        armamentId: identity.armamentId,
+        cardDefId: identity.cardDefId,
+        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+        previewKind: 'unknown',
+        previewIdentityId: identity.cardDefId,
+    };
+};
 
 const updateRegions = (
     core: QidahenCore,
@@ -112,42 +145,6 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
 
         core.currentPlayer = '0';
         core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
-        core.handCards = core.handCards.map((card) => {
-            if (card.id === mingCardIds[0]) {
-                return {
-                    ...card,
-                    label: '大明事件牌',
-                    cardKind: 'event' as const,
-                    cardDefId: 'tutorial-ming-event',
-                };
-            }
-            if (card.id === mingCardIds[1]) {
-                return {
-                    ...card,
-                    label: '火炮技术',
-                    cardKind: 'armament' as const,
-                    armamentId: 'artillery-tech',
-                    cardDefId: 'tutorial-ming-artillery-tech',
-                };
-            }
-            if (card.id === mingCardIds[2]) {
-                return {
-                    ...card,
-                    label: '大明战术牌',
-                    cardKind: 'tactic' as const,
-                    cardDefId: 'tutorial-ming-tactic',
-                };
-            }
-            if (card.id === mingCardIds[3]) {
-                return {
-                    ...card,
-                    label: '银两牌',
-                    cardKind: 'silver' as const,
-                    cardDefId: 'tutorial-ming-silver',
-                };
-            }
-            return card;
-        });
         const discardCandidateCardIds = mingCardIds.slice(0, 1);
         core.turnPhase = 'hand-limit-discard';
         core.wheelActionUsed = false;
@@ -211,12 +208,7 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
         if (mingTacticCardId) {
             core.handCards = core.handCards.map((card) => (
                 card.id === mingTacticCardId
-                    ? {
-                        ...card,
-                        label: '大明战术牌',
-                        cardKind: 'tactic' as const,
-                        cardDefId: 'tutorial-ming-tactic',
-                    }
+                    ? applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1615-arrows-like-rain')
                     : card
             ));
         }
@@ -939,31 +931,13 @@ const createArmamentUpgradeTutorialSetup = (): QidahenTutorialPreset => ({
         core.payment = { required: 0, selected: 0, prompt: '需弃 0 / 已选 0' };
         core.handCards = core.handCards.map((card) => {
             if (card.id === mingCardIds[0]) {
-                return {
-                    ...card,
-                    label: '火炮技术',
-                    cardKind: 'armament' as const,
-                    armamentId: 'artillery-tech',
-                    cardDefId: 'tutorial-ming-artillery-tech-upgrade',
-                };
+                return applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1626-artillery-tech');
             }
             if (card.id === mingCardIds[1]) {
-                return {
-                    ...card,
-                    label: '军饷银两',
-                    cardKind: 'silver' as const,
-                    armamentId: null,
-                    cardDefId: 'tutorial-ming-silver-upgrade',
-                };
+                return applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1624-silver');
             }
             if (card.id === mingCardIds[2]) {
-                return {
-                    ...card,
-                    label: '大明事件牌',
-                    cardKind: 'event' as const,
-                    armamentId: null,
-                    cardDefId: 'tutorial-ming-event-upgrade',
-                };
+                return applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1630-ginseng-and-sable');
             }
             return card;
         });
@@ -1012,31 +986,13 @@ const createEventActionTutorialSetup = (): QidahenTutorialPreset => ({
         ];
         core.handCards = core.handCards.map((card) => {
             if (card.id === mongolCardIds[0]) {
-                return {
-                    ...card,
-                    label: '大汗令箭事件牌',
-                    cardKind: 'event' as const,
-                    armamentId: null,
-                    cardDefId: 'tutorial-mongol-khan-edict-event',
-                };
+                return applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1643-silver');
             }
             if (card.id === mongolCardIds[1]) {
-                return {
-                    ...card,
-                    label: '蒙古银两牌',
-                    cardKind: 'silver' as const,
-                    armamentId: null,
-                    cardDefId: 'tutorial-mongol-silver-event',
-                };
+                return applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1632-pincer-advance');
             }
             if (card.id === mongolCardIds[2]) {
-                return {
-                    ...card,
-                    label: '蒙古战术牌',
-                    cardKind: 'tactic' as const,
-                    armamentId: null,
-                    cardDefId: 'tutorial-mongol-tactic-event',
-                };
+                return applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1637-mongol-drought-alt');
             }
             return card;
         });

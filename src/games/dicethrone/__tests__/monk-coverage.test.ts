@@ -10,6 +10,7 @@ import { TOKEN_IDS, STATUS_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { DiceThroneCore } from '../domain/types';
+import { buildHeroAbilitiesForFace, initHeroState } from '../domain/characters';
 import {
     testSystems,
     createQueuedRandom,
@@ -194,6 +195,65 @@ describe('Monk 技能完整覆盖测试', () => {
     });
 
     describe('太极连环拳 (taiji-combo) - rollDie 分支', () => {
+        it('连段冲拳②两颗太极奖励骰应结算为5伤害+4太极，且不触发莲花选择', () => {
+            const diceValues = [
+                1, 1, 1, 3, 4, // 进攻骰：3拳+1掌，触发连段冲拳②
+                1, 1, 1, 1,    // 防御骰
+                4, 5,          // 两颗奖励骰均为太极
+            ];
+            const random = createQueuedRandom(diceValues);
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: (playerIds, setupRandom) => {
+                    const state = createNoResponseSetup()(playerIds, setupRandom);
+                    state.core.selectedCharacters['1'] = 'monk';
+                    state.core.players['1'] = initHeroState('1', 'monk', setupRandom);
+                    for (const pid of playerIds) {
+                        state.core.players[pid].hand = [];
+                        state.core.players[pid].deck = [];
+                    }
+                    const monk = state.core.players['0'];
+                    monk.abilityLevels['taiji-combo'] = 2;
+                    monk.abilities = buildHeroAbilitiesForFace(
+                        monk.characterId,
+                        monk.playerBoardFace,
+                        monk.abilityLevels,
+                    );
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: '连段冲拳②两颗太极奖励骰',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'taiji-combo' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(4);
+            expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
+            expect(result.finalState.sys.interaction?.current).toBeFalsy();
+            expect(result.finalState.core.pendingBonusDiceSettlement?.dice).toMatchObject([
+                { value: 4, face: 'taiji' },
+                { value: 5, face: 'taiji' },
+            ]);
+        });
+
         it('rollDie=拳头: 基础6伤害+2额外伤害', () => {
             // 进攻骰: [1,1,1,3,4] -> 3拳+1掌
             // rollDie: 1 -> 拳头 (+2伤害)

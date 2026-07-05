@@ -2,9 +2,10 @@ import React from 'react';
 
 import {
     DiceBoxThreeEngine,
+    type DiceBoxDieSkin,
     type DiceBoxStyleProfile,
 } from '../dice-box-threejs/engine';
-import type { DicePhysicsState } from './types';
+import type { DicePhysicsRendererMode, DicePhysicsState } from './types';
 
 export interface DicePhysicsDieInput {
     id: number;
@@ -16,8 +17,11 @@ export interface DiceBoxPhysicsSourceProps {
     isRolling: boolean;
     rerollingDiceIds?: number[];
     styleProfile?: DiceBoxStyleProfile;
+    dieSkins?: Array<DiceBoxDieSkin | null>;
+    rendererMode?: DicePhysicsRendererMode;
     className?: string;
     testId?: string;
+    dataAttributes?: Record<string, string>;
     onPhysicsStatesChange?: (states: DicePhysicsState[]) => void;
 }
 
@@ -26,8 +30,11 @@ export function DiceBoxPhysicsSource({
     isRolling,
     rerollingDiceIds,
     styleProfile,
+    dieSkins,
+    rendererMode = 'physics-only',
     className,
     testId = 'dice-box-physics-source',
+    dataAttributes,
     onPhysicsStatesChange,
 }: DiceBoxPhysicsSourceProps) {
     const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -61,7 +68,7 @@ export function DiceBoxPhysicsSource({
             try {
                 const engine = await DiceBoxThreeEngine.create(container, {
                     styleProfile,
-                    rendererMode: 'physics-only',
+                    rendererMode,
                 });
                 if (cancelled) {
                     engine.destroy();
@@ -86,7 +93,15 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [styleProfile]);
+    }, [rendererMode, styleProfile]);
+
+    React.useEffect(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        if (dieSkins) {
+            engine.setDieSkins(dieSkins);
+        }
+    }, [dieSkins, engineVersion]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -210,8 +225,9 @@ export function DiceBoxPhysicsSource({
             className={className}
             data-testid={testId}
             data-dice-physics-source="dice-box-threejs"
-            data-dice-physics-mode="physics-only"
+            data-dice-physics-mode={rendererMode}
             data-dice-settled={settled ? 'true' : 'false'}
+            {...dataAttributes}
         />
     );
 }
