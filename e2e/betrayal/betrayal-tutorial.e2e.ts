@@ -161,27 +161,21 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(exorciseRollPanel).toContainText('驱魔');
         await expect(exorciseRollPanel).toContainText('神志检定');
         await expect(page.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
+        const exorciseDiceGroup = exorciseRollPanel.getByTestId('betrayal-house-dice-3d-group');
+        await expect(exorciseDiceGroup).toBeVisible();
+        await expect(exorciseDiceGroup).toHaveAttribute('data-render-mode', 'dice-box-threejs');
+        await expect(exorciseRollPanel.getByTestId('betrayal-house-dice-3d-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
         const recentRollDice = page.locator('[data-testid^="betrayal-recent-roll-die-"]');
-        await expect(recentRollDice.first()).toBeVisible();
-        await expect(recentRollDice.first()).toHaveAttribute('data-render-mode', 'betrayal-house-die-3d');
-        await expect(page.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
         const loadedDiceAssets = await recentRollDice.evaluateAll((diceNodes) => diceNodes.map((node) => {
-            const image = node.querySelector('img');
             return {
                 asset: node.getAttribute('data-asset-src'),
                 renderMode: node.getAttribute('data-render-mode'),
-                imageSrc: image?.getAttribute('src') ?? '',
-                naturalWidth: image?.naturalWidth ?? 0,
-                naturalHeight: image?.naturalHeight ?? 0,
             };
         }));
         expect(loadedDiceAssets.length).toBeGreaterThan(0);
         for (const die of loadedDiceAssets) {
             expect(die.asset).toMatch(/^betrayal\/dice\/house-die-[0-2]$/);
-            expect(die.renderMode).toBe('betrayal-house-die-3d');
-            expect(die.imageSrc.length).toBeGreaterThan(0);
-            expect(die.naturalWidth).toBeGreaterThan(0);
-            expect(die.naturalHeight).toBeGreaterThan(0);
+            expect(die.renderMode).toBe('dice-box-threejs');
         }
         await saveScreenshot(page, STEP_06);
 
@@ -251,25 +245,21 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(discoveryRollPanel).toContainText('外星几何');
         await expect(discoveryRollPanel).toContainText('知识检定');
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
+        const discoveryDiceGroup = discoveryRollPanel.getByTestId('betrayal-house-dice-3d-group');
+        await expect(discoveryDiceGroup).toBeVisible();
+        await expect(discoveryDiceGroup).toHaveAttribute('data-render-mode', 'dice-box-threejs');
+        await expect(discoveryRollPanel.getByTestId('betrayal-house-dice-3d-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
         const discoveryRollDice = discoveryReveal.locator('[data-testid^="betrayal-recent-roll-die-"]');
-        await expect(discoveryRollDice.first()).toBeVisible();
-        await expect(discoveryRollDice.first()).toHaveAttribute('data-render-mode', 'betrayal-house-die-3d');
-        await expect(discoveryReveal.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
         const discoveryDiceAssets = await discoveryRollDice.evaluateAll((diceNodes) => diceNodes.map((node) => {
-            const image = node.querySelector('img');
             return {
                 src: node.getAttribute('data-asset-src'),
                 renderMode: node.getAttribute('data-render-mode'),
-                naturalWidth: image instanceof HTMLImageElement ? image.naturalWidth : 0,
-                naturalHeight: image instanceof HTMLImageElement ? image.naturalHeight : 0,
             };
         }));
         expect(discoveryDiceAssets.length).toBeGreaterThan(0);
         for (const die of discoveryDiceAssets) {
             expect(die.src).toMatch(/betrayal\/dice\/house-die-[0-2]/);
-            expect(die.renderMode).toBe('betrayal-house-die-3d');
-            expect(die.naturalWidth).toBeGreaterThan(0);
-            expect(die.naturalHeight).toBeGreaterThan(0);
+            expect(die.renderMode).toBe('dice-box-threejs');
         }
         const discoveryGeometry = await discoveryReveal.evaluate((node) => {
             const rect = node.getBoundingClientRect();

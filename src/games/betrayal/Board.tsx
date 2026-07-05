@@ -14,10 +14,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import type { ActionBarAction } from '../../core/ui/types';
+import { getLocalizedImageCandidateUrls } from '../../core';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
-import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSource';
-import type { DicePhysicsState } from '../../lib/dice-physics/types';
+import {
+    DiceBoxThreeEngine,
+    type DiceBoxDieSkin,
+    type DiceBoxStyleProfile,
+} from '../../lib/dice-box-threejs/engine';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
@@ -1289,102 +1293,194 @@ function resolveRecentRollTotal(roll: BetrayalRecentRollState): number {
     return roll.dice.reduce((sum, pip) => sum + pip, 0) + roll.passiveBonus;
 }
 
-function BetrayalHouseDie3D({
-    pip,
-    testId,
-    className = 'h-11 w-11',
-}: {
-    pip: number;
-    testId: string;
-    className?: string;
-}) {
-    const clampedPip = Math.max(0, Math.min(2, pip));
-    const dieAsset = `betrayal/dice/house-die-${clampedPip}`;
+const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
+    id: 'betrayal-house-dice',
+    surface: 'green-felt',
+    colorset: 'white',
+    texture: '',
+    material: 'plastic',
+    soundMaterial: 'plastic',
+    colorSpotlight: 0xf4df9a,
+    shadows: true,
+    gravityMultiplier: 420,
+    lightIntensity: 0.8,
+    baseScale: 82,
+    strength: 0.9,
+    iterationLimit: 900,
+    customColorset: {
+        name: 'betrayal-house-aged-bone',
+        foreground: '#2b2418',
+        background: ['#f4ecd0', '#cfc09a', '#8a7658', '#f6e5b5'],
+        outline: '#fff1c2',
+        texture: 'none',
+        material: 'plastic',
+    },
+} satisfies DiceBoxStyleProfile;
 
-    return (
-        <span
-            data-testid={testId}
-            data-asset-src={dieAsset}
-            data-render-mode="betrayal-house-die-3d"
-            aria-label={`${clampedPip} 点骰面`}
-            className={`${className} dice3d-perspective relative grid shrink-0 place-items-center overflow-visible`}
-        >
-            <span
-                aria-hidden="true"
-                className="relative h-full w-full rounded-[20%] border border-[rgba(237,222,180,0.62)] bg-[linear-gradient(145deg,#f4ecd0_0%,#cbc0a0_42%,#6f6754_100%)] shadow-[0_12px_18px_rgba(0,0,0,0.34),inset_5px_5px_10px_rgba(255,255,255,0.42),inset_-7px_-8px_13px_rgba(32,26,20,0.38)]"
-                style={{
-                    transform: 'rotateX(58deg) rotateZ(-19deg)',
-                    transformStyle: 'preserve-3d',
-                }}
-            >
-                <span className="absolute inset-[12%] overflow-hidden rounded-[16%] border border-white/45 bg-[rgba(255,250,230,0.18)]">
-                    <OptimizedImage
-                        src={dieAsset}
-                        alt=""
-                        aria-hidden="true"
-                        locale="zh-CN"
-                        draggable={false}
-                        className="h-full w-full object-contain"
-                    />
-                </span>
-                <span className="pointer-events-none absolute inset-0 rounded-[20%] bg-[linear-gradient(120deg,rgba(255,255,255,0.34),transparent_46%,rgba(24,19,14,0.34))]" />
-            </span>
-        </span>
-    );
+const HOUSE_DIE_FACE_BY_D6_VALUE: Record<number, number> = {
+    1: 0,
+    2: 0,
+    3: 1,
+    4: 1,
+    5: 2,
+    6: 2,
+};
+
+function createHouseDieFaceCanvas(image: HTMLImageElement): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const context = canvas.getContext('2d');
+    if (!context) return canvas;
+
+    context.fillStyle = '#eadfbf';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 20, 20, 216, 216);
+    context.strokeStyle = 'rgba(74, 56, 30, 0.46)';
+    context.lineWidth = 8;
+    context.strokeRect(10, 10, 236, 236);
+    return canvas;
+}
+
+async function loadHouseDieSkin(locale: string): Promise<DiceBoxDieSkin> {
+    const images = await Promise.all([0, 1, 2].map(async (pip) => {
+        const candidates = getLocalizedImageCandidateUrls(`betrayal/dice/house-die-${pip}`, locale);
+        const image = new Image();
+        image.decoding = 'async';
+        image.src = candidates[0] ?? `/assets/i18n/${locale}/betrayal/dice/compressed/house-die-${pip}.webp`;
+        await image.decode();
+        return image;
+    }));
+    const faceCanvases: Record<number, HTMLCanvasElement> = {};
+    const faceImages: Record<number, HTMLImageElement> = {};
+
+    for (const d6Value of [1, 2, 3, 4, 5, 6]) {
+        const image = images[HOUSE_DIE_FACE_BY_D6_VALUE[d6Value]];
+        faceImages[d6Value] = image;
+        faceCanvases[d6Value] = createHouseDieFaceCanvas(image);
+    }
+
+    return {
+        id: `betrayal-house-die-${locale}`,
+        faceCanvases,
+        faceImages,
+    };
 }
 
 function BetrayalHouseDice3DGroup({
     roll,
-    diceClassName,
+    className = '',
+    locale,
 }: {
     roll: BetrayalRecentRollState;
-    diceClassName?: string;
+    className?: string;
+    locale: string;
 }) {
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const engineRef = React.useRef<DiceBoxThreeEngine | null>(null);
     const diceInputs = React.useMemo(
-        () => roll.dice.map((pip, index) => ({
-            id: index + 1,
-            value: Math.max(1, Math.min(6, pip + 1)),
-        })),
+        () => roll.dice.map((pip) => Math.max(1, Math.min(6, (pip * 2) + 1))),
         [roll.dice],
     );
-    const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
+    const diceKey = React.useMemo(() => `${roll.id}:${diceInputs.join(',')}`, [diceInputs, roll.id]);
+    const [engineState, setEngineState] = React.useState<'loading' | 'ready' | 'fallback'>('loading');
+
+    React.useEffect(() => {
+        let cancelled = false;
+        const init = async () => {
+            const container = containerRef.current;
+            if (!container) return;
+            setEngineState('loading');
+            try {
+                const engine = await DiceBoxThreeEngine.create(container, {
+                    styleProfile: BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
+                    rendererMode: 'debug-visible',
+                });
+                const skin = await loadHouseDieSkin(locale);
+                if (cancelled) {
+                    engine.destroy();
+                    return;
+                }
+                engineRef.current = engine;
+                engine.setDieSkins(diceInputs.map(() => skin));
+                engine.resize();
+                await engine.rollToValues(diceInputs);
+                if (!cancelled) {
+                    setEngineState('ready');
+                }
+            } catch {
+                if (!cancelled) {
+                    engineRef.current?.destroy();
+                    engineRef.current = null;
+                    setEngineState('fallback');
+                }
+            }
+        };
+
+        void init();
+
+        return () => {
+            cancelled = true;
+            engineRef.current?.destroy();
+            engineRef.current = null;
+        };
+    }, [diceInputs, diceKey, locale]);
 
     return (
         <div
             data-testid="betrayal-house-dice-3d-group"
-            className="relative flex shrink-0 items-center gap-1.5"
+            data-render-mode={engineState === 'ready' ? 'dice-box-threejs' : engineState}
+            className={`relative h-[132px] min-w-[300px] overflow-hidden rounded-[14px] border border-[rgba(211,179,109,0.3)] bg-[radial-gradient(circle_at_50%_70%,rgba(101,75,34,0.32),rgba(10,12,9,0.92)_70%)] ${className}`}
         >
-            <DiceBoxPhysicsSource
-                dice={diceInputs}
-                isRolling={false}
-                testId="betrayal-house-dice-physics-source"
-                className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-                onPhysicsStatesChange={setPhysicsStates}
+            <div
+                ref={containerRef}
+                data-testid="betrayal-house-dice-3d-canvas"
+                data-dice-physics-source={engineState === 'ready' ? 'dice-box-threejs' : engineState}
+                className="absolute inset-0"
             />
-            {roll.dice.map((pip, dieIndex) => {
-                const physics = physicsStates.find((state) => state.id === dieIndex + 1);
-                const rotateX = physics ? `${physics.layout.rotateX}rad` : `${0.92 + dieIndex * 0.08}rad`;
-                const rotateY = physics ? `${physics.layout.rotateY}rad` : `${0.22 - dieIndex * 0.04}rad`;
-                const rotateZ = physics ? `${physics.layout.rotateZ}rad` : `${-0.3 + dieIndex * 0.09}rad`;
-
-                return (
-                    <span
-                        key={`${roll.id}-${dieIndex}`}
-                        data-dice-physics-source={physics ? 'dice-box-threejs' : 'pending'}
-                        data-dice-physics-settled={physics?.settled ? 'true' : 'false'}
-                        style={{
-                            transform: `rotateX(${rotateX}) rotateY(${rotateY}) rotateZ(${rotateZ})`,
-                            transformStyle: 'preserve-3d',
-                        }}
-                    >
-                        <BetrayalHouseDie3D
-                            pip={pip}
-                            testId={`betrayal-recent-roll-die-${dieIndex}`}
-                            className={diceClassName}
-                        />
-                    </span>
-                );
-            })}
+            {engineState !== 'ready' ? (
+                <div className="absolute inset-0 flex items-center justify-center gap-2">
+                    {roll.dice.map((pip, dieIndex) => {
+                        const clampedPip = Math.max(0, Math.min(2, pip));
+                        const dieAsset = `betrayal/dice/house-die-${clampedPip}`;
+                        return (
+                            <span
+                                key={`${roll.id}-${dieIndex}`}
+                                data-testid={`betrayal-recent-roll-die-${dieIndex}`}
+                                data-asset-src={dieAsset}
+                                data-render-mode="betrayal-house-die-fallback"
+                                className="grid h-12 w-12 place-items-center rounded-[9px] border border-[rgba(237,222,180,0.62)] bg-[rgba(234,223,191,0.94)]"
+                            >
+                                <OptimizedImage
+                                    src={dieAsset}
+                                    alt=""
+                                    aria-hidden="true"
+                                    locale="zh-CN"
+                                    draggable={false}
+                                    className="h-full w-full object-contain"
+                                />
+                            </span>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="sr-only">
+                    {roll.dice.map((pip, dieIndex) => {
+                        const clampedPip = Math.max(0, Math.min(2, pip));
+                        const dieAsset = `betrayal/dice/house-die-${clampedPip}`;
+                        return (
+                            <span
+                                key={`${roll.id}-${dieIndex}`}
+                                data-testid={`betrayal-recent-roll-die-${dieIndex}`}
+                                data-asset-src={dieAsset}
+                                data-render-mode="dice-box-threejs"
+                            >
+                                {clampedPip}
+                            </span>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
@@ -1424,12 +1520,14 @@ function RecentRollPanel({
     roll,
     className = '',
     diceClassName,
+    effectiveLocale = 'zh-CN',
     showSource = true,
     showOutcome = true,
 }: {
     roll: BetrayalRecentRollState;
     className?: string;
     diceClassName?: string;
+    effectiveLocale?: string;
     showSource?: boolean;
     showOutcome?: boolean;
 }) {
@@ -1449,7 +1547,7 @@ function RecentRollPanel({
                     ) : null}
                     <div className="mt-0.5 text-[13px] font-semibold text-[#fff1b8]">{roll.rollLabel ?? t('board.roll.fallbackLabel')}</div>
                 </div>
-                <BetrayalHouseDice3DGroup roll={roll} diceClassName={diceClassName} />
+                <BetrayalHouseDice3DGroup roll={roll} locale={effectiveLocale} className={diceClassName} />
             </div>
             <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[#d6c498]">
                 {roll.passiveBonus !== 0 ? (
@@ -1662,6 +1760,7 @@ function EndgameScreen({
                                 <RecentRollPanel
                                     roll={core.recentRoll}
                                     className="relative z-10 w-full max-w-[520px]"
+                                    effectiveLocale={effectiveLocale}
                                 />
                             ) : null}
                             <div className="relative w-full max-w-[728px] border border-[#aa864b] bg-[linear-gradient(180deg,rgba(54,40,22,0.98),rgba(28,21,14,0.99))] p-[9px] shadow-[0_22px_48px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(226,185,102,0.12)]">
@@ -3752,7 +3851,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
                                                 className="w-[min(440px,calc(100vw-2rem))] shrink-0 md:w-[440px]"
-                                                diceClassName="h-12 w-12"
+                                                effectiveLocale={effectiveLocale}
                                             />
                                         ) : null}
                                     </div>
@@ -3763,6 +3862,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 <RecentRollPanel
                                     roll={core.recentRoll}
                                     className="absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2"
+                                    effectiveLocale={effectiveLocale}
                                 />
                             ) : null}
 

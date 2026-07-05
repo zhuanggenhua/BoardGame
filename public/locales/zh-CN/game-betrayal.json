@@ -80,6 +80,7 @@
       "activeExplorer": "行动者：{{name}}",
       "selectedCard": "已选：{{card}}",
       "noSelectedCard": "未选卡牌",
+      "damage": "伤害",
       "exploreTarget": "下一块会翻到 {{room}}",
       "tradeTarget": "可交易给：{{player}}",
       "tradeFlowStart": "交易：先选持有物，再选同房间目标",

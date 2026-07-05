@@ -79,6 +79,7 @@
       "activeExplorer": "Active Explorer: {{name}}",
       "selectedCard": "Selected: {{card}}",
       "noSelectedCard": "No card selected",
+      "damage": "Damage",
       "exploreTarget": "Next reveal goes to {{room}}",
       "tradeTarget": "Trade with: {{player}}",
       "tradeFlowStart": "Trade: choose an item, then a same-room target",
