@@ -2136,6 +2136,145 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.actionLog[0]?.text).toContain('建立 5 个 3 级后金步兵');
     });
 
+    it('后金已打出汉八旗时，七大恨可在后金控制的汉人区域建兵', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1609-seven-grievances'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-19-liaoxi',
+            factions: {
+                ...core.factions,
+                jin: {
+                    ...core.factions.jin,
+                    armaments: core.factions.jin.armaments.map((armament) => (
+                        armament.id === 'han-banners'
+                            ? { ...armament, level: 1 }
+                            : armament
+                    )),
+                },
+            },
+            regions: core.regions.map((region) => (
+                region.id === 'city-region-19-liaoxi'
+                    ? {
+                        ...region,
+                        controller: 'jin' as const,
+                        controlLabel: '后金',
+                    }
+                    : region
+            )),
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '七大恨',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1609-seven-grievances',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+        const baseRegion = mappedCore.regions.find((region) => region.id === 'city-region-19-liaoxi')!;
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const nextRegion = executed.regions.find((region) => region.id === 'city-region-19-liaoxi')!;
+
+        expect(getEffectiveHomelandController(mappedCore, 'city-region-19-liaoxi')).toBe('jin');
+        expect(nextRegion.troops).toBe(baseRegion.troops + 3);
+        expect(nextRegion.specialTroops).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'jin-seven-grievances-regular-infantry-lv3',
+                faction: 'jin',
+                troopKind: 'infantry',
+                count: 3,
+                level: 3,
+            }),
+        ]));
+        expect(executed.pieces.filter((piece) => (
+            piece.regionId === 'city-region-19-liaoxi'
+            && piece.sourceStackId === 'jin-seven-grievances-regular-infantry-lv3'
+            && piece.location === 'field'
+        ))).toHaveLength(3);
+        expect(executed.factions.jin.troops).toBe(core.factions.jin.troops + 3);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('已生效 1 张八旗事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('在 辽西 建立 3 个 3 级后金步兵');
+    });
+
+    it('七大恨不会仅因汉八旗生效就在非后金控制汉人区域建兵', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1609-seven-grievances'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-19-liaoxi',
+            factions: {
+                ...core.factions,
+                jin: {
+                    ...core.factions.jin,
+                    armaments: core.factions.jin.armaments.map((armament) => (
+                        armament.id === 'han-banners'
+                            ? { ...armament, level: 1 }
+                            : armament
+                    )),
+                },
+            },
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '七大恨',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1609-seven-grievances',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+        const baseRegion = mappedCore.regions.find((region) => region.id === 'city-region-19-liaoxi')!;
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const nextRegion = executed.regions.find((region) => region.id === 'city-region-19-liaoxi')!;
+
+        expect(getEffectiveHomelandController(mappedCore, 'city-region-19-liaoxi')).toBe('jin');
+        expect(baseRegion.controller).not.toBe('jin');
+        expect(nextRegion.troops).toBe(baseRegion.troops);
+        expect(nextRegion.specialTroops).toEqual(baseRegion.specialTroops);
+        expect(executed.pieces.filter((piece) => (
+            piece.regionId === 'city-region-19-liaoxi'
+            && piece.sourceStackId === 'jin-seven-grievances-regular-infantry-lv3'
+            && piece.location === 'field'
+        ))).toHaveLength(0);
+        expect(executed.factions.jin.troops).toBe(core.factions.jin.troops);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('当前选中区域不是后金本土，本次未建立部队');
+    });
+
     it('蒙古打出七大恨会按牌面无效果处理并移出游戏，不建立部队也不进弃牌堆', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const [sourceCard] = factionHandCards(core, 'mongol');
