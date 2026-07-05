@@ -441,23 +441,6 @@ const createFaceCanvas = (
     return canvas;
 };
 
-const createSymbolCanvas = (
-    faceValue: number,
-    atlasImage: HTMLImageElement | null,
-) => {
-    const size = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
-
-    ctx.clearRect(0, 0, size, size);
-    drawAtlasSymbol(ctx, atlasImage, faceValue, size);
-
-    return canvas;
-};
-
 const canvasToImage = (canvas: HTMLCanvasElement): Promise<HTMLImageElement> => new Promise((resolve) => {
     const image = new Image();
     image.onload = () => resolve(image);
