@@ -28,6 +28,8 @@ export interface ActionLogSystemConfig {
         command: Command;
         state: MatchState<unknown>;
         events: GameEvent[];
+        /** afterEvents 多轮迭代的当前轮次：0 = 命令原始事件轮，>0 = 后续系统派生事件轮 */
+        afterEventsRound: number;
     }) => ActionLogEntry | ActionLogEntry[] | null;
 }
 
@@ -54,7 +56,7 @@ export function createActionLogSystem<TCore>(
             },
         }),
 
-        afterEvents: ({ state, command, events }): HookResult<TCore> | void => {
+        afterEvents: ({ state, command, events, afterEventsRound }): HookResult<TCore> | void => {
             // ✅ 移除 afterEventsRound 限制，记录所有轮次的事件
             // 原因：SmashUpEventSystem 等游戏层系统会在后续轮次产生重要事件（如交互解决产生的 POWER_COUNTER_ADDED）
             // 这些事件也需要被记录到 ActionLog
@@ -65,6 +67,7 @@ export function createActionLogSystem<TCore>(
                 command,
                 state: state as MatchState<unknown>,
                 events,
+                afterEventsRound: afterEventsRound ?? 0,
             });
             if (!result) return;
 
@@ -73,9 +76,7 @@ export function createActionLogSystem<TCore>(
             let touched = false;
             for (const entry of entries) {
                 if (!entry) continue;
-                const stateWithEntry = appendEntry(nextState, entry, maxEntries);
-                if (stateWithEntry === nextState) continue;
-                nextState = stateWithEntry;
+                nextState = appendEntry(nextState, entry, maxEntries);
                 touched = true;
             }
 
@@ -110,10 +111,6 @@ function appendEntry<TCore>(
     const normalizedMaxEntries = Number.isFinite(currentActionLog.maxEntries)
         ? currentActionLog.maxEntries
         : maxEntries;
-
-    if (existingEntries.some(existingEntry => existingEntry.id === entry.id)) {
-        return state;
-    }
 
     const entries = [...existingEntries, entry];
 

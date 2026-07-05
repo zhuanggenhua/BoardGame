@@ -971,9 +971,14 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         const unimplementedBattleChainIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
             return rulesSummary.includes('附兵部队视为步兵部队')
-                || rulesSummary.includes('再移动最多 2 个没有参战的部队进入战斗');
+                || rulesSummary.includes('再移动最多 2 个没有参战的部队进入战斗')
+                || rulesSummary.includes('敌方次级部队参战时使用');
         });
-        expect(unimplementedBattleChainIdentities.map((identity) => identity.displayName)).toEqual(['骑马步兵', '分进合击']);
+        expect(unimplementedBattleChainIdentities.map((identity) => identity.cardDefId)).toEqual([
+            'qidahen-atlas05-1620-mounted-infantry',
+            'qidahen-atlas05-1629-instigate-defection-alt',
+            'qidahen-atlas05-1632-pincer-advance',
+        ]);
         const phaseOnlyIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
             return rulesSummary.includes('野战步兵阶段使用')
@@ -995,6 +1000,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 || rulesSummary.includes('扎营过程中')
                 || rulesSummary.includes('附兵部队视为步兵部队')
                 || rulesSummary.includes('再移动最多 2 个没有参战的部队进入战斗')
+                || rulesSummary.includes('敌方次级部队参战时使用')
                 || rulesSummary.includes('野战步兵阶段使用')
                 || rulesSummary.includes('野战骑兵阶段使用')
                 || rulesSummary.includes('提前在炮兵阶段');
@@ -1003,6 +1009,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             '箭如雨下',
             '打草惊蛇',
             '偷袭与伏击',
+            '策反',
             '骑兵冲锋',
             '步骑联合',
             '分进合击',
@@ -1268,6 +1275,77 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         expect(result.state.core.pendingTargetAction?.tacticModifiers ?? []).not.toEqual(expect.arrayContaining([
             expect.objectContaining({
                 sourceCardDefId: 'qidahen-atlas05-1660-feigned-retreat-lure-enemy',
+            }),
+        ]));
+    });
+
+    it('次级部队版策反不能从普通攻方战术窗口被当作已打出战术消耗', () => {
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const baseMingCard = baseCore.handCards.find((card) => card.faction === 'ming');
+        expect(baseMingCard).toBeTruthy();
+        const instigateDefectionAltCard = {
+            ...baseMingCard!,
+            id: 'atlas05-tactic-instigate-defection-alt',
+            label: '策反',
+            status: 'payable' as const,
+            cardKind: 'tactic' as const,
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1629-instigate-defection-alt',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+                'qidahen-atlas05-1629-instigate-defection-alt'
+            ],
+        };
+        const state = syncQidahenRuntimeInteractionState({
+            core: {
+                ...baseCore,
+                turnPhase: 'resolve-pending' as const,
+                handCards: [instigateDefectionAltCard],
+                pendingTargetAction: {
+                    actionId: 'wheel-dispatch' as const,
+                    battleMode: 'field' as const,
+                    targetKind: 'region' as const,
+                    title: '调度进攻待结算',
+                    attackerFactionId: 'ming' as const,
+                    sourceRegionId: 'city-region-16',
+                    sourceRegionName: '克什克腾部',
+                    targetRegionId: 'city-region-14',
+                    targetRegionName: '察哈尔',
+                    targetRuntimeRegionId: 'city-region-14',
+                    defenderFactionId: 'jin' as const,
+                    defenderLabel: '后金',
+                    restriction: '测试 · 次级部队版策反触发窗口未开放',
+                    battleWidth: 3,
+                    boundaryUnitCap: null,
+                    sourceAvailableTroops: 2,
+                    committedTroops: 2,
+                    movementProfileId: 'dispatch-infantry',
+                    attackPressure: 2,
+                    attackBoundaryType: 'plain',
+                    resolutionHint: '克什克腾部 → 察哈尔 · 平原 3',
+                    defenderPayCost: null,
+                },
+            },
+            sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+        });
+
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: instigateDefectionAltCard.id },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+
+        const result = applyPipeline(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: instigateDefectionAltCard.id },
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.state.core.handCards.some((card) => card.id === instigateDefectionAltCard.id)).toBe(true);
+        expect(result.state.core.discardPileCount).toBe(baseCore.discardPileCount);
+        expect(result.state.core.pendingTargetAction?.tacticModifiers ?? []).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1629-instigate-defection-alt',
             }),
         ]));
     });

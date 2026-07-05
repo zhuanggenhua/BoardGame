@@ -161,15 +161,18 @@ function formatDiceThroneActionEntry({
     command,
     state,
     events,
+    afterEventsRound = 0,
 }: {
     command: Command;
     state: MatchState<unknown>;
     events: GameEvent[];
+    afterEventsRound?: number;
 }): ActionLogEntry | ActionLogEntry[] | null {
     const core = (state as MatchState<DiceThroneCore>).core;
     const timestamp = typeof command.timestamp === 'number' ? command.timestamp : 0;
     const entries: ActionLogEntry[] = [];
     const tokenDefinitions = core.tokenDefinitions ?? [];
+    const shouldRecordCommandEntry = afterEventsRound === 0;
 
     // i18n segment 工厂：延迟翻译，渲染时由客户端 useTranslation 翻译
     const i18nSeg = (
@@ -231,7 +234,7 @@ function formatDiceThroneActionEntry({
         };
     };
 
-    if (command.type === 'PLAY_CARD' || command.type === 'PLAY_UPGRADE_CARD') {
+    if (shouldRecordCommandEntry && (command.type === 'PLAY_CARD' || command.type === 'PLAY_UPGRADE_CARD')) {
         const cardId = (command.payload as { cardId: string }).cardId;
         const card = findDiceThroneCard(core, cardId, command.playerId);
         if (!card || !card.previewRef) return null;
@@ -285,7 +288,7 @@ function formatDiceThroneActionEntry({
         }
     }
 
-    if (command.type === 'SELL_CARD') {
+    if (shouldRecordCommandEntry && command.type === 'SELL_CARD') {
         const cardId = (command.payload as { cardId: string }).cardId;
         const card = findDiceThroneCard(core, cardId, command.playerId);
 
@@ -316,7 +319,7 @@ function formatDiceThroneActionEntry({
         });
     }
 
-    if (command.type === 'DISCARD_CARD') {
+    if (shouldRecordCommandEntry && command.type === 'DISCARD_CARD') {
         const cardId = (command.payload as { cardId: string }).cardId;
         const card = findDiceThroneCard(core, cardId, command.playerId);
 
@@ -346,7 +349,7 @@ function formatDiceThroneActionEntry({
         });
     }
 
-    if (command.type === 'UNDO_SELL_CARD') {
+    if (shouldRecordCommandEntry && command.type === 'UNDO_SELL_CARD') {
         const undoEvent = events.find((event) => event.type === 'SELL_UNDONE') as { payload?: { cardId?: string } } | undefined;
         const cardId = undoEvent?.payload?.cardId ?? core.lastSoldCardId ?? '';
         const card = cardId ? findDiceThroneCard(core, cardId, command.playerId) : undefined;
@@ -377,7 +380,7 @@ function formatDiceThroneActionEntry({
         });
     }
 
-    if (command.type === 'ADVANCE_PHASE') {
+    if (shouldRecordCommandEntry && command.type === 'ADVANCE_PHASE') {
         const phaseChanged = [...events]
             .reverse()
             .find(event => event.type === 'SYS_PHASE_CHANGED') as
@@ -421,7 +424,7 @@ function formatDiceThroneActionEntry({
         }
     }
 
-    if (command.type === 'SELECT_ABILITY') {
+    if (shouldRecordCommandEntry && command.type === 'SELECT_ABILITY') {
         const abilityEvent = events.find(
             event => event.type === 'ABILITY_ACTIVATED'
         ) as AbilityActivatedEvent | undefined;
@@ -451,7 +454,7 @@ function formatDiceThroneActionEntry({
         }
     }
 
-    if (command.type === 'USE_PURIFY') {
+    if (shouldRecordCommandEntry && command.type === 'USE_PURIFY') {
         const statusId = (command.payload as { statusId?: string }).statusId;
         if (statusId) {
             const tokenKey = getTokenI18nKey(statusId);
@@ -468,7 +471,7 @@ function formatDiceThroneActionEntry({
         }
     }
 
-    if (command.type === 'PAY_TO_REMOVE_KNOCKDOWN') {
+    if (shouldRecordCommandEntry && command.type === 'PAY_TO_REMOVE_KNOCKDOWN') {
         entries.push({
             id: `PAY_TO_REMOVE_KNOCKDOWN-${command.playerId}-${timestamp}`,
             timestamp,
@@ -480,7 +483,7 @@ function formatDiceThroneActionEntry({
         });
     }
 
-    if (command.type === 'USE_PASSIVE_ABILITY') {
+    if (shouldRecordCommandEntry && command.type === 'USE_PASSIVE_ABILITY') {
         const passiveId = (command.payload as { passiveId?: string }).passiveId;
         if (passiveId) {
             const source = resolveAbilitySourceLabel(passiveId, core, command.playerId);
@@ -498,7 +501,7 @@ function formatDiceThroneActionEntry({
         }
     }
 
-    if (command.type === 'CONFIRM_ROLL') {
+    if (shouldRecordCommandEntry && command.type === 'CONFIRM_ROLL') {
         const phase = (state as MatchState<DiceThroneCore>).sys?.phase as TurnPhase | undefined;
         const rollerId = getRollerId(core, phase);
         const activeDice = getActiveDice(core);

@@ -95,7 +95,7 @@
   - 本地材质图：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Images\httpssteamusercontentaakamaihdnetugc310636117333783900D4349CB7B7A59D4F8DF84D5A8FB0D723953A466.jpg`，512x512，近白 / 空白材质；点数来自模型几何与 `RotationValues`，不是贴图格子。
   - `RotationValues` 明确映射 6 面结果：`0` 对应 `z=90/-90`，`1` 对应 `x=90/-90`，`2` 对应 `z=0/180`。
   - 另一个 `Custom_Dice`（`GUID b14471`）不是山屋 0/1/2 点骰，而是探索者姓名随机骰，不能混用。
-  - 当前状态：`source-found / runtime-ingested-as-model-derived-faces`。网页运行时已经从 TTS OBJ 按 `RotationValues` 派生 `0/1/2` 三张骰面资源，落点为 `public/assets/i18n/zh-CN/betrayal/dice/house-die-0.png`、`house-die-1.png`、`house-die-2.png` 及对应 `compressed/*.webp`，并由 `Board.tsx` 的 `BetrayalDieFace` 通过 `OptimizedImage` 加载；这不是手写 CSS 点数代替品。当前仍不是实时 WebGL 3D 骰子，只是把 TTS 3D 模型烘焙成正式运行时骰面图。
+  - 当前状态：`source-found / runtime-ingested-as-3d-house-dice`。网页运行时已经从 TTS OBJ 按 `RotationValues` 派生 `0/1/2` 三张房屋骰骰面资源，落点为 `public/assets/i18n/zh-CN/betrayal/dice/house-die-0.png`、`house-die-1.png`、`house-die-2.png` 及对应 `compressed/*.webp`。`Board.tsx` 的 `BetrayalHouseDice3DGroup` 复用 `DiceBoxPhysicsSource` / `@3d-dice/dice-box-threejs` 作为物理源，并以前台山屋专属 3D 房屋骰承接显示；不再是单纯 2D 骰面图顶替。
 
 ## 6. 明确不进运行时的素材
 

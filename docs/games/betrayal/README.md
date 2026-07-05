@@ -82,7 +82,7 @@
 ## 已接入的 TTS 派生素材
 
 - TTS 山屋 0/1/2 骰子 3D 模型已经找到并接入为运行时骰面图：真相源在 `Mods\Workshop\3420850553.json`，本地模型在 `Mods\Models\httpssteamusercontentaakamaihdnetugc8369528783806126162444D3E2AC5B69A7939369B3566A0941C2D881C9.obj`，本地近白材质图在 `Mods\Images\httpssteamusercontentaakamaihdnetugc310636117333783900D4349CB7B7A59D4F8DF84D5A8FB0D723953A466.jpg`。
-- 当前运行时资源为 `public/assets/i18n/zh-CN/betrayal/dice/house-die-0.png`、`house-die-1.png`、`house-die-2.png` 及对应 `compressed/*.webp`；教程 / 终局页通过 `OptimizedImage` 读取这些资源，不再使用 CSS 点数方块代替。
+- 当前运行时资源为 `public/assets/i18n/zh-CN/betrayal/dice/house-die-0.png`、`house-die-1.png`、`house-die-2.png` 及对应 `compressed/*.webp`；教程 / 终局页用这些骰面贴图渲染山屋专属 3D 房屋骰，并复用 `DiceBoxPhysicsSource` / `@3d-dice/dice-box-threejs` 作为物理源，不再使用 CSS 点数方块或单纯 2D 骰面图代替。
 - 事件牌正面图集已作为正式运行时素材接入：`public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg` 是 `6076x6376` 的 `9x5` 图集，最后一列 / 最后一行承接 `1px` 余数；当前教程发现牌截图已验证 `外星几何` 使用图集第 `24` 格，不再用旧占位事件或错误大格裁切。
 
 ## 下一步建议

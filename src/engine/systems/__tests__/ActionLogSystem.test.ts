@@ -68,17 +68,33 @@ describe('ActionLogSystem', () => {
         expect(result?.state?.sys.actionLog.maxEntries).toBe(2);
     });
 
-    it('同一日志 ID 在后续事件轮次中不会重复追加', () => {
+    it('后续事件轮次不会重新生成命令级日志，但仍可记录新事件日志', () => {
         const system = createActionLogSystem({
             maxEntries: 5,
             commandAllowlist: ['CONFIRM_ROLL'],
-            formatEntry: ({ command }): ActionLogEntry => ({
-                id: `${command.type}-${command.playerId}-${command.timestamp}`,
-                timestamp: command.timestamp ?? 0,
-                actorId: command.playerId,
-                kind: command.type,
-                segments: [{ type: 'text', text: '确认投掷' }],
-            }),
+            formatEntry: ({ command, events, afterEventsRound }): ActionLogEntry[] => {
+                const entries: ActionLogEntry[] = [];
+                if (afterEventsRound === 0) {
+                    entries.push({
+                        id: `${command.type}-${command.playerId}-${command.timestamp}`,
+                        timestamp: command.timestamp ?? 0,
+                        actorId: command.playerId,
+                        kind: command.type,
+                        segments: [{ type: 'text', text: '确认投掷' }],
+                    });
+                }
+                for (const event of events) {
+                    if (event.type !== 'PHASE_CHANGED') continue;
+                    entries.push({
+                        id: `${event.type}-${event.timestamp}`,
+                        timestamp: event.timestamp,
+                        actorId: command.playerId,
+                        kind: event.type,
+                        segments: [{ type: 'text', text: '阶段推进' }],
+                    });
+                }
+                return entries;
+            },
         });
 
         const command: Command = {
@@ -108,7 +124,10 @@ describe('ActionLogSystem', () => {
             afterEventsRound: 1,
         });
 
-        expect(second).toBeUndefined();
-        expect(first?.state?.sys.actionLog.entries).toHaveLength(1);
+        expect(second?.state?.sys.actionLog.entries).toHaveLength(2);
+        expect(second?.state?.sys.actionLog.entries.map(entry => entry.kind)).toEqual([
+            'CONFIRM_ROLL',
+            'PHASE_CHANGED',
+        ]);
     });
 });

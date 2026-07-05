@@ -223,6 +223,7 @@ const isQidahenTacticCardPlayableForPendingBattle = (
         || rulesSummary.includes('野战骑兵阶段使用')
         || rulesSummary.includes('附兵部队视为步兵部队')
         || rulesSummary.includes('再移动最多 2 个没有参战的部队进入战斗')
+        || rulesSummary.includes('敌方次级部队参战时使用')
     ) {
         return false;
     }

@@ -16,6 +16,8 @@ import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
+import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSource';
+import type { DicePhysicsState } from '../../lib/dice-physics/types';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
@@ -1287,12 +1289,14 @@ function resolveRecentRollTotal(roll: BetrayalRecentRollState): number {
     return roll.dice.reduce((sum, pip) => sum + pip, 0) + roll.passiveBonus;
 }
 
-function BetrayalDieFace({
+function BetrayalHouseDie3D({
     pip,
     testId,
+    className = 'h-11 w-11',
 }: {
     pip: number;
     testId: string;
+    className?: string;
 }) {
     const clampedPip = Math.max(0, Math.min(2, pip));
     const dieAsset = `betrayal/dice/house-die-${clampedPip}`;
@@ -1301,18 +1305,87 @@ function BetrayalDieFace({
         <span
             data-testid={testId}
             data-asset-src={dieAsset}
+            data-render-mode="betrayal-house-die-3d"
             aria-label={`${clampedPip} 点骰面`}
-            className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden"
+            className={`${className} dice3d-perspective relative grid shrink-0 place-items-center overflow-visible`}
         >
-            <OptimizedImage
-                src={dieAsset}
-                alt=""
+            <span
                 aria-hidden="true"
-                locale="zh-CN"
-                draggable={false}
-                className="h-full w-full object-contain drop-shadow-[0_7px_10px_rgba(0,0,0,0.42)]"
-            />
+                className="relative h-full w-full rounded-[20%] border border-[rgba(237,222,180,0.62)] bg-[linear-gradient(145deg,#f4ecd0_0%,#cbc0a0_42%,#6f6754_100%)] shadow-[0_12px_18px_rgba(0,0,0,0.34),inset_5px_5px_10px_rgba(255,255,255,0.42),inset_-7px_-8px_13px_rgba(32,26,20,0.38)]"
+                style={{
+                    transform: 'rotateX(58deg) rotateZ(-19deg)',
+                    transformStyle: 'preserve-3d',
+                }}
+            >
+                <span className="absolute inset-[12%] overflow-hidden rounded-[16%] border border-white/45 bg-[rgba(255,250,230,0.18)]">
+                    <OptimizedImage
+                        src={dieAsset}
+                        alt=""
+                        aria-hidden="true"
+                        locale="zh-CN"
+                        draggable={false}
+                        className="h-full w-full object-contain"
+                    />
+                </span>
+                <span className="pointer-events-none absolute inset-0 rounded-[20%] bg-[linear-gradient(120deg,rgba(255,255,255,0.34),transparent_46%,rgba(24,19,14,0.34))]" />
+            </span>
         </span>
+    );
+}
+
+function BetrayalHouseDice3DGroup({
+    roll,
+    diceClassName,
+}: {
+    roll: BetrayalRecentRollState;
+    diceClassName?: string;
+}) {
+    const diceInputs = React.useMemo(
+        () => roll.dice.map((pip, index) => ({
+            id: index + 1,
+            value: Math.max(1, Math.min(6, pip + 1)),
+        })),
+        [roll.dice],
+    );
+    const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
+
+    return (
+        <div
+            data-testid="betrayal-house-dice-3d-group"
+            className="relative flex shrink-0 items-center gap-1.5"
+        >
+            <DiceBoxPhysicsSource
+                dice={diceInputs}
+                isRolling={false}
+                testId="betrayal-house-dice-physics-source"
+                className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+                onPhysicsStatesChange={setPhysicsStates}
+            />
+            {roll.dice.map((pip, dieIndex) => {
+                const physics = physicsStates.find((state) => state.id === dieIndex + 1);
+                const rotateX = physics ? `${physics.layout.rotateX}rad` : `${0.92 + dieIndex * 0.08}rad`;
+                const rotateY = physics ? `${physics.layout.rotateY}rad` : `${0.22 - dieIndex * 0.04}rad`;
+                const rotateZ = physics ? `${physics.layout.rotateZ}rad` : `${-0.3 + dieIndex * 0.09}rad`;
+
+                return (
+                    <span
+                        key={`${roll.id}-${dieIndex}`}
+                        data-dice-physics-source={physics ? 'dice-box-threejs' : 'pending'}
+                        data-dice-physics-settled={physics?.settled ? 'true' : 'false'}
+                        style={{
+                            transform: `rotateX(${rotateX}) rotateY(${rotateY}) rotateZ(${rotateZ})`,
+                            transformStyle: 'preserve-3d',
+                        }}
+                    >
+                        <BetrayalHouseDie3D
+                            pip={pip}
+                            testId={`betrayal-recent-roll-die-${dieIndex}`}
+                            className={diceClassName}
+                        />
+                    </span>
+                );
+            })}
+        </div>
     );
 }
 
@@ -1350,11 +1423,13 @@ function DiscoveryAtlasFrame({ visual, locale, alt, testId }: DiscoveryAtlasFram
 function RecentRollPanel({
     roll,
     className = '',
+    diceClassName,
     showSource = true,
     showOutcome = true,
 }: {
     roll: BetrayalRecentRollState;
     className?: string;
+    diceClassName?: string;
     showSource?: boolean;
     showOutcome?: boolean;
 }) {
@@ -1374,15 +1449,7 @@ function RecentRollPanel({
                     ) : null}
                     <div className="mt-0.5 text-[13px] font-semibold text-[#fff1b8]">{roll.rollLabel ?? t('board.roll.fallbackLabel')}</div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                    {roll.dice.map((pip, dieIndex) => (
-                        <BetrayalDieFace
-                            key={`${roll.id}-${dieIndex}`}
-                            pip={pip}
-                            testId={`betrayal-recent-roll-die-${dieIndex}`}
-                        />
-                    ))}
-                </div>
+                <BetrayalHouseDice3DGroup roll={roll} diceClassName={diceClassName} />
             </div>
             <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[#d6c498]">
                 {roll.passiveBonus !== 0 ? (
@@ -2342,6 +2409,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const shouldShowLatestDiscovery = Boolean(
         core.latestDiscovery
         && core.latestDiscoveryOwnerPlayerId === core.currentExplorer.playerId,
+    );
+    const shouldShowLatestDiscoveryRoll = Boolean(
+        shouldShowLatestDiscovery
+        && core.latestDiscovery?.kind === 'event'
+        && core.recentRoll
+        && (core.recentRoll.kind === 'eventTraitCheck' || core.recentRoll.kind === 'eventDiceRoll')
+        && core.recentRoll.sourceTitle === core.latestDiscovery.title,
     );
     const latestDiscoveryTitle = core.latestDiscovery?.title;
     const latestDiscoveryKindLabel = core.latestDiscovery
@@ -3651,39 +3725,44 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     aria-label={`${latestDiscoveryKindLabel} ${core.latestDiscovery!.title}`}
                                     className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center px-4 py-16"
                                 >
-                                    <div className="w-[min(360px,calc(100vw-2rem))]">
-                                        <span className="sr-only" data-testid="betrayal-discovery-detail">
-                                            {core.latestDiscovery!.summary}
-                                            {' '}
-                                            {core.latestDiscovery!.detail}
-                                        </span>
-                                        {latestDiscoveryVisual ? (
-                                            <DiscoveryAtlasFrame
-                                                visual={latestDiscoveryVisual}
-                                                locale={effectiveLocale}
-                                                alt={core.latestDiscovery!.title}
-                                                testId="betrayal-discovery-card-front-atlas"
-                                            />
-                                        ) : (
-                                            <div
-                                                data-testid="betrayal-discovery-card-front-missing"
-                                                className="flex aspect-[675/1275] items-center justify-center rounded-[10px] border border-[rgba(211,179,109,0.28)] bg-[rgba(13,15,11,0.94)] px-3 text-center text-[12px] font-semibold leading-tight text-[#d6c498]"
-                                            >
-                                                {t('board.status.frontMissing')}
-                                            </div>
-                                        )}
+                                    <div className="flex max-h-[calc(100vh-8rem)] w-[min(900px,calc(100vw-2rem))] flex-col items-center justify-center gap-5 md:flex-row">
+                                        <div className="w-[min(340px,calc(100vw-2rem))] shrink-0 md:w-[340px]">
+                                            <span className="sr-only" data-testid="betrayal-discovery-detail">
+                                                {core.latestDiscovery!.summary}
+                                                {' '}
+                                                {core.latestDiscovery!.detail}
+                                            </span>
+                                            {latestDiscoveryVisual ? (
+                                                <DiscoveryAtlasFrame
+                                                    visual={latestDiscoveryVisual}
+                                                    locale={effectiveLocale}
+                                                    alt={core.latestDiscovery!.title}
+                                                    testId="betrayal-discovery-card-front-atlas"
+                                                />
+                                            ) : (
+                                                <div
+                                                    data-testid="betrayal-discovery-card-front-missing"
+                                                    className="flex aspect-[675/1275] items-center justify-center rounded-[10px] border border-[rgba(211,179,109,0.28)] bg-[rgba(13,15,11,0.94)] px-3 text-center text-[12px] font-semibold leading-tight text-[#d6c498]"
+                                                >
+                                                    {t('board.status.frontMissing')}
+                                                </div>
+                                            )}
                                         </div>
+                                        {shouldShowLatestDiscoveryRoll && core.recentRoll ? (
+                                            <RecentRollPanel
+                                                roll={core.recentRoll}
+                                                className="w-[min(440px,calc(100vw-2rem))] shrink-0 md:w-[440px]"
+                                                diceClassName="h-12 w-12"
+                                            />
+                                        ) : null}
+                                    </div>
                                 </div>
                             ) : null}
 
-                            {core.recentRoll && !pendingEventChoice ? (
+                            {core.recentRoll && !pendingEventChoice && !shouldShowLatestDiscovery ? (
                                 <RecentRollPanel
                                     roll={core.recentRoll}
-                                    showSource={!shouldShowLatestDiscovery}
-                                    showOutcome={!shouldShowLatestDiscovery}
-                                    className={`absolute left-1/2 z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 ${
-                                        shouldShowLatestDiscovery ? 'top-[calc(50%+190px)]' : 'top-[86px]'
-                                    }`}
+                                    className="absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2"
                                 />
                             ) : null}
 

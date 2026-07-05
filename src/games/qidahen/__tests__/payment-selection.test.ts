@@ -33,7 +33,11 @@ import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_SHAPES, QIDAHEN_MAP_WIDTH } from
 import type { QidahenCommand, QidahenCore, QidahenDriveTigerConsentSelection, QidahenEvent, QidahenFactionId, QidahenInternalDispatchSelection } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import {
+    createRespondToPromptCommand,
+    getCurrentInteractionSummary,
+    getPromptOptions,
+} from '../../../engine/testing/interactionTestFacade';
 import { engineConfig } from '../game';
 
 const random = () => 0.5;
@@ -151,6 +155,30 @@ function applyPipeline(
         testRandom,
         playerIds,
     );
+}
+
+function getPromptSummary(state: MatchState<QidahenCore>) {
+    return getCurrentInteractionSummary(state);
+}
+
+function getPromptData<T extends Record<string, unknown>>(state: MatchState<QidahenCore>): T {
+    return (state.sys.interaction?.current?.data ?? {}) as T;
+}
+
+function getPromptSourceId(state: MatchState<QidahenCore>) {
+    return getPromptSummary(state).sourceId;
+}
+
+function respondToPrompt(
+    state: MatchState<QidahenCore>,
+    playerId: string,
+    args: { optionId?: string; optionIds?: string[]; mergedValue?: unknown },
+): MatchState<QidahenCore> {
+    return applyPipeline(state, createRespondToPromptCommand(state, { playerId, ...args })).state;
+}
+
+function expectNoPrompt(state: MatchState<QidahenCore>) {
+    expect(getPromptSummary(state).id).toBeUndefined();
 }
 
 function setFactionCharactersInPlay(
@@ -2361,6 +2389,65 @@ describe('七大恨支付手牌选择', () => {
                 kind: 'drought',
                 label: '旱灾标记',
                 sourceCardDefId: 'qidahen-atlas05-1608-mongol-drought',
+                imageSrc: 'qidahen/markers/drought-marker',
+            }),
+        ]));
+        expect(executed.mapTokens).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'drought-marker-city-region-14',
+                type: 'marker',
+                faction: 'neutral',
+                imageSrc: 'qidahen/markers/drought-marker',
+            }),
+        ]));
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：蒙古大旱');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：在 察哈尔 放置旱灾标记。');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后移出游戏：此牌未进入弃牌堆。');
+    });
+
+    it('从手牌打出第二张蒙古大旱也会在蒙古人区域放置可见旱灾标记', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1637-mongol-drought-alt'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-14',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '蒙古大旱',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1637-mongol-drought-alt',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const droughtRegion = executed.regions.find((region) => region.id === 'city-region-14')!;
+
+        expect(droughtRegion.eventMarkers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'drought-marker-city-region-14',
+                kind: 'drought',
+                label: '旱灾标记',
+                sourceCardDefId: 'qidahen-atlas05-1637-mongol-drought-alt',
                 imageSrc: 'qidahen/markers/drought-marker',
             }),
         ]));
@@ -6284,7 +6371,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'drive-tiger' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenDriveTigerConsentSelection?: { dispatchSelection?: QidahenCore['wheelDispatchProgress'] | null };
         } | undefined;
@@ -6310,7 +6397,7 @@ describe('七大恨支付手牌选择', () => {
         expect(reselected.core.turnPhase).toBe('drive-tiger-consent');
         expect(reselected.core.selectedRegionId).toBe('jinzhou');
         expect(reselected.core.explicitRegionId).toBe('liao-xi');
-        expect(reselected.sys.interaction.current?.data).toMatchObject({
+        expect(getPromptData(reselected)).toMatchObject({
             sourceId: 'qidahen:drive-tiger-consent',
             qidahenDriveTigerConsentSelection: {
                 dispatchSelection: {
@@ -7391,7 +7478,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.actionLog.map((log) => log.text).join(' | ')).toContain('已按手牌上限弃掉 2 张牌');
     });
 
-    it('超限弃牌现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口', () => {
+    it('超限弃牌现在会正式挂到交互提示，并通过提示响应收口', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const mongolCards = factionHandCards(core, 'mongol');
         const extraMongolCards = Array.from({ length: 6 }, (_, index) => ({
@@ -7422,45 +7509,31 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'recruit' },
         }).state;
-        const recruitInteraction = state.sys.interaction.current;
-        expect(recruitInteraction?.kind).toBe('simple-choice');
-        expect((recruitInteraction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:recruit');
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: recruitInteraction?.id,
-                optionId: 'level-2-troops',
-            },
-        }).state;
+        const recruitInteraction = getPromptSummary(state);
+        expect(recruitInteraction.kind).toBe('simple-choice');
+        expect(recruitInteraction.sourceId).toBe('qidahen:recruit');
+        state = respondToPrompt(state, '0', { optionId: 'level-2-troops' });
         state = applyPipeline(state, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
             payload: { moveId: 'move-1-free' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:hand-limit-discard');
-        const optionIds = (interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.slice(0, 2).map((option) => option.id) ?? [];
+        const interaction = getPromptSummary(state);
+        expect(interaction.kind).toBe('simple-choice');
+        expect(interaction.sourceId).toBe('qidahen:hand-limit-discard');
+        const optionIds = getPromptOptions(state).slice(0, 2).map((option) => option.id);
         expect(optionIds).toHaveLength(2);
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: {
-                interactionId: interaction?.id,
-                optionIds,
-            },
-        }).state;
+        state = respondToPrompt(state, '1', { optionIds });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(state);
         expect(state.core.handLimitDiscardSelection).toBeNull();
         expect(state.core.factions.mongol.handCount).toBe(10);
         expect(factionHandCards(state.core, 'mongol').some((card) => optionIds.includes(card.id))).toBe(false);
     });
 
-    it('征召军队选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口', () => {
+    it('征召军队选择现在会正式挂到交互提示，并通过提示响应收口', () => {
         let state: MatchState<QidahenCore> = {
             core: QidahenDomain.setup(['0', '1', '2'], random),
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
@@ -7477,10 +7550,10 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'recruit' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:recruit');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toEqual([
+        const interaction = getPromptSummary(state);
+        expect(interaction.kind).toBe('simple-choice');
+        expect(interaction.sourceId).toBe('qidahen:recruit');
+        expect(getPromptOptions(state).map((option) => option.id)).toEqual([
             'level-2-troops',
             'level-4-chuanbing',
             'level-1-artillery',
@@ -7489,16 +7562,9 @@ describe('七大恨支付手牌选择', () => {
             targetRegionId: 'song-jin',
         });
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'level-2-troops',
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId: 'level-2-troops' });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(state);
         expect(state.core.recruitSelection).toBeNull();
         expect(state.core.selectedRegionId).toBe('song-jin');
         expect(state.core.turnPhase).toBe('action-window');
@@ -7578,8 +7644,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'ning-yuan' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:recruit');
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:recruit');
         expect(state.core.selectedRegionId).toBe('song-jin');
         expect(state.core.explicitRegionId).toBe('ning-yuan');
         expect(getRecruitSelection(state.core)).toMatchObject({
@@ -7605,7 +7671,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'recruit' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenRecruitSelection?: QidahenCore['recruitSelection'];
         } | undefined;
@@ -7672,7 +7738,7 @@ describe('七大恨支付手牌选择', () => {
                 recruitSelection: null,
             },
         });
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenRecruitSelection?: QidahenCore['recruitSelection'];
         } | undefined;
@@ -7717,10 +7783,10 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(getRecruitSelection(rebuilt.core)).toBeNull();
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
-    it('轮盘调度目标选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口', () => {
+    it('轮盘调度目标选择现在会正式挂到交互提示，并通过提示响应收口', () => {
         const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
         core.selectedRegionId = 'city-region-24';
         let state: MatchState<QidahenCore> = {
@@ -7734,25 +7800,18 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-3-all-opponents' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
+        const interaction = getPromptSummary(state);
         expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:dispatch-targeting');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toContain('city-region-20');
+        expect(getPromptSourceId(state)).toBe('qidahen:dispatch-targeting');
+        expect(getPromptOptions(state).map((option) => option.id)).toContain('city-region-20');
         expect(getWheelDispatchSelection(state.core)).toMatchObject({
             sourceRegionId: 'city-region-24',
             sourceRegionName: '宁远',
         });
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'city-region-20',
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId: 'city-region-20' });
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
         expect(state.core.wheelDispatchProgress).toBeNull();
         expect(state.core.turnPhase).toBe('resolve-pending');
         expect(state.core.selectedRegionId).toBe('city-region-20');
@@ -7779,8 +7838,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-3-all-opponents' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:dispatch-targeting');
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:dispatch-targeting');
 
         state = applyPipeline(state, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
@@ -7788,7 +7847,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-20' },
         }).state;
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
         expect(state.core.turnPhase).toBe('resolve-pending');
         expect(state.core.selectedRegionId).toBe('city-region-20');
         expect(state.core.wheelDispatchProgress).toBeNull();
@@ -7813,7 +7872,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-3-all-opponents' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenWheelDispatchSelection?: QidahenCore['wheelDispatchProgress'];
         } | undefined;
@@ -7858,7 +7917,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-3-all-opponents' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenWheelDispatchSelection?: QidahenCore['wheelDispatchProgress'];
         } | undefined;
@@ -7912,7 +7971,7 @@ describe('七大恨支付手牌选择', () => {
             },
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenWheelDispatchSelection?: QidahenCore['wheelDispatchProgress'];
         } | undefined;
@@ -8101,7 +8160,7 @@ describe('七大恨支付手牌选择', () => {
             },
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenWheelDispatchSelection?: QidahenCore['wheelDispatchProgress'];
         } | undefined;
@@ -8139,7 +8198,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-20' },
         }).state;
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
         expect(state.core.turnPhase).toBe('resolve-pending');
         expect(state.core.selectedRegionId).toBe('city-region-20');
         expect(state.core.pendingTargetAction).toMatchObject({
@@ -8175,10 +8234,10 @@ describe('七大恨支付手牌选择', () => {
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         });
 
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
-    it('战后处理选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口', () => {
+    it('战后处理选择现在会正式挂到交互提示，并通过提示响应收口', () => {
         const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
         core.selectedRegionId = 'city-region-24';
         core.regions = core.regions.map((region) => {
@@ -8215,26 +8274,19 @@ describe('七大恨支付手牌选择', () => {
             payload: {},
         }).state;
 
-        const interaction = state.sys.interaction.current;
+        const interaction = getPromptSummary(state);
         expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toContain('occupy');
+        expect(getPromptSourceId(state)).toBe('qidahen:post-battle');
+        expect(getPromptOptions(state).map((option) => option.id)).toContain('occupy');
         expect(state.core.turnPhase).toBe('post-battle-decision');
         expect(state.core.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-20',
             committedTroops: 2,
         });
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'occupy',
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId: 'occupy' });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(state).id).toBeUndefined();
         expect(state.core.postBattleSelection).toBeNull();
         expect(state.core.turnPhase).toBe('action-window');
         expect(state.core.selectedRegionId).toBe('city-region-20');
@@ -8284,7 +8336,7 @@ describe('七大恨支付手牌选择', () => {
             payload: {},
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenPostBattleSelection?: QidahenCore['postBattleSelection'];
         } | undefined;
@@ -8364,7 +8416,7 @@ describe('七大恨支付手牌选择', () => {
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         });
 
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
     it('战后处理 resolver 在 core 残留旧 selection 时，仍优先吃 interaction 快照', () => {
@@ -8404,7 +8456,7 @@ describe('七大恨支付手牌选择', () => {
             payload: {},
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenPostBattleSelection?: QidahenCore['postBattleSelection'];
         } | undefined;
@@ -8486,7 +8538,7 @@ describe('七大恨支付手牌选择', () => {
             },
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenPostBattleSelection?: QidahenCore['postBattleSelection'];
         } | undefined;
@@ -8497,7 +8549,7 @@ describe('七大恨支付手牌选择', () => {
         });
     });
 
-    it('待结算选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 把 mergedValue 收口进战后选择', () => {
+    it('待结算选择现在会正式挂到交互提示，并通过提示响应把合并值收口进战后选择', () => {
         const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
         core.selectedRegionId = 'city-region-24';
         core.regions = core.regions.map((region) => {
@@ -8529,10 +8581,10 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-20' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
+        const interaction = getPromptSummary(state);
         expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:pending-target');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toContain('rear-guard');
+        expect(getPromptSourceId(state)).toBe('qidahen:pending-target');
+        expect(getPromptOptions(state).map((option) => option.id)).toContain('rear-guard');
         expect(state.core.turnPhase).toBe('resolve-pending');
         expect(state.core.pendingTargetAction).toMatchObject({
             actionId: 'wheel-dispatch',
@@ -8541,21 +8593,16 @@ describe('七大恨支付手牌选择', () => {
             committedTroops: 2,
         });
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'rear-guard',
-                mergedValue: {
-                    committedTroops: 1,
-                    attackerCasualtyPriority: 'lowest-level',
-                    defenderCasualtyPriority: 'highest-level',
-                },
+        state = respondToPrompt(state, '0', {
+            optionId: 'rear-guard',
+            mergedValue: {
+                committedTroops: 1,
+                attackerCasualtyPriority: 'lowest-level',
+                defenderCasualtyPriority: 'highest-level',
             },
-        }).state;
+        });
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
         expect(state.core.turnPhase).toBe('post-battle-decision');
         expect(state.core.pendingTargetAction).toBeNull();
         expect(state.core.postBattleSelection).toMatchObject({
@@ -8596,10 +8643,10 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-20' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
+        const interaction = getPromptSummary(state);
         expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string; allowedCommands?: string[] } | undefined)?.sourceId).toBe('qidahen:pending-target');
-        expect((interaction?.data as { allowedCommands?: string[] } | undefined)?.allowedCommands).toContain(QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION);
+        expect(getPromptSourceId(state)).toBe('qidahen:pending-target');
+        expect((getPromptData(state) as { allowedCommands?: string[] }).allowedCommands).toContain(QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION);
 
         state = applyPipeline(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
@@ -8611,7 +8658,7 @@ describe('七大恨支付手牌选择', () => {
             },
         }).state;
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
         expect(state.core.turnPhase).toBe('post-battle-decision');
         expect(state.core.pendingTargetAction).toBeNull();
         expect(state.core.postBattleSelection).toMatchObject({
@@ -8652,7 +8699,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-20' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenPendingTargetAction?: QidahenCore['pendingTargetAction'];
         } | undefined;
@@ -8684,7 +8731,7 @@ describe('七大恨支付手牌选择', () => {
             },
         }).state;
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:post-battle');
         expect(state.core.turnPhase).toBe('post-battle-decision');
         expect(state.core.pendingTargetAction).toBeNull();
         expect(state.core.postBattleSelection).toMatchObject({
@@ -8725,7 +8772,7 @@ describe('七大恨支付手牌选择', () => {
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         });
 
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
     it('待结算 runtime interaction 在 core 残留旧 selection 时，仍优先沿当前 interaction data 续建', () => {
@@ -8761,7 +8808,7 @@ describe('七大恨支付手牌选择', () => {
             },
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenPendingTargetAction?: QidahenCore['pendingTargetAction'];
         } | undefined;
@@ -8773,7 +8820,7 @@ describe('七大恨支付手牌选择', () => {
         });
     });
 
-    it('马市贸易选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口', () => {
+    it('马市贸易选择现在会正式挂到交互提示，并通过提示响应收口', () => {
         let state: MatchState<QidahenCore> = {
             core: {
                 ...QidahenDomain.setup(['0', '1', '2'], random),
@@ -8791,20 +8838,13 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'ma-shi-trade' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:ma-shi-trade');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toEqual(['1', '2', '3']);
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:ma-shi-trade');
+        expect(getPromptOptions(state).map((option) => option.id)).toEqual(['1', '2', '3']);
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: '3',
-            },
-        }).state;
+        state = respondToPrompt(state, '1', { optionId: '3' });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(state).id).toBeUndefined();
         expect(state.core.maShiTradeSelection).toBeNull();
         expect(state.core.turnPhase).toBe('action-window');
         expect(state.core.regions.find((region) => region.id === 'song-jin')).toMatchObject({ troops: 5 });
@@ -8829,7 +8869,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'ma-shi-trade' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenMaShiTradeSelection?: QidahenCore['maShiTradeSelection'];
         } | undefined;
@@ -8883,7 +8923,7 @@ describe('七大恨支付手牌选择', () => {
                 maShiTradeSelection: null,
             },
         });
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenMaShiTradeSelection?: QidahenCore['maShiTradeSelection'];
         } | undefined;
@@ -8925,10 +8965,10 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(getMaShiTradeSelection(rebuilt.core)).toBeNull();
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
-    it('大汗令箭选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 进入外交雇佣链', () => {
+    it('大汗令箭选择现在会正式挂到交互提示，并通过提示响应进入外交雇佣链', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '1';
         core.selectedRegionId = 'city-region-25';
@@ -8962,19 +9002,12 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'khan-edict' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:khan-edict');
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:khan-edict');
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'hire-dispatch',
-            },
-        }).state;
+        state = respondToPrompt(state, '1', { optionId: 'hire-dispatch' });
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
         expect(state.core.khanEdictSelection).toBeNull();
         expect(state.core.diplomacyProgress).toBeNull();
         expect(getDiplomacySelection(state.core)?.source).toBe('khan-edict');
@@ -9014,7 +9047,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'khan-edict' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenKhanEdictSelection?: QidahenCore['khanEdictSelection'];
         } | undefined;
@@ -9071,14 +9104,7 @@ describe('七大恨支付手牌选择', () => {
             playerId: '1',
             payload: { actionId: 'khan-edict' },
         }).state;
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: {
-                interactionId: state.sys.interaction.current?.id,
-                optionId: 'hire-dispatch',
-            },
-        }).state;
+        state = respondToPrompt(state, '1', { optionId: 'hire-dispatch' });
 
         expect(state.core.turnPhase).toBe('diplomacy-choice');
         expect(state.core.diplomacyProgress).toBeNull();
@@ -9140,7 +9166,7 @@ describe('七大恨支付手牌选择', () => {
                 khanEdictSelection: null,
             },
         });
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenKhanEdictSelection?: QidahenCore['khanEdictSelection'];
         } | undefined;
@@ -9198,10 +9224,10 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(getKhanEdictSelection(rebuilt.core)).toBeNull();
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
-    it('驱虎吞狼同意选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 进入指挥调度', () => {
+    it('驱虎吞狼同意选择现在会正式挂到交互提示，并通过提示响应进入指挥调度', () => {
         const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'jinzhou', 'jin', 2, 2);
         core.selectedRegionId = 'jinzhou';
         let state: MatchState<QidahenCore> = {
@@ -9215,19 +9241,12 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'drive-tiger' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:drive-tiger-consent');
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:drive-tiger-consent');
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '2',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'accept',
-            },
-        }).state;
+        state = respondToPrompt(state, '2', { optionId: 'accept' });
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:dispatch-targeting');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:dispatch-targeting');
         expect(getQidahenDriveTigerConsentSelectionForCore(state.core)).toBeNull();
         expect(state.core.wheelDispatchProgress).toBeNull();
         expect(getWheelDispatchSelection(state.core)?.attackerFactionId).toBe('jin');
@@ -9265,7 +9284,7 @@ describe('七大恨支付手牌选择', () => {
             core: state.core,
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         });
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenDriveTigerConsentSelection?: QidahenDriveTigerConsentSelection;
         } | undefined;
@@ -9297,7 +9316,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'drive-tiger' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenDriveTigerConsentSelection?: QidahenDriveTigerConsentSelection;
         } | undefined;
@@ -9337,7 +9356,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { actionId: 'drive-tiger' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             qidahenDriveTigerConsentSelection?: QidahenDriveTigerConsentSelection;
         } | undefined;
 
@@ -9488,7 +9507,7 @@ describe('七大恨支付手牌选择', () => {
             },
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenDriveTigerConsentSelection?: QidahenDriveTigerConsentSelection;
         } | undefined;
@@ -9531,10 +9550,10 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(getQidahenDriveTigerConsentSelectionForCore(rebuilt.core)).toBeNull();
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
-    it('新年防线维护现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口 attritionPriority', () => {
+    it('新年防线维护现在会正式挂到交互提示，并通过提示响应收口损耗优先级', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.actionWheelPosition = 'wheel-midyear';
         core.factions = {
@@ -9567,20 +9586,15 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-1-free' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:fortification-maintenance');
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:fortification-maintenance');
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'auto-pay',
-                mergedValue: { attritionPriority: 'highest-level' },
-            },
-        }).state;
+        state = respondToPrompt(state, '0', {
+            optionId: 'auto-pay',
+            mergedValue: { attritionPriority: 'highest-level' },
+        });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(state).id).toBeUndefined();
         expect(state.core.currentYearIndex).toBe(1);
         expect(state.core.lastSeasonSummary?.title).toBe('新年结算');
     });
@@ -9619,7 +9633,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-1-free' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenFortificationMaintenanceSelection?: ReturnType<typeof getQidahenFortificationMaintenanceSelectionForCore>;
         } | undefined;
@@ -9669,10 +9683,10 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(getQidahenFortificationMaintenanceSelectionForCore(rebuilt.core)).toBeNull();
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
-    it('王化贞内部调度现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 收口', () => {
+    it('王化贞内部调度现在会正式挂到交互提示，并通过提示响应收口', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '0';
         core.selectedRegionId = 'city-region-25';
@@ -9730,21 +9744,14 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-25' },
         }).state;
 
-        const interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:internal-dispatch');
-        const optionId = (interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.find((option) => option.id.includes('city-region-24'))?.id;
+        const interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:internal-dispatch');
+        const optionId = getPromptOptions(state).find((option) => option.id.includes('city-region-24'))?.id;
         expect(optionId).toBeTruthy();
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId,
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(state).id).toBeUndefined();
         expect('internalDispatchSelection' in state.core).toBe(false);
         expect(state.core.regions.find((region) => region.id === 'city-region-24')).toMatchObject({ troops: 3 });
     });
@@ -9807,7 +9814,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-25' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             options?: Array<{ id: string }>;
             qidahenInternalDispatchSelection?: QidahenInternalDispatchSelection;
@@ -9897,7 +9904,7 @@ describe('七大恨支付手牌选择', () => {
             core: state.core,
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             options?: Array<{ id: string }>;
             qidahenInternalDispatchSelection?: QidahenInternalDispatchSelection;
@@ -9976,7 +9983,7 @@ describe('七大恨支付手牌选择', () => {
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         });
 
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
     it('超限弃牌等待选择时点逻辑区辽西，不会把 selectedRegionId 漂离当前焦点', () => {
@@ -23700,7 +23707,7 @@ describe('七大恨支付手牌选择', () => {
         expect(finished.actionLog[0]?.text).toContain('轮盘外交/雇佣');
     });
 
-    it('外交雇佣选择现在会正式挂到 sys.interaction，并通过 SYS_INTERACTION_RESPOND 连续收口', () => {
+    it('外交雇佣选择现在会正式挂到交互提示，并通过提示响应连续收口', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.actionWheelPosition = 'wheel-hire';
         core.selectedRegionId = 'song-jin';
@@ -23729,10 +23736,10 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-1-free' },
         }).state;
 
-        let interaction = state.sys.interaction.current;
+        let interaction = getPromptSummary(state);
         expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toContain('hire-only');
+        expect(getPromptSourceId(state)).toBe('qidahen:diplomacy');
+        expect(getPromptOptions(state).map((option) => option.id)).toContain('hire-only');
         expect(getDiplomacySelection(state.core)?.sourceRegionId).toBe('song-jin');
 
         state = applyPipeline(state, {
@@ -23741,22 +23748,15 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-22' },
         }).state;
 
-        interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
+        interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:diplomacy');
         expect(getDiplomacySelection(state.core)?.targetRegionId).toBe('city-region-22');
-        expect((interaction?.data as { options?: Array<{ id: string }> } | undefined)?.options?.map((option) => option.id)).toContain('place-friendly');
+        expect(getPromptOptions(state).map((option) => option.id)).toContain('place-friendly');
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'place-friendly',
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId: 'place-friendly' });
 
-        interaction = state.sys.interaction.current;
-        expect((interaction?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
+        interaction = getPromptSummary(state);
+        expect(getPromptSourceId(state)).toBe('qidahen:diplomacy');
         expect(state.core.diplomacyProgress?.resolvedSteps).toHaveLength(1);
         expect(state.core.diplomacyProgress?.remainingTargetCount).toBe(2);
         expect(state.core.regions.find((region) => region.id === 'city-region-22')).toMatchObject({
@@ -23765,16 +23765,9 @@ describe('七大恨支付手牌选择', () => {
             controlLabel: '大明友好',
         });
 
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: interaction?.id,
-                optionId: 'hire-only',
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId: 'hire-only' });
 
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(state).id).toBeUndefined();
         expect(state.core.diplomacyProgress).toBeNull();
         expect(state.core.turnPhase).toBe('action-window');
         expect(state.core.regions.find((region) => region.id === 'song-jin')).toMatchObject({
@@ -23825,7 +23818,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-22' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenDiplomacySelection?: QidahenDiplomacySelectionSnapshot;
         } | undefined;
@@ -23894,16 +23887,9 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { regionId: 'city-region-22' },
         }).state;
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: state.sys.interaction.current?.id,
-                optionId: 'place-friendly',
-            },
-        }).state;
+        state = respondToPrompt(state, '0', { optionId: 'place-friendly' });
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenDiplomacySelection?: QidahenDiplomacySelectionSnapshot;
         } | undefined;
@@ -23986,21 +23972,14 @@ describe('七大恨支付手牌选择', () => {
             playerId: '1',
             payload: { actionId: 'khan-edict' },
         }).state;
-        state = applyPipeline(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: {
-                interactionId: state.sys.interaction.current?.id,
-                optionId: 'hire-dispatch',
-            },
-        }).state;
+        state = respondToPrompt(state, '1', { optionId: 'hire-dispatch' });
         state = applyPipeline(state, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '1',
             payload: { regionId: 'city-region-22' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenDiplomacySelection?: QidahenDiplomacySelectionSnapshot;
         } | undefined;
@@ -24086,7 +24065,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-22' },
         }).state;
 
-        expect((state.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
+        expect((getPromptData(state) as { sourceId?: string } | undefined)?.sourceId).toBe('qidahen:diplomacy');
         expect(state.core.turnPhase).toBe('diplomacy-choice');
         expect(state.core.selectedRegionId).toBe('song-jin');
         expect(state.core.explicitRegionId).toBe('city-region-22');
@@ -24130,7 +24109,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-22' },
         }).state;
 
-        const interactionData = state.sys.interaction.current?.data as {
+        const interactionData = getPromptData(state) as {
             sourceId?: string;
             qidahenDiplomacySelection?: QidahenDiplomacySelectionSnapshot;
         } | undefined;
@@ -24202,7 +24181,7 @@ describe('七大恨支付手牌选择', () => {
             sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
         });
 
-        expect(rebuilt.sys.interaction.current).toBeUndefined();
+        expect(getPromptSummary(rebuilt).id).toBeUndefined();
     });
 
     it('外交雇佣 runtime interaction 在 core 残留旧 selection 时，仍优先沿当前 interaction data 续建', () => {
@@ -24254,7 +24233,7 @@ describe('七大恨支付手牌选择', () => {
             } as QidahenCore & { diplomacySelection?: QidahenDiplomacySelectionSnapshot }),
         });
 
-        const interactionData = rebuilt.sys.interaction.current?.data as {
+        const interactionData = getPromptData(rebuilt) as {
             sourceId?: string;
             qidahenDiplomacySelection?: QidahenDiplomacySelectionSnapshot;
         } | undefined;
