@@ -69,10 +69,26 @@ describe('DiceThrone Treant / Ninja 新英雄接入', () => {
         assertCards(NINJA_CARDS, DICETHRONE_CARD_ATLAS_IDS.NINJA);
     });
 
-    it('新规格通用卡映射覆盖 18 张通用牌，且意不意外位于末行 slot-37', () => {
+    it('新规格通用卡映射覆盖 18 张通用牌，且意不意外位于末行 slot-32', () => {
         expect(Object.keys(TREANT_NINJA_COMMON_ATLAS_INDEX)).toHaveLength(18);
-        expect(TREANT_NINJA_COMMON_ATLAS_INDEX['card-unexpected']).toBe(37);
+        expect(TREANT_NINJA_COMMON_ATLAS_INDEX['card-unexpected']).toBe(32);
         expect(TREANT_NINJA_COMMON_ATLAS_INDEX['card-next-time']).toBe(0);
+    });
+
+    it('忍者雾隐和道场必须指向真实存在的专属卡槽位', () => {
+        expect(NINJA_CARDS.find(card => card.id === 'ninja-card-vanish')?.previewRef).toMatchObject({
+            type: 'atlas',
+            atlasId: DICETHRONE_CARD_ATLAS_IDS.NINJA,
+            index: 30,
+        });
+        expect(NINJA_CARDS.find(card => card.id === 'ninja-card-vanish')?.sourceAtlasIndex).toBe(30);
+
+        expect(NINJA_CARDS.find(card => card.id === 'ninja-card-dojo')?.previewRef).toMatchObject({
+            type: 'atlas',
+            atlasId: DICETHRONE_CARD_ATLAS_IDS.NINJA,
+            index: 31,
+        });
+        expect(NINJA_CARDS.find(card => card.id === 'ninja-card-dojo')?.sourceAtlasIndex).toBe(31);
     });
 
     it('状态图集 JSON 覆盖所有新 token frameId', () => {

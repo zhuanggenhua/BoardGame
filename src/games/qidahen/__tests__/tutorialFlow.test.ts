@@ -12,6 +12,11 @@ import {
 } from '../../../engine';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import {
+    createRespondToPromptCommand,
+    getCurrentInteractionSummary,
+    getPromptOptions,
+} from '../../../engine/testing/interactionTestFacade';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import QIDAHEN_TUTORIALS from '../tutorial';
 import { buildQidahenTutorialSetupData } from '../tutorialSetup';
@@ -65,6 +70,21 @@ const dispatch = (state: MatchState<unknown>, command: Command): MatchState<unkn
     expect(result.success).toBe(true);
     return result.state;
 };
+
+const getPromptSummary = (state: MatchState<unknown>) => getCurrentInteractionSummary(state);
+
+const getPromptOptionIds = (state: MatchState<unknown>) => (
+    getPromptOptions(state).map((option) => option.id)
+);
+
+const respondToPrompt = (
+    state: MatchState<unknown>,
+    playerId: string,
+    args: { optionId?: string; optionIds?: string[]; mergedValue?: unknown },
+): MatchState<unknown> => dispatch(
+    state,
+    createRespondToPromptCommand(state, { playerId, ...args }) as Command,
+);
 
 describe('qidahen tutorial flow', () => {
     it('教程目录用 6 个玩家主章节串起隐藏续章，并保留关键步骤合同', () => {
@@ -132,6 +152,7 @@ describe('qidahen tutorial flow', () => {
             'hand-limit',
             'wheel-move',
             'pick-action',
+            'choose-grant-pardon-target',
             'pay-cards',
         ]));
         expect(stepIdsOf('attack-and-battle')).toEqual(expect.arrayContaining([
@@ -271,8 +292,16 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
+        expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-target');
+        expect((state.core as any).turnPhase).toBe('grant-pardon-choice');
+        expect((state.core as any).grantPardonSelection?.choices.map((choice: any) => choice.id)).toContain('jinzhou->city-region-25');
+        expect(getPromptSummary(state).kind).toBe('simple-choice');
+        expect(getPromptOptionIds(state)).toContain('jinzhou->city-region-25');
+
+        state = respondToPrompt(state, '0', { optionId: 'jinzhou->city-region-25' });
         expect(state.sys.tutorial.step?.id).toBe('pay-cards');
         expect((state.core as any).payment.required).toBe(3);
+        expect((state.core as any).grantPardonSelection?.selectedChoiceId).toBe('jinzhou->city-region-25');
 
         const paymentCardIds = (state.core as any).handCards
             .filter((card: any) => card.faction === 'ming' && card.status !== 'disabled')

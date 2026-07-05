@@ -144,6 +144,7 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
             highlightTarget: 'betrayal-latest-discovery',
             position: 'center',
             infoStep: true,
+            allowedCommands: [BETRAYAL_COMMANDS.USE_RABBIT_FOOT],
             viewAs: '0',
         },
     ],

@@ -36,6 +36,8 @@ interface QidahenSelectedActionStateCommitFollowUp {
     maShiTradeSelection: QidahenCore['maShiTradeSelection'];
     pendingTargetAction: QidahenCore['pendingTargetAction'];
     recruitSelection: QidahenCore['recruitSelection'];
+    grantPardonSelection: QidahenCore['grantPardonSelection'];
+    eventOpponentHandChoiceSelection: QidahenCore['eventOpponentHandChoiceSelection'];
     selectedRegionId: string;
     turnPhase: QidahenCore['turnPhase'];
     wheelDispatchProgress: QidahenCore['wheelDispatchProgress'];
@@ -97,6 +99,7 @@ export function commitQidahenSelectedActionState(
         selectedPaymentCardIds: [],
         selectedHandActionCardId: null,
         recruitSelection: followUp.recruitSelection,
+        grantPardonSelection: followUp.grantPardonSelection,
         maShiTradeSelection: followUp.maShiTradeSelection,
         khanEdictSelection: followUp.khanEdictSelection,
         diplomacyProgress: null,

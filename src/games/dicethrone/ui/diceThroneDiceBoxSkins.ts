@@ -29,6 +29,9 @@ const FACE_TEXTURE_ROTATION: Partial<Record<number, number>> = {
     6: Math.PI,
 };
 
+const DICE_BOX_FACE_SAFE_SCALE = 0.74;
+const DICE_BOX_FACE_EDGE_SCALE = 0.94;
+
 const DICE_FACE_FALLBACK_LABELS: Record<string, string> = {
     chi: '气',
     fist: '拳',
@@ -128,37 +131,52 @@ const drawSpriteDieFace = (
     const cellHeight = spriteImage.naturalHeight / 3;
     const inset = Math.max(1, Math.min(cellWidth, cellHeight) * 0.018);
     const radius = size * 0.14;
+    const faceSize = size * DICE_BOX_FACE_SAFE_SCALE;
+    const faceOffset = (size - faceSize) / 2;
+    const edgeSize = size * DICE_BOX_FACE_EDGE_SCALE;
+    const edgeOffset = (size - edgeSize) / 2;
+
+    const drawSourceCell = (
+        dx: number,
+        dy: number,
+        dw: number,
+        dh: number,
+    ) => {
+        ctx.drawImage(
+            spriteImage,
+            face.col * cellWidth + inset,
+            face.row * cellHeight + inset,
+            cellWidth - inset * 2,
+            cellHeight - inset * 2,
+            dx,
+            dy,
+            dw,
+            dh,
+        );
+    };
 
     ctx.save();
     drawRoundedRect(ctx, 0, 0, size, size, radius);
     ctx.clip();
 
+    const faceBaseGradient = ctx.createLinearGradient(0, 0, size, size);
+    faceBaseGradient.addColorStop(0, '#fff2c9');
+    faceBaseGradient.addColorStop(0.42, '#d9aa58');
+    faceBaseGradient.addColorStop(1, '#7b4319');
+    ctx.fillStyle = faceBaseGradient;
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    drawSourceCell(edgeOffset, edgeOffset, edgeSize, edgeSize);
+    ctx.restore();
+
     if (FACE_TEXTURE_ROTATION[faceValue]) {
         ctx.translate(size / 2, size / 2);
         ctx.rotate(FACE_TEXTURE_ROTATION[faceValue]);
-        ctx.drawImage(
-            spriteImage,
-            face.col * cellWidth + inset,
-            face.row * cellHeight + inset,
-            cellWidth - inset * 2,
-            cellHeight - inset * 2,
-            -size / 2,
-            -size / 2,
-            size,
-            size,
-        );
+        drawSourceCell(-faceSize / 2, -faceSize / 2, faceSize, faceSize);
     } else {
-        ctx.drawImage(
-            spriteImage,
-            face.col * cellWidth + inset,
-            face.row * cellHeight + inset,
-            cellWidth - inset * 2,
-            cellHeight - inset * 2,
-            0,
-            0,
-            size,
-            size,
-        );
+        drawSourceCell(faceOffset, faceOffset, faceSize, faceSize);
     }
 
     ctx.restore();
@@ -238,7 +256,7 @@ const canvasToImage = (
     image.onload = () => resolve(image);
     try {
         image.src = canvas.toDataURL('image/png');
-    } catch (error) {
+    } catch {
         if (fallbackCanvas && fallbackCanvas !== canvas) {
             try {
                 image.src = fallbackCanvas.toDataURL('image/png');

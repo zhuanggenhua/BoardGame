@@ -134,10 +134,8 @@ describe('炎术士 GTR 技能覆盖', () => {
             // 进攻骰: [5,5,1,4,6] → 2 fiery_soul + 1 fire + 1 magma + 1 meteor
             // soul-burn-fm: +2 FM (preDefense)
             // soul-burn-damage: 按骰面上 fiery_soul 数量造成伤害 = 2 (withDamage)
-            // 防御骰: [6,6,6,6,6] → 5 meteor（magma-armor 读取防御骰面：无 fire/fiery_soul → 无效果）
-            // 流程：offensiveRoll exit → preDefense: +2 FM → isDefendable=true → defensiveRoll
-            //   → magma-armor 读取防御骰面 → 2 伤害 → main2
-            const random = createQueuedRandom([5, 5, 1, 4, 6, 6, 6, 6, 6, 6, 6]);
+            // 当前 soul-burn 先完成焚魂伤害并进入 main2，不再额外打开防御骰窗口
+            const random = createQueuedRandom([5, 5, 1, 4, 6]);
             const runner = new GameTestRunner({
                 domain: DiceThroneDomain, systems: testSystems,
                 playerIds: ['0', '1'], random,
@@ -150,11 +148,7 @@ describe('炎术士 GTR 技能覆盖', () => {
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'soul-burn' }),
-                    cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll
-                    cmd('ROLL_DICE', '1'),
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'magma-armor' }),
-                    cmd('ADVANCE_PHASE', '1'),       // defensiveRoll exit → main2
+                    cmd('ADVANCE_PHASE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',

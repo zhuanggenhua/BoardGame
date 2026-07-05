@@ -1,5 +1,6 @@
-import { syncFactionActionWindow } from './factionActionWindow';
+import { buildPaymentState, syncFactionActionWindow } from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
+import { resolveQidahenGrantPardonExecution } from './grantPardonExecution';
 import {
     getQidahenDriveTigerConsentSelectionForCore,
     getQidahenInteractionSelectionStateForCore,
@@ -19,6 +20,7 @@ import {
     buildDiplomacySelectionFromRegionSemantics,
     buildQidahenDiplomacyProgress,
     getQidahenCurrentDiplomacySelectionForCore,
+    getQidahenGrantPardonSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
@@ -45,6 +47,8 @@ import type {
     QidahenDiplomacySelection,
     QidahenDriveTigerConsentSelection,
     QidahenFactionId,
+    QidahenGrantPardonChoice,
+    QidahenGrantPardonSelection,
     QidahenKhanEdictChoice,
     QidahenKhanEdictSelection,
     QidahenMaShiTradeSelection,
@@ -113,6 +117,17 @@ interface QidahenActionWindowChoiceDependencies {
         region: QidahenCore['regions'][number],
         fallbackName: string,
     ) => string;
+    resolveGrantPardonExecution: (
+        state: QidahenCore,
+        factions: QidahenCore['factions'],
+        timestamp: number,
+        choice?: QidahenGrantPardonChoice | null,
+    ) => {
+        factions: QidahenCore['factions'];
+        lastSeasonSummary: QidahenSeasonSummary | null;
+        regions: QidahenCore['regions'];
+        selectedRegionId: string;
+    };
 }
 
 export const resolveQidahenRecruitInteractionChoice = (
@@ -230,6 +245,102 @@ export const resolveQidahenRecruitInteractionChoice = (
         ].slice(0, 6),
     });
     return dependencies.advanceTurnIfReady(syncFactionActionWindow(resolvedState, currentFactionId), timestamp);
+};
+
+export const resolveQidahenGrantPardonInteractionChoice = (
+    state: QidahenCore,
+    choiceId: QidahenGrantPardonChoice['id'],
+    timestamp: number,
+    interactionSelection?: QidahenGrantPardonSelection | null,
+    dependencies: QidahenActionWindowChoiceDependencies = {
+        applyVictoryStatus: applyQidahenVictoryStatus,
+        advanceTurnIfReady: advanceQidahenTurnIfReady,
+        updateTurnLabel: updateQidahenTurnLabel,
+        buildSeasonSummary,
+        getFactionDrawPileCount,
+        drawFromFactionPile,
+        addFactionHandCards,
+        buildDrawnHandCards,
+        materializeNonSiegedCityActionSourceRegion,
+        refreshRuntimeRegionRules,
+        getEffectiveHomelandController,
+        toFactionLabel,
+        getActionRuleDisplayRegionName,
+        resolveGrantPardonExecution: resolveQidahenGrantPardonExecution,
+    },
+): QidahenCore => {
+    const selection = getQidahenInteractionSelectionStateForCore(
+        interactionSelection,
+        state,
+        getQidahenGrantPardonSelectionForCore,
+    );
+    const choice = selection?.choices.find((item) => item.id === choiceId) ?? null;
+    if (!selection || !choice) {
+        return state;
+    }
+    const selectedSelection: QidahenGrantPardonSelection = {
+        ...selection,
+        sourceRegionId: choice.sourceRegionId,
+        sourceRegionName: choice.sourceRegionName,
+        displayAnchorRegionId: choice.sourceRegionId,
+        displayAnchorRegionName: choice.sourceRegionName,
+        selectedChoiceId: choice.id,
+        choices: selection.choices.map((item) => ({ ...item })),
+    };
+    if (selection.executionSource === 'tribute-edict') {
+        const resolution = dependencies.resolveGrantPardonExecution(
+            state,
+            state.factions,
+            timestamp,
+            choice,
+        );
+        return dependencies.advanceTurnIfReady(dependencies.updateTurnLabel({
+            ...state,
+            selectedRegionId: resolution.selectedRegionId,
+            explicitRegionId: null,
+            regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId),
+            selectedActionId: 'grant-pardon',
+            confirmedActionId: 'grant-pardon',
+            selectedPaymentCardIds: [],
+            payment: buildPaymentState('grant-pardon', 0, 0),
+            turnPhase: 'action-window',
+            grantPardonSelection: null,
+            recruitSelection: null,
+            maShiTradeSelection: null,
+            khanEdictSelection: null,
+            diplomacyProgress: null,
+            factions: resolution.factions,
+            regions: resolution.regions,
+            lastSeasonSummary: dependencies.buildSeasonSummary('封贡敕书', timestamp, [
+                '大明选择执行赐印招安。',
+                ...(resolution.lastSeasonSummary?.lines.map((line) => `赐印招安：${line}`) ?? [
+                    '赐印招安：当前没有可招安的相邻敌军。',
+                ]),
+            ]),
+        }), timestamp);
+    }
+    return dependencies.updateTurnLabel({
+        ...state,
+        selectedRegionId: choice.sourceRegionId,
+        explicitRegionId: null,
+        regionFocusState: buildQidahenRegionFocusState(choice.sourceRegionId, {
+            lockedSourceRegionId: choice.sourceRegionId,
+            displayAnchorRegionId: choice.sourceRegionId,
+        }),
+        selectedActionId: 'grant-pardon',
+        confirmedActionId: 'grant-pardon',
+        selectedPaymentCardIds: [],
+        turnPhase: 'action-window',
+        grantPardonSelection: selectedSelection,
+        recruitSelection: null,
+        maShiTradeSelection: null,
+        khanEdictSelection: null,
+        diplomacyProgress: null,
+        lastSeasonSummary: dependencies.buildSeasonSummary('赐印招安', timestamp, [
+            `已选择招安目标：${choice.sourceRegionName} 的 1 个${choice.targetFactionName}部队，转入 ${choice.targetRegionName}。`,
+            '下一步弃 3 张手牌支付赐印招安。',
+        ]),
+    });
 };
 
 export const resolveQidahenDriveTigerConsentInteractionChoice = (

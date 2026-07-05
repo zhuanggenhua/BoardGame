@@ -1405,9 +1405,10 @@ function BetrayalHouseDice3DGroup({
         <div
             data-testid="betrayal-house-dice-3d-group"
             data-render-mode="betrayal-house-dice-box-visible"
+            data-dice-tray-style="transparent-virtual"
             data-dice-physics-ready={hasPhysicsState ? 'true' : 'false'}
             data-dice-count={roll.dice.length}
-            className={`relative min-h-0 overflow-hidden rounded-[14px] border border-[rgba(211,179,109,0.3)] bg-[radial-gradient(circle_at_50%_70%,rgba(101,75,34,0.32),rgba(10,12,9,0.92)_70%)] ${className}`}
+            className={`relative min-h-0 overflow-visible rounded-[14px] bg-transparent ${className}`}
         >
             <DiceBoxPhysicsSource
                 dice={diceInputs}
@@ -1440,7 +1441,6 @@ function BetrayalHouseDice3DGroup({
         </div>
     );
 }
-
 type DiscoveryAtlasFrameProps = {
     visual: BetrayalDiscoveryAtlasVisual | BetrayalPossessionAtlasVisual;
     locale: string;
@@ -1476,19 +1476,29 @@ function RecentRollPanel({
     roll,
     className = '',
     diceClassName,
+    rollModifierControls = null,
     effectiveLocale = 'zh-CN',
     showSource = true,
     showOutcome = true,
+    openTable = false,
 }: {
     roll: BetrayalRecentRollState;
     className?: string;
     diceClassName?: string;
+    rollModifierControls?: React.ReactNode;
     effectiveLocale?: string;
     showSource?: boolean;
     showOutcome?: boolean;
+    openTable?: boolean;
 }) {
     const { t } = useTranslation('game-betrayal');
     const bonusLabel = roll.passiveBonus > 0 ? `+${roll.passiveBonus}` : String(roll.passiveBonus);
+    const diceSubtotal = roll.dice.reduce((sum, value) => sum + value, 0);
+    const rollDetailText = t('board.roll.detail', {
+        subtotal: diceSubtotal,
+        bonus: bonusLabel,
+        total: resolveRecentRollTotal(roll),
+    });
     const totalLabel = t('board.roll.total', { value: resolveRecentRollTotal(roll) });
     const bonusText = roll.passiveBonus !== 0 ? t('board.roll.bonus', { value: bonusLabel }) : t('board.roll.noBonus');
 
@@ -1496,11 +1506,16 @@ function RecentRollPanel({
         <div
             data-testid="betrayal-recent-roll-panel"
             data-tutorial-id="betrayal-recent-roll-panel"
-            className={`pointer-events-none min-h-[260px] border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(22,18,12,0.96),rgba(9,12,10,0.94))] p-3 text-[#f3e0a6] shadow-[0_14px_34px_rgba(0,0,0,0.38)] ${className}`}
+            data-roll-panel-style={openTable ? 'open-table-transparent' : 'boxed'}
+            className={`pointer-events-none min-h-[260px] text-[#f3e0a6] ${
+                openTable
+                    ? 'bg-transparent p-0 shadow-none'
+                    : 'border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(22,18,12,0.96),rgba(9,12,10,0.94))] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.38)]'
+            } ${className}`}
         >
             <div className="grid h-full min-h-[236px] grid-rows-[minmax(158px,2fr)_minmax(62px,1fr)] gap-2">
                 <BetrayalHouseDice3DGroup roll={roll} locale={effectiveLocale} className={`h-full w-full min-w-0 ${diceClassName ?? ''}`} />
-                <div className="grid min-h-0 grid-cols-[1fr_auto] gap-x-3 gap-y-1 rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.58)] px-3 py-2">
+                <div className="grid min-h-0 grid-cols-[1fr_auto] gap-x-3 gap-y-2 rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.72)] px-3 py-2 shadow-[0_8px_22px_rgba(0,0,0,0.28)]">
                     <div className="min-w-0">
                         {showSource ? (
                             <div className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">{roll.sourceTitle}</div>
@@ -1510,14 +1525,21 @@ function RecentRollPanel({
                     <div data-testid="betrayal-recent-roll-total" className="self-center whitespace-nowrap text-[15px] font-bold text-[#eef4a8]">
                         {totalLabel}
                     </div>
-                    <div className="min-w-0 text-[12px] text-[#d6c498]">
-                        <span data-testid="betrayal-recent-roll-bonus">{bonusText}</span>
+                    <div className="min-w-0 text-[12px] font-semibold text-[#d6c498]">
+                        <span data-testid="betrayal-recent-roll-detail" className="text-[#d8c48f]">{rollDetailText}</span>
+                        <span data-testid="betrayal-recent-roll-a11y-summary" className="sr-only">{rollDetailText}</span>
+                        <span data-testid="betrayal-recent-roll-bonus" className="sr-only">{bonusText}</span>
                     </div>
                     {showOutcome ? (
                         <div className="self-center truncate text-right text-[12px] font-semibold text-[#fff1b8]">{roll.latestLabel}</div>
                     ) : (
                         <span className="sr-only">{roll.latestLabel}</span>
                     )}
+                    {rollModifierControls ? (
+                        <div className="col-span-2 border-t border-[rgba(211,179,109,0.18)] pt-2">
+                            {rollModifierControls}
+                        </div>
+                    ) : null}
                 </div>
             </div>
             <div className="sr-only">
@@ -2355,6 +2377,38 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedCardCanUseRabbitFoot = selectedInventoryCard
         ? canUseRabbitFootForRecentRoll(core, core.currentExplorer.playerId, selectedInventoryCard.id)
         : false;
+    const rabbitFootRollControls = selectedCardCanUseRabbitFoot && core.recentRoll ? (
+        <div
+            data-testid="betrayal-rabbit-foot-dice"
+            className="pointer-events-auto flex flex-wrap items-center justify-between gap-2"
+        >
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">{t('board.inventory.rabbitFoot')}</span>
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                {core.recentRoll.dice.map((_pip, dieIndex) => (
+                    <button
+                        key={`${core.recentRoll!.id}-${dieIndex}`}
+                        type="button"
+                        onClick={() => {
+                            dispatchCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, {
+                                cardId: selectedInventoryCard?.id,
+                                dieIndex,
+                            });
+                            setInventoryPreviewCardId(null);
+                            setPreviewState((previousState) => ({
+                                ...previousState,
+                                selectedInventoryCardId: null,
+                            }));
+                        }}
+                        data-testid={`betrayal-rabbit-foot-die-${dieIndex}`}
+                        className="grid min-h-[30px] min-w-[30px] place-items-center border border-[#d1b05f] bg-[rgba(209,176,95,0.18)] px-2 text-[13px] font-bold text-[#fff1b8] shadow-[0_0_14px_rgba(209,176,95,0.24)] transition hover:bg-[rgba(209,176,95,0.28)] hover:text-[#f6ffc4]"
+                        title={t('board.inventory.rerollDie', { index: dieIndex + 1 })}
+                    >
+                        {dieIndex + 1}
+                    </button>
+                ))}
+            </div>
+        </div>
+    ) : null;
     const rollModifierCardIds = React.useMemo(
         () => new Set(core.currentExplorerInventory
             .filter((card) => canUseRabbitFootForRecentRoll(core, core.currentExplorer.playerId, card.id))
@@ -3222,22 +3276,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 data-testid={options.testId}
                 data-roll-modifier-available={canModifyRecentRoll ? 'true' : 'false'}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击选择`}
-                className={`relative w-full overflow-hidden text-left transition ${
+                className={`relative w-full overflow-visible text-left transition ${
                     showSelectedState
                         ? 'z-20 -translate-y-0.5 shadow-[0_0_0_2px_rgba(238,204,126,0.92),0_0_0_5px_rgba(238,204,126,0.2),0_0_20px_rgba(238,204,126,0.3)]'
                         : isPreview
                             ? 'z-10'
                             : 'z-10 hover:-translate-y-0.5'
-                } ${canModifyRecentRoll ? 'ring-2 ring-[#eef4a8] ring-offset-2 ring-offset-[#11100c] shadow-[0_0_22px_rgba(238,244,168,0.32)]' : ''}`}
+                } ${canModifyRecentRoll ? 'z-30 shadow-[0_0_0_2px_rgba(238,244,168,0.95),0_0_0_5px_rgba(238,244,168,0.22),0_0_26px_rgba(238,244,168,0.38)]' : ''}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
                 {canModifyRecentRoll ? (
                     <div
                         data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
-                        className={`absolute left-2 top-2 z-20 rounded-full border border-[#eef4a8] bg-[rgba(34,42,18,0.92)] ${isCompact ? 'px-1.5 py-0.5 text-[8px]' : 'px-2 py-0.5 text-[10px]'} font-bold tracking-[0.08em] text-[#eef4a8] shadow-[0_0_14px_rgba(238,244,168,0.28)]`}
-                    >
-                        {t('board.discovery.rollModifierTag')}
-                    </div>
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute inset-[-4px] z-40 ${shellRadiusClass} border-[3px] border-[#eef4a8] bg-[radial-gradient(circle_at_50%_50%,rgba(238,244,168,0.10),transparent_64%)] shadow-[0_0_0_1px_rgba(15,18,10,0.92),0_0_20px_rgba(238,244,168,0.62)]`}
+                    />
                 ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
@@ -3526,7 +3579,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 </header>
 
                 <main className="absolute inset-0 overflow-hidden">
-                    <section className="pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible">
+                    <section
+                        data-testid="betrayal-left-status-rail"
+                        className="pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible"
+                    >
                         <article className="pointer-events-auto relative overflow-visible bg-transparent px-1 py-1">
                             <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1 xl:mx-0">
                                 <div className="relative mx-auto w-full max-w-[188px]">
@@ -3825,21 +3881,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     data-tutorial-id="betrayal-latest-discovery"
                                     aria-label={`${latestDiscoveryKindLabel} ${core.latestDiscovery!.title}`}
                                     data-allows-inventory-roll-modifiers={rollModifierCardIds.size > 0 ? 'true' : 'false'}
-                                    className={`pointer-events-none absolute inset-y-0 left-0 z-50 flex items-center justify-center px-4 py-16 ${
-                                        rollModifierCardIds.size > 0
-                                            ? 'right-0 md:right-[236px] md:pr-2'
-                                            : 'right-0'
-                                    }`}
+                                    className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[120] flex items-center justify-center px-4 py-16 md:left-[392px] md:right-[240px]"
                                 >
                                     <div
                                         data-testid="betrayal-discovery-panel-content"
-                                        className={`flex max-h-[calc(100vh-8rem)] flex-col items-center justify-center gap-5 md:flex-row ${
-                                        rollModifierCardIds.size > 0
-                                            ? 'w-[min(900px,calc(100vw-2rem))] md:w-[min(780px,calc(100vw-18rem))]'
-                                            : 'w-[min(900px,calc(100vw-2rem))]'
+                                        className={`flex max-h-[calc(100vh-8rem)] flex-col items-center justify-center gap-4 md:flex-row ${
+                                        shouldShowLatestDiscoveryRoll && core.recentRoll
+                                            ? rollModifierCardIds.size > 0
+                                                ? 'w-full max-w-[900px]'
+                                                : 'w-full max-w-[940px]'
+                                            : rollModifierCardIds.size > 0
+                                                ? 'w-[min(900px,calc(100vw-2rem))] md:w-[min(780px,calc(100vw-18rem))]'
+                                                : 'w-[min(900px,calc(100vw-2rem))]'
                                     }`}
                                     >
-                                        <div className="w-[min(340px,calc(100vw-2rem))] shrink-0 md:w-[340px]">
+                                        <div className={`shrink-0 ${
+                                            shouldShowLatestDiscoveryRoll && core.recentRoll
+                                                ? 'w-[min(300px,calc(100vw-2rem))] md:w-[270px]'
+                                                : 'w-[min(340px,calc(100vw-2rem))] md:w-[340px]'
+                                        }`}>
                                             <span className="sr-only" data-testid="betrayal-discovery-detail">
                                                 {core.latestDiscovery!.summary}
                                                 {' '}
@@ -3864,8 +3924,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         {shouldShowLatestDiscoveryRoll && core.recentRoll ? (
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
-                                                className="w-[min(440px,calc(100vw-2rem))] shrink-0 md:w-[440px]"
+                                                className="h-[min(52vh,440px)] min-h-[360px] w-[min(700px,calc(100vw-2rem))] shrink-0 md:w-[610px]"
+                                                diceClassName="min-h-[280px]"
+                                                rollModifierControls={rabbitFootRollControls}
                                                 effectiveLocale={effectiveLocale}
+                                                openTable
                                             />
                                         ) : null}
                                     </div>
@@ -3874,26 +3937,31 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                             {core.recentRoll && !pendingEventChoice && !shouldShowLatestDiscovery ? (
                                 isEndgameExorciseRollReview ? (
-                                    <div
-                                        data-testid="betrayal-exorcise-roll-review"
-                                        data-tutorial-id="betrayal-exorcise-roll-review"
-                                        className="pointer-events-auto absolute left-1/2 top-[70px] z-50 flex w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center gap-3"
-                                    >
-                                        <RecentRollPanel
-                                            roll={core.recentRoll}
-                                            className="w-full"
-                                            diceClassName="min-h-[240px]"
-                                            effectiveLocale={effectiveLocale}
-                                        />
-                                        <button
-                                            type="button"
-                                            data-testid="betrayal-exorcise-roll-continue"
-                                            className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
-                                            onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
+                                    <>
+                                        <div
+                                            data-testid="betrayal-exorcise-roll-review"
+                                            data-tutorial-id="betrayal-exorcise-roll-review"
+                                            className="pointer-events-auto absolute left-1/2 top-[70px] z-50 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2"
                                         >
-                                            {t('board.endgame.enterEndgame')}
-                                        </button>
-                                    </div>
+                                            <RecentRollPanel
+                                                roll={core.recentRoll}
+                                                className="w-full"
+                                                diceClassName="min-h-[240px]"
+                                                effectiveLocale={effectiveLocale}
+                                                openTable
+                                            />
+                                        </div>
+                                        <div className="pointer-events-auto absolute bottom-6 left-1/2 z-50 -translate-x-1/2">
+                                            <button
+                                                type="button"
+                                                data-testid="betrayal-exorcise-roll-continue"
+                                                className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                                                onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
+                                            >
+                                                {t('board.endgame.enterEndgame')}
+                                            </button>
+                                        </div>
+                                    </>
                                 ) : (
                                     <RecentRollPanel
                                         roll={core.recentRoll}
@@ -4038,7 +4106,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || selectedCardCanUseRabbitFoot || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
+                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
                                 <div className="pointer-events-auto absolute left-1/2 top-[86px] z-50 flex max-w-[min(880px,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1">
                                     {roomFocusState ? (
                                         <button
@@ -4176,32 +4244,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </button>
                                                 );
                                             })}
-                                        </div>
-                                    ) : null}
-                                    {selectedCardCanUseRabbitFoot && core.recentRoll ? (
-                                        <div
-                                            data-testid="betrayal-rabbit-foot-dice"
-                                            className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
-                                        >
-                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.inventory.rabbitFoot')}</span>
-                                            {core.recentRoll.dice.map((pip, dieIndex) => (
-                                                <button
-                                                    key={`${core.recentRoll!.id}-${dieIndex}`}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        dispatchCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, {
-                                                            cardId: selectedInventoryCard?.id,
-                                                            dieIndex,
-                                                        });
-                                                        setInventoryPreviewCardId(null);
-                                                    }}
-                                                    data-testid={`betrayal-rabbit-foot-die-${dieIndex}`}
-                                                    className="min-h-[28px] min-w-[28px] rounded-none border-0 bg-transparent px-1 text-[12px] font-bold text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4 shadow-none transition hover:text-[#f6ffc4]"
-                                                    title={t('board.inventory.rerollDie', { index: dieIndex + 1 })}
-                                                >
-                                                    {pip}
-                                                </button>
-                                            ))}
                                         </div>
                                     ) : null}
                                     {(canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0 ? (
@@ -4559,7 +4601,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     })}
                                 </div>
                             </div>
-                            {visibleActionItems.length > 0 ? (
+                            {visibleActionItems.length > 0 && !isEndgameExorciseRollReview ? (
                                 <div className="pointer-events-none absolute inset-x-0 bottom-1 z-50 hidden flex-col items-center justify-end gap-0.5 md:flex">
                                     {core.recommendedAction === 'trade' ? (
                                         <div
@@ -4632,7 +4674,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                     </section>
 
-                    <section className="pointer-events-auto absolute bottom-3 right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1">
+                    <section
+                        data-testid="betrayal-status-rail"
+                        className="pointer-events-auto absolute bottom-3 right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1"
+                    >
                         <article
                             id="betrayal-decks-section"
                             className="relative ml-auto w-full max-w-[198px] overflow-visible bg-transparent px-0 pb-2 pt-3"
@@ -4924,7 +4969,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     ) : null}
                 </MagnifyOverlay>
 
-                {core.recommendedAction === 'trade' ? null : (
+                {core.recommendedAction === 'trade' || isEndgameExorciseRollReview ? null : (
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-[calc(var(--safe-area-bottom)+0.75rem)] md:hidden">
                     <div className="pointer-events-auto rounded-[18px] border border-[#5f4d31] bg-[rgba(14,20,18,0.92)] p-2 shadow-[0_16px_32px_rgba(0,0,0,0.34)] backdrop-blur-sm">
                         <div className="mb-2 flex items-center gap-2">

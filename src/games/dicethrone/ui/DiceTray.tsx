@@ -12,8 +12,8 @@ import { Dice3D, DiceField3D, type ProjectedDiceLayout } from './Dice3D';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { UI_Z_INDEX } from '../../../core';
 import { DiceBoxPhysicsSource } from '../../../lib/dice-physics/DiceBoxPhysicsSource';
-import type { DicePhysicsState } from '../../../lib/dice-physics/types';
 import { DICETHRONE_DICE_BOX_STYLE_PROFILE } from './diceBoxStyleProfiles';
+import { loadDiceThroneDiceBoxSkins, type DiceThroneDiceBoxSkin } from './diceThroneDiceBoxSkins';
 
 // ============================================================================
 // DiceThrone 骰子交互元数据类型
@@ -93,16 +93,10 @@ const BOARD_DICE_SCATTER_SLOTS = [
     { left: '85%', top: '54%', rotate: '-17deg', zIndex: 3, world: { x: 2.08, y: -1.07, z: 0.9 } },
 ];
 
-const BOARD_DICE_PHYSICS_LAYOUT_BOUNDS = {
-    left: 0.08,
-    top: 0.18,
-    width: 0.84,
-    height: 0.64,
-};
-
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
 const BOARD_DICE_HIT_TARGET_SIZE_PX = 38;
+const BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX = 106;
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
@@ -241,7 +235,7 @@ export const DiceTray = ({
     const canSelectMore = currentSelectCount < maxSelectCount;
     const canToggleDieLock = canInteract && rollCount > 0;
     const [centerDiceLayout, setCenterDiceLayout] = React.useState<Record<number, ProjectedDiceLayout>>({});
-    const [dicePhysicsStates, setDicePhysicsStates] = React.useState<DicePhysicsState[]>([]);
+    const [diceBoxDieSkins, setDiceBoxDieSkins] = React.useState<Array<DiceThroneDiceBoxSkin | null>>([]);
     const fieldDice = React.useMemo(
         () => dice.map((die) => ({
             id: die.id,
@@ -261,6 +255,30 @@ export const DiceTray = ({
         })),
         [visibleOverlayDice],
     );
+    const visibleDiceSkinKey = React.useMemo(
+        () => visibleOverlayDice.map((die) => die.definitionId ?? '').join('|'),
+        [visibleOverlayDice],
+    );
+    React.useEffect(() => {
+        if (!isBoardPresentation || visibleOverlayDice.length === 0) {
+            setDiceBoxDieSkins([]);
+            return;
+        }
+
+        let cancelled = false;
+        const skinDefinitions = visibleOverlayDice.map((die) => ({
+            definitionId: die.definitionId,
+        }));
+        void loadDiceThroneDiceBoxSkins(skinDefinitions, locale ?? 'zh-CN').then((skins) => {
+            if (!cancelled) {
+                setDiceBoxDieSkins(skins);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isBoardPresentation, locale, visibleDiceSkinKey, visibleOverlayDice]);
     const selectedDieIdsKey = isSelectMode
         ? (selectResult?.selectedDiceIds ?? []).join('|')
         : isModifyMode
@@ -295,30 +313,14 @@ export const DiceTray = ({
         });
     }, []);
     const handleDicePhysicsStatesChange = React.useCallback((states: DicePhysicsState[]) => {
-        setDicePhysicsStates((prev) => {
-            if (states.length !== prev.length) return states;
-
-            for (let index = 0; index < states.length; index += 1) {
-                const nextState = states[index];
-                const prevState = prev[index];
-                if (!nextState || !prevState || nextState.id !== prevState.id || nextState.settled !== prevState.settled) {
-                    return states;
-                }
-                if (Math.abs(nextState.layout.x - prevState.layout.x) > 1
-                    || Math.abs(nextState.layout.y - prevState.layout.y) > 1
-                    || Math.abs(nextState.layout.width - prevState.layout.width) > 1
-                    || Math.abs(nextState.layout.height - prevState.layout.height) > 1
-                    || Math.abs(nextState.motion.rotateX - prevState.motion.rotateX) > 0.02
-                    || Math.abs(nextState.motion.rotateY - prevState.motion.rotateY) > 0.02
-                    || Math.abs(nextState.motion.rotateZ - prevState.motion.rotateZ) > 0.02) {
-                    return states;
-                }
-            }
-
-            return prev;
-        });
-    }, []);
-
+        handleProjectedDiceUpdate(states.map((state) => ({
+            ...state.layout,
+            selected: selectedDieIds.includes(state.id),
+            rotateX: state.motion.rotateX,
+            rotateY: state.motion.rotateY,
+            rotateZ: state.motion.rotateZ,
+        })));
+    }, [handleProjectedDiceUpdate, selectedDieIds]);
     const handleRailDieClick = (dieId: number) => {
         // 掷骰结果已进入权威状态后，允许玩家立刻锁骰，
         // 不要让本地最短动画窗口吞掉真实点击。
@@ -590,30 +592,87 @@ export const DiceTray = ({
     return (
         <div className={resolvedContainerClassName} onClick={isBoardPresentation ? handleBoardPresentationClick : undefined}>
             <div className={resolvedTrayInnerClassName}>
-                <DiceField3D
-                    dice={isBoardPresentation ? visibleOverlayDice : fieldDice}
-                    selectedDieIds={selectedDieIds}
-                    isRolling={isRolling}
-                    rerollingDiceIds={rerollingDiceIds}
-                    locale={locale}
-                    characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
-                    slots={isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS}
-                    onDieClick={handleOverlayDieClick}
-                    physicsStates={isBoardPresentation ? dicePhysicsStates : undefined}
-                    physicsLayoutBounds={isBoardPresentation ? BOARD_DICE_PHYSICS_LAYOUT_BOUNDS : undefined}
-                    scenePreset={isBoardPresentation ? 'board-topdown' : 'spotlight'}
-                    onProjectedDiceUpdate={handleProjectedDiceUpdate}
-                />
+                {!isBoardPresentation && (
+                    <DiceField3D
+                        dice={fieldDice}
+                        selectedDieIds={selectedDieIds}
+                        isRolling={isRolling}
+                        rerollingDiceIds={rerollingDiceIds}
+                        locale={locale}
+                        characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
+                        slots={CENTER_DICE_SCATTER_SLOTS}
+                        onDieClick={handleOverlayDieClick}
+                        scenePreset="spotlight"
+                        onProjectedDiceUpdate={handleProjectedDiceUpdate}
+                    />
+                )}
                 {isBoardPresentation && (
                     <DiceBoxPhysicsSource
                         dice={visiblePhysicsDice}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
                         styleProfile={DICETHRONE_DICE_BOX_STYLE_PROFILE}
-                        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-                        testId="dicethrone-board-dice-physics-source"
+                        dieSkins={diceBoxDieSkins}
+                        rendererMode="debug-visible"
+                        canvasTestId="dicethrone-board-dice-box-canvas"
+                        className="pointer-events-none absolute inset-0 h-full w-full"
                         onPhysicsStatesChange={handleDicePhysicsStatesChange}
+                        testId="dicethrone-board-dice-physics-source"
                     />
+                )}
+                {isBoardPresentation && (
+                    <div
+                        className="absolute inset-0"
+                        style={{ zIndex: UI_Z_INDEX.hud + 6 }}
+                        data-testid="dicethrone-board-dice-hit-layer"
+                        onClick={handleBoardPresentationClick}
+                    />
+                )}
+                {isBoardPresentation && (
+                    <div
+                        className="pointer-events-none absolute inset-0 opacity-80 mix-blend-normal"
+                        style={{ transform: `translateY(${BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX}px)` }}
+                        data-testid="dicethrone-board-dice-custom-reference-layer"
+                    >
+                        <DiceField3D
+                            dice={visibleOverlayDice.map((die) => ({
+                                id: die.id,
+                                value: die.value,
+                                definitionId: die.definitionId,
+                            }))}
+                            selectedDieIds={selectedDieIds}
+                            isRolling={false}
+                            rerollingDiceIds={[]}
+                            locale={locale}
+                            characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
+                            slots={BOARD_DICE_SCATTER_SLOTS}
+                            scenePreset="board-topdown"
+                            physicsStates={Object.values(centerDiceLayout).map((layout) => ({
+                                id: layout.id,
+                                layout: {
+                                    ...layout,
+                                    y: layout.y + BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX,
+                                    minY: layout.minY + BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX,
+                                    maxY: layout.maxY + BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX,
+                                },
+                                motion: {
+                                    x: 0,
+                                    y: 0,
+                                    z: 0,
+                                    rotateX: layout.rotateX,
+                                    rotateY: layout.rotateY,
+                                    rotateZ: layout.rotateZ,
+                                },
+                                settled: true,
+                            }))}
+                            physicsLayoutBounds={{
+                                left: 0,
+                                top: 0,
+                                width: 1,
+                                height: 1,
+                            }}
+                        />
+                    </div>
                 )}
                 {visibleOverlayDice.map((d, i) => {
                     const selected = isSelected(d.id);
@@ -666,7 +725,14 @@ export const DiceTray = ({
                         return (
                             <div
                                 key={d.id}
-                                onClick={isBoardPresentation ? undefined : () => clickable && handleOverlayDieClick(d.id)}
+                                onClick={(event) => {
+                                    if (isBoardPresentation) {
+                                        event.stopPropagation();
+                                    }
+                                    if (clickable) {
+                                        handleOverlayDieClick(d.id);
+                                    }
+                                }}
                                 data-testid={`die-button-${d.id}`}
                                 data-selected={selected ? 'true' : 'false'}
                                 data-clickable={clickable ? 'true' : 'false'}
@@ -679,7 +745,8 @@ export const DiceTray = ({
                                 data-rotate-z={projectedLayout ? projectedLayout.rotateZ.toFixed(4) : ''}
                                 className={clsx(
                                     'absolute rounded-2xl transition-[left,top,width,height,transform,filter] duration-75 ease-out',
-                                    'ring-0'
+                                    'ring-0',
+                                    isBoardPresentation ? 'pointer-events-none' : 'pointer-events-auto',
                                 )}
                                 style={{
                                     left: projectedLayout ? `${centerX}px` : scatterSlot.left,
@@ -710,6 +777,9 @@ export const DiceTray = ({
                                     <div className={`absolute ${selectedBadgeClassName} bg-amber-500 rounded-full flex items-center justify-center z-30`}>
                                         <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
                                     </div>
+                                )}
+                                {selected && isBoardPresentation && (
+                                    <div className="pointer-events-none absolute inset-[-0.28rem] rounded-2xl ring-2 ring-amber-300 shadow-[0_0_18px_rgba(245,158,11,0.55)]" />
                                 )}
                                 {!isInteractionMode && d.isKept && (
                                     <div className="absolute inset-0 flex items-center justify-center">

@@ -24,6 +24,24 @@ import {
 } from './test-utils';
 
 describe('Monk 技能完整覆盖测试', () => {
+    const createTaijiCombo2MirrorMonkSetup = () => (playerIds: PlayerId[], setupRandom: RandomFn): MatchState<DiceThroneCore> => {
+        const state = createNoResponseSetup()(playerIds, setupRandom);
+        state.core.selectedCharacters['1'] = 'monk';
+        state.core.players['1'] = initHeroState('1', 'monk', setupRandom);
+        for (const pid of playerIds) {
+            state.core.players[pid].hand = [];
+            state.core.players[pid].deck = [];
+        }
+        const monk = state.core.players['0'];
+        monk.abilityLevels['taiji-combo'] = 2;
+        monk.abilities = buildHeroAbilitiesForFace(
+            monk.characterId,
+            monk.playerBoardFace,
+            monk.abilityLevels,
+        );
+        return state;
+    };
+
     describe('超脱 (transcendence) - Ultimate', () => {
         it('命中后完整效果链:10伤害+击倒+闪避+净化+太极上限+1并补满', () => {
             // 5个莲花: [6,6,6,6,6]
@@ -168,7 +186,7 @@ describe('Monk 技能完整覆盖测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createTaijiCombo2MirrorMonkSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -195,7 +213,7 @@ describe('Monk 技能完整覆盖测试', () => {
     });
 
     describe('太极连环拳 (taiji-combo) - rollDie 分支', () => {
-        it('连段冲拳②两颗太极奖励骰应结算为5伤害+4太极，且不触发莲花选择', () => {
+        it('连段冲拳②两颗太极奖励骰应结算为5伤害加4气', () => {
             const diceValues = [
                 1, 1, 1, 3, 4, // 进攻骰：3拳+1掌，触发连段冲拳②
                 1, 1, 1, 1,    // 防御骰
@@ -208,23 +226,7 @@ describe('Monk 技能完整覆盖测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: (playerIds, setupRandom) => {
-                    const state = createNoResponseSetup()(playerIds, setupRandom);
-                    state.core.selectedCharacters['1'] = 'monk';
-                    state.core.players['1'] = initHeroState('1', 'monk', setupRandom);
-                    for (const pid of playerIds) {
-                        state.core.players[pid].hand = [];
-                        state.core.players[pid].deck = [];
-                    }
-                    const monk = state.core.players['0'];
-                    monk.abilityLevels['taiji-combo'] = 2;
-                    monk.abilities = buildHeroAbilitiesForFace(
-                        monk.characterId,
-                        monk.playerBoardFace,
-                        monk.abilityLevels,
-                    );
-                    return state;
-                },
+                setup: createTaijiCombo2MirrorMonkSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -241,17 +243,20 @@ describe('Monk 技能完整覆盖测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
+                    cmd('SKIP_BONUS_DICE_REROLL', '0'),
                 ],
             });
 
             expect(result.assertionErrors).toEqual([]);
-            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(4);
+            expect(result.actualErrors).toEqual([]);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI] ?? 0).toBe(4);
             expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.PURIFY] ?? 0).toBe(0);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.EVASIVE] ?? 0).toBe(0);
             expect(result.finalState.sys.interaction?.current).toBeFalsy();
-            expect(result.finalState.core.pendingBonusDiceSettlement?.dice).toMatchObject([
-                { value: 4, face: 'taiji' },
-                { value: 5, face: 'taiji' },
-            ]);
+            expect(result.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+            expect(result.finalState.core.pendingDamage).toBeUndefined();
         });
 
         it('rollDie=拳头: 基础6伤害+2额外伤害', () => {
@@ -283,6 +288,7 @@ describe('Monk 技能完整覆盖测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -308,7 +314,7 @@ describe('Monk 技能完整覆盖测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createTaijiCombo2MirrorMonkSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -325,14 +331,13 @@ describe('Monk 技能完整覆盖测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        // 当前实现下,这条用例不会再由 meditation 对攻击方造成 4 点反伤;
-                        // taiji-combo 的掌分支结算后仅体现进攻侧额外伤害。
-                        '0': { hp: 50 },
-                        '1': { hp: 42 },
+                        '0': { hp: 46 },
+                        '1': { hp: 39 },
                     },
                 },
             });
@@ -354,7 +359,7 @@ describe('Monk 技能完整覆盖测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createTaijiCombo2MirrorMonkSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -371,12 +376,13 @@ describe('Monk 技能完整覆盖测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
-                        '0': { tokens: { [TOKEN_IDS.TAIJI]: 0 } },
-                        '1': { hp: 42 },
+                        '0': { tokens: { [TOKEN_IDS.TAIJI]: 4 } },
+                        '1': { hp: 45 },
                     },
                 },
             });
@@ -384,14 +390,8 @@ describe('Monk 技能完整覆盖测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
-        it.skip('rollDie=莲花: 基础6伤害+获得闪避Token', () => {
-            // TODO: Test infrastructure issue - GameTestRunner doesn't handle interactive choices correctly
-            // The fix for CHOICE_REQUESTED break is correct, but the test needs to be rewritten
-            // See evidence/dicethrone/session-3-conclusion.md for details
-            // 进攻骰: [1,1,1,3,4] -> 3拳+1掌+1太极
-            // 防御骰: [1,1,1,1] -> 4拳 (meditation 反伤 4)
-            // rollDie: 6 -> 莲花 (二选一)
-            const diceValues = [1, 1, 1, 3, 4, 1, 1, 1, 1, 6];
+        it('连段冲拳②奖励骰莲花选择闪避后仍应继续造成基础5伤害', () => {
+            const diceValues = [1, 1, 1, 3, 4, 1, 1, 1, 1, 6, 4];
             const random = createQueuedRandom(diceValues);
 
             const runner = new GameTestRunner({
@@ -399,91 +399,110 @@ describe('Monk 技能完整覆盖测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createTaijiCombo2MirrorMonkSetup(),
                 assertFn: assertState,
                 silent: true,
             });
 
             const result = runner.run({
-                name: '太极连环拳 rollDie=莲花选闪避',
+                name: '连段冲拳②奖励骰莲花选闪避',
                 commands: [
-                    cmd('ADVANCE_PHASE', '0'),  // main1 -> offensiveRoll
+                    cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'taiji-combo' }),
-                    cmd('ADVANCE_PHASE', '0'),  // offensiveRoll -> defensiveRoll (攻击可防御)
-                    cmd('ROLL_DICE', '1'),      // 防御方掷骰
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
-                    cmd('ADVANCE_PHASE', '1'),  // defensiveRoll 退出,触发攻击结算,rollDie 产生 choice,halt
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }), // 选择闪避
-                ],
-                expect: {
-                    turnPhase: 'main2',
-                    players: {
-                        '0': {
-                            hp: 46, // 50 - 4 = 46 (meditation 反伤)
-                            tokens: {
-                                [TOKEN_IDS.EVASIVE]: 1,
-                            },
-                        },
-                        '1': { hp: 44 }, // 50 - 6 = 44 (仅基础伤害)
-                    },
-                },
-            });
-
-            expect(result.assertionErrors).toEqual([]);
-        });
-
-        it.skip('rollDie=莲花: 基础6伤害+获得净化Token', () => {
-            // TODO: Test infrastructure issue - GameTestRunner doesn't handle interactive choices correctly
-            // The fix for CHOICE_REQUESTED break is correct, but the test needs to be rewritten
-            // See evidence/dicethrone/session-3-conclusion.md for details
-            // 进攻骰: [1,1,1,3,4] -> 3拳+1掌+1太极
-            // 防御骰: [1,1,1,1] -> 4拳 (meditation 反伤 4)
-            // rollDie: 6 -> 莲花 (二选一)
-            const diceValues = [1, 1, 1, 3, 4, 1, 1, 1, 1, 6];
-            const random = createQueuedRandom(diceValues);
-
-            const runner = new GameTestRunner({
-                domain: DiceThroneDomain,
-                systems: testSystems,
-                playerIds: ['0', '1'],
-                random,
-                setup: createNoResponseSetup(),
-                assertFn: assertState,
-                silent: true,
-            });
-
-            const result = runner.run({
-                name: '太极连环拳 rollDie=莲花选净化',
-                commands: [
-                    cmd('ADVANCE_PHASE', '0'),  // main1 -> offensiveRoll
-                    cmd('ROLL_DICE', '0'),
-                    cmd('CONFIRM_ROLL', '0'),
-                    cmd('SELECT_ABILITY', '0', { abilityId: 'taiji-combo' }),
-                    cmd('ADVANCE_PHASE', '0'),  // offensiveRoll -> defensiveRoll
+                    cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
-                    cmd('ADVANCE_PHASE', '1'),  // defensiveRoll 退出,触发攻击结算,rollDie 产生 choice,halt
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-1' }), // 选择净化
+                    cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                 ],
-                expect: {
-                    turnPhase: 'main2',
-                    players: {
-                        '0': {
-                            hp: 46,
-                            tokens: {
-                                [TOKEN_IDS.PURIFY]: 1,
-                            },
-                        },
-                        '1': { hp: 44 },
-                    },
-                },
+            });
+
+            const responded = respondToPrompt(result.finalState, 'option-0', '0', random, ['0', '1']);
+            const afterChoice = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: () => responded.state,
+                assertFn: assertState,
+                silent: true,
+            }).run({
+                name: '连段冲拳②奖励骰莲花选闪避后继续结算',
+                commands: [
+                    cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
+                ],
             });
 
             expect(result.assertionErrors).toEqual([]);
+            expect(responded.errors ?? []).toEqual([]);
+            expect(afterChoice.assertionErrors).toEqual([]);
+            expect(afterChoice.finalState.sys.phase).toBe('main2');
+            expect(afterChoice.finalState.core.players['0'].tokens[TOKEN_IDS.EVASIVE]).toBe(1);
+            expect(afterChoice.finalState.core.players['0'].tokens[TOKEN_IDS.PURIFY] ?? 0).toBe(0);
+            expect(afterChoice.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(2);
+            expect(afterChoice.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
+            expect(afterChoice.finalState.sys.interaction?.current).toBeFalsy();
+        });
+
+        it('连段冲拳②奖励骰莲花选择净化后仍应继续造成基础5伤害', () => {
+            const diceValues = [1, 1, 1, 3, 4, 1, 1, 1, 1, 6, 4];
+            const random = createQueuedRandom(diceValues);
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: createTaijiCombo2MirrorMonkSetup(),
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: '连段冲拳②奖励骰莲花选净化',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'taiji-combo' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+            });
+
+            const responded = respondToPrompt(result.finalState, 'option-1', '0', random, ['0', '1']);
+            const afterChoice = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: () => responded.state,
+                assertFn: assertState,
+                silent: true,
+            }).run({
+                name: '连段冲拳②奖励骰莲花选净化后继续结算',
+                commands: [
+                    cmd('ADVANCE_PHASE', '1'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
+                ],
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(responded.errors ?? []).toEqual([]);
+            expect(afterChoice.assertionErrors).toEqual([]);
+            expect(afterChoice.finalState.sys.phase).toBe('main2');
+            expect(afterChoice.finalState.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBe(1);
+            expect(afterChoice.finalState.core.players['0'].tokens[TOKEN_IDS.EVASIVE] ?? 0).toBe(0);
+            expect(afterChoice.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(2);
+            expect(afterChoice.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
+            expect(afterChoice.finalState.sys.interaction?.current).toBeFalsy();
         });
     });
 

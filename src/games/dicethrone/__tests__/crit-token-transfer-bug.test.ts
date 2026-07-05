@@ -178,8 +178,8 @@ describe('暴击 Token 跨英雄转移后使用', () => {
         expect(core.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(0);
         // 应增加 +4 伤害
         expect(core.pendingAttack?.bonusDamage).toBe(4);
-        // Token 选择应标记为已完成
-        expect(core.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        // 暴击可与其他攻击后 Token 连续选择，不应直接标记整个窗口完成
+        expect(core.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
         // 交互应已清除
         expect(sys.interaction.current).toBeUndefined();
     });
@@ -218,7 +218,7 @@ describe('暴击 Token 跨英雄转移后使用', () => {
         expect(core.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(1);
         // 不应增加伤害
         expect(core.pendingAttack?.bonusDamage ?? 0).toBe(0);
-        // Token 选择应标记为已完成
+        // 跳过会关闭本次攻击后 Token 窗口
         expect(core.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
     });
 
@@ -278,6 +278,6 @@ describe('暴击 Token 跨英雄转移后使用', () => {
         // 验证：token 应被消耗（从 1 → 0）
         expect(coreAfter.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(0);
         expect(coreAfter.pendingAttack?.bonusDamage).toBe(4);
-        expect(coreAfter.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        expect(coreAfter.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
     });
 });

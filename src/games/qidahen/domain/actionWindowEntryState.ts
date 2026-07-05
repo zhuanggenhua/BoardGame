@@ -37,6 +37,7 @@ QidahenCore,
 | 'selectedHandActionCardId'
 | 'recruitSelection'
 | 'maShiTradeSelection'
+| 'grantPardonSelection'
 | 'khanEdictSelection'
 | 'diplomacyProgress'
 | 'handLimitDiscardSelection'
@@ -71,6 +72,7 @@ QidahenCore,
         selectedHandActionCardId: null,
         recruitSelection: null,
         maShiTradeSelection: null,
+        grantPardonSelection: null,
         khanEdictSelection: null,
         diplomacyProgress: null,
         handLimitDiscardSelection: null,

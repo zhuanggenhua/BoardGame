@@ -797,6 +797,12 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'paladin-blessing-prevent',
             // 神枪手决斗：当前 handler 只发起比较/选项交互，实际伤害在 choice-resolved handler 中落地
             'gunslinger-duel-resolve',
+            // 通用加攻与部分工匠 / 忍者动作会把伤害挂到当前攻击、机器人分支或后续结算路径，不在基础 mock 中直接落 DAMAGE_DEALT
+            'common-add-attack-bonus',
+            'artificer-activate-bots',
+            'artificer-nanobot-detonate',
+            'artificer-wrench-strike-branch',
+            'artificer-tinker-2-defense',
             // 忍者忍术：handler 追加 BONUS_DAMAGE_ADDED 到当前攻击，不直接产生 DAMAGE_DEALT
             'ninja-ninjutsu-use',
             // 树人复仇藤蔓/野性生长 II：伤害依赖树灵数量与多骰结算路径，mock 状态未必直接落出 DAMAGE_DEALT
@@ -805,6 +811,7 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 忍者多骰/多目标结算：伤害落在 bonus settlement / choice-resolved 链路，mock 状态不稳定
             'ninja-going-forward',
             'ninja-going-forward-2',
+            'ninja-death-blossom',
             'ninja-death-blossom-2',
             'ninja-smoke-screen-kuji-kiri',
             // 战术家/咒缚海盗：伤害取决于防御骰、奖励骰或目标身上的诅咒金币层数

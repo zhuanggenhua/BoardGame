@@ -252,6 +252,34 @@ export const resolveAttack = (
     return events;
 };
 
+export const resolveWithDamageAfterChoice = (
+    state: DiceThroneCore,
+    random: RandomFn,
+    timestamp: number = 0
+): DiceThroneEvent[] => {
+    const pending = state.pendingAttack;
+    if (!pending?.sourceAbilityId || !pending.defenderId) {
+        return [];
+    }
+
+    const effects = getPlayerAbilityEffects(state, pending.attackerId, pending.sourceAbilityId);
+    const attackCtx: EffectContext = {
+        attackerId: pending.attackerId,
+        defenderId: pending.defenderId,
+        sourceAbilityId: pending.sourceAbilityId,
+        state,
+        damageDealt: pending.resolvedDamage ?? 0,
+        timestamp,
+    };
+
+    return resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
+        bonusDamage: pending.bonusDamage ?? 0,
+        bonusDamageOnce: true,
+        random,
+        skipNonDamage: true,
+    });
+};
+
 export const resolveAttackWithSneakImmunityAfterDefense = (
     state: DiceThroneCore,
     random: RandomFn,
@@ -310,7 +338,8 @@ export const resolveAttackWithSneakImmunityAfterDefense = (
 export const resolvePostDamageEffects = (
     state: DiceThroneCore,
     random: RandomFn,
-    timestamp: number = 0
+    timestamp: number = 0,
+    options?: { includeWithDamage?: boolean; continueWithDamageAfterFirstDamage?: boolean }
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
     if (!pending) {
@@ -332,7 +361,13 @@ export const resolvePostDamageEffects = (
             timestamp,
         };
 
-        events.push(...resolveEffectsToEvents(effects, 'withDamage', attackCtx, { random, skipDamage: true }));
+        if (options?.includeWithDamage !== false) {
+            events.push(...resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
+                random,
+                skipDamage: true,
+                continueAfterFirstDamage: options?.continueWithDamageAfterFirstDamage,
+            }));
+        }
         events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
     }
 

@@ -449,15 +449,15 @@
   "gameDetails": {
     "description": "Classic strategy play. Connect three symbols to win."
   },
-    "games": {
-      "betrayal": {
-        "title": "Betrayal at House on the Hill",
-        "description": "A 3-6 player horror exploration board game. The current foundation skeleton locks the room board, explorer area, and deck rail.",
-        "players": "3-6 Players"
-      },
-      "tictactoe": {
-        "title": "Tic-Tac-Toe",
-        "description": "Classic X and O game. Challenge the AI or face a friend.",
+  "games": {
+    "betrayal": {
+      "title": "Betrayal at House on the Hill",
+      "description": "A 3-6 player horror exploration board game. The current foundation skeleton locks the room board, explorer area, and deck rail.",
+      "players": "3-6 Players"
+    },
+    "tictactoe": {
+      "title": "Tic-Tac-Toe",
+      "description": "Classic X and O game. Challenge the AI or face a friend.",
       "players": "2 Players"
     },
     "dicethrone": {
@@ -526,6 +526,11 @@
     },
     "ugc": {
       "players": "2 Players"
+    },
+    "the-gang": {
+      "title": "The Gang",
+      "description": "A cooperative Texas Hold'em ranking game. Pick chips to communicate hand strength and complete heists together.",
+      "players": "3-6 Players"
     }
   },
   "matchRoom": {

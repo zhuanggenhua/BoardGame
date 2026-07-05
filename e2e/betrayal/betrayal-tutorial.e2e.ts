@@ -29,6 +29,8 @@ const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-房间牌整张承接-�
 const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-房间牌整张承接-点击后.png`;
 const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-探索未知房间前.png`;
 const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-探索后发现牌.png`;
+const STEP_14A = `${EVIDENCE_DIR}/14A-山屋惊魂-教程-点击兔脚后选择骰子.png`;
+const STEP_14B = `${EVIDENCE_DIR}/14B-山屋惊魂-教程-兔脚重投结束.png`;
 const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-探索后牌桌结果.png`;
 
 const waitForStep = async (page: Parameters<typeof test>[0]['page'], stepId: string, timeout = 15000) => {
@@ -51,6 +53,7 @@ const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
     const diceGroup = rollPanel.getByTestId('betrayal-house-dice-3d-group');
     await expect(diceGroup).toBeVisible();
     await expect(diceGroup).toHaveAttribute('data-render-mode', 'betrayal-house-dice-box-visible');
+    await expect(diceGroup).toHaveAttribute('data-dice-tray-style', 'transparent-virtual');
     await expect(diceGroup).toHaveAttribute('data-dice-count', /[1-9]/);
     await expect.poll(async () => diceGroup.getAttribute('data-dice-physics-ready'), { timeout: 10000 }).toBe('true');
 
@@ -75,6 +78,12 @@ const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
                 && Number(style.opacity || '1') > 0.5;
         });
     }), { timeout: 10000 }).toBe(true);
+};
+
+const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
+    const physicsSource = rollPanel.getByTestId('betrayal-house-dice-physics-source');
+    await expect.poll(async () => physicsSource.getAttribute('data-dice-settled'), { timeout: 15000 }).toBe('true');
+    await rollPanel.page().waitForTimeout(450);
 };
 
 const expectDiscoveryPanelDoesNotCoverRollModifier = async (discoveryReveal: Locator, modifierCard: Locator) => {
@@ -217,6 +226,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(exorciseRollReview.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
         await expect(page.getByTestId('betrayal-endgame-screen')).toBeHidden();
         await expectVisiblePhysicalDiceBox(exorciseRollPanel);
+        await waitForPhysicalDiceSettled(exorciseRollPanel);
         await saveScreenshot(page, STEP_06);
         await page.getByTestId('betrayal-exorcise-roll-continue').click();
 
@@ -293,14 +303,21 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const rabbitFootCard = page.getByTestId('betrayal-inventory-rope');
         await expect(rabbitFootCard).toBeVisible();
         await expect(rabbitFootCard).toHaveAttribute('data-roll-modifier-available', 'true');
-        await expect(page.getByTestId('betrayal-inventory-rope-roll-modifier')).toBeVisible();
+        const rollModifierHighlight = page.getByTestId('betrayal-inventory-rope-roll-modifier');
+        await expect(rollModifierHighlight).toBeVisible();
+        await expect(rollModifierHighlight).toBeEmpty();
         await expectDiscoveryPanelDoesNotCoverRollModifier(discoveryReveal, rabbitFootCard);
         const discoveryRollPanel = discoveryReveal.getByTestId('betrayal-recent-roll-panel');
         await expect(discoveryRollPanel).toBeVisible();
         await expect(discoveryRollPanel).toContainText('外星几何');
         await expect(discoveryRollPanel).toContainText('知识检定');
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
+        const initialRollDetail = discoveryReveal.getByTestId('betrayal-recent-roll-detail');
+        await expect(initialRollDetail).toContainText(/骰子合计\s+\d+｜加值\s+[+-]\d+/);
+        await expect(initialRollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
+        await expect(discoveryRollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
         await expectVisiblePhysicalDiceBox(discoveryRollPanel);
+        await waitForPhysicalDiceSettled(discoveryRollPanel);
         const rollPanelLayout = await discoveryRollPanel.evaluate((node) => {
             const panel = node as HTMLElement;
             const dice = panel.querySelector('[data-testid="betrayal-house-dice-3d-group"]') as HTMLElement | null;
@@ -318,6 +335,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
             const totalRect = total?.getBoundingClientRect();
             return {
                 panelHeight: panelRect.height,
+                panelBackground: window.getComputedStyle(panel).backgroundColor,
                 diceWidth: diceRect?.width ?? 0,
                 diceHeight: diceRect?.height ?? 0,
                 canvasWidth: canvasRect?.width ?? 0,
@@ -328,19 +346,36 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         });
         expect(rollPanelLayout.diceHeight / rollPanelLayout.panelHeight).toBeGreaterThan(0.54);
         expect(rollPanelLayout.totalTop / rollPanelLayout.panelHeight).toBeGreaterThan(0.58);
-        expect(rollPanelLayout.canvasWidth).toBeGreaterThanOrEqual(160);
-        expect(rollPanelLayout.canvasHeight).toBeGreaterThanOrEqual(120);
+        expect(rollPanelLayout.panelBackground).toBe('rgba(0, 0, 0, 0)');
+        expect(rollPanelLayout.diceWidth).toBeGreaterThanOrEqual(600);
+        expect(rollPanelLayout.canvasWidth).toBeGreaterThanOrEqual(300);
+        expect(rollPanelLayout.canvasHeight).toBeGreaterThanOrEqual(210);
         expect(rollPanelLayout.staticDiceImages).toBe(0);
         const discoveryGeometry = await discoveryReveal.evaluate((node) => {
             const panel = node as HTMLElement;
             const rect = panel.getBoundingClientRect();
             const content = panel.querySelector('[data-testid="betrayal-discovery-panel-content"]') as HTMLElement | null;
             const contentRect = content?.getBoundingClientRect();
+            const rollPanel = panel.querySelector('[data-testid="betrayal-recent-roll-panel"]') as HTMLElement | null;
+            const rollPanelRect = rollPanel?.getBoundingClientRect();
+            const rightPanel = document.querySelector('[data-testid="betrayal-status-rail"], [data-testid="betrayal-player-panel"], [data-testid="betrayal-deck-status"]') as HTMLElement | null;
+            const rightPanelRect = rightPanel?.getBoundingClientRect();
+            const leftPanelRects = Array.from(
+                document.querySelectorAll('[data-testid="betrayal-left-status-rail"], [data-testid="betrayal-inventory-section"]'),
+            )
+                .map((candidate) => (candidate as HTMLElement).getBoundingClientRect())
+                .filter((candidate) => candidate.width > 0 && candidate.height > 0);
             return {
                 panelCenterX: rect.left + rect.width / 2,
                 panelCenterY: rect.top + rect.height / 2,
                 contentCenterX: contentRect ? contentRect.left + contentRect.width / 2 : 0,
                 contentCenterY: contentRect ? contentRect.top + contentRect.height / 2 : 0,
+                contentLeft: contentRect?.left ?? 0,
+                contentRight: contentRect?.right ?? 0,
+                rollPanelRight: rollPanelRect?.right ?? 0,
+                rightPanelLeft: rightPanelRect?.left ?? window.innerWidth,
+                leftPanelRight: leftPanelRects.reduce((maxRight, candidate) => Math.max(maxRight, candidate.right), 0),
+                viewportCenterX: window.innerWidth / 2,
                 viewportCenterY: window.innerHeight / 2,
                 width: rect.width,
                 height: rect.height,
@@ -348,11 +383,14 @@ test.describe('山屋惊魂教程最小真实链路', () => {
                 contentHeight: contentRect?.height ?? 0,
             };
         });
-        expect(Math.abs(discoveryGeometry.contentCenterX - discoveryGeometry.panelCenterX)).toBeLessThanOrEqual(24);
+        const tableAreaCenterX = (discoveryGeometry.leftPanelRight + discoveryGeometry.rightPanelLeft) / 2;
+        expect(Math.abs(discoveryGeometry.contentCenterX - tableAreaCenterX)).toBeLessThanOrEqual(24);
+        expect(discoveryGeometry.contentLeft).toBeGreaterThanOrEqual(discoveryGeometry.leftPanelRight + 12);
+        expect(discoveryGeometry.rollPanelRight).toBeLessThanOrEqual(discoveryGeometry.rightPanelLeft - 12);
         expect(Math.abs(discoveryGeometry.panelCenterY - discoveryGeometry.viewportCenterY)).toBeLessThanOrEqual(48);
-        expect(discoveryGeometry.width).toBeGreaterThan(300);
+        expect(discoveryGeometry.width).toBeGreaterThan(900);
         expect(discoveryGeometry.height).toBeGreaterThan(320);
-        expect(discoveryGeometry.contentWidth).toBeGreaterThan(300);
+        expect(discoveryGeometry.contentWidth).toBeGreaterThanOrEqual(900);
         expect(discoveryGeometry.contentHeight).toBeGreaterThan(320);
         const discoveryFrontAtlas = discoveryReveal.getByTestId('betrayal-discovery-card-front-atlas');
         await expect(discoveryFrontAtlas).toBeVisible();
@@ -364,6 +402,23 @@ test.describe('山屋惊魂教程最小真实链路', () => {
             return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
         })).toBe(true);
         await saveScreenshot(page, STEP_14);
+        await rabbitFootCard.click();
+        const rabbitFootDice = page.getByTestId('betrayal-rabbit-foot-dice');
+        await expect(rabbitFootDice).toBeVisible();
+        const rerollTargetDie = page.getByTestId('betrayal-rabbit-foot-die-1');
+        await expect(rerollTargetDie).toBeVisible();
+        await saveScreenshot(page, STEP_14A);
+        const rollTotal = discoveryReveal.getByTestId('betrayal-recent-roll-total');
+        const rollDetail = discoveryReveal.getByTestId('betrayal-recent-roll-detail');
+        const totalBeforeRabbitFoot = await rollTotal.innerText();
+        await setHarnessRandomQueue(page, [0.99]);
+        await rerollTargetDie.click();
+        await expect(rabbitFootDice).toBeHidden();
+        await expect.poll(async () => rollTotal.innerText()).not.toBe(totalBeforeRabbitFoot);
+        await waitForPhysicalDiceSettled(discoveryRollPanel);
+        await expect(rollDetail).toContainText(/骰子合计\s+\d+｜加值\s+[+-]\d+/);
+        await expect(rollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
+        await saveScreenshot(page, STEP_14B);
         await clickNext(page);
         await expect(page.locator('[data-tutorial-step]')).toHaveCount(0, { timeout: 10000 });
         await expect(exploreTargetRoom).toBeVisible();

@@ -462,7 +462,7 @@ describe('BonusDieOverlay', () => {
         expect(readIsRolling()).toBe(true);
     });
 
-    it('spotlight 奖励骰应使用 2D 骰面节点，而不是 3D 骰模', async () => {
+    it('spotlight 奖励骰应使用 3D 骰模承接当前骰面展示', async () => {
         vi.useFakeTimers();
 
         render(
@@ -480,8 +480,8 @@ describe('BonusDieOverlay', () => {
             vi.advanceTimersByTime(1200);
         });
 
-        expect(screen.getByTestId('bonus-die-spotlight-face')).toBeInTheDocument();
-        expect(screen.queryByTestId('dice-3d')).toBeNull();
+        expect(screen.getByTestId('dice-3d')).toBeInTheDocument();
+        expect(screen.queryByTestId('bonus-die-spotlight-face')).toBeNull();
     });
 
     it('奖励骰展示态特写应保留首次点击保护，0.3 秒后才允许关闭', () => {
@@ -831,7 +831,7 @@ describe('BonusDieOverlay', () => {
             expect(state[0].previewRef).toEqual({
                 type: 'atlas',
                 atlasId: 'dicethrone:gunslinger-cards',
-                index: 24,
+                index: 26,
             });
         });
     });

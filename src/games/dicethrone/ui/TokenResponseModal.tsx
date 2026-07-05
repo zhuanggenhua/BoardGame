@@ -214,7 +214,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
         const useOptions = getTokenUseOptions(tokenDef, actualTokenCount);
         if (useOptions.length <= 0) return null;
 
-        const useAmount = useOptions[0] ?? 1;
+        const useAmount = useOptions[useOptions.length - 1] ?? 1;
         const preview = getTokenEffectPreview(t, tokenDef, pendingDamage.currentDamage, useAmount, responsePhase);
         const category = getTokenCategory(tokenDef, responsePhase);
         const isDisabled = !preview.canUse;

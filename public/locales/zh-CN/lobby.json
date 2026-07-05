@@ -449,15 +449,15 @@
   "gameDetails": {
     "description": "经典策略游戏。连成 3 个符号即可获胜。"
   },
-    "games": {
-      "betrayal": {
-        "title": "山屋惊魂",
-        "description": "3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定房间主视图、探索者区与牌堆区。",
-        "players": "3-6 人"
-      },
-      "tictactoe": {
-        "title": "井字棋",
-        "description": "经典的井字棋游戏。挑战 AI 或与朋友对战。",
+  "games": {
+    "betrayal": {
+      "title": "山屋惊魂",
+      "description": "3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定房间主视图、探索者区与牌堆区。",
+      "players": "3-6 人"
+    },
+    "tictactoe": {
+      "title": "井字棋",
+      "description": "经典的井字棋游戏。挑战 AI 或与朋友对战。",
       "players": "2 人游戏"
     },
     "dicethrone": {
@@ -526,6 +526,11 @@
     },
     "ugc": {
       "players": "2 人"
+    },
+    "the-gang": {
+      "title": "纸牌帮",
+      "description": "合作德州扑克排序游戏。用筹码表达牌力，齐心完成抢劫。",
+      "players": "3-6 人"
     }
   },
   "matchRoom": {

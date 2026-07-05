@@ -77,6 +77,9 @@ export function getPendingAttackSettlementStage(
     if (pendingAttack.postDamageFollowUpResolved || pendingAttack.bonusDiceResolved) {
         return 'readyToResolve';
     }
+    if (pendingAttack.withDamageChoiceResolved) {
+        return 'withDamageChoicePending';
+    }
     if (pendingAttack.damageResolved) {
         return 'postDamagePending';
     }

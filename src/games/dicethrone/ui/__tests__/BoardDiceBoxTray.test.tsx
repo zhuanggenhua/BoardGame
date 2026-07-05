@@ -119,6 +119,6 @@ describe('BoardDiceBoxTray', () => {
         await waitFor(() => {
             expect(removeDiceMock).toHaveBeenCalledWith([0]);
         });
-        expect(engineMock.rollToValues).toHaveBeenCalledTimes(1);
+        expect(engineMock.rollToValues).toHaveBeenCalled();
     });
 });

@@ -110,12 +110,6 @@ export function getUsableTokenAmountForTiming(
     }
     if (availableAmount <= 0) return 0;
 
-    // 规则：本回合获得的太极不可用于本回合增强伤害（beforeDamageDealt）。
-    if (tokenDef.id === TOKEN_IDS.TAIJI && timing === 'beforeDamageDealt') {
-        const gainedThisTurn = state.taijiGainedThisTurn?.[playerId] ?? 0;
-        availableAmount = Math.max(0, availableAmount - gainedThisTurn);
-    }
-
     const maxWindowUsage = getMaxTokenUseAmount(tokenDef);
     const usedInWindow = state.pendingDamage?.tokenUsageTotals?.[tokenDef.id] ?? 0;
     const hasExplicitWindowCap = (tokenDef.activeUse.allowedConsumeAmounts?.length ?? 0) > 0;
@@ -718,9 +712,8 @@ export function shouldOpenTokenResponse(
     // 终极技能（规则 §4.4）：伤害可被攻击方强化，但不可被防御方降低/忽略/回避
     const isUltimate = state.pendingAttack?.isUltimate ?? false;
     
-    // 先检查攻击方是否有太极可用于加伤
-    // 注意：规则说"本回合获得的太极不可用于本回合增强伤害"
-    // 这个限制需要额外的状态追踪，暂时先不实现
+    // 先检查攻击方是否有太极可用于加伤。
+    // 连段冲拳②等奖励骰在伤害结算前获得的太极，属于本次攻击的可用资源。
     const hasOffensiveTokensResult = hasOffensiveTokens(state, attackerId, damageScope, damage);
     if (hasOffensiveTokensResult) {
         return 'attackerBoost';

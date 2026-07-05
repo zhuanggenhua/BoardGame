@@ -328,7 +328,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('sourceRegionName: khanEdictSelection.sourceRegionName');
         expect(boardSource).not.toContain('sourceRegionName: diplomacySelection.sourceRegionName');
         expect(boardSource).toContain("defaultValue: '处理外交与雇佣'");
-        expect(boardSource).toContain("defaultValue: '外交目标 · {{targetHint}}'");
+        expect(boardSource).toContain("defaultValue: '在地图上点击外交目标；下方地区按钮仅作备用 · {{targetHint}}'");
         expect(boardSource).toContain("defaultValue: '进攻目标'");
         expect(boardSource).toContain("defaultValue: '{{targetRegionName}} · {{defenderLabel}}'");
         expect(boardSource).not.toContain("defaultValue: '先选建军方式；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
@@ -370,6 +370,29 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("title: gaoDiTargetSelectionActive");
         expect(boardSource).toContain("candidates: gaoDiTargetSelectionActive ? core.gaoDiDispatchSelection.candidates.map");
         expect(boardSource).not.toContain("action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const");
+    });
+
+    it('地区目标主路径会落到地图命中圈，按钮只保留为后续确认或备用入口', () => {
+        expect(boardSource).toContain('const buildRegularTroopPlacementCandidates = React.useCallback');
+        expect(boardSource).toContain('.filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId))');
+        expect(boardSource).toContain("action: 'select-region' as const");
+        expect(boardSource).toContain("title: '赐印招安'");
+        expect(boardSource).toContain("action: 'grant-pardon' as const");
+        expect(boardSource).toContain("title: '征召地区'");
+        expect(boardSource).toContain('candidates: buildRegularTroopPlacementCandidates(recruitFactionId)');
+        expect(boardSource).toContain("title: '马市建军地区'");
+        expect(boardSource).toContain("candidates: buildRegularTroopPlacementCandidates('ming')");
+        expect(boardSource).toContain("title: '大汗令箭地区'");
+        expect(boardSource).toContain('candidates: buildRegularTroopPlacementCandidates(khanFactionId)');
+        expect(boardSource).toContain("title: '外交目标'");
+        expect(boardSource).toContain('data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}');
+        expect(boardSource).toContain('data-action={candidate.action}');
+        expect(boardSource).toContain('onClick={() => activateTopLevelGuideTarget(candidate)}');
+        expect(boardSource).toContain('selectRegion(candidate.targetRegionId);');
+        expect(boardSource).toContain('data-testid={`qidahen-recruit-choice-${choice.id}`}');
+        expect(boardSource).toContain('data-testid={`qidahen-ma-shi-trade-choice-${choice.troopCount}`}');
+        expect(boardSource).toContain('data-testid={`qidahen-khan-edict-choice-${choice.id}`}');
+        expect(boardSource).toContain('data-testid={`qidahen-diplomacy-choice-${choice.id}`}');
     });
 
     it('右侧动作按钮在 hover 或 focus 时必须显示可见功能提示，而不是只依赖原生 title', () => {

@@ -9630,6 +9630,1410 @@
           "mime": "image/webp"
         }
       }
+    },
+    "zh-CN/the-gang/cards/ace-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "d76404f0d37bc4d5e10718766afa45d9ad02082bebea8ed513ffecf9d470ad3a",
+          "bytes": 25943,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ace-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "24ce5421325d1d323f48315b3fc454fdec207d13a89882713d4a952d0317e003",
+          "bytes": 23085,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ace-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "702c19d5dc122603ea1e99ecd307f800a2650a92fcfa4eac64bf3246d6738301",
+          "bytes": 22679,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ace-spades": {
+      "variants": {
+        "png": {
+          "sha256": "f21c4ba0c7c98c32e32b96a76a40e0648e888ae7a5b61f7ca2c33d68ea29dab9",
+          "bytes": 24301,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/card-back": {
+      "variants": {
+        "png": {
+          "sha256": "b659aeb0a174340b0ba55dbceaa79590cfa9e37b2dadbcd7d1c342f2a8a2fa57",
+          "bytes": 2267299,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ace-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "6bb267474d395c1fc2a214f0a2a05c0d54d6ed1071ca6b3e4bbc9c9072f736b6",
+          "bytes": 11374,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ace-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "577a1cbba0055a25b78febbc116a4f5a61e6601304417fdbf6ecf32ec5c107c6",
+          "bytes": 10986,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ace-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "3db2e8f7b189a7abb97bcc7c0fe793aa64c0a839c7ad7622c7b46ebbd626d730",
+          "bytes": 10650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ace-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc6eef56893e737b19afff44cbf9cb0c1ffd208dce034b548f6535b9e8862c",
+          "bytes": 8676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "0bf74e8eb072e8e6bb29b15a294d4cc17c4b20117578ac7e89a6120165e187c9",
+          "bytes": 190434,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/eight-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "bf6129243f17e82fd0a4db446cf9c11ea28bc430981ffb8021188c9617917f2d",
+          "bytes": 16718,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/eight-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "d594ce05dc5b985882b00f214169802a73b4cb2ca82864432a94c6260c2b5cd3",
+          "bytes": 16072,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/eight-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "e4568393108f49009f9b977938e2552215b3941f23457ec70eef60bac885cd0f",
+          "bytes": 16130,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/eight-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "141d918bcaa909db0a8434350f038a5bb7e215928356d630748dcdc7a23749e7",
+          "bytes": 13138,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/five-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "f5b90a54c58d76f6b1097d2801d5cb99d6fa9bc03a7653125dab29fdcd608a88",
+          "bytes": 13496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/five-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "34c37fb20de09414f90b612b37eec12d437d8c33011688a1cb1c34d9f940e944",
+          "bytes": 13098,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/five-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "b3f3dfb6f5fe82bc889f7a44c66ab891e6f86613109d6c58f2fe31d17daefbfd",
+          "bytes": 13616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/five-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "06c2640807704d9d39d4b7fb92e7172abf5cc3cad87e59dfaeeef05d8a7d3b15",
+          "bytes": 10486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/four-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "214893a0bf225337206ed0338535fb78de897f82d94085776178d9a4c40cb339",
+          "bytes": 11574,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/four-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "1768034bbb3fad3ce507f33f49396112c73fd78825f9df096221491d2dc91bbe",
+          "bytes": 11302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/four-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "f97f71c66c47d6f32167affb64c2e1dc1bda81d8c1bec204b0c62976da671018",
+          "bytes": 11648,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/four-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "3e0ec895f4b81acba0749a51adbb9f6438cd0b4ab488732b556115db7aba0962",
+          "bytes": 11314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/jack-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "c35e2ec0dcc8bb8fde0afc81cae56329942ec0cb1f3848511e0bd8b68bea382f",
+          "bytes": 45158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/jack-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "48538b9205e8ea2e65dccfd801ec86eea3a7d862d78783e5c975508a740215d3",
+          "bytes": 43006,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/jack-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "a355f6ca06920388e990688de36631294de1a01485a801e24faa808737fe2c87",
+          "bytes": 45746,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/jack-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "e4f5446a34f879bb19711cf5d7aa9aea9b46b0b846c479ecd0452a5561997d6b",
+          "bytes": 34884,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/king-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "71d08bdd5d20a11903b07f03014e501e2555b0d21a3d3637da55d961e84ffe45",
+          "bytes": 48138,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/king-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "3547025fc991b6c017dc9570dc18efab99fa37321358b35cb16c5abcb38519b9",
+          "bytes": 45598,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/king-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "622e785be121a8b5f2ccaa32eb0376c144fd944829366eb5b1ea0e36f8954c8a",
+          "bytes": 47216,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/king-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "d0696e7771ddd62d2ffdf384bd3ec5f69bbe8ce2a138a068e6eea4b22bdba493",
+          "bytes": 45596,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/nine-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "be3b484b4b82c0839d03d7a498f3351457146e9c8ece056a6e7d613b02370661",
+          "bytes": 18732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/nine-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "6f6b2639a00e24b83deddce4f20e1014d71ac1db88aaffe54593432d6a25d629",
+          "bytes": 17260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/nine-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "6e94ca9461a0e1e4e30c1c3bf4ea5110cbb6f29c50400d72f13f2d1bc3edaadd",
+          "bytes": 17562,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/nine-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "b1e75608ef609f34c5e1de8a953f0f5fb3204710475bcd664b63829b8e8500e5",
+          "bytes": 14272,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/queen-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "50c67b13f2f37d59d29c71ada04d44c79306cdc9d49d3cad8f485413ea75e72e",
+          "bytes": 52244,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/queen-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "160f4ae546d8fd326683fccdbefb93589ec8109429de3629cca2003eae24d81c",
+          "bytes": 47092,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/queen-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "2efbf0aed75510352182bdb72e825f10fd23ad090108d179d87b512dd5dd84a1",
+          "bytes": 52732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/queen-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "34f4b833efa6552e992c8412b276391883e4301ec7572cb88ad92044606b90d4",
+          "bytes": 46326,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/seven-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "35cff2fb7c658c70bb46e12e7feb429556968003cc919cf910adb87900b45e35",
+          "bytes": 14870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/seven-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "512b833c9ae5a73d56322bbcdb42d22d92b8c954da0bd8925a1ca6a7ae171f82",
+          "bytes": 15106,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/seven-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "2071d642f8b68398b8030cdd098dfeaa907bce1285321ce63a3ee63ccff2230e",
+          "bytes": 14676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/seven-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "e072a8c996d9cb1f5943bfd97fe937828535028b74adb9d507c96c7b474ad83c",
+          "bytes": 11710,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/six-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "705cb7051c6988f72d9b5381f3e7103648a61e4c2437937dd400e1ea44c3da4f",
+          "bytes": 15246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/six-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "98f597651539d5fa69e8e02dfe0369a85fd0f76757fb47271d33f8f8636c0ca8",
+          "bytes": 13954,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/six-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "50c2d6c1fa8d166cf57f6fd6aa2d42f8ae68be8ac65c3bc3cc0e754aac9a7698",
+          "bytes": 14702,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/six-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "086cddc04dee629807f352104570b029e8d96d237b4181a3fa74d8062a479652",
+          "bytes": 13402,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ten-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "ed72949839e4b04f0740ac6b94359368b7c1ec9125a50e6356ff9ab076d18436",
+          "bytes": 20098,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ten-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "741b8e1ab6542988ef1e7504a22eef8f219a95f36cdc5e547455925ec5579423",
+          "bytes": 18448,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ten-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "9fc4c770a8b51b20749da5565703f2d76c436d210852ab89758273634bbe0cc4",
+          "bytes": 18338,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/ten-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "d0f9dff2991fc84842599add60c1e676dcc0cfc4189d723e6e11ce71aa09aa6f",
+          "bytes": 14898,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/three-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "ea6180dafcbbcf3c5b3fada04bac6380c47c5aa9b2e5d559466518db80c4eaf0",
+          "bytes": 10924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/three-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "abb8707e9e3a62f0eff865c3e35413afa87f9601a1ce94627f8fa4c37c7b1646",
+          "bytes": 11010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/three-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "be73f66557b323b705e399f2ea3ea038051fb54f1c9a5fb9e48d19f967b6f217",
+          "bytes": 11062,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/three-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "c477979c131c01e0c63445750d52aa9bf696c4e1a9d857fc89a6e956dbe0a4bd",
+          "bytes": 11112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/two-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "0fd30bf65ed9e7a2db3d603005355d1ec830e06e982dc460b703855eaabe7528",
+          "bytes": 9962,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/two-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "8df5af3f2984f008f0b00d2bfc2c399d313dcd1566e901317bf1d0261cec4028",
+          "bytes": 9852,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/two-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "18ffee32cdbfff7d9190b2eb4f36167d48ccbd80069e935a1d623589a0419348",
+          "bytes": 9912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/compressed/two-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "fd2d3a2b46eb480fb15940e3a5f1092c68adf8c957a8fd02ca07c8b81a6256c1",
+          "bytes": 8166,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/eight-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "57904cda5262637677dc45967945db1bd8e5c1b98e958e58baf49f742fb2cd35",
+          "bytes": 30344,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/eight-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "ff2c33456fb9fb90d41a1782efc33973f1457ac76171a4059e2f78a56997a9e3",
+          "bytes": 36932,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/eight-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "fecab182dc03dd793126022b3be6972b6a1d17b04f865428853a993fb3ea5ec0",
+          "bytes": 29203,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/eight-spades": {
+      "variants": {
+        "png": {
+          "sha256": "1e7b91b3920d7878b197b7c9b0cb0d3888cafb6b276fbb0c391c5729ee4daf3d",
+          "bytes": 31949,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/five-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "26e128e7f8fa413862a71731311bb55c019f14a3ce07e6e0bb3d323c7caa09b6",
+          "bytes": 30475,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/five-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "bf06ef5bbaac01d0a8ee3f3f75741ca536ad4d73e860b0f38ef527d85ca715fa",
+          "bytes": 23455,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/five-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "987baf0147a888b1afcdb5a043880878731e4d74b831200b6a0b32f794f5f5e7",
+          "bytes": 24056,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/five-spades": {
+      "variants": {
+        "png": {
+          "sha256": "43036a7cb813dc5c7db29e86ad4d77b48164f3baf76e070158a94d3c333d8cc2",
+          "bytes": 25242,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/four-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "0a25848e99f05edeeefa175f0dab50beec9cb3af059e47b3b95f97e0deca75ed",
+          "bytes": 27425,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/four-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "fd2b1615b1ae7f37e0227efafb013a1000e222025aabad8ec50fbe3cfe487282",
+          "bytes": 21288,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/four-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "7d8f3b9aa51cc4da4567a3099efffcd76541d3ac43fa481be238daed5832f27d",
+          "bytes": 20986,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/four-spades": {
+      "variants": {
+        "png": {
+          "sha256": "a2dff8ce53d169f8909908db065d1c5336902dfa21029c6e5ce3074705dc1c96",
+          "bytes": 134338,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/jack-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "aa8e48e7cc5224be3162142ce76f2e064f2c0536c0ca51cb5500f7be6a249c49",
+          "bytes": 90437,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/jack-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "cdf08c055c47d14b98833bb15449b4aeab77f391cb01e0048699451c3e61daea",
+          "bytes": 92761,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/jack-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "5c715d31e3c290c5dea8d952f4f779fa18a9c16fbdc24abf80719d51ba461e1c",
+          "bytes": 93796,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/jack-spades": {
+      "variants": {
+        "png": {
+          "sha256": "86ead5237b288d2037acedbfb3f7cc68250fff37ed94845ac1384cc5fc1c9b5f",
+          "bytes": 89325,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/king-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "d3cb46f5e23f98cd4ff7ae81d8f28c7d497034cb82404de52fe768b713dbea01",
+          "bytes": 93383,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/king-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "fb8f0d0d90e083dc099904d7b019cab4be7e56f7d2e7d24fc07b07d31cc5d2e3",
+          "bytes": 98640,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/king-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "e0e0ab8d5870ef8e4c38058e07ebb5fcbec2c37c4bd343f8c40fda9df77e1efb",
+          "bytes": 92205,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/king-spades": {
+      "variants": {
+        "png": {
+          "sha256": "358eea8224781eb852c5bf83aef8e75b0840c88b83866d300a8b3daf9bbfb2de",
+          "bytes": 106235,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/nine-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "ef54ddc93fdb673f239245df96d06b21816c0d9a0033b63655515c290c7ad7c1",
+          "bytes": 46611,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/nine-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "fb7256e196153d9b7342dbca0ee9061151ca61792ffcfddc021963dadc90293f",
+          "bytes": 31376,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/nine-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "39e54b4acc8adbdfbc1041732688d36a89462d1a133dca0e328f81389bb78bb5",
+          "bytes": 30881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/nine-spades": {
+      "variants": {
+        "png": {
+          "sha256": "f2206c67ce42fa7bdce2fd000f216cdce14a65dacb7ae4d3573c8badc09402ef",
+          "bytes": 33465,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/queen-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "833b372dfd4c263ab9581ec105e35080df6064c47d13db8f49875a4f96bb81e7",
+          "bytes": 198548,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/queen-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "339d259afd818e0cb00f1c70b1c22ae09b7473e7b71f88c3924ff60590e00402",
+          "bytes": 96960,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/queen-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "adf127c72c1fedfa0a4a6aeea95f2d1b9e5d157ce7c21721a428cd6198469e60",
+          "bytes": 98224,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/queen-spades": {
+      "variants": {
+        "png": {
+          "sha256": "ac86c4b4b49507a3c4da6fdf99fc1c4973b16f97ace6b5a2d3cb4e26631f06da",
+          "bytes": 122418,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/seven-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "ca1d2d1c38ee71a8cd8f5353038bbe0e95d2dc53aafcae1d9ff073e20a620dab",
+          "bytes": 26801,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/seven-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "69293f09b853cca432dc171b8b1f44dd4c8e0de4abb1b0acd5dee1e05bb12dfe",
+          "bytes": 27330,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/seven-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "663a2b330a98b5154a99213be448aff1861d75c882d09afa8ec4b51d34da6290",
+          "bytes": 26293,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/seven-spades": {
+      "variants": {
+        "png": {
+          "sha256": "87e7641574c20ac946d4a1aed31a6d4d4afee81906220852840aa8d18766a871",
+          "bytes": 28501,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/six-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "0eeb610569a433e7f3581d5c5fbd1559a57d7df38ddab77a89888384d6eb0bd6",
+          "bytes": 25312,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/six-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "8589f1a1ba0baea8ac7c15203ca1a60f414f8eb39c953747c7ac663b6269d6ac",
+          "bytes": 25855,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/six-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "b8c8b175bae85f0cadfd06ea084052c2e33ac85aa0329b206bcd7cb76105201a",
+          "bytes": 39973,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/six-spades": {
+      "variants": {
+        "png": {
+          "sha256": "eb5c54177cad76ef0fcf0be6fceaa4752a1fe4c46dc2705908f049db03515a63",
+          "bytes": 179392,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ten-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "fe8124cb5718c30a646e11f3749aa0f2095094e26d8b76205fc5c70a57ae41f9",
+          "bytes": 32412,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ten-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "645f86e7435af201d19b0b15ed579fa8791d3796ae1c22e48e734695e89c8e55",
+          "bytes": 33058,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ten-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "49691f1c31f13f6a3954d46485d4b3005846997fc07752a4569fa112b447e988",
+          "bytes": 32379,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/ten-spades": {
+      "variants": {
+        "png": {
+          "sha256": "f204484dc31bce9fa8e286eea1b9ba1b8b2b80a25d5b1b6610acce7f3e349a0d",
+          "bytes": 35250,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/three-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "4c2a25fb0ffd0fc85b549ca1b3bd3298cfe2cce7ac0df857ec084b1f0e62eb63",
+          "bytes": 20335,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/three-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "f74225f3f8e8392e7e0524593b8d494be3450d69cf17b1ac19f995d5476d39a5",
+          "bytes": 20714,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/three-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "ecc57de0f65490e484756d1defe65f40c1b9875c438810f24fa7811faa0bde90",
+          "bytes": 20512,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/three-spades": {
+      "variants": {
+        "png": {
+          "sha256": "4b28de230e705074ac4fb27d7cb43fc78154aee546e27238accb2677dc658227",
+          "bytes": 138775,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/two-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "d7163fb8fc375bcd655b8bb724675628b9ae71bf71afd955ed3d846b577df760",
+          "bytes": 18486,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/two-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "e35c8b9f35ff0af7db6485964c861521fc78f797433cb89beaadb473a9b1b900",
+          "bytes": 18477,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/two-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "ac9a185e5245fefc7cd9a7fe5f134fcdcd055b6ef9dfc77738ceca175959655f",
+          "bytes": 18451,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/cards/two-spades": {
+      "variants": {
+        "png": {
+          "sha256": "b2c1780420df9c67834f5a7519d3ee98989e173e48cb20459cea701dc4765b70",
+          "bytes": 19266,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-1-white-1": {
+      "variants": {
+        "webp": {
+          "sha256": "09891be28733d5efe9cc50d7257c9a24f244eef85e3656d3c8540a7974c3cef9",
+          "bytes": 29914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-1-white-2": {
+      "variants": {
+        "webp": {
+          "sha256": "60dd49c91ec8dc8ba2cb7d3ad28125f4bf04800453248b37199477b33c924b89",
+          "bytes": 29846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-1-white-3": {
+      "variants": {
+        "webp": {
+          "sha256": "741a1bdfdec44e9ad65990e2838a82a604463f06e9d8e4060950d4baf06f3013",
+          "bytes": 30444,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-1-white-4": {
+      "variants": {
+        "webp": {
+          "sha256": "d2a2f899857c039c85f74d3dafb1e0a7ffa45c7b703b21cdf40a07b7d6e745b7",
+          "bytes": 29788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-1-white-5": {
+      "variants": {
+        "webp": {
+          "sha256": "b6ffdff354468cb1b659c65fd8bd6ac4490742a753a2a85b0101d3fe3e77ddbd",
+          "bytes": 30234,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-1-white-6": {
+      "variants": {
+        "webp": {
+          "sha256": "26121b8f65f29d9c422ba588fa753c214ad81bfc858d66f2440a3dff8ad0eb8b",
+          "bytes": 29874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-2-yellow-1": {
+      "variants": {
+        "webp": {
+          "sha256": "4a154e0df86905f6234ef0c5ee6e1ecf6a6ed37219ace8e68fc0e6807c0168d2",
+          "bytes": 35320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-2-yellow-2": {
+      "variants": {
+        "webp": {
+          "sha256": "4a154e0df86905f6234ef0c5ee6e1ecf6a6ed37219ace8e68fc0e6807c0168d2",
+          "bytes": 35320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-2-yellow-3": {
+      "variants": {
+        "webp": {
+          "sha256": "4456635becd8bd9ba4eb8d5f72439c0a1a801463ee35c699babb67a364ae0c64",
+          "bytes": 35584,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-2-yellow-4": {
+      "variants": {
+        "webp": {
+          "sha256": "ab7a4c03dfb2fa329f75fe8c1ca28ba8bfe2debb8ced628f08b60b8213b4f27a",
+          "bytes": 35370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-2-yellow-5": {
+      "variants": {
+        "webp": {
+          "sha256": "0b4ab85b6ff20fca98c55d4118a0da13d96cba73e503dd94cf9aa6a8031c92fd",
+          "bytes": 35278,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-2-yellow-6": {
+      "variants": {
+        "webp": {
+          "sha256": "5a1faaa520c6c70a9d687c6c0ab79aeadf99e46abf86f9a6772952dc6718558a",
+          "bytes": 35350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-3-orange-1": {
+      "variants": {
+        "webp": {
+          "sha256": "36b7fc0cab2e5a1396cfadb29c891972d527fa797d72326e33c379d4a379308e",
+          "bytes": 35458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-3-orange-2": {
+      "variants": {
+        "webp": {
+          "sha256": "36b7fc0cab2e5a1396cfadb29c891972d527fa797d72326e33c379d4a379308e",
+          "bytes": 35458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-3-orange-3": {
+      "variants": {
+        "webp": {
+          "sha256": "ffa09c1bea0c3c1b0795536604dce5f194b1d5fccda72259425f17f8db452e2a",
+          "bytes": 35888,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-3-orange-4": {
+      "variants": {
+        "webp": {
+          "sha256": "8f132ee2bbe2ff36ff42b2ee7f6a922fd758b924629bdfa01e1e23c3396eb4ca",
+          "bytes": 35486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-3-orange-5": {
+      "variants": {
+        "webp": {
+          "sha256": "abcabffbd076ec7598f4f3b2c34b1a4722f2c179244d9d9f8631b82f21ffba38",
+          "bytes": 35604,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-3-orange-6": {
+      "variants": {
+        "webp": {
+          "sha256": "17f23ad55602e210c12e58259dce5609e5bdc337c074d92a1208e152f6a27d7a",
+          "bytes": 35630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-4-red-1": {
+      "variants": {
+        "webp": {
+          "sha256": "a22527eabdf98c5330520e0b02a36145d24063840a94ccb34521f2768436a789",
+          "bytes": 33914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-4-red-2": {
+      "variants": {
+        "webp": {
+          "sha256": "6e481610aaa3cf8f48e087e453c5180b355610f814187cf76041c894760265ee",
+          "bytes": 33930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-4-red-3": {
+      "variants": {
+        "webp": {
+          "sha256": "48d6c57ca912e86d004157715842dc33aab07a83eb879da62d2acda72693a7b6",
+          "bytes": 34030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-4-red-4": {
+      "variants": {
+        "webp": {
+          "sha256": "f3655de1a675e70fff425a818fc2728e0bbd73b84ce8c6a6d8298ebf77101580",
+          "bytes": 33620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-4-red-5": {
+      "variants": {
+        "webp": {
+          "sha256": "fa08cbb04f73439c975cc88543cf71506401cb2b98e1943a802025a17570dde0",
+          "bytes": 33654,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/compressed/round-4-red-6": {
+      "variants": {
+        "webp": {
+          "sha256": "7f2f3ec5f050e8b4bbdcc708eec10634f37a5b62b2a94377bf12590806912510",
+          "bytes": 33794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-1-white-1": {
+      "variants": {
+        "png": {
+          "sha256": "6e55dc3b000436531cbf62acce13825c4854973d64322cd0ac093f234af8e8ff",
+          "bytes": 95430,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-1-white-2": {
+      "variants": {
+        "png": {
+          "sha256": "4062740986f86132818d6dcb988c132f4683ba495145ce25e38049326a9e687a",
+          "bytes": 95055,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-1-white-3": {
+      "variants": {
+        "png": {
+          "sha256": "71ec60ce826247192323e53001f62d51af3c6eceee5f6cdabcc89d2bc952d872",
+          "bytes": 95259,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-1-white-4": {
+      "variants": {
+        "png": {
+          "sha256": "8eb8fc55c235e3acfcea1e85078a82bc2dc7a90a4535daa6315e4bc7a1ac1380",
+          "bytes": 94840,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-1-white-5": {
+      "variants": {
+        "png": {
+          "sha256": "aff389e29cd11570aa9e4e0d343aee667c31f20b452fea4b5b46273441b67315",
+          "bytes": 94928,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-1-white-6": {
+      "variants": {
+        "png": {
+          "sha256": "895317d00c6c89c34f52b28bd35716e7619a49d0284fce9070f980f1d1b077d6",
+          "bytes": 94879,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-2-yellow-1": {
+      "variants": {
+        "png": {
+          "sha256": "1d41133002397584e3931eb537e4c86c1724385b7bdef0f5180ae0f67706033a",
+          "bytes": 184504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-2-yellow-2": {
+      "variants": {
+        "png": {
+          "sha256": "1d41133002397584e3931eb537e4c86c1724385b7bdef0f5180ae0f67706033a",
+          "bytes": 184504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-2-yellow-3": {
+      "variants": {
+        "png": {
+          "sha256": "0477471e81a64a8cdae440ca13e3be315b3fde063e25627b24ac0c78aeff51f9",
+          "bytes": 187059,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-2-yellow-4": {
+      "variants": {
+        "png": {
+          "sha256": "11e3ec54ef27594cc12657dde9df4f8dc7f38562a8a50a3dc7f6ed4f82a83a0b",
+          "bytes": 186271,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-2-yellow-5": {
+      "variants": {
+        "png": {
+          "sha256": "53b4b8a12cd87aea8c339b92f41b2a0672a1c3038b5fa8de547d44066a62876a",
+          "bytes": 186598,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-2-yellow-6": {
+      "variants": {
+        "png": {
+          "sha256": "6b062f530a1581288854992a85c93bb332f7e6251c649b9c4a5899df58034374",
+          "bytes": 186221,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-3-orange-1": {
+      "variants": {
+        "png": {
+          "sha256": "5503697af9425889fd6f410e77363baaf275050c119928495347a5bdb3012f06",
+          "bytes": 194685,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-3-orange-2": {
+      "variants": {
+        "png": {
+          "sha256": "5503697af9425889fd6f410e77363baaf275050c119928495347a5bdb3012f06",
+          "bytes": 194685,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-3-orange-3": {
+      "variants": {
+        "png": {
+          "sha256": "9cbb4da95832a606e58f19b18412960cc35d293f055034ae4ad9b45239679eca",
+          "bytes": 197106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-3-orange-4": {
+      "variants": {
+        "png": {
+          "sha256": "2cd885e4ff803378517ae46bf82db71e7dae4e331b8ab230fbb55a9b94c4361d",
+          "bytes": 196454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-3-orange-5": {
+      "variants": {
+        "png": {
+          "sha256": "81a258f7f0839db89b785d3669039d98c2ab4f7ed8bd177e55a4176062d176c3",
+          "bytes": 196627,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-3-orange-6": {
+      "variants": {
+        "png": {
+          "sha256": "3253a10b84942d5fe11da57b933339a5f7d212fcf91853db1e0050a9d822ce1a",
+          "bytes": 196325,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-4-red-1": {
+      "variants": {
+        "png": {
+          "sha256": "619baa9f6d910c616afa1787c9b61dbaad71af9399c9247b3174c221e62ff3ac",
+          "bytes": 201472,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-4-red-2": {
+      "variants": {
+        "png": {
+          "sha256": "9ed5c731b26da2bd9d65021bbc2b17122fa376f76f17bc039e81c4191e63b614",
+          "bytes": 200151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-4-red-3": {
+      "variants": {
+        "png": {
+          "sha256": "37bf5da36152583510a62a19d995f075dd749ebb37399f8523164ed8576afeb6",
+          "bytes": 200378,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-4-red-4": {
+      "variants": {
+        "png": {
+          "sha256": "d6927ad2304ba8c693590ee5c65fa32e78ee4893b8544fba6f905a09233d117a",
+          "bytes": 199764,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-4-red-5": {
+      "variants": {
+        "png": {
+          "sha256": "b41c38bb9a4761f0d035727c1598e8fc53dae3e1feb031e1183b4b32a8332f78",
+          "bytes": 199959,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/round-4-red-6": {
+      "variants": {
+        "png": {
+          "sha256": "63f36075881b23a128c8e48ade13983a3db7ce6d779a284b9ddf89452b3cf1ae",
+          "bytes": 199584,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "5ecfea83b34e860ff53fe71817539d88a3b276f270a793fe1d4eafeae7838536",
+          "bytes": 43054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/thumbnails/cover": {
+      "variants": {
+        "png": {
+          "sha256": "0dbbfae7081bacc90d95b80e13a0e5f1c0ede27a57b58f4b09ba5f8a3065c04f",
+          "bytes": 71553,
+          "mime": "image/png"
+        }
+      }
     }
   },
   "id": "i18n",

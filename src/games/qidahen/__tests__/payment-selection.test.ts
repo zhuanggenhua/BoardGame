@@ -27,6 +27,7 @@ import {
     isQidahenMongolRuntimeRegionId,
 } from '../domain/regionEthnicity';
 import { getEffectiveHomelandController } from '../domain/regionRuleSemantics';
+import { getQidahenGrantPardonSelectionForCore } from '../domain/selectionBuilders';
 import { syncQidahenRuntimeInteractionState } from '../domain/runtimeInteractions';
 import { getQidahenScenarioPreset } from '../domain/scenarioPresets';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_SHAPES, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';
@@ -123,8 +124,44 @@ function getRecruitSelection(core: QidahenCore) {
     return getQidahenRecruitSelectionForCore(core);
 }
 
+function getGrantPardonSelection(core: QidahenCore) {
+    return getQidahenGrantPardonSelectionForCore(core);
+}
+
 function getMaShiTradeSelection(core: QidahenCore) {
     return getQidahenMaShiTradeSelectionForCore(core);
+}
+
+function resolveGrantPardonChoiceAndPay(
+    core: QidahenCore,
+    choiceId: string,
+): QidahenCore {
+    const choosingTarget = apply(core, {
+        type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
+        playerId: '0',
+        payload: { choiceId },
+    });
+    expect(choosingTarget.turnPhase).toBe('action-window');
+    expect(choosingTarget.grantPardonSelection?.selectedChoiceId).toBe(choiceId);
+    expect(choosingTarget.payment).toMatchObject({
+        required: 3,
+        selected: 0,
+    });
+    const first = apply(choosingTarget, {
+        type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        playerId: '0',
+        payload: { cardId: 'hand-1' },
+    });
+    const second = apply(first, {
+        type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        playerId: '0',
+        payload: { cardId: 'hand-2' },
+    });
+    return apply(second, {
+        type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        playerId: '0',
+        payload: { cardId: 'hand-3' },
+    });
 }
 
 function getKhanEdictSelection(core: QidahenCore) {
@@ -1890,6 +1927,108 @@ describe('七大恨支付手牌选择', () => {
         expect(consenting.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 1);
         expect(consenting.lastSeasonSummary?.title).toBe('封贡敕书');
         expect(consenting.lastSeasonSummary?.lines.join(' ')).toContain('等待后金决定是否接受大明指挥');
+    });
+
+    it('封贡敕书指定大明执行赐印招安时，会先进入目标选择并免费结算所选目标', () => {
+        const baseCore = QidahenDomain.setup(['0', '1', '2'], random);
+        const core: QidahenCore = {
+            ...baseCore,
+            currentPlayer: '2',
+            selectedRegionId: 'jinzhou',
+            explicitRegionId: 'jinzhou',
+            regionFocusState: {
+                ...baseCore.regionFocusState,
+                defaultFocusRegionId: baseCore.regionFocusState.defaultFocusRegionId,
+                lockedSourceRegionId: 'jinzhou',
+                currentTargetRegionId: 'jinzhou',
+                displayAnchorRegionId: 'jinzhou',
+            },
+        };
+        const [sourceCard, paymentCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1633-tribute-edict'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '封贡敕书',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1633-tribute-edict',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '2',
+            payload: { cardId: paymentCard.id },
+        });
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const waitingActionChoice = apply(executed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '2',
+            payload: { choiceId: 'ming' },
+        });
+        const choosingGrantPardonTarget = apply(waitingActionChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'grant-pardon' },
+        });
+
+        expect(choosingGrantPardonTarget.turnPhase).toBe('grant-pardon-choice');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(choosingGrantPardonTarget)).toBeNull();
+        expect(choosingGrantPardonTarget.currentPlayer).toBe('0');
+        expect(choosingGrantPardonTarget.payment).toMatchObject({
+            required: 0,
+            selected: 0,
+        });
+        expect(choosingGrantPardonTarget.grantPardonSelection).toMatchObject({
+            executionSource: 'tribute-edict',
+            selectedChoiceId: null,
+        });
+        expect(getGrantPardonSelection(choosingGrantPardonTarget)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
+
+        const resolved = apply(choosingGrantPardonTarget, {
+            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'jinzhou->city-region-25' },
+        });
+
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(resolved.grantPardonSelection).toBeNull();
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(resolved.factions.jin.handCount).toBe(core.factions.jin.handCount - 2);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 2);
+        expect(resolved.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount + 1);
+        expect(resolved.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 1);
+        expect(resolved.regions.find((region) => region.id === 'jinzhou')).toMatchObject({
+            controller: 'jin',
+            troops: 1,
+        });
+        expect(resolved.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
+            controller: 'ming',
+            troops: 3,
+        });
+        expect(resolved.selectedRegionId).toBe('city-region-25');
+        expect(resolved.lastSeasonSummary?.title).toBe('封贡敕书');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('大明选择执行赐印招安');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('赐印招安：锦州 有 1 个部队被招安，转入 山海关 并成为大明部队');
     });
 
     it('封贡敕书指定蒙古时仍停在通用结算摘要，不伪装成既有正式行动链', () => {
@@ -5733,21 +5872,10 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        const first = apply(previewed, {
-            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
-            playerId: '0',
-            payload: { cardId: 'hand-1' },
-        });
-        const second = apply(first, {
-            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
-            playerId: '0',
-            payload: { cardId: 'hand-2' },
-        });
-        const third = apply(second, {
-            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
-            playerId: '0',
-            payload: { cardId: 'hand-3' },
-        });
+        expect(previewed.turnPhase).toBe('grant-pardon-choice');
+        const grantPardonSelection = getGrantPardonSelection(previewed);
+        expect(grantPardonSelection?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
+        const third = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
         const next = apply(third, {
             type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
             playerId: '0',
@@ -5770,20 +5898,13 @@ describe('七大恨支付手牌选择', () => {
         expect(next.factions.ming.troops).toBe(19);
         expect(next.factions.jin.troops).toBe(16);
         expect(next.selectedRegionId).toBe('city-region-25');
+        expect(next.grantPardonSelection).toBeNull();
         expect(next.lastSeasonSummary?.title).toBe('赐印招安');
     });
 
     it('赐印招安可对非围城 cityState 敌城生效，并只从城内守军扣 1', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
-        core.selectedActionId = 'grant-pardon';
-        core.confirmedActionId = 'grant-pardon';
-        core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
-        core.payment = {
-            required: 3,
-            selected: 3,
-            prompt: '需弃 3 / 已选 3',
-        };
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
                 return region;
@@ -5816,7 +5937,14 @@ describe('七大恨支付手牌选择', () => {
             return region;
         });
 
-        const next = apply(core, {
+        const previewed = apply(core, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        expect(getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
+        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
+        const next = apply(paid, {
             type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
             playerId: '0',
             payload: {},
@@ -5848,14 +5976,6 @@ describe('七大恨支付手牌选择', () => {
     it('赐印招安以逻辑区宁远作为当前选区时，会按真实敌区结算并把焦点收回真实接收区', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'ning-yuan';
-        core.selectedActionId = 'grant-pardon';
-        core.confirmedActionId = 'grant-pardon';
-        core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
-        core.payment = {
-            required: 3,
-            selected: 3,
-            prompt: '需弃 3 / 已选 3',
-        };
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
                 return region;
@@ -5889,7 +6009,14 @@ describe('七大恨支付手牌选择', () => {
             return region;
         });
 
-        const next = apply(core, {
+        const previewed = apply(core, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        expect(getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id)).toContain('city-region-24->city-region-25');
+        const paid = resolveGrantPardonChoiceAndPay(previewed, 'city-region-24->city-region-25');
+        const next = apply(paid, {
             type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
             playerId: '0',
             payload: {},
@@ -5909,17 +6036,9 @@ describe('七大恨支付手牌选择', () => {
         expect(next.lastSeasonSummary?.title).toBe('赐印招安');
     });
 
-    it('赐印招安自动接收区会按 cityState 合并后的兵力优先选择大明区域', () => {
+    it('赐印招安会按玩家选择的接收区结算，不再自动猜目标', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
-        core.selectedActionId = 'grant-pardon';
-        core.confirmedActionId = 'grant-pardon';
-        core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
-        core.payment = {
-            required: 3,
-            selected: 3,
-            prompt: '需弃 3 / 已选 3',
-        };
         const jinzhouAdjacentIds = new Set([
             'city-region-14',
             'city-region-15',
@@ -5984,37 +6103,44 @@ describe('七大恨支付手牌选择', () => {
             return region;
         });
 
-        const next = apply(core, {
+        const previewed = apply(core, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        const choiceIds = getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id) ?? [];
+        expect(choiceIds).toEqual(expect.arrayContaining([
+            'jinzhou->city-region-24',
+            'jinzhou->city-region-25',
+        ]));
+        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-24');
+        const next = apply(paid, {
             type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
             playerId: '0',
             payload: {},
         });
 
-        expect(next.selectedRegionId).toBe('city-region-25');
+        expect(next.selectedRegionId).toBe('city-region-24');
         expect(next.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
             controller: 'ming',
-            troops: 2,
+            troops: 3,
             cityState: null,
         });
         expect(next.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
             controller: 'ming',
-            troops: 5,
-            population: 2,
-            cityState: null,
+            troops: 0,
+            population: 0,
+            cityState: {
+                troops: 4,
+                population: 2,
+                specialTroops: [],
+            },
         });
     });
 
     it('赐印招安把部队转入己方被围城市时，会并入 cityState 而不是落到城市顶层', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
-        core.selectedActionId = 'grant-pardon';
-        core.confirmedActionId = 'grant-pardon';
-        core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
-        core.payment = {
-            required: 3,
-            selected: 3,
-            prompt: '需弃 3 / 已选 3',
-        };
         const jinzhouAdjacentIds = new Set([
             'city-region-14',
             'city-region-15',
@@ -6076,7 +6202,14 @@ describe('七大恨支付手牌选择', () => {
             return region;
         });
 
-        const next = apply(core, {
+        const previewed = apply(core, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        expect(getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
+        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
+        const next = apply(paid, {
             type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
             playerId: '0',
             payload: {},
@@ -6107,17 +6240,9 @@ describe('七大恨支付手牌选择', () => {
         expect(next.lastSeasonSummary?.title).toBe('赐印招安');
     });
 
-    it('赐印招安自动接收区会按被围城市的 cityState 守军优先选择大明区域', () => {
+    it('赐印招安可由玩家显式选择被围城市作为接收区并并入城内守军', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.selectedRegionId = 'jinzhou';
-        core.selectedActionId = 'grant-pardon';
-        core.confirmedActionId = 'grant-pardon';
-        core.selectedPaymentCardIds = ['hand-1', 'hand-2', 'hand-3'];
-        core.payment = {
-            required: 3,
-            selected: 3,
-            prompt: '需弃 3 / 已选 3',
-        };
         const jinzhouAdjacentIds = new Set([
             'city-region-14',
             'city-region-15',
@@ -6190,7 +6315,18 @@ describe('七大恨支付手牌选择', () => {
             return region;
         });
 
-        const next = apply(core, {
+        const previewed = apply(core, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'grant-pardon' },
+        });
+        const choiceIds = getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id) ?? [];
+        expect(choiceIds).toEqual(expect.arrayContaining([
+            'jinzhou->city-region-24',
+            'jinzhou->city-region-25',
+        ]));
+        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
+        const next = apply(paid, {
             type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
             playerId: '0',
             payload: {},

@@ -19,6 +19,7 @@ export interface DiceBoxPhysicsSourceProps {
     styleProfile?: DiceBoxStyleProfile;
     dieSkins?: Array<DiceBoxDieSkin | null>;
     rendererMode?: DicePhysicsRendererMode;
+    canvasTestId?: string;
     className?: string;
     testId?: string;
     dataAttributes?: Record<string, string>;
@@ -32,6 +33,7 @@ export function DiceBoxPhysicsSource({
     styleProfile,
     dieSkins,
     rendererMode = 'physics-only',
+    canvasTestId,
     className,
     testId = 'dice-box-physics-source',
     dataAttributes,
@@ -56,6 +58,9 @@ export function DiceBoxPhysicsSource({
 
     const setSettledState = React.useCallback((nextSettled: boolean) => {
         settledRef.current = nextSettled;
+        engineRef.current?.setCanvasDiagnostics({
+            settled: nextSettled,
+        });
         setSettled(nextSettled);
     }, []);
 
@@ -69,6 +74,7 @@ export function DiceBoxPhysicsSource({
                 const engine = await DiceBoxThreeEngine.create(container, {
                     styleProfile,
                     rendererMode,
+                    canvasTestId,
                 });
                 if (cancelled) {
                     engine.destroy();
@@ -76,6 +82,10 @@ export function DiceBoxPhysicsSource({
                 }
                 engineRef.current = engine;
                 engine.resize();
+                engine.setCanvasDiagnostics({
+                    settled: settledRef.current,
+                    skinsReady: false,
+                });
                 setEngineReady(true);
                 setEngineVersion((count) => count + 1);
             } catch {
@@ -93,13 +103,17 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [rendererMode, styleProfile]);
+    }, [canvasTestId, rendererMode, styleProfile]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
         if (!engine) return;
         if (dieSkins) {
             engine.setDieSkins(dieSkins);
+            engine.setCanvasDiagnostics({
+                settled: settledRef.current,
+                skinsReady: dieSkins.length > 0,
+            });
         }
     }, [dieSkins, engineVersion]);
 

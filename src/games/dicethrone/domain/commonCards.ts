@@ -79,7 +79,7 @@ export const GUNSLINGER_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = {
 };
 
 /**
- * 树精 / 忍者新规格图集：通用卡分布在前 17 格与末行 slot-37。
+ * 树精 / 忍者新规格图集：通用卡分布在前 17 格与末行 slot-32。
  * 该顺序来自 900x2048 正式运行时图集逐格核对；不能套旧角色默认映射。
  */
 export const TREANT_NINJA_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = {
@@ -100,7 +100,7 @@ export const TREANT_NINJA_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = {
     'card-bye-bye': 14,
     'card-flick': 15,
     'card-super-double': 16,
-    'card-unexpected': 37,
+    'card-unexpected': 32,
 };
 
 /**

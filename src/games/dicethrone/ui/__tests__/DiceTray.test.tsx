@@ -79,7 +79,7 @@ describe('DiceTray tutorial anchor', () => {
             />,
         );
 
-        expect(dice3DCalls).toHaveLength(1);
+        expect(dice3DCalls).toHaveLength(2);
         expect(dice3DCalls[0]?.enableWebgl).toBeUndefined();
     });
 
@@ -99,7 +99,7 @@ describe('DiceTray tutorial anchor', () => {
             />,
         );
 
-        expect(screen.getByTestId('mock-dice-field-3d')).toBeInTheDocument();
+        expect(screen.getByTestId('dicethrone-board-dice-custom-reference-layer')).toBeInTheDocument();
         expect(screen.getByTestId('mock-dice-box-physics-source')).toBeInTheDocument();
         expect(container.querySelector('[data-tutorial-id="dice-tray"]')).toBeNull();
     });

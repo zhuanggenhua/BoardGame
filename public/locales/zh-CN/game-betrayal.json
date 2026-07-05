@@ -184,7 +184,7 @@
     "heal": "治疗",
     "weapon": "武器",
     "unarmed": "徒手",
-    "rabbitFoot": "兔脚",
+    "rabbitFoot": "选择要重掷的骰子",
     "rerollDie": "重掷第 {{index}} 颗骰子",
     "explore": "探索",
     "holySymbol": "圣符",
@@ -249,6 +249,7 @@
       "fallbackLabel": "投骰",
       "bonus": "加值 {{value}}",
       "noBonus": "无加值",
+      "detail": "骰子合计 {{subtotal}}｜加值 {{bonus}}",
       "total": "总点数 {{value}}"
     },
     "useEffects": {

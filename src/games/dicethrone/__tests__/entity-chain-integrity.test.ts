@@ -476,6 +476,8 @@ describe('能力效果双重授予检测', () => {
         'paladin/righteous-prayer/righteous-prayer-2-main',
         // war-monger: 先获得战术优势，再通过 custom action 进入额外进攻投掷阶段，不会重复授予 token
         'zhanshujia/war-monger',
+        // maximum-power: 独立 bot token/status 与 activate-bots 的交互分支共存，不是重复授予同一对象
+        'artificer/maximum-power',
     ]);
 
     /** 可能产生 token 授予的 custom action 分类 */
@@ -547,6 +549,10 @@ describe('能力效果双重授予检测', () => {
             'pyromancer/meteor',
             // merciless-curse: 固定施加休战/诅咒金币/凋零；custom action 只负责给选中的目标施加火药桶
             'cursed_pirate/merciless-curse',
+            // 工匠机器人能力的独立状态与 activate-bots 交互分支共存，不是同一状态重复施加
+            'artificer/overclock',
+            'artificer/shock-bot',
+            'artificer/maximum-power',
         ]);
         for (const group of getAllEffectGroups()) {
             if (WHITELIST.has(group.label) || STATUS_WHITELIST.has(group.label)) continue;
@@ -691,11 +697,23 @@ describe('Token 响应窗口契约完整性', () => {
             const mockState = {
                 players: {
                     '0': {
-                        tokens: { [def.id]: 1 },
+                        tokens: { [def.id]: 1, [TOKEN_IDS.SYNTH]: 2 },
                         resources: { [RESOURCE_IDS.HP]: 50 },
+                        artificerBotState: {
+                            [TOKEN_IDS.SHOCK_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
+                            [TOKEN_IDS.HEAL_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
+                        },
                     },
                 },
                 tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                },
+                pendingDamage: {
+                    originalDamage: 6,
+                    responseType: 'beforeDamageDealt',
+                },
             } as any;
 
             const result = getUsableTokensForTiming(mockState, '0', 'beforeDamageDealt');
@@ -714,11 +732,23 @@ describe('Token 响应窗口契约完整性', () => {
             const mockState = {
                 players: {
                     '0': {
-                        tokens: { [def.id]: 1 },
+                        tokens: { [def.id]: 1, [TOKEN_IDS.SYNTH]: 2 },
                         resources: { [RESOURCE_IDS.HP]: 50 },
+                        artificerBotState: {
+                            [TOKEN_IDS.SHOCK_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
+                            [TOKEN_IDS.HEAL_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
+                        },
                     },
                 },
                 tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                },
+                pendingDamage: {
+                    originalDamage: 6,
+                    responseType: 'beforeDamageReceived',
+                },
             } as any;
 
             const result = getUsableTokensForTiming(mockState, '0', 'beforeDamageReceived');

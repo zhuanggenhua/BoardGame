@@ -1,0 +1,74 @@
+{
+  "title": {
+    "primary": "The Gang",
+    "secondary": "Co-op Heist"
+  },
+  "description": "A cooperative Texas Hold'em ranking game. Pick chips to communicate hand strength and complete heists together.",
+  "players": "3-6 players",
+  "status": {
+    "chipSelection": "Choose chips",
+    "showdown": "Showdown",
+    "gameOver": "Game over"
+  },
+  "actionLog": {
+    "takeChip": "Player {{player}} chooses the {{chip}}★ chip in round {{round}}",
+    "endRound": "Player {{player}} ends round {{round}} and advances to round {{nextRound}}",
+    "revealShowdown": "Player {{player}} reveals showdown: heist {{heist}} {{outcome}} (successes {{successes}} / failures {{failures}})",
+    "startNextHeist": "Player {{player}} starts heist {{heist}}"
+  },
+  "tutorial": {
+    "steps": {
+      "intro": "Win three heists before the team trips three alarms. Each round starts with your two pocket cards, then you use chips to signal where you think your hand ranks.",
+      "goalTrack": "This shows the current heist plus gold and alarm progress. Three gold bars win the game; three alarms lose it.",
+      "hand": "These are your pocket cards and current best hand. You cannot state your cards, so read your hand, the table cards, and the chips other players have taken.",
+      "chipChoice": "Choose an available white chip. A higher number says you think your hand is stronger; a lower number leaves stronger positions for teammates.",
+      "tableResponse": "Your teammates take white chips too. Only chips are public for now, so remember the strength signals everyone is giving.",
+      "advanceRound": "When everyone has a chip, advance the round. Community cards will appear and everyone reassesses their hand strength.",
+      "communityCards": "Community cards can change your best hand. Later rounds add the turn and river, and each round asks for a new chip color.",
+      "yellowChip": "Reassess your hand strength and take a yellow chip. Yellow chips revise the strength signal from the white chips.",
+      "yellowResponse": "Your teammates take yellow chips too. Comparing white and yellow chips shows who thinks the community cards helped them.",
+      "turnRound": "When all yellow chips are chosen, advance to the turn. The next community card can change the ranking again.",
+      "turnCard": "The turn card is out. With four community cards on the table, reassess the order again.",
+      "orangeChip": "Take an orange chip for the third-round judgment. By now, everyone has three public signals to calibrate against.",
+      "orangeResponse": "Your teammates take orange chips too. Remember how each player moved from white to orange before red chips lock the final order.",
+      "riverRound": "When all orange chips are chosen, advance to the river. The fifth community card leads into the final commitment.",
+      "finalChip": "The red chip is the final commitment. Read your two pocket cards with all five community cards before choosing your final rank.",
+      "finalResponse": "Your teammates take red chips too. The three red chips form the final strength order that showdown will check.",
+      "revealShowdown": "After all red chips are chosen, reveal showdown. The game compares real hand order against the red chip order.",
+      "showdown": "Showdown shows each red chip, hand category, and whether the heist succeeded. Correct order earns gold; a mismatch triggers an alarm.",
+      "finish": "The loop is: read hand strength, signal rank with chips, reassess as public cards appear, lock final order with red chips, then resolve showdown."
+    }
+  },
+  "board": {
+    "cardBackAlt": "Hidden playing card back",
+    "layoutContract": "BGG electronic layout: player boards on top, chip pool and river in the middle, alarms, vaults, and hand at the bottom.",
+    "chip": "Chip",
+    "roundLabels": {
+      "1": "White chip",
+      "2": "Yellow chip",
+      "3": "Orange chip",
+      "4": "Red chip"
+    },
+    "chipLabel": "{{round}} {{value}} star",
+    "chipTakenByPlayer": "{{label}} already chosen by Player {{player}}",
+    "failuresLabel": "Failures {{failures}}",
+    "failures": "Failures",
+    "alarmTrack": "Alarms {{failures}}/3",
+    "successesLabel": "Successes {{successes}}",
+    "successes": "Successes",
+    "vaultTrack": "Vaults {{successes}}/3",
+    "vaultsAlarmsLabel": "Vaults {{successes}}/3, alarms {{failures}}/3",
+    "showdownSettlement": "Showdown settlement",
+    "heistSuccess": "Heist succeeded",
+    "heistFailure": "Heist failed",
+    "safeSettlement": "Safe settlement",
+    "nextHeist": "Next heist",
+    "playerFallback": "Player {{player}}",
+    "heistNumber": "Heist {{heist}}",
+    "communityCardsSlot": "Community card slots",
+    "myHand": "My hand",
+    "nextRound": "Next round",
+    "revealShowdown": "Reveal showdown",
+    "localSeat": "Local seat"
+  }
+}

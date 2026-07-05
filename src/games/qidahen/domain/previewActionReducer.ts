@@ -7,6 +7,8 @@ import {
 } from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
+import { getQidahenExplicitRegionSelectionSemantics } from './regionFocusSemantics';
+import { buildGrantPardonSelectionFromRegionSemantics } from './selectionBuilders';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type {
     QidahenCore,
@@ -45,14 +47,28 @@ const reduceQidahenPreviewActionConfirmed = (
         ))
         : null;
     const selectedPaymentCardIds = sourceCard ? [sourceCard.id] : [];
+    const grantPardonSelection = actionId === 'grant-pardon'
+        ? buildGrantPardonSelectionFromRegionSemantics(
+            state,
+            getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
+        )
+        : null;
     const nextState: QidahenCore = {
         ...state,
         selectedActionId: actionId,
         confirmedActionId: actionId,
-        selectedPaymentCardIds,
+        selectedPaymentCardIds: grantPardonSelection ? [] : selectedPaymentCardIds,
         selectedHandActionCardId: sourceCard?.id ?? null,
+        grantPardonSelection,
+        turnPhase: grantPardonSelection ? 'grant-pardon-choice' : state.turnPhase,
         payment: state.payment,
     };
+    if (grantPardonSelection) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            payment: buildPaymentState(actionId, 0),
+        });
+    }
     return dependencies.updateTurnLabel({
         ...nextState,
         payment: buildPaymentState(

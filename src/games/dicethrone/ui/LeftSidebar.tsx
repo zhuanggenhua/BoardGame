@@ -94,6 +94,7 @@ export const LeftSidebar = ({
                         atlas={statusIconAtlas}
                         tokenDefinitions={tokenDefinitions}
                         tokenStackLimits={viewPlayer.tokenStackLimits}
+                        testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
                         onTokenClick={(tokenId) => {
                             // 从定义中查找该 Token 是否有 removeDebuff 效果（即净化类 Token）
                             const tokenDef = tokenDefinitions?.find(def => def.id === tokenId);

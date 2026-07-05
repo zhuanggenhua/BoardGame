@@ -262,7 +262,7 @@ describe('DiceThrone choice handler anchor contract', () => {
 
         expect(next.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(0);
         expect(next.pendingAttack?.bonusDamage).toBe(4);
-        expect(next.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        expect(next.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
         expect(next.activatingAbilityId).toBeUndefined();
     });
 
@@ -324,7 +324,7 @@ describe('DiceThrone choice handler anchor contract', () => {
 
         expect(next.players['0'].tokens[TOKEN_IDS.ACCURACY]).toBe(0);
         expect(next.pendingAttack?.isDefendable).toBe(false);
-        expect(next.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        expect(next.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
         expect(next.activatingAbilityId).toBeUndefined();
     });
 

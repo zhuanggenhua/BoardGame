@@ -1260,6 +1260,22 @@ export const setDiceThroneDiceValues = async (page: Page, values: number[]) => {
     }, values);
 };
 
+export const setDiceThroneRandomQueue = async (page: Page, values: number[]) => {
+    await waitForDiceThroneHarness(page);
+    await page.evaluate((nextValues) => {
+        (window as Window).__BG_TEST_HARNESS__?.random?.setQueue?.(nextValues);
+    }, values);
+};
+
+const toDiceRandomValue = (value: number) => {
+    const normalized = Math.max(1, Math.min(6, Math.floor(value)));
+    return (normalized - 1) / 6 + 0.001;
+};
+
+export const setDiceThroneBonusDiceValues = async (page: Page, values: number[]) => {
+    await setDiceThroneRandomQueue(page, values.map(toDiceRandomValue));
+};
+
 export const waitForDiceThronePhase = async (page: Page, phase: string, timeout = 10000) => {
     await page.waitForFunction(
         (expectedPhase) => (window as Window).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.phase === expectedPhase,

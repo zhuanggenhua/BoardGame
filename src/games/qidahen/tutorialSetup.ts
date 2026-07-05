@@ -144,7 +144,7 @@ const createBasicTutorialSetup = (): QidahenTutorialPreset => ({
         }
 
         core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 轮盘推进';
+        core.turnLabel = '第 1 轮 · 大明 · 检查手牌上限';
         const discardCandidateCardIds = mingCardIds.slice(0, 1);
         core.turnPhase = 'hand-limit-discard';
         core.wheelActionUsed = false;

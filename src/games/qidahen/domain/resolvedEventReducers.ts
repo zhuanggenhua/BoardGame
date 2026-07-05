@@ -5,6 +5,7 @@ import {
 import {
     resolveQidahenDiplomacyInteractionChoice,
     resolveQidahenDriveTigerConsentInteractionChoice,
+    resolveQidahenGrantPardonInteractionChoice,
     resolveQidahenKhanEdictInteractionChoice,
     resolveQidahenMaShiTradeInteractionChoice,
     resolveQidahenRecruitInteractionChoice,
@@ -525,6 +526,15 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
     defineResolvedEventReducer(
         ['RECRUIT_CHOICE_RESOLVED'],
         (state, event) => resolveQidahenRecruitInteractionChoice(
+            state,
+            event.payload.choiceId,
+            event.timestamp,
+            event.payload.selection,
+        ),
+    ),
+    defineResolvedEventReducer(
+        ['GRANT_PARDON_CHOICE_RESOLVED'],
+        (state, event) => resolveQidahenGrantPardonInteractionChoice(
             state,
             event.payload.choiceId,
             event.timestamp,

@@ -89,6 +89,16 @@ export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceT
     return handler(context);
 }
 
+registerChoiceEffectHandler('dt-with-damage-choice-resolved', ({ state, sourceAbilityId }) => {
+    if (!state.pendingAttack || state.pendingAttack.sourceAbilityId !== sourceAbilityId) return undefined;
+    return {
+        pendingAttack: {
+            ...updatePendingAttackSettlementStage(state.pendingAttack, 'withDamageChoicePending')!,
+            withDamageChoiceResolved: true,
+        },
+    };
+});
+
 // ============================================================================
 // 攻击掷骰阶段结束时 Token 使用处理器
 // ============================================================================

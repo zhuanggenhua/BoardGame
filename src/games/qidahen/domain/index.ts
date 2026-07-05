@@ -110,6 +110,8 @@ export {
     getQidahenEventOpponentHandChoiceSelectionForCore,
     getQidahenFortificationMaintenanceSelectionFromInteraction,
     getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenGrantPardonSelectionFromInteraction,
+    getQidahenGrantPardonSelectionForCore,
     getQidahenHandLimitDiscardSelectionFromInteraction,
     getQidahenInternalDispatchSelectionFromInteraction,
     getQidahenKhanEdictSelectionFromInteraction,

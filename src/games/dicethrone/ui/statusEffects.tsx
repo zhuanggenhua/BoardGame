@@ -572,6 +572,7 @@ export const TokenBadge = ({
     atlas,
     onClick,
     clickable = false,
+    dataTestId,
 }: {
     tokenId: string;
     amount: number;
@@ -582,6 +583,7 @@ export const TokenBadge = ({
     atlas?: StatusAtlases | null;
     onClick?: () => void;
     clickable?: boolean;
+    dataTestId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const meta = getVisualMetaById(tokenId) || { color: 'from-gray-500 to-gray-600' };
@@ -616,6 +618,10 @@ export const TokenBadge = ({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={isClickable ? onClick : undefined}
+            data-testid={dataTestId}
+            data-token-id={tokenId}
+            data-token-amount={amount}
+            data-token-max={maxAmount}
         >
             <div
                 className={`
@@ -663,6 +669,7 @@ export const TokensContainer = ({
     clickableTokens,
     tokenDefinitions,
     tokenStackLimits,
+    testIdPrefix,
 }: {
     tokens: Record<string, number>;
     maxPerRow?: number;
@@ -678,6 +685,8 @@ export const TokensContainer = ({
     tokenDefinitions?: TokenDef[];
     /** 玩家级别的堆叠上限覆盖（技能可永久提高上限） */
     tokenStackLimits?: Record<string, number>;
+    /** E2E 可见性断言前缀，例如 dt-player-0-token */
+    testIdPrefix?: string;
 }) => {
     const activeTokens = Object.entries(tokens).filter(([, amount]) => amount > 0);
     if (activeTokens.length === 0) return null;
@@ -713,6 +722,7 @@ export const TokensContainer = ({
                         atlas={atlas}
                         onClick={isClickable ? () => onTokenClick?.(tokenId) : undefined}
                         clickable={isClickable}
+                        dataTestId={testIdPrefix ? `${testIdPrefix}-${tokenId}` : undefined}
                     />
                 );
             })}

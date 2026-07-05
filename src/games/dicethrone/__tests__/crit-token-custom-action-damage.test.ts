@@ -142,7 +142,7 @@ describe('暴击 Token 与 custom action 伤害技能', () => {
         const core = result.finalState.core;
         expect(core.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(0);
         expect(core.pendingAttack?.bonusDamage).toBe(4);
-        expect(core.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        expect(core.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
     });
 
     it('shadow-shank (终极) + 暴击：终极不可防御但暴击仍可用', () => {

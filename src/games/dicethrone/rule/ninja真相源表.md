@@ -20,7 +20,7 @@
 
 - 忍者卡图与树精同规格，均不能套旧公共 atlas。
 - 本轮使用 `ability-cards-ninja.atlas.json`。
-- 通用卡使用 `TREANT_NINJA_COMMON_ATLAS_INDEX`，其中 `card-unexpected` 位于 `slot-37`。
+- 通用卡使用 `TREANT_NINJA_COMMON_ATLAS_INDEX`，其中 `card-unexpected` 位于 `slot-32`；`ninja-card-vanish` 位于 `slot-30`，`ninja-card-dojo` 位于 `slot-31`。
 - 未新增 `hand-cards-atlas`；手牌仍通过现有 `CardPreview`/atlas 运行时合同加载。
 
 ## 对照与冲突

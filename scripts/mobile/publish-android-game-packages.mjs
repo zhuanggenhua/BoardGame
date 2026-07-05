@@ -409,6 +409,35 @@ const uploadObject = async (key, body, contentType, cacheControl, contentLength)
     throw lastError;
 };
 
+const resolveAssetObjectContentType = (relativePath) => {
+    const extension = path.extname(relativePath).toLowerCase();
+    switch (extension) {
+        case '.json':
+            return 'application/json';
+        case '.svg':
+            return 'image/svg+xml';
+        case '.webp':
+            return 'image/webp';
+        case '.ogg':
+            return 'audio/ogg';
+        default:
+            return 'application/octet-stream';
+    }
+};
+
+const uploadIndexedAssetObjects = async (includedFiles) => {
+    for (const entry of includedFiles) {
+        const objectKey = `official/${entry.relativePath}`;
+        await uploadObject(
+            objectKey,
+            () => createReadStream(entry.fullPath),
+            resolveAssetObjectContentType(entry.relativePath),
+            'public, max-age=31536000, immutable',
+            statSync(entry.fullPath).size,
+        );
+    }
+};
+
 const createAndroidCompatibleZipFile = async (includedFiles, zipFilePath) => {
     mkdirSync(path.dirname(zipFilePath), { recursive: true });
     try {
@@ -773,6 +802,7 @@ const publishSingleGameIndexManifest = async (gameId, sharedAudioPackResult) => 
     manifest.assetPack.diffOnly = true;
 
     if (!dryRun) {
+        await uploadIndexedAssetObjects(includedFiles);
         await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
         await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
         await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
@@ -792,6 +822,7 @@ const publishSingleGameIndexManifest = async (gameId, sharedAudioPackResult) => 
         bundleUrl: null,
         fallbackVersion: fallbackAssetPack.version,
         fallbackBundleUrl: fallbackAssetPack.url,
+        uploadedAssetObjectCount: dryRun ? 0 : includedFiles.length,
         indexManifestOnly: true,
     };
 };
@@ -915,6 +946,9 @@ for (const gameId of targetGames) {
         }
         if (result.fallbackBundleUrl) {
             console.log(`fallbackBundleUrl=${result.fallbackBundleUrl}`);
+        }
+        if (typeof result.uploadedAssetObjectCount === 'number') {
+            console.log(`uploadedAssetObjectCount=${result.uploadedAssetObjectCount}`);
         }
         console.log('---');
     }

@@ -3,17 +3,14 @@ import {
     materializeNonSiegedCityActionSourceRegion,
 } from './actionSourceRegionState';
 import {
-    getFriendlyReceivingRegionSnapshot,
-} from './battleState';
-import {
     addTroopsToFriendlyBesiegedCityInterior,
     removeTroopsFromNonSiegedCityStateRegion,
 } from './cityInteriorTroopTransfer';
-import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import type {
     QidahenCore,
+    QidahenGrantPardonChoice,
     QidahenSeasonSummary,
 } from './types';
 
@@ -54,6 +51,7 @@ export const resolveQidahenGrantPardonExecution = (
     state: QidahenCore,
     factions: QidahenCore['factions'],
     timestamp: number,
+    choice?: QidahenGrantPardonChoice | null,
     dependencies: QidahenGrantPardonExecutionDependencies = {
         buildSeasonSummary,
         materializeNonSiegedCityActionSourceRegion,
@@ -62,25 +60,18 @@ export const resolveQidahenGrantPardonExecution = (
         refreshRuntimeRegionRules,
     },
 ): QidahenGrantPardonExecutionResult => {
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(state.selectedRegionId);
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const grantPardonSourceRegion = runtimeRegions.find((region) => (
-        region.id === selectedRuntimeRegionId
+        region.id === choice?.sourceRegionId
         && region.controller !== 'ming'
         && getNonSiegedCityActionSourceSnapshot(region).troops > 0
     ));
     const grantPardonDestinationRegion = grantPardonSourceRegion
-        ? grantPardonSourceRegion.adjacentRegionIds
-            .map((regionId) => runtimeRegions.find((region) => region.id === regionId))
-            .filter((region): region is NonNullable<typeof region> => region != null && region.controller === 'ming')
-            .sort((left, right) => {
-                const leftSource = getFriendlyReceivingRegionSnapshot(left);
-                const rightSource = getFriendlyReceivingRegionSnapshot(right);
-                return rightSource.troops - leftSource.troops
-                    || rightSource.population - leftSource.population
-                    || left.name.localeCompare(right.name, 'zh-CN');
-            })
-            .at(0)
+        ? runtimeRegions.find((region) => (
+            region.id === choice?.targetRegionId
+            && region.controller === 'ming'
+            && grantPardonSourceRegion.adjacentRegionIds.includes(region.id)
+        )) ?? null
         : null;
 
     if (!grantPardonSourceRegion || !grantPardonDestinationRegion) {

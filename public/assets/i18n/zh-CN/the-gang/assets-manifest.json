@@ -1,0 +1,1484 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "the-gang",
+  "basePrefix": "official/the-gang/",
+  "files": {
+    "board/compressed/slot-tile": {
+      "variants": {
+        "webp": {
+          "sha256": "af81d442f17d91cbfc160b312be3d01c8b70112f1d2b2f3d390210256b174545",
+          "bytes": 388,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "board/slot-tile": {
+      "variants": {
+        "jpg": {
+          "sha256": "6e8add77d3fb9c360abe12680a70d5aa226b8e217a4bc7e50d366dcd169da079",
+          "bytes": 25656,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "cards/ace-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "5db0e5b4fb2b49b747f69ddacb42e1ea603d97058d63dd8cce31d0764b3edd44",
+          "bytes": 18799,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ace-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "6a62bae965d33f32d0cfbc619bb484af3d8bb5ed0c34af2f0f65d4d7fa2a0ab2",
+          "bytes": 17706,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ace-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "2d7098cdc87b482fac6866853a3da594d2c16c247fa9ebb09eb4f515eaf702ec",
+          "bytes": 16771,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ace-spades": {
+      "variants": {
+        "png": {
+          "sha256": "3d1ed38f663374da61d6ff851a3f4469c99b781104701798475eb275d65c8517",
+          "bytes": 19326,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/card-back": {
+      "variants": {
+        "png": {
+          "sha256": "d1790daddaf5b4e23747462f785e9c96d22392e046e9c63b6564005f66d07649",
+          "bytes": 228947,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/ace-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "b32e3da93f753e023d378bd5b5ca123227b586c8c17323e64df849f794aa0f2a",
+          "bytes": 10808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ace-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "8b610461e212798a603c13ad649cbd52d3ef51ca846036ade25684ceec738866",
+          "bytes": 10660,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ace-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "dd528abc74e283f827aea489cc0e46ebaaefe346b5bd801a50b872c7bbc3023e",
+          "bytes": 10572,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ace-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "3409e88a6dff80b48e389ed5eda01cc81073da74cc555529678a2dec0badfbe9",
+          "bytes": 8230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "c05dc921157d9a6f386ef84ecb2c1d6965c1afec88a4af31571fd7abf07a0e7a",
+          "bytes": 139874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/eight-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "7e921ad3998ed1fb70c571004ed5ff94a11d32105bffec8da52779a46f8732f8",
+          "bytes": 16392,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/eight-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "c361dc673045dfd567bfbb50873d3e7dcd4dc8dfd776dabba067420aa94b6c0d",
+          "bytes": 15782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/eight-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "2f97e4a9dbdc2873d0f1881f982fdbdd8bf5f44148de0e75d2d656e99b23ea44",
+          "bytes": 15610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/eight-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "d15ecd3833a1e6fcf724c1c4473dc4d9851c16332c25dfee935a21c9f4ced43b",
+          "bytes": 12236,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/five-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "97c0fa444093d8d64703c79fb8e68089ec12d00bd3cf8f4cb3e1d61fe3534ef3",
+          "bytes": 13088,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/five-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "3cfe80967dd3b1aa35f2824bbd89ce9435e5b6096b11c70eeda210ec84c32bb1",
+          "bytes": 12424,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/five-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "484cae3bc3f62c59aae44871841255fd28920478b42ec4dc01b3898c81cb29e2",
+          "bytes": 12602,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/five-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "51e636c56d1713341653ce07d0a5e60b3678597a4f7e139d638aa311d6b40c4d",
+          "bytes": 9844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/four-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "02e6bfb879ccbba447773898dbdaa1dfbc511ca7797a9075c9b3c70be24a0e06",
+          "bytes": 11436,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/four-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "8493bb10922a50bc09681c3ee87847a3f910b1a9b43cfe023afe64c91f8b6f93",
+          "bytes": 10642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/four-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "a04669f37f92956054a731b6745565f1f043d637251611ef2057eae6c5a98682",
+          "bytes": 10796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/four-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "745cc3cc6afb6a4bbd4b9648b2d436d3427239e2935486c3de50211d2f38d460",
+          "bytes": 10400,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/jack-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "d6d2abcad099d077432e2185b7421bccfbf126ea47ff467485d9e1a5c3c47e69",
+          "bytes": 41940,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/jack-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "2b6e0ee73bee828f8a54a6df87892e59757765bddd10ae0cf891c7efe5ffbeb8",
+          "bytes": 40518,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/jack-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "45220ae526df0f58b51d61386e951bbc09ecb4e2a84a1d412dc9c6ffa58ff7df",
+          "bytes": 43036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/jack-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "3b0e57177d0015ebd5924d812a362a90abf3b0389f28623ed3798bf33a08d223",
+          "bytes": 32202,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/king-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "b02d36791996d2f1b68aca7ddcecf7a575b0cc80050e3eeaa84edbdcd5c98082",
+          "bytes": 45190,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/king-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "18d6434d93db6c8ac7da3fae3108ba6cc1d35234010e02f125348eb7182023ac",
+          "bytes": 42874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/king-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "9c2b9aac0d6fc7b1aa8219cf366b8aefeeebf36586b8fd99e64993c0baa2bc01",
+          "bytes": 42992,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/king-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "81fce1ddbbb25cff3161f5df1e597bb275c5c24d9b7244ad69226eed91b28ff1",
+          "bytes": 42306,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/nine-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "0d181c94b1178ed273cd3f8ad2303f0a33b66e93e6393a4b92666dbfb30a4d14",
+          "bytes": 17728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/nine-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "376fa8e37ff32ee040c602e90690fb5f6192f74ede7e428a1ba194161ea6574e",
+          "bytes": 16870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/nine-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "04b824b80b323f6131c8d4c0f36bd33b35e6192eda84cf11ad6b721ad5622094",
+          "bytes": 16312,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/nine-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "667410c7edb7f856080254432d07853cda7cf01ffa276119826fcce109917ca7",
+          "bytes": 13116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/queen-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "3bee70c1d6dfa1ee53aed95e637ba92d03c54197ccac2300042c7aa3fde79b3d",
+          "bytes": 49100,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/queen-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "559f6b1b512cff515abfc872dd96328e72cf42acc9c0f4427238ddb9ed6bd2e6",
+          "bytes": 43952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/queen-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "d17522fd55e9ee1850b03748612ea458305c9eed30ed91d6b616ea3b3a075e38",
+          "bytes": 49634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/queen-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "9251e549acde2f9c3c92e8f26751bb45be9ac26fbc3e4c5e3dcf8b174cf127cc",
+          "bytes": 43866,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/seven-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "c1989fcf5a5957d8f3ff04ec009abf8c10c55364b02145ca9ea8c29dbca0d710",
+          "bytes": 14316,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/seven-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "b9bd3d91b18b4e1f01979e52dd218de9288d2356e387546db96b05ccd972f299",
+          "bytes": 13728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/seven-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "a0222e96a0fffafe92fe497412c9f71f2112aa6e7b23ef0d56abc85f256b1f45",
+          "bytes": 14036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/seven-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "5289b5c5b0c4e78ad8633f0deaba7d88170e766715978746c24a67ff38f33a62",
+          "bytes": 11112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/six-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "378bff9a6686ae6642bc1d5a6573f3eec2b0defe9da47ae1dbb8d43ba92edef3",
+          "bytes": 13668,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/six-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "ef348564f312bf73c0e8bfa5fc95d2239b3678d2459c7e4de72b624c51973871",
+          "bytes": 13624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/six-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "d0b5f2d33f05f1b6c9c6f1151f8689ccc9e10f68bd3ab2555afb06cce3e9936f",
+          "bytes": 14124,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/six-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "09a5c51e3fa7741492f26cd2ff780b1d25acd0a9c94b897835e8f6e1999ad80b",
+          "bytes": 12456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ten-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "563c90a517bf2dbc74ed77a0dd70d27f25159675232fb45a17192419c67299ea",
+          "bytes": 17844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ten-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "077847547a069ae53ee7fd010d70c005cb1f53c43726c92115c7fe77afded2bd",
+          "bytes": 17650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ten-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "eeda18e451e0d1e6f1bd58ee391dbd91a7293e0e710d6ab84f762c9e012b7d40",
+          "bytes": 17112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/ten-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "166f5f087a84e6d58b913724dac66e1db301fb70464af34a70862953a98aa413",
+          "bytes": 13724,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/three-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "3d928c1edf41122e0ca78755660a3280d9aab47192985fad695511c2db4964a6",
+          "bytes": 10780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/three-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "7bae8cf9aa421d4fda8838eb37c2a2ae991e314b4143d7133e5ebf7fc0bf97eb",
+          "bytes": 10574,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/three-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "06bbe71b122d5a6a01d6012dab3a24c6e491c25152cc72d9f21bcbbe1266ac60",
+          "bytes": 10590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/three-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "d0b164a345ee276661ad36556ef4ede48049c2d5af64902d2dd196febcc870d2",
+          "bytes": 10170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/two-clubs": {
+      "variants": {
+        "webp": {
+          "sha256": "337b80a045fe696399c1e6dcd787b155273f3b52d1980e7530a6bc9a98156142",
+          "bytes": 9578,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/two-diamonds": {
+      "variants": {
+        "webp": {
+          "sha256": "146fa76541d8c5f6dd599d219229fcefd178012e1cd6bef813a6ab2b9e87ec5e",
+          "bytes": 9214,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/two-hearts": {
+      "variants": {
+        "webp": {
+          "sha256": "bdd0b459cb23e2da74769d99d0a469c8ae8ae94d99ae5909a5f52247908e12de",
+          "bytes": 9106,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/two-spades": {
+      "variants": {
+        "webp": {
+          "sha256": "3b3b0ab09049886812efdd1e4b6f9f3b54b4d38f5129770ec84abd4ce5892f51",
+          "bytes": 7464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/eight-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "88d97d385bd8673701f83a0691a141c9b27dd5914cc1d71147cebaa0d01e437d",
+          "bytes": 23986,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/eight-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "8a3256d05b755ac9316bb08a82b3969ba53178ceba57d084c29b74cd993640aa",
+          "bytes": 32624,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/eight-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "d2ba95c8b067995f30f44b73306f2ea98c9d67d1a30f74343742f0e75cb0342d",
+          "bytes": 23626,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/eight-spades": {
+      "variants": {
+        "png": {
+          "sha256": "7ccb91141ae8033c80edfaf69fbf5d48bbd74736d902362a90888c496d56884e",
+          "bytes": 29218,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/five-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "700014540d352c5912dfdcd2ef56d8f2d65881087a0ecad77570967d41a66d7e",
+          "bytes": 24692,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/five-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "9878c52224ecbea522cba264de4339b4ab0d6ea42485d917c181c4d1c0ad6dba",
+          "bytes": 19679,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/five-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "d0240704457fdf2ad5d14f8e7ef82872a7cb26f9df2b76cc1a7d86faeaf7d8d8",
+          "bytes": 19443,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/five-spades": {
+      "variants": {
+        "png": {
+          "sha256": "7c8c2d1e06d5df7f707ad0fd428f30f18dbf6d881ba21298f078830feb2dc654",
+          "bytes": 22687,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/four-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "e4d0834b6e763330dd02db490b77042fa3d0b448409216c44d8104fdabf8bc8d",
+          "bytes": 22138,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/four-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "66e3f4a1f2702a653a78c984804e548465e79a819cc5364d3f25ccf3c58fa27b",
+          "bytes": 17832,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/four-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "b6f42eedf1209eae0582a93c25b166b38aa6673a218ac4c95fe2ebb06fd2b7dd",
+          "bytes": 17326,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/four-spades": {
+      "variants": {
+        "png": {
+          "sha256": "b92691480c64d702c4b47b1e2b06a4e4374d7a7322439041fffa037128802e50",
+          "bytes": 99140,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/jack-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "df47e4c3ec22734364df4d8b1ee363ff4826584d508f5b8c77ae4742edbe61ae",
+          "bytes": 64586,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/jack-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "547d1dcea2d4c8b608167353efd5d4580f71ed79f2f2d1099ec1133b0b410fc6",
+          "bytes": 65953,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/jack-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "7508a5cda11de019e7e4037d364f26992ad27a98c53288f5f86c3391606cc810",
+          "bytes": 70185,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/jack-spades": {
+      "variants": {
+        "png": {
+          "sha256": "79f166d9f95617f6f9beff0043d5e06065d1ac78aa341a446031eeadcfde09fe",
+          "bytes": 66026,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/king-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "df77442ea4199d823b0d6a69741860cc669868be059d32e534c4d7f93876fb62",
+          "bytes": 72219,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/king-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "8386ed34c7f1335b11042a275950f1aaa8ee681e6b195eb43881b19e36d6c10e",
+          "bytes": 71623,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/king-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "6789fad10f83a16699a0c5157766ec0352f97a76a004accf1e58cc6eff083c4b",
+          "bytes": 67961,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/king-spades": {
+      "variants": {
+        "png": {
+          "sha256": "315e7f2dac2419b0d129ee2d6c78572e39af6cabd55f771ee39453dceedeeff9",
+          "bytes": 80344,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/nine-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "b940eec01909c58fc3220b0222648d6969304535f3032f4e4f51817fd920c4a9",
+          "bytes": 38967,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/nine-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "e3fd567b5eacf6e7c1c190eda50c28a77746490708e1ecc84b81041f77cbe0f2",
+          "bytes": 26421,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/nine-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "20ea739d9d09345e43a327bcd1ea33d7536922eb62d0f9ee3f580dcf49bed06f",
+          "bytes": 25958,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/nine-spades": {
+      "variants": {
+        "png": {
+          "sha256": "cb6bf41e5a9e4087557f51374ce8f08c59c1bebd15e74282ea290e9ccbebeb96",
+          "bytes": 30726,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/queen-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "1011e127704efc69d65349f567660d2b4a1e05fd45b3bd7144bc4b7c95a036f3",
+          "bytes": 147302,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/queen-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "b9493b5447b102885997a95e33606942f300c06be324e12e0e08150559318b9a",
+          "bytes": 71578,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/queen-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "7db681c2e6d130dfd8da3916d95a3705982e928775182f6d9168126783d5752d",
+          "bytes": 75653,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/queen-spades": {
+      "variants": {
+        "png": {
+          "sha256": "37e11ef724569ec41afec7837a2f61ca8c7029a53cdd8706cadadcacb0cfa998",
+          "bytes": 89491,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/seven-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "eb71d06e4c97710cac31dd27355952c6fe8e12a6e3810cb67bb0f14376d78f7b",
+          "bytes": 21313,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/seven-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "d508128df2e7cd6e14dac5001b0d1a7ee75e4e115aac3df91234f3d77c4080f3",
+          "bytes": 22356,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/seven-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "83fd1046a3b7b77a960368bded975596fd9aecaf059eacbe3ffff1f2e9bd36e9",
+          "bytes": 20887,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/seven-spades": {
+      "variants": {
+        "png": {
+          "sha256": "8e0448d73a98b7cb397a97b94d36a457a30e397f11f668709347ebc2f955ee3a",
+          "bytes": 25476,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/six-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "708db20f571e699988df900d9fc30130045dfea3cb016d4fca3676d1b5b8bc2a",
+          "bytes": 19983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/six-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "55a2d205c8be1e17128dcfe9c5b002d57eb627125b09511ace626b14bab929a3",
+          "bytes": 21849,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/six-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "509fd1080ecf5177db1858d606cc1d2afc30eb9e02dda8f080b25e596e076b0d",
+          "bytes": 33396,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/six-spades": {
+      "variants": {
+        "png": {
+          "sha256": "d958683e0444c0683ec6793748bb8e8754eb0c5e36b2886a2fb5f95577ef747e",
+          "bytes": 132073,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ten-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "ab31e3ee79be70639a295a6f43b68025a12f623f9ad2b7218c87b7857920c2df",
+          "bytes": 25253,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ten-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "e6784b49b052d862635fc841729be512e1d2393b178839888e4b8ed5043b180b",
+          "bytes": 27481,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ten-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "3d16db69fc16f5f2b5fe1b4eb0ac7b39b9afe959a6f79ed0f110699bd8b2a147",
+          "bytes": 25830,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/ten-spades": {
+      "variants": {
+        "png": {
+          "sha256": "7183650ef21f8044e082b283ab8cb26dfb0ef4beb092fc1d317af8f262daa284",
+          "bytes": 32312,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/three-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "a29469d039c5a1ef3ed82340541495541b78aaf2fe06750a01a7dc000f302998",
+          "bytes": 16950,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/three-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "29027d2bcad1158101f73a3f702422981aaf695d28bfa9dd7e6a80f11d363834",
+          "bytes": 17310,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/three-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "cf9f2add2986c14d48dc6f7713bc8facad07f14f4dc99655414bb781b9d50023",
+          "bytes": 17135,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/three-spades": {
+      "variants": {
+        "png": {
+          "sha256": "2cc4a48182441dfc8dfc13b485ac5c2ea9b2d2c2fb6913e1c18db03cc26e7bc1",
+          "bytes": 97158,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/two-clubs": {
+      "variants": {
+        "png": {
+          "sha256": "752f6d743d7cd175e67b4a916be375e3849efd1d2be8c078ad3f62d50db7d80d",
+          "bytes": 15328,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/two-diamonds": {
+      "variants": {
+        "png": {
+          "sha256": "5be19562668ed2db3bcb983d7000534ef888bd4d40dda2ec4864b3c495c1ecce",
+          "bytes": 15842,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/two-hearts": {
+      "variants": {
+        "png": {
+          "sha256": "c06ab64ade3281c1142a645c66f6d34c49db46727251c0b26b215daf13440e4b",
+          "bytes": 15247,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/two-spades": {
+      "variants": {
+        "png": {
+          "sha256": "6fe87801060fcab4f72dd1e7d2a4cd6c2ffbf944ca7fc9a11144dc14bada1de3",
+          "bytes": 17590,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-1": {
+      "variants": {
+        "webp": {
+          "sha256": "b654622ee7534fbf7223b2284dac8ad51fc8bd2eadcc7483d2947e7d4c3e6526",
+          "bytes": 25424,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-2": {
+      "variants": {
+        "webp": {
+          "sha256": "eca112dad551b689b54f18b0c14549a3940efd915f023faac149410de20c81ff",
+          "bytes": 39632,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-3": {
+      "variants": {
+        "webp": {
+          "sha256": "bdae02fcab91ba08238c8d28a5160f5107e045be9564d5896924bc07a12b0b40",
+          "bytes": 39732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-4": {
+      "variants": {
+        "webp": {
+          "sha256": "6100adb5fc4b718ced871dd26d1f9e496e88a21f4572cd65f00eed9761ad1cc0",
+          "bytes": 39386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-5": {
+      "variants": {
+        "webp": {
+          "sha256": "417365746847430a99a5b5e6a9dbfc63459679ebae3fc7cadc5a431f97b3b468",
+          "bytes": 39534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-6": {
+      "variants": {
+        "webp": {
+          "sha256": "7f79905b7be5429c03ebc311ab355881ed783ae0488781816afe5e29f7f501d6",
+          "bytes": 39794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-1": {
+      "variants": {
+        "webp": {
+          "sha256": "a7ebc6dccbf024755051f10677bdbd167c42b415efb87b044230774c4c07dfcc",
+          "bytes": 47536,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-2": {
+      "variants": {
+        "webp": {
+          "sha256": "79348ef0b08a8c3c918d363cd8ebeaae20cbe05c982f151141fff332a3d6fea3",
+          "bytes": 47112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-3": {
+      "variants": {
+        "webp": {
+          "sha256": "d4f074ed3dfc6fe588be2c7f7704923d29880f8d20aa1ec1039e017a6c449594",
+          "bytes": 47248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-4": {
+      "variants": {
+        "webp": {
+          "sha256": "3de6c6029cace55b6d7795d422dad0ee7b18457e52e964b30d2c3b4aefb08e71",
+          "bytes": 47290,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-5": {
+      "variants": {
+        "webp": {
+          "sha256": "c8ef57b60d6b528c2c24da6cb16a1943895086a643c83d1d534f247f52f5bb37",
+          "bytes": 46898,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-6": {
+      "variants": {
+        "webp": {
+          "sha256": "5da3f98eb2250ce585e0e50423cb279def8958205b3b2dd90fb69da31979e83c",
+          "bytes": 47024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-1": {
+      "variants": {
+        "webp": {
+          "sha256": "1b1682a16799c0228921fae84ee5834d0051853380fe7f83fa6180da056d4aa4",
+          "bytes": 46732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-2": {
+      "variants": {
+        "webp": {
+          "sha256": "1672087202710bc742963769d2308a02cf3cb660a5646b7050ff71874709bd30",
+          "bytes": 47332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-3": {
+      "variants": {
+        "webp": {
+          "sha256": "d25db77d4aaafa66b30090684d7781b140a0c9e15ab9be18145b5cf801e9e50f",
+          "bytes": 47218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-4": {
+      "variants": {
+        "webp": {
+          "sha256": "e07f36750a744b0579c3fcadae033c29c3c8cb9238c5e9c5fc6c4dff1fa7f761",
+          "bytes": 46788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-5": {
+      "variants": {
+        "webp": {
+          "sha256": "093db2cee5ea6885c41efcb3f37ef3d4fa818dd6fbca402650ec80eacc125598",
+          "bytes": 47170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-6": {
+      "variants": {
+        "webp": {
+          "sha256": "e28568e66e19020ff5894fb4912549044ec6c67b52fdaa9f0b633c8f760c4bc2",
+          "bytes": 47302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-1": {
+      "variants": {
+        "webp": {
+          "sha256": "3ec69d5dc715415a51eb7eedebbd1240ac6f056b392f553fa44ee84bfa6faada",
+          "bytes": 31194,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-2": {
+      "variants": {
+        "webp": {
+          "sha256": "8a7f0120253486f2887645a04639abcd14e41990db0ad421c24a2d4ee13b10e6",
+          "bytes": 45110,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-3": {
+      "variants": {
+        "webp": {
+          "sha256": "ce66e42dc0a30bccae2e36f9ddd22b1d48967ccc070da78f8aa8f96cc7a7ff32",
+          "bytes": 32072,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-4": {
+      "variants": {
+        "webp": {
+          "sha256": "b1e8742065de44925b389c1e5673d42d2b708a6642de005d2b90460ad9ff2d5f",
+          "bytes": 31800,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-5": {
+      "variants": {
+        "webp": {
+          "sha256": "61ef06b54db9ac2e088f6b31373c44d8c8298a3b5bdc9b7cd46afbba16869d5e",
+          "bytes": 44864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-6": {
+      "variants": {
+        "webp": {
+          "sha256": "2c907ca6f5b5d4cc1564d6de03d78d2150f35d73138b8ac1eaa81f070ee91550",
+          "bytes": 44920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/round-1-white-1": {
+      "variants": {
+        "png": {
+          "sha256": "ad74b183f2c4c5398d934828af8e9b839251964ebcfc06818d2c6180169b1555",
+          "bytes": 104490,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-2": {
+      "variants": {
+        "png": {
+          "sha256": "bb220aef48215d58e52bcd071d0f02bdfe3d1fdad9d87d55ee202937e769cfb3",
+          "bytes": 153600,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-3": {
+      "variants": {
+        "png": {
+          "sha256": "cc4a500c3e277ae3ff1628b8bad05383cd9a416ac699658e7cbcbc88eeb7b1e5",
+          "bytes": 154251,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-4": {
+      "variants": {
+        "png": {
+          "sha256": "04c185751d76945839867878ea0d9256110b23f7b8f37ff5b9343b6243049745",
+          "bytes": 153371,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-5": {
+      "variants": {
+        "png": {
+          "sha256": "f2e9c95d330c1345a61d9c661ff8ee9ce259217efb98a68ae4bf78fbfb4b954a",
+          "bytes": 153341,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-6": {
+      "variants": {
+        "png": {
+          "sha256": "c4b5ab92631383f0b6f94d37a2535b203f3cbc3b87d81bd263e1c7a6c4d51ee1",
+          "bytes": 153618,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-1": {
+      "variants": {
+        "png": {
+          "sha256": "60364ec97229114eabbff33c8704b0f306c8da72220bd8792734e837c4efd683",
+          "bytes": 297085,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-2": {
+      "variants": {
+        "png": {
+          "sha256": "bdaa96e3a05abf66def0cf30f6761e7317d33f3f25ba23a336687973230f3a85",
+          "bytes": 293623,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-3": {
+      "variants": {
+        "png": {
+          "sha256": "212b64f8815421d37d442c74eb203b52cca4d9885069464ca095a75091af4244",
+          "bytes": 294819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-4": {
+      "variants": {
+        "png": {
+          "sha256": "98d139e701474d353b0958f3cd3903434824b32766c9e726341fb7bd4243cec7",
+          "bytes": 293708,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-5": {
+      "variants": {
+        "png": {
+          "sha256": "d0270d190bf91b5917c63d5e0d0c683212776833f2c1888e6a7e9587ccfaad5a",
+          "bytes": 293396,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-6": {
+      "variants": {
+        "png": {
+          "sha256": "d0f4445aeda6909fa3f902e2ddfec4febd78a798c4b018381b9b266f005cb306",
+          "bytes": 293201,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-1": {
+      "variants": {
+        "png": {
+          "sha256": "cfcab295d5c44969f095665c11bac291af90636fbe05d10a5d4a696f7d47ea2c",
+          "bytes": 311917,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-2": {
+      "variants": {
+        "png": {
+          "sha256": "90a423f2b525a848164e5ec6190262efcfc7356d16ee6780bc011e1853991044",
+          "bytes": 308689,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-3": {
+      "variants": {
+        "png": {
+          "sha256": "f6573f4e347371ce177b2c22edec52fad050564e472f56751d9130dd1a2ab521",
+          "bytes": 309661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-4": {
+      "variants": {
+        "png": {
+          "sha256": "d0bb899fc51ccd85b667eba9aa18c9b1cb4a8ab9bdf47fd8d05340a78faf607c",
+          "bytes": 308504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-5": {
+      "variants": {
+        "png": {
+          "sha256": "66804d6329f06f1a2b7137b089774ac65e6d3baf374468c6e94809ac66066250",
+          "bytes": 308186,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-6": {
+      "variants": {
+        "png": {
+          "sha256": "5ecee9a7151178d568852732b056925459d93656aea6d67a6c86a346b7f9cbb4",
+          "bytes": 308001,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-1": {
+      "variants": {
+        "png": {
+          "sha256": "87069e42362e37da163565e8e8f46975d65c44ad0e7d67631ed26a6cdbec658d",
+          "bytes": 209767,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-2": {
+      "variants": {
+        "png": {
+          "sha256": "0e71db96c031a82015543e0fd4e4a8af1c6c6a98a580005e7848e5cd1b09666b",
+          "bytes": 316883,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-3": {
+      "variants": {
+        "png": {
+          "sha256": "e853a75843b8ba7b83631ba2c860fdf40dfc9869046d1ac783ca83da17ee86a2",
+          "bytes": 215220,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-4": {
+      "variants": {
+        "png": {
+          "sha256": "c4f1e35ce1c86b31715346ecb67d2969e41ab5570e0ec0a5bad40d84ca6ad3f6",
+          "bytes": 213559,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-5": {
+      "variants": {
+        "png": {
+          "sha256": "2d0cfaac3512d57dfc69c4613356442b14b6539d429252081977c1a3219066f5",
+          "bytes": 316846,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-6": {
+      "variants": {
+        "png": {
+          "sha256": "ddb2f7ee5fa71fc820d49ca8b0d6ab7125a51c440b89f3b24685c8eee4f99c40",
+          "bytes": 316386,
+          "mime": "image/png"
+        }
+      }
+    },
+    "markers/alarm-token": {
+      "variants": {
+        "png": {
+          "sha256": "9c99ce98d31ec7d309c3cf4d920f1497ef38d4bded117a334cea625f78d1d108",
+          "bytes": 285781,
+          "mime": "image/png"
+        }
+      }
+    },
+    "markers/alarm-token-back": {
+      "variants": {
+        "png": {
+          "sha256": "b38f858bb04216903926f02dc17de7c7593de03e9a2b344697702fd0b0923645",
+          "bytes": 379296,
+          "mime": "image/png"
+        }
+      }
+    },
+    "markers/compressed/alarm-token": {
+      "variants": {
+        "webp": {
+          "sha256": "252e9802f18345cbb14ec73fb7ca34239b6e7eb0087a685038f2807396237bd2",
+          "bytes": 13512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "markers/compressed/alarm-token-back": {
+      "variants": {
+        "webp": {
+          "sha256": "b7a3d270b7f66c34687368c994bdad00986d9591c6d0d814ee0c75e20e7a64e1",
+          "bytes": 29052,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "markers/compressed/gold-ingot": {
+      "variants": {
+        "webp": {
+          "sha256": "1d85c4c649bc24313af2a64fd64f57560f2e1a27425b3d8f231dc4cc5670587f",
+          "bytes": 20120,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "markers/gold-ingot": {
+      "variants": {
+        "png": {
+          "sha256": "fa7a1945df46f413304c4cfe0ae9392c83c4278ce31bfc2f8f7860dad1208c8d",
+          "bytes": 47892,
+          "mime": "image/png"
+        }
+      }
+    },
+    "thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "5ecfea83b34e860ff53fe71817539d88a3b276f270a793fe1d4eafeae7838536",
+          "bytes": 43054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "thumbnails/cover": {
+      "variants": {
+        "png": {
+          "sha256": "0dbbfae7081bacc90d95b80e13a0e5f1c0ede27a57b58f4b09ba5f8a3065c04f",
+          "bytes": 71553,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

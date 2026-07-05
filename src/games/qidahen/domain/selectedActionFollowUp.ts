@@ -34,6 +34,8 @@ interface QidahenSelectedActionFollowUpResolutionResult {
 
 interface QidahenSelectedActionFollowUpResult {
     actionLogText: string;
+    eventOpponentHandChoiceSelection: QidahenCore['eventOpponentHandChoiceSelection'];
+    grantPardonSelection: QidahenCore['grantPardonSelection'];
     khanEdictSelection: QidahenCore['khanEdictSelection'];
     lastSeasonSummary: QidahenSeasonSummary | null;
     maShiTradeSelection: QidahenCore['maShiTradeSelection'];
@@ -316,6 +318,8 @@ export const resolveQidahenSelectedActionFollowUp = (
 
     return {
         actionLogText,
+        eventOpponentHandChoiceSelection: null,
+        grantPardonSelection: null,
         khanEdictSelection: selectionResolution.khanEdictSelection,
         lastSeasonSummary: stateTransition.lastSeasonSummary,
         maShiTradeSelection: selectionResolution.maShiTradeSelection,

@@ -42,7 +42,7 @@ import {
     getTargetingRollChoiceOwnerId,
     isTeamMode,
 } from './rules';
-import { resolveAttack, resolveAttackWithSneakImmunityAfterDefense, resolveOffensivePreDefenseEffects, resolvePostDamageEffects } from './attack';
+import { resolveAttack, resolveAttackWithSneakImmunityAfterDefense, resolveOffensivePreDefenseEffects, resolvePostDamageEffects, resolveWithDamageAfterChoice } from './attack';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { buildDrawEvents } from './deckEvents';
@@ -987,13 +987,17 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, overrideNextPhase: 'targetingRoll' };
                 }
 
-                // 伤害已通过 Token 响应结算（autoContinue 重入），只执行 postDamage 效果
+                // 伤害已通过 Token 响应结算（autoContinue 重入），继续执行后续 withDamage 效果。
+                // resolvePostDamageEffects 会跳过已结算的 damage，但保留 rollDie 等后续效果。
                 if (pendingAttackStage === 'postDamagePending') {
                     // 闪避修正：完全闪避时 resolvedDamage 为 0，但攻击仍视为命中
                     // 将 resolvedDamage 设为基础伤害让 onHit 效果正确触发
                     const coreForPostDamage = getCoreForPostDamageAfterEvasion(core);
                     const isFullyEvaded = coreForPostDamage !== core;
-                    const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
+                    const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp, {
+                        includeWithDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
+                        continueWithDamageAfterFirstDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
+                    });
                     // 闪避免伤：过滤掉 DAMAGE_DEALT 事件（伤害已被闪避免除，非伤害效果仍生效）
                     const filteredPostDamageEvents = isFullyEvaded
                         ? postDamageEvents.filter(e => e.type !== 'DAMAGE_DEALT')
@@ -1356,7 +1360,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             if (pendingAttackStage === 'postDamagePending') {
                 const coreForPostDamage = getCoreForPostDamageAfterEvasion(targetingCore);
                 const isFullyEvaded = coreForPostDamage !== targetingCore;
-                const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
+                const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp, {
+                    includeWithDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
+                    continueWithDamageAfterFirstDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
+                });
                 const filteredPostDamageEvents = isFullyEvaded
                     ? postDamageEvents.filter(e => e.type !== 'DAMAGE_DEALT')
                     : postDamageEvents;
@@ -1510,13 +1517,55 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         if (from === 'defensiveRoll') {
             if (core.pendingAttack) {
                 const pendingAttackStage = getPendingAttackSettlementStage(core.pendingAttack);
-                // 如果伤害已通过 Token 响应结算，只执行 postDamage 效果
+                if (pendingAttackStage === 'withDamageChoicePending') {
+                    const withDamageEvents = resolveWithDamageAfterChoice(core, random, timestamp);
+                    events.push(...withDamageEvents);
+
+                    const hasChoice = withDamageEvents.some(isBlockingInteractionEvent);
+                    const hasTokenResponse = withDamageEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
+                    const hasBonusDiceReroll = withDamageEvents.some((event) =>
+                        event.type === 'BONUS_DICE_REROLL_REQUESTED' &&
+                        !(event as any).payload?.settlement?.displayOnly
+                    );
+                    if (hasChoice || hasTokenResponse || hasBonusDiceReroll) {
+                        return { events, halt: true };
+                    }
+
+                    const coreAfterWithDamage = withDamageEvents.length > 0
+                        ? applyEvents(core, withDamageEvents as DiceThroneEvent[], reduce)
+                        : core;
+                    const postDamageEvents = resolvePostDamageEffects(coreAfterWithDamage, random, timestamp);
+                    events.push(...postDamageEvents);
+
+                    const hasPostChoice = postDamageEvents.some(isBlockingInteractionEvent);
+                    const hasPostTokenResponse = postDamageEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
+                    const hasPostBonusDiceReroll = postDamageEvents.some((event) =>
+                        event.type === 'BONUS_DICE_REROLL_REQUESTED' &&
+                        !(event as any).payload?.settlement?.displayOnly
+                    );
+                    if (hasPostChoice || hasPostTokenResponse || hasPostBonusDiceReroll) {
+                        return { events, halt: true };
+                    }
+
+                    const coreAfterPostDamage = postDamageEvents.length > 0
+                        ? applyEvents(coreAfterWithDamage, postDamageEvents as DiceThroneEvent[], reduce)
+                        : coreAfterWithDamage;
+                    if (!appendPendingAttackResolvedEvent(coreAfterPostDamage.pendingAttack, events, command.type, timestamp)) {
+                        return { events, halt: true };
+                    }
+                    return resolvePostAttackFollowUp(coreAfterPostDamage, events, command.type, timestamp, from as TurnPhase);
+                }
+                // 如果伤害已通过 Token 响应结算，继续执行后续 withDamage 效果。
+                // resolvePostDamageEffects 会跳过已结算的 damage，但保留 rollDie 等后续效果。
                 if (pendingAttackStage === 'postDamagePending') {
                     // 闪避修正：完全闪避时 resolvedDamage 为 0，但攻击仍视为命中
                     // 将 resolvedDamage 设为基础伤害让 onHit 效果正确触发
                     const coreForPostDamage = getCoreForPostDamageAfterEvasion(core);
                     const isFullyEvaded = coreForPostDamage !== core;
-                    const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
+                    const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp, {
+                        includeWithDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
+                        continueWithDamageAfterFirstDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
+                    });
                     // 闪避免伤：过滤掉 DAMAGE_DEALT 事件（伤害已被闪避免除，非伤害效果仍生效）
                     const filteredPostDamageEvents = isFullyEvaded
                         ? postDamageEvents.filter(e => e.type !== 'DAMAGE_DEALT')

@@ -175,9 +175,9 @@ export const buildTurnLabel = (
             ? '回合收口'
         : wheelActionUsed
                 ? '势力行动'
-                : factionActionUsed && !bonusFactionActionPending
+        : factionActionUsed && !bonusFactionActionPending
                     ? '轮盘行动'
-                    : factionActionUsed
+        : factionActionUsed
                         ? '势力行动'
                         : '行动窗口';
     return `第 ${roundNumber} 轮 · ${factionName} · ${pendingLabel}`;

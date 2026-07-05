@@ -3062,7 +3062,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             sourceAbilityId: 'verdict-command',
             isDefendable: true,
         });
-        expect(advanced.state.core.pendingAttack?.preDefenseResolved).not.toBe(true);
+        expect(advanced.state.core.pendingAttack?.preDefenseResolved).toBe(true);
 
         const prompt = getSimpleChoicePrompt(advanced.state, 'verdict-command');
         expect(prompt.playerId).toBe('0');

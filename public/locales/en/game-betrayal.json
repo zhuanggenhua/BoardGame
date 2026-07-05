@@ -183,7 +183,7 @@
     "heal": "Heal",
     "weapon": "Weapon",
     "unarmed": "Unarmed",
-    "rabbitFoot": "Rabbit's Foot",
+    "rabbitFoot": "Choose a die to reroll",
     "rerollDie": "Reroll die {{index}}",
     "explore": "Explore",
     "holySymbol": "Holy Symbol",
@@ -248,6 +248,7 @@
       "fallbackLabel": "Dice Roll",
       "bonus": "Bonus {{value}}",
       "noBonus": "No bonus",
+      "detail": "Dice total {{subtotal}} | bonus {{bonus}}",
       "total": "Total {{value}}"
     },
     "useEffects": {

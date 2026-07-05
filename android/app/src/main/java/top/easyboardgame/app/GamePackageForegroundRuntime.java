@@ -196,18 +196,32 @@ final class GamePackageForegroundRuntime {
         long installedAt = System.currentTimeMillis();
 
         if (assetBaseUrl == null || fileIndexUrl == null) throw new IncrementalFallbackException("增量安装缺少索引或资源根地址");
-        if (!currentAssetsDir.isDirectory() || !currentMetadataFile.exists()) throw new IncrementalFallbackException("本地未安装可复用资源");
 
-        JSONObject localInstalledFilesIndex = GamePackageFs.readJsonFile(currentInstalledFilesIndexFile);
-        JSONObject localFiles = localInstalledFilesIndex == null ? null : localInstalledFilesIndex.optJSONObject("files");
-        if (localFiles == null) throw new IncrementalFallbackException("本地已安装文件索引缺失");
+        boolean hasReusableLocalInstall = currentAssetsDir.isDirectory() && currentMetadataFile.exists();
+        JSONObject localFiles = new JSONObject();
+        if (hasReusableLocalInstall) {
+            JSONObject localInstalledFilesIndex = GamePackageFs.readJsonFile(currentInstalledFilesIndexFile);
+            localFiles = localInstalledFilesIndex == null ? null : localInstalledFilesIndex.optJSONObject("files");
+            if (localFiles == null) throw new IncrementalFallbackException("本地已安装文件索引缺失");
+        } else if (task.allowFullFallback) {
+            throw new IncrementalFallbackException("本地未安装可复用资源");
+        } else {
+            Log.i(
+                TAG,
+                "incremental-bootstrap-without-local gameId=" + gameId
+                    + " version=" + resolvedPackageVersion
+                    + " mode=file-index-only"
+            );
+        }
 
         emitInstallState(context, gameId, "manifest", null, "indeterminate", null, null, task.packageVersion, null, null);
         JSONObject remoteIndex = downloadJson(fileIndexUrl, task.fileIndexChecksum, cancelFlag);
         List<RemoteFileEntry> remoteEntries = parseRemoteFileIndex(remoteIndex);
         if (remoteEntries.isEmpty()) throw new IncrementalFallbackException("远端文件索引为空");
 
-        List<RemoteFileEntry> changedEntries = computeChangedEntries(currentAssetsDir, localFiles, remoteEntries);
+        List<RemoteFileEntry> changedEntries = hasReusableLocalInstall
+            ? computeChangedEntries(currentAssetsDir, localFiles, remoteEntries)
+            : new ArrayList<>(remoteEntries);
         Set<String> remotePaths = buildRemotePathSet(remoteEntries);
         addIncrementalPartPaths(remotePaths, changedEntries);
         Log.i(
@@ -216,6 +230,8 @@ final class GamePackageForegroundRuntime {
                 + " version=" + resolvedPackageVersion
                 + " totalFiles=" + remoteEntries.size()
                 + " changedFiles=" + changedEntries.size()
+                + " reusableLocalInstall=" + hasReusableLocalInstall
+                + " allowFullFallback=" + task.allowFullFallback
         );
 
         File stagingDir = GamePackageFs.resolveVersionedStagingDir(context, gameId, resolvedPackageVersion);
@@ -224,7 +240,9 @@ final class GamePackageForegroundRuntime {
             GamePackageFs.cleanupStagingDirectories(context, gameId, resolvedPackageVersion);
             if (!stagingAssetsDir.mkdirs() && !stagingAssetsDir.exists()) throw new IOException("创建增量暂存目录失败");
 
-            GamePackageFs.copyDirectoryContents(currentAssetsDir, stagingAssetsDir);
+            if (hasReusableLocalInstall) {
+                GamePackageFs.copyDirectoryContents(currentAssetsDir, stagingAssetsDir);
+            }
             GamePackageFs.pruneDirectoryContents(stagingAssetsDir, remotePaths);
             long totalBytes = 0L;
             for (RemoteFileEntry entry : changedEntries) totalBytes += Math.max(0L, entry.size);
@@ -421,7 +439,7 @@ final class GamePackageForegroundRuntime {
         int attempt,
         IncrementalFileProgressListener progressListener
     ) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(buildRemoteAssetFileUrl(assetBaseUrl, entry.path)).openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(buildRemoteAssetFileUrl(assetBaseUrl, entry)).openConnection();
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(30000);
         long resumedBytes = partFile.exists() ? partFile.length() : 0L;
@@ -595,14 +613,15 @@ final class GamePackageForegroundRuntime {
         }
     }
 
-    private static String buildRemoteAssetFileUrl(String assetBaseUrl, String relativePath) {
+    private static String buildRemoteAssetFileUrl(String assetBaseUrl, RemoteFileEntry entry) {
         String normalizedBase = assetBaseUrl.replaceAll("/+$", "");
-        String[] segments = relativePath.replace('\\', '/').split("/");
+        String[] segments = entry.path.replace('\\', '/').split("/");
         StringBuilder builder = new StringBuilder(normalizedBase);
         for (String segment : segments) {
             if (segment == null || segment.isEmpty()) continue;
             builder.append('/').append(Uri.encode(segment));
         }
+        builder.append("?v=").append(Uri.encode(entry.hash));
         return builder.toString();
     }
 

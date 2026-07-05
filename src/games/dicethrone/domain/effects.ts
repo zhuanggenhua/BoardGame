@@ -594,7 +594,6 @@ function resolveEffectAction(
                         result.finalDamage,
                     );
 
-                    // 检查是否需要打开 Token 响应窗口
                     const tokenResponseType = shouldOpenTokenResponse(
                         state,
                         attackerId,
@@ -603,16 +602,6 @@ function resolveEffectAction(
                         ctx.isDefensiveContext,
                         action.damageScope ?? 'attack'
                     );
-
-                    console.log('[DT-Effects] shouldOpenTokenResponse 检查', {
-                        attackerId,
-                        dmgTargetId,
-                        damage: result.finalDamage,
-                        effectiveDamageForTokenResponse,
-                        isDefensiveContext: ctx.isDefensiveContext,
-                        tokenResponseType,
-                        hasPendingDamage: !!state.pendingDamage,
-                    });
 
                     if (tokenResponseType) {
                         // 创建待处理伤害，暂停伤害结算
@@ -630,11 +619,6 @@ function resolveEffectAction(
                             action.damageScope ?? 'attack'
                         );
                         const tokenResponseEvent = createTokenResponseRequestedEvent(pendingDamage, timestamp);
-                        console.log('[DT-Effects] 生成 TOKEN_RESPONSE_REQUESTED 事件', {
-                            pendingDamageId: pendingDamage.id,
-                            responderId: pendingDamage.responderId,
-                            responseType: pendingDamage.responseType,
-                        });
                         events.push(tokenResponseEvent);
                         // 不在这里生成 DAMAGE_DEALT，等待 Token 响应完成后再生成
                         continue;
@@ -1001,7 +985,6 @@ function resolveEffectAction(
         }
     }
 
-    console.log('[effects.ts] resolveEffectAction returning', events.length, 'events, types:', events.map(e => e.type).join(', '));
     return events;
 }
 
@@ -1296,10 +1279,18 @@ export function resolveEffectsToEvents(
     effects: AbilityEffect[],
     timing: EffectTiming,
     ctx: EffectContext,
-    config?: { bonusDamage?: number; bonusDamageOnce?: boolean; random?: RandomFn; skipDamage?: boolean }
+    config?: {
+        bonusDamage?: number;
+        bonusDamageOnce?: boolean;
+        random?: RandomFn;
+        skipDamage?: boolean;
+        skipNonDamage?: boolean;
+        continueAfterFirstDamage?: boolean;
+    }
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     let bonusApplied = false;
+    let passedFirstDamage = false;
     const shouldInlineBonusDamage =
         (timing === 'withDamage' || timing === 'postDamage')
         && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
@@ -1331,17 +1322,23 @@ export function resolveEffectsToEvents(
         if (!effect.action) {
             continue;
         }
+        const isDamageAction = effect.action.type === 'damage'
+            || (effect.action.type === 'custom' && !!effect.action.customActionId
+                && isCustomActionCategory(effect.action.customActionId, 'damage'));
+        if (config?.continueAfterFirstDamage && !passedFirstDamage) {
+            if (isDamageAction) {
+                passedFirstDamage = true;
+            }
+            continue;
+        }
         // skipDamage：Token 响应后重新执行 withDamage 时，跳过已结算的伤害效果
         // 同时跳过产生伤害的 custom action（如雷霆万钧的 thunder-strike-roll-damage），
         // 避免 custom action 被重复执行导致骰子二次投掷和 random 队列偏移
-        if (config?.skipDamage) {
-            if (effect.action.type === 'damage') {
-                continue;
-            }
-            if (effect.action.type === 'custom' && effect.action.customActionId
-                && isCustomActionCategory(effect.action.customActionId, 'damage')) {
-                continue;
-            }
+        if (config?.skipDamage && isDamageAction) {
+            continue;
+        }
+        if (config?.skipNonDamage && effect.action.type !== 'damage') {
+            continue;
         }
         if (!combatAbilityManager.instance.checkEffectCondition(effect, resolutionCtx)) {
             continue;
@@ -1406,6 +1403,19 @@ export function resolveEffectsToEvents(
         // 例如：taiji-combo 的 rollDie=莲花 产生选择，后续的 damage(6) 应等待选择完成后再执行
         // 否则会导致伤害在选择前就被应用，破坏游戏流程
         if (immediateEvents.some(e => e.type === 'CHOICE_REQUESTED')) {
+            if (
+                timing === 'withDamage'
+                && ctx.state.pendingAttack?.sourceAbilityId === ctx.sourceAbilityId
+                && ctx.state.pendingAttack.damageResolved !== true
+            ) {
+                const choiceEvent = immediateEvents.find(e => e.type === 'CHOICE_REQUESTED') as ChoiceRequestedEvent | undefined;
+                if (choiceEvent?.payload?.options) {
+                    choiceEvent.payload.options = choiceEvent.payload.options.map(option => ({
+                        ...option,
+                        customId: option.customId ?? 'dt-with-damage-choice-resolved',
+                    }));
+                }
+            }
             break;
         }
 

@@ -8,6 +8,7 @@ import {
     getQidahenEventOpponentHandChoiceSelectionForCore,
     getQidahenDiplomacySelectionForCore,
     getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenGrantPardonSelectionForCore,
     getQidahenHandLimitDiscardSelectionForCore,
     getQidahenInternalDispatchSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
@@ -55,6 +56,7 @@ export const QIDAHEN_COMMANDS = {
     RESOLVE_MA_SHI_TRADE_CHOICE: 'RESOLVE_MA_SHI_TRADE_CHOICE',
     RESOLVE_DRIVE_TIGER_CONSENT: 'RESOLVE_DRIVE_TIGER_CONSENT',
     RESOLVE_RECRUIT_CHOICE: 'RESOLVE_RECRUIT_CHOICE',
+    RESOLVE_GRANT_PARDON_CHOICE: 'RESOLVE_GRANT_PARDON_CHOICE',
     RESOLVE_FORTIFICATION_MAINTENANCE: 'RESOLVE_FORTIFICATION_MAINTENANCE',
     RESOLVE_EVENT_CHARACTER_TARGET: 'RESOLVE_EVENT_CHARACTER_TARGET',
     RESOLVE_EVENT_OPPONENT_HAND_CHOICE: 'RESOLVE_EVENT_OPPONENT_HAND_CHOICE',
@@ -619,6 +621,17 @@ export function validate(
                 return { valid: false, error: 'notCurrentPlayer' };
             }
             return getQidahenRecruitSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE:
+            if (hasPendingScenarioVote(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (!isCurrentInteractionSeatCommand(state, command)) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return getQidahenGrantPardonSelectionForCore(state.core, currentInteraction)
                 ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };

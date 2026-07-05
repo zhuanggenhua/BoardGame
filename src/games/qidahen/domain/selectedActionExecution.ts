@@ -21,6 +21,7 @@ import type {
     QidahenArmamentId,
     QidahenCore,
     QidahenFactionId,
+    QidahenGrantPardonChoice,
     QidahenSeasonSummary,
 } from './types';
 
@@ -58,6 +59,7 @@ interface QidahenSelectedActionExecutionDependencies {
         state: QidahenCore,
         factions: QidahenCore['factions'],
         timestamp: number,
+        choice?: QidahenGrantPardonChoice | null,
     ) => {
         factions: QidahenCore['factions'];
         lastSeasonSummary: QidahenSeasonSummary | null;
@@ -92,8 +94,13 @@ interface QidahenSelectedActionExecutionDependencies {
             factions: QidahenCore['factions'];
             followUp: {
                 actionLogText: string;
+                eventOpponentHandChoiceSelection: QidahenCore['eventOpponentHandChoiceSelection'];
+                grantPardonSelection: QidahenCore['grantPardonSelection'];
+                khanEdictSelection: QidahenCore['khanEdictSelection'];
                 lastSeasonSummary: QidahenSeasonSummary | null;
+                maShiTradeSelection: QidahenCore['maShiTradeSelection'];
                 pendingTargetAction: QidahenCore['pendingTargetAction'];
+                recruitSelection: QidahenCore['recruitSelection'];
                 selectedRegionId: string;
                 turnPhase: QidahenCore['turnPhase'];
                 wheelDispatchProgress: QidahenCore['wheelDispatchProgress'];

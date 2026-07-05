@@ -22,7 +22,7 @@ const COMMAND_BATTLE_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidah
 const YEAR_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-年序结算流程';
 const BASIC_GUIDED_FLOW_PREGAME_BEFORE = `${BASIC_GUIDED_FLOW_DIR}/01-教程直入-载入后进入棋盘.png`;
 const BASIC_GUIDED_FLOW_BOARD_AFTER_CONFIRM = `${BASIC_GUIDED_FLOW_DIR}/02-教程直入-行动窗口初始状态.png`;
-const BASIC_GUIDED_FLOW_BEFORE_ACTION_CLICK = `${BASIC_GUIDED_FLOW_DIR}/03-行动窗口-点击赐印招安后出现支付.png`;
+const BASIC_GUIDED_FLOW_BEFORE_ACTION_CLICK = `${BASIC_GUIDED_FLOW_DIR}/03-行动窗口-选择赐印招安目标后出现支付.png`;
 const BASIC_GUIDED_FLOW_AFTER_ACTION_CONFIRM = `${BASIC_GUIDED_FLOW_DIR}/04-赐印招安-支付后进入轮盘推进.png`;
 const BASIC_GUIDED_FLOW_BEFORE_DISPATCH_RESOLVE = `${BASIC_GUIDED_FLOW_DIR}/05-赐印招安-轮盘推进可选免费走1.png`;
 const BASIC_GUIDED_FLOW_AFTER_DISPATCH_RESOLVED = `${BASIC_GUIDED_FLOW_DIR}/06-赐印招安-免费走1后切到蒙古行动窗口.png`;
@@ -113,6 +113,16 @@ type RegionMaskDebugSnapshot = {
 
 type QidahenHarnessState = {
     core: QidahenCore;
+    sys?: {
+        interaction?: {
+            current?: unknown;
+            queue?: unknown[];
+            isBlocked?: boolean;
+            [key: string]: unknown;
+        };
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
 };
 
 type QidahenHarnessWindow = Window & {
@@ -189,7 +199,7 @@ const readRequiredQidahenHarnessState = async (page: Page): Promise<QidahenHarne
     })
 );
 
-const QIDAHEN_BASIC_OPENING_TEST_URL = '/play/qidahen?tutorialSetup=basic-opening';
+const QIDAHEN_BASIC_OPENING_TEST_URL = '/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human';
 
 const clickMapRegion = async (page: import('@playwright/test').Page, regionId: keyof typeof MAP_REGION_POINTS) => {
     const point = MAP_REGION_POINTS[regionId];
@@ -469,7 +479,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         assertNoFatalFrontendErrors([{ label: 'qidahen-pregame-gate', diagnostics }]);
     });
 
-    test('教程直入行动窗口，点赐印招安后先进入弃牌支付，完成后进入轮盘推进提示', async ({ page }) => {
+    test('教程直入行动窗口，点赐印招安后先场景直选目标，再弃牌支付并进入轮盘推进提示', async ({ page }) => {
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {
@@ -506,6 +516,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await saveScreenshot(page, ACTION_TOOLTIP_SCREENSHOT);
 
         await page.getByRole('button', { name: /赐印招安/ }).click();
+        await expect(page.locator('[data-testid="qidahen-grant-pardon-selection"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]')).toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('需弃 3 张');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BEFORE_ACTION_CLICK);
@@ -513,8 +526,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await confirmActionPayment(page, 3);
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择推进几格');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_ACTION_CONFIRM);
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BEFORE_DISPATCH_RESOLVE);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
@@ -2446,13 +2459,14 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await previewAndConfirmActionPayment(page, /征召军队/, 1);
         await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toContainText('征召军队');
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-song-jin"][data-action="select-region"]')).toBeVisible();
+        await clickGuidedMapTarget(page, 'song-jin');
         await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toContainText('皮岛');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
         await expect(page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]')).toContainText('建立 6 个等级 2 部队');
         await expect(page.locator('[data-testid="qidahen-recruit-choice-level-4-chuanbing"]')).toContainText('建立 2 个等级 4 川兵');
         await page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]').click();
 
-        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
         await clickMapRegion(page, 'songjin');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 8');
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).toContainText('2/15');
@@ -2530,19 +2544,80 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
                 state?: { isRegistered?: () => boolean };
             };
         }).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true);
-
-        await previewAndConfirmActionPayment(page, /征召军队/, 1);
-        await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toContainText('征召军队');
-        await page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]').click();
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
+        await page.evaluate(() => {
+            const harness = (window as QidahenHarnessWindow).__BG_TEST_HARNESS__;
+            const state = harness?.state;
+            const snapshot = state?.get?.();
+            if (!snapshot || !state?.set) {
+                throw new Error('qidahen test harness state injector unavailable');
+            }
+            const next = structuredClone(snapshot);
+            next.core.currentPlayer = '1';
+            next.core.turnLabel = '第 1 轮 · 蒙古 · 行动窗口';
+            next.core.turnPhase = 'action-window';
+            next.core.wheelActionUsed = true;
+            next.core.factionActionUsed = false;
+            next.core.actionWheelPosition = 'wheel-hire';
+            next.core.selectedActionId = 'ma-shi-trade';
+            next.core.confirmedActionId = null;
+            next.core.selectedRegionId = 'song-jin';
+            next.core.selectedPaymentCardIds = [];
+            next.core.recruitSelection = null;
+            next.core.maShiTradeSelection = null;
+            next.core.khanEdictSelection = null;
+            next.core.diplomacySelection = null;
+            next.core.pendingTargetAction = null;
+            next.core.postBattleSelection = null;
+            next.core.lastSeasonSummary = null;
+            next.core.payment = { required: 1, selected: 0, prompt: '需弃 1 / 已选 0' };
+            next.core.actionChoices = [
+                { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+                { id: 'ma-shi-trade', label: '马市贸易', cost: 1, detail: '弃 1 张手牌，大明选择建立 1-3 个部队，蒙古抽 2 倍张数的手牌。' },
+                { id: 'khan-edict', label: '大汗令箭', cost: 1, detail: '弃 1 张手牌，执行征兵训练或外交雇佣，不需再支付花费。' },
+            ];
+            if (next.sys?.interaction) {
+                next.sys.interaction = {
+                    ...next.sys.interaction,
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                };
+            }
+            next.core.regions = next.core.regions.map((region) => {
+                if (region.isLogicalRegion) return region;
+                if (region.id === 'song-jin') {
+                    return {
+                        ...region,
+                        controller: 'ming',
+                        controlLabel: '大明',
+                        troops: 10,
+                        population: 0,
+                        specialTroops: [],
+                        cityState: null,
+                        siegeState: null,
+                        diplomacyMarkerFaction: null,
+                        diplomacyMarkerSide: null,
+                    };
+                }
+                return region;
+            });
+            return state.set(next);
+        });
+        await page.waitForFunction(() => {
+            const core = (window as QidahenHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()?.core;
+            return core?.currentPlayer === '1'
+                && core.turnPhase === 'action-window'
+                && core.wheelActionUsed === true
+                && core.factionActionUsed === false
+                && core.selectedActionId === 'ma-shi-trade'
+                && core.selectedRegionId === 'song-jin';
+        });
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
-
-        await clickMapRegion(page, 'songjin');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('皮岛 · 大明');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 10');
 
         await previewAndConfirmActionPayment(page, /马市贸易/, 1);
         await expect(page.locator('[data-testid="qidahen-ma-shi-trade-selection"]')).toContainText('马市贸易');
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-song-jin"][data-action="select-region"]')).toBeVisible();
+        await clickGuidedMapTarget(page, 'song-jin');
         await expect(page.locator('[data-testid="qidahen-ma-shi-trade-selection"]')).toContainText('皮岛');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
         await expect(page.locator('[data-testid="qidahen-ma-shi-trade-choice-3"]')).toContainText('建立 3 个部队');
@@ -2552,15 +2627,17 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: '3' },
         });
 
-        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
+        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('后金');
+        await expect(page.getByText('蒙古在 皮岛 发动马市贸易，大明选择建立 3 个部队。')).toBeVisible();
+        await expect(page.getByText('蒙古因马市贸易获得 6 张手牌。')).toBeVisible();
+        await clickMapRegion(page, 'songjin');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 13');
-        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('12/10');
+        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('11/10');
         const finalState = await readRequiredQidahenHarnessState(page);
         const songJin = finalState.core.regions.find((region) => region.id === 'song-jin');
-        expect(finalState.core.currentPlayer).toBe('1');
-        expect(finalState.core.selectedRegionId).toBe('song-jin');
+        expect(finalState.core.currentPlayer).toBe('2');
         expect(songJin?.troops).toBe(13);
-        expect(finalState.core.factions.mongol.handCount).toBe(12);
+        expect(finalState.core.factions.mongol.handCount).toBe(11);
 
         await saveScreenshot(page, MA_SHI_TRADE_SCREENSHOT);
     });

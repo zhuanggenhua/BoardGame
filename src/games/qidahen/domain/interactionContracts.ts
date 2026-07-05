@@ -12,6 +12,8 @@ import type {
     QidahenEventOpponentHandChoiceSelection,
     QidahenFortificationMaintenanceMode,
     QidahenFortificationMaintenanceSelection,
+    QidahenGrantPardonChoice,
+    QidahenGrantPardonSelection,
     QidahenHandLimitDiscardSelection,
     QidahenInternalDispatchSelection,
     QidahenKhanEdictChoice,
@@ -31,6 +33,10 @@ interface QidahenHandLimitDiscardChoiceValue {
 
 interface QidahenRecruitChoiceValue {
     choiceId: QidahenRecruitChoice['id'];
+}
+
+interface QidahenGrantPardonChoiceValue {
+    choiceId: QidahenGrantPardonChoice['id'];
 }
 
 interface QidahenDiplomacyChoiceValue {
@@ -87,6 +93,12 @@ export type QidahenHandLimitDiscardInteraction = InteractionDescriptor<
 export type QidahenRecruitInteraction = InteractionDescriptor<
     SimpleChoiceData<QidahenRecruitChoiceValue> & {
         qidahenRecruitSelection: QidahenRecruitSelection;
+    }
+>;
+
+export type QidahenGrantPardonInteraction = InteractionDescriptor<
+    SimpleChoiceData<QidahenGrantPardonChoiceValue> & {
+        qidahenGrantPardonSelection: QidahenGrantPardonSelection;
     }
 >;
 

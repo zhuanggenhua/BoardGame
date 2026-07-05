@@ -180,7 +180,7 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
 
     it('卡牌预览走各自 ability-cards atlas，通用牌映射沿用新规格合同', () => {
         expect(Object.keys(TREANT_NINJA_COMMON_ATLAS_INDEX)).toHaveLength(18);
-        expect(TREANT_NINJA_COMMON_ATLAS_INDEX['card-unexpected']).toBe(37);
+        expect(TREANT_NINJA_COMMON_ATLAS_INDEX['card-unexpected']).toBe(32);
 
         for (const card of ZHANSHUJIA_CARDS) {
             expect(card.previewRef, `${card.id} 缺少战术家 previewRef`).toMatchObject({

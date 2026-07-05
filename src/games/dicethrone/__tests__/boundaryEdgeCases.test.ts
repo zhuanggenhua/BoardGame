@@ -126,7 +126,7 @@ describe('HP 边界', () => {
         expect(getUsableTokensForTiming(result, '0', 'beforeDamageDealt').some(token => token.id === TOKEN_IDS.TAIJI)).toBe(true);
     });
 
-    it('TURN_CHANGED 后旧太极应恢复为全量可用于加伤', () => {
+    it('本回合获得记录不扣减可用太极，TURN_CHANGED 后仍保持全量可用于加伤', () => {
         const core = getInitCore();
         core.players['0'].tokens[TOKEN_IDS.TAIJI] = 6;
         core.players['0'].tokenStackLimits[TOKEN_IDS.TAIJI] = 6;
@@ -142,7 +142,7 @@ describe('HP 边界', () => {
             isFullyEvaded: false,
         };
 
-        expect(getUsableTokenAmountForTiming(core, '0', TOKEN_IDS.TAIJI, 'beforeDamageDealt')).toBe(4);
+        expect(getUsableTokenAmountForTiming(core, '0', TOKEN_IDS.TAIJI, 'beforeDamageDealt')).toBe(6);
 
         const nextTurn = reduce(core, ev('TURN_CHANGED', { nextPlayerId: '0', turnNumber: core.turnNumber + 1 }));
         nextTurn.pendingDamage = {

@@ -143,9 +143,12 @@
       "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
       "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
       "primaryActionSelectPrompt": "Hand action",
+      "grantPardon": {
+        "mapFirstHint": "Click the receiving region on the map to complete Grant Pardon; the list below is only a fallback. {{summary}}"
+      },
       "wheelNextStepBadge": "Next",
-      "wheelNextStepTitle": "Wheel-result action",
-      "wheelNextStepHint": "Choose a wheel segment",
+      "wheelNextStepTitle": "Advance public wheel",
+      "wheelNextStepHint": "Choose how many spaces to move",
       "wheelExecutePrompt": "Choose a wheel segment",
       "directExecute": "Execute now",
       "victoryAchieved": "{{winnerName}} has achieved {{condition}}",
@@ -276,12 +279,13 @@
         "welcome": "Seven Hatreds has three victory paths: control 16 regions at New Year, capture an opponent's capital, or reach 3 prestige first.",
         "handLimit": "At the start of every turn, check hand limit first. Ming may keep 15 cards; Later Jin and the Mongols may keep 10. Pick the excess card from the hand area and confirm the discard.",
         "handResource": "Cards are your main resource. Event cards resolve when played, armament cards need one extra discard, tactic cards are used only in battle, and silver cards serve only as payment.",
-        "wheelFirst": "After tidying the hand, push the shared wheel first. Moving it by 1, 2, or 3 spaces decides not only whether other players draw, but also which action gate this turn lands on next.",
-        "wheelMove": "Choose how far to push the shared wheel this turn. This is the wheel push, not the wheel-result action.",
+        "wheelFirst": "After the hand-limit check, the shared wheel is next. It has not moved yet. Moving it by 1, 2, or 3 spaces decides whether other players draw and which wheel-result action this turn will use.",
+        "wheelMove": "Now choose how far to push the shared wheel. This is only the wheel push, not the wheel-result action; use the free 1-space move for the smallest example.",
         "afterWheel": "Once the shared wheel push is resolved, this turn still has two parts left: one hand action and one wheel-result action. The current player chooses which of those two parts to do first.",
-        "pickAction": "Hand action: Grant Pardon. It pulls adjacent enemy troops into Ming control and changes ownership on the map directly.",
-        "payCards": "Discard 3 cards to pay for this Grant Pardon.",
-        "actionResult": "Ownership on the map has already changed. Hand resources have turned into direct board control.",
+        "pickAction": "Hand action: Grant Pardon. Choose the action first, not a map region; the target troop and receiving Ming region are chosen in the next step.",
+        "chooseGrantPardonTarget": "Choose the pardon target on the map: click Shanhaiguan to move 1 Later Jin troop out of Jinzhou into that adjacent Ming-controlled region.",
+        "payCards": "The target is locked. Now discard 3 cards to pay for Grant Pardon; the map changes only after payment resolves.",
+        "actionResult": "Jinzhou loses an enemy troop, and Shanhaiguan gains a Ming troop. Hand resources have turned into direct board control.",
         "moraleLevel": "The number on each troop is both level and morale. Higher level means stronger dice in battle; only when a troop falls to 0 does it rout away.",
         "wheelAction": "The wheel-result action is now resolved. Wherever the shared wheel lands, it takes you into Reclaim and Farm, Diplomacy and Hire, Attack and Dispatch, or Recruit and Train.",
         "finish": "The first-turn skeleton is: check hand limit, push the shared wheel, then complete one hand action and one wheel-result action."
@@ -424,7 +428,7 @@
         "overview": "Mongol faction actions are also paid with hand cards. Khan's Edict turns this action into recruit/training or diplomacy/hire.",
         "chooseAction": "Click the Khan's Edict faction action on the right. After it starts, discard 1 hand card to enter the effect choice.",
         "payCards": "Pick 1 card from the hand at the bottom, then confirm the action.",
-        "chooseEffect": "Choose Recruit / Train here to turn the action into a real troop gain.",
+        "chooseEffect": "Click Shanhaiguan on the map first to confirm where Khan's Edict will add troops, then choose Recruit / Train to resolve the gain.",
         "result": "The result has landed: Khan's Edict raised Mongol troops at Shanhaiguan from 2 to 4, so this action has already changed live board strength.",
         "finish": "That is the faction-action rhythm: spend a card to fire it, then let the action effect change the live position immediately."
       }
@@ -435,10 +439,10 @@
       "steps": {
         "overview": "Diplomacy decides regional relationships, not just marker sides; hiring decides where new troops can appear.",
         "wheelEntry": "Push the wheel into Diplomacy and Hire. This branch resolves control relationships and room for troops, not battle.",
-        "chooseTarget": "Diplomacy can only target regions adjacent to your controlled areas, and it cannot target homeland regions without control markers, Korea regions, or areas with regular troops stationed there.",
-        "friendlyMark": "A reverse-side marker means a friendly region. Your troops may pass through and station there, but it is not yet a controlled region.",
+        "chooseTarget": "Diplomacy targets map regions. Click a region adjacent to your controlled areas; you cannot target homeland regions without control markers, Korea regions, or areas with regular troops stationed there.",
+        "friendlyMark": "Click Ningyuan on the map to place a friendly marker. A reverse-side marker means your troops may pass through and station there, but it is not yet a controlled region.",
         "tributeMark": "Flip the friendly marker you just placed into a vassal marker. Only a face-up marker counts as your controlled region; neutral regions taken by battle also become this state directly.",
-        "removeMark": "Choose Dongjiang and remove the existing rival control marker. Diplomacy not only places your own markers; it can also push back markers already placed by someone else.",
+        "removeMark": "Click Dongjiang on the map and remove the existing rival control marker. Diplomacy not only places your own markers; it can also push back markers already placed by someone else.",
         "hireOnly": "Mercenary troops can only be built in controlled regions. They do not appear freely in ordinary neutral territory.",
         "finish": "When diplomacy and hiring resolve together, you get two benefits at once: map relationships change, and force structure changes with them."
       }

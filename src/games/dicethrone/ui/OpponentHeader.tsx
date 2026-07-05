@@ -205,7 +205,12 @@ export const OpponentHeader = ({
                                     <div ref={opponentHpRef} className={`flex items-center gap-[0.3vw] ${compact ? 'ml-[0.05vw]' : 'ml-[0.2vw]'}`}>
                                         <div className="flex items-center gap-[0.2vw]">
                                             <div className={`${iconDotClassName} bg-red-500 rounded-full shadow-[0_0_6px_rgba(239,68,68,0.4)]`} />
-                                            <span className={`text-red-400 font-bold ${statClassName}`}>{overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}</span>
+                                            <span
+                                                className={`text-red-400 font-bold ${statClassName}`}
+                                                data-testid={testId ? `${testId}-hp` : undefined}
+                                            >
+                                                {overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}
+                                            </span>
                                         </div>
                                         <div ref={opponentCpRef} className="flex items-center gap-[0.2vw]">
                                             <div className={`${iconDotClassName} bg-amber-500 rounded-full shadow-[0_0_6px_rgba(245,158,11,0.4)]`} />
@@ -237,6 +242,7 @@ export const OpponentHeader = ({
                                         atlas={statusIconAtlas}
                                         tokenDefinitions={tokenDefinitions}
                                         tokenStackLimits={opponent.tokenStackLimits}
+                                        testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
                                     />
                                     <StatusEffectsContainer
                                         effects={opponent.statusEffects || {}}

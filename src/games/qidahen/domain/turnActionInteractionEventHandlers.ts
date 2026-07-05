@@ -5,6 +5,7 @@ import {
     QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
     QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
     QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
+    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
     QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
     QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
@@ -18,6 +19,7 @@ import {
     getQidahenEventCharacterTargetSelectionFromInteraction,
     getQidahenEventOpponentHandChoiceSelectionFromInteraction,
     getQidahenFortificationMaintenanceSelectionFromInteraction,
+    getQidahenGrantPardonSelectionFromInteraction,
     getQidahenInternalDispatchSelectionFromInteraction,
     getQidahenKhanEdictSelectionFromInteraction,
     getQidahenMaShiTradeSelectionFromInteraction,
@@ -35,6 +37,7 @@ import {
 import {
     resolveQidahenDiplomacyInteractionChoice,
     resolveQidahenDriveTigerConsentInteractionChoice,
+    resolveQidahenGrantPardonInteractionChoice,
     resolveQidahenKhanEdictInteractionChoice,
     resolveQidahenMaShiTradeInteractionChoice,
     resolveQidahenRecruitInteractionChoice,
@@ -87,6 +90,31 @@ const resolveQidahenRecruitInteractionEvent = (
         choiceId,
         event.timestamp ?? 0,
         recruitSelection,
+    );
+};
+
+const resolveQidahenGrantPardonInteractionEvent = (
+    context: QidahenInteractionResolutionContext,
+): QidahenCore | null | undefined => {
+    const { state, payload, event } = context;
+    const grantPardonSelection = getQidahenGrantPardonSelectionFromInteraction(
+        asQidahenInteractionSelectionCarrier(payload.interactionData),
+    );
+    if (
+        payload.sourceId !== QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID
+        && grantPardonSelection == null
+    ) {
+        return undefined;
+    }
+    const choiceId = getQidahenResolvedChoiceId(payload);
+    if (!choiceId) {
+        return null;
+    }
+    return resolveQidahenGrantPardonInteractionChoice(
+        state.core,
+        choiceId,
+        event.timestamp ?? 0,
+        grantPardonSelection,
     );
 };
 
@@ -339,6 +367,7 @@ export const resolveQidahenTurnActionInteractionEvent = (
     context: QidahenInteractionResolutionContext,
 ): QidahenCore | null | undefined => resolveQidahenHandLimitDiscardInteractionEvent(context)
     ?? resolveQidahenRecruitInteractionEvent(context)
+    ?? resolveQidahenGrantPardonInteractionEvent(context)
     ?? resolveQidahenDiplomacyInteractionEvent(context)
     ?? resolveQidahenWheelDispatchInteractionEvent(context)
     ?? resolveQidahenInternalDispatchInteractionEvent(context)

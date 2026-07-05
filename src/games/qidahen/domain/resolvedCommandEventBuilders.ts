@@ -6,6 +6,7 @@ import {
     getQidahenEventCharacterTargetSelectionForCore,
     getQidahenEventOpponentHandChoiceSelectionForCore,
     getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenGrantPardonSelectionForCore,
     getQidahenInternalDispatchSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
@@ -29,6 +30,7 @@ import type {
     ResolveEventOpponentHandChoiceCommand,
     ResolveFortificationMaintenanceCommand,
     ResolveGaoDiDispatchCommand,
+    ResolveGrantPardonChoiceCommand,
     HandLimitDiscardResolvedEvent,
     PendingActionResolvedEvent,
     PostBattleDecisionResolvedEvent,
@@ -60,6 +62,7 @@ interface QidahenActionWindowResolvedCommandDependencies {
     getQidahenFortificationMaintenanceSelectionForCore: typeof getQidahenFortificationMaintenanceSelectionForCore;
     getQidahenDriveTigerConsentSelectionForCore: typeof getQidahenDriveTigerConsentSelectionForCore;
     getQidahenRecruitSelectionForCore: typeof getQidahenRecruitSelectionForCore;
+    getQidahenGrantPardonSelectionForCore: typeof getQidahenGrantPardonSelectionForCore;
     getQidahenMaShiTradeSelectionForCore: typeof getQidahenMaShiTradeSelectionForCore;
     getQidahenKhanEdictSelectionForCore: typeof getQidahenKhanEdictSelectionForCore;
     getQidahenDiplomacySelectionForCore: typeof getQidahenDiplomacySelectionForCore;
@@ -221,6 +224,33 @@ const buildQidahenRecruitChoiceResolvedEvent = (
         playerId: command.playerId,
         choiceId: command.payload.choiceId,
         selection: dependencies.getQidahenRecruitSelectionForCore(state.core, state.sys.interaction?.current),
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenGrantPardonChoiceResolvedEvent = (
+    state: MatchState<QidahenCore>,
+    command: ResolveGrantPardonChoiceCommand,
+    timestamp: number,
+    dependencies: QidahenActionWindowResolvedCommandDependencies = {
+        getQidahenInternalDispatchSelectionForCore,
+        getQidahenFortificationMaintenanceSelectionForCore,
+        getQidahenDriveTigerConsentSelectionForCore,
+        getQidahenRecruitSelectionForCore,
+        getQidahenGrantPardonSelectionForCore,
+        getQidahenMaShiTradeSelectionForCore,
+        getQidahenKhanEdictSelectionForCore,
+        getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
+        getQidahenEventOpponentHandChoiceSelectionForCore,
+    },
+): QidahenEvent => ({
+    type: 'GRANT_PARDON_CHOICE_RESOLVED',
+    payload: {
+        playerId: command.playerId,
+        choiceId: command.payload.choiceId,
+        selection: dependencies.getQidahenGrantPardonSelectionForCore(state.core, state.sys.interaction?.current),
     },
     sourceCommandType: command.type,
     timestamp,
@@ -526,6 +556,12 @@ const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEv
         commandTypes: [QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE],
         buildEvents: buildStatefulResolvedCommandEvents<ResolveRecruitChoiceCommand>(
             buildQidahenRecruitChoiceResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+        buildEvents: buildStatefulResolvedCommandEvents<ResolveGrantPardonChoiceCommand>(
+            buildQidahenGrantPardonChoiceResolvedEvent,
         ),
     },
     {

@@ -427,6 +427,7 @@ export interface QidahenGrantPardonChoice {
 export interface QidahenGrantPardonSelection {
     title: string;
     summary: string;
+    executionSource?: 'tribute-edict';
     preferredSourceRegionId: string | null;
     sourceRegionId: string | null;
     sourceRegionName: string | null;
@@ -952,6 +953,12 @@ export interface ResolveRecruitChoiceCommand extends Command<'RESOLVE_RECRUIT_CH
     };
 }
 
+export interface ResolveGrantPardonChoiceCommand extends Command<'RESOLVE_GRANT_PARDON_CHOICE'> {
+    payload: {
+        choiceId: QidahenGrantPardonChoice['id'];
+    };
+}
+
 export interface ResolveFortificationMaintenanceCommand extends Command<'RESOLVE_FORTIFICATION_MAINTENANCE'> {
     payload: {
         choiceId: QidahenFortificationMaintenanceMode;
@@ -1016,6 +1023,7 @@ export type QidahenCommand =
     | ResolveMaShiTradeChoiceCommand
     | ResolveDriveTigerConsentCommand
     | ResolveRecruitChoiceCommand
+    | ResolveGrantPardonChoiceCommand
     | ResolveFortificationMaintenanceCommand
     | ResolveEventCharacterTargetCommand
     | ResolveEventOpponentHandChoiceCommand
@@ -1189,6 +1197,14 @@ export interface RecruitChoiceResolvedEvent extends GameEvent<'RECRUIT_CHOICE_RE
     };
 }
 
+export interface GrantPardonChoiceResolvedEvent extends GameEvent<'GRANT_PARDON_CHOICE_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: QidahenGrantPardonChoice['id'];
+        selection?: QidahenGrantPardonSelection | null;
+    };
+}
+
 export interface DriveTigerConsentResolvedEvent extends GameEvent<'DRIVE_TIGER_CONSENT_RESOLVED'> {
     payload: {
         playerId: PlayerId;
@@ -1268,6 +1284,7 @@ export type QidahenEvent =
     | DiplomacyChoiceResolvedEvent
     | MaShiTradeChoiceResolvedEvent
     | RecruitChoiceResolvedEvent
+    | GrantPardonChoiceResolvedEvent
     | DriveTigerConsentResolvedEvent
     | FortificationMaintenanceResolvedEvent
     | EventCharacterTargetResolvedEvent
@@ -1300,6 +1317,7 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     RESOLVE_MA_SHI_TRADE_CHOICE: ResolveMaShiTradeChoiceCommand['payload'];
     RESOLVE_DRIVE_TIGER_CONSENT: ResolveDriveTigerConsentCommand['payload'];
     RESOLVE_RECRUIT_CHOICE: ResolveRecruitChoiceCommand['payload'];
+    RESOLVE_GRANT_PARDON_CHOICE: ResolveGrantPardonChoiceCommand['payload'];
     RESOLVE_FORTIFICATION_MAINTENANCE: ResolveFortificationMaintenanceCommand['payload'];
     RESOLVE_EVENT_CHARACTER_TARGET: ResolveEventCharacterTargetCommand['payload'];
     RESOLVE_EVENT_OPPONENT_HAND_CHOICE: ResolveEventOpponentHandChoiceCommand['payload'];

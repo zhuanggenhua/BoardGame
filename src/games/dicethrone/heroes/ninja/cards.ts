@@ -236,7 +236,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         timing: 'instant',
         description: cardText('ninja-card-vanish', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
-        ...ninjaCardRef(35),
+        ...ninjaCardRef(30),
         effects: [grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, cardText('ninja-card-vanish', 'description'))],
     },
     {
@@ -247,7 +247,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('ninja-card-dojo', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
-        ...ninjaCardRef(36),
+        ...ninjaCardRef(31),
         effects: [{
             description: cardText('ninja-card-dojo', 'description'),
             action: {

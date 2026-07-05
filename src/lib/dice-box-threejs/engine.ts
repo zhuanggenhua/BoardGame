@@ -41,6 +41,7 @@ export interface DiceBoxDieSkin {
 export interface DiceBoxEngineConfig {
     styleProfile?: DiceBoxStyleProfile;
     rendererMode?: DicePhysicsRendererMode;
+    canvasTestId?: string;
     /**
      * @deprecated Use styleProfile.customColorset. Kept temporarily so callers can
      * be migrated without coupling game UI to third-party option names.
@@ -127,6 +128,9 @@ export class DiceBoxThreeEngine {
         box.renderer.domElement.style.display = 'block';
         box.renderer.domElement.style.pointerEvents = 'none';
         box.renderer.domElement.dataset.dicePhysicsSource = 'dice-box-threejs';
+        if (config?.canvasTestId) {
+            box.renderer.domElement.dataset.testid = config.canvasTestId;
+        }
         if ((config?.rendererMode ?? 'debug-visible') === 'physics-only') {
             box.renderer.domElement.style.opacity = '0';
             box.renderer.domElement.style.visibility = 'hidden';
@@ -137,6 +141,25 @@ export class DiceBoxThreeEngine {
 
     hasDice(count: number): boolean {
         return this.box.diceList.length === count && count > 0;
+    }
+
+    setCanvasDiagnostics({
+        settled,
+        skinsReady,
+    }: {
+        settled: boolean;
+        skinsReady?: boolean;
+    }): void {
+        const canvas = this.box.renderer?.domElement;
+        if (!canvas) return;
+
+        canvas.dataset.diceSettled = settled ? 'true' : 'false';
+        canvas.dataset.diceVisualSettled = settled ? 'true' : 'false';
+        canvas.dataset.diceMaxLift = settled ? '0' : '1';
+        canvas.dataset.diceMaxTravel = settled ? '0' : '1';
+        if (typeof skinsReady === 'boolean') {
+            canvas.dataset.skinsReady = skinsReady ? 'true' : 'false';
+        }
     }
 
     clear(): void {

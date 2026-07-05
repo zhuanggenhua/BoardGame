@@ -32,6 +32,7 @@ import type {
     QidahenDiplomacyProgress,
     QidahenDiplomacySelection,
     QidahenFactionId,
+    QidahenGrantPardonSelection,
     QidahenKhanEdictSelection,
     QidahenMaShiTradeSelection,
     QidahenRecruitSelection,
@@ -173,6 +174,101 @@ export const getQidahenRecruitSelectionForCore = (
     state: QidahenCore,
 ): QidahenRecruitSelection | null => (
     getQidahenRecruitSelectionFromCurrentAction(state)
+);
+
+const isGrantPardonSourceRegion = (
+    state: QidahenCore,
+    region: QidahenCore['regions'][number],
+): boolean => (
+    !region.isLogicalRegion
+    && region.controller !== 'ming'
+    && getNonSiegedCityActionSourceSnapshot(region).troops > 0
+    && region.adjacentRegionIds.some((adjacentRegionId) => (
+        state.regions.some((adjacentRegion) => (
+            !adjacentRegion.isLogicalRegion
+            && adjacentRegion.id === adjacentRegionId
+            && adjacentRegion.controller === 'ming'
+        ))
+    ))
+);
+
+export const buildGrantPardonSelectionFromRegionSemantics = (
+    state: QidahenCore,
+    regionSemantics: QidahenExplicitRegionSelectionSemantics,
+): QidahenGrantPardonSelection | null => {
+    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
+    const preferredSourceRegion = state.regions.find((region) => (
+        region.id === selectedRuntimeRegionId
+        && isGrantPardonSourceRegion(state, region)
+    )) ?? null;
+    const sourceRegions = [
+        ...(preferredSourceRegion ? [preferredSourceRegion] : []),
+        ...state.regions.filter((region) => (
+            region.id !== preferredSourceRegion?.id
+            && isGrantPardonSourceRegion(state, region)
+        )),
+    ];
+    const choices = sourceRegions.flatMap((sourceRegion) => (
+        sourceRegion.adjacentRegionIds.flatMap((targetRegionId) => {
+            const targetRegion = state.regions.find((region) => (
+                !region.isLogicalRegion
+                && region.id === targetRegionId
+                && region.controller === 'ming'
+            ));
+            if (!targetRegion) {
+                return [];
+            }
+            const sourceRegionName = getPreferredLogicalRegionDisplayName(sourceRegion, regionSemantics.displayAnchorRegionId);
+            const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, targetRegion.id);
+            const targetFactionName = toFactionLabel(sourceRegion.controller);
+            return [{
+                id: `${sourceRegion.id}->${targetRegion.id}`,
+                sourceRegionId: sourceRegion.id,
+                sourceRegionName,
+                targetRegionId: targetRegion.id,
+                targetRegionName,
+                targetFactionId: sourceRegion.controller,
+                targetFactionName,
+                label: `${sourceRegionName} → ${targetRegionName}`,
+                detail: `指定${targetFactionName}在 ${sourceRegionName} 的 1 个部队，移动到相邻的大明控制区 ${targetRegionName} 并改为大明部队。`,
+            }];
+        })
+    ));
+    if (choices.length === 0) {
+        return null;
+    }
+    const sourceRegion = preferredSourceRegion ?? sourceRegions[0] ?? null;
+    const displayAnchorRegionId = sourceRegion
+        ? resolvePreferredRegionDisplayAnchor(sourceRegion, regionSemantics.displayAnchorRegionId)
+        : null;
+    return {
+        title: '赐印招安：选择目标部队和接收区',
+        summary: '指定 1 个对手相邻于大明控制区域的部队，再指定相邻的大明控制区域接收并转为大明部队。',
+        preferredSourceRegionId: preferredSourceRegion?.id ?? null,
+        sourceRegionId: sourceRegion?.id ?? null,
+        sourceRegionName: sourceRegion ? getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId) : null,
+        displayAnchorRegionId,
+        displayAnchorRegionName: sourceRegion ? getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId) : null,
+        selectedChoiceId: null,
+        choices,
+    };
+};
+
+const getQidahenGrantPardonSelectionFromCurrentAction = (
+    state: QidahenCore,
+): QidahenGrantPardonSelection | null => (
+    state.turnPhase === 'grant-pardon-choice'
+        ? state.grantPardonSelection ?? buildGrantPardonSelectionFromRegionSemantics(
+            state,
+            getQidahenExplicitRegionSelectionSemantics(state, state.selectedRegionId),
+        )
+        : null
+);
+
+export const getQidahenGrantPardonSelectionForCore = (
+    state: QidahenCore,
+): QidahenGrantPardonSelection | null => (
+    getQidahenGrantPardonSelectionFromCurrentAction(state)
 );
 
 const buildDiplomacyChoicesForTarget = (

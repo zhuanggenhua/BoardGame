@@ -417,6 +417,15 @@ describe('Property 7: 伤害类型处理', () => {
 
 describe('Property 8: 状态效果叠加', () => {
     const NON_REMOVABLE_DEBUFF_WHITELIST = [STATUS_IDS.CURSED_COIN].sort();
+    const NON_REMOVABLE_SPECIAL_TOKEN_WHITELIST = [
+        TOKEN_IDS.BLESSING_OF_DIVINITY,
+        TOKEN_IDS.HEAL_BOT,
+        TOKEN_IDS.NANOBOT,
+        TOKEN_IDS.SHOCK_BOT,
+        TOKEN_IDS.TREANT_DIVINE,
+        TOKEN_IDS.TREANT_SAPLING,
+        TOKEN_IDS.TREANT_SEEDLING,
+    ].sort();
 
     it('所有 debuff 类 Token 都有 stackLimit 定义', () => {
         const debuffs = ALL_TOKEN_DEFINITIONS.filter(d => d.category === 'debuff');
@@ -459,8 +468,8 @@ describe('Property 8: 状态效果叠加', () => {
             .map(def => def.id)
             .sort();
         expect(nonRemovableIds).toEqual([
-            TOKEN_IDS.BLESSING_OF_DIVINITY,
             ...NON_REMOVABLE_DEBUFF_WHITELIST,
+            ...NON_REMOVABLE_SPECIAL_TOKEN_WHITELIST,
         ].sort());
     });
 
@@ -829,7 +838,7 @@ describe('Property 9: 4 人玩家目标交互验证', () => {
         expect(damageTargets).not.toContain('2');
     });
 
-    it('Soul Burn 在 4 人 / 2v2 下只命中当前 defender', () => {
+    it('Soul Burn 在 4 人 / 2v2 下命中敌方集合', () => {
         const core = createFourPlayerCore({
             pendingAttack: {
                 attackerId: '0',
@@ -856,9 +865,7 @@ describe('Property 9: 4 人玩家目标交互验证', () => {
             .filter((event) => event.type === 'DAMAGE_DEALT')
             .map((event: any) => event.payload.targetId);
 
-        expect(damageTargets).toEqual(['1']);
-        expect(damageTargets).not.toContain('2');
-        expect(damageTargets).not.toContain('3');
+        expect(damageTargets).toEqual(['1', '2', '3']);
     });
 
     it('REMOVE_STATUS 在 requiresTargetWithStatus=true 时拒绝空目标', () => {

@@ -7,6 +7,31 @@ export const QIDAHEN_DEFAULT_TUTORIAL_ID = 'basic-opening';
 
 const asCore = (state: MatchState<unknown>): QidahenCore => state.core as QidahenCore;
 
+const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
+    const core = asCore(state);
+    switch (step.id) {
+        case 'pick-action':
+            return core.turnPhase === 'action-window'
+                && core.factionActionUsed === false;
+        case 'choose-grant-pardon-target':
+            return core.turnPhase === 'grant-pardon-choice'
+                && core.selectedActionId === 'grant-pardon'
+                && Boolean(core.grantPardonSelection?.choices.length);
+        case 'pay-cards':
+            return core.turnPhase === 'action-window'
+                && core.selectedActionId === 'grant-pardon'
+                && core.payment.required === 3
+                && core.grantPardonSelection?.selectedChoiceId != null;
+        case 'action-result':
+        case 'morale-level':
+        case 'wheel-action':
+        case 'finish':
+            return core.lastSeasonSummary?.title === '赐印招安';
+        default:
+            return true;
+    }
+};
+
 const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
@@ -343,6 +368,7 @@ const koreaSpecialStepValidator = (state: MatchState<unknown>, step: { id: strin
 
 const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
     id: QIDAHEN_DEFAULT_TUTORIAL_ID,
+    stepValidator: basicOpeningStepValidator,
     steps: [
         {
             id: 'welcome',
@@ -400,6 +426,16 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
             allowedTargets: ['grant-pardon'],
             advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'grant-pardon' } }],
+        },
+        {
+            id: 'choose-grant-pardon-target',
+            content: 'game-qidahen:tutorial.basic.steps.chooseGrantPardonTarget',
+            highlightTarget: 'qidahen-map-guide-hit-target-city-region-25',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+            allowedTargets: ['jinzhou->city-region-25'],
+            advanceOnEvents: [{ type: 'GRANT_PARDON_CHOICE_RESOLVED', match: { choiceId: 'jinzhou->city-region-25' } }],
         },
         {
             id: 'pay-cards',
@@ -1005,12 +1041,12 @@ const QIDAHEN_EVENT_ACTION_TUTORIAL: TutorialManifest = {
         {
             id: 'choose-effect',
             content: 'game-qidahen:tutorial.eventAction.steps.chooseEffect',
-            highlightTarget: 'qidahen-khan-edict-selection',
+            highlightTarget: 'qidahen-map-guide-hit-target-city-region-25',
             position: 'left',
             requireAction: true,
             viewAs: '1',
-            allowedCommands: [INTERACTION_COMMANDS.RESPOND],
-            allowedTargets: ['recruit-train'],
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
+            allowedTargets: ['city-region-25', 'recruit-train'],
         },
         {
             id: 'result',
@@ -1062,7 +1098,7 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
         {
             id: 'friendly-mark',
             content: 'game-qidahen:tutorial.diplomacy.steps.friendlyMark',
-            highlightTarget: 'qidahen-map-layer',
+            highlightTarget: 'qidahen-map-guide-hit-target-city-region-24',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
@@ -1082,7 +1118,7 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
         {
             id: 'remove-mark',
             content: 'game-qidahen:tutorial.diplomacy.steps.removeMark',
-            highlightTarget: 'qidahen-diplomacy-target-city-region-22',
+            highlightTarget: 'qidahen-map-guide-hit-target-city-region-22',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],

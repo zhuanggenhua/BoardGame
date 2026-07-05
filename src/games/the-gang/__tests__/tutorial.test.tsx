@@ -1,0 +1,239 @@
+/* @vitest-environment happy-dom */
+import React from 'react';
+import { render } from '@testing-library/react';
+import { describe, expect, test } from 'vitest';
+import type { MatchState } from '../../../engine/types';
+import Board from '../Board';
+import { TheGangDomain } from '../domain';
+import { execute, reduce } from '../domain/reducer';
+import { THE_GANG_COMMANDS, THE_GANG_EVENTS, type TheGangCore } from '../domain/types';
+import TheGangTutorial from '../tutorial';
+
+const fixedRandom = { random: () => 0 };
+
+const stateOf = (core: TheGangCore): MatchState<TheGangCore> => ({
+    core,
+    sys: {
+        tutorial: {
+            active: false,
+            manifestId: null,
+            stepIndex: 0,
+            steps: [],
+            step: null,
+        },
+    } as MatchState<TheGangCore>['sys'],
+});
+
+const tutorialTargets = () =>
+    TheGangTutorial.steps
+        .map((step) => step.highlightTarget)
+        .filter((target): target is string => Boolean(target));
+
+const stableTutorialTargets = () =>
+    tutorialTargets().filter((target) => target !== 'the-gang-next-round' && target !== 'the-gang-reveal-showdown');
+
+describe('The Gang tutorial', () => {
+    test('基础教程包含真实步骤和命令/事件约束', () => {
+        expect(TheGangTutorial.id).toBe('the-gang-basic');
+        expect(TheGangTutorial.numPlayers).toBe(3);
+        expect(TheGangTutorial.steps.length).toBeGreaterThanOrEqual(8);
+        expect(TheGangTutorial.steps.map((step) => step.id)).toEqual([
+            'intro',
+            'goal-track',
+            'hand',
+            'chip-choice',
+            'table-response',
+            'advance-round',
+            'community-cards',
+            'yellow-chip',
+            'yellow-response',
+            'turn-round',
+            'turn-card',
+            'orange-chip',
+            'orange-response',
+            'river-round',
+            'final-chip',
+            'final-response',
+            'reveal-showdown',
+            'showdown',
+            'finish',
+        ]);
+
+        const chipStep = TheGangTutorial.steps.find((step) => step.id === 'chip-choice');
+        expect(chipStep).toMatchObject({
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.CHIP_TAKEN, match: { playerId: '0' } }],
+        });
+
+        const tableResponseStep = TheGangTutorial.steps.find((step) => step.id === 'table-response');
+        expect(tableResponseStep).toMatchObject({
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+        });
+        expect(tableResponseStep?.infoStep).not.toBe(true);
+
+        const advanceRoundStep = TheGangTutorial.steps.find((step) => step.id === 'advance-round');
+        expect(advanceRoundStep).toMatchObject({
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
+        });
+
+        for (const stepId of ['yellow-chip', 'orange-chip']) {
+            const chipStep = TheGangTutorial.steps.find((step) => step.id === stepId);
+            expect(chipStep).toMatchObject({
+                requireAction: true,
+                allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+                advanceOnEvents: [{ type: THE_GANG_EVENTS.CHIP_TAKEN, match: { playerId: '0' } }],
+            });
+        }
+
+        for (const stepId of ['yellow-response', 'orange-response']) {
+            const responseStep = TheGangTutorial.steps.find((step) => step.id === stepId);
+            expect(responseStep).toMatchObject({
+                allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            });
+            expect(responseStep?.infoStep).not.toBe(true);
+        }
+
+        for (const stepId of ['turn-round', 'river-round']) {
+            const roundStep = TheGangTutorial.steps.find((step) => step.id === stepId);
+            expect(roundStep).toMatchObject({
+                requireAction: true,
+                allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+                advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
+            });
+        }
+
+        const finalChipStep = TheGangTutorial.steps.find((step) => step.id === 'final-chip');
+        expect(finalChipStep).toMatchObject({
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.CHIP_TAKEN, match: { playerId: '0' } }],
+        });
+
+        const finalResponseStep = TheGangTutorial.steps.find((step) => step.id === 'final-response');
+        expect(finalResponseStep).toMatchObject({
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+        });
+        expect(finalResponseStep?.infoStep).not.toBe(true);
+
+        const revealShowdownStep = TheGangTutorial.steps.find((step) => step.id === 'reveal-showdown');
+        expect(revealShowdownStep).toMatchObject({
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.SHOWDOWN_REVEALED }],
+        });
+    });
+
+    test('教程高亮目标在 Board 中都有真实锚点', () => {
+        const core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        render(
+            <Board
+                G={stateOf(core)}
+                dispatch={() => undefined}
+                playerID="0"
+                matchData={[
+                    { id: 0, name: '玩家 1', isConnected: true },
+                    { id: 1, name: '玩家 2', isConnected: true },
+                    { id: 2, name: '玩家 3', isConnected: true },
+                ]}
+                isConnected
+            />,
+        );
+
+        expect(document.querySelector('[data-tutorial-id="the-gang-title"]')).not.toBeNull();
+        for (const target of new Set(stableTutorialTargets())) {
+            expect(document.querySelector(`[data-tutorial-id="${target}"]`)).not.toBeNull();
+        }
+    });
+
+    test('教程主动作覆盖选筹码、推进公共牌和摊牌反馈闭环', () => {
+        let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const dispatch = () => undefined;
+        const matchData = [
+            { id: 0, name: '玩家 1', isConnected: true },
+            { id: 1, name: '玩家 2', isConnected: true },
+            { id: 2, name: '玩家 3', isConnected: true },
+        ];
+        const renderBoard = () =>
+            render(
+                <Board
+                    G={stateOf(core)}
+                    dispatch={dispatch}
+                    playerID="0"
+                    matchData={matchData}
+                    isConnected
+                />,
+            );
+
+        const takeChip = (playerId: string, chip: number) => {
+            const events = execute(stateOf(core), {
+                type: THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId,
+                payload: { chip },
+                timestamp: 0,
+            }, fixedRandom);
+            for (const event of events) core = reduce(core, event);
+        };
+        const endRound = () => {
+            const events = execute(stateOf(core), {
+                type: THE_GANG_COMMANDS.END_ROUND,
+                playerId: '0',
+                payload: {},
+                timestamp: 0,
+            }, fixedRandom);
+            for (const event of events) core = reduce(core, event);
+        };
+        const revealShowdown = () => {
+            const events = execute(stateOf(core), {
+                type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+                playerId: '0',
+                payload: {},
+                timestamp: 0,
+            }, fixedRandom);
+            for (const event of events) core = reduce(core, event);
+        };
+
+        takeChip('0', 1);
+        takeChip('1', 2);
+        takeChip('2', 3);
+
+        const readyForNextRound = renderBoard();
+        expect(document.querySelector('[data-tutorial-id="the-gang-next-round"]')).not.toBeNull();
+        readyForNextRound.unmount();
+
+        endRound();
+        expect(core.round).toBe(2);
+        expect(core.communityCards).toHaveLength(3);
+        expect(core.roundHistory).toHaveLength(1);
+
+        takeChip('0', 1);
+        takeChip('1', 2);
+        takeChip('2', 3);
+        endRound();
+        takeChip('0', 1);
+        takeChip('1', 2);
+        takeChip('2', 3);
+        endRound();
+        takeChip('0', 1);
+        takeChip('1', 2);
+        takeChip('2', 3);
+
+        const readyForShowdown = renderBoard();
+        expect(document.querySelector('[data-tutorial-id="the-gang-reveal-showdown"]')).not.toBeNull();
+        readyForShowdown.unmount();
+
+        revealShowdown();
+
+        expect(core.phase).toBe('showdown');
+        expect(core.communityCards).toHaveLength(5);
+        expect(core.lastShowdown?.results).toHaveLength(3);
+
+        const { unmount } = renderBoard();
+        expect(document.querySelector('[data-tutorial-id="the-gang-reveal-showdown"]')).toBeNull();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-area"]')).not.toBeNull();
+        expect(document.querySelector('[data-bgg-zone="reveal-zone"]')).not.toBeNull();
+        unmount();
+    });
+});

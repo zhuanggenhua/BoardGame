@@ -5,6 +5,7 @@ import {
     QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
     QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
     QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
+    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
     QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
     QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
@@ -22,6 +23,7 @@ import {
 import { getQidahenLockedRegionSelectionSemantics } from './regionFocusSemantics';
 import {
     getQidahenDiplomacySelectionForCore as getCoreQidahenDiplomacySelectionForCore,
+    getQidahenGrantPardonSelectionForCore as getCoreQidahenGrantPardonSelectionForCore,
     getQidahenKhanEdictSelectionForCore as getCoreQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore as getCoreQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore as getCoreQidahenRecruitSelectionForCore,
@@ -34,6 +36,7 @@ import type {
     QidahenEventOpponentHandChoiceSelection,
     QidahenFactionId,
     QidahenFortificationMaintenanceSelection,
+    QidahenGrantPardonSelection,
     QidahenHandLimitDiscardSelection,
     QidahenInternalDispatchSelection,
     QidahenKhanEdictSelection,
@@ -205,6 +208,38 @@ export function getQidahenRecruitSelectionForCore(
         ),
         readInteraction: getQidahenRecruitSelectionFromInteraction,
         readCore: (currentCore) => currentCore.recruitSelection ?? getCoreQidahenRecruitSelectionForCore(currentCore),
+    });
+}
+
+export function getQidahenGrantPardonSelectionFromInteraction(
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenGrantPardonSelection | null {
+    return getQidahenGrantPardonSelectionFromInteractionData(interaction?.data);
+}
+
+const getQidahenGrantPardonSelectionFromInteractionData = (
+    interactionData?: unknown,
+): QidahenGrantPardonSelection | null => {
+    return readQidahenInteractionSelectionField(
+        interactionData,
+        QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
+        'qidahenGrantPardonSelection',
+    );
+};
+
+export function getQidahenGrantPardonSelectionForCore(
+    core: QidahenCore,
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenGrantPardonSelection | null {
+    return getQidahenInteractionSelectionMirrorForCore({
+        core,
+        interaction,
+        isActive: (currentCore) => (
+            currentCore.turnPhase === 'grant-pardon-choice'
+            && currentCore.confirmedActionId === 'grant-pardon'
+        ),
+        readInteraction: getQidahenGrantPardonSelectionFromInteraction,
+        readCore: (currentCore) => currentCore.grantPardonSelection ?? getCoreQidahenGrantPardonSelectionForCore(currentCore),
     });
 }
 

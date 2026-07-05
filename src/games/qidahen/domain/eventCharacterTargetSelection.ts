@@ -1,7 +1,10 @@
 import { buildDriveTigerDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';
 import { buildPaymentState } from './factionActionWindow';
-import { resolveQidahenGrantPardonExecution } from './grantPardonExecution';
-import { getQidahenLockedRegionSelectionSemantics } from './regionFocusSemantics';
+import {
+    buildQidahenRegionFocusState,
+    getQidahenLockedRegionSelectionSemantics,
+} from './regionFocusSemantics';
+import { buildGrantPardonSelectionFromRegionSemantics } from './selectionBuilders';
 import {
     canResolveQidahenCharacterJudgement,
     resolveQidahenSingleCharacterJudgement,
@@ -667,16 +670,50 @@ export function resolveQidahenEventOpponentHandChoice(
         });
 
         if (selection.targetFactionId === 'ming' && choice.id === 'grant-pardon') {
-            const grantPardonResolution = resolveQidahenGrantPardonExecution(
+            const grantPardonSelection = buildGrantPardonSelectionFromRegionSemantics(
                 nextState,
-                nextState.factions,
-                timestamp,
+                getQidahenLockedRegionSelectionSemantics(nextState),
             );
-            const grantPardonState = updateQidahenTurnLabel({
+            if (!grantPardonSelection) {
+                return advanceQidahenTurnIfReady(updateQidahenTurnLabel({
+                    ...nextState,
+                    lastSeasonSummary: {
+                        id: `summary-${timestamp}`,
+                        title: '封贡敕书',
+                        lines: [
+                            `${selection.targetFactionName}选择执行赐印招安。`,
+                            `封贡敕书使用后进入${selection.targetFactionName}弃牌堆。`,
+                            discardedCardCount > 0
+                                ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
+                                : '没有额外弃牌费用。',
+                            '赐印招安：当前没有可招安的相邻敌军。',
+                        ],
+                    },
+                }), timestamp);
+            }
+            const tributeEdictGrantPardonSelection = {
+                ...grantPardonSelection,
+                executionSource: 'tribute-edict' as const,
+            };
+
+            const displayAnchorRegionId = tributeEdictGrantPardonSelection.displayAnchorRegionId
+                ?? tributeEdictGrantPardonSelection.sourceRegionId
+                ?? nextState.selectedRegionId;
+            return updateQidahenTurnLabel({
                 ...nextState,
-                factions: grantPardonResolution.factions,
-                regions: grantPardonResolution.regions,
-                selectedRegionId: grantPardonResolution.selectedRegionId,
+                currentPlayer: state.factions.ming.playerId,
+                turnPhase: 'grant-pardon-choice',
+                selectedActionId: 'grant-pardon',
+                confirmedActionId: 'grant-pardon',
+                selectedPaymentCardIds: [],
+                payment: buildPaymentState('grant-pardon', 0, 0),
+                grantPardonSelection: tributeEdictGrantPardonSelection,
+                selectedRegionId: displayAnchorRegionId,
+                regionFocusState: buildQidahenRegionFocusState(displayAnchorRegionId, {
+                    lockedSourceRegionId: tributeEdictGrantPardonSelection.sourceRegionId ?? displayAnchorRegionId,
+                    displayAnchorRegionId,
+                }),
+                lastFactionActionId: 'grant-pardon',
                 lastSeasonSummary: {
                     id: `summary-${timestamp}`,
                     title: '封贡敕书',
@@ -686,9 +723,7 @@ export function resolveQidahenEventOpponentHandChoice(
                         discardedCardCount > 0
                             ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
                             : '没有额外弃牌费用。',
-                        ...(grantPardonResolution.lastSeasonSummary?.lines.map((line) => `赐印招安：${line}`) ?? [
-                            '赐印招安：当前没有可招安的相邻敌军。'
-                        ]),
+                        '等待大明选择赐印招安的目标部队和接收区。',
                     ],
                 },
                 actionLog: [
@@ -700,8 +735,6 @@ export function resolveQidahenEventOpponentHandChoice(
                     ...state.actionLog,
                 ].slice(0, 6),
             });
-
-            return advanceQidahenTurnIfReady(grantPardonState, timestamp);
         }
 
         if (selection.targetFactionId === 'ming' && choice.id === 'drive-tiger') {

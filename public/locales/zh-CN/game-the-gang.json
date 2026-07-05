@@ -1,0 +1,74 @@
+{
+  "title": {
+    "primary": "纸牌帮",
+    "secondary": "合作抢劫"
+  },
+  "description": "合作德州扑克排序游戏。用筹码表达牌力，齐心完成抢劫。",
+  "players": "3-6 人",
+  "status": {
+    "chipSelection": "选筹码",
+    "showdown": "摊牌",
+    "gameOver": "结束"
+  },
+  "actionLog": {
+    "takeChip": "玩家 {{player}} 在第 {{round}} 轮选择 {{chip}}★ 筹码",
+    "endRound": "玩家 {{player}} 结束第 {{round}} 轮，进入第 {{nextRound}} 轮",
+    "revealShowdown": "玩家 {{player}} 摊牌：第 {{heist}} 次抢劫{{outcome}}（成功 {{successes}} / 失败 {{failures}}）",
+    "startNextHeist": "玩家 {{player}} 开始第 {{heist}} 次抢劫"
+  },
+  "tutorial": {
+    "steps": {
+      "intro": "完成 3 次抢劫就赢，失败 3 次就输。每轮先看自己的两张底牌，再用筹码告诉队友：我觉得自己的牌力排第几。",
+      "goalTrack": "左边是第几次抢劫，右边是金条和警报。金条先到 3 个全队获胜，警报先到 3 个全队失败。",
+      "hand": "这是你的底牌和当前最佳牌型。你不能明说牌面，只能根据底牌、公共牌和别人拿过的筹码判断自己该排第几。",
+      "chipChoice": "现在选一个没被拿走的白筹码。数字越大，表示你认为自己的牌力越靠前；数字越小，表示你愿意把强牌位让给队友。",
+      "tableResponse": "队友也会拿白筹码。这里先只公开筹码，不公开手牌；你要记住大家给出的强弱信号。",
+      "advanceRound": "所有人都拿完筹码后，推进到下一轮。公共牌会翻开，大家再根据新牌重新估强弱。",
+      "communityCards": "公共牌出现后，你的最佳牌型会变化。后面还会继续翻出转牌和河牌，每轮都要重新拿对应颜色的筹码。",
+      "yellowChip": "现在重新估自己的牌力，拿黄筹码。黄筹码可以修正刚才白筹码传递的强弱信号。",
+      "yellowResponse": "队友也会拿黄筹码。对比白筹码和黄筹码，就能看出谁觉得公共牌帮到了自己。",
+      "turnRound": "黄筹码都拿完后推进到转牌。下一张公共牌会让排名判断再变化一次。",
+      "turnCard": "转牌已经出现。现在桌面有四张公共牌，继续根据新牌重新排序。",
+      "orangeChip": "拿橙筹码表达第三轮判断。到这里，大家已经有三轮公开信号可以互相校准。",
+      "orangeResponse": "队友也会拿橙筹码。记住每个人从白到橙的变化，红筹码会把这些判断锁成最终顺序。",
+      "riverRound": "橙筹码都拿完后推进到河牌。第五张公共牌出现后，就进入最终承诺。",
+      "finalChip": "红筹码是最终承诺。选红筹码时要把自己的两张底牌和五张公共牌一起看，决定最终牌力排名。",
+      "finalResponse": "队友也会拿红筹码。三个人的红筹码必须形成最终强弱顺序，摊牌时就按这个顺序检查。",
+      "revealShowdown": "所有红筹码都选完后摊牌。系统会比较真实牌力顺序和红筹码顺序。",
+      "showdown": "摊牌结果会显示每位玩家的红筹码、牌型和本次抢劫是否成功。顺序对上就获得金条，对不上就触发警报。",
+      "finish": "核心闭环是：看牌力、用筹码表达排名、公共牌改变判断、红筹码锁定最终顺序、摊牌结算。"
+    }
+  },
+  "board": {
+    "cardBackAlt": "隐藏扑克牌牌背",
+    "layoutContract": "BGG 电子版结构：顶部玩家板，中部筹码池和牌河，底部警报金库和手牌。",
+    "chip": "筹码",
+    "roundLabels": {
+      "1": "白筹码",
+      "2": "黄筹码",
+      "3": "橙筹码",
+      "4": "红筹码"
+    },
+    "chipLabel": "{{round}} {{value}} 星",
+    "chipTakenByPlayer": "{{label}} 已被玩家 {{player}} 选择",
+    "failuresLabel": "失败 {{failures}}",
+    "failures": "失败",
+    "alarmTrack": "警报 {{failures}}/3",
+    "successesLabel": "成功 {{successes}}",
+    "successes": "成功",
+    "vaultTrack": "金库 {{successes}}/3",
+    "vaultsAlarmsLabel": "金库 {{successes}}/3，警报 {{failures}}/3",
+    "showdownSettlement": "摊牌结算",
+    "heistSuccess": "抢劫成功",
+    "heistFailure": "抢劫失败",
+    "safeSettlement": "保险箱结算",
+    "nextHeist": "下一次抢劫",
+    "playerFallback": "玩家 {{player}}",
+    "heistNumber": "抢劫 {{heist}}",
+    "communityCardsSlot": "公共牌牌槽",
+    "myHand": "我的手牌",
+    "nextRound": "下一轮",
+    "revealShowdown": "摊牌",
+    "localSeat": "本地座位"
+  }
+}

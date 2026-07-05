@@ -12,6 +12,7 @@ import type {
     QidahenEventCharacterTargetInteraction,
     QidahenEventOpponentHandChoiceInteraction,
     QidahenFortificationMaintenanceInteraction,
+    QidahenGrantPardonInteraction,
     QidahenHandLimitDiscardInteraction,
     QidahenInternalDispatchInteraction,
     QidahenKhanEdictInteraction,
@@ -27,6 +28,7 @@ import {
     getQidahenDiplomacySelectionForCore,
     getQidahenHandLimitDiscardSelectionForCore,
     getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenGrantPardonSelectionForCore,
     getQidahenInternalDispatchSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
@@ -39,6 +41,7 @@ import {
     QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
     QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
     QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
+    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
     QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
     QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
@@ -121,11 +124,49 @@ function buildQidahenRecruitInteraction(
             targetType: 'button',
             autoResolveIfSingle: false,
             subtitle: '选择建军方式',
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE],
         },
     ) as QidahenRecruitInteraction;
 
     interaction.data.qidahenRecruitSelection = {
+        ...selection,
+        choices: selection.choices.map((choice) => ({ ...choice })),
+    };
+
+    return interaction;
+}
+
+function buildQidahenGrantPardonInteraction(
+    state: MatchState<QidahenCore>,
+): QidahenGrantPardonInteraction | null {
+    const selection = getQidahenGrantPardonSelectionForCore(state.core, state.sys.interaction?.current);
+    if (!selection) {
+        return null;
+    }
+
+    const options = selection.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.label,
+        value: { choiceId: choice.id },
+        displayMode: 'button' as const,
+        description: choice.detail,
+    }));
+
+    const interaction = createSimpleChoice(
+        `qidahen-grant-pardon-${selection.sourceRegionId ?? state.core.currentPlayer}`,
+        state.core.currentPlayer,
+        selection.title,
+        options,
+        {
+            sourceId: QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
+            targetType: 'button',
+            autoResolveIfSingle: false,
+            subtitle: selection.summary,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+        },
+    ) as QidahenGrantPardonInteraction;
+
+    interaction.data.qidahenGrantPardonSelection = {
         ...selection,
         choices: selection.choices.map((choice) => ({ ...choice })),
     };
@@ -517,6 +558,10 @@ export const QIDAHEN_TURN_ACTION_RUNTIME_INTERACTION_BUILDERS: readonly QidahenR
     {
         sourceId: QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
         buildInteraction: buildQidahenRecruitInteraction,
+    },
+    {
+        sourceId: QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
+        buildInteraction: buildQidahenGrantPardonInteraction,
     },
     {
         sourceId: QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,

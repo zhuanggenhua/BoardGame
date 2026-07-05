@@ -31,7 +31,7 @@
 
 - 树精卡图不是旧 `ability-cards-common.atlas.json` 的 `1860x2048` 宽图，不能套旧公共 atlas。
 - 本轮使用 `ability-cards-treant.atlas.json`，合同为 `900x2048`、5 列、8 行、row-major frame。
-- 通用卡使用 `TREANT_NINJA_COMMON_ATLAS_INDEX`，其中 `card-unexpected` 位于 `slot-37`。
+- 通用卡使用 `TREANT_NINJA_COMMON_ATLAS_INDEX`，其中 `card-unexpected` 位于 `slot-32`。
 - 未新增 `hand-cards-atlas`；手牌仍通过现有 `CardPreview`/atlas 运行时合同加载。
 
 ## 对照与冲突

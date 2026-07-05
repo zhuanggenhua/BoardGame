@@ -11,6 +11,7 @@ import type {
     QidahenArmamentId,
     QidahenCore,
     QidahenFactionId,
+    QidahenGrantPardonChoice,
     QidahenSeasonSummary,
 } from './types';
 
@@ -24,6 +25,7 @@ interface QidahenSelectedActionExecutionResolutionDependencies {
         state: QidahenCore,
         factions: QidahenCore['factions'],
         timestamp: number,
+        choice?: QidahenGrantPardonChoice | null,
     ) => {
         factions: QidahenCore['factions'];
         lastSeasonSummary: QidahenSeasonSummary | null;
@@ -430,10 +432,14 @@ export const resolveQidahenSelectedActionExecutionResolution = (
     }
 
     if (actionId === 'grant-pardon') {
+        const grantPardonChoice = state.grantPardonSelection?.choices.find((choice) => (
+            choice.id === state.grantPardonSelection?.selectedChoiceId
+        )) ?? null;
         const grantPardonResolution = dependencies.resolveGrantPardonExecution(
             state,
             nextFactions,
             timestamp,
+            grantPardonChoice,
         );
         nextFactions = grantPardonResolution.factions;
         nextLastSeasonSummary = grantPardonResolution.lastSeasonSummary;

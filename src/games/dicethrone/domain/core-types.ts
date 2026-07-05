@@ -225,6 +225,7 @@ export interface AbilityCard {
 export type PendingAttackSettlementStage =
     | 'targeting'
     | 'preDamage'
+    | 'withDamageChoicePending'
     | 'postDamagePending'
     | 'readyToResolve';
 
@@ -286,6 +287,11 @@ export interface PendingAttack {
     };
     /** 奖励骰是否已通过 BONUS_DICE_SETTLED 结算（避免 autoContinue 重入时重复执行 resolveAttack） */
     bonusDiceResolved?: boolean;
+    /**
+     * withDamage 中的非伤害选择已完成。
+     * 例：武僧“连段冲拳②”奖励骰掷出莲花后先选净化/闪避，再继续结算同一技能的基础伤害。
+     */
+    withDamageChoiceResolved?: boolean;
     /**
      * 主伤害已在攻击中途落地，且 postDamage/withDamage 内挂起的后续选择也已完成。
      * 后续只需要生成 ATTACK_RESOLVED 收口，不应再次重放整段攻击或二次造成伤害。
