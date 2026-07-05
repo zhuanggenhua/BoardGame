@@ -40,6 +40,9 @@ export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
 ];
 export const DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS = [
   'assets-manifest.json',
+  // V2 书本首页首屏背景是 Android 壳根路由的关键图片；
+  // 生产包必须保留本地副本，不能依赖 CDN 单点可用性。
+  'images/home-v2/book-catalog-wide/1.png',
 ];
 export const DIST_LOGOS_RETAIN_RELATIVE_PATHS = [
   'weixin.jpg',
@@ -69,7 +72,15 @@ const sizeOf = (targetPath) => {
 
   while (stack.length > 0) {
     const currentPath = stack.pop();
-    const stat = fs.statSync(currentPath);
+    let stat;
+    try {
+      stat = fs.statSync(currentPath);
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
     if (stat.isFile()) {
       total += stat.size;
       continue;

@@ -2276,6 +2276,16 @@ export class GameTransportServer {
                     }
                     : nextCandidate;
                 const hasLiveSeatConnection = (match.connections.get(candidate.playerId)?.size ?? 0) > 0;
+                const shouldContinueOfflineLegalOnlyActiveTurnRecovery =
+                    actionRecoveryApplied
+                    && candidate.reason === 'active-turn-legal-only'
+                    && normalizedNextCandidate.reason === 'active-turn'
+                    && !hasLiveSeatConnection
+                    && normalizedNextCandidate.resolution.action.commands.length > 0;
+                if (shouldContinueOfflineLegalOnlyActiveTurnRecovery) {
+                    currentCandidate = normalizedNextCandidate;
+                    continue;
+                }
                 // 仅在 AI seat 在线时才交给自然链路继续；离线时需继续 watchdog 收口，避免停在 AI 半回合。
                 if (actionRecoveryApplied && normalizedNextCandidate.reason === 'active-turn' && hasLiveSeatConnection) {
                     allowNaturalAiContinuation = true;

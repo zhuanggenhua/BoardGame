@@ -250,7 +250,8 @@ export function createPendingDamage(
     sourceAbilityId: string | undefined,
     timestamp: number = 0,
     initialModifiers?: Array<{ type: 'defense' | 'token' | 'shield' | 'status'; value: number; sourceId?: string; sourceName?: string }>,
-    damageScope?: 'attack' | 'direct'
+    damageScope?: 'attack' | 'direct',
+    unblockable?: boolean,
 ): PendingDamage {
     const responderId = responseType === 'beforeDamageDealt' ? sourcePlayerId : targetPlayerId;
     const normalizedSource = sourceAbilityId ?? 'none';
@@ -263,6 +264,7 @@ export function createPendingDamage(
         currentDamage: damage,
         sourceAbilityId,
         damageScope,
+        ...(unblockable ? { unblockable: true } : {}),
         responseType,
         responderId,
         isFullyEvaded: false,
@@ -650,6 +652,7 @@ export function finalizeTokenResponse(
                 sourceAbilityId: pendingDamage.sourceAbilityId,
                 sourcePlayerId: pendingDamage.sourcePlayerId,
                 damageScope: pendingDamage.damageScope,
+                ...(pendingDamage.unblockable ? { unblockable: true } : {}),
                 modifiers: pendingDamage.modifiers,
             },
             sourceCommandType: 'ABILITY_EFFECT',

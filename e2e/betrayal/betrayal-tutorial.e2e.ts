@@ -30,6 +30,7 @@ const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-房间牌整张承接-�
 const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-探索未知房间前.png`;
 const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-探索后发现牌.png`;
 const STEP_14A = `${EVIDENCE_DIR}/14A-山屋惊魂-教程-点击兔脚后选择骰子.png`;
+const STEP_14A1 = `${EVIDENCE_DIR}/14A1-山屋惊魂-教程-兔脚选中改骰高亮.png`;
 const STEP_14B = `${EVIDENCE_DIR}/14B-山屋惊魂-教程-兔脚重投结束.png`;
 const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-探索后牌桌结果.png`;
 
@@ -60,13 +61,13 @@ const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
     const physicsSource = rollPanel.getByTestId('betrayal-house-dice-physics-source');
     await expect(physicsSource).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
     await expect(physicsSource).toHaveAttribute('data-dice-physics-mode', 'debug-visible');
-    await expect(physicsSource).toHaveAttribute('data-dice-face-system', 'betrayal-house-0-1-2-skin');
+    await expect(physicsSource).toHaveAttribute('data-dice-face-system', 'betrayal-house-0-1-2-per-die-skin');
     await expect.poll(async () => diceGroup.evaluate((node) => {
         const canvases = Array.from(node.querySelectorAll('canvas'))
             .filter((canvas): canvas is HTMLCanvasElement => canvas instanceof HTMLCanvasElement);
         const source = node.querySelector('[data-testid="betrayal-house-dice-physics-source"]') as HTMLElement | null;
         if (source?.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
-        if (source?.dataset.diceFaceSystem !== 'betrayal-house-0-1-2-skin') return false;
+        if (source?.dataset.diceFaceSystem !== 'betrayal-house-0-1-2-per-die-skin') return false;
 
         return canvases.some((canvas) => {
             const rect = canvas.getBoundingClientRect();
@@ -84,6 +85,135 @@ const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
     const physicsSource = rollPanel.getByTestId('betrayal-house-dice-physics-source');
     await expect.poll(async () => physicsSource.getAttribute('data-dice-settled'), { timeout: 15000 }).toBe('true');
     await rollPanel.page().waitForTimeout(450);
+};
+
+const readBetrayalRollMetrics = async (rollPanel: Locator) => {
+    return rollPanel.evaluate((node) => {
+        const panel = node as HTMLElement;
+        const diceGroup = panel.querySelector('[data-testid="betrayal-house-dice-3d-group"]') as HTMLElement | null;
+        const subtotal = panel.querySelector('[data-testid="betrayal-recent-roll-subtotal"]')?.textContent ?? '';
+        const total = panel.querySelector('[data-testid="betrayal-recent-roll-total"]')?.textContent ?? '';
+        const bonus = panel.querySelector('[data-testid="betrayal-recent-roll-passive-bonus"]')?.textContent ?? '';
+        const ruleValues = (diceGroup?.dataset.diceRuleValues ?? '')
+            .split(',')
+            .filter(Boolean)
+            .map((value) => Number(value));
+        const visibleRuleValues = (diceGroup?.dataset.diceVisibleRuleValues ?? '')
+            .split(',')
+            .filter(Boolean)
+            .map((value) => Number(value));
+        const readableOverlayCount = panel.querySelectorAll('[data-testid^="betrayal-house-readable-die-"]').length;
+        const dieValueOverlays = Array.from(panel.querySelectorAll('[data-testid^="betrayal-house-die-value-overlay-"]'))
+            .map((element) => Number((element as HTMLElement).dataset.ruleValue));
+        const dieValueOverlayRects = Array.from(panel.querySelectorAll('[data-testid^="betrayal-house-die-value-overlay-"]'))
+            .map((element) => {
+                const rect = (element as HTMLElement).getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                return {
+                    width: rect.width,
+                    height: rect.height,
+                    visible: rect.width > 0
+                        && rect.height > 0
+                        && style.display !== 'none'
+                        && style.visibility !== 'hidden'
+                        && Number(style.opacity || '1') > 0.5,
+                };
+            });
+        const physicalFaces = (diceGroup?.dataset.dicePhysicalD6Faces ?? '')
+            .split(',')
+            .filter(Boolean)
+            .map((value) => Number(value));
+        const subtotalNumber = Number(subtotal.match(/-?\d+/)?.[0] ?? Number.NaN);
+        const totalNumber = Number(total.match(/-?\d+/)?.[0] ?? Number.NaN);
+        const bonusNumber = Number(bonus.match(/[+-]?\d+/)?.[0] ?? Number.NaN);
+        return {
+            ruleValues,
+            visibleRuleValues,
+            readableOverlayCount,
+            dieValueOverlays,
+            dieValueOverlayRects,
+            physicalFaces,
+            ruleSubtotal: Number(diceGroup?.dataset.diceRuleSubtotal ?? Number.NaN),
+            expectedSubtotal: ruleValues.reduce((sum, value) => sum + value, 0),
+            expectedPhysicalFaces: ruleValues.map((value) => (value * 2) + 1),
+            subtotalNumber,
+            totalNumber,
+            bonusNumber,
+        };
+    });
+};
+
+const expectBetrayalRollMetricsToMatchVisibleSummary = async (rollPanel: Locator) => {
+    const metrics = await readBetrayalRollMetrics(rollPanel);
+    expect(metrics.ruleValues.length, '山屋骰必须暴露每颗 0/1/2 规则骰面').toBeGreaterThan(0);
+    expect(metrics.ruleSubtotal, '骰子组件记录的规则骰面合计必须等于逐骰求和').toBe(metrics.expectedSubtotal);
+    expect(metrics.subtotalNumber, '信息区“骰面合计”必须等于山屋 0/1/2 规则骰面合计').toBe(metrics.expectedSubtotal);
+    expect(metrics.visibleRuleValues, '物理骰本体使用的山屋 0/1/2 规则值必须与结算骰一致').toEqual(metrics.ruleValues);
+    expect(metrics.readableOverlayCount, '不能用额外小骰面列替代物理骰本体可读性').toBe(0);
+    expect(metrics.dieValueOverlays, '每颗物理骰本体位置必须直接显示山屋 0/1/2 规则值').toEqual(metrics.ruleValues);
+    expect(metrics.dieValueOverlayRects.every((rect) => rect.visible && rect.width >= 30 && rect.height >= 30), '物理骰本体上的规则值必须真实可见且足够大').toBe(true);
+    expect(metrics.physicalFaces, '物理 d6 目标面必须和山屋规则骰一一对应').toEqual(metrics.expectedPhysicalFaces);
+    expect(metrics.totalNumber, '信息区“总点数”必须等于规则骰面合计 + 加值').toBe(metrics.expectedSubtotal + metrics.bonusNumber);
+};
+
+const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
+    const outline = await card.evaluate((node) => {
+        const button = node as HTMLElement;
+        const shell = button.querySelector('[data-testid$="-shell"]') as HTMLElement | null;
+        const modifier = button.querySelector('[data-testid$="-roll-modifier"]') as HTMLElement | null;
+        const buttonStyle = window.getComputedStyle(button);
+        const shellStyle = shell ? window.getComputedStyle(shell) : null;
+        const modifierStyle = modifier ? window.getComputedStyle(modifier) : null;
+        const modifierRect = modifier?.getBoundingClientRect();
+        const shellRect = shell?.getBoundingClientRect();
+        return {
+            buttonShadowLayers: buttonStyle.boxShadow === 'none' ? 0 : buttonStyle.boxShadow.split('),').length,
+            shellBoxShadow: shellStyle?.boxShadow ?? null,
+            modifierBorderTop: modifierStyle?.borderTopWidth ?? null,
+            modifierBorderRight: modifierStyle?.borderRightWidth ?? null,
+            modifierBorderBottom: modifierStyle?.borderBottomWidth ?? null,
+            modifierBorderLeft: modifierStyle?.borderLeftWidth ?? null,
+            modifierInsetLeft: modifierRect && shellRect ? Math.round(modifierRect.left - shellRect.left) : null,
+            modifierInsetRight: modifierRect && shellRect ? Math.round(shellRect.right - modifierRect.right) : null,
+            modifierInsetTop: modifierRect && shellRect ? Math.round(modifierRect.top - shellRect.top) : null,
+            modifierInsetBottom: modifierRect && shellRect ? Math.round(shellRect.bottom - modifierRect.bottom) : null,
+        };
+    });
+    expect(outline.buttonShadowLayers, '选中/可改骰按钮外发光不能叠成多圈描边').toBeLessThanOrEqual(2);
+    expect(outline.shellBoxShadow, '卡牌壳层内部不应额外叠阴影').toBe('none');
+    expect(outline.modifierBorderTop).toBe('2px');
+    expect(outline.modifierBorderRight).toBe('2px');
+    expect(outline.modifierBorderBottom).toBe('2px');
+    expect(outline.modifierBorderLeft).toBe('2px');
+    expect(outline.modifierInsetLeft, '可改骰内描边左侧内缩必须和右侧对称').toBe(outline.modifierInsetRight);
+    expect(outline.modifierInsetTop, '可改骰内描边上侧内缩必须和下侧对称').toBe(outline.modifierInsetBottom);
+    expect(outline.modifierInsetLeft, '可改骰内描边必须留在卡面内，不能向左外溢叠边').toBeGreaterThanOrEqual(1);
+    expect(outline.modifierInsetTop, '可改骰内描边必须留在卡面内，不能向下被持有区裁切').toBeGreaterThanOrEqual(1);
+};
+
+const expectTutorialNextDoesNotStealRollModifierFocus = async (page: Parameters<typeof test>[0]['page']) => {
+    const geometry = await page.evaluate(() => {
+        const button = document.querySelector('[data-testid="tutorial-next-button"]') as HTMLElement | null;
+        const dice = document.querySelector('[data-testid="betrayal-rabbit-foot-dice"]') as HTMLElement | null;
+        if (!button || !dice) {
+            return {
+                visible: false,
+                verticalGap: Number.POSITIVE_INFINITY,
+                buttonCenterX: 0,
+                diceCenterX: 0,
+            };
+        }
+        const buttonRect = button.getBoundingClientRect();
+        const diceRect = dice.getBoundingClientRect();
+        return {
+            visible: buttonRect.width > 0 && buttonRect.height > 0 && window.getComputedStyle(button).visibility !== 'hidden',
+            verticalGap: buttonRect.top - diceRect.bottom,
+            buttonCenterX: buttonRect.left + buttonRect.width / 2,
+            diceCenterX: diceRect.left + diceRect.width / 2,
+        };
+    });
+    if (!geometry.visible) return;
+    expect(geometry.verticalGap, '选择重投骰子时，“下一步”不能贴着骰子选择控件抢主焦点').toBeGreaterThanOrEqual(18);
 };
 
 const expectDiscoveryPanelDoesNotCoverRollModifier = async (discoveryReveal: Locator, modifierCard: Locator) => {
@@ -313,6 +443,8 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(discoveryRollPanel).toContainText('知识检定');
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
         const initialRollDetail = discoveryReveal.getByTestId('betrayal-recent-roll-detail');
+        await expect(discoveryReveal.getByTestId('betrayal-recent-roll-subtotal')).toContainText(/骰面合计\s+\d+/);
+        await expect(discoveryReveal.getByTestId('betrayal-recent-roll-passive-bonus')).toContainText(/加值\s+[+-]\d+/);
         await expect(initialRollDetail).toContainText(/骰子合计\s+\d+｜加值\s+[+-]\d+/);
         await expect(initialRollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
         await expect(discoveryRollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
@@ -407,7 +539,12 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(rabbitFootDice).toBeVisible();
         const rerollTargetDie = page.getByTestId('betrayal-rabbit-foot-die-1');
         await expect(rerollTargetDie).toBeVisible();
+        await expect(rabbitFootCard).toHaveAttribute('aria-pressed', 'true');
+        await expectInventoryCardHasSingleSymmetricOutline(rabbitFootCard);
+        await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);
+        await expectTutorialNextDoesNotStealRollModifierFocus(page);
         await saveScreenshot(page, STEP_14A);
+        await saveScreenshot(page, STEP_14A1);
         const rollTotal = discoveryReveal.getByTestId('betrayal-recent-roll-total');
         const rollDetail = discoveryReveal.getByTestId('betrayal-recent-roll-detail');
         const totalBeforeRabbitFoot = await rollTotal.innerText();
@@ -416,6 +553,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(rabbitFootDice).toBeHidden();
         await expect.poll(async () => rollTotal.innerText()).not.toBe(totalBeforeRabbitFoot);
         await waitForPhysicalDiceSettled(discoveryRollPanel);
+        await expect(discoveryReveal.getByTestId('betrayal-recent-roll-subtotal')).toContainText(/骰面合计\s+\d+/);
+        await expect(discoveryReveal.getByTestId('betrayal-recent-roll-passive-bonus')).toContainText(/加值\s+[+-]\d+/);
+        await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);
         await expect(rollDetail).toContainText(/骰子合计\s+\d+｜加值\s+[+-]\d+/);
         await expect(rollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
         await saveScreenshot(page, STEP_14B);

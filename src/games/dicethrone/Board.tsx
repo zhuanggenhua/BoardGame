@@ -2293,6 +2293,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 respondableCardIds={respondableCardIds}
                                 characterId={handOwner.characterId}
                                 playerBoardFace={handOwner.playerBoardFace}
+                                disableCardPointerEvents={Boolean(diceMultistepInteraction)}
                             />
                         </>
                     );

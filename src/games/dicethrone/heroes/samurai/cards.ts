@@ -88,7 +88,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         id: 'upgrade-wakizashi-2',
         name: cardText('upgrade-wakizashi-2', 'name'),
         type: 'upgrade',
-        cpCost: 2,
+        cpCost: 1,
         timing: 'main',
         description: cardText('upgrade-wakizashi-2', 'description'),
         sfxKey: SAMURAI_SFX_LIGHT,

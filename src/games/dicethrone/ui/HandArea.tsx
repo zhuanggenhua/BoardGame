@@ -192,6 +192,7 @@ export const HandArea = ({
     respondableCardIds,
     characterId,
     playerBoardFace,
+    disableCardPointerEvents = false,
 }: {
     hand: AbilityCard[];
     locale?: string;
@@ -217,6 +218,7 @@ export const HandArea = ({
     respondableCardIds?: Set<string>;
     characterId?: string;
     playerBoardFace?: HeroState['playerBoardFace'];
+    disableCardPointerEvents?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isCoarsePointer = useCoarsePointer();
@@ -901,7 +903,8 @@ export const HandArea = ({
                                 className={`
                                     absolute bottom-0 rounded-[0.8vw]
                                     ${canClickDiscard ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
-                                    pointer-events-auto origin-bottom-center bg-transparent overflow-visible
+                                    ${disableCardPointerEvents ? 'pointer-events-none' : 'pointer-events-auto'}
+                                    origin-bottom-center bg-transparent overflow-visible
                                 `}
                                 style={{
                                     bottom: handCardBottomOffset,

@@ -40,6 +40,7 @@ export function createInitialHeistCore(
         successes: previous?.successes ?? 0,
         failures: previous?.failures ?? 0,
         currentRoundChips: {},
+        pendingProgress: undefined,
         roundHistory: [],
         heistHistory: previous?.heistHistory ?? [],
         lastShowdown: undefined,

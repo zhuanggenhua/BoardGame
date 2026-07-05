@@ -96,6 +96,23 @@ const reduceCommand = (
 ) => TheGangDomain.execute(stateOf(core), command, fixedRandom)
     .reduce((nextCore, event) => TheGangDomain.reduce(nextCore, event), core);
 
+const confirmProgressForAllPlayers = (
+    core: TheGangCore,
+    type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
+    timestamp: number,
+) => {
+    let nextCore = core;
+    for (const [index, playerId] of nextCore.playerIds.entries()) {
+        nextCore = reduceCommand(nextCore, {
+            type,
+            playerId,
+            payload: {},
+            timestamp: timestamp + index,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+    }
+    return nextCore;
+};
+
 const buildCoreReadyForShowdown = () => {
     let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
@@ -109,12 +126,7 @@ const buildCoreReadyForShowdown = () => {
             } as Parameters<typeof TheGangDomain.execute>[1]);
         }
 
-        core = reduceCommand(core, {
-            type: THE_GANG_COMMANDS.END_ROUND,
-            playerId: '0',
-            payload: {},
-            timestamp: round * 100,
-        } as Parameters<typeof TheGangDomain.execute>[1]);
+        core = confirmProgressForAllPlayers(core, THE_GANG_COMMANDS.END_ROUND, round * 100);
     }
 
     const finalRoundChips = finalRoundChipsFor(core);
@@ -176,17 +188,26 @@ describe('The Gang Board 运行入口', () => {
 
         unmount();
 
-        const revealed = reduceCommand(readyForShowdown, {
+        const pendingReveal = reduceCommand(readyForShowdown, {
             type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
             playerId: '0',
             payload: {},
             timestamp: 500,
         } as Parameters<typeof TheGangDomain.execute>[1]);
+        expect(pendingReveal.lastShowdown).toBeUndefined();
+        expect(pendingReveal.pendingProgress).toEqual({ kind: 'reveal-showdown', approvals: ['0'] });
+
+        const revealed = confirmProgressForAllPlayers(pendingReveal, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 510);
         renderBoardForCore(revealed);
 
         expect(document.querySelector('[data-bgg-zone="reveal-zone"]')).toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-result"]')).toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-best-cards"]')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="safe-zone"]')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="reveal-players"]')).toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="reveal-best-cards"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="reveal-best-cards"] img')).toHaveLength(15);
+        expect(revealed.lastShowdown?.outcome).toBe('success');
         expect(screen.getByRole('button', { name: 'board.nextHeist' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '摊牌' })).not.toBeInTheDocument();
     });

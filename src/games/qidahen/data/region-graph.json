@@ -340,10 +340,10 @@
         "y": 477
       },
       "center": {
-        "x": 627,
-        "y": 477
+        "x": 621,
+        "y": 465
       },
-      "pixelCount": 16960
+      "pixelCount": 13089
     },
     {
       "id": "city-region-22",
@@ -353,10 +353,10 @@
         "y": 717
       },
       "center": {
-        "x": 878,
-        "y": 717
+        "x": 881,
+        "y": 719
       },
-      "pixelCount": 110371
+      "pixelCount": 108882
     },
     {
       "id": "song-jin",

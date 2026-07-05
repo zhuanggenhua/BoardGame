@@ -69,6 +69,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
             ai: null,
         }),
         resolveGameTutorialManifest: () => null,
+        subscribeGameImplementationReady: () => () => undefined,
     }));
 
     vi.doMock('../../engine/transport/react', () => ({

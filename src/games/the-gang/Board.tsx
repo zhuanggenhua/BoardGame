@@ -5,11 +5,13 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorialBridge } from '../../contexts/TutorialContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { formatCard } from './domain/cards';
+import { TEXAS_HOLDEM_HAND_RANK_RULES, type PokerHandRankRule } from './domain/poker';
 import {
     THE_GANG_COMMANDS,
     type PlayingCard,
     type TheGangCommandMap,
     type TheGangCore,
+    type TheGangProgressKind,
 } from './domain/types';
 
 type Props = GameBoardProps<TheGangCore, TheGangCommandMap>;
@@ -61,7 +63,72 @@ const BGG_LAYOUT_CONTRACT = {
     bottomZone: 'bottom_zone / vaults_alarms_zone / hand_groupzone',
 };
 
+const DEFAULT_HAND_RANK_RULES = TEXAS_HOLDEM_HAND_RANK_RULES;
+
 type TFunction = ReturnType<typeof useTranslation>['t'];
+
+type CardFaceEmphasis = 'table' | 'river' | 'hand' | 'showdown';
+
+interface ProgressButtonState {
+    approvals: string[];
+    hasApproved: boolean;
+    label: string;
+    status: string;
+}
+
+function ProgressVoteDots({
+    playerIds,
+    approvals,
+    label,
+}: {
+    playerIds: string[];
+    approvals: string[];
+    label: string;
+}) {
+    return (
+        <div
+            aria-label={label}
+            className="flex items-center justify-end gap-1.5"
+            data-testid="the-gang-progress-vote-dots"
+        >
+            {playerIds.map((playerId) => {
+                const approved = approvals.includes(playerId);
+                return (
+                    <span
+                        key={playerId}
+                        aria-label={approved ? `${playerId} approved` : `${playerId} pending`}
+                        data-approved={approved ? 'true' : 'false'}
+                        className={[
+                            'h-2.5 w-2.5 rounded-full transition',
+                            approved
+                                ? 'bg-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.68)]'
+                                : 'bg-white/28 ring-1 ring-white/18',
+                        ].join(' ')}
+                    />
+                );
+            })}
+        </div>
+    );
+}
+
+const getProgressButtonState = (
+    core: TheGangCore,
+    kind: TheGangProgressKind,
+    localPlayerId: string,
+    baseLabel: string,
+    t: TFunction,
+): ProgressButtonState => {
+    const approvals = core.pendingProgress?.kind === kind ? core.pendingProgress.approvals : [];
+    const hasApproved = approvals.includes(localPlayerId);
+    return {
+        approvals,
+        hasApproved,
+        label: hasApproved ? t('board.progressWaiting') : baseLabel,
+        status: approvals.length > 0
+            ? t('board.progressApprovedCount', { approved: approvals.length, total: core.playerIds.length })
+            : t('board.progressNeedsAll'),
+    };
+};
 
 function CardFace({
     card,
@@ -71,12 +138,16 @@ function CardFace({
 }: {
     card?: PlayingCard;
     hidden?: boolean;
-    emphasis?: 'table' | 'hand';
+    emphasis?: CardFaceEmphasis;
     t: TFunction;
 }) {
-    const sizeClass = emphasis === 'hand'
-        ? 'h-20 w-14 md:h-24 md:w-16 lg:h-32 lg:w-[5.5rem] xl:h-40 xl:w-28'
-        : 'h-10 w-7 md:h-12 md:w-8 lg:h-20 lg:w-14';
+    const sizeClassByEmphasis: Record<CardFaceEmphasis, string> = {
+        table: 'h-14 w-10 md:h-16 md:w-11 lg:h-24 lg:w-[4.25rem] xl:h-28 xl:w-20',
+        river: 'h-20 w-14 md:h-24 md:w-16 lg:h-32 lg:w-[5.5rem] xl:h-40 xl:w-28',
+        hand: 'h-20 w-14 md:h-24 md:w-16 lg:h-32 lg:w-[5.5rem] xl:h-40 xl:w-28',
+        showdown: 'h-16 w-11 md:h-20 md:w-14 lg:h-24 lg:w-[4.25rem] xl:h-28 xl:w-20',
+    };
+    const sizeClass = sizeClassByEmphasis[emphasis];
 
     if (hidden || !card) {
         return (
@@ -112,6 +183,38 @@ function LayoutContractBadge() {
         <span className="sr-only" data-testid="the-gang-layout-contract">
             {t('board.layoutContract')}
         </span>
+    );
+}
+
+function HandRankReference({ rules = DEFAULT_HAND_RANK_RULES }: { rules?: readonly PokerHandRankRule[] }) {
+    const { t } = useTranslation('game-the-gang');
+    const orderedRules = [...rules].sort((left, right) => left.category - right.category);
+
+    return (
+        <details
+            className="group absolute bottom-1 left-1 z-20 max-w-[20rem] text-[0.62rem] font-black text-amber-50/94 lg:bottom-2 lg:left-2 lg:text-xs"
+            data-tutorial-id="the-gang-hand-rank-reference"
+            data-bgg-zone="hand-rank-reference"
+        >
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full bg-emerald-950/82 px-3 py-1.5 text-amber-100 shadow-[0_0.18rem_0.8rem_rgba(0,0,0,0.28)] ring-1 ring-amber-200/24 transition marker:hidden hover:bg-emerald-900/88 hover:text-amber-50 group-open:bg-amber-200 group-open:text-emerald-950 [&::-webkit-details-marker]:hidden" aria-label={t('board.handRankReferenceAria')}>
+                <span aria-hidden="true" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-200/45 text-[0.62rem] leading-none">?</span>
+                {t('board.handRankReference')}
+            </summary>
+            <div className="mt-1 rounded-lg bg-emerald-950/92 p-2 shadow-[0_0.25rem_1rem_rgba(0,0,0,0.35)] ring-1 ring-amber-200/22">
+                <div className="mb-1 flex items-center justify-between gap-3 text-[0.58rem] tracking-[0.12em] text-amber-200/72 lg:text-[0.66rem]">
+                    <span>{t('board.handRankWeak')}</span>
+                    <span>{t('board.handRankStrong')}</span>
+                </div>
+                <ol className="grid grid-cols-2 gap-x-4 gap-y-0.5" aria-label={t('board.handRankListAria')}>
+                {orderedRules.map((rule, index) => (
+                    <li key={rule.category} className="flex items-center gap-1.5 whitespace-nowrap rounded-sm px-1 py-0.5 leading-tight odd:bg-amber-50/[0.04]">
+                        <span className="w-3 text-right text-amber-200/70 tabular-nums">{index + 1}</span>
+                        <span className="text-amber-50">{rule.label}</span>
+                    </li>
+                ))}
+                </ol>
+            </div>
+        </details>
     );
 }
 
@@ -273,25 +376,36 @@ function VaultsAlarmsZone({ successes, failures }: { successes: number; failures
 
 function ShowdownResultPanel({
     lastShowdown,
+    localPlayerId,
+    isMultiplayer,
+    onSelectHotseatPlayer,
     playerName,
     onNextHeist,
+    nextHeistProgress,
+    playerIds,
 }: {
     lastShowdown: NonNullable<TheGangCore['lastShowdown']>;
+    localPlayerId: string;
+    isMultiplayer?: boolean;
+    onSelectHotseatPlayer: (playerId: string) => void;
     playerName: (id: string) => string;
     onNextHeist: () => void;
+    nextHeistProgress: ProgressButtonState;
+    playerIds: string[];
 }) {
     const success = lastShowdown.outcome === 'success';
     const { t } = useTranslation('game-the-gang');
 
     return (
         <section
-            className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center bg-[radial-gradient(circle_at_50%_44%,rgba(17,24,39,0.78),rgba(5,9,8,0.42)_48%,rgba(5,9,8,0.22)_72%,rgba(5,9,8,0.08))] px-6 py-8 [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]"
+            className="pointer-events-auto fixed inset-0 z-[80] flex min-h-dvh items-center justify-center overflow-y-auto bg-[radial-gradient(circle_at_50%_44%,rgba(17,24,39,0.92),rgba(5,9,8,0.86)_50%,rgba(5,9,8,0.78)_100%)] px-4 py-6 [text-shadow:0_2px_8px_rgba(0,0,0,0.9)] backdrop-blur-md md:px-6 md:py-8"
             data-bgg-zone="reveal-zone"
             aria-label={t('board.showdownSettlement')}
         >
             <div
-                className="relative flex flex-col items-center justify-center gap-5 px-8 py-7"
+                className="relative flex w-full max-w-[82rem] flex-col items-center justify-center gap-5 rounded-[2rem] border border-amber-100/18 bg-emerald-950/42 px-3 py-5 shadow-[0_30px_90px_rgba(0,0,0,0.45)] md:px-6 md:py-7"
                 data-bgg-zone="reveal-action"
+                data-tutorial-id="the-gang-showdown-result"
             >
                 <div className="flex items-center justify-center gap-3" data-bgg-zone="reveal-more-holder">
                     <span className={['text-5xl font-black leading-none md:text-7xl', success ? 'text-amber-300' : 'text-rose-400'].join(' ')}>
@@ -302,15 +416,37 @@ function ShowdownResultPanel({
                     </h2>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-bold md:text-base" data-bgg-zone="reveal-players">
+                <div
+                    className="grid w-full grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+                    data-bgg-zone="reveal-players"
+                    data-tutorial-id="the-gang-showdown-best-cards"
+                >
                     {lastShowdown.results.map((result) => (
                         <div
                             key={result.playerId}
-                            className="flex items-center gap-2"
+                            className="flex min-w-0 flex-col gap-3 rounded-2xl bg-emerald-950/62 px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.32)] ring-1 ring-amber-100/14 md:px-4 md:py-4"
                         >
-                            <span className="text-stone-100">{playerName(result.playerId)}</span>
-                            <ChipDisc round={4} value={result.chip} size="md" zone="plreveal-token" />
-                            <span className="text-stone-100">{result.strength.label}</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="truncate text-sm font-black text-stone-100 md:text-base">{playerName(result.playerId)}</span>
+                                <div className="flex items-center gap-2">
+                                    <ChipDisc round={4} value={result.chip} size="md" zone="plreveal-token" />
+                                    <span className="text-xs font-black tracking-[0.08em] text-amber-100 md:text-sm">{result.strength.label}</span>
+                                </div>
+                            </div>
+                            <div
+                                className="flex justify-center gap-2 md:gap-3"
+                                data-bgg-zone="reveal-best-cards"
+                                aria-label={`${playerName(result.playerId)} ${result.strength.label}`}
+                            >
+                                {result.bestCards.map((card, index) => (
+                                    <CardFace
+                                        key={`${result.playerId}-${card.rank}-${card.suit}-${index}`}
+                                        card={card}
+                                        emphasis="showdown"
+                                        t={t}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -319,13 +455,48 @@ function ShowdownResultPanel({
                     {t('board.safeSettlement')}
                 </div>
 
+                {!isMultiplayer && (
+                    <div
+                        className="flex flex-wrap justify-center gap-2"
+                        data-testid="the-gang-showdown-hotseat-switcher"
+                    >
+                        {lastShowdown.results.map((result) => {
+                            const selected = result.playerId === localPlayerId;
+                            const approved = nextHeistProgress.approvals.includes(result.playerId);
+                            return (
+                                <button
+                                    key={result.playerId}
+                                    type="button"
+                                    aria-pressed={selected}
+                                    onClick={() => onSelectHotseatPlayer(result.playerId)}
+                                    className={[
+                                        'rounded-full border px-3 py-1 text-xs font-black tracking-[0.08em] transition',
+                                        selected
+                                            ? 'border-amber-200 bg-amber-200 text-emerald-950'
+                                            : 'border-emerald-100/30 bg-emerald-950/62 text-emerald-50 hover:border-amber-200/70',
+                                    ].join(' ')}
+                                >
+                                    {playerName(result.playerId)}
+                                    {approved ? ` · ${t('board.progressWaiting')}` : ''}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
                 <button
                     type="button"
                     onClick={onNextHeist}
-                    className="text-sm font-black text-emerald-100/85 underline decoration-amber-300/45 underline-offset-4 transition hover:text-emerald-100 md:text-base"
+                    disabled={nextHeistProgress.hasApproved}
+                    className="rounded-full border border-emerald-100/60 bg-emerald-300 px-6 py-3 text-base font-black tracking-[0.08em] text-emerald-950 shadow-[0_12px_28px_rgba(16,185,129,0.32)] transition hover:-translate-y-0.5 hover:bg-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-100 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400 disabled:shadow-none disabled:hover:translate-y-0 md:px-8 md:text-lg"
                 >
-                    {t('board.nextHeist')}
+                    {nextHeistProgress.label}
                 </button>
+                <ProgressVoteDots
+                    approvals={nextHeistProgress.approvals}
+                    label={nextHeistProgress.status}
+                    playerIds={playerIds}
+                />
             </div>
         </section>
     );
@@ -422,6 +593,9 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
     const localPlayerId = !isMultiplayer ? resolvedHotseatPlayerId : (playerID ?? core.playerIds[0]);
     const localPlayer = core.players[localPlayerId];
     const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
+    const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
+    const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
+    const nextHeistProgress = getProgressButtonState(core, 'start-next-heist', localPlayerId, t('board.nextHeist'), t);
     const chipValues = Array.from({ length: core.playerIds.length }, (_, index) => index + 1);
     const ownerByChip = Object.fromEntries(
         Object.entries(core.currentRoundChips).map(([owner, chip]) => [chip, owner]),
@@ -562,9 +736,9 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                                 ))}
                             </div>
 
-                            <div className="flex w-full max-w-[34rem] flex-nowrap justify-center gap-2 lg:max-w-[52rem] lg:gap-4" data-bgg-zone="card-river" aria-label={t('board.communityCardsSlot')}>
+                            <div className="flex w-full max-w-[48rem] flex-nowrap justify-center gap-3 lg:max-w-[72rem] lg:gap-5 xl:max-w-[80rem]" data-bgg-zone="card-river" aria-label={t('board.communityCardsSlot')}>
                                 {core.communityCards.map((card, index) => (
-                                    <CardFace key={index} card={card} t={t} />
+                                    <CardFace key={index} card={card} emphasis="river" t={t} />
                                 ))}
                             </div>
                         </div>
@@ -572,6 +746,7 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
 
                     <section className="relative z-10 flex shrink-0 items-end justify-center pb-1 lg:pb-2" data-bgg-zone="bottom-zone">
                         <VaultsAlarmsZone successes={core.successes} failures={core.failures} />
+                        <HandRankReference />
 
                         <div className="flex flex-col items-center gap-1.5 lg:gap-2" data-bgg-zone="hand-groupzone" data-tutorial-id="the-gang-hand">
                             <span className="sr-only">{t('board.myHand')}</span>
@@ -591,28 +766,35 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                             </div>
                         </div>
 
-                        <div className="absolute bottom-1 right-1 flex min-w-[5rem] justify-end lg:bottom-2 lg:right-2">
+                        <div className="absolute bottom-1 right-1 flex min-w-[5rem] flex-col items-end gap-1 lg:bottom-2 lg:right-2">
                             {core.phase === 'chip-selection' && core.round < 4 && (
                                 <button
                                     type="button"
-                                    disabled={!allPlayersHaveChip}
+                                    disabled={!allPlayersHaveChip || nextRoundProgress.hasApproved}
                                     onClick={endRound}
                                     data-tutorial-id="the-gang-next-round"
-                                    className="text-xs font-black tracking-[0.08em] text-amber-100/82 underline decoration-amber-300/45 underline-offset-4 transition hover:text-amber-100 disabled:cursor-not-allowed disabled:text-stone-500 disabled:no-underline lg:text-sm"
+                                    className="min-w-[5.75rem] rounded-full border border-amber-200/75 bg-amber-300 px-5 py-2.5 text-base font-black tracking-[0.08em] text-stone-950 shadow-[0_12px_28px_rgba(245,158,11,0.36)] transition hover:-translate-y-0.5 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400 disabled:shadow-none disabled:hover:translate-y-0 lg:min-w-[7rem] lg:px-7 lg:py-3.5 lg:text-lg"
                                 >
-                                    {t('board.nextRound')}
+                                    {nextRoundProgress.label}
                                 </button>
                             )}
                             {core.phase === 'chip-selection' && core.round === 4 && (
                                 <button
                                     type="button"
-                                    disabled={!allPlayersHaveChip}
+                                    disabled={!allPlayersHaveChip || revealShowdownProgress.hasApproved}
                                     onClick={revealShowdown}
                                     data-tutorial-id="the-gang-reveal-showdown"
-                                    className="text-xs font-black tracking-[0.08em] text-rose-100/82 underline decoration-rose-300/45 underline-offset-4 transition hover:text-rose-100 disabled:cursor-not-allowed disabled:text-stone-500 disabled:no-underline lg:text-sm"
+                                    className="min-w-[5.75rem] rounded-full border border-rose-200/80 bg-rose-400 px-5 py-2.5 text-base font-black tracking-[0.08em] text-stone-950 shadow-[0_12px_30px_rgba(244,63,94,0.38)] transition hover:-translate-y-0.5 hover:bg-rose-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-100 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400 disabled:shadow-none disabled:hover:translate-y-0 lg:min-w-[7rem] lg:px-7 lg:py-3.5 lg:text-lg"
                                 >
-                                    {t('board.revealShowdown')}
+                                    {revealShowdownProgress.label}
                                 </button>
+                            )}
+                            {allPlayersHaveChip && core.phase === 'chip-selection' && (
+                                <ProgressVoteDots
+                                    approvals={core.round < 4 ? nextRoundProgress.approvals : revealShowdownProgress.approvals}
+                                    label={core.round < 4 ? nextRoundProgress.status : revealShowdownProgress.status}
+                                    playerIds={core.playerIds}
+                                />
                             )}
                         </div>
 
@@ -622,8 +804,13 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                         {core.lastShowdown && (
                             <ShowdownResultPanel
                                 lastShowdown={core.lastShowdown}
+                                localPlayerId={localPlayerId}
+                                isMultiplayer={isMultiplayer}
+                                onSelectHotseatPlayer={setHotseatPlayerId}
                                 playerName={playerName}
                                 onNextHeist={startNextHeist}
+                                nextHeistProgress={nextHeistProgress}
+                                playerIds={core.playerIds}
                             />
                         )}
                     </div>

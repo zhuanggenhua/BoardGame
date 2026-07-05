@@ -347,10 +347,10 @@
         "y": 477
       },
       "center": {
-        "x": 627,
-        "y": 477
+        "x": 621,
+        "y": 465
       },
-      "pixelCount": 16960
+      "pixelCount": 13089
     },
     {
       "id": "city-region-22",
@@ -360,10 +360,10 @@
         "y": 717
       },
       "center": {
-        "x": 878,
-        "y": 717
+        "x": 881,
+        "y": 719
       },
-      "pixelCount": 110371
+      "pixelCount": 108882
     },
     {
       "id": "song-jin",
@@ -451,10 +451,10 @@
         "y": 634
       },
       "center": {
-        "x": 491,
-        "y": 629
+        "x": 503,
+        "y": 634
       },
-      "pixelCount": 6115
+      "pixelCount": 7791
     },
     {
       "id": "city-region-29",
@@ -464,7 +464,7 @@
         "y": 871
       },
       "center": {
-        "x": 1239,
+        "x": 1252,
         "y": 820
       },
       "pixelCount": 5445
@@ -529,10 +529,10 @@
         "y": 460
       },
       "center": {
-        "x": 888,
-        "y": 447
+        "x": 892,
+        "y": 382
       },
-      "pixelCount": 7892
+      "pixelCount": 25738
     },
     {
       "id": "city-region-19-liaoxi",
@@ -542,10 +542,10 @@
         "y": 503
       },
       "center": {
-        "x": 661,
-        "y": 411
+        "x": 710,
+        "y": 390
       },
-      "pixelCount": 818
+      "pixelCount": 5038
     }
   ],
   "edges": [

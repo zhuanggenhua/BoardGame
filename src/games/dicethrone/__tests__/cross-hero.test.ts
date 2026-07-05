@@ -41,7 +41,7 @@ import {
     SHOWDOWN_3,
     TAKE_COVER_2,
 } from '../heroes/gunslinger/abilities';
-import { WAKIZASHI_3 } from '../heroes/samurai/abilities';
+import { WAKIZASHI_2, WAKIZASHI_3 } from '../heroes/samurai/abilities';
 
 // ============================================================================
 // 闂傚倷娴囧畷鍨叏閸偆顩插ù鐘差儏缁€澶愮叓閸ャ劍纾甸柛瀣尭椤繈顢橀悙鈺傜亞婵?setup 闂備浇顕у锕傦綖婢舵劕绠栭柛顐ｆ礀绾惧潡姊洪鈧粔鎾儗?
@@ -2255,6 +2255,7 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'wakizashi' }),
                     cmd('ADVANCE_PHASE', '0'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ADVANCE_PHASE', '0'),
                 ],
@@ -2292,6 +2293,7 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'wakizashi' }),
                     cmd('ADVANCE_PHASE', '0'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ADVANCE_PHASE', '0'),
                 ],
@@ -2323,6 +2325,7 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'wakizashi' }),
                     cmd('ADVANCE_PHASE', '0'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -2335,6 +2338,41 @@ describe('cross hero battles', () => {
             });
 
             expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION]).toBe(1);
+            expect(result.finalState.core.pendingAttack).toBeNull();
+        });
+
+        it('wakizashi undefendable damage can be boosted by honor', () => {
+            const runner = createCrossHeroRunner(
+                createQueuedRandom([1, 1, 6, 6, 4]),
+                { '0': 'samurai', '1': 'monk' }
+            );
+
+            const result = runner.run({
+                name: 'samurai wakizashi honor boost',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'wakizashi' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('USE_TOKEN', '0', { tokenId: TOKEN_IDS.HONOR, amount: 1 }),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    pendingInteraction: null,
+                    players: {
+                        '0': { hp: 50 },
+                        '1': { hp: 46 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.HONOR]).toBe(0);
             expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION]).toBe(1);
             expect(result.finalState.core.pendingAttack).toBeNull();
         });
@@ -2721,6 +2759,42 @@ describe('cross hero battles', () => {
             expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION]).toBe(1);
             expect(result.finalState.core.pendingAttack).toBeNull();
             expect(result.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+        });
+
+        it('upgrade-wakizashi-2 costs 1 CP and replaces runtime definition with level II', () => {
+            const upgradeCard = SAMURAI_CARDS.find(card => card.id === 'upgrade-wakizashi-2');
+            expect(upgradeCard).toBeDefined();
+            expect(upgradeCard!.cpCost).toBe(1);
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random: fixedRandom,
+                setup: (playerIds: PlayerId[], random: RandomFn) => {
+                    const state = createInitializedStateWithCharacters(
+                        playerIds,
+                        random,
+                        { '0': 'samurai', '1': 'monk' }
+                    );
+                    state.core.players['0'].resources.cp = 1;
+                    state.core.players['0'].hand = [{ ...upgradeCard! }];
+                    state.core.players['0'].deck = [];
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: 'samurai upgrade-wakizashi-2 runtime replace',
+                commands: [cmd('PLAY_CARD', '0', { cardId: 'upgrade-wakizashi-2' })],
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['0'].resources.cp).toBe(0);
+            expect(result.finalState.core.players['0'].abilityLevels['wakizashi']).toBe(2);
+            expect(result.finalState.core.players['0'].abilities.find(ability => ability.id === 'wakizashi')).toMatchObject(WAKIZASHI_2);
         });
 
         it('upgrade-wakizashi-3 replaces runtime definition with level III', () => {

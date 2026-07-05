@@ -441,34 +441,43 @@ async function logBoardDiceStageGate(page: Page, label: string) {
 }
 
 async function clickCenterDie(page: Page, dieId: number) {
-    const point = await page.evaluate((nextDieId: number) => {
+    const clickTarget = await page.evaluate((nextDieId: number) => {
         const hitLayer = document.querySelector(
             '[data-testid="dicethrone-board-dice-hit-layer"]',
         ) as HTMLElement | null;
         const target = document.querySelector(
             `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${nextDieId}"]`,
         ) as HTMLElement | null;
-        if (!target && !hitLayer) return null;
+        if (!hitLayer || !target) return null;
 
         // 透明按钮保留的是插件投影中心；真正接收点击的是整层 hit layer。
-        // 因此这里必须优先点透明按钮中心，不能退化成点 hit layer 正中心。
-        const clickSource = target ?? hitLayer!;
-        const rect = clickSource.getBoundingClientRect();
-        const style = window.getComputedStyle(clickSource);
-        if (rect.width <= 0
-            || rect.height <= 0
-            || style.visibility === 'hidden'
-            || style.display === 'none') {
+        // Playwright 直接按页面坐标点鼠标时，重叠层会影响命中；改为点 hit layer 内部相对坐标。
+        const targetRect = target.getBoundingClientRect();
+        const hitLayerRect = hitLayer.getBoundingClientRect();
+        const targetStyle = window.getComputedStyle(target);
+        const hitLayerStyle = window.getComputedStyle(hitLayer);
+        if (targetRect.width <= 0
+            || targetRect.height <= 0
+            || hitLayerRect.width <= 0
+            || hitLayerRect.height <= 0
+            || targetStyle.visibility === 'hidden'
+            || targetStyle.display === 'none'
+            || hitLayerStyle.visibility === 'hidden'
+            || hitLayerStyle.display === 'none') {
             return null;
         }
 
         return {
-            x: rect.left + (rect.width / 2),
-            y: rect.top + (rect.height / 2),
+            x: (targetRect.left + (targetRect.width / 2)) - hitLayerRect.left,
+            y: (targetRect.top + (targetRect.height / 2)) - hitLayerRect.top,
         };
     }, dieId);
-    if (!point) throw new Error(`未找到棋盘骰子中心点击点 ${dieId}`);
-    await page.mouse.click(point.x, point.y);
+    if (!clickTarget) throw new Error(`未找到棋盘骰子中心点击点 ${dieId}`);
+    await page.getByTestId('dicethrone-board-dice-hit-layer').click({
+        position: clickTarget,
+        force: true,
+    });
+    await page.waitForTimeout(120);
 }
 
 async function dragHandCardToPlay(page: Page, cardId: string) {

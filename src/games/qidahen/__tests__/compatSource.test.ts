@@ -3573,7 +3573,11 @@ describe('Qidahen compatibility source guards', () => {
         expect(handCardStateSource).toContain("import { resolveQidahenAtlas05OrdinaryHandCardIdentity } from './handCardIdentity';");
         expect(handCardStateSource).toContain("import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';");
         expect(handCardStateSource).toContain("const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];");
-        expect(handCardStateSource).toContain('const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_COUNT = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.length;');
+        expect(handCardStateSource).toContain('export const QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION: Record<QidahenFactionId, number[]> = {');
+        expect(handCardStateSource).toContain('const getFactionAtlas05DeckIndex = (');
+        expect(handCardStateSource).toContain('Missing confirmed qidahen atlas05 ordinary hand card identity');
+        expect(handCardStateSource).not.toContain('atlasIndex %');
+        expect(handCardStateSource).not.toContain('identity!');
         expect(handCardStateSource).not.toContain('const QIDAHEN_FACTION_HAND_PREVIEW_COUNT = 16;');
         expect(handCardStateSource).not.toContain('const factionHandPreviewById: Record<QidahenFactionId, (index: number) => QidahenHandCard[\'previewRef\']> = {');
         expect(handCardStateSource).toContain('export const buildInitialHandCards = (');

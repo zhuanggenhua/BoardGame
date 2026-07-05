@@ -372,7 +372,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain("action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const");
     });
 
-    it('地区目标主路径会落到地图区域遮罩，按钮只保留为透明命中或备用入口', () => {
+    it('地区目标主路径必须复用正式区域高亮，不得用标牌替代', () => {
         expect(boardSource).toContain('const buildRegularTroopPlacementCandidates = React.useCallback');
         expect(boardSource).toContain('.filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId))');
         expect(boardSource).toContain("action: 'select-region' as const");
@@ -380,12 +380,28 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("action: 'grant-pardon' as const");
         expect(boardSource).toContain('board.actions.grantPardon.mapFirstHint');
         expect(boardSource).toContain('board.actions.grantPardon.fallbackListLabel');
-        expect(boardSource).toContain('主路径：点击地图上的金色高亮接收区完成招安');
+        expect(boardSource).toContain('主路径：点击地图上的目标地区完成招安；列表只作备用');
         expect(boardSource).toContain("candidate.action === 'grant-pardon'");
-        expect(boardSource).toContain('for (const choice of grantPardonSelection?.choices ?? [])');
+        expect(boardSource).toContain('const choice = grantPardonMapChoices.find((item) => item.targetRegionId === regionId);');
+        expect(boardSource).toContain('resolveGrantPardonChoice(choice.id);');
+        expect(boardSource).toContain('grantPardonSelection?.choices.filter((choice) => isTutorialTargetAllowed(choice.id)) ?? []');
+        expect(boardSource).toContain('for (const choice of grantPardonMapChoices)');
+        expect(boardSource).toContain("if (tutorialStepId !== 'choose-grant-pardon-target') {");
+        expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'source');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'dispatch');");
-        expect(boardSource).toContain("candidate.action === 'grant-pardon'\n                                        ? 'transparent'");
+        expect(boardSource).toContain("const mapSelectionGuideUsesRegionHighlight = tutorialStepId === 'choose-grant-pardon-target';");
+        expect(boardSource).toContain('const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;');
+        expect(boardSource).toContain('{mapSelectionGuideDrawsRoute ? (');
+        expect(boardSource).toContain("topLevelMapSelectionGuide && tutorialStep?.id === 'choose-grant-pardon-target'");
+        expect(boardSource).toContain('data-tutorial-id={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}');
+        expect(boardSource).toContain("topLevelMapSelectionGuide && tutorialStep?.id !== 'choose-grant-pardon-target'");
+        expect(boardSource).toContain('const buildQidahenFocusedMapViewport = (');
+        expect(boardSource).toContain('const autoFocusMapCandidate = topLevelMapSelectionGuide?.candidates.length === 1');
+        expect(boardSource).not.toContain("const isGrantPardonTarget = candidate.action === 'grant-pardon';");
+        expect(boardSource).not.toContain('data-testid={`qidahen-map-guide-target-label-${candidate.targetRegionId}`}');
+        expect(boardSource).toContain('sr-only');
         expect(boardSource).not.toContain('0 0 0 5px rgba(255,236,190,0.92)');
+        expect(boardSource).not.toContain("boxShadow: '0 0 0 3px rgba(255,236,190,0.68)'");
         expect(boardSource).toContain("title: '征召地区'");
         expect(boardSource).toContain('candidates: buildRegularTroopPlacementCandidates(recruitFactionId)');
         expect(boardSource).toContain("title: '马市建军地区'");

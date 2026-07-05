@@ -1,6 +1,6 @@
 # 七大恨运行时手牌图集与 TTS 牌组交叉核验
 
-> 这份记录只用文本和 JSON 交叉核验运行时 faction hand preview atlas 与 TTS `CustomDeck / DeckIDs` 的对应关系。本轮不读取图片；本文件不得直接作为普通事件、军备、战术、银两的正式规则映射。
+> 这份记录只用文本和 JSON 交叉核验运行时 faction hand preview atlas 与 TTS `CustomDeck / DeckIDs` 的对应关系。本文件不得直接作为普通事件、军备、战术、银两的正式规则映射；也不得把 `deckKey 16 / atlas05` 直接当作全阵营可见手牌牌面图源。
 
 ## 输入与边界
 
@@ -13,6 +13,7 @@
 - TTS JSON：
   - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Workshop\2228142777.json`
 - 本轮只读取文本、JSON、路径、Steam 资源哈希和图集网格元数据；不读取整张图集或牌面图片。
+- 2026-07-05 运行态补充边界：`deckKey 16 / atlas05` 可作为普通手牌规则身份与文字来源，但它的原牌面左上角会带原图阵营角标，不能直接渲染到当前行动方手牌区；可见手牌牌面应与规则身份来源解耦。
 
 ## 核验方法
 
@@ -47,6 +48,8 @@
 | `$/ObjectStates[7]` | 17 | 24 | 15 | 10x7 | `朝鲜牌库图集/整版` | `public/assets/i18n/zh-CN/qidahen/cards/atlases/korea-deck-atlas.jpg` | 不是正式 faction hand preview atlas |
 
 ## 当前结论
+
+- 运行态手牌可分为两层：规则身份/文字来源与玩家可见牌面来源。atlas05 可以作为当前已核读的规则身份/文字来源；正式运行时必须同时按 TTS 真实牌堆顺序、目标 `atlasIndex` 和 `previewRef` 绑定同一张真实牌面。历史上“大明手牌露出后金‘金’”这类问题不能通过结构化 UI、文字卡或其它自造牌面遮掉，只能通过正确普通手牌图源、图集槽位、牌组映射或运行时引用修复；未找到正确素材前只能保持未完成/blocked。
 
 - 之前泛化记录的 `deckId 13 / 16 / 17` 不能整体当作大明、蒙古、后金正式手牌逐牌来源：
   - `deckId 13` 命中蒙古牌库图集。

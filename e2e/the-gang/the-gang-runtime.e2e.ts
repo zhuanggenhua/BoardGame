@@ -3,10 +3,11 @@ import type { Page } from '@playwright/test';
 
 const THE_GANG_GAME_ID = 'the-gang';
 
-async function selectHotseat(page: Page, seatName: string) {
-    const seatButton = page
-        .getByTestId('the-gang-hotseat-switcher')
-        .getByRole('button', { name: seatName });
+async function selectHotseat(page: Page, seatName: string, scope: 'board' | 'showdown' = 'board') {
+    const testId = scope === 'showdown'
+        ? 'the-gang-showdown-hotseat-switcher'
+        : 'the-gang-hotseat-switcher';
+    const seatButton = page.getByTestId(testId).getByRole('button', { name: seatName });
     await seatButton.click({ force: true });
     await expect(seatButton).toHaveAttribute('aria-pressed', 'true');
 }
@@ -20,6 +21,21 @@ async function chooseAllPlayerChips(page: Page, chipPrefix: string) {
     await chooseChipForSeat(page, '玩家 1', `${chipPrefix} 1 星`);
     await chooseChipForSeat(page, '玩家 2', `${chipPrefix} 2 星`);
     await chooseChipForSeat(page, '玩家 3', `${chipPrefix} 3 星`);
+}
+
+async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
+    const hotseatScope = buttonName === '下一次抢劫' ? 'showdown' : 'board';
+    await selectHotseat(page, '玩家 1', hotseatScope);
+    await page.getByRole('button', { name: buttonName }).click();
+    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
+
+    await selectHotseat(page, '玩家 2', hotseatScope);
+    await page.getByRole('button', { name: buttonName }).click();
+    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(2);
+
+    await selectHotseat(page, '玩家 3', hotseatScope);
+    await page.getByRole('button', { name: buttonName }).click();
 }
 
 async function expectChipRound(page: Page, chipPrefix: string) {
@@ -111,6 +127,11 @@ test.describe('The Gang 真实入口截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '高牌' })).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '皇家同花顺' })).toBeVisible();
+        await game.screenshot('桌面牌型辅助表展开', testInfo);
+
         await expectChipRound(page, '白筹码');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeDisabled();
         await game.screenshot('桌面首轮可操作状态', testInfo);
@@ -121,32 +142,40 @@ test.describe('The Gang 真实入口截图', () => {
         await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
         await game.screenshot('桌面首轮全员筹码已选', testInfo);
 
-        await page.getByRole('button', { name: '下一轮' }).click();
+        await confirmProgressForAllPlayers(page, '下一轮');
         await expectChipRound(page, '黄筹码');
         await chooseAllPlayerChips(page, '黄筹码');
 
-        await page.getByRole('button', { name: '下一轮' }).click();
+        await confirmProgressForAllPlayers(page, '下一轮');
         await expectChipRound(page, '橙筹码');
         await chooseAllPlayerChips(page, '橙筹码');
 
-        await page.getByRole('button', { name: '下一轮' }).click();
+        await confirmProgressForAllPlayers(page, '下一轮');
         await expectChipRound(page, '红筹码');
 
-        await chooseAllPlayerChips(page, '红筹码');
+        await chooseChipForSeat(page, '玩家 1', '红筹码 2 星');
+        await chooseChipForSeat(page, '玩家 2', '红筹码 1 星');
+        await chooseChipForSeat(page, '玩家 3', '红筹码 3 星');
         await selectHotseat(page, '玩家 1');
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
         await expectMiddleRoundFullState(page);
         await game.screenshot('桌面中局满元素已拿新筹码待摊牌', testInfo);
 
-        await page.getByRole('button', { name: '摊牌' }).click();
+        await confirmProgressForAllPlayers(page, '摊牌');
 
         await expect(page.getByLabel('摊牌结算')).toBeVisible();
-        await expect(page.getByLabel('摊牌结算')).toHaveClass(/absolute/);
+        await expect(page.getByLabel('摊牌结算')).toHaveClass(/fixed/);
+        await expect(page.getByLabel('摊牌结算')).toHaveClass(/inset-0/);
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-result"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-best-cards"]')).toBeVisible();
+        await expect(page.locator('[data-bgg-zone="reveal-best-cards"]')).toHaveCount(3);
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-best-cards"] img', 15);
+        await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
         await expect(page.getByRole('button', { name: '下一次抢劫' })).toBeVisible();
         await game.screenshot('桌面摊牌结果', testInfo);
 
-        await page.getByRole('button', { name: '下一次抢劫' }).click();
+        await confirmProgressForAllPlayers(page, '下一次抢劫');
         await expect(page.getByText('抢劫 2')).toBeVisible();
         await expectChipRound(page, '白筹码');
     });

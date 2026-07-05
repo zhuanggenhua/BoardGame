@@ -23,6 +23,7 @@ import { buildQidahenTutorialSetupData } from '../tutorialSetup';
 import { QidahenDomain } from '../domain';
 import { createQidahenInteractionSystem } from '../domain/interactionSystem';
 import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from '../domain/ordinaryHandCardIdentities';
+import { QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';
 
 const random: RandomFn = {
     random: () => 0.5,
@@ -208,7 +209,9 @@ describe('qidahen tutorial flow', () => {
         const initialMingHandCards = (state.core as any).handCards
             .filter((card: any) => card.faction === 'ming')
             .slice(0, 4);
-        const expectedAtlas05Cards = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.slice(0, 4);
+        const expectedAtlas05Cards = QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.ming.slice(0, 4).map((atlasIndex) => (
+            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((card) => card.atlasIndex === atlasIndex)!
+        ));
         expect(initialMingHandCards.map((card: any) => card.label)).toEqual(
             expectedAtlas05Cards.map((card) => card.displayName),
         );
@@ -678,8 +681,12 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('choose-action');
         expect((state.core as any).factions.ming.armaments.find((armament: any) => armament.id === 'artillery-tech')?.level).toBe(1);
         const mingArmamentCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1626-artillery-tech');
+        const artilleryTechIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((card) => (
+            card.cardDefId === 'qidahen-atlas05-1626-artillery-tech'
+        ));
         expect(mingArmamentCard?.cardKind).toBe('armament');
         expect(mingArmamentCard?.label).toBe('火炮技术');
+        expect(mingArmamentCard?.previewRef?.index).toBe(artilleryTechIdentity?.atlasIndex);
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
@@ -739,6 +746,12 @@ describe('qidahen tutorial flow', () => {
         expect((state.core as any).selectedActionId).toBe('khan-edict');
         expect((state.core as any).actionChoices.map((action: any) => action.id)).toContain('khan-edict');
         expect((state.core as any).handCards.map((card: any) => card.label).join('|')).not.toMatch(/大汗令箭事件牌|蒙古银两牌|蒙古战术牌/);
+        const mongolSilverIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((card) => (
+            card.cardDefId === 'qidahen-atlas05-1643-silver'
+        ));
+        const firstMongolCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1643-silver');
+        expect(firstMongolCard?.label).toBe('银两');
+        expect(firstMongolCard?.previewRef?.index).toBe(mongolSilverIdentity?.atlasIndex);
 
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,

@@ -248,6 +248,8 @@
       "fallbackLabel": "Dice Roll",
       "bonus": "Bonus {{value}}",
       "noBonus": "No bonus",
+      "diceSubtotal": "Dice faces {{value}}",
+      "passiveBonus": "Bonus {{value}}",
       "detail": "Dice total {{subtotal}} | bonus {{bonus}}",
       "total": "Total {{value}}"
     },

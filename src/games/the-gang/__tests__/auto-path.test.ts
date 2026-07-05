@@ -24,6 +24,24 @@ const pickCorrectChipByStrength = (core: TheGangCore) => {
         }), {});
 };
 
+const confirmProgressForAllPlayers = (
+    adapter: ReturnType<typeof createReplayAdapter>,
+    state: ReturnType<ReturnType<typeof createReplayAdapter>['setup']>,
+    type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
+    timestamp: number,
+) => {
+    let nextState = state;
+    for (const [index, playerId] of nextState.core.playerIds.entries()) {
+        nextState = adapter.execute(nextState, {
+            type,
+            playerId,
+            payload: {},
+            timestamp: timestamp + index,
+        }).state;
+    }
+    return nextState;
+};
+
 describe('The Gang 最低自动验证路径', () => {
     test('自动座位可以重复完成三次成功抢劫并触发胜利结算', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-auto-path-test');
@@ -40,12 +58,12 @@ describe('The Gang 最低自动验证路径', () => {
                     }).state;
                 }
 
-                state = adapter.execute(state, {
-                    type: THE_GANG_COMMANDS.END_ROUND,
-                    playerId: '0',
-                    payload: {},
-                    timestamp: state.core.heistNumber * 1000 + round * 100,
-                }).state;
+                state = confirmProgressForAllPlayers(
+                    adapter,
+                    state,
+                    THE_GANG_COMMANDS.END_ROUND,
+                    state.core.heistNumber * 1000 + round * 100,
+                );
             }
 
             const finalRoundChips = pickCorrectChipByStrength(state.core);
@@ -58,20 +76,20 @@ describe('The Gang 最低自动验证路径', () => {
                 }).state;
             }
 
-            state = adapter.execute(state, {
-                type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
-                playerId: '0',
-                payload: {},
-                timestamp: state.core.heistNumber * 1000 + 500,
-            }).state;
+            state = confirmProgressForAllPlayers(
+                adapter,
+                state,
+                THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+                state.core.heistNumber * 1000 + 500,
+            );
 
             if (!state.core.gameResult) {
-                state = adapter.execute(state, {
-                    type: THE_GANG_COMMANDS.START_NEXT_HEIST,
-                    playerId: '0',
-                    payload: {},
-                    timestamp: state.core.heistNumber * 1000 + 600,
-                }).state;
+                state = confirmProgressForAllPlayers(
+                    adapter,
+                    state,
+                    THE_GANG_COMMANDS.START_NEXT_HEIST,
+                    state.core.heistNumber * 1000 + 600,
+                );
             }
         }
 

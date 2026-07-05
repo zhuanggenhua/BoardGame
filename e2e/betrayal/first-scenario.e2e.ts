@@ -57,6 +57,9 @@ test.describe('山屋惊魂第一剧本', () => {
         await expect(page.getByTestId('betrayal-action-use')).toContainText(/驱魔|Exorcise/i);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
         await page.getByTestId('betrayal-action-use').click();
+        const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
+        await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
+        await page.getByTestId('betrayal-exorcise-roll-continue').click();
         const endgameScreen = page.getByTestId('betrayal-endgame-screen');
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });
         await expect(endgameScreen.getByRole('main').getByText('幸存者逃脱', { exact: true }).first()).toBeVisible();

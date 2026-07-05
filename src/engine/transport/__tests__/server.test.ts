@@ -6318,6 +6318,163 @@ describe('GameTransportServer（离座与重连）', () => {
         expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-becomes-active-turn-offline')).toBe(false);
     });
 
+    it('DiceThrone 线上反馈 6a4a157d：offensiveRoll 仅剩 advance-phase 时 watchdog 应继续推进到 main2 并收口', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-dicethrone-offensive-advance-only', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'dicethrone' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('dicethrone')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoverySequence: (
+                match: any,
+                tracker: any,
+                candidate: any,
+                progressMarkerBeforeRecovery: string,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<void>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<{
+                applied: boolean;
+                resolved: boolean;
+                blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
+                executedCommandTypes: string[];
+                outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+                reportedAction?: {
+                    candidateReason: string;
+                    playerId: string;
+                    actionKind: string;
+                    actionId: string;
+                } | null;
+            }>;
+            resolveOnlineAiRecoveryCandidate: (
+                match: any,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<any>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-dicethrone-offensive-advance-only');
+        const candidate = {
+            playerId: '1',
+            reason: 'active-turn-legal-only',
+            legalActionOnly: true,
+            fingerprintHint: 'active-turn-legal-only:1:offensiveRoll',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:offensiveRoll',
+                source: 'local-ai',
+                action: {
+                    actionId: 'force-end-turn:active-turn-legal-only:1:offensiveRoll',
+                    kind: 'force-end-turn',
+                    label: '服务端代 AI 执行合法动作',
+                    commands: [],
+                },
+            },
+        };
+        const tracker = {
+            key: '1:active-turn-legal-only:active-turn-legal-only:1:offensiveRoll',
+            firstSeenAt: Date.now(),
+            autoSubmittedAt: Date.now(),
+            lastReportedFailureReason: null,
+            failureCount: 0,
+        };
+        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+
+        const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch, currentCandidate) => {
+            expect(currentCandidate.reason).toBe('active-turn-legal-only');
+            activeMatch.state = {
+                ...activeMatch.state,
+                core: {
+                    ...activeMatch.state.core,
+                    activePlayerId: '1',
+                    currentPlayerIndex: 1,
+                },
+                sys: {
+                    ...activeMatch.state.sys,
+                    phase: 'main2',
+                    eventStream: {
+                        ...(activeMatch.state.sys?.eventStream ?? {}),
+                        nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                    },
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: {
+                        ...(activeMatch.state.sys?.responseWindow ?? {}),
+                        current: undefined,
+                    },
+                },
+            };
+            return {
+                applied: true,
+                resolved: true,
+                blockedReason: null,
+                executedCommandTypes: ['ADVANCE_PHASE'],
+                outcome: 'applied',
+                reportedAction: {
+                    candidateReason: 'active-turn-legal-only',
+                    playerId: '1',
+                    actionKind: 'advance-phase',
+                    actionId: 'phase:advance:offensiveRoll:main2',
+                },
+            };
+        });
+        const resolveCandidateSpy = vi.spyOn(serverInternal, 'resolveOnlineAiRecoveryCandidate')
+            .mockResolvedValueOnce(null);
+
+        await serverInternal.runOnlineAiRecoverySequence(
+            match,
+            tracker,
+            candidate,
+            buildAiProgressMarker(match.state),
+            {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        );
+
+        expect(tryRecoverSpy).toHaveBeenCalledTimes(1);
+        expect(resolveCandidateSpy).toHaveBeenCalled();
+        expect(match.state.core.activePlayerId).toBe('1');
+        expect(match.state.sys.phase).toBe('main2');
+        expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-dicethrone-offensive-advance-only',
+            incidentKind: 'force-end-turn-failed',
+            reason: expect.stringContaining('blocker_persisted'),
+        }));
+        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-dicethrone-offensive-advance-only')).toBe(false);
+    });
+
     it('online AI watchdog 在交互合法动作已把现场切到同一 AI 的新 seat-legal-only 时，应继续 watchdog 收口而不是落成 blocker_persisted', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

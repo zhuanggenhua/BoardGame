@@ -300,6 +300,10 @@ describe('武士反击 (Samurai Retribution) custom action', () => {
         expect((closeEvents[1] as any).payload.amount).toBe(5);
         expect((closeEvents[2] as any).payload.targetId).toBe('0');
         expect((closeEvents[2] as any).payload.amount).toBe(1);
+
+        const afterClose = applyEvents(afterUse, closeEvents, reduce);
+        expect(afterClose.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
+        expect(afterClose.players['0'].resources[RESOURCE_IDS.HP]).toBe(49);
     });
 });
 
@@ -1271,6 +1275,130 @@ describe('Token 响应窗口判定', () => {
 
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
         expect(responseType).toBe('attackerBoost');
+    });
+
+    it('不可防御伤害可用 honor 增伤，关闭后不会切到防御方减伤窗口', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom).core;
+        state.players['0'].tokens[TOKEN_IDS.HONOR] = 1;
+        state.players['1'].tokens[TOKEN_IDS.PROTECT] = 1;
+        state.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            isDefendable: false,
+            sourceAbilityId: 'wakizashi',
+        } as any;
+        state.pendingDamage = {
+            id: 'unblockable-honor-window',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 4,
+            currentDamage: 4,
+            sourceAbilityId: 'wakizashi',
+            damageScope: 'attack',
+            unblockable: true,
+            responseType: 'beforeDamageDealt',
+            responderId: '0',
+        };
+
+        const useEvents = executeTokenCommand(
+            state,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.HONOR, amount: 1 },
+            } as any,
+            fixedRandom,
+            10,
+        );
+        const afterUse = applyEvents(state, useEvents, reduce);
+        expect(afterUse.pendingDamage?.currentDamage).toBe(5);
+        expect(afterUse.pendingDamage?.unblockable).toBe(true);
+
+        const closeEvents = executeTokenCommand(
+            afterUse,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '0',
+                payload: {},
+            } as any,
+            fixedRandom,
+            11,
+        );
+
+        expect(closeEvents.map((event) => event.type)).toEqual([
+            'TOKEN_RESPONSE_CLOSED',
+            'DAMAGE_DEALT',
+        ]);
+        expect((closeEvents[1] as any).payload.targetId).toBe('1');
+        expect((closeEvents[1] as any).payload.amount).toBe(5);
+        expect((closeEvents[1] as any).payload.unblockable).toBe(true);
+
+        const afterClose = applyEvents(afterUse, closeEvents, reduce);
+        expect(afterClose.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);
+        expect(afterClose.players['1'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+    });
+
+    it('不可防御伤害可用 taiji 增伤，关闭后不会切到防御方减伤窗口', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom).core;
+        state.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
+        state.players['1'].tokens[TOKEN_IDS.PROTECT] = 1;
+        state.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            isDefendable: false,
+            sourceAbilityId: 'lotus-palm',
+        } as any;
+        state.pendingDamage = {
+            id: 'unblockable-taiji-window',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 4,
+            currentDamage: 4,
+            sourceAbilityId: 'lotus-palm',
+            damageScope: 'attack',
+            unblockable: true,
+            responseType: 'beforeDamageDealt',
+            responderId: '0',
+        };
+
+        const useEvents = executeTokenCommand(
+            state,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1 },
+            } as any,
+            fixedRandom,
+            10,
+        );
+        const afterUse = applyEvents(state, useEvents, reduce);
+        expect(afterUse.pendingDamage?.currentDamage).toBe(5);
+        expect(afterUse.pendingDamage?.unblockable).toBe(true);
+
+        const closeEvents = executeTokenCommand(
+            afterUse,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '0',
+                payload: {},
+            } as any,
+            fixedRandom,
+            11,
+        );
+
+        expect(closeEvents.map((event) => event.type)).toEqual([
+            'TOKEN_RESPONSE_CLOSED',
+            'DAMAGE_DEALT',
+        ]);
+        expect((closeEvents[1] as any).payload.targetId).toBe('1');
+        expect((closeEvents[1] as any).payload.amount).toBe(5);
+        expect((closeEvents[1] as any).payload.unblockable).toBe(true);
+
+        const afterClose = applyEvents(afterUse, closeEvents, reduce);
+        expect(afterClose.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);
+        expect(afterClose.players['1'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
     });
 
     it('攻击方有 shame Token 时不应打开 attackerBoost（耻辱应被动减伤）', () => {

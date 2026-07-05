@@ -230,7 +230,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-hand-limit-discard-selection"]')).toBeVisible({ timeout: 10000 });
         await expectTutorialOverlayFullyVisible(page, 'hand-limit');
         await saveScreenshot(page, TUTORIAL_STEP_02);
-        const handLimitCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
+        const handLimitCards = page.locator('button[data-testid^="qidahen-hand-card-hand-"]');
         await expect(handLimitCards.nth(0)).toBeVisible({ timeout: 15000 });
         await handLimitCards.nth(0).click();
         await expect(page.locator('[data-testid="qidahen-resolve-hand-limit-discard"]')).toBeEnabled();
@@ -269,6 +269,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid^="qidahen-hand-card-kind-"]').nth(1)).toContainText(/事件|军备|战术|银两/);
         await expect(page.locator('[data-testid^="qidahen-hand-card-kind-"]').nth(2)).toContainText(/事件|军备|战术|银两/);
         await expect(page.locator('[data-testid="qidahen-hand-zone"]')).not.toContainText(/人物牌|纪年卡|朝鲜牌/);
+        await expect(page.locator('[data-testid="qidahen-hand-zone"] [data-card-atlas-id="qidahen:atlas05-ordinary-hand-preview"]')).toHaveCount(3);
         await saveScreenshot(page, TUTORIAL_STEP_06);
 
         await page.locator('[data-testid="tutorial-next-button"]').click();
@@ -282,7 +283,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先弃 3 张手牌支付赐印招安');
         await saveScreenshot(page, TUTORIAL_STEP_08);
 
-        const handCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
+        const handCards = page.locator('button[data-testid^="qidahen-hand-card-hand-"]');
         await expect(handCards.nth(0)).toBeVisible({ timeout: 15000 });
         await expect(handCards.nth(1)).toBeVisible({ timeout: 15000 });
         await expect(handCards.nth(2)).toBeVisible({ timeout: 15000 });
@@ -299,7 +300,14 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('费用已经付完');
         await saveScreenshot(page, TUTORIAL_STEP_09);
 
-        await grantPardonMapTarget.click();
+        const grantPardonTargetBox = await grantPardonMapTarget.boundingBox();
+        if (!grantPardonTargetBox) {
+            throw new Error('grant pardon map target anchor missing');
+        }
+        await page.mouse.click(
+            grantPardonTargetBox.x + grantPardonTargetBox.width / 2,
+            grantPardonTargetBox.y + grantPardonTargetBox.height / 2,
+        );
         await expect(page.locator('[data-tutorial-step="action-result"]')).toBeVisible({ timeout: 10000 });
         await saveScreenshot(page, TUTORIAL_STEP_10);
         await page.locator('[data-testid="tutorial-next-button"]').click();
@@ -563,7 +571,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('需弃 2');
         await saveScreenshot(page, ARMAMENT_STEP_02);
 
-        const handCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
+        const handCards = page.locator('button[data-testid^="qidahen-hand-card-hand-"]');
         await handCards.nth(0).click();
         await handCards.nth(1).click();
         await expect(page.locator('[data-testid="qidahen-action-payment-confirm"]')).toBeEnabled();
@@ -606,7 +614,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('需弃 1');
         await saveScreenshot(page, EVENT_STEP_02);
 
-        const handCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
+        const handCards = page.locator('button[data-testid^="qidahen-hand-card-hand-"]');
         await expect(handCards.nth(0)).toBeVisible({ timeout: 15000 });
         const firstCardBox = await handCards.nth(0).boundingBox();
         if (!firstCardBox) {

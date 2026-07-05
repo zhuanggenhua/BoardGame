@@ -19,13 +19,11 @@ export function validate(
         case THE_GANG_COMMANDS.TAKE_CHIP:
             return validateTakeChip(core, command.playerId, command.payload.chip);
         case THE_GANG_COMMANDS.END_ROUND:
-            return validateEndRound(core);
+            return validateEndRound(core, command.playerId);
         case THE_GANG_COMMANDS.REVEAL_SHOWDOWN:
-            return validateRevealShowdown(core);
+            return validateRevealShowdown(core, command.playerId);
         case THE_GANG_COMMANDS.START_NEXT_HEIST:
-            return core.phase === 'showdown' && !!core.lastShowdown
-                ? success()
-                : failure('showdownRequired');
+            return validateStartNextHeist(core, command.playerId);
         default:
             return failure('unknownCommand');
     }
@@ -43,7 +41,13 @@ function validateTakeChip(core: TheGangCore, playerId: string, chip: number): Va
     return success();
 }
 
-function validateEndRound(core: TheGangCore): ValidationResult {
+function validateProgressPlayer(core: TheGangCore, playerId: string): ValidationResult {
+    return core.playerIds.includes(playerId) ? success() : failure('unknownPlayer');
+}
+
+function validateEndRound(core: TheGangCore, playerId: string): ValidationResult {
+    const playerValidation = validateProgressPlayer(core, playerId);
+    if (!playerValidation.valid) return playerValidation;
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
     if (!core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined)) {
         return failure('missingChips');
@@ -52,7 +56,9 @@ function validateEndRound(core: TheGangCore): ValidationResult {
     return success();
 }
 
-function validateRevealShowdown(core: TheGangCore): ValidationResult {
+function validateRevealShowdown(core: TheGangCore, playerId: string): ValidationResult {
+    const playerValidation = validateProgressPlayer(core, playerId);
+    if (!playerValidation.valid) return playerValidation;
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
     if (core.round !== 4) return failure('notFinalRound');
     if (!core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined)) {
@@ -60,4 +66,12 @@ function validateRevealShowdown(core: TheGangCore): ValidationResult {
     }
     if (core.communityCards.length !== 5) return failure('missingCommunityCards');
     return success();
+}
+
+function validateStartNextHeist(core: TheGangCore, playerId: string): ValidationResult {
+    const playerValidation = validateProgressPlayer(core, playerId);
+    if (!playerValidation.valid) return playerValidation;
+    return core.phase === 'showdown' && !!core.lastShowdown
+        ? success()
+        : failure('showdownRequired');
 }

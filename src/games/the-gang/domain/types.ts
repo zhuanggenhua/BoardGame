@@ -36,6 +36,13 @@ export interface HeistRecord {
     results: ShowdownPlayerResult[];
 }
 
+export type TheGangProgressKind = 'end-round' | 'reveal-showdown' | 'start-next-heist';
+
+export interface TheGangProgressConfirmation {
+    kind: TheGangProgressKind;
+    approvals: PlayerId[];
+}
+
 export interface TheGangPlayerState {
     id: PlayerId;
     pocketCards: PlayingCard[];
@@ -53,6 +60,7 @@ export interface TheGangCore {
     successes: number;
     failures: number;
     currentRoundChips: Record<PlayerId, number>;
+    pendingProgress?: TheGangProgressConfirmation;
     roundHistory: RoundChipState[];
     heistHistory: HeistRecord[];
     lastShowdown?: HeistRecord;
@@ -97,6 +105,7 @@ export type TheGangCommandMap = {
 
 export const THE_GANG_EVENTS = {
     CHIP_TAKEN: 'CHIP_TAKEN',
+    PROGRESS_APPROVED: 'PROGRESS_APPROVED',
     ROUND_ENDED: 'ROUND_ENDED',
     SHOWDOWN_REVEALED: 'SHOWDOWN_REVEALED',
     NEXT_HEIST_STARTED: 'NEXT_HEIST_STARTED',
@@ -109,6 +118,10 @@ export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TA
         round: TheGangRound;
         chip: number;
     };
+}
+
+export interface ProgressApprovedEvent extends GameEvent<typeof THE_GANG_EVENTS.PROGRESS_APPROVED> {
+    payload: TheGangProgressConfirmation;
 }
 
 export interface RoundEndedEvent extends GameEvent<typeof THE_GANG_EVENTS.ROUND_ENDED> {
@@ -139,6 +152,7 @@ export interface GameFinishedEvent extends GameEvent<typeof THE_GANG_EVENTS.GAME
 
 export type TheGangEvent =
     | ChipTakenEvent
+    | ProgressApprovedEvent
     | RoundEndedEvent
     | ShowdownRevealedEvent
     | NextHeistStartedEvent

@@ -249,6 +249,8 @@
       "fallbackLabel": "投骰",
       "bonus": "加值 {{value}}",
       "noBonus": "无加值",
+      "diceSubtotal": "骰面合计 {{value}}",
+      "passiveBonus": "加值 {{value}}",
       "detail": "骰子合计 {{subtotal}}｜加值 {{bonus}}",
       "total": "总点数 {{value}}"
     },

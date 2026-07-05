@@ -454,6 +454,10 @@ const isNonReleaseAndroidAppId = (appId) => appId
     .split('.')
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
 
+const shouldAppendDebugApplicationIdSuffix = (appId) => !appId
+    .split('.')
+    .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
+
 const applyReleaseShellDefaults = () => {
     process.env.CAPACITOR_APP_ID = releaseAppId;
     process.env.VITE_CAPACITOR_APP_ID = releaseAppId;
@@ -691,6 +695,9 @@ const moveJavaFileToPackage = (javaRootDir, fileName, packageName, transformCont
 const updateAppBuildGradle = (appId) => {
     replaceInFile(path.join(androidDir, 'app', 'build.gradle'), (content) => {
         let next = content;
+        const debugApplicationIdSuffixLine = shouldAppendDebugApplicationIdSuffix(appId)
+            ? '            applicationIdSuffix ".debug"\n'
+            : '';
 
         if (!next.includes('import java.util.Properties')) {
             next = `import java.util.Properties\n\n${next}`;
@@ -703,6 +710,10 @@ const updateAppBuildGradle = (appId) => {
         next = next
             .replace(/namespace\s*=\s*"[^"]+"/, `namespace = "${stableAndroidSourcePackage}"`)
             .replace(/applicationId\s+"[^"]+"/, `applicationId "${appId}"`)
+            .replace(
+                /debug\s*\{\s*(?:applicationIdSuffix\s+"[^"]+"\s*)?\}/,
+                `debug {\n${debugApplicationIdSuffixLine}        }`,
+            )
             .replace(/minifyEnabled\s+false/g, 'minifyEnabled true');
 
         if (!/shrinkResources\s+true/.test(next)) {

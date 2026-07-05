@@ -427,6 +427,8 @@ export interface PendingDamage {
     sourceAbilityId?: string;
     /** 伤害范围（attack=攻击伤害，direct=直接伤害） */
     damageScope?: 'attack' | 'direct';
+    /** 是否为不可防御伤害（仍允许攻击方增伤，但禁止防御方减伤/闪避） */
+    unblockable?: boolean;
     /** 响应窗口类型 */
     responseType: 'beforeDamageDealt' | 'beforeDamageReceived';
     /** 当前响应者 ID */

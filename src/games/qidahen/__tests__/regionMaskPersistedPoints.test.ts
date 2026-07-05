@@ -122,4 +122,56 @@ describe('qidahen persisted region mask points', () => {
         expect(invalidSeeds).toEqual([]);
         expect(invalidGraphPoints).toEqual([]);
     });
+
+    it('山海关正式区域必须保持已确认基线，UI/教程高亮问题不得迁移区域真相源', async () => {
+        const config = readRegionConfig();
+        const graph = readRegionGraph();
+        const shanhaiguan = config.regions?.find((region) => region.id === 'city-region-25');
+        const shanhaiguanGraph = graph.nodes?.find((node) => node.id === 'city-region-25');
+        expect(shanhaiguan).toBeTruthy();
+        expect(shanhaiguanGraph).toBeTruthy();
+
+        const expectedColor = hexToRgb(shanhaiguan!.color);
+        const { data, info } = await sharp(REGION_MASK_PATH).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+        let pixelCount = 0;
+        let minX = Number.POSITIVE_INFINITY;
+        let minY = Number.POSITIVE_INFINITY;
+        let maxX = Number.NEGATIVE_INFINITY;
+        let maxY = Number.NEGATIVE_INFINITY;
+
+        const matchesShanhaiguan = (x: number, y: number) => {
+            const offset = ((y * info.width) + x) * info.channels;
+            return data[offset + 3] !== 0
+                && data[offset] === expectedColor[0]
+                && data[offset + 1] === expectedColor[1]
+                && data[offset + 2] === expectedColor[2];
+        };
+
+        for (let y = 0; y < info.height; y += 1) {
+            for (let x = 0; x < info.width; x += 1) {
+                if (!matchesShanhaiguan(x, y)) {
+                    continue;
+                }
+                pixelCount += 1;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+
+        expect(pixelCount).toBe(10868);
+        expect({ minX, minY, maxX, maxY }).toEqual({
+            minX: 458,
+            minY: 500,
+            maxX: 622,
+            maxY: 611,
+        });
+        expect(matchesShanhaiguan(543, 552)).toBe(true);
+        expect(matchesShanhaiguan(627, 547)).toBe(false);
+        expect(shanhaiguan!.seed).toEqual({ x: 543, y: 552 });
+        expect(shanhaiguanGraph!.seed).toEqual({ x: 543, y: 552 });
+        expect(shanhaiguanGraph!.center).toEqual({ x: 543, y: 552 });
+        expect(shanhaiguanGraph!.pixelCount).toBe(pixelCount);
+    });
 });

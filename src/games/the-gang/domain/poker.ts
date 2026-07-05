@@ -11,6 +11,25 @@ export interface EvaluatedHand {
     cards: PlayingCard[];
 }
 
+export interface PokerHandRankRule {
+    category: number;
+    label: string;
+    description: string;
+}
+
+export const TEXAS_HOLDEM_HAND_RANK_RULES: readonly PokerHandRankRule[] = [
+    { category: 0, label: HAND_LABELS[0], description: '没有组成对子或顺子/同花时，比最高牌。' },
+    { category: 1, label: HAND_LABELS[1], description: '两张同点数牌，剩余牌作为踢脚比较。' },
+    { category: 2, label: HAND_LABELS[2], description: '两组对子，先比高对子，再比低对子。' },
+    { category: 3, label: HAND_LABELS[3], description: '三张同点数牌，强于两对。' },
+    { category: 4, label: HAND_LABELS[4], description: '五张连续点数牌，A 可作 1 或 14。' },
+    { category: 5, label: HAND_LABELS[5], description: '五张同花色牌，强于顺子。' },
+    { category: 6, label: HAND_LABELS[6], description: '三条加一对，强于同花。' },
+    { category: 7, label: HAND_LABELS[7], description: '四张同点数牌，强于葫芦。' },
+    { category: 8, label: HAND_LABELS[8], description: '同花色且连续的五张牌。' },
+    { category: 9, label: HAND_LABELS[9], description: 'A-K-Q-J-10 同花顺，是最强牌型。' },
+] as const;
+
 const sortDescending = (values: number[]) => [...values].sort((a, b) => b - a);
 
 const getStraightHigh = (values: number[]): number | null => {

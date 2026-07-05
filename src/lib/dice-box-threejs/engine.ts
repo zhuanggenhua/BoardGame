@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { CanvasTexture } from 'three';
+import { CanvasTexture, SRGBColorSpace } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -30,6 +30,7 @@ export interface DiceBoxStyleProfile {
     baseScale?: number;
     strength?: number;
     iterationLimit?: number;
+    arrangeSettledDice?: boolean;
 }
 
 export interface DiceBoxDieSkin {
@@ -38,6 +39,7 @@ export interface DiceBoxDieSkin {
     edgeCanvas?: HTMLCanvasElement;
     faceImages?: Record<number, HTMLImageElement>;
     faceLabels?: Record<number, string>;
+    preferPresetMaterials?: boolean;
 }
 
 export interface DiceBoxEngineConfig {
@@ -90,12 +92,14 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
+    private readonly styleProfile: DiceBoxStyleProfile;
     private dieSkins: Array<DiceBoxDieSkin | null> = [];
     private activePresetSkinId: string | null = null;
 
-    private constructor(box: InstanceType<typeof DiceBoxModule>, container: HTMLElement) {
+    private constructor(box: InstanceType<typeof DiceBoxModule>, container: HTMLElement, styleProfile: DiceBoxStyleProfile) {
         this.box = box;
         this.container = container;
+        this.styleProfile = styleProfile;
     }
 
     static async create(container: HTMLElement, config?: DiceBoxEngineConfig): Promise<DiceBoxThreeEngine> {
@@ -138,7 +142,7 @@ export class DiceBoxThreeEngine {
             box.renderer.domElement.style.visibility = 'hidden';
             box.renderer.domElement.setAttribute('aria-hidden', 'true');
         }
-        return new DiceBoxThreeEngine(box, container);
+        return new DiceBoxThreeEngine(box, container, styleProfile);
     }
 
     hasDice(count: number): boolean {
@@ -384,41 +388,116 @@ export class DiceBoxThreeEngine {
             }
         });
 
+        if (this.arrangeSettledDice()) {
+            didChange = true;
+        }
+
         if (didChange) {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
+    }
+
+    private arrangeSettledDice(): boolean {
+        if (!this.styleProfile.arrangeSettledDice || this.box.diceList.length === 0) return false;
+
+        const dice = this.box.diceList;
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const maxColumns = 5;
+        const columns = Math.min(dice.length, maxColumns);
+        const rows = Math.ceil(dice.length / columns);
+        const spacingX = baseScale * 1.38;
+        const spacingY = baseScale * 1.08;
+        const z = baseScale * 0.56;
+
+        dice.forEach((die, index) => {
+            const row = Math.floor(index / columns);
+            const col = index % columns;
+            const rowCount = row === rows - 1 ? dice.length - row * columns : columns;
+            const x = (col - (rowCount - 1) / 2) * spacingX;
+            const y = (row - (rows - 1) / 2) * spacingY;
+
+            die.position.set?.(x, y, z);
+            die.position.x = x;
+            die.position.y = y;
+            die.position.z = z;
+            die.body?.position?.set?.(x, y, z);
+            if (die.body?.position) {
+                die.body.position.x = x;
+                die.body.position.y = y;
+                die.body.position.z = z;
+            }
+            die.body?.velocity?.set?.(0, 0, 0);
+            die.body?.angularVelocity?.set?.(0, 0, 0);
+            die.rotation.z = 0;
+            die.updateMatrixWorld?.(true);
+        });
+
+        return true;
     }
 
     private applySkinToDie(die: DiceBoxDie, skin: DiceBoxDieSkin): boolean {
         const materials = Array.isArray(die.material) ? die.material : [die.material];
         let didChange = false;
 
-        if (skin.edgeCanvas && this.applyCanvasToMaterial(materials[0], skin.edgeCanvas)) {
-            didChange = true;
+        const shouldUsePresetMaterials = Boolean(skin.preferPresetMaterials && (skin.faceImages || skin.faceLabels));
+        if (shouldUsePresetMaterials && this.rebuildDiePresetMaterials(die)) {
+            return true;
         }
 
-        const indexedFaceValues = new Set<number>();
+        const usedMaterialIndexes = new Set<number>();
         for (const group of die.geometry.groups ?? []) {
-            const faceValue = group.materialIndex - 1;
-            if (faceValue >= 1 && faceValue <= 6) {
-                indexedFaceValues.add(faceValue);
-            }
-        }
-        const faceValues = indexedFaceValues.size > 0 ? [...indexedFaceValues] : [1, 2, 3, 4, 5, 6];
-
-        for (const faceValue of faceValues) {
-            const materialIndex = faceValue + 1;
-            const material = materials[materialIndex];
-            const canvas = skin.faceCanvases[faceValue];
-            if (!material || !canvas) continue;
-
-            if (this.applyCanvasToMaterial(material, canvas)) {
-                didChange = true;
+            if (group.materialIndex >= 0) {
+                usedMaterialIndexes.add(group.materialIndex);
             }
         }
 
-        this.normalizeFaceMaterial(materials[0]);
+        const edgeCanvas = skin.edgeCanvas;
+        if (edgeCanvas) {
+            for (const [materialIndex, material] of materials.entries()) {
+                if (materialIndex >= 2 && usedMaterialIndexes.has(materialIndex)) continue;
+                if (this.applyCanvasToMaterial(material, edgeCanvas)) {
+                    didChange = true;
+                }
+            }
+        }
+
+        const visibleMaterialIndexes = usedMaterialIndexes.size > 0
+            ? [...usedMaterialIndexes].filter((materialIndex) => materialIndex > 0)
+            : materials.map((_, materialIndex) => materialIndex).filter((materialIndex) => materialIndex >= 2);
+
+        if (!shouldUsePresetMaterials) {
+            for (const materialIndex of visibleMaterialIndexes) {
+                const material = materials[materialIndex];
+                const faceValue = materialIndex - 1;
+                const canvas = skin.faceCanvases[faceValue] ?? edgeCanvas;
+                if (!material || !canvas) continue;
+
+                if (this.applyCanvasToMaterial(material, canvas)) {
+                    didChange = true;
+                }
+            }
+        }
+
+        for (const material of materials) {
+            this.normalizeFaceMaterial(material);
+        }
         return didChange;
+    }
+
+    private rebuildDiePresetMaterials(die: DiceBoxDie): boolean {
+        const preset = this.box.DiceFactory?.get?.(die.notation?.type ?? 'd6');
+        const createMaterials = this.box.DiceFactory?.createMaterials;
+        if (!preset || !createMaterials) return false;
+
+        const baseScale = typeof this.box.DiceFactory.baseScale === 'number'
+            ? this.box.DiceFactory.baseScale
+            : DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        die.material = createMaterials.call(this.box.DiceFactory, preset, baseScale / 2, 1);
+        const rebuiltMaterials = Array.isArray(die.material) ? die.material : [die.material];
+        for (const material of rebuiltMaterials) {
+            this.preservePresetFaceMaterial(material);
+        }
+        return true;
     }
 
     private applyCanvasToMaterial(material: DiceBoxMaterialInstance | undefined, canvas: HTMLCanvasElement): boolean {
@@ -427,6 +506,7 @@ export class DiceBoxThreeEngine {
         material.map.image = canvas;
         material.map.flipY = false;
         material.map.generateMipmaps = false;
+        material.map.colorSpace = SRGBColorSpace;
         material.map.needsUpdate = true;
         this.normalizeFaceMaterial(material);
         return true;
@@ -443,8 +523,28 @@ export class DiceBoxThreeEngine {
         material.bumpMap = null;
         material.opacity = 1;
         material.transparent = false;
+        material.alphaTest = 0;
         material.depthTest = true;
         material.depthWrite = true;
         material.needsUpdate = true;
+    }
+
+    private preservePresetFaceMaterial(material?: DiceBoxMaterialInstance): void {
+        if (!material) return;
+        material.color?.set?.(0xffffff);
+        material.emissive?.set?.(0x000000);
+        material.emissiveIntensity = 0;
+        material.opacity = 1;
+        material.transparent = true;
+        material.alphaTest = 0;
+        material.depthTest = true;
+        material.depthWrite = true;
+        material.needsUpdate = true;
+        if (material.map) {
+            material.map.flipY = false;
+            material.map.generateMipmaps = false;
+            material.map.colorSpace = SRGBColorSpace;
+            material.map.needsUpdate = true;
+        }
     }
 }

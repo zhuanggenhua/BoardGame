@@ -24,6 +24,24 @@ const buildContext = (state: ReturnType<typeof setupState>, playerId = '0'): AiD
         seatController: { type: 'local-ai' },
     });
 
+const confirmProgressForAllPlayers = (
+    adapter: ReturnType<typeof createReplayAdapter>,
+    state: ReturnType<typeof setupState>,
+    type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
+    timestamp: number,
+) => {
+    let nextState = state;
+    for (const [index, playerId] of nextState.core.playerIds.entries()) {
+        nextState = adapter.execute(nextState, {
+            type,
+            playerId,
+            payload: {},
+            timestamp: timestamp + index,
+        }).state as ReturnType<typeof setupState>;
+    }
+    return nextState;
+};
+
 describe('The Gang local AI', () => {
     test('初始抢劫阶段每个 AI 座位都有可选筹码动作', () => {
         const state = setupState();
@@ -84,12 +102,7 @@ describe('The Gang local AI', () => {
                     }).state;
                 }
             }
-            state = adapter.execute(state, {
-                type: THE_GANG_COMMANDS.END_ROUND,
-                playerId: '0',
-                payload: {},
-                timestamp: round * 100,
-            }).state;
+            state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, round * 100);
         }
 
         for (const [index, playerId] of state.core.playerIds.entries()) {
@@ -110,6 +123,11 @@ describe('The Gang local AI', () => {
             payload: {},
             timestamp: 500,
         }).state;
+        expect(state.core.phase).toBe('chip-selection');
+        expect(state.core.pendingProgress).toEqual({ kind: 'reveal-showdown', approvals: ['0'] });
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 510);
+        expect(state.core.phase).toBe('showdown');
 
         expect(buildTheGangAiLegalActions({ playerId: '0', state })
             .some((action) => action.kind === 'start-next-heist')).toBe(true);

@@ -28,8 +28,8 @@
   - 当前承载 atlas05 的 49 张已确认普通手牌规则身份。
   - 只允许来自人工确认矩阵的行进入，不得把 OCR 候选直接填进这里。
 - `src/games/qidahen/domain/handCardState.ts`
-  - 正式开局手牌与后续摸牌已按 atlas05 的 49 张 `passed` 真相表连续发放。
-  - 只消费人工确认行；`partial / blocked` 行不会进入正式手牌身份或预览。
+  - 正式开局手牌与后续摸牌按 TTS `deckKey 16` 的真实势力牌堆顺序发放，再映射到 atlas05 的人工确认普通手牌身份与预览。
+  - 只消费人工确认行；`partial / blocked` 行不会进入正式手牌身份或预览。找不到确认身份时必须显式失败，不得用取模、相邻槽位或其它势力牌面兜底。
 - `src/games/qidahen/ui/cardAtlas.ts`
   - 已注册 `qidahen:atlas05-ordinary-hand-preview`，指向 `qidahen/cards/atlases/ordinary-hand-atlas05`。
   - 该图集使用 10x7 网格合同，当前正式运行时只引用 49 张已确认普通手牌帧。

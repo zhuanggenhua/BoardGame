@@ -30,7 +30,12 @@ const tutorialTargets = () =>
         .filter((target): target is string => Boolean(target));
 
 const stableTutorialTargets = () =>
-    tutorialTargets().filter((target) => target !== 'the-gang-next-round' && target !== 'the-gang-reveal-showdown');
+    tutorialTargets().filter((target) => ![
+        'the-gang-next-round',
+        'the-gang-reveal-showdown',
+        'the-gang-showdown-result',
+        'the-gang-showdown-best-cards',
+    ].includes(target));
 
 describe('The Gang tutorial', () => {
     test('基础教程包含真实步骤和命令/事件约束', () => {
@@ -41,6 +46,7 @@ describe('The Gang tutorial', () => {
             'intro',
             'goal-track',
             'hand',
+            'hand-rank-reference',
             'chip-choice',
             'table-response',
             'advance-round',
@@ -56,8 +62,15 @@ describe('The Gang tutorial', () => {
             'final-response',
             'reveal-showdown',
             'showdown',
+            'showdown-reading',
             'finish',
         ]);
+
+        const handRankStep = TheGangTutorial.steps.find((step) => step.id === 'hand-rank-reference');
+        expect(handRankStep).toMatchObject({
+            infoStep: true,
+            highlightTarget: 'the-gang-hand-rank-reference',
+        });
 
         const chipStep = TheGangTutorial.steps.find((step) => step.id === 'chip-choice');
         expect(chipStep).toMatchObject({
@@ -124,6 +137,16 @@ describe('The Gang tutorial', () => {
             allowedCommands: [THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.SHOWDOWN_REVEALED }],
         });
+
+        const showdownReadingStep = TheGangTutorial.steps.find((step) => step.id === 'showdown-reading');
+        expect(showdownReadingStep).toMatchObject({
+            infoStep: true,
+            highlightTarget: 'the-gang-showdown-best-cards',
+        });
+        expect(TheGangTutorial.steps.find((step) => step.id === 'showdown')).toMatchObject({
+            infoStep: true,
+            highlightTarget: 'the-gang-showdown-result',
+        });
     });
 
     test('教程高亮目标在 Board 中都有真实锚点', () => {
@@ -146,6 +169,7 @@ describe('The Gang tutorial', () => {
         for (const target of new Set(stableTutorialTargets())) {
             expect(document.querySelector(`[data-tutorial-id="${target}"]`)).not.toBeNull();
         }
+        expect(document.querySelector('[data-tutorial-id="the-gang-hand-rank-reference"]')).not.toBeNull();
     });
 
     test('教程主动作覆盖选筹码、推进公共牌和摊牌反馈闭环', () => {
@@ -233,6 +257,8 @@ describe('The Gang tutorial', () => {
         const { unmount } = renderBoard();
         expect(document.querySelector('[data-tutorial-id="the-gang-reveal-showdown"]')).toBeNull();
         expect(document.querySelector('[data-tutorial-id="the-gang-showdown-area"]')).not.toBeNull();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-result"]')).not.toBeNull();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-best-cards"]')).not.toBeNull();
         expect(document.querySelector('[data-bgg-zone="reveal-zone"]')).not.toBeNull();
         unmount();
     });

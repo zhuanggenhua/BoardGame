@@ -1,6 +1,23 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../framework/fixtures';
 import { setChineseLocale } from '../helpers/common';
+import {
+    buildShowdownResults,
+    type ShowdownPlayerResult,
+    type TheGangCore,
+} from '../../src/games/the-gang/domain';
+
+const strengthOrder = (left: ShowdownPlayerResult, right: ShowdownPlayerResult) => {
+    const categoryDelta = left.strength.category - right.strength.category;
+    if (categoryDelta !== 0) return categoryDelta;
+
+    for (let index = 0; index < Math.max(left.strength.ranks.length, right.strength.ranks.length); index += 1) {
+        const rankDelta = (left.strength.ranks[index] ?? 0) - (right.strength.ranks[index] ?? 0);
+        if (rankDelta !== 0) return rankDelta;
+    }
+
+    return 0;
+};
 
 async function clearTheGangTutorialProgress(page: Page) {
     await page.addInitScript(() => {
@@ -20,10 +37,11 @@ async function nextTutorialStep(page: Page) {
     await page.getByTestId('tutorial-next-button').click();
 }
 
-async function selectHotseat(page: Page, seatName: string) {
-    const seatButton = page
-        .getByTestId('the-gang-hotseat-switcher')
-        .getByRole('button', { name: seatName });
+async function selectHotseat(page: Page, seatName: string, scope: 'board' | 'showdown' = 'board') {
+    const testId = scope === 'showdown'
+        ? 'the-gang-showdown-hotseat-switcher'
+        : 'the-gang-hotseat-switcher';
+    const seatButton = page.getByTestId(testId).getByRole('button', { name: seatName });
     await seatButton.click({ force: true });
     await expect(seatButton).toHaveAttribute('aria-pressed', 'true');
 }
@@ -37,6 +55,45 @@ async function chooseAllPlayerChips(page: Page, chipPrefix: string) {
     await chooseChipForSeat(page, '玩家 1', `${chipPrefix} 1 星`);
     await chooseChipForSeat(page, '玩家 2', `${chipPrefix} 2 星`);
     await chooseChipForSeat(page, '玩家 3', `${chipPrefix} 3 星`);
+}
+
+async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
+    const hotseatScope = buttonName === '下一次抢劫' ? 'showdown' : 'board';
+    await selectHotseat(page, '玩家 1', hotseatScope);
+    await page.getByRole('button', { name: buttonName }).click();
+    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
+
+    await selectHotseat(page, '玩家 2', hotseatScope);
+    await page.getByRole('button', { name: buttonName }).click();
+    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(2);
+
+    await selectHotseat(page, '玩家 3', hotseatScope);
+    await page.getByRole('button', { name: buttonName }).click();
+}
+
+async function chooseFinalChipsForSuccessfulShowdown(page: Page) {
+    const core = await page.evaluate(() => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: { get?: () => unknown };
+            };
+        }).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.() as { core?: TheGangCore } | undefined;
+        return state?.core ?? null;
+    });
+    if (!core) throw new Error('The Gang tutorial state is unavailable');
+
+    const finalChips = [...buildShowdownResults(core)]
+        .sort(strengthOrder)
+        .reduce<Record<string, number>>((chips, result, index) => {
+            chips[result.playerId] = index + 1;
+            return chips;
+        }, {});
+
+    await chooseChipForSeat(page, '玩家 1', `红筹码 ${finalChips['0']} 星`);
+    await chooseChipForSeat(page, '玩家 2', `红筹码 ${finalChips['1']} 星`);
+    await chooseChipForSeat(page, '玩家 3', `红筹码 ${finalChips['2']} 星`);
 }
 
 async function expectImagesLoaded(page: Page, selector: string, expectedCount: number) {
@@ -97,6 +154,73 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
     expect(emptySources, `${selector} 存在空图片地址`).toEqual([]);
 }
 
+async function expectTutorialHighlightCoversVisibleTarget(page: Page, targetId: string) {
+    await expect(page.locator(`[data-tutorial-id="${targetId}"]`)).toBeVisible();
+    const ring = page.getByTestId('tutorial-highlight-ring');
+    await expect(ring).toBeVisible();
+    await expect(ring).toHaveAttribute('data-tutorial-highlight-target', targetId);
+    const geometry = await page.evaluate((id) => {
+        const target = document.querySelector<HTMLElement>(`[data-tutorial-id="${id}"]`);
+        const highlight = document.querySelector<HTMLElement>('[data-testid="tutorial-highlight-ring"]');
+        if (!target || !highlight) return null;
+        const targetRect = target.getBoundingClientRect();
+        const highlightRect = highlight.getBoundingClientRect();
+        const horizontalOverlap = Math.max(
+            0,
+            Math.min(targetRect.right, highlightRect.right) - Math.max(targetRect.left, highlightRect.left),
+        );
+        const verticalOverlap = Math.max(
+            0,
+            Math.min(targetRect.bottom, highlightRect.bottom) - Math.max(targetRect.top, highlightRect.top),
+        );
+        const overlapArea = horizontalOverlap * verticalOverlap;
+        const targetArea = targetRect.width * targetRect.height;
+        return {
+            targetWidth: targetRect.width,
+            targetHeight: targetRect.height,
+            highlightWidth: highlightRect.width,
+            highlightHeight: highlightRect.height,
+            overlapRatio: targetArea > 0 ? overlapArea / targetArea : 0,
+            centerDeltaX: Math.abs((targetRect.left + targetRect.right) / 2 - (highlightRect.left + highlightRect.right) / 2),
+            centerDeltaY: Math.abs((targetRect.top + targetRect.bottom) / 2 - (highlightRect.top + highlightRect.bottom) / 2),
+        };
+    }, targetId);
+    expect(geometry, `${targetId} 必须有可测几何`).not.toBeNull();
+    expect(geometry?.targetWidth, `${targetId} 不能是空宽度锚点`).toBeGreaterThan(1);
+    expect(geometry?.targetHeight, `${targetId} 不能是空高度锚点`).toBeGreaterThan(1);
+    expect(geometry?.highlightWidth, `${targetId} 蓝框不能是空宽度`).toBeGreaterThan(1);
+    expect(geometry?.highlightHeight, `${targetId} 蓝框不能是空高度`).toBeGreaterThan(1);
+    expect(geometry?.overlapRatio, `${targetId} 蓝框必须覆盖真实目标主体`).toBeGreaterThan(0.9);
+    expect(geometry?.centerDeltaX, `${targetId} 蓝框水平中心必须贴住真实目标`).toBeLessThan(6);
+    expect(geometry?.centerDeltaY, `${targetId} 蓝框垂直中心必须贴住真实目标`).toBeLessThan(6);
+}
+
+async function expectTutorialCardDoesNotCoverTarget(page: Page, targetId: string) {
+    await expect(page.locator(`[data-tutorial-id="${targetId}"]`)).toBeVisible();
+    const geometry = await page.evaluate((id) => {
+        const target = document.querySelector<HTMLElement>(`[data-tutorial-id="${id}"]`);
+        const card = document.querySelector<HTMLElement>('[data-testid="tutorial-overlay-card"]');
+        if (!target || !card) return null;
+        const targetRect = target.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const horizontalOverlap = Math.max(
+            0,
+            Math.min(targetRect.right, cardRect.right) - Math.max(targetRect.left, cardRect.left),
+        );
+        const verticalOverlap = Math.max(
+            0,
+            Math.min(targetRect.bottom, cardRect.bottom) - Math.max(targetRect.top, cardRect.top),
+        );
+        return {
+            overlapArea: horizontalOverlap * verticalOverlap,
+            targetArea: targetRect.width * targetRect.height,
+        };
+    }, targetId);
+    expect(geometry, `${targetId} 必须能测量教程卡片与目标位置`).not.toBeNull();
+    expect(geometry?.targetArea, `${targetId} 不能是空目标`).toBeGreaterThan(1);
+    expect(geometry?.overlapArea, `${targetId} 教程文案框不能遮挡教学目标`).toBe(0);
+}
+
 test.describe('The Gang 教程 E2E', () => {
     test('桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
@@ -122,6 +246,14 @@ test.describe('The Gang 教程 E2E', () => {
         await game.screenshot('教程读底牌和当前牌型', testInfo);
 
         await nextTutorialStep(page);
+        await expect(page.locator('[data-tutorial-step="hand-rank-reference"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeVisible();
+        await expect(page.getByText(/局中速查入口/u)).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"]')).not.toHaveAttribute('open', /.*/u);
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').first()).toBeHidden();
+        await game.screenshot('教程牌型查询入口', testInfo);
+
+        await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="chip-choice"]')).toBeVisible();
         await expect(page.getByTestId('tutorial-action-hint')).toBeVisible();
         await expect(page.getByRole('button', { name: '白筹码 1 星' })).toBeVisible();
@@ -137,7 +269,9 @@ test.describe('The Gang 教程 E2E', () => {
 
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="advance-round"]')).toBeVisible();
-        await page.getByRole('button', { name: '下一轮' }).click();
+        await expect(page.locator('[data-tutorial-step="advance-round"]').getByText(/全员确认/u)).toBeVisible();
+        await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
+        await confirmProgressForAllPlayers(page, '下一轮');
 
         await expect(page.locator('[data-tutorial-step="community-cards"]')).toBeVisible();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 3);
@@ -151,7 +285,8 @@ test.describe('The Gang 教程 E2E', () => {
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="turn-round"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
-        await page.getByRole('button', { name: '下一轮' }).click();
+        await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
+        await confirmProgressForAllPlayers(page, '下一轮');
 
         await expect(page.locator('[data-tutorial-step="turn-card"]')).toBeVisible();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 4);
@@ -162,20 +297,20 @@ test.describe('The Gang 教程 E2E', () => {
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="river-round"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
-        await page.getByRole('button', { name: '下一轮' }).click();
+        await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
+        await confirmProgressForAllPlayers(page, '下一轮');
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
         await expect(page.locator('[data-tutorial-step="final-chip"]')).toBeVisible();
         await expect(page.getByText(/红筹码是最终承诺/u)).toBeVisible();
         await game.screenshot('教程红筹码最终承诺', testInfo);
 
-        await chooseChipForSeat(page, '玩家 1', '红筹码 1 星');
-        await chooseChipForSeat(page, '玩家 2', '红筹码 2 星');
-        await chooseChipForSeat(page, '玩家 3', '红筹码 3 星');
+        await chooseFinalChipsForSuccessfulShowdown(page);
         await selectHotseat(page, '玩家 1');
         await nextTutorialStep(page);
 
         await expect(page.locator('[data-tutorial-step="reveal-showdown"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
+        await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-reveal-showdown');
         await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(9);
         await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
@@ -184,11 +319,25 @@ test.describe('The Gang 教程 E2E', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
         await game.screenshot('教程满元素待摊牌', testInfo);
 
-        await page.getByRole('button', { name: '摊牌' }).click();
+        await expect(page.getByText(/摊牌也需要全员确认/u)).toBeVisible();
+        await confirmProgressForAllPlayers(page, '摊牌');
         await expect(page.locator('[data-tutorial-step="showdown"]')).toBeVisible();
+        await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-showdown-result');
         await expect(page.getByLabel('摊牌结算')).toBeVisible();
+        await expect(page.getByLabel('摊牌结算')).toHaveClass(/fixed/);
+        await expect(page.getByLabel('摊牌结算')).toHaveClass(/inset-0/);
+        await expect(page.locator('[data-bgg-zone="reveal-best-cards"]')).toHaveCount(3);
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-best-cards"] img', 15);
+        await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
         await expect(page.getByText(/摊牌结果会显示/u)).toBeVisible();
         await game.screenshot('教程摊牌结果反馈', testInfo);
+
+        await nextTutorialStep(page);
+        await expect(page.locator('[data-tutorial-step="showdown-reading"]')).toBeVisible();
+        await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-showdown-best-cards');
+        await expect(page.getByText(/读摊牌时先看每位玩家的牌型/u)).toBeVisible();
+        await expect(page.getByText(/真实牌型越强/u)).toBeVisible();
+        await game.screenshot('教程摊牌读法', testInfo);
     });
 });

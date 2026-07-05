@@ -1,6 +1,7 @@
 import type { GameSetupSelections } from '../setupOptions';
 import { applyQidahenPregameChoiceDefaults } from './roomSetup';
 import { buildWheelDispatchSelectionFromWheel } from './domain/dispatchSelectionBuilders';
+import { qidahenAtlas05OrdinaryHandPreview } from './ui/cardAtlas';
 import {
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
@@ -49,6 +50,7 @@ const applyAtlas05TutorialHandCardIdentity = (
     return {
         ...card,
         label: identity.displayName,
+        previewRef: qidahenAtlas05OrdinaryHandPreview(identity.atlasIndex),
         cardKind: identity.cardKind,
         armamentId: identity.armamentId,
         cardDefId: identity.cardDefId,

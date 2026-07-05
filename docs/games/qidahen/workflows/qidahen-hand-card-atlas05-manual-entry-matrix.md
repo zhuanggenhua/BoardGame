@@ -1,6 +1,6 @@
 # 七大恨 atlas05 普通手牌人工录入矩阵
 
-> 这份矩阵只记录从 `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images` 中 atlas05 普通手牌图集安全裁图核读出的候选。已确认行可以作为 OpenSpec `2.4` 的逐牌真相源进展；未确认行不得反写正式 `cardKind / cardDefId / armamentId`。
+> 这份矩阵只记录从 `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images` 中 atlas05 普通手牌图集安全裁图核读出的候选。已确认行可以作为 OpenSpec `2.4` 的逐牌规则身份与文字真相源进展；未确认行不得反写正式 `cardKind / cardDefId / armamentId`。历史上曾出现过规则身份已替换、但运行时牌图引用没有同步的错派系牌面风险；修复必须回到真实素材来源、TTS 牌堆顺序、图集索引和 `previewRef` 绑定，不能用结构化 UI 或文字卡替代。
 
 ## 输入与边界
 
@@ -9,13 +9,14 @@
 - 安全裁图：`test-results/evidence-image-validation/qidahen-formal-handcard-assets/ordinary-atlas-05-card-crops-v3`。
 - 抽样核验图：`test-results/evidence-image-validation/qidahen-formal-handcard-assets/atlas05-v3-target-sample-contact.webp`。
 - 本矩阵先锁定能满足反写门槛的最小普通手牌行；标题或效果仍不完整的候选保持“待复核”或“部分确认”。
+- 可见牌面边界：atlas05 牌面左上角带有原图阵营角标，不等价于当前行动方手牌所属阵营；运行态引用该图集时，必须按 TTS 真实牌堆顺序映射到目标 `atlasIndex`，并在教程强制换牌时同步 `previewRef`。如果再次出现大明手牌露出“金”等错派系角标，属于素材绑定、图集索引或运行时引用错误；修复只能继续接回正确真实素材链，找不到时保持 blocked/未完成，不得用结构化普通手牌、文字卡或其它自造 UI 顶替。
 
 ## 汇总
 
 - 当前验收样本：49 张实际 TTS 使用普通手牌。
 - 已确认普通手牌：49 张。
 - 已覆盖牌类：事件、战术、军备、银两。
-- 结论：atlas05 已证明本地完整素材目录中存在可反写的正式普通手牌真相源；当前只允许 TTS deckKey 16 实际使用且字段完整的 49 张 passed 条目进入正式真相表；CardID 1647 / r05c08 边缘窄条不在 TTS DeckIDs 中，只保留为排除证据。OpenSpec `2.4 / 4.5` 仍不得勾选完成。
+- 结论：atlas05 已证明本地完整素材目录中存在可反写的正式普通手牌规则身份与文字真相源；当前只允许 TTS deckKey 16 实际使用且字段完整的 49 张 passed 条目进入正式真相表；CardID 1647 / r05c08 边缘窄条不在 TTS DeckIDs 中，只保留为排除证据。atlas05 不得直接渲染为大明/蒙古/后金手牌区的可见牌面。OpenSpec `2.4 / 4.5` 仍不得勾选完成。
 
 ## 人工录入矩阵
 

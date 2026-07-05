@@ -63,6 +63,7 @@ vi.mock('../../games/registry', () => ({
         ai: {},
     }),
     resolveGameTutorialManifest: () => null,
+    subscribeGameImplementationReady: () => () => undefined,
 }));
 
 vi.mock('../../engine/transport/react', () => ({

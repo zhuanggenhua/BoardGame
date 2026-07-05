@@ -70,6 +70,35 @@
 
 ## 改动落点判断
 
+## UI / 教程问题不得反向污染正式区域真相
+
+当用户反馈“地图高亮不对”“教程目标不聚焦”“区域看起来偏了”“某一步应该场景直选”时，默认先把问题归到 **UI 表达、视角移动、教程锚点、点击承接或运行时高亮消费**，不得直接修改正式区域真相源。
+
+### 禁止直接修改的正式真相
+
+- `src/games/qidahen/data/region-mask.png`
+- `src/games/qidahen/data/region-mask-regions.json`
+- `src/games/qidahen/data/region-graph.json`
+- `src/games/qidahen/data/runtime-region-mask-regions.json`
+- `src/games/qidahen/data/runtime-region-graph.json`
+- 任何把正式区域 `seed` / `center` / `pixelCount` / `links` 改成新值的测试预期
+
+### 允许修改正式区域数据的最低门槛
+
+只有同时满足以下证据，才允许改正式区域数据：
+
+1. `/dev/qidahen-region-mask` 当前正式工作区能复现区域本体错误，而不是教程层或截图角度错误。
+2. `region-mask.png` 像素、编辑器选区、`region-mask-regions.json` 种子、`region-graph.json` 中心点至少两项互相矛盾。
+3. 已对比上一个可信基线或用户确认的正确截图，能说明旧值本身错误，而不是当前 UI 没聚焦或高亮消费错误。
+4. 修复后回到编辑器截图、运行时高亮截图、区域持久点测试三处验证。
+
+### 已有正式能力优先复用
+
+- 如果正式地图已经有区域遮罩高亮、命中画布或编辑器选区能力，教程和 E2E 必须复用它们。
+- 禁止为教程临时发明圆球、编号、替代标牌或按钮路径来冒充区域高亮。
+- 可场景直选的地区目标，主路径必须点地图地区本体；按钮或右侧列表只能是备用入口或已选地区后的确认方式。
+- 若截图中只有某个地区异常，先用编辑器正式工作区与运行时遮罩截图核对该地区，不得先改区域数据。
+
 ### 只影响正式闭合区
 
 - 改：

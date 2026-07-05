@@ -10,7 +10,7 @@ import {
     getQidahenDirectActionIdForHandCard,
     resolveQidahenAtlas05OrdinaryHandCardIdentity,
 } from '../domain/handCardIdentity';
-import { buildDrawnHandCards } from '../domain/handCardState';
+import { buildDrawnHandCards, QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';
 import { getQidahenDirectedPassageRule } from '../domain/movement';
 import {
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
@@ -342,19 +342,24 @@ describe('七大恨支付手牌选择', () => {
         expect(factionHandCards(core, 'jin')).toHaveLength(10);
     });
 
-    it('剧本一开局普通手牌预览会绑定 atlas05 正式普通手牌图集', () => {
+    it('剧本一开局普通手牌按 TTS 真实牌堆顺序暴露 atlas05 图集引用，不用替代 UI 遮掉错误素材', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const allVisibleHandCards = [
             ...factionHandCards(core, 'ming'),
             ...factionHandCards(core, 'mongol'),
             ...factionHandCards(core, 'jin'),
         ];
+        const expectedAtlasIndices = [
+            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.ming.slice(0, factionHandCards(core, 'ming').length),
+            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.mongol.slice(0, factionHandCards(core, 'mongol').length),
+            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin.slice(0, factionHandCards(core, 'jin').length),
+        ];
 
         for (const [index, card] of allVisibleHandCards.entries()) {
             expect(card.previewRef).toMatchObject({
                 type: 'atlas',
                 atlasId: 'qidahen:atlas05-ordinary-hand-preview',
-                index: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[index]?.atlasIndex,
+                index: expectedAtlasIndices[index],
             });
         }
     });
@@ -369,52 +374,59 @@ describe('七大恨支付手牌选择', () => {
 
         expect(allVisibleHandCards.every((card) => card.previewKind === 'unknown')).toBe(true);
         expect(allVisibleHandCards.every((card) => card.cardKind !== 'unknown')).toBe(true);
+        const expectedInitialIdentities = [
+            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.ming.slice(0, factionHandCards(core, 'ming').length),
+            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.mongol.slice(0, factionHandCards(core, 'mongol').length),
+            ...QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin.slice(0, factionHandCards(core, 'jin').length),
+        ].map((atlasIndex) => QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((identity) => (
+            identity.atlasIndex === atlasIndex
+        ))!);
         expect(allVisibleHandCards.map((card) => card.cardDefId)).toEqual(
-            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
-                .slice(0, allVisibleHandCards.length)
-                .map((identity) => identity.cardDefId),
+            expectedInitialIdentities.map((identity) => identity.cardDefId),
         );
         expect(allVisibleHandCards.map((card) => card.label)).toEqual(
-            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
-                .slice(0, allVisibleHandCards.length)
-                .map((identity) => identity.displayName),
+            expectedInitialIdentities.map((identity) => identity.displayName),
         );
         expect(allVisibleHandCards.map((card) => card.rulesSummary)).toEqual(
-            QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
-                .slice(0, allVisibleHandCards.length)
-                .map((identity) => (
-                    QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId]
-                )),
+            expectedInitialIdentities.map((identity) => (
+                QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId]
+            )),
         );
         expect(factionHandCards(core, 'ming').map((card) => card.cardDefId)).toEqual([
-            'qidahen-atlas05-1600-counter-spy-plot',
-            'qidahen-atlas05-1601-defeat-in-detail',
-            'qidahen-atlas05-1602-bayara',
-            'qidahen-atlas05-1603-infantry-armor',
+            'qidahen-atlas05-1631-northeast-army',
+            'qidahen-atlas05-1644-wuzhen-chaoha',
+            'qidahen-atlas05-1643-silver',
+            'qidahen-atlas05-1626-artillery-tech',
         ]);
-        expect(factionHandCards(core, 'ming')[2]?.cardKind).toBe('tactic');
+        expect(factionHandCards(core, 'ming')[0]?.previewRef.index).toBeGreaterThanOrEqual(31);
         expect(factionHandCards(core, 'ming')[3]?.cardKind).toBe('armament');
-        expect(factionHandCards(core, 'ming')[3]?.armamentId).toBe('infantry-armor');
+        expect(factionHandCards(core, 'ming')[3]?.armamentId).toBe('artillery-tech');
         expect(factionHandCards(core, 'jin').some((card) => card.cardKind === 'armament')).toBe(true);
     });
 
-    it('正式局后续摸牌会继续沿 atlas05 通过验收序列发放普通手牌', () => {
+    it('正式局后续摸牌会继续沿当前势力 TTS 真实牌堆顺序发放普通手牌', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         const drawn = buildDrawnHandCards(core, 'jin', 2);
         const nextCards = drawn.slice(-2);
-        const firstDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[10];
-        const secondDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES[11];
+        const firstDrawnIndex = QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin[10];
+        const secondDrawnIndex = QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION.jin[11];
+        const firstDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((identity) => (
+            identity.atlasIndex === firstDrawnIndex
+        ));
+        const secondDrawnIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.find((identity) => (
+            identity.atlasIndex === secondDrawnIndex
+        ));
 
         expect(nextCards).toHaveLength(2);
         expect(nextCards[0]?.previewRef).toMatchObject({
             type: 'atlas',
             atlasId: 'qidahen:atlas05-ordinary-hand-preview',
-            index: firstDrawnIdentity?.atlasIndex,
+            index: firstDrawnIndex,
         });
         expect(nextCards[1]?.previewRef).toMatchObject({
             type: 'atlas',
             atlasId: 'qidahen:atlas05-ordinary-hand-preview',
-            index: secondDrawnIdentity?.atlasIndex,
+            index: secondDrawnIndex,
         });
         expect(nextCards.map((card) => card.cardDefId)).toEqual([
             firstDrawnIdentity?.cardDefId,

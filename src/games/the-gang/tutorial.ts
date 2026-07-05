@@ -32,6 +32,14 @@ export const TheGangTutorial: TutorialManifest = {
             viewAs: '0',
         },
         {
+            id: 'hand-rank-reference',
+            content: 'game-the-gang:tutorial.steps.handRankReference',
+            highlightTarget: 'the-gang-hand-rank-reference',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
             id: 'chip-choice',
             content: 'game-the-gang:tutorial.steps.chipChoice',
             highlightTarget: 'the-gang-chip-row',
@@ -162,7 +170,15 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'showdown',
             content: 'game-the-gang:tutorial.steps.showdown',
-            highlightTarget: 'the-gang-showdown-area',
+            highlightTarget: 'the-gang-showdown-result',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'showdown-reading',
+            content: 'game-the-gang:tutorial.steps.showdownReading',
+            highlightTarget: 'the-gang-showdown-best-cards',
             position: 'left',
             infoStep: true,
             viewAs: '0',

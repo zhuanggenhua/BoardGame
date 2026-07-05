@@ -15,6 +15,7 @@ declare module '@3d-dice/dice-box-threejs' {
             name: string;
             foreground?: string;
             background?: string | string[];
+            edge?: string | string[];
             outline?: string;
             texture?: string;
             material?: string;
@@ -39,6 +40,7 @@ declare module '@3d-dice/dice-box-threejs' {
             needsUpdate?: boolean;
             flipY?: boolean;
             generateMipmaps?: boolean;
+            colorSpace?: string;
         } | null;
         bumpMap?: unknown;
         color?: { set: (value: number | string) => void };
@@ -49,6 +51,7 @@ declare module '@3d-dice/dice-box-threejs' {
         envMapIntensity?: number;
         opacity?: number;
         transparent?: boolean;
+        alphaTest?: number;
         depthTest?: boolean;
         depthWrite?: boolean;
         needsUpdate?: boolean;
@@ -59,8 +62,10 @@ declare module '@3d-dice/dice-box-threejs' {
     }
 
     export interface DiceBoxFactory {
+        baseScale?: number;
         materials_cache?: Record<string, unknown>;
         get(type: string): DiceBoxPreset | undefined;
+        createMaterials?: (preset: DiceBoxPreset, baseScale: number, margin: number) => DiceBoxMaterialInstance[];
     }
 
     export interface DiceBoxDie {
@@ -99,6 +104,7 @@ declare module '@3d-dice/dice-box-threejs' {
             x: number;
             y: number;
             z: number;
+            set?: (x: number, y: number, z: number) => unknown;
             clone: () => {
                 project: (camera: unknown) => { x: number; y: number; z: number };
             };

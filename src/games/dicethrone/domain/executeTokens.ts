@@ -237,7 +237,7 @@ export function executeTokenCommand(
             }
             
             // 检查是否需要切换到下一个响应者
-            if (pendingDamage.responseType === 'beforeDamageDealt') {
+            if (pendingDamage.responseType === 'beforeDamageDealt' && !pendingDamage.unblockable) {
                 // 攻击方跳过加伤，检查防御方是否有可用 Token
                 if (hasDefensiveTokens(state, pendingDamage.targetPlayerId, pendingDamage.damageScope)) {
                     // 切换到防御方响应

@@ -183,6 +183,7 @@ export const TutorialOverlay: React.FC = () => {
 
             // 2. 计算提示框位置
             const isCenterPosition = position === 'center';
+            const bottomConfirmInset = safeArea.bottom + 60;
             if (isCompactTutorialLayout) {
                 const compactPanel = getCompactTutorialPanelMetrics(viewportWidth, viewportHeight, safeArea);
                 const scaledWidth = compactPanel.panelWidth * compactPanel.panelScale;
@@ -365,7 +366,7 @@ export const TutorialOverlay: React.FC = () => {
                 commitTooltipLayout({
                     style: {
                         position: 'fixed',
-                        bottom: safeArea.bottom + 24,
+                        bottom: isBottomConfirmStep ? bottomConfirmInset : safeArea.bottom + 24,
                         left: '50%',
                         transform: 'translateX(-50%)',
                         zIndex: UI_Z_INDEX.tutorial,
@@ -388,7 +389,9 @@ export const TutorialOverlay: React.FC = () => {
             const spaceLeft = rect.left;
             const spaceBottom = viewportHeight - rect.bottom;
 
-            let pos: 'right' | 'left' | 'bottom' | 'top';
+            type TooltipPlacement = 'right' | 'left' | 'bottom' | 'top';
+
+            let pos: TooltipPlacement;
             if (position) {
                 pos = position;
             } else if (spaceRight > tooltipWidth + 20) {
@@ -401,64 +404,83 @@ export const TutorialOverlay: React.FC = () => {
                 pos = 'top';
             }
 
-            const styles: React.CSSProperties = { position: 'fixed', zIndex: UI_Z_INDEX.tutorial };
-            let arrow = '';
-            switch (pos) {
-                case 'right':
-                    styles.left = rect.right + padding;
-                    styles.top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
-                    arrow = '-left-[6px] top-[40px] border-b border-l';
-                    break;
-                case 'left':
-                    styles.left = rect.left - actualTooltipWidth - padding;
-                    styles.top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
-                    arrow = '-right-[6px] top-[40px] border-t border-r';
-                    break;
-                case 'bottom':
-                    styles.top = rect.bottom + padding;
-                    styles.left = rect.left + (rect.width / 2) - (actualTooltipWidth / 2);
-                    arrow = '-top-[6px] left-1/2 -translate-x-1/2 border-t border-l';
-                    break;
-                case 'top':
-                    styles.top = rect.top - tooltipHeight - padding;
-                    styles.left = rect.left + (rect.width / 2) - (actualTooltipWidth / 2);
-                    arrow = '-bottom-[6px] left-1/2 -translate-x-1/2 border-b border-r';
-                    break;
-            }
-
-            // 防遮挡：确保 tooltip 不覆盖高亮目标区域
-            if (typeof styles.top === 'number') {
-                const tooltipBottom = styles.top + tooltipHeight;
-                const tooltipTop = styles.top;
-                if (pos === 'top' && tooltipBottom > rect.top - padding) {
-                    // tooltip 底部侵入目标区域，往上推
-                    styles.top = rect.top - tooltipHeight - padding;
-                }
-                if (pos === 'bottom' && tooltipTop < rect.bottom + padding) {
-                    styles.top = rect.bottom + padding;
-                }
-            }
-
             const arrowBase = 'bg-white w-4 h-4 absolute rotate-45 border-gray-100 z-0';
             const safeMargin = 8;
             const minTop = safeArea.top + safeMargin;
             const maxTop = viewportHeight - tooltipHeight - safeArea.bottom - safeMargin;
             const minLeft = safeArea.left + safeMargin;
             const maxLeft = viewportWidth - actualTooltipWidth - safeArea.right - safeMargin;
-            // 视口边界约束（上下都限制，防止全屏高亮目标把 tooltip 推到屏幕外）
-            if (typeof styles.top === 'number') {
-                styles.top = Math.max(minTop, Math.min(styles.top as number, maxTop));
-            }
-            if (typeof styles.left === 'number') {
-                styles.left = Math.max(minLeft, Math.min(styles.left as number, maxLeft));
-            }
+            const targetBounds = {
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+            };
+            const buildPlacement = (placement: TooltipPlacement) => {
+                const styles: React.CSSProperties = { position: 'fixed', zIndex: UI_Z_INDEX.tutorial };
+                let arrow = '';
+                switch (placement) {
+                    case 'right':
+                        styles.left = rect.right + padding;
+                        styles.top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
+                        arrow = '-left-[6px] top-[40px] border-b border-l';
+                        break;
+                    case 'left':
+                        styles.left = rect.left - actualTooltipWidth - padding;
+                        styles.top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
+                        arrow = '-right-[6px] top-[40px] border-t border-r';
+                        break;
+                    case 'bottom':
+                        styles.top = rect.bottom + padding;
+                        styles.left = rect.left + (rect.width / 2) - (actualTooltipWidth / 2);
+                        arrow = '-top-[6px] left-1/2 -translate-x-1/2 border-t border-l';
+                        break;
+                    case 'top':
+                        styles.top = rect.top - tooltipHeight - padding;
+                        styles.left = rect.left + (rect.width / 2) - (actualTooltipWidth / 2);
+                        arrow = '-bottom-[6px] left-1/2 -translate-x-1/2 border-b border-r';
+                        break;
+                }
+                // 视口边界约束后再计算真实重叠，避免“先不遮挡、夹紧后遮挡”。
+                if (typeof styles.top === 'number') {
+                    styles.top = Math.max(minTop, Math.min(styles.top as number, maxTop));
+                }
+                if (typeof styles.left === 'number') {
+                    styles.left = Math.max(minLeft, Math.min(styles.left as number, maxLeft));
+                }
+                if (typeof styles.left !== 'number' || typeof styles.top !== 'number') return null;
+                const bounds = {
+                    left: styles.left,
+                    top: styles.top,
+                    right: styles.left + actualTooltipWidth,
+                    bottom: styles.top + tooltipHeight,
+                };
+                return {
+                    styles,
+                    arrow,
+                    placement,
+                    bounds,
+                    overlapArea: getRectIntersectionArea(bounds, targetBounds),
+                };
+            };
+
+            const placementOrder: TooltipPlacement[] = [pos, 'right', 'left', 'bottom', 'top']
+                .filter((placement, index, placements) => placements.indexOf(placement) === index);
+            const selectedPlacement = placementOrder
+                .map((placement, index) => ({ candidate: buildPlacement(placement), index }))
+                .filter((entry): entry is { candidate: NonNullable<ReturnType<typeof buildPlacement>>; index: number } => Boolean(entry.candidate))
+                .sort((left, right) => (
+                    left.candidate.overlapArea - right.candidate.overlapArea
+                    || left.index - right.index
+                ))[0]?.candidate;
+            const styles = selectedPlacement?.styles ?? { position: 'fixed', zIndex: UI_Z_INDEX.tutorial };
             const topValue = typeof styles.top === 'number' ? styles.top : minTop;
             styles.maxHeight = viewportHeight - topValue - safeArea.bottom - safeMargin;
 
             commitTooltipLayout({
                 style: styles,
-                arrowClass: `${arrowBase} ${arrow}`,
-                placement: pos,
+                arrowClass: `${arrowBase} ${selectedPlacement?.arrow ?? ''}`,
+                placement: selectedPlacement?.placement ?? pos,
             });
         };
 
@@ -517,6 +539,7 @@ export const TutorialOverlay: React.FC = () => {
     }, [
         currentStep,
         isActive,
+        isBottomConfirmStep,
         isCompactTutorialLayout,
         rootViewportHeight,
         rootViewportWidth,
@@ -574,6 +597,9 @@ export const TutorialOverlay: React.FC = () => {
             {/* 目标高亮环（苹果风格蓝色光晕）- 目标存在时始终可见 */}
             {visibleTargetRect && (
                 <div
+                    data-testid="tutorial-highlight-ring"
+                    data-tutorial-highlight-target={currentStep.highlightTarget}
+                    data-tutorial-highlight-step={currentStep.id ?? 'unknown'}
                     className="absolute pointer-events-none"
                     style={{
                         top: visibleTargetRect.top - 4,
@@ -599,12 +625,12 @@ export const TutorialOverlay: React.FC = () => {
                 <div
                     data-testid="tutorial-overlay-card"
                     data-tutorial-placement={tooltipStyles.placement}
-                    className={`bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0] animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${
+                    className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${
                         isBottomConfirmStep
-                            ? 'w-[min(360px,calc(100vw-2rem))] rounded-sm px-4 py-3'
+                            ? 'w-[min(320px,calc(100vw-2rem))]'
                             : isCompactTutorialLayout
-                                ? 'w-full max-w-full rounded-xl p-4'
-                                : 'max-w-sm w-72 rounded-sm p-5'
+                                ? 'w-full max-w-full rounded-xl p-4 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]'
+                                : 'max-w-sm w-72 rounded-sm p-5 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]'
                     }`}
                     style={{ maxHeight: isBottomConfirmStep ? undefined : 'inherit', width: isBottomConfirmStep ? undefined : '100%' }}
                 >
@@ -632,7 +658,7 @@ export const TutorialOverlay: React.FC = () => {
                             }}
                             className={`touch-target-min w-full bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${
                                 isBottomConfirmStep
-                                    ? 'py-2 text-xs tracking-[0.12em]'
+                                    ? 'rounded-sm border border-[#f3e8cc]/70 py-2.5 text-xs tracking-[0.12em] shadow-[0_6px_18px_rgba(0,0,0,0.34)]'
                                     : isCompactTutorialLayout
                                         ? 'py-2 text-[12px] tracking-[0.14em] rounded-lg'
                                         : 'py-2 text-sm tracking-widest'

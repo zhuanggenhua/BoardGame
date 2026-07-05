@@ -585,16 +585,16 @@ function resolveEffectAction(
                     sourceName: m.sourceName,
                 }));
 
-                // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口；
-                // 明确标记为 unblockable 的动作伤害也不允许任何减伤/回避类 Token 响应。
-                if (!action.unblockable && action.target !== 'all' && action.target !== 'allOpponents') {
+                // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口。
+                // 不可防御伤害仍允许攻击方增伤，但禁止防御方减伤/闪避类响应。
+                if (action.target !== 'all' && action.target !== 'allOpponents') {
                     const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
                         state,
                         dmgTargetId,
                         result.finalDamage,
                     );
 
-                    const tokenResponseType = shouldOpenTokenResponse(
+                    const rawTokenResponseType = shouldOpenTokenResponse(
                         state,
                         attackerId,
                         dmgTargetId,
@@ -602,6 +602,9 @@ function resolveEffectAction(
                         ctx.isDefensiveContext,
                         action.damageScope ?? 'attack'
                     );
+                    const tokenResponseType = action.unblockable && rawTokenResponseType === 'defenderMitigation'
+                        ? null
+                        : rawTokenResponseType;
 
                     if (tokenResponseType) {
                         // 创建待处理伤害，暂停伤害结算
@@ -616,7 +619,8 @@ function resolveEffectAction(
                             sourceAbilityId,
                             timestamp,
                             passiveModifiers.length > 0 ? passiveModifiers : undefined,
-                            action.damageScope ?? 'attack'
+                            action.damageScope ?? 'attack',
+                            action.unblockable === true,
                         );
                         const tokenResponseEvent = createTokenResponseRequestedEvent(pendingDamage, timestamp);
                         events.push(tokenResponseEvent);
@@ -873,8 +877,9 @@ function resolveEffectAction(
                         const bypassShields = dmgPayload.bypassShields === true;
                         const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
 
-                        // 检查是否需要打开 Token 响应窗口
-                        if (shouldCheckTokenResponse && dmgAmount > 0 && !isUnblockable) {
+                        // 检查是否需要打开 Token 响应窗口。
+                        // 不可防御伤害仍允许攻击方增伤，但禁止防御方减伤/闪避类响应。
+                        if (shouldCheckTokenResponse && dmgAmount > 0) {
                             const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
                                 state,
                                 dmgTargetId,
@@ -882,7 +887,7 @@ function resolveEffectAction(
                                 { bypassShields },
                             );
 
-                            const tokenResponseType = shouldOpenTokenResponse(
+                            const rawTokenResponseType = shouldOpenTokenResponse(
                                 state,
                                 attackerId,
                                 dmgTargetId,
@@ -890,6 +895,9 @@ function resolveEffectAction(
                                 ctx.isDefensiveContext,
                                 damageScope
                             );
+                            const tokenResponseType = isUnblockable && rawTokenResponseType === 'defenderMitigation'
+                                ? null
+                                : rawTokenResponseType;
 
                             if (tokenResponseType) {
                                 // 替换 DAMAGE_DEALT 为 TOKEN_RESPONSE_REQUESTED
@@ -904,7 +912,8 @@ function resolveEffectAction(
                                     sourceAbilityId,
                                     timestamp,
                                     undefined,
-                                    damageScope
+                                    damageScope,
+                                    isUnblockable,
                                 );
                                 const tokenResponseEvent = createTokenResponseRequestedEvent(pendingDamage, timestamp);
                                 handledEvents[i] = tokenResponseEvent;

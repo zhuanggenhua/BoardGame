@@ -12,7 +12,7 @@ describe('DiceThrone 骰盒皮肤画布导出', () => {
         vi.restoreAllMocks();
     });
 
-    it('骰面图集污染画布导致 toDataURL 抛安全异常时，会回退到安全骰面图', async () => {
+    it('用正式骰面素材导出透明符号层给插件原生骰体', async () => {
         class AutoLoadImage {
             onload: (() => void) | null = null;
             onerror: (() => void) | null = null;
@@ -34,20 +34,17 @@ describe('DiceThrone 骰盒皮肤画布导出', () => {
         }
 
         globalThis.Image = AutoLoadImage as unknown as typeof Image;
-
-        let callCount = 0;
-        HTMLCanvasElement.prototype.toDataURL = vi.fn(() => {
-            callCount += 1;
-            if (callCount % 2 === 1) {
-                throw new DOMException('Tainted canvases may not be exported.', 'SecurityError');
-            }
-            return 'data:image/png;base64,ZmFsbGJhY2s=';
-        });
+        HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,test-symbol');
 
         const skin = await loadDiceThroneDiceBoxSkin('monk-dice', 'zh-CN');
 
+        expect(Object.keys(skin.faceCanvases)).toHaveLength(6);
         expect(Object.keys(skin.faceImages)).toHaveLength(6);
-        expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(12);
-        expect(skin.faceImages[1].src).toBe('data:image/png;base64,ZmFsbGJhY2s=');
+        expect(skin.preferPresetMaterials).toBe(true);
+        expect(skin.faceCanvases[1].width).toBe(512);
+        expect(skin.faceCanvases[1].height).toBe(512);
+        expect(skin.edgeCanvas.width).toBe(512);
+        expect(skin.edgeCanvas.height).toBe(512);
+        expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(6);
     });
 });

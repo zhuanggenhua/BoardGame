@@ -17,6 +17,7 @@ import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSource';
+import type { DicePhysicsState } from '../../lib/dice-physics/types';
 import type { DiceBoxDieSkin } from '../../lib/dice-box-threejs/engine';
 import type { DiceBoxStyleProfile } from '../../lib/dice-box-threejs/engine';
 import {
@@ -1300,21 +1301,34 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
     colorSpotlight: 0xf4df9a,
     shadows: true,
     gravityMultiplier: 420,
-    lightIntensity: 0.8,
+    lightIntensity: 1.08,
     baseScale: 82,
     strength: 0.9,
     iterationLimit: 900,
     customColorset: {
         name: 'betrayal-house-aged-bone',
         foreground: '#2b2418',
-        ['background']: ['#f4ecd0', '#cfc09a', '#8a7658', '#f6e5b5'],
+        ['background']: ['#fff0bd', '#ead18a', '#d2a95a', '#fff6d4'],
         outline: '#fff1c2',
         texture: 'none',
         material: 'plastic',
     },
 } satisfies DiceBoxStyleProfile;
 
-const BETRAYAL_HOUSE_DICE_FACE_SYSTEM = 'betrayal-house-0-1-2-skin';
+const BETRAYAL_HOUSE_DICE_FACE_SYSTEM = 'betrayal-house-0-1-2-per-die-skin';
+
+const BETRAYAL_HOUSE_RULE_VALUE_TO_D6_FACE: Record<0 | 1 | 2, number> = {
+    0: 1,
+    1: 3,
+    2: 5,
+};
+
+const resolveBetrayalHouseD6Face = (pip: number): number => {
+    if (pip === 0 || pip === 1 || pip === 2) {
+        return BETRAYAL_HOUSE_RULE_VALUE_TO_D6_FACE[pip];
+    }
+    return Math.max(1, Math.min(6, pip));
+};
 
 function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
@@ -1322,31 +1336,40 @@ function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     canvas.height = 256;
     const ctx = canvas.getContext('2d')!;
     const gradient = ctx.createRadialGradient(96, 76, 16, 128, 128, 148);
-    gradient.addColorStop(0, '#fff2c2');
-    gradient.addColorStop(0.42, '#d6bd7a');
-    gradient.addColorStop(1, '#8a612f');
+    gradient.addColorStop(0, '#fff8d6');
+    gradient.addColorStop(0.48, '#edcf82');
+    gradient.addColorStop(1, '#d49a4f');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 256, 256);
-    ctx.strokeStyle = '#2e2117';
+    ctx.strokeStyle = '#9a6a31';
     ctx.lineWidth = 12;
     ctx.strokeRect(14, 14, 228, 228);
     ctx.strokeStyle = 'rgba(255,255,255,0.28)';
     ctx.lineWidth = 4;
     ctx.strokeRect(27, 27, 202, 202);
 
+    ctx.font = '900 112px Georgia, "Times New Roman", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = 'rgba(255,246,212,0.78)';
+    ctx.strokeText(String(value), 128, 134);
+    ctx.fillStyle = '#5f3618';
+    ctx.fillText(String(value), 128, 134);
+
     const pipPositions: Record<0 | 1 | 2, Array<[number, number]>> = {
         0: [],
-        1: [[128, 128]],
-        2: [[88, 88], [168, 168]],
+        1: [[194, 64]],
+        2: [[62, 62], [194, 194]],
     };
 
     for (const [x, y] of pipPositions[value]) {
         ctx.beginPath();
-        ctx.arc(x, y, 28, 0, Math.PI * 2);
-        ctx.fillStyle = '#21170f';
+        ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fillStyle = '#8a5524';
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x - 7, y - 8, 9, 0, Math.PI * 2);
+        ctx.arc(x - 5, y - 6, 6, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255,241,194,0.36)';
         ctx.fill();
     }
@@ -1354,45 +1377,23 @@ function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     return canvas;
 }
 
-function createBetrayalHouseDieEdgeCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
-    const gradient = ctx.createLinearGradient(0, 0, 256, 256);
-    gradient.addColorStop(0, '#f2df9a');
-    gradient.addColorStop(0.54, '#b8924d');
-    gradient.addColorStop(1, '#6f4b27');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 256, 256);
-    return canvas;
-}
+const normalizeBetrayalHouseRuleValue = (pip: number): 0 | 1 | 2 => (
+    pip === 0 || pip === 1 || pip === 2 ? pip : 0
+);
 
-function createBetrayalHouseDiceSkin(): DiceBoxDieSkin {
-    const zero = createBetrayalHouseDieFaceCanvas(0);
-    const one = createBetrayalHouseDieFaceCanvas(1);
-    const two = createBetrayalHouseDieFaceCanvas(2);
-    const edge = createBetrayalHouseDieEdgeCanvas();
+function createBetrayalHouseDiceSkin(value: 0 | 1 | 2): DiceBoxDieSkin {
+    const face = createBetrayalHouseDieFaceCanvas(value);
     return {
-        id: BETRAYAL_HOUSE_DICE_FACE_SYSTEM,
-        edgeCanvas: edge,
+        id: `${BETRAYAL_HOUSE_DICE_FACE_SYSTEM}-${value}`,
+        edgeCanvas: face,
         faceCanvases: {
-            1: zero,
-            2: zero,
-            3: one,
-            4: one,
-            5: two,
-            6: two,
+            1: face,
+            2: face,
+            3: face,
+            4: face,
+            5: face,
+            6: face,
         },
-        faceLabels: {
-            1: '0',
-            2: '0',
-            3: '1',
-            4: '1',
-            5: '2',
-            6: '2',
-        },
-        faceImages: undefined,
     };
 }
 
@@ -1407,15 +1408,20 @@ function BetrayalHouseDice3DGroup({
     const diceInputs = React.useMemo(
         () => roll.dice.map((pip, index) => ({
             id: index + 1,
-            value: Math.max(1, Math.min(6, (pip * 2) + 1)),
+            value: resolveBetrayalHouseD6Face(pip),
         })),
         [roll.dice],
     );
+    const physicalD6Faces = React.useMemo(
+        () => roll.dice.map(resolveBetrayalHouseD6Face),
+        [roll.dice],
+    );
     const dieSkins = React.useMemo(
-        () => roll.dice.map(() => createBetrayalHouseDiceSkin()),
+        () => roll.dice.map((pip) => createBetrayalHouseDiceSkin(normalizeBetrayalHouseRuleValue(pip))),
         [roll.dice],
     );
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
+    const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
 
     return (
         <div
@@ -1424,6 +1430,10 @@ function BetrayalHouseDice3DGroup({
             data-dice-tray-style="transparent-virtual"
             data-dice-physics-ready={hasPhysicsState ? 'true' : 'false'}
             data-dice-count={roll.dice.length}
+            data-dice-rule-values={roll.dice.join(',')}
+            data-dice-visible-rule-values={roll.dice.join(',')}
+            data-dice-rule-subtotal={roll.dice.reduce((sum, pip) => sum + pip, 0)}
+            data-dice-physical-d6-faces={physicalD6Faces.join(',')}
             className={`relative min-h-0 overflow-visible rounded-[14px] bg-transparent ${className}`}
         >
             <DiceBoxPhysicsSource
@@ -1436,12 +1446,39 @@ function BetrayalHouseDice3DGroup({
                 className="pointer-events-none absolute inset-0 h-full w-full"
                 dataAttributes={{
                     'data-dice-face-system': BETRAYAL_HOUSE_DICE_FACE_SYSTEM,
-                    'data-dice-model-source': 'dice-box-d6-with-betrayal-0-1-2-skin',
+                    'data-dice-model-source': 'dice-box-d6-with-per-die-betrayal-0-1-2-skin',
                 }}
                 onPhysicsStatesChange={(states) => {
                     setHasPhysicsState(states.length > 0);
+                    setPhysicsStates(states);
                 }}
             />
+            {physicsStates.map((state, stateIndex) => {
+                const pip = normalizeBetrayalHouseRuleValue(roll.dice[stateIndex] ?? 0);
+                const size = Math.max(34, Math.min(58, state.layout.width * 0.46));
+                return (
+                    <span
+                        key={`${roll.id}-projected-value-${state.id}`}
+                        data-testid={`betrayal-house-die-value-overlay-${stateIndex}`}
+                        data-rule-value={pip}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute z-20 grid place-items-center rounded-full font-serif font-black text-[#56310f] drop-shadow-[0_1px_0_rgba(255,246,212,0.88)]"
+                        style={{
+                            left: state.layout.x,
+                            top: state.layout.y,
+                            width: size,
+                            height: size,
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: size * 0.82,
+                            lineHeight: `${size}px`,
+                            WebkitTextStroke: '1.2px rgba(255,246,212,0.86)',
+                            textShadow: '0 1px 0 rgba(255,246,212,0.72), 0 2px 4px rgba(0,0,0,0.28)',
+                        }}
+                    >
+                        {pip}
+                    </span>
+                );
+            })}
             <div className="sr-only">
                 {roll.dice.map((pip, dieIndex) => (
                     <span
@@ -1449,6 +1486,8 @@ function BetrayalHouseDice3DGroup({
                         data-testid={`betrayal-recent-roll-die-${dieIndex}`}
                         data-render-mode="betrayal-house-die-dice-box-visible"
                         data-dice-physics-source={hasPhysicsState ? 'dice-box-threejs' : 'pending'}
+                        data-rule-value={pip}
+                        data-physical-d6-face={physicalD6Faces[dieIndex]}
                     >
                         {pip}
                     </span>
@@ -1516,6 +1555,8 @@ function RecentRollPanel({
         total: resolveRecentRollTotal(roll),
     });
     const totalLabel = t('board.roll.total', { value: resolveRecentRollTotal(roll) });
+    const diceSubtotalLabel = t('board.roll.diceSubtotal', { value: diceSubtotal });
+    const passiveBonusLabel = t('board.roll.passiveBonus', { value: bonusLabel });
     const bonusText = roll.passiveBonus !== 0 ? t('board.roll.bonus', { value: bonusLabel }) : t('board.roll.noBonus');
 
     return (
@@ -1531,18 +1572,20 @@ function RecentRollPanel({
         >
             <div className="grid h-full min-h-[236px] grid-rows-[minmax(158px,2fr)_minmax(62px,1fr)] gap-2">
                 <BetrayalHouseDice3DGroup roll={roll} locale={effectiveLocale} className={`h-full w-full min-w-0 ${diceClassName ?? ''}`} />
-                <div className="grid min-h-0 grid-cols-[1fr_auto] gap-x-3 gap-y-2 rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.72)] px-3 py-2 shadow-[0_8px_22px_rgba(0,0,0,0.28)]">
+                <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.72)] px-3 py-2 shadow-[0_8px_22px_rgba(0,0,0,0.28)]">
                     <div className="min-w-0">
                         {showSource ? (
                             <div className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">{roll.sourceTitle}</div>
                         ) : null}
                         <div className="mt-0.5 truncate text-[13px] font-semibold text-[#fff1b8]">{roll.rollLabel ?? t('board.roll.fallbackLabel')}</div>
                     </div>
-                    <div data-testid="betrayal-recent-roll-total" className="self-center whitespace-nowrap text-[15px] font-bold text-[#eef4a8]">
+                    <div data-testid="betrayal-recent-roll-total" className="row-span-2 self-center whitespace-nowrap rounded-[10px] border border-[rgba(238,244,168,0.28)] bg-[rgba(238,244,168,0.08)] px-3 py-1.5 text-center text-[15px] font-bold text-[#eef4a8]">
                         {totalLabel}
                     </div>
-                    <div className="min-w-0 text-[12px] font-semibold text-[#d6c498]">
-                        <span data-testid="betrayal-recent-roll-detail" className="text-[#d8c48f]">{rollDetailText}</span>
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[12px] font-semibold text-[#d6c498]">
+                        <span data-testid="betrayal-recent-roll-detail" className="sr-only">{rollDetailText}</span>
+                        <span data-testid="betrayal-recent-roll-subtotal" className="rounded-[7px] border border-[rgba(211,179,109,0.20)] bg-[rgba(211,179,109,0.08)] px-2 py-0.5 text-[#e2cc91]">{diceSubtotalLabel}</span>
+                        <span data-testid="betrayal-recent-roll-passive-bonus" className="rounded-[7px] border border-[rgba(211,179,109,0.14)] bg-[rgba(211,179,109,0.05)] px-2 py-0.5 text-[#cdb783]">{passiveBonusLabel}</span>
                         <span data-testid="betrayal-recent-roll-a11y-summary" className="sr-only">{rollDetailText}</span>
                         <span data-testid="betrayal-recent-roll-bonus" className="sr-only">{bonusText}</span>
                     </div>
@@ -3268,6 +3311,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 zIndex: showSelectedState ? 12 : 2,
             }
             : undefined;
+        const buttonOutlineClass = showSelectedState
+            ? 'z-30 -translate-y-0.5'
+            : canModifyRecentRoll
+                ? 'z-30'
+                : isPreview
+                    ? 'z-10'
+                    : 'z-10 hover:-translate-y-0.5';
+        const modifierOutlineClass = showSelectedState
+            ? 'bg-[rgba(238,204,126,0.03)]'
+            : 'bg-[rgba(238,244,168,0.04)]';
+        const modifierOutlineStyle = showSelectedState
+            ? {
+                border: '2px solid #eecc7e',
+                boxShadow: 'none',
+            }
+            : {
+                border: '2px solid #eef4a8',
+                boxShadow: 'none',
+            };
         return (
             <div
                 key={`${options.layout}-${item.id}`}
@@ -3292,22 +3354,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 data-testid={options.testId}
                 data-roll-modifier-available={canModifyRecentRoll ? 'true' : 'false'}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击选择`}
-                className={`relative w-full overflow-visible text-left transition ${
-                    showSelectedState
-                        ? 'z-20 -translate-y-0.5 shadow-[0_0_0_2px_rgba(238,204,126,0.92),0_0_0_5px_rgba(238,204,126,0.2),0_0_20px_rgba(238,204,126,0.3)]'
-                        : isPreview
-                            ? 'z-10'
-                            : 'z-10 hover:-translate-y-0.5'
-                } ${canModifyRecentRoll ? 'z-30 shadow-[0_0_0_2px_rgba(238,244,168,0.95),0_0_0_5px_rgba(238,244,168,0.22),0_0_26px_rgba(238,244,168,0.38)]' : ''}`}
+                className={`relative w-full overflow-visible text-left transition ${buttonOutlineClass}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
-                {canModifyRecentRoll ? (
-                    <div
-                        data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
-                        aria-hidden="true"
-                        className={`pointer-events-none absolute inset-[-4px] z-40 ${shellRadiusClass} border-[3px] border-[#eef4a8] bg-[radial-gradient(circle_at_50%_50%,rgba(238,244,168,0.10),transparent_64%)] shadow-[0_0_0_1px_rgba(15,18,10,0.92),0_0_20px_rgba(238,244,168,0.62)]`}
-                    />
-                ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
@@ -3317,7 +3366,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     data-testid={options.testId ? `${options.testId}-shell` : undefined}
                     className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} border ${
                         showSelectedState
-                            ? 'border-[rgba(238,204,126,0.92)] bg-transparent'
+                            ? 'border-transparent bg-transparent'
                             : frontVisual
                             ? isCompact
                                 ? 'border-[rgba(120,105,76,0.18)] bg-[rgba(10,8,6,0.18)]'
@@ -3330,13 +3379,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
                         ...(showSelectedState
                             ? {
-                                borderColor: 'rgb(238, 204, 126)',
+                                borderColor: 'transparent',
                                 borderStyle: 'solid',
                                 borderWidth: '1px',
                             }
                             : {}),
                     }}
                 >
+                    {canModifyRecentRoll ? (
+                        <div
+                            data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
+                            aria-hidden="true"
+                            className={`pointer-events-none absolute inset-[3px] z-40 ${shellRadiusClass} ${modifierOutlineClass}`}
+                            style={modifierOutlineStyle}
+                        />
+                    ) : null}
                     {frontVisual ? (
                         <>
                             <div className={`absolute overflow-hidden ${
@@ -3953,21 +4010,19 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                             {core.recentRoll && !pendingEventChoice && !shouldShowLatestDiscovery ? (
                                 isEndgameExorciseRollReview ? (
-                                    <>
+                                    <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center px-4 py-12">
                                         <div
                                             data-testid="betrayal-exorcise-roll-review"
                                             data-tutorial-id="betrayal-exorcise-roll-review"
-                                            className="pointer-events-auto absolute left-1/2 top-[70px] z-50 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2"
+                                            className="pointer-events-auto flex w-[min(640px,calc(100vw-2rem))] flex-col items-center gap-3"
                                         >
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
-                                                className="w-full"
-                                                diceClassName="min-h-[240px]"
+                                                className="h-[min(48vh,430px)] min-h-[340px] w-full"
+                                                diceClassName="min-h-[260px]"
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
                                             />
-                                        </div>
-                                        <div className="pointer-events-auto absolute bottom-6 left-1/2 z-50 -translate-x-1/2">
                                             <button
                                                 type="button"
                                                 data-testid="betrayal-exorcise-roll-continue"
@@ -3977,7 +4032,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 {t('board.endgame.enterEndgame')}
                                             </button>
                                         </div>
-                                    </>
+                                    </div>
                                 ) : (
                                     <RecentRollPanel
                                         roll={core.recentRoll}

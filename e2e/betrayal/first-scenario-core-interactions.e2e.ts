@@ -122,7 +122,7 @@ async function assertTradeActionBarKeepsButtons(page: import('@playwright/test')
         const skeletonActionBarExists = Boolean(document.querySelector('[data-component="action-bar"]'));
         const legacyActionZoneExists = Boolean(document.querySelector('[data-tutorial-id="betrayal-actions-zone"]'));
         const actionItemWrapperCount = document.querySelectorAll('[data-action-id]').length;
-        const buttonsDirectlyUnderRoomGrid = actionButtons.every((button) => button.parentElement?.getAttribute('data-testid') === 'betrayal-room-grid');
+        const buttonsStayInRoomPanelLayer = actionButtons.every((button) => Boolean(button.closest('[data-testid="betrayal-room-panel"]')));
         const actionButtonStyles = actionButtons.map((button) => {
             const style = window.getComputedStyle(button);
             return {
@@ -146,7 +146,7 @@ async function assertTradeActionBarKeepsButtons(page: import('@playwright/test')
             skeletonActionBarExists,
             legacyActionZoneExists,
             actionItemWrapperCount,
-            buttonsDirectlyUnderRoomGrid,
+            buttonsStayInRoomPanelLayer,
             actionButtonStyles,
         };
     });
@@ -155,7 +155,7 @@ async function assertTradeActionBarKeepsButtons(page: import('@playwright/test')
     expect(metrics.skeletonActionBarExists, '底部按钮不能再用 ActionBarSkeleton 生成整排骨架容器').toBe(false);
     expect(metrics.legacyActionZoneExists, '底部按钮不应再保留 betrayal-actions-zone 这种整排动作区概念').toBe(false);
     expect(metrics.actionItemWrapperCount, '底部每个按钮不能再套 data-action-id 外包层').toBe(0);
-    expect(metrics.buttonsDirectlyUnderRoomGrid, '动作按钮不能再被整排动作区容器包裹，必须直接挂在可视地图层').toBe(true);
+    expect(metrics.buttonsStayInRoomPanelLayer, '动作按钮必须留在牌桌主面板内，不能退回页面外层动作区').toBe(true);
     expect(metrics.flowBannerExists, '交易态必须保留轻量操作提示').toBe(true);
     expect(metrics.flowBanner!.backgroundColor, '操作提示不能有黑底').toBe('rgba(0, 0, 0, 0)');
     expect(metrics.flowBanner!.backgroundImage, '操作提示不能有背景层').toBe('none');

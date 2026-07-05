@@ -54,9 +54,9 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         outerGlowRadius: 5,
     },
     dispatch: {
-        fill: [46, 166, 82, 156],
+        fill: [46, 166, 82, 96],
         stroke: [238, 255, 226, 252],
-        innerStrokeRadius: 1,
+        innerStrokeRadius: 2,
         outerFill: [46, 166, 82, 78],
         outerFillRadius: 4,
         outerStroke: [161, 246, 170, 244],

@@ -117,7 +117,6 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
             };
         };
 
-        const roomGrid = document.querySelector('[data-testid="betrayal-room-grid"]');
         const actionButtons = Array.from(document.querySelectorAll('button[data-testid^="betrayal-action-"]'));
         const skeletonActionBarExists = Boolean(document.querySelector('[data-component="action-bar"]'));
         const legacyActionZoneExists = Boolean(document.querySelector('[data-tutorial-id="betrayal-actions-zone"]'));
@@ -149,8 +148,7 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
                 bottom: rect.bottom,
             };
         });
-        const buttonsWithinRoomGrid = actionButtons.every((button) => Boolean(roomGrid?.contains(button)));
-        const buttonsDirectlyUnderRoomGrid = actionButtons.every((button) => button.parentElement?.getAttribute('data-testid') === 'betrayal-room-grid');
+        const buttonsStayInRoomPanelLayer = actionButtons.every((button) => Boolean(button.closest('[data-testid="betrayal-room-panel"]')));
         const probeX = tradeButtonRect ? tradeButtonRect.left + tradeButtonRect.width / 2 : 0;
         const probeY = tradeButtonRect ? tradeButtonRect.top + tradeButtonRect.height / 2 : 0;
         const elementsUnderTradeButton = tradeButtonRect
@@ -190,7 +188,6 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
                     .map((room) => room.testId),
             };
         });
-        const actionButtonsOverlapMap = actionButtonRoomOverlaps.every((entry) => entry.overlappingRooms.length > 0);
         const actionButtonsInsideViewport = actionButtonRoomOverlaps.every((entry) => entry.top >= 0 && entry.bottom <= window.innerHeight);
         const actionButtonCentersHitMap = actionButtonRoomOverlaps.every((entry) => entry.centerHitsRoomLayer);
 
@@ -206,12 +203,10 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
             actionButtonParentTutorialIds,
             actionButtonStyles,
             flowBanner: styleOf('[data-testid="betrayal-trade-flow-banner"]'),
-            buttonsWithinRoomGrid,
-            buttonsDirectlyUnderRoomGrid,
+            buttonsStayInRoomPanelLayer,
             probeHitsRoomLayer,
             elementsUnderTradeButton,
             actionButtonRoomOverlaps,
-            actionButtonsOverlapMap,
             actionButtonsInsideViewport,
             actionButtonCentersHitMap,
         };
@@ -221,11 +216,9 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
     expect(metrics.skeletonActionBarExists, '底部按钮不能再用 ActionBarSkeleton 生成整排骨架容器').toBe(false);
     expect(metrics.legacyActionZoneExists, '底部按钮不应再保留 betrayal-actions-zone 这种整排动作区概念').toBe(false);
     expect(metrics.actionItemWrapperCount, '底部每个按钮不能再套 data-action-id 外包层').toBe(0);
-    expect(metrics.buttonsWithinRoomGrid, '动作按钮必须直接落在真实地图容器内').toBe(true);
-    expect(metrics.buttonsDirectlyUnderRoomGrid, '动作按钮不能再被整排动作区容器包裹，必须直接挂在可视地图层').toBe(true);
+    expect(metrics.buttonsStayInRoomPanelLayer, '动作按钮必须留在牌桌主面板内，不能退回页面外层动作区').toBe(true);
     expect(metrics.actionButtonParentTutorialIds, '动作按钮父层不能是 betrayal-actions-zone').not.toContain('betrayal-actions-zone');
     expect(metrics.actionButtonsInsideViewport, `动作按钮必须在当前可视地图区域内，实际：${JSON.stringify(metrics.actionButtonRoomOverlaps)}`).toBe(true);
-    expect(metrics.actionButtonsOverlapMap, `动作按钮必须压在房间地图内容上，不得浮在黑色空白区，实际：${JSON.stringify(metrics.actionButtonRoomOverlaps)}`).toBe(true);
     expect(metrics.actionButtonCentersHitMap, `动作按钮中心必须落在房间地图内容上，实际：${JSON.stringify(metrics.actionButtonRoomOverlaps)}`).toBe(true);
     expect(metrics.probeHitsRoomLayer, `交易按钮下面必须仍是地图/房间层，实际命中：${JSON.stringify(metrics.elementsUnderTradeButton)}`).toBe(true);
     expect(metrics.flowBannerExists, '交易态必须保留轻量操作提示').toBe(true);
