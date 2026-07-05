@@ -144,7 +144,8 @@
       "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
       "primaryActionSelectPrompt": "Hand action",
       "grantPardon": {
-        "mapFirstHint": "Click the receiving region on the map to complete Grant Pardon; the list below is only a fallback. {{summary}}"
+        "mapFirstHint": "Click the receiving region on the map to complete Grant Pardon; the list below is only a fallback. {{summary}}",
+        "fallbackListLabel": "Fallback choices"
       },
       "wheelNextStepBadge": "Next",
       "wheelNextStepTitle": "Advance public wheel",

@@ -21,7 +21,7 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
             return core.turnPhase === 'action-window'
                 && core.selectedActionId === 'grant-pardon'
                 && core.payment.required === 3
-                && core.grantPardonSelection?.selectedChoiceId != null;
+                && core.grantPardonSelection == null;
         case 'action-result':
         case 'morale-level':
         case 'wheel-action':
@@ -428,6 +428,15 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'grant-pardon' } }],
         },
         {
+            id: 'pay-cards',
+            content: 'game-qidahen:tutorial.basic.steps.payCards',
+            highlightTarget: 'qidahen-hand-zone',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
+            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'grant-pardon' } }],
+        },
+        {
             id: 'choose-grant-pardon-target',
             content: 'game-qidahen:tutorial.basic.steps.chooseGrantPardonTarget',
             highlightTarget: 'qidahen-map-guide-hit-target-city-region-25',
@@ -436,15 +445,6 @@ const QIDAHEN_BASIC_TUTORIAL: TutorialManifest = {
             allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
             allowedTargets: ['jinzhou->city-region-25'],
             advanceOnEvents: [{ type: 'GRANT_PARDON_CHOICE_RESOLVED', match: { choiceId: 'jinzhou->city-region-25' } }],
-        },
-        {
-            id: 'pay-cards',
-            content: 'game-qidahen:tutorial.basic.steps.payCards',
-            highlightTarget: 'qidahen-hand-zone',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
-            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'grant-pardon' } }],
         },
         {
             id: 'action-result',

@@ -372,12 +372,20 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain("action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const");
     });
 
-    it('地区目标主路径会落到地图命中圈，按钮只保留为后续确认或备用入口', () => {
+    it('地区目标主路径会落到地图区域遮罩，按钮只保留为透明命中或备用入口', () => {
         expect(boardSource).toContain('const buildRegularTroopPlacementCandidates = React.useCallback');
         expect(boardSource).toContain('.filter((region) => !region.isLogicalRegion && canPlaceRegularTroopsInRegion(region, factionId))');
         expect(boardSource).toContain("action: 'select-region' as const");
         expect(boardSource).toContain("title: '赐印招安'");
         expect(boardSource).toContain("action: 'grant-pardon' as const");
+        expect(boardSource).toContain('board.actions.grantPardon.mapFirstHint');
+        expect(boardSource).toContain('board.actions.grantPardon.fallbackListLabel');
+        expect(boardSource).toContain('主路径：点击地图上的金色高亮接收区完成招安');
+        expect(boardSource).toContain("candidate.action === 'grant-pardon'");
+        expect(boardSource).toContain('for (const choice of grantPardonSelection?.choices ?? [])');
+        expect(boardSource).toContain("applyTone(choice.targetRegionId, 'dispatch');");
+        expect(boardSource).toContain("candidate.action === 'grant-pardon'\n                                        ? 'transparent'");
+        expect(boardSource).not.toContain('0 0 0 5px rgba(255,236,190,0.92)');
         expect(boardSource).toContain("title: '征召地区'");
         expect(boardSource).toContain('candidates: buildRegularTroopPlacementCandidates(recruitFactionId)');
         expect(boardSource).toContain("title: '马市建军地区'");

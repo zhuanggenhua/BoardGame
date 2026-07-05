@@ -1798,14 +1798,17 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionExecutionResolutionSource).toContain('interface QidahenSelectedActionExecutionResolutionResult {');
         expect(selectedActionExecutionResolutionSource).toContain('export const resolveQidahenSelectedActionExecutionResolution = (');
         expect(selectedActionExecutionResolutionSource).toContain("if (actionId === 'upgrade-armament') {");
-        expect(selectedActionExecutionResolutionSource).toContain("if (actionId === 'grant-pardon') {");
-        expect(selectedActionExecutionResolutionSource).toContain('const grantPardonResolution = dependencies.resolveGrantPardonExecution(');
+        expect(selectedActionExecutionResolutionSource).not.toContain("if (actionId === 'grant-pardon') {");
+        expect(selectedActionExecutionResolutionSource).not.toContain('const grantPardonResolution = dependencies.resolveGrantPardonExecution(');
         expect(selectedActionExecutionResolutionSource).toContain('const upgradeResolution = dependencies.resolveSelectedArmamentUpgradeExecution(');
 
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionPendingFollowUpResolution';");
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionSelectionFollowUpResolution';");
         expect(selectedActionFollowUpSource).toContain("import { buildPendingTargetAction } from './pendingTargetActionBuilder';");
         expect(selectedActionFollowUpSource).toContain("} from './selectionBuilders';");
+        expect(selectedActionFollowUpSource).toContain('buildGrantPardonSelectionFromRegionSemantics');
+        expect(selectedActionFollowUpSource).toContain("resolution.grantPardonSelection");
+        expect(selectedActionFollowUpSource).toContain("? 'grant-pardon-choice'");
         expect(selectedActionFollowUpSource).toContain("import { buildDriveTigerDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';");
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionFollowUpLogText';");
         expect(selectedActionFollowUpSource).not.toContain("} from './selectedActionFollowUpStateTransition';");
@@ -2725,6 +2728,9 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnAdvanceSource).toContain("} from './regionSelectionPreferences';");
         expect(turnAdvanceSource).toContain("} from './scenarioPresets';");
         expect(turnAdvanceSource).toContain("} from './selectionBuilders';");
+        expect(turnAdvanceSource).toContain('getQidahenGrantPardonSelectionForCore');
+        expect(turnAdvanceSource).toContain('const grantPardonSelection = getQidahenGrantPardonSelectionForCore(nextState);');
+        expect(turnAdvanceSource).toContain('|| grantPardonSelection');
         expect(turnAdvanceSource).toContain("import { buildQidahenActionWindowEntryState } from './actionWindowEntryState';");
         expect(turnAdvanceSource).not.toContain('export interface QidahenTurnAdvanceDependencies {');
         expect(turnAdvanceSource).toContain('interface QidahenTurnAdvanceDependencies {');

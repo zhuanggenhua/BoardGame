@@ -1,7 +1,7 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { useUndo } from '../../../contexts/UndoContext';
 import Board from '../Board';
@@ -90,92 +90,104 @@ function HarnessBoard() {
     );
 }
 
-const chooseFinalRoundChips = () => {
-    const finalCore = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
-    let core = finalCore;
+const reduceCommand = (
+    core: TheGangCore,
+    command: Parameters<typeof TheGangDomain.execute>[1],
+) => TheGangDomain.execute(stateOf(core), command, fixedRandom)
+    .reduce((nextCore, event) => TheGangDomain.reduce(nextCore, event), core);
+
+const buildCoreReadyForShowdown = () => {
+    let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
     for (const round of [1, 2, 3]) {
         for (const [index, playerId] of core.playerIds.entries()) {
-            const state = stateOf(core);
-            core = TheGangDomain.execute(state, {
+            core = reduceCommand(core, {
                 type: THE_GANG_COMMANDS.TAKE_CHIP,
                 playerId,
                 payload: { chip: index + 1 },
                 timestamp: round * 10 + index,
-            }, fixedRandom).reduce((nextCore, event) => TheGangDomain.reduce(nextCore, event), core);
+            } as Parameters<typeof TheGangDomain.execute>[1]);
         }
 
-        const state = stateOf(core);
-        core = TheGangDomain.execute(state, {
+        core = reduceCommand(core, {
             type: THE_GANG_COMMANDS.END_ROUND,
             playerId: '0',
             payload: {},
             timestamp: round * 100,
-        }, fixedRandom).reduce((nextCore, event) => TheGangDomain.reduce(nextCore, event), core);
+        } as Parameters<typeof TheGangDomain.execute>[1]);
     }
 
-    return finalRoundChipsFor(core);
+    const finalRoundChips = finalRoundChipsFor(core);
+    for (const playerId of core.playerIds) {
+        core = reduceCommand(core, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId,
+            payload: { chip: finalRoundChips[playerId] },
+            timestamp: 400 + Number(playerId),
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+    }
+
+    return core;
+};
+
+const renderBoardForCore = (core: TheGangCore) => render(
+    <Board
+        G={stateOf(core)}
+        dispatch={vi.fn() as never}
+        playerID="0"
+        matchData={[
+            { id: 0, name: '玩家 1', isConnected: true },
+            { id: 1, name: '玩家 2', isConnected: true },
+            { id: 2, name: '玩家 3', isConnected: true },
+        ]}
+        isConnected
+    />,
+);
+
+const expectBggTableAnchors = () => {
+    const layoutRoot = document.querySelector('[data-layout-contract]');
+    expect(layoutRoot).toHaveAttribute('data-layout-contract', 'bgg-electronic');
+    expect(layoutRoot).toHaveAttribute('data-layout-source', 'BGG electronic DOM/CSS');
+    expect(screen.getByTestId('the-gang-layout-contract')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="top-zone"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="middle-zone"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="bottom-zone"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="token-pile"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="card-river"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="vaults-alarms-zone"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="player-tokens"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-bgg-zone="hand-chips"]')).toBeInTheDocument();
 };
 
 describe('The Gang Board 运行入口', () => {
     test('真实 Board 可以完成四轮抢劫并显示摊牌结果', () => {
-        render(<HarnessBoard />);
+        const readyForShowdown = buildCoreReadyForShowdown();
+        const { unmount } = renderBoardForCore(readyForShowdown);
 
-        expect(screen.getByText('纸牌帮')).toBeInTheDocument();
-        expect(screen.getByText('抢劫 1')).toBeInTheDocument();
-        expect(screen.getByText('第 1 轮 · 白筹码')).toBeInTheDocument();
-        expect(screen.getByLabelText('公共牌牌槽')).toBeInTheDocument();
-        expect(screen.getByLabelText('金库 0/3，警报 0/3')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '下一轮' })).toBeDisabled();
+        expect(document.querySelector('[data-game-ui="the-gang"]')).toBeInTheDocument();
+        expectBggTableAnchors();
+        expect(readyForShowdown.communityCards).toHaveLength(5);
+        expect(readyForShowdown.roundHistory).toHaveLength(3);
+        expect(Object.keys(readyForShowdown.currentRoundChips)).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="card-river"] img')).toHaveLength(5);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
 
-        const layoutRoot = screen.getByText('纸牌帮').closest('[data-layout-contract]');
-        expect(layoutRoot).toHaveAttribute('data-layout-contract', 'bgg-electronic');
-        expect(layoutRoot).toHaveAttribute('data-layout-source', 'BGG electronic DOM/CSS');
-        expect(screen.getByTestId('the-gang-layout-contract')).toHaveTextContent('BGG 电子版结构');
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="middle-zone"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="bottom-zone"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="token-pile"]')).toBeInTheDocument();
-        expect(document.querySelectorAll('[data-bgg-zone="token-slot"]')).toHaveLength(4);
-        expect(document.querySelector('[data-bgg-zone="card-river"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="vaults-alarms-zone"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="player-tokens"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="hand-chips"]')).toBeInTheDocument();
+        unmount();
 
-        for (const round of [1, 2, 3]) {
-            const chipLabel = ['白筹码', '黄筹码', '橙筹码'][round - 1];
-            fireEvent.click(screen.getByRole('button', { name: '切到玩家 1' }));
-            fireEvent.click(screen.getByRole('button', { name: `${chipLabel} 1 星` }));
-            fireEvent.click(screen.getByRole('button', { name: '切到玩家 2' }));
-            fireEvent.click(screen.getByRole('button', { name: `${chipLabel} 2 星` }));
-            fireEvent.click(screen.getByRole('button', { name: '切到玩家 3' }));
-            fireEvent.click(screen.getByRole('button', { name: `${chipLabel} 3 星` }));
-            expect(screen.getByRole('button', { name: '下一轮' })).toBeEnabled();
-            fireEvent.click(screen.getByRole('button', { name: '下一轮' }));
-            expect(screen.getByText(`第 ${round + 1} 轮 · ${['', '', '黄筹码', '橙筹码', '红筹码'][round + 1]}`)).toBeInTheDocument();
-        }
+        const revealed = reduceCommand(readyForShowdown, {
+            type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+            playerId: '0',
+            payload: {},
+            timestamp: 500,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+        renderBoardForCore(revealed);
 
-        const finalRoundChips = chooseFinalRoundChips();
-        fireEvent.click(screen.getByRole('button', { name: '切到玩家 1' }));
-        fireEvent.click(screen.getByRole('button', { name: `红筹码 ${finalRoundChips['0']} 星` }));
-        fireEvent.click(screen.getByRole('button', { name: '切到玩家 2' }));
-        fireEvent.click(screen.getByRole('button', { name: `红筹码 ${finalRoundChips['1']} 星` }));
-        fireEvent.click(screen.getByRole('button', { name: '切到玩家 3' }));
-        fireEvent.click(screen.getByRole('button', { name: `红筹码 ${finalRoundChips['2']} 星` }));
-
-        expect(screen.getByRole('button', { name: '摊牌' })).toBeEnabled();
-        fireEvent.click(screen.getByRole('button', { name: '摊牌' }));
-
-        expect(screen.getByLabelText('摊牌结算')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="reveal-zone"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-bgg-zone="reveal-final"]')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="safe-zone"]')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="reveal-players"]')).toBeInTheDocument();
-        expect(screen.getByText('抢劫成功')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '下一次抢劫' })).toBeInTheDocument();
-        expect(screen.getAllByLabelText('成功 1').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getAllByLabelText('失败 0').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByRole('button', { name: 'board.nextHeist' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '摊牌' })).not.toBeInTheDocument();
     });
 

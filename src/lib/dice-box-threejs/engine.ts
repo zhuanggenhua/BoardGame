@@ -1,4 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
+import { CanvasTexture } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -34,6 +35,7 @@ export interface DiceBoxStyleProfile {
 export interface DiceBoxDieSkin {
     id: string;
     faceCanvases: Record<number, HTMLCanvasElement>;
+    edgeCanvas?: HTMLCanvasElement;
     faceImages?: Record<number, HTMLImageElement>;
     faceLabels?: Record<number, string>;
 }
@@ -346,6 +348,8 @@ export class DiceBoxThreeEngine {
 
         preset.labels = faceLabels
             ? [
+                '',
+                '',
                 faceLabels[1] ?? '',
                 faceLabels[2] ?? '',
                 faceLabels[3] ?? '',
@@ -389,23 +393,43 @@ export class DiceBoxThreeEngine {
         const materials = Array.isArray(die.material) ? die.material : [die.material];
         let didChange = false;
 
-        for (const faceValue of [1, 2, 3, 4, 5, 6]) {
-            const material = materials[faceValue + 1];
+        if (skin.edgeCanvas && this.applyCanvasToMaterial(materials[0], skin.edgeCanvas)) {
+            didChange = true;
+        }
+
+        const indexedFaceValues = new Set<number>();
+        for (const group of die.geometry.groups ?? []) {
+            const faceValue = group.materialIndex - 1;
+            if (faceValue >= 1 && faceValue <= 6) {
+                indexedFaceValues.add(faceValue);
+            }
+        }
+        const faceValues = indexedFaceValues.size > 0 ? [...indexedFaceValues] : [1, 2, 3, 4, 5, 6];
+
+        for (const faceValue of faceValues) {
+            const materialIndex = faceValue + 1;
+            const material = materials[materialIndex];
             const canvas = skin.faceCanvases[faceValue];
             if (!material || !canvas) continue;
 
-            if (material.map) {
-                material.map.image = canvas;
-                material.map.flipY = false;
-                material.map.generateMipmaps = false;
-                material.map.needsUpdate = true;
+            if (this.applyCanvasToMaterial(material, canvas)) {
+                didChange = true;
             }
-            this.normalizeFaceMaterial(material);
-            didChange = true;
         }
 
         this.normalizeFaceMaterial(materials[0]);
         return didChange;
+    }
+
+    private applyCanvasToMaterial(material: DiceBoxMaterialInstance | undefined, canvas: HTMLCanvasElement): boolean {
+        if (!material) return false;
+        material.map ??= new CanvasTexture(canvas);
+        material.map.image = canvas;
+        material.map.flipY = false;
+        material.map.generateMipmaps = false;
+        material.map.needsUpdate = true;
+        this.normalizeFaceMaterial(material);
+        return true;
     }
 
     private normalizeFaceMaterial(material?: DiceBoxMaterialInstance): void {
@@ -417,7 +441,10 @@ export class DiceBoxThreeEngine {
         material.metalness = 0.04;
         material.envMapIntensity = 0.35;
         material.bumpMap = null;
-        material.transparent = true;
+        material.opacity = 1;
+        material.transparent = false;
+        material.depthTest = true;
+        material.depthWrite = true;
         material.needsUpdate = true;
     }
 }

@@ -431,22 +431,6 @@ export const resolveQidahenSelectedActionExecutionResolution = (
         }
     }
 
-    if (actionId === 'grant-pardon') {
-        const grantPardonChoice = state.grantPardonSelection?.choices.find((choice) => (
-            choice.id === state.grantPardonSelection?.selectedChoiceId
-        )) ?? null;
-        const grantPardonResolution = dependencies.resolveGrantPardonExecution(
-            state,
-            nextFactions,
-            timestamp,
-            grantPardonChoice,
-        );
-        nextFactions = grantPardonResolution.factions;
-        nextLastSeasonSummary = grantPardonResolution.lastSeasonSummary;
-        nextRegions = grantPardonResolution.regions;
-        nextSelectedRegionId = grantPardonResolution.selectedRegionId;
-    }
-
     return {
         factions: nextFactions,
         lastSeasonSummary: nextLastSeasonSummary,

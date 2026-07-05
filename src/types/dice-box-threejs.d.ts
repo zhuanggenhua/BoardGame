@@ -47,7 +47,10 @@ declare module '@3d-dice/dice-box-threejs' {
         roughness?: number;
         metalness?: number;
         envMapIntensity?: number;
+        opacity?: number;
         transparent?: boolean;
+        depthTest?: boolean;
+        depthWrite?: boolean;
         needsUpdate?: boolean;
     }
 
@@ -65,6 +68,9 @@ declare module '@3d-dice/dice-box-threejs' {
         shape: string;
         notation: { type: string };
         geometry: {
+            groups?: Array<{
+                materialIndex: number;
+            }>;
             boundingBox?: {
                 min: {
                     x: number;

@@ -21,9 +21,9 @@ const TUTORIAL_STEP_03 = `${TUTORIAL_DIR}/03-教程第3步-先看公共轮盘会
 const TUTORIAL_STEP_04 = `${TUTORIAL_DIR}/04-教程第4步-点击轮盘免费走1.png`;
 const TUTORIAL_STEP_05 = `${TUTORIAL_DIR}/05-教程第5步-看轮盘后本回合还有手牌行动和轮盘落点行动.png`;
 const TUTORIAL_STEP_06 = `${TUTORIAL_DIR}/06-教程第6步-先看底部手牌资源.png`;
-const TUTORIAL_STEP_07 = `${TUTORIAL_DIR}/07-教程第7步-点击赐印招安进入目标选择.png`;
-const TUTORIAL_STEP_08 = `${TUTORIAL_DIR}/08-教程第8步-选择锦州到山海关招安目标.png`;
-const TUTORIAL_STEP_09 = `${TUTORIAL_DIR}/09-教程第9步-弃3张手牌支付赐印招安.png`;
+const TUTORIAL_STEP_07 = `${TUTORIAL_DIR}/07-教程第7步-点击赐印招安进入支付.png`;
+const TUTORIAL_STEP_08 = `${TUTORIAL_DIR}/08-教程第8步-弃3张手牌支付赐印招安.png`;
+const TUTORIAL_STEP_09 = `${TUTORIAL_DIR}/09-教程第9步-支付后地图高亮选择招安目标.png`;
 const TUTORIAL_STEP_10 = `${TUTORIAL_DIR}/10-教程第10步-招安后看到控制权变化.png`;
 const TUTORIAL_STEP_11 = `${TUTORIAL_DIR}/11-教程第11步-看地图上的等级与士气.png`;
 const TUTORIAL_STEP_12 = `${TUTORIAL_DIR}/12-教程第12步-看当前轮盘会把你推进到哪类行动.png`;
@@ -277,18 +277,10 @@ test.describe('七大恨新游戏收口', () => {
         await saveScreenshot(page, TUTORIAL_STEP_07);
 
         await page.getByRole('button', { name: /赐印招安/ }).click();
-        await expect(page.locator('[data-tutorial-step="choose-grant-pardon-target"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-grant-pardon-selection"]')).toBeVisible();
-        const grantPardonMapTarget = page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]');
-        await expect(grantPardonMapTarget).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('选择招安目标');
-        await saveScreenshot(page, TUTORIAL_STEP_08);
-
-        await grantPardonMapTarget.click();
         await expect(page.locator('[data-tutorial-step="pay-cards"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('目标已经锁定');
-        await saveScreenshot(page, TUTORIAL_STEP_09);
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('先弃 3 张手牌支付赐印招安');
+        await saveScreenshot(page, TUTORIAL_STEP_08);
 
         const handCards = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])');
         await expect(handCards.nth(0)).toBeVisible({ timeout: 15000 });
@@ -300,6 +292,14 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-action-payment-confirm"]')).toBeEnabled();
         await page.locator('[data-testid="qidahen-action-payment-confirm"]').click();
 
+        await expect(page.locator('[data-tutorial-step="choose-grant-pardon-target"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-grant-pardon-selection"]')).toBeVisible();
+        const grantPardonMapTarget = page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]');
+        await expect(grantPardonMapTarget).toBeVisible();
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('费用已经付完');
+        await saveScreenshot(page, TUTORIAL_STEP_09);
+
+        await grantPardonMapTarget.click();
         await expect(page.locator('[data-tutorial-step="action-result"]')).toBeVisible({ timeout: 10000 });
         await saveScreenshot(page, TUTORIAL_STEP_10);
         await page.locator('[data-testid="tutorial-next-button"]').click();

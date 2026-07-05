@@ -96,7 +96,6 @@ const BOARD_DICE_SCATTER_SLOTS = [
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
 const BOARD_DICE_HIT_TARGET_SIZE_PX = 38;
-const BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX = 106;
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
@@ -400,7 +399,8 @@ export const DiceTray = ({
     const handleBoardPresentationClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
         if (!isBoardPresentation) return;
 
-        const stageRect = event.currentTarget.getBoundingClientRect();
+        const stage = event.currentTarget.closest('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+        const stageRect = (stage ?? event.currentTarget).getBoundingClientRect();
         const clickX = event.clientX;
         const clickY = event.clientY;
         let nearestDieId: number | null = null;
@@ -625,54 +625,11 @@ export const DiceTray = ({
                         className="absolute inset-0"
                         style={{ zIndex: UI_Z_INDEX.hud + 6 }}
                         data-testid="dicethrone-board-dice-hit-layer"
-                        onClick={handleBoardPresentationClick}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            handleBoardPresentationClick(event);
+                        }}
                     />
-                )}
-                {isBoardPresentation && (
-                    <div
-                        className="pointer-events-none absolute inset-0 opacity-80 mix-blend-normal"
-                        style={{ transform: `translateY(${BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX}px)` }}
-                        data-testid="dicethrone-board-dice-custom-reference-layer"
-                    >
-                        <DiceField3D
-                            dice={visibleOverlayDice.map((die) => ({
-                                id: die.id,
-                                value: die.value,
-                                definitionId: die.definitionId,
-                            }))}
-                            selectedDieIds={selectedDieIds}
-                            isRolling={false}
-                            rerollingDiceIds={[]}
-                            locale={locale}
-                            characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
-                            slots={BOARD_DICE_SCATTER_SLOTS}
-                            scenePreset="board-topdown"
-                            physicsStates={Object.values(centerDiceLayout).map((layout) => ({
-                                id: layout.id,
-                                layout: {
-                                    ...layout,
-                                    y: layout.y + BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX,
-                                    minY: layout.minY + BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX,
-                                    maxY: layout.maxY + BOARD_DICE_CUSTOM_REFERENCE_OFFSET_Y_PX,
-                                },
-                                motion: {
-                                    x: 0,
-                                    y: 0,
-                                    z: 0,
-                                    rotateX: layout.rotateX,
-                                    rotateY: layout.rotateY,
-                                    rotateZ: layout.rotateZ,
-                                },
-                                settled: true,
-                            }))}
-                            physicsLayoutBounds={{
-                                left: 0,
-                                top: 0,
-                                width: 1,
-                                height: 1,
-                            }}
-                        />
-                    </div>
                 )}
                 {visibleOverlayDice.map((d, i) => {
                     const selected = isSelected(d.id);
@@ -1118,7 +1075,7 @@ export const BoardDiceStage = ({
     return (
         <div
             className="pointer-events-auto absolute left-[28%] right-[38%] top-[43%] bottom-[25%]"
-            style={{ zIndex: UI_Z_INDEX.hud + 5 }}
+            style={{ zIndex: UI_Z_INDEX.hint + 5 }}
             data-testid="dicethrone-board-dice-stage"
             data-board-magnify-ignore="true"
             onPointerDown={(event) => event.stopPropagation()}

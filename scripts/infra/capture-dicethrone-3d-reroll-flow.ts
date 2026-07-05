@@ -442,13 +442,19 @@ async function logBoardDiceStageGate(page: Page, label: string) {
 
 async function clickCenterDie(page: Page, dieId: number) {
     const point = await page.evaluate((nextDieId: number) => {
+        const hitLayer = document.querySelector(
+            '[data-testid="dicethrone-board-dice-hit-layer"]',
+        ) as HTMLElement | null;
         const target = document.querySelector(
             `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${nextDieId}"]`,
         ) as HTMLElement | null;
-        if (!target) return null;
+        if (!target && !hitLayer) return null;
 
-        const rect = target.getBoundingClientRect();
-        const style = window.getComputedStyle(target);
+        // 透明按钮保留的是插件投影中心；真正接收点击的是整层 hit layer。
+        // 因此这里必须优先点透明按钮中心，不能退化成点 hit layer 正中心。
+        const clickSource = target ?? hitLayer!;
+        const rect = clickSource.getBoundingClientRect();
+        const style = window.getComputedStyle(clickSource);
         if (rect.width <= 0
             || rect.height <= 0
             || style.visibility === 'hidden'
@@ -487,12 +493,18 @@ async function dragHandCardToPlay(page: Page, cardId: string) {
 
 async function waitForCenterDieAttached(page: Page, dieId: number) {
     await page.waitForFunction((nextDieId: number) => {
-        return Boolean(document.querySelector(`[data-testid="die-button-${nextDieId}"]`));
+        return Boolean(document.querySelector(`[data-testid="die-button-${nextDieId}"]`))
+            || Boolean(document.querySelector('[data-testid="dicethrone-board-dice-hit-layer"]'));
     }, dieId, { timeout: 12000 });
 }
 
 async function waitForSelectedBoardDiceCount(page: Page, count: number) {
     await page.waitForFunction((expectedCount: number) => {
+        const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
+        const result = state?.sys?.multistepInteraction?.result ?? state?.ui?.multistepInteraction?.result;
+        if (Array.isArray(result?.selectedDiceIds) && result.selectedDiceIds.length === expectedCount) {
+            return true;
+        }
         return Array.from(document.querySelectorAll(
             '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
         )).filter((node) => (node as HTMLElement).dataset.selected === 'true').length === expectedCount;
@@ -533,11 +545,20 @@ async function waitForBoardDiceProjectionStable(page: Page) {
     await page.waitForFunction(() => {
         const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
         const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]');
-        const canvas = document.querySelector('[data-testid="dice-field-3d-canvas"], [data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+        const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]')
+            ?? document.querySelector('[data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
         const buttons = Array.from(document.querySelectorAll(
             '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
         )) as HTMLElement[];
-        if (!state || !stage || !canvas || buttons.length < 5) return false;
+        if (!state || !stage || !canvas) return false;
+
+        const canvasRect = canvas.getBoundingClientRect();
+        const canvasStable = canvasRect.width > 0
+            && canvasRect.height > 0
+            && (canvas.dataset.skinsReady === 'true' || canvas.dataset.diceTexturesReady === 'true')
+            && canvas.dataset.diceSettled === 'true'
+            && canvas.dataset.diceVisualSettled === 'true';
+        if (buttons.length < 5) return canvasStable;
 
         const stageRect = stage.getBoundingClientRect();
         const rects = buttons.map((node) => node.getBoundingClientRect());

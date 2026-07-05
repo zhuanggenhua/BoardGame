@@ -26,5 +26,5 @@
 ## 当前验收状态
 
 - 旧 2026-07-05 08:24 截图和 PureRef 记录只证明旧 TTS 桌面式版本曾经可跑，不能作为 BGG 电子版重做完成证据。
-- 最新 Board 已切到 `data-layout-contract="bgg-electronic"`，但还必须重新跑 The Gang 定向测试、真实页面 E2E、打开最新截图给用户看，并由 AI 复看桌面首轮、桌面摊牌/结算、手机横屏三张图。
+- 最新 Board 已切到 `data-layout-contract="bgg-electronic"`；2026-07-05 17:05/17:06 已按 1920×1080 基线重跑 The Gang 桌面运行时 E2E 与桌面教程 E2E，打开运行时满元素、运行时摊牌、教程满元素、教程摊牌四张最新截图给用户看，并由 AI 复看 `temp/the-gang-intake/the-gang-1920-desktop-contact.jpg`。手机横屏和最终完成口径仍等待用户桌面验收后继续。
 - 在上述最新证据完成前，本文件只证明“重做方向已锁定并正在实施”，不证明 UI 已完成。

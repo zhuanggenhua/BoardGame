@@ -77,6 +77,7 @@ const hasPendingScenarioVote = (state: MatchState<QidahenCore>): boolean => (
 const hasBlockingSelection = (state: MatchState<QidahenCore>): boolean => (
     state.sys.interaction?.current != null
     || state.sys.interaction?.isBlocked === true
+    || state.core.grantPardonSelection != null
     || state.core.sunYuanhuaTechSelection != null
     || state.core.gaoDiDispatchSelection != null
 );

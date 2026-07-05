@@ -278,15 +278,6 @@ export const resolveQidahenGrantPardonInteractionChoice = (
     if (!selection || !choice) {
         return state;
     }
-    const selectedSelection: QidahenGrantPardonSelection = {
-        ...selection,
-        sourceRegionId: choice.sourceRegionId,
-        sourceRegionName: choice.sourceRegionName,
-        displayAnchorRegionId: choice.sourceRegionId,
-        displayAnchorRegionName: choice.sourceRegionName,
-        selectedChoiceId: choice.id,
-        choices: selection.choices.map((item) => ({ ...item })),
-    };
     if (selection.executionSource === 'tribute-edict') {
         const resolution = dependencies.resolveGrantPardonExecution(
             state,
@@ -319,28 +310,32 @@ export const resolveQidahenGrantPardonInteractionChoice = (
             ]),
         }), timestamp);
     }
-    return dependencies.updateTurnLabel({
+    const resolution = dependencies.resolveGrantPardonExecution(
+        state,
+        state.factions,
+        timestamp,
+        choice,
+    );
+    return dependencies.advanceTurnIfReady(dependencies.updateTurnLabel({
         ...state,
-        selectedRegionId: choice.sourceRegionId,
+        selectedRegionId: resolution.selectedRegionId,
         explicitRegionId: null,
-        regionFocusState: buildQidahenRegionFocusState(choice.sourceRegionId, {
-            lockedSourceRegionId: choice.sourceRegionId,
-            displayAnchorRegionId: choice.sourceRegionId,
-        }),
+        regionFocusState: buildQidahenRegionFocusState(resolution.selectedRegionId),
         selectedActionId: 'grant-pardon',
         confirmedActionId: 'grant-pardon',
         selectedPaymentCardIds: [],
         turnPhase: 'action-window',
-        grantPardonSelection: selectedSelection,
+        grantPardonSelection: null,
         recruitSelection: null,
         maShiTradeSelection: null,
         khanEdictSelection: null,
         diplomacyProgress: null,
-        lastSeasonSummary: dependencies.buildSeasonSummary('赐印招安', timestamp, [
-            `已选择招安目标：${choice.sourceRegionName} 的 1 个${choice.targetFactionName}部队，转入 ${choice.targetRegionName}。`,
-            '下一步弃 3 张手牌支付赐印招安。',
+        factions: resolution.factions,
+        regions: resolution.regions,
+        lastSeasonSummary: resolution.lastSeasonSummary ?? dependencies.buildSeasonSummary('赐印招安', timestamp, [
+            '当前没有可招安的相邻敌军。',
         ]),
-    });
+    }), timestamp);
 };
 
 export const resolveQidahenDriveTigerConsentInteractionChoice = (

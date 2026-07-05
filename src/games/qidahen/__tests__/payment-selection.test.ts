@@ -132,22 +132,17 @@ function getMaShiTradeSelection(core: QidahenCore) {
     return getQidahenMaShiTradeSelectionForCore(core);
 }
 
-function resolveGrantPardonChoiceAndPay(
+function payGrantPardonAndChooseTarget(
     core: QidahenCore,
     choiceId: string,
 ): QidahenCore {
-    const choosingTarget = apply(core, {
-        type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-        playerId: '0',
-        payload: { choiceId },
-    });
-    expect(choosingTarget.turnPhase).toBe('action-window');
-    expect(choosingTarget.grantPardonSelection?.selectedChoiceId).toBe(choiceId);
-    expect(choosingTarget.payment).toMatchObject({
+    expect(core.turnPhase).toBe('action-window');
+    expect(core.grantPardonSelection).toBeNull();
+    expect(core.payment).toMatchObject({
         required: 3,
         selected: 0,
     });
-    const first = apply(choosingTarget, {
+    const first = apply(core, {
         type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
         playerId: '0',
         payload: { cardId: 'hand-1' },
@@ -157,10 +152,22 @@ function resolveGrantPardonChoiceAndPay(
         playerId: '0',
         payload: { cardId: 'hand-2' },
     });
-    return apply(second, {
+    const third = apply(second, {
         type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
         playerId: '0',
         payload: { cardId: 'hand-3' },
+    });
+    const choosingTarget = apply(third, {
+        type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+        playerId: '0',
+        payload: {},
+    });
+    expect(choosingTarget.turnPhase).toBe('grant-pardon-choice');
+    expect(getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id)).toContain(choiceId);
+    return apply(choosingTarget, {
+        type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
+        playerId: '0',
+        payload: { choiceId },
     });
 }
 
@@ -5872,15 +5879,10 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        expect(previewed.turnPhase).toBe('grant-pardon-choice');
-        const grantPardonSelection = getGrantPardonSelection(previewed);
-        expect(grantPardonSelection?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
-        const third = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
-        const next = apply(third, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
-            playerId: '0',
-            payload: {},
-        });
+        expect(previewed.turnPhase).toBe('action-window');
+        expect(previewed.payment.required).toBe(3);
+        expect(getGrantPardonSelection(previewed)).toBeNull();
+        const next = payGrantPardonAndChooseTarget(previewed, 'jinzhou->city-region-25');
 
         const sourceRegion = next.regions.find((region) => region.id === 'jinzhou');
         const destinationRegion = next.regions.find((region) => region.id === 'city-region-25');
@@ -5942,13 +5944,10 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        expect(getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
-        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
-        const next = apply(paid, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
-            playerId: '0',
-            payload: {},
-        });
+        expect(previewed.turnPhase).toBe('action-window');
+        expect(previewed.payment.required).toBe(3);
+        expect(getGrantPardonSelection(previewed)).toBeNull();
+        const next = payGrantPardonAndChooseTarget(previewed, 'jinzhou->city-region-25');
 
         expect(next.regions.find((region) => region.id === 'jinzhou')).toMatchObject({
             controller: 'jin',
@@ -6014,13 +6013,10 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        expect(getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id)).toContain('city-region-24->city-region-25');
-        const paid = resolveGrantPardonChoiceAndPay(previewed, 'city-region-24->city-region-25');
-        const next = apply(paid, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
-            playerId: '0',
-            payload: {},
-        });
+        expect(previewed.turnPhase).toBe('action-window');
+        expect(previewed.payment.required).toBe(3);
+        expect(getGrantPardonSelection(previewed)).toBeNull();
+        const next = payGrantPardonAndChooseTarget(previewed, 'city-region-24->city-region-25');
 
         expect(next.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
             controller: 'jin',
@@ -6108,16 +6104,36 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        const choiceIds = getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id) ?? [];
+        expect(previewed.turnPhase).toBe('action-window');
+        expect(previewed.payment.required).toBe(3);
+        expect(getGrantPardonSelection(previewed)).toBeNull();
+        const paid = apply(apply(apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: 'hand-1' },
+        }), {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: 'hand-2' },
+        }), {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: 'hand-3' },
+        });
+        const choosingTarget = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const choiceIds = getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id) ?? [];
         expect(choiceIds).toEqual(expect.arrayContaining([
             'jinzhou->city-region-24',
             'jinzhou->city-region-25',
         ]));
-        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-24');
-        const next = apply(paid, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+        const next = apply(choosingTarget, {
+            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
             playerId: '0',
-            payload: {},
+            payload: { choiceId: 'jinzhou->city-region-24' },
         });
 
         expect(next.selectedRegionId).toBe('city-region-24');
@@ -6207,13 +6223,10 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        expect(getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id)).toContain('jinzhou->city-region-25');
-        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
-        const next = apply(paid, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
-            playerId: '0',
-            payload: {},
-        });
+        expect(previewed.turnPhase).toBe('action-window');
+        expect(previewed.payment.required).toBe(3);
+        expect(getGrantPardonSelection(previewed)).toBeNull();
+        const next = payGrantPardonAndChooseTarget(previewed, 'jinzhou->city-region-25');
 
         expect(next.selectedRegionId).toBe('city-region-25');
         expect(next.regions.find((region) => region.id === 'jinzhou')).toMatchObject({
@@ -6320,16 +6333,36 @@ describe('七大恨支付手牌选择', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        const choiceIds = getGrantPardonSelection(previewed)?.choices.map((choice) => choice.id) ?? [];
+        expect(previewed.turnPhase).toBe('action-window');
+        expect(previewed.payment.required).toBe(3);
+        expect(getGrantPardonSelection(previewed)).toBeNull();
+        const paid = apply(apply(apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: 'hand-1' },
+        }), {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: 'hand-2' },
+        }), {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: 'hand-3' },
+        });
+        const choosingTarget = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const choiceIds = getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id) ?? [];
         expect(choiceIds).toEqual(expect.arrayContaining([
             'jinzhou->city-region-24',
             'jinzhou->city-region-25',
         ]));
-        const paid = resolveGrantPardonChoiceAndPay(previewed, 'jinzhou->city-region-25');
-        const next = apply(paid, {
-            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+        const next = apply(choosingTarget, {
+            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
             playerId: '0',
-            payload: {},
+            payload: { choiceId: 'jinzhou->city-region-25' },
         });
 
         expect(next.selectedRegionId).toBe('city-region-25');

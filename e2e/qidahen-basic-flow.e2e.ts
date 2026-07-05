@@ -479,7 +479,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         assertNoFatalFrontendErrors([{ label: 'qidahen-pregame-gate', diagnostics }]);
     });
 
-    test('教程直入行动窗口，点赐印招安后先场景直选目标，再弃牌支付并进入轮盘推进提示', async ({ page }) => {
+    test('教程直入行动窗口，点赐印招安后先弃牌支付，再场景直选目标并进入轮盘推进提示', async ({ page }) => {
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {
@@ -516,14 +516,14 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await saveScreenshot(page, ACTION_TOOLTIP_SCREENSHOT);
 
         await page.getByRole('button', { name: /赐印招安/ }).click();
-        await expect(page.locator('[data-testid="qidahen-grant-pardon-selection"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]')).toBeVisible();
-        await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('需弃 3 张');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BEFORE_ACTION_CLICK);
 
         await confirmActionPayment(page, 3);
+        await expect(page.locator('[data-testid="qidahen-grant-pardon-selection"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]')).toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');

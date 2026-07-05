@@ -292,16 +292,10 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { actionId: 'grant-pardon' },
         });
-        expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-target');
-        expect((state.core as any).turnPhase).toBe('grant-pardon-choice');
-        expect((state.core as any).grantPardonSelection?.choices.map((choice: any) => choice.id)).toContain('jinzhou->city-region-25');
-        expect(getPromptSummary(state).kind).toBe('simple-choice');
-        expect(getPromptOptionIds(state)).toContain('jinzhou->city-region-25');
-
-        state = respondToPrompt(state, '0', { optionId: 'jinzhou->city-region-25' });
         expect(state.sys.tutorial.step?.id).toBe('pay-cards');
+        expect((state.core as any).turnPhase).toBe('action-window');
         expect((state.core as any).payment.required).toBe(3);
-        expect((state.core as any).grantPardonSelection?.selectedChoiceId).toBe('jinzhou->city-region-25');
+        expect((state.core as any).grantPardonSelection).toBeNull();
 
         const paymentCardIds = (state.core as any).handCards
             .filter((card: any) => card.faction === 'ming' && card.status !== 'disabled')
@@ -320,6 +314,13 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: {},
         });
+        expect(state.sys.tutorial.step?.id).toBe('choose-grant-pardon-target');
+        expect((state.core as any).turnPhase).toBe('grant-pardon-choice');
+        expect((state.core as any).grantPardonSelection?.choices.map((choice: any) => choice.id)).toContain('jinzhou->city-region-25');
+        expect(getPromptSummary(state).kind).toBe('simple-choice');
+        expect(getPromptOptionIds(state)).toContain('jinzhou->city-region-25');
+
+        state = respondToPrompt(state, '0', { optionId: 'jinzhou->city-region-25' });
         expect(state.sys.tutorial.step?.id).toBe('action-result');
         expect(((state.core as any).actionLog ?? []).map((entry: any) => entry.text).join(' | ')).toContain('赐印招安');
 

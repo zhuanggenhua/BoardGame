@@ -1354,12 +1354,28 @@ function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     return canvas;
 }
 
+function createBetrayalHouseDieEdgeCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+    const gradient = ctx.createLinearGradient(0, 0, 256, 256);
+    gradient.addColorStop(0, '#f2df9a');
+    gradient.addColorStop(0.54, '#b8924d');
+    gradient.addColorStop(1, '#6f4b27');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+    return canvas;
+}
+
 function createBetrayalHouseDiceSkin(): DiceBoxDieSkin {
     const zero = createBetrayalHouseDieFaceCanvas(0);
     const one = createBetrayalHouseDieFaceCanvas(1);
     const two = createBetrayalHouseDieFaceCanvas(2);
+    const edge = createBetrayalHouseDieEdgeCanvas();
     return {
         id: BETRAYAL_HOUSE_DICE_FACE_SYSTEM,
+        edgeCanvas: edge,
         faceCanvases: {
             1: zero,
             2: zero,

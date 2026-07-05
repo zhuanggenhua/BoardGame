@@ -13,7 +13,7 @@
 | 规则真相源 | 基础版 3-6 人，4 轮抢劫，3 成功胜利 / 3 失败失败 | `docs/games/the-gang/base-rules-contract.md` |
 | 正式桌面入口 | 已有底牌、筹码区、公共牌区、下一轮、摊牌、摊牌结果锚点 | `src/games/the-gang/Board.tsx` |
 | 旧教程缺口 | 只有 `TAKE_CHIP` 一个真实动作，未把推进公共牌和摊牌反馈纳入教程动作链 | `src/games/the-gang/tutorial.ts` 旧步骤 |
-| 本次修正 | 增加 4 轮筹码、公共牌推进、红筹码最终承诺与摊牌反馈动作步骤，并补语言包、单测与桌面 E2E 截图链 | 当前补丁；`npx vitest run src/games/the-gang/__tests__/tutorial.test.tsx --configLoader native` 通过；`node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-tutorial.e2e.ts "桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈"` 2026-07-05 16:17 通过，并包含公共牌、历史筹码、当前筹码图片真实加载断言 |
+| 本次修正 | 增加 4 轮筹码、公共牌推进、红筹码最终承诺与摊牌反馈动作步骤，并补语言包、单测与桌面 E2E 截图链 | 当前补丁；`npx vitest run src/games/the-gang/__tests__/tutorial.test.tsx --configLoader native` 通过；`node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-tutorial.e2e.ts "桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈"` 2026-07-05 17:06 以 1920×1080 基线通过，并包含公共牌、历史筹码、当前筹码图片真实加载断言 |
 
 ## 桌面教程 E2E 截图链
 
@@ -29,7 +29,7 @@
 | 教程满元素待摊牌 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\the-gang\the-gang-tutorial.e2e\桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈\教程满元素待摊牌.jpg` | 三名玩家均有历史筹码和当前红筹码，中央有 5 张公共牌，摊牌按钮可用 |
 | 教程摊牌结果反馈 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\the-gang\the-gang-tutorial.e2e\桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈\教程摊牌结果反馈.jpg` | 摊牌结果区显示成功/失败、玩家红筹码与牌型反馈 |
 
-补充复核：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg` 已在 PureRef 打开；AI 复看 `temp/the-gang-intake/the-gang-final-screenshot-contact.jpg` 确认教程图里公共牌、历史筹码、当前红筹码和摊牌反馈可见，不再是资源白块。
+补充复核：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg` 已在 PureRef 打开；AI 复看 `temp/the-gang-intake/the-gang-1920-desktop-contact.jpg` 确认教程图里公共牌、历史筹码、当前红筹码和摊牌反馈可见，不再是资源白块。
 
 ## 教程覆盖矩阵
 
@@ -66,5 +66,5 @@
 
 - 桌面教程 E2E 截图链已补齐；仍需按最终收口范围继续处理手机验收与用户桌面验收。
 - The Gang 本轮新增压缩资源的 R2/CDN 上传与远端回查已完成；手机验收仍属于 `add-the-gang-data-and-runtime-closeout` 的继续范围，不因教程补丁自动完成。
-- `教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg` 已用 PureRef 打开给用户看；运行时满元素和摊牌结果图也已同时打开。本次 PureRef 新建了 4 个进程而非复用旧窗口。这只关闭“桌面教程关键图已交付”，不代表用户已经验收桌面 UI。
+- `教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg` 已用 PureRef 打开给用户看；运行时满元素和摊牌结果图也已同时打开。本次 PureRef 新建了 4 个进程 `21064,22068,29900,42044` 而非复用旧窗口。这只关闭“桌面教程关键图已交付”，不代表用户已经验收桌面 UI。
 - 当前文档不得作为最终完成证明；最终仍需回到真实教程页面截图链、手机验收和用户验收。

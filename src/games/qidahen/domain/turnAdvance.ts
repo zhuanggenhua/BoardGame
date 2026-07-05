@@ -19,6 +19,7 @@ import {
 } from './dispatchSelectionBuilders';
 import {
     getQidahenCurrentDiplomacySelectionForCore,
+    getQidahenGrantPardonSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
@@ -117,6 +118,7 @@ export function advanceQidahenTurnIfReady(
     const nextState = dependencies.syncCurrentCoreSelections(state);
     const internalDispatchSelection = getQidahenInternalDispatchSelectionForCore(nextState);
     const recruitSelection = getQidahenRecruitSelectionForCore(nextState);
+    const grantPardonSelection = getQidahenGrantPardonSelectionForCore(nextState);
     const maShiTradeSelection = getQidahenMaShiTradeSelectionForCore(nextState);
     const khanEdictSelection = getQidahenKhanEdictSelectionForCore(nextState);
     const diplomacySelection = getQidahenCurrentDiplomacySelectionForCore(nextState);
@@ -127,6 +129,7 @@ export function advanceQidahenTurnIfReady(
         nextState.pendingTargetAction
         || nextState.postBattleSelection
         || recruitSelection
+        || grantPardonSelection
         || maShiTradeSelection
         || khanEdictSelection
         || diplomacySelection

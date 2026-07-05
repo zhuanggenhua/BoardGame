@@ -3,6 +3,7 @@ import { buildPendingTargetAction } from './pendingTargetActionBuilder';
 import { getQidahenExplicitRegionSelectionSemantics } from './regionFocusSemantics';
 import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
 import {
+    buildGrantPardonSelectionFromRegionSemantics,
     buildKhanEdictSelectionFromRegionSemantics,
     buildMaShiTradeSelectionFromRegionSemantics,
     buildRecruitSelectionFromRegionSemantics,
@@ -24,6 +25,7 @@ interface QidahenSelectedActionFollowUpDependencies {
 
 interface QidahenSelectedActionFollowUpResolutionResult {
     driveTigerDispatchSelection: QidahenCore['wheelDispatchProgress'];
+    grantPardonSelection: QidahenCore['grantPardonSelection'];
     khanEdictSelection: QidahenCore['khanEdictSelection'];
     lastSeasonSummary: QidahenSeasonSummary | null;
     maShiTradeSelection: QidahenCore['maShiTradeSelection'];
@@ -56,6 +58,7 @@ interface QidahenSelectedActionFollowUpStateTransition {
 
 interface QidahenSelectedActionSelectionFollowUpResolutionResult {
     driveTigerDispatchSelection: QidahenCore['wheelDispatchProgress'];
+    grantPardonSelection: QidahenCore['grantPardonSelection'];
     khanEdictSelection: QidahenCore['khanEdictSelection'];
     lastSeasonSummary: QidahenSeasonSummary | null;
     maShiTradeSelection: QidahenCore['maShiTradeSelection'];
@@ -125,6 +128,9 @@ const buildQidahenSelectedActionFollowUpLogText = (
     if (resolution.driveTigerDispatchSelection) {
         return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}，等待 ${state.factions[resolution.driveTigerDispatchSelection.attackerFactionId].name} 决定是否同意受大明指挥。`;
     }
+    if (resolution.grantPardonSelection) {
+        return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}，进入赐印招安地图目标选择。`;
+    }
     if (resolution.pendingTargetAction) {
         return `${currentFactionName} 执行 ${actionLabel}，弃 ${spentCardCount} 张牌${paymentResourceText}，进入 ${resolution.pendingTargetAction.title}（${resolution.pendingTargetAction.resolutionHint}）。`;
     }
@@ -163,9 +169,11 @@ const buildQidahenSelectedActionFollowUpStateTransition = (
                 ? 'ma-shi-trade-choice'
                 : resolution.driveTigerDispatchSelection
                     ? 'drive-tiger-consent'
-                    : resolution.pendingTargetAction
-                        ? 'resolve-pending'
-                        : 'action-window',
+                    : resolution.grantPardonSelection
+                        ? 'grant-pardon-choice'
+                        : resolution.pendingTargetAction
+                            ? 'resolve-pending'
+                            : 'action-window',
     wheelDispatchProgress: resolution.driveTigerDispatchSelection,
 });
 
@@ -191,6 +199,9 @@ const resolveQidahenSelectedActionSelectionFollowUpResolution = (
     const driveTigerDispatchSelection = actionId === 'drive-tiger'
         ? buildDriveTigerDispatchSelectionFromRegionSemantics(state, currentFactionId, baseRegionSemantics)
         : null;
+    const grantPardonSelection = actionId === 'grant-pardon'
+        ? buildGrantPardonSelectionFromRegionSemantics(state, baseRegionSemantics)
+        : null;
 
     let nextLastSeasonSummary = baseLastSeasonSummary;
 
@@ -207,6 +218,7 @@ const resolveQidahenSelectedActionSelectionFollowUpResolution = (
 
     return {
         driveTigerDispatchSelection,
+        grantPardonSelection,
         khanEdictSelection,
         lastSeasonSummary: nextLastSeasonSummary,
         maShiTradeSelection,
@@ -295,6 +307,7 @@ export const resolveQidahenSelectedActionFollowUp = (
         : null;
     const resolution: QidahenSelectedActionFollowUpResolutionResult = {
         driveTigerDispatchSelection: selectionResolution.driveTigerDispatchSelection,
+        grantPardonSelection: selectionResolution.grantPardonSelection,
         khanEdictSelection: selectionResolution.khanEdictSelection,
         lastSeasonSummary: eventActionSummary ?? selectionResolution.lastSeasonSummary,
         maShiTradeSelection: selectionResolution.maShiTradeSelection,
@@ -319,7 +332,7 @@ export const resolveQidahenSelectedActionFollowUp = (
     return {
         actionLogText,
         eventOpponentHandChoiceSelection: null,
-        grantPardonSelection: null,
+        grantPardonSelection: selectionResolution.grantPardonSelection,
         khanEdictSelection: selectionResolution.khanEdictSelection,
         lastSeasonSummary: stateTransition.lastSeasonSummary,
         maShiTradeSelection: selectionResolution.maShiTradeSelection,

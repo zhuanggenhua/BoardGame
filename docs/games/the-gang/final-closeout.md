@@ -7,7 +7,7 @@
 - 当前 UI 事实：`dom.txt` 为空不能作为排除布局真相源的理由；用户后续补充的 BGG 电子版 DOM/CSS/结算参考已成为当前 UI 真相源。`Board.tsx` 已改为 `data-layout-contract="bgg-electronic"` 的少框桌面布局，并通过桌面真实页面 E2E、中局满元素截图、PureRef 打开和 AI 复看。
 - 当前不包含 7-10 人扩展、Joker、工具牌、Dealer、挑战/专家卡或其它扑克变体；这些是明确的后续扩展范围，不是基础版完成阻塞项。
 - 本文只记录合并到主分支前的实施中检查点；The Gang 本轮新增的 77 个压缩资源已定向上传 R2/CDN 并回查通过；手机验收、用户桌面验收和最终完成口径仍在后续实施范围内。桌面教程端到端已补齐，不再作为待打磨缺口。
-- 当前工作区实况：The Gang 代码、素材接入、桌面运行时 E2E 与桌面教程 E2E 已在当前 `main` 工作区验证；相关资源文件、E2E 断言和收口文档仍是未提交差异，不得说已经全部进入 `HEAD`。旧 `.worktrees/the-gang`/`feat/the-gang` 只作为历史实施现场记录，不再作为当前执行现场。
+- 当前工作区实况：The Gang 代码、素材接入、桌面运行时 E2E 与桌面教程 E2E 已在当前 `main` 工作区验证；桌面实施中检查点和教程规范补丁已分别进入 `HEAD`（`3caed9e6f`、`863b46431`）。旧 `.worktrees/the-gang`/`feat/the-gang` 只作为历史实施现场记录，不再作为当前执行现场。
 - 外部大图素材已盘点和分类；基础版运行时已接入缩略图、52 张普通扑克牌牌面、24 个筹码、隐藏牌背、警报、金条、桌面/牌槽和规则参考，避免把来源哈希图、扩展图或 HTML/CSS 伪造元素误接入正式玩法。
 
 ## 实现验证矩阵
@@ -45,11 +45,11 @@
 - `openspec validate add-the-gang-data-and-runtime-closeout --strict --no-interactive`：2026-07-05 复验通过。
 - `openspec validate the-gang --strict --no-interactive`：2026-07-05 复验通过。
 - `npx vitest run src/games/the-gang --configLoader native`：2026-07-05 08:22 复验通过，8 files / 20 tests passed。
-- `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-runtime.e2e.ts "桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果"`：2026-07-05 16:15 复验通过，1 test passed；桌面核心流程通过真实 UI 完成一次四轮抢劫，且图片加载断言覆盖公共牌、历史筹码、当前筹码。
-- 最新桌面中局满元素截图已重新生成并打开给用户看：`test-results/evidence-screenshots/the-gang/the-gang-runtime.e2e/桌面端可通过真实-UI-完成一次四轮抢劫并显示摊牌结果/桌面中局满元素已拿新筹码待摊牌.jpg`；AI 已复看 `temp/the-gang-intake/the-gang-final-screenshot-contact.jpg` 并确认历史筹码、当前红筹码、中央五张公共牌、红筹码区、底部手牌和“摊牌”入口同屏可见，不再是白块截图。
+- `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-runtime.e2e.ts "桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果"`：2026-07-05 17:05 复验通过，1 test passed；桌面核心流程以 1920×1080 基线通过真实 UI 完成一次四轮抢劫，且图片加载断言覆盖公共牌、历史筹码、当前筹码。
+- 最新桌面中局满元素截图已重新生成并打开给用户看：`test-results/evidence-screenshots/the-gang/the-gang-runtime.e2e/桌面端可通过真实-UI-完成一次四轮抢劫并显示摊牌结果/桌面中局满元素已拿新筹码待摊牌.jpg`；AI 已复看 `temp/the-gang-intake/the-gang-1920-desktop-contact.jpg` 并确认历史筹码、当前红筹码、中央五张公共牌、红筹码区、底部手牌和“摊牌”入口同屏可见，不再是白块截图。
 - `npx vitest run src/games/the-gang/__tests__/tutorial.test.tsx --configLoader native`：2026-07-05 复验通过，3 tests passed。
-- `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-tutorial.e2e.ts "桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈"`：2026-07-05 16:17 复验通过，1 test passed；截图目录为 `test-results/evidence-screenshots/the-gang/the-gang-tutorial.e2e/桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈/`，且图片加载断言覆盖公共牌、历史筹码、当前筹码。
-- 教程关键图已打开给用户看：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg`；PureRef 本次打开时新建了 4 个进程而非复用旧窗口。这证明桌面教程端到端，不等于整体最终完成。
+- `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-tutorial.e2e.ts "桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈"`：2026-07-05 17:06 复验通过，1 test passed；截图目录为 `test-results/evidence-screenshots/the-gang/the-gang-tutorial.e2e/桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈/`，且图片加载断言覆盖公共牌、历史筹码、当前筹码。
+- 教程关键图已打开给用户看：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg`；本次 PureRef 新建了 4 个进程 `21064,22068,29900,42044` 而非复用旧窗口。这证明桌面教程端到端，不等于整体最终完成。
 - R2/CDN 定向上传：2026-07-05 已上传 `official/i18n/zh-CN/the-gang/**/compressed/*.webp` 共 77 个对象；样本包括 `cards/compressed/ace-clubs.webp`、`cards/compressed/card-back.webp`、`chips/compressed/round-4-red-3.webp`，远端 `HeadObject` 大小均与本地一致；`npm run assets:check` 已确认 The Gang 无新增/变更差异。
 - `npx eslint src/games/the-gang --ext .ts,.tsx`：通过。
 - `npm run typecheck`：通过。

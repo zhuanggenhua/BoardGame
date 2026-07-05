@@ -1426,6 +1426,7 @@ const MapSceneLayer: React.FC<{
         applyTone(core.gaoDiDispatchSelection?.sourceRegionId, 'source');
         applyTone(internalDispatchSelection?.sourceRegionId, 'source');
         applyTone(pendingTargetAction?.sourceRegionId, 'source');
+        applyTone(grantPardonSelection?.sourceRegionId, 'source');
         for (const candidate of wheelDispatchSelection?.candidates ?? []) {
             applyTone(candidate.targetRuntimeRegionId, 'dispatch');
         }
@@ -1436,6 +1437,9 @@ const MapSceneLayer: React.FC<{
         }
         for (const candidate of internalDispatchSelection?.candidates ?? []) {
             applyTone(candidate.targetRegionId, 'dispatch');
+        }
+        for (const choice of grantPardonSelection?.choices ?? []) {
+            applyTone(choice.targetRegionId, 'dispatch');
         }
         if (pendingTargetAction?.targetRuntimeRegionId || pendingTargetAction?.targetRegionId) {
             applyTone(pendingTargetAction.targetRuntimeRegionId ?? pendingTargetAction.targetRegionId, 'pending');
@@ -1460,6 +1464,8 @@ const MapSceneLayer: React.FC<{
         compactRegionTip,
         core.regions,
         core.explicitRegionId,
+        grantPardonSelection?.choices,
+        grantPardonSelection?.sourceRegionId,
         tutorialMapTargetRegionId,
         wheelDispatchSelection?.sourceRegionId,
         wheelDispatchSelection?.candidates,
@@ -3168,10 +3174,13 @@ const ActionsZone: React.FC<{
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.grantPardon.mapFirstHint', {
                             summary: grantPardonSelection.summary,
-                            defaultValue: '在地图上点击接收区完成招安；下方列表仅作备用选择。{{summary}}',
+                            defaultValue: '主路径：点击地图上的金色高亮接收区完成招安；下方列表只作备用选择。{{summary}}',
                         })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
+                        <div className="text-[10px] font-black uppercase tracking-[0.08em]" style={{ color: UI_STYLE.mapGold }}>
+                            {t('board.actions.grantPardon.fallbackListLabel', { defaultValue: '备用选择' })}
+                        </div>
                         {grantPardonSelection.choices.map((choice) => (
                             <button
                                 key={choice.id}
@@ -5311,12 +5320,17 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                                 aria-label={`${topLevelMapSelectionGuide.title}：${candidate.targetRegionName}`}
                                 className="pointer-events-auto absolute cursor-pointer rounded-full border-0 bg-transparent p-0"
                                 style={{
-                                    left: targetPoint.x - 26,
-                                    top: targetPoint.y - 26,
-                                    width: 52,
-                                    height: 52,
+                                    left: targetPoint.x - 34,
+                                    top: targetPoint.y - 34,
+                                    width: 68,
+                                    height: 68,
                                     outline: 'none',
-                                    boxShadow: '0 0 0 3px rgba(255,236,190,0.68)',
+                                    background: candidate.action === 'grant-pardon'
+                                        ? 'transparent'
+                                        : 'rgba(255,236,190,0.06)',
+                                    boxShadow: candidate.action === 'grant-pardon'
+                                        ? '0 0 0 2px rgba(255,236,190,0.24)'
+                                        : '0 0 0 3px rgba(255,236,190,0.68)',
                                 }}
                                 onClick={() => activateTopLevelGuideTarget(candidate)}
                             />

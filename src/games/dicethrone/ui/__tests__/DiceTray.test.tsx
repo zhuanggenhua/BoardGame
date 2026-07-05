@@ -99,7 +99,8 @@ describe('DiceTray tutorial anchor', () => {
             />,
         );
 
-        expect(screen.getByTestId('dicethrone-board-dice-custom-reference-layer')).toBeInTheDocument();
+        expect(screen.queryByTestId('dicethrone-board-dice-custom-reference-layer')).toBeNull();
+        expect(screen.getByTestId('dicethrone-board-dice-hit-layer')).toBeInTheDocument();
         expect(screen.getByTestId('mock-dice-box-physics-source')).toBeInTheDocument();
         expect(container.querySelector('[data-tutorial-id="dice-tray"]')).toBeNull();
     });
@@ -133,10 +134,7 @@ describe('DiceTray tutorial anchor', () => {
             />,
         );
 
-        expect(diceField3DCalls).toHaveLength(1);
-        expect(diceField3DCalls[0]?.dice).toMatchObject([
-            { id: 0, value: 1, definitionId: 'monk-dice' },
-        ]);
+        expect(diceField3DCalls).toHaveLength(0);
         expect(diceBoxPhysicsSourceCalls).toHaveLength(1);
         expect(diceBoxPhysicsSourceCalls[0]?.dice).toMatchObject([
             { id: 0, value: 1 },
