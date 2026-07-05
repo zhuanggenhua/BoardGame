@@ -482,7 +482,7 @@ export async function loadDiceThroneDiceBoxSkin(
 
     for (const faceValue of DICE_BOX_ATLAS_FACE_VALUES) {
         faceCanvases[faceValue] = createFaceCanvas(faceValue, atlasImage);
-        faceImages[faceValue] = await canvasToImage(createSymbolCanvas(faceValue, atlasImage));
+        faceImages[faceValue] = await canvasToImage(faceCanvases[faceValue]);
     }
 
     return {

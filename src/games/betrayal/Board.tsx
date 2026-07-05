@@ -17,7 +17,6 @@ import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSource';
-import type { DicePhysicsState } from '../../lib/dice-physics/types';
 import type { DiceBoxDieSkin } from '../../lib/dice-box-threejs/engine';
 import type { DiceBoxStyleProfile } from '../../lib/dice-box-threejs/engine';
 import {
@@ -1421,7 +1420,6 @@ function BetrayalHouseDice3DGroup({
         [roll.dice],
     );
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
-    const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
 
     return (
         <div
@@ -1450,35 +1448,8 @@ function BetrayalHouseDice3DGroup({
                 }}
                 onPhysicsStatesChange={(states) => {
                     setHasPhysicsState(states.length > 0);
-                    setPhysicsStates(states);
                 }}
             />
-            {physicsStates.map((state, stateIndex) => {
-                const pip = normalizeBetrayalHouseRuleValue(roll.dice[stateIndex] ?? 0);
-                const size = Math.max(34, Math.min(58, state.layout.width * 0.46));
-                return (
-                    <span
-                        key={`${roll.id}-projected-value-${state.id}`}
-                        data-testid={`betrayal-house-die-value-overlay-${stateIndex}`}
-                        data-rule-value={pip}
-                        aria-hidden="true"
-                        className="pointer-events-none absolute z-20 grid place-items-center rounded-full font-serif font-black text-[#56310f] drop-shadow-[0_1px_0_rgba(255,246,212,0.88)]"
-                        style={{
-                            left: state.layout.x,
-                            top: state.layout.y,
-                            width: size,
-                            height: size,
-                            transform: 'translate(-50%, -50%)',
-                            fontSize: size * 0.82,
-                            lineHeight: `${size}px`,
-                            WebkitTextStroke: '1.2px rgba(255,246,212,0.86)',
-                            textShadow: '0 1px 0 rgba(255,246,212,0.72), 0 2px 4px rgba(0,0,0,0.28)',
-                        }}
-                    >
-                        {pip}
-                    </span>
-                );
-            })}
             <div className="sr-only">
                 {roll.dice.map((pip, dieIndex) => (
                     <span

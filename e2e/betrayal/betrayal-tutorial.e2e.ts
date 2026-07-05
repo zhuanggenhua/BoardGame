@@ -13,26 +13,26 @@ import {
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-tutorial');
-const STEP_00 = `${EVIDENCE_DIR}/00-山屋惊魂-教程-章节目录.png`;
-const STEP_01 = `${EVIDENCE_DIR}/01-山屋惊魂-教程-恶兆前动作区.png`;
-const STEP_02 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-剩余移动.png`;
-const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.png`;
-const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.png`;
-const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-haunt收尾前.png`;
-const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-驱魔神志检定骰盘.png`;
-const STEP_06B = `${EVIDENCE_DIR}/06B-山屋惊魂-教程-驱魔成功后的终局页.png`;
-const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.png`;
-const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.png`;
-const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-第二章使用书本前.png`;
-const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-第二章使用后移动.png`;
-const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-房间牌整张承接-点击前.png`;
-const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-房间牌整张承接-点击后.png`;
-const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-探索未知房间前.png`;
-const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-探索后发现牌.png`;
-const STEP_14A = `${EVIDENCE_DIR}/14A-山屋惊魂-教程-点击兔脚后选择骰子.png`;
-const STEP_14A1 = `${EVIDENCE_DIR}/14A1-山屋惊魂-教程-兔脚选中改骰高亮.png`;
-const STEP_14B = `${EVIDENCE_DIR}/14B-山屋惊魂-教程-兔脚重投结束.png`;
-const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-探索后牌桌结果.png`;
+const STEP_00 = `${EVIDENCE_DIR}/00-山屋惊魂-教程-章节目录.jpg`;
+const STEP_01 = `${EVIDENCE_DIR}/01-山屋惊魂-教程-恶兆前动作区.jpg`;
+const STEP_02 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-剩余移动.jpg`;
+const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.jpg`;
+const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.jpg`;
+const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-haunt收尾前.jpg`;
+const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-驱魔神志检定骰盘.jpg`;
+const STEP_06B = `${EVIDENCE_DIR}/06B-山屋惊魂-教程-驱魔成功后的终局页.jpg`;
+const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.jpg`;
+const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.jpg`;
+const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-第二章使用书本前.jpg`;
+const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-第二章使用后移动.jpg`;
+const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-房间牌整张承接-点击前.jpg`;
+const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-房间牌整张承接-点击后.jpg`;
+const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-探索未知房间前.jpg`;
+const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-探索后发现牌.jpg`;
+const STEP_14A = `${EVIDENCE_DIR}/14A-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
+const STEP_14A1 = `${EVIDENCE_DIR}/14A1-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
+const STEP_14B = `${EVIDENCE_DIR}/14B-山屋惊魂-教程-兔脚重投结束.jpg`;
+const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-探索后牌桌结果.jpg`;
 
 const waitForStep = async (page: Parameters<typeof test>[0]['page'], stepId: string, timeout = 15000) => {
     await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
@@ -74,6 +74,7 @@ const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
             const style = window.getComputedStyle(canvas);
             return rect.width >= 160
                 && rect.height >= 120
+                && canvas.dataset.skinsReady === 'true'
                 && style.display !== 'none'
                 && style.visibility !== 'hidden'
                 && Number(style.opacity || '1') > 0.5;
@@ -103,22 +104,10 @@ const readBetrayalRollMetrics = async (rollPanel: Locator) => {
             .filter(Boolean)
             .map((value) => Number(value));
         const readableOverlayCount = panel.querySelectorAll('[data-testid^="betrayal-house-readable-die-"]').length;
-        const dieValueOverlays = Array.from(panel.querySelectorAll('[data-testid^="betrayal-house-die-value-overlay-"]'))
-            .map((element) => Number((element as HTMLElement).dataset.ruleValue));
-        const dieValueOverlayRects = Array.from(panel.querySelectorAll('[data-testid^="betrayal-house-die-value-overlay-"]'))
-            .map((element) => {
-                const rect = (element as HTMLElement).getBoundingClientRect();
-                const style = window.getComputedStyle(element);
-                return {
-                    width: rect.width,
-                    height: rect.height,
-                    visible: rect.width > 0
-                        && rect.height > 0
-                        && style.display !== 'none'
-                        && style.visibility !== 'hidden'
-                        && Number(style.opacity || '1') > 0.5,
-                };
-            });
+        const dieValueOverlayCount = panel.querySelectorAll('[data-testid^="betrayal-house-die-value-overlay-"]').length;
+        const skinCanvasCount = Array.from(panel.querySelectorAll('canvas'))
+            .filter((canvas): canvas is HTMLCanvasElement => canvas instanceof HTMLCanvasElement)
+            .filter((canvas) => canvas.dataset.skinsReady === 'true').length;
         const physicalFaces = (diceGroup?.dataset.dicePhysicalD6Faces ?? '')
             .split(',')
             .filter(Boolean)
@@ -130,8 +119,8 @@ const readBetrayalRollMetrics = async (rollPanel: Locator) => {
             ruleValues,
             visibleRuleValues,
             readableOverlayCount,
-            dieValueOverlays,
-            dieValueOverlayRects,
+            dieValueOverlayCount,
+            skinCanvasCount,
             physicalFaces,
             ruleSubtotal: Number(diceGroup?.dataset.diceRuleSubtotal ?? Number.NaN),
             expectedSubtotal: ruleValues.reduce((sum, value) => sum + value, 0),
@@ -150,8 +139,8 @@ const expectBetrayalRollMetricsToMatchVisibleSummary = async (rollPanel: Locator
     expect(metrics.subtotalNumber, '信息区“骰面合计”必须等于山屋 0/1/2 规则骰面合计').toBe(metrics.expectedSubtotal);
     expect(metrics.visibleRuleValues, '物理骰本体使用的山屋 0/1/2 规则值必须与结算骰一致').toEqual(metrics.ruleValues);
     expect(metrics.readableOverlayCount, '不能用额外小骰面列替代物理骰本体可读性').toBe(0);
-    expect(metrics.dieValueOverlays, '每颗物理骰本体位置必须直接显示山屋 0/1/2 规则值').toEqual(metrics.ruleValues);
-    expect(metrics.dieValueOverlayRects.every((rect) => rect.visible && rect.width >= 30 && rect.height >= 30), '物理骰本体上的规则值必须真实可见且足够大').toBe(true);
+    expect(metrics.dieValueOverlayCount, '不能用 DOM 数字叠层替代骰子素材本体').toBe(0);
+    expect(metrics.skinCanvasCount, '山屋 0/1/2 规则值必须由 dice-box 骰子皮肤承载').toBeGreaterThan(0);
     expect(metrics.physicalFaces, '物理 d6 目标面必须和山屋规则骰一一对应').toEqual(metrics.expectedPhysicalFaces);
     expect(metrics.totalNumber, '信息区“总点数”必须等于规则骰面合计 + 加值').toBe(metrics.expectedSubtotal + metrics.bonusNumber);
 };

@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { CanvasTexture, SRGBColorSpace } from 'three';
+import { CanvasTexture, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -88,6 +88,17 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
     const value = die?.getLastValue?.().value;
     return typeof value === 'number' ? value : null;
 }
+
+const D6_FACE_NORMALS: Record<number, Vector3> = {
+    1: new Vector3(0, 0, 1),
+    2: new Vector3(0, 0, -1),
+    3: new Vector3(0, 1, 0),
+    4: new Vector3(0, -1, 0),
+    5: new Vector3(1, 0, 0),
+    6: new Vector3(-1, 0, 0),
+};
+
+const WORLD_UP = new Vector3(0, 0, 1);
 
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
@@ -364,12 +375,12 @@ export class DiceBoxThreeEngine {
             : [
                 '',
                 '',
-                faceImages![1],
-                faceImages![2],
-                faceImages![3],
-                faceImages![4],
-                faceImages![5],
-                faceImages![6],
+                faceImages?.[1] ?? primarySkin.faceCanvases[1],
+                faceImages?.[2] ?? primarySkin.faceCanvases[2],
+                faceImages?.[3] ?? primarySkin.faceCanvases[3],
+                faceImages?.[4] ?? primarySkin.faceCanvases[4],
+                faceImages?.[5] ?? primarySkin.faceCanvases[5],
+                faceImages?.[6] ?? primarySkin.faceCanvases[6],
             ];
         if (this.box.DiceFactory?.materials_cache) {
             this.box.DiceFactory.materials_cache = {};
@@ -428,11 +439,46 @@ export class DiceBoxThreeEngine {
             }
             die.body?.velocity?.set?.(0, 0, 0);
             die.body?.angularVelocity?.set?.(0, 0, 0);
-            die.rotation.z = 0;
+            const settledQuaternion = this.getSettledQuaternionForDie(die);
+            die.quaternion?.copy?.(settledQuaternion);
+            die.body?.quaternion?.copy?.(settledQuaternion);
+            if (!die.quaternion?.copy) {
+                die.quaternion?.set?.(
+                    settledQuaternion.x,
+                    settledQuaternion.y,
+                    settledQuaternion.z,
+                    settledQuaternion.w,
+                );
+            }
+            if (!die.body?.quaternion?.copy) {
+                die.body?.quaternion?.set?.(
+                    settledQuaternion.x,
+                    settledQuaternion.y,
+                    settledQuaternion.z,
+                    settledQuaternion.w,
+                );
+            }
+            if (die.body?.quaternion && die.quaternion?.copy) {
+                die.quaternion.copy(die.body.quaternion);
+            }
             die.updateMatrixWorld?.(true);
         });
 
         return true;
+    }
+
+    private getSettledQuaternionForDie(die: DiceBoxDie): Quaternion {
+        const targetValue = readDieValue(die);
+        const faceNormal = targetValue ? D6_FACE_NORMALS[targetValue] : undefined;
+        if (!faceNormal) return new Quaternion();
+
+        const faceToTop = new Quaternion().setFromUnitVectors(faceNormal, WORLD_UP);
+        const yaw = new Quaternion().setFromAxisAngle(WORLD_UP, this.getStableYawForValue(targetValue));
+        return yaw.multiply(faceToTop).normalize();
+    }
+
+    private getStableYawForValue(value: number): number {
+        return ((value - 1) % 6) * (Math.PI / 18);
     }
 
     private applySkinToDie(die: DiceBoxDie, skin: DiceBoxDieSkin): boolean {
@@ -522,7 +568,7 @@ export class DiceBoxThreeEngine {
         material.envMapIntensity = 0.35;
         material.bumpMap = null;
         material.opacity = 1;
-        material.transparent = false;
+        material.transparent = true;
         material.alphaTest = 0;
         material.depthTest = true;
         material.depthWrite = true;

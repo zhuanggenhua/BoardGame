@@ -58,7 +58,7 @@ declare module '@3d-dice/dice-box-threejs' {
     }
 
     export interface DiceBoxPreset {
-        labels: Array<string | HTMLImageElement>;
+        labels: Array<string | HTMLImageElement | HTMLCanvasElement>;
     }
 
     export interface DiceBoxFactory {
@@ -114,6 +114,14 @@ declare module '@3d-dice/dice-box-threejs' {
             y: number;
             z: number;
         };
+        quaternion?: {
+            x?: number;
+            y?: number;
+            z?: number;
+            w?: number;
+            set?: (x: number, y: number, z: number, w: number) => unknown;
+            copy?: (value: { x?: number; y?: number; z?: number; w?: number }) => unknown;
+        };
         result: DiceValueRecord[];
         body?: {
             velocity?: {
@@ -133,6 +141,14 @@ declare module '@3d-dice/dice-box-threejs' {
                 y?: number;
                 z?: number;
                 set?: (x: number, y: number, z: number) => void;
+            };
+            quaternion?: {
+                x?: number;
+                y?: number;
+                z?: number;
+                w?: number;
+                set?: (x: number, y: number, z: number, w: number) => unknown;
+                copy?: (value: { x?: number; y?: number; z?: number; w?: number }) => unknown;
             };
             wakeUp?: () => void;
         };
