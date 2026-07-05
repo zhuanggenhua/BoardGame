@@ -192,7 +192,7 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     // ========================================================================
     // soul-burn-2-fm: 获得 2×火魂骰面数量 FM（基础版和升级版共用）
     // ========================================================================
-    describe('soul-burn-2-fm (灵魂燃烧 FM获取 — 基础版2火魂)', () => {
+    describe('soul-burn-2-fm (燃烧之灵 FM获取 — 基础版2火魂)', () => {
         it('2个火魂面时获得4FM（2×2）', () => {
             // 骰子: fire,fire,fire,fiery_soul,fiery_soul → 2个fiery_soul
             const dice = [1, 2, 3, 5, 5].map(v => createPyroDie(v));
@@ -223,16 +223,18 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
         });
     });
 
-    describe('soul-burn-damage (灵魂燃烧 伤害)', () => {
-        it('造成fiery_soul骰面数量的伤害', () => {
+    describe('soul-burn-damage (燃烧之灵伤害)', () => {
+        it('对所有对手造成 fiery_soul 骰面数量的附属伤害', () => {
             // 5颗骰子: fire,fire,fire,magma,fiery_soul → 1个fiery_soul
-            const state = createState({ attackerFM: 1 });
+            const state = createState({ attackerFM: 5 });
             const handler = getCustomActionHandler('soul-burn-damage')!;
             const events = handler(buildCtx(state, 'soul-burn-damage'));
 
             const dmgEvents = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmgEvents).toHaveLength(1);
             expect((dmgEvents[0] as any).payload.amount).toBe(1);
+            expect((dmgEvents[0] as any).payload.damageScope).toBe('direct');
+            expect((dmgEvents[0] as any).payload.unblockable).toBe(true);
         });
 
         it('无fiery_soul骰面时不造成伤害', () => {

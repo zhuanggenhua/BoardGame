@@ -56,9 +56,9 @@ test.describe('山屋惊魂基本流程', () => {
         await saveScreenshot(page, USE_ITEM_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-move').click();
-        await expect(page.getByTestId('betrayal-room-move-target-hallway')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-hallway')).toBeVisible();
         await saveScreenshot(page, MOVE_MODE_SCREENSHOT);
-        await page.getByTestId('betrayal-room-move-target-hallway').click();
+        await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('移动到门厅');
         await saveScreenshot(page, MOVE_RESULT_SCREENSHOT);
 

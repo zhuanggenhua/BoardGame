@@ -2,10 +2,10 @@ import type { TutorialCollection, TutorialManifest } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { BETRAYAL_COMMANDS } from './game';
 import {
-    createFirstScenarioHauntCore,
-    createFirstScenarioReadyToExorciseCore,
-    createFirstScenarioReadyToTraitorVictoryCore,
-    createStartedFirstScenarioCore,
+    createFirstScenarioHauntTutorialCore,
+    createFirstScenarioReadyToExorciseTutorialCore,
+    createFirstScenarioReadyToTraitorVictoryTutorialCore,
+    createStartedFirstScenarioTutorialCore,
 } from './testing/firstScenarioTestUtils';
 
 const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
@@ -23,7 +23,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createStartedFirstScenarioCore().core ?? createStartedFirstScenarioCore(),
+                        fields: createStartedFirstScenarioTutorialCore().core ?? createStartedFirstScenarioTutorialCore(),
                     },
                 },
             ],
@@ -94,7 +94,7 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createStartedFirstScenarioCore().core ?? createStartedFirstScenarioCore(),
+                        fields: createStartedFirstScenarioTutorialCore().core ?? createStartedFirstScenarioTutorialCore(),
                     },
                 },
             ],
@@ -120,7 +120,7 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
         {
             id: 'move-to-hallway',
             content: 'game-betrayal:tutorial.moveExploreUse.steps.moveToHallway',
-            highlightTarget: 'betrayal-room-move-target-hallway',
+            highlightTarget: 'betrayal-room-hallway',
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.MOVE_TO_ROOM],
@@ -142,7 +142,7 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
             id: 'finish',
             content: 'game-betrayal:tutorial.moveExploreUse.steps.finish',
             highlightTarget: 'betrayal-latest-discovery',
-            position: 'right',
+            position: 'center',
             infoStep: true,
             viewAs: '0',
         },
@@ -164,7 +164,7 @@ const BETRAYAL_CRIMSON_JACK_OBJECTIVE: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createFirstScenarioHauntCore().core ?? createFirstScenarioHauntCore(),
+                        fields: createFirstScenarioHauntTutorialCore().core ?? createFirstScenarioHauntTutorialCore(),
                     },
                 },
             ],
@@ -219,7 +219,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createFirstScenarioReadyToExorciseCore().core ?? createFirstScenarioReadyToExorciseCore(),
+                        fields: createFirstScenarioReadyToExorciseTutorialCore().core ?? createFirstScenarioReadyToExorciseTutorialCore(),
                     },
                 },
             ],
@@ -247,6 +247,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.EXORCISE_JACK],
+            randomPolicy: { mode: 'fixed', values: [3] },
             advanceOnEvents: [{ type: 'JACK_EXORCISED', match: { playerId: '0', success: true } }],
             viewAs: '0',
         },
@@ -276,7 +277,7 @@ const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createFirstScenarioReadyToTraitorVictoryCore().core ?? createFirstScenarioReadyToTraitorVictoryCore(),
+                        fields: createFirstScenarioReadyToTraitorVictoryTutorialCore().core ?? createFirstScenarioReadyToTraitorVictoryTutorialCore(),
                     },
                 },
             ],

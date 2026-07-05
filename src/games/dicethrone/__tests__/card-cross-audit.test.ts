@@ -211,15 +211,15 @@ describe('野蛮人符号计数文案一致性', () => {
     const enAbilities = (en as Record<string, unknown>).abilities as Record<string, { description?: string }> ?? {};
 
     it('百折不挠 II 与重击 II/III 应显式描述 Hearts / Swords 触发及相同数字追加效果', () => {
-        expect(zhAbilities['steadfast-2']?.description).toContain('3/4/5心');
-        expect(zhAbilities['steadfast-2']?.description).not.toContain('三连');
+        expect(zhAbilities['steadfast-2']?.description).toMatch(/3\/4\/5\s*心/);
+        expect(zhAbilities['steadfast-2']?.description).toMatch(/3\s*个相同数字/);
         expect(enAbilities['steadfast-2']?.description).toContain('3/4/5 Hearts');
-        expect(enAbilities['steadfast-2']?.description).not.toContain('three of a kind');
+        expect(enAbilities['steadfast-2']?.description).toContain('3 matching numbers');
 
-        expect(zhAbilities['slap-2']?.description).toContain('3/4/5剑');
-        expect(zhAbilities['slap-2']?.description).toContain('4个相同数字');
-        expect(zhAbilities['slap-3']?.description).toContain('3/4/5剑');
-        expect(zhAbilities['slap-3']?.description).toContain('4个相同数字');
+        expect(zhAbilities['slap-2']?.description).toMatch(/3\/4\/5\s*剑/);
+        expect(zhAbilities['slap-2']?.description).toMatch(/4\s*个相同数字/);
+        expect(zhAbilities['slap-3']?.description).toMatch(/3\/4\/5\s*剑/);
+        expect(zhAbilities['slap-3']?.description).toMatch(/4\s*个相同数字/);
         expect(enAbilities['slap-2']?.description).toContain('3/4/5 Swords');
         expect(enAbilities['slap-2']?.description).toContain('4 matching numbers');
         expect(enAbilities['slap-3']?.description).toContain('3/4/5 Swords');
@@ -300,15 +300,15 @@ describe('枪手 / 武士卡图接线一致性', () => {
             'upgrade-showdown-2': { runtimeIndex: 20, sourceAtlasIndex: 20 },
             'upgrade-showdown-3': { runtimeIndex: 21, sourceAtlasIndex: 21 },
             'upgrade-fan-the-hammer-2': { runtimeIndex: 22, sourceAtlasIndex: 22 },
-            'upgrade-take-cover-2': { runtimeIndex: 23, sourceAtlasIndex: 23 },
-            'upgrade-deadeye-2': { runtimeIndex: 24, sourceAtlasIndex: 24 },
-            'upgrade-duel-2': { runtimeIndex: 25, sourceAtlasIndex: 25 },
-            'upgrade-quick-draw': { runtimeIndex: 26, sourceAtlasIndex: 26 },
-            'card-wanted': { runtimeIndex: 27, sourceAtlasIndex: 27 },
-            'card-spin-the-chamber': { runtimeIndex: 28, sourceAtlasIndex: 28 },
-            'card-high-noon': { runtimeIndex: 29, sourceAtlasIndex: 29 },
-            'card-wild-west': { runtimeIndex: 30, sourceAtlasIndex: 30 },
-            'card-eat-my-lead': { runtimeIndex: 31, sourceAtlasIndex: 31 },
+            'upgrade-take-cover-2': { runtimeIndex: 24, sourceAtlasIndex: 24 },
+            'upgrade-deadeye-2': { runtimeIndex: 26, sourceAtlasIndex: 26 },
+            'upgrade-duel-2': { runtimeIndex: 28, sourceAtlasIndex: 28 },
+            'upgrade-quick-draw': { runtimeIndex: 29, sourceAtlasIndex: 29 },
+            'card-wanted': { runtimeIndex: 30, sourceAtlasIndex: 30 },
+            'card-spin-the-chamber': { runtimeIndex: 31, sourceAtlasIndex: 31 },
+            'card-high-noon': { runtimeIndex: 32, sourceAtlasIndex: 32 },
+            'card-wild-west': { runtimeIndex: 33, sourceAtlasIndex: 33 },
+            'card-eat-my-lead': { runtimeIndex: 34, sourceAtlasIndex: 34 },
         };
 
         for (const [cardId, { runtimeIndex, sourceAtlasIndex }] of Object.entries(normalizedGunslingerRuntimeAtlasCards)) {

@@ -2,6 +2,8 @@ import {
     buildPaymentState,
     computeQidahenSelectedPaymentValue,
     getActionChoiceById,
+    getQidahenSelectedActionCost,
+    getQidahenSelectedActionPaymentProgress,
 } from './factionActionWindow';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
@@ -43,13 +45,22 @@ const reduceQidahenPreviewActionConfirmed = (
         ))
         : null;
     const selectedPaymentCardIds = sourceCard ? [sourceCard.id] : [];
-    return dependencies.updateTurnLabel({
+    const nextState: QidahenCore = {
         ...state,
         selectedActionId: actionId,
         confirmedActionId: actionId,
         selectedPaymentCardIds,
         selectedHandActionCardId: sourceCard?.id ?? null,
-        payment: buildPaymentState(actionId, computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds)),
+        payment: state.payment,
+    };
+    return dependencies.updateTurnLabel({
+        ...nextState,
+        payment: buildPaymentState(
+            actionId,
+            computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds),
+            getQidahenSelectedActionCost(nextState, actionId),
+            getQidahenSelectedActionPaymentProgress(nextState, actionId),
+        ),
     });
 };
 

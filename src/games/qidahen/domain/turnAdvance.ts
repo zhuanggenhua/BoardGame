@@ -1,4 +1,7 @@
-import { getQidahenDriveTigerConsentSelectionForCore } from './interactionSelectionAccessors';
+import {
+    getQidahenDriveTigerConsentSelectionForCore,
+    getQidahenEventOpponentHandChoiceSelectionForCore,
+} from './interactionSelectionAccessors';
 import {
     syncQidahenCurrentCoreSelections,
 } from './coreDerivedState';
@@ -119,6 +122,7 @@ export function advanceQidahenTurnIfReady(
     const diplomacySelection = getQidahenCurrentDiplomacySelectionForCore(nextState);
     const wheelDispatchSelection = dependencies.getCurrentWheelDispatchSelectionForCore(nextState);
     const driveTigerConsentSelection = getQidahenDriveTigerConsentSelectionForCore(nextState);
+    const eventOpponentHandChoiceSelection = getQidahenEventOpponentHandChoiceSelectionForCore(nextState);
     if (
         nextState.pendingTargetAction
         || nextState.postBattleSelection
@@ -131,6 +135,7 @@ export function advanceQidahenTurnIfReady(
         || nextState.gaoDiDispatchSelection
         || internalDispatchSelection
         || driveTigerConsentSelection
+        || eventOpponentHandChoiceSelection
         || wheelDispatchSelection
         || !nextState.wheelActionUsed
         || !isFactionActionTurnComplete(nextState)

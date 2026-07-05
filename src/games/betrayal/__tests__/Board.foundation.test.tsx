@@ -235,10 +235,10 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('书本');
 
         fireEvent.click(screen.getByTestId('betrayal-action-move'));
-        expect(screen.getByTestId('betrayal-room-move-target-upper-landing')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-room-upper-landing')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('现在：点绿色房间');
 
-        fireEvent.click(screen.getByTestId('betrayal-room-move-target-upper-landing'));
+        fireEvent.click(screen.getByTestId('betrayal-room-upper-landing'));
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('移动到上层起始点');
     });
 
@@ -377,9 +377,9 @@ describe('Betrayal Board foundation', () => {
         );
 
         fireEvent.click(screen.getByTestId('betrayal-action-move'));
-        expect(screen.getByTestId('betrayal-room-move-target-upper-west')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-room-upper-west')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByTestId('betrayal-room-move-target-upper-west'));
+        fireEvent.click(screen.getByTestId('betrayal-room-upper-west'));
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用骨制钥匙穿过墙壁');
     });
 

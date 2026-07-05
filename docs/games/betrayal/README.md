@@ -79,6 +79,12 @@
 
 这些素材继续保留在 `docs/games/betrayal/sources/` 作为真相源或候选源，不混入 `public/assets/`。
 
+## 已接入的 TTS 派生素材
+
+- TTS 山屋 0/1/2 骰子 3D 模型已经找到并接入为运行时骰面图：真相源在 `Mods\Workshop\3420850553.json`，本地模型在 `Mods\Models\httpssteamusercontentaakamaihdnetugc8369528783806126162444D3E2AC5B69A7939369B3566A0941C2D881C9.obj`，本地近白材质图在 `Mods\Images\httpssteamusercontentaakamaihdnetugc310636117333783900D4349CB7B7A59D4F8DF84D5A8FB0D723953A466.jpg`。
+- 当前运行时资源为 `public/assets/i18n/zh-CN/betrayal/dice/house-die-0.png`、`house-die-1.png`、`house-die-2.png` 及对应 `compressed/*.webp`；教程 / 终局页通过 `OptimizedImage` 读取这些资源，不再使用 CSS 点数方块代替。
+- 事件牌正面图集已作为正式运行时素材接入：`public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg` 是 `6076x6376` 的 `9x5` 图集，最后一列 / 最后一行承接 `1px` 余数；当前教程发现牌截图已验证 `外星几何` 使用图集第 `24` 格，不再用旧占位事件或错误大格裁切。
+
 ## 下一步建议
 
 1. 当前十二条最小真实流程 / 边界链路都已通过项目标准 E2E 入口验证，并且本轮已在当前 `main` 现场重新串行复核通过：
@@ -113,13 +119,16 @@
 4. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合，且此后攻击英雄时会按 `Jack's Spirit` 的房间与 `Might 5` 结算；当 `Jack's Spirit` 回到尸体所在房间时，叛徒会恢复肉身并移除 spirit。交易、调查杰克、研究法阵和英雄攻击叛徒也已补真实页面 E2E，不再只停留在领域单测或命令注入。
 5. `HAUNT_ATTACK` 也已经从“命中即秒杀”改成正式对攻：英雄打叛徒、叛徒打英雄都按 `Might` 对掷，按点差造成 `Physical damage`，平手不受伤；`Knowledge of Jack` 的 `+2` 只在英雄攻击叛徒时生效。
 6. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
-7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E：
+7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E；本轮又对“发现牌揭示 / 骰面 / 参考页”做了当前现场复核：
    - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
    - 默认教程是 `basic-setup-and-turn`
    - 当前已补 5 个短章：`basic-setup-and-turn`、`move-explore-use`、`crimson-jack-objective`、`haunt-actions-and-finish`、`traitor-path`
    - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`
    - `Board.tsx` 已把角色选择、动作区、持有区、房间区、帮助入口和终局挂上真实 `data-tutorial-id`
    - `e2e/betrayal/betrayal-tutorial.e2e.ts` 已通过，截图证据位于 `evidence/betrayal-tutorial/`
+   - `14-山屋惊魂-教程-探索后发现牌.jpg`：发现牌居中作为主结果，底部确认条只保留“下一步”按钮，不复读牌面标题、正文或“已抽到/已翻开”说明。
+   - `06-山屋惊魂-教程-终局页.jpg`：驱魔投骰骰面在终局主结果区域可见，不再只有一行文字结果。
+   - `evidence/betrayal-first-scenario/02-山屋惊魂-玩家参考卡-帮助面板.jpg`：第一剧本参考页使用正式参考卡素材，不在旁边复读规则正文。
    - 教程 / 生命周期 / 教程阶段运行时相关单测也已重新通过：
      - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx --configLoader native`
      - 结果：`4 passed / 34 passed`

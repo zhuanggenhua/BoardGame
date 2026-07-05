@@ -8,6 +8,8 @@ import type {
     QidahenDiplomacySelection,
     QidahenDriveTigerConsentChoice,
     QidahenDriveTigerConsentSelection,
+    QidahenEventCharacterTargetSelection,
+    QidahenEventOpponentHandChoiceSelection,
     QidahenFortificationMaintenanceMode,
     QidahenFortificationMaintenanceSelection,
     QidahenHandLimitDiscardSelection,
@@ -66,6 +68,14 @@ interface QidahenDriveTigerConsentChoiceValue {
 interface QidahenFortificationMaintenanceChoiceValue {
     choiceId: QidahenFortificationMaintenanceMode;
     attritionPriority?: QidahenCasualtyPriority;
+}
+
+interface QidahenEventCharacterTargetChoiceValue {
+    choiceId: string;
+}
+
+interface QidahenEventOpponentHandChoiceValue {
+    choiceId: string;
 }
 
 export type QidahenHandLimitDiscardInteraction = InteractionDescriptor<
@@ -131,5 +141,17 @@ export type QidahenDriveTigerConsentInteraction = InteractionDescriptor<
 export type QidahenFortificationMaintenanceInteraction = InteractionDescriptor<
     SimpleChoiceData<QidahenFortificationMaintenanceChoiceValue> & {
         qidahenFortificationMaintenanceSelection: QidahenFortificationMaintenanceSelection;
+    }
+>;
+
+export type QidahenEventCharacterTargetInteraction = InteractionDescriptor<
+    SimpleChoiceData<QidahenEventCharacterTargetChoiceValue> & {
+        qidahenEventCharacterTargetSelection: QidahenEventCharacterTargetSelection;
+    }
+>;
+
+export type QidahenEventOpponentHandChoiceInteraction = InteractionDescriptor<
+    SimpleChoiceData<QidahenEventOpponentHandChoiceValue> & {
+        qidahenEventOpponentHandChoiceSelection: QidahenEventOpponentHandChoiceSelection;
     }
 >;

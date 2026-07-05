@@ -22,6 +22,7 @@ export interface QidahenArmamentState {
     id: QidahenArmamentId;
     name: string;
     level: number;
+    sourceCardDefIds?: string[];
 }
 
 export type QidahenScenarioId = 'post-sarhu-1619' | 'shanhaiguan-1622' | 'dingmao-rebellion-1627';
@@ -178,6 +179,7 @@ export interface QidahenPiece {
 }
 
 export type QidahenCasualtyPriority = 'highest-level' | 'lowest-level';
+export type QidahenBattleCasualtyPriority = QidahenCasualtyPriority | 'artillery-first';
 
 export type QidahenBattleRollPhase = 'artillery' | 'cavalry' | 'infantry' | 'melee';
 
@@ -258,6 +260,15 @@ export interface QidahenBattleTacticModifier {
     troopKind: QidahenTroopKind;
     levelBonus: number;
     diceCountBonus?: number;
+    rollValueDivisor?: number;
+    priorityRoll?: boolean;
+    rollAsPhase?: Extract<QidahenBattleRollPhase, 'artillery' | 'cavalry' | 'infantry'>;
+    rollUnitCount?: number;
+    cancelEnemyPrioritySourceCardDefIds?: string[];
+    cancelEnemyRollAsPhaseSourceCardDefIds?: string[];
+    cavalryPlunderCounterDamageDisabled?: boolean;
+    casualtyPriority?: QidahenBattleCasualtyPriority;
+    convertEnemyTroopCount?: number;
 }
 
 export interface QidahenWheelDispatchCandidate {
@@ -508,6 +519,7 @@ export interface QidahenPostBattleSelection {
     attackerLosses: number;
     movementProfileId?: string | null;
     attackerCasualtyPriority?: QidahenCasualtyPriority;
+    attackerBattleCasualtyPriority?: QidahenBattleCasualtyPriority;
     originalController: QidahenFactionId | 'neutral';
     originalControlLabel: string;
     title: string;
@@ -552,6 +564,66 @@ export interface QidahenSeasonSummary {
     lines: string[];
 }
 
+export interface QidahenActiveEventCard {
+    id: string;
+    cardDefId: string;
+    label: string;
+    ownerFactionId: QidahenFactionId;
+    rulesSummary: string | null;
+}
+
+export interface QidahenEventCharacterTargetChoice {
+    id: string;
+    characterId: string;
+    characterName: string;
+    factionId: QidahenFactionId;
+    factionName: string;
+    detail: string;
+}
+
+export interface QidahenEventCharacterTargetSelection {
+    source: 'counter-spy-plot' | 'power-struggle-coup-character-judgement';
+    title: string;
+    summary: string;
+    eventCardId: string;
+    eventCardDefId: string;
+    eventCardLabel: string;
+    ownerFactionId: QidahenFactionId;
+    ownerFactionName: string;
+    paymentCardIds: string[];
+    choices: QidahenEventCharacterTargetChoice[];
+}
+
+export interface QidahenEventOpponentHandChoice {
+    id: string;
+    cardId: string;
+    cardLabel: string;
+    cardDefId: string | null;
+    detail: string;
+}
+
+export interface QidahenEventOpponentHandChoiceSelection {
+    source:
+        | 'ginseng-and-sable-opponent'
+        | 'ginseng-and-sable-card'
+        | 'tribute-edict-opponent'
+        | 'tribute-edict-action'
+        | 'mongol-nobles-congress-effect'
+        | 'mongol-nobles-congress-play-character'
+        | 'mongol-nobles-congress-return-character';
+    title: string;
+    summary: string;
+    eventCardId: string;
+    eventCardDefId: string;
+    eventCardLabel: string;
+    ownerFactionId: QidahenFactionId;
+    ownerFactionName: string;
+    targetFactionId?: QidahenFactionId;
+    targetFactionName?: string;
+    paymentCardIds: string[];
+    choices: QidahenEventOpponentHandChoice[];
+}
+
 export interface QidahenHandCard {
     id: string;
     label: string;
@@ -585,7 +657,7 @@ export interface QidahenMapToken {
     faction: QidahenFactionId | 'neutral';
     imageSrc?: string;
     size?: number;
-    value?: number;
+    value?: number | string;
     rotationDeg?: number;
 }
 
@@ -653,6 +725,8 @@ export interface QidahenCore {
         | 'khan-edict-choice'
         | 'diplomacy-choice'
         | 'drive-tiger-consent'
+        | 'event-character-target'
+        | 'event-opponent-hand-choice'
         | 'dispatch-targeting'
         | 'resolve-pending'
         | 'post-battle-decision'
@@ -681,11 +755,15 @@ export interface QidahenCore {
     sunYuanhuaTechSelection: QidahenSunYuanhuaTechSelection | null;
     gaoDiDispatchSelection: QidahenGaoDiDispatchSelection | null;
     wheelDispatchProgress: QidahenWheelDispatchSelection | null;
+    eventCharacterTargetSelection: QidahenEventCharacterTargetSelection | null;
+    eventOpponentHandChoiceSelection: QidahenEventOpponentHandChoiceSelection | null;
     pendingTargetAction: QidahenPendingTargetAction | null;
     postBattleSelection: QidahenPostBattleSelection | null;
     lastCharacterActionWindowTriggerKey: string | null;
     lastSeasonSummary: QidahenSeasonSummary | null;
+    activeEventCards: QidahenActiveEventCard[];
     hanseongPrestigeUnlocked: boolean;
+    guihuaPrestigeMarkerController: QidahenFactionId | 'neutral' | null;
     victoryStatus: QidahenVictoryStatus | null;
     factions: Record<QidahenFactionId, QidahenFactionState>;
     regions: QidahenRegionSummary[];
@@ -855,6 +933,18 @@ export interface ResolveFortificationMaintenanceCommand extends Command<'RESOLVE
     };
 }
 
+export interface ResolveEventCharacterTargetCommand extends Command<'RESOLVE_EVENT_CHARACTER_TARGET'> {
+    payload: {
+        choiceId: string;
+    };
+}
+
+export interface ResolveEventOpponentHandChoiceCommand extends Command<'RESOLVE_EVENT_OPPONENT_HAND_CHOICE'> {
+    payload: {
+        choiceId: string;
+    };
+}
+
 interface ResolveScenarioCharacterChoiceCommand extends Command<'RESOLVE_SCENARIO_CHARACTER_CHOICE'> {
     payload: {
         groupId: string;
@@ -901,6 +991,8 @@ export type QidahenCommand =
     | ResolveDriveTigerConsentCommand
     | ResolveRecruitChoiceCommand
     | ResolveFortificationMaintenanceCommand
+    | ResolveEventCharacterTargetCommand
+    | ResolveEventOpponentHandChoiceCommand
     | ResolveScenarioCharacterChoiceCommand
     | ResolveScenarioArmamentChoiceCommand;
 
@@ -1088,6 +1180,22 @@ export interface FortificationMaintenanceResolvedEvent extends GameEvent<'FORTIF
     };
 }
 
+export interface EventCharacterTargetResolvedEvent extends GameEvent<'EVENT_CHARACTER_TARGET_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: string;
+        selection?: QidahenEventCharacterTargetSelection | null;
+    };
+}
+
+export interface EventOpponentHandChoiceResolvedEvent extends GameEvent<'EVENT_OPPONENT_HAND_CHOICE_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: string;
+        selection?: QidahenEventOpponentHandChoiceSelection | null;
+    };
+}
+
 interface ScenarioCharacterChoiceResolvedEvent extends GameEvent<'SCENARIO_CHARACTER_CHOICE_RESOLVED'> {
     payload: {
         playerId: PlayerId;
@@ -1136,6 +1244,8 @@ export type QidahenEvent =
     | RecruitChoiceResolvedEvent
     | DriveTigerConsentResolvedEvent
     | FortificationMaintenanceResolvedEvent
+    | EventCharacterTargetResolvedEvent
+    | EventOpponentHandChoiceResolvedEvent
     | ScenarioCharacterChoiceResolvedEvent
     | ScenarioArmamentChoiceResolvedEvent;
 
@@ -1165,6 +1275,8 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     RESOLVE_DRIVE_TIGER_CONSENT: ResolveDriveTigerConsentCommand['payload'];
     RESOLVE_RECRUIT_CHOICE: ResolveRecruitChoiceCommand['payload'];
     RESOLVE_FORTIFICATION_MAINTENANCE: ResolveFortificationMaintenanceCommand['payload'];
+    RESOLVE_EVENT_CHARACTER_TARGET: ResolveEventCharacterTargetCommand['payload'];
+    RESOLVE_EVENT_OPPONENT_HAND_CHOICE: ResolveEventOpponentHandChoiceCommand['payload'];
     RESOLVE_SCENARIO_CHARACTER_CHOICE: ResolveScenarioCharacterChoiceCommand['payload'];
     RESOLVE_SCENARIO_ARMAMENT_CHOICE: ResolveScenarioArmamentChoiceCommand['payload'];
     SYS_INTERACTION_RESPOND: {

@@ -88,9 +88,9 @@ function createPaladinSetup() {
 
 describe('圣骑士 GTR 技能覆盖', () => {
     // ========================================================================
-    // blessing-of-might — 力量祝福（不可防御 3 伤害 + 暴击 + 精准）
+    // blessing-of-might — 神力信徒（不可防御 3 伤害 + 暴击 + 精准）
     // ========================================================================
-    describe('力量祝福 (blessing-of-might)', () => {
+    describe('神力信徒 (blessing-of-might)', () => {
         it('3 剑 + 1 祈祷造成 3 不可防御伤害 + 获得暴击和精准', () => {
             // 进攻骰: [1,1,1,6,3] → 3 sword + 1 pray + 1 helm
             // 流程：preDefense 授予 CRIT+ACCURACY → 不可防御
@@ -103,7 +103,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                 setup: createPaladinSetup(), assertFn: assertState, silent: true,
             });
             const result = runner.run({
-                name: '力量祝福 3剑1祈祷=3不可防御伤害+暴击+精准',
+                name: '神力信徒 3剑1祈祷=3不可防御伤害+暴击+精准',
                 commands: [
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '0'),
@@ -500,9 +500,9 @@ describe('圣骑士 GTR 技能覆盖', () => {
     });
 
     // ========================================================================
-    // blessing-of-might-2 — 力量祝福 II（升级版，含两个变体）
+    // blessing-of-might-2 — 神力信徒 II（升级版，含两个变体）
     // ========================================================================
-    describe('力量祝福 II (blessing-of-might-2)', () => {
+    describe('神力信徒 II (blessing-of-might-2)', () => {
         /** 升级 setup：将 blessing-of-might 替换为 BLESSING_OF_MIGHT_2 */
         function createPaladinLevel2Setup() {
             return (playerIds: PlayerId[], random: RandomFn): MatchState<DiceThroneCore> => {

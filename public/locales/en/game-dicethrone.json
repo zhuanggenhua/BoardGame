@@ -807,7 +807,7 @@
       "volley.result": "{{bowCount}} Bow(s): Damage +{{bonusDamage}}, apply Entangle",
       "volley.bowContribution": "Bow: +1 damage this attack",
       "volley.otherContribution": "Non-bow face: no extra damage",
-      "explodingArrow.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded",
+      "explodingArrow.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 1×{{bowCount}} + 1×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded",
       "explodingArrow2.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded",
       "explodingArrow3.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded and Entangle",
       "watchOut": "No extra effect triggered",
@@ -1422,6 +1422,7 @@
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
     "selectPlayerForConsecrate": "Select a player to consecrate",
+    "selectPlayerForEvasive": "Choose 1 player to gain Evasive",
     "gunslingerTheLaw": "Select up to 2 target players",
     "targetingRollSelectTarget": "Select this attack's target",
     "targetingRollOpponentDecidesTarget": "The opponent decides who takes this attack",
@@ -1584,6 +1585,14 @@
         "damageByFist": "Deal damage equal to Fist faces rolled"
       }
     },
+    "meditation-2": {
+      "name": "Meditation II",
+      "description": "During Defensive Roll Phase, roll 5 dice. Gain Chi equal to Taiji faces; deal 1 damage for each Fist face.",
+      "effects": {
+        "taijiByResult": "Gain Chi equal to Taiji faces rolled",
+        "damageByFist": "Deal 1 damage for each Fist face"
+      }
+    },
     "transcendence": {
       "name": "Transcendence!",
       "description": "Ultimate Ability! Once activated, opponents cannot interfere.",
@@ -1733,7 +1742,7 @@
       }
     },
     "blessing-of-might": {
-      "name": "Blessing of Might",
+      "name": "Might Disciple",
       "description": "3 Sword + 1 Pray: deal 3 undefendable damage, gain 1 Crit and 1 Accuracy",
       "effects": {
         "damage3": "Deal 3 undefendable damage",
@@ -1742,7 +1751,7 @@
       }
     },
     "blessing-of-might-2": {
-      "name": "Blessing of Might II",
+      "name": "Might Disciple II",
       "description": "Two variants: Offensive Stance and Might Disciple",
       "effects": {
         "damage2Unblockable": "Deal 2 undefendable damage",
@@ -1809,7 +1818,7 @@
       }
     },
     "vengeance": {
-      "name": "Vengeance",
+      "name": "Retribution",
       "description": "3 Helm + 1 Pray: gain 1 Retribution, gain 2 CP",
       "effects": {
         "gainRetribution": "Gain 1 Retribution token",
@@ -1817,8 +1826,8 @@
       }
     },
     "vengeance-2": {
-      "name": "Vengeance II",
-      "description": "Two variants: Vengeance and Retribution",
+      "name": "Retribution II",
+      "description": "Two variants: Retribution II and Vengeance",
       "effects": {
         "gainRetribution": "Gain 1 Retribution token",
         "heal1": "Heal 1",
@@ -1828,11 +1837,11 @@
       }
     },
     "vengeance-2-mix": {
-      "name": "Retribution",
+      "name": "Vengeance",
       "description": "1 each of Sword, Helm, Heart, Pray: heal 1, deal 3 undefendable damage, gain Retribution"
     },
     "vengeance-2-main": {
-      "name": "Vengeance II",
+      "name": "Retribution II",
       "description": "3 Helm + 1 Pray: 1 player gains Retribution, gain 4 CP"
     },
     "righteous-prayer": {
@@ -1965,9 +1974,9 @@
     },
     "silencing-trace": {
       "name": "Silencing Trace",
-      "description": "3 Foot: gain Evasive, deal 2 undefendable damage",
+      "description": "3 Foot: one player gains Evasive, deal 2 undefendable damage",
       "effects": {
-        "gainEvasive": "Gain 1 Evasive token",
+        "gainEvasive": "One player gains 1 Evasive token",
         "damage2Unblockable": "Deal 2 undefendable damage"
       }
     },
@@ -2142,7 +2151,7 @@
       }
     },
     "soul-burn": {
-      "name": "Soul Burn",
+      "name": "Burning Soul",
       "description": "Gain Fire Mastery equal to 2× Fire Soul faces and deal 1× Fire Soul damage to the target player.",
       "effects": {
         "fm": "Gain 2 Fire Mastery",
@@ -2150,7 +2159,7 @@
       }
     },
     "fiery-combo": {
-      "name": "Fiery Combo",
+      "name": "Hot Streak",
       "description": "Gain 2 Fire Mastery, deal 5 damage, plus 1 damage per Fire Mastery.",
       "effects": {
         "gainFM2": "Gain 2 Fire Mastery",
@@ -2364,9 +2373,9 @@
     },
     "steadfast-2": {
       "name": "Steadfast II",
-      "description": "3/4/5 Hearts: heal 5/6/7. Remove 1 of your status effects.",
+      "description": "3/4/5 Hearts: heal 5/6/7. If you rolled 3 matching numbers, you may remove 1 of your status effects.",
       "effects": {
-        "removeStatus": "Remove 1 of your status effect tokens",
+        "removeStatus": "If you rolled 3 matching numbers, you may remove 1 of your status effect tokens",
         "heal5": "Heal 5",
         "heal6": "Heal 6",
         "heal7": "Heal 7"
@@ -2460,31 +2469,33 @@
       }
     },
     "soul-burn-2": {
-      "name": "Soul Burn II",
-      "description": "2 Fire Soul: Gain 2×[souls] FM, deal [souls] damage. 3 Fire Soul: also inflict Burn. Blazing Soul (2 Magma + 2 Fire Soul): FM cap +1, gain 5 FM, inflict Knockdown.",
+      "name": "Burning Soul II",
+      "description": "2 Fire Soul: gain 2×[souls] Fire Mastery and deal 1×[souls] collateral damage to all opponents. 3 Fire Soul: also inflict Burn. 4 Fire Soul: also increase Fire Mastery stack limit by 1.",
       "effects": {
         "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
-        "damage": "Deal damage equal to Fire Soul face count to the target player"
+        "damage": "Deal collateral damage equal to Fire Soul face count to all opponents"
       }
     },
     "soul-burn-3": {
+      "name": "Burning Soul (3 Fire Soul)",
       "effects": {
         "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
         "inflictBurn": "Inflict 1 Burn token",
-        "damage": "Deal damage equal to Fire Soul face count to the target player"
+        "damage": "Deal collateral damage equal to Fire Soul face count to all opponents"
       }
     },
-    "blazing-soul": {
-      "name": "Blazing Soul",
-      "description": "2 Magma + 2 Fire Soul: FM cap +1, gain 5 Fire Mastery, inflict Knockdown",
+    "soul-burn-4": {
+      "name": "Burning Soul (4 Fire Soul)",
+      "description": "4 Fire Soul: Fire Mastery stack limit +1, gain 2× Fire Soul Fire Mastery, inflict Burn, and deal 1× Fire Soul collateral damage to all opponents.",
       "effects": {
         "increaseLimit": "Increase Fire Mastery cap by 1",
-        "gainFM5": "Gain 5 Fire Mastery",
-        "inflictKnockdown": "Inflict Knockdown"
+        "fm": "Gain Fire Mastery equal to 2× Fire Soul faces",
+        "inflictBurn": "Inflict 1 Burn token",
+        "damage": "Deal collateral damage equal to Fire Soul face count to all opponents"
       }
     },
     "fiery-combo-2": {
-      "name": "Fiery Combo II",
+      "name": "Hot Streak II",
       "description": "Small Straight: gain 2 Fire Mastery and deal 6+X damage. 2 Fire + 2 Magma: gain 2 Fire Mastery, inflict Burn, deal 6 damage.",
       "effects": {
         "gainFM2": "Gain 2 Fire Mastery",
@@ -2901,18 +2912,18 @@
     },
     "masamune-2": {
       "name": "Masamune II",
-      "description": "Includes the Masamune II and Honor variants.",
+      "description": "Includes the Masamune II and Empower variants.",
       "effects": {
         "damage7": "Deal 7 damage.",
-        "roll6": "Roll 6 dice: each Katana deals 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+        "roll5": "Roll 5 dice: each Katana deals 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
       }
     },
     "masamune-2-large-straight": {
       "name": "Masamune II",
-      "description": "Large Straight: deal 7 damage, then roll 6 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+      "description": "Large Straight: deal 7 damage, then roll 5 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
     },
-    "masamune-2-honor": {
-      "name": "Honor",
+    "masamune-2-empower": {
+      "name": "Empower",
       "description": "Katana + Helm + Rising Sun: gain 1 Back Strike.",
       "effects": {
         "gainBackStrike": "Gain 1 Back Strike."
@@ -3844,6 +3855,7 @@
       "name": "Overclock II",
       "description": "4 Electricity: inflict Nanobomb, deal 6 undefendable damage, then activate up to 2 different bots (ignoring normal activation conditions). Energy Boost: 3 Electricity, inflict 3 Nanobombs on an opponent.",
       "effects": {
+        "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage6Unblockable": "Deal 6 undefendable damage.",
         "activateTwoBots": "Activate up to 2 different bots (ignoring normal activation conditions).",
         "energyBoostInflictNanobomb3": "Inflict 3 Nanobombs on an opponent."
@@ -4300,28 +4312,28 @@
     },
     "upgrade-artificer-overclock-2": {
       "name": "Overclock II",
-      "description": "Upgrade Overclock: deal 6 undefendable damage, then activate up to 2 different bots; includes the Energy Boost branch.",
+      "description": "Upgrade Overclock: 4 Electricity, inflict 1 Nanobomb, deal 6 undefendable damage, then activate up to 2 different bots (ignoring normal activation conditions). Energy Boost: 3 Electricity, inflict 3 Nanobombs on an opponent.",
       "effects": {
         "upgrade": "Upgrade Overclock to level II."
       }
     },
     "upgrade-artificer-shock-bot-3": {
       "name": "Shock Bot III",
-      "description": "Upgrade Shock Bot: gain 2 Synth, inflict 1 Nanobomb, deal 9 damage, then activate 1 bot; includes the Mechanical Army sub-section.",
+      "description": "Upgrade Shock Bot: Large Straight, gain 2 Synth, inflict 1 Nanobomb, deal 9 damage, then activate 1 bot (ignoring normal activation conditions). Mechanical Army: 1 Wrench + 2 Gear + 1 Electricity, deal 5 damage; deal +1 damage for each bot you have.",
       "effects": {
         "upgrade": "Upgrade Shock Bot to level III."
       }
     },
     "upgrade-artificer-activate-bots-2": {
       "name": "Activate Bots II",
-      "description": "Upgrade Activate Bots: gain 1 Synth, inflict 2 Nanobombs, deal 7 damage; includes the Precision Fabrication branch.",
+      "description": "Upgrade Activate Bots: Small Straight, gain 1 Synth, inflict 2 Nanobombs, then deal 7 damage. Precision Fabrication: 3 Wrenches + 1 Electricity, gain 5 Synth.",
       "effects": {
         "upgrade": "Upgrade Activate Bots to level II."
       }
     },
     "upgrade-artificer-eureka-2": {
       "name": "Eureka II",
-      "description": "Upgrade Eureka: gain 3 Synth, then deal 8 damage; includes the Build From Scratch branch.",
+      "description": "Upgrade Eureka: 2 Wrenches + 3 Gear, gain 3 Synth, then deal 8 damage. Build From Scratch: 2 Wrenches + 2 Gear, build 1 advanced bot of any type or upgrade 1 basic bot to advanced (no Synth required).",
       "effects": {
         "upgrade": "Upgrade Eureka to level II."
       }
@@ -4342,7 +4354,7 @@
     },
     "upgrade-artificer-collect-parts-2": {
       "name": "Collect Parts II",
-      "description": "Upgrade Collect Parts: gain Synth during Upkeep; spend 4 Synth to inflict 1 Nanobomb on 1 opponent.",
+      "description": "Upgrade Collect Parts: during your Upkeep, roll 1 die. If you roll Wrench, gain 1 Synth. If you roll Gear or Electricity, gain 2 Synth. You may spend 4 Synth at any time to inflict 1 Nanobomb on an opponent.",
       "effects": {
         "upgrade": "Upgrade Collect Parts to level II."
       }
@@ -4609,11 +4621,11 @@
     },
     "card-burning-soul-2": {
       "name": "Burning Soul II",
-      "description": "Upgrade Soul Burn to Level II. Includes the 4x Fire Soul variant."
+      "description": "Upgrade Burning Soul to Level II."
     },
     "card-hot-streak-2": {
       "name": "Hot Streak II",
-      "description": "Upgrade Fiery Combo to Level II."
+      "description": "Upgrade Hot Streak to Level II."
     },
     "card-meteor-2": {
       "name": "Meteor II",
@@ -4818,16 +4830,16 @@
       "description": "Upgrade Righteous Combat to Level 2."
     },
     "card-blessing-of-might-2": {
-      "name": "Blessing of Might II",
-      "description": "Upgrade Blessing of Might to Level 2."
+      "name": "Might Disciple II",
+      "description": "Upgrade Might Disciple to Level 2."
     },
     "card-holy-strike-2": {
       "name": "Holy Strike II",
       "description": "Upgrade Holy Strike to Level 2."
     },
     "card-vengeance-2": {
-      "name": "Vengeance II",
-      "description": "Upgrade Vengeance to Level 2."
+      "name": "Retribution II",
+      "description": "Upgrade Retribution to Level 2."
     },
     "card-righteous-prayer-2": {
       "name": "Righteous Prayer II",

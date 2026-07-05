@@ -20,6 +20,7 @@ import {
     takeCommittedSpecialTroopStacks,
 } from './movementProfileTroopSelection';
 import type {
+    QidahenBattleCasualtyPriority,
     QidahenCasualtyPriority,
     QidahenCore,
     QidahenFactionId,
@@ -32,12 +33,15 @@ import type {
 export const applyCasualtiesToSpecialStacks = (
     stacks: QidahenSpecialTroopStack[],
     troopLoss: number,
-    casualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    casualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
 ): QidahenSpecialTroopStack[] => {
     const allPieces = expandSpecialTroopStacksToCompatPieces(stacks);
+    const casualtyCandidates = casualtyPriority === 'artillery-first'
+        ? allPieces
+        : allPieces.filter((piece) => piece.troopKind !== 'artillery');
     const removedPieceIds = new Set(
         sortCompatPiecesForRemoval(
-            allPieces.filter((piece) => piece.troopKind !== 'artillery'),
+            casualtyCandidates,
             casualtyPriority,
         )
             .slice(0, Math.max(0, troopLoss))
@@ -83,7 +87,7 @@ export const applyCasualtyPriorityToRegion = (
     region: QidahenCore['regions'][number],
     troopLoss: number,
     movementProfileId?: string | null,
-    casualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    casualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
 ): QidahenCore['regions'][number] => {
     const remainingLoss = Math.max(0, troopLoss);
     if (remainingLoss <= 0 || region.specialTroops.length === 0) {
@@ -91,12 +95,15 @@ export const applyCasualtyPriorityToRegion = (
     }
 
     const allPieces = expandSpecialTroopStacksToCompatPieces(region.specialTroops);
+    const casualtyCandidates = casualtyPriority === 'artillery-first'
+        ? allPieces.filter((piece) => isTroopKindAllowedForMovementProfile(piece.troopKind, movementProfileId))
+        : allPieces.filter((piece) => (
+            piece.troopKind !== 'artillery'
+            && isTroopKindAllowedForMovementProfile(piece.troopKind, movementProfileId)
+        ));
     const removedPieceIds = new Set(
         sortCompatPiecesForRemoval(
-            allPieces.filter((piece) => (
-                piece.troopKind !== 'artillery'
-                && isTroopKindAllowedForMovementProfile(piece.troopKind, movementProfileId)
-            )),
+            casualtyCandidates,
             casualtyPriority,
         )
             .slice(0, remainingLoss)
@@ -254,7 +261,7 @@ export const computeStructuredAttackerRout = (
     committedTroops: number,
     attackerLosses: number,
     movementProfileId?: string | null,
-    attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    attackerCasualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
 ): {
     damagedTroops: number;
     troopLoss: number;
@@ -301,7 +308,7 @@ export const getSurvivingCommittedSpecialTroops = (
     committedTroops: number,
     attackerLosses: number,
     movementProfileId?: string | null,
-    attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    attackerCasualtyPriority: QidahenBattleCasualtyPriority = 'highest-level',
 ): QidahenSpecialTroopStack[] => {
     if (!sourceRegion || sourceRegion.specialTroops.length === 0) {
         return [];

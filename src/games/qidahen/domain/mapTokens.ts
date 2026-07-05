@@ -225,6 +225,7 @@ export const syncQidahenMapTokensFromRegions = (
                     type: 'marker',
                     faction: 'neutral',
                     imageSrc: marker.imageSrc,
+                    value: marker.imageSrc ? undefined : marker.label,
                     size: 27,
                 });
             }

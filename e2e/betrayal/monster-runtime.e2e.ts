@@ -61,10 +61,10 @@ test.describe('山屋惊魂怪物运行时', () => {
         await saveScreenshot(page, USE_WITH_MONSTER_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-move').click();
-        await expect(page.getByTestId('betrayal-room-move-target-upper-landing')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-upper-landing')).toBeVisible();
         await saveScreenshot(page, MOVE_WITH_MONSTER_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-move-target-upper-landing').click();
+        await page.getByTestId('betrayal-room-upper-landing').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('移动到');
         await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0')).toBeVisible();
         await saveScreenshot(page, MOVE_RESULT_SCREENSHOT);

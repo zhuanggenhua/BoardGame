@@ -31,7 +31,7 @@ import {
     mergeSpecialTroopStackGroupsAsPieces,
 } from './troopCompat';
 import type {
-    QidahenCasualtyPriority,
+    QidahenBattleCasualtyPriority,
     QidahenCore,
     QidahenFactionId,
     QidahenPostBattleSelection,
@@ -58,7 +58,7 @@ interface QidahenPostBattleResolutionDependencies {
         committedTroops: number,
         attackerLosses: number,
         movementProfileId?: string | null,
-        attackerCasualtyPriority?: QidahenCasualtyPriority,
+        attackerCasualtyPriority?: QidahenBattleCasualtyPriority,
     ) => QidahenSpecialTroopStack[];
     applyCommittedTroopRemovalToRegion: (
         region: QidahenRuntimeRegion,
@@ -69,7 +69,7 @@ interface QidahenPostBattleResolutionDependencies {
         region: QidahenRuntimeRegion,
         losses: number,
         movementProfileId?: string | null,
-        casualtyPriority?: QidahenCasualtyPriority,
+        casualtyPriority?: QidahenBattleCasualtyPriority,
     ) => QidahenRuntimeRegion;
     getRegionControlLabel: (
         region: QidahenRuntimeRegion,
@@ -241,7 +241,7 @@ export const resolvePostBattleDecision = (
         selection.committedTroops,
         selection.attackerLosses,
         selection.movementProfileId,
-        selection.attackerCasualtyPriority,
+        selection.attackerBattleCasualtyPriority ?? selection.attackerCasualtyPriority,
     );
     const nextRuntimeRegions = runtimeRegions.map((region) => {
         if (region.id === sourceRemovalRegionId && sourceRemovalRegionId !== selection.targetRuntimeRegionId) {
@@ -258,7 +258,7 @@ export const resolvePostBattleDecision = (
                     ...sourceActionRegion,
                     troops: Math.max(0, sourceActionRegion.troops - selection.attackerLosses),
                     note: `${sourceActionRegion.name} 战后回收幸存部队，但损失 ${selection.attackerLosses} 个部队。`,
-                }, selection.attackerLosses, selection.movementProfileId, selection.attackerCasualtyPriority);
+                }, selection.attackerLosses, selection.movementProfileId, selection.attackerBattleCasualtyPriority ?? selection.attackerCasualtyPriority);
             }
             if (choice.mode === 'withdraw' && withdrawRegionId !== sourceRemovalRegionId) {
                 return dependencies.applyCommittedTroopRemovalToRegion({

@@ -67,4 +67,48 @@ describe('ActionLogSystem', () => {
         expect(result?.state?.sys.actionLog.entries).toHaveLength(1);
         expect(result?.state?.sys.actionLog.maxEntries).toBe(2);
     });
+
+    it('同一日志 ID 在后续事件轮次中不会重复追加', () => {
+        const system = createActionLogSystem({
+            maxEntries: 5,
+            commandAllowlist: ['CONFIRM_ROLL'],
+            formatEntry: ({ command }): ActionLogEntry => ({
+                id: `${command.type}-${command.playerId}-${command.timestamp}`,
+                timestamp: command.timestamp ?? 0,
+                actorId: command.playerId,
+                kind: command.type,
+                segments: [{ type: 'text', text: '确认投掷' }],
+            }),
+        });
+
+        const command: Command = {
+            type: 'CONFIRM_ROLL',
+            playerId: '0',
+            payload: {},
+            timestamp: 10,
+        };
+
+        const first = system.afterEvents?.({
+            state: createStateWithoutActionLog(),
+            command,
+            events: [{ type: 'ROLL_CONFIRMED', payload: { playerId: '0' }, timestamp: 10 }],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+            afterEventsRound: 0,
+        });
+
+        expect(first?.state?.sys.actionLog.entries).toHaveLength(1);
+
+        const second = system.afterEvents?.({
+            state: first!.state!,
+            command,
+            events: [{ type: 'PHASE_CHANGED', payload: { from: 'offensiveRoll', to: 'defensiveRoll' }, timestamp: 11 }],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+            afterEventsRound: 1,
+        });
+
+        expect(second).toBeUndefined();
+        expect(first?.state?.sys.actionLog.entries).toHaveLength(1);
+    });
 });

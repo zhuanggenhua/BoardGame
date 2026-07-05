@@ -75,6 +75,19 @@ export function createStartedFirstScenarioCore(playerIds: string[] = ['0', '1', 
     return core;
 }
 
+function applyTutorialDiscoveryOrder(core: BetrayalCore): BetrayalCore {
+    const tutorialEvent = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '外星几何');
+    if (!tutorialEvent) {
+        throw new Error('山屋教程缺少官方事件牌：外星几何');
+    }
+    core.eventOrder = [tutorialEvent];
+    return core;
+}
+
+export function createStartedFirstScenarioTutorialCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+    return applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(playerIds));
+}
+
 export function createFirstScenarioHauntCore(): BetrayalCore {
     let core = createStartedFirstScenarioCore();
     core.roomDiscoveryOrderByFloor.basement = [
@@ -100,6 +113,10 @@ export function createFirstScenarioHauntCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {}, 100, hauntTriggerRandom);
 
     return core;
+}
+
+export function createFirstScenarioHauntTutorialCore(): BetrayalCore {
+    return applyTutorialDiscoveryOrder(createFirstScenarioHauntCore());
 }
 
 export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
@@ -188,6 +205,10 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     core.activeRoomId = 'basement-landing';
 
     return core;
+}
+
+export function createFirstScenarioReadyToExorciseTutorialCore(): BetrayalCore {
+    return applyTutorialDiscoveryOrder(createFirstScenarioReadyToExorciseCore());
 }
 
 export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
@@ -311,6 +332,10 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
     return core;
+}
+
+export function createFirstScenarioReadyToTraitorVictoryTutorialCore(): BetrayalCore {
+    return applyTutorialDiscoveryOrder(createFirstScenarioReadyToTraitorVictoryCore());
 }
 
 export function createCorpseLootReadyCore(): BetrayalCore {

@@ -174,7 +174,7 @@ function handleBlessingPrevent({ targetId, state, timestamp, action }: CustomAct
         const damageEvents = damageCalc.toEvents();
         // 手动添加 bypassShields 标记（引擎层暂不支持）
         if (damageEvents[0]?.type === 'DAMAGE_DEALT') {
-            (damageEvents[0].payload as any).bypassShields = true;
+            (damageEvents[0].payload as { bypassShields?: boolean }).bypassShields = true;
         }
         events.push(...damageEvents);
     }
@@ -183,7 +183,7 @@ function handleBlessingPrevent({ targetId, state, timestamp, action }: CustomAct
 }
 
 /**
- * 复仇 II 主技能 — 选择任意玩家授予 1 层弹反
+ * 反击 II 主技能 — 选择任意玩家授予 1 层神罚
  */
 function handleVengeanceSelectPlayer({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const interaction: PendingInteraction = {

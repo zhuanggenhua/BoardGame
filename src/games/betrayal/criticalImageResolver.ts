@@ -9,6 +9,8 @@ const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     'betrayal/ui/trait-track-0-9',
     'betrayal/cards/player-reference-zh-front',
     'betrayal/cards/player-reference-zh-back',
+    'betrayal/cards/traitor-reference-zh',
+    'betrayal/cards/monster-reference-zh',
     'betrayal/cards/back-omen',
     'betrayal/cards/back-item',
     'betrayal/cards/back-event',

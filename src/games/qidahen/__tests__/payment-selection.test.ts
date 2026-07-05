@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenEffectiveVpByFaction, getQidahenFortificationMaintenanceSelectionForCore, getQidahenFortificationMaintenanceSelectionFromInteraction, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore, QidahenDomain } from '../domain';
+import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenEffectiveVpByFaction, getQidahenEventCharacterTargetSelectionForCore, getQidahenEventOpponentHandChoiceSelectionForCore, getQidahenFortificationMaintenanceSelectionForCore, getQidahenFortificationMaintenanceSelectionFromInteraction, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore, QidahenDomain } from '../domain';
 import { resolveQidahenInternalDispatchInteractionChoice, resolveQidahenWheelDispatchInteractionChoice } from '../domain/actionWindowDispatch';
 import { resolveQidahenDiplomacyInteractionChoice, resolveQidahenDriveTigerConsentInteractionChoice, resolveQidahenKhanEdictInteractionChoice, resolveQidahenMaShiTradeInteractionChoice, resolveQidahenRecruitInteractionChoice } from '../domain/actionWindowChoices';
 import { syncQidahenCurrentCoreSelections } from '../domain/coreDerivedState';
@@ -806,6 +806,8 @@ describe('七大恨支付手牌选择', () => {
             payload: {},
         });
         expect(executed.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech')?.level).toBe(2);
+        expect(executed.factions.ming.armaments.find((armament) => armament.id === 'artillery-tech')?.sourceCardDefIds)
+            .toContain('test-ming-artillery-tech');
         expect(executed.selectedHandActionCardId).toBeNull();
         expect(executed.handCards.some((card) => card.id === armamentCard.id)).toBe(false);
         expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
@@ -867,11 +869,13 @@ describe('七大恨支付手牌选择', () => {
             });
 
             expect(executed.factions.ming.armaments.find((armament) => armament.id === identity.armamentId)?.level).toBe(2);
+            expect(executed.factions.ming.armaments.find((armament) => armament.id === identity.armamentId)?.sourceCardDefIds)
+                .toContain(identity.cardDefId);
             expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(identity.displayName);
         }
     });
 
-    it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件记录层', () => {
+    it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件入口，并拦截未闭合归属链', () => {
         const eventIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
             .filter((identity) => identity.cardKind === 'event');
         expect(eventIdentities.length).toBeGreaterThan(0);
@@ -896,6 +900,9 @@ describe('七大恨支付手牌选择', () => {
                 )),
             };
             const mappedSourceCard = mappedCore.handCards.find((card) => card.id === sourceCard.id)!;
+            const isCounterSpyPlot = identity.cardDefId === 'qidahen-atlas05-1600-counter-spy-plot';
+            const isTributeEdict = identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict';
+            const requiredPaymentCount = isCounterSpyPlot || isTributeEdict ? 2 : 1;
 
             expect(getQidahenDirectActionIdForHandCard(mappedSourceCard)).toBe('play-event-card');
 
@@ -907,12 +914,19 @@ describe('七大恨支付手牌选择', () => {
             expect(previewed.selectedHandActionCardId).toBe(sourceCard.id);
             expect(previewed.selectedPaymentCardIds).toEqual([sourceCard.id]);
             expect(previewed.payment).toMatchObject({
-                required: 1,
+                required: requiredPaymentCount,
                 selected: 1,
-                prompt: '需弃 1 / 已选 1',
+                prompt: `需弃 ${requiredPaymentCount} / 已选 1`,
             });
 
-            const executed = apply(previewed, {
+            const payable = requiredPaymentCount > 1
+                ? apply(previewed, {
+                    type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+                    playerId: '0',
+                    payload: { cardId: factionHandCards(previewed, 'ming').find((card) => card.id !== sourceCard.id)!.id },
+                })
+                : previewed;
+            const executed = apply(payable, {
                 type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
                 playerId: '0',
                 payload: {},
@@ -920,7 +934,81 @@ describe('七大恨支付手牌选择', () => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
             const isRemovedFromGameEvent = rulesSummary.includes('使用后移出游戏');
             const isPersistentEvent = rulesSummary.includes('持续事件');
+            const requiresOpponentDiscardOwner = rulesSummary.includes('放入该对手弃牌堆');
+            const isGinsengAndSable = identity.cardDefId === 'qidahen-atlas05-1630-ginseng-and-sable';
+            const isMongolNoblesCongress = identity.cardDefId === 'qidahen-atlas05-1623-mongol-nobles-congress';
+            const isPowerStruggleCoup = identity.cardDefId === 'qidahen-atlas05-1621-power-struggle-coup';
+            const requiresUnimplementedTargetChoice = (rulesSummary.includes('指定并移除一张对手场上的人物牌') && !isCounterSpyPlot)
+                || (rulesSummary.includes('执行两项效果之一') && !isMongolNoblesCongress && !isPowerStruggleCoup);
+            const isNortheastArmy = identity.cardDefId === 'qidahen-atlas05-1631-northeast-army';
+            const requiresUnimplementedTimingOrBoardTarget = rulesSummary.includes('只能在遭到攻击时自手牌打出')
+                || (rulesSummary.includes('放置甲喇标记') && !isNortheastArmy);
             const doesNotEnterDiscardPile = isRemovedFromGameEvent || isPersistentEvent;
+
+            if (isCounterSpyPlot) {
+                expect(executed.turnPhase).toBe('event-character-target');
+                expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+                expect(executed.discardPileCount).toBe(core.discardPileCount);
+                expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+                expect(getQidahenEventCharacterTargetSelectionForCore(executed)).toMatchObject({
+                    title: '反间计',
+                    eventCardId: sourceCard.id,
+                    eventCardDefId: identity.cardDefId,
+                    ownerFactionId: 'ming',
+                });
+                continue;
+            }
+
+            if (isTributeEdict) {
+                expect(executed.turnPhase).toBe('event-opponent-hand-choice');
+                expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+                expect(executed.discardPileCount).toBe(core.discardPileCount);
+                expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+                expect(getQidahenEventOpponentHandChoiceSelectionForCore(executed)).toMatchObject({
+                    source: 'tribute-edict-opponent',
+                    title: '封贡敕书',
+                    eventCardId: sourceCard.id,
+                    eventCardDefId: identity.cardDefId,
+                    ownerFactionId: 'ming',
+                });
+                expect(executed.lastSeasonSummary?.title).toBe('封贡敕书');
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('由该对手选择执行赐印招安或驱虎吞狼');
+                continue;
+            }
+
+            if (isPowerStruggleCoup) {
+                expect(executed.turnPhase).toBe('event-character-target');
+                expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+                expect(executed.discardPileCount).toBe(core.discardPileCount);
+                expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+                expect(getQidahenEventCharacterTargetSelectionForCore(executed)).toMatchObject({
+                    source: 'power-struggle-coup-character-judgement',
+                    title: '开门迎降',
+                    eventCardId: sourceCard.id,
+                    eventCardDefId: identity.cardDefId,
+                    ownerFactionId: 'ming',
+                });
+                expect(executed.lastSeasonSummary?.title).toBe('开门迎降');
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('按既有人物额外判定表执行一次掷骰判定');
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('第二项效果文本仍未锁定');
+                continue;
+            }
+
+            if (
+                (requiresOpponentDiscardOwner && !isGinsengAndSable)
+                || requiresUnimplementedTargetChoice
+                || requiresUnimplementedTimingOrBoardTarget
+            ) {
+                expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+                expect(executed.discardPileCount).toBe(core.discardPileCount);
+                expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+                expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(identity.displayName);
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toMatch(/需要指定对手|需要目标选择|需要目标选择或二择一效果选择|需要特定打出时机或地图目标选择/);
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('本次未消耗手牌');
+                expect(executed.actionLog[0]?.text).toContain(`尝试执行事件「${identity.displayName}」`);
+                continue;
+            }
 
             expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
             expect(executed.discardPileCount).toBe(core.discardPileCount + (doesNotEnterDiscardPile ? 0 : 1));
@@ -930,17 +1018,960 @@ describe('七大恨支付手牌选择', () => {
             expect(executed.lastSeasonSummary?.title).toBe('执行事件');
             expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(`打出事件牌：${identity.displayName}`);
             expect(executed.lastSeasonSummary?.lines.join(' ')).toContain(rulesSummary);
+            if (isMongolNoblesCongress) {
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('大明使用王公大会无效果');
+            }
+            if (isGinsengAndSable) {
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('大明使用人参貂皮无效果');
+            }
+            if (identity.cardDefId === 'qidahen-atlas05-1609-seven-grievances') {
+                expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('大明使用七大恨无效果');
+            }
             if (isPersistentEvent) {
                 expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('持续事件：此牌未进入弃牌堆');
                 expect(executed.actionLog[0]?.text).toContain('打出为持续事件，不进入弃牌堆');
+                expect(executed.activeEventCards).toEqual(expect.arrayContaining([
+                    expect.objectContaining({
+                        cardDefId: identity.cardDefId,
+                        label: identity.displayName,
+                        ownerFactionId: 'ming',
+                        rulesSummary,
+                    }),
+                ]));
             } else if (isRemovedFromGameEvent) {
                 expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后移出游戏：此牌未进入弃牌堆。');
                 expect(executed.actionLog[0]?.text).toContain('打出并移出游戏');
             } else {
                 expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后进入当前势力弃牌堆。');
             }
+            if (!isPersistentEvent) {
+                expect(executed.activeEventCards.some((card) => card.cardDefId === identity.cardDefId)).toBe(false);
+            }
             expect(executed.actionLog[0]?.text).toContain(`执行事件「${identity.displayName}」`);
         }
+    });
+
+    it('反间计会进入人物目标选择，并排除努尔哈赤、林丹汗和阿巴凯', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard, paymentCard] = factionHandCards(core, 'ming');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1600-counter-spy-plot'
+        ];
+        setFactionCharactersInPlay(core, 'jin', ['jin-nurhaci', 'jin-abakai', 'jin-eidu']);
+        setFactionCharactersInPlay(core, 'mongol', ['mongol-lindan-hutuktu']);
+        const mappedCore: QidahenCore = {
+            ...core,
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '反间计',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1600-counter-spy-plot',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCard.id },
+        });
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        const selection = getQidahenEventCharacterTargetSelectionForCore(executed);
+        expect(executed.turnPhase).toBe('event-character-target');
+        expect(selection?.title).toBe('反间计');
+        expect(selection?.paymentCardIds).toEqual([sourceCard.id, paymentCard.id]);
+        expect(selection?.choices.map((choice) => choice.characterId)).toEqual(['jin-eidu']);
+        expect(selection?.choices[0]).toMatchObject({
+            id: 'jin:jin-eidu',
+            characterName: '额亦都',
+            factionId: 'jin',
+        });
+    });
+
+    it('反间计选择合法目标后会移除人物，事件牌移出游戏，额外费用进弃牌堆', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard, paymentCard] = factionHandCards(core, 'ming');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1600-counter-spy-plot'
+        ];
+        setFactionCharactersInPlay(core, 'jin', ['jin-eidu']);
+        const mappedCore: QidahenCore = {
+            ...core,
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '反间计',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1600-counter-spy-plot',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCard.id },
+        });
+        const waitingTarget = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        const resolved = apply(waitingTarget, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_CHARACTER_TARGET,
+            playerId: '0',
+            payload: { choiceId: 'jin:jin-eidu' },
+        });
+
+        expect(resolved.eventCharacterTargetSelection).toBeNull();
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(resolved.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 1);
+        expect(resolved.factions.jin.characters.find((character) => character.id === 'jin-eidu')).toMatchObject({
+            inPlay: false,
+            removedFromGame: true,
+        });
+        expect(resolved.lastSeasonSummary?.title).toBe('反间计');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('反间计使用后移出游戏；此牌未进入弃牌堆。');
+        expect(resolved.actionLog[0]?.text).toContain('大明 执行事件「反间计」');
+    });
+
+    it('反间计没有合法人物目标时不消耗手牌', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard, paymentCard] = factionHandCards(core, 'ming');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1600-counter-spy-plot'
+        ];
+        setFactionCharactersInPlay(core, 'jin', ['jin-nurhaci', 'jin-abakai']);
+        setFactionCharactersInPlay(core, 'mongol', ['mongol-lindan-hutuktu']);
+        const mappedCore: QidahenCore = {
+            ...core,
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '反间计',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1600-counter-spy-plot',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '0',
+            payload: { cardId: paymentCard.id },
+        });
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(executed.eventCharacterTargetSelection).toBeNull();
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+        expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(true);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+        expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('反间计需要一个可被指定的对手在场人物');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('本次未消耗手牌');
+    });
+
+    it('开门迎降可指定敌方人物并按既有人物判定表结算，事件牌移出游戏', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1621-power-struggle-coup'
+        ];
+        setFactionCharactersInPlay(core, 'ming', ['ming-mao-wenlong']);
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '开门迎降',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1621-power-struggle-coup',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const waitingTarget = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        const selection = getQidahenEventCharacterTargetSelectionForCore(waitingTarget);
+        expect(waitingTarget.turnPhase).toBe('event-character-target');
+        expect(selection).toMatchObject({
+            source: 'power-struggle-coup-character-judgement',
+            title: '开门迎降',
+            eventCardId: sourceCard.id,
+            eventCardDefId: 'qidahen-atlas05-1621-power-struggle-coup',
+            ownerFactionId: 'jin',
+            paymentCardIds: [sourceCard.id],
+        });
+        expect(selection?.choices.map((choice) => choice.id)).toContain('ming:ming-mao-wenlong');
+
+        const resolved = apply(waitingTarget, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_CHARACTER_TARGET,
+            playerId: '2',
+            payload: { choiceId: 'ming:ming-mao-wenlong' },
+        });
+
+        expect(resolved.eventCharacterTargetSelection).toBeNull();
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount);
+        expect(resolved.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount);
+        expect(resolved.factions.jin.handCount).toBe(core.factions.jin.handCount - 1);
+        expect(resolved.factions.ming.characters.find((character) => character.id === 'ming-mao-wenlong')).toMatchObject({
+            inPlay: false,
+            removedFromGame: false,
+            defeatMarkers: 0,
+        });
+        expect(resolved.lastSeasonSummary?.title).toBe('开门迎降');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('毛文龙(d10) 掷 9→8：下野，回到大明人物牌堆');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('开门迎降使用后移出游戏；此牌未进入弃牌堆。');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('第二项');
+        expect(resolved.actionLog[0]?.text).toContain('后金 执行事件「开门迎降」');
+        expect(resolved.actionLog[0]?.text).toContain('毛文龙(d10) 掷 9→8：下野');
+    });
+
+    it('各个击破不能从普通执行事件入口被当作已结算事件消耗', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'ming');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1601-defeat-in-detail'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '0',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '各个击破',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1601-defeat-in-detail',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+        expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('各个击破 需要特定打出时机或地图目标选择');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('本次未消耗手牌，也未结算事件效果。');
+        expect(executed.actionLog[0]?.text).toContain('尝试执行事件「各个击破」');
+    });
+
+    it('蒙古打出王公大会会进入打出/回收蒙古人物二择一，不立即消耗手牌', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'mongol');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1623-mongol-nobles-congress'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '王公大会',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '1',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+
+        const selection = getQidahenEventOpponentHandChoiceSelectionForCore(executed);
+        expect(executed.turnPhase).toBe('event-opponent-hand-choice');
+        expect(selection).toMatchObject({
+            source: 'mongol-nobles-congress-effect',
+            title: '王公大会',
+            eventCardId: sourceCard.id,
+            eventCardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
+            ownerFactionId: 'mongol',
+            paymentCardIds: [sourceCard.id],
+        });
+        expect(selection?.choices.map((choice) => choice.id)).toEqual(['play-character']);
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.mongol.discardPileCount).toBe(core.factions.mongol.discardPileCount);
+        expect(executed.lastSeasonSummary?.title).toBe('王公大会');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('选择打出 1 张蒙古人物');
+    });
+
+    it('蒙古打出王公大会可选择 1 张蒙古人物打出并将事件牌放入蒙古弃牌堆', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'mongol');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1623-mongol-nobles-congress'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '王公大会',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '1',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const waitingEffectChoice = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+        const waitingCharacterChoice = apply(waitingEffectChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'play-character' },
+        });
+        const characterSelection = getQidahenEventOpponentHandChoiceSelectionForCore(waitingCharacterChoice);
+        expect(waitingCharacterChoice.turnPhase).toBe('event-opponent-hand-choice');
+        expect(characterSelection).toMatchObject({
+            source: 'mongol-nobles-congress-play-character',
+            ownerFactionId: 'mongol',
+        });
+        expect(characterSelection?.choices.map((choice) => choice.cardId)).toEqual([
+            'mongol-choghtu-taiji',
+            'mongol-oba-taiji',
+            'mongol-qisai-noyan',
+            'mongol-gunchu-ketuji',
+        ]);
+
+        const resolved = apply(waitingCharacterChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'mongol-choghtu-taiji' },
+        });
+
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(resolved)).toBeNull();
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.factions.mongol.characters.find((character) => character.id === 'mongol-choghtu-taiji')).toMatchObject({
+            inPlay: true,
+            removedFromGame: false,
+            defeatMarkers: 0,
+        });
+        expect(resolved.factions.mongol.handCount).toBe(core.factions.mongol.handCount - 1);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(resolved.factions.mongol.discardPileCount).toBe(core.factions.mongol.discardPileCount + 1);
+        expect(resolved.lastSeasonSummary?.title).toBe('王公大会');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('打出蒙古人物「绰克图台吉」');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('王公大会使用后进入蒙古弃牌堆');
+        expect(resolved.actionLog.some((entry) => (
+            entry.text.includes('蒙古 执行事件「王公大会」')
+            && entry.text.includes('打出蒙古人物「绰克图台吉」')
+        ))).toBe(true);
+    });
+
+    it('蒙古打出王公大会可将大明侧在场蒙古人物拿回蒙古人物牌堆', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'mongol');
+        const returnedCharacter = {
+            ...core.factions.mongol.characters.find((character) => character.id === 'mongol-choghtu-taiji')!,
+            faction: 'mongol' as const,
+            inPlay: true,
+            removedFromGame: false,
+            defeatMarkers: 1,
+        };
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1623-mongol-nobles-congress'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            factions: {
+                ...core.factions,
+                ming: {
+                    ...core.factions.ming,
+                    characters: [...core.factions.ming.characters, returnedCharacter],
+                },
+                mongol: {
+                    ...core.factions.mongol,
+                    characters: core.factions.mongol.characters.filter((character) => character.id !== returnedCharacter.id),
+                },
+            },
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '王公大会',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '1',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const waitingEffectChoice = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+        const effectSelection = getQidahenEventOpponentHandChoiceSelectionForCore(waitingEffectChoice);
+        expect(effectSelection?.choices.map((choice) => choice.id)).toEqual(['play-character', 'return-character']);
+
+        const waitingCharacterChoice = apply(waitingEffectChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'return-character' },
+        });
+        const characterSelection = getQidahenEventOpponentHandChoiceSelectionForCore(waitingCharacterChoice);
+        expect(characterSelection).toMatchObject({
+            source: 'mongol-nobles-congress-return-character',
+            ownerFactionId: 'mongol',
+        });
+        expect(characterSelection?.choices.map((choice) => choice.id)).toContain('ming:mongol-choghtu-taiji');
+
+        const resolved = apply(waitingCharacterChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'ming:mongol-choghtu-taiji' },
+        });
+
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(resolved)).toBeNull();
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.factions.ming.characters.some((character) => character.id === 'mongol-choghtu-taiji')).toBe(false);
+        expect(resolved.factions.mongol.characters.find((character) => character.id === 'mongol-choghtu-taiji')).toMatchObject({
+            faction: 'mongol',
+            inPlay: false,
+            removedFromGame: false,
+            defeatMarkers: 0,
+        });
+        expect(resolved.factions.mongol.handCount).toBe(core.factions.mongol.handCount - 1);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(resolved.factions.mongol.discardPileCount).toBe(core.factions.mongol.discardPileCount + 1);
+        expect(resolved.lastSeasonSummary?.title).toBe('王公大会');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('将大明在场蒙古人物「绰克图台吉」拿回蒙古人物牌堆');
+        expect(resolved.actionLog.some((entry) => (
+            entry.text.includes('将大明在场蒙古人物「绰克图台吉」拿回蒙古人物牌堆')
+        ))).toBe(true);
+    });
+
+    it('后金打出王公大会会按牌面无效果处理并进入当前势力弃牌堆', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1623-mongol-nobles-congress'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '王公大会',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1623-mongol-nobles-congress',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(executed.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(executed.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount + 1);
+        expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：王公大会');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('后金使用王公大会无效果');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后进入当前势力弃牌堆。');
+        expect(executed.actionLog[0]?.text).toContain('执行事件「王公大会」');
+        expect(executed.actionLog[0]?.text).toContain('后金使用王公大会无效果');
+    });
+
+    it('后金打出人参貂皮会指定对手，并由该对手选择给出手牌', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const targetCard = factionHandCards(core, 'ming')[1];
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1630-ginseng-and-sable'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '人参貂皮',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1630-ginseng-and-sable',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        const opponentSelection = getQidahenEventOpponentHandChoiceSelectionForCore(executed);
+        expect(executed.turnPhase).toBe('event-opponent-hand-choice');
+        expect(opponentSelection).toMatchObject({
+            source: 'ginseng-and-sable-opponent',
+            title: '人参貂皮',
+            eventCardId: sourceCard.id,
+            eventCardDefId: 'qidahen-atlas05-1630-ginseng-and-sable',
+            ownerFactionId: 'jin',
+            paymentCardIds: [sourceCard.id],
+        });
+        expect(opponentSelection?.choices.map((choice) => choice.id)).toEqual(['ming', 'mongol']);
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+        expect(executed.handCards.some((card) => card.id === targetCard.id)).toBe(true);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount);
+        expect(executed.lastSeasonSummary?.title).toBe('人参貂皮');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('由该对手选择给出哪张手牌');
+
+        const waitingCardChoice = apply(executed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '2',
+            payload: { choiceId: 'ming' },
+        });
+        const cardSelection = getQidahenEventOpponentHandChoiceSelectionForCore(waitingCardChoice);
+        expect(waitingCardChoice.turnPhase).toBe('event-opponent-hand-choice');
+        expect(cardSelection).toMatchObject({
+            source: 'ginseng-and-sable-card',
+            targetFactionId: 'ming',
+            targetFactionName: '大明',
+        });
+        expect(cardSelection?.choices.map((choice) => choice.cardId)).toEqual(
+            factionHandCards(core, 'ming').map((card) => card.id),
+        );
+
+        const resolved = apply(waitingCardChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '0',
+            payload: { choiceId: targetCard.id },
+        });
+
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(resolved)).toBeNull();
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(factionHandCards(resolved, 'jin').some((card) => card.id === targetCard.id)).toBe(true);
+        expect(factionHandCards(resolved, 'ming').some((card) => card.id === targetCard.id)).toBe(false);
+        expect(resolved.factions.jin.handCount).toBe(core.factions.jin.handCount);
+        expect(resolved.factions.ming.handCount).toBe(core.factions.ming.handCount - 1);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(resolved.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount);
+        expect(resolved.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 1);
+        expect(resolved.lastSeasonSummary?.title).toBe('人参貂皮');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain(`后金获得大明给出的手牌「${targetCard.label}」`);
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('人参貂皮使用后进入大明弃牌堆');
+        expect(resolved.actionLog[0]?.text).toContain('后金 执行事件「人参貂皮」');
+        expect(resolved.actionLog[0]?.text).toContain('事件牌进入大明弃牌堆');
+    });
+
+    it('后金打出封贡敕书会额外弃 1 张手牌，再指定对手并由该对手选择赐印招安或驱虎吞狼', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard, paymentCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1633-tribute-edict'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '封贡敕书',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1633-tribute-edict',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        expect(previewed.payment.required).toBe(2);
+
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '2',
+            payload: { cardId: paymentCard.id },
+        });
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        const opponentSelection = getQidahenEventOpponentHandChoiceSelectionForCore(executed);
+        expect(executed.turnPhase).toBe('event-opponent-hand-choice');
+        expect(opponentSelection).toMatchObject({
+            source: 'tribute-edict-opponent',
+            title: '封贡敕书',
+            eventCardId: sourceCard.id,
+            eventCardDefId: 'qidahen-atlas05-1633-tribute-edict',
+            ownerFactionId: 'jin',
+            paymentCardIds: [sourceCard.id, paymentCard.id],
+        });
+        expect(opponentSelection?.choices.map((choice) => choice.id)).toEqual(['ming', 'mongol']);
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
+        expect(executed.lastSeasonSummary?.title).toBe('封贡敕书');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('由该对手选择执行赐印招安或驱虎吞狼');
+
+        const waitingActionChoice = apply(executed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '2',
+            payload: { choiceId: 'ming' },
+        });
+        const actionSelection = getQidahenEventOpponentHandChoiceSelectionForCore(waitingActionChoice);
+        expect(waitingActionChoice.turnPhase).toBe('event-opponent-hand-choice');
+        expect(actionSelection).toMatchObject({
+            source: 'tribute-edict-action',
+            targetFactionId: 'ming',
+            targetFactionName: '大明',
+        });
+        expect(actionSelection?.choices.map((choice) => choice.id)).toEqual(['grant-pardon', 'drive-tiger']);
+
+        const resolved = apply(waitingActionChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'drive-tiger' },
+        });
+
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(resolved)).toBeNull();
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(resolved.factions.jin.handCount).toBe(core.factions.jin.handCount - 2);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 2);
+        expect(resolved.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount + 1);
+        expect(resolved.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 1);
+        expect(resolved.lastSeasonSummary?.title).toBe('封贡敕书');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('大明选择执行驱虎吞狼');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('封贡敕书使用后进入大明弃牌堆');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('额外弃 1 张手牌作为费用');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('当前没有可由大明指挥的对手调度进攻来源');
+        expect(resolved.actionLog[0]?.text).toContain('后金 执行事件「封贡敕书」');
+        expect(resolved.actionLog[0]?.text).toContain('事件牌进入大明弃牌堆');
+    });
+
+    it('封贡敕书指定大明执行驱虎吞狼时，会进入既有驱虎吞狼同意链', () => {
+        const baseCore = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'jinzhou', 'jin', 2, 2);
+        const core: QidahenCore = {
+            ...baseCore,
+            currentPlayer: '2',
+            selectedRegionId: 'jinzhou',
+            explicitRegionId: 'jinzhou',
+            regionFocusState: {
+                ...baseCore.regionFocusState,
+                defaultFocusRegionId: baseCore.regionFocusState.defaultFocusRegionId,
+                lockedSourceRegionId: 'jinzhou',
+                currentTargetRegionId: 'jinzhou',
+                displayAnchorRegionId: 'jinzhou',
+            },
+        };
+        const [sourceCard, paymentCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1633-tribute-edict'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '封贡敕书',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1633-tribute-edict',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '2',
+            payload: { cardId: paymentCard.id },
+        });
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const waitingActionChoice = apply(executed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '2',
+            payload: { choiceId: 'ming' },
+        });
+        const consenting = apply(waitingActionChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '0',
+            payload: { choiceId: 'drive-tiger' },
+        });
+
+        expect(consenting.turnPhase).toBe('drive-tiger-consent');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(consenting)).toBeNull();
+        expect(getDriveTigerConsentSelection(consenting)).toMatchObject({
+            commanderFactionId: 'ming',
+            targetFactionId: 'jin',
+            targetFactionName: '后金',
+        });
+        expect(getDriveTigerConsentSelection(consenting)?.dispatchSelection).toMatchObject({
+            attackerFactionId: 'jin',
+            sourceRegionId: 'jinzhou',
+            sourceActionId: 'drive-tiger',
+        });
+        expect(consenting.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(consenting.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(consenting.factions.jin.handCount).toBe(core.factions.jin.handCount - 2);
+        expect(consenting.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount + 1);
+        expect(consenting.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 1);
+        expect(consenting.lastSeasonSummary?.title).toBe('封贡敕书');
+        expect(consenting.lastSeasonSummary?.lines.join(' ')).toContain('等待后金决定是否接受大明指挥');
+    });
+
+    it('封贡敕书指定蒙古时仍停在通用结算摘要，不伪装成既有正式行动链', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard, paymentCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1633-tribute-edict'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '封贡敕书',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1633-tribute-edict',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const paid = apply(previewed, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '2',
+            payload: { cardId: paymentCard.id },
+        });
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const waitingActionChoice = apply(executed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '2',
+            payload: { choiceId: 'mongol' },
+        });
+        const resolved = apply(waitingActionChoice, {
+            type: QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'grant-pardon' },
+        });
+
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(getQidahenEventOpponentHandChoiceSelectionForCore(resolved)).toBeNull();
+        expect(resolved.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(resolved.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(resolved.factions.jin.handCount).toBe(core.factions.jin.handCount - 2);
+        expect(resolved.discardPileCount).toBe(core.discardPileCount + 2);
+        expect(resolved.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount + 1);
+        expect(resolved.factions.mongol.discardPileCount).toBe(core.factions.mongol.discardPileCount + 1);
+        expect(resolved.selectedActionId).not.toBe('grant-pardon');
+        expect(resolved.lastSeasonSummary?.title).toBe('封贡敕书');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('蒙古选择执行赐印招安');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('封贡敕书使用后进入蒙古弃牌堆');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).toContain('赐印招安的地图目标和正式行动结算仍需后续承接');
+        expect(resolved.lastSeasonSummary?.lines.join(' ')).not.toContain('赐印招安：');
+    });
+
+    it('蒙古打出人参貂皮会按牌面无效果处理并进入当前势力弃牌堆', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'mongol');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1630-ginseng-and-sable'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '人参貂皮',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1630-ginseng-and-sable',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '1',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(executed.discardPileCount).toBe(core.discardPileCount + 1);
+        expect(executed.factions.mongol.discardPileCount).toBe(core.factions.mongol.discardPileCount + 1);
+        expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：人参貂皮');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('蒙古使用人参貂皮无效果');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后进入当前势力弃牌堆。');
+        const eventLog = executed.actionLog.find((log) => log.text.includes('执行事件「人参貂皮」'));
+        expect(eventLog?.text).toContain('蒙古使用人参貂皮无效果');
     });
 
     it('后金从手牌打出七大恨会在当前后金本土建立 2 个 3 级步兵', () => {
@@ -1003,6 +2034,58 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：在 建州 建立 2 个 3 级后金步兵。');
         expect(executed.actionLog[0]?.text).toContain('执行事件「七大恨」');
         expect(executed.actionLog[0]?.text).toContain('在 建州 建立 2 个 3 级后金步兵');
+    });
+
+    it('蒙古打出七大恨会按牌面无效果处理并移出游戏，不建立部队也不进弃牌堆', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'mongol');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1609-seven-grievances'
+        ];
+        const baseRegion = core.regions.find((region) => region.id === 'city-region-14')!;
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            selectedRegionId: 'city-region-14',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '七大恨',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1609-seven-grievances',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '1',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+        const nextRegion = executed.regions.find((region) => region.id === 'city-region-14')!;
+
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.mongol.discardPileCount).toBe(core.factions.mongol.discardPileCount);
+        expect(nextRegion.troops).toBe(baseRegion.troops);
+        expect(nextRegion.specialTroops).toEqual(baseRegion.specialTroops);
+        expect(executed.factions.mongol.troops).toBe(core.factions.mongol.troops);
+        expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：七大恨');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('蒙古使用七大恨无效果');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后移出游戏：此牌未进入弃牌堆。');
+        const eventLog = executed.actionLog.find((log) => log.text.includes('执行事件「七大恨」'));
+        expect(eventLog?.text).toContain('打出并移出游戏');
+        expect(eventLog?.text).toContain('蒙古使用七大恨无效果');
     });
 
     it('后金从手牌打出成立汉八旗会在已控制汉人区域建立 2 级次级步兵，并让汉人区域视为后金本土', () => {
@@ -1336,6 +2419,278 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：东北大旱');
         expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：当前选中区域不是女真人区域，本次未放置旱灾标记。');
         expect(executed.discardPileCount).toBe(core.discardPileCount);
+    });
+
+    it('从手牌打出东北大旱会在女真人区域放置可见旱灾标记', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1613-northeast-drought'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-13',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '东北大旱',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1613-northeast-drought',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const droughtRegion = executed.regions.find((region) => region.id === 'city-region-13')!;
+
+        expect(droughtRegion.eventMarkers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'drought-marker-city-region-13',
+                kind: 'drought',
+                label: '旱灾标记',
+                sourceCardDefId: 'qidahen-atlas05-1613-northeast-drought',
+                imageSrc: 'qidahen/markers/drought-marker',
+            }),
+        ]));
+        expect(executed.mapTokens).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'drought-marker-city-region-13',
+                type: 'marker',
+                faction: 'neutral',
+                imageSrc: 'qidahen/markers/drought-marker',
+            }),
+        ]));
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：东北大旱');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：在 建州 放置旱灾标记。');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后移出游戏：此牌未进入弃牌堆。');
+    });
+
+    it('从手牌打出东北大军会在女真人区域放置结构化甲喇标记', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1631-northeast-army'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-13',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '东北大军',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1631-northeast-army',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const jurchenRegion = executed.regions.find((region) => region.id === 'city-region-13')!;
+
+        expect(jurchenRegion.eventMarkers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'jala-marker-city-region-13',
+                kind: 'jala',
+                label: '甲喇标记',
+                sourceCardDefId: 'qidahen-atlas05-1631-northeast-army',
+                imageSrc: undefined,
+            }),
+        ]));
+        expect(executed.mapTokens).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'jala-marker-city-region-13',
+                type: 'marker',
+                faction: 'neutral',
+                value: '甲喇标记',
+            }),
+        ]));
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：东北大军');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：在 建州 放置甲喇标记。');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('甲喇标记的新年限制与完整目标选择入口仍需后续接入。');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后移出游戏：此牌未进入弃牌堆。');
+    });
+
+    it('先在地图选择女真人区域后打出东北大军会把甲喇标记放到新选区', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1631-northeast-army'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-14',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '东北大军',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1631-northeast-army',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const targetSelected = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '2',
+            payload: { regionId: 'city-region-13' },
+        });
+        const previewed = apply(targetSelected, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const oldRegion = executed.regions.find((region) => region.id === 'city-region-14')!;
+        const targetRegion = executed.regions.find((region) => region.id === 'city-region-13')!;
+
+        expect(targetSelected.selectedRegionId).toBe('city-region-13');
+        expect(oldRegion.eventMarkers).toEqual([]);
+        expect(targetRegion.eventMarkers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'jala-marker-city-region-13',
+                kind: 'jala',
+                label: '甲喇标记',
+                sourceCardDefId: 'qidahen-atlas05-1631-northeast-army',
+            }),
+        ]));
+        expect(executed.mapTokens).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'jala-marker-city-region-13',
+                value: '甲喇标记',
+            }),
+        ]));
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：在 建州 放置甲喇标记。');
+    });
+
+    it('东北大军不会在非女真人区域放置甲喇标记', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1631-northeast-army'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedRegionId: 'city-region-14',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '东北大军',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1631-northeast-army',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const selectedRegion = executed.regions.find((region) => region.id === 'city-region-14')!;
+
+        expect(selectedRegion.eventMarkers).toEqual([]);
+        expect(executed.mapTokens.some((token) => token.id === 'jala-marker-city-region-14')).toBe(false);
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：东北大军');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：当前选中区域不是女真人区域，本次未放置甲喇标记。');
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+    });
+
+    it('东北大军在轮盘行动标记走到新年时不能使用并保留手牌', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [sourceCard] = factionHandCards(core, 'jin');
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+            'qidahen-atlas05-1631-northeast-army'
+        ];
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            actionWheelPosition: 'wheel-new-year',
+            selectedRegionId: 'city-region-13',
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '东北大军',
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: 'qidahen-atlas05-1631-northeast-army',
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '2',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const jurchenRegion = executed.regions.find((region) => region.id === 'city-region-13')!;
+
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(true);
+        expect(jurchenRegion.eventMarkers).toEqual([]);
+        expect(executed.mapTokens.some((token) => token.id === 'jala-marker-city-region-13')).toBe(false);
+        expect(executed.discardPileCount).toBe(core.discardPileCount);
+        expect(executed.factions.jin.discardPileCount).toBe(core.factions.jin.discardPileCount);
+        expect(executed.lastSeasonSummary?.title).toBe('执行事件');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('东北大军不能在轮盘行动标记走到新年时使用。');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('本次未消耗手牌，也未结算事件效果。');
+        expect(executed.actionLog[0]?.text).toContain('尝试执行事件「东北大军」');
+        expect(executed.actionLog[0]?.text).toContain('轮盘行动标记在新年位置');
     });
 
     it('翻山越岭会把本次进攻中的长城边界临时视为平原', () => {
@@ -2787,6 +4142,171 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.actionLog[0]?.text).toContain('封贡敕书（视作 2 张银两）');
     });
 
+    it('后金直接执行普通行动时，会自动按封贡敕书 2 张银两支付', () => {
+        const tributeEdictIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .find((identity) => identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict');
+        expect(tributeEdictIdentity).toBeDefined();
+
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [paymentCard, secondPaymentCard] = factionHandCards(core, 'jin');
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '2',
+            selectedActionId: 'marriage-subjugation',
+            confirmedActionId: null,
+            actionChoices: getActionChoicesForFaction('jin'),
+            selectedPaymentCardIds: [],
+            payment: {
+                required: 2,
+                selected: 0,
+                prompt: '需弃 2 / 已选 0',
+            },
+            handCards: core.handCards.map((card) => {
+                if (card.id === paymentCard.id) {
+                    return {
+                        ...card,
+                        label: tributeEdictIdentity!.displayName,
+                        cardKind: tributeEdictIdentity!.cardKind,
+                        armamentId: tributeEdictIdentity!.armamentId,
+                        cardDefId: tributeEdictIdentity!.cardDefId,
+                        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[tributeEdictIdentity!.cardDefId],
+                    };
+                }
+                return card;
+            }),
+        };
+
+        expect(QidahenDomain.validate(stateOf(mappedCore), {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: '2',
+            payload: { actionId: 'marriage-subjugation' },
+        })).toEqual({ valid: true });
+
+        const executed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: '2',
+            payload: { actionId: 'marriage-subjugation' },
+        });
+
+        expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(executed.handCards.some((card) => card.id === secondPaymentCard.id)).toBe(true);
+        expect(executed.actionLog[0]?.text).toContain('封贡敕书（视作 2 张银两）');
+    });
+
+    it('蒙古弃封贡敕书支付普通行动时，也会按 2 张银两计入支付值', () => {
+        const tributeEdictIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .find((identity) => identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict');
+        expect(tributeEdictIdentity).toBeDefined();
+
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [paymentCard, secondPaymentCard] = factionHandCards(core, 'mongol');
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            selectedActionId: 'khan-edict',
+            confirmedActionId: 'khan-edict',
+            actionChoices: getActionChoicesForFaction('mongol'),
+            selectedPaymentCardIds: [],
+            payment: {
+                required: 1,
+                selected: 0,
+                prompt: '需弃 1 / 已选 0',
+            },
+            handCards: core.handCards.map((card) => (
+                card.id === paymentCard.id
+                    ? {
+                        ...card,
+                        label: tributeEdictIdentity!.displayName,
+                        cardKind: tributeEdictIdentity!.cardKind,
+                        armamentId: tributeEdictIdentity!.armamentId,
+                        cardDefId: tributeEdictIdentity!.cardDefId,
+                        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[tributeEdictIdentity!.cardDefId],
+                    }
+                    : card
+            )),
+        };
+
+        const paid = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '1',
+            payload: { cardId: paymentCard.id },
+        });
+
+        expect(paid.selectedPaymentCardIds).toEqual([paymentCard.id]);
+        expect(paid.payment).toMatchObject({
+            required: 1,
+            selected: 1,
+            prompt: '需弃 1 / 已选 1',
+        });
+
+        const capped = apply(paid, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId: '1',
+            payload: { cardId: secondPaymentCard.id },
+        });
+        expect(capped.selectedPaymentCardIds).toEqual([paymentCard.id]);
+
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '1',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(executed.handCards.some((card) => card.id === secondPaymentCard.id)).toBe(true);
+        expect(executed.actionLog[0]?.text).toContain('封贡敕书（视作 2 张银两）');
+    });
+
+    it('蒙古直接执行普通行动时，会自动按封贡敕书 2 张银两支付', () => {
+        const tributeEdictIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
+            .find((identity) => identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict');
+        expect(tributeEdictIdentity).toBeDefined();
+
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const [paymentCard, secondPaymentCard] = factionHandCards(core, 'mongol');
+        const mappedCore: QidahenCore = {
+            ...core,
+            currentPlayer: '1',
+            selectedActionId: 'khan-edict',
+            confirmedActionId: null,
+            actionChoices: getActionChoicesForFaction('mongol'),
+            selectedPaymentCardIds: [],
+            payment: {
+                required: 1,
+                selected: 0,
+                prompt: '需弃 1 / 已选 0',
+            },
+            handCards: core.handCards.map((card) => (
+                card.id === paymentCard.id
+                    ? {
+                        ...card,
+                        label: tributeEdictIdentity!.displayName,
+                        cardKind: tributeEdictIdentity!.cardKind,
+                        armamentId: tributeEdictIdentity!.armamentId,
+                        cardDefId: tributeEdictIdentity!.cardDefId,
+                        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[tributeEdictIdentity!.cardDefId],
+                    }
+                    : card
+            )),
+        };
+
+        expect(QidahenDomain.validate(stateOf(mappedCore), {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: '1',
+            payload: { actionId: 'khan-edict' },
+        })).toEqual({ valid: true });
+
+        const executed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: '1',
+            payload: { actionId: 'khan-edict' },
+        });
+
+        expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(executed.handCards.some((card) => card.id === secondPaymentCard.id)).toBe(true);
+        expect(executed.actionLog[0]?.text).toContain('封贡敕书（视作 2 张银两）');
+    });
+
     it('大明弃封贡敕书支付普通行动时，仍只按 1 张手牌计入支付值', () => {
         const tributeEdictIdentity = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
             .find((identity) => identity.cardDefId === 'qidahen-atlas05-1633-tribute-edict');
@@ -2831,7 +4351,18 @@ describe('七大恨支付手牌选择', () => {
             selected: 1,
             prompt: '需弃 1 / 已选 1',
         });
+        expect(paid.selectedPaymentCardIds).toEqual([paymentCard.id]);
         expect(secondPaymentCard).toBeDefined();
+
+        const executed = apply(paid, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
+        expect(executed.handCards.some((card) => card.id === secondPaymentCard.id)).toBe(true);
+        expect(executed.actionLog[0]?.text).not.toContain('封贡敕书（视作 2 张银两）');
     });
 
     it('切换行动会清空已选支付牌并按新花费重算', () => {
@@ -10799,6 +12330,388 @@ describe('七大恨支付手牌选择', () => {
         ]));
     });
 
+    it('策反内应打出后会让 1 个敌方炮兵临时转为攻方参战', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 策反/内应',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-instigate-defection-insider-card',
+                label: '策反/内应',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1604-instigate-defection-insider',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1604-instigate-defection-insider'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-artillery-lv2',
+                            label: '后金炮兵',
+                            faction: 'jin',
+                            troopKind: 'artillery',
+                            count: 1,
+                            level: 2,
+                        },
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-instigate-defection-insider-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const artilleryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'artillery');
+
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1604-instigate-defection-insider',
+                label: '策反/内应',
+                side: 'attacker',
+                troopKind: 'artillery',
+                levelBonus: 0,
+                convertEnemyTroopCount: 1,
+            }),
+        ]);
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('策反/内应：本次战斗中 1 个敌方炮兵临时改为攻方阵营并立即参战');
+        expect(artilleryStage?.attackerRolls ?? []).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'artillery', level: 2, dieSides: 8 }),
+        ]));
+        expect(artilleryStage?.attackerRolls.length ?? 0).toBeGreaterThanOrEqual(1);
+        expect(artilleryStage?.defenderRolls).toEqual([]);
+    });
+
+    it('策反打出后复用炮兵转侧窄口并保留真实牌名摘要', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 策反',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-instigate-defection-card',
+                label: '策反',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1611-instigate-defection',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1611-instigate-defection'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-artillery-lv2',
+                            label: '后金炮兵',
+                            faction: 'jin',
+                            troopKind: 'artillery',
+                            count: 1,
+                            level: 2,
+                        },
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-instigate-defection-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const artilleryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'artillery');
+
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1611-instigate-defection',
+                label: '策反',
+                side: 'attacker',
+                troopKind: 'artillery',
+                levelBonus: 0,
+                convertEnemyTroopCount: 1,
+            }),
+        ]);
+        expect(tacticPlayed.pendingTargetAction?.restriction).toContain('策反：1 个敌方炮兵临时转为攻方');
+        expect(tacticPlayed.pendingTargetAction?.restriction).not.toContain('策反/内应：1 个敌方炮兵临时转为攻方');
+        expect(tacticPlayed.pendingTargetAction?.resolutionHint).toContain('策反敌方炮兵转攻方');
+        expect(tacticPlayed.pendingTargetAction?.resolutionHint).not.toContain('策反/内应敌方炮兵转攻方');
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('策反：本次战斗中 1 个敌方炮兵临时改为攻方阵营并立即参战');
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).not.toContain('策反/内应：本次战斗中 1 个敌方炮兵临时改为攻方阵营并立即参战');
+        expect(artilleryStage?.attackerRolls ?? []).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'artillery', level: 2, dieSides: 8 }),
+        ]));
+        expect(artilleryStage?.defenderRolls).toEqual([]);
+    });
+
+    it('步骑联合打出后会让本次野战攻方步兵和骑兵掷骰等级 +1', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 步骑联合',
+            battleWidth: 4,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 3,
+            committedTroops: 3,
+            attackPressure: 3,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-infantry-cavalry-combined-card',
+                label: '步骑联合',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1628-infantry-cavalry-combined',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1628-infantry-cavalry-combined'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                        {
+                            id: 'ming-cavalry-lv2',
+                            label: '大明骑兵',
+                            faction: 'ming',
+                            troopKind: 'cavalry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-infantry-cavalry-combined-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const cavalryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'cavalry');
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1628-infantry-cavalry-combined',
+                label: '步骑联合',
+                side: 'attacker',
+                troopKind: 'infantry',
+                levelBonus: 1,
+                cancelEnemyPrioritySourceCardDefIds: ['qidahen-atlas05-1646-linked-muskets'],
+            }),
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1628-infantry-cavalry-combined',
+                label: '步骑联合',
+                side: 'attacker',
+                troopKind: 'cavalry',
+                levelBonus: 1,
+                cancelEnemyPrioritySourceCardDefIds: ['qidahen-atlas05-1646-linked-muskets'],
+            }),
+        ]));
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('步骑联合：本次野战中攻方步兵和骑兵掷骰等级 +1');
+        expect(cavalryStage?.attackerRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'cavalry', level: 3, dieSides: 10 }),
+        ]));
+        expect(infantryStage?.attackerRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'infantry', level: 3, dieSides: 10 }),
+        ]));
+    });
+
     it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         setFactionCharactersInPlay(core, 'jin', []);
@@ -10912,6 +12825,562 @@ describe('七大恨支付手牌选择', () => {
             .toEqual(expect.arrayContaining([
                 expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
             ]));
+    });
+
+    it('乌真超哈特殊牌正式打出后会让 1 个攻方步兵提前在炮兵阶段攻击', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 乌真超哈特殊牌',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-wuzhen-chaoha-special-card',
+                label: '乌真超哈',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1650-wuzhen-chaoha-special'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-wuzhen-chaoha-special-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const artilleryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'artillery');
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(tacticPlayed.handCards.some((card) => card.id === 'test-wuzhen-chaoha-special-card')).toBe(false);
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
+                label: '乌真超哈',
+                side: 'attacker',
+                troopKind: 'infantry',
+                levelBonus: 0,
+                rollAsPhase: 'artillery',
+                rollUnitCount: 1,
+            }),
+        ]);
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('乌真超哈：本次野战中 1 个攻方步兵提前在炮兵阶段攻击');
+        expect(artilleryStage?.attackerRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]);
+        expect(infantryStage?.attackerRolls).toHaveLength(1);
+        expect(infantryStage?.attackerRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]);
+        expect(infantryStage?.defenderRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]);
+    });
+
+    it('箭如雨下战斗掷骰层会让野战攻方步兵先结算并压制守方反击', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 箭如雨下',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-arrows-like-rain-priority',
+                    sourceCardDefId: 'qidahen-atlas05-1615-arrows-like-rain',
+                    label: '箭如雨下',
+                    side: 'attacker',
+                    troopKind: 'infantry',
+                    levelBonus: 0,
+                    priorityRoll: true,
+                },
+            ],
+        };
+        core.handCards = core.handCards.filter((card) => card.cardDefId !== 'qidahen-atlas05-1615-arrows-like-rain');
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(core.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1615-arrows-like-rain',
+                label: '箭如雨下',
+                side: 'attacker',
+                troopKind: 'infantry',
+                levelBonus: 0,
+                priorityRoll: true,
+            }),
+        ]);
+        expect(resolved.actionLog[0]?.text).toContain('步兵(箭如雨下指定步兵先掷) 攻4/4=8/守-=0');
+        expect(infantryStage?.attackerRolls).toHaveLength(2);
+        expect(infantryStage?.defenderRolls).toHaveLength(0);
+    });
+
+    it('拒马战斗掷骰层会让对手箭如雨下先结算修正失效', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 拒马',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-arrows-like-rain-priority',
+                    sourceCardDefId: 'qidahen-atlas05-1615-arrows-like-rain',
+                    label: '箭如雨下',
+                    side: 'attacker',
+                    troopKind: 'infantry',
+                    levelBonus: 0,
+                    priorityRoll: true,
+                },
+                {
+                    id: 'test-cheval-de-frise-cancel',
+                    sourceCardDefId: 'qidahen-atlas05-1636-cheval-de-frise',
+                    label: '拒马',
+                    side: 'defender',
+                    troopKind: 'cavalry',
+                    levelBonus: 0,
+                    cancelEnemyPrioritySourceCardDefIds: ['qidahen-atlas05-1615-arrows-like-rain'],
+                },
+            ],
+        };
+        core.handCards = core.handCards.filter((card) => (
+            card.cardDefId !== 'qidahen-atlas05-1615-arrows-like-rain'
+            && card.cardDefId !== 'qidahen-atlas05-1636-cheval-de-frise'
+        ));
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2-a',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4/4=8/守');
+        expect(resolved.actionLog[0]?.text).not.toContain('箭如雨下指定步兵先掷');
+        expect(resolved.actionLog[0]?.text).toContain('攻方造成 2 损伤');
+        expect(resolved.actionLog[0]?.text).toContain('守方造成 3 损伤');
+    });
+
+    it('偷袭与伏击战斗掷骰层会让被指定兵种骰子等级 -1', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 偷袭与伏击指定步兵降级',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-raid-and-ambush-infantry-debuff',
+                    sourceCardDefId: 'qidahen-atlas05-1622-raid-and-ambush',
+                    label: '偷袭与伏击',
+                    side: 'defender',
+                    troopKind: 'infantry',
+                    levelBonus: -1,
+                },
+            ],
+        };
+        core.handCards = core.handCards.filter((card) => card.cardDefId !== 'qidahen-atlas05-1622-raid-and-ambush');
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(core.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1622-raid-and-ambush',
+                label: '偷袭与伏击',
+                side: 'defender',
+                troopKind: 'infantry',
+                levelBonus: -1,
+            }),
+        ]);
+        expect(infantryStage?.attackerRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]));
+        expect(infantryStage?.defenderRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 1, dieSides: 6 }),
+        ]);
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4/4=8/守4->5=5');
+    });
+
+    it('乌真超哈特殊牌战斗掷骰层底座会让一个步兵提前在炮兵阶段攻击且不重复攻击', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 乌真超哈特殊牌',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-wuzhen-chaoha-special-early-artillery',
+                    sourceCardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
+                    label: '乌真超哈',
+                    side: 'attacker',
+                    troopKind: 'infantry',
+                    levelBonus: 0,
+                    rollAsPhase: 'artillery',
+                    rollUnitCount: 1,
+                },
+            ],
+        };
+        core.handCards = core.handCards.filter((card) => card.cardDefId !== 'qidahen-atlas05-1650-wuzhen-chaoha-special');
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const artilleryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'artillery');
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(core.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special',
+                label: '乌真超哈',
+                side: 'attacker',
+                troopKind: 'infantry',
+                levelBonus: 0,
+                rollAsPhase: 'artillery',
+                rollUnitCount: 1,
+            }),
+        ]);
+        expect(artilleryStage?.attackerRolls).toHaveLength(1);
+        expect(artilleryStage?.attackerRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]);
+        expect(artilleryStage?.defenderRolls).toHaveLength(0);
+        expect(infantryStage?.attackerRolls).toHaveLength(1);
+        expect(infantryStage?.attackerRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]);
+        expect(infantryStage?.defenderRolls).toHaveLength(1);
+        expect(infantryStage?.defenderRolls).toEqual([
+            expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
+        ]);
+        expect(resolved.actionLog[0]?.text).toContain('炮兵 攻4=4/守-=0');
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4=4/守');
     });
 
     it('骑兵冲锋打出后会让本次野战攻方每个骑兵额外掷 2 颗骰', () => {
@@ -11257,6 +13726,592 @@ describe('七大恨支付手牌选择', () => {
             expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
         ]));
         expect(infantryStage?.defenderRolls).toHaveLength(1);
+    });
+
+    it('机里耐步兵战斗掷骰层会让防守明军步兵先结算并压制攻方反击', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'jin',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-14',
+            sourceRegionName: '区域 14',
+            targetRegionId: 'city-region-16',
+            targetRegionName: '区域 16',
+            targetRuntimeRegionId: 'city-region-16',
+            defenderFactionId: 'ming',
+            defenderLabel: '大明',
+            restriction: '测试 · 机里耐步兵防守明军先结算',
+            battleWidth: 4,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 4,
+            committedTroops: 4,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 4,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-jirinai-infantry-defensive-priority',
+                    sourceCardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+                    label: '机里耐步兵',
+                    side: 'defender',
+                    troopKind: 'infantry',
+                    levelBonus: 0,
+                    priorityRoll: true,
+                },
+            ],
+        };
+        core.handCards = core.handCards.filter((card) => card.cardDefId !== 'qidahen-atlas05-1640-jirinai-infantry');
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 4,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 4,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 3,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        expect(core.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+                label: '机里耐步兵',
+                side: 'defender',
+                troopKind: 'infantry',
+                levelBonus: 0,
+                priorityRoll: true,
+            }),
+        ]);
+        expect(resolved.actionLog[0]?.text).toContain('步兵(机里耐步兵指定步兵先掷) 攻-=0/守4/4/4=12');
+        expect(resolved.actionLog[0]?.text).toContain('守方造成 4 损伤');
+        expect(resolved.postBattleSelection).toBeNull();
+    });
+
+    it('机里耐步兵由防守明军正式打出后会让明军步兵先结算', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'jin',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-14',
+            sourceRegionName: '区域 14',
+            targetRegionId: 'city-region-16',
+            targetRegionName: '区域 16',
+            targetRuntimeRegionId: 'city-region-16',
+            defenderFactionId: 'ming',
+            defenderLabel: '大明',
+            restriction: '测试 · 机里耐步兵防守正式打出',
+            battleWidth: 4,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 4,
+            committedTroops: 4,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 4,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-jirinai-infantry-defense-card',
+                label: '机里耐步兵',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1640-jirinai-infantry'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 4,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 4,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 3,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-jirinai-infantry-defense-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+
+        expect(tacticPlayed.handCards.some((card) => card.id === 'test-jirinai-infantry-defense-card')).toBe(false);
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1640-jirinai-infantry',
+                label: '机里耐步兵',
+                side: 'defender',
+                troopKind: 'infantry',
+                levelBonus: 0,
+                priorityRoll: true,
+            }),
+        ]);
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('机里耐步兵：本次野战中防守明军步兵先结算');
+        expect(tacticPlayed.pendingTargetAction?.restriction).toContain('机里耐步兵：防守明军步兵先结算');
+        expect(tacticPlayed.pendingTargetAction?.resolutionHint).toContain('机里耐步兵防守明军先结算');
+        expect(resolved.actionLog[0]?.text).toContain('步兵(机里耐步兵指定步兵先掷) 攻-=0/守4/4/4=12');
+        expect(resolved.actionLog[0]?.text).toContain('守方造成 4 损伤');
+        expect(resolved.postBattleSelection).toBeNull();
+    });
+
+    it('巴雅喇战斗掷骰层会让防守方步兵防御等级 +1', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'jin',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-14',
+            sourceRegionName: '区域 14',
+            targetRegionId: 'city-region-16',
+            targetRegionName: '区域 16',
+            targetRuntimeRegionId: 'city-region-16',
+            defenderFactionId: 'ming',
+            defenderLabel: '大明',
+            restriction: '测试 · 巴雅喇防守步兵防御等级',
+            battleWidth: 4,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-bayara-defensive-infantry-armor',
+                    sourceCardDefId: 'qidahen-atlas05-1602-bayara',
+                    label: '巴雅喇',
+                    side: 'defender',
+                    troopKind: 'infantry',
+                    levelBonus: 1,
+                },
+            ],
+        };
+        core.handCards = core.handCards.filter((card) => card.cardDefId !== 'qidahen-atlas05-1602-bayara');
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(core.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1602-bayara',
+                label: '巴雅喇',
+                side: 'defender',
+                troopKind: 'infantry',
+                levelBonus: 1,
+            }),
+        ]);
+        expect(infantryStage?.defenderRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'infantry', level: 3, dieSides: 10 }),
+        ]));
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4->5/4->5=10/守4=4');
+        expect(resolved.actionLog[0]?.text).toContain('守方造成 1 损伤');
+    });
+
+    it('巴雅喇由防守方正式打出后会让防守方步兵防御等级 +1', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'jin',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-14',
+            sourceRegionName: '区域 14',
+            targetRegionId: 'city-region-16',
+            targetRegionName: '区域 16',
+            targetRuntimeRegionId: 'city-region-16',
+            defenderFactionId: 'ming',
+            defenderLabel: '大明',
+            restriction: '测试 · 巴雅喇防守正式打出',
+            battleWidth: 4,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-bayara-defense-card',
+                label: '巴雅喇',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1602-bayara',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1602-bayara'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 2,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-bayara-defense-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '2',
+            payload: {},
+        });
+        const infantryStage = resolved.postBattleSelection?.battleRolls?.stages.find((stage) => stage.phase === 'infantry');
+
+        expect(tacticPlayed.handCards.some((card) => card.id === 'test-bayara-defense-card')).toBe(false);
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1602-bayara',
+                label: '巴雅喇',
+                side: 'defender',
+                troopKind: 'infantry',
+                levelBonus: 1,
+            }),
+        ]);
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('巴雅喇：本次防守中己方步兵防御等级 +1');
+        expect(tacticPlayed.pendingTargetAction?.restriction).toContain('巴雅喇：防守方步兵防御等级 +1');
+        expect(tacticPlayed.pendingTargetAction?.resolutionHint).toContain('巴雅喇防守步兵+1');
+        expect(infantryStage?.defenderRolls).toEqual(expect.arrayContaining([
+            expect.objectContaining({ troopKind: 'infantry', level: 3, dieSides: 10 }),
+        ]));
+        expect(resolved.actionLog[0]?.text).toContain('步兵 攻4->5/4->5=10/守4=4');
+        expect(resolved.actionLog[0]?.text).toContain('守方造成 1 损伤');
+    });
+
+    it('链炮阵打出后会让攻方炮兵先于步兵承受战斗损失', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        setFactionCharactersInPlay(core, 'ming', []);
+        setFactionCharactersInPlay(core, 'jin', []);
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 链炮阵',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 3,
+            committedTroops: 3,
+            attackPressure: 3,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        core.handCards = [
+            {
+                ...mingCard!,
+                id: 'test-chain-cannon-formation-card',
+                label: '链炮阵',
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1638-chain-cannon-formation',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1638-chain-cannon-formation'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    specialTroops: [
+                        {
+                            id: 'ming-artillery-lv3',
+                            label: '大明炮兵',
+                            faction: 'ming',
+                            troopKind: 'artillery',
+                            count: 1,
+                            level: 3,
+                            pieceIds: ['ming-artillery-piece-1'],
+                        },
+                        {
+                            id: 'ming-infantry-lv2',
+                            label: '大明步兵',
+                            faction: 'ming',
+                            troopKind: 'infantry',
+                            count: 2,
+                            level: 2,
+                            pieceIds: ['ming-infantry-piece-1', 'ming-infantry-piece-2'],
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 0,
+                    specialTroops: [
+                        {
+                            id: 'jin-infantry-lv3',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 1,
+                            level: 3,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-chain-cannon-formation-card' },
+        });
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+        const occupied = apply(resolved, {
+            type: QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION,
+            playerId: '0',
+            payload: { choiceId: 'occupy' },
+        });
+        const occupiedRegion = occupied.regions.find((region) => region.id === 'city-region-14');
+
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1638-chain-cannon-formation',
+                label: '链炮阵',
+                side: 'attacker',
+                troopKind: 'artillery',
+                levelBonus: 0,
+                casualtyPriority: 'artillery-first',
+            }),
+        ]);
+        expect(tacticPlayed.lastSeasonSummary?.lines.join(' ')).toContain('链炮阵：本次野战中攻方承受损伤时炮兵单位先承受');
+        expect(resolved.postBattleSelection).toMatchObject({
+            attackerLosses: 1,
+            attackerBattleCasualtyPriority: 'artillery-first',
+            survivingTroops: 2,
+        });
+        expect(occupiedRegion).toMatchObject({
+            controller: 'ming',
+            troops: 2,
+            specialTroops: [
+                {
+                    id: 'ming-infantry-lv2',
+                    label: '大明步兵',
+                    faction: 'ming',
+                    troopKind: 'infantry',
+                    count: 2,
+                    level: 2,
+                    pieceIds: ['ming-infantry-piece-1', 'ming-infantry-piece-2'],
+                },
+            ],
+        });
+        expect(occupiedRegion?.specialTroops.some((stack) => stack.id === 'ming-artillery-lv3')).toBe(false);
     });
 
     it('结构化攻方可选择低级部队优先承伤以保留精锐木块', () => {
@@ -14269,6 +17324,241 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.actionLog[0]?.text).toContain('骑兵劫掠');
         expect(resolved.actionLog[0]?.text).toContain('损失 1');
         expect(resolved.actionLog[0]?.text).toContain('劫掠 2 人口');
+    });
+
+    it('打草惊蛇战斗劫掠层底座会让骑兵劫掠不受守方反击伤害', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.pendingTargetAction = {
+            actionId: 'wheel-dispatch',
+            title: '调骑 4 待结算',
+            attackerFactionId: 'ming',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 打草惊蛇',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 3,
+            committedTroops: 3,
+            movementProfileId: 'dispatch-cavalry',
+            attackPressure: 3,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+            tacticModifiers: [
+                {
+                    id: 'test-raid-grain',
+                    sourceCardDefId: 'qidahen-atlas05-1612-raid-grain',
+                    label: '打草惊蛇',
+                    side: 'attacker',
+                    troopKind: 'cavalry',
+                    levelBonus: 0,
+                    cavalryPlunderCounterDamageDisabled: true,
+                },
+            ],
+        };
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    specialTroops: [
+                        {
+                            id: 'ming-cavalry-lv2',
+                            label: '大明骑兵',
+                            faction: 'ming',
+                            troopKind: 'cavalry',
+                            count: 3,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 3,
+                    specialTroops: [
+                        {
+                            id: 'jin-cavalry-lv2',
+                            label: '后金骑兵',
+                            faction: 'jin',
+                            troopKind: 'cavalry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const resolved = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: { attackerCavalryPlunder: true },
+        });
+
+        expect(resolved.regions.find((region) => region.id === 'city-region-14')).toMatchObject({
+            population: 0,
+        });
+        expect(resolved.regions.find((region) => region.id === 'city-region-16')).toMatchObject({
+            troops: 3,
+            specialTroops: [
+                {
+                    id: 'ming-cavalry-lv2',
+                    label: '大明骑兵',
+                    faction: 'ming',
+                    troopKind: 'cavalry',
+                    count: 3,
+                    level: 2,
+                },
+            ],
+        });
+        expect(resolved.factions.ming.handCount).toBe(core.factions.ming.handCount + 3);
+        expect(resolved.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount + 3);
+        expect(resolved.actionLog[0]?.text).toContain('打草惊蛇使劫掠部队不受反击伤害');
+        expect(resolved.actionLog[0]?.text).toContain('劫掠 3 人口');
+        expect(resolved.actionLog[0]?.text).not.toContain('损失 1');
+    });
+
+    it('打草惊蛇正式打出后会让本次攻方骑兵劫掠不受守方反击伤害', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.pendingTargetAction = {
+            actionId: 'wheel-dispatch',
+            title: '调骑 4 待结算',
+            attackerFactionId: 'ming',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '区域 16',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '区域 14',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 骑兵劫掠',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 3,
+            committedTroops: 3,
+            movementProfileId: 'dispatch-cavalry',
+            attackPressure: 3,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        core.handCards = [
+            {
+                id: 'test-raid-grain-card',
+                label: '打草惊蛇',
+                faction: 'ming',
+                previewRef: {
+                    source: 'qidahen-atlas05',
+                    cardDefId: 'qidahen-atlas05-1612-raid-grain',
+                },
+                status: 'payable',
+                cardKind: 'tactic',
+                armamentId: null,
+                cardDefId: 'qidahen-atlas05-1612-raid-grain',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1612-raid-grain'],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-16') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 3,
+                    specialTroops: [
+                        {
+                            id: 'ming-cavalry-lv2',
+                            label: '大明骑兵',
+                            faction: 'ming',
+                            troopKind: 'cavalry',
+                            count: 3,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-14') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 1,
+                    population: 3,
+                    specialTroops: [
+                        {
+                            id: 'jin-cavalry-lv2',
+                            label: '后金骑兵',
+                            faction: 'jin',
+                            troopKind: 'cavalry',
+                            count: 1,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            return region;
+        });
+
+        const tacticPlayed = apply(core, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId: 'test-raid-grain-card' },
+        });
+        expect(tacticPlayed.handCards.some((card) => card.id === 'test-raid-grain-card')).toBe(false);
+        expect(tacticPlayed.pendingTargetAction?.tacticModifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceCardDefId: 'qidahen-atlas05-1612-raid-grain',
+                label: '打草惊蛇',
+                side: 'attacker',
+                troopKind: 'cavalry',
+                cavalryPlunderCounterDamageDisabled: true,
+            }),
+        ]));
+
+        const resolved = apply(tacticPlayed, {
+            type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0',
+            payload: { attackerCavalryPlunder: true },
+        });
+
+        expect(resolved.regions.find((region) => region.id === 'city-region-14')).toMatchObject({
+            population: 0,
+        });
+        expect(resolved.regions.find((region) => region.id === 'city-region-16')).toMatchObject({
+            troops: 3,
+            specialTroops: [
+                {
+                    id: 'ming-cavalry-lv2',
+                    label: '大明骑兵',
+                    faction: 'ming',
+                    troopKind: 'cavalry',
+                    count: 3,
+                    level: 2,
+                },
+            ],
+        });
+        expect(resolved.actionLog[0]?.text).toContain('打草惊蛇使劫掠部队不受反击伤害');
+        expect(resolved.actionLog[0]?.text).toContain('劫掠 3 人口');
+        expect(resolved.actionLog[0]?.text).not.toContain('损失 1');
     });
 
     it('结构化攻方骑兵劫掠可选择抽守方普通牌堆', () => {
@@ -24759,6 +28049,332 @@ describe('七大恨支付手牌选择', () => {
         });
         expect(next.victoryStatus?.detail).toContain('含汉城');
         expect(QidahenDomain.isGameOver?.(next)).toEqual({ winner: '0' });
+    });
+
+    it('玉匣出土在同控归化 VP 标记和鄂尔多斯部时才给拥有者 +1 威望', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const jadeCasketCardDefId = 'qidahen-atlas05-1625-jade-casket-unearthed';
+        const activeJadeCasket = {
+            id: 'active-event-qidahen-atlas05-1625-jade-casket-unearthed-ming',
+            cardDefId: jadeCasketCardDefId,
+            label: '玉匣出土',
+            ownerFactionId: 'ming' as const,
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[jadeCasketCardDefId],
+        };
+        const withOrdosControlledByMing: QidahenCore = {
+            ...core,
+            activeEventCards: [activeJadeCasket],
+            guihuaPrestigeMarkerController: 'ming',
+            factions: {
+                ...core.factions,
+                ming: {
+                    ...core.factions.ming,
+                    vp: 2,
+                },
+            },
+            regions: core.regions.map((region) => (
+                region.id === 'city-region-26'
+                    ? {
+                        ...region,
+                        controller: 'ming',
+                        controlLabel: '大明',
+                    }
+                    : region
+            )),
+        };
+
+        expect(getQidahenEffectiveVpByFaction(withOrdosControlledByMing, 'ming')).toBe(3);
+
+        const withoutGuihuaMarkerControl: QidahenCore = {
+            ...withOrdosControlledByMing,
+            guihuaPrestigeMarkerController: 'jin',
+        };
+        expect(getQidahenEffectiveVpByFaction(withoutGuihuaMarkerControl, 'ming')).toBe(2);
+
+        const withoutOrdosControl: QidahenCore = {
+            ...withOrdosControlledByMing,
+            regions: withOrdosControlledByMing.regions.map((region) => (
+                region.id === 'city-region-26'
+                    ? {
+                        ...region,
+                        controller: 'jin',
+                        controlLabel: '后金',
+                    }
+                    : region
+            )),
+        };
+        expect(getQidahenEffectiveVpByFaction(withoutOrdosControl, 'ming')).toBe(2);
+    });
+
+    it('玉匣出土正式打出后会设置归化 VP 标记控制者并即时计入威望', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const jadeCasketCardDefId = 'qidahen-atlas05-1625-jade-casket-unearthed';
+        const sourceCard = factionHandCards(core, 'ming')[0];
+        const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[jadeCasketCardDefId];
+        const mappedCore: QidahenCore = {
+            ...core,
+            selectedRegionId: 'city-region-26',
+            guihuaPrestigeMarkerController: null,
+            factions: {
+                ...core.factions,
+                ming: {
+                    ...core.factions.ming,
+                    vp: 2,
+                },
+            },
+            regions: core.regions.map((region) => (
+                region.id === 'city-region-26'
+                    ? {
+                        ...region,
+                        controller: 'ming',
+                        controlLabel: '大明',
+                    }
+                    : region
+            )),
+            handCards: core.handCards.map((card) => (
+                card.id === sourceCard.id
+                    ? {
+                        ...card,
+                        label: '玉匣出土',
+                        status: 'payable' as const,
+                        cardKind: 'event' as const,
+                        armamentId: null,
+                        cardDefId: jadeCasketCardDefId,
+                        rulesSummary,
+                    }
+                    : card
+            )),
+        };
+
+        const previewed = apply(mappedCore, {
+            type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+            playerId: '0',
+            payload: { actionId: 'play-event-card', sourceHandCardId: sourceCard.id },
+        });
+        const executed = apply(previewed, {
+            type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(executed.handCards.some((card) => card.id === sourceCard.id)).toBe(false);
+        expect(executed.guihuaPrestigeMarkerController).toBe('ming');
+        expect(executed.activeEventCards).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                cardDefId: jadeCasketCardDefId,
+                label: '玉匣出土',
+                ownerFactionId: 'ming',
+                rulesSummary,
+            }),
+        ]));
+        expect(getQidahenEffectiveVpByFaction(executed, 'ming')).toBe(3);
+        expect(executed.victoryStatus).toMatchObject({
+            winnerFactionId: 'ming',
+            condition: 'prestige',
+        });
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('玉匣出土作为持续事件留在场上。');
+    });
+
+    it('玉匣出土拥有者战后失去鄂尔多斯部时会转移给新控制者', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const jadeCasketCardDefId = 'qidahen-atlas05-1625-jade-casket-unearthed';
+        core.currentPlayer = '2';
+        core.postBattleSelection = {
+            actionId: 'raid',
+            battleMode: 'field',
+            attackerFactionId: 'jin',
+            sourceRegionId: 'city-region-24',
+            sourceRegionName: '宁远',
+            targetRegionId: 'city-region-26',
+            targetRegionName: '鄂尔多斯部',
+            targetRuntimeRegionId: 'city-region-26',
+            committedTroops: 3,
+            survivingTroops: 2,
+            attackerLosses: 1,
+            movementProfileId: null,
+            attackerCasualtyPriority: 'highest-level',
+            originalController: 'ming',
+            originalControlLabel: '大明',
+            title: '战后处理',
+            summary: '测试',
+            choices: [
+                {
+                    id: 'occupy',
+                    mode: 'occupy',
+                    regionId: 'city-region-26',
+                    plunderPopulation: 0,
+                    plunderSource: null,
+                    label: '占领鄂尔多斯部',
+                    detail: '测试',
+                },
+            ],
+        };
+        core.activeEventCards = [
+            {
+                id: 'active-event-qidahen-atlas05-1625-jade-casket-unearthed-ming',
+                cardDefId: jadeCasketCardDefId,
+                label: '玉匣出土',
+                ownerFactionId: 'ming',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[jadeCasketCardDefId],
+            },
+        ];
+        core.guihuaPrestigeMarkerController = 'ming';
+        core.factions.ming.vp = 2;
+        core.factions.jin.vp = 2;
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 3,
+                    specialTroops: [
+                        {
+                            id: 'jin-ningyuan-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 3,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-26') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 0,
+                    population: 0,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+
+        expect(getQidahenEffectiveVpByFaction(core, 'ming')).toBe(3);
+
+        const occupied = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION,
+            playerId: '2',
+            payload: { choiceId: 'occupy' },
+        });
+
+        expect(occupied.regions.find((region) => region.id === 'city-region-26')).toMatchObject({
+            controller: 'jin',
+            controlLabel: '后金',
+        });
+        expect(occupied.activeEventCards).toEqual([
+            expect.objectContaining({
+                id: 'active-event-qidahen-atlas05-1625-jade-casket-unearthed-jin',
+                cardDefId: jadeCasketCardDefId,
+                label: '玉匣出土',
+                ownerFactionId: 'jin',
+            }),
+        ]);
+        expect(getQidahenEffectiveVpByFaction(occupied, 'ming')).toBe(2);
+        expect(getQidahenEffectiveVpByFaction(occupied, 'jin')).toBe(2);
+    });
+
+    it('玉匣出土不属于鄂尔多斯部原控制者时不会因战后占领误转移', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const jadeCasketCardDefId = 'qidahen-atlas05-1625-jade-casket-unearthed';
+        core.currentPlayer = '2';
+        core.postBattleSelection = {
+            actionId: 'raid',
+            battleMode: 'field',
+            attackerFactionId: 'jin',
+            sourceRegionId: 'city-region-24',
+            sourceRegionName: '宁远',
+            targetRegionId: 'city-region-26',
+            targetRegionName: '鄂尔多斯部',
+            targetRuntimeRegionId: 'city-region-26',
+            committedTroops: 3,
+            survivingTroops: 2,
+            attackerLosses: 1,
+            movementProfileId: null,
+            attackerCasualtyPriority: 'highest-level',
+            originalController: 'ming',
+            originalControlLabel: '大明',
+            title: '战后处理',
+            summary: '测试',
+            choices: [
+                {
+                    id: 'occupy',
+                    mode: 'occupy',
+                    regionId: 'city-region-26',
+                    plunderPopulation: 0,
+                    plunderSource: null,
+                    label: '占领鄂尔多斯部',
+                    detail: '测试',
+                },
+            ],
+        };
+        core.activeEventCards = [
+            {
+                id: 'active-event-qidahen-atlas05-1625-jade-casket-unearthed-mongol',
+                cardDefId: jadeCasketCardDefId,
+                label: '玉匣出土',
+                ownerFactionId: 'mongol',
+                rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[jadeCasketCardDefId],
+            },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-24') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                    troops: 3,
+                    specialTroops: [
+                        {
+                            id: 'jin-ningyuan-infantry-lv2',
+                            label: '后金步兵',
+                            faction: 'jin',
+                            troopKind: 'infantry',
+                            count: 3,
+                            level: 2,
+                        },
+                    ],
+                };
+            }
+            if (region.id === 'city-region-26') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 0,
+                    population: 0,
+                    specialTroops: [],
+                };
+            }
+            return region;
+        });
+
+        const occupied = apply(core, {
+            type: QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION,
+            playerId: '2',
+            payload: { choiceId: 'occupy' },
+        });
+
+        expect(occupied.regions.find((region) => region.id === 'city-region-26')).toMatchObject({
+            controller: 'jin',
+            controlLabel: '后金',
+        });
+        expect(occupied.activeEventCards).toEqual([
+            expect.objectContaining({
+                id: 'active-event-qidahen-atlas05-1625-jade-casket-unearthed-mongol',
+                cardDefId: jadeCasketCardDefId,
+                ownerFactionId: 'mongol',
+            }),
+        ]);
     });
 
     it('攻下已配置首都时会立刻标记军事胜利', () => {

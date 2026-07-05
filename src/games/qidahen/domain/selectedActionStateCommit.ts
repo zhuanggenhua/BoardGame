@@ -16,6 +16,8 @@ import type {
     QidahenFactionId,
 } from './types';
 
+const QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID = 'qidahen-atlas05-1625-jade-casket-unearthed';
+
 interface QidahenSelectedActionStateCommitDependencies {
     applyVictoryStatus: (
         state: QidahenCore,
@@ -47,6 +49,10 @@ interface QidahenSelectedActionStateCommitInput {
     followUp: QidahenSelectedActionStateCommitFollowUp;
     paidHandCards: QidahenCore['handCards'];
     regions: QidahenCore['regions'];
+    selectedEventActionCardDefId: string | null;
+    selectedEventActionCardLabel: string | null;
+    selectedEventActionCardPersistent: boolean;
+    selectedEventActionRulesSummary: string | null;
     spentCardCount: number;
     timestamp: number;
 }
@@ -67,11 +73,20 @@ export function commitQidahenSelectedActionState(
         followUp,
         paidHandCards,
         regions,
+        selectedEventActionCardDefId,
+        selectedEventActionCardLabel,
+        selectedEventActionCardPersistent,
+        selectedEventActionRulesSummary,
         timestamp,
     } = input;
     const hasHuangtaijiBonus = currentFactionId === 'jin' && hasActiveCharacter(state, 'jin', 'jin-huangtaiji');
     const usedBonusFactionAction = state.factionActionUsed && hasRemainingFactionAction(state, currentFactionId);
     const shouldKeepDriveTigerDispatchSelectionOffHost = followUp.turnPhase === 'drive-tiger-consent';
+    const guihuaPrestigeMarkerController = actionId === 'play-event-card'
+        && selectedEventActionCardPersistent
+        && selectedEventActionCardDefId === QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID
+        ? currentFactionId
+        : state.guihuaPrestigeMarkerController;
     const executedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: followUp.selectedRegionId,
@@ -85,6 +100,8 @@ export function commitQidahenSelectedActionState(
         maShiTradeSelection: followUp.maShiTradeSelection,
         khanEdictSelection: followUp.khanEdictSelection,
         diplomacyProgress: null,
+        eventCharacterTargetSelection: null,
+        eventOpponentHandChoiceSelection: followUp.eventOpponentHandChoiceSelection,
         wheelDispatchProgress: shouldKeepDriveTigerDispatchSelectionOffHost ? null : followUp.wheelDispatchProgress,
         postBattleSelection: null,
         turnPhase: followUp.turnPhase,
@@ -96,6 +113,26 @@ export function commitQidahenSelectedActionState(
         discardPileCount: state.discardPileCount + discardedCardCount,
         drawPileCount: state.drawPileCount,
         handCards: paidHandCards,
+        activeEventCards: actionId === 'play-event-card'
+            && selectedEventActionCardPersistent
+            && selectedEventActionCardDefId
+            && selectedEventActionCardLabel
+            && !state.activeEventCards.some((card) => (
+                card.cardDefId === selectedEventActionCardDefId
+                && card.ownerFactionId === currentFactionId
+            ))
+            ? [
+                ...state.activeEventCards,
+                {
+                    id: `active-event-${selectedEventActionCardDefId}-${currentFactionId}`,
+                    cardDefId: selectedEventActionCardDefId,
+                    label: selectedEventActionCardLabel,
+                    ownerFactionId: currentFactionId,
+                    rulesSummary: selectedEventActionRulesSummary,
+                },
+            ]
+            : state.activeEventCards,
+        guihuaPrestigeMarkerController,
         regions,
         factions,
         pendingTargetAction: followUp.pendingTargetAction,

@@ -1,4 +1,5 @@
 import type {
+    QidahenBattleCasualtyPriority,
     QidahenCasualtyPriority,
     QidahenCore,
     QidahenFactionId,
@@ -203,11 +204,17 @@ export const sortCompatPiecesForSelection = (
 
 export const sortCompatPiecesForRemoval = (
     pieces: readonly QidahenCompatPieceView[],
-    casualtyPriority: QidahenCasualtyPriority,
+    casualtyPriority: QidahenBattleCasualtyPriority,
 ): QidahenCompatPieceView[] => (
     pieces
         .slice()
         .sort((left, right) => {
+            if (casualtyPriority === 'artillery-first') {
+                return Number(right.troopKind === 'artillery') - Number(left.troopKind === 'artillery')
+                    || right.level - left.level
+                    || left.stackOrder - right.stackOrder
+                    || right.pieceOrder - left.pieceOrder;
+            }
             const levelDiff = casualtyPriority === 'lowest-level'
                 ? left.level - right.level
                 : right.level - left.level;

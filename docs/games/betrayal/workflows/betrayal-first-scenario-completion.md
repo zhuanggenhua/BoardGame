@@ -2,7 +2,7 @@
 
 > 对象：第一剧本 `Crimson Jack Returns`
 > 目的：把“已经真实跑通到哪”和“还没被真实证据证明到哪”分开，避免把局部通过误说成整剧本已完整完成。
-> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
+> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`src/games/betrayal/__tests__/tutorial.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
 
 ## 当前结论
 
@@ -11,16 +11,22 @@
 - `Jack's Spirit` 复活叛徒后，已经具备“真实页面继续攻击同房间英雄并推进回合”的独立页面证据。
 - 教程已补入第一剧本叛徒视角独立章节，能从真实教程进入叛徒攻击并到达真实终局。
 - 尸体搜刮已经补到二次限制：第一次搜尸后，同一正式动作位会回到普通交易且显示没有可搜尸 / 可交易对象。
-- 第一剧本与教程相关的最小真实回归矩阵已经在当前 `main` 现场重新串行通过。
+- 第一剧本与教程相关的最小真实回归矩阵已经在当前 `main` 现场重新串行通过；本轮另补了事件牌图集裁切、教程阻塞揭示主视线、骰面可见和参考页不复读素材内容的当前截图证据。
 - 因此，当前可以说“第一剧本英雄线与叛徒线的最小可玩闭环都已成立”；但仍不能扩大成“第一剧本所有边界交互都已完整验收”。
 
 ## 当前现场的最新回归结果
 
-> 回归时间：`2026-07-04`
+> 回归时间：`2026-07-05`
 > 回归现场：`D:\gongzuo\webgame\BoardGame`
 > 目的：确认教程 + 第一剧本必要部分，而不是扩大成整游戏完成审计。
 
 - 本轮已通过的定向验证：
+  - `npx vitest run src/games/betrayal/__tests__/tutorial.test.ts`：`1 file / 7 tests passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts "移动探索教程会使用持有物、整张房间牌移动并探索出发现牌"`：`1 test passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts "教程路由会从真实运行时主入口开始，并复用真实终局"`：`1 test passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/first-scenario.e2e.ts "从真实 haunt 运行时进入幸存者终局"`：`1 test passed`
+  - `npx eslint src/components/tutorial/TutorialOverlay.tsx src/games/betrayal/discoveryAtlas.ts src/games/betrayal/__tests__/tutorial.test.ts e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario.e2e.ts`：0 error
+  - `git diff --check -- src/components/tutorial/TutorialOverlay.tsx src/games/betrayal/discoveryAtlas.ts src/games/betrayal/__tests__/tutorial.test.ts e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario.e2e.ts src/games/betrayal/Board.tsx src/games/betrayal/tutorial.ts public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json docs/ai-rules/ui-ux.md docs/ai-rules/tutorial-design.md .codex/skill/tutorial-workflow/SKILL.md`：通过，仅 LF/CRLF 提示
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx --configLoader native`：`4 files / 34 tests passed`
   - `node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts`：`2 tests passed`
   - `node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/first-scenario-corpse-loot.e2e.ts`：`1 test passed`
@@ -31,6 +37,8 @@
   - 教程已经从 4 个短章扩到 5 个短章，新增叛徒视角最小收尾章节。
   - 叛徒视角教程不是只写配置，已经通过真实页面攻击和终局截图证据。
   - 搜尸边界不是只验证第一次成功，已经补到二次限制的真实页面证据。
+  - 发现牌揭示现在使用正式事件牌图集，图集合同锁定为 `6076x6376 / 9x5`，并通过 `外星几何` 第 `24` 格页面截图验证。
+  - 阻塞式发现牌和第一剧本参考页以正式素材为主结果；发现牌底部确认条只保留“下一步”按钮，教程 / 帮助 UI 不再在旁边复读素材正文。
 - 执行备注：
   - 这次只声明“教程 + 第一剧本必要部分”已收口，不声明全事件牌、全房间资源、更多剧本或山屋整游戏完成。
 
@@ -66,6 +74,8 @@
   - 教程没有另起教学壳层，而是复用真实角色选择、真实运行时和真实终局；
   - 教程最小链路可从第一剧本英雄线收尾进入真实终局；
   - `traitor-path` 章节可从叛徒视角进入真实攻击并到达真实叛徒终局；
+  - 教程探索章节会真实翻开房间并展示正式发现牌正面；当前关键截图：`evidence/betrayal-tutorial/14-山屋惊魂-教程-探索后发现牌.jpg`、`evidence/betrayal-tutorial/15-山屋惊魂-教程-探索后牌桌结果.jpg`；
+  - 教程英雄线终局页能显示驱魔投骰骰面；当前关键截图：`evidence/betrayal-tutorial/06-山屋惊魂-教程-终局页.jpg`；
   - 关键截图：`evidence/betrayal-tutorial/07-山屋惊魂-教程-叛徒视角攻击前.jpg`、`evidence/betrayal-tutorial/08-山屋惊魂-教程-叛徒终局页.jpg`。
 
 ### 4. 第一剧本叛徒线到真实终局
@@ -146,6 +156,7 @@
 
 2. 更复杂教程分支
    - 当前教程覆盖英雄线和叛徒视角最小收尾；更多剧本、更多 haunt 分支和完整规则书式教学仍未覆盖。
+   - 当前已额外覆盖“发现牌揭示必须展示正式牌面且底部只留确认按钮”“驱魔投骰必须展示骰面”“参考页必须展示正式素材且不复读正文”这三个教程 / 第一剧本必要展示口径。
 
 ## 当前建议
 

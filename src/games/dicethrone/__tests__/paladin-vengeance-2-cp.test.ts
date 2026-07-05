@@ -1,11 +1,11 @@
 /**
- * 测试圣骑士复仇 II 技能的 CP 获取行为
+ * 测试圣骑士反击 II 技能的 CP 获取行为
  *
  * 用户反馈：点击反击2每次都加CP
  *
  * 预期行为：
- * 1. 触发复仇 II（3盔+1祈祷）应该只获得 4 CP 一次
- * 2. 选择玩家授予反击后，不应该再次获得 CP
+ * 1. 触发反击 II（3盔+1祈祷）应该只获得 4 CP 一次
+ * 2. 选择玩家授予神罚后，不应该再次获得 CP
  * 3. 多次点击技能按钮不应该重复获得 CP
  */
 
@@ -80,7 +80,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
         expect(result.actualErrors).toEqual([]);
     });
 
-    it('复仇 II - 应该在真实交互链路中只获得 4 CP 一次', () => {
+    it('反击 II - 应该在真实交互链路中只获得 4 CP 一次', () => {
         const random = createQueuedRandom([3, 3, 3, 6, 1]); // 3盔+1祈祷
         const runner = new GameTestRunner({
             domain: DiceThroneDomain,
@@ -157,7 +157,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
         expect(result.actualErrors).toEqual([]);
     });
 
-    it('复仇 II - 多次点击技能按钮不应该重复获得 CP', () => {
+    it('反击 II - 多次点击技能按钮不应该重复获得 CP', () => {
         const random = createQueuedRandom([3, 3, 3, 6, 1]); // 3盔+1祈祷
         const runner = new GameTestRunner({
             domain: DiceThroneDomain,
@@ -194,7 +194,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
         expect(result.actualErrors.map((entry) => entry.error)).toContain('attack_already_initiated');
     });
 
-    it('复仇 II - 交互完成后再连点，也只能结算一次并在边界处钳制到 CP_MAX', () => {
+    it('反击 II - 交互完成后再连点，也只能结算一次并在边界处钳制到 CP_MAX', () => {
         const random = createQueuedRandom([3, 3, 3, 6, 1]); // 3盔+1祈祷
         const runner = new GameTestRunner({
             domain: DiceThroneDomain,

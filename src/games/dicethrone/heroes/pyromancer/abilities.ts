@@ -273,41 +273,26 @@ export const BURNING_SOUL_2: AbilityDef = {
             priority: 2
         },
         {
-            // 5火魂：基本效果 + 施加灼烧 + 火焰精通堆叠上限+1（递增叠加）
-            id: 'soul-burn-5',
-            name: abilityText('soul-burn-5', 'name'),
-            trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 5 } },
+            // 4火魂：基本效果 + 施加灼烧 + 火焰精通堆叠上限+1（递增叠加）
+            id: 'soul-burn-4',
+            name: abilityText('soul-burn-4', 'name'),
+            trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 4 } },
             effects: [
                 {
-                    description: abilityEffectText('soul-burn-5', 'increaseLimit'),
+                    description: abilityEffectText('soul-burn-4', 'increaseLimit'),
                     action: { type: 'custom', target: 'self', customActionId: 'increase-fm-limit' }
                 },
                 {
-                    description: abilityEffectText('soul-burn-5', 'fm'),
+                    description: abilityEffectText('soul-burn-4', 'fm'),
                     action: { type: 'custom', target: 'self', customActionId: 'soul-burn-2-fm' }
                 },
-                inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('soul-burn-5', 'inflictBurn')),
+                inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('soul-burn-4', 'inflictBurn')),
                 {
-                    description: abilityEffectText('soul-burn-5', 'damage'),
+                    description: abilityEffectText('soul-burn-4', 'damage'),
                     action: { type: 'custom', target: 'opponent', customActionId: 'soul-burn-damage' }
                 }
             ],
             priority: 3
-        },
-        {
-            // 炙热之魂：2岩浆+2火魂，FM上限+1，获得5FM，施加倒地
-            id: 'blazing-soul',
-            name: abilityText('blazing-soul', 'name'),
-            trigger: { type: 'diceSet', faces: { [PYROMANCER_DICE_FACE_IDS.MAGMA]: 2, [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2 } },
-            effects: [
-                {
-                    description: abilityEffectText('blazing-soul', 'increaseLimit'),
-                    action: { type: 'custom', target: 'self', customActionId: 'increase-fm-limit' }
-                },
-                grantToken(TOKEN_IDS.FIRE_MASTERY, 5, abilityEffectText('blazing-soul', 'gainFM5')),
-                inflictStatus(STATUS_IDS.KNOCKDOWN, 1, abilityEffectText('blazing-soul', 'inflictKnockdown'))
-            ],
-            priority: 4
         }
     ]
 };

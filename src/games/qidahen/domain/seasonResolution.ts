@@ -76,6 +76,11 @@ type QidahenMidyearCharacterJudgementRule = {
     ) => QidahenMidyearCharacterJudgementOutcome;
 };
 
+export interface QidahenCharacterJudgementResolution {
+    factions: QidahenCore['factions'];
+    summary: string;
+}
+
 type QidahenMidyearResolution = Pick<QidahenCore, 'factions' | 'lastSeasonSummary'>;
 
 const hasQidahenDroughtMarker = (region: QidahenCore['regions'][number]): boolean => (
@@ -535,6 +540,80 @@ const transferCharacterToFactionPile = (
                 movedCharacter,
             ],
         },
+    };
+};
+
+export const canResolveQidahenCharacterJudgement = (characterId: string): boolean => (
+    getMidyearCharacterJudgementRule(characterId) != null
+);
+
+export const resolveQidahenSingleCharacterJudgement = (
+    state: QidahenMidyearCharacterJudgementContext,
+    factionId: QidahenFactionId,
+    characterId: string,
+    attemptIndex = 0,
+): QidahenCharacterJudgementResolution | null => {
+    const character = state.factions[factionId].characters.find((candidate) => candidate.id === characterId);
+    if (!character?.inPlay) {
+        return null;
+    }
+    const rule = getMidyearCharacterJudgementRule(character.id);
+    if (!rule) {
+        return null;
+    }
+
+    const rawRoll = getMidyearCharacterJudgementRoll(character.id, rule.dieSides, attemptIndex);
+    const effectiveRoll = applyMidyearCharacterJudgementPenalty(state.factions, character, rawRoll);
+    const outcome = rule.resolve(state, character, effectiveRoll);
+    const rollSegment = `${rawRoll}${effectiveRoll !== rawRoll ? `→${effectiveRoll}` : ''}`;
+    let nextFactions = state.factions;
+
+    if (outcome.kind === 'down') {
+        nextFactions = {
+            ...nextFactions,
+            [factionId]: {
+                ...nextFactions[factionId],
+                characters: nextFactions[factionId].characters.map((candidate) => (
+                    candidate.id === character.id
+                        ? {
+                            ...candidate,
+                            inPlay: false,
+                            removedFromGame: false,
+                            defeatMarkers: 0,
+                        }
+                        : candidate
+                )),
+            },
+        };
+    } else if (outcome.kind === 'remove') {
+        nextFactions = {
+            ...nextFactions,
+            [factionId]: {
+                ...nextFactions[factionId],
+                characters: nextFactions[factionId].characters.map((candidate) => (
+                    candidate.id === character.id
+                        ? {
+                            ...candidate,
+                            inPlay: false,
+                            removedFromGame: true,
+                            defeatMarkers: 0,
+                        }
+                        : candidate
+                )),
+            },
+        };
+    } else if (outcome.kind === 'transfer') {
+        nextFactions = transferCharacterToFactionPile(
+            nextFactions,
+            factionId,
+            character,
+            outcome.targetFactionId,
+        );
+    }
+
+    return {
+        factions: nextFactions,
+        summary: `${character.name}(d${rule.dieSides}) 掷 ${rollSegment}：${outcome.summary}`,
     };
 };
 

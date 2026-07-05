@@ -33,7 +33,7 @@ test.describe('山屋惊魂未知房间探索', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
 
         await page.getByTestId('betrayal-action-move').click();
-        await page.getByTestId('betrayal-room-move-target-hallway').click();
+        await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('杰登·琼斯');
         await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*可探索/);
         await expect(page.getByTestId('betrayal-room-ground-south')).toHaveAccessibleName(/未探索.*一层.*可探索/);

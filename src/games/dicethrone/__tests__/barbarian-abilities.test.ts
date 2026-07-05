@@ -205,12 +205,12 @@ describe('狂战士技能定义', () => {
             expect(shake.effects[1].action.value).toBe(7);
         });
 
-        it('坚韧 II - 治疗提升 + 移除状态', () => {
+        it('百折不挠 II - 治疗提升 + 三个相同数字时移除状态', () => {
             expect(STEADFAST_2.variants).toHaveLength(3);
-            // 3 Heart = 治疗 5 + 移除状态
+            // 3 Heart = 治疗 5 + 三个相同数字时移除状态
             expect(STEADFAST_2.variants![0].effects[0].action.value).toBe(5);
             expect(STEADFAST_2.variants![0].effects).toHaveLength(2);
-            expect(STEADFAST_2.variants![0].effects[1].action.customActionId).toBe('remove-status-self');
+            expect(STEADFAST_2.variants![0].effects[1].action.customActionId).toBe('barbarian-steadfast-remove-status-if-three-kind');
         });
 
         it('压制 II - 新增战吼变体', () => {

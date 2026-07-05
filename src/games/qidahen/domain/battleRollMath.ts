@@ -1,6 +1,7 @@
 import type { RandomFn } from '../../../engine/types';
 import { getQidahenTroopDieSides } from './attackRules';
 import { getArmamentLevel } from './armamentStateAccessors';
+import { hasArmamentSourceCard } from './armamentStateAccessors';
 import { hasActiveCharacter } from './characterPresenceAccessors';
 import {
     getEffectivePendingDefenderTroops,
@@ -46,6 +47,19 @@ type QidahenStructuredBattleRollOptions = {
     defenderCavalryEvasion: boolean;
     attackerCavalryPlunder: boolean;
 };
+
+const RED_COAT_CANNON_CARD_DEF_ID = 'qidahen-atlas05-1634-red-coat-cannon';
+const FINE_STEEL_SABER_CARD_DEF_ID = 'qidahen-atlas05-1616-fine-steel-saber';
+const CAVALRY_FIREARM_CARD_DEF_ID = 'qidahen-atlas05-1639-cavalry-firearm';
+const LINKED_MUSKETS_CARD_DEF_ID = 'qidahen-atlas05-1646-linked-muskets';
+
+const controlsOrdosRegion = (state: QidahenCore, factionId: QidahenFactionId): boolean => (
+    state.regions.some((region) => (
+        !region.isLogicalRegion
+        && region.id === 'city-region-26'
+        && region.controller === factionId
+    ))
+);
 
 const getBattleRollArmamentBonus = (
     state: QidahenCore,
@@ -120,6 +134,16 @@ const getBattleRollTacticDiceCountBonus = (
         .reduce((total, modifier) => total + (modifier.diceCountBonus ?? 0), 0)
 );
 
+const getBattleRollTacticValueDivisor = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    unit: QidahenCombatUnit,
+    side: QidahenBattleUnitSide,
+): number => (
+    (pendingTargetAction.tacticModifiers ?? [])
+        .filter((modifier) => modifier.side === side && modifier.troopKind === unit.troopKind)
+        .reduce((maxDivisor, modifier) => Math.max(maxDivisor, modifier.rollValueDivisor ?? 1), 1)
+);
+
 const getBattleRollArmamentDiceCountBonus = (
     state: QidahenCore,
     unit: QidahenCombatUnit,
@@ -131,10 +155,41 @@ const getBattleRollArmamentDiceCountBonus = (
         return 0;
     }
     if (phase === 'artillery' && unit.troopKind === 'artillery') {
-        return getArmamentLevel(state, unit.factionId, 'artillery-tech') > 0 ? 1 : 0;
+        const artilleryTechBonus = getArmamentLevel(state, unit.factionId, 'artillery-tech') > 0 ? 1 : 0;
+        const redCoatCannonBonus = hasArmamentSourceCard(
+            state,
+            unit.factionId,
+            'artillery-tech',
+            RED_COAT_CANNON_CARD_DEF_ID,
+        )
+            ? cityBattle && side === 'attacker'
+                ? 2
+                : !cityBattle && side === 'defender'
+                    ? 1
+                    : 0
+            : 0;
+        return artilleryTechBonus + redCoatCannonBonus;
     }
     if (!cityBattle && phase === 'cavalry' && unit.troopKind === 'cavalry') {
-        return getArmamentLevel(state, unit.factionId, 'cavalry-firearm') > 0 ? 1 : 0;
+        const hasCavalryFirearmSource = hasArmamentSourceCard(
+            state,
+            unit.factionId,
+            'cavalry-firearm',
+            CAVALRY_FIREARM_CARD_DEF_ID,
+        );
+        const hasFineSteelSaberSource = hasArmamentSourceCard(
+            state,
+            unit.factionId,
+            'cavalry-firearm',
+            FINE_STEEL_SABER_CARD_DEF_ID,
+        );
+        const hasLegacyCavalryFirearm = getArmamentLevel(state, unit.factionId, 'cavalry-firearm') > 0
+            && !hasFineSteelSaberSource;
+        return hasCavalryFirearmSource
+            || hasLegacyCavalryFirearm
+            || (hasFineSteelSaberSource && controlsOrdosRegion(state, unit.factionId))
+            ? 1
+            : 0;
     }
     if (!cityBattle && phase === 'infantry' && unit.troopKind === 'infantry') {
         return getArmamentLevel(state, unit.factionId, 'long-barreled-musket') > 0 ? 1 : 0;
@@ -221,6 +276,97 @@ const takeBattleUnits = (
     return [...artilleryUnits, ...nonArtilleryUnits].filter((unit) => unit.count > 0);
 };
 
+const splitBattleUnitsByTransferredCount = (
+    units: QidahenCombatUnit[],
+    troopKind: QidahenTroopKind,
+    transferCount: number,
+): { remainingUnits: QidahenCombatUnit[]; transferredUnits: QidahenCombatUnit[] } => {
+    let remainingTransferCount = Math.max(0, transferCount);
+    const remainingUnits: QidahenCombatUnit[] = [];
+    const transferredUnits: QidahenCombatUnit[] = [];
+
+    for (const unit of units) {
+        if (unit.troopKind !== troopKind || remainingTransferCount <= 0) {
+            remainingUnits.push(unit);
+            continue;
+        }
+        const transferredCount = Math.min(unit.count, remainingTransferCount);
+        remainingTransferCount -= transferredCount;
+        if (unit.count > transferredCount) {
+            remainingUnits.push({
+                ...unit,
+                count: unit.count - transferredCount,
+            });
+        }
+        transferredUnits.push({
+            ...unit,
+            count: transferredCount,
+        });
+    }
+
+    return { remainingUnits, transferredUnits };
+};
+
+const splitBattleUnitsByKindCount = (
+    units: QidahenCombatUnit[],
+    troopKind: QidahenTroopKind,
+    count: number,
+): { remainingUnits: QidahenCombatUnit[]; selectedUnits: QidahenCombatUnit[] } => {
+    let remainingSelectionCount = Math.max(0, count);
+    const remainingUnits: QidahenCombatUnit[] = [];
+    const selectedUnits: QidahenCombatUnit[] = [];
+
+    for (const unit of units) {
+        if (unit.troopKind !== troopKind || remainingSelectionCount <= 0) {
+            remainingUnits.push(unit);
+            continue;
+        }
+        const selectedCount = Math.min(unit.count, remainingSelectionCount);
+        remainingSelectionCount -= selectedCount;
+        if (unit.count > selectedCount) {
+            remainingUnits.push({
+                ...unit,
+                count: unit.count - selectedCount,
+            });
+        }
+        selectedUnits.push({
+            ...unit,
+            count: selectedCount,
+        });
+    }
+
+    return { remainingUnits, selectedUnits };
+};
+
+const applyTacticUnitTransfers = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    attackerUnits: QidahenCombatUnit[],
+    defenderUnits: QidahenCombatUnit[],
+): { attackerUnits: QidahenCombatUnit[]; defenderUnits: QidahenCombatUnit[] } => {
+    let nextAttackerUnits = attackerUnits;
+    let nextDefenderUnits = defenderUnits;
+    for (const modifier of pendingTargetAction.tacticModifiers ?? []) {
+        const transferCount = modifier.convertEnemyTroopCount ?? 0;
+        if (transferCount <= 0 || modifier.side !== 'attacker') {
+            continue;
+        }
+        const transferResult = splitBattleUnitsByTransferredCount(
+            nextDefenderUnits,
+            modifier.troopKind,
+            transferCount,
+        );
+        nextDefenderUnits = transferResult.remainingUnits;
+        nextAttackerUnits = [
+            ...nextAttackerUnits,
+            ...transferResult.transferredUnits.map((unit) => ({
+                ...unit,
+                factionId: pendingTargetAction.attackerFactionId,
+            })),
+        ];
+    }
+    return { attackerUnits: nextAttackerUnits, defenderUnits: nextDefenderUnits };
+};
+
 const buildCommittedBattleUnits = (
     sourceRegion: Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'specialTroops'>,
     committedTroops: number,
@@ -268,9 +414,13 @@ const rollCombatUnit = (
         const armamentBonus = getBattleRollArmamentBonus(state, unit);
         const characterBonus = getBattleRollCharacterBonus(state, unit);
         const armoredValue = raw + armamentBonus + characterBonus;
-        const value = cityBattle && phase === 'melee' && unit.troopKind === 'cavalry'
+        const adjustedValue = cityBattle && phase === 'melee' && unit.troopKind === 'cavalry'
             ? Math.max(0, armoredValue - 1)
             : armoredValue;
+        const tacticValueDivisor = getBattleRollTacticValueDivisor(pendingTargetAction, unit, side);
+        const value = tacticValueDivisor > 1
+            ? Math.floor(adjustedValue / tacticValueDivisor)
+            : adjustedValue;
         rolls.push({
             troopKind: unit.troopKind,
             level: effectiveLevel,
@@ -366,6 +516,227 @@ const getEiduPriorityPhase = (
     };
 };
 
+const getTacticPriorityPhase = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    attackerUnits: QidahenCombatUnit[],
+    defenderUnits: QidahenCombatUnit[],
+    cityBattle: boolean,
+): {
+    phase: Extract<QidahenBattleRollPhase, 'artillery' | 'cavalry' | 'infantry'>;
+    side: QidahenBattleUnitSide;
+    note: string;
+} | null => {
+    if (cityBattle) {
+        return null;
+    }
+    const priorityModifier = (pendingTargetAction.tacticModifiers ?? [])
+        .find((modifier) => (
+            modifier.priorityRoll
+            && !(pendingTargetAction.tacticModifiers ?? []).some((cancellingModifier) => (
+                cancellingModifier.side !== modifier.side
+                && cancellingModifier.cancelEnemyPrioritySourceCardDefIds?.includes(modifier.sourceCardDefId ?? '')
+            ))
+            && modifier.troopKind !== 'artillery'
+            && (modifier.side === 'attacker'
+                ? attackerUnits.some((unit) => unit.troopKind === modifier.troopKind)
+                    && defenderUnits.some((unit) => unit.troopKind === modifier.troopKind)
+                : defenderUnits.some((unit) => unit.troopKind === modifier.troopKind)
+                    && attackerUnits.some((unit) => unit.troopKind === modifier.troopKind))
+        ));
+    if (!priorityModifier) {
+        return null;
+    }
+    return {
+        phase: priorityModifier.troopKind,
+        side: priorityModifier.side,
+        note: `${priorityModifier.label}指定${getQidahenTroopKindLabel(priorityModifier.troopKind)}先掷`,
+    };
+};
+
+const isPrioritySourceCancelledByEnemyModifier = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    side: QidahenBattleUnitSide,
+    sourceCardDefId: string,
+): boolean => (pendingTargetAction.tacticModifiers ?? []).some((modifier) => (
+    modifier.side !== side
+    && modifier.cancelEnemyPrioritySourceCardDefIds?.includes(sourceCardDefId)
+));
+
+const isRollAsPhaseSourceCancelledByEnemyModifier = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    side: QidahenBattleUnitSide,
+    sourceCardDefId: string,
+): boolean => (pendingTargetAction.tacticModifiers ?? []).some((modifier) => (
+    modifier.side !== side
+    && modifier.cancelEnemyRollAsPhaseSourceCardDefIds?.includes(sourceCardDefId)
+));
+
+const hasCavalryFirearmPriority = (
+    state: QidahenCore,
+    units: QidahenCombatUnit[],
+): boolean => units.some((unit) => (
+    unit.structured
+    && unit.factionId
+    && unit.troopKind === 'cavalry'
+    && (
+        hasArmamentSourceCard(
+            state,
+            unit.factionId,
+            'cavalry-firearm',
+            CAVALRY_FIREARM_CARD_DEF_ID,
+        )
+        || (
+            getArmamentLevel(state, unit.factionId, 'cavalry-firearm') > 0
+            && !hasArmamentSourceCard(
+                state,
+                unit.factionId,
+                'cavalry-firearm',
+                FINE_STEEL_SABER_CARD_DEF_ID,
+            )
+        )
+    )
+));
+
+const hasLinkedMusketsPriority = (
+    state: QidahenCore,
+    units: QidahenCombatUnit[],
+): boolean => units.some((unit) => (
+    unit.structured
+    && unit.factionId
+    && unit.troopKind === 'infantry'
+    && (
+        hasArmamentSourceCard(
+            state,
+            unit.factionId,
+            'long-barreled-musket',
+            LINKED_MUSKETS_CARD_DEF_ID,
+        )
+        || getArmamentLevel(state, unit.factionId, 'long-barreled-musket') > 0
+    )
+));
+
+const getArmamentPriorityPhase = (
+    state: QidahenCore,
+    pendingTargetAction: QidahenPendingTargetAction,
+    attackerUnits: QidahenCombatUnit[],
+    defenderUnits: QidahenCombatUnit[],
+    cityBattle: boolean,
+): {
+    phase: Extract<QidahenBattleRollPhase, 'artillery' | 'cavalry' | 'infantry'>;
+    side: QidahenBattleUnitSide;
+    note: string;
+} | null => {
+    if (cityBattle) {
+        return null;
+    }
+    const bothSidesHaveCavalry = attackerUnits.some((unit) => unit.troopKind === 'cavalry')
+        && defenderUnits.some((unit) => unit.troopKind === 'cavalry');
+    if (
+        bothSidesHaveCavalry
+        && hasCavalryFirearmPriority(state, attackerUnits)
+        && !isPrioritySourceCancelledByEnemyModifier(pendingTargetAction, 'attacker', CAVALRY_FIREARM_CARD_DEF_ID)
+    ) {
+        return {
+            phase: 'cavalry',
+            side: 'attacker',
+            note: '骑兵火器指定骑兵先掷',
+        };
+    }
+    if (
+        bothSidesHaveCavalry
+        && hasCavalryFirearmPriority(state, defenderUnits)
+        && !isPrioritySourceCancelledByEnemyModifier(pendingTargetAction, 'defender', CAVALRY_FIREARM_CARD_DEF_ID)
+    ) {
+        return {
+            phase: 'cavalry',
+            side: 'defender',
+            note: '骑兵火器指定骑兵先掷',
+        };
+    }
+    const bothSidesHaveInfantry = attackerUnits.some((unit) => unit.troopKind === 'infantry')
+        && defenderUnits.some((unit) => unit.troopKind === 'infantry');
+    if (
+        bothSidesHaveInfantry
+        && hasLinkedMusketsPriority(state, attackerUnits)
+        && !isPrioritySourceCancelledByEnemyModifier(pendingTargetAction, 'attacker', LINKED_MUSKETS_CARD_DEF_ID)
+    ) {
+        return {
+            phase: 'infantry',
+            side: 'attacker',
+            note: '连环火铳指定步兵先掷',
+        };
+    }
+    if (
+        bothSidesHaveInfantry
+        && hasLinkedMusketsPriority(state, defenderUnits)
+        && !isPrioritySourceCancelledByEnemyModifier(pendingTargetAction, 'defender', LINKED_MUSKETS_CARD_DEF_ID)
+    ) {
+        return {
+            phase: 'infantry',
+            side: 'defender',
+            note: '连环火铳指定步兵先掷',
+        };
+    }
+    return null;
+};
+
+const getTacticRollAsPhaseCount = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    side: QidahenBattleUnitSide,
+    troopKind: QidahenTroopKind,
+    phase?: QidahenBattleRollPhase,
+): number => (
+    (pendingTargetAction.tacticModifiers ?? [])
+        .filter((modifier) => (
+            modifier.side === side
+            && modifier.troopKind === troopKind
+            && modifier.rollAsPhase
+            && modifier.rollAsPhase !== modifier.troopKind
+            && (!phase || modifier.rollAsPhase === phase)
+            && !isRollAsPhaseSourceCancelledByEnemyModifier(
+                pendingTargetAction,
+                side,
+                modifier.sourceCardDefId ?? '',
+            )
+        ))
+        .reduce((total, modifier) => total + Math.max(1, modifier.rollUnitCount ?? 1), 0)
+);
+
+const buildBattleStageUnits = (
+    pendingTargetAction: QidahenPendingTargetAction,
+    units: QidahenCombatUnit[],
+    phase: QidahenBattleRollPhase,
+    side: QidahenBattleUnitSide,
+    cityBattle: boolean,
+): QidahenCombatUnit[] => {
+    const acceptsNativePhase = (unit: QidahenCombatUnit) => (
+        phase === 'melee'
+            ? unit.troopKind === 'cavalry' || unit.troopKind === 'infantry'
+            : unit.troopKind === phase
+    );
+    let nativeUnits = units.filter(acceptsNativePhase);
+    if (cityBattle || phase === 'melee') {
+        return nativeUnits;
+    }
+
+    const earlyAwayCount = getTacticRollAsPhaseCount(pendingTargetAction, side, phase);
+    if (earlyAwayCount > 0) {
+        nativeUnits = splitBattleUnitsByKindCount(nativeUnits, phase, earlyAwayCount).remainingUnits;
+    }
+
+    const rollAsUnits = (['artillery', 'cavalry', 'infantry'] as const)
+        .filter((troopKind) => troopKind !== phase)
+        .flatMap((troopKind) => {
+            const rollAsCount = getTacticRollAsPhaseCount(pendingTargetAction, side, troopKind, phase);
+            if (rollAsCount <= 0) {
+                return [];
+            }
+            return splitBattleUnitsByKindCount(units, troopKind, rollAsCount).selectedUnits;
+        });
+
+    return [...nativeUnits, ...rollAsUnits];
+};
+
 const rollBattleStage = (
     random: RandomFn,
     state: QidahenCore,
@@ -374,20 +745,15 @@ const rollBattleStage = (
     attackerUnits: QidahenCombatUnit[],
     defenderUnits: QidahenCombatUnit[],
     cityBattle: boolean,
-    eiduPriority: ReturnType<typeof getEiduPriorityPhase>,
+    battlePriority: ReturnType<typeof getEiduPriorityPhase>,
 ) => {
-    const accepts = (unit: QidahenCombatUnit) => (
-        phase === 'melee'
-            ? unit.troopKind === 'cavalry' || unit.troopKind === 'infantry'
-            : unit.troopKind === phase
-    );
-    const stageAttackerUnits = attackerUnits.filter(accepts);
-    const stageDefenderUnits = defenderUnits.filter(accepts);
+    const stageAttackerUnits = buildBattleStageUnits(pendingTargetAction, attackerUnits, phase, 'attacker', cityBattle);
+    const stageDefenderUnits = buildBattleStageUnits(pendingTargetAction, defenderUnits, phase, 'defender', cityBattle);
     let attackerRolls: QidahenBattleRoll[] = [];
     let defenderRolls: QidahenBattleRoll[] = [];
 
-    if (eiduPriority?.phase === phase && phase !== 'melee') {
-        if (eiduPriority.side === 'attacker') {
+    if (battlePriority?.phase === phase && phase !== 'melee') {
+        if (battlePriority.side === 'attacker') {
             attackerRolls = stageAttackerUnits.flatMap((unit) => rollCombatUnit(random, state, pendingTargetAction, unit, phase, cityBattle, 'attacker'));
             const preventedDefenderUnits = trimBattleUnitsBeforeCounterRoll(
                 stageDefenderUnits,
@@ -419,7 +785,7 @@ const rollBattleStage = (
         defenderTotal,
         attackerDamage: Math.floor(attackerTotal / 3),
         defenderDamage: Math.floor(defenderTotal / 3),
-        priorityNote: eiduPriority?.phase === phase ? eiduPriority.note : null,
+        priorityNote: battlePriority?.phase === phase ? battlePriority.note : null,
     };
 };
 
@@ -466,13 +832,18 @@ export const createQidahenStructuredBattleRolls = (
 
     const effectiveDefenderTroops = getEffectivePendingDefenderTroops(targetRegion, pendingTargetAction, battleMode);
     const defenderPressure = Math.max(1, Math.min(effectiveDefenderTroops, pendingTargetAction.battleWidth));
-    const attackerUnits = buildCommittedBattleUnits(
+    const baseAttackerUnits = buildCommittedBattleUnits(
         sourceRegion,
         pendingTargetAction.committedTroops,
         pendingTargetAction.attackPressure || pendingTargetAction.battleWidth,
         pendingTargetAction.movementProfileId,
     );
-    const defenderUnits = takeBattleUnits(buildCombatUnits(targetBattleRegion), defenderPressure);
+    const baseDefenderUnits = takeBattleUnits(buildCombatUnits(targetBattleRegion), defenderPressure);
+    const { attackerUnits, defenderUnits } = applyTacticUnitTransfers(
+        pendingTargetAction,
+        baseAttackerUnits,
+        baseDefenderUnits,
+    );
     if (attackerUnits.length === 0 && defenderUnits.length === 0) {
         return null;
     }
@@ -481,9 +852,11 @@ export const createQidahenStructuredBattleRolls = (
     const phases: QidahenBattleRollPhase[] = cityBattle
         ? ['artillery', 'melee']
         : ['artillery', 'cavalry', 'infantry'];
-    const eiduPriority = getEiduPriorityPhase(state, attackerUnits, defenderUnits, cityBattle);
+    const battlePriority = getTacticPriorityPhase(pendingTargetAction, attackerUnits, defenderUnits, cityBattle)
+        ?? getArmamentPriorityPhase(state, pendingTargetAction, attackerUnits, defenderUnits, cityBattle)
+        ?? getEiduPriorityPhase(state, attackerUnits, defenderUnits, cityBattle);
     const stages = phases
-        .map((phase) => rollBattleStage(random, state, pendingTargetAction, phase, attackerUnits, defenderUnits, cityBattle, eiduPriority))
+        .map((phase) => rollBattleStage(random, state, pendingTargetAction, phase, attackerUnits, defenderUnits, cityBattle, battlePriority))
         .filter((stage) => stage.attackerRolls.length > 0 || stage.defenderRolls.length > 0);
     const attackerDamage = stages.reduce((sum, stage) => sum + stage.attackerDamage, 0);
     const defenderDamage = stages.reduce((sum, stage) => sum + stage.defenderDamage, 0);

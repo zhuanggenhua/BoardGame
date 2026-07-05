@@ -9,12 +9,14 @@
  */
 
 import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPlayerDieFace } from '../rules';
-import { STATUS_IDS, MOON_ELF_DICE_FACE_IDS } from '../ids';
+import { STATUS_IDS, MOON_ELF_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import type {
     DiceThroneEvent,
     DamageDealtEvent,
     DamageShieldGrantedEvent,
+    InteractionRequestedEvent,
+    PendingInteraction,
     StatusAppliedEvent,
     StatusRemovedEvent,
     BonusDieRolledEvent,
@@ -188,6 +190,31 @@ function handleLongbowBonusCheck3(context: CustomActionContext): DiceThroneEvent
     const hasMatch = getAttackMaxDuplicateValueCount(state) >= 3;
     if (!hasMatch) return [];
     return [applyStatus(opponentId, STATUS_IDS.ENTANGLE, 1, sourceAbilityId, state, timestamp)];
+}
+
+function handleSilencingTraceSelectEvasiveTarget({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const interaction: PendingInteraction = {
+        id: `${sourceAbilityId}-${timestamp}`,
+        playerId: attackerId,
+        sourceCardId: sourceAbilityId,
+        type: 'selectPlayer',
+        titleKey: 'interaction.selectPlayerForEvasive',
+        selectCount: 1,
+        selected: [],
+        targetPlayerIds: Object.keys(state.players),
+        tokenGrantConfig: { tokenId: TOKEN_IDS.EVASIVE, amount: 1 },
+    };
+    return [{
+        type: 'INTERACTION_REQUESTED',
+        payload: { interaction },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as InteractionRequestedEvent];
 }
 
 // ============================================================================
@@ -675,6 +702,10 @@ export function registerMoonElfCustomActions(): void {
     registerCustomActionHandler('moon_elf-longbow-bonus-check-3', handleLongbowBonusCheck3, {
         categories: ['status'],
         usesAttackDiceSnapshot: true,
+    });
+    registerCustomActionHandler('moon_elf-silencing-trace-select-evasive-target', handleSilencingTraceSelectEvasiveTarget, {
+        categories: ['token'],
+        requiresInteraction: true,
     });
 
     // 鐖嗚绠粨绠?

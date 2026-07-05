@@ -191,7 +191,7 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
     // 爆裂箭结算
     // ========================================================================
     describe('moon_elf-exploding-arrow-resolve-1 (爆裂箭I：骰值伤害)', () => {
-        it('5骰全BOW时造成13点伤害（3+2×5）', () => {
+        it('5骰全BOW时造成8点伤害（3+1×5）', () => {
             const state = createState({});
             const handler = getCustomActionHandler('moon_elf-exploding-arrow-resolve-1')!;
             const events = handler(buildCtx(state, 'moon_elf-exploding-arrow-resolve-1', {
@@ -200,7 +200,7 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
 
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
-            expect((dmg[0] as any).payload.amount).toBe(13); // 3 + 2×5弓 + 1×0足
+            expect((dmg[0] as any).payload.amount).toBe(8); // 3 + 1×5弓 + 1×0足
         });
 
         it('5骰全MOON时造成3点基础伤害', () => {

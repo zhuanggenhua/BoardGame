@@ -3,6 +3,8 @@ import { QIDAHEN_COMMANDS } from './commands';
 import {
     getQidahenDiplomacySelectionForCore,
     getQidahenDriveTigerConsentSelectionForCore,
+    getQidahenEventCharacterTargetSelectionForCore,
+    getQidahenEventOpponentHandChoiceSelectionForCore,
     getQidahenFortificationMaintenanceSelectionForCore,
     getQidahenInternalDispatchSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
@@ -23,6 +25,8 @@ import type {
     QidahenEvent,
     ResolveDiplomacyChoiceCommand,
     ResolveDriveTigerConsentCommand,
+    ResolveEventCharacterTargetCommand,
+    ResolveEventOpponentHandChoiceCommand,
     ResolveFortificationMaintenanceCommand,
     ResolveGaoDiDispatchCommand,
     HandLimitDiscardResolvedEvent,
@@ -59,6 +63,8 @@ interface QidahenActionWindowResolvedCommandDependencies {
     getQidahenMaShiTradeSelectionForCore: typeof getQidahenMaShiTradeSelectionForCore;
     getQidahenKhanEdictSelectionForCore: typeof getQidahenKhanEdictSelectionForCore;
     getQidahenDiplomacySelectionForCore: typeof getQidahenDiplomacySelectionForCore;
+    getQidahenEventCharacterTargetSelectionForCore: typeof getQidahenEventCharacterTargetSelectionForCore;
+    getQidahenEventOpponentHandChoiceSelectionForCore: typeof getQidahenEventOpponentHandChoiceSelectionForCore;
 }
 
 interface QidahenPendingBattleResolvedCommandDependencies {
@@ -131,6 +137,7 @@ const buildQidahenInternalDispatchResolvedEvent = (
         getQidahenMaShiTradeSelectionForCore,
         getQidahenKhanEdictSelectionForCore,
         getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
     },
 ): QidahenEvent => ({
     type: 'INTERNAL_DISPATCH_RESOLVED',
@@ -155,6 +162,7 @@ const buildQidahenFortificationMaintenanceResolvedEvent = (
         getQidahenMaShiTradeSelectionForCore,
         getQidahenKhanEdictSelectionForCore,
         getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
     },
 ): QidahenEvent => ({
     type: 'FORTIFICATION_MAINTENANCE_RESOLVED',
@@ -180,6 +188,7 @@ const buildQidahenDriveTigerConsentResolvedEvent = (
         getQidahenMaShiTradeSelectionForCore,
         getQidahenKhanEdictSelectionForCore,
         getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
     },
 ): QidahenEvent => ({
     type: 'DRIVE_TIGER_CONSENT_RESOLVED',
@@ -204,6 +213,7 @@ const buildQidahenRecruitChoiceResolvedEvent = (
         getQidahenMaShiTradeSelectionForCore,
         getQidahenKhanEdictSelectionForCore,
         getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
     },
 ): QidahenEvent => ({
     type: 'RECRUIT_CHOICE_RESOLVED',
@@ -283,6 +293,63 @@ const buildQidahenDiplomacyChoiceResolvedEvent = (
         playerId: command.playerId,
         choiceId: command.payload.choiceId,
         selection: dependencies.getQidahenDiplomacySelectionForCore(state.core, state.sys.interaction?.current),
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenEventCharacterTargetResolvedEvent = (
+    state: MatchState<QidahenCore>,
+    command: ResolveEventCharacterTargetCommand,
+    timestamp: number,
+    dependencies: QidahenActionWindowResolvedCommandDependencies = {
+        getQidahenInternalDispatchSelectionForCore,
+        getQidahenFortificationMaintenanceSelectionForCore,
+        getQidahenDriveTigerConsentSelectionForCore,
+        getQidahenRecruitSelectionForCore,
+        getQidahenMaShiTradeSelectionForCore,
+        getQidahenKhanEdictSelectionForCore,
+        getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
+    },
+): QidahenEvent => ({
+    type: 'EVENT_CHARACTER_TARGET_RESOLVED',
+    payload: {
+        playerId: command.playerId,
+        choiceId: command.payload.choiceId,
+        selection: dependencies.getQidahenEventCharacterTargetSelectionForCore(
+            state.core,
+            state.sys.interaction?.current?.data != null ? state.sys.interaction.current : null,
+        ),
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenEventOpponentHandChoiceResolvedEvent = (
+    state: MatchState<QidahenCore>,
+    command: ResolveEventOpponentHandChoiceCommand,
+    timestamp: number,
+    dependencies: QidahenActionWindowResolvedCommandDependencies = {
+        getQidahenInternalDispatchSelectionForCore,
+        getQidahenFortificationMaintenanceSelectionForCore,
+        getQidahenDriveTigerConsentSelectionForCore,
+        getQidahenRecruitSelectionForCore,
+        getQidahenMaShiTradeSelectionForCore,
+        getQidahenKhanEdictSelectionForCore,
+        getQidahenDiplomacySelectionForCore,
+        getQidahenEventCharacterTargetSelectionForCore,
+        getQidahenEventOpponentHandChoiceSelectionForCore,
+    },
+): QidahenEvent => ({
+    type: 'EVENT_OPPONENT_HAND_CHOICE_RESOLVED',
+    payload: {
+        playerId: command.playerId,
+        choiceId: command.payload.choiceId,
+        selection: dependencies.getQidahenEventOpponentHandChoiceSelectionForCore(
+            state.core,
+            state.sys.interaction?.current?.data != null ? state.sys.interaction.current : null,
+        ),
     },
     sourceCommandType: command.type,
     timestamp,
@@ -477,6 +544,18 @@ const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEv
         commandTypes: [QIDAHEN_COMMANDS.RESOLVE_DIPLOMACY_CHOICE],
         buildEvents: buildStatefulResolvedCommandEvents<ResolveDiplomacyChoiceCommand>(
             buildQidahenDiplomacyChoiceResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_EVENT_CHARACTER_TARGET],
+        buildEvents: buildStatefulResolvedCommandEvents<ResolveEventCharacterTargetCommand>(
+            buildQidahenEventCharacterTargetResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE],
+        buildEvents: buildStatefulResolvedCommandEvents<ResolveEventOpponentHandChoiceCommand>(
+            buildQidahenEventOpponentHandChoiceResolvedEvent,
         ),
     },
     {

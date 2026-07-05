@@ -132,6 +132,7 @@ export const TutorialOverlay: React.FC = () => {
     const isMobileViewport = viewport.width > 0 && viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH;
     const isCompactTutorialLayout = isMobileViewport && viewport.width > viewport.height;
     const visibleTargetRect = positionedStepId === currentStep?.id ? targetRect : null;
+    const isBottomConfirmStep = currentStep?.position === 'center' && currentStep.infoStep && Boolean(currentStep.highlightTarget);
     const rootViewportWidth = viewport.width > 0
         ? viewport.width
         : (typeof document !== 'undefined' ? document.documentElement.clientWidth : 0);
@@ -513,7 +514,16 @@ export const TutorialOverlay: React.FC = () => {
             if (rafId !== null) cancelAnimationFrame(rafId);
             resizeObserver?.disconnect();
         };
-    }, [currentStep, isActive, isCompactTutorialLayout, viewport.height, viewport.safeArea, viewport.width]);
+    }, [
+        currentStep,
+        isActive,
+        isCompactTutorialLayout,
+        rootViewportHeight,
+        rootViewportWidth,
+        viewport.height,
+        viewport.safeArea,
+        viewport.width,
+    ]);
 
     if (!isActive || !currentStep) {
         return null;
@@ -589,15 +599,29 @@ export const TutorialOverlay: React.FC = () => {
                 <div
                     data-testid="tutorial-overlay-card"
                     data-tutorial-placement={tooltipStyles.placement}
-                    className={`bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0] animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${isCompactTutorialLayout ? 'w-full max-w-full rounded-xl p-4' : 'max-w-sm w-72 rounded-sm p-5'}`}
-                    style={{ maxHeight: 'inherit', width: '100%' }}
+                    className={`bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0] animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${
+                        isBottomConfirmStep
+                            ? 'w-[min(360px,calc(100vw-2rem))] rounded-sm px-4 py-3'
+                            : isCompactTutorialLayout
+                                ? 'w-full max-w-full rounded-xl p-4'
+                                : 'max-w-sm w-72 rounded-sm p-5'
+                    }`}
+                    style={{ maxHeight: isBottomConfirmStep ? undefined : 'inherit', width: isBottomConfirmStep ? undefined : '100%' }}
                 >
                     {/* 装饰性边角（右上）*/}
-                    <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
+                    {!isBottomConfirmStep ? (
+                        <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
+                    ) : null}
 
-                    <div className={`text-[#433422] font-bold text-left overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${isCompactTutorialLayout ? 'text-[15px] leading-[1.55] mb-2.5' : 'text-lg leading-relaxed mb-4'}`}>
-                        {t(currentStep.content)}
-                    </div>
+                    {isBottomConfirmStep ? null : (
+                        <div className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
+                            isCompactTutorialLayout
+                                ? 'mb-2.5 text-left text-[15px] leading-[1.55]'
+                                : 'mb-4 text-left text-lg leading-relaxed'
+                        }`}>
+                            {t(currentStep.content)}
+                        </div>
+                    )}
 
                     {!currentStep.requireAction && (
                         <button
@@ -606,9 +630,15 @@ export const TutorialOverlay: React.FC = () => {
                                 playSound(TUTORIAL_NEXT_SOUND_KEY);
                                 nextStep('manual');
                             }}
-                            className={`touch-target-min w-full bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${isCompactTutorialLayout ? 'py-2 text-[12px] tracking-[0.14em] rounded-lg' : 'py-2 text-sm tracking-widest'}`}
+                            className={`touch-target-min w-full bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${
+                                isBottomConfirmStep
+                                    ? 'py-2 text-xs tracking-[0.12em]'
+                                    : isCompactTutorialLayout
+                                        ? 'py-2 text-[12px] tracking-[0.14em] rounded-lg'
+                                        : 'py-2 text-sm tracking-widest'
+                            }`}
                         >
-                            {isLastStep ? t('overlay.finish') : t('overlay.next')}
+                            {isBottomConfirmStep ? t('overlay.next') : (isLastStep ? t('overlay.finish') : t('overlay.next'))}
                         </button>
                     )}
 

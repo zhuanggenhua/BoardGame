@@ -6,7 +6,7 @@
 import type { AbilityCard } from '../../types';
 import type { RandomFn } from '../../../../engine/types';
 import type { AbilityEffect, AbilityDef } from '../../domain/combat';
-import { STATUS_IDS, TOKEN_IDS, PYROMANCER_DICE_FACE_IDS, DICETHRONE_CARD_ATLAS_IDS } from '../../domain/ids';
+import { TOKEN_IDS, DICETHRONE_CARD_ATLAS_IDS } from '../../domain/ids';
 import { COMMON_CARDS, injectCommonCardPreviewRefs } from '../../domain/commonCards';
 import { abilityEffectText } from '../../../../engine/primitives/ability';
 import {
@@ -180,7 +180,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         description: cardText('card-fireball-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 6 },
         effects: [
-            replaceAbility('fireball', FIREBALL_2, 2, '升级火球至 II 级')
+            replaceAbility('fireball', FIREBALL_2, 2, '升级火球术至 II 级')
         ],
     },
     {
@@ -192,7 +192,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         description: cardText('card-burning-soul-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 9 },
         effects: [
-            replaceAbility('soul-burn', BURNING_SOUL_2, 2, '升级灵魂燃烧至 II 级')
+            replaceAbility('soul-burn', BURNING_SOUL_2, 2, '升级燃烧之灵至 II 级')
         ],
     },
     {
@@ -204,7 +204,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         description: cardText('card-hot-streak-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 14 },
         effects: [
-            replaceAbility('fiery-combo', HOT_STREAK_2, 2, '升级热浪/火热连击至 II 级')
+            replaceAbility('fiery-combo', HOT_STREAK_2, 2, '升级炽热波纹至 II 级')
         ],
     },
     {
@@ -216,7 +216,7 @@ export const PYROMANCER_CARDS: AbilityCard[] = [
         description: cardText('card-meteor-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PYROMANCER, index: 5 },
         effects: [
-            replaceAbility('meteor', METEOR_2, 2, '升级陨石至 II 级')
+            replaceAbility('meteor', METEOR_2, 2, '升级流星火雨至 II 级')
         ],
     },
     {

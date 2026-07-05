@@ -36,6 +36,7 @@ import {
     type DiceThroneExpectation,
 } from './test-utils';
 import { GameTestRunner } from '../../../engine/testing';
+import zhCN from '../../../../public/locales/zh-CN/game-dicethrone.json';
 
 // ============================================================================
 // 测试工具
@@ -244,6 +245,18 @@ describe('暗影刺客 - 定义完整性', () => {
         expect(ids).toContain('shadow-shank');
         expect(ids).toContain('shadow-defense');
         expect(ids).toContain('fearless-riposte');
+    });
+
+    it('玩家板基础技能和升级技能中文名应按正式图面录入', () => {
+        expect(zhCN.abilities['dagger-strike'].name).toBe('匕首突刺');
+        expect(zhCN.abilities.pickpocket.name).toBe('迅捷突袭');
+        expect(zhCN.abilities['kidney-shot'].name).toBe('破隐一击');
+        expect(zhCN.abilities.steal.name).toBe('扒窃');
+
+        expect(zhCN.abilities['dagger-strike-2'].name).toBe('匕首突刺 II');
+        expect(zhCN.abilities['pickpocket-2'].name).toBe('迅捷突袭 II');
+        expect(zhCN.abilities['kidney-shot-2'].name).toBe('破隐一击 II');
+        expect(zhCN.abilities['steal-2'].name).toBe('扒窃 II');
     });
 
     it('卡牌包含升级卡和行动卡', () => {

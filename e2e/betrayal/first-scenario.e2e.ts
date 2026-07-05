@@ -39,6 +39,14 @@ test.describe('山屋惊魂第一剧本', () => {
 
         await page.getByTestId('betrayal-open-scenario').click();
         await expect(page.getByTestId('betrayal-reference-overlay')).toBeVisible();
+        const referenceImage = page.getByTestId('betrayal-reference-card-image');
+        await expect(referenceImage).toHaveAttribute('data-asset-src', 'betrayal/cards/player-reference-zh-front');
+        await page.getByTestId('betrayal-reference-toggle').click();
+        await expect(referenceImage).toHaveAttribute('data-asset-src', 'betrayal/cards/player-reference-zh-back');
+        await page.getByTestId('betrayal-reference-toggle').click();
+        await expect(referenceImage).toHaveAttribute('data-asset-src', 'betrayal/cards/traitor-reference-zh');
+        await page.getByTestId('betrayal-reference-toggle').click();
+        await expect(referenceImage).toHaveAttribute('data-asset-src', 'betrayal/cards/monster-reference-zh');
         await saveScreenshot(page, REFERENCE_SCREENSHOT);
         await page.getByTestId('betrayal-reference-close').click();
         await expect(page.getByTestId('betrayal-reference-overlay')).toBeHidden();

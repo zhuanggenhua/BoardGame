@@ -5,11 +5,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
-import {
-    FIREBALL_2, BURNING_SOUL_2, HOT_STREAK_2, METEOR_2,
-    PYRO_BLAST_2, PYRO_BLAST_3, BURN_DOWN_2, IGNITE_2,
-    MAGMA_ARMOR_2, MAGMA_ARMOR_3
-} from '../heroes/pyromancer/abilities';
 import { TOKEN_IDS, STATUS_IDS } from '../domain/ids';
 
 describe('Pyromancer 技能升级路径验证', () => {
@@ -34,17 +29,18 @@ describe('Pyromancer 技能升级路径验证', () => {
         expect(fmEffect?.action.value).toBe(2);
     });
 
-    it('Burning Soul II 升级校验', () => {
+    it('燃烧之灵 II 升级校验', () => {
         const ability = getUpgradedAbilityFromCard('card-burning-soul-2');
         expect(ability).toBeDefined();
-        // 验证变体：升级后包含 blazing-soul (2岩浆+2火魂)
-        const blazing = ability.variants?.find(v => v.id === 'blazing-soul');
-        expect(blazing).toBeDefined();
-        // blazing-soul 应包含 increase-fm-limit + gainFM5 + inflictKnockdown
-        const fmLimit = blazing?.effects.find(e => e.action.customActionId === 'increase-fm-limit');
+        expect(ability.variants?.map(v => v.id)).toEqual(['soul-burn-2', 'soul-burn-3', 'soul-burn-4']);
+        const fourSoul = ability.variants?.find(v => v.id === 'soul-burn-4');
+        expect(fourSoul?.trigger).toEqual({ type: 'diceSet', faces: { fiery_soul: 4 } });
+        const fmLimit = fourSoul?.effects.find(e => e.action.customActionId === 'increase-fm-limit');
         expect(fmLimit).toBeDefined();
-        const knockdown = blazing?.effects.find(e => e.action.statusId === STATUS_IDS.KNOCKDOWN);
-        expect(knockdown).toBeDefined();
+        const burn = fourSoul?.effects.find(e => e.action.statusId === STATUS_IDS.BURN);
+        expect(burn).toBeDefined();
+        const knockdown = ability.variants?.flatMap(v => v.effects).find(e => e.action.statusId === STATUS_IDS.KNOCKDOWN);
+        expect(knockdown).toBeUndefined();
     });
 
     it('Hot Streak II 升级校验', () => {

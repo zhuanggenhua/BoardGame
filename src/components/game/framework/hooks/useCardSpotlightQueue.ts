@@ -136,12 +136,15 @@ export function useCardSpotlightQueue<TData = unknown>(
 
         for (const entry of newEntries) {
             if (!triggerSetRef.current.has(entry.event.type)) continue;
-            if (
-                typeof ignoreEventsBefore === 'number'
-                && typeof entry.event.timestamp === 'number'
-                && entry.event.timestamp < ignoreEventsBefore
-            ) {
-                continue;
+            if (typeof ignoreEventsBefore === 'number') {
+                const eventTimestamp = entry.event.timestamp;
+                if (
+                    typeof eventTimestamp !== 'number'
+                    || !Number.isFinite(eventTimestamp)
+                    || eventTimestamp < ignoreEventsBefore
+                ) {
+                    continue;
+                }
             }
 
             const extracted = extractCard(entry.event);

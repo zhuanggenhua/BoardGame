@@ -29,6 +29,17 @@ const grantToken = (tokenId: string, value: number, description: string, opts?: 
     timing: opts?.timing ?? 'postDamage',
 });
 
+const selectPlayerGrantToken = (tokenId: string, value: number, description: string, customActionId: string, opts?: { timing?: EffectTiming }): AbilityEffect => ({
+    description,
+    action: {
+        type: 'custom',
+        target: 'self',
+        customActionId,
+        params: { tokenId, amount: value },
+    },
+    timing: opts?.timing ?? 'postDamage',
+});
+
 // Base Abilities (Level 1)
 export const MOON_ELF_ABILITIES: AbilityDef[] = [
     // Longbow I
@@ -199,7 +210,7 @@ export const COVERING_FIRE_2: AbilityDef = {
     sfxKey: MOON_ELF_SFX_SHOT,
     variants: [
         { id: 'covering-fire-2', trigger: { type: 'diceSet', faces: { [FACE.BOW]: 2, [FACE.FOOT]: 3 } }, effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('covering-fire-2', 'gainEvasive'), { timing: 'preDefense' }), damage(9, abilityEffectText('covering-fire-2', 'damage9'))], priority: 1 },
-        { id: 'silencing-trace', trigger: { type: 'diceSet', faces: { [FACE.FOOT]: 3 } }, tags: ['unblockable'], effects: [grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('silencing-trace', 'gainEvasive'), { timing: 'preDefense' }), { description: abilityEffectText('silencing-trace', 'damage2Unblockable'), action: { type: 'damage', target: 'opponent', value: 2 } }], priority: 0 },
+        { id: 'silencing-trace', trigger: { type: 'diceSet', faces: { [FACE.FOOT]: 3 } }, tags: ['unblockable'], effects: [selectPlayerGrantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('silencing-trace', 'gainEvasive'), 'moon_elf-silencing-trace-select-evasive-target', { timing: 'preDefense' }), { description: abilityEffectText('silencing-trace', 'damage2Unblockable'), action: { type: 'damage', target: 'opponent', value: 2 } }], priority: 0 },
     ],
 };
 

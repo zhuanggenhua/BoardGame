@@ -133,7 +133,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-take-cover-2', 'description'),
         sfxKey: GUNSLINGER_SFX_SHOT,
-        ...gunslingerAtlasRef(23),
+        ...gunslingerAtlasRef(24),
         effects: [replaceAbility('take-cover', TAKE_COVER_2, 2, cardText('upgrade-take-cover-2', 'description'))],
     },
     {
@@ -144,7 +144,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-deadeye-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
-        ...gunslingerAtlasRef(24),
+        ...gunslingerAtlasRef(26),
         effects: [replaceAbility('deadeye', DEADEYE_2, 2, cardText('upgrade-deadeye-2', 'description'))],
     },
     {
@@ -155,7 +155,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-duel-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
-        ...gunslingerAtlasRef(25),
+        ...gunslingerAtlasRef(28),
         effects: [replaceAbility('duel', DUEL_2, 2, cardText('upgrade-duel-2', 'description'))],
     },
     {
@@ -166,7 +166,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-quick-draw', 'description'),
         sfxKey: GUNSLINGER_SFX_DRAW,
-        ...gunslingerAtlasRef(26),
+        ...gunslingerAtlasRef(29),
         effects: [replaceAbility('quick-draw', QUICK_DRAW_UPGRADED, 2, cardText('upgrade-quick-draw', 'description'))],
     },
     {
@@ -177,7 +177,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-wanted', 'description'),
         sfxKey: GUNSLINGER_SFX_BOUNTY,
-        ...gunslingerAtlasRef(27),
+        ...gunslingerAtlasRef(30),
         effects: [
             custom('gunslinger-card-wanted', cardText('card-wanted', 'description')),
         ],
@@ -190,7 +190,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-spin-the-chamber', 'description'),
         sfxKey: GUNSLINGER_SFX_LOADED,
-        ...gunslingerAtlasRef(28),
+        ...gunslingerAtlasRef(31),
         effects: [
             grantToken('self', TOKEN_IDS.LOADED, 1, cardText('card-spin-the-chamber', 'description')),
         ],
@@ -203,7 +203,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-high-noon', 'description'),
         sfxKey: GUNSLINGER_SFX_SHOT,
-        ...gunslingerAtlasRef(29),
+        ...gunslingerAtlasRef(32),
         effects: [
             custom('gunslinger-card-high-noon', cardText('card-high-noon', 'description')),
         ],
@@ -216,7 +216,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-wild-west', 'description'),
         sfxKey: GUNSLINGER_SFX_SHOT,
-        ...gunslingerAtlasRef(30),
+        ...gunslingerAtlasRef(33),
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true, requireLoaded: true },
         effects: [
@@ -233,7 +233,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-eat-my-lead', 'description'),
         sfxKey: GUNSLINGER_SFX_ULTIMATE,
-        ...gunslingerAtlasRef(31),
+        ...gunslingerAtlasRef(34),
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [

@@ -12,6 +12,7 @@ import {
 
 const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
 const tributeEdictCardDefId = 'qidahen-atlas05-1633-tribute-edict';
+const counterSpyPlotCardDefId = 'qidahen-atlas05-1600-counter-spy-plot';
 
 const upgradeArmamentActionChoice: QidahenActionChoice = {
     id: 'upgrade-armament',
@@ -76,13 +77,16 @@ export const getDefaultActionIdForFaction = (factionId: QidahenFactionId): strin
 export const buildPaymentState = (
     selectedActionId: string,
     selectedPaymentValue = 0,
+    selectedActionCost?: number,
+    selectedPaymentCount?: number,
 ): QidahenPaymentState => {
     const action = getActionChoiceById(selectedActionId) ?? actionChoiceCatalog.ming[0];
-    const selected = Math.min(selectedPaymentValue, action.cost);
+    const required = selectedActionCost ?? action.cost;
+    const selected = Math.min(selectedPaymentCount ?? selectedPaymentValue, required);
     return {
-        required: action.cost,
+        required,
         selected,
-        prompt: `需弃 ${action.cost} / 已选 ${selected}`,
+        prompt: `需弃 ${required} / 已选 ${selected}`,
     };
 };
 
@@ -111,6 +115,32 @@ export const computeQidahenSelectedPaymentValue = (
     return handCards.reduce((total, card) => (
         selectedCardIdSet.has(card.id) ? total + getQidahenHandCardPaymentValue(card) : total
     ), 0);
+};
+
+export const getQidahenSelectedActionCost = (
+    state: QidahenCore,
+    selectedActionId: string,
+): number | undefined => {
+    if (selectedActionId !== 'play-event-card' || !state.selectedHandActionCardId) {
+        return undefined;
+    }
+    const sourceCard = state.handCards.find((card) => card.id === state.selectedHandActionCardId);
+    return sourceCard?.cardDefId === counterSpyPlotCardDefId || sourceCard?.cardDefId === tributeEdictCardDefId
+        ? 2
+        : undefined;
+};
+
+export const getQidahenSelectedActionPaymentProgress = (
+    state: QidahenCore,
+    selectedActionId: string,
+): number | undefined => {
+    if (selectedActionId !== 'play-event-card' || !state.selectedHandActionCardId) {
+        return undefined;
+    }
+    const sourceCard = state.handCards.find((card) => card.id === state.selectedHandActionCardId);
+    return sourceCard?.cardDefId === tributeEdictCardDefId
+        ? state.selectedPaymentCardIds.length
+        : undefined;
 };
 
 export const buildTurnLabel = (
@@ -191,6 +221,11 @@ export const syncFactionActionWindow = (
         actionChoices,
         selectedActionId,
         confirmedActionId,
-        payment: buildPaymentState(selectedActionId, computeQidahenSelectedPaymentValue(state.handCards, state.selectedPaymentCardIds)),
+        payment: buildPaymentState(
+            selectedActionId,
+            computeQidahenSelectedPaymentValue(state.handCards, state.selectedPaymentCardIds),
+            getQidahenSelectedActionCost(state, selectedActionId),
+            getQidahenSelectedActionPaymentProgress(state, selectedActionId),
+        ),
     };
 };

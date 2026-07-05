@@ -14,101 +14,115 @@
 import { describe, it, expect } from 'vitest';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
 import type { AbilityDef } from '../domain/combat/types';
-import type { AbilityEffect } from '../domain/combat';
-import type { AbilityCard } from '../domain/types';
+import type { AbilityCard, HeroState } from '../domain/types';
 import {
     getRegisteredCustomActionIds,
     getCustomActionHandler,
     getCustomActionMeta,
 } from '../domain/effects';
-import type { SelectableCharacterId } from '../domain/types';
-
-// 各英雄卡牌
-import { MONK_CARDS } from '../heroes/monk/cards';
-import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
-import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
-import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
-import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
-import { PALADIN_CARDS } from '../heroes/paladin/cards';
-import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
-import { SAMURAI_CARDS } from '../heroes/samurai/cards';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
 
-const HEROES: SelectableCharacterId[] = [
-    'monk', 'barbarian', 'paladin', 'pyromancer', 'moon_elf', 'shadow_thief', 'gunslinger', 'samurai',
-];
+const HEROES = Object.keys(CHARACTER_DATA_MAP);
+
+const CARD_LOOKUP_RANDOM = {
+    random: () => 0.5,
+    d: (_max: number) => 1,
+    range: (min: number) => min,
+    shuffle: <T>(arr: T[]) => arr,
+} as const;
 
 const ALL_CARDS: AbilityCard[] = [
-    ...MONK_CARDS, ...BARBARIAN_CARDS, ...PYROMANCER_CARDS,
-    ...SHADOW_THIEF_CARDS, ...MOON_ELF_CARDS, ...PALADIN_CARDS, ...GUNSLINGER_CARDS, ...SAMURAI_CARDS,
+    ...Object.values(CHARACTER_DATA_MAP).flatMap(data => data.getStartingDeck(CARD_LOOKUP_RANDOM as any)),
     ...COMMON_CARDS,
+];
+
+const BOARD_FACES_TO_AUDIT: Array<HeroState['playerBoardFace']> = [
+    undefined,
+    'normal',
+    'cursed',
 ];
 
 // ============================================================================
 // 辅助函数
 // ============================================================================
 
-/** 从 AbilityDef 中提取所有 customActionId（含变体） */
-function extractCustomActionIds(ability: AbilityDef): string[] {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
+ * 从数据定义中递归提取所有技能结算入口。
+ *
+ * 这里同时覆盖：
+ * - action.customActionId：技能、卡牌、Token、被动能力直接声明的结算入口
+ * - resolveCustomActionId：先让玩家选择目标，再回调执行的结算入口
+ */
+function extractCustomActionIdsFromValue(value: unknown, seen = new WeakSet<object>()): string[] {
     const ids: string[] = [];
-    const collect = (effects: AbilityEffect[] | undefined) => {
-        if (!effects) return;
-        for (const e of effects) {
-            if (e.action?.type === 'custom' && e.action.customActionId) {
-                ids.push(e.action.customActionId);
+    const visit = (current: unknown) => {
+        if (!isRecord(current)) return;
+        if (seen.has(current)) return;
+        seen.add(current);
+
+        if (Array.isArray(current)) {
+            current.forEach(visit);
+            return;
+        }
+
+        for (const [key, nested] of Object.entries(current)) {
+            if (
+                (key === 'customActionId' || key === 'resolveCustomActionId')
+                && typeof nested === 'string'
+            ) {
+                ids.push(nested);
             }
-            // rollDie 的 conditionalEffects 中也可能有 custom action
-            if (e.action?.type === 'rollDie' && e.action.conditionalEffects) {
-                for (const ce of e.action.conditionalEffects) {
-                    if (ce.triggerChoice?.options) {
-                        // choice options 中可能引用 custom action
-                    }
-                }
-            }
+            visit(nested);
         }
     };
-    collect(ability.effects);
-    if (ability.variants) {
-        for (const v of ability.variants) {
-            collect(v.effects);
-        }
-    }
+
+    visit(value);
     return ids;
+}
+
+function uniq(values: string[]): string[] {
+    return [...new Set(values)];
+}
+
+/** 从 AbilityDef 中提取所有 customActionId（含变体、条件效果和目标选择回调） */
+function extractCustomActionIds(ability: AbilityDef): string[] {
+    return uniq(extractCustomActionIdsFromValue(ability));
 }
 
 /** 从卡牌中提取所有 customActionId（含升级卡 newAbilityDef 中的引用） */
 function extractCardCustomActionIds(card: AbilityCard): string[] {
-    const ids: string[] = [];
-    if (!card.effects) return ids;
-    for (const e of card.effects) {
-        if (e.action?.type === 'custom' && e.action.customActionId) {
-            ids.push(e.action.customActionId);
-        }
-        // 升级卡的 replaceAbility 效果中包含 newAbilityDef，其中也可能引用 customAction
-        if (e.action?.type === 'replaceAbility' && e.action.newAbilityDef) {
-            const newDef = e.action.newAbilityDef as AbilityDef;
-            ids.push(...extractCustomActionIds(newDef));
-        }
-    }
-    return ids;
+    return uniq(extractCustomActionIdsFromValue(card));
 }
 
-/** 从 TokenDef 被动触发中提取 customActionId */
+/** 从 TokenDef 中提取 customActionId（含主动使用、被动触发和机器人状态钩子） */
 function extractTokenCustomActionIds(): string[] {
-    const ids: string[] = [];
-    for (const def of ALL_TOKEN_DEFINITIONS) {
-        const actions = def.passiveTrigger?.actions ?? [];
-        for (const a of actions) {
-            if (a.type === 'custom' && a.customActionId) {
-                ids.push(a.customActionId);
-            }
-        }
-        if (def.activeUse?.customActionId) {
-            ids.push(def.activeUse.customActionId);
+    return uniq(extractCustomActionIdsFromValue(ALL_TOKEN_DEFINITIONS));
+}
+
+/** 从英雄被动能力中提取 customActionId */
+function extractPassiveAbilityCustomActionIds(): string[] {
+    return uniq(extractCustomActionIdsFromValue(
+        Object.values(CHARACTER_DATA_MAP).flatMap(data => data.passiveAbilities ?? []),
+    ));
+}
+
+function getAbilitiesForAudit(heroId: string): AbilityDef[] {
+    const data = CHARACTER_DATA_MAP[heroId];
+    const abilities: AbilityDef[] = [];
+
+    abilities.push(...(data.abilities as AbilityDef[]));
+    if (data.getAbilitiesForFace) {
+        for (const face of BOARD_FACES_TO_AUDIT) {
+            abilities.push(...(data.getAbilitiesForFace(face) as AbilityDef[]));
         }
     }
-    return ids;
+
+    return abilities;
 }
 
 // ============================================================================
@@ -116,8 +130,7 @@ function extractTokenCustomActionIds(): string[] {
 // ============================================================================
 
 describe.each(HEROES)('%s: CustomAction 注册完整性', (heroId) => {
-    const data = CHARACTER_DATA_MAP[heroId];
-    const abilities = data.abilities as AbilityDef[];
+    const abilities = getAbilitiesForAudit(heroId);
 
     it('所有技能引用的 customActionId 都已注册', () => {
         const violations: string[] = [];
@@ -197,17 +210,33 @@ describe('TokenDef 被动触发 CustomAction 注册完整性', () => {
 });
 
 // ============================================================================
+// 3.1 英雄被动能力 CustomAction 注册完整性
+// ============================================================================
+
+describe('英雄被动能力 CustomAction 注册完整性', () => {
+    it('所有英雄被动能力引用的 customActionId 都已注册', () => {
+        const ids = extractPassiveAbilityCustomActionIds();
+        const violations: string[] = [];
+        for (const id of ids) {
+            if (!getCustomActionHandler(id)) {
+                violations.push(`英雄被动能力 → customActionId "${id}" 未注册`);
+            }
+        }
+        expect(violations).toEqual([]);
+    });
+});
+
+// ============================================================================
 // 4. CustomAction 覆盖完整性审计（Task 13.2）
 // ============================================================================
 
 describe('CustomAction 覆盖完整性审计', () => {
     const registeredIds = getRegisteredCustomActionIds();
 
-    // 收集所有被引用的 customActionId（技能 + 卡牌 + TokenDef）
+    // 收集所有被引用的 customActionId（技能 + 卡牌 + TokenDef + 英雄被动能力）
     const referencedIds = new Set<string>();
     for (const heroId of HEROES) {
-        const data = CHARACTER_DATA_MAP[heroId];
-        for (const ability of data.abilities as AbilityDef[]) {
+        for (const ability of getAbilitiesForAudit(heroId)) {
             extractCustomActionIds(ability).forEach(id => referencedIds.add(id));
         }
     }
@@ -215,6 +244,7 @@ describe('CustomAction 覆盖完整性审计', () => {
         extractCardCustomActionIds(card).forEach(id => referencedIds.add(id));
     }
     extractTokenCustomActionIds().forEach(id => referencedIds.add(id));
+    extractPassiveAbilityCustomActionIds().forEach(id => referencedIds.add(id));
 
     // 已知的非声明式引用 customAction（通过 flowHooks/attack.ts/直接调用等路径使用）
     // 这些 customAction 不在 AbilityDef/Card/TokenDef 的 effects 中声明，但在运行时被调用
@@ -235,6 +265,10 @@ describe('CustomAction 覆盖完整性审计', () => {
         'shadow_thief-cornucopia-discard', // 聚宝盆旧版 handler（向后兼容）
         // 僧侣（通用状态移除，由卡牌系统直接调用）
         'remove-status-self',
+        // 通用卡牌目标选择：执行卡牌时先选对手，再回调结算卡牌效果
+        'resolve-card-effects-on-selected-opponent',
+        // 枪手卡牌：手枪鞭打先进入目标选择包装入口，再回调 resolve 入口
+        'gunslinger-card-pistol-whip',
         // 通过 selectPlayer interaction 的 resolveCustomActionId 间接进入
         'gunslinger-card-pistol-whip-resolve',
         'gunslinger-card-mark-the-target-resolve',
@@ -242,6 +276,9 @@ describe('CustomAction 覆盖完整性审计', () => {
         'gunslinger-card-high-noon-resolve',
         'samurai-card-you-should-be-ashamed-resolve',
         'artificer-synth-inflict-nanobomb-selected',
+        // 战术家：战争贩子结算中临时追加进攻投掷；地毯式轰炸选目标后回调伤害结算
+        'zhanshujia-war-monger-extra-offensive-roll',
+        'zhanshujia-carpet-bombing-target-damage',
     ]);
 
     it('所有注册的 customAction 都被声明式引用或在已知非声明式列表中', () => {

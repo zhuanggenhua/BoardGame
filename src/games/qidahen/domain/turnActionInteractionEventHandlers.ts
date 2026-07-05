@@ -2,6 +2,8 @@ import type { QidahenCore } from './types';
 import {
     QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
     QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
+    QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+    QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
     QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
     QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
@@ -13,6 +15,8 @@ import {
 import {
     getQidahenDiplomacySelectionFromInteraction,
     getQidahenDriveTigerConsentSelectionFromInteraction,
+    getQidahenEventCharacterTargetSelectionFromInteraction,
+    getQidahenEventOpponentHandChoiceSelectionFromInteraction,
     getQidahenFortificationMaintenanceSelectionFromInteraction,
     getQidahenInternalDispatchSelectionFromInteraction,
     getQidahenKhanEdictSelectionFromInteraction,
@@ -37,6 +41,10 @@ import {
 } from './actionWindowChoices';
 import { resolveQidahenFortificationMaintenanceInteractionChoice } from './fortificationMaintenance';
 import { resolveQidahenHandLimitDiscardInteractionChoice } from './handLimitDiscard';
+import {
+    resolveQidahenEventCharacterTargetChoice,
+    resolveQidahenEventOpponentHandChoice,
+} from './eventCharacterTargetSelection';
 
 const asQidahenInteractionSelectionCarrier = (interactionData?: unknown) => ({ data: interactionData });
 
@@ -277,6 +285,56 @@ const resolveQidahenFortificationMaintenanceInteractionEvent = (
     );
 };
 
+const resolveQidahenEventCharacterTargetInteractionEvent = (
+    context: QidahenInteractionResolutionContext,
+): QidahenCore | null | undefined => {
+    const { state, payload, event } = context;
+    const selection = getQidahenEventCharacterTargetSelectionFromInteraction(
+        asQidahenInteractionSelectionCarrier(payload.interactionData),
+    );
+    if (
+        payload.sourceId !== QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID
+        && selection == null
+    ) {
+        return undefined;
+    }
+    const choiceId = getQidahenResolvedChoiceId(payload);
+    if (!choiceId) {
+        return null;
+    }
+    return resolveQidahenEventCharacterTargetChoice(
+        state.core,
+        choiceId,
+        event.timestamp ?? 0,
+        selection,
+    );
+};
+
+const resolveQidahenEventOpponentHandChoiceInteractionEvent = (
+    context: QidahenInteractionResolutionContext,
+): QidahenCore | null | undefined => {
+    const { state, payload, event } = context;
+    const selection = getQidahenEventOpponentHandChoiceSelectionFromInteraction(
+        asQidahenInteractionSelectionCarrier(payload.interactionData),
+    );
+    if (
+        payload.sourceId !== QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID
+        && selection == null
+    ) {
+        return undefined;
+    }
+    const choiceId = getQidahenResolvedChoiceId(payload);
+    if (!choiceId) {
+        return null;
+    }
+    return resolveQidahenEventOpponentHandChoice(
+        state.core,
+        choiceId,
+        event.timestamp ?? 0,
+        selection,
+    );
+};
+
 export const resolveQidahenTurnActionInteractionEvent = (
     context: QidahenInteractionResolutionContext,
 ): QidahenCore | null | undefined => resolveQidahenHandLimitDiscardInteractionEvent(context)
@@ -287,4 +345,6 @@ export const resolveQidahenTurnActionInteractionEvent = (
     ?? resolveQidahenMaShiTradeInteractionEvent(context)
     ?? resolveQidahenKhanEdictInteractionEvent(context)
     ?? resolveQidahenDriveTigerConsentInteractionEvent(context)
-    ?? resolveQidahenFortificationMaintenanceInteractionEvent(context);
+    ?? resolveQidahenFortificationMaintenanceInteractionEvent(context)
+    ?? resolveQidahenEventCharacterTargetInteractionEvent(context)
+    ?? resolveQidahenEventOpponentHandChoiceInteractionEvent(context);

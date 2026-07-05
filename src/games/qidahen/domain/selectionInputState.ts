@@ -6,6 +6,8 @@ import { getCurrentFactionId } from './factionTurnAccessors';
 import {
     buildPaymentState,
     computeQidahenSelectedPaymentValue,
+    getQidahenSelectedActionCost,
+    getQidahenSelectedActionPaymentProgress,
 } from './factionActionWindow';
 import { resolveQidahenHandLimitDiscard } from './handLimitDiscard';
 import { isSunYuanhuaEnabled } from './characterAbilitySemantics';
@@ -113,7 +115,7 @@ const toggleQidahenPaymentCard = (
         return state.selectedPaymentCardIds.filter((selectedId) => selectedId !== cardId);
     }
 
-    if (computeQidahenSelectedPaymentValue(state.handCards, state.selectedPaymentCardIds) >= state.payment.required) {
+    if (state.payment.selected >= state.payment.required) {
         return state.selectedPaymentCardIds;
     }
 
@@ -192,6 +194,14 @@ export const reduceQidahenSelectionInputEvent = (
                 payment: buildPaymentState(
                     state.confirmedActionId ?? state.selectedActionId,
                     computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds),
+                    getQidahenSelectedActionCost(state, state.confirmedActionId ?? state.selectedActionId),
+                    getQidahenSelectedActionPaymentProgress(
+                        {
+                            ...state,
+                            selectedPaymentCardIds,
+                        },
+                        state.confirmedActionId ?? state.selectedActionId,
+                    ),
                 ),
             });
         }

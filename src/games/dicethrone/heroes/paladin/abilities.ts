@@ -345,7 +345,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         ]
     },
 
-    // 2. 力量祝福 (Blessing of Might)
+    // 2. 神力信徒 (Might Disciple)
     {
         id: 'blessing-of-might',
         name: abilityText('blessing-of-might', 'name'),

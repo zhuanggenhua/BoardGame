@@ -33,9 +33,9 @@ const inflictStatus = (statusId: string, value: number, description: string, opt
     condition: opts?.condition,
 });
 
-const removeStatus = (description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
+const removeStatusIfThreeKind = (description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
     description,
-    action: { type: 'custom', target: 'self', customActionId: 'remove-status-self' },
+    action: { type: 'custom', target: 'self', customActionId: 'barbarian-steadfast-remove-status-if-three-kind' },
     timing: opts?.timing,
     condition: opts?.condition,
 });
@@ -240,9 +240,9 @@ export const STEADFAST_2: AbilityDef = {
     description: abilityText('steadfast-2', 'description'),
     sfxKey: BARBARIAN_SFX_LIGHT,
     variants: [
-        { id: 'steadfast-2-3', trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.HEART]: 3 } }, effects: [heal(5, abilityEffectText('steadfast-2', 'heal5')), removeStatus(abilityEffectText('steadfast-2', 'removeStatus'))], priority: 1 },
-        { id: 'steadfast-2-4', trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.HEART]: 4 } }, effects: [heal(6, abilityEffectText('steadfast-2', 'heal6')), removeStatus(abilityEffectText('steadfast-2', 'removeStatus'))], priority: 2 },
-        { id: 'steadfast-2-5', trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.HEART]: 5 } }, effects: [heal(7, abilityEffectText('steadfast-2', 'heal7')), removeStatus(abilityEffectText('steadfast-2', 'removeStatus'))], priority: 3 },
+        { id: 'steadfast-2-3', trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.HEART]: 3 } }, effects: [heal(5, abilityEffectText('steadfast-2', 'heal5')), removeStatusIfThreeKind(abilityEffectText('steadfast-2', 'removeStatus'))], priority: 1 },
+        { id: 'steadfast-2-4', trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.HEART]: 4 } }, effects: [heal(6, abilityEffectText('steadfast-2', 'heal6')), removeStatusIfThreeKind(abilityEffectText('steadfast-2', 'removeStatus'))], priority: 2 },
+        { id: 'steadfast-2-5', trigger: { type: 'diceSet', faces: { [BARBARIAN_DICE_FACE_IDS.HEART]: 5 } }, effects: [heal(7, abilityEffectText('steadfast-2', 'heal7')), removeStatusIfThreeKind(abilityEffectText('steadfast-2', 'removeStatus'))], priority: 3 },
     ],
 };
 

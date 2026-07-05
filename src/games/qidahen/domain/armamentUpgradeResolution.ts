@@ -83,6 +83,7 @@ export const resolveQidahenSelectedArmamentUpgradeExecution = (
     currentFactionId: QidahenFactionId,
     selectedArmamentId: QidahenArmamentId | null,
     selectedHandActionCardLabel: string | null,
+    selectedHandActionCardDefId: string | null,
     timestamp: number,
     dependencies: QidahenArmamentUpgradeResolutionDependencies = {
         buildSeasonSummary,
@@ -93,11 +94,24 @@ export const resolveQidahenSelectedArmamentUpgradeExecution = (
         factions[currentFactionId].armaments,
         selectedArmamentId,
     );
+    const nextArmaments = selectedHandActionCardDefId && upgradeResult.upgradedArmament
+        ? upgradeResult.armaments.map((armament) => (
+            armament.id === upgradeResult.upgradedArmament?.id
+                ? {
+                    ...armament,
+                    sourceCardDefIds: Array.from(new Set([
+                        ...(armament.sourceCardDefIds ?? []),
+                        selectedHandActionCardDefId,
+                    ])),
+                }
+                : armament
+        ))
+        : upgradeResult.armaments;
     const nextFactions: QidahenCore['factions'] = {
         ...factions,
         [currentFactionId]: {
             ...factions[currentFactionId],
-            armaments: upgradeResult.armaments,
+            armaments: nextArmaments,
         },
     };
     const upgradedArmamentLine = upgradeResult.upgradedArmament

@@ -78,16 +78,17 @@ const resolveSoulBurn2FM = (ctx: CustomActionContext): DiceThroneEvent[] => {
 };
 
 /**
- * 灵魂燃烧 (Soul Burn) — 伤害部分（withDamage 时机）
- * 对所有对手造成 1x [火焰精通] 不可防御伤害
+ * 燃烧之灵 — 伤害部分（withDamage 时机）
+ * 对所有对手造成 1×火魂骰面数量的附属伤害。
  * 注意：在 defensiveRoll exit 时执行，此时骰子已被防御方覆盖，
- * 必须从 pendingAttack.attackDiceFaceCounts 读取攻击方骰面快照
+ * 必须从 pendingAttack.attackDiceFaceCounts 读取攻击方骰面快照。
  * 
  * 【已迁移到新伤害计算管线】
  */
 const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
     const events: DiceThroneEvent[] = [];
-    const dmg = getFireMasteryCount(ctx);
+    const faces = getAttackDiceFaceCounts(ctx.state);
+    const dmg = faces[PYROMANCER_DICE_FACE_IDS.FIERY_SOUL] || 0;
     if (dmg <= 0) return events;
 
     const collateralTargets = Object.keys(ctx.state.players).filter(playerId => playerId !== ctx.attackerId);

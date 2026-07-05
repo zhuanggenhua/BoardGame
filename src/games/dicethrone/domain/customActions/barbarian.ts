@@ -2,17 +2,17 @@
  * 閲庤洰浜?(Barbarian) 涓撳睘 Custom Action 澶勭悊鍣?
  */
 
-import { getActiveDice, getFaceCounts, getMaxDuplicateValueCount, getPlayerDieFace } from '../rules';
-import { RESOURCE_IDS } from '../resources';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPlayerDieFace } from '../rules';
 import { STATUS_IDS, BARBARIAN_DICE_FACE_IDS as FACES } from '../ids';
 import type {
     DiceThroneEvent,
-    DamageDealtEvent,
     HealAppliedEvent,
     StatusAppliedEvent,
     BonusDieRolledEvent,
     DamageShieldGrantedEvent,
     BonusDieInfo,
+    PendingInteraction,
+    InteractionRequestedEvent,
 } from '../types';
 import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
@@ -342,7 +342,7 @@ function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, t
  * 重击 II / III：仅当攻击骰至少 4 个相同数字时，本次攻击变为不可防御。
  */
 function handleBarbarianSlapUnblockableIfFourKind({ attackerId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    if (getMaxDuplicateValueCount(getActiveDice(state)) < 4) {
+    if (getAttackMaxDuplicateValueCount(state) < 4) {
         return [];
     }
 
@@ -352,6 +352,28 @@ function handleBarbarianSlapUnblockableIfFourKind({ attackerId, state, timestamp
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as DiceThroneEvent];
+}
+
+/**
+ * 百折不挠 II：仅当攻击骰至少 3 个相同数字时，才允许移除自身 1 个状态。
+ */
+function handleBarbarianSteadfastRemoveStatusIfThreeKind({ attackerId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    if (getAttackMaxDuplicateValueCount(state) < 3) {
+        return [];
+    }
+
+    const interaction: PendingInteraction = {
+        id: `${sourceAbilityId}-${timestamp}`,
+        playerId: attackerId,
+        sourceCardId: sourceAbilityId,
+        type: 'selectStatus',
+        titleKey: 'interaction.selectStatusToRemove',
+        selectCount: 1,
+        selected: [],
+        targetPlayerIds: [attackerId],
+    };
+
+    return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
 // ============================================================================
@@ -380,6 +402,10 @@ export function registerBarbarianCustomActions(): void {
     });
     registerCustomActionHandler('barbarian-slap-unblockable-if-four-kind', handleBarbarianSlapUnblockableIfFourKind, {
         categories: ['defense', 'dice'],
+    });
+    registerCustomActionHandler('barbarian-steadfast-remove-status-if-three-kind', handleBarbarianSteadfastRemoveStatusIfThreeKind, {
+        categories: ['status', 'dice'],
+        requiresInteraction: true,
     });
 }
 

@@ -151,7 +151,7 @@ interface BetrayalRoomEnterEffectResult {
 
 export interface BetrayalRecentRollState {
     id: string;
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention';
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck';
     playerId: string;
     sourceTitle: string;
     trait?: BetrayalTraitKey;
@@ -549,6 +549,8 @@ type BetrayalEvent =
         playerId: string;
         roomId: string;
         rollTotal: number;
+        dice: number[];
+        passiveBonus: number;
         regionBonus: number;
         success: boolean;
         logText: string;
@@ -1905,6 +1907,21 @@ function rollNonCombatTraitCheck(
     trait: BetrayalTraitKey,
 ): number {
     return rollTrait(random, resolveNonCombatTraitCheckValue(core, explorer, trait)) + resolveTraitRollPassiveBonus(explorer, trait);
+}
+
+function rollNonCombatTraitCheckWithDice(
+    random: RandomFn,
+    core: BetrayalCore,
+    explorer: BetrayalExplorerSummary,
+    trait: BetrayalTraitKey,
+): { total: number; dice: number[]; passiveBonus: number } {
+    const dice = rollDicePips(random, resolveNonCombatTraitCheckValue(core, explorer, trait));
+    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
+    return {
+        total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
+        dice,
+        passiveBonus,
+    };
 }
 
 function resolveEventTraitCheckExtraDice(explorer: BetrayalExplorerSummary): number {
@@ -4804,11 +4821,14 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         case BETRAYAL_COMMANDS.EXORCISE_JACK: {
             const actor = core.currentExplorer;
             const regionBonus = countExorcismCirclesInRegion(core, actor.roomId);
-            const rollTotal = rollNonCombatTraitCheck(random, core, actor, 'sanity') + regionBonus;
+            const sanityRoll = rollNonCombatTraitCheckWithDice(random, core, actor, 'sanity');
+            const rollTotal = sanityRoll.total + regionBonus;
             return [nowEvent(EVENTS.JACK_EXORCISED, {
                 playerId: command.playerId,
                 roomId: actor.roomId,
                 rollTotal,
+                dice: sanityRoll.dice,
+                passiveBonus: sanityRoll.passiveBonus,
                 regionBonus,
                 success: rollTotal >= 7,
                 logText: rollTotal >= 7
@@ -5707,6 +5727,18 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
                 ? null
                 : core.nextNonCombatTraitReplacement;
+            core.recentRoll = {
+                id: `${event.payload.playerId}-exorcise-jack-${event.timestamp}`,
+                kind: 'hauntActionTraitCheck',
+                playerId: event.payload.playerId,
+                sourceTitle: '驱魔',
+                trait: 'sanity',
+                rollLabel: '神志检定',
+                dice: [...event.payload.dice],
+                passiveBonus: event.payload.passiveBonus + event.payload.regionBonus,
+                latestLabel: event.payload.success ? '驱魔成功' : '驱魔失败',
+                consumedRabbitFootCardIds: [],
+            };
             if (!event.payload.success) {
                 getAllExplorers(core)
                     .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)

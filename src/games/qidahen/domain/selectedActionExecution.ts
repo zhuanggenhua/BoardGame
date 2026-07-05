@@ -39,8 +39,10 @@ type QidahenPreparedSelectedActionResult =
         selectedEventActionCardDefId: string | null;
         selectedEventActionCardLabel: string | null;
         selectedEventActionCardRemovedFromGame: boolean;
+        selectedEventActionCardPersistent: boolean;
         selectedEventActionRulesSummary: string | null;
         selectedHandActionCardLabel: string | null;
+        selectedHandActionCardDefId: string | null;
         selectedPaymentResourceLabels: string[];
         selectedArmamentId: QidahenArmamentId | null;
         spentCardCount: number;
@@ -68,6 +70,7 @@ interface QidahenSelectedActionExecutionDependencies {
         currentFactionId: QidahenFactionId,
         selectedArmamentId: QidahenArmamentId | null,
         selectedHandActionCardLabel: string | null,
+        selectedHandActionCardDefId: string | null,
         timestamp: number,
     ) => {
         factions: QidahenCore['factions'];
@@ -97,6 +100,10 @@ interface QidahenSelectedActionExecutionDependencies {
             };
             paidHandCards: QidahenCore['handCards'];
             regions: QidahenCore['regions'];
+            selectedEventActionCardDefId: string | null;
+            selectedEventActionCardLabel: string | null;
+            selectedEventActionCardPersistent: boolean;
+            selectedEventActionRulesSummary: string | null;
             spentCardCount: number;
             timestamp: number;
         },
@@ -136,8 +143,10 @@ export const executeQidahenSelectedAction = (
         selectedEventActionCardDefId,
         selectedEventActionCardLabel,
         selectedEventActionCardRemovedFromGame,
+        selectedEventActionCardPersistent,
         selectedEventActionRulesSummary,
         selectedHandActionCardLabel,
+        selectedHandActionCardDefId,
         selectedPaymentResourceLabels,
         selectedArmamentId,
         spentCardCount,
@@ -147,9 +156,13 @@ export const executeQidahenSelectedAction = (
         actionId,
         currentFactionId,
         selectedEventActionCardDefId,
+        selectedEventActionCardLabel,
         selectedArmamentId,
         selectedHandActionCardLabel,
+        selectedHandActionCardDefId,
         preparedFactions,
+        selectedEventActionCardPersistent,
+        selectedEventActionRulesSummary,
         timestamp,
         dependencies,
     );
@@ -179,6 +192,10 @@ export const executeQidahenSelectedAction = (
         followUp,
         paidHandCards,
         regions: executionResolution.regions,
+        selectedEventActionCardDefId,
+        selectedEventActionCardLabel,
+        selectedEventActionCardPersistent,
+        selectedEventActionRulesSummary,
         spentCardCount,
         timestamp,
     });

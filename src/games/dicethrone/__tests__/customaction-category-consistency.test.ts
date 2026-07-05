@@ -668,6 +668,94 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
         expect(handler!(nonTriggerCtx)).toEqual([]);
     });
 
+    it('barbarian-steadfast-remove-status-if-three-kind 仅按攻击骰三个相同数字请求移除自身状态', () => {
+        const handler = getCustomActionHandler('barbarian-steadfast-remove-status-if-three-kind');
+        expect(handler).toBeDefined();
+
+        const barbarianData = CHARACTER_DATA_MAP.barbarian;
+        const monkData = CHARACTER_DATA_MAP.monk;
+        const state = {
+            players: {
+                '0': {
+                    characterId: 'barbarian',
+                    resources: { [RESOURCE_IDS.HP]: 50, [RESOURCE_IDS.CP]: 5 },
+                    tokens: {},
+                    tokenStackLimits: {},
+                    statusEffects: { concussion: 1 },
+                    abilities: barbarianData.abilities,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    abilityLevels: {},
+                    dice: barbarianData.diceDefinition,
+                },
+                '1': {
+                    characterId: 'monk',
+                    resources: { [RESOURCE_IDS.HP]: 50, [RESOURCE_IDS.CP]: 5 },
+                    tokens: {},
+                    tokenStackLimits: {},
+                    statusEffects: {},
+                    abilities: monkData.abilities,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    abilityLevels: {},
+                    dice: monkData.diceDefinition,
+                },
+            },
+            activePlayerId: '0',
+            rollDiceCount: 5,
+            tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                abilityId: 'steadfast',
+                bonusDamage: 0,
+                isDefendable: true,
+                attackDiceValues: [2, 2, 2, 4, 5],
+            },
+            dice: [
+                { id: 'die-0', value: 1, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-1', value: 2, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-2', value: 3, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-3', value: 4, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-4', value: 5, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+            ],
+        };
+
+        const ctx = createMockContext('barbarian-steadfast-remove-status-if-three-kind', state);
+        const events = handler!(ctx);
+        expect(events).toHaveLength(1);
+        expect(events[0]).toMatchObject({
+            type: 'INTERACTION_REQUESTED',
+            payload: {
+                interaction: {
+                    playerId: '0',
+                    sourceCardId: 'test-ability',
+                    type: 'selectStatus',
+                    targetPlayerIds: ['0'],
+                },
+            },
+        });
+
+        const nonTriggerState = {
+            ...state,
+            pendingAttack: {
+                ...state.pendingAttack,
+                attackDiceValues: [1, 1, 2, 3, 4],
+            },
+            dice: [
+                { id: 'die-0', value: 6, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-1', value: 6, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-2', value: 6, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-3', value: 4, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+                { id: 'die-4', value: 5, locked: false, symbol: 'heart', definitionId: barbarianData.diceDefinition?.[0]?.id ?? 'barbarian-die' },
+            ],
+        };
+        const nonTriggerCtx = createMockContext('barbarian-steadfast-remove-status-if-three-kind', nonTriggerState);
+        expect(handler!(nonTriggerCtx)).toEqual([]);
+    });
+
     it('categories 声明 damage 的 handler 应当产生 DAMAGE_DEALT（反向检查）', () => {
         const violations: string[] = [];
 

@@ -14,7 +14,6 @@ import {
     RIGHTEOUS_COMBAT_2,
     RIGHTEOUS_COMBAT_3,
     BLESSING_OF_MIGHT_2,
-    HOLY_LIGHT_2,
     VENGEANCE_2,
     RIGHTEOUS_PRAYER_2,
     HOLY_STRIKE_2,
@@ -49,7 +48,7 @@ describe('圣骑士技能定义', () => {
             expect(ability!.effects![1].action.type).toBe('rollDie');
         });
 
-        it('力量祝福 - 3 Sword + 1 Pray 触发，不可防御', () => {
+        it('神力信徒 - 3 Sword + 1 Pray 触发，不可防御', () => {
             const ability = PALADIN_ABILITIES.find(a => a.id === 'blessing-of-might');
             expect(ability).toBeDefined();
             expect(ability!.trigger).toEqual({
@@ -174,7 +173,7 @@ describe('圣骑士技能定义', () => {
             expect(main.effects[0].action.value).toBe(6);
         });
 
-        it('力量祝福 II - 新增进攻姿态变体', () => {
+        it('神力信徒 II - 新增进攻姿态变体', () => {
             expect(BLESSING_OF_MIGHT_2.variants).toHaveLength(2);
             // 进攻姿态: 2 Sword + 1 Pray
             const stance = BLESSING_OF_MIGHT_2.variants![0];
@@ -195,7 +194,7 @@ describe('圣骑士技能定义', () => {
             expect(HOLY_STRIKE_2.variants![1].effects[1].action.value).toBe(9);
         });
 
-        it('复仇 II - 新增混合变体 + 玩家选择交互', () => {
+        it('反击 II - 新增复仇变体 + 玩家选择交互', () => {
             expect(VENGEANCE_2.variants).toHaveLength(2);
             // 混合变体: 4 种不同符号
             expect(VENGEANCE_2.variants![0].trigger.type).toBe('allSymbolsPresent');

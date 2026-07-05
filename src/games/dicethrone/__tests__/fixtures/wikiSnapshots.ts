@@ -290,8 +290,8 @@ export const PALADIN_ABILITY_SNAPSHOTS: WikiAbilitySnapshot[] = [
   { heroId: 'paladin', abilityId: 'righteous-combat', level: 3, wikiName: 'Righteous Combat III', wikiDescription: 'Tenacity (2 Swords + 1 Helm): Heal 2, deal 2 unblockable damage. Main (3 Swords + 2 Helms): Deal 6 damage, roll 3 dice with bonuses.', wikiDamage: 6, wikiTrigger: '2 Swords + 1 Helm / 3 Swords + 2 Helms', wikiTags: ['unblockable'] },
 
   // --- Blessing of Might ---
-  { heroId: 'paladin', abilityId: 'blessing-of-might', level: 1, wikiName: 'Blessing of Might', wikiDescription: 'Deal 3 unblockable damage. Gain 1 Crit and 1 Accuracy.', wikiDamage: 3, wikiTrigger: '3 Swords + 1 Pray', wikiTags: ['unblockable'] },
-  { heroId: 'paladin', abilityId: 'blessing-of-might', level: 2, wikiName: 'Blessing of Might II', wikiDescription: 'Offensive Stance (2 Swords + 1 Pray): Deal 2 unblockable damage, choose Crit or Accuracy. Might Disciple II (3 Swords + 1 Pray): Deal 4 unblockable damage, gain 1 Crit and 1 Accuracy.', wikiDamage: 4, wikiTrigger: '2 Swords + 1 Pray / 3 Swords + 1 Pray', wikiTags: ['unblockable'] },
+  { heroId: 'paladin', abilityId: 'blessing-of-might', level: 1, wikiName: 'Might Disciple', wikiDescription: 'Deal 3 unblockable damage. Gain 1 Crit and 1 Accuracy.', wikiDamage: 3, wikiTrigger: '3 Swords + 1 Pray', wikiTags: ['unblockable'] },
+  { heroId: 'paladin', abilityId: 'blessing-of-might', level: 2, wikiName: 'Might Disciple II', wikiDescription: 'Offensive Stance (2 Swords + 1 Pray): Deal 2 unblockable damage, choose Crit or Accuracy. Might Disciple II (3 Swords + 1 Pray): Deal 4 unblockable damage, gain 1 Crit and 1 Accuracy.', wikiDamage: 4, wikiTrigger: '2 Swords + 1 Pray / 3 Swords + 1 Pray', wikiTags: ['unblockable'] },
 
   // --- Holy Strike ---
   { heroId: 'paladin', abilityId: 'holy-strike', level: 1, wikiName: 'Holy Strike', wikiDescription: 'Small Straight: Heal 1, deal 5 damage. Large Straight: Heal 2, deal 8 damage.', wikiDamage: 5, wikiHeal: 1, wikiTrigger: 'Small Straight / Large Straight' },
@@ -302,8 +302,8 @@ export const PALADIN_ABILITY_SNAPSHOTS: WikiAbilitySnapshot[] = [
   { heroId: 'paladin', abilityId: 'holy-light', level: 2, wikiName: 'Holy Light II', wikiDescription: 'Heal 2 per Heart rolled. Roll 3 dice: Sword gain Crit, Helm gain Protect, Heart draw 1, Pray gain 2 CP.', wikiHeal: 2, wikiTrigger: '2 Hearts' },
 
   // --- Vengeance ---
-  { heroId: 'paladin', abilityId: 'vengeance', level: 1, wikiName: 'Vengeance', wikiDescription: 'Gain 1 Retribution. Gain 2 CP.', wikiTrigger: '3 Helms + 1 Pray' },
-  { heroId: 'paladin', abilityId: 'vengeance', level: 2, wikiName: 'Vengeance II', wikiDescription: 'Vengeance (all 4 symbols): Gain 1 Retribution, heal 1, deal 3 unblockable damage. Retribution II (3 Helms + 1 Pray): Give any player 1 Retribution, gain 4 CP.', wikiTrigger: 'All 4 symbols / 3 Helms + 1 Pray', wikiTags: ['unblockable'] },
+  { heroId: 'paladin', abilityId: 'vengeance', level: 1, wikiName: 'Retribution', wikiDescription: 'Gain 1 Retribution. Gain 2 CP.', wikiTrigger: '3 Helms + 1 Pray' },
+  { heroId: 'paladin', abilityId: 'vengeance', level: 2, wikiName: 'Retribution II', wikiDescription: 'Vengeance (all 4 symbols): Gain 1 Retribution, heal 1, deal 3 unblockable damage. Retribution II (3 Helms + 1 Pray): Give any player 1 Retribution, gain 4 CP.', wikiTrigger: 'All 4 symbols / 3 Helms + 1 Pray', wikiTags: ['unblockable'] },
 
   // --- Righteous Prayer ---
   { heroId: 'paladin', abilityId: 'righteous-prayer', level: 1, wikiName: 'Righteous Prayer', wikiDescription: 'Deal 8 damage. Gain 1 Crit. Gain 2 CP.', wikiDamage: 8, wikiTrigger: '4 Prays' },
@@ -514,9 +514,9 @@ export const PALADIN_CARD_SNAPSHOTS: WikiCardSnapshot[] = [
   { cardId: 'card-holy-light-2', heroId: 'paladin', wikiName: 'Holy Light II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Holy Light to level II.', wikiType: 'upgrade' },
   { cardId: 'card-righteous-combat-3', heroId: 'paladin', wikiName: 'Righteous Combat III', wikiCpCost: 4, wikiTiming: 'main', wikiDescription: 'Upgrade Righteous Combat to level III.', wikiType: 'upgrade' },
   { cardId: 'card-righteous-combat-2', heroId: 'paladin', wikiName: 'Righteous Combat II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Righteous Combat to level II.', wikiType: 'upgrade' },
-  { cardId: 'card-blessing-of-might-2', heroId: 'paladin', wikiName: 'Blessing of Might II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Blessing of Might to level II.', wikiType: 'upgrade' },
+  { cardId: 'card-blessing-of-might-2', heroId: 'paladin', wikiName: 'Might Disciple II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Might Disciple to level II.', wikiType: 'upgrade' },
   { cardId: 'card-holy-strike-2', heroId: 'paladin', wikiName: 'Holy Strike II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Holy Strike to level II.', wikiType: 'upgrade' },
-  { cardId: 'card-vengeance-2', heroId: 'paladin', wikiName: 'Vengeance II', wikiCpCost: 1, wikiTiming: 'main', wikiDescription: 'Upgrade Vengeance to level II.', wikiType: 'upgrade' },
+  { cardId: 'card-vengeance-2', heroId: 'paladin', wikiName: 'Retribution II', wikiCpCost: 1, wikiTiming: 'main', wikiDescription: 'Upgrade Retribution to level II.', wikiType: 'upgrade' },
   { cardId: 'card-righteous-prayer-2', heroId: 'paladin', wikiName: 'Righteous Prayer II', wikiCpCost: 2, wikiTiming: 'main', wikiDescription: 'Upgrade Righteous Prayer to level II.', wikiType: 'upgrade' },
   { cardId: 'card-tithes-2', heroId: 'paladin', wikiName: 'Tithes II', wikiCpCost: 3, wikiTiming: 'main', wikiDescription: 'Upgrade Tithes to level II.', wikiType: 'upgrade' },
 ];

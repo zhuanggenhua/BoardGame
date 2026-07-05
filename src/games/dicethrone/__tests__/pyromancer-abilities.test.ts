@@ -89,8 +89,8 @@ describe('Pyromancer 技能定义', () => {
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
 
-describe('Pyromancer 灵魂燃烧伤害语义', () => {
-    it('灵魂燃烧应按火焰精通数量对所有对手造成不可防御附属伤害且不吃攻击修正', () => {
+describe('Pyromancer 燃烧之灵伤害语义', () => {
+    it('燃烧之灵应按火魂骰面数量对所有对手造成不可防御附属伤害且不吃攻击修正', () => {
         const random = createQueuedRandom([1]);
         const state = {
             core: DiceThroneDomain.setup(['0', '1', '2'], random),
@@ -102,7 +102,7 @@ describe('Pyromancer 灵魂燃烧伤害语义', () => {
             '1': initHeroState('1', 'monk', random),
             '2': initHeroState('2', 'ninja', random),
         };
-        state.core.players['0'].tokens[TOKEN_IDS.FIRE_MASTERY] = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.FIRE_MASTERY] = 5;
         state.core.dice = createCharacterDice('pyromancer');
         state.sys.phase = 'offensiveRoll';
         state.core.activePlayerId = '0';
@@ -129,6 +129,10 @@ describe('Pyromancer 灵魂燃烧伤害语义', () => {
             ...selected.pendingAttack!,
             defenderId: '1',
             bonusDamage: 3,
+            attackDiceFaceCounts: {
+                [PYROMANCER_DICE_FACE_IDS.FIRE]: 3,
+                [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2,
+            },
         };
 
         const damageEvents = resolveAttack(

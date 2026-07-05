@@ -3610,6 +3610,15 @@
         }
       }
     },
+    "zh-CN/betrayal/cards/compressed/event-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "c417367c0540777a9cd1a0c1e2a8ff172d8b1e206ee0ebac79e0043d8cdc63b5",
+          "bytes": 702794,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/cards/compressed/item-front-atlas": {
       "variants": {
         "webp": {
@@ -3777,6 +3786,60 @@
         "png": {
           "sha256": "55c767f7b18a9926f6274c2a8ea9ac1d7f964eda421221dff6e60f03796bf68a",
           "bytes": 1386807,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/dice/compressed/house-die-0": {
+      "variants": {
+        "webp": {
+          "sha256": "ce7e5a540c806a3444e02d2a9170d24416f2e77f5fb4318a2f5c885fd1856176",
+          "bytes": 37052,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/dice/compressed/house-die-1": {
+      "variants": {
+        "webp": {
+          "sha256": "eaa8f7d752a2dc7a03b3fbaa80ea7aea132fa175aafef2b1c65aef2aeb8ddf43",
+          "bytes": 26872,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/dice/compressed/house-die-2": {
+      "variants": {
+        "webp": {
+          "sha256": "2c899338166d40216f67f260c6f4525765d42c93cba0e13d256f592080134a73",
+          "bytes": 24370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/dice/house-die-0": {
+      "variants": {
+        "png": {
+          "sha256": "9f4cd562bee3e812ad4fe73fc4f78affba48dd9129f659effe4fcd20a567b2cd",
+          "bytes": 103850,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/dice/house-die-1": {
+      "variants": {
+        "png": {
+          "sha256": "bdc77808ab6b8b1a309948463c6e120b0baff0d21766bc5dd46875ce11c7114f",
+          "bytes": 72181,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/dice/house-die-2": {
+      "variants": {
+        "png": {
+          "sha256": "9f49e13e30366677c02184bd9d7bce3cb0d7efe733717f32cdf7572d55e0b678",
+          "bytes": 66553,
           "mime": "image/png"
         }
       }
@@ -7165,11 +7228,29 @@
         }
       }
     },
+    "zh-CN/fantasyrealms/cards/atlases/compressed/fantasyrealms-cursed-hoard-cards-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "61c09ae1108bfa31958b936e94ddae7abd7b995b119b0f1d41d8d4f5b712baeb",
+          "bytes": 280692,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas": {
       "variants": {
         "png": {
           "sha256": "27748edd4bb782d60106ead5c7bca46ee0cea02b34a16b438ba41f67c0f9b9ed",
           "bytes": 26441844,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/cards/atlases/fantasyrealms-cursed-hoard-cards-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "61884852b9bb0ebf7559db1ac9785474bbc2e2137ce11698369e6e558566f63a",
+          "bytes": 12508340,
           "mime": "image/png"
         }
       }
@@ -7966,6 +8047,15 @@
         }
       }
     },
+    "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
+      "variants": {
+        "webp": {
+          "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
+          "bytes": 2640142,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/qidahen/cards/atlases/jin-faction-deck-atlas": {
       "variants": {
         "jpg": {
@@ -7998,6 +8088,15 @@
         "jpg": {
           "sha256": "edbad441b175a40904971be908a690d337e11db75bb5f35e346fda1dd53fb80f",
           "bytes": 2255009,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/ordinary-hand-atlas05": {
+      "variants": {
+        "jpg": {
+          "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
+          "bytes": 4138087,
           "mime": "image/jpeg"
         }
       }

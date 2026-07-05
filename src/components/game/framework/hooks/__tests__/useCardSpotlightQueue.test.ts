@@ -69,6 +69,62 @@ describe('useCardSpotlightQueue', () => {
         });
     });
 
+    it('skips timestamp-less historical events when the current page session has a time floor', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: { watermark: null, seq: 0, reconcileSeq: 0 } satisfies EventStreamRollbackValue },
+                children,
+            );
+
+        const staleEntry = createEntry(1, {
+            type: 'ACTION_PLAYED',
+            payload: {
+                playerId: '1',
+                defId: 'zombies_the_dead_rise',
+            },
+        } as GameEvent);
+        const liveEntry = createEntry(2, {
+            type: 'ACTION_PLAYED',
+            payload: {
+                playerId: '1',
+                defId: 'tricksters_disruption',
+            },
+            timestamp: 3000,
+        } as GameEvent);
+
+        const { result, rerender } = renderHook(
+            ({ entries }: { entries: EventStreamEntry[] }) => useCardSpotlightQueue<{ defId: string }>({
+                entries,
+                triggerEventTypes: ['ACTION_PLAYED'],
+                consumeOnReconcile: true,
+                ignoreEventsBefore: 2000,
+                extractCard: (event) => {
+                    const payload = event.payload as { playerId?: string; defId?: string };
+                    return payload.playerId && payload.defId
+                        ? { playerId: payload.playerId, cardData: { defId: payload.defId } }
+                        : null;
+                },
+            }),
+            {
+                initialProps: { entries: [] },
+                wrapper,
+            },
+        );
+
+        rerender({ entries: [staleEntry] });
+
+        await act(async () => {});
+        expect(result.current.queue).toEqual([]);
+
+        rerender({ entries: [staleEntry, liveEntry] });
+
+        await waitFor(() => {
+            expect(result.current.queue).toHaveLength(1);
+            expect(result.current.queue[0]?.cardData.defId).toBe('tricksters_disruption');
+        });
+    });
+
     it('clears stale spotlight queue on optimistic rollback signal and does not replay restored old events', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,

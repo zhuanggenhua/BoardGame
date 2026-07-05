@@ -34,8 +34,8 @@ describe('Betrayal Board data-tutorial-id 属性', () => {
         expect(boardSource).toContain('data-tutorial-id={`betrayal-action-${action.id}`}');
     });
 
-    it('房间移动目标只在当前教程步骤点名时暴露对应锚点', () => {
-        expect(boardSource).toContain("target.startsWith('betrayal-room-move-target-')");
+    it('房间移动目标用整张房间牌暴露对应教程锚点', () => {
+        expect(boardSource).toContain("target.startsWith('betrayal-room-')");
         expect(boardSource).toContain("data-tutorial-id={tutorialMapTargetRoomId === room.id ? tutorialStep?.highlightTarget : undefined}");
     });
 

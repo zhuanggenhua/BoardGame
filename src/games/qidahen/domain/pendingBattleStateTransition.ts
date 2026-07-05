@@ -9,6 +9,9 @@ import type {
     QidahenSeasonSummary,
 } from './types';
 
+const QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID = 'qidahen-atlas05-1625-jade-casket-unearthed';
+const QIDAHEN_ORDOS_RUNTIME_REGION_ID = 'city-region-26';
+
 type QidahenPendingActionResolution = Pick<
     QidahenCore,
     'regions' | 'factions' | 'drawPileCount' | 'discardPileCount' | 'handCards'
@@ -78,6 +81,36 @@ const buildPostBattleDecisionSummary = (
         lines.push(targetRegion.note);
     }
     return buildSeasonSummary(selection.title, timestamp, lines);
+};
+
+const applyJadeCasketTransferAfterPostBattle = (
+    state: QidahenCore,
+    selection: QidahenPostBattleSelection,
+    resolution: QidahenPostBattleDecisionResolution,
+): QidahenCore['activeEventCards'] => {
+    if (selection.targetRuntimeRegionId !== QIDAHEN_ORDOS_RUNTIME_REGION_ID) {
+        return state.activeEventCards;
+    }
+    const ordosController = resolution.regions.find((region) => (
+        !region.isLogicalRegion && region.id === QIDAHEN_ORDOS_RUNTIME_REGION_ID
+    ))?.controller;
+    if (!ordosController || ordosController === 'neutral') {
+        return state.activeEventCards;
+    }
+    return state.activeEventCards.map((card) => {
+        if (
+            card.cardDefId !== QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID
+            || card.ownerFactionId !== selection.originalController
+            || card.ownerFactionId === ordosController
+        ) {
+            return card;
+        }
+        return {
+            ...card,
+            id: `active-event-${card.cardDefId}-${ordosController}`,
+            ownerFactionId: ordosController,
+        };
+    });
 };
 
 export const applyPendingActionResolutionToBattleFlowState = (
@@ -176,6 +209,7 @@ export const applyPostBattleDecisionResolutionToBattleFlowState = (
         drawPileCount: resolution.drawPileCount,
         discardPileCount: resolution.discardPileCount,
         handCards: resolution.handCards,
+        activeEventCards: applyJadeCasketTransferAfterPostBattle(state, selection, resolution),
         lastSeasonSummary,
         actionLog: [
             {

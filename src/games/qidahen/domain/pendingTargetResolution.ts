@@ -64,6 +64,7 @@ import {
     subtractSpecialTroopStacks,
 } from './troopCompat';
 import type {
+    QidahenBattleCasualtyPriority,
     QidahenBattleRolls,
     QidahenCasualtyPriority,
     QidahenCore,
@@ -94,6 +95,7 @@ const buildPostBattleSelection = (
     survivingTroops: number,
     attackerLosses: number,
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    attackerBattleCasualtyPriority: QidahenBattleCasualtyPriority = attackerCasualtyPriority,
     battleRollSummary: string | null = null,
     battleRolls: QidahenBattleRolls | null = null,
     dependencies: Pick<
@@ -142,6 +144,7 @@ const buildPostBattleSelection = (
             attackerLosses,
             movementProfileId: pendingTargetAction.movementProfileId,
             attackerCasualtyPriority,
+            attackerBattleCasualtyPriority,
             originalController: targetRegion.controller,
             originalControlLabel: targetRegion.controlLabel,
             title: `${pendingTargetAction.targetRegionName} 解围待结算`,
@@ -256,6 +259,7 @@ const buildPostBattleSelection = (
         attackerLosses,
         movementProfileId: pendingTargetAction.movementProfileId ?? null,
         attackerCasualtyPriority,
+        attackerBattleCasualtyPriority,
         originalController: targetRegion.controller,
         originalControlLabel: targetRegion.controlLabel,
         title: '战后处理',
@@ -297,6 +301,7 @@ interface QidahenPendingTargetResolutionDependencies {
         survivingTroops: number,
         attackerLosses: number,
         attackerCasualtyPriority?: QidahenCasualtyPriority,
+        attackerBattleCasualtyPriority?: QidahenBattleCasualtyPriority,
         battleRollSummary?: string | null,
         battleRolls?: QidahenBattleRolls | null,
     ) => QidahenPostBattleSelection | null;
@@ -310,7 +315,7 @@ interface QidahenPendingTargetResolutionDependencies {
         region: QidahenRuntimeRegion,
         losses: number,
         movementProfileId?: string | null,
-        casualtyPriority?: QidahenCasualtyPriority,
+        casualtyPriority?: QidahenBattleCasualtyPriority,
     ) => QidahenRuntimeRegion;
     pruneUnsupportedRetreatArtillery: (
         stacks: QidahenSpecialTroopStack[],
@@ -386,7 +391,7 @@ interface QidahenPendingTargetResolutionDependencies {
         committedTroops: number,
         attackerLosses: number,
         movementProfileId?: string | null,
-        attackerCasualtyPriority?: QidahenCasualtyPriority,
+        attackerCasualtyPriority?: QidahenBattleCasualtyPriority,
     ) => {
         damagedTroops: number;
         troopLoss: number;
@@ -468,7 +473,7 @@ interface QidahenPendingTargetResolutionDependencies {
     applyCasualtiesToSpecialStacks: (
         stacks: readonly QidahenSpecialTroopStack[],
         losses: number,
-        casualtyPriority?: QidahenCasualtyPriority,
+        casualtyPriority?: QidahenBattleCasualtyPriority,
     ) => QidahenSpecialTroopStack[];
     addDefeatMarkerToFaction: (
         factions: QidahenCore['factions'],
@@ -677,6 +682,7 @@ const resolvePendingBattleWithoutDefenders = (
                 pendingTargetAction.committedTroops,
                 0,
                 attackerCasualtyPriority,
+                attackerCasualtyPriority,
                 null,
             ),
             pendingTargetAction: null,
@@ -724,6 +730,7 @@ const resolvePendingBattleWithoutDefenders = (
             battleRegion,
             pendingTargetAction.committedTroops,
             0,
+            attackerCasualtyPriority,
             attackerCasualtyPriority,
             null,
         ),
@@ -918,8 +925,12 @@ const resolvePendingCavalryPlunderAction = (
         return null;
     }
 
-    const counterPower = dependencies.getCavalryPlunderCounterPower(battleRegion);
-    const cavalryLoss = Math.min(committedCavalryTroops, Math.ceil(counterPower / 3));
+    const counterDamageDisabled = pendingTargetAction.tacticModifiers?.some((modifier) => (
+        modifier.side === 'attacker'
+        && modifier.cavalryPlunderCounterDamageDisabled
+    )) ?? false;
+    const counterPower = counterDamageDisabled ? 0 : dependencies.getCavalryPlunderCounterPower(battleRegion);
+    const cavalryLoss = counterDamageDisabled ? 0 : Math.min(committedCavalryTroops, Math.ceil(counterPower / 3));
     const survivingCavalry = Math.max(0, committedCavalryTroops - cavalryLoss);
     const plunderPopulation = Math.min(survivingCavalry, battleRegion.population);
     const canPlunderDefenderDeck = (
@@ -969,6 +980,9 @@ const resolvePendingCavalryPlunderAction = (
     const plunderDeckText = canPlunderDefenderDeck
         ? `抽${dependencies.toFactionLabel(pendingTargetAction.defenderFactionId)}牌堆获得 ${handGain} 张手牌`
         : `抽自己牌堆获得 ${handGain} 张手牌、弃牌堆 +${discardGain}${attackerDeckPlunderHandBonus > 0 ? '（含人物额外摸牌）' : ''}`;
+    const counterDamageText = counterDamageDisabled
+        ? '打草惊蛇使劫掠部队不受反击伤害'
+        : `先承受守方炮骑反击损失 ${cavalryLoss}`;
 
     return {
         region: {
@@ -980,7 +994,7 @@ const resolvePendingCavalryPlunderAction = (
         drawPileCount,
         discardPileCount,
         handCards,
-        logText: `${state.factions[pendingTargetAction.attackerFactionId].name} 自 ${pendingTargetAction.sourceRegionName ?? '前线'} 以 ${committedCavalryTroops} 个骑兵劫掠 ${battleRegion.name}，先承受守方炮骑反击损失 ${cavalryLoss}，幸存 ${survivingCavalry} 个骑兵劫掠 ${plunderPopulation} 人口，${plunderDeckText} 后撤回。`,
+        logText: `${state.factions[pendingTargetAction.attackerFactionId].name} 自 ${pendingTargetAction.sourceRegionName ?? '前线'} 以 ${committedCavalryTroops} 个骑兵劫掠 ${battleRegion.name}，${counterDamageText}，幸存 ${survivingCavalry} 个骑兵劫掠 ${plunderPopulation} 人口，${plunderDeckText} 后撤回。`,
         sourceTroopLoss: cavalryLoss,
     };
 };
@@ -990,6 +1004,7 @@ const applyPendingTargetAftermathAdjustments = (
     pendingTargetAction: QidahenPendingTargetAction,
     sourceRemovalRegionId: string | null,
     attackerCasualtyPriority: QidahenCasualtyPriority,
+    attackerBattleCasualtyPriority: QidahenBattleCasualtyPriority,
     aftermath: QidahenPendingTargetAftermathState,
     dependencies: Pick<
         QidahenPendingTargetResolutionDependencies,
@@ -1032,7 +1047,7 @@ const applyPendingTargetAftermathAdjustments = (
                             siegeSourceRegion,
                             aftermath.sourceTroopLoss,
                             pendingTargetAction.movementProfileId,
-                            attackerCasualtyPriority,
+                            attackerBattleCasualtyPriority,
                         );
                     const filteredRetreatForce = dependencies.pruneUnsupportedRetreatArtillery(
                         lostSiegeSourceRegion.specialTroops,
@@ -1063,7 +1078,7 @@ const applyPendingTargetAftermathAdjustments = (
                         baseLostRegion,
                         aftermath.sourceTroopLoss,
                         pendingTargetAction.movementProfileId,
-                        attackerCasualtyPriority,
+                        attackerBattleCasualtyPriority,
                     );
                 const filteredRetreatForce = dependencies.pruneUnsupportedRetreatArtillery(
                     lostRegion.specialTroops,
@@ -1239,6 +1254,7 @@ const resolvePendingBattleTargetAction = (
             pendingTargetAction,
             sourceRemovalRegionId,
             attackerCasualtyPriority,
+            attackerCasualtyPriority,
             aftermath,
             dependencies,
         );
@@ -1259,6 +1275,12 @@ const resolvePendingBattleTargetAction = (
     }
 
     const sourceRegion = dependencies.getPendingActionSourceForceSnapshot(state, pendingTargetAction);
+    const attackerBattleCasualtyPriority: QidahenBattleCasualtyPriority = pendingTargetAction.tacticModifiers?.some((modifier) => (
+        modifier.side === 'attacker'
+        && modifier.casualtyPriority === 'artillery-first'
+    ))
+        ? 'artillery-first'
+        : attackerCasualtyPriority;
     const isCityBattle = currentBattleMode === 'city';
     let nextFactions = state.factions;
     let nextDrawPileCount = state.drawPileCount;
@@ -1409,6 +1431,7 @@ const resolvePendingBattleTargetAction = (
                     defenderCasualtyPriority,
                 ),
                 attackerCasualtyPriority,
+                attackerBattleCasualtyPriority,
                 defenderCasualtyPriority,
                 structuredBattleText,
                 battleRolls,
@@ -1438,6 +1461,7 @@ const resolvePendingBattleTargetAction = (
         pendingTargetAction,
         sourceRemovalRegionId,
         attackerCasualtyPriority,
+        attackerBattleCasualtyPriority,
         aftermath,
         dependencies,
     );
@@ -1685,6 +1709,7 @@ const resolvePendingCapturedBattleFollowup = (
     isCityRegion = false,
     defenderSortieBattle = false,
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    attackerBattleCasualtyPriority: QidahenBattleCasualtyPriority = attackerCasualtyPriority,
     dependencies: Pick<QidahenPendingTargetResolutionDependencies, 'buildPostBattleSelection'>,
 ): {
     continuedPendingTargetAction: QidahenPendingTargetAction | null;
@@ -1764,6 +1789,7 @@ const resolvePendingCapturedBattleFollowup = (
             survivingAttackers,
             attackerLoss,
             attackerCasualtyPriority,
+            attackerBattleCasualtyPriority,
             structuredBattleText.trim() || null,
             battleRolls ?? null,
         ),
@@ -1815,6 +1841,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
                 battleRegion,
                 survivingAttackers,
                 attackerLoss,
+                attackerCasualtyPriority,
                 attackerCasualtyPriority,
                 structuredBattleText.trim() || null,
                 battleRolls,
@@ -1879,6 +1906,7 @@ const resolvePendingGenericBattleOutcome = (
     fieldSurvivingSpecialTroops: QidahenSpecialTroopStack[],
     defenderSortieCapturedSpecialTroops: QidahenSpecialTroopStack[],
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    attackerBattleCasualtyPriority: QidahenBattleCasualtyPriority = attackerCasualtyPriority,
     defenderCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
     structuredBattleText = '',
     battleRolls: QidahenBattleRolls | null | undefined,
@@ -1947,6 +1975,7 @@ const resolvePendingGenericBattleOutcome = (
             isCityRegion,
             defenderSortieBattle,
             attackerCasualtyPriority,
+            attackerBattleCasualtyPriority,
             dependencies,
         );
         continuedPendingTargetAction = capturedBattleFollowup.continuedPendingTargetAction;

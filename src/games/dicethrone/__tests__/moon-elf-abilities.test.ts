@@ -32,12 +32,10 @@ import type { EngineSystem } from '../../../engine/systems/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { diceThroneSystemsForTest } from '../game';
 import {
-    createRunner,
     createQueuedRandom,
     fixedRandom,
     cmd,
     assertState,
-    type DiceThroneExpectation,
 } from './test-utils';
 import { GameTestRunner } from '../../../engine/testing';
 
@@ -172,10 +170,64 @@ describe('Moon Elf 技能定义', () => {
     it('covering-fire 的 silencing-trace variant 应标记为 unblockable', () => {
         const silencingTrace = COVERING_FIRE_2.variants?.find(v => v.id === 'silencing-trace');
         expect(silencingTrace?.tags).toContain('unblockable');
+        expect(silencingTrace?.effects?.[0].action).toMatchObject({
+            type: 'custom',
+            customActionId: 'moon_elf-silencing-trace-select-evasive-target',
+        });
         expect(silencingTrace?.effects?.[1].action).toMatchObject({
             type: 'damage',
             value: 2,
         });
+    });
+
+    it('silencing-trace 应选择任意玩家获得闪避，伤害仍对防御方结算', () => {
+        const random = createQueuedRandom([4, 4, 4, 1, 6, 1, 1, 1, 1, 1]);
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: testSystems,
+            playerIds: ['0', '1'],
+            random,
+            setup: createMoonElfSetup({
+                mutate: (core) => {
+                    core.players['0'].abilities = core.players['0'].abilities.map((ability) => (
+                        ability.id === 'covering-fire' ? COVERING_FIRE_2 : ability
+                    ));
+                    core.players['0'].abilityLevels = {
+                        ...core.players['0'].abilityLevels,
+                        'covering-fire': 2,
+                    };
+                },
+            }),
+            assertFn: assertState,
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: '销声匿迹任意玩家获得闪避',
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'silencing-trace' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('RESOLVE_INTERACTION', '0', { selectedPlayerIds: ['1'] }),
+                cmd('SKIP_TOKEN_RESPONSE', '1'),
+            ],
+            expect: {
+                turnPhase: 'main2',
+                pendingInteraction: null,
+                players: {
+                    '0': { tokens: { [TOKEN_IDS.EVASIVE]: 0 } },
+                    '1': {
+                        hp: INITIAL_HEALTH - 2,
+                        tokens: { [TOKEN_IDS.EVASIVE]: 1 },
+                    },
+                },
+            },
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        expect(result.actualErrors).toEqual([]);
     });
 
     it('covert-fire 在 offensiveRoll 下应按 3弓+2月进入可用技能列表', () => {

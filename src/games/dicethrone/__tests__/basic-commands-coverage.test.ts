@@ -3893,14 +3893,23 @@ describe('作弊发牌 atlas 索引保护', () => {
         player.hand = [];
         player.discard = [];
         player.deck = [
+            getCardById('upgrade-take-cover-2'),
             getCardById('upgrade-deadeye-2'),
-            ...player.deck.filter((card) => card.id !== 'upgrade-deadeye-2'),
+            ...player.deck.filter((card) => card.id !== 'upgrade-take-cover-2' && card.id !== 'upgrade-deadeye-2'),
         ];
     })(['0', '1'], fixedRandom);
 
-    it('gunslinger slot 24 现在只对应 upgrade-deadeye-2，按 atlas index 应可唯一发牌', () => {
+    it('gunslinger slot 24 现在只对应 upgrade-take-cover-2，按 atlas index 应可唯一发牌', () => {
         const state = createUpgradeAtlasState();
         const nextCore = diceThroneCheatModifier.dealCardByAtlasIndex!(state.core, '0', 24);
+
+        expect(nextCore.players['0'].hand.map((card) => card.id)).toEqual(['upgrade-take-cover-2']);
+        expect(nextCore.players['0'].deck).toHaveLength(state.core.players['0'].deck.length - 1);
+    });
+
+    it('gunslinger slot 26 现在只对应 upgrade-deadeye-2，按 atlas index 应可唯一发牌', () => {
+        const state = createUpgradeAtlasState();
+        const nextCore = diceThroneCheatModifier.dealCardByAtlasIndex!(state.core, '0', 26);
 
         expect(nextCore.players['0'].hand.map((card) => card.id)).toEqual(['upgrade-deadeye-2']);
         expect(nextCore.players['0'].deck).toHaveLength(state.core.players['0'].deck.length - 1);
@@ -3908,10 +3917,10 @@ describe('作弊发牌 atlas 索引保护', () => {
 
     it('精确 deckIndex 发牌仍可发出 upgrade-deadeye-2', () => {
         const state = createUpgradeAtlasState();
-        const nextCore = diceThroneCheatModifier.dealCardByIndex!(state.core, '0', 0);
+        const nextCore = diceThroneCheatModifier.dealCardByIndex!(state.core, '0', 1);
 
         expect(nextCore.players['0'].hand.map((card) => card.id)).toEqual(['upgrade-deadeye-2']);
-        expect(nextCore.players['0'].deck[0]?.id).not.toBe('upgrade-deadeye-2');
+        expect(nextCore.players['0'].deck.map((card) => card.id)).not.toContain('upgrade-deadeye-2');
     });
 
     it('atlas 对应卡已不在剩余牌库时，仍可直接补到手牌', () => {

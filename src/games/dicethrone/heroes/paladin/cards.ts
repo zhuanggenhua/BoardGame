@@ -168,7 +168,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-holy-light-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 7 },
-        effects: [replaceAbility('holy-light', HOLY_LIGHT_2, 2, '升级圣光至 II 级')]
+        effects: [replaceAbility('holy-light', HOLY_LIGHT_2, 2, '升级圣光术至 II 级')]
     },
     {
         id: 'card-righteous-combat-3',
@@ -198,7 +198,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-blessing-of-might-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 9 },
-        effects: [replaceAbility('blessing-of-might', BLESSING_OF_MIGHT_2, 2, '升级力量祝福至 II 级')]
+        effects: [replaceAbility('blessing-of-might', BLESSING_OF_MIGHT_2, 2, '升级神力信徒至 II 级')]
     },
     {
         id: 'card-holy-strike-2',
@@ -218,7 +218,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-vengeance-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 12 },
-        effects: [replaceAbility('vengeance', VENGEANCE_2, 2, '升级复仇至 II 级')]
+        effects: [replaceAbility('vengeance', VENGEANCE_2, 2, '升级反击至 II 级')]
     },
     {
         id: 'card-righteous-prayer-2',

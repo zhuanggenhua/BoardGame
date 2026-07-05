@@ -40,7 +40,7 @@
 - 总图片数：172
 - 尺寸组：56
 - 主要高频组：
-  - `384x336`：51 张，主要是头像、怪物 token、骰面/状态小图
+  - `384x336`：51 张，主要是头像、怪物 token、状态 / 符文小图；山屋 0/1/2 骰子不在这组图片索引里
   - `450x450`：28 张，主要是数字标记与状态标记
   - `675x1275`：14 张，主要是牌背与参考卡
   - `1270x1289`：10 张，主要是探索者角色牌
@@ -86,14 +86,22 @@
   - 当前运行时默认预兆对象族必须收敛到这 `9` 张，禁止继续保留 `watch / amulet / pendant / coin / bell / feathers / mirror-shard` 这类不属于真 atlas 的伪对象名。
   - `contact-03-675-1275.jpg` 这组只包含牌背、玩家/叛徒/怪物参考卡；
   - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
-  - 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 仍必须诚实显示“缺正面”，不得误接错误拼页、marker 或牌背主视觉。
+- 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 仍必须诚实显示“缺正面”，不得误接错误拼页、marker 或牌背主视觉。
 - 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替。
+- 山屋骰子素材真相已经从 TTS Workshop JSON 与本地解包文件锁定：
+  - Workshop 真相源：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Workshop\3420850553.json`。
+  - 真正的山屋 0/1/2 骰子是 `Custom_Model`，共 48 颗，使用同一模型 `MeshURL`：`https://steamusercontent-a.akamaihd.net/ugc/836952878380612616/2444D3E2AC5B69A7939369B3566A0941C2D881C9/`。
+  - 本地 OBJ：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Models\httpssteamusercontentaakamaihdnetugc8369528783806126162444D3E2AC5B69A7939369B3566A0941C2D881C9.obj`。
+  - 本地材质图：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Images\httpssteamusercontentaakamaihdnetugc310636117333783900D4349CB7B7A59D4F8DF84D5A8FB0D723953A466.jpg`，512x512，近白 / 空白材质；点数来自模型几何与 `RotationValues`，不是贴图格子。
+  - `RotationValues` 明确映射 6 面结果：`0` 对应 `z=90/-90`，`1` 对应 `x=90/-90`，`2` 对应 `z=0/180`。
+  - 另一个 `Custom_Dice`（`GUID b14471`）不是山屋 0/1/2 点骰，而是探索者姓名随机骰，不能混用。
+  - 当前状态：`source-found / runtime-ingested-as-model-derived-faces`。网页运行时已经从 TTS OBJ 按 `RotationValues` 派生 `0/1/2` 三张骰面资源，落点为 `public/assets/i18n/zh-CN/betrayal/dice/house-die-0.png`、`house-die-1.png`、`house-die-2.png` 及对应 `compressed/*.webp`，并由 `Board.tsx` 的 `BetrayalDieFace` 通过 `OptimizedImage` 加载；这不是手写 CSS 点数代替品。当前仍不是实时 WebGL 3D 骰子，只是把 TTS 3D 模型烘焙成正式运行时骰面图。
 
 ## 6. 明确不进运行时的素材
 
 以下素材现在只保留为 `source/candidate`，不进入 `public/assets/`：
 
-- 6300x5400、6076x6376、5400x3826 这类大拼版图
+- 6300x5400、5400x3826 这类尚未锁定运行时合同的大拼版图
 - 3376x2550、2026x2550、2943x969 这类待裁切的楼层/房间/标记拼页
 - 含大面积黑底的拼接参考页
 - 扫描页 JPG
@@ -104,7 +112,8 @@
 
 补充门禁：
 
-- 大拼版原图本身不直接放入 `public/assets/**`，但可以作为正式裁切源；从它裁出的房间牌 / 楼层板必须记录原始图集、裁剪坐标和导出尺寸。
+- 大拼版原图本身默认不直接放入 `public/assets/**`，但可以作为正式裁切源；从它裁出的房间牌 / 楼层板必须记录原始图集、裁剪坐标和导出尺寸。
+- 例外：`6076x6376` 事件牌正面图集已经锁定为 `9x5` 正式 atlas，运行时路径为 `public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg`，最后一列 / 最后一行承接 `1px` 余数；它不再属于“不进运行时”的未裁切大拼版。
 - `contact-*`、`all-by-size-*` 只允许用于识别图面和定位候选，禁止裁成正式运行时房间牌、卡牌、角色板或地图板块。
 - 如果为了跑通流程临时引用低清索引裁片，必须在 `runtime-resource-map.json` 标成 `temporary-runtime-placeholder`，不得标为正式 `runtime`；当前运行时房间牌已换成原始图集裁剪，不能再新增低清联系表裁片。
 

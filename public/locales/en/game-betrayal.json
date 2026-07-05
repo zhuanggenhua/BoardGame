@@ -137,6 +137,8 @@
       "button": "Reference",
       "front": "Player reference front",
       "back": "Player reference back",
+      "traitor": "Traitor reference",
+      "monster": "Monster reference",
       "toggle": "Flip",
       "close": "Close"
     },
@@ -231,9 +233,19 @@
     },
     "discovery": {
       "label": "Discovery",
+      "revealed": "Revealed",
+      "eventCard": "Event Card",
+      "itemCard": "Item Card",
+      "omenCard": "Omen Card",
       "eventResolved": "Immediate effect",
       "addedToInventory": "Added to inventory",
       "readyToUse": "Selected and ready to use"
+    },
+    "roll": {
+      "fallbackLabel": "Dice Roll",
+      "bonus": "Bonus {{value}}",
+      "noBonus": "No bonus",
+      "total": "Total {{value}}"
     },
     "useEffects": {
       "move": "Move {{value}}",
@@ -270,61 +282,61 @@
   "tutorial": {
     "basicSetup": {
       "title": "Setup and Core Loop",
-      "description": "Start directly from the real pre-haunt board and learn the first true decision entry point.",
+      "description": "Start from the pre-haunt board and learn the first turn decision entry point.",
       "steps": {
-        "setupRuntime": "This chapter drops you straight into the real pre-haunt state for the first scenario instead of teaching character select as a standalone lesson.",
+        "setupRuntime": "Start from the first scenario before the haunt: explorers are already chosen, so you can focus on what to do during the turn.",
         "objectiveAndTurn": "Before the haunt, your job is to keep exploring the house. On your turn, the five core actions are move, explore, trade, use, and end turn.",
         "traitsAndSpeed": "Speed is the first trait to read here. It tells you the movement range your explorer can work with before spending any steps.",
         "movesRemaining": "The MOVE medallion in the upper-right shows how many steps you still have right now this turn. That current remainder is not always the same as your full speed value.",
         "roomBoard": "The central room board is the main play area. First read where you are, which rooms are already connected, and where exploration can continue.",
-        "inventoryAndHelp": "The lower-left area is your real inventory for items and omens. Open the reference card only when you need to check terms, not as a replacement for the main UI.",
-        "finish": "You now know to read the goal, action bar, speed, and room board first. The next chapter walks through a real use, move, and explore sequence."
+        "inventoryAndHelp": "The lower-left area is your inventory for items and omens. Open the reference card only when you need to check terms, not as a replacement for the main UI.",
+        "finish": "You now know to read the goal, action bar, speed, and room board first. The next chapter walks through use, move, and explore."
       }
     },
     "moveExploreUse": {
       "title": "Move, Explore, and Use",
-      "description": "Walk through one real pre-haunt sequence of using an item, moving, and exploring.",
+      "description": "Walk through a common pre-haunt rhythm: use a possession, move to a connected room, then explore a new room.",
       "steps": {
-        "setupRuntime": "The next steps jump into a real pre-haunt runtime state for the first scenario.",
+        "setupRuntime": "Start from the first scenario before the haunt: you already hold the Book, and your current position can still lead to more rooms.",
         "useBook": "Use the book first. The held item is already selected; the magnifier on the card only opens the large preview.",
         "useRope": "Use the rope first. It grants extra movement so you can keep the room exploration going.",
-        "openMoveTargets": "Now choose Move. The move button highlights real reachable rooms, not tutorial overlays.",
-        "moveToHallway": "Now move to the Hallway. Green targets are real reachable rooms, not tutorial overlays.",
-        "moveToGrandStaircase": "Now move to the Grand Staircase. Green targets are real reachable rooms, not tutorial overlays.",
-        "exploreUpper": "Then use Explore to reveal the next room. Exploration really triggers an event, item, or omen.",
-        "finish": "You have now walked through a real use -> move -> explore sequence. That is the normal runtime rhythm."
+        "openMoveTargets": "Now choose Move. Rooms glowing green are places you can still reach this turn.",
+        "moveToHallway": "Now choose the Hallway. Move there first, then use the open doorway to keep exploring.",
+        "moveToGrandStaircase": "Now choose the Grand Staircase. Move there first, then use the open doorway to keep exploring.",
+        "exploreUpper": "Next choose Explore, then pick a glowing unknown room. The room flips over and draws an event, item, or omen from its matching deck.",
+        "finish": "Continue."
       }
     },
     "crimsonJack": {
       "title": "Crimson Jack Objective",
       "description": "Explain what the heroes and the traitor are trying to do once the first haunt begins.",
       "steps": {
-        "setupHaunt": "This chapter jumps directly into a real haunt state for the first scenario.",
+        "setupHaunt": "Start from the first scenario after the haunt begins, then read each side's goal.",
         "hauntReveal": "The first haunt is Crimson Jack Returns. Once the haunt starts, the revealer becomes the traitor.",
         "heroGoal": "The hero line has three goals: learn about Jack, study two exorcism circles, then banish Jack's Spirit.",
-        "traitorGoal": "The traitor wants to kill the heroes, or return to life through Jack's Spirit. The board and actions stay on the same real page.",
-        "finish": "You should now understand that this haunt is driven by investigation, circles, and Jack's Spirit, not just combat."
+        "traitorGoal": "The traitor wants to kill the heroes, or return to life through Jack's Spirit. Rooms, movement, and attacks still happen on the same board.",
+        "finish": "You should now understand that this haunt is driven by investigation, circles, Jack's Spirit, and different goals for each side."
       }
     },
     "hauntActions": {
-      "title": "Haunt Actions and Finish",
-      "description": "Use a real endgame-ready haunt state to review help, haunt actions, and the true finish.",
+      "title": "Banish Jack's Spirit",
+      "description": "Start from the later first-scenario haunt state, check the reference card, confirm the haunt actions, and complete the exorcism.",
       "steps": {
-        "setupReadyToExorcise": "This chapter jumps to a real state where the heroes are ready to finish the exorcism.",
+        "setupReadyToExorcise": "The heroes have learned about Jack and prepared two exorcism circles. Now they need to share a room with Jack's Spirit and complete the exorcism.",
         "helpEntry": "If you need to re-read the printed aid, open it here. The help entry stays lightweight and does not replace the action bar.",
-        "hauntActions": "The haunt-specific actions still live in the real bottom action row: learn, study, exorcise, and attack when needed.",
-        "exorciseJack": "Execute the real exorcise action now. A success leads straight into the actual endgame screen.",
-        "endgameReview": "This is the real hero-side finish for the first scenario, not a tutorial-only end screen."
+        "hauntActions": "The haunt-specific actions still live in the bottom action row: learn, study, exorcise, and attack when needed.",
+        "exorciseJack": "Exorcise Jack now. On success, the survivors banish Jack's Spirit.",
+        "endgameReview": "Jack's Spirit is banished, and the survivors escape."
       }
     },
     "traitorPath": {
-      "title": "Traitor View and Finish",
-      "description": "Enter the first scenario from the traitor's turn and finish the real attack chain.",
+      "title": "Traitor Attack Route",
+      "description": "Enter the first scenario from the traitor's turn and see how the traitor defeats the heroes.",
       "steps": {
-        "setupTraitorTurn": "This chapter jumps directly to Daryl's real traitor turn. The heroes are near defeat, so the traitor line can finish from the real board.",
+        "setupTraitorTurn": "It is Daryl's traitor turn. The heroes are wounded, and the traitor can keep pressing the attack.",
         "traitorObjective": "The traitor is not studying circles. The goal is to defeat every hero; if the traitor falls first, Jack's Spirit may take over and try to return.",
-        "attackHero": "Use the real room focus entry to attack a hero in the same room. This resolves through the normal opposed attack and damage rules, not a tutorial-only button.",
-        "traitorFinish": "This is the true traitor-side finish for the first scenario. The tutorial now covers both required first-scenario viewpoints."
+        "attackHero": "Use the room focus entry to attack a hero in the same room. The attack compares both sides and deals damage from the difference.",
+        "traitorFinish": "When every hero falls, Crimson Jack prevails and the traitor wins."
       }
     }
   }

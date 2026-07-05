@@ -2,6 +2,8 @@ import type { InteractionDescriptor } from '../../../engine/systems/InteractionS
 import {
     QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
     QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
+    QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+    QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
     QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
     QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
@@ -28,6 +30,8 @@ import type {
     QidahenCore,
     QidahenDiplomacySelection,
     QidahenDriveTigerConsentSelection,
+    QidahenEventCharacterTargetSelection,
+    QidahenEventOpponentHandChoiceSelection,
     QidahenFactionId,
     QidahenFortificationMaintenanceSelection,
     QidahenHandLimitDiscardSelection,
@@ -465,6 +469,64 @@ export function getQidahenPendingTargetActionForCore(
         isActive: (currentCore) => currentCore.turnPhase === 'resolve-pending',
         readInteraction: getQidahenPendingTargetActionFromInteraction,
         readCore: (currentCore) => currentCore.pendingTargetAction,
+    });
+}
+
+export function getQidahenEventCharacterTargetSelectionFromInteraction(
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenEventCharacterTargetSelection | null {
+    return getQidahenEventCharacterTargetSelectionFromInteractionData(interaction?.data);
+}
+
+const getQidahenEventCharacterTargetSelectionFromInteractionData = (
+    interactionData?: unknown,
+): QidahenEventCharacterTargetSelection | null => {
+    return readQidahenInteractionSelectionField(
+        interactionData,
+        QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+        'qidahenEventCharacterTargetSelection',
+    );
+};
+
+export function getQidahenEventCharacterTargetSelectionForCore(
+    core: QidahenCore,
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenEventCharacterTargetSelection | null {
+    return getQidahenInteractionSelectionMirrorForCore({
+        core,
+        interaction,
+        isActive: (currentCore) => currentCore.turnPhase === 'event-character-target',
+        readInteraction: getQidahenEventCharacterTargetSelectionFromInteraction,
+        readCore: (currentCore) => currentCore.eventCharacterTargetSelection,
+    });
+}
+
+export function getQidahenEventOpponentHandChoiceSelectionFromInteraction(
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenEventOpponentHandChoiceSelection | null {
+    return getQidahenEventOpponentHandChoiceSelectionFromInteractionData(interaction?.data);
+}
+
+const getQidahenEventOpponentHandChoiceSelectionFromInteractionData = (
+    interactionData?: unknown,
+): QidahenEventOpponentHandChoiceSelection | null => {
+    return readQidahenInteractionSelectionField(
+        interactionData,
+        QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
+        'qidahenEventOpponentHandChoiceSelection',
+    );
+};
+
+export function getQidahenEventOpponentHandChoiceSelectionForCore(
+    core: QidahenCore,
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenEventOpponentHandChoiceSelection | null {
+    return getQidahenInteractionSelectionMirrorForCore({
+        core,
+        interaction,
+        isActive: (currentCore) => currentCore.turnPhase === 'event-opponent-hand-choice',
+        readInteraction: getQidahenEventOpponentHandChoiceSelectionFromInteraction,
+        readCore: (currentCore) => currentCore.eventOpponentHandChoiceSelection,
     });
 }
 

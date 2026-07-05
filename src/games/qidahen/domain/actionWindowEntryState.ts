@@ -43,6 +43,8 @@ QidahenCore,
 | 'sunYuanhuaTechSelection'
 | 'gaoDiDispatchSelection'
 | 'wheelDispatchProgress'
+| 'eventCharacterTargetSelection'
+| 'eventOpponentHandChoiceSelection'
 | 'pendingTargetAction'
 | 'postBattleSelection'
 | 'lastCharacterActionWindowTriggerKey'
@@ -75,6 +77,8 @@ QidahenCore,
         sunYuanhuaTechSelection: null,
         gaoDiDispatchSelection: null,
         wheelDispatchProgress: null,
+        eventCharacterTargetSelection: null,
+        eventOpponentHandChoiceSelection: null,
         pendingTargetAction: null,
         postBattleSelection: null,
         lastCharacterActionWindowTriggerKey: null,

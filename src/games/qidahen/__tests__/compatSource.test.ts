@@ -2181,7 +2181,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(previewActionReducerSource).toContain('selectedActionId: actionId,');
         expect(previewActionReducerSource).toContain('confirmedActionId: actionId,');
         expect(previewActionReducerSource).toContain('selectedPaymentCardIds,');
-        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds)),');
+        expect(previewActionReducerSource).toContain('const nextState: QidahenCore = {');
+        expect(previewActionReducerSource).toContain('payment: state.payment,');
+        expect(previewActionReducerSource).toContain('payment: buildPaymentState(');
+        expect(previewActionReducerSource).toContain('getQidahenSelectedActionCost(nextState, actionId),');
         expect(previewActionReducerSource).toContain("export const resolveQidahenPreviewActionCancelledEvent = (");
         expect(previewActionReducerSource).not.toContain("const grantPardonSourceRegion = actionId === 'grant-pardon'");
         expect(previewActionReducerSource).not.toContain("const pendingTargetAction = (actionId === 'raid' || actionId === 'marriage-subjugation')");
@@ -4885,7 +4888,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);');
         expect(commandEventBuildersSource).toContain('sourceHandCardId: command.payload.sourceHandCardId ?? null,');
         expect(previewActionReducerSource).toContain('selectedHandActionCardId: sourceCard?.id ?? null,');
-        expect(previewActionReducerSource).toContain('payment: buildPaymentState(actionId, computeQidahenSelectedPaymentValue(state.handCards, selectedPaymentCardIds)),');
+        expect(previewActionReducerSource).toContain('const nextState: QidahenCore = {');
+        expect(previewActionReducerSource).toContain('payment: state.payment,');
+        expect(previewActionReducerSource).toContain('payment: buildPaymentState(');
+        expect(previewActionReducerSource).toContain('getQidahenSelectedActionCost(nextState, actionId),');
         expect(selectionInputStateSource).toContain('if (state.selectedHandActionCardId === cardId) {');
         expect(commandsSource).toContain('getQidahenDirectActionIdForHandCard(sourceCard) === actionId');
         expect(stateCommitSource).toContain('selectedHandActionCardId: null,');

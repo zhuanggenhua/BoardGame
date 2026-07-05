@@ -9,6 +9,8 @@ import {
 import type {
     QidahenDiplomacyInteraction,
     QidahenDriveTigerConsentInteraction,
+    QidahenEventCharacterTargetInteraction,
+    QidahenEventOpponentHandChoiceInteraction,
     QidahenFortificationMaintenanceInteraction,
     QidahenHandLimitDiscardInteraction,
     QidahenInternalDispatchInteraction,
@@ -20,6 +22,8 @@ import type {
 import type { QidahenRuntimeInteractionBuilderSpec } from './runtimeInteractionBuilderContracts';
 import {
     getQidahenDriveTigerConsentSelectionForCore,
+    getQidahenEventCharacterTargetSelectionForCore,
+    getQidahenEventOpponentHandChoiceSelectionForCore,
     getQidahenDiplomacySelectionForCore,
     getQidahenHandLimitDiscardSelectionForCore,
     getQidahenFortificationMaintenanceSelectionForCore,
@@ -32,6 +36,8 @@ import {
 import {
     QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
     QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
+    QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+    QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
     QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
     QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
@@ -413,6 +419,96 @@ function buildQidahenFortificationMaintenanceInteraction(
     return interaction;
 }
 
+function buildQidahenEventCharacterTargetInteraction(
+    state: MatchState<QidahenCore>,
+): QidahenEventCharacterTargetInteraction | null {
+    const selection = getQidahenEventCharacterTargetSelectionForCore(state.core, state.sys.interaction?.current);
+    if (!selection) {
+        return null;
+    }
+    const playerId = state.core.factions[selection.ownerFactionId]?.playerId;
+    if (!playerId) {
+        return null;
+    }
+
+    const options = selection.choices.map((choice) => ({
+        id: choice.id,
+        label: `${choice.characterName}（${choice.factionName}）`,
+        value: { choiceId: choice.id },
+        displayMode: 'button' as const,
+        description: choice.detail,
+    }));
+
+    const interaction = createSimpleChoice(
+        `qidahen-event-character-target-${selection.eventCardId}`,
+        playerId,
+        selection.title,
+        options,
+        {
+            sourceId: QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+            targetType: 'button',
+            autoResolveIfSingle: false,
+            subtitle: selection.summary,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_EVENT_CHARACTER_TARGET],
+        },
+    ) as QidahenEventCharacterTargetInteraction;
+
+    interaction.data.qidahenEventCharacterTargetSelection = {
+        ...selection,
+        paymentCardIds: [...selection.paymentCardIds],
+        choices: selection.choices.map((choice) => ({ ...choice })),
+    };
+
+    return interaction;
+}
+
+function buildQidahenEventOpponentHandChoiceInteraction(
+    state: MatchState<QidahenCore>,
+): QidahenEventOpponentHandChoiceInteraction | null {
+    const selection = getQidahenEventOpponentHandChoiceSelectionForCore(state.core, state.sys.interaction?.current);
+    if (!selection) {
+        return null;
+    }
+    const factionId = selection.source === 'ginseng-and-sable-card'
+        || selection.source === 'tribute-edict-action'
+        ? selection.targetFactionId
+        : selection.ownerFactionId;
+    const playerId = factionId ? state.core.factions[factionId]?.playerId : null;
+    if (!playerId) {
+        return null;
+    }
+
+    const options = selection.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.cardLabel,
+        value: { choiceId: choice.id },
+        displayMode: 'button' as const,
+        description: choice.detail,
+    }));
+
+    const interaction = createSimpleChoice(
+        `qidahen-event-opponent-hand-choice-${selection.eventCardId}-${selection.source}`,
+        playerId,
+        selection.title,
+        options,
+        {
+            sourceId: QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
+            targetType: 'button',
+            autoResolveIfSingle: false,
+            subtitle: selection.summary,
+            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE],
+        },
+    ) as QidahenEventOpponentHandChoiceInteraction;
+
+    interaction.data.qidahenEventOpponentHandChoiceSelection = {
+        ...selection,
+        paymentCardIds: [...selection.paymentCardIds],
+        choices: selection.choices.map((choice) => ({ ...choice })),
+    };
+
+    return interaction;
+}
+
 export const QIDAHEN_TURN_ACTION_RUNTIME_INTERACTION_BUILDERS: readonly QidahenRuntimeInteractionBuilderSpec[] = [
     {
         sourceId: QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
@@ -449,5 +545,13 @@ export const QIDAHEN_TURN_ACTION_RUNTIME_INTERACTION_BUILDERS: readonly QidahenR
     {
         sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
         buildInteraction: buildQidahenFortificationMaintenanceInteraction,
+    },
+    {
+        sourceId: QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+        buildInteraction: buildQidahenEventCharacterTargetInteraction,
+    },
+    {
+        sourceId: QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
+        buildInteraction: buildQidahenEventOpponentHandChoiceInteraction,
     },
 ];

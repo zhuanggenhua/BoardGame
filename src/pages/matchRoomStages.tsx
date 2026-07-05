@@ -43,17 +43,17 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
         : tutorialCatalog.defaultTutorialId;
 
     return (
-        <div className="flex h-full w-full items-center justify-center bg-[#24180d] px-6 py-8 text-[#433422]">
-            <div className="w-full max-w-5xl rounded-[16px] border border-[#8c7b64]/35 bg-[#f4ecd8] p-6 shadow-[0_18px_48px_rgba(67,52,34,0.22)] md:p-8">
-                <div className="mb-6">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8c7b64]">
+        <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(255,242,202,0.035)_0_1px,transparent_1px_18px),radial-gradient(ellipse_at_50%_42%,rgba(122,77,34,0.18),transparent_38rem),linear-gradient(180deg,#2c2116_0%,#21160e_58%,#180f09_100%)] px-5 py-12 text-[#342313]">
+            <div className="w-full max-w-[760px]">
+                <div className="mb-7">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#f7e7be]/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
                         {tLobby('matchRoom.tutorialCatalog.eyebrow')}
                     </div>
-                    <h2 className="mt-2 font-serif text-3xl font-bold text-[#433422]">
+                    <h2 className="mt-2 font-serif text-[clamp(30px,4vw,44px)] font-bold leading-[1.12] tracking-[0.02em] text-[#f7e7be] drop-shadow-[0_3px_16px_rgba(0,0,0,0.62)]">
                         {tLobby('matchRoom.tutorialCatalog.title')}
                     </h2>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="relative grid gap-0 rounded-[18px] border border-[#79572b]/20 bg-[#f2e8cf]/[0.82] px-7 py-[22px] shadow-[0_20px_42px_rgba(19,10,4,0.2)] backdrop-blur-[1px] before:absolute before:bottom-[34px] before:left-[49px] before:top-[34px] before:border-l before:border-dashed before:border-[#74532d]/45 max-md:px-4 max-md:py-[18px] max-md:before:left-[37px]">
                     {entries.map(([tutorialId, entry], index) => {
                         const title = entry.titleKey
                             ? t(entry.titleKey, { defaultValue: entry.title ?? tutorialId })
@@ -70,37 +70,35 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                                 type="button"
                                 data-testid={`tutorial-catalog-entry-${tutorialId}`}
                                 onClick={() => navigate(`/play/${stage.gameId}/tutorial/${tutorialId}`)}
-                                className="group flex min-h-[168px] cursor-pointer flex-col rounded-[10px] border border-[#8c7b64]/32 bg-[#f9f1df] p-5 text-left shadow-[0_2px_8px_rgba(67,52,34,0.05)] transition-colors duration-200 hover:border-[#8c7b64]/60 hover:bg-[#fff6e5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]"
+                                className="group relative grid min-h-[94px] cursor-pointer grid-cols-[46px_1fr_auto] items-start gap-[18px] border-b border-[#74532d]/15 py-3 pb-[18px] text-left transition-colors duration-200 last:border-b-0 last:pb-1 hover:bg-[#fff5df]/30 focus-visible:rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] max-md:grid-cols-[44px_1fr] max-md:gap-3"
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="text-sm font-semibold tracking-[0.16em] text-[#8c7b64]">
-                                        {String(index + 1).padStart(2, '0')}
-                                    </div>
-                                    <div className="flex flex-wrap justify-end gap-2">
+                                <div className="relative z-[1] grid h-[42px] w-[42px] place-items-center rounded-full border border-[#79572b]/40 bg-[linear-gradient(180deg,#f5edd8,#dfd0b3)] text-[13px] font-extrabold tracking-[0.14em] text-[#6b4c22] shadow-[0_0_0_5px_rgba(242,232,207,0.82)]">
+                                    {String(index + 1).padStart(2, '0')}
+                                </div>
+                                <div>
+                                    <div className="font-serif text-[22px] font-bold leading-tight tracking-[0.02em] text-[#342313]">
+                                        {title}
                                         {isCompleted ? (
                                             <span
-                                                className="rounded border border-[#556b2f]/35 bg-[#556b2f]/10 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#556b2f]"
+                                                className="ml-2 inline-block -translate-y-1 rounded border border-[#556b2f]/30 bg-[#556b2f]/10 px-2 py-0.5 font-sans text-[11px] font-extrabold tracking-[0.12em] text-[#556b2f]"
                                                 aria-label={tLobby('matchRoom.tutorialCatalog.completed')}
                                             >
                                                 ✓ {tLobby('matchRoom.tutorialCatalog.completed')}
                                             </span>
                                         ) : null}
                                         {isDefault ? (
-                                            <span className="rounded border border-[#d4af37]/45 bg-[#d4af37]/12 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#7a5a17]">
+                                            <span className="ml-2 inline-block -translate-y-1 rounded border border-[#a17022]/30 bg-[#c49032]/10 px-2 py-0.5 font-sans text-[11px] font-extrabold text-[#805714]">
                                                 {tLobby('matchRoom.tutorialCatalog.recommended')}
                                             </span>
                                         ) : null}
                                     </div>
+                                    {description ? (
+                                        <div className="mt-2 max-w-[520px] font-sans text-sm leading-7 text-[#5f4a31]">
+                                            {description}
+                                        </div>
+                                    ) : null}
                                 </div>
-                                <div className="mt-5 font-serif text-2xl font-bold leading-tight text-[#433422]">
-                                    {title}
-                                </div>
-                                {description ? (
-                                    <div className="mt-3 text-sm leading-6 text-[#6f5d45]">
-                                        {description}
-                                    </div>
-                                ) : null}
-                                <div className="mt-auto pt-5 text-sm font-semibold text-[#7a5a17]">
+                                <div className="mt-2 min-w-24 border-l border-[#74532d]/15 pl-4 pt-1 font-sans text-sm font-extrabold text-[#775015] max-md:col-start-2 max-md:mt-0 max-md:min-w-0 max-md:border-l-0 max-md:pl-0">
                                     {tLobby('matchRoom.tutorialCatalog.enter')}
                                 </div>
                             </button>
