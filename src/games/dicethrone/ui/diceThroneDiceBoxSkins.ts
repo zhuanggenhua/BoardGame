@@ -117,12 +117,16 @@ const createEdgeCanvas = () => {
     if (!ctx) return canvas;
 
     const radius = size * 0.15;
-    ctx.fillStyle = '#ffffff';
+    const face = ctx.createLinearGradient(0, 0, size, size);
+    face.addColorStop(0, '#ffffff');
+    face.addColorStop(0.62, '#f2efe4');
+    face.addColorStop(1, '#cbc2aa');
+    ctx.fillStyle = face;
     drawRoundedRect(ctx, 0, 0, size, size, radius);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(70,70,70,0.08)';
-    ctx.lineWidth = size * 0.018;
+    ctx.strokeStyle = 'rgba(62, 55, 42, 0.24)';
+    ctx.lineWidth = size * 0.024;
     drawRoundedRect(ctx, size * 0.01, size * 0.01, size - size * 0.02, size - size * 0.02, radius);
     ctx.stroke();
 

@@ -640,10 +640,10 @@ export class DiceBoxThreeEngine {
         material.envMapIntensity = 0.35;
         material.bumpMap = null;
         material.opacity = 1;
-        material.transparent = true;
+        material.transparent = false;
         material.alphaTest = 0;
-        material.depthTest = false;
-        material.depthWrite = false;
+        material.depthTest = true;
+        material.depthWrite = true;
         material.needsUpdate = true;
     }
 
