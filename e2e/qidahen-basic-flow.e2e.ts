@@ -199,6 +199,30 @@ const readRequiredQidahenHarnessState = async (page: Page): Promise<QidahenHarne
     })
 );
 
+const expectMapArmyFace = async (
+    page: Page,
+    {
+        faction,
+        regionId,
+        face,
+        minimum = 1,
+    }: {
+        faction: 'ming' | 'mongol' | 'jin' | 'neutral';
+        regionId: string;
+        face: 'front' | 'hidden-back';
+        minimum?: number;
+    },
+) => {
+    const tokens = page.locator(
+        `[data-testid^="qidahen-map-token-"][data-qidahen-map-token-type="army"][data-qidahen-map-token-faction="${faction}"][data-qidahen-map-token-region="${regionId}"]`,
+    );
+    await expect.poll(async () => tokens.count()).toBeGreaterThanOrEqual(minimum);
+    const tokenCount = await tokens.count();
+    for (let index = 0; index < tokenCount; index += 1) {
+        await expect(tokens.nth(index)).toHaveAttribute('data-qidahen-army-face', face);
+    }
+};
+
 const QIDAHEN_BASIC_OPENING_TEST_URL = '/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human';
 
 const clickMapRegion = async (page: import('@playwright/test').Page, regionId: keyof typeof MAP_REGION_POINTS) => {
@@ -485,6 +509,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-scenario-pregame-screen"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-scenario-panel"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-action-wheel"]')).toBeVisible();
+        await expectMapArmyFace(page, { faction: 'ming', regionId: 'city-region-25', face: 'front' });
+        await expectMapArmyFace(page, { faction: 'jin', regionId: 'city-region-13', face: 'hidden-back' });
         await saveScreenshot(page, PREGAME_SCREENSHOT);
         assertNoFatalFrontendErrors([{ label: 'qidahen-pregame-gate', diagnostics }]);
     });
@@ -1098,6 +1124,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('低级承伤优先');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-14');
+        await expectMapArmyFace(page, { faction: 'ming', regionId: 'city-region-16', face: 'front', minimum: 3 });
+        await expectMapArmyFace(page, { faction: 'jin', regionId: 'city-region-14', face: 'front' });
         await expect(page.locator('[data-testid="qidahen-pending-casualty-priority"]')).toContainText('攻方承伤');
         await expect(page.locator('[data-testid="qidahen-pending-casualty-priority"]')).toContainText('守方承伤');
         await expect(page.locator('[data-testid="qidahen-attacker-casualty-highest-level"]')).toContainText('高级先损');
@@ -1462,6 +1490,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return state.set(next);
         });
 
+        await expectMapArmyFace(page, { faction: 'ming', regionId: 'city-region-16', face: 'front', minimum: 4 });
         const committedTroopTokens = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]');
         await expect(committedTroopTokens).toHaveCount(4);
         await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');

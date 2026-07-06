@@ -58,25 +58,22 @@ export const getNativeMobileRuntimeDiagnostics = (options?: {
     const windowCapacitorPlatform = safeInvoke(() => runtimeWindow?.Capacitor?.getPlatform?.());
     const windowCapacitorNative = safeInvoke(() => runtimeWindow?.Capacitor?.isNativePlatform?.());
     const hasAndroidBridge = Boolean(runtimeWindow?.androidBridge);
-    const hasImportRuntimeSignal = typeof importCapacitorNative === 'boolean' || typeof importCapacitorPlatform === 'string';
     const hasE2ENativeAndroidOverride = import.meta.env.DEV
         && runtimeWindow?.__BG_E2E_NATIVE_ANDROID_RUNTIME__ === true;
     const hasE2ENativeIosOverride = import.meta.env.DEV
         && runtimeWindow?.__BG_E2E_NATIVE_IOS_RUNTIME__ === true;
 
-    const detectedPlatform = hasImportRuntimeSignal
-        ? normalizeNativePlatform(importCapacitorPlatform)
-        : normalizeNativePlatform(windowCapacitorPlatform);
-    const detectedNative = hasImportRuntimeSignal
-        ? importCapacitorNative === true
-        : windowCapacitorNative === true;
+    const importPlatform = normalizeNativePlatform(importCapacitorPlatform);
+    const windowPlatform = normalizeNativePlatform(windowCapacitorPlatform);
+    const nativeImportPlatform = importCapacitorNative === true ? importPlatform : undefined;
+    const nativeWindowPlatform = windowCapacitorNative === true ? windowPlatform : undefined;
     const platform = hasE2ENativeAndroidOverride
         ? 'android'
         : hasE2ENativeIosOverride
             ? 'ios'
-            : detectedNative
-                ? detectedPlatform
-                : undefined;
+            : hasAndroidBridge
+                ? 'android'
+                : nativeWindowPlatform ?? nativeImportPlatform;
     const nativeAndroid = platform === 'android';
     const nativeIos = platform === 'ios';
     const nativeMobile = nativeAndroid || nativeIos;

@@ -1480,5 +1480,23 @@
         }
       }
     }
+  },
+  "thumbnails/cover": {
+    "variants": {
+      "png": {
+        "sha256": "0cf838b063a231069349a3d18421e4f47a57559ea76b464eef1c42eafc745996",
+        "bytes": 233882,
+        "mime": "image/png"
+      }
+    }
+  },
+  "thumbnails/compressed/cover": {
+    "variants": {
+      "webp": {
+        "sha256": "a1b2cb69195da028ca8169fda786c803b62fa4aac8614229a20821d4e51ae291",
+        "bytes": 45874,
+        "mime": "image/webp"
+      }
+    }
   }
 }
