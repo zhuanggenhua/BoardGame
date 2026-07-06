@@ -541,6 +541,10 @@ export class DiceBoxThreeEngine {
     }
 
     private applySkinToDie(die: DiceBoxDie, skin: DiceBoxDieSkin): boolean {
+        if (skin.preferPresetMaterials) {
+            return false;
+        }
+
         let materials = Array.isArray(die.material) ? die.material : [die.material];
         let didChange = false;
 

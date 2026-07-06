@@ -81,6 +81,21 @@ const drawDieFaceBase = (ctx: CanvasRenderingContext2D, size: number) => {
     ctx.stroke();
 };
 
+const createPresetLabelCanvas = (faceValue: number, atlasImage: HTMLImageElement | null) => {
+    const size = DICE_BOX_FACE_CANVAS_SIZE;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    drawOfficialAtlasFace(ctx, atlasImage, faceValue, size);
+
+    return canvas;
+};
+
 const loadImageFromCandidates = (urls: string[]): Promise<HTMLImageElement | null> => new Promise((resolve) => {
     const candidates = urls.filter(Boolean);
     let index = 0;
@@ -318,7 +333,7 @@ export async function loadDiceThroneDiceBoxSkin(
 
     for (const faceValue of DICE_BOX_ATLAS_FACE_VALUES) {
         faceCanvases[faceValue] = createFaceCanvas(faceValue, atlasImage);
-        faceImages[faceValue] = await canvasToImage(faceCanvases[faceValue]);
+        faceImages[faceValue] = await canvasToImage(createPresetLabelCanvas(faceValue, atlasImage));
     }
 
     return {

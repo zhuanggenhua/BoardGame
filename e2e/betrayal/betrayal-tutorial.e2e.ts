@@ -391,7 +391,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         }
         await waitForStep(page, 'use-book');
         await expect(page.getByTestId('betrayal-action-use')).toBeVisible();
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('书本');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('先使用书本');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('非战斗检定');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('放大镜');
         await expect(page.getByTestId('betrayal-inventory-omen-book')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-omen-book-magnify')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
@@ -412,7 +414,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await saveScreenshot(page, STEP_12);
         await waitForStep(page, 'explore-upper');
         await expect(page.getByTestId('betrayal-action-explore')).toBeVisible();
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('房间会翻开');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('立刻抽取对应的发现牌');
         await page.getByTestId('betrayal-action-explore').click();
         const exploreTargetMarker = page.locator('[data-testid^="betrayal-room-explore-target-"]').first();
         await expect(exploreTargetMarker).toBeVisible({ timeout: 10000 });

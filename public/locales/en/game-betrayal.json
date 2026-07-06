@@ -304,12 +304,12 @@
       "description": "Walk through a common pre-haunt rhythm: use a possession, move to a connected room, then explore a new room.",
       "steps": {
         "setupRuntime": "Start from the first scenario before the haunt: you already hold the Book, and your current position can still lead to more rooms.",
-        "useBook": "Use the book first. The held item is already selected; the magnifier on the card only opens the large preview.",
+        "useBook": "Use the Book first. It steers the next non-combat check toward Knowledge, making the upcoming discovery easier for Jaden to handle.",
         "useRope": "Use the rope first. It grants extra movement so you can keep the room exploration going.",
         "openMoveTargets": "Now choose Move. Rooms glowing green are places you can still reach this turn.",
-        "moveToHallway": "Now choose the Hallway. Move there first, then use the open doorway to keep exploring.",
-        "moveToGrandStaircase": "Now choose the Grand Staircase. Move there first, then use the open doorway to keep exploring.",
-        "exploreUpper": "Next choose Explore, then pick a glowing unknown room. The room flips over and draws an event, item, or omen from its matching deck.",
+        "moveToHallway": "Move into the Hallway. It still connects to a new exit, so the next step can reveal an unknown room.",
+        "moveToGrandStaircase": "Move into the Grand Staircase. It still connects to a new exit, so the next step can reveal an unknown room.",
+        "exploreUpper": "Explore the glowing unknown room. The room flips over, then immediately draws the matching discovery card.",
         "finish": "Continue."
       }
     },
