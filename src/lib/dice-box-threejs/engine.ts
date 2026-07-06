@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { Euler, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -28,7 +28,6 @@ export interface DiceBoxStyleProfile {
     gravityMultiplier?: number;
     lightIntensity?: number;
     baseScale?: number;
-    cameraZoom?: number;
     strength?: number;
     iterationLimit?: number;
     arrangeSettledDice?: boolean;
@@ -91,12 +90,12 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
     return typeof value === 'number' ? value : null;
 }
 
-const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number }> = [
-    { x: -1.24, y: -0.86, yaw: -0.18 },
-    { x: -0.44, y: -0.18, yaw: 0.08 },
-    { x: 0.18, y: -0.68, yaw: -0.04 },
-    { x: 1.08, y: -0.22, yaw: 0.16 },
-    { x: 0.84, y: -1.04, yaw: -0.12 },
+const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
+    { x: -1.24, y: -0.86, yaw: -0.18, tiltX: 0.035, tiltY: -0.025 },
+    { x: -0.44, y: -0.18, yaw: 0.08, tiltX: -0.03, tiltY: 0.02 },
+    { x: 0.18, y: -0.68, yaw: -0.04, tiltX: 0.025, tiltY: 0.03 },
+    { x: 1.08, y: -0.22, yaw: 0.16, tiltX: -0.035, tiltY: -0.02 },
+    { x: 0.84, y: -1.04, yaw: -0.12, tiltX: 0.03, tiltY: 0.025 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
@@ -140,7 +139,6 @@ export class DiceBoxThreeEngine {
         });
         await box.initialize();
         const engine = new DiceBoxThreeEngine(box, container, styleProfile);
-        engine.applyCameraProfile();
         box.renderer.domElement.style.width = '100%';
         box.renderer.domElement.style.height = '100%';
         box.renderer.domElement.style.display = 'block';
@@ -197,7 +195,6 @@ export class DiceBoxThreeEngine {
             x: this.container.clientWidth,
             y: this.container.clientHeight,
         });
-        this.applyCameraProfile();
     }
 
     async rollToValues(values: number[]): Promise<void> {
@@ -357,20 +354,6 @@ export class DiceBoxThreeEngine {
         }
     }
 
-    private applyCameraProfile(): void {
-        const camera = this.box.camera;
-        if (!camera) return;
-
-        const zoom = this.styleProfile.cameraZoom ?? 1;
-        if (typeof camera.zoom === 'number' && zoom !== camera.zoom) {
-            camera.zoom = zoom;
-        }
-
-        camera.lookAt?.(0, 0, 0);
-        camera.updateProjectionMatrix?.();
-        camera.updateMatrixWorld?.(true);
-    }
-
     private applyPrimarySkinToDicePreset(): boolean {
         const primarySkin = this.dieSkins.find(Boolean);
         const faceImages = primarySkin?.faceImages;
@@ -522,17 +505,19 @@ export class DiceBoxThreeEngine {
 
     private getSettledQuaternionForDie(
         die: DiceBoxDie,
-        layout?: { yaw: number },
+        layout?: { yaw: number; tiltX: number; tiltY: number },
     ): Quaternion {
         const targetValue = readDieValue(die);
         if (!targetValue) return new Quaternion();
 
         const yaw = layout?.yaw ?? 0;
+        const tiltX = layout?.tiltX ?? 0;
+        const tiltY = layout?.tiltY ?? 0;
         const faceNormal = this.getFaceNormalForValue(die, targetValue);
         const faceUp = faceNormal
             ? new Quaternion().setFromUnitVectors(faceNormal, WORLD_UP)
             : new Quaternion();
-        const pose = new Quaternion().setFromAxisAngle(WORLD_UP, yaw);
+        const pose = new Quaternion().setFromEuler(new Euler(tiltX, tiltY, yaw, 'XYZ'));
         return new Quaternion()
             .multiplyQuaternions(pose, faceUp)
             .normalize();
