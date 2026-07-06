@@ -27,6 +27,7 @@ export interface DicePhysicsState {
     layout: DicePhysicsProjectedLayout;
     motion: DicePhysicsMotionSnapshot;
     settled: boolean;
+    value: number | null;
 }
 
 export type DicePhysicsRendererMode = 'debug-visible' | 'physics-only';

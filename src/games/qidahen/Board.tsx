@@ -137,6 +137,39 @@ const QIDAHEN_MAP_MAX_ZOOM = 2.25;
 
 type QidahenGuidePoint = { x: number; y: number };
 
+const buildQidahenGuideDisplayPoints = (
+    points: QidahenGuidePoint[],
+    trimLength: number,
+): QidahenGuidePoint[] => {
+    if (points.length < 2) {
+        return points;
+    }
+    const result = points.map((point) => ({ ...point }));
+    let remainingTrim = trimLength;
+    for (let index = result.length - 1; index > 0 && remainingTrim > 0; index -= 1) {
+        const current = result[index];
+        const previous = result[index - 1];
+        const dx = current.x - previous.x;
+        const dy = current.y - previous.y;
+        const segmentLength = Math.hypot(dx, dy);
+        if (segmentLength <= 0) {
+            result.pop();
+            continue;
+        }
+        if (segmentLength > remainingTrim) {
+            const ratio = (segmentLength - remainingTrim) / segmentLength;
+            result[index] = {
+                x: previous.x + dx * ratio,
+                y: previous.y + dy * ratio,
+            };
+            return result;
+        }
+        remainingTrim -= segmentLength;
+        result.pop();
+    }
+    return result.length >= 2 ? result : points;
+};
+
 const buildQidahenGuideArrowHeadPath = (
     points: QidahenGuidePoint[],
     length: number,
@@ -154,9 +187,10 @@ const buildQidahenGuideArrowHeadPath = (
     const normalX = -unitY;
     const normalY = unitX;
     const center = {
-        x: tip.x - unitX * (length * 0.42),
-        y: tip.y - unitY * (length * 0.42),
+        x: tip.x - unitX * (length * 0.78),
+        y: tip.y - unitY * (length * 0.78),
     };
+    const arrowTip = { x: center.x + unitX * (length * 0.78), y: center.y + unitY * (length * 0.78) };
     const leftShoulder = {
         x: center.x + normalX * width + unitX * (length * 0.08),
         y: center.y + normalY * width + unitY * (length * 0.08),
@@ -166,20 +200,20 @@ const buildQidahenGuideArrowHeadPath = (
         y: center.y - normalY * width + unitY * (length * 0.08),
     };
     const leftTail = {
-        x: center.x + normalX * (width * 0.36) - unitX * (length * 0.48),
-        y: center.y + normalY * (width * 0.36) - unitY * (length * 0.48),
+        x: center.x + normalX * (width * 0.36) - unitX * (length * 0.46),
+        y: center.y + normalY * (width * 0.36) - unitY * (length * 0.46),
     };
     const rightTail = {
-        x: center.x - normalX * (width * 0.36) - unitX * (length * 0.48),
-        y: center.y - normalY * (width * 0.36) - unitY * (length * 0.48),
+        x: center.x - normalX * (width * 0.36) - unitX * (length * 0.46),
+        y: center.y - normalY * (width * 0.36) - unitY * (length * 0.46),
     };
     const tail = {
-        x: center.x - unitX * (length * 0.52),
-        y: center.y - unitY * (length * 0.52),
+        x: center.x - unitX * (length * 0.5),
+        y: center.y - unitY * (length * 0.5),
     };
     return [
         `M ${leftTail.x} ${leftTail.y}`,
-        `Q ${leftShoulder.x} ${leftShoulder.y} ${tip.x} ${tip.y}`,
+        `Q ${leftShoulder.x} ${leftShoulder.y} ${arrowTip.x} ${arrowTip.y}`,
         `Q ${rightShoulder.x} ${rightShoulder.y} ${rightTail.x} ${rightTail.y}`,
         `Q ${tail.x} ${tail.y} ${leftTail.x} ${leftTail.y}`,
         'Z',
@@ -1357,7 +1391,7 @@ const MapToken: React.FC<{
     const pendingCommittedTone = pendingCommittedSelected
         ? {
             opacity: 1,
-            boxShadow: '0 0 0 3px rgba(255, 232, 158, 0.98), 0 0 0 7px rgba(77, 157, 78, 0.54), 0 5px 14px rgba(22, 17, 10, 0.42)',
+            boxShadow: '0 0 0 4px rgba(77, 157, 78, 0.78), 0 5px 14px rgba(22, 17, 10, 0.42)',
             filter: 'brightness(1.08) saturate(1.08)',
         }
         : pendingCommittedSelectable
@@ -2100,10 +2134,17 @@ const MapSceneLayer: React.FC<{
                                 if (pathPoints.length < 2) {
                                     return null;
                                 }
-                                const pointLabel = pathPoints.map((point) => `${point.x},${point.y}`).join(' ');
-                                const arrowHeadPath = buildQidahenGuideArrowHeadPath(pathPoints, activeCandidate ? 36 : 31, activeCandidate ? 13 : 11);
+                                const displayPoints = buildQidahenGuideDisplayPoints(pathPoints, activeCandidate ? 22 : 18);
+                                const pointLabel = displayPoints.map((point) => `${point.x},${point.y}`).join(' ');
+                                const targetPoint = pathPoints[pathPoints.length - 1];
+                                const arrowHeadPath = buildQidahenGuideArrowHeadPath(pathPoints, activeCandidate ? 22 : 18, activeCandidate ? 8.4 : 6.8);
                                 return (
-                                    <g key={candidate.id} data-testid={`qidahen-map-guide-route-${candidate.targetRegionId}`}>
+                                    <g
+                                        key={candidate.id}
+                                        data-testid={`qidahen-map-guide-route-${candidate.targetRegionId}`}
+                                        data-guide-target-x={targetPoint.x}
+                                        data-guide-target-y={targetPoint.y}
+                                    >
                                         <polyline
                                             points={pointLabel}
                                             fill="none"

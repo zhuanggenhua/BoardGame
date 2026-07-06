@@ -1324,6 +1324,15 @@ const BETRAYAL_HOUSE_RULE_VALUE_TO_D6_FACE: Record<0 | 1 | 2, number> = {
     2: 5,
 };
 
+const BETRAYAL_HOUSE_D6_FACE_TO_RULE_VALUE: Record<number, 0 | 1 | 2> = {
+    1: 0,
+    2: 0,
+    3: 1,
+    4: 1,
+    5: 2,
+    6: 2,
+};
+
 const resolveBetrayalHouseD6Face = (pip: number): number => {
     if (pip === 0 || pip === 1 || pip === 2) {
         return BETRAYAL_HOUSE_RULE_VALUE_TO_D6_FACE[pip];
@@ -1382,40 +1391,30 @@ function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     return canvas;
 }
 
-function createBetrayalHouseDieBlankFaceCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
-    paintBetrayalHouseDieFaceBase(ctx);
-    ctx.fillStyle = 'rgba(77,42,16,0.12)';
-    ctx.fillRect(58, 58, 140, 140);
-    return canvas;
-}
-
 const normalizeBetrayalHouseRuleValue = (pip: number): 0 | 1 | 2 => (
     pip === 0 || pip === 1 || pip === 2 ? pip : 0
 );
 
 function createBetrayalHouseDiceSkin(value: 0 | 1 | 2): DiceBoxDieSkin {
-    const face = createBetrayalHouseDieFaceCanvas(value);
-    const blank = createBetrayalHouseDieBlankFaceCanvas();
-    const targetPhysicalFace = resolveBetrayalHouseD6Face(value);
-    const faceCanvases: Record<number, HTMLCanvasElement> = {
-        1: blank,
-        2: blank,
-        3: blank,
-        4: blank,
-        5: blank,
-        6: blank,
+    const ruleFaceCanvases: Record<0 | 1 | 2, HTMLCanvasElement> = {
+        0: createBetrayalHouseDieFaceCanvas(0),
+        1: createBetrayalHouseDieFaceCanvas(1),
+        2: createBetrayalHouseDieFaceCanvas(2),
     };
-    faceCanvases[targetPhysicalFace] = face;
+    const faceCanvases: Record<number, HTMLCanvasElement> = {
+        1: ruleFaceCanvases[0],
+        2: ruleFaceCanvases[0],
+        3: ruleFaceCanvases[1],
+        4: ruleFaceCanvases[1],
+        5: ruleFaceCanvases[2],
+        6: ruleFaceCanvases[2],
+    };
 
     return {
         id: `${BETRAYAL_HOUSE_DICE_FACE_SYSTEM}-${value}`,
-        edgeCanvas: blank,
+        edgeCanvas: ruleFaceCanvases[value],
         faceCanvases,
-        topFaceCanvas: face,
+        topFaceCanvas: ruleFaceCanvases[value],
     };
 }
 
@@ -1450,6 +1449,13 @@ function BetrayalHouseDice3DGroup({
     );
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
     const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
+    const visibleRuleValues = React.useMemo(
+        () => roll.dice.map((pip, index) => {
+            const physicalValue = physicsStates[index]?.value;
+            return physicalValue ? BETRAYAL_HOUSE_D6_FACE_TO_RULE_VALUE[physicalValue] ?? normalizeBetrayalHouseRuleValue(pip) : normalizeBetrayalHouseRuleValue(pip);
+        }),
+        [physicsStates, roll.dice],
+    );
     const selectableDiceTargets = React.useMemo(
         () => physicsStates
             .map((state) => ({
@@ -1474,7 +1480,7 @@ function BetrayalHouseDice3DGroup({
             data-dice-physics-ready={hasPhysicsState ? 'true' : 'false'}
             data-dice-count={roll.dice.length}
             data-dice-rule-values={roll.dice.join(',')}
-            data-dice-visible-rule-values={roll.dice.join(',')}
+            data-dice-visible-rule-values={visibleRuleValues.join(',')}
             data-dice-rule-subtotal={roll.dice.reduce((sum, pip) => sum + pip, 0)}
             data-dice-physical-d6-faces={physicalD6Faces.join(',')}
             className={`relative min-h-0 overflow-visible rounded-[14px] bg-transparent ${className}`}

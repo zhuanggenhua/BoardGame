@@ -204,6 +204,7 @@ export class DiceBoxThreeEngine {
         }
         this.applyPrimarySkinToDicePreset();
         await this.box.roll(createNotation(values));
+        this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
     }
 
@@ -262,6 +263,7 @@ export class DiceBoxThreeEngine {
             layout,
             motion,
             settled,
+            value: readDieValue(this.box.diceList[index]),
         };
     }
 
@@ -316,6 +318,8 @@ export class DiceBoxThreeEngine {
         const width = Math.max(40, maxX - minX);
         const height = Math.max(40, maxY - minY);
 
+        const layoutYaw = SETTLED_DICE_LAYOUT[index]?.yaw;
+
         return {
             id,
             x: (minX + maxX) / 2,
@@ -328,7 +332,7 @@ export class DiceBoxThreeEngine {
             maxY,
             rotateX: die.rotation.x,
             rotateY: die.rotation.y,
-            rotateZ: die.rotation.z,
+            rotateZ: layoutYaw ?? die.rotation.z,
         };
     }
 

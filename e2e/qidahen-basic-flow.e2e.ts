@@ -237,19 +237,19 @@ const clickGuidedMapTarget = async (
     }
     await page.evaluate((guidedTargetRegionId) => {
         const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="qidahen-map-hitmap-canvas"]');
-        const route = document.querySelector<SVGPolylineElement>(`[data-testid="qidahen-map-guide-route-${guidedTargetRegionId}"] polyline`);
+        const routeGroup = document.querySelector<SVGGElement>(`[data-testid="qidahen-map-guide-route-${guidedTargetRegionId}"]`);
         const overlay = document.querySelector<SVGSVGElement>('[data-testid="qidahen-map-overlay"]');
-        if (!canvas || !route || !overlay) {
+        if (!canvas || !routeGroup || !overlay) {
             throw new Error(`missing guided map target for ${guidedTargetRegionId}`);
         }
-        const points = route.getAttribute('points')?.trim().split(/\s+/) ?? [];
-        const lastPoint = points.at(-1)?.split(',').map(Number) ?? [];
-        if (lastPoint.length !== 2 || !Number.isFinite(lastPoint[0]) || !Number.isFinite(lastPoint[1])) {
-            throw new Error(`invalid guided map route points for ${guidedTargetRegionId}`);
+        const targetX = Number(routeGroup.dataset.guideTargetX);
+        const targetY = Number(routeGroup.dataset.guideTargetY);
+        if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
+            throw new Error(`invalid guided map target point for ${guidedTargetRegionId}`);
         }
         const svgPoint = overlay.createSVGPoint();
-        svgPoint.x = lastPoint[0];
-        svgPoint.y = lastPoint[1];
+        svgPoint.x = targetX;
+        svgPoint.y = targetY;
         const screenPoint = svgPoint.matrixTransform(overlay.getScreenCTM()!);
         const clientX = screenPoint.x;
         const clientY = screenPoint.y;
