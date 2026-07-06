@@ -28,6 +28,7 @@ export interface DiceBoxStyleProfile {
     gravityMultiplier?: number;
     lightIntensity?: number;
     baseScale?: number;
+    cameraZoom?: number;
     strength?: number;
     iterationLimit?: number;
     arrangeSettledDice?: boolean;
@@ -138,6 +139,8 @@ export class DiceBoxThreeEngine {
             iterationLimit: styleProfile.iterationLimit ?? DEFAULT_DICE_BOX_STYLE_PROFILE.iterationLimit,
         });
         await box.initialize();
+        const engine = new DiceBoxThreeEngine(box, container, styleProfile);
+        engine.applyCameraProfile();
         box.renderer.domElement.style.width = '100%';
         box.renderer.domElement.style.height = '100%';
         box.renderer.domElement.style.display = 'block';
@@ -151,7 +154,7 @@ export class DiceBoxThreeEngine {
             box.renderer.domElement.style.visibility = 'hidden';
             box.renderer.domElement.setAttribute('aria-hidden', 'true');
         }
-        return new DiceBoxThreeEngine(box, container, styleProfile);
+        return engine;
     }
 
     hasDice(count: number): boolean {
@@ -194,6 +197,7 @@ export class DiceBoxThreeEngine {
             x: this.container.clientWidth,
             y: this.container.clientHeight,
         });
+        this.applyCameraProfile();
     }
 
     async rollToValues(values: number[]): Promise<void> {
@@ -351,6 +355,20 @@ export class DiceBoxThreeEngine {
         if (didChange) {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
+    }
+
+    private applyCameraProfile(): void {
+        const camera = this.box.camera;
+        if (!camera) return;
+
+        const zoom = this.styleProfile.cameraZoom ?? 1;
+        if (typeof camera.zoom === 'number' && zoom !== camera.zoom) {
+            camera.zoom = zoom;
+        }
+
+        camera.lookAt?.(0, 0, 0);
+        camera.updateProjectionMatrix?.();
+        camera.updateMatrixWorld?.(true);
     }
 
     private applyPrimarySkinToDicePreset(): boolean {

@@ -166,12 +166,29 @@ declare module '@3d-dice/dice-box-threejs' {
         updateMatrixWorld?: (force?: boolean) => void;
     }
 
+    export interface DiceBoxCamera {
+        fov?: number;
+        near?: number;
+        far?: number;
+        zoom?: number;
+        aspect?: number;
+        position?: {
+            x: number;
+            y: number;
+            z: number;
+            set?: (x: number, y: number, z: number) => unknown;
+        };
+        lookAt?: (x: number, y: number, z: number) => unknown;
+        updateProjectionMatrix?: () => unknown;
+        updateMatrixWorld?: (force?: boolean) => unknown;
+    }
+
     export default class DiceBox {
         constructor(selector: string, config?: DiceBoxConfig);
         initialized: boolean;
         rolling: boolean;
         diceList: DiceBoxDie[];
-        camera: unknown;
+        camera: DiceBoxCamera;
         scene: unknown;
         renderer: {
             domElement: HTMLCanvasElement;

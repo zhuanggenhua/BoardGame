@@ -19,6 +19,7 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
     gravityMultiplier: 400,
     lightIntensity: 0.86,
     baseScale: 54,
+    cameraZoom: 1.18,
     strength: 0.92,
     iterationLimit: 1000,
     arrangeSettledDice: true,
