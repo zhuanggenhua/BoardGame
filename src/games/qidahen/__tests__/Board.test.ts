@@ -360,9 +360,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const engagedActionId = core.confirmedActionId;');
         expect(boardSource).toContain("hint: gaoDiTargetSelectionActive ? '选择目标' : '弃 1 张手牌'");
         expect(boardSource).toContain("badgeLabel: gaoDiTargetSelectionActive ? '选择目标' : '弃牌'");
-        expect(boardSource).toContain("title: '进攻目标'");
+        expect(boardSource).toContain("title: '点一个进攻目标'");
+        expect(boardSource).toContain('hint: `${wheelDispatchSelection.displayAnchorRegionName} 出发`');
+        expect(boardSource).toContain("badgeLabel: '选择地区'");
         expect(boardSource).toContain("? '调度目标'");
-        expect(boardSource).not.toContain("title: '点一个进攻目标'");
         expect(boardSource).not.toContain("? '点一个调度目标'");
         expect(boardSource).not.toContain("title: '点一个调度目标'");
         expect(boardSource).toContain("candidateSummary: gaoDiTargetSelectionActive");

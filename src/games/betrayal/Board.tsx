@@ -19,6 +19,7 @@ import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay'
 import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSource';
 import type { DiceBoxDieSkin } from '../../lib/dice-box-threejs/engine';
 import type { DiceBoxStyleProfile } from '../../lib/dice-box-threejs/engine';
+import type { DicePhysicsState } from '../../lib/dice-physics/types';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
@@ -1417,10 +1418,16 @@ function createBetrayalHouseDiceSkin(value: 0 | 1 | 2): DiceBoxDieSkin {
 function BetrayalHouseDice3DGroup({
     roll,
     className = '',
+    rerollSelection,
 }: {
     roll: BetrayalRecentRollState;
     className?: string;
     locale: string;
+    rerollSelection?: {
+        promptLabel: string;
+        getDieActionLabel: (dieIndex: number) => string;
+        onSelectDie: (dieIndex: number) => void;
+    } | null;
 }) {
     const diceInputs = React.useMemo(
         () => roll.dice.map((pip, index) => ({
@@ -1438,6 +1445,22 @@ function BetrayalHouseDice3DGroup({
         [roll.dice],
     );
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
+    const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
+    const selectableDiceTargets = React.useMemo(
+        () => physicsStates
+            .map((state) => ({
+                dieIndex: state.id - 1,
+                layout: state.layout,
+            }))
+            .filter((target) => target.dieIndex >= 0 && target.dieIndex < roll.dice.length),
+        [physicsStates, roll.dice.length],
+    );
+    const handleRerollTargetKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>, dieIndex: number) => {
+        if (!rerollSelection) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        rerollSelection.onSelectDie(dieIndex);
+    }, [rerollSelection]);
 
     return (
         <div
@@ -1466,8 +1489,47 @@ function BetrayalHouseDice3DGroup({
                 }}
                 onPhysicsStatesChange={(states) => {
                     setHasPhysicsState(states.length > 0);
+                    setPhysicsStates(states);
                 }}
             />
+            {rerollSelection ? (
+                <div
+                    data-testid="betrayal-rabbit-foot-dice"
+                    data-reroll-target-count={selectableDiceTargets.length}
+                    className="pointer-events-none absolute inset-0 z-20"
+                >
+                    <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[rgba(241,221,146,0.44)] bg-[rgba(16,12,8,0.74)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f7e6ab] shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
+                        {rerollSelection.promptLabel}
+                    </div>
+                    {selectableDiceTargets.map(({ dieIndex, layout }) => (
+                        <div
+                            key={`${roll.id}-reroll-target-${dieIndex}`}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={rerollSelection.getDieActionLabel(dieIndex)}
+                            title={rerollSelection.getDieActionLabel(dieIndex)}
+                            data-testid={`betrayal-house-dice-reroll-target-${dieIndex}`}
+                            className="group pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 outline-none"
+                            style={{
+                                left: `${layout.x}px`,
+                                top: `${layout.y}px`,
+                                width: `${layout.width + 18}px`,
+                                height: `${layout.height + 18}px`,
+                            }}
+                            onClick={() => rerollSelection.onSelectDie(dieIndex)}
+                            onKeyDown={(event) => {
+                                handleRerollTargetKeyDown(event, dieIndex);
+                            }}
+                        >
+                            <span className="sr-only">{rerollSelection.getDieActionLabel(dieIndex)}</span>
+                            <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-0 rounded-[18px] border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
+                            />
+                        </div>
+                    ))}
+                </div>
+            ) : null}
             <div className="sr-only">
                 {roll.dice.map((pip, dieIndex) => (
                     <span
@@ -1520,7 +1582,7 @@ function RecentRollPanel({
     roll,
     className = '',
     diceClassName,
-    rollModifierControls = null,
+    rerollSelection = null,
     effectiveLocale = 'zh-CN',
     showSource = true,
     showOutcome = true,
@@ -1529,7 +1591,11 @@ function RecentRollPanel({
     roll: BetrayalRecentRollState;
     className?: string;
     diceClassName?: string;
-    rollModifierControls?: React.ReactNode;
+    rerollSelection?: {
+        promptLabel: string;
+        getDieActionLabel: (dieIndex: number) => string;
+        onSelectDie: (dieIndex: number) => void;
+    } | null;
     effectiveLocale?: string;
     showSource?: boolean;
     showOutcome?: boolean;
@@ -1560,7 +1626,12 @@ function RecentRollPanel({
             } ${className}`}
         >
             <div className="grid h-full min-h-[236px] grid-rows-[minmax(158px,2fr)_minmax(62px,1fr)] gap-2">
-                <BetrayalHouseDice3DGroup roll={roll} locale={effectiveLocale} className={`h-full w-full min-w-0 ${diceClassName ?? ''}`} />
+                <BetrayalHouseDice3DGroup
+                    roll={roll}
+                    locale={effectiveLocale}
+                    rerollSelection={rerollSelection}
+                    className={`h-full w-full min-w-0 ${diceClassName ?? ''}`}
+                />
                 <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.72)] px-3 py-2 shadow-[0_8px_22px_rgba(0,0,0,0.28)]">
                     <div className="min-w-0">
                         {showSource ? (
@@ -1583,11 +1654,6 @@ function RecentRollPanel({
                     ) : (
                         <span className="sr-only">{roll.latestLabel}</span>
                     )}
-                    {rollModifierControls ? (
-                        <div className="col-span-2 border-t border-[rgba(211,179,109,0.18)] pt-2">
-                            {rollModifierControls}
-                        </div>
-                    ) : null}
                 </div>
             </div>
             <div className="sr-only">
@@ -2425,38 +2491,21 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedCardCanUseRabbitFoot = selectedInventoryCard
         ? canUseRabbitFootForRecentRoll(core, core.currentExplorer.playerId, selectedInventoryCard.id)
         : false;
-    const rabbitFootRollControls = selectedCardCanUseRabbitFoot && core.recentRoll ? (
-        <div
-            data-testid="betrayal-rabbit-foot-dice"
-            className="pointer-events-auto flex flex-wrap items-center justify-between gap-2"
-        >
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">{t('board.inventory.rabbitFoot')}</span>
-            <div className="flex flex-wrap items-center justify-end gap-1.5">
-                {core.recentRoll.dice.map((_pip, dieIndex) => (
-                    <button
-                        key={`${core.recentRoll!.id}-${dieIndex}`}
-                        type="button"
-                        onClick={() => {
-                            dispatchCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, {
-                                cardId: selectedInventoryCard?.id,
-                                dieIndex,
-                            });
-                            setInventoryPreviewCardId(null);
-                            setPreviewState((previousState) => ({
-                                ...previousState,
-                                selectedInventoryCardId: null,
-                            }));
-                        }}
-                        data-testid={`betrayal-rabbit-foot-die-${dieIndex}`}
-                        className="grid min-h-[30px] min-w-[30px] place-items-center border border-[#d1b05f] bg-[rgba(209,176,95,0.18)] px-2 text-[13px] font-bold text-[#fff1b8] shadow-[0_0_14px_rgba(209,176,95,0.24)] transition hover:bg-[rgba(209,176,95,0.28)] hover:text-[#f6ffc4]"
-                        title={t('board.inventory.rerollDie', { index: dieIndex + 1 })}
-                    >
-                        {dieIndex + 1}
-                    </button>
-                ))}
-            </div>
-        </div>
-    ) : null;
+    const rabbitFootRerollSelection = selectedCardCanUseRabbitFoot && core.recentRoll ? {
+        promptLabel: t('board.inventory.rabbitFoot'),
+        getDieActionLabel: (dieIndex: number) => t('board.inventory.rerollDie', { index: dieIndex + 1 }),
+        onSelectDie: (dieIndex: number) => {
+            dispatchCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, {
+                cardId: selectedInventoryCard?.id,
+                dieIndex,
+            });
+            setInventoryPreviewCardId(null);
+            setPreviewState((previousState) => ({
+                ...previousState,
+                selectedInventoryCardId: null,
+            }));
+        },
+    } : null;
     const rollModifierCardIds = React.useMemo(
         () => new Set(core.currentExplorerInventory
             .filter((card) => canUseRabbitFootForRecentRoll(core, core.currentExplorer.playerId, card.id))
@@ -3992,7 +4041,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 roll={core.recentRoll}
                                                 className="h-[min(52vh,440px)] min-h-[360px] w-[min(700px,calc(100vw-2rem))] shrink-0 md:w-[610px]"
                                                 diceClassName="min-h-[280px]"
-                                                rollModifierControls={rabbitFootRollControls}
+                                                rerollSelection={rabbitFootRerollSelection}
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
                                             />

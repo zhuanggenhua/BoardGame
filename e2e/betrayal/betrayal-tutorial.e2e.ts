@@ -539,8 +539,11 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await rabbitFootCard.click();
         const rabbitFootDice = page.getByTestId('betrayal-rabbit-foot-dice');
         await expect(rabbitFootDice).toBeVisible();
-        const rerollTargetDie = page.getByTestId('betrayal-rabbit-foot-die-1');
+        await expect(rabbitFootDice).toHaveAttribute('data-reroll-target-count', /^[1-9]\d*$/);
+        await expect(page.getByTestId('betrayal-rabbit-foot-die-1')).toHaveCount(0);
+        const rerollTargetDie = page.getByTestId('betrayal-house-dice-reroll-target-1');
         await expect(rerollTargetDie).toBeVisible();
+        await expect(rerollTargetDie).toHaveAttribute('role', 'button');
         await expect(rabbitFootCard).toHaveAttribute('aria-pressed', 'true');
         await expectInventoryCardHasSingleSymmetricOutline(rabbitFootCard);
         await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);

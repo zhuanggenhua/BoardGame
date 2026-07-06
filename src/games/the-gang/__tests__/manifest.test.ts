@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { THE_GANG_MANIFEST } from '../manifest';
-import { engineConfig } from '../game';
+import { audioConfig, engineConfig } from '../game';
+import { THE_GANG_AUDIO_CONFIG } from '../audio.config';
 
 describe('The Gang manifest', () => {
     test('声明注册表必需字段', () => {
@@ -14,5 +15,6 @@ describe('The Gang manifest', () => {
             remoteAi: false,
         });
         expect(engineConfig.gameId).toBe('the-gang');
+        expect(audioConfig).toBe(THE_GANG_AUDIO_CONFIG);
     });
 });

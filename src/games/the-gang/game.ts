@@ -7,6 +7,7 @@ import {
     THE_GANG_UNDO_ALLOWLIST,
 } from './actionLog';
 import { theGangAiRuntime } from './ai';
+import { THE_GANG_AUDIO_CONFIG } from './audio.config';
 import { TheGangDomain } from './domain';
 import {
     THE_GANG_COMMANDS,
@@ -35,5 +36,6 @@ export const engineConfig = createGameEngine<TheGangCore, TheGangCommand, TheGan
 
 export default engineConfig;
 export type { TheGangCore as TheGangState } from './domain';
+export { THE_GANG_AUDIO_CONFIG as audioConfig };
 
 registerGameAiRuntime(theGangAiRuntime);

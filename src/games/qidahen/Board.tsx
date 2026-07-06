@@ -1808,9 +1808,9 @@ const MapSceneLayer: React.FC<{
         if (wheelDispatchSelection) {
             return {
                 sourceRegionId: wheelDispatchSelection.sourceRegionId,
-                title: '进攻目标',
-                hint: '选择目标',
-                badgeLabel: '选择目标',
+                title: '点一个进攻目标',
+                hint: `${wheelDispatchSelection.displayAnchorRegionName} 出发`,
+                badgeLabel: '选择地区',
                 candidates: wheelDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.targetRuntimeRegionId,
                     targetRegionId: candidate.targetRuntimeRegionId,

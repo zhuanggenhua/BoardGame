@@ -91,11 +91,11 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 }
 
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
-    { x: -0.94, y: 0.42, yaw: -0.08, tiltX: -0.02, tiltY: 0.02 },
-    { x: -0.52, y: -0.38, yaw: 0.06, tiltX: 0.03, tiltY: -0.02 },
-    { x: 0.2, y: 0.16, yaw: 0.12, tiltX: -0.02, tiltY: -0.02 },
-    { x: 0.88, y: 0.42, yaw: 0.14, tiltX: 0.03, tiltY: 0.02 },
-    { x: 0.2, y: -0.86, yaw: -0.26, tiltX: -0.02, tiltY: 0.02 },
+    { x: -0.95, y: 0.52, yaw: -0.42, tiltX: 0.004, tiltY: -0.004 },
+    { x: -1.62, y: -0.18, yaw: 0.38, tiltX: -0.005, tiltY: 0.004 },
+    { x: -0.02, y: 1.08, yaw: -0.08, tiltX: 0.003, tiltY: 0.004 },
+    { x: 1.7, y: 0.34, yaw: 0.54, tiltX: -0.004, tiltY: -0.003 },
+    { x: 0.78, y: -0.48, yaw: -0.58, tiltX: 0.004, tiltY: 0.003 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
@@ -415,8 +415,8 @@ export class DiceBoxThreeEngine {
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
         const rows = Math.ceil(cappedDice.length / columns);
-        const spacingX = baseScale * 2.08;
-        const spacingY = baseScale * 1.84;
+        const spacingX = baseScale * 2.18;
+        const spacingY = baseScale * 1.86;
         const z = baseScale * 0.56;
 
         dice.forEach((die, index) => {
@@ -440,7 +440,6 @@ export class DiceBoxThreeEngine {
             die.body?.velocity?.set?.(0, 0, 0);
             die.body?.angularVelocity?.set?.(0, 0, 0);
             const settledQuaternion = this.getSettledQuaternionForDie(die, layout);
-            this.applySettledTopFace(die, settledQuaternion, this.dieSkins[index] ?? this.dieSkins[0] ?? null);
             die.quaternion?.copy?.(settledQuaternion);
             die.body?.quaternion?.copy?.(settledQuaternion);
             if (!die.quaternion?.copy) {
@@ -468,22 +467,6 @@ export class DiceBoxThreeEngine {
         return true;
     }
 
-    private applySettledTopFace(
-        die: DiceBoxDie,
-        settledQuaternion: Quaternion,
-        skin: DiceBoxDieSkin | null,
-    ): void {
-        const targetValue = readDieValue(die);
-        const canvas = targetValue ? (skin?.topFaceCanvas ?? skin?.faceCanvases[targetValue]) : undefined;
-        if (!canvas) return;
-
-        const topMaterialIndex = this.getTopMaterialIndexForQuaternion(die.geometry, settledQuaternion);
-        if (!topMaterialIndex) return;
-
-        const materials = Array.isArray(die.material) ? die.material : [die.material];
-        this.updateExistingMaterialMap(materials[topMaterialIndex], canvas);
-    }
-
     private getFaceValueForMaterialIndex(materialIndex: number): number | null {
         const preset = this.box.DiceFactory?.get?.('d6');
         const values = preset?.values ?? [1, 2, 3, 4, 5, 6];
@@ -497,30 +480,6 @@ export class DiceBoxThreeEngine {
         const values = preset?.values ?? [1, 2, 3, 4, 5, 6];
         const valueIndex = values.indexOf(faceValue);
         return valueIndex >= 0 ? valueIndex + 2 : null;
-    }
-
-    private getTopMaterialIndexForQuaternion(
-        geometry: DiceBoxDie['geometry'],
-        quaternion: Quaternion,
-    ): number | null {
-        const normalArray = geometry.getAttribute?.('normal')?.array;
-        if (!normalArray || !geometry.groups?.length) return null;
-
-        let topMaterialIndex: number | null = null;
-        let topDot = Number.NEGATIVE_INFINITY;
-        geometry.groups.forEach((group, groupIndex) => {
-            if (group.materialIndex <= 0) return;
-            const normal = this.getGroupAverageNormal(geometry, groupIndex);
-            if (!normal) return;
-            normal.applyQuaternion(quaternion);
-            const dot = normal.dot(WORLD_UP);
-            if (dot > topDot) {
-                topDot = dot;
-                topMaterialIndex = group.materialIndex;
-            }
-        });
-
-        return topDot > 0.72 ? topMaterialIndex : null;
     }
 
     private getSettledQuaternionForDie(
@@ -631,7 +590,7 @@ export class DiceBoxThreeEngine {
 
     private updateExistingMaterialMap(material: DiceBoxMaterialInstance | undefined, canvas: HTMLCanvasElement): boolean {
         if (!material) return false;
-        material.map ??= new CanvasTexture(canvas);
+        if (!material.map) return false;
         material.map.image = canvas;
         material.map.flipY = false;
         material.map.generateMipmaps = false;
