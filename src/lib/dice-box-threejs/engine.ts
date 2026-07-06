@@ -91,11 +91,11 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 }
 
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
-    { x: -1.42, y: -1.05, yaw: -0.18, tiltX: 0.12, tiltY: -0.08 },
-    { x: -0.52, y: -0.24, yaw: 0.1, tiltX: -0.1, tiltY: 0.07 },
-    { x: 0.24, y: -0.78, yaw: -0.02, tiltX: 0.08, tiltY: 0.1 },
-    { x: 1.38, y: -0.18, yaw: 0.16, tiltX: -0.12, tiltY: -0.06 },
-    { x: 1.04, y: -1.2, yaw: -0.12, tiltX: 0.1, tiltY: 0.08 },
+    { x: -1.5, y: -0.98, yaw: -0.18, tiltX: 0.1, tiltY: -0.06 },
+    { x: -0.62, y: -0.22, yaw: 0.1, tiltX: -0.08, tiltY: 0.06 },
+    { x: 0.18, y: -0.74, yaw: -0.02, tiltX: 0.07, tiltY: 0.08 },
+    { x: 1.42, y: -0.18, yaw: 0.16, tiltX: -0.1, tiltY: -0.05 },
+    { x: 1.08, y: -1.12, yaw: -0.12, tiltX: 0.08, tiltY: 0.06 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
