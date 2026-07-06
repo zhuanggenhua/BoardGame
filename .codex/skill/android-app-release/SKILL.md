@@ -138,6 +138,13 @@ npm run mobile:android:build:release
 
 如果用户说“不要部署，只更新网站下载的 app”，默认是 **native publish，不是 deploy**。
 
+### 4.1.1 OTA 不被无关本地脏改阻塞
+
+- 发布 OTA 的真相源是**已推送的 git ref**。只要目标提交已经在 `origin/main`、tag 或用户指定的远端 ref 上，且发布命令显式指定 `git_ref` / `--ref`，本地工作区存在无关未提交改动时，不得因此阻塞 OTA 发布。
+- 只有当未提交改动本身就是本次要发布的 H5 内容、会改变 OTA bundle、或会改变发布配置/版本参数时，才需要先提交并推送后再发 OTA。
+- 如果本地存在无关脏改，发布前只需说明“本次 OTA 使用已推送 ref，以下本地改动不包含在本次发布内”，然后继续触发 workflow 或发布脚本。
+- 发布后仍必须回查线上 `app-updates/android/<channel>/latest.json`，确认 `notes`、`version` 或 bundle URL 能对应本次已推送 ref；不能只看 workflow 成功。
+
 ### 4.2 本地构建与本地产物验证
 
 推荐入口：
