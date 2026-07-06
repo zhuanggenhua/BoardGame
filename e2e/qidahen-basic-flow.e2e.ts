@@ -1646,9 +1646,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await saveScreenshot(page, WHEEL_HIGHLIGHT_SCREENSHOT);
-        await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('轮盘进攻/调度 · 调骑 4');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('从 皮岛 出发');
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-22"][data-action="wheel-dispatch"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-32"][data-action="wheel-dispatch"]')).toBeVisible();

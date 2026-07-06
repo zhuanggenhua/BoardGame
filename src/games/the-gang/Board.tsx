@@ -758,7 +758,7 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                             </div>
                         </div>
 
-                        <div className="absolute bottom-1 right-1 flex min-w-[5rem] flex-col items-end gap-1 lg:bottom-2 lg:right-2">
+                        <div className="absolute bottom-1 right-1 flex min-w-[5rem] flex-col items-center gap-1 lg:bottom-2 lg:right-2">
                             {core.phase === 'chip-selection' && core.round < 4 && (
                                 <button
                                     type="button"

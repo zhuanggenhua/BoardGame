@@ -26,6 +26,24 @@ const runCommand = (state: MatchState<TheGangCore>, command: TheGangCommand) => 
 
 const command = <T extends TheGangCommand>(value: T): T => value;
 
+const confirmProgressForAllPlayers = (
+    state: MatchState<TheGangCore>,
+    type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
+    timestamp: number,
+) => {
+    let nextState = state;
+    for (const [index, playerId] of playerIds.entries()) {
+        nextState = runCommand(nextState, command({
+            type,
+            playerId,
+            payload: {},
+            timestamp: timestamp + index,
+            skipValidation: true,
+        }));
+    }
+    return nextState;
+};
+
 describe('The Gang action-log', () => {
     test('记录公开抢劫流程且不暴露隐藏手牌', () => {
         let state = setupState();
@@ -48,12 +66,7 @@ describe('The Gang action-log', () => {
             payload: { chip: 3 },
             timestamp: 3,
         }));
-        state = runCommand(state, command({
-            type: THE_GANG_COMMANDS.END_ROUND,
-            playerId: '0',
-            payload: {},
-            timestamp: 4,
-        }));
+        state = confirmProgressForAllPlayers(state, THE_GANG_COMMANDS.END_ROUND, 4);
 
         const entries = state.sys.actionLog.entries;
         expect(entries).toHaveLength(4);
@@ -73,7 +86,7 @@ describe('The Gang action-log', () => {
             type: 'i18n',
             ns: 'game-the-gang',
             key: 'actionLog.endRound',
-            params: { player: 1, round: 1, nextRound: 2 },
+            params: { player: 3, round: 1, nextRound: 2 },
         }]);
 
         const serializedLog = JSON.stringify(entries);
@@ -103,41 +116,23 @@ describe('The Gang action-log', () => {
             }
 
             if (round < 4) {
-                state = runCommand(state, command({
-                    type: THE_GANG_COMMANDS.END_ROUND,
-                    playerId: '0',
-                    payload: {},
-                    timestamp: round * 100,
-                    skipValidation: true,
-                }));
+                state = confirmProgressForAllPlayers(state, THE_GANG_COMMANDS.END_ROUND, round * 100);
             }
         }
 
-        state = runCommand(state, command({
-            type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
-            playerId: '0',
-            payload: {},
-            timestamp: 500,
-            skipValidation: true,
-        }));
+        state = confirmProgressForAllPlayers(state, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 500);
         expect(state.sys.actionLog.entries.at(-1)?.segments[0]).toMatchObject({
             type: 'i18n',
             ns: 'game-the-gang',
             key: 'actionLog.revealShowdown',
         });
 
-        state = runCommand(state, command({
-            type: THE_GANG_COMMANDS.START_NEXT_HEIST,
-            playerId: '0',
-            payload: {},
-            timestamp: 600,
-            skipValidation: true,
-        }));
+        state = confirmProgressForAllPlayers(state, THE_GANG_COMMANDS.START_NEXT_HEIST, 600);
         expect(state.sys.actionLog.entries.at(-1)?.segments[0]).toEqual({
             type: 'i18n',
             ns: 'game-the-gang',
             key: 'actionLog.startNextHeist',
-            params: { player: 1, heist: 2 },
+            params: { player: 3, heist: 2 },
         });
     });
 
