@@ -14,7 +14,18 @@ import {
 import { readCompletedTutorialIds } from './useMatchRoomTutorialLifecycle';
 import { getVisibleTutorialCatalogEntries } from './useMatchRoomRuntimeSetup';
 
-const tutorialChapterAccents = ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'] as const;
+const tutorialChapterAccentByGame = {
+    qidahen: ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'],
+    betrayal: ['#b8975b', '#496246', '#d8c29a', '#8b6f45', '#7e2f2a', '#b8975b'],
+} as const;
+
+const fallbackTutorialChapterAccents = ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'] as const;
+
+const resolveTutorialCatalogThemeClass = (gameId: string) => {
+    if (gameId === 'betrayal') return 'tutorial-catalog-stage--betrayal';
+    if (gameId === 'qidahen') return 'tutorial-catalog-stage--qidahen';
+    return 'tutorial-catalog-stage--default';
+};
 
 export type MatchRoomTutorialBoardStageModel = {
     noTutorialText: string;
@@ -45,8 +56,12 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
         ? entries[0]?.[0]
         : tutorialCatalog.defaultTutorialId;
 
+    const chapterAccents = tutorialChapterAccentByGame[stage.gameId as keyof typeof tutorialChapterAccentByGame]
+        ?? fallbackTutorialChapterAccents;
+    const catalogThemeClass = resolveTutorialCatalogThemeClass(stage.gameId);
+
     return (
-        <div data-testid="tutorial-catalog-stage" className="tutorial-catalog-stage">
+        <div data-testid="tutorial-catalog-stage" className={`tutorial-catalog-stage ${catalogThemeClass}`}>
             <div className="tutorial-catalog-stage__shell">
                 <div className="tutorial-catalog-stage__content">
                     <div className="tutorial-catalog-stage__header">
@@ -69,7 +84,7 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                         const isCompleted = completedTutorialIds.has(tutorialId);
                         const entryStyle = {
                             '--tutorial-chapter-index': index,
-                            '--tutorial-chapter-accent': tutorialChapterAccents[index % tutorialChapterAccents.length],
+                            '--tutorial-chapter-accent': chapterAccents[index % chapterAccents.length],
                         } as CSSProperties;
 
                         return (

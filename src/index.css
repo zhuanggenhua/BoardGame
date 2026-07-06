@@ -825,6 +825,16 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     --qidahen-cinnabar: #9f3426;
     --qidahen-paper-light: #f3e7c4;
     --qidahen-shadow: rgba(56, 35, 15, 0.24);
+    --tutorial-catalog-bg:
+        linear-gradient(90deg, rgba(32, 21, 13, 0.94), rgba(32, 21, 13, 0.5) 46%, rgba(32, 21, 13, 0.82)),
+        radial-gradient(circle at 18% 0%, rgba(210, 183, 117, 0.18), transparent 19rem),
+        radial-gradient(circle at 88% 100%, rgba(159, 52, 38, 0.18), transparent 17rem),
+        linear-gradient(135deg, rgba(234, 215, 167, 0.05) 0 1px, transparent 1px 16px),
+        linear-gradient(180deg, #21170f 0%, #130d08 100%);
+    --tutorial-catalog-entry-bg:
+        linear-gradient(90deg, color-mix(in srgb, var(--tutorial-chapter-accent-safe) 18%, transparent), transparent 32%),
+        linear-gradient(180deg, rgba(47, 32, 20, 0.96), rgba(27, 18, 11, 0.95));
+    --tutorial-catalog-index-bg: linear-gradient(180deg, rgba(159, 52, 38, 0.94), rgba(91, 29, 22, 0.96));
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -836,14 +846,29 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     -webkit-overflow-scrolling: touch;
     padding: clamp(1.25rem, 3.4vw, 3rem);
     color: var(--qidahen-map-ivory);
-    background:
-        linear-gradient(90deg, rgba(32, 21, 13, 0.94), rgba(32, 21, 13, 0.5) 46%, rgba(32, 21, 13, 0.82)),
-        radial-gradient(circle at 18% 0%, rgba(210, 183, 117, 0.18), transparent 19rem),
-        radial-gradient(circle at 88% 100%, rgba(159, 52, 38, 0.18), transparent 17rem),
-        linear-gradient(135deg, rgba(234, 215, 167, 0.05) 0 1px, transparent 1px 16px),
-        linear-gradient(180deg, #21170f 0%, #130d08 100%);
+    background: var(--tutorial-catalog-bg);
     scrollbar-width: thin;
     scrollbar-color: rgba(210, 183, 117, 0.72) rgba(32, 21, 13, 0.54);
+}
+
+.tutorial-catalog-stage--betrayal {
+    --qidahen-map-ink: #14180f;
+    --qidahen-map-panel: rgba(20, 28, 20, 0.82);
+    --qidahen-map-gold: #b8975b;
+    --qidahen-map-ivory: #e0d1ae;
+    --qidahen-cinnabar: #7e2f2a;
+    --qidahen-paper-light: #ead9b5;
+    --qidahen-shadow: rgba(12, 10, 7, 0.32);
+    --tutorial-catalog-bg:
+        radial-gradient(circle at 20% 8%, rgba(184, 151, 91, 0.18), transparent 18rem),
+        radial-gradient(circle at 86% 92%, rgba(126, 47, 42, 0.18), transparent 18rem),
+        linear-gradient(135deg, rgba(224, 209, 174, 0.045) 0 1px, transparent 1px 14px),
+        linear-gradient(90deg, rgba(13, 17, 11, 0.96), rgba(31, 45, 29, 0.82) 50%, rgba(13, 17, 11, 0.94)),
+        linear-gradient(180deg, #182216 0%, #0d110b 100%);
+    --tutorial-catalog-entry-bg:
+        linear-gradient(90deg, color-mix(in srgb, var(--tutorial-chapter-accent-safe) 18%, transparent), transparent 34%),
+        linear-gradient(180deg, rgba(35, 47, 32, 0.96), rgba(16, 20, 14, 0.96));
+    --tutorial-catalog-index-bg: linear-gradient(180deg, rgba(73, 98, 70, 0.94), rgba(33, 47, 31, 0.98));
 }
 
 .tutorial-catalog-stage::-webkit-scrollbar {
@@ -944,9 +969,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     text-align: left;
     border: 2px solid rgba(32, 21, 13, 0.92);
     border-radius: 0.42rem;
-    background:
-        linear-gradient(90deg, color-mix(in srgb, var(--tutorial-chapter-accent-safe) 18%, transparent), transparent 32%),
-        linear-gradient(180deg, rgba(47, 32, 20, 0.96), rgba(27, 18, 11, 0.95));
+    background: var(--tutorial-catalog-entry-bg);
     box-shadow:
         0 4px 0 rgba(0, 0, 0, 0.24),
         0 12px 24px rgba(0, 0, 0, 0.22),
@@ -1000,7 +1023,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     color: var(--qidahen-map-ivory);
     border: 2px solid rgba(32, 21, 13, 0.95);
     border-radius: 0.22rem;
-    background: linear-gradient(180deg, rgba(159, 52, 38, 0.94), rgba(91, 29, 22, 0.96));
+    background: var(--tutorial-catalog-index-bg);
     font-size: 12px;
     font-weight: 900;
     letter-spacing: 0.14em;
