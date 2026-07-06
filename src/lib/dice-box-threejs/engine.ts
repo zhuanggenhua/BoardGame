@@ -430,6 +430,7 @@ export class DiceBoxThreeEngine {
 
         const dice = this.box.diceList;
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const layoutScale = Math.max(baseScale, 88);
         const maxColumns = 5;
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
