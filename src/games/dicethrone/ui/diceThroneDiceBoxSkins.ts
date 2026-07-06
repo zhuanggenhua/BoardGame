@@ -19,8 +19,17 @@ export interface DiceThroneDiceBoxSkin {
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
 const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const DICE_BOX_FACE_CANVAS_SIZE = 512;
-const DICE_BOX_FACE_ART_SCALE = 0.62;
+const DICE_BOX_FACE_ART_SCALE = 0.58;
 const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 38;
+
+const DICE_BOX_FACE_ART_REGIONS: Record<number, { minX: number; minY: number; maxX: number; maxY: number }> = {
+    1: { minX: 0.04, minY: 0.12, maxX: 0.58, maxY: 0.9 },
+    2: { minX: 0.42, minY: 0.32, maxX: 0.96, maxY: 0.9 },
+    3: { minX: 0.48, minY: 0.2, maxX: 0.96, maxY: 0.88 },
+    4: { minX: 0.2, minY: 0.26, maxX: 0.86, maxY: 0.94 },
+    5: { minX: 0.2, minY: 0.26, maxX: 0.86, maxY: 0.94 },
+    6: { minX: 0.12, minY: 0.04, maxX: 0.76, maxY: 0.72 },
+};
 
 type RgbColor = {
     r: number;
@@ -167,13 +176,15 @@ const estimateFaceBackgroundColor = (
     };
 };
 
-const isAtlasPrintedNumberPixel = (faceValue: number, x: number, y: number, width: number, height: number) => {
+const isInsideOfficialFaceArtRegion = (faceValue: number, x: number, y: number, width: number, height: number) => {
+    const region = DICE_BOX_FACE_ART_REGIONS[faceValue];
+    if (!region) return true;
     const xRatio = x / Math.max(1, width - 1);
     const yRatio = y / Math.max(1, height - 1);
-    if (faceValue === 1 || faceValue === 6) {
-        return xRatio >= 0.55 && yRatio >= 0.46;
-    }
-    return xRatio <= 0.43 && yRatio <= 0.5;
+    return xRatio >= region.minX
+        && xRatio <= region.maxX
+        && yRatio >= region.minY
+        && yRatio <= region.maxY;
 };
 
 const drawOfficialAtlasFace = (
@@ -224,9 +235,9 @@ const drawOfficialAtlasFace = (
             const alpha = data[offset + 3] ?? 0;
             const isBackground = alpha < 16
                 || colorDistance(r, g, b, backgroundColor) <= DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE;
-            const isPrintedNumber = isAtlasPrintedNumberPixel(faceValue, x, y, spriteCanvas.width, spriteCanvas.height);
+            const isOutsideOfficialArt = !isInsideOfficialFaceArtRegion(faceValue, x, y, spriteCanvas.width, spriteCanvas.height);
 
-            if (isBackground || isPrintedNumber) {
+            if (isBackground || isOutsideOfficialArt) {
                 data[offset + 3] = 0;
                 continue;
             }

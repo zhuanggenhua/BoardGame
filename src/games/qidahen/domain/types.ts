@@ -680,6 +680,8 @@ export interface QidahenMapToken {
     y: number;
     type: 'army' | 'population' | 'control' | 'marker';
     faction: QidahenFactionId | 'neutral';
+    regionId?: string;
+    troopIndex?: number;
     imageSrc?: string;
     size?: number;
     value?: number | string;

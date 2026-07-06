@@ -158,6 +158,8 @@ const buildMapArmyTokensForRegion = (
             y: clampMapTokenCoordinate(point.y + yOffset / QIDAHEN_MAP_HEIGHT),
             type: 'army' as const,
             faction: unit.faction,
+            regionId: region.id,
+            troopIndex: index + 1,
             imageSrc: unit.imageSrc,
             size: 26,
             rotationDeg: unit.rotationDeg,

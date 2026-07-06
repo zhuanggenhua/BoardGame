@@ -800,10 +800,10 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('城战待结算');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('山海关');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('本次出兵 4');
-        await expect(page.locator('[data-testid="qidahen-pending-committed-1"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-pending-committed-2"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-pending-committed-3"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-pending-committed-4"]')).toBeVisible();
+        const committedTroopTokens = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]');
+        await expect(committedTroopTokens).toHaveCount(4);
+        await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');
+        await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'true');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action"]')).toContainText('断后');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action-rout"]')).toContainText('溃退');
         await resolvePendingActionByCommand(page, {

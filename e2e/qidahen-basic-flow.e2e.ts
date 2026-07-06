@@ -237,13 +237,22 @@ const clickGuidedMapTarget = async (
     }
     await page.evaluate((guidedTargetRegionId) => {
         const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="qidahen-map-hitmap-canvas"]');
-        const targetCircle = document.querySelector<SVGCircleElement>(`[data-testid="qidahen-map-guide-route-${guidedTargetRegionId}"] circle`);
-        if (!canvas || !targetCircle) {
+        const route = document.querySelector<SVGPolylineElement>(`[data-testid="qidahen-map-guide-route-${guidedTargetRegionId}"] polyline`);
+        const overlay = document.querySelector<SVGSVGElement>('[data-testid="qidahen-map-overlay"]');
+        if (!canvas || !route || !overlay) {
             throw new Error(`missing guided map target for ${guidedTargetRegionId}`);
         }
-        const circleRect = targetCircle.getBoundingClientRect();
-        const clientX = circleRect.left + circleRect.width / 2;
-        const clientY = circleRect.top + circleRect.height / 2;
+        const points = route.getAttribute('points')?.trim().split(/\s+/) ?? [];
+        const lastPoint = points.at(-1)?.split(',').map(Number) ?? [];
+        if (lastPoint.length !== 2 || !Number.isFinite(lastPoint[0]) || !Number.isFinite(lastPoint[1])) {
+            throw new Error(`invalid guided map route points for ${guidedTargetRegionId}`);
+        }
+        const svgPoint = overlay.createSVGPoint();
+        svgPoint.x = lastPoint[0];
+        svgPoint.y = lastPoint[1];
+        const screenPoint = svgPoint.matrixTransform(overlay.getScreenCTM()!);
+        const clientX = screenPoint.x;
+        const clientY = screenPoint.y;
         const init: PointerEventInit = {
             clientX,
             clientY,
@@ -1451,15 +1460,21 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return state.set(next);
         });
 
-        await expect(page.locator('[data-testid="qidahen-pending-committed-troops"]')).toContainText('实际投入');
-        await page.click('[data-testid="qidahen-pending-committed-2"]');
+        const committedTroopTokens = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]');
+        await expect(committedTroopTokens).toHaveCount(4);
+        await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');
+        await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'true');
+        await committedTroopTokens.nth(1).click();
+        await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');
+        await expect(committedTroopTokens.nth(1)).toHaveAttribute('data-pending-committed-selected', 'true');
+        await expect(committedTroopTokens.nth(2)).toHaveAttribute('data-pending-committed-selected', 'false');
+        await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'false');
         await saveScreenshot(page, COMMITTED_TROOPS_SCREENSHOT);
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rear-guard', committedTroops: 2 });
 
-        await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('投入 2');
+        await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('幸存 2');
         await page.click('[data-testid="qidahen-post-battle-choice-occupy"]');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('占领');
-        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-19');
         const finalState = await readRequiredQidahenHarnessState(page);
         const sourceRegion = finalState.core.regions.find((region) => region.id === 'city-region-16');
         const targetRegion = finalState.core.regions.find((region) => region.id === 'city-region-14');
@@ -1641,6 +1656,10 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('皮岛 出发');
         const guideRouteCount = await page.locator('[data-testid^="qidahen-map-guide-route-"]').count();
         expect(guideRouteCount).toBeGreaterThanOrEqual(2);
+        const firstGuideRoute = page.locator('[data-testid^="qidahen-map-guide-route-"] polyline').first();
+        await expect(firstGuideRoute).toHaveAttribute('marker-end', /qidahen-map-guide-arrow/);
+        await expect(page.locator('[data-testid^="qidahen-map-guide-route-"] circle')).toHaveCount(0);
+        await expect(page.locator('[data-testid^="qidahen-map-guide-route-"] text')).toHaveCount(0);
 
         await saveScreenshot(page, WHEEL_DISPATCH_SELECTION_SCREENSHOT);
         await saveScreenshot(page, COMMAND_FLOW_SELECTION_SCREENSHOT);

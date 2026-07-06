@@ -170,6 +170,7 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
 const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
+const typesSource = readFileSync(resolve(__dirname, '..', 'domain', 'types.ts'), 'utf-8');
 
 describe('Qidahen Board 结构门禁', () => {
     it('纪年卡预览继续绑定纪年图集而不是蒙古图集', () => {
@@ -464,6 +465,21 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('onViewportChange={setMapViewport}');
         expect(boardSource).toContain("markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
         expect(boardSource).toContain("markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
+        expect(boardSource).toContain('inferPendingTargetPathRegionIds(pendingTargetAction)');
+        expect(boardSource).not.toContain("t('board.map.selectionGuideSource'");
+        expect(boardSource).not.toContain('{index + 1}');
+    });
+
+    it('待结算投入兵力必须由地图部队本体承接，默认全选并允许点击切换数量', () => {
+        expect(typesSource).toContain('regionId?: string;');
+        expect(typesSource).toContain('troopIndex?: number;');
+        expect(mapTokenSource).toContain('regionId: region.id,');
+        expect(mapTokenSource).toContain('troopIndex: index + 1,');
+        expect(boardSource).toContain('data-pending-committed-selectable={pendingCommittedSelectable ?');
+        expect(boardSource).toContain('data-pending-committed-selected={pendingCommittedSelectable ? String(pendingCommittedSelected) : undefined}');
+        expect(boardSource).toContain('onSelectPendingCommittedTroops?.(token.troopIndex!)');
+        expect(boardSource).toContain('token.regionId === pendingTargetAction.sourceRegionId');
+        expect(boardSource).toContain('pendingCommittedSelected={pendingCommittedSelectable && (token.troopIndex ?? 0) <= pendingCommittedSelectedCount}');
     });
 
     it('地图文案不得再把 region id 直接漏给用户，可见区域名优先走中文规则名', () => {

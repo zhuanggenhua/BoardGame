@@ -23,6 +23,12 @@ async function chooseAllPlayerChips(page: Page, chipPrefix: string) {
     await chooseChipForSeat(page, '玩家 3', `${chipPrefix} 3 星`);
 }
 
+async function chooseChipsForSeats(page: Page, chipPrefix: string, playerCount: number) {
+    for (let seat = 1; seat <= playerCount; seat += 1) {
+        await chooseChipForSeat(page, `玩家 ${seat}`, `${chipPrefix} ${seat} 星`);
+    }
+}
+
 async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
     const hotseatScope = buttonName === '下一次抢劫' ? 'showdown' : 'board';
     await selectHotseat(page, '玩家 1', hotseatScope);
@@ -42,6 +48,12 @@ async function expectChipRound(page: Page, chipPrefix: string) {
     await expect(page.getByRole('button', { name: `${chipPrefix} 1 星` })).toBeVisible();
     await expect(page.getByRole('button', { name: `${chipPrefix} 2 星` })).toBeVisible();
     await expect(page.getByRole('button', { name: `${chipPrefix} 3 星` })).toBeVisible();
+}
+
+async function expectChipRoundForPlayerCount(page: Page, chipPrefix: string, playerCount: number) {
+    for (let chip = 1; chip <= playerCount; chip += 1) {
+        await expect(page.getByRole('button', { name: `${chipPrefix} ${chip} 星` })).toBeVisible();
+    }
 }
 
 async function expectImagesLoaded(page: Page, selector: string, expectedCount: number) {
@@ -150,6 +162,36 @@ async function expectCurrentRoundChips(page: Page, expectedCount: number) {
 }
 
 test.describe('The Gang 真实入口截图', () => {
+    test('桌面端 6 人满人数布局可显示所有玩家席位', async ({ game, page }, testInfo) => {
+        test.setTimeout(120000);
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 6,
+            seed: 'the-gang-e2e-six-player',
+            seat1: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        const switcher = page.getByTestId('the-gang-hotseat-switcher');
+        for (let seat = 1; seat <= 6; seat += 1) {
+            await expect(switcher.getByRole('button', { name: `玩家 ${seat}` })).toBeVisible();
+        }
+        await expectChipRoundForPlayerCount(page, '白筹码', 6);
+        await expect(page.locator('[data-bgg-zone="card-river"]')).toHaveCount(1);
+        await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).toBeVisible();
+        await expect(page.locator('[data-bgg-zone="hand-chips"]')).toHaveCount(1);
+        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(6);
+        await game.screenshot('桌面6人满人数首轮可操作状态', testInfo);
+
+        await chooseChipsForSeats(page, '白筹码', 6);
+        await selectHotseat(page, '玩家 1');
+        await expectCurrentRoundChips(page, 6);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(6);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 6);
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await game.screenshot('桌面6人满人数全员筹码已选', testInfo);
+    });
+
     test('桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
         await page.setViewportSize({ width: 1920, height: 1080 });
