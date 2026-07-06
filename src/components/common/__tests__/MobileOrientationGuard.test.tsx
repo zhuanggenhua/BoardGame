@@ -63,6 +63,7 @@ describe('MobileOrientationGuard native orientation behavior', () => {
         vi.clearAllMocks();
         vi.useRealTimers();
         Reflect.deleteProperty(window, 'Capacitor');
+        Reflect.deleteProperty(window, 'androidBridge');
         document.body.innerHTML = '';
     });
 
@@ -122,6 +123,7 @@ describe('MobileOrientationGuard game orientation banner', () => {
         vi.clearAllMocks();
         vi.useRealTimers();
         Reflect.deleteProperty(window, 'Capacitor');
+        Reflect.deleteProperty(window, 'androidBridge');
         document.body.innerHTML = '';
     });
 
@@ -178,6 +180,7 @@ describe('MobileOrientationGuard home orientation gate', () => {
         vi.clearAllMocks();
         vi.useRealTimers();
         Reflect.deleteProperty(window, 'Capacitor');
+        Reflect.deleteProperty(window, 'androidBridge');
         window.localStorage.clear();
         document.body.innerHTML = '';
     });
