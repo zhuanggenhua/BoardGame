@@ -91,11 +91,11 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 }
 
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
-    { x: -1.62, y: -0.26, yaw: -0.42, tiltX: 0, tiltY: 0 },
-    { x: -0.62, y: 0.52, yaw: 0.28, tiltX: 0, tiltY: 0 },
-    { x: 0.18, y: 0.08, yaw: -0.04, tiltX: 0, tiltY: 0 },
-    { x: 1.54, y: 0.48, yaw: 0.46, tiltX: 0, tiltY: 0 },
-    { x: 1.06, y: -0.5, yaw: -0.24, tiltX: 0, tiltY: 0 },
+    { x: -1.55, y: -0.4, yaw: -0.16, tiltX: 0, tiltY: 0 },
+    { x: -0.55, y: 0.52, yaw: 0.12, tiltX: 0, tiltY: 0 },
+    { x: 0.25, y: -0.04, yaw: -0.02, tiltX: 0, tiltY: 0 },
+    { x: 1.42, y: 0.44, yaw: 0.18, tiltX: 0, tiltY: 0 },
+    { x: 1.04, y: -0.58, yaw: -0.1, tiltX: 0, tiltY: 0 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
@@ -434,8 +434,8 @@ export class DiceBoxThreeEngine {
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
         const rows = Math.ceil(cappedDice.length / columns);
-        const spacingX = baseScale * 2.02;
-        const spacingY = baseScale * 1.7;
+        const spacingX = layoutScale * 2.14;
+        const spacingY = layoutScale * 1.92;
         const z = baseScale * 0.56;
 
         dice.forEach((die, index) => {
@@ -508,9 +508,9 @@ export class DiceBoxThreeEngine {
         const targetValue = readDieValue(die);
         if (!targetValue) return new Quaternion();
 
-        const yaw = layout?.yaw ?? ((targetValue - 1) % 6) * (Math.PI / 18);
-        const tiltX = layout?.tiltX ?? (((targetValue % 2 === 0) ? 1 : -1) * (Math.PI / 30));
-        const tiltY = layout?.tiltY ?? (((targetValue % 3 === 0) ? -1 : 1) * (Math.PI / 42));
+        const yaw = layout?.yaw ?? 0;
+        const tiltX = layout?.tiltX ?? 0;
+        const tiltY = layout?.tiltY ?? 0;
         const faceNormal = this.getFaceNormalForValue(die, targetValue);
         const faceUp = faceNormal
             ? new Quaternion().setFromUnitVectors(faceNormal, WORLD_UP)
@@ -536,6 +536,7 @@ export class DiceBoxThreeEngine {
         const normalArray = geometry.getAttribute?.('normal')?.array;
         if (!group || !normalArray) return null;
 
+        const indexArray = geometry.index?.array;
         const vertexCount = Math.floor(normalArray.length / 3);
         const startVertex = typeof group.start === 'number'
             ? Math.max(0, Math.floor(group.start))
@@ -543,16 +544,27 @@ export class DiceBoxThreeEngine {
         const count = typeof group.count === 'number'
             ? Math.max(1, Math.floor(group.count))
             : 3;
-        const endVertex = Math.min(vertexCount, startVertex + count);
         const normal = new Vector3(0, 0, 0);
-
-        for (let vertex = startVertex; vertex < endVertex; vertex += 1) {
+        const addVertexNormal = (vertex: number) => {
+            if (vertex < 0 || vertex >= vertexCount) return;
             const offset = vertex * 3;
             normal.add(new Vector3(
                 Number(normalArray[offset] ?? 0),
                 Number(normalArray[offset + 1] ?? 0),
                 Number(normalArray[offset + 2] ?? 0),
             ));
+        };
+
+        if (indexArray) {
+            const endIndex = Math.min(indexArray.length, startVertex + count);
+            for (let indexOffset = startVertex; indexOffset < endIndex; indexOffset += 1) {
+                addVertexNormal(Number(indexArray[indexOffset] ?? -1));
+            }
+        } else {
+            const endVertex = Math.min(vertexCount, startVertex + count);
+            for (let vertex = startVertex; vertex < endVertex; vertex += 1) {
+                addVertexNormal(vertex);
+            }
         }
 
         if (normal.lengthSq() === 0) return null;
@@ -635,8 +647,8 @@ export class DiceBoxThreeEngine {
         material.opacity = 1;
         material.transparent = true;
         material.alphaTest = 0;
-        material.depthTest = true;
-        material.depthWrite = true;
+        material.depthTest = false;
+        material.depthWrite = false;
         material.needsUpdate = true;
     }
 

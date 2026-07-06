@@ -19,17 +19,8 @@ export interface DiceThroneDiceBoxSkin {
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
 const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const DICE_BOX_FACE_CANVAS_SIZE = 512;
-const DICE_BOX_FACE_ART_SCALE = 0.48;
+const DICE_BOX_FACE_ART_SCALE = 0.58;
 const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 38;
-
-const DICE_BOX_FACE_ART_REGIONS: Record<number, { minX: number; minY: number; maxX: number; maxY: number }> = {
-    1: { minX: 0.0, minY: 0.06, maxX: 0.66, maxY: 0.96 },
-    2: { minX: 0.34, minY: 0.24, maxX: 1.0, maxY: 0.96 },
-    3: { minX: 0.4, minY: 0.12, maxX: 1.0, maxY: 0.96 },
-    4: { minX: 0.26, minY: 0.26, maxX: 0.9, maxY: 0.98 },
-    5: { minX: 0.26, minY: 0.26, maxX: 0.9, maxY: 0.98 },
-    6: { minX: 0.0, minY: 0.0, maxX: 0.8, maxY: 0.72 },
-};
 
 type RgbColor = {
     r: number;
@@ -89,7 +80,7 @@ const createPresetLabelCanvas = (faceValue: number, atlasImage: HTMLImageElement
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
 
-    ctx.clearRect(0, 0, size, size);
+    drawDieFaceBase(ctx, size);
     drawOfficialAtlasFace(ctx, atlasImage, faceValue, size);
 
     return canvas;
@@ -190,17 +181,6 @@ const estimateFaceBackgroundColor = (
     };
 };
 
-const isInsideOfficialFaceArtRegion = (faceValue: number, x: number, y: number, width: number, height: number) => {
-    const region = DICE_BOX_FACE_ART_REGIONS[faceValue];
-    if (!region) return true;
-    const xRatio = x / Math.max(1, width - 1);
-    const yRatio = y / Math.max(1, height - 1);
-    return xRatio >= region.minX
-        && xRatio <= region.maxX
-        && yRatio >= region.minY
-        && yRatio <= region.maxY;
-};
-
 const drawOfficialAtlasFace = (
     ctx: CanvasRenderingContext2D,
     atlasImage: HTMLImageElement | null,
@@ -249,9 +229,7 @@ const drawOfficialAtlasFace = (
             const alpha = data[offset + 3] ?? 0;
             const isBackground = alpha < 16
                 || colorDistance(r, g, b, backgroundColor) <= DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE;
-            const isOutsideOfficialArt = !isInsideOfficialFaceArtRegion(faceValue, x, y, spriteCanvas.width, spriteCanvas.height);
-
-            if (isBackground || isOutsideOfficialArt) {
+            if (isBackground) {
                 data[offset + 3] = 0;
                 continue;
             }
