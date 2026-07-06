@@ -110,7 +110,7 @@ test.describe('DiceThrone 3D 骰子端到端视觉验收', () => {
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
-                hand: ['card-just-this'],
+                hand: ['card-i-can-again'],
                 resources: { CP: 2, HP: 50 },
             },
             player1: {
@@ -167,7 +167,7 @@ test.describe('DiceThrone 3D 骰子端到端视觉验收', () => {
         await expect(confirmButton).toBeVisible({ timeout: 5000 });
         await saveScreenshot(page, SCREENSHOTS.rolled);
 
-        await dragHandCardToPlay(page, 'card-just-this');
+        await dragHandCardToPlay(page, 'card-i-can-again');
         await expect.poll(async () => {
             const state = await game.getState();
             const interaction = state?.sys?.interaction?.current;
@@ -222,7 +222,7 @@ test.describe('DiceThrone 3D 骰子端到端视觉验收', () => {
         await expect.poll(async () => {
             return readDiceValues(game);
         }, { timeout: 8000 }).not.toEqual(rolledValues);
-        await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-just-this"]')).toHaveCount(0, { timeout: 5000 });
+        await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-i-can-again"]')).toHaveCount(0, { timeout: 5000 });
         await page.waitForTimeout(450);
         await saveScreenshot(page, SCREENSHOTS.rerolled);
     });
