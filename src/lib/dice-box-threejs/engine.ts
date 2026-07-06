@@ -91,11 +91,11 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 }
 
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number }> = [
-    { x: -1.5, y: -0.98, yaw: -0.18 },
-    { x: -0.62, y: -0.22, yaw: 0.1 },
-    { x: 0.18, y: -0.74, yaw: -0.02 },
-    { x: 1.42, y: -0.18, yaw: 0.16 },
-    { x: 1.08, y: -1.12, yaw: -0.12 },
+    { x: -1.24, y: -0.86, yaw: -0.18 },
+    { x: -0.44, y: -0.18, yaw: 0.08 },
+    { x: 0.18, y: -0.68, yaw: -0.04 },
+    { x: 1.08, y: -0.22, yaw: 0.16 },
+    { x: 0.84, y: -1.04, yaw: -0.12 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
@@ -430,13 +430,13 @@ export class DiceBoxThreeEngine {
 
         const dice = this.box.diceList;
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
-        const layoutScale = Math.max(baseScale, 96);
+        const layoutScale = Math.max(baseScale, 82);
         const maxColumns = 5;
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
         const rows = Math.ceil(cappedDice.length / columns);
-        const spacingX = layoutScale * 2.04;
-        const spacingY = layoutScale * 1.84;
+        const spacingX = layoutScale * 1.86;
+        const spacingY = layoutScale * 1.68;
         const z = baseScale * 0.56;
 
         dice.forEach((die, index) => {
