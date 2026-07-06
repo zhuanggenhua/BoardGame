@@ -343,33 +343,6 @@ export const BoardDiceBoxTray = ({
                 <div className="absolute inset-0">
                     <div className="pointer-events-none absolute inset-0">
                         {dice.map((die) => {
-                            const layout = projectedLayouts[die.id];
-                            if (!layout) return null;
-
-                            const shadowWidth = Math.max(layout.width, layout.height) * 0.88;
-                            const shadowHeight = shadowWidth * 0.36;
-
-                            return (
-                                <div
-                                    key={`contact-shadow-${die.id}`}
-                                    className="absolute rounded-[999px]"
-                                    style={{
-                                        left: `${layout.x}px`,
-                                        top: `${layout.y + (layout.height * 0.32)}px`,
-                                        width: `${shadowWidth}px`,
-                                        height: `${shadowHeight}px`,
-                                        transform: 'translate(-50%, -50%)',
-                                        zIndex: 6,
-                                        background: 'radial-gradient(ellipse at center, rgba(16, 10, 4, 0.42) 0%, rgba(16, 10, 4, 0.24) 42%, rgba(16, 10, 4, 0) 72%)',
-                                        filter: 'blur(2px)',
-                                        opacity: die.isKept ? 0.48 : 0.72,
-                                    }}
-                                />
-                            );
-                        })}
-                    </div>
-                    <div className="pointer-events-none absolute inset-0">
-                        {dice.map((die) => {
                             if (!die.selected) return null;
                             const layout = projectedLayouts[die.id];
                             if (!layout) return null;
