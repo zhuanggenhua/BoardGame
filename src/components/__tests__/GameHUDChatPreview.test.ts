@@ -324,6 +324,7 @@ describe('FabMenu helpers', () => {
         expect(layout.position).toEqual({ left: 120, top: 130 });
         expect(layout.listOffset).toEqual({ x: 0, y: 0 });
         expect(layout.alignment).toEqual({ v: 'bottom', h: 'left' });
+        expect(layout.columnCount).toBe(1);
     });
 
     it('展开态靠近顶部时会整体下移，而不是只把卫星按钮单独推开', () => {
@@ -342,5 +343,23 @@ describe('FabMenu helpers', () => {
         expect(layout.position).toEqual({ left: 120, top: 6 });
         expect(layout.listOffset).toEqual({ x: 0, y: -32 });
         expect(layout.alignment).toEqual({ v: 'top', h: 'right' });
+    });
+
+    it('横屏高度不足时悬浮球卫星按钮应自动拆成多列', () => {
+        const layout = resolveExpandedFabLayout({
+            position: { left: 640, top: 260 },
+            alignment: { v: 'bottom', h: 'left' },
+            satelliteCount: 8,
+            buttonSize: 44,
+            buttonGap: 8,
+            viewportHeight: 320,
+            safeAreaTop: 8,
+            safeAreaBottom: 8,
+            getHorizontalAlignment: () => 'left',
+        });
+
+        expect(layout.columnCount).toBeGreaterThan(1);
+        expect(layout.itemsPerColumn).toBeLessThan(8);
+        expect(layout.listOffset.y).toBeGreaterThanOrEqual(0);
     });
 });

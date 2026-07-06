@@ -364,13 +364,15 @@ test.describe('The Gang 教程 E2E', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 6);
         await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
-        await expect(page.getByText(/摊牌结果会先显示 5 张公共牌/u)).toBeVisible();
+        await expect(page.getByText(/逐张翻开 5 张公共牌/u)).toBeVisible();
+        await expect(page.getByText(/向下滚动查看所有人的真实牌/u)).toBeVisible();
         await game.screenshot('教程摊牌结果反馈', testInfo);
 
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="showdown-reading"]')).toBeVisible();
         await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-showdown-hole-cards');
         await expect(page.getByText(/读摊牌时先看公共牌/u)).toBeVisible();
+        await expect(page.getByText(/向下滚动看每位玩家/u)).toBeVisible();
         await expect(page.getByText(/真实牌型越强/u)).toBeVisible();
         await game.screenshot('教程摊牌读法', testInfo);
     });

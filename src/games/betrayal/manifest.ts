@@ -20,10 +20,10 @@ const entry: GameManifestEntry = {
         localAi: false,
         remoteAi: false,
     },
-    mobileProfile: 'portrait-adapted',
-    preferredOrientation: 'portrait',
-    mobileLayoutPreset: 'portrait-simple',
-    shellTargets: ['pwa'],
+    mobileProfile: 'landscape-adapted',
+    preferredOrientation: 'landscape',
+    mobileLayoutPreset: 'board-shell',
+    shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
 };
 
 export const BETRAYAL_MANIFEST: GameManifestEntry = entry;

@@ -1,18 +1,25 @@
 /* @vitest-environment happy-dom */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getGameById } from '../../config/games.config';
+import { extractGameIdFromPlayPath } from '../mobileSupport';
 import { GAME_MANIFEST_BY_ID } from '../manifest';
 import { hasGameImplementation, loadGameImplementation, resolveGameTutorialManifest } from '../registry';
 
 describe('betrayal manifest integration', () => {
-    it('betrayal 会以本地预演入口暴露，并声明手机纵向适配', async () => {
+    it('betrayal 会以本地预演入口暴露，并声明手机横屏棋盘壳适配', async () => {
         const game = getGameById('betrayal');
         expect(game).toBeDefined();
         expect(game?.enabled).toBe(true);
         expect(game?.allowLocalMode).toBe(true);
         expect(game?.playerOptions).toEqual([3, 4, 5, 6]);
-        expect(game?.mobileProfile).toBe('portrait-adapted');
+        expect(game?.mobileProfile).toBe('landscape-adapted');
+        expect(game?.preferredOrientation).toBe('landscape');
+        expect(game?.mobileLayoutPreset).toBe('board-shell');
+        expect(game?.shellTargets).toEqual(
+            expect.arrayContaining(['pwa', 'app-webview', 'mini-program-webview']),
+        );
 
         expect(GAME_MANIFEST_BY_ID.betrayal).toBeDefined();
         expect(GAME_MANIFEST_BY_ID.betrayal?.allowLocalMode).toBe(true);
@@ -23,6 +30,18 @@ describe('betrayal manifest integration', () => {
         expect(typeof implementation?.board).toBe('function');
     });
 
+    it('betrayal 教程路由在 Android 方向表里保持横屏，不要求游戏 Board 单独接方向锁', () => {
+        const androidOrientationMap = JSON.parse(
+            readFileSync(
+                'android/app/src/main/assets/game-orientation-map.json',
+                'utf8',
+            ),
+        ) as Record<string, string>;
+
+        expect(extractGameIdFromPlayPath('/play/betrayal/tutorial/basic-setup-and-turn')).toBe('betrayal');
+        expect(androidOrientationMap.betrayal).toBe('landscape');
+    });
+
     it('betrayal 教程模块会被 manifest 生成链识别成 TutorialCollection', async () => {
         const implementation = await loadGameImplementation('betrayal', { includeTutorial: true });
         expect(implementation?.tutorialCatalog?.defaultTutorialId).toBe('basic-setup-and-turn');
@@ -31,6 +50,7 @@ describe('betrayal manifest integration', () => {
             'move-explore-use',
             'crimson-jack-objective',
             'haunt-actions-and-finish',
+            'traitor-path',
         ]);
         expect(resolveGameTutorialManifest('betrayal')).toEqual(
             implementation?.tutorialCatalog?.tutorials['basic-setup-and-turn']?.manifest ?? null,

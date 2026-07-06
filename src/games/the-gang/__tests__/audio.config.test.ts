@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { AudioEvent } from '../../../lib/audio/types';
 import {
     THE_GANG_AUDIO_CONFIG,
@@ -17,6 +19,41 @@ const resolveKey = (event: AudioEvent) =>
         ctx: {},
         meta: {},
     } as never);
+
+const REGISTRY_PATH = path.join(process.cwd(), 'public', 'assets', 'common', 'audio', 'registry.json');
+const registryExists = fs.existsSync(REGISTRY_PATH);
+const registry = registryExists
+    ? JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf-8')) as { entries: Array<{ key: string }> }
+    : { entries: [] };
+const registryKeys = new Set(registry.entries.map((entry) => entry.key));
+
+const collectConfiguredAudioKeys = () => {
+    const keys = new Set<string>();
+
+    THE_GANG_AUDIO_CONFIG.criticalSounds?.forEach((key) => keys.add(key));
+    THE_GANG_AUDIO_CONFIG.bgm?.forEach((track) => keys.add(track.key));
+    Object.values(THE_GANG_AUDIO_CONFIG.bgmGroups ?? {}).forEach((group) => group.forEach((key) => keys.add(key)));
+
+    [
+        resolveKey({ type: THE_GANG_EVENTS.CHIP_TAKEN }),
+        resolveKey({ type: THE_GANG_EVENTS.PROGRESS_APPROVED }),
+        resolveKey({ type: THE_GANG_EVENTS.ROUND_ENDED }),
+        resolveKey({ type: THE_GANG_EVENTS.NEXT_HEIST_STARTED }),
+        resolveKey({
+            type: THE_GANG_EVENTS.SHOWDOWN_REVEALED,
+            payload: { record: { outcome: 'success' } },
+        }),
+        resolveKey({
+            type: THE_GANG_EVENTS.SHOWDOWN_REVEALED,
+            payload: { record: { outcome: 'failure' } },
+        }),
+        resolveKey({ type: THE_GANG_EVENTS.GAME_FINISHED }),
+    ].forEach((key) => {
+        if (key) keys.add(key);
+    });
+
+    return keys;
+};
 
 describe('The Gang 音频配置', () => {
     it('核心游戏事件映射到对应音效', () => {
@@ -64,5 +101,11 @@ describe('The Gang 音频配置', () => {
 
         expect(normalRule?.group).toBe('normal');
         expect(showdownRule?.group).toBe('battle');
+    });
+
+    it.skipIf(!registryExists)('所有配置的音效和 BGM key 都存在于公共音频注册表', () => {
+        for (const key of collectConfiguredAudioKeys()) {
+            expect(registryKeys.has(key), `纸牌帮音频 key 不在 registry: ${key}`).toBe(true);
+        }
     });
 });

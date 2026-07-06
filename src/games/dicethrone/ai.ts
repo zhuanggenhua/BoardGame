@@ -92,6 +92,7 @@ type DiceTargetPlan = {
     totalRequired: number;
     available: boolean;
     strategicScore: number;
+    ambitionScore: number;
 };
 
 type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
@@ -468,6 +469,71 @@ const getAbilityStrategicScore = (
     return score;
 };
 
+const getAbilityAmbitionScore = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    abilityId: string,
+    trigger: TriggerCondition | undefined,
+): number => {
+    const match = findPlayerAbility(state.core, playerId, abilityId);
+    if (!match) return 0;
+
+    if (match.ability.tags?.includes('ultimate') || match.variant?.tags?.includes('ultimate')) {
+        return 360;
+    }
+
+    if (trigger?.type === 'largeStraight') {
+        return 180;
+    }
+
+    if (trigger?.type === 'smallStraight') {
+        return 70;
+    }
+
+    if (trigger?.type === 'diceSet') {
+        const totalRequired = sumFaceRequirement(trigger.faces);
+        if (totalRequired >= 5) return 240;
+        if (totalRequired === 4) return 110;
+        if (totalRequired === 3) return -45;
+    }
+
+    return 0;
+};
+
+const DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
+    'modify-die-to-6',
+    'modify-die-copy',
+    'modify-die-any-1',
+    'modify-die-any-2',
+    'modify-die-adjust-1',
+    'reroll-die-2',
+    'reroll-die-5',
+]);
+
+const countAffordableDiceToolCards = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): number => {
+    if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') return 0;
+    if (playerId !== getRollerId(state.core, phase)) return 0;
+
+    const player = state.core.players[playerId];
+    if (!player) return 0;
+    const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
+
+    return player.hand.filter((card) => {
+        if (cp < card.cpCost) return false;
+        return card.effects?.some((effect) => {
+            const customActionId = effect.action?.type === 'custom'
+                ? effect.action.customActionId
+                : null;
+            if (!customActionId || !DICE_TOOL_CUSTOM_ACTION_IDS.has(customActionId)) return false;
+            return effect.action?.target !== 'opponent';
+        }) ?? false;
+    }).length;
+};
+
 const buildDiceTargetPlans = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -484,6 +550,7 @@ const buildDiceTargetPlans = (
 
     const pushPlan = (abilityId: string, trigger: TriggerCondition | undefined) => {
         const strategicScore = getAbilityStrategicScore(state, playerId, abilityId, phase);
+        const ambitionScore = getAbilityAmbitionScore(state, playerId, abilityId, trigger);
         const requirements = extractDiceRequirements(trigger);
         if (requirements.length === 0) {
             if (!availableIds.has(abilityId)) return;
@@ -495,6 +562,7 @@ const buildDiceTargetPlans = (
                 totalRequired: 0,
                 available: true,
                 strategicScore,
+                ambitionScore,
             });
             return;
         }
@@ -506,6 +574,7 @@ const buildDiceTargetPlans = (
                 ...evaluation,
                 available: diceOverride ? evaluation.missingCount === 0 : availableIds.has(abilityId),
                 strategicScore,
+                ambitionScore,
             });
         }
     };
@@ -546,7 +615,14 @@ const scoreDiceTargetPlan = (
             ? 100
             : 60;
 
-    return plan.strategicScore + plan.matchedCount * 18 - plan.missingCount * missingPenalty + (plan.available ? availableBonus : 0);
+    const canStillChaseHigherPlan = isRollPhase && !state.core.rollConfirmed && remainingRolls > 0;
+    const ambitionScore = canStillChaseHigherPlan ? plan.ambitionScore * 0.16 : 0;
+
+    return plan.strategicScore
+        + ambitionScore
+        + plan.matchedCount * 18
+        - plan.missingCount * missingPenalty
+        + (plan.available ? availableBonus : 0);
 };
 
 const getBestDiceTargetPlan = (
@@ -565,6 +641,156 @@ const getBestDiceTargetPlan = (
         if (left.missingCount !== right.missingCount) return left.missingCount - right.missingCount;
         return right.strategicScore - left.strategicScore;
     })[0] ?? null;
+};
+
+const getBestAvailableDiceTargetPlan = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): DiceTargetPlan | null => {
+    const plans = buildDiceTargetPlans(state, playerId, phase).filter((plan) => plan.available);
+    if (plans.length === 0) return null;
+
+    return [...plans].sort((left, right) => {
+        const leftScore = scoreDiceTargetPlan(state, phase, left);
+        const rightScore = scoreDiceTargetPlan(state, phase, right);
+        if (rightScore !== leftScore) return rightScore - leftScore;
+        if (right.ambitionScore !== left.ambitionScore) return right.ambitionScore - left.ambitionScore;
+        return right.strategicScore - left.strategicScore;
+    })[0] ?? null;
+};
+
+const getBestStableDiceTargetPlan = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    diceOverride?: DiceThroneCore['dice'],
+): DiceTargetPlan | null => {
+    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride);
+    if (plans.length === 0) return null;
+
+    const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
+    const remainingRolls = isRollPhase
+        ? Math.max(0, state.core.rollLimit - state.core.rollCount)
+        : 0;
+    const missingPenalty = !isRollPhase
+        ? 36
+        : state.core.rollConfirmed
+            ? 120
+            : (remainingRolls <= 0 ? 120 : (remainingRolls === 1 ? 60 : 36));
+    const availableBonus = !isRollPhase
+        ? 60
+        : state.core.rollConfirmed || remainingRolls <= 0
+            ? 100
+            : 60;
+    const stableScore = (plan: DiceTargetPlan) => (
+        plan.strategicScore
+        + plan.matchedCount * 18
+        - plan.missingCount * missingPenalty
+        + (plan.available ? availableBonus : 0)
+    );
+
+    return [...plans].sort((left, right) => {
+        const leftScore = stableScore(left);
+        const rightScore = stableScore(right);
+        if (rightScore !== leftScore) return rightScore - leftScore;
+        if (left.missingCount !== right.missingCount) return left.missingCount - right.missingCount;
+        return right.strategicScore - left.strategicScore;
+    })[0] ?? null;
+};
+
+const estimateDiceChaseProbability = (
+    plan: DiceTargetPlan,
+    remainingRolls: number,
+    diceToolCardCount: number,
+): number => {
+    if (plan.missingCount <= 0) return 1;
+    if (remainingRolls <= 0 && diceToolCardCount <= 0) return 0;
+
+    const effectiveAttempts = Math.max(1, remainingRolls + Math.min(1, diceToolCardCount));
+    const singleMissingChance = 1 - (5 / 6) ** effectiveAttempts;
+    const baseChance = singleMissingChance ** plan.missingCount;
+    const cardBoost = diceToolCardCount > 0
+        ? Math.min(0.28, diceToolCardCount * 0.08 + (plan.missingCount <= 2 ? 0.12 : 0))
+        : 0;
+
+    return Math.min(0.92, Number((baseChance + cardBoost).toFixed(4)));
+};
+
+const scoreHigherAmbitionChasePlan = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    plan: DiceTargetPlan,
+    availablePlan: DiceTargetPlan | null,
+): number => {
+    const remainingRolls = Math.max(0, state.core.rollLimit - state.core.rollCount);
+    const diceToolCardCount = countAffordableDiceToolCards(state, playerId, phase);
+    const successChance = estimateDiceChaseProbability(plan, remainingRolls, diceToolCardCount);
+    const currentValue = availablePlan?.strategicScore ?? 0;
+    const valueGap = plan.strategicScore - currentValue;
+    const closeness = plan.totalRequired > 0
+        ? plan.matchedCount / plan.totalRequired
+        : 0;
+    const expectedUpside = successChance * (plan.strategicScore + plan.ambitionScore * 0.65);
+    const fallbackRisk = (1 - successChance) * Math.max(0, currentValue - plan.strategicScore * 0.25);
+    const nearMissBonus = closeness * plan.ambitionScore * 0.22;
+    const diceToolBonus = diceToolCardCount * 45;
+    const ultimateNearMissBonus = plan.ambitionScore >= 300 && plan.matchedCount >= 3
+        ? 55
+        : 0;
+    const longShotPenalty = diceToolCardCount === 0 && plan.missingCount >= 3
+        ? 120
+        : 0;
+    const lastRollPenalty = remainingRolls <= 1 && diceToolCardCount === 0 && plan.missingCount >= 2
+        ? 60
+        : 0;
+
+    return Number((
+        expectedUpside
+        + valueGap * 0.35
+        + nearMissBonus
+        + diceToolBonus
+        + ultimateNearMissBonus
+        + plan.matchedCount * 8
+        - plan.missingCount * 32
+        - fallbackRisk
+        - longShotPenalty
+        - lastRollPenalty
+    ).toFixed(3));
+};
+
+const getHigherAmbitionChasePlan = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    currentAbilityId?: string | null,
+): DiceTargetPlan | null => {
+    if (phase !== 'offensiveRoll') return null;
+    if (state.core.rollConfirmed) return null;
+    const remainingRolls = Math.max(0, state.core.rollLimit - state.core.rollCount);
+    if (remainingRolls <= 0) return null;
+
+    const availablePlan = currentAbilityId
+        ? buildDiceTargetPlans(state, playerId, phase).find((plan) => plan.abilityId === currentAbilityId && plan.available) ?? null
+        : getBestAvailableDiceTargetPlan(state, playerId, phase);
+    const availableAmbition = availablePlan?.ambitionScore ?? 0;
+
+    const candidates = buildDiceTargetPlans(state, playerId, phase)
+        .filter((plan) => !plan.available)
+        .map((plan) => ({
+            plan,
+            chaseScore: scoreHigherAmbitionChasePlan(state, playerId, phase, plan, availablePlan),
+        }))
+        .filter(({ plan }) => plan.missingCount > 0 && plan.missingCount <= 3)
+        .filter(({ plan }) => plan.ambitionScore >= availableAmbition + 80)
+        .filter(({ chaseScore }) => chaseScore >= 35);
+
+    return candidates.sort((left, right) => {
+        if (right.chaseScore !== left.chaseScore) return right.chaseScore - left.chaseScore;
+        if (right.plan.ambitionScore !== left.plan.ambitionScore) return right.plan.ambitionScore - left.plan.ambitionScore;
+        return left.plan.missingCount - right.plan.missingCount;
+    })[0]?.plan ?? null;
 };
 
 const isRemovableStatusId = (state: DiceThroneState, statusId: string): boolean => {
@@ -2895,17 +3121,24 @@ const dicePlanScorer: LocalAiActionScorer = {
 
         const activeDice = getActiveDice(state.core);
         const plan = getBestDiceTargetPlan(state, context.playerId, phase);
+        const chasePlan = getHigherAmbitionChasePlan(state, context.playerId, phase);
+        const effectivePlan = chasePlan ?? plan;
         const pendingToggleCount = activeDice.filter((die) => {
-            const shouldKeep = plan ? plan.keepDieIds.includes(die.id) : false;
+            const shouldKeep = effectivePlan ? effectivePlan.keepDieIds.includes(die.id) : false;
             return shouldKeep !== die.isKept;
         }).length;
+        const lockedEffectiveKeyDieCount = effectivePlan
+            ? activeDice.filter((die) => effectivePlan.keepDieIds.includes(die.id) && die.isKept).length
+            : 0;
+        const shouldSpendDiceToolBeforeMoreLocking = lockedEffectiveKeyDieCount > 0
+            && countAffordableDiceToolCards(state, context.playerId, phase) > 0;
         const rerollBlockedByBindCp = isOffensiveRollRerollBlockedByBindCp(state, context.playerId, phase);
 
         if (action.kind === 'toggle-die-lock') {
             const dieId = typeof action.metadata?.dieId === 'number' ? action.metadata.dieId : null;
             const die = dieId !== null ? activeDice.find((candidate) => candidate.id === dieId) : null;
             if (!die) return null;
-            const shouldKeep = plan ? plan.keepDieIds.includes(die.id) : false;
+            const shouldKeep = effectivePlan ? effectivePlan.keepDieIds.includes(die.id) : false;
             if (shouldKeep === die.isKept) return null;
             if (rerollBlockedByBindCp) {
                 return {
@@ -2915,10 +3148,20 @@ const dicePlanScorer: LocalAiActionScorer = {
             }
 
             return {
-                score: shouldKeep ? 175 : 135,
+                score: shouldSpendDiceToolBeforeMoreLocking
+                    ? (shouldKeep
+                        ? 80 + (effectivePlan?.ambitionScore ?? 0) * 0.12
+                        : 70)
+                    : (shouldKeep
+                        ? 175 + (effectivePlan?.ambitionScore ?? 0) * 0.45
+                        : 135),
                 reason: shouldKeep
-                    ? `先锁住接近 ${plan?.abilityId ?? '高价值技能'} 的关键骰子`
-                    : '先解锁无关骰子，再进行下一次重投',
+                    ? (shouldSpendDiceToolBeforeMoreLocking
+                        ? `已经锁住一颗关键骰，先用改骰牌推进 ${effectivePlan?.abilityId ?? '高价值技能'}，不继续空锁`
+                        : `先锁住接近 ${effectivePlan?.abilityId ?? '高价值技能'} 的关键骰子`)
+                    : (shouldSpendDiceToolBeforeMoreLocking
+                        ? '已经有关键骰和改骰牌，先打牌而不是继续整理锁骰'
+                        : '先解锁无关骰子，再进行下一次重投'),
             };
         }
 
@@ -2947,6 +3190,12 @@ const dicePlanScorer: LocalAiActionScorer = {
                     reason: '已经没有重投次数，不应继续尝试掷骰',
                 };
             }
+            if (chasePlan) {
+                return {
+                    score: 160 + chasePlan.ambitionScore * 0.35 - chasePlan.missingCount * 18,
+                    reason: `已有可发动技能，但仍值得继续追 ${chasePlan.abilityId}`,
+                };
+            }
             if (plan && !plan.available) {
                 return {
                     score: 115 - plan.missingCount * 18,
@@ -2970,6 +3219,12 @@ const dicePlanScorer: LocalAiActionScorer = {
                 return {
                     score: -180,
                     reason: '锁骰方案还没对齐，先别提前确认骰面',
+                };
+            }
+            if (chasePlan) {
+                return {
+                    score: -140 - chasePlan.ambitionScore * 0.25,
+                    reason: `仍有机会追 ${chasePlan.abilityId}，不应满足低阶技能就提前确认`,
                 };
             }
             if (plan?.available) {
@@ -3022,7 +3277,7 @@ const passiveValueScorer: LocalAiActionScorer = {
             if (!die) return null;
             const phase = getContextPhase(context);
             const currentPlan = (phase === 'offensiveRoll' || phase === 'defensiveRoll')
-                ? getBestDiceTargetPlan(state, context.playerId, phase)
+                ? getBestStableDiceTargetPlan(state, context.playerId, phase)
                 : null;
             if (currentPlan?.keepDieIds.includes(die.id)) {
                 return {
@@ -4232,6 +4487,18 @@ const projectDiceThroneAction = (args: {
             ? args.action.metadata.abilityId
             : null;
         if (!abilityId) return null;
+        const chasePlan = getHigherAmbitionChasePlan(state, args.context.playerId, phase, abilityId);
+        if (chasePlan) {
+            return {
+                score: Number((-95 - chasePlan.ambitionScore * 0.35).toFixed(3)),
+                reason: `当前可发动技能不是最优路线，仍有机会追 ${chasePlan.abilityId}`,
+                metadata: {
+                    chasePlanId: chasePlan.abilityId,
+                    missingCount: chasePlan.missingCount,
+                    ambitionScore: chasePlan.ambitionScore,
+                },
+            };
+        }
         const opponentIds = getOpponentIds(state, args.context.playerId);
         const lowestOpponentHp = opponentIds.reduce((best, opponentId) => {
             const hp = state.core.players[opponentId]?.resources[RESOURCE_IDS.HP] ?? 999;
@@ -4318,11 +4585,49 @@ function shouldUseRemoteDecisionForDiceThrone(context: AiDecisionContext): boole
     return context.legalActions.some((action) => REMOTE_VISIBLE_MAJOR_ACTION_KINDS.has(action.kind));
 }
 
+function getInitialKeyDieLockActionForDiceThrone(args: {
+    context: AiDecisionContext;
+    proposedAction: AiLegalAction;
+}): AiLegalAction | null {
+    if (args.proposedAction.kind !== 'play-card') return null;
+
+    const phase = getContextPhase(args.context);
+    if (phase !== 'offensiveRoll' && phase !== 'defensiveRoll') return null;
+
+    const state = args.context.visibleState as DiceThroneState;
+    if (state.core.rollConfirmed) return null;
+    if (args.context.playerId !== getRollerId(state.core, phase)) return null;
+
+    const plan = getBestStableDiceTargetPlan(state, args.context.playerId, phase)
+        ?? getHigherAmbitionChasePlan(state, args.context.playerId, phase)
+        ?? getBestDiceTargetPlan(state, args.context.playerId, phase);
+    if (!plan || plan.keepDieIds.length === 0) return null;
+
+    const activeDice = getActiveDice(state.core);
+    if (activeDice.filter((die) => die.isKept).length >= 3) return null;
+
+    const hasLockedKeyDie = activeDice.some((die) => plan.keepDieIds.includes(die.id) && die.isKept);
+    if (hasLockedKeyDie) return null;
+
+    const firstUnlockedKeyDie = activeDice.find((die) => plan.keepDieIds.includes(die.id) && !die.isKept);
+    if (!firstUnlockedKeyDie) return null;
+
+    return args.context.legalActions.find((action) => (
+        action.kind === 'toggle-die-lock'
+        && action.metadata?.dieId === firstUnlockedKeyDie.id
+    )) ?? null;
+}
+
 function refineDiceThroneAiAction(args: {
     context: AiDecisionContext;
     proposedAction: AiLegalAction;
 }): AiLegalAction {
     const phase = getContextPhase(args.context);
+    const initialKeyDieLockAction = getInitialKeyDieLockActionForDiceThrone(args);
+    if (initialKeyDieLockAction) {
+        return initialKeyDieLockAction;
+    }
+
     if (
         (args.proposedAction.kind === 'toggle-die-lock' || args.proposedAction.kind === 'roll-dice')
         && isOffensiveRollRerollBlockedByBindCp(

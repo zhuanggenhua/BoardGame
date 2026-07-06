@@ -446,6 +446,9 @@ export const FabMenu = ({
                 position: fabPosition,
                 alignment,
                 listOffset: { x: 0, y: 0 },
+                columnCount: 1,
+                itemsPerColumn: Math.max(items.length - 1, 1),
+                columnGap: expandedButtonSize + Math.max(expandedButtonGap, 8),
             };
         }
         return getExpandedLayout(fabPosition);
@@ -527,6 +530,9 @@ export const FabMenu = ({
                 isDragging={isDragging}
                 fabPosition={liveRenderPosition}
                 listOffset={renderLayout.listOffset}
+                columnCount={renderLayout.columnCount}
+                itemsPerColumn={renderLayout.itemsPerColumn}
+                columnGap={renderLayout.columnGap}
                 buttonSize={renderButtonSize}
                 buttonGap={renderButtonGap}
                 edgePadding={edgePadding}
@@ -552,6 +558,9 @@ const SatelliteList = ({
     isDragging,
     fabPosition,
     listOffset,
+    columnCount: resolvedColumnCount,
+    itemsPerColumn: resolvedItemsPerColumn,
+    columnGap: resolvedColumnGap,
     buttonSize,
     buttonGap,
     edgePadding,
@@ -562,21 +571,31 @@ const SatelliteList = ({
     layerZIndex,
 }: any) => {
     const isButtonBottom = alignment.v === 'bottom';
+    const isRightOpening = alignment.h === 'right';
+    const columnCount = Math.max(1, Number(resolvedColumnCount ?? 1));
+    const itemsPerColumn = Math.max(1, Number(resolvedItemsPerColumn ?? (items.length || 1)));
+    const columnGap = Math.max(buttonSize + Math.max(buttonGap, 8), Number(resolvedColumnGap ?? 0));
+    const itemGroups = Array.from({ length: columnCount }, (_, columnIndex) => (
+        items.slice(columnIndex * itemsPerColumn, (columnIndex + 1) * itemsPerColumn)
+    )).filter((group) => group.length > 0);
+    const effectiveColumnCount = Math.max(1, itemGroups.length);
     const flexDirection = isButtonBottom ? 'flex-col-reverse' : 'flex-col';
+    const rowDirection = isRightOpening ? 'row' : 'row-reverse';
     const alignItems = alignment.h === 'right' ? 'items-start' : 'items-end';
     const offset = buttonSize + buttonGap;
+    const columnHeights = itemGroups.map((group) => group.length * (buttonSize + buttonGap));
     const visibleColumnTop = isButtonBottom
-        ? fabPosition.top + (listOffset?.y ?? 0) - (items.length * (buttonSize + buttonGap))
+        ? fabPosition.top + (listOffset?.y ?? 0) - Math.max(...columnHeights, buttonSize)
         : fabPosition.top + (listOffset?.y ?? 0) + offset;
     const visibleColumnBottom = isButtonBottom
         ? fabPosition.top + (listOffset?.y ?? 0) - offset + buttonSize
-        : fabPosition.top + (listOffset?.y ?? 0) + ((Math.max(items.length - 1, 0)) * (buttonSize + buttonGap)) + offset + buttonSize;
+        : fabPosition.top + (listOffset?.y ?? 0) + Math.max(...columnHeights, buttonSize) + offset;
     const panelReferenceRect = {
         left: fabPosition.left + (listOffset?.x ?? 0),
-        right: fabPosition.left + (listOffset?.x ?? 0) + buttonSize,
+        right: fabPosition.left + (listOffset?.x ?? 0) + buttonSize + ((effectiveColumnCount - 1) * columnGap),
         top: visibleColumnTop,
         bottom: visibleColumnBottom,
-        width: buttonSize,
+        width: buttonSize + ((effectiveColumnCount - 1) * columnGap),
         height: Math.max(visibleColumnBottom - visibleColumnTop, buttonSize),
     };
 
@@ -584,10 +603,11 @@ const SatelliteList = ({
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className={`absolute left-0 flex ${flexDirection} ${alignItems}`}
+                    className={`absolute left-0 flex ${alignItems}`}
                     style={{
                         [isButtonBottom ? 'bottom' : 'top']: offset,
-                        gap: isMobileViewport ? buttonGap : Math.max(buttonGap, 12),
+                        flexDirection: rowDirection,
+                        columnGap: itemGroups.length > 1 ? columnGap - buttonSize : 0,
                         transform: `translate(${listOffset?.x ?? 0}px, ${listOffset?.y ?? 0}px)`,
                     }}
                     initial="hidden"
@@ -598,42 +618,53 @@ const SatelliteList = ({
                         visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
                     }}
                 >
-                    {items.map((item: FabAction, index: number) => {
-                        const distanceFromMain = index + 1;
-                        const anchorPosition: FabPosition = {
-                            left: fabPosition.left + (listOffset?.x ?? 0),
-                            top: isButtonBottom
-                                ? fabPosition.top + (listOffset?.y ?? 0) - distanceFromMain * (buttonSize + buttonGap)
-                                : fabPosition.top + (listOffset?.y ?? 0) + distanceFromMain * (buttonSize + buttonGap),
-                        };
+                    {itemGroups.map((group, columnIndex) => (
+                        <div
+                            key={`fab-column-${columnIndex}`}
+                            className={`flex ${flexDirection} ${alignItems}`}
+                            style={{
+                                gap: isMobileViewport ? buttonGap : Math.max(buttonGap, 12),
+                            }}
+                        >
+                            {group.map((item: FabAction, index: number) => {
+                                const distanceFromMain = index + 1;
+                                const columnX = (isRightOpening ? 1 : -1) * columnIndex * columnGap;
+                                const anchorPosition: FabPosition = {
+                                    left: fabPosition.left + (listOffset?.x ?? 0) + columnX,
+                                    top: isButtonBottom
+                                        ? fabPosition.top + (listOffset?.y ?? 0) - distanceFromMain * (buttonSize + buttonGap)
+                                        : fabPosition.top + (listOffset?.y ?? 0) + distanceFromMain * (buttonSize + buttonGap),
+                                };
 
-                        return (
-                            <FabButtonSlot
-                                key={item.id}
-                                item={item}
-                                isActive={activeId === item.id}
-                                onClick={() => onItemClick(item)}
-                                showGlow={Boolean(item.active) && activeId !== item.id}
-                                isMain={false}
-                                isDark={isDark}
-                                alignment={alignment}
-                                tooltipPortalRoot={tooltipPortalRoot}
-                                glowColor={glowColor}
-                                isDragging={isDragging}
-                                buttonSize={buttonSize}
-                                buttonGap={buttonGap}
-                                edgePadding={edgePadding}
-                                safeAreaInsets={safeAreaInsets}
-                                isMobileViewport={isMobileViewport}
-                                viewportWidth={viewportWidth}
-                                viewportHeight={viewportHeight}
-                                panelAnchorPosition={anchorPosition}
-                                panelReferenceRect={panelReferenceRect}
-                                layerZIndex={layerZIndex}
-                                onRequestClose={() => onItemClick(item)}
-                            />
-                        );
-                    })}
+                                return (
+                                    <FabButtonSlot
+                                        key={item.id}
+                                        item={item}
+                                        isActive={activeId === item.id}
+                                        onClick={() => onItemClick(item)}
+                                        showGlow={Boolean(item.active) && activeId !== item.id}
+                                        isMain={false}
+                                        isDark={isDark}
+                                        alignment={alignment}
+                                        tooltipPortalRoot={tooltipPortalRoot}
+                                        glowColor={glowColor}
+                                        isDragging={isDragging}
+                                        buttonSize={buttonSize}
+                                        buttonGap={buttonGap}
+                                        edgePadding={edgePadding}
+                                        safeAreaInsets={safeAreaInsets}
+                                        isMobileViewport={isMobileViewport}
+                                        viewportWidth={viewportWidth}
+                                        viewportHeight={viewportHeight}
+                                        panelAnchorPosition={anchorPosition}
+                                        panelReferenceRect={panelReferenceRect}
+                                        layerZIndex={layerZIndex}
+                                        onRequestClose={() => onItemClick(item)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    ))}
                 </motion.div>
             )}
         </AnimatePresence>

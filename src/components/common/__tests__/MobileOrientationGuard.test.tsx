@@ -27,6 +27,14 @@ const renderGuard = () => render(
     </MemoryRouter>,
 );
 
+const renderBetrayalGuard = () => render(
+    <MemoryRouter initialEntries={["/play/betrayal/tutorial/basic-setup-and-turn"]}>
+        <MobileOrientationGuard>
+            <div data-testid="game-content">game content</div>
+        </MobileOrientationGuard>
+    </MemoryRouter>,
+);
+
 const renderGuardAndFlushViewport = () => {
     const result = renderGuard();
     act(() => {
@@ -57,6 +65,20 @@ describe('MobileOrientationGuard native orientation behavior', () => {
         setNativeAppShell(true);
 
         renderGuardAndFlushViewport();
+
+        expect(screen.getByTestId('game-content')).toBeTruthy();
+        expect(screen.queryByText('正在切换横屏…')).toBeNull();
+    });
+
+    it('keeps betrayal tutorial mounted in native shell while requesting landscape orientation', () => {
+        vi.useFakeTimers();
+        setViewport(390, 844);
+        setNativeAppShell(true);
+
+        renderBetrayalGuard();
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
 
         expect(screen.getByTestId('game-content')).toBeTruthy();
         expect(screen.queryByText('正在切换横屏…')).toBeNull();

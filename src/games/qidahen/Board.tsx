@@ -124,6 +124,7 @@ const ASSETS = {
     mingMarker: 'qidahen/markers/ming-control-diplomacy-marker-a',
     mongolMarker: 'qidahen/markers/mongol-control-diplomacy-marker-a',
     jinMarker: 'qidahen/markers/jin-control-diplomacy-marker-a',
+    armyBackMarker: 'qidahen/markers/blank-rectangular-marker',
 } as const;
 
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
@@ -339,6 +340,37 @@ const factionTone: Record<QidahenFactionId, { bg: string; border: string; text: 
     ming: { bg: UI_STYLE.paper, border: UI_STYLE.cinnabar, text: UI_STYLE.ink, chip: ASSETS.mingMarker },
     mongol: { bg: UI_STYLE.paper, border: UI_STYLE.oldGold, text: UI_STYLE.ink, chip: ASSETS.mongolMarker },
     jin: { bg: UI_STYLE.paper, border: UI_STYLE.bronze, text: UI_STYLE.ink, chip: ASSETS.jinMarker },
+};
+
+const shouldRevealQidahenMapArmyToken = (
+    token: QidahenMapToken,
+    viewerFactionId: QidahenFactionId | null,
+    revealedBattleRegionIds: ReadonlySet<string>,
+): boolean => {
+    if (token.type !== 'army') {
+        return true;
+    }
+    if (viewerFactionId != null && token.faction === viewerFactionId) {
+        return true;
+    }
+    return token.regionId != null && revealedBattleRegionIds.has(token.regionId);
+};
+
+const buildRevealedBattleRegionIds = (
+    pendingTargetAction: QidahenCore['pendingTargetAction'],
+    postBattleSelection: QidahenCore['postBattleSelection'],
+): ReadonlySet<string> => {
+    const regionIds = [
+        pendingTargetAction?.sourceRegionId,
+        pendingTargetAction?.targetRegionId,
+        pendingTargetAction?.targetRuntimeRegionId,
+        pendingTargetAction?.attackerPositionRegionId,
+        postBattleSelection?.sourceRegionId,
+        postBattleSelection?.targetRegionId,
+        postBattleSelection?.targetRuntimeRegionId,
+        postBattleSelection?.attackerPositionRegionId,
+    ].filter((regionId): regionId is string => Boolean(regionId));
+    return new Set(regionIds);
 };
 
 const BOUNDARY_TYPE_RUNTIME_COLORS: Record<string, string> = {
@@ -1378,16 +1410,18 @@ const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => {
 
 const MapToken: React.FC<{
     token: QidahenMapToken;
+    revealFront: boolean;
     pendingCommittedSelected?: boolean;
     pendingCommittedSelectable?: boolean;
     onSelectPendingCommittedTroops?: (committedTroops: number) => void;
-}> = ({ token, pendingCommittedSelected = false, pendingCommittedSelectable = false, onSelectPendingCommittedTroops }) => {
+}> = ({ token, revealFront, pendingCommittedSelected = false, pendingCommittedSelectable = false, onSelectPendingCommittedTroops }) => {
     const size = token.size ?? 30;
     const tone = factionTone[token.faction === 'neutral' ? 'ming' : token.faction];
     const isArmyToken = token.type === 'army';
     const isPopulationToken = token.type === 'population';
     const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : (token.type === 'control' || isPopulationToken) ? 'rounded-full' : '';
     const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';
+    const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);
     const pendingCommittedTone = pendingCommittedSelected
         ? {
             opacity: 1,
@@ -1405,6 +1439,10 @@ const MapToken: React.FC<{
         <div
             className={`${pendingCommittedSelectable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} absolute grid place-items-center text-[13px] font-black ${tokenShapeClass}`}
             data-testid={`qidahen-map-token-${token.id}`}
+            data-qidahen-map-token-type={token.type}
+            data-qidahen-map-token-faction={token.faction}
+            data-qidahen-map-token-region={token.regionId}
+            data-qidahen-army-face={isArmyToken ? (revealFront ? 'front' : 'hidden-back') : undefined}
             data-pending-committed-selectable={pendingCommittedSelectable ? 'true' : undefined}
             data-pending-committed-selected={pendingCommittedSelectable ? String(pendingCommittedSelected) : undefined}
             data-pending-committed-index={pendingCommittedSelectable ? token.troopIndex : undefined}
@@ -1433,7 +1471,7 @@ const MapToken: React.FC<{
                 zIndex: pendingCommittedSelectable ? 8 : undefined,
             }}
         >
-            {token.imageSrc ? (
+            {showTokenImage ? (
                 <>
                     <OptimizedImage
                         src={token.imageSrc}
@@ -1460,6 +1498,25 @@ const MapToken: React.FC<{
                         </span>
                     ) : null}
                 </>
+            ) : isArmyToken ? (
+                <span
+                    className={`grid h-full w-full place-items-center border-2 ${tokenShapeClass}`}
+                    data-qidahen-army-face="hidden-back"
+                    style={{
+                        borderColor: UI_STYLE.mapInk,
+                        background: UI_STYLE.paperLight,
+                        boxShadow: `inset 0 0 0 1px rgba(255,241,205,0.18), 0 2px 8px ${UI_STYLE.shadowSoft}`,
+                    }}
+                    aria-label="部队背面"
+                >
+                    <OptimizedImage
+                        src={ASSETS.armyBackMarker}
+                        alt="部队背面"
+                        className={`h-full w-full object-cover ${tokenShapeClass}`}
+                        draggable={false}
+                        placeholder={false}
+                    />
+                </span>
             ) : (
                 <span
                     className={`grid h-full w-full place-items-center border-2 ${tokenShapeClass}`}
@@ -1997,6 +2054,10 @@ const MapSceneLayer: React.FC<{
     const mapSelectionGuideUsesRegionHighlight = grantPardonSelection != null
         || tutorialStepId === 'choose-grant-pardon-target';
     const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;
+    const revealedBattleRegionIds = React.useMemo(
+        () => buildRevealedBattleRegionIds(pendingTargetAction, core.postBattleSelection),
+        [pendingTargetAction, core.postBattleSelection],
+    );
     const pendingCommittedOptions = getPendingCommittedTroopOptions(pendingTargetAction);
     const pendingCommittedMax = pendingCommittedOptions.at(-1) ?? 0;
     const pendingCommittedSelectedCount = Math.min(
@@ -2188,6 +2249,7 @@ const MapSceneLayer: React.FC<{
                         <MapToken
                             key={token.id}
                             token={token}
+                            revealFront={shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)}
                             pendingCommittedSelectable={pendingCommittedSelectable}
                             pendingCommittedSelected={pendingCommittedSelectable && (token.troopIndex ?? 0) <= pendingCommittedSelectedCount}
                             onSelectPendingCommittedTroops={handleSelectPendingCommittedTroopsFromMap}
@@ -3485,7 +3547,7 @@ const ActionsZone: React.FC<{
                             ))}
                         </div>
                     ) : null}
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="sr-only">
                         {diplomacySelection.candidateTargetRegionIds.map((regionId) => {
                             const region = core.regions.find((item) => item.id === regionId && !item.isLogicalRegion);
                             if (!region) return null;
@@ -3494,7 +3556,7 @@ const ActionsZone: React.FC<{
                                     key={regionId}
                                     type="button"
                                     data-testid={`qidahen-diplomacy-target-${regionId}`}
-                                    className="border-[2px] px-2 py-1 text-[11px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    className="border-[2px] px-2 py-1 text-[11px] font-black"
                                     onClick={() => onSelectRegion(regionId)}
                                     style={{
                                         borderColor: UI_STYLE.mapInk,
@@ -3623,31 +3685,22 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : null}
                     {getPendingCommittedTroopOptions(pendingTargetAction).length > 1 ? (
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]" data-testid="qidahen-pending-committed-troops">
+                        <div className="mt-2 text-[11px]" data-testid="qidahen-pending-committed-troops">
                             <span className="mr-1" style={{ color: '#f3d1a5' }}>
-                                {t('board.actions.pendingTarget.actualCommittedTroops', { defaultValue: '实际出兵' })}
+                                {t('board.actions.pendingTarget.actualCommittedTroopsMapFirst', { defaultValue: '实际出兵：点击地图上的源地区兵牌切换数量' })}
                             </span>
-                            {getPendingCommittedTroopOptions(pendingTargetAction).map((committedTroops) => {
-                                const selected = committedTroops === (pendingCommittedTroops ?? pendingTargetAction.committedTroops);
-                                return (
+                            <span className="sr-only">
+                                {getPendingCommittedTroopOptions(pendingTargetAction).map((committedTroops) => (
                                     <button
                                         key={committedTroops}
                                         type="button"
                                         data-testid={`qidahen-pending-committed-${committedTroops}`}
-                                        className="inline-flex h-[28px] min-w-[34px] items-center justify-center border-[2px] px-2 text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                         onClick={() => onSelectPendingCommittedTroops(committedTroops)}
-                                        style={{
-                                            borderColor: selected ? UI_STYLE.oldGold : UI_STYLE.mapInk,
-                                            background: selected ? UI_SURFACE.mapPanelSelected : UI_SURFACE.paper,
-                                            color: selected ? UI_STYLE.mapIvory : UI_STYLE.ink,
-                                            boxShadow: selected ? UI_SURFACE.mapPanelShadow : UI_SURFACE.hardShadow,
-                                            borderRadius: 3,
-                                        }}
                                     >
                                         {committedTroops}
                                     </button>
-                                );
-                            })}
+                                ))}
+                            </span>
                         </div>
                     ) : null}
                     {hasStructuredCasualtyChoice(core, pendingTargetAction) ? (

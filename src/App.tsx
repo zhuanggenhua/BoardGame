@@ -28,6 +28,7 @@ import { PcWebMascot } from './components/system/PcWebMascot';
 import { InteractionGuardProvider } from './components/game/framework/InteractionGuard';
 import AdminGuard from './components/auth/AdminGuard';
 import { MobileOrientationGuard } from './components/common/MobileOrientationGuard';
+import { ModalStackRoot } from './components/system/ModalStackRoot';
 import { installGlobalErrorContextCapture } from './lib/feedback/errorContext';
 import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
 import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
@@ -45,7 +46,6 @@ const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'))
 const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
-const LazyModalStackRoot = React.lazy(() => import('./components/system/ModalStackRoot').then(m => ({ default: m.ModalStackRoot })));
 const LazyToastViewport = React.lazy(() => import('./components/system/ToastViewport').then(m => ({ default: m.ToastViewport })));
 
 const queryClient = new QueryClient();
@@ -113,9 +113,7 @@ const AppRouteChrome = ({
       <MobileTextEntryProxyLayer />
       <ViewportDebugProbe />
       {!isPlayRoute ? <GlobalHUD /> : null}
-      <React.Suspense fallback={null}>
-        <LazyModalStackRoot />
-      </React.Suspense>
+      <ModalStackRoot />
       <React.Suspense fallback={null}>
         <LazyToastViewport />
       </React.Suspense>

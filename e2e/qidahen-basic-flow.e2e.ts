@@ -394,11 +394,12 @@ const selectPendingCommittedTroopsIfPresent = async (
         return;
     }
 
-    const option = page.locator(`[data-testid="qidahen-pending-committed-${resolvedCommittedTroops}"]`);
-    if (await option.count() === 0) {
+    const mapToken = page.locator(`[data-pending-committed-selectable="true"][data-pending-committed-index="${resolvedCommittedTroops}"]`).first();
+    if (await mapToken.count() === 0) {
         return;
     }
-    await option.click();
+    await mapToken.click();
+    await expect(mapToken).toHaveAttribute('data-pending-committed-selected', 'true');
 };
 
 const resolvePendingActionByCommand = async (
@@ -1389,6 +1390,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await page.addInitScript(() => {
             (window as Window & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__ = true;
         });
+        const diagnostics = attachPageDiagnostics(page);
 
         await page.setViewportSize({ width: 1920, height: 1080 });
         await page.goto(QIDAHEN_BASIC_OPENING_TEST_URL, { waitUntil: 'domcontentloaded' });
@@ -1481,6 +1483,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         expect(sourceRegion.troops).toBe(2);
         expect(targetRegion.controller).toBe('ming');
         expect(targetRegion.troops).toBe(2);
+        assertNoFatalFrontendErrors([{ label: 'qidahen-pending-committed-troops', diagnostics }]);
     });
 
     test('野战战败会给败方显示战败标记', async ({ page }) => {
@@ -2899,7 +2902,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('大汗令箭');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('从 山海关 出发');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
-        await page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]').click();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-24"][data-action="diplomacy"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]')).not.toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-24');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('正在查看 宁远');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
         await page.evaluate(() => {
@@ -3051,7 +3056,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('大汗令箭');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('从 山海关 出发');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
-        await page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]').click();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-24"][data-action="diplomacy"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]')).not.toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-24');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('正在查看 宁远');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
         await page.evaluate(() => {
@@ -3072,7 +3079,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('还可继续 2 次');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
 
-        await page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]').click();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-24"][data-action="diplomacy"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]')).not.toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-24');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('正在查看 宁远');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
         await page.evaluate(() => {
@@ -3093,7 +3102,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('还可继续 1 次');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
 
-        await page.locator('[data-testid="qidahen-diplomacy-target-city-region-28-jizhen"]').click();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-28-jizhen"][data-action="diplomacy"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-diplomacy-target-city-region-28-jizhen"]')).not.toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-28-jizhen');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-28-jizhen');
         await page.evaluate(() => {
             const harness = (window as Window & {

@@ -218,8 +218,8 @@ export function DiceBoxPhysicsSource({
                     return;
                 }
 
-                setSettledState(false);
-                await engine.rollToValues(values);
+                setSettledState(true);
+                await engine.restoreValues(values);
                 previousDiceIdsRef.current = dice.map((die) => die.id);
                 setSettledState(true);
                 return;

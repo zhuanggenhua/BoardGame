@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { LinearFilter, LinearMipmapLinearFilter, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -53,6 +53,20 @@ export interface DiceBoxEngineConfig {
      */
     themeCustomColorset?: DiceBoxConfig['theme_customColorset'];
 }
+
+type DiceBoxInternalNotationVector = {
+    vectors?: unknown[];
+    result?: number[];
+};
+
+type DiceBoxInternalRuntime = InstanceType<typeof DiceBoxModule> & {
+    iteration?: number;
+    notationVectors?: DiceBoxInternalNotationVector | null;
+    startClickThrow?: (notation: string) => DiceBoxInternalNotationVector | null;
+    spawnDice?: (vector: unknown, die?: DiceBoxDie) => void;
+    simulateThrow?: () => void;
+    steps?: number;
+};
 
 const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     id: 'default-green-felt',
@@ -208,6 +222,18 @@ export class DiceBoxThreeEngine {
         this.applyCurrentSkins();
     }
 
+    async restoreValues(values: number[]): Promise<void> {
+        if (values.length === 0) {
+            this.clear();
+            return;
+        }
+        if (!this.hasDice(values.length)) {
+            this.restoreDiceWithoutVisibleThrow(values);
+            return;
+        }
+        this.syncValues(values);
+    }
+
     async rerollToValues(indices: number[], values: number[]): Promise<void> {
         if (indices.length === 0) return;
         await this.box.reroll(indices);
@@ -222,10 +248,24 @@ export class DiceBoxThreeEngine {
 
     syncValues(values: number[]): void {
         this.applyValues(values, undefined, true);
+        this.applyCurrentSkins();
     }
 
     previewValues(values: number[], indices?: number[]): void {
         this.applyValues(values, indices, false);
+    }
+
+    ensureValues(values: number[]): void {
+        if (values.length === 0) {
+            this.clear();
+            return;
+        }
+        const hasExistingDice = this.hasDice(values.length);
+        if (!hasExistingDice) {
+            void this.restoreValues(values);
+            return;
+        }
+        this.syncValues(values);
     }
 
     setDieSkins(skins: Array<DiceBoxDieSkin | null>): void {
@@ -356,6 +396,34 @@ export class DiceBoxThreeEngine {
         if (didChange) {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
+    }
+
+    private restoreDiceWithoutVisibleThrow(values: number[]): void {
+        const box = this.box as DiceBoxInternalRuntime;
+        const notationVectors = box.startClickThrow?.(createNotation(values));
+        const vectors = notationVectors?.vectors;
+        if (!notationVectors || !Array.isArray(vectors) || vectors.length === 0 || !box.spawnDice || !box.simulateThrow) {
+            void this.rollToValues(values);
+            return;
+        }
+
+        this.applyPrimarySkinToDicePreset();
+        box.notationVectors = notationVectors;
+        this.clear();
+        for (const vector of vectors) {
+            box.spawnDice(vector);
+        }
+        box.simulateThrow();
+        box.iteration = 0;
+        box.steps = 0;
+        vectors.forEach((vector, index) => {
+            const die = this.box.diceList[index];
+            if (die) {
+                box.spawnDice?.(vector, die);
+            }
+        });
+        this.applyValues(values, undefined, true);
+        this.applyCurrentSkins();
     }
 
     private applyPrimarySkinToDicePreset(): boolean {
@@ -635,7 +703,9 @@ export class DiceBoxThreeEngine {
         if (!material.map) return false;
         material.map.image = canvas;
         material.map.flipY = false;
-        material.map.generateMipmaps = false;
+        material.map.generateMipmaps = true;
+        material.map.minFilter = LinearMipmapLinearFilter;
+        material.map.magFilter = LinearFilter;
         material.map.colorSpace = SRGBColorSpace;
         material.map.needsUpdate = true;
         this.normalizeFaceMaterial(material);

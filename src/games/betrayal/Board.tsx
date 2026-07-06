@@ -85,6 +85,7 @@ type DeckTrayItem = {
 type PreviewState = {
     selectedInventoryCardId: string | null;
     selectedTradeTargetPlayerId: string | null;
+    selectedCorpseLootCardId: string | null;
     selectedDogTradeCardIds: string[];
     selectedAttackWeaponCardId: string | null;
     selectedInventoryTargetPlayerId: string | null;
@@ -326,21 +327,10 @@ function isBetrayalCore(value: unknown): value is BetrayalCore {
 }
 
 function createInitialPreviewState(core: BetrayalCore): PreviewState {
-    const latestDrawnCardId = core.latestDiscovery && core.latestDiscovery.kind !== 'event'
-        ? core.currentExplorerInventory[core.currentExplorerInventory.length - 1]?.id ?? null
-        : null;
-    const firstUsableCardId = core.currentExplorerInventory.find((card) => (
-        resolveUseEffect(card)
-        && core.turnStartInventoryCardIds.includes(card.id)
-        && !core.usedCardIdsThisTurn.includes(card.id)
-    ))?.id ?? null;
     return {
-        selectedInventoryCardId: core.recommendedAction === 'trade'
-            ? null
-            : firstUsableCardId ?? latestDrawnCardId ?? core.currentExplorerInventory[0]?.id ?? null,
-        selectedTradeTargetPlayerId: core.recommendedAction === 'trade'
-            ? null
-            : resolveTradeTargets(core)[0]?.playerId ?? null,
+        selectedInventoryCardId: null,
+        selectedTradeTargetPlayerId: null,
+        selectedCorpseLootCardId: null,
         selectedDogTradeCardIds: [],
         selectedAttackWeaponCardId: null,
         selectedInventoryTargetPlayerId: null,
@@ -1359,7 +1349,10 @@ function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return canvas;
+    }
     paintBetrayalHouseDieFaceBase(ctx);
 
     if (value === 0) {
@@ -1456,15 +1449,44 @@ function BetrayalHouseDice3DGroup({
         }),
         [physicsStates, roll.dice],
     );
-    const selectableDiceTargets = React.useMemo(
-        () => physicsStates
+    const selectableDiceTargets = React.useMemo(() => {
+        const physicsTargets = physicsStates
             .map((state) => ({
                 dieIndex: state.id - 1,
                 layout: state.layout,
+                source: 'physics' as const,
             }))
-            .filter((target) => target.dieIndex >= 0 && target.dieIndex < roll.dice.length),
-        [physicsStates, roll.dice.length],
-    );
+            .filter((target) => target.dieIndex >= 0 && target.dieIndex < roll.dice.length);
+
+        if (physicsTargets.length > 0) {
+            return physicsTargets;
+        }
+
+        const spacing = 82;
+        const totalWidth = Math.max(0, (roll.dice.length - 1) * spacing);
+        return roll.dice.map((_, dieIndex) => ({
+            dieIndex,
+            layout: {
+                id: dieIndex + 1,
+                x: 0,
+                y: 0,
+                width: 64,
+                height: 64,
+                minX: 0,
+                maxX: 0,
+                minY: 0,
+                maxY: 0,
+                rotateX: 0,
+                rotateY: 0,
+                rotateZ: 0,
+            },
+            fallbackStyle: {
+                left: `calc(50% + ${dieIndex * spacing - totalWidth / 2}px)`,
+                top: '50%',
+            },
+            source: 'fallback-projection' as const,
+        }));
+    }, [physicsStates, roll.dice]);
     const handleRerollTargetKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>, dieIndex: number) => {
         if (!rerollSelection) return;
         if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -1511,30 +1533,31 @@ function BetrayalHouseDice3DGroup({
                     <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[rgba(241,221,146,0.44)] bg-[rgba(16,12,8,0.74)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f7e6ab] shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
                         {rerollSelection.promptLabel}
                     </div>
-                    {selectableDiceTargets.map(({ dieIndex, layout }) => (
+                    {selectableDiceTargets.map((target) => (
                         <div
-                            key={`${roll.id}-reroll-target-${dieIndex}`}
+                            key={`${roll.id}-reroll-target-${target.dieIndex}`}
                             role="button"
                             tabIndex={0}
-                            aria-label={rerollSelection.getDieActionLabel(dieIndex)}
-                            title={rerollSelection.getDieActionLabel(dieIndex)}
-                            data-testid={`betrayal-house-dice-reroll-target-${dieIndex}`}
-                            data-reroll-target-rotate-z={layout.rotateZ.toFixed(4)}
+                            aria-label={rerollSelection.getDieActionLabel(target.dieIndex)}
+                            title={rerollSelection.getDieActionLabel(target.dieIndex)}
+                            data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
+                            data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
+                            data-reroll-target-source={target.source}
                             className="group pointer-events-auto absolute outline-none"
                             style={{
-                                left: `${layout.x}px`,
-                                top: `${layout.y}px`,
-                                width: `${layout.width + 18}px`,
-                                height: `${layout.height + 18}px`,
-                                transform: `translate(-50%, -50%) rotate(${layout.rotateZ}rad)`,
+                                left: target.source === 'fallback-projection' ? target.fallbackStyle.left : `${target.layout.x}px`,
+                                top: target.source === 'fallback-projection' ? target.fallbackStyle.top : `${target.layout.y}px`,
+                                width: `${target.layout.width + 18}px`,
+                                height: `${target.layout.height + 18}px`,
+                                transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
                                 transformOrigin: 'center center',
                             }}
-                            onClick={() => rerollSelection.onSelectDie(dieIndex)}
+                            onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
                             onKeyDown={(event) => {
-                                handleRerollTargetKeyDown(event, dieIndex);
+                                handleRerollTargetKeyDown(event, target.dieIndex);
                             }}
                         >
-                            <span className="sr-only">{rerollSelection.getDieActionLabel(dieIndex)}</span>
+                            <span className="sr-only">{rerollSelection.getDieActionLabel(target.dieIndex)}</span>
                             <span
                                 aria-hidden="true"
                                 className="pointer-events-none absolute inset-0 rounded-[18px] border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
@@ -2365,12 +2388,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (selectedInventoryUseEffect?.mode !== 'moveOthersInRoom') {
             return {};
         }
-        const fallbackRoomId = maskTargetRooms[0]?.id ?? null;
+        const validTargetRoomIds = new Set(maskTargetRooms.map((room) => room.id));
         return Object.fromEntries(
-            maskTargetTokens.map((token) => [
-                token.id,
-                previewState.selectedMaskTargetRoomIdsByTokenId[token.id] ?? fallbackRoomId ?? '',
-            ]),
+            maskTargetTokens.map((token) => {
+                const selectedRoomId = previewState.selectedMaskTargetRoomIdsByTokenId[token.id];
+                return [
+                    token.id,
+                    selectedRoomId && validTargetRoomIds.has(selectedRoomId) ? selectedRoomId : '',
+                ];
+            }),
         );
     }, [
         maskTargetRooms,
@@ -2383,7 +2409,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ? selectedMaskTargetRoomIdsByTokenId[maskTargetTokens[0].id] ?? null
             : null
         : selectedInventoryUseEffect?.mode === 'placeExplorer'
-            ? previewState.selectedInventoryTargetRoomId ?? inventoryTargetRooms[0]?.id ?? null
+            ? inventoryTargetRooms.some((room) => room.id === previewState.selectedInventoryTargetRoomId)
+                ? previewState.selectedInventoryTargetRoomId
+                : null
             : null;
     const explorableRoomSlots = React.useMemo(() => resolveExplorableRoomSlots(core), [core]);
     const explorableRoomSlotIds = React.useMemo(() => new Set(explorableRoomSlots.map((room) => room.id)), [explorableRoomSlots]);
@@ -2437,7 +2465,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     ]);
     const selectedInventoryTargetPlayerId = selectedInventoryUseEffect?.mode === 'healTraits'
         && selectedInventoryUseEffect.target === 'selfOrSameRoomExplorer'
-        ? previewState.selectedInventoryTargetPlayerId ?? healTargetExplorers[0]?.playerId ?? null
+        ? healTargetExplorers.some((explorer) => explorer.playerId === previewState.selectedInventoryTargetPlayerId)
+            ? previewState.selectedInventoryTargetPlayerId
+            : null
         : null;
     const pendingEventChoice = core.pendingEventChoice;
     const pendingEventActionEffect = pendingEventChoice
@@ -2455,14 +2485,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const pendingEventTraitChoices = mergeEventTraitChoices(pendingEventAcceptTraitChoices, pendingEventDeclineTraitChoices);
     const selectedEventTrait = pendingEventTraitChoices.includes(previewState.selectedEventTrait!)
         ? previewState.selectedEventTrait
-        : pendingEventTraitChoices[0] ?? null;
+        : null;
     const pendingEventPreviewEffect = pendingEventActionEffect
         ? resolveEventPreviewEffect(core, pendingEventActionEffect, selectedEventTrait)
         : null;
     const pendingEventTargetRooms = resolveEventTargetRooms(core, pendingEventPreviewEffect);
     const selectedEventTargetRoomId = pendingEventTargetRooms.some((room) => room.id === previewState.selectedEventTargetRoomId)
         ? previewState.selectedEventTargetRoomId
-        : pendingEventTargetRooms[0]?.id ?? null;
+        : null;
     const pendingEventDamageChoice = resolveEventGeneralDamageChoice(pendingEventPreviewEffect);
     const selectedEventDamageTraits = pendingEventDamageChoice
         ? previewState.selectedEventDamageTraits.filter((trait) => pendingEventDamageChoice.allowedTraits.includes(trait)).slice(0, pendingEventDamageChoice.amount)
@@ -2483,6 +2513,16 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         () => activeTradeTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? null,
         [selectedTradeTargetPlayerId, activeTradeTargets],
     );
+    const selectedCorpseLootTargetPlayerId = corpseLootTargets.some((explorer) => explorer.playerId === previewState.selectedTradeTargetPlayerId)
+        ? previewState.selectedTradeTargetPlayerId
+        : null;
+    const selectedCorpseLootTarget = React.useMemo(
+        () => corpseLootTargets.find((explorer) => explorer.playerId === selectedCorpseLootTargetPlayerId) ?? null,
+        [corpseLootTargets, selectedCorpseLootTargetPlayerId],
+    );
+    const selectedCorpseLootCardId = selectedCorpseLootTarget?.inventory.some((card) => card.id === previewState.selectedCorpseLootCardId)
+        ? previewState.selectedCorpseLootCardId
+        : null;
     const selectedTradeTargetName = selectedTradeTarget
         ? resolvePlayerName(
             selectedTradeTarget.playerId,
@@ -2491,10 +2531,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         )
         : null;
     const tradeSelectionReady = Boolean((useDogTrade || selectedInventoryCard) && selectedTradeTarget);
-    const selectedCorpseLootTarget = React.useMemo(
-        () => corpseLootTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? corpseLootTargets[0] ?? null,
-        [corpseLootTargets, selectedTradeTargetPlayerId],
-    );
     const selectedCardUsedThisTurn = selectedInventoryCard
         ? core.usedCardIdsThisTurn.includes(selectedInventoryCard.id)
         : false;
@@ -2525,11 +2561,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             .map((card) => card.id)),
         [core],
     );
-    const selectedCardNeedsTargetRoom = selectedInventoryUseEffect?.mode === 'moveOthersInRoom';
-    const selectedCardUseDisabled = Boolean(selectedInventoryCard && (
+        const selectedCardNeedsTargetRoom = selectedInventoryUseEffect?.mode === 'moveOthersInRoom';
+    const selectedCardNeedsPlaceRoom = selectedInventoryUseEffect?.mode === 'placeExplorer';
+    const selectedCardNeedsHealTarget = selectedInventoryUseEffect?.mode === 'healTraits'
+        && selectedInventoryUseEffect.target === 'selfOrSameRoomExplorer'
+        && healTargetExplorers.length > 0;
+    const selectedCardUseDisabled = !selectedInventoryCard || Boolean(
         (!selectedInventoryUseEffect && !selectedCardCanUseRabbitFoot)
         || !selectedCardAvailableThisTurn
         || selectedCardUsedThisTurn
+        || (selectedCardNeedsPlaceRoom && !selectedInventoryTargetRoomId)
+        || (selectedCardNeedsHealTarget && !selectedInventoryTargetPlayerId)
         || (
             selectedCardNeedsTargetRoom
             && (
@@ -2537,7 +2579,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 || maskTargetTokens.some((token) => !selectedMaskTargetRoomIdsByTokenId[token.id])
             )
         )
-    ));
+    );
     const tradeStatusText = selectedTradeTarget
         ? t('board.status.tradeTarget', {
             player: selectedTradeTargetName,
@@ -2643,7 +2685,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             };
         }
         if (heroAttackTargets.length > 0) {
-            const heroTarget = heroAttackTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? heroAttackTargets[0]!;
+            const heroTarget = heroAttackTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId)
+                ?? (heroAttackTargets.length === 1 ? heroAttackTargets[0] : null);
+            if (!heroTarget) {
+                return null;
+            }
             return {
                 actionKind: 'attack-hero' as const,
                 label: t('board.status.focusAttackHero', {
@@ -2955,25 +3001,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             if (explorableRoomSlots.length === 0) {
                 return previousState;
             }
-            if (explorableRoomSlots.length === 1) {
-                dispatchCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, {
-                    roomId: explorableRoomSlots[0]!.id,
-                    ...(useHolySymbolForExplore ? { useHolySymbol: true } : {}),
-                    ...(useIdolForExplore ? { useIdol: true } : {}),
-                });
-                return {
-                    ...previousState,
-                    useHolySymbolForExplore: false,
-                    useIdolForExplore: false,
-                    interactionMode: 'default',
-                };
-            }
             return {
                 ...previousState,
                 interactionMode: 'explore',
             };
         });
-    }, [dispatchCommand, explorableRoomSlots, useHolySymbolForExplore, useIdolForExplore]);
+    }, [explorableRoomSlots]);
 
     const handleExploreRoom = React.useCallback((roomId: string) => {
         dispatchCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, {
@@ -3111,6 +3144,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             return;
         }
         const cardId = selectedInventoryCard?.id;
+        if (!cardId) {
+            return;
+        }
         if (cardId && selectedCardCanUseRabbitFoot) {
             setInventoryPreviewCardId(null);
             return;
@@ -3134,14 +3170,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     const handleTradeAction = () => {
         if (selectedCorpseLootTarget) {
-            const cardId = selectedCorpseLootTarget.inventory[0]?.id;
+            if (!selectedCorpseLootCardId) {
+                setPreviewState((previousState) => ({
+                    ...previousState,
+                    tradeSelectionTouched: true,
+                }));
+                return;
+            }
             dispatchCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, {
                 sourcePlayerId: selectedCorpseLootTarget.playerId,
-                ...(cardId ? { cardId } : {}),
+                cardId: selectedCorpseLootCardId,
             });
             setInventoryPreviewCardId(null);
             setPreviewState((previousState) => ({
                 ...previousState,
+                selectedCorpseLootCardId: null,
+                selectedTradeTargetPlayerId: null,
                 interactionMode: 'default',
             }));
             return;
@@ -3369,11 +3413,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : isPreview
                     ? 'z-10'
                     : 'z-10 hover:-translate-y-0.5';
-        const modifierOutlineClass = 'bg-[rgba(238,244,168,0.04)]';
-        const modifierOutlineStyle = {
-            border: '2px solid #eef4a8',
-            boxShadow: 'none',
-        };
+        const outerRingClass = showSelectedState
+            ? 'ring-4 ring-[#eecc7e] shadow-[0_0_24px_rgba(238,204,126,0.48)]'
+            : canModifyRecentRoll
+                ? 'ring-4 ring-[#9fe1a7] shadow-[0_0_24px_rgba(159,225,167,0.52)]'
+                : '';
         return (
             <div
                 key={`${options.layout}-${item.id}`}
@@ -3401,17 +3445,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 className={`relative w-full overflow-visible text-left transition ${buttonOutlineClass}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
-                {showSelectedState ? (
-                    <div
-                        data-testid={options.testId ? `${options.testId}-selected-outline` : undefined}
-                        aria-hidden="true"
-                        className={`pointer-events-none absolute -inset-[4px] z-50 ${shellRadiusClass}`}
-                        style={{
-                            border: '2px solid #eecc7e',
-                            boxShadow: '0 0 0 1px rgba(32,22,10,0.92)',
-                        }}
-                    />
-                ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
@@ -3419,7 +3452,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ) : null}
                 <div
                     data-testid={options.testId ? `${options.testId}-shell` : undefined}
-                    className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} border ${
+                    data-selected-outline={showSelectedState ? 'true' : undefined}
+                    data-modifier-outline={canModifyRecentRoll && !showSelectedState ? 'true' : undefined}
+                    className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} ${outerRingClass} border ${
                         showSelectedState
                             ? 'border-transparent bg-transparent'
                             : frontVisual
@@ -3441,14 +3476,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             : {}),
                     }}
                 >
-                    {canModifyRecentRoll && !showSelectedState ? (
-                        <div
-                            data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
-                            aria-hidden="true"
-                            className={`pointer-events-none absolute inset-[3px] z-40 ${shellRadiusClass} ${modifierOutlineClass}`}
-                            style={modifierOutlineStyle}
-                        />
-                    ) : null}
                     {frontVisual ? (
                         <>
                             <div className={`absolute overflow-hidden ${
@@ -3819,7 +3846,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="grid gap-1.5">
                                 {core.otherExplorers.map((explorer) => {
                                     const isTradeCandidate = activeTradeTargets.some((item) => item.playerId === explorer.playerId);
-                                    const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId;
+                                    const isCorpseLootCandidate = corpseLootTargets.some((item) => item.playerId === explorer.playerId);
+                                    const isAttackTarget = hauntActionContext?.actionKind === 'attack-hero'
+                                        && hauntActionContext.targetPlayerId === explorer.playerId;
+                                    const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId
+                                        || explorer.playerId === selectedCorpseLootTargetPlayerId
+                                        || isAttackTarget;
                                     const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
                                     const isDogTradeTarget = dogTradeTargets.some((item) => item.playerId === explorer.playerId);
                                     const panel = (
@@ -3828,7 +3860,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             className={`grid grid-cols-[50px_minmax(0,1fr)_52px] items-center gap-2 rounded-[8px] px-1.5 py-2 transition ${
                                                 isSelectedTradeTarget
                                                     ? 'bg-transparent outline outline-[4px] outline-offset-[3px] outline-[#9fe1a7] shadow-[0_0_0_5px_rgba(255,255,221,0.30)]'
-                                                    : isTradeCandidate
+                                                    : isTradeCandidate || isCorpseLootCandidate || isAttackTarget
                                                         ? 'bg-transparent hover:bg-[rgba(255,224,138,0.06)]'
                                                         : 'bg-transparent'
                                             }`}
@@ -3847,7 +3879,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     <div className="truncate text-sm font-medium text-[#f1e8d4]">
                                                         {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
                                                     </div>
-                                                    {isTradeCandidate ? (
+                                                    {isTradeCandidate || isCorpseLootCandidate || isAttackTarget ? (
                                                         <span
                                                             className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                                                                 isSelectedTradeTarget
@@ -3855,7 +3887,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                     : 'bg-transparent text-[#bddac2]'
                                                             }`}
                                                         >
-                                                            {isDogTradeTarget && !isSameRoom ? t('board.inventory.dog') : isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
+                                                            {isAttackTarget
+                                                                ? t('board.actions.attack')
+                                                                : isCorpseLootCandidate
+                                                                    ? t('board.players.corpse')
+                                                                    : isDogTradeTarget && !isSameRoom
+                                                                        ? t('board.inventory.dog')
+                                                                        : isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
                                                         </span>
                                                     ) : null}
                                                 </div>
@@ -3877,7 +3915,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         </div>
                                     );
 
-                                    if (!isTradeCandidate) {
+                                    if (!isTradeCandidate && !isCorpseLootCandidate && !isAttackTarget) {
                                         return panel;
                                     }
 
@@ -3885,12 +3923,19 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         <button
                                             key={explorer.playerId}
                                             type="button"
-                                            onClick={() => setPreviewState((previousState) => ({
-                                                ...previousState,
-                                                selectedTradeTargetPlayerId: explorer.playerId,
-                                                tradeSelectionTouched: true,
-                                            }))}
-                                            data-testid={`betrayal-trade-target-${explorer.playerId}`}
+                                            onClick={() => {
+                                                if (isAttackTarget) {
+                                                    handleAttackAction('hero', explorer.playerId);
+                                                    return;
+                                                }
+                                                setPreviewState((previousState) => ({
+                                                    ...previousState,
+                                                    selectedTradeTargetPlayerId: explorer.playerId,
+                                                    selectedCorpseLootCardId: isCorpseLootCandidate ? null : previousState.selectedCorpseLootCardId,
+                                                    tradeSelectionTouched: true,
+                                                }));
+                                            }}
+                                            data-testid={isAttackTarget ? `betrayal-attack-hero-target-${explorer.playerId}` : isCorpseLootCandidate ? `betrayal-corpse-loot-target-${explorer.playerId}` : `betrayal-trade-target-${explorer.playerId}`}
                                             className="w-full cursor-pointer text-left"
                                         >
                                             {panel}
@@ -4232,7 +4277,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
+                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 0) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
                                 <div className="pointer-events-auto absolute left-1/2 top-[86px] z-50 flex max-w-[min(880px,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1">
                                     {roomFocusState ? (
                                         <button
@@ -4308,7 +4353,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             })}
                                         </div>
                                     ) : null}
-                                    {selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 1 ? (
+                                    {selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 0 ? (
                                         <div
                                             data-testid="betrayal-inventory-target-player-selector"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
@@ -4362,6 +4407,36 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         data-testid={`betrayal-attack-weapon-${card.id}`}
                                                         className={`min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-semibold shadow-none transition ${
                                                             isSelectedWeapon
+                                                                ? 'text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4'
+                                                                : 'text-[#d6c498] hover:text-[#f0dfad]'
+                                                        }`}
+                                                    >
+                                                        {card.name}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : null}
+                                    {selectedCorpseLootTarget ? (
+                                        <div
+                                            data-testid="betrayal-corpse-loot-card-selector"
+                                            className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+                                        >
+                                            <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">{t('board.players.corpse')}</span>
+                                            {selectedCorpseLootTarget.inventory.map((card) => {
+                                                const isSelectedLootCard = selectedCorpseLootCardId === card.id;
+                                                return (
+                                                    <button
+                                                        key={card.id}
+                                                        type="button"
+                                                        onClick={() => setPreviewState((previousState) => ({
+                                                            ...previousState,
+                                                            selectedCorpseLootCardId: card.id,
+                                                            tradeSelectionTouched: true,
+                                                        }))}
+                                                        data-testid={`betrayal-corpse-loot-card-${card.id}`}
+                                                        className={`min-h-[26px] rounded-none border-0 bg-transparent px-1 text-[11px] font-semibold shadow-none transition ${
+                                                            isSelectedLootCard
                                                                 ? 'text-[#eef4a8] underline decoration-[#c9a35e] underline-offset-4'
                                                                 : 'text-[#d6c498] hover:text-[#f0dfad]'
                                                         }`}
@@ -4923,7 +4998,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 <div className="mt-2 grid gap-1.5">
                                     {core.otherExplorers.map((explorer) => {
                                         const isTradeCandidate = tradeTargets.some((item) => item.playerId === explorer.playerId);
-                                        const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId;
+                                        const isCorpseLootCandidate = corpseLootTargets.some((item) => item.playerId === explorer.playerId);
+                                        const isAttackTarget = hauntActionContext?.actionKind === 'attack-hero'
+                                            && hauntActionContext.targetPlayerId === explorer.playerId;
+                                        const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId
+                                            || explorer.playerId === selectedCorpseLootTargetPlayerId
+                                            || isAttackTarget;
                                         const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
                                         const roomName = core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown');
                                         return (
@@ -4942,12 +5022,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 className={`group relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] px-1.5 py-1.5 text-left transition ${
                                                     isSelectedTradeTarget
                                                         ? 'bg-[linear-gradient(180deg,rgba(53,40,20,0.72),rgba(22,19,14,0.82))]'
-                                                        : 'hover:bg-[rgba(28,24,19,0.5)]'
+                                                        : isTradeCandidate || isCorpseLootCandidate || isAttackTarget
+                                                            ? 'hover:bg-[rgba(28,24,19,0.5)]'
+                                                            : 'hover:bg-[rgba(28,24,19,0.5)]'
                                                 }`}
                                                 title={`定位到 ${roomName}`}
                                             >
                                                 <div className={`relative h-[34px] w-[34px] overflow-hidden rounded-full border ${
-                                                    isTradeCandidate ? 'border-[rgba(118,189,153,0.62)]' : 'border-[rgba(117,98,68,0.42)]'
+                                                    isTradeCandidate || isCorpseLootCandidate || isAttackTarget ? 'border-[rgba(118,189,153,0.62)]' : 'border-[rgba(117,98,68,0.42)]'
                                                 } bg-[rgba(12,14,13,0.62)]`}>
                                                     <OptimizedImage
                                                         src={explorer.portraitAsset}
@@ -4967,13 +5049,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         <div className="truncate text-[11px] font-medium tracking-[0.04em] text-[#efe5cf]">
                                                             {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
                                                         </div>
-                                                        {isTradeCandidate ? (
+                                                        {isTradeCandidate || isCorpseLootCandidate || isAttackTarget ? (
                                                             <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] ${
                                                                 isSelectedTradeTarget
                                                                     ? 'bg-[#fff1a8] text-[#2a2108]'
                                                                     : 'bg-[rgba(40,63,50,0.18)] text-[#bddac2]'
                                                             }`}>
-                                                                {isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
+                                                                {isAttackTarget
+                                                                    ? t('board.actions.attack')
+                                                                    : isCorpseLootCandidate
+                                                                        ? t('board.players.corpse')
+                                                                        : isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
                                                             </span>
                                                         ) : null}
                                                     </div>

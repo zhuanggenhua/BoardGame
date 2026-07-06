@@ -344,6 +344,7 @@ export const useRuntimeViewport = (
     const { syncCssVars = true } = options;
     const [viewport, setViewport] = useState<RuntimeViewportMetrics>(() => readRuntimeViewportMetrics());
     const pendingViewportUpdateTimerRef = useRef<number | null>(null);
+    const delayedViewportUpdateTimerRefs = useRef<number[]>([]);
 
     useLayoutEffect(() => {
         if (!syncCssVars) {
@@ -371,10 +372,17 @@ export const useRuntimeViewport = (
             }
             pendingViewportUpdateTimerRef.current = window.setTimeout(flushViewportUpdate, 0);
         };
+        const scheduleDelayedViewportUpdate = () => {
+            scheduleViewportUpdate();
+            [80, 240, 600].forEach((delay) => {
+                const timer = window.setTimeout(flushViewportUpdate, delay);
+                delayedViewportUpdateTimerRefs.current.push(timer);
+            });
+        };
 
         scheduleViewportUpdate();
         window.addEventListener('resize', scheduleViewportUpdate);
-        window.addEventListener('orientationchange', scheduleViewportUpdate);
+        window.addEventListener('orientationchange', scheduleDelayedViewportUpdate);
         visualViewport?.addEventListener('resize', scheduleViewportUpdate);
 
         const attributeObserver = typeof MutationObserver === 'function'
@@ -414,8 +422,10 @@ export const useRuntimeViewport = (
                 window.clearTimeout(pendingViewportUpdateTimerRef.current);
                 pendingViewportUpdateTimerRef.current = null;
             }
+            delayedViewportUpdateTimerRefs.current.forEach((timer) => window.clearTimeout(timer));
+            delayedViewportUpdateTimerRefs.current = [];
             window.removeEventListener('resize', scheduleViewportUpdate);
-            window.removeEventListener('orientationchange', scheduleViewportUpdate);
+            window.removeEventListener('orientationchange', scheduleDelayedViewportUpdate);
             visualViewport?.removeEventListener('resize', scheduleViewportUpdate);
             attributeObserver?.disconnect();
         };

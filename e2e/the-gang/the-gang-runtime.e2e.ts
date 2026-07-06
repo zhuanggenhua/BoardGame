@@ -30,18 +30,19 @@ async function chooseChipsForSeats(page: Page, chipPrefix: string, playerCount: 
 }
 
 async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
+    await confirmProgressForSeats(page, buttonName, 3);
+}
+
+async function confirmProgressForSeats(page: Page, buttonName: string, playerCount: number) {
     const hotseatScope = buttonName === '下一次抢劫' ? 'showdown' : 'board';
-    await selectHotseat(page, '玩家 1', hotseatScope);
-    await page.getByRole('button', { name: buttonName }).click();
-    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(1);
-    await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
-
-    await selectHotseat(page, '玩家 2', hotseatScope);
-    await page.getByRole('button', { name: buttonName }).click();
-    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(2);
-
-    await selectHotseat(page, '玩家 3', hotseatScope);
-    await page.getByRole('button', { name: buttonName }).click();
+    for (let seat = 1; seat <= playerCount; seat += 1) {
+        await selectHotseat(page, `玩家 ${seat}`, hotseatScope);
+        await page.getByRole('button', { name: buttonName }).click();
+        if (seat < playerCount) {
+            await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(seat);
+            await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
+        }
+    }
 }
 
 async function expectChipRound(page: Page, chipPrefix: string) {
@@ -209,6 +210,119 @@ test.describe('The Gang 真实入口截图', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 6);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await game.screenshot('桌面6人满人数全员筹码已选', testInfo);
+    });
+
+    test('桌面端 6 人摊牌结算可滚动并显示完整公共牌和底牌', async ({ game, page }, testInfo) => {
+        test.setTimeout(180000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 6,
+            seed: 'the-gang-e2e-six-player-showdown',
+            seat1: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expectChipRoundForPlayerCount(page, '白筹码', 6);
+        await chooseChipsForSeats(page, '白筹码', 6);
+
+        await confirmProgressForSeats(page, '下一轮', 6);
+        await expectChipRoundForPlayerCount(page, '黄筹码', 6);
+        await chooseChipsForSeats(page, '黄筹码', 6);
+
+        await confirmProgressForSeats(page, '下一轮', 6);
+        await expectChipRoundForPlayerCount(page, '橙筹码', 6);
+        await chooseChipsForSeats(page, '橙筹码', 6);
+
+        await confirmProgressForSeats(page, '下一轮', 6);
+        await expectChipRoundForPlayerCount(page, '红筹码', 6);
+        await chooseChipsForSeats(page, '红筹码', 6);
+        await selectHotseat(page, '玩家 1');
+        await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
+
+        await confirmProgressForSeats(page, '摊牌', 6);
+
+        const revealZone = page.getByLabel('摊牌结算');
+        await expect(revealZone).toBeVisible();
+        await expect(revealZone).toHaveClass(/fixed/);
+        await expect(revealZone).toHaveClass(/inset-0/);
+        await expect(revealZone).toHaveClass(/overflow-y-auto/);
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-result"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-community-cards"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-hole-cards"]')).toBeVisible();
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-community-cards"] img', 5);
+        await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"]')).toHaveCount(6);
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 12);
+        await expect(page.locator('[data-bgg-zone="reveal-card"]')).toHaveCount(17);
+        const revealAnimationContract = await page.locator('[data-bgg-zone="reveal-card"]').evaluateAll((nodes) => nodes.map((node) => {
+            const element = node as HTMLElement;
+            return {
+                order: element.dataset.revealOrder,
+                animationDelay: element.style.animationDelay,
+                hasRevealAnimation: element.className.includes('the-gang-card-reveal'),
+            };
+        }));
+        expect(revealAnimationContract).toEqual([
+            { order: '0', animationDelay: '0ms', hasRevealAnimation: true },
+            { order: '1', animationDelay: '90ms', hasRevealAnimation: true },
+            { order: '2', animationDelay: '180ms', hasRevealAnimation: true },
+            { order: '3', animationDelay: '270ms', hasRevealAnimation: true },
+            { order: '4', animationDelay: '360ms', hasRevealAnimation: true },
+            { order: '5', animationDelay: '450ms', hasRevealAnimation: true },
+            { order: '6', animationDelay: '540ms', hasRevealAnimation: true },
+            { order: '7', animationDelay: '630ms', hasRevealAnimation: true },
+            { order: '8', animationDelay: '720ms', hasRevealAnimation: true },
+            { order: '9', animationDelay: '810ms', hasRevealAnimation: true },
+            { order: '10', animationDelay: '900ms', hasRevealAnimation: true },
+            { order: '11', animationDelay: '990ms', hasRevealAnimation: true },
+            { order: '12', animationDelay: '1080ms', hasRevealAnimation: true },
+            { order: '13', animationDelay: '1170ms', hasRevealAnimation: true },
+            { order: '14', animationDelay: '1260ms', hasRevealAnimation: true },
+            { order: '15', animationDelay: '1350ms', hasRevealAnimation: true },
+            { order: '16', animationDelay: '1440ms', hasRevealAnimation: true },
+        ]);
+        await expect(page.locator('[data-bgg-zone="top-zone"]').getByAltText('2♣')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="top-zone"]').getByAltText('6♣')).toHaveCount(0);
+
+        const revealMetrics = await page.locator('[data-bgg-zone="reveal-zone"]').evaluate((node) => {
+            const element = node as HTMLElement;
+            return {
+                clientHeight: element.clientHeight,
+                scrollTop: element.scrollTop,
+                scrollHeight: element.scrollHeight,
+            };
+        });
+        expect(revealMetrics.scrollTop).toBe(0);
+        expect(revealMetrics.scrollHeight).toBeGreaterThan(revealMetrics.clientHeight);
+        expect(revealMetrics.clientHeight).toBe(768);
+        const handCoverTarget = await page.locator('[data-bgg-zone="hand-groupzone"]').evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            const topElement = document.elementFromPoint(x, y);
+            return {
+                point: { x, y },
+                isInsideReveal: !!topElement?.closest('[data-bgg-zone="reveal-zone"]'),
+                topZone: topElement?.closest('[data-bgg-zone]')?.getAttribute('data-bgg-zone') ?? null,
+                topTestId: topElement?.closest('[data-testid]')?.getAttribute('data-testid') ?? null,
+            };
+        });
+        expect(handCoverTarget.isInsideReveal).toBe(true);
+        expect(handCoverTarget.topZone).not.toBe('hand-groupzone');
+        await page.locator('[data-bgg-zone="reveal-zone"]').evaluate((node) => {
+            const element = node as HTMLElement;
+            element.scrollTo({ top: element.scrollHeight, behavior: 'instant' });
+        });
+        const scrolledRevealMetrics = await page.locator('[data-bgg-zone="reveal-zone"]').evaluate((node) => {
+            const element = node as HTMLElement;
+            return {
+                clientHeight: element.clientHeight,
+                scrollHeight: element.scrollHeight,
+                scrollTop: element.scrollTop,
+            };
+        });
+        expect(scrolledRevealMetrics.scrollTop).toBeGreaterThan(0);
+        await expect(page.getByRole('button', { name: '下一次抢劫' })).toBeInViewport();
+        await game.screenshot('桌面6人摊牌结算完整公共牌和底牌', testInfo);
     });
 
     test('移动横屏可操作并保留行为日志和撤回入口', async ({ game, page }, testInfo) => {

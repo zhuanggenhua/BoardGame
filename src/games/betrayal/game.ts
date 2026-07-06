@@ -3692,11 +3692,11 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         case BETRAYAL_COMMANDS.LOOT_CORPSE: {
             const corpseTargets = resolveCorpseLootTargets(core);
-            const sourcePlayerId = command.payload.sourcePlayerId ?? corpseTargets[0]?.playerId;
-            const sourceExplorer = corpseTargets.find((explorer) => explorer.playerId === sourcePlayerId) ?? corpseTargets[0];
-            const cardId = command.payload.cardId ?? sourceExplorer?.inventory[0]?.id;
+            const sourcePlayerId = command.payload.sourcePlayerId;
+            const sourceExplorer = corpseTargets.find((explorer) => explorer.playerId === sourcePlayerId);
+            const cardId = command.payload.cardId;
             if (!sourcePlayerId || !sourceExplorer || !cardId) {
-                return { valid: false, error: '当前没有可搜刮的同房间尸体。' };
+                return { valid: false, error: '搜刮尸体必须先选择尸体和具体持有物。' };
             }
             if (!sourceExplorer.inventory.some((card) => card.id === cardId)) {
                 return { valid: false, error: '该尸体上没有这件物品或预兆。' };
@@ -4512,10 +4512,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         }
         case BETRAYAL_COMMANDS.LOOT_CORPSE: {
             const corpseTargets = resolveCorpseLootTargets(core);
-            const source = corpseTargets.find((item) => item.playerId === command.payload.sourcePlayerId)
-                ?? corpseTargets[0]!;
-            const card = source.inventory.find((item) => item.id === command.payload.cardId)
-                ?? source.inventory[0]!;
+            const source = corpseTargets.find((item) => item.playerId === command.payload.sourcePlayerId)!;
+            const card = source.inventory.find((item) => item.id === command.payload.cardId)!;
             return [nowEvent(EVENTS.CORPSE_LOOTED, {
                 playerId: command.playerId,
                 sourcePlayerId: source.playerId,

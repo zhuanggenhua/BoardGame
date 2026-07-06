@@ -4,6 +4,8 @@ import type { GameBoardProps } from '../../engine/transport/protocol';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorialBridge } from '../../contexts/TutorialContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
+import { EndgameOverlay, type ContentSlotProps } from '../../components/game/framework/widgets/EndgameOverlay';
+import { useEndgame } from '../../hooks/game/useEndgame';
 import { formatCard } from './domain/cards';
 import { TEXAS_HOLDEM_HAND_RANK_RULES, type PokerHandRankRule } from './domain/poker';
 import {
@@ -134,11 +136,13 @@ function CardFace({
     card,
     hidden = false,
     emphasis = 'table',
+    revealOrder,
     t,
 }: {
     card?: PlayingCard;
     hidden?: boolean;
     emphasis?: CardFaceEmphasis;
+    revealOrder?: number;
     t: TFunction;
 }) {
     const sizeClassByEmphasis: Record<CardFaceEmphasis, string> = {
@@ -149,9 +153,25 @@ function CardFace({
     };
     const sizeClass = sizeClassByEmphasis[emphasis];
 
+    const revealDelayMs = revealOrder === undefined ? undefined : `${Math.min(revealOrder, 32) * 90}ms`;
+    const revealClass = revealOrder === undefined
+        ? ''
+        : ' motion-safe:animate-[the-gang-card-reveal_520ms_cubic-bezier(0.2,0.8,0.2,1)_both] motion-reduce:animate-none';
+    const revealStyle = revealDelayMs === undefined ? undefined : { animationDelay: revealDelayMs };
+    const revealProps = revealOrder === undefined
+        ? {}
+        : {
+            'data-bgg-zone': 'reveal-card',
+            'data-reveal-order': String(revealOrder),
+            style: revealStyle,
+        };
+
     if (hidden || !card) {
         return (
-            <div className={`${sizeClass} overflow-hidden rounded-md bg-slate-800 shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/70`}>
+            <div
+                className={`${sizeClass} overflow-hidden rounded-md bg-slate-800 shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/70${revealClass}`}
+                {...revealProps}
+            >
                 <OptimizedImage
                     src={CARD_BACK_ASSET_PATH}
                     alt={t('board.cardBackAlt')}
@@ -164,7 +184,10 @@ function CardFace({
     }
 
     return (
-        <div className={`${sizeClass} overflow-hidden rounded-md bg-white shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/75`}>
+        <div
+            className={`${sizeClass} overflow-hidden rounded-md bg-white shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/75${revealClass}`}
+            {...revealProps}
+        >
             <OptimizedImage
                 src={getCardAssetPath(card)}
                 alt={formatCard(card)}
@@ -397,15 +420,16 @@ function ShowdownResultPanel({
 }) {
     const success = lastShowdown.outcome === 'success';
     const { t } = useTranslation('game-the-gang');
+    const playerResultIndex = new Map(lastShowdown.results.map((result, index) => [result.playerId, index]));
 
     return (
         <section
-            className="pointer-events-auto fixed inset-0 z-[80] flex min-h-dvh items-center justify-center overflow-y-auto bg-[radial-gradient(circle_at_50%_44%,rgba(17,24,39,0.92),rgba(5,9,8,0.86)_50%,rgba(5,9,8,0.78)_100%)] px-4 py-6 [text-shadow:0_2px_8px_rgba(0,0,0,0.9)] backdrop-blur-md md:px-6 md:py-8"
+            className="pointer-events-auto fixed inset-0 z-[80] h-dvh overflow-y-auto overscroll-contain bg-[#06110d] bg-[radial-gradient(circle_at_50%_18%,rgba(251,191,36,0.18),transparent_28%),radial-gradient(circle_at_50%_58%,rgba(6,78,59,0.72),rgba(6,17,13,0.98)_62%,#06110d_100%)] px-3 py-4 [text-shadow:0_2px_8px_rgba(0,0,0,0.9)] md:px-6 md:py-6"
             data-bgg-zone="reveal-zone"
             aria-label={t('board.showdownSettlement')}
         >
             <div
-                className="relative flex w-full max-w-[82rem] flex-col items-center justify-center gap-5 rounded-[2rem] border border-amber-100/18 bg-emerald-950/42 px-3 py-5 shadow-[0_30px_90px_rgba(0,0,0,0.45)] md:px-6 md:py-7"
+                className="relative mx-auto flex min-h-full w-full max-w-[104rem] flex-col items-center justify-start gap-4 overflow-visible px-1 py-4 md:gap-5 md:px-3 md:py-6"
                 data-bgg-zone="reveal-action"
                 data-tutorial-id="the-gang-showdown-result"
             >
@@ -419,7 +443,7 @@ function ShowdownResultPanel({
                 </div>
 
                 <div
-                    className="flex w-full flex-col items-center gap-2 rounded-2xl border border-amber-100/14 bg-emerald-950/48 px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.28)]"
+                    className="flex w-full flex-col items-center gap-2 overflow-visible px-2 py-2"
                     data-bgg-zone="reveal-community-cards"
                     data-tutorial-id="the-gang-showdown-community-cards"
                     aria-label={t('board.communityCards')}
@@ -433,6 +457,7 @@ function ShowdownResultPanel({
                                 key={`${card.rank}-${card.suit}-${index}`}
                                 card={card}
                                 emphasis="showdown"
+                                revealOrder={index}
                                 t={t}
                             />
                         ))}
@@ -440,14 +465,14 @@ function ShowdownResultPanel({
                 </div>
 
                 <div
-                    className="grid w-full grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+                    className="grid w-full max-w-[72rem] grid-cols-1 gap-4 overflow-visible md:grid-cols-2"
                     data-bgg-zone="reveal-players"
                     data-tutorial-id="the-gang-showdown-hole-cards"
                 >
                     {lastShowdown.results.map((result) => (
                         <div
                             key={result.playerId}
-                            className="flex min-w-0 flex-col gap-3 rounded-2xl bg-emerald-950/62 px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.32)] ring-1 ring-amber-100/14 md:px-4 md:py-4"
+                            className="flex min-w-0 flex-col gap-3 overflow-visible rounded-[1.25rem] bg-emerald-950/34 px-3 py-3 outline outline-1 outline-amber-100/10 shadow-[0_0_34px_rgba(251,191,36,0.14),0_14px_34px_rgba(0,0,0,0.28)] md:px-4 md:py-4"
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <span className="truncate text-sm font-black text-stone-100 md:text-base">{playerName(result.playerId)}</span>
@@ -457,18 +482,19 @@ function ShowdownResultPanel({
                                 </div>
                             </div>
                             <div
-                                className="flex justify-center gap-2 md:gap-3"
+                                className="flex justify-center gap-2 overflow-visible md:gap-3"
                                 data-bgg-zone="reveal-pocket-cards"
                                 aria-label={`${playerName(result.playerId)} ${result.strength.label}`}
                             >
                                 {result.pocketCards.map((card, index) => (
                                     <CardFace
-                                        key={`${result.playerId}-${card.rank}-${card.suit}-${index}`}
-                                        card={card}
-                                        emphasis="showdown"
-                                        t={t}
-                                    />
-                                ))}
+                                key={`${result.playerId}-${card.rank}-${card.suit}-${index}`}
+                                card={card}
+                                emphasis="showdown"
+                                        revealOrder={communityCards.length + (playerResultIndex.get(result.playerId) ?? 0) * 2 + index}
+                                t={t}
+                            />
+                        ))}
                             </div>
                         </div>
                     ))}
@@ -604,10 +630,60 @@ function HandChipStrip({
     );
 }
 
-export default function TheGangBoard({ G, dispatch, playerID, matchData, isMultiplayer }: Props) {
+function TheGangEndgameContent({
+    result,
+    successes,
+    failures,
+}: ContentSlotProps & {
+    successes: number;
+    failures: number;
+}) {
+    const clearedAllCases = Array.isArray(result?.winners) && result.winners.length > 0;
+    const title = clearedAllCases ? '全部结案' : '行动失败';
+    const subtitle = clearedAllCases
+        ? '纸牌帮完成三起案件，所有人共同胜利。'
+        : '警报累积到三次，纸牌帮这次没能全身而退。';
+
+    return (
+        <div className="mb-6 text-center">
+            <div className="mb-3 inline-flex rounded-full border border-amber-200/40 bg-amber-200/12 px-4 py-1 text-xs font-black tracking-[0.18em] text-amber-100 shadow-[0_0_24px_rgba(245,158,11,0.28)]">
+                THE GANG
+            </div>
+            <h2
+                data-testid="the-gang-endgame-title"
+                className={[
+                    'text-4xl font-black tracking-[0.2em] drop-shadow-[0_5px_18px_rgba(0,0,0,0.85)] md:text-5xl',
+                    clearedAllCases ? 'text-emerald-300' : 'text-rose-300',
+                ].join(' ')}
+            >
+                {title}
+            </h2>
+            <p className="mt-3 text-base font-bold text-stone-100 drop-shadow-lg md:text-lg">
+                {subtitle}
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-3 text-sm font-black tracking-[0.12em]">
+                <span className="rounded-full border border-emerald-300/40 bg-emerald-300/12 px-4 py-2 text-emerald-100">
+                    结案 {successes} / 3
+                </span>
+                <span className="rounded-full border border-rose-300/40 bg-rose-300/12 px-4 py-2 text-rose-100">
+                    警报 {failures} / 3
+                </span>
+            </div>
+        </div>
+    );
+}
+
+export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, isMultiplayer }: Props) {
     const core = G.core;
     const { t } = useTranslation('game-the-gang');
     useTutorialBridge(G.sys.tutorial, dispatch);
+    const { overlayProps: endgameProps } = useEndgame({
+        result: G.sys.gameover || undefined,
+        playerID,
+        reset,
+        matchData,
+        isMultiplayer,
+    });
 
     const [hotseatPlayerId, setHotseatPlayerId] = useState(core.playerIds[0]);
     const resolvedHotseatPlayerId = core.playerIds.includes(hotseatPlayerId)
@@ -691,14 +767,14 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
 
                 <section className="relative z-10 flex min-h-0 flex-1 flex-col gap-1 lg:gap-2 xl:gap-3" data-testid="the-gang-bgg-board">
                     <section
-                        className="flex shrink-0 justify-evenly gap-3 lg:gap-6"
+                        className="flex shrink-0 justify-evenly gap-3 overflow-visible lg:gap-6"
                         data-bgg-zone="top-zone"
                         data-tutorial-id="the-gang-player-list"
                     >
                         {core.playerIds.map((id) => {
                             const player = core.players[id];
                             const isSelf = id === localPlayerId;
-                            const visible = core.phase !== 'chip-selection' || isSelf;
+                            const visible = core.phase !== 'chip-selection' && !isSelf;
                             return (
                                 <div
                                     key={id}
@@ -727,13 +803,13 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                     </section>
 
                     <section
-                        className="flex min-h-0 flex-[0.82] items-center justify-center overflow-hidden"
+                        className="relative z-20 flex min-h-0 flex-[0.82] items-center justify-center overflow-visible"
                         data-tutorial-id="the-gang-round-panel"
                         data-bgg-zone="middle-zone"
                     >
-                        <div className="flex min-h-0 flex-col items-center gap-3 lg:gap-6" data-bgg-zone="middle-center">
+                        <div className="relative z-20 flex min-h-0 flex-col items-center gap-3 overflow-visible lg:gap-6" data-bgg-zone="middle-center">
                             <div
-                                className="flex w-full max-w-[29rem] flex-wrap items-center justify-center gap-3 lg:max-w-[44rem] lg:gap-5"
+                                className="relative z-30 flex w-full max-w-[29rem] flex-wrap items-center justify-center gap-3 overflow-visible lg:max-w-[44rem] lg:gap-5"
                                 data-tutorial-id="the-gang-chip-row"
                                 data-bgg-zone="token-pile"
                             >
@@ -759,7 +835,7 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                         </div>
                     </section>
 
-                    <section className="relative z-10 flex shrink-0 items-end justify-center pb-1 lg:pb-2" data-bgg-zone="bottom-zone">
+                    <section className="relative z-10 flex shrink-0 items-end justify-center overflow-visible pb-1 lg:pb-2" data-bgg-zone="bottom-zone">
                         <VaultsAlarmsZone successes={core.successes} failures={core.failures} />
                         <HandRankReference />
 
@@ -781,7 +857,7 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                             </div>
                         </div>
 
-                        <div className="absolute bottom-1 right-1 flex min-w-[5rem] flex-col items-center gap-1 lg:bottom-2 lg:right-2">
+                        <div className="absolute bottom-1 right-24 flex min-w-[7rem] flex-col items-center gap-1 lg:bottom-2 lg:right-28" data-bgg-zone="action-dock">
                             {core.phase === 'chip-selection' && core.round < 4 && (
                                 <button
                                     type="button"
@@ -861,7 +937,36 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                     </aside>
                 </section>
             </section>
+            <EndgameOverlay
+                {...endgameProps}
+                renderContent={(props) => (
+                    <TheGangEndgameContent
+                        {...props}
+                        successes={core.successes}
+                        failures={core.failures}
+                    />
+                )}
+            />
         </main>
+        <style>{`
+            @keyframes the-gang-card-reveal {
+                0% {
+                    opacity: 0;
+                    transform: perspective(42rem) rotateY(78deg) translateY(0.65rem) scale(0.94);
+                    filter: brightness(0.72) saturate(0.85);
+                }
+                54% {
+                    opacity: 1;
+                    transform: perspective(42rem) rotateY(-8deg) translateY(-0.1rem) scale(1.03);
+                    filter: brightness(1.12) saturate(1.08);
+                }
+                100% {
+                    opacity: 1;
+                    transform: perspective(42rem) rotateY(0deg) translateY(0) scale(1);
+                    filter: brightness(1) saturate(1);
+                }
+            }
+        `}</style>
         </UndoProvider>
     );
 }

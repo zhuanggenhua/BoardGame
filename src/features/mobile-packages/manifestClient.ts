@@ -130,6 +130,7 @@ interface RemotePackInfo {
     url?: string | null;
     checksum?: string | null;
     bytes?: number | null;
+    fallbackBytes?: number | null;
     fileCount?: number | null;
     fileIndexUrl?: string | null;
     fileIndexChecksum?: string | null;
@@ -236,6 +237,8 @@ const applyRemotePack = (
 
     const remoteDiffOnly = remotePack?.diffOnly === true;
     const shouldUseFallbackBundle = !remoteDiffOnly;
+    const remoteBytes = normalizeOptionalRemoteNumber(remotePack?.bytes);
+    const remoteFallbackBytes = normalizeOptionalRemoteNumber(remotePack?.fallbackBytes);
 
     return {
         id: normalizeOptionalString(remotePack?.id) ?? fallbackId,
@@ -245,7 +248,7 @@ const applyRemotePack = (
         fileIndexUrl: normalizeOptionalHttpUrl(remotePack?.fileIndexUrl) ?? fallbackFileIndexUrl,
         fileIndexChecksum: normalizeOptionalString(remotePack?.fileIndexChecksum) ?? fallbackFileIndexChecksum,
         diffOnly: typeof remotePack?.diffOnly === 'boolean' ? remotePack.diffOnly : fallbackDiffOnly,
-        bytes: normalizeOptionalRemoteNumber(remotePack?.bytes) ?? (shouldUseFallbackBundle ? fallbackBytes : undefined),
+        bytes: remoteBytes ?? remoteFallbackBytes ?? (shouldUseFallbackBundle ? fallbackBytes : undefined),
         fileCount: normalizeOptionalRemoteNumber(remotePack?.fileCount) ?? fallbackFileCount,
     };
 };

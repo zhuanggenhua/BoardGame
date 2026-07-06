@@ -15,6 +15,7 @@ import React, {
 import type { GameMobileBattlefieldZoom } from '../../../games/manifest.types';
 import { isNativeAndroidRuntime } from '../../../lib/mobile/androidRuntime';
 import { logMobileRuntimeCritical } from '../../../lib/mobile/mobileRuntimeDebug';
+import { shouldReserveSystemBackGesture } from '../../../lib/mobile/systemBackGesture';
 
 interface MobileBoardShellProps {
     children: ReactNode;
@@ -378,6 +379,7 @@ export const MobileBattlefieldViewport = ({
     const shouldLockTouchGestures = isEnabled && transform.scale > MIN_SCALE;
     const supportsTouchPointerEvents = typeof window !== 'undefined' && typeof window.PointerEvent !== 'undefined';
     const shouldUseTouchFallback = isEnabled && !supportsTouchPointerEvents;
+    const shouldReserveNativeBackGesture = isEnabled && isNativeAndroidRuntime();
     const childCount = React.Children.count(children);
     const singleChild = childCount === 1 ? React.Children.only(children) : null;
     const hasDedicatedZoomTarget = transformTarget === 'content' && isValidElement<ZoomTargetElementProps>(singleChild);
@@ -712,6 +714,16 @@ export const MobileBattlefieldViewport = ({
             return;
         }
 
+        if (
+            Array.from(event.changedTouches).some((touch) => shouldReserveSystemBackGesture({
+                enabled: shouldReserveNativeBackGesture,
+                clientX: touch.clientX,
+                viewportWidth: window.innerWidth,
+            }))
+        ) {
+            return;
+        }
+
         let handled = false;
         for (const touch of Array.from(event.changedTouches)) {
             handled = beginTrackedPoint(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY }) || handled;
@@ -721,7 +733,7 @@ export const MobileBattlefieldViewport = ({
             event.preventDefault();
             event.stopPropagation();
         }
-    }, [beginTrackedPoint, shouldUseTouchFallback]);
+    }, [beginTrackedPoint, shouldReserveNativeBackGesture, shouldUseTouchFallback]);
 
     const onTouchMove = useCallback((event: ReactTouchEvent<HTMLElement>) => {
         if (!shouldUseTouchFallback) {
@@ -754,12 +766,20 @@ export const MobileBattlefieldViewport = ({
             return;
         }
 
+        if (shouldReserveSystemBackGesture({
+            enabled: shouldReserveNativeBackGesture,
+            clientX: event.clientX,
+            viewportWidth: window.innerWidth,
+        })) {
+            return;
+        }
+
         const point = { clientX: event.clientX, clientY: event.clientY };
         if (beginTrackedPoint(event.pointerId, point)) {
             event.preventDefault();
             event.stopPropagation();
         }
-    }, [beginTrackedPoint, isEnabled]);
+    }, [beginTrackedPoint, isEnabled, shouldReserveNativeBackGesture]);
 
     const onPointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
         if (!isEnabled || event.pointerType !== 'touch' || !surfaceRef.current) {

@@ -5,6 +5,7 @@ import { resolveAndroidBackNavigationAction } from '../../lib/mobile/androidBack
 import { resolveInAppUrlPath } from '../../lib/mobile/appUrlRouting';
 import { dispatchAppVisibilityChange } from '../../lib/mobile/appVisibility';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
+import { shouldReserveSystemBackGesture } from '../../lib/mobile/systemBackGesture';
 import { isTextEntrySessionElement } from '../../lib/textEntry';
 
 type PluginListenerHandle = {
@@ -30,6 +31,17 @@ type CapacitorAppPluginModule = {
         exitApp(): Promise<void>;
     };
 };
+
+type EdgeSwipeState = {
+    pointerId: number;
+    startX: number;
+    startY: number;
+    edge: 'left' | 'right';
+    triggered: boolean;
+};
+
+const EDGE_BACK_SWIPE_DISTANCE_PX = 56;
+const EDGE_BACK_SWIPE_MAX_VERTICAL_DRIFT_PX = 44;
 
 let capacitorAppPluginLoader: Promise<CapacitorAppPluginModule | null> | null = null;
 
@@ -73,6 +85,7 @@ export const AndroidBackNavigationBridge = () => {
     const { stack, closeTop } = useModalStack();
     const topEntry = stack[stack.length - 1];
     const lastHandledUrlRef = useRef<string | null>(null);
+    const edgeSwipeRef = useRef<EdgeSwipeState | null>(null);
 
     const navigateFromAppUrl = useEffectEvent((url: string, options?: { replace?: boolean }) => {
         const resolvedPath = resolveInAppUrlPath(url);
@@ -94,11 +107,6 @@ export const AndroidBackNavigationBridge = () => {
     });
 
     const handleBackNavigation = useEffectEvent(async () => {
-        const appPluginModule = await loadCapacitorAppPlugin();
-        if (!appPluginModule) {
-            return;
-        }
-
         const action = resolveAndroidBackNavigationAction({
             pathname: location.pathname,
             search: location.search,
@@ -133,6 +141,11 @@ export const AndroidBackNavigationBridge = () => {
 
         if (action.type === 'fallback-route') {
             navigate(action.path, { replace: true });
+            return;
+        }
+
+        const appPluginModule = await loadCapacitorAppPlugin();
+        if (!appPluginModule) {
             return;
         }
 
@@ -187,6 +200,90 @@ export const AndroidBackNavigationBridge = () => {
             for (const listenerHandle of listenerHandles) {
                 void listenerHandle.remove().catch(() => {});
             }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isNativeAndroidRuntime() || typeof window === 'undefined' || typeof document === 'undefined') {
+            return;
+        }
+
+        const resolveViewportWidth = () => (
+            Number.isFinite(window.innerWidth) && window.innerWidth > 0
+                ? window.innerWidth
+                : document.documentElement.clientWidth
+        );
+
+        const beginEdgeSwipe = (pointerId: number, clientX: number, clientY: number) => {
+            const viewportWidth = resolveViewportWidth();
+            if (!shouldReserveSystemBackGesture({ enabled: true, clientX, viewportWidth })) {
+                edgeSwipeRef.current = null;
+                return;
+            }
+
+            edgeSwipeRef.current = {
+                pointerId,
+                startX: clientX,
+                startY: clientY,
+                edge: clientX <= viewportWidth / 2 ? 'left' : 'right',
+                triggered: false,
+            };
+        };
+
+        const updateEdgeSwipe = (pointerId: number, clientX: number, clientY: number, event: Event) => {
+            const edgeSwipe = edgeSwipeRef.current;
+            if (!edgeSwipe || edgeSwipe.pointerId !== pointerId || edgeSwipe.triggered) {
+                return;
+            }
+
+            const deltaX = clientX - edgeSwipe.startX;
+            const deltaY = Math.abs(clientY - edgeSwipe.startY);
+            const horizontalTravel = edgeSwipe.edge === 'left' ? deltaX : -deltaX;
+            if (horizontalTravel < EDGE_BACK_SWIPE_DISTANCE_PX || deltaY > EDGE_BACK_SWIPE_MAX_VERTICAL_DRIFT_PX) {
+                return;
+            }
+
+            edgeSwipe.triggered = true;
+            event.preventDefault();
+            event.stopPropagation();
+            void handleBackNavigation();
+        };
+
+        const finishEdgeSwipe = (pointerId: number) => {
+            if (edgeSwipeRef.current?.pointerId === pointerId) {
+                edgeSwipeRef.current = null;
+            }
+        };
+
+        const handlePointerDown = (event: PointerEvent) => {
+            if (event.pointerType !== 'touch' || (event.isPrimary === false && edgeSwipeRef.current !== null)) {
+                return;
+            }
+            beginEdgeSwipe(event.pointerId, event.clientX, event.clientY);
+        };
+
+        const handlePointerMove = (event: PointerEvent) => {
+            if (event.pointerType !== 'touch') {
+                return;
+            }
+            updateEdgeSwipe(event.pointerId, event.clientX, event.clientY, event);
+        };
+
+        const handlePointerFinish = (event: PointerEvent) => {
+            finishEdgeSwipe(event.pointerId);
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        document.addEventListener('pointermove', handlePointerMove, true);
+        document.addEventListener('pointerup', handlePointerFinish, true);
+        document.addEventListener('pointercancel', handlePointerFinish, true);
+
+        return () => {
+            edgeSwipeRef.current = null;
+            document.removeEventListener('pointerdown', handlePointerDown, true);
+            document.removeEventListener('pointermove', handlePointerMove, true);
+            document.removeEventListener('pointerup', handlePointerFinish, true);
+            document.removeEventListener('pointercancel', handlePointerFinish, true);
         };
     }, []);
 

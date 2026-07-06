@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { shouldReserveSystemBackGesture } from '../../../../lib/mobile/systemBackGesture';
 import { MobileBattlefieldViewport, MobileBoardShell } from '../MobileBoardShell';
 
 describe('MobileBoardShell', () => {
@@ -23,6 +24,7 @@ describe('MobileBoardShell', () => {
     });
 
     afterEach(() => {
+        Reflect.deleteProperty(window, '__BG_E2E_NATIVE_ANDROID_RUNTIME__');
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
             writable: true,
@@ -707,6 +709,84 @@ describe('MobileBoardShell', () => {
                 pointerType: 'touch',
                 clientX: 260,
                 clientY: 120,
+            });
+        });
+
+        expect(viewport.getAttribute('data-battlefield-zoom-scale')).toBe('1.000');
+        expect(viewport.getAttribute('data-battlefield-touch-mode')).toBe('native-pan');
+    });
+
+    it('reserves the left and right Android system back gesture edges from battlefield gestures', () => {
+        expect(shouldReserveSystemBackGesture({
+            enabled: true,
+            clientX: 12,
+            viewportWidth: 360,
+        })).toBe(true);
+
+        expect(shouldReserveSystemBackGesture({
+            enabled: true,
+            clientX: 348,
+            viewportWidth: 360,
+        })).toBe(true);
+
+        expect(shouldReserveSystemBackGesture({
+            enabled: true,
+            clientX: 180,
+            viewportWidth: 360,
+        })).toBe(false);
+
+        expect(shouldReserveSystemBackGesture({
+            enabled: false,
+            clientX: 12,
+            viewportWidth: 360,
+        })).toBe(false);
+    });
+
+    it('does not capture Android edge swipes into battlefield pinch tracking', () => {
+        Object.defineProperty(window, '__BG_E2E_NATIVE_ANDROID_RUNTIME__', {
+            configurable: true,
+            value: true,
+        });
+        Object.defineProperty(window, 'innerWidth', {
+            configurable: true,
+            writable: true,
+            value: 900,
+        });
+
+        render(
+            <MobileBattlefieldViewport zoomMode="shell-pinch-pan" testId="battlefield">
+                <div>board</div>
+            </MobileBattlefieldViewport>,
+        );
+
+        const viewport = screen.getByTestId('battlefield');
+        act(() => {
+            fireEvent.pointerDown(viewport, {
+                pointerId: 1,
+                pointerType: 'touch',
+                clientX: 8,
+                clientY: 180,
+            });
+            fireEvent.pointerDown(viewport, {
+                pointerId: 2,
+                pointerType: 'touch',
+                clientX: 220,
+                clientY: 180,
+            });
+        });
+
+        act(() => {
+            fireEvent.pointerMove(viewport, {
+                pointerId: 1,
+                pointerType: 'touch',
+                clientX: 2,
+                clientY: 180,
+            });
+            fireEvent.pointerMove(viewport, {
+                pointerId: 2,
+                pointerType: 'touch',
+                clientX: 320,
+                clientY: 180,
             });
         });
 

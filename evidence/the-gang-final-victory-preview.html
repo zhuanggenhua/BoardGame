@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Gang 全部结案</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    color: #f8f1dd;
+    background:
+      radial-gradient(circle at 50% 14%, rgba(251, 191, 36, .24), transparent 28%),
+      radial-gradient(circle at 50% 58%, rgba(6, 78, 59, .82), rgba(6, 17, 13, .98) 62%, #06110d 100%);
+  }
+  .table {
+    position: relative;
+    width: 1440px;
+    height: 900px;
+    background:
+      radial-gradient(circle at 50% 36%, rgba(245,214,132,.16), transparent 36%),
+      radial-gradient(circle at 50% 112%, rgba(5,8,5,.55), transparent 42%),
+      linear-gradient(90deg, rgba(245,214,132,.06), transparent 18%, transparent 82%, rgba(245,214,132,.06)),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.028) 0, rgba(255,255,255,.028) 1px, transparent 1px, transparent 20px),
+      #203b23;
+  }
+  .players { position: absolute; top: 38px; left: 110px; right: 110px; display: flex; justify-content: space-between; }
+  .player { width: 250px; text-align: center; opacity: .82; }
+  .name { font-size: 18px; font-weight: 900; letter-spacing: .08em; }
+  .chips { margin-top: 12px; display: flex; justify-content: center; gap: 7px; }
+  .chip { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #1b170d; font-weight: 900; box-shadow: 0 8px 18px rgba(0,0,0,.38); }
+  .white { background: #f8f4e6; } .yellow { background: #facc15; } .orange { background: #fb923c; } .red { background: #f43f5e; }
+  .river { position: absolute; top: 312px; left: 50%; transform: translateX(-50%); display: flex; gap: 22px; }
+  .card { width: 118px; height: 168px; border-radius: 14px; background: #f4ead4; color: #1d2a1f; border: 3px solid rgba(255,255,255,.68); box-shadow: 0 18px 38px rgba(0,0,0,.48); display: grid; place-items: center; font-weight: 950; font-size: 34px; }
+  .hand { position: absolute; bottom: 72px; left: 50%; transform: translateX(-50%); display: flex; align-items: end; gap: 34px; }
+  .vaults { position: absolute; left: 80px; bottom: 80px; display: flex; flex-direction: column; gap: 14px; font-size: 18px; font-weight: 950; letter-spacing: .12em; }
+  .vault-row { display: flex; gap: 10px; align-items: center; }
+  .badge { min-width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.08); }
+  .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .panel { text-align: center; max-width: 760px; padding: 42px 56px; border-radius: 36px; background: rgba(6, 17, 13, .48); border: 1px solid rgba(251, 191, 36, .26); box-shadow: 0 34px 110px rgba(0,0,0,.56), 0 0 70px rgba(16,185,129,.22); backdrop-filter: blur(10px); }
+  .kicker { display: inline-flex; padding: 7px 20px; border-radius: 999px; border: 1px solid rgba(253,230,138,.45); background: rgba(253,230,138,.13); color: #fde68a; font-size: 14px; font-weight: 950; letter-spacing: .22em; box-shadow: 0 0 24px rgba(245,158,11,.28); }
+  h1 { margin: 22px 0 0; color: #6ee7b7; font-size: 76px; line-height: 1; font-weight: 1000; letter-spacing: .22em; text-shadow: 0 6px 22px rgba(0,0,0,.9), 0 0 32px rgba(16,185,129,.36); }
+  .subtitle { margin: 22px 0 0; font-size: 24px; font-weight: 900; text-shadow: 0 3px 12px rgba(0,0,0,.8); }
+  .score { margin-top: 34px; display: flex; justify-content: center; gap: 18px; font-size: 18px; font-weight: 950; letter-spacing: .14em; }
+  .score span { padding: 14px 24px; border-radius: 999px; border: 1px solid rgba(255,255,255,.24); background: rgba(255,255,255,.08); }
+  .score .ok { color: #d1fae5; border-color: rgba(110,231,183,.42); background: rgba(110,231,183,.13); }
+  .score .warn { color: #ffe4e6; border-color: rgba(253,164,175,.38); background: rgba(251,113,133,.12); }
+</style>
+</head>
+<body>
+  <div class="table">
+    <div class="players">
+      <div class="player"><div class="name">玩家 1</div><div class="chips"><b class="chip white">1</b><b class="chip yellow">1</b><b class="chip orange">1</b><b class="chip red">1</b></div></div>
+      <div class="player"><div class="name">玩家 2</div><div class="chips"><b class="chip white">2</b><b class="chip yellow">2</b><b class="chip orange">2</b><b class="chip red">2</b></div></div>
+      <div class="player"><div class="name">玩家 3</div><div class="chips"><b class="chip white">3</b><b class="chip yellow">3</b><b class="chip orange">3</b><b class="chip red">3</b></div></div>
+    </div>
+    <div class="river"><div class="card">A♠</div><div class="card">K♥</div><div class="card">Q♦</div><div class="card">J♣</div><div class="card">10♠</div></div>
+    <div class="vaults"><div class="vault-row">结案 <span class="badge">3</span></div><div class="vault-row">警报 <span class="badge">0</span></div></div>
+    <div class="hand"><div class="card">9♥</div><div class="card">9♣</div></div>
+    <div class="overlay"><div class="panel"><div class="kicker">THE GANG</div><h1>全部结案</h1><p class="subtitle">纸牌帮完成三起案件，所有人共同胜利。</p><div class="score"><span class="ok">结案 3 / 3</span><span class="warn">警报 0 / 3</span></div></div></div>
+  </div>
+</body>
+</html>

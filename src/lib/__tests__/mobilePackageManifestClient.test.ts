@@ -49,6 +49,7 @@ describe('resolveGamePackageManifest', () => {
                     diffOnly: true,
                     fallbackUrl: 'https://assets.example.test/official/mobile-packages/android/stable/bundles/dicethrone/previous.zip',
                     fallbackChecksum: 'previous-checksum',
+                    fallbackBytes: 22616359,
                 },
             }),
         });
@@ -62,6 +63,6 @@ describe('resolveGamePackageManifest', () => {
         expect(manifest.assetPackFileIndexUrl).toContain('/file-index/dicethrone/');
         expect(manifest.assetPackUrl).toBeUndefined();
         expect(manifest.assetPackChecksum).toBeUndefined();
-        expect(manifest.assetPackBytes).toBeUndefined();
+        expect(manifest.assetPackBytes).toBe(22616359);
     });
 });
