@@ -7,14 +7,21 @@ const SCREENSHOTS = {
     beforeRoll: `${OUT_DIR}/01-开始投掷.png`,
     rolling: `${OUT_DIR}/02-投掷中.png`,
     rolled: `${OUT_DIR}/03-投掷动画结束.png`,
+    rolledCanvas: `${OUT_DIR}/03-投掷动画结束-canvas.png`,
     selected: `${OUT_DIR}/04-打出选任意骰子重投卡牌-选择所有骰子.png`,
     rerolled: `${OUT_DIR}/05-点击重投后.png`,
+    rerolledCanvas: `${OUT_DIR}/05-点击重投后-canvas.png`,
 } as const;
 const BOARD_DICE_3D_STORAGE_KEY = 'dicethrone:boardDice3dEnabled';
 
 async function saveScreenshot(page: import('@playwright/test').Page, path: string) {
     await mkdir(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: false });
+}
+
+async function saveBoardDiceCanvasScreenshot(page: import('@playwright/test').Page, path: string) {
+    await mkdir(dirname(path), { recursive: true });
+    await page.getByTestId('dicethrone-board-dice-box-canvas').screenshot({ path });
 }
 
 async function readDiceValues(game: import('../framework').GameTestContext): Promise<number[]> {
@@ -166,6 +173,7 @@ test.describe('DiceThrone 3D 骰子端到端视觉验收', () => {
         await page.waitForTimeout(450);
         await expect(confirmButton).toBeVisible({ timeout: 5000 });
         await saveScreenshot(page, SCREENSHOTS.rolled);
+        await saveBoardDiceCanvasScreenshot(page, SCREENSHOTS.rolledCanvas);
 
         await dragHandCardToPlay(page, 'card-i-can-again');
         await expect.poll(async () => {
@@ -225,5 +233,6 @@ test.describe('DiceThrone 3D 骰子端到端视觉验收', () => {
         await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-i-can-again"]')).toHaveCount(0, { timeout: 5000 });
         await page.waitForTimeout(450);
         await saveScreenshot(page, SCREENSHOTS.rerolled);
+        await saveBoardDiceCanvasScreenshot(page, SCREENSHOTS.rerolledCanvas);
     });
 });

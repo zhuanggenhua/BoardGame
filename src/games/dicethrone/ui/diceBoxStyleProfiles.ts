@@ -18,7 +18,7 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
     shadows: true,
     gravityMultiplier: 400,
     lightIntensity: 0.78,
-    baseScale: 72,
+    baseScale: 66,
     strength: 0.92,
     iterationLimit: 1000,
     arrangeSettledDice: true,
