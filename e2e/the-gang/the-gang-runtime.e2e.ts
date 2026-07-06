@@ -161,6 +161,25 @@ async function expectCurrentRoundChips(page: Page, expectedCount: number) {
         .toBe(expectedCount);
 }
 
+async function openFabMenu(page: Page) {
+    const fabMenu = page.getByTestId('fab-menu');
+    await expect(fabMenu).toBeVisible();
+    await expect(fabMenu).not.toHaveCSS('pointer-events', 'none');
+    await fabMenu.locator('[data-fab-id]').first().click();
+}
+
+async function expectHudActionLogAndUndoAvailable(page: Page) {
+    await openFabMenu(page);
+    await expect(page.locator('[data-fab-id="action-log"]')).toBeVisible();
+    await expect(page.locator('[data-fab-id="undo-request"]')).toBeVisible();
+
+    await page.locator('[data-fab-id="action-log"]').click();
+    await expect(page.getByTestId('hud-action-log-row').filter({ hasText: '选择 1★ 筹码' })).toBeVisible();
+
+    await page.locator('[data-fab-id="undo-request"]').click();
+    await expect(page.getByText('可以请求撤回上一步操作')).toBeVisible();
+}
+
 test.describe('The Gang 真实入口截图', () => {
     test('桌面端 6 人满人数布局可显示所有玩家席位', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
@@ -190,6 +209,29 @@ test.describe('The Gang 真实入口截图', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 6);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await game.screenshot('桌面6人满人数全员筹码已选', testInfo);
+    });
+
+    test('移动横屏可操作并保留行为日志和撤回入口', async ({ game, page }, testInfo) => {
+        test.setTimeout(120000);
+        await page.setViewportSize({ width: 812, height: 375 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 3,
+            seed: 'the-gang-e2e-mobile-landscape',
+            seat1: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
+        await expectChipRound(page, '白筹码');
+        await chooseAllPlayerChips(page, '白筹码');
+        await selectHotseat(page, '玩家 1');
+        await expectCurrentRoundChips(page, 3);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await expect(page.getByTestId('the-gang-progress-vote-dots')).toBeVisible();
+        await expectHudActionLogAndUndoAvailable(page);
+        await game.screenshot('移动横屏首轮全员筹码已选且HUD可用', testInfo);
     });
 
     test('桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果', async ({ game, page }, testInfo) => {

@@ -26,9 +26,9 @@ const DICE_BOX_FACE_ART_REGIONS: Record<number, { minX: number; minY: number; ma
     1: { minX: 0.04, minY: 0.12, maxX: 0.58, maxY: 0.9 },
     2: { minX: 0.42, minY: 0.32, maxX: 0.96, maxY: 0.9 },
     3: { minX: 0.48, minY: 0.2, maxX: 0.96, maxY: 0.88 },
-    4: { minX: 0.2, minY: 0.26, maxX: 0.86, maxY: 0.94 },
-    5: { minX: 0.2, minY: 0.26, maxX: 0.86, maxY: 0.94 },
-    6: { minX: 0.12, minY: 0.04, maxX: 0.76, maxY: 0.72 },
+    4: { minX: 0.02, minY: 0.08, maxX: 0.9, maxY: 0.92 },
+    5: { minX: 0.02, minY: 0.08, maxX: 0.9, maxY: 0.92 },
+    6: { minX: 0.1, minY: 0.04, maxX: 0.72, maxY: 0.66 },
 };
 
 type RgbColor = {

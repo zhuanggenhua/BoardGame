@@ -91,11 +91,11 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 }
 
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
-    { x: -1.04, y: 0.44, yaw: -0.12, tiltX: -0.03, tiltY: 0.03 },
-    { x: -0.62, y: -0.42, yaw: 0.08, tiltX: 0.04, tiltY: -0.02 },
-    { x: 0.24, y: 0.18, yaw: 0.18, tiltX: -0.03, tiltY: -0.03 },
-    { x: 1.02, y: 0.46, yaw: 0.2, tiltX: 0.04, tiltY: 0.03 },
-    { x: 0.24, y: -1.0, yaw: -0.32, tiltX: -0.03, tiltY: 0.02 },
+    { x: -0.94, y: 0.42, yaw: -0.08, tiltX: -0.02, tiltY: 0.02 },
+    { x: -0.52, y: -0.38, yaw: 0.06, tiltX: 0.03, tiltY: -0.02 },
+    { x: 0.2, y: 0.16, yaw: 0.12, tiltX: -0.02, tiltY: -0.02 },
+    { x: 0.88, y: 0.42, yaw: 0.14, tiltX: 0.03, tiltY: 0.02 },
+    { x: 0.2, y: -0.86, yaw: -0.26, tiltX: -0.02, tiltY: 0.02 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
@@ -510,12 +510,9 @@ export class DiceBoxThreeEngine {
         let topDot = Number.NEGATIVE_INFINITY;
         geometry.groups.forEach((group, groupIndex) => {
             if (group.materialIndex <= 0) return;
-            const offset = groupIndex * 9;
-            const normal = new Vector3(
-                Number(normalArray[offset] ?? 0),
-                Number(normalArray[offset + 1] ?? 0),
-                Number(normalArray[offset + 2] ?? 0),
-            ).normalize().applyQuaternion(quaternion);
+            const normal = this.getGroupAverageNormal(geometry, groupIndex);
+            if (!normal) return;
+            normal.applyQuaternion(quaternion);
             const dot = normal.dot(WORLD_UP);
             if (dot > topDot) {
                 topDot = dot;
@@ -548,18 +545,40 @@ export class DiceBoxThreeEngine {
 
     private getFaceNormalForValue(die: DiceBoxDie, faceValue: number): Vector3 | null {
         const materialIndex = this.getMaterialIndexForFaceValue(faceValue);
-        const normalArray = die.geometry.getAttribute?.('normal')?.array;
-        if (!materialIndex || !normalArray) return null;
+        if (!materialIndex) return null;
 
         const groupIndex = die.geometry.groups?.findIndex((group) => group.materialIndex === materialIndex) ?? -1;
         if (groupIndex < 0) return null;
 
-        const offset = groupIndex * 9;
-        return new Vector3(
-            Number(normalArray[offset] ?? 0),
-            Number(normalArray[offset + 1] ?? 0),
-            Number(normalArray[offset + 2] ?? 0),
-        ).normalize();
+        return this.getGroupAverageNormal(die.geometry, groupIndex);
+    }
+
+    private getGroupAverageNormal(geometry: DiceBoxDie['geometry'], groupIndex: number): Vector3 | null {
+        const group = geometry.groups?.[groupIndex];
+        const normalArray = geometry.getAttribute?.('normal')?.array;
+        if (!group || !normalArray) return null;
+
+        const vertexCount = Math.floor(normalArray.length / 3);
+        const startVertex = typeof group.start === 'number'
+            ? Math.max(0, Math.floor(group.start))
+            : groupIndex * 3;
+        const count = typeof group.count === 'number'
+            ? Math.max(1, Math.floor(group.count))
+            : 3;
+        const endVertex = Math.min(vertexCount, startVertex + count);
+        const normal = new Vector3(0, 0, 0);
+
+        for (let vertex = startVertex; vertex < endVertex; vertex += 1) {
+            const offset = vertex * 3;
+            normal.add(new Vector3(
+                Number(normalArray[offset] ?? 0),
+                Number(normalArray[offset + 1] ?? 0),
+                Number(normalArray[offset + 2] ?? 0),
+            ));
+        }
+
+        if (normal.lengthSq() === 0) return null;
+        return normal.normalize();
     }
 
     private applySkinToDie(die: DiceBoxDie, skin: DiceBoxDieSkin): boolean {

@@ -88,7 +88,7 @@ function ProgressVoteDots({
     return (
         <div
             aria-label={label}
-            className="flex items-center justify-end gap-1.5"
+            className="flex items-center justify-center gap-1.5"
             data-testid="the-gang-progress-vote-dots"
         >
             {playerIds.map((playerId) => {
@@ -644,14 +644,6 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
             className="the-gang-desktop-table h-full min-h-0 overflow-hidden bg-[#203b23] text-stone-50"
             data-game-ui="the-gang"
         >
-            <style>
-                {`
-                    body:has(.the-gang-desktop-table) [data-testid="fab-menu"] {
-                        opacity: 0;
-                        pointer-events: none;
-                    }
-                `}
-            </style>
             <section
                 className="relative flex h-full min-h-0 w-full flex-col gap-1 overflow-hidden bg-[#203b23] px-4 py-3 lg:gap-2 lg:px-8 lg:py-5 xl:gap-3 xl:px-12 xl:py-7"
                 data-layout-contract="bgg-electronic"
@@ -815,11 +807,11 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                         )}
                     </div>
 
-                    <aside className="pointer-events-none absolute bottom-2 right-2 z-20 hidden max-w-[32rem] flex-wrap items-end justify-end gap-2 opacity-0 xl:flex" data-bgg-zone="helper-zone">
+                    <aside className="pointer-events-none absolute left-2 top-2 z-30 flex max-w-[min(28rem,calc(100%-1rem))] flex-wrap items-start justify-start gap-1.5 lg:left-3 lg:top-3 lg:gap-2" data-bgg-zone="helper-zone">
                         {!isMultiplayer && (
                             <div className="pointer-events-auto" data-testid="the-gang-hotseat-switcher">
                                 <h2 className="sr-only">{t('board.localSeat')}</h2>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5 rounded-full border border-amber-100/16 bg-emerald-950/48 px-2 py-1 shadow-[0_0.3rem_1rem_rgba(0,0,0,0.22)] backdrop-blur-sm lg:gap-2 lg:px-3">
                                     {core.playerIds.map((id) => {
                                         const selected = id === localPlayerId;
                                         return (
@@ -829,8 +821,10 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                                                 aria-pressed={selected}
                                                 onClick={() => setHotseatPlayerId(id)}
                                                 className={[
-                                                    'px-2 py-1 text-[0.68rem] font-black transition',
-                                                    selected ? 'text-amber-200' : 'text-stone-100/60 hover:text-stone-100',
+                                                    'rounded-full px-2.5 py-1 text-[0.68rem] font-black tracking-[0.05em] transition lg:px-3 lg:text-xs',
+                                                    selected
+                                                        ? 'bg-amber-200 text-emerald-950 shadow-[0_0_0.7rem_rgba(251,191,36,0.35)]'
+                                                        : 'text-stone-100/70 hover:bg-white/10 hover:text-stone-100',
                                                 ].join(' ')}
                                             >
                                                 {playerName(id)}

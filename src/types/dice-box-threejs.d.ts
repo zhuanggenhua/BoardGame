@@ -76,6 +76,8 @@ declare module '@3d-dice/dice-box-threejs' {
         notation: { type: string };
         geometry: {
             groups?: Array<{
+                start?: number;
+                count?: number;
                 materialIndex: number;
             }>;
             clone?: () => DiceBoxDie['geometry'];

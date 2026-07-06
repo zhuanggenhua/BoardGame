@@ -879,7 +879,8 @@ function resolveEffectAction(
 
                         // 检查是否需要打开 Token 响应窗口。
                         // 不可防御伤害仍允许攻击方增伤，但禁止防御方减伤/闪避类响应。
-                        if (shouldCheckTokenResponse && dmgAmount > 0) {
+                        const shouldAllowAttackerBoost = damageScope === 'attack';
+                        if (shouldCheckTokenResponse && dmgAmount > 0 && (shouldAllowAttackerBoost || !isUnblockable)) {
                             const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
                                 state,
                                 dmgTargetId,
