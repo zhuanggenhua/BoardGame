@@ -19,14 +19,7 @@ export interface DiceThroneDiceBoxSkin {
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
 const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const DICE_BOX_FACE_CANVAS_SIZE = 512;
-const DICE_BOX_FACE_ART_SCALE = 0.42;
-const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 38;
-
-type RgbColor = {
-    r: number;
-    g: number;
-    b: number;
-};
+const DICE_BOX_FACE_ART_SCALE = 0.68;
 
 const drawRoundedRect = (
     ctx: CanvasRenderingContext2D,
@@ -133,58 +126,6 @@ const createEdgeCanvas = () => {
     return canvas;
 };
 
-const colorDistance = (r: number, g: number, b: number, color: RgbColor) => Math.hypot(
-    r - color.r,
-    g - color.g,
-    b - color.b,
-);
-
-const readPixel = (data: Uint8ClampedArray, width: number, x: number, y: number): RgbColor | null => {
-    const offset = (y * width + x) * 4;
-    const alpha = data[offset + 3] ?? 0;
-    if (alpha <= 16) return null;
-    return {
-        r: data[offset] ?? 0,
-        g: data[offset + 1] ?? 0,
-        b: data[offset + 2] ?? 0,
-    };
-};
-
-const estimateFaceBackgroundColor = (
-    data: Uint8ClampedArray,
-    width: number,
-    height: number,
-): RgbColor => {
-    const samplePoints = [
-        [0.08, 0.08],
-        [0.5, 0.08],
-        [0.92, 0.08],
-        [0.08, 0.5],
-        [0.92, 0.5],
-        [0.08, 0.92],
-        [0.5, 0.92],
-        [0.92, 0.92],
-    ];
-    const colors = samplePoints
-        .map(([xRatio, yRatio]) => readPixel(
-            data,
-            width,
-            Math.min(width - 1, Math.max(0, Math.round((width - 1) * xRatio))),
-            Math.min(height - 1, Math.max(0, Math.round((height - 1) * yRatio))),
-        ))
-        .filter((color): color is RgbColor => Boolean(color));
-
-    if (colors.length === 0) {
-        return { r: 224, g: 215, b: 178 };
-    }
-
-    return {
-        r: Math.round(colors.reduce((sum, color) => sum + color.r, 0) / colors.length),
-        g: Math.round(colors.reduce((sum, color) => sum + color.g, 0) / colors.length),
-        b: Math.round(colors.reduce((sum, color) => sum + color.b, 0) / colors.length),
-    };
-};
-
 const drawOfficialAtlasFace = (
     ctx: CanvasRenderingContext2D,
     atlasImage: HTMLImageElement | null,
@@ -198,73 +139,21 @@ const drawOfficialAtlasFace = (
     const sourceHeight = atlasImage.naturalHeight / DICE_ATLAS.rows;
     const sourceX = mapping.col * sourceWidth;
     const sourceY = mapping.row * sourceHeight;
-    const spriteCanvas = document.createElement('canvas');
-    spriteCanvas.width = Math.max(1, Math.round(sourceWidth));
-    spriteCanvas.height = Math.max(1, Math.round(sourceHeight));
-    const spriteCtx = spriteCanvas.getContext('2d', { willReadFrequently: true });
-    if (!spriteCtx) return;
-
-    spriteCtx.drawImage(
-        atlasImage,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        0,
-        0,
-        spriteCanvas.width,
-        spriteCanvas.height,
-    );
-
-    const imageData = spriteCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
-    const data = imageData.data;
-    const backgroundColor = estimateFaceBackgroundColor(data, spriteCanvas.width, spriteCanvas.height);
-    let minX = spriteCanvas.width;
-    let minY = spriteCanvas.height;
-    let maxX = -1;
-    let maxY = -1;
-
-    for (let y = 0; y < spriteCanvas.height; y += 1) {
-        for (let x = 0; x < spriteCanvas.width; x += 1) {
-            const offset = (y * spriteCanvas.width + x) * 4;
-            const r = data[offset] ?? 0;
-            const g = data[offset + 1] ?? 0;
-            const b = data[offset + 2] ?? 0;
-            const alpha = data[offset + 3] ?? 0;
-            const isBackground = alpha < 16
-                || colorDistance(r, g, b, backgroundColor) <= DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE;
-            if (isBackground) {
-                data[offset + 3] = 0;
-                continue;
-            }
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-        }
-    }
-
-    if (maxX < minX || maxY < minY) return;
-    spriteCtx.putImageData(imageData, 0, 0);
-
-    const padding = Math.max(3, Math.round(Math.min(spriteCanvas.width, spriteCanvas.height) * 0.02));
-    const cropX = Math.max(0, minX - padding);
-    const cropY = Math.max(0, minY - padding);
-    const cropW = Math.min(spriteCanvas.width, maxX + padding + 1) - cropX;
-    const cropH = Math.min(spriteCanvas.height, maxY + padding + 1) - cropY;
-    const maxTarget = size * DICE_BOX_FACE_ART_SCALE;
-    const scale = Math.min(maxTarget / cropW, maxTarget / cropH);
-    const targetWidth = cropW * scale;
-    const targetHeight = cropH * scale;
+    const sourceSize = Math.min(sourceWidth, sourceHeight);
+    const sourceInsetX = sourceX + (sourceWidth - sourceSize) / 2;
+    const sourceInsetY = sourceY + (sourceHeight - sourceSize) / 2;
+    const targetSize = size * DICE_BOX_FACE_ART_SCALE;
+    const targetWidth = targetSize;
+    const targetHeight = targetSize;
     const targetX = (size - targetWidth) / 2;
     const targetY = (size - targetHeight) / 2;
 
     ctx.drawImage(
-        spriteCanvas,
-        cropX,
-        cropY,
-        cropW,
-        cropH,
+        atlasImage,
+        sourceInsetX,
+        sourceInsetY,
+        sourceSize,
+        sourceSize,
         targetX,
         targetY,
         targetWidth,
