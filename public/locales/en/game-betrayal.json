@@ -295,7 +295,7 @@
         "traitsAndSpeed": "Speed is the first trait to read here. It tells you the movement range your explorer can work with before spending any steps.",
         "movesRemaining": "The MOVE medallion in the upper-right shows how many steps you still have right now this turn. That current remainder is not always the same as your full speed value.",
         "roomBoard": "The central room board is the main play area. First read where you are, which rooms are already connected, and where exploration can continue.",
-        "inventoryAndHelp": "The lower-left area is your inventory for items and omens. Open the reference card only when you need to check terms, not as a replacement for the main UI.",
+      "inventoryAndHelp": "The lower-left area is your inventory. Items and omens stay here, and later use, trade, or effect decisions start from those cards.",
         "finish": "You now know to read the goal, action bar, speed, and room board first. The next chapter walks through use, move, and explore."
       }
     },
@@ -329,7 +329,7 @@
       "description": "Start from the later first-scenario haunt state, check the reference card, confirm the haunt actions, and complete the exorcism.",
       "steps": {
         "setupReadyToExorcise": "The heroes have learned about Jack and prepared two exorcism circles. Now they need to share a room with Jack's Spirit and complete the exorcism.",
-        "helpEntry": "If you need to re-read the printed aid, open it here. The help entry stays lightweight and does not replace the action bar.",
+      "helpEntry": "When haunt terms need a refresher, open the reference card for both-side reminders. It helps you read the haunt without changing the current turn.",
         "hauntActions": "The haunt-specific actions still live in the bottom action row: learn, study, exorcise, and attack when needed.",
         "exorciseJack": "Exorcise Jack now. On success, the survivors banish Jack's Spirit.",
         "endgameReview": "Jack's Spirit is banished, and the survivors escape."

@@ -295,6 +295,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
 
         await clickNext(page);
         await waitForStep(page, 'inventory-and-help');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('物品和预兆会留在这里');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('帮助入口');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('主界面');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('替代');
         await expect(page.locator('[data-tutorial-id="betrayal-inventory-zone"]')).toBeVisible();
         await expect(page.locator('[data-tutorial-id="betrayal-reference-entry"]')).toBeVisible();
         await page.getByTestId('betrayal-open-scenario').click();
@@ -318,6 +322,11 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await waitForBetrayalPageReady(page);
         await waitForHauntRuntime(page, 30000);
         await waitForStep(page, 'help-entry');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('复查恶兆后术语');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('不会改变当前回合');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('帮助入口');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('底部动作按钮');
+        await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('替代');
         await expect(page.locator('[data-tutorial-id="betrayal-reference-entry"]')).toBeVisible();
         const jackSpiritToken = page.getByTestId('betrayal-monster-board-token-jack-spirit');
         await expect(jackSpiritToken).toBeVisible();

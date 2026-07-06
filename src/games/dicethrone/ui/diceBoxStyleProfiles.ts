@@ -28,7 +28,9 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
         background: '#ffffff',
         edge: '#ffffff',
         outline: 'none',
-        texture: '',
-        material: 'none',
+        texture: {
+            name: 'none',
+            material: 'plastic',
+        },
     },
 } satisfies DiceBoxStyleProfile;
