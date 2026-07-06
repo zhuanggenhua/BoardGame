@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
 import { TestHarness } from './engine/testing';
 import { TutorialProvider } from './contexts/TutorialContext';
@@ -129,8 +129,11 @@ const AppRouteChrome = ({
 
 const AppContent = () => {
   const { t } = useTranslation('lobby');
-  const isNativeAndroid = isNativeAndroidRuntime();
-  const isNativeMobile = isNativeMobileRuntime();
+  const [nativeRuntime, setNativeRuntime] = useState(() => ({
+    isNativeAndroid: isNativeAndroidRuntime(),
+    isNativeMobile: isNativeMobileRuntime(),
+  }));
+  const { isNativeAndroid, isNativeMobile } = nativeRuntime;
   
   // Token 自动刷新
   useTokenRefresh();
@@ -144,6 +147,33 @@ const AppContent = () => {
     if (initialLoader && !shouldKeepBootstrapLoader) {
       initialLoader.remove();
     }
+  }, []);
+
+  useEffect(() => {
+    const refreshNativeRuntime = () => {
+      setNativeRuntime((current) => {
+        const next = {
+          isNativeAndroid: isNativeAndroidRuntime(),
+          isNativeMobile: isNativeMobileRuntime(),
+        };
+        return current.isNativeAndroid === next.isNativeAndroid && current.isNativeMobile === next.isNativeMobile
+          ? current
+          : next;
+      });
+    };
+
+    refreshNativeRuntime();
+    const timeoutIds = [100, 300, 1000].map((delay) => window.setTimeout(refreshNativeRuntime, delay));
+    window.addEventListener('focus', refreshNativeRuntime);
+    document.addEventListener('visibilitychange', refreshNativeRuntime);
+
+    return () => {
+      for (const timeoutId of timeoutIds) {
+        window.clearTimeout(timeoutId);
+      }
+      window.removeEventListener('focus', refreshNativeRuntime);
+      document.removeEventListener('visibilitychange', refreshNativeRuntime);
+    };
   }, []);
 
   const renderAdminOnly = (element: React.ReactNode) => (

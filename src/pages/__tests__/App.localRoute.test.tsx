@@ -1,7 +1,7 @@
 /* @vitest-environment happy-dom */
 
 import type { PropsWithChildren, ReactNode } from 'react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const PassThrough = ({ children }: PropsWithChildren) => <>{children}</>;
@@ -43,11 +43,11 @@ vi.mock('../../lib/feedback/errorContext', () => ({
 }));
 
 vi.mock('../../lib/mobile/androidRuntime', () => ({
-    isNativeAndroidRuntime: () => false,
+    isNativeAndroidRuntime: () => runtimeState.nativeAndroid,
 }));
 
 vi.mock('../../lib/mobile/mobileRuntime', () => ({
-    isNativeMobileRuntime: () => false,
+    isNativeMobileRuntime: () => runtimeState.nativeMobile,
 }));
 
 vi.mock('../../contexts/DebugContext', () => ({ DebugProvider: PassThrough }));
@@ -68,7 +68,9 @@ vi.mock('../../components/system/GlobalErrorBoundary', () => ({ GlobalErrorBound
 vi.mock('../../components/system/BrowserCompatibilityGate', () => ({ BrowserCompatibilityGate: PassThrough }));
 vi.mock('../../components/system/MobileLiveUpdateManager', () => ({ MobileLiveUpdateManager: NullComponent }));
 vi.mock('../../components/system/AndroidNativeUpdateManager', () => ({ AndroidNativeUpdateManager: NullComponent }));
-vi.mock('../../components/system/AndroidBackNavigationBridge', () => ({ AndroidBackNavigationBridge: NullComponent }));
+vi.mock('../../components/system/AndroidBackNavigationBridge', () => ({
+    AndroidBackNavigationBridge: () => <div data-testid="android-back-navigation-bridge" />,
+}));
 vi.mock('../../components/system/GamePageRescueGate', () => ({ GamePageRescueGate: NullComponent }));
 vi.mock('../../components/system/LoadingScreen', () => ({
     LoadingScreen: () => <div data-testid="loading-screen">loading</div>,
@@ -80,6 +82,11 @@ vi.mock('../../components/common/MobileOrientationGuard', () => ({ MobileOrienta
 vi.mock('../../components/system/GlobalHUD', () => ({ GlobalHUD: NullComponent }));
 vi.mock('../../components/system/ModalStackRoot', () => ({ ModalStackRoot: NullComponent }));
 vi.mock('../../components/system/ToastViewport', () => ({ ToastViewport: NullComponent }));
+
+const runtimeState = {
+    nativeAndroid: false,
+    nativeMobile: false,
+};
 
 vi.mock('react-hot-toast', () => ({
     Toaster: NullComponent,
@@ -125,6 +132,9 @@ describe('App local route', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+        vi.useRealTimers();
+        runtimeState.nativeAndroid = false;
+        runtimeState.nativeMobile = false;
     });
 
     it('命中 /play/:gameId/local 时应渲染 LocalMatchRoom，而不是回退到 TestMatchRoom', async () => {
@@ -136,5 +146,25 @@ describe('App local route', () => {
             expect(screen.getByTestId('local-match-room')).toBeInTheDocument();
         });
         expect(screen.queryByTestId('test-match-room')).toBeNull();
+    });
+
+    it('旧 Android 壳桥接晚到时应刷新全局返回桥，而不是要求游戏单独接侧滑', async () => {
+        vi.useFakeTimers();
+        const { default: App } = await import('../../App');
+
+        render(<App />);
+
+        expect(screen.queryByTestId('android-back-navigation-bridge')).toBeNull();
+
+        runtimeState.nativeAndroid = true;
+        runtimeState.nativeMobile = true;
+
+        await act(async () => {
+            vi.advanceTimersByTime(300);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('android-back-navigation-bridge')).toBeInTheDocument();
+        });
     });
 });

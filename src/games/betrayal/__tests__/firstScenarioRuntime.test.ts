@@ -4164,8 +4164,9 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentPlayer).toBe('2');
         expect(core.currentExplorer.playerId).toBe('2');
         expect(core.activeRoomId).toBe('ground-north');
-        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
-        expect(livingHeroesInRoom.map((explorer) => explorer.playerId)).toEqual(['0']);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(livingHeroesInRoom.map((explorer) => explorer.playerId)).toEqual(['1']);
     });
 
     it('恶兆不会在掷骰不足 5 时提前触发 haunt', () => {

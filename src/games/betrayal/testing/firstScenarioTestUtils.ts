@@ -198,7 +198,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
     core.currentExplorer.roomId = 'basement-landing';
