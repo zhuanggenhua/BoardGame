@@ -2689,8 +2689,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             };
         }
         if (heroAttackTargets.length > 0) {
-            const heroTarget = heroAttackTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId)
-                ?? (heroAttackTargets.length === 1 ? heroAttackTargets[0] : null);
+            const heroTarget = heroAttackTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? null;
             if (!heroTarget) {
                 return null;
             }
@@ -2707,6 +2706,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         }
         return null;
     }, [core, matchData, selectedTradeTargetPlayerId, t]);
+    const heroAttackTargetPlayerIds = React.useMemo(() => {
+        if (core.phase !== 'haunt' || core.scenarioRuntime.traitorPlayerId !== core.currentExplorer.playerId) {
+            return new Set<string>();
+        }
+        return new Set(core.otherExplorers
+            .filter((explorer) => (
+                !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                && explorer.roomId === core.activeRoomId
+            ))
+            .map((explorer) => explorer.playerId));
+    }, [core.activeRoomId, core.currentExplorer.playerId, core.otherExplorers, core.phase, core.scenarioRuntime.deadExplorerPlayerIds, core.scenarioRuntime.traitorPlayerId]);
     const shouldShowLatestDiscovery = Boolean(
         core.latestDiscovery
         && core.latestDiscoveryOwnerPlayerId === core.currentExplorer.playerId,
@@ -2744,13 +2754,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 })
                 : t('board.status.turnHintHold');
     const roomFocusState = (() => {
-        if (previewState.interactionMode === 'move' && moveTargetRooms.length === 1) {
-            return {
-                label: t('board.status.focusMoveMode', { room: moveTargetRooms[0]!.name }),
-                actionKind: 'move' as const,
-                roomId: moveTargetRooms[0]!.id,
-            };
-        }
         if (hauntActionContext?.actionKind === 'use') {
             return {
                 label: hauntActionContext.label,
@@ -2771,13 +2774,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 actionKind: 'attack-hero' as const,
                 roomId: null,
                 targetPlayerId: hauntActionContext.targetPlayerId ?? null,
-            };
-        }
-        if (core.recommendedAction === 'move' && moveTargetRooms.length === 1) {
-            return {
-                label: t('board.status.focusMoveTarget', { room: moveTargetRooms[0]!.name }),
-                actionKind: 'move' as const,
-                roomId: moveTargetRooms[0]!.id,
             };
         }
         if (core.recommendedAction === 'use' && selectedInventoryCard && !selectedCardUseDisabled) {
@@ -3851,11 +3847,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 {core.otherExplorers.map((explorer) => {
                                     const isTradeCandidate = activeTradeTargets.some((item) => item.playerId === explorer.playerId);
                                     const isCorpseLootCandidate = corpseLootTargets.some((item) => item.playerId === explorer.playerId);
-                                    const isAttackTarget = hauntActionContext?.actionKind === 'attack-hero'
+                                    const isAttackTarget = heroAttackTargetPlayerIds.has(explorer.playerId);
+                                    const isSelectedAttackTarget = hauntActionContext?.actionKind === 'attack-hero'
                                         && hauntActionContext.targetPlayerId === explorer.playerId;
                                     const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId
                                         || explorer.playerId === selectedCorpseLootTargetPlayerId
-                                        || isAttackTarget;
+                                        || isSelectedAttackTarget;
                                     const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
                                     const isDogTradeTarget = dogTradeTargets.some((item) => item.playerId === explorer.playerId);
                                     const panel = (
@@ -5003,11 +5000,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     {core.otherExplorers.map((explorer) => {
                                         const isTradeCandidate = tradeTargets.some((item) => item.playerId === explorer.playerId);
                                         const isCorpseLootCandidate = corpseLootTargets.some((item) => item.playerId === explorer.playerId);
-                                        const isAttackTarget = hauntActionContext?.actionKind === 'attack-hero'
+                                        const isAttackTarget = heroAttackTargetPlayerIds.has(explorer.playerId);
+                                        const isSelectedAttackTarget = hauntActionContext?.actionKind === 'attack-hero'
                                             && hauntActionContext.targetPlayerId === explorer.playerId;
                                         const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId
                                             || explorer.playerId === selectedCorpseLootTargetPlayerId
-                                            || isAttackTarget;
+                                            || isSelectedAttackTarget;
                                         const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
                                         const roomName = core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown');
                                         return (
@@ -5016,6 +5014,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 type="button"
                                                 onClick={() => {
                                                     focusRoomInView(explorer.roomId);
+                                                    if (isAttackTarget) {
+                                                        handleAttackAction('hero', explorer.playerId);
+                                                        return;
+                                                    }
                                                     setPreviewState((previousState) => ({
                                                         ...previousState,
                                                         selectedTradeTargetPlayerId: isTradeCandidate || isCorpseLootCandidate ? explorer.playerId : previousState.selectedTradeTargetPlayerId,
@@ -5023,7 +5025,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         tradeSelectionTouched: isTradeCandidate || isCorpseLootCandidate ? true : previousState.tradeSelectionTouched,
                                                     }));
                                                 }}
-                                                data-testid={`betrayal-bottom-teammate-${explorer.playerId}`}
+                                                data-testid={isAttackTarget ? `betrayal-bottom-attack-hero-target-${explorer.playerId}` : `betrayal-bottom-teammate-${explorer.playerId}`}
                                                 className={`group relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] px-1.5 py-1.5 text-left transition ${
                                                     isSelectedTradeTarget
                                                         ? 'bg-[linear-gradient(180deg,rgba(53,40,20,0.72),rgba(22,19,14,0.82))]'

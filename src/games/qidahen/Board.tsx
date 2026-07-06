@@ -1205,11 +1205,6 @@ const QidahenCardMagnifyOverlay: React.FC<{
 const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [stageMetrics, setStageMetrics] = React.useState({ scale: 1, left: 0, top: 0 });
-    const [isLandscapeMobileViewport, setIsLandscapeMobileViewport] = React.useState(false);
-    const mapStageBackdropUrl = React.useMemo(() => {
-        const localizedPath = getLocalizedAssetPath(ASSETS.mainMap, 'zh-CN');
-        return getOptimizedImageUrls(localizedPath).webp || '';
-    }, []);
 
     React.useEffect(() => {
         const element = containerRef.current;
@@ -1221,7 +1216,6 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             const visibleWidth = nextLandscapeMobileViewport ? Math.min(rect.width, window.innerWidth) : rect.width;
             const visibleHeight = nextLandscapeMobileViewport ? Math.min(rect.height, window.innerHeight) : rect.height;
             const scale = Math.min(visibleWidth / STAGE_WIDTH, visibleHeight / STAGE_HEIGHT);
-            setIsLandscapeMobileViewport(nextLandscapeMobileViewport);
             setStageMetrics({
                 scale,
                 left: Math.max(0, (visibleWidth - STAGE_WIDTH * scale) / 2),
@@ -1246,10 +1240,6 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             data-testid="qidahen-board"
             style={{
                 backgroundColor: QIDAHEN_STAGE_BG,
-                backgroundImage: isLandscapeMobileViewport && mapStageBackdropUrl ? `url("${mapStageBackdropUrl}")` : undefined,
-                backgroundPosition: 'center center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: isLandscapeMobileViewport ? 'cover' : undefined,
             }}
         >
             <div
@@ -1507,11 +1497,11 @@ const MapToken: React.FC<{
                         background: UI_STYLE.paperLight,
                         boxShadow: `inset 0 0 0 1px rgba(255,241,205,0.18), 0 2px 8px ${UI_STYLE.shadowSoft}`,
                     }}
-                    aria-label="部队背面"
+                    aria-label={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}
                 >
                     <OptimizedImage
                         src={ASSETS.armyBackMarker}
-                        alt="部队背面"
+                        alt={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}
                         className={`h-full w-full object-cover ${tokenShapeClass}`}
                         draggable={false}
                         placeholder={false}
@@ -3687,7 +3677,7 @@ const ActionsZone: React.FC<{
                     {getPendingCommittedTroopOptions(pendingTargetAction).length > 1 ? (
                         <div className="mt-2 text-[11px]" data-testid="qidahen-pending-committed-troops">
                             <span className="mr-1" style={{ color: '#f3d1a5' }}>
-                                {t('board.actions.pendingTarget.actualCommittedTroopsMapFirst', { defaultValue: '实际出兵：点击地图上的源地区兵牌切换数量' })}
+                                {t('board.actions.pendingTarget.actualCommittedTroopsMapFirst')}
                             </span>
                             <span className="sr-only">
                                 {getPendingCommittedTroopOptions(pendingTargetAction).map((committedTroops) => (

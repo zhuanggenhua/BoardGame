@@ -638,16 +638,19 @@ function TheGangEndgameContent({
     successes: number;
     failures: number;
 }) {
+    const { t } = useTranslation('game-the-gang');
     const clearedAllCases = Array.isArray(result?.winners) && result.winners.length > 0;
-    const title = clearedAllCases ? '全部结案' : '行动失败';
+    const title = clearedAllCases
+        ? t('board.endgame.winTitle')
+        : t('board.endgame.loseTitle');
     const subtitle = clearedAllCases
-        ? '纸牌帮完成三起案件，所有人共同胜利。'
-        : '警报累积到三次，纸牌帮这次没能全身而退。';
+        ? t('board.endgame.winSubtitle')
+        : t('board.endgame.loseSubtitle');
 
     return (
         <div className="mb-6 text-center">
             <div className="mb-3 inline-flex rounded-full border border-amber-200/40 bg-amber-200/12 px-4 py-1 text-xs font-black tracking-[0.18em] text-amber-100 shadow-[0_0_24px_rgba(245,158,11,0.28)]">
-                THE GANG
+                {t('title.primary')}
             </div>
             <h2
                 data-testid="the-gang-endgame-title"
@@ -663,10 +666,10 @@ function TheGangEndgameContent({
             </p>
             <div className="mt-5 flex items-center justify-center gap-3 text-sm font-black tracking-[0.12em]">
                 <span className="rounded-full border border-emerald-300/40 bg-emerald-300/12 px-4 py-2 text-emerald-100">
-                    结案 {successes} / 3
+                    {t('board.endgame.casesClosed', { successes })}
                 </span>
                 <span className="rounded-full border border-rose-300/40 bg-rose-300/12 px-4 py-2 text-rose-100">
-                    警报 {failures} / 3
+                    {t('board.endgame.alarms', { failures })}
                 </span>
             </div>
         </div>

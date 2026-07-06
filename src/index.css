@@ -817,249 +817,355 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+.tutorial-catalog-stage {
+    --qidahen-map-ink: #20150d;
+    --qidahen-map-panel: rgba(32, 21, 13, 0.78);
+    --qidahen-map-gold: #d2b775;
+    --qidahen-map-ivory: #ead7a7;
+    --qidahen-cinnabar: #9f3426;
+    --qidahen-paper-light: #f3e7c4;
+    --qidahen-shadow: rgba(56, 35, 15, 0.24);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scroll-padding-block: 1rem;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    padding: clamp(1.25rem, 3.4vw, 3rem);
+    color: var(--qidahen-map-ivory);
+    background:
+        linear-gradient(90deg, rgba(32, 21, 13, 0.94), rgba(32, 21, 13, 0.5) 46%, rgba(32, 21, 13, 0.82)),
+        radial-gradient(circle at 18% 0%, rgba(210, 183, 117, 0.18), transparent 19rem),
+        radial-gradient(circle at 88% 100%, rgba(159, 52, 38, 0.18), transparent 17rem),
+        linear-gradient(135deg, rgba(234, 215, 167, 0.05) 0 1px, transparent 1px 16px),
+        linear-gradient(180deg, #21170f 0%, #130d08 100%);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(210, 183, 117, 0.72) rgba(32, 21, 13, 0.54);
+}
+
+.tutorial-catalog-stage::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tutorial-catalog-stage::-webkit-scrollbar-track {
+    background: rgba(32, 21, 13, 0.54);
+    border-radius: 999px;
+}
+
+.tutorial-catalog-stage::-webkit-scrollbar-thumb {
+    background: var(--qidahen-map-gold);
+    border-radius: 999px;
+}
+
+.tutorial-catalog-stage__shell {
+    width: min(1080px, 100%);
+    min-height: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.tutorial-catalog-stage__content {
+    width: 100%;
+}
+
+.tutorial-catalog-stage__header {
+    margin-bottom: clamp(0.7rem, 1.8vw, 1.35rem);
+    padding-inline: 0.25rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 1rem;
+}
+
+.tutorial-catalog-stage__eyebrow {
+    grid-column: 1;
+    color: rgba(210, 183, 117, 0.78);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.tutorial-catalog-stage__title {
+    grid-column: 1;
+    margin-top: 0.2rem;
+    font-family: ui-serif, "STSong", "SimSun", serif;
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: 0.04em;
+    color: var(--qidahen-map-ivory);
+    text-shadow: 0 3px 14px rgba(0, 0, 0, 0.62);
+    text-wrap: balance;
+}
+
+.tutorial-catalog-stage__header::after {
+    content: "横屏可滚动";
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: block;
+    align-self: end;
+    padding: 0.38rem 0.64rem;
+    border: 2px solid rgba(32, 21, 13, 0.86);
+    background: rgba(32, 21, 13, 0.72);
+    color: rgba(234, 215, 167, 0.82);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.24);
+    white-space: nowrap;
+}
+
+.tutorial-catalog-stage__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.75rem, 1.6vw, 1.05rem);
+}
+
+.tutorial-catalog-stage__entry {
+    --tutorial-chapter-accent-safe: var(--tutorial-chapter-accent, #d2b775);
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    min-height: 132px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 0.84rem;
+    row-gap: 0.48rem;
+    overflow: hidden;
+    padding: 0.92rem 1rem 0.88rem;
+    cursor: pointer;
+    text-align: left;
+    border: 2px solid rgba(32, 21, 13, 0.92);
+    border-radius: 0.42rem;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--tutorial-chapter-accent-safe) 18%, transparent), transparent 32%),
+        linear-gradient(180deg, rgba(47, 32, 20, 0.96), rgba(27, 18, 11, 0.95));
+    box-shadow:
+        0 4px 0 rgba(0, 0, 0, 0.24),
+        0 12px 24px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(234, 215, 167, 0.1);
+    transform: translateZ(0);
+    transition:
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+.tutorial-catalog-stage__entry::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-left: 5px solid var(--tutorial-chapter-accent-safe);
+    opacity: 0.86;
+    pointer-events: none;
+}
+
+.tutorial-catalog-stage__entry::after {
+    content: "";
+    position: absolute;
+    inset: 0.42rem;
+    border: 1px solid rgba(234, 215, 167, 0.08);
+    pointer-events: none;
+}
+
+.tutorial-catalog-stage__entry:hover,
+.tutorial-catalog-stage__entry:focus-visible {
+    border-color: rgba(210, 183, 117, 0.92);
+    outline: none;
+    box-shadow:
+        0 3px 0 rgba(0, 0, 0, 0.34),
+        0 16px 30px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(234, 215, 167, 0.2);
+    transform: translateY(-1px);
+}
+
+.tutorial-catalog-stage__entry:active {
+    transform: translateY(0);
+}
+
+.tutorial-catalog-stage__index {
+    position: relative;
+    z-index: 1;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    color: var(--qidahen-map-ivory);
+    border: 2px solid rgba(32, 21, 13, 0.95);
+    border-radius: 0.22rem;
+    background: linear-gradient(180deg, rgba(159, 52, 38, 0.94), rgba(91, 29, 22, 0.96));
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    box-shadow:
+        0 2px 0 rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(234, 215, 167, 0.22);
+}
+
+.tutorial-catalog-stage__entry-body {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+.tutorial-catalog-stage__entry-title {
+    color: var(--qidahen-map-ivory);
+    font-family: ui-serif, "STSong", "SimSun", serif;
+    font-size: clamp(18px, 1.65vw, 23px);
+    font-weight: 800;
+    line-height: 1.14;
+    letter-spacing: 0.03em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
+}
+
+.tutorial-catalog-stage__entry-title span {
+    overflow-wrap: anywhere;
+}
+
+.tutorial-catalog-stage__tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.38rem;
+    margin-top: 0.5rem;
+}
+
+.tutorial-catalog-stage__tag {
+    min-height: 22px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.44rem;
+    border: 1px solid rgba(210, 183, 117, 0.42);
+    border-radius: 0.18rem;
+    background: rgba(32, 21, 13, 0.52);
+    color: rgba(234, 215, 167, 0.88);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.tutorial-catalog-stage__tag--recommended {
+    border-color: rgba(159, 52, 38, 0.68);
+    color: #f0c985;
+}
+
+.tutorial-catalog-stage__tag--completed {
+    color: #d8c98f;
+}
+
+.tutorial-catalog-stage__description {
+    margin-top: 0.48rem;
+    max-width: 32rem;
+    color: rgba(234, 215, 167, 0.74);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.tutorial-catalog-stage__enter {
+    position: relative;
+    z-index: 1;
+    grid-column-start: 2;
+    width: fit-content;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    padding: 0 0.82rem;
+    border: 1px solid rgba(210, 183, 117, 0.32);
+    border-radius: 0.2rem;
+    background: rgba(32, 21, 13, 0.55);
+    color: var(--qidahen-map-gold);
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: inset 0 1px 0 rgba(234, 215, 167, 0.08);
+}
+
+.tutorial-catalog-stage__enter::after {
+    content: "→";
+    font-size: 14px;
+    line-height: 1;
+    transform: translateY(-0.5px);
+}
+
+@media (max-width: 700px), (max-height: 500px) and (orientation: landscape) {
     .tutorial-catalog-stage {
-        --qidahen-map-ink: #20150d;
-        --qidahen-map-panel: rgba(32, 21, 13, 0.78);
-        --qidahen-map-gold: #d2b775;
-        --qidahen-map-ivory: #ead7a7;
-        --qidahen-cinnabar: #9f3426;
-        --qidahen-paper-light: #f3e7c4;
-        --qidahen-shadow: rgba(56, 35, 15, 0.24);
-        height: 100%;
-        max-height: 100%;
-        min-height: 0;
-        padding: 0.8rem 1rem;
+        padding: 0.82rem 1rem;
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        scroll-padding-block: 0.85rem;
-        touch-action: pan-y;
-        -webkit-overflow-scrolling: touch;
-        background:
-            linear-gradient(90deg, rgba(32, 21, 13, 0.92), rgba(32, 21, 13, 0.5) 46%, rgba(32, 21, 13, 0.78)),
-            radial-gradient(circle at 18% 0%, rgba(210, 183, 117, 0.18), transparent 18rem),
-            radial-gradient(circle at 88% 100%, rgba(159, 52, 38, 0.16), transparent 16rem),
-            linear-gradient(135deg, rgba(234, 215, 167, 0.045) 0 1px, transparent 1px 16px),
-            linear-gradient(180deg, #21170f 0%, #130d08 100%);
-        scrollbar-width: thin;
-        scrollbar-color: rgba(210, 183, 117, 0.72) rgba(32, 21, 13, 0.54);
-    }
-
-    .tutorial-catalog-stage::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .tutorial-catalog-stage::-webkit-scrollbar-track {
-        background: rgba(32, 21, 13, 0.54);
-        border-radius: 999px;
-    }
-
-    .tutorial-catalog-stage::-webkit-scrollbar-thumb {
-        background: var(--qidahen-map-gold);
-        border-radius: 999px;
     }
 
     .tutorial-catalog-stage__shell {
         display: block;
-        max-width: min(940px, 100%);
+        width: min(940px, 100%);
     }
 
     .tutorial-catalog-stage__header {
         margin-bottom: 0.68rem;
         padding: 0.1rem 0.2rem 0;
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
         column-gap: 0.9rem;
     }
 
-    .tutorial-catalog-stage__header > div:first-child {
-        grid-column: 1;
-        grid-row: 1;
-        color: rgba(210, 183, 117, 0.78);
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-    }
-
     .tutorial-catalog-stage__title {
-        grid-column: 1;
-        grid-row: 2;
-        margin-top: 0.18rem;
         font-size: clamp(24px, 4.2vw, 31px);
-        line-height: 1.04;
-        color: var(--qidahen-map-ivory);
-        text-shadow: 0 3px 14px rgba(0, 0, 0, 0.62);
-        text-wrap: balance;
-    }
-
-    .tutorial-catalog-stage__header::after {
-        content: "横屏可滚动";
-        grid-column: 2;
-        grid-row: 1 / span 2;
-        display: block;
-        align-self: end;
-        margin-bottom: 0.1rem;
-        padding: 0.34rem 0.58rem;
-        border: 2px solid rgba(32, 21, 13, 0.86);
-        background: rgba(32, 21, 13, 0.72);
-        color: rgba(234, 215, 167, 0.82);
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.16em;
-        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.24);
-        white-space: nowrap;
     }
 
     .tutorial-catalog-stage__list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: 0.85rem;
-        row-gap: 0.75rem;
-        padding: 0;
-        border: 0;
-        border-radius: 0;
-        background: transparent;
-        box-shadow: none;
-        backdrop-filter: none;
-    }
-
-    .tutorial-catalog-stage__list::before {
-        display: none;
+        gap: 0.75rem 0.85rem;
     }
 
     .tutorial-catalog-stage__entry {
-        --tutorial-chapter-accent-safe: var(--tutorial-chapter-accent, #d5a642);
         min-height: 0;
         grid-template-columns: 38px minmax(0, 1fr);
         column-gap: 0.72rem;
         row-gap: 0.38rem;
-        position: relative;
-        overflow: hidden;
-        padding: 0.72rem 0.82rem 0.72rem;
-        border-bottom-width: 0;
-        border: 2px solid rgba(32, 21, 13, 0.9);
-        border-radius: 0.42rem;
-        background:
-            linear-gradient(90deg, rgba(159, 52, 38, 0.14), transparent 32%),
-            linear-gradient(180deg, rgba(47, 32, 20, 0.95), rgba(27, 18, 11, 0.94));
-        box-shadow:
-            0 4px 0 rgba(0, 0, 0, 0.24),
-            0 12px 24px rgba(0, 0, 0, 0.22),
-            inset 0 1px 0 rgba(234, 215, 167, 0.1);
-        isolation: isolate;
-        transform: translateZ(0);
-        transition:
-            background-color 160ms ease,
-            border-color 180ms ease,
-            box-shadow 180ms ease,
-            transform 180ms ease;
-    }
-
-    .tutorial-catalog-stage__entry:hover,
-    .tutorial-catalog-stage__entry:focus-visible {
-        border-color: rgba(210, 183, 117, 0.9);
-        background:
-            linear-gradient(90deg, rgba(159, 52, 38, 0.2), transparent 34%),
-            linear-gradient(180deg, rgba(56, 38, 23, 0.98), rgba(31, 21, 13, 0.97));
-        box-shadow:
-            0 3px 0 rgba(0, 0, 0, 0.32),
-            0 14px 26px rgba(0, 0, 0, 0.3),
-            inset 0 0 0 1px rgba(234, 215, 167, 0.18);
-        transform: translateY(-1px);
-    }
-
-    .tutorial-catalog-stage__entry:active {
-        transform: translateY(0);
-    }
-
-    .tutorial-catalog-stage__entry::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-left: 5px solid var(--tutorial-chapter-accent-safe);
-        pointer-events: none;
-        opacity: 0.86;
-    }
-
-    .tutorial-catalog-stage__entry::after {
-        content: none;
-        position: absolute;
+        padding: 0.72rem 0.82rem;
     }
 
     .tutorial-catalog-stage__index {
         width: 38px;
         height: 38px;
         font-size: 11px;
-        color: var(--qidahen-map-ivory);
-        border: 2px solid rgba(32, 21, 13, 0.95);
-        border-radius: 0.22rem;
-        background: linear-gradient(180deg, rgba(159, 52, 38, 0.94), rgba(91, 29, 22, 0.96));
-        box-shadow:
-            0 2px 0 rgba(0, 0, 0, 0.35),
-            inset 0 1px 0 rgba(234, 215, 167, 0.22);
     }
 
     .tutorial-catalog-stage__entry-title {
         font-size: 17px;
-        line-height: 1.16;
-        color: var(--qidahen-map-ivory);
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.38);
     }
 
     .tutorial-catalog-stage__description {
         margin-top: 0.32rem;
         font-size: 12px;
         line-height: 1.18rem;
-        color: rgba(234, 215, 167, 0.74);
-    }
-
-    .tutorial-catalog-stage__tag {
-        min-height: 22px;
-        border-radius: 0.18rem;
-        border-color: rgba(210, 183, 117, 0.42) !important;
-        background: rgba(32, 21, 13, 0.52) !important;
-        color: rgba(234, 215, 167, 0.88) !important;
-    }
-
-    .tutorial-catalog-stage__tag--recommended {
-        border-color: rgba(159, 52, 38, 0.68) !important;
-        color: #f0c985 !important;
-    }
-
-    .tutorial-catalog-stage__tag--completed {
-        color: #d8c98f !important;
     }
 
     .tutorial-catalog-stage__enter {
-        grid-column-start: 2;
-        width: fit-content;
         min-height: 32px;
-        min-width: 0;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        margin-top: 0;
-        padding: 0 0.76rem;
-        border-left-width: 0;
-        border: 1px solid rgba(210, 183, 117, 0.3);
-        border-radius: 0.2rem;
-        background: rgba(32, 21, 13, 0.55);
-        font-size: 12px;
-        color: var(--qidahen-map-gold);
-        box-shadow: inset 0 1px 0 rgba(234, 215, 167, 0.08);
+    }
+}
+
+@media (max-width: 520px) and (orientation: portrait) {
+    .tutorial-catalog-stage__header {
+        grid-template-columns: 1fr;
     }
 
-    .tutorial-catalog-stage__enter::after {
-        content: "→";
-        font-size: 14px;
-        line-height: 1;
-        transform: translateY(-0.5px);
+    .tutorial-catalog-stage__header::after {
+        display: none;
     }
 
-    @media (prefers-reduced-motion: no-preference) {
-        .tutorial-catalog-stage__entry {
-            animation: tutorial-catalog-entry-in 260ms ease both;
-            animation-delay: calc(var(--tutorial-chapter-index, 0) * 35ms);
-        }
+    .tutorial-catalog-stage__list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .tutorial-catalog-stage__entry {
+        animation: tutorial-catalog-entry-in 260ms ease both;
+        animation-delay: calc(var(--tutorial-chapter-index, 0) * 35ms);
     }
 }
 

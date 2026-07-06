@@ -1466,8 +1466,8 @@
   "thumbnails/the-gang-vault-heist-thumbnail": {
     "variants": {
       "png": {
-        "sha256": "0cf838b063a231069349a3d18421e4f47a57559ea76b464eef1c42eafc745996",
-        "bytes": 233882,
+        "sha256": "9c7b5fdee4de1c811e3fdb86db195953aba22024ba4d4794ed16fcf5dbf4bbdd",
+        "bytes": 295968,
         "mime": "image/png"
       }
     }
@@ -1475,22 +1475,10 @@
   "thumbnails/compressed/the-gang-vault-heist-thumbnail": {
     "variants": {
       "webp": {
-        "sha256": "a1b2cb69195da028ca8169fda786c803b62fa4aac8614229a20821d4e51ae291",
-        "bytes": 45874,
+        "sha256": "467b496553441c48a946e782e391613f55de814cc10e878cae15bf55573883eb",
+        "bytes": 67012,
         "mime": "image/webp"
       }
-    }
-  },
-  "assets": {
-    "thumbnails/the-gang-vault-heist-thumbnail": {
-      "path": "thumbnails/the-gang-vault-heist-thumbnail.png",
-      "type": "image",
-      "format": "png"
-    },
-    "thumbnails/compressed/the-gang-vault-heist-thumbnail": {
-      "path": "thumbnails/compressed/the-gang-vault-heist-thumbnail.webp",
-      "type": "image",
-      "format": "webp"
     }
   }
 }

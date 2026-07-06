@@ -80,6 +80,14 @@
     "progressWaiting": "等待确认",
     "progressNeedsAll": "需要全员确认",
     "progressApprovedCount": "已确认 {{approved}}/{{total}}",
-    "localSeat": "本地座位"
+    "localSeat": "本地座位",
+    "endgame": {
+      "winTitle": "全部结案",
+      "loseTitle": "行动失败",
+      "winSubtitle": "纸牌帮完成三起案件，所有人共同胜利。",
+      "loseSubtitle": "警报累积到三次，纸牌帮这次没能全身而退。",
+      "casesClosed": "结案 {{successes}} / 3",
+      "alarms": "警报 {{failures}} / 3"
+    }
   }
 }

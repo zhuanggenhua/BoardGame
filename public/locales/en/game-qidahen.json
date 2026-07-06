@@ -101,6 +101,7 @@
     },
     "map": {
       "mainMapAlt": "Qidahen main map",
+      "armyBackAlt": "Army back",
       "regionSelectionAria": "Qidahen map region selection",
       "regionTroopsPopulation": "Troops {{troops}} · Population {{population}}",
       "regionSpecialTroops": "Special {{summary}}",
@@ -220,6 +221,7 @@
         "stats": "Source troops {{sourceAvailableTroops}} · Commit {{committedTroops}} · Pressure {{attackPressure}}",
         "boundaryUnitCap": " · Boundary cap {{count}}",
         "actualCommittedTroops": "Actual commit",
+        "actualCommittedTroopsMapFirst": "Actual troops: click the source army token on the map to change the count",
         "attackerCasualtyLabel": "Attacker losses",
         "defenderCasualtyLabel": "Defender losses"
       },

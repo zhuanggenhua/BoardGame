@@ -101,6 +101,7 @@
     },
     "map": {
       "mainMapAlt": "七大恨主地图",
+      "armyBackAlt": "部队背面",
       "regionSelectionAria": "七大恨地图区域选择",
       "regionTroopsPopulation": "兵力 {{troops}} · 人口 {{population}}",
       "regionSpecialTroops": "特殊 {{summary}}",
@@ -220,6 +221,7 @@
         "stats": "本次出兵 {{committedTroops}}",
         "boundaryUnitCap": " · 边界上限 {{count}}",
         "actualCommittedTroops": "实际投入",
+        "actualCommittedTroopsMapFirst": "实际出兵：点击地图上的源地区兵牌切换数量",
         "attackerCasualtyLabel": "攻方承伤",
         "defenderCasualtyLabel": "守方承伤"
       },

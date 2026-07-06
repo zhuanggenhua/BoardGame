@@ -80,6 +80,14 @@
     "progressWaiting": "Waiting",
     "progressNeedsAll": "All players must confirm",
     "progressApprovedCount": "{{approved}}/{{total}} confirmed",
-    "localSeat": "Local seat"
+    "localSeat": "Local seat",
+    "endgame": {
+      "winTitle": "All cases closed",
+      "loseTitle": "Operation failed",
+      "winSubtitle": "The Gang closed three cases and everyone wins together.",
+      "loseSubtitle": "The alarms reached three, and The Gang did not make it out cleanly.",
+      "casesClosed": "Cases {{successes}} / 3",
+      "alarms": "Alarms {{failures}} / 3"
+    }
   }
 }

@@ -15,6 +15,8 @@ description: BoardGame 项目的 AI 接入唯一入口。给游戏添加或修�
 - 新游戏接 AI，需要审查交互闭环与兜底策略
 - 用户提到：`AI 接入`、`AI 适配`、`AI 卡死`、`自动跳过`、`强制推进`、`watchdog`、`response-window`、`无解交互`
 
+若用户关注的是“AI 蠢 / 打法优化 / 策略设计 / 对比大杀四方 / 英雄或卡组画像 / 评分模型重构”，先读项目 skill：`.codex/skill/game-ai-strategy-design/SKILL.md`。本技能只负责 AI 合法动作、交互闭环、卡死和兜底。
+
 ---
 
 ## 先读什么（强制）

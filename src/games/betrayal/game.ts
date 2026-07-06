@@ -3568,7 +3568,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             return { valid: true };
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
-            const cardId = command.payload.cardId ?? core.currentExplorer.inventory[0]?.id;
+            const cardId = command.payload.cardId;
             if (!cardId || !core.currentExplorer.inventory.some((card) => card.id === cardId)) {
                 return { valid: false, error: '当前没有可使用持有物。' };
             }
@@ -3812,6 +3812,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 ));
                 if (livingHeroesInRoom.length === 0) {
                     return { valid: false, error: '当前房间没有可攻击的英雄。' };
+                }
+                if (!command.payload.targetPlayerId) {
+                    return { valid: false, error: '必须选择要攻击的英雄。' };
                 }
                 if (
                     command.payload.targetPlayerId
@@ -4181,8 +4184,10 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
-            const card = core.currentExplorer.inventory.find((item) => item.id === command.payload.cardId)
-                ?? core.currentExplorer.inventory[0]!;
+            const card = core.currentExplorer.inventory.find((item) => item.id === command.payload.cardId);
+            if (!card) {
+                return [];
+            }
             const effect = resolveUseEffect(card);
             if (!effect) {
                 throw new Error(`possession ${card.id} has no active use effect`);
@@ -4653,8 +4658,10 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
                     && explorer.roomId === attackerRoomId
                 ));
-                const targetHero = heroTargets.find((explorer) => explorer.playerId === command.payload.targetPlayerId)
-                    ?? heroTargets[0];
+                const targetHero = heroTargets.find((explorer) => explorer.playerId === command.payload.targetPlayerId);
+                if (!targetHero) {
+                    return [];
+                }
                 const defenderTraitsBeforeDamage = targetHero ? { ...targetHero.traits } : undefined;
                 const attackRoll = jackSpirit
                     ? {

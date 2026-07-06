@@ -1,0 +1,4 @@
+interface:
+  display_name: "策略型游戏AI设计"
+  short_description: "为 BoardGame 项目设计和重构更聪明、可解释、可验证的策略型 AI"
+  default_prompt: "请按本技能流程分析指定游戏 AI 的策略短板，设计可验证的优化方案并实施重构。"

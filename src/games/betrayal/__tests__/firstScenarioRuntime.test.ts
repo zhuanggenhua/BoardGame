@@ -4458,7 +4458,7 @@ describe('Betrayal first scenario runtime', () => {
             afterAttackCore,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
             '2',
-            { target: 'hero' },
+            { target: 'hero', targetPlayerId: '0' },
             100,
             createBetrayalScriptedRandom(1, 1, 1, 1, 1, 1),
         );
@@ -4872,7 +4872,7 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
             '2',
-            { target: 'hero' },
+            { target: 'hero', targetPlayerId: '0' },
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1),
         );
@@ -4903,7 +4903,7 @@ describe('Betrayal first scenario runtime', () => {
             withoutBonus,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
             '2',
-            { target: 'hero' },
+            { target: 'hero', targetPlayerId: '0' },
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 1, 1, 1),
         );
@@ -4931,7 +4931,7 @@ describe('Betrayal first scenario runtime', () => {
             withBonus,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
             '2',
-            { target: 'hero' },
+            { target: 'hero', targetPlayerId: '0' },
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 1, 1, 1),
         );

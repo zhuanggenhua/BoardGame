@@ -243,6 +243,13 @@ test.describe('The Gang 真实入口截图', () => {
 
         const revealZone = page.getByLabel('摊牌结算');
         await expect(revealZone).toBeVisible();
+        await game.screenshot('桌面6人摊牌翻牌过程帧-00-进入结算', testInfo);
+        await page.waitForTimeout(300);
+        await game.screenshot('桌面6人摊牌翻牌过程帧-01-公共牌翻开中', testInfo);
+        await page.waitForTimeout(400);
+        await game.screenshot('桌面6人摊牌翻牌过程帧-02-玩家底牌翻开中', testInfo);
+        await page.waitForTimeout(500);
+        await game.screenshot('桌面6人摊牌翻牌过程帧-03-更多底牌翻开', testInfo);
         await expect(revealZone).toHaveClass(/fixed/);
         await expect(revealZone).toHaveClass(/inset-0/);
         await expect(revealZone).toHaveClass(/overflow-y-auto/);

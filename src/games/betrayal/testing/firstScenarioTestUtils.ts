@@ -152,9 +152,9 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-north' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntSuccessRandom);
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
-
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntSuccessRandom);
     core.currentExplorer.roomId = 'basement-landing';
@@ -198,7 +198,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntProgressRandom);
     core.currentExplorer.roomId = 'basement-landing';
@@ -225,7 +225,7 @@ export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-west' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.LEARN_ABOUT_JACK, '0', {}, 100, hauntProgressRandom);
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
@@ -298,10 +298,10 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'grand-staircase' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'ground-north' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero' }, 100, traitorWinRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero', targetPlayerId: '0' }, 100, traitorWinRandom);
 
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero' }, 100, traitorWinRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero', targetPlayerId: '1' }, 100, traitorWinRandom);
 
     return core;
 }
@@ -317,7 +317,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'ground-north' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'ground-north' });
@@ -327,7 +327,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'grand-staircase' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'ground-north' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero' }, 100, traitorWinRandom);
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.HAUNT_ATTACK, '2', { target: 'hero', targetPlayerId: '0' }, 100, traitorWinRandom);
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 

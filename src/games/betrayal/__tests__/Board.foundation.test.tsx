@@ -1,6 +1,6 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { TutorialProvider } from '../../../contexts/TutorialContext';
@@ -512,10 +512,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('急救包、地图');
     });
 
-    it('搜尸必须在真实页面选择尸体和具体持有物，不能默认拿第一张', () => {
+    it('搜尸必须在真实页面选择尸体和具体持有物，不能默认拿第一张', async () => {
         render(
             <HarnessBoard
                 initialCore={createCorpseLootReadyCore()}
+                playerID="1"
                 matchData={defaultMatchData.slice(0, 3)}
             />,
         );
@@ -529,7 +530,9 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-corpse-loot-card-corpse-omen-1'));
         fireEvent.click(screen.getByTestId('betrayal-action-trade'));
 
-        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('拿走了黑暗预兆');
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('拿走了黑暗预兆');
+        });
     });
 
     it('圣符和雕像会在真实页面探索入口传入声明', () => {
@@ -735,15 +738,21 @@ describe('Betrayal Board foundation', () => {
         expect(within(endgameMain).getByText('队友一')).toBeInTheDocument();
     });
 
-    it('叛徒复活后若同房间已有英雄，房间焦点应优先给攻击英雄而不是单一移动目标', () => {
-        renderBoard(createJackSpiritPostReviveAttackReadyCore(), {
-            playerID: '2',
-            matchData: defaultMatchData.slice(0, 3),
-        });
+    it('叛徒复活后若同房间已有英雄，必须点击英雄对象而不是自动代选目标', async () => {
+        render(
+            <HarnessBoard
+                initialCore={createJackSpiritPostReviveAttackReadyCore()}
+                playerID="2"
+                matchData={defaultMatchData.slice(0, 3)}
+            />,
+        );
 
-        expect(screen.getByTestId('betrayal-room-focus-target')).toHaveTextContent('攻击测试玩家');
+        expect(screen.queryByTestId('betrayal-room-focus-target')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-attack-hero-target-0')).toHaveTextContent('测试玩家');
-        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('现在：点攻击测试玩家');
+        fireEvent.click(screen.getByTestId('betrayal-attack-hero-target-0'));
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('扑向英雄');
+        });
     });
 
     it('砍刀会在真实页面攻击入口选择武器并传入攻击命令', () => {
