@@ -17,18 +17,23 @@ async function saveScreenshot(page: import('@playwright/test').Page, path: strin
     await page.screenshot({ path, fullPage: false });
 }
 
+async function readDiceValues(game: import('../framework').GameTestContext): Promise<number[]> {
+    const state = await game.getState();
+    return (state?.core?.dice ?? []).map((die: { value: number }) => die.value);
+}
+
 async function waitForValidDiceValues(
     game: import('../framework').GameTestContext,
     timeout = 8000,
 ): Promise<number[]> {
-    const values = await expect.poll(async () => {
+    await expect.poll(async () => {
         const state = await game.getState();
         const values = (state?.core?.dice ?? []).map((die: { value: number }) => die.value);
         return values.length === 5 && values.every((value: number) => value >= 1 && value <= 6)
-            ? values
-            : [];
-    }, { timeout }).not.toEqual([]);
-    return values;
+            ? 'valid'
+            : 'invalid';
+    }, { timeout }).toBe('valid');
+    return readDiceValues(game);
 }
 
 async function waitForBoardVisualAssets(page: import('@playwright/test').Page) {
@@ -215,8 +220,7 @@ test.describe('DiceThrone 3D 骰子端到端视觉验收', () => {
             rerolledCount: 5,
         });
         await expect.poll(async () => {
-            const state = await game.getState();
-            return (state?.core?.dice ?? []).map((die: { value: number }) => die.value);
+            return readDiceValues(game);
         }, { timeout: 8000 }).not.toEqual(rolledValues);
         await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-just-this"]')).toHaveCount(0, { timeout: 5000 });
         await page.waitForTimeout(450);
