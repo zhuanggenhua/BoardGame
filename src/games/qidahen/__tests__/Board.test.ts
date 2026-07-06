@@ -55,7 +55,6 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-post-battle-dice-summary"',
     'data-testid={`qidahen-post-battle-choice-${choice.id}`}',
     'data-testid="qidahen-wheel-dispatch-selection"',
-    'data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}',
     'data-testid="qidahen-actions-zone"',
     'data-tutorial-id="qidahen-actions-zone"',
     'data-testid="qidahen-action-slot"',
@@ -330,7 +329,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("defaultValue: '处理外交与雇佣'");
         expect(boardSource).toContain("defaultValue: '在地图上点击外交目标；下方地区按钮仅作备用 · {{targetHint}}'");
         expect(boardSource).toContain("defaultValue: '进攻目标'");
-        expect(boardSource).toContain("defaultValue: '{{targetRegionName}} · {{defenderLabel}}'");
+        expect(boardSource).toContain("if (wheelDispatchSelection) {");
+        expect(boardSource).toContain("action: 'wheel-dispatch' as const");
         expect(boardSource).not.toContain("defaultValue: '先选建军方式；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
         expect(boardSource).not.toContain("defaultValue: '先选建军数量；需要时再改目标地区（当前聚焦 {{targetRegionName}}）'");
         expect(boardSource).not.toContain("defaultValue: '先选执行效果；需要时再改来源地区（当前聚焦 {{sourceRegionName}}）'");
@@ -384,12 +384,15 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("candidate.action === 'grant-pardon'");
         expect(boardSource).toContain('const choice = grantPardonMapChoices.find((item) => item.targetRegionId === regionId);');
         expect(boardSource).toContain('resolveGrantPardonChoice(choice.id);');
+        expect(boardSource).toContain('const grantPardonHasMapTargets = Boolean(grantPardonSelection?.choices.length);');
+        expect(boardSource).toContain('grantPardonHasMapTargets ? null : (');
         expect(boardSource).toContain('grantPardonSelection?.choices.filter((choice) => isTutorialTargetAllowed(choice.id)) ?? []');
         expect(boardSource).toContain('for (const choice of grantPardonMapChoices)');
         expect(boardSource).toContain("if (tutorialStepId !== 'choose-grant-pardon-target') {");
         expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'source');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'dispatch');");
-        expect(boardSource).toContain("const mapSelectionGuideUsesRegionHighlight = tutorialStepId === 'choose-grant-pardon-target';");
+        expect(boardSource).toContain('const mapSelectionGuideUsesRegionHighlight = grantPardonSelection != null');
+        expect(boardSource).toContain("|| tutorialStepId === 'choose-grant-pardon-target';");
         expect(boardSource).toContain('const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;');
         expect(boardSource).toContain('{mapSelectionGuideDrawsRoute ? (');
         expect(boardSource).toContain("topLevelMapSelectionGuide && tutorialStep?.id === 'choose-grant-pardon-target'");
@@ -412,6 +415,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}');
         expect(boardSource).toContain('data-action={candidate.action}');
         expect(boardSource).toContain('onClick={() => activateTopLevelGuideTarget(candidate)}');
+        expect(boardSource).not.toContain('data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}');
         expect(boardSource).toContain('selectRegion(candidate.targetRegionId);');
         expect(boardSource).toContain('data-testid={`qidahen-recruit-choice-${choice.id}`}');
         expect(boardSource).toContain('data-testid={`qidahen-ma-shi-trade-choice-${choice.troopCount}`}');

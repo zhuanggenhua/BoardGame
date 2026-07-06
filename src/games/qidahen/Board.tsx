@@ -1848,7 +1848,8 @@ const MapSceneLayer: React.FC<{
     const mapSelectionBannerInteractive = mapSelectionGuide != null
         && pendingTargetAction == null
         && mapSelectionGuide.candidates.length > 0;
-    const mapSelectionGuideUsesRegionHighlight = tutorialStepId === 'choose-grant-pardon-target';
+    const mapSelectionGuideUsesRegionHighlight = grantPardonSelection != null
+        || tutorialStepId === 'choose-grant-pardon-target';
     const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;
 
     return (
@@ -2863,10 +2864,10 @@ const ActionsZone: React.FC<{
     onResolvePostBattleDecision: (choiceId: string) => void;
     isTutorialCommandAllowed?: (commandType: string) => boolean;
     isTutorialTargetAllowed?: (targetId: string | null | undefined) => boolean;
-    tutorialStepId?: string | null;
-}> = ({ core, primaryStageMode, isTutorialActive, tutorialInfoStepActive, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, grantPardonSelection, grantPardonMapChoices, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGrantPardonChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed, tutorialStepId }) => {
+}> = ({ core, primaryStageMode, isTutorialActive, tutorialInfoStepActive, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, grantPardonSelection, grantPardonMapChoices, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGrantPardonChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-qidahen');
     const actionSlotRef = React.useRef<HTMLDivElement>(null);
+    const grantPardonHasMapTargets = Boolean(grantPardonSelection?.choices.length);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
     const pendingScenarioChoices = core.scenarioVote != null
         || core.pendingScenarioCharacterChoices.length > 0
@@ -3204,7 +3205,7 @@ const ActionsZone: React.FC<{
                         color: UI_STYLE.mapIvory,
                         boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
                         borderRadius: 3,
-                        opacity: tutorialStepId === 'choose-grant-pardon-target' && grantPardonMapChoices.length === 1 ? 0.68 : 1,
+                        opacity: grantPardonHasMapTargets ? 0.72 : 1,
                     }}
                 >
                     <div>{grantPardonSelection.title}</div>
@@ -3216,28 +3217,30 @@ const ActionsZone: React.FC<{
                             defaultValue: '主路径：点击地图上的目标地区完成招安；列表只作备用。{{summary}}',
                         })}
                     </div>
-                    <div className={tutorialStepId === 'choose-grant-pardon-target' && grantPardonMapChoices.length === 1 ? 'sr-only' : 'mt-2 flex flex-col gap-2'}>
-                        <div className="text-[10px] font-black uppercase tracking-[0.08em]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.actions.grantPardon.fallbackListLabel', { defaultValue: '备用选择' })}
-                        </div>
-                        {(grantPardonMapChoices.length > 0 ? grantPardonMapChoices : grantPardonSelection.choices).map((choice) => (
-                            <button
-                                key={choice.id}
-                                type="button"
-                                data-testid={`qidahen-grant-pardon-choice-${choice.id}`}
-                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                onClick={() => onResolveGrantPardonChoice(choice.id)}
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {choice.detail}
+                    {grantPardonHasMapTargets ? null : (
+                        <div className="mt-2 flex flex-col gap-2">
+                            <div className="text-[10px] font-black uppercase tracking-[0.08em]" style={{ color: UI_STYLE.mapGold }}>
+                                {t('board.actions.grantPardon.fallbackListLabel', { defaultValue: '备用选择' })}
+                            </div>
+                            {grantPardonSelection.choices.map((choice) => (
+                                <button
+                                    key={choice.id}
+                                    type="button"
+                                    data-testid={`qidahen-grant-pardon-choice-${choice.id}`}
+                                    className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    onClick={() => onResolveGrantPardonChoice(choice.id)}
+                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                >
+                                    <span className="min-w-0">
+                                        <span className="block text-[13px]">{choice.label}</span>
+                                        <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                            {choice.detail}
+                                        </span>
                                     </span>
-                                </span>
-                            </button>
-                        ))}
-                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             ) : null}
             {maShiTradeSelection ? (
@@ -3445,42 +3448,6 @@ const ActionsZone: React.FC<{
                             count: wheelDispatchSelection.candidates.length,
                             defaultValue: '进攻目标',
                         })}
-                    </div>
-                    <div className="mt-2 max-h-[236px] overflow-y-auto pr-1">
-                        <div className="flex flex-col gap-2">
-                        {wheelDispatchSelection.candidates.map((candidate) => (
-                            <div
-                                key={candidate.targetRuntimeRegionId}
-                                data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}
-                                className="inline-flex min-h-[50px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black"
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block text-[13px]">
-                                        {t('board.actions.wheelDispatch.targetSummary', {
-                                            targetRegionName: candidate.targetRegionName,
-                                            defenderLabel: candidate.defenderLabel,
-                                            defaultValue: '{{targetRegionName}} · {{defenderLabel}}',
-                                        })}
-                                    </span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                        {t('board.actions.wheelDispatch.stats', {
-                                            sourceAvailableTroops: candidate.sourceAvailableTroops,
-                                            committedTroops: candidate.committedTroops,
-                                            attackPressure: candidate.attackPressure,
-                                            defaultValue: '本次出兵 {{committedTroops}}',
-                                        })}
-                                    </span>
-                                </span>
-                                <span className="shrink-0 text-[11px]" style={{ color: '#2f7a40' }}>
-                                    {t('board.actions.wheelDispatch.travelCost', {
-                                        totalTravelCost: candidate.totalTravelCost,
-                                        defaultValue: '耗 {{totalTravelCost}}',
-                                    })}
-                                </span>
-                            </div>
-                        ))}
-                        </div>
                     </div>
                 </div>
             ) : null}
@@ -5346,7 +5313,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onResolvePendingAction={resolvePendingAction}
                 onResolvePostBattleDecision={resolvePostBattleDecision}
                 wheelDispatchSelection={wheelDispatchSelection}
-                tutorialStepId={tutorialStep?.id ?? null}
             />
             <HandInteractionTray
                 core={core}

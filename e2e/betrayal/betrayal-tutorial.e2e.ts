@@ -150,18 +150,31 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
         const button = node as HTMLElement;
         const shell = button.querySelector('[data-testid$="-shell"]') as HTMLElement | null;
         const modifier = button.querySelector('[data-testid$="-roll-modifier"]') as HTMLElement | null;
+        const selectedOutline = button.querySelector('[data-testid$="-selected-outline"]') as HTMLElement | null;
         const buttonStyle = window.getComputedStyle(button);
         const shellStyle = shell ? window.getComputedStyle(shell) : null;
         const modifierStyle = modifier ? window.getComputedStyle(modifier) : null;
+        const selectedOutlineStyle = selectedOutline ? window.getComputedStyle(selectedOutline) : null;
         const modifierRect = modifier?.getBoundingClientRect();
+        const selectedOutlineRect = selectedOutline?.getBoundingClientRect();
         const shellRect = shell?.getBoundingClientRect();
         return {
             buttonShadowLayers: buttonStyle.boxShadow === 'none' ? 0 : buttonStyle.boxShadow.split('),').length,
             shellBoxShadow: shellStyle?.boxShadow ?? null,
+            modifierExists: Boolean(modifier),
+            selectedOutlineExists: Boolean(selectedOutline),
+            selectedBorderTop: selectedOutlineStyle?.borderTopWidth ?? null,
+            selectedBorderRight: selectedOutlineStyle?.borderRightWidth ?? null,
+            selectedBorderBottom: selectedOutlineStyle?.borderBottomWidth ?? null,
+            selectedBorderLeft: selectedOutlineStyle?.borderLeftWidth ?? null,
             modifierBorderTop: modifierStyle?.borderTopWidth ?? null,
             modifierBorderRight: modifierStyle?.borderRightWidth ?? null,
             modifierBorderBottom: modifierStyle?.borderBottomWidth ?? null,
             modifierBorderLeft: modifierStyle?.borderLeftWidth ?? null,
+            selectedInsetLeft: selectedOutlineRect && shellRect ? Math.round(selectedOutlineRect.left - shellRect.left) : null,
+            selectedInsetRight: selectedOutlineRect && shellRect ? Math.round(shellRect.right - selectedOutlineRect.right) : null,
+            selectedInsetTop: selectedOutlineRect && shellRect ? Math.round(selectedOutlineRect.top - shellRect.top) : null,
+            selectedInsetBottom: selectedOutlineRect && shellRect ? Math.round(shellRect.bottom - selectedOutlineRect.bottom) : null,
             modifierInsetLeft: modifierRect && shellRect ? Math.round(modifierRect.left - shellRect.left) : null,
             modifierInsetRight: modifierRect && shellRect ? Math.round(shellRect.right - modifierRect.right) : null,
             modifierInsetTop: modifierRect && shellRect ? Math.round(modifierRect.top - shellRect.top) : null,
@@ -170,14 +183,14 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
     });
     expect(outline.buttonShadowLayers, '选中/可改骰按钮外发光不能叠成多圈描边').toBeLessThanOrEqual(2);
     expect(outline.shellBoxShadow, '卡牌壳层内部不应额外叠阴影').toBe('none');
-    expect(outline.modifierBorderTop).toBe('2px');
-    expect(outline.modifierBorderRight).toBe('2px');
-    expect(outline.modifierBorderBottom).toBe('2px');
-    expect(outline.modifierBorderLeft).toBe('2px');
-    expect(outline.modifierInsetLeft, '可改骰内描边左侧内缩必须和右侧对称').toBe(outline.modifierInsetRight);
-    expect(outline.modifierInsetTop, '可改骰内描边上侧内缩必须和下侧对称').toBe(outline.modifierInsetBottom);
-    expect(outline.modifierInsetLeft, '可改骰内描边必须留在卡面内，不能向左外溢叠边').toBeGreaterThanOrEqual(1);
-    expect(outline.modifierInsetTop, '可改骰内描边必须留在卡面内，不能向下被持有区裁切').toBeGreaterThanOrEqual(1);
+    expect(outline.modifierExists, '选中态不能再叠加内部改骰描边，避免左边和下边视觉加粗').toBe(false);
+    expect(outline.selectedOutlineExists, '选中态需要一层独立外描边').toBe(true);
+    expect(outline.selectedBorderTop).toBe('2px');
+    expect(outline.selectedBorderRight).toBe('2px');
+    expect(outline.selectedBorderBottom).toBe('2px');
+    expect(outline.selectedBorderLeft).toBe('2px');
+    expect(outline.selectedInsetLeft, '选中外描边左侧外扩必须和右侧对称').toBe(outline.selectedInsetRight);
+    expect(outline.selectedInsetTop, '选中外描边上侧外扩必须和下侧对称').toBe(outline.selectedInsetBottom);
 };
 
 const expectTutorialNextDoesNotStealRollModifierFocus = async (page: Parameters<typeof test>[0]['page']) => {

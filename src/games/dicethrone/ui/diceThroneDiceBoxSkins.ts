@@ -16,20 +16,11 @@ export interface DiceThroneDiceBoxSkin {
     preferPresetMaterials: true;
 }
 
-const DICE_BOX_FACE_ART_SCALE = 0.66;
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
-const DICE_FACE_BACKGROUND_RGB = { r: 224, g: 215, b: 178 };
-const DICE_BOX_NUMBER_ERASE_PADDING = 0.035;
-const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 34;
 const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
-
-type SpriteComponentBounds = {
-    area: number;
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-};
+const DICE_BOX_FACE_CANVAS_SIZE = 512;
+const DICE_BOX_FACE_ART_SCALE = 0.62;
+const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 38;
 
 type RgbColor = {
     r: number;
@@ -62,15 +53,19 @@ const drawDieFaceBase = (ctx: CanvasRenderingContext2D, size: number) => {
     drawRoundedRect(ctx, 0, 0, size, size, radius);
     ctx.clip();
 
-    ctx.fillStyle = '#ffffff';
+    const face = ctx.createLinearGradient(0, 0, size, size);
+    face.addColorStop(0, '#fffdf6');
+    face.addColorStop(0.62, '#f6f1df');
+    face.addColorStop(1, '#ddd5bd');
+    ctx.fillStyle = face;
     ctx.fillRect(0, 0, size, size);
 
     ctx.restore();
 
     const edge = ctx.createLinearGradient(0, 0, size, size);
-    edge.addColorStop(0, 'rgba(255,255,255,0.42)');
-    edge.addColorStop(0.5, 'rgba(255,255,255,0.04)');
-    edge.addColorStop(1, 'rgba(70,70,70,0.08)');
+    edge.addColorStop(0, 'rgba(255,255,255,0.62)');
+    edge.addColorStop(0.5, 'rgba(120,110,82,0.08)');
+    edge.addColorStop(1, 'rgba(55,48,34,0.18)');
     ctx.strokeStyle = edge;
     ctx.lineWidth = size * 0.018;
     drawRoundedRect(ctx, size * 0.01, size * 0.01, size - size * 0.02, size - size * 0.02, radius);
@@ -100,7 +95,7 @@ const loadImageFromCandidates = (urls: string[]): Promise<HTMLImageElement | nul
 });
 
 const createEdgeCanvas = () => {
-    const size = 512;
+    const size = DICE_BOX_FACE_CANVAS_SIZE;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -161,189 +156,31 @@ const estimateFaceBackgroundColor = (
         ))
         .filter((color): color is RgbColor => Boolean(color));
 
-    if (colors.length === 0) return DICE_FACE_BACKGROUND_RGB;
-
-    const sortedByReference = [...colors].sort((a, b) => (
-        colorDistance(a.r, a.g, a.b, DICE_FACE_BACKGROUND_RGB)
-        - colorDistance(b.r, b.g, b.b, DICE_FACE_BACKGROUND_RGB)
-    ));
-    const usable = sortedByReference.slice(0, Math.max(3, Math.ceil(sortedByReference.length * 0.65)));
+    if (colors.length === 0) {
+        return { r: 224, g: 215, b: 178 };
+    }
 
     return {
-        r: Math.round(usable.reduce((sum, color) => sum + color.r, 0) / usable.length),
-        g: Math.round(usable.reduce((sum, color) => sum + color.g, 0) / usable.length),
-        b: Math.round(usable.reduce((sum, color) => sum + color.b, 0) / usable.length),
+        r: Math.round(colors.reduce((sum, color) => sum + color.r, 0) / colors.length),
+        g: Math.round(colors.reduce((sum, color) => sum + color.g, 0) / colors.length),
+        b: Math.round(colors.reduce((sum, color) => sum + color.b, 0) / colors.length),
     };
 };
 
-const isResidualAtlasFaceBackgroundPixel = (
-    r: number,
-    g: number,
-    b: number,
-    alpha: number,
-    backgroundColor: RgbColor,
-) => {
-    if (alpha < 16) return true;
-    return colorDistance(r, g, b, backgroundColor) <= DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE;
-};
-
-const isVisibleSpritePixel = (data: Uint8ClampedArray, width: number, x: number, y: number) => {
-    const offset = (y * width + x) * 4;
-    const alpha = data[offset + 3] ?? 0;
-    return alpha >= 16;
-};
-
-const extractSpriteComponents = (
-    data: Uint8ClampedArray,
-    width: number,
-    height: number,
-) => {
-    const visited = new Uint8Array(width * height);
-    const components: SpriteComponentBounds[] = [];
-    const queue: number[] = [];
-
-    for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) {
-            const startIndex = y * width + x;
-            if (visited[startIndex] || !isVisibleSpritePixel(data, width, x, y)) {
-                visited[startIndex] = 1;
-                continue;
-            }
-
-            let area = 0;
-            let minX = x;
-            let minY = y;
-            let maxX = x;
-            let maxY = y;
-            queue.length = 0;
-            queue.push(startIndex);
-            visited[startIndex] = 1;
-
-            for (let cursor = 0; cursor < queue.length; cursor += 1) {
-                const index = queue[cursor] ?? 0;
-                const cx = index % width;
-                const cy = Math.floor(index / width);
-                area += 1;
-                minX = Math.min(minX, cx);
-                minY = Math.min(minY, cy);
-                maxX = Math.max(maxX, cx);
-                maxY = Math.max(maxY, cy);
-
-                const neighbors = [
-                    index - 1,
-                    index + 1,
-                    index - width,
-                    index + width,
-                ];
-                for (const neighbor of neighbors) {
-                    if (neighbor < 0 || neighbor >= visited.length || visited[neighbor]) continue;
-                    const nx = neighbor % width;
-                    const ny = Math.floor(neighbor / width);
-                    if (Math.abs(nx - cx) + Math.abs(ny - cy) !== 1) continue;
-                    visited[neighbor] = 1;
-                    if (isVisibleSpritePixel(data, width, nx, ny)) {
-                        queue.push(neighbor);
-                    }
-                }
-            }
-
-            if (area > 20) {
-                components.push({ area, minX, minY, maxX, maxY });
-            }
-        }
-    }
-
-    return components;
-};
-
-const isAtlasNumberComponent = (
-    faceValue: number,
-    bounds: SpriteComponentBounds,
-    width: number,
-    height: number,
-) => {
-    const centerX = (bounds.minX + bounds.maxX) / 2;
-    const centerY = (bounds.minY + bounds.maxY) / 2;
-    const componentWidth = bounds.maxX - bounds.minX + 1;
-    const componentHeight = bounds.maxY - bounds.minY + 1;
-    const isTopLeftNumber = centerX < width * 0.42 && centerY < height * 0.5;
-    const isBottomRightNumber = centerX > width * 0.58 && centerY > height * 0.55;
-    const isNarrowDigit = componentWidth < width * 0.34 || componentHeight < height * 0.42;
-
+const isAtlasPrintedNumberPixel = (faceValue: number, x: number, y: number, width: number, height: number) => {
+    const xRatio = x / Math.max(1, width - 1);
+    const yRatio = y / Math.max(1, height - 1);
     if (faceValue === 1 || faceValue === 6) {
-        return isBottomRightNumber && isNarrowDigit;
+        return xRatio >= 0.55 && yRatio >= 0.46;
     }
-    return isTopLeftNumber && isNarrowDigit;
+    return xRatio <= 0.43 && yRatio <= 0.5;
 };
 
-const eraseAtlasPrintedNumber = (
+const drawOfficialAtlasFace = (
     ctx: CanvasRenderingContext2D,
-    faceValue: number,
-    size: number,
-) => {
-    const padding = size * DICE_BOX_NUMBER_ERASE_PADDING;
-    const fillNumberArea = (x: number, y: number, width: number, height: number) => {
-        ctx.save();
-        ctx.fillStyle = `rgb(${DICE_FACE_BACKGROUND_RGB.r}, ${DICE_FACE_BACKGROUND_RGB.g}, ${DICE_FACE_BACKGROUND_RGB.b})`;
-        ctx.fillRect(x - padding, y - padding, width + padding * 2, height + padding * 2);
-        ctx.restore();
-    };
-
-    if (faceValue === 1 || faceValue === 6) {
-        fillNumberArea(size * 0.57, size * 0.48, size * 0.36, size * 0.42);
-        return;
-    }
-
-    fillNumberArea(size * 0.05, size * 0.05, size * 0.34, size * 0.42);
-};
-
-const mergeSpriteComponentBounds = (
-    components: SpriteComponentBounds[],
-    faceValue: number,
-    width: number,
-    height: number,
-) => {
-    const symbolComponents = components
-        .filter((component) => !isAtlasNumberComponent(faceValue, component, width, height))
-        .filter((component) => component.area >= Math.max(72, width * height * 0.002));
-    const usableComponents = symbolComponents.length > 0 ? symbolComponents : components;
-    if (usableComponents.length === 0) return null;
-
-    const anchor = usableComponents.reduce((best, component) => (
-        component.area > best.area ? component : best
-    ));
-    const anchorCenterX = (anchor.minX + anchor.maxX) / 2;
-    const anchorCenterY = (anchor.minY + anchor.maxY) / 2;
-    const maxDistance = Math.min(width, height) * 0.32;
-    const relatedComponents = usableComponents.filter((component) => {
-        if (component === anchor) return true;
-        const centerX = (component.minX + component.maxX) / 2;
-        const centerY = (component.minY + component.maxY) / 2;
-        const distance = Math.hypot(centerX - anchorCenterX, centerY - anchorCenterY);
-        return distance <= maxDistance || component.area >= anchor.area * 0.18;
-    });
-
-    return relatedComponents.reduce<SpriteComponentBounds>((merged, component) => ({
-        area: merged.area + component.area,
-        minX: Math.min(merged.minX, component.minX),
-        minY: Math.min(merged.minY, component.minY),
-        maxX: Math.max(merged.maxX, component.maxX),
-        maxY: Math.max(merged.maxY, component.maxY),
-    }), {
-        area: 0,
-        minX: width,
-        minY: height,
-        maxX: -1,
-        maxY: -1,
-    });
-};
-
-const drawAtlasSymbol = (
-    targetCtx: CanvasRenderingContext2D,
     atlasImage: HTMLImageElement | null,
     faceValue: number,
     size: number,
-    artScale = DICE_BOX_FACE_ART_SCALE,
 ) => {
     if (!atlasImage?.naturalWidth || !atlasImage.naturalHeight) return;
 
@@ -369,11 +206,14 @@ const drawAtlasSymbol = (
         spriteCanvas.width,
         spriteCanvas.height,
     );
-    eraseAtlasPrintedNumber(spriteCtx, faceValue, spriteCanvas.width);
 
     const imageData = spriteCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
     const data = imageData.data;
     const backgroundColor = estimateFaceBackgroundColor(data, spriteCanvas.width, spriteCanvas.height);
+    let minX = spriteCanvas.width;
+    let minY = spriteCanvas.height;
+    let maxX = -1;
+    let maxY = -1;
 
     for (let y = 0; y < spriteCanvas.height; y += 1) {
         for (let x = 0; x < spriteCanvas.width; x += 1) {
@@ -382,40 +222,42 @@ const drawAtlasSymbol = (
             const g = data[offset + 1] ?? 0;
             const b = data[offset + 2] ?? 0;
             const alpha = data[offset + 3] ?? 0;
+            const isBackground = alpha < 16
+                || colorDistance(r, g, b, backgroundColor) <= DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE;
+            const isPrintedNumber = isAtlasPrintedNumberPixel(faceValue, x, y, spriteCanvas.width, spriteCanvas.height);
 
-            if (isResidualAtlasFaceBackgroundPixel(r, g, b, alpha, backgroundColor)) {
+            if (isBackground || isPrintedNumber) {
                 data[offset + 3] = 0;
+                continue;
             }
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
         }
     }
 
+    if (maxX < minX || maxY < minY) return;
     spriteCtx.putImageData(imageData, 0, 0);
 
-    const components = extractSpriteComponents(data, spriteCanvas.width, spriteCanvas.height);
-    const bounds = mergeSpriteComponentBounds(components, faceValue, spriteCanvas.width, spriteCanvas.height);
-    if (!bounds || bounds.area < 24) return;
-
-    const padding = Math.max(4, Math.round(Math.min(spriteCanvas.width, spriteCanvas.height) * 0.026));
-    const minX = Math.max(0, bounds.minX - padding);
-    const minY = Math.max(0, bounds.minY - padding);
-    const maxX = Math.min(spriteCanvas.width - 1, bounds.maxX + padding);
-    const maxY = Math.min(spriteCanvas.height - 1, bounds.maxY + padding);
-    const spriteWidth = maxX - minX + 1;
-    const spriteHeight = maxY - minY + 1;
-    if (spriteWidth < 2 || spriteHeight < 2) return;
-    const maxTarget = size * artScale;
-    const targetScale = Math.min(maxTarget / spriteWidth, maxTarget / spriteHeight);
-    const targetWidth = spriteWidth * targetScale;
-    const targetHeight = spriteHeight * targetScale;
+    const padding = Math.max(3, Math.round(Math.min(spriteCanvas.width, spriteCanvas.height) * 0.02));
+    const cropX = Math.max(0, minX - padding);
+    const cropY = Math.max(0, minY - padding);
+    const cropW = Math.min(spriteCanvas.width, maxX + padding + 1) - cropX;
+    const cropH = Math.min(spriteCanvas.height, maxY + padding + 1) - cropY;
+    const maxTarget = size * DICE_BOX_FACE_ART_SCALE;
+    const scale = Math.min(maxTarget / cropW, maxTarget / cropH);
+    const targetWidth = cropW * scale;
+    const targetHeight = cropH * scale;
     const targetX = (size - targetWidth) / 2;
     const targetY = (size - targetHeight) / 2;
 
-    targetCtx.drawImage(
+    ctx.drawImage(
         spriteCanvas,
-        minX,
-        minY,
-        spriteWidth,
-        spriteHeight,
+        cropX,
+        cropY,
+        cropW,
+        cropH,
         targetX,
         targetY,
         targetWidth,
@@ -427,7 +269,7 @@ const createFaceCanvas = (
     faceValue: number,
     atlasImage: HTMLImageElement | null,
 ) => {
-    const size = 512;
+    const size = DICE_BOX_FACE_CANVAS_SIZE;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -436,7 +278,7 @@ const createFaceCanvas = (
 
     ctx.clearRect(0, 0, size, size);
     drawDieFaceBase(ctx, size);
-    drawAtlasSymbol(ctx, atlasImage, faceValue, size);
+    drawOfficialAtlasFace(ctx, atlasImage, faceValue, size);
 
     return canvas;
 };

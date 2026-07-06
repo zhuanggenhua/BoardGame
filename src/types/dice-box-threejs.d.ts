@@ -41,6 +41,7 @@ declare module '@3d-dice/dice-box-threejs' {
             flipY?: boolean;
             generateMipmaps?: boolean;
             colorSpace?: string;
+            clone?: () => NonNullable<DiceBoxMaterialInstance['map']>;
         } | null;
         bumpMap?: unknown;
         color?: { set: (value: number | string) => void };
@@ -55,6 +56,7 @@ declare module '@3d-dice/dice-box-threejs' {
         depthTest?: boolean;
         depthWrite?: boolean;
         needsUpdate?: boolean;
+        clone?: () => DiceBoxMaterialInstance;
     }
 
     export interface DiceBoxPreset {
@@ -76,6 +78,11 @@ declare module '@3d-dice/dice-box-threejs' {
             groups?: Array<{
                 materialIndex: number;
             }>;
+            clone?: () => DiceBoxDie['geometry'];
+            elementsNeedUpdate?: boolean;
+            getAttribute?: (name: string) => {
+                array: ArrayLike<number>;
+            };
             boundingBox?: {
                 min: {
                     x: number;

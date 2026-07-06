@@ -379,7 +379,7 @@ export const TutorialOverlay: React.FC = () => {
             }
 
             const padding = 12;
-            const tooltipWidth = 280;
+            const tooltipWidth = 384;
             // 用实际 DOM 尺寸，首次渲染前 fallback 到估算值
             const measured = tooltipRef.current?.getBoundingClientRect();
             const tooltipHeight = measured ? measured.height : 160;

@@ -2,9 +2,10 @@ import { describe, expect, test } from 'vitest';
 import type { AiDecisionContext } from '../../../engine/ai';
 import { buildAiDecisionContext } from '../../../engine/ai';
 import { createReplayAdapter } from '../../../engine/adapter';
+import { resolveNextLocalAiAction } from '../../../engine/ai/localRunner';
 import { TheGangDomain } from '../domain';
 import { buildTheGangAiLegalActions, theGangAiRuntime } from '../ai';
-import '../game';
+import { engineConfig } from '../game';
 import { THE_GANG_COMMANDS } from '../domain/types';
 
 const setupState = () => {
@@ -140,5 +141,102 @@ describe('The Gang local AI', () => {
 
         expect(decision).not.toBeNull();
         expect(context.legalActions.some((action) => action.actionId === decision?.actionId)).toBe(true);
+    });
+
+    test('本地 AI runner 会在真人操作后连续派发 AI 选筹码与推进确认', async () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-runner-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const seatControllers = {
+            '0': { type: 'human' as const },
+            '1': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+            '2': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+        };
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 1,
+        }).state;
+
+        const firstAiChip = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'the-gang-ai-runner-test',
+            seatControllers,
+        });
+        expect(firstAiChip?.playerId).toBe('1');
+        expect(firstAiChip?.action.kind).toBe('take-chip');
+        for (const command of firstAiChip?.action.commands ?? []) {
+            state = adapter.execute(state, {
+                type: command.type as typeof THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId: firstAiChip!.playerId,
+                payload: command.payload as { chip: number },
+                timestamp: 2,
+            }).state;
+        }
+
+        const secondAiChip = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'the-gang-ai-runner-test',
+            seatControllers,
+        });
+        expect(secondAiChip?.playerId).toBe('2');
+        expect(secondAiChip?.action.kind).toBe('take-chip');
+        for (const command of secondAiChip?.action.commands ?? []) {
+            state = adapter.execute(state, {
+                type: command.type as typeof THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId: secondAiChip!.playerId,
+                payload: command.payload as { chip: number },
+                timestamp: 3,
+            }).state;
+        }
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.END_ROUND,
+            playerId: '0',
+            payload: {},
+            timestamp: 4,
+        }).state;
+
+        const firstAiApproval = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'the-gang-ai-runner-test',
+            seatControllers,
+        });
+        expect(firstAiApproval?.playerId).toBe('1');
+        expect(firstAiApproval?.action.kind).toBe('end-round');
+        for (const command of firstAiApproval?.action.commands ?? []) {
+            state = adapter.execute(state, {
+                type: command.type as typeof THE_GANG_COMMANDS.END_ROUND,
+                playerId: firstAiApproval!.playerId,
+                payload: {},
+                timestamp: 5,
+            }).state;
+        }
+
+        const secondAiApproval = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'the-gang-ai-runner-test',
+            seatControllers,
+        });
+        expect(secondAiApproval?.playerId).toBe('2');
+        expect(secondAiApproval?.action.kind).toBe('end-round');
+        for (const command of secondAiApproval?.action.commands ?? []) {
+            state = adapter.execute(state, {
+                type: command.type as typeof THE_GANG_COMMANDS.END_ROUND,
+                playerId: secondAiApproval!.playerId,
+                payload: {},
+                timestamp: 6,
+            }).state;
+        }
+
+        expect(state.core.round).toBe(2);
+        expect(state.core.communityCards).toHaveLength(3);
+        expect(state.core.currentRoundChips).toEqual({});
+        expect(state.core.pendingProgress).toBeUndefined();
     });
 });

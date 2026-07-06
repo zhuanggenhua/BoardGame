@@ -3,7 +3,7 @@ import { createAiLegalActionId } from '../../engine/ai';
 import type { AiDecisionContext, AiLegalAction, GameAiRuntime, LocalAiPolicy } from '../../engine/ai';
 import { evaluateBestTexasHoldemHand } from './domain';
 import { getChipValues } from './domain/setup';
-import { THE_GANG_COMMANDS, type TheGangCore } from './domain/types';
+import { THE_GANG_COMMANDS, type TheGangCore, type TheGangProgressKind } from './domain/types';
 
 type TheGangState = MatchState<TheGangCore>;
 
@@ -36,6 +36,15 @@ const createProgressAction = (
         payload: {},
     }],
 });
+
+const isProgressAlreadyApprovedByPlayer = (
+    core: TheGangCore,
+    playerId: PlayerId,
+    kind: TheGangProgressKind,
+): boolean => (
+    core.pendingProgress?.kind === kind
+    && core.pendingProgress.approvals.includes(playerId)
+);
 
 const allPlayersHaveChips = (core: TheGangCore): boolean =>
     core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined);
@@ -107,13 +116,16 @@ export function buildTheGangAiLegalActions(args: {
 
         if (!allPlayersHaveChips(core)) return actions;
 
-        if (core.round < 4) {
+        if (core.round < 4 && !isProgressAlreadyApprovedByPlayer(core, args.playerId, 'end-round')) {
             actions.push(createProgressAction(
                 ACTION_KIND_END_ROUND,
                 '推进到下一轮',
                 THE_GANG_COMMANDS.END_ROUND,
             ));
-        } else if (core.communityCards.length === 5) {
+        } else if (
+            core.communityCards.length === 5
+            && !isProgressAlreadyApprovedByPlayer(core, args.playerId, 'reveal-showdown')
+        ) {
             actions.push(createProgressAction(
                 ACTION_KIND_REVEAL_SHOWDOWN,
                 '揭示摊牌结果',
@@ -124,7 +136,12 @@ export function buildTheGangAiLegalActions(args: {
         return actions;
     }
 
-    if (core.phase === 'showdown' && core.lastShowdown && !core.gameResult) {
+    if (
+        core.phase === 'showdown'
+        && core.lastShowdown
+        && !core.gameResult
+        && !isProgressAlreadyApprovedByPlayer(core, args.playerId, 'start-next-heist')
+    ) {
         return [createProgressAction(
             ACTION_KIND_START_NEXT_HEIST,
             '开始下一次抢劫',

@@ -51,10 +51,10 @@ async function chooseChipForSeat(page: Page, seatName: string, chipLabel: string
     await page.getByRole('button', { name: chipLabel }).click();
 }
 
-async function chooseAllPlayerChips(page: Page, chipPrefix: string) {
-    await chooseChipForSeat(page, '玩家 1', `${chipPrefix} 1 星`);
+async function chooseTeammateChips(page: Page, chipPrefix: string) {
     await chooseChipForSeat(page, '玩家 2', `${chipPrefix} 2 星`);
     await chooseChipForSeat(page, '玩家 3', `${chipPrefix} 3 星`);
+    await selectHotseat(page, '玩家 1');
 }
 
 async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
@@ -72,7 +72,7 @@ async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
     await page.getByRole('button', { name: buttonName }).click();
 }
 
-async function chooseFinalChipsForSuccessfulShowdown(page: Page) {
+async function computeFinalChipsForSuccessfulShowdown(page: Page) {
     const core = await page.evaluate(() => {
         const harness = (window as Window & {
             __BG_TEST_HARNESS__?: {
@@ -91,9 +91,7 @@ async function chooseFinalChipsForSuccessfulShowdown(page: Page) {
             return chips;
         }, {});
 
-    await chooseChipForSeat(page, '玩家 1', `红筹码 ${finalChips['0']} 星`);
-    await chooseChipForSeat(page, '玩家 2', `红筹码 ${finalChips['1']} 星`);
-    await chooseChipForSeat(page, '玩家 3', `红筹码 ${finalChips['2']} 星`);
+    return finalChips;
 }
 
 async function expectImagesLoaded(page: Page, selector: string, expectedCount: number) {
@@ -203,6 +201,7 @@ async function expectTutorialCardDoesNotCoverTarget(page: Page, targetId: string
         if (!target || !card) return null;
         const targetRect = target.getBoundingClientRect();
         const cardRect = card.getBoundingClientRect();
+        const placement = card.getAttribute('data-tutorial-placement');
         const horizontalOverlap = Math.max(
             0,
             Math.min(targetRect.right, cardRect.right) - Math.max(targetRect.left, cardRect.left),
@@ -214,11 +213,35 @@ async function expectTutorialCardDoesNotCoverTarget(page: Page, targetId: string
         return {
             overlapArea: horizontalOverlap * verticalOverlap,
             targetArea: targetRect.width * targetRect.height,
+            targetRect: {
+                left: targetRect.left,
+                top: targetRect.top,
+                right: targetRect.right,
+                bottom: targetRect.bottom,
+                width: targetRect.width,
+                height: targetRect.height,
+            },
+            cardRect: {
+                left: cardRect.left,
+                top: cardRect.top,
+                right: cardRect.right,
+                bottom: cardRect.bottom,
+                width: cardRect.width,
+                height: cardRect.height,
+            },
+            placement,
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight,
+            },
         };
     }, targetId);
     expect(geometry, `${targetId} 必须能测量教程卡片与目标位置`).not.toBeNull();
     expect(geometry?.targetArea, `${targetId} 不能是空目标`).toBeGreaterThan(1);
-    expect(geometry?.overlapArea, `${targetId} 教程文案框不能遮挡教学目标`).toBe(0);
+    expect(
+        geometry?.overlapArea,
+        `${targetId} 教程文案框不能遮挡教学目标；geometry=${JSON.stringify(geometry)}`,
+    ).toBe(0);
 }
 
 test.describe('The Gang 教程 E2E', () => {
@@ -281,9 +304,11 @@ test.describe('The Gang 教程 E2E', () => {
         await nextTutorialStep(page);
 
         await expect(page.locator('[data-tutorial-step="yellow-chip"]')).toBeVisible();
-        await chooseAllPlayerChips(page, '黄筹码');
+        await chooseChipForSeat(page, '玩家 1', '黄筹码 1 星');
+        await expect(page.locator('[data-tutorial-step="yellow-response"]')).toBeVisible();
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="turn-round"]')).toBeVisible();
+        await chooseTeammateChips(page, '黄筹码');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
         await confirmProgressForAllPlayers(page, '下一轮');
@@ -293,9 +318,11 @@ test.describe('The Gang 教程 E2E', () => {
         await nextTutorialStep(page);
 
         await expect(page.locator('[data-tutorial-step="orange-chip"]')).toBeVisible();
-        await chooseAllPlayerChips(page, '橙筹码');
+        await chooseChipForSeat(page, '玩家 1', '橙筹码 1 星');
+        await expect(page.locator('[data-tutorial-step="orange-response"]')).toBeVisible();
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="river-round"]')).toBeVisible();
+        await chooseTeammateChips(page, '橙筹码');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
         await confirmProgressForAllPlayers(page, '下一轮');
@@ -304,9 +331,13 @@ test.describe('The Gang 教程 E2E', () => {
         await expect(page.getByText(/红筹码是最终承诺/u)).toBeVisible();
         await game.screenshot('教程红筹码最终承诺', testInfo);
 
-        await chooseFinalChipsForSuccessfulShowdown(page);
-        await selectHotseat(page, '玩家 1');
+        const finalChips = await computeFinalChipsForSuccessfulShowdown(page);
+        await chooseChipForSeat(page, '玩家 1', `红筹码 ${finalChips['0']} 星`);
+        await expect(page.locator('[data-tutorial-step="final-response"]')).toBeVisible();
         await nextTutorialStep(page);
+        await chooseChipForSeat(page, '玩家 2', `红筹码 ${finalChips['1']} 星`);
+        await chooseChipForSeat(page, '玩家 3', `红筹码 ${finalChips['2']} 星`);
+        await selectHotseat(page, '玩家 1');
 
         await expect(page.locator('[data-tutorial-step="reveal-showdown"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();

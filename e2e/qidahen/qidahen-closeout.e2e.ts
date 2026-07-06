@@ -402,7 +402,8 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="dispatch-ready"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('进攻目标');
-        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(3);
+        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')).toHaveCount(3);
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘落点是进攻调度');
         await saveScreenshot(page, WHEEL_COST_STEP_03);
         await page.locator('[data-testid="tutorial-next-button"]').click();
@@ -668,7 +669,9 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="move-entry"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵和步兵一次走 1 格');
         await saveScreenshot(page, FIELD_BATTLE_STEP_01);
-        await page.getByRole('button', { name: '选择目标：察哈尔' }).click();
+        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]')).toBeVisible();
+        await page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]').click();
 
         await expect(page.locator('[data-tutorial-step="border-width"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');

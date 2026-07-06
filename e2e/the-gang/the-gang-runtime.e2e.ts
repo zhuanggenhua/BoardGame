@@ -116,6 +116,39 @@ async function expectMiddleRoundFullState(page: Page) {
     await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
 }
 
+type TheGangHarnessState = {
+    core?: {
+        currentRoundChips?: Record<string, unknown>;
+    };
+};
+
+type TheGangTestWindow = Window & {
+    __BG_TEST_HARNESS__?: {
+        state?: {
+            get?: () => TheGangHarnessState | null;
+        };
+    };
+};
+
+async function getTheGangState(page: Page) {
+    return page.evaluate(() => {
+        const harness = (window as TheGangTestWindow).__BG_TEST_HARNESS__;
+        return harness?.state?.get?.();
+    });
+}
+
+async function expectCurrentRoundChips(page: Page, expectedCount: number) {
+    await expect
+        .poll(
+            async () => {
+                const state = await getTheGangState(page);
+                return Object.keys(state?.core?.currentRoundChips ?? {}).length;
+            },
+            { message: `等待当前轮 ${expectedCount} 名玩家完成筹码选择` },
+        )
+        .toBe(expectedCount);
+}
+
 test.describe('The Gang 真实入口截图', () => {
     test('桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
@@ -178,5 +211,29 @@ test.describe('The Gang 真实入口截图', () => {
         await confirmProgressForAllPlayers(page, '下一次抢劫');
         await expect(page.getByText('抢劫 2')).toBeVisible();
         await expectChipRound(page, '白筹码');
+    });
+
+    test('本地 AI 座位可自动选筹码并确认进入下一轮', async ({ game, page }) => {
+        test.setTimeout(120000);
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 3,
+            seat1: 'local-ai',
+            seat1Delay: 0,
+            seat2: 'local-ai',
+            seat2Delay: 0,
+            seed: 'the-gang-local-ai-e2e',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expectChipRound(page, '白筹码');
+
+        await page.getByRole('button', { name: '白筹码 1 星' }).click();
+        await expectCurrentRoundChips(page, 3);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+
+        await page.getByRole('button', { name: '下一轮' }).click();
+        await expectChipRound(page, '黄筹码');
     });
 });

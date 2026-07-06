@@ -100,7 +100,7 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             requireAction: true,
             viewAs: '0',
-            allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         },
         {
@@ -136,7 +136,7 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             requireAction: true,
             viewAs: '0',
-            allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         },
         {
@@ -164,7 +164,7 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             requireAction: true,
             viewAs: '0',
-            allowedCommands: [THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.SHOWDOWN_REVEALED }],
         },
         {

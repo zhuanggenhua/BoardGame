@@ -522,6 +522,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await confirmActionPayment(page, 3);
         await expect(page.locator('[data-testid="qidahen-grant-pardon-selection"]')).toBeVisible();
+        await expect(page.locator('[data-testid^="qidahen-grant-pardon-choice-"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]')).toBeVisible();
         await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
@@ -1633,9 +1634,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('轮盘进攻/调度 · 调骑 4');
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('从 皮岛 出发');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-22"]')).toContainText('东江');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-22"]')).toContainText('耗 2');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-32"]')).toContainText('登莱');
+        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-22"][data-action="wheel-dispatch"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-32"][data-action="wheel-dispatch"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('点一个进攻目标');
         await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('皮岛 出发');
         const guideRouteCount = await page.locator('[data-testid^="qidahen-map-guide-route-"]').count();
@@ -1952,10 +1953,10 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('轮盘进攻/调度 · 调骑 4');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-25"]')).toContainText('山海关');
-        await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-25"]')).toContainText('增援围城');
+        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-action="wheel-dispatch"]')).toBeVisible();
 
-        await page.click('[data-testid="qidahen-wheel-dispatch-target-city-region-25"]');
+        await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('山海关');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('增援围城');
@@ -2060,7 +2061,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
-        await page.click('[data-testid="qidahen-wheel-dispatch-target-city-region-20"]');
+        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-20"][data-action="wheel-dispatch"]')).toBeVisible();
+        await clickGuidedMapTarget(page, 'city-region-20');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');
         await selectPendingCommittedTroopsIfPresent(page);
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rear-guard' });
@@ -2675,12 +2678,13 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('驱虎吞狼');
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('指挥后金调度进攻');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'jinzhou');
-        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]').first()).toBeVisible();
+        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
 
-        const dispatchTarget = page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]').first();
+        const dispatchTarget = page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]').first();
+        await expect(dispatchTarget).toBeVisible();
         const dispatchTargetTestId = await dispatchTarget.getAttribute('data-testid');
         expect(dispatchTargetTestId).not.toBeNull();
-        const dispatchTargetRegionId = dispatchTargetTestId!.replace('qidahen-wheel-dispatch-target-', '');
+        const dispatchTargetRegionId = dispatchTargetTestId!.replace('qidahen-map-guide-hit-target-', '');
         await dispatchTarget.click();
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('驱虎吞狼待结算');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('本次出兵');

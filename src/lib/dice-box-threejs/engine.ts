@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { CanvasTexture, Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { CanvasTexture, Euler, Quaternion, SRGBColorSpace } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -36,6 +36,7 @@ export interface DiceBoxStyleProfile {
 export interface DiceBoxDieSkin {
     id: string;
     faceCanvases: Record<number, HTMLCanvasElement>;
+    topFaceCanvas?: HTMLCanvasElement;
     edgeCanvas?: HTMLCanvasElement;
     faceImages?: Record<number, HTMLImageElement>;
     faceLabels?: Record<number, string>;
@@ -89,17 +90,13 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
     return typeof value === 'number' ? value : null;
 }
 
-const D6_FACE_NORMALS: Record<number, Vector3> = {
-    1: new Vector3(0, 0, 1),
-    2: new Vector3(0, 0, -1),
-    3: new Vector3(0, 1, 0),
-    4: new Vector3(0, -1, 0),
-    5: new Vector3(1, 0, 0),
-    6: new Vector3(-1, 0, 0),
-};
-
-const WORLD_UP = new Vector3(0, 0, 1);
-
+const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
+    { x: -1.04, y: 0.44, yaw: -0.12, tiltX: -0.03, tiltY: 0.03 },
+    { x: -0.62, y: -0.42, yaw: 0.08, tiltX: 0.04, tiltY: -0.02 },
+    { x: 0.24, y: 0.18, yaw: 0.18, tiltX: -0.03, tiltY: -0.03 },
+    { x: 1.02, y: 0.46, yaw: 0.2, tiltX: 0.04, tiltY: 0.03 },
+    { x: 0.24, y: -1.0, yaw: -0.32, tiltX: -0.03, tiltY: 0.02 },
+];
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
@@ -414,18 +411,20 @@ export class DiceBoxThreeEngine {
         const dice = this.box.diceList;
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
         const maxColumns = 5;
-        const columns = Math.min(dice.length, maxColumns);
-        const rows = Math.ceil(dice.length / columns);
-        const spacingX = baseScale * 1.38;
-        const spacingY = baseScale * 1.08;
+        const cappedDice = dice.slice(0, maxColumns);
+        const columns = Math.min(cappedDice.length, maxColumns);
+        const rows = Math.ceil(cappedDice.length / columns);
+        const spacingX = baseScale * 2.08;
+        const spacingY = baseScale * 1.84;
         const z = baseScale * 0.56;
 
         dice.forEach((die, index) => {
+            const layout = SETTLED_DICE_LAYOUT[index];
             const row = Math.floor(index / columns);
             const col = index % columns;
-            const rowCount = row === rows - 1 ? dice.length - row * columns : columns;
-            const x = (col - (rowCount - 1) / 2) * spacingX;
-            const y = (row - (rows - 1) / 2) * spacingY;
+            const rowCount = row === rows - 1 ? cappedDice.length - row * columns : columns;
+            const x = layout ? layout.x * spacingX : (col - (rowCount - 1) / 2) * spacingX;
+            const y = layout ? layout.y * spacingY : (row - (rows - 1) / 2) * spacingY;
 
             die.position.set?.(x, y, z);
             die.position.x = x;
@@ -439,7 +438,7 @@ export class DiceBoxThreeEngine {
             }
             die.body?.velocity?.set?.(0, 0, 0);
             die.body?.angularVelocity?.set?.(0, 0, 0);
-            const settledQuaternion = this.getSettledQuaternionForDie(die);
+            const settledQuaternion = this.getSettledQuaternionForDie(die, layout);
             die.quaternion?.copy?.(settledQuaternion);
             die.body?.quaternion?.copy?.(settledQuaternion);
             if (!die.quaternion?.copy) {
@@ -467,27 +466,29 @@ export class DiceBoxThreeEngine {
         return true;
     }
 
-    private getSettledQuaternionForDie(die: DiceBoxDie): Quaternion {
+    private getSettledQuaternionForDie(
+        die: DiceBoxDie,
+        layout?: { yaw: number; tiltX: number; tiltY: number },
+    ): Quaternion {
         const targetValue = readDieValue(die);
-        const faceNormal = targetValue ? D6_FACE_NORMALS[targetValue] : undefined;
-        if (!faceNormal) return new Quaternion();
+        if (!targetValue) return new Quaternion();
 
-        const faceToTop = new Quaternion().setFromUnitVectors(faceNormal, WORLD_UP);
-        const yaw = new Quaternion().setFromAxisAngle(WORLD_UP, this.getStableYawForValue(targetValue));
-        return yaw.multiply(faceToTop).normalize();
-    }
-
-    private getStableYawForValue(value: number): number {
-        return ((value - 1) % 6) * (Math.PI / 18);
+        const yaw = layout?.yaw ?? ((targetValue - 1) % 6) * (Math.PI / 18);
+        const tiltX = layout?.tiltX ?? (((targetValue % 2 === 0) ? 1 : -1) * (Math.PI / 30));
+        const tiltY = layout?.tiltY ?? (((targetValue % 3 === 0) ? -1 : 1) * (Math.PI / 42));
+        return new Quaternion()
+            .setFromEuler(new Euler(tiltX, tiltY, yaw, 'XYZ'))
+            .normalize();
     }
 
     private applySkinToDie(die: DiceBoxDie, skin: DiceBoxDieSkin): boolean {
-        const materials = Array.isArray(die.material) ? die.material : [die.material];
+        let materials = Array.isArray(die.material) ? die.material : [die.material];
         let didChange = false;
 
         const shouldUsePresetMaterials = Boolean(skin.preferPresetMaterials && (skin.faceImages || skin.faceLabels));
-        if (shouldUsePresetMaterials && this.rebuildDiePresetMaterials(die)) {
-            return true;
+        if (shouldUsePresetMaterials) {
+            this.ensureIndependentMaterials(die);
+            materials = Array.isArray(die.material) ? die.material : [die.material];
         }
 
         const usedMaterialIndexes = new Set<number>();
@@ -498,27 +499,24 @@ export class DiceBoxThreeEngine {
         }
 
         const edgeCanvas = skin.edgeCanvas;
-        if (edgeCanvas) {
-            for (const [materialIndex, material] of materials.entries()) {
-                if (materialIndex >= 2 && usedMaterialIndexes.has(materialIndex)) continue;
-                if (this.applyCanvasToMaterial(material, edgeCanvas)) {
-                    didChange = true;
-                }
+        const faceMaterialIndexes = materials
+            .map((_, materialIndex) => materialIndex)
+            .filter((materialIndex) => materialIndex > 0);
+        for (const materialIndex of faceMaterialIndexes) {
+            const material = materials[materialIndex];
+            const faceValue = materialIndex - 1;
+            const canvas = skin.faceCanvases[faceValue] ?? edgeCanvas;
+            if (!material || !canvas) continue;
+
+            if (this.applyCanvasToMaterial(material, canvas)) {
+                didChange = true;
             }
         }
 
-        const visibleMaterialIndexes = usedMaterialIndexes.size > 0
-            ? [...usedMaterialIndexes].filter((materialIndex) => materialIndex > 0)
-            : materials.map((_, materialIndex) => materialIndex).filter((materialIndex) => materialIndex >= 2);
-
-        if (!shouldUsePresetMaterials) {
-            for (const materialIndex of visibleMaterialIndexes) {
-                const material = materials[materialIndex];
-                const faceValue = materialIndex - 1;
-                const canvas = skin.faceCanvases[faceValue] ?? edgeCanvas;
-                if (!material || !canvas) continue;
-
-                if (this.applyCanvasToMaterial(material, canvas)) {
+        if (edgeCanvas) {
+            for (const [materialIndex, material] of materials.entries()) {
+                if (materialIndex > 0) continue;
+                if (this.applyCanvasToMaterial(material, edgeCanvas)) {
                     didChange = true;
                 }
             }
@@ -530,26 +528,20 @@ export class DiceBoxThreeEngine {
         return didChange;
     }
 
-    private rebuildDiePresetMaterials(die: DiceBoxDie): boolean {
-        const preset = this.box.DiceFactory?.get?.(die.notation?.type ?? 'd6');
-        const createMaterials = this.box.DiceFactory?.createMaterials;
-        if (!preset || !createMaterials) return false;
-
-        const baseScale = typeof this.box.DiceFactory.baseScale === 'number'
-            ? this.box.DiceFactory.baseScale
-            : DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
-        die.material = createMaterials.call(this.box.DiceFactory, preset, baseScale / 2, 1);
-        const rebuiltMaterials = Array.isArray(die.material) ? die.material : [die.material];
-        for (const material of rebuiltMaterials) {
-            this.preservePresetFaceMaterial(material);
-        }
-        return true;
+    private ensureIndependentMaterials(die: DiceBoxDie): void {
+        const materials = Array.isArray(die.material) ? die.material : [die.material];
+        die.material = materials.map((material) => {
+            const clone = material.clone?.() ?? material;
+            if (material.map?.clone) {
+                clone.map = material.map.clone();
+            }
+            return clone;
+        });
     }
 
     private applyCanvasToMaterial(material: DiceBoxMaterialInstance | undefined, canvas: HTMLCanvasElement): boolean {
         if (!material) return false;
-        material.map ??= new CanvasTexture(canvas);
-        material.map.image = canvas;
+        material.map = new CanvasTexture(canvas);
         material.map.flipY = false;
         material.map.generateMipmaps = false;
         material.map.colorSpace = SRGBColorSpace;
@@ -575,22 +567,4 @@ export class DiceBoxThreeEngine {
         material.needsUpdate = true;
     }
 
-    private preservePresetFaceMaterial(material?: DiceBoxMaterialInstance): void {
-        if (!material) return;
-        material.color?.set?.(0xffffff);
-        material.emissive?.set?.(0x000000);
-        material.emissiveIntensity = 0;
-        material.opacity = 1;
-        material.transparent = true;
-        material.alphaTest = 0;
-        material.depthTest = true;
-        material.depthWrite = true;
-        material.needsUpdate = true;
-        if (material.map) {
-            material.map.flipY = false;
-            material.map.generateMipmaps = false;
-            material.map.colorSpace = SRGBColorSpace;
-            material.map.needsUpdate = true;
-        }
-    }
 }

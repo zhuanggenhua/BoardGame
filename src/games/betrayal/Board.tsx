@@ -1304,6 +1304,7 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
     baseScale: 82,
     strength: 0.9,
     iterationLimit: 900,
+    arrangeSettledDice: true,
     customColorset: {
         name: 'betrayal-house-aged-bone',
         foreground: '#2b2418',
@@ -1329,11 +1330,7 @@ const resolveBetrayalHouseD6Face = (pip: number): number => {
     return Math.max(1, Math.min(6, pip));
 };
 
-function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+function paintBetrayalHouseDieFaceBase(ctx: CanvasRenderingContext2D): void {
     const gradient = ctx.createRadialGradient(96, 76, 16, 128, 128, 148);
     gradient.addColorStop(0, '#fff8d6');
     gradient.addColorStop(0.48, '#edcf82');
@@ -1346,33 +1343,52 @@ function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
     ctx.strokeStyle = 'rgba(255,255,255,0.28)';
     ctx.lineWidth = 4;
     ctx.strokeRect(27, 27, 202, 202);
+}
 
-    ctx.font = '900 112px Georgia, "Times New Roman", serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 9;
-    ctx.strokeStyle = 'rgba(255,246,212,0.78)';
-    ctx.strokeText(String(value), 128, 134);
-    ctx.fillStyle = '#5f3618';
-    ctx.fillText(String(value), 128, 134);
+function createBetrayalHouseDieFaceCanvas(value: 0 | 1 | 2): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+    paintBetrayalHouseDieFaceBase(ctx);
 
-    const pipPositions: Record<0 | 1 | 2, Array<[number, number]>> = {
-        0: [],
-        1: [[194, 64]],
-        2: [[62, 62], [194, 194]],
-    };
+    if (value === 0) {
+        ctx.font = '900 128px Arial, "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = 'rgba(255,248,219,0.9)';
+        ctx.strokeText('0', 128, 132);
+        ctx.fillStyle = '#4d2a10';
+        ctx.fillText('0', 128, 132);
+    } else {
+        const pipPositions: Record<1 | 2, Array<[number, number]>> = {
+            1: [[128, 128]],
+            2: [[88, 88], [168, 168]],
+        };
 
-    for (const [x, y] of pipPositions[value]) {
-        ctx.beginPath();
-        ctx.arc(x, y, 18, 0, Math.PI * 2);
-        ctx.fillStyle = '#8a5524';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x - 5, y - 6, 6, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,241,194,0.36)';
-        ctx.fill();
+        for (const [x, y] of pipPositions[value]) {
+            ctx.beginPath();
+            ctx.arc(x, y, 38, 0, Math.PI * 2);
+            ctx.fillStyle = '#4d2a10';
+            ctx.fill();
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = 'rgba(255,248,219,0.78)';
+            ctx.stroke();
+        }
     }
 
+    return canvas;
+}
+
+function createBetrayalHouseDieBlankFaceCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+    paintBetrayalHouseDieFaceBase(ctx);
+    ctx.fillStyle = 'rgba(77,42,16,0.12)';
+    ctx.fillRect(58, 58, 140, 140);
     return canvas;
 }
 
@@ -1382,17 +1398,19 @@ const normalizeBetrayalHouseRuleValue = (pip: number): 0 | 1 | 2 => (
 
 function createBetrayalHouseDiceSkin(value: 0 | 1 | 2): DiceBoxDieSkin {
     const face = createBetrayalHouseDieFaceCanvas(value);
+    const blank = createBetrayalHouseDieBlankFaceCanvas();
     return {
         id: `${BETRAYAL_HOUSE_DICE_FACE_SYSTEM}-${value}`,
-        edgeCanvas: face,
+        edgeCanvas: blank,
         faceCanvases: {
-            1: face,
-            2: face,
-            3: face,
-            4: face,
-            5: face,
-            6: face,
+            1: blank,
+            2: blank,
+            3: blank,
+            4: blank,
+            5: blank,
+            6: blank,
         },
+        topFaceCanvas: face,
     };
 }
 
@@ -3289,18 +3307,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : isPreview
                     ? 'z-10'
                     : 'z-10 hover:-translate-y-0.5';
-        const modifierOutlineClass = showSelectedState
-            ? 'bg-[rgba(238,204,126,0.03)]'
-            : 'bg-[rgba(238,244,168,0.04)]';
-        const modifierOutlineStyle = showSelectedState
-            ? {
-                border: '2px solid #eecc7e',
-                boxShadow: 'none',
-            }
-            : {
-                border: '2px solid #eef4a8',
-                boxShadow: 'none',
-            };
+        const modifierOutlineClass = 'bg-[rgba(238,244,168,0.04)]';
+        const modifierOutlineStyle = {
+            border: '2px solid #eef4a8',
+            boxShadow: 'none',
+        };
         return (
             <div
                 key={`${options.layout}-${item.id}`}
@@ -3328,6 +3339,17 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 className={`relative w-full overflow-visible text-left transition ${buttonOutlineClass}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
+                {showSelectedState ? (
+                    <div
+                        data-testid={options.testId ? `${options.testId}-selected-outline` : undefined}
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute -inset-[4px] z-50 ${shellRadiusClass}`}
+                        style={{
+                            border: '2px solid #eecc7e',
+                            boxShadow: '0 0 0 1px rgba(32,22,10,0.92)',
+                        }}
+                    />
+                ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
@@ -3357,7 +3379,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             : {}),
                     }}
                 >
-                    {canModifyRecentRoll ? (
+                    {canModifyRecentRoll && !showSelectedState ? (
                         <div
                             data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
                             aria-hidden="true"
