@@ -19,7 +19,7 @@ export interface DiceThroneDiceBoxSkin {
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
 const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const DICE_BOX_FACE_CANVAS_SIZE = 512;
-const DICE_BOX_FACE_ART_SCALE = 0.58;
+const DICE_BOX_FACE_ART_SCALE = 0.68;
 const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 38;
 
 type RgbColor = {
@@ -80,7 +80,7 @@ const createPresetLabelCanvas = (faceValue: number, atlasImage: HTMLImageElement
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
 
-    drawDieFaceBase(ctx, size);
+    ctx.clearRect(0, 0, size, size);
     drawOfficialAtlasFace(ctx, atlasImage, faceValue, size);
 
     return canvas;
