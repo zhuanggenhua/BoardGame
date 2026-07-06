@@ -19,6 +19,13 @@ const setNativeAppShell = (value: boolean) => {
     });
 };
 
+const setAndroidBridgeShell = () => {
+    Object.defineProperty(window, 'androidBridge', {
+        configurable: true,
+        value: {},
+    });
+};
+
 const renderGuard = () => render(
     <MemoryRouter initialEntries={["/play/smashup/room-1"]}>
         <MobileOrientationGuard>
@@ -82,6 +89,20 @@ describe('MobileOrientationGuard native orientation behavior', () => {
 
         expect(screen.getByTestId('game-content')).toBeTruthy();
         expect(screen.queryByText('正在切换横屏…')).toBeNull();
+    });
+
+    it('legacy Android shell with only androidBridge is still handled by the global native shell path', () => {
+        vi.useFakeTimers();
+        setViewport(390, 844);
+        setAndroidBridgeShell();
+
+        renderBetrayalGuard();
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
+
+        expect(screen.getByTestId('game-content')).toBeTruthy();
+        expect(screen.queryByTestId('mobile-orientation-game-banner')).toBeNull();
     });
 
     it('renders native game content once the target landscape viewport is ready', () => {

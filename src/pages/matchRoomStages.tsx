@@ -14,14 +14,7 @@ import {
 import { readCompletedTutorialIds } from './useMatchRoomTutorialLifecycle';
 import { getVisibleTutorialCatalogEntries } from './useMatchRoomRuntimeSetup';
 
-const tutorialChapterAccents = [
-    { solid: '#d5a642', wash: 'rgba(213, 166, 66, 0.18)', ring: 'rgba(213, 166, 66, 0.36)' },
-    { solid: '#9f5f37', wash: 'rgba(159, 95, 55, 0.18)', ring: 'rgba(159, 95, 55, 0.36)' },
-    { solid: '#4f7c65', wash: 'rgba(79, 124, 101, 0.18)', ring: 'rgba(79, 124, 101, 0.36)' },
-    { solid: '#7b5aa6', wash: 'rgba(123, 90, 166, 0.18)', ring: 'rgba(123, 90, 166, 0.36)' },
-    { solid: '#b85b47', wash: 'rgba(184, 91, 71, 0.18)', ring: 'rgba(184, 91, 71, 0.36)' },
-    { solid: '#5f7da6', wash: 'rgba(95, 125, 166, 0.18)', ring: 'rgba(95, 125, 166, 0.36)' },
-] as const;
+const tutorialChapterAccents = ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'] as const;
 
 export type MatchRoomTutorialBoardStageModel = {
     noTutorialText: string;
@@ -74,12 +67,9 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                                 : (entry.description ?? '');
                         const isDefault = recommendedTutorialId === tutorialId;
                         const isCompleted = completedTutorialIds.has(tutorialId);
-                        const accent = tutorialChapterAccents[index % tutorialChapterAccents.length];
                         const entryStyle = {
                             '--tutorial-chapter-index': index,
-                            '--tutorial-chapter-accent': accent.solid,
-                            '--tutorial-chapter-accent-wash': accent.wash,
-                            '--tutorial-chapter-accent-ring': accent.ring,
+                            '--tutorial-chapter-accent': tutorialChapterAccents[index % tutorialChapterAccents.length],
                         } as CSSProperties;
 
                         return (
@@ -101,14 +91,14 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
                                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                             {isCompleted ? (
                                                 <span
-                                                    className="inline-flex min-h-[26px] items-center rounded border border-[#556b2f]/30 bg-[#556b2f]/10 px-2 py-0.5 font-sans text-[11px] font-extrabold tracking-[0.12em] text-[#556b2f]"
+                                                    className="tutorial-catalog-stage__tag tutorial-catalog-stage__tag--completed inline-flex min-h-[26px] items-center rounded border border-[#556b2f]/30 bg-[#556b2f]/10 px-2 py-0.5 font-sans text-[11px] font-extrabold tracking-[0.12em] text-[#556b2f]"
                                                     aria-label={tLobby('matchRoom.tutorialCatalog.completed')}
                                                 >
                                                     ✓ {tLobby('matchRoom.tutorialCatalog.completed')}
                                                 </span>
                                             ) : null}
                                             {isDefault ? (
-                                                <span className="inline-flex min-h-[26px] items-center rounded border border-[#a17022]/30 bg-[#c49032]/10 px-2 py-0.5 font-sans text-[11px] font-extrabold text-[#805714]">
+                                                <span className="tutorial-catalog-stage__tag tutorial-catalog-stage__tag--recommended inline-flex min-h-[26px] items-center rounded border border-[#a17022]/30 bg-[#c49032]/10 px-2 py-0.5 font-sans text-[11px] font-extrabold text-[#805714]">
                                                     {tLobby('matchRoom.tutorialCatalog.recommended')}
                                                 </span>
                                             ) : null}

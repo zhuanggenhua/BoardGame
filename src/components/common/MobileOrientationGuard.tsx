@@ -21,22 +21,12 @@ import {
     isStandaloneWebApp,
     tryLockScreenOrientation,
 } from '../../lib/webFullscreen';
+import { detectNativeMobileRuntime } from '../../lib/mobile/mobileRuntime';
 
 type GameMobileEntry = Pick<
     GameManifestEntry,
     'mobileProfile' | 'preferredOrientation' | 'mobileLayoutPreset' | 'shellTargets' | 'mobileDelivery'
 >;
-
-const hasCapacitorRuntime = () => {
-    if (typeof window === 'undefined') return false;
-    const runtime = (window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-    if (typeof runtime?.isNativePlatform !== 'function') return false;
-    try {
-        return runtime.isNativePlatform();
-    } catch {
-        return false;
-    }
-};
 
 type CapacitorCoreModule = {
     Capacitor: {
@@ -78,10 +68,13 @@ const loadScreenOrientation = async (): Promise<ScreenOrientationModule | null> 
     return screenOrientationLoader;
 };
 
+const hasNativeMobileRuntime = () => detectNativeMobileRuntime();
+
 const isNativeAppShell = async () => {
-    if (!hasCapacitorRuntime()) {
-        return false;
+    if (hasNativeMobileRuntime()) {
+        return true;
     }
+
     const capacitorCore = await loadCapacitorCore();
     return capacitorCore?.Capacitor.isNativePlatform() ?? false;
 };
@@ -162,7 +155,7 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
-    const [nativeAppShell, setNativeAppShell] = useState(() => hasCapacitorRuntime());
+    const [nativeAppShell, setNativeAppShell] = useState(() => hasNativeMobileRuntime());
     const nativeAppShellRef = useRef(nativeAppShell);
     const standaloneWebApp = isStandaloneWebApp();
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
