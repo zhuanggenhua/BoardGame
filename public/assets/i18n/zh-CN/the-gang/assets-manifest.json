@@ -1480,5 +1480,17 @@
         "mime": "image/webp"
       }
     }
+  },
+  "assets": {
+    "thumbnails/the-gang-vault-heist-thumbnail": {
+      "path": "thumbnails/the-gang-vault-heist-thumbnail.png",
+      "type": "image",
+      "format": "png"
+    },
+    "thumbnails/compressed/the-gang-vault-heist-thumbnail": {
+      "path": "thumbnails/compressed/the-gang-vault-heist-thumbnail.webp",
+      "type": "image",
+      "format": "webp"
+    }
   }
 }

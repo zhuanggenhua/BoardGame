@@ -1076,7 +1076,7 @@ export const BoardDiceStage = ({
         <div
             className="pointer-events-none absolute left-1/2 aspect-square w-[clamp(360px,42vw,630px)] -translate-x-1/2 max-[900px]:w-[clamp(300px,60vw,510px)]"
             style={{
-                top: 'clamp(-28px, -2vw, -18px)',
+                top: 'clamp(-96px, -6vw, -56px)',
                 zIndex: UI_Z_INDEX.hint + 5,
             }}
             data-testid="dicethrone-board-dice-stage"
