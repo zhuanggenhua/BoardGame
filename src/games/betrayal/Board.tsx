@@ -1400,17 +1400,21 @@ const normalizeBetrayalHouseRuleValue = (pip: number): 0 | 1 | 2 => (
 function createBetrayalHouseDiceSkin(value: 0 | 1 | 2): DiceBoxDieSkin {
     const face = createBetrayalHouseDieFaceCanvas(value);
     const blank = createBetrayalHouseDieBlankFaceCanvas();
+    const targetPhysicalFace = resolveBetrayalHouseD6Face(value);
+    const faceCanvases: Record<number, HTMLCanvasElement> = {
+        1: blank,
+        2: blank,
+        3: blank,
+        4: blank,
+        5: blank,
+        6: blank,
+    };
+    faceCanvases[targetPhysicalFace] = face;
+
     return {
         id: `${BETRAYAL_HOUSE_DICE_FACE_SYSTEM}-${value}`,
         edgeCanvas: blank,
-        faceCanvases: {
-            1: blank,
-            2: blank,
-            3: blank,
-            4: blank,
-            5: blank,
-            6: blank,
-        },
+        faceCanvases,
         topFaceCanvas: face,
     };
 }
@@ -1509,12 +1513,15 @@ function BetrayalHouseDice3DGroup({
                             aria-label={rerollSelection.getDieActionLabel(dieIndex)}
                             title={rerollSelection.getDieActionLabel(dieIndex)}
                             data-testid={`betrayal-house-dice-reroll-target-${dieIndex}`}
-                            className="group pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 outline-none"
+                            data-reroll-target-rotate-z={layout.rotateZ.toFixed(4)}
+                            className="group pointer-events-auto absolute outline-none"
                             style={{
                                 left: `${layout.x}px`,
                                 top: `${layout.y}px`,
                                 width: `${layout.width + 18}px`,
                                 height: `${layout.height + 18}px`,
+                                transform: `translate(-50%, -50%) rotate(${layout.rotateZ}rad)`,
+                                transformOrigin: 'center center',
                             }}
                             onClick={() => rerollSelection.onSelectDie(dieIndex)}
                             onKeyDown={(event) => {

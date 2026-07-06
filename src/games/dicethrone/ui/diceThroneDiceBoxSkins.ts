@@ -19,16 +19,16 @@ export interface DiceThroneDiceBoxSkin {
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
 const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const DICE_BOX_FACE_CANVAS_SIZE = 512;
-const DICE_BOX_FACE_ART_SCALE = 0.68;
+const DICE_BOX_FACE_ART_SCALE = 0.48;
 const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 38;
 
 const DICE_BOX_FACE_ART_REGIONS: Record<number, { minX: number; minY: number; maxX: number; maxY: number }> = {
-    1: { minX: 0.04, minY: 0.12, maxX: 0.58, maxY: 0.9 },
-    2: { minX: 0.42, minY: 0.32, maxX: 0.96, maxY: 0.9 },
-    3: { minX: 0.48, minY: 0.2, maxX: 0.96, maxY: 0.88 },
-    4: { minX: 0.34, minY: 0.36, maxX: 0.82, maxY: 0.92 },
-    5: { minX: 0.34, minY: 0.36, maxX: 0.82, maxY: 0.92 },
-    6: { minX: 0.08, minY: 0.04, maxX: 0.72, maxY: 0.64 },
+    1: { minX: 0.0, minY: 0.06, maxX: 0.66, maxY: 0.96 },
+    2: { minX: 0.34, minY: 0.24, maxX: 1.0, maxY: 0.96 },
+    3: { minX: 0.4, minY: 0.12, maxX: 1.0, maxY: 0.96 },
+    4: { minX: 0.26, minY: 0.26, maxX: 0.9, maxY: 0.98 },
+    5: { minX: 0.26, minY: 0.26, maxX: 0.9, maxY: 0.98 },
+    6: { minX: 0.0, minY: 0.0, maxX: 0.8, maxY: 0.72 },
 };
 
 type RgbColor = {

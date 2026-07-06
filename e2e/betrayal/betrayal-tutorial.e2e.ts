@@ -555,6 +555,11 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const rerollTargetDie = page.getByTestId('betrayal-house-dice-reroll-target-1');
         await expect(rerollTargetDie).toBeVisible();
         await expect(rerollTargetDie).toHaveAttribute('role', 'button');
+        const rerollTargetRotateZ = Number(await rerollTargetDie.getAttribute('data-reroll-target-rotate-z'));
+        expect(Number.isFinite(rerollTargetRotateZ), '选骰框必须记录物理骰当前旋转角').toBe(true);
+        expect(Math.abs(rerollTargetRotateZ), '选骰框必须跟随被选骰子的旋转，而不是固定正矩形').toBeGreaterThan(0.05);
+        await expect.poll(async () => rerollTargetDie.evaluate((node) => getComputedStyle(node as HTMLElement).transform))
+            .not.toBe('none');
         await expect(rabbitFootCard).toHaveAttribute('aria-pressed', 'true');
         await expectInventoryCardHasSingleSymmetricOutline(rabbitFootCard);
         await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);

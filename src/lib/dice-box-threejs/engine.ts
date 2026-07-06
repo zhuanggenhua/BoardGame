@@ -91,11 +91,11 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
 }
 
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number; tiltX: number; tiltY: number }> = [
-    { x: -0.95, y: 0.52, yaw: -0.42, tiltX: 0.004, tiltY: -0.004 },
-    { x: -1.62, y: -0.18, yaw: 0.38, tiltX: -0.005, tiltY: 0.004 },
-    { x: -0.02, y: 1.08, yaw: -0.08, tiltX: 0.003, tiltY: 0.004 },
-    { x: 1.7, y: 0.34, yaw: 0.54, tiltX: -0.004, tiltY: -0.003 },
-    { x: 0.78, y: -0.48, yaw: -0.58, tiltX: 0.004, tiltY: 0.003 },
+    { x: -1.62, y: -0.26, yaw: -0.42, tiltX: 0, tiltY: 0 },
+    { x: -0.62, y: 0.52, yaw: 0.28, tiltX: 0, tiltY: 0 },
+    { x: 0.18, y: 0.08, yaw: -0.04, tiltX: 0, tiltY: 0 },
+    { x: 1.54, y: 0.48, yaw: 0.46, tiltX: 0, tiltY: 0 },
+    { x: 1.06, y: -0.5, yaw: -0.24, tiltX: 0, tiltY: 0 },
 ];
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
@@ -415,8 +415,8 @@ export class DiceBoxThreeEngine {
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
         const rows = Math.ceil(cappedDice.length / columns);
-        const spacingX = baseScale * 2.18;
-        const spacingY = baseScale * 1.86;
+        const spacingX = baseScale * 2.02;
+        const spacingY = baseScale * 1.7;
         const z = baseScale * 0.56;
 
         dice.forEach((die, index) => {
