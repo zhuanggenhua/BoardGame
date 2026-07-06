@@ -1,7 +1,7 @@
 /* @vitest-environment happy-dom */
 
 import type { PropsWithChildren, ReactNode } from 'react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const PassThrough = ({ children }: PropsWithChildren) => <>{children}</>;
@@ -149,7 +149,6 @@ describe('App local route', () => {
     });
 
     it('旧 Android 壳桥接晚到时应刷新全局返回桥，而不是要求游戏单独接侧滑', async () => {
-        vi.useFakeTimers();
         const { default: App } = await import('../../App');
 
         render(<App />);
@@ -159,12 +158,8 @@ describe('App local route', () => {
         runtimeState.nativeAndroid = true;
         runtimeState.nativeMobile = true;
 
-        await act(async () => {
-            vi.advanceTimersByTime(300);
-        });
-
         await waitFor(() => {
             expect(screen.getByTestId('android-back-navigation-bridge')).toBeInTheDocument();
-        });
+        }, { timeout: 1000 });
     });
 });

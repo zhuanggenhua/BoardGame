@@ -832,7 +832,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         linear-gradient(135deg, rgba(234, 215, 167, 0.05) 0 1px, transparent 1px 16px),
         linear-gradient(180deg, #21170f 0%, #130d08 100%);
     --tutorial-catalog-entry-bg:
-        linear-gradient(90deg, color-mix(in srgb, var(--tutorial-chapter-accent-safe) 18%, transparent), transparent 32%),
+        linear-gradient(90deg, rgba(159, 52, 38, 0.14), transparent 32%),
         linear-gradient(180deg, rgba(47, 32, 20, 0.96), rgba(27, 18, 11, 0.95));
     --tutorial-catalog-index-bg: linear-gradient(180deg, rgba(159, 52, 38, 0.94), rgba(91, 29, 22, 0.96));
     width: 100%;
@@ -866,7 +866,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         linear-gradient(90deg, rgba(13, 17, 11, 0.96), rgba(31, 45, 29, 0.82) 50%, rgba(13, 17, 11, 0.94)),
         linear-gradient(180deg, #182216 0%, #0d110b 100%);
     --tutorial-catalog-entry-bg:
-        linear-gradient(90deg, color-mix(in srgb, var(--tutorial-chapter-accent-safe) 18%, transparent), transparent 34%),
+        linear-gradient(90deg, rgba(73, 98, 70, 0.2), transparent 34%),
         linear-gradient(180deg, rgba(35, 47, 32, 0.96), rgba(16, 20, 14, 0.96));
     --tutorial-catalog-index-bg: linear-gradient(180deg, rgba(73, 98, 70, 0.94), rgba(33, 47, 31, 0.98));
 }
@@ -1148,6 +1148,10 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         column-gap: 0.72rem;
         row-gap: 0.38rem;
         padding: 0.72rem 0.82rem;
+    }
+
+    .tutorial-catalog-stage--betrayal .tutorial-catalog-stage__entry {
+        min-height: 7.1rem;
     }
 
     .tutorial-catalog-stage__index {

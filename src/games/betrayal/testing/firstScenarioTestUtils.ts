@@ -152,7 +152,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-north' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntSuccessRandom);
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
