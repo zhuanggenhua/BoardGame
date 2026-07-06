@@ -135,6 +135,57 @@ const QIDAHEN_FACTION_ORDER: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
 const QIDAHEN_MAP_MIN_ZOOM = 1;
 const QIDAHEN_MAP_MAX_ZOOM = 2.25;
 
+type QidahenGuidePoint = { x: number; y: number };
+
+const buildQidahenGuideArrowHeadPath = (
+    points: QidahenGuidePoint[],
+    length: number,
+    width: number,
+): string | null => {
+    if (points.length < 2) {
+        return null;
+    }
+    const tip = points[points.length - 1];
+    const previous = points[points.length - 2];
+    const tangent = { x: tip.x - previous.x, y: tip.y - previous.y };
+    const tangentLength = Math.hypot(tangent.x, tangent.y) || 1;
+    const unitX = tangent.x / tangentLength;
+    const unitY = tangent.y / tangentLength;
+    const normalX = -unitY;
+    const normalY = unitX;
+    const center = {
+        x: tip.x - unitX * (length * 0.42),
+        y: tip.y - unitY * (length * 0.42),
+    };
+    const leftShoulder = {
+        x: center.x + normalX * width + unitX * (length * 0.08),
+        y: center.y + normalY * width + unitY * (length * 0.08),
+    };
+    const rightShoulder = {
+        x: center.x - normalX * width + unitX * (length * 0.08),
+        y: center.y - normalY * width + unitY * (length * 0.08),
+    };
+    const leftTail = {
+        x: center.x + normalX * (width * 0.36) - unitX * (length * 0.48),
+        y: center.y + normalY * (width * 0.36) - unitY * (length * 0.48),
+    };
+    const rightTail = {
+        x: center.x - normalX * (width * 0.36) - unitX * (length * 0.48),
+        y: center.y - normalY * (width * 0.36) - unitY * (length * 0.48),
+    };
+    const tail = {
+        x: center.x - unitX * (length * 0.52),
+        y: center.y - unitY * (length * 0.52),
+    };
+    return [
+        `M ${leftTail.x} ${leftTail.y}`,
+        `Q ${leftShoulder.x} ${leftShoulder.y} ${tip.x} ${tip.y}`,
+        `Q ${rightShoulder.x} ${rightShoulder.y} ${rightTail.x} ${rightTail.y}`,
+        `Q ${tail.x} ${tail.y} ${leftTail.x} ${leftTail.y}`,
+        'Z',
+    ].join(' ');
+};
+
 const CARD_BACK_BY_FACTION: Record<QidahenFactionId, string> = {
     ming: ASSETS.mingCard,
     mongol: ASSETS.mongolCard,
@@ -1976,12 +2027,6 @@ const MapSceneLayer: React.FC<{
                         <filter id="qidahen-map-province-hover" x="-10%" y="-10%" width="120%" height="120%">
                             <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(255,220,146,0.44)" />
                         </filter>
-                        <marker id="qidahen-map-guide-arrow" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto" markerUnits="userSpaceOnUse">
-                            <path d="M 0 1 L 16 9 L 0 17 L 5 9 z" fill="rgba(118, 214, 138, 0.98)" />
-                        </marker>
-                        <marker id="qidahen-map-guide-arrow-active" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto" markerUnits="userSpaceOnUse">
-                            <path d="M 0 1 L 16 9 L 0 17 L 5 9 z" fill="rgba(255, 230, 167, 0.98)" />
-                        </marker>
                         <filter id="qidahen-map-guide-glow" x="-18%" y="-18%" width="136%" height="136%">
                             <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(106,214,139,0.42)" />
                         </filter>
@@ -2056,6 +2101,7 @@ const MapSceneLayer: React.FC<{
                                     return null;
                                 }
                                 const pointLabel = pathPoints.map((point) => `${point.x},${point.y}`).join(' ');
+                                const arrowHeadPath = buildQidahenGuideArrowHeadPath(pathPoints, activeCandidate ? 36 : 31, activeCandidate ? 13 : 11);
                                 return (
                                     <g key={candidate.id} data-testid={`qidahen-map-guide-route-${candidate.targetRegionId}`}>
                                         <polyline
@@ -2065,11 +2111,17 @@ const MapSceneLayer: React.FC<{
                                             strokeWidth={activeCandidate ? 11 : 8}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
-                                            markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
                                             filter="url(#qidahen-map-guide-glow)"
                                             opacity={1}
                                         />
+                                        {arrowHeadPath ? (
+                                            <path
+                                                d={arrowHeadPath}
+                                                fill={activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.96)'}
+                                                filter="url(#qidahen-map-guide-glow)"
+                                                data-testid={`qidahen-map-guide-arrow-head-${candidate.targetRegionId}`}
+                                            />
+                                        ) : null}
                                     </g>
                                 );
                             })}
@@ -3532,7 +3584,7 @@ const ActionsZone: React.FC<{
                     {getPendingCommittedTroopOptions(pendingTargetAction).length > 1 ? (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]" data-testid="qidahen-pending-committed-troops">
                             <span className="mr-1" style={{ color: '#f3d1a5' }}>
-                                {t('board.actions.pendingTarget.actualCommittedTroops', { defaultValue: '实际投入' })}
+                                {t('board.actions.pendingTarget.actualCommittedTroops', { defaultValue: '实际出兵' })}
                             </span>
                             {getPendingCommittedTroopOptions(pendingTargetAction).map((committedTroops) => {
                                 const selected = committedTroops === (pendingCommittedTroops ?? pendingTargetAction.committedTroops);

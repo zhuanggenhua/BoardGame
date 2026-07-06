@@ -11,6 +11,7 @@ export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] 
             playerId,
             chip: core.currentRoundChips[playerId],
             strength: evaluated.strength,
+            pocketCards: [...core.players[playerId].pocketCards],
             bestCards: evaluated.cards,
         };
     });

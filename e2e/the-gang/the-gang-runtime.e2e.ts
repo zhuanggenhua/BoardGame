@@ -284,9 +284,11 @@ test.describe('The Gang 真实入口截图', () => {
         await expect(page.getByLabel('摊牌结算')).toHaveClass(/fixed/);
         await expect(page.getByLabel('摊牌结算')).toHaveClass(/inset-0/);
         await expect(page.locator('[data-tutorial-id="the-gang-showdown-result"]')).toBeVisible();
-        await expect(page.locator('[data-tutorial-id="the-gang-showdown-best-cards"]')).toBeVisible();
-        await expect(page.locator('[data-bgg-zone="reveal-best-cards"]')).toHaveCount(3);
-        await expectImagesLoaded(page, '[data-bgg-zone="reveal-best-cards"] img', 15);
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-community-cards"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-hole-cards"]')).toBeVisible();
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-community-cards"] img', 5);
+        await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"]')).toHaveCount(3);
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 6);
         await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
         await expect(page.getByRole('button', { name: '下一次抢劫' })).toBeVisible();

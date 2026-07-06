@@ -36,8 +36,8 @@
       "finalChip": "The red chip is the final commitment. Read your two pocket cards with all five community cards before choosing your final rank.",
       "finalResponse": "Your teammates take red chips too. The three red chips form the final strength order that showdown will check.",
       "revealShowdown": "After all red chips are chosen, reveal showdown. Showdown also waits for every player to confirm; AI seats confirm automatically. The game compares real hand order against the red chip order.",
-      "showdown": "Showdown shows each red chip, hand category, and whether the heist succeeded. Correct order earns gold; a mismatch triggers an alarm.",
-      "showdownReading": "Read showdown by comparing each player's hand category with their red chip. Stronger real hands should have higher red-chip numbers; if any red-chip order disagrees with real hand strength, the heist fails.",
+      "showdown": "Showdown shows the five community cards, then each player's two pocket cards, red chip, hand category, and whether the heist succeeded. Correct order earns gold; a mismatch triggers an alarm.",
+      "showdownReading": "Read showdown by checking the community cards, each player's two pocket cards and hand category, then comparing those hands with the red chips. Stronger real hands should have higher red-chip numbers; if any red-chip order disagrees with real hand strength, the heist fails.",
       "finish": "The loop is: read hand strength, signal rank with chips, reassess as public cards appear, lock final order with red chips, then resolve showdown."
     }
   },
@@ -68,6 +68,7 @@
     "playerFallback": "Player {{player}}",
     "heistNumber": "Heist {{heist}}",
     "communityCardsSlot": "Community card slots",
+    "communityCards": "Community cards",
     "myHand": "My hand",
     "handRankReference": "Hands",
     "handRankReferenceAria": "Open the hand list to quickly review Texas Hold'em hand rankings from weakest to strongest",

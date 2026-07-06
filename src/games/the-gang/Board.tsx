@@ -376,6 +376,7 @@ function VaultsAlarmsZone({ successes, failures }: { successes: number; failures
 
 function ShowdownResultPanel({
     lastShowdown,
+    communityCards,
     localPlayerId,
     isMultiplayer,
     onSelectHotseatPlayer,
@@ -385,6 +386,7 @@ function ShowdownResultPanel({
     playerIds,
 }: {
     lastShowdown: NonNullable<TheGangCore['lastShowdown']>;
+    communityCards: TheGangCore['communityCards'];
     localPlayerId: string;
     isMultiplayer?: boolean;
     onSelectHotseatPlayer: (playerId: string) => void;
@@ -417,9 +419,30 @@ function ShowdownResultPanel({
                 </div>
 
                 <div
+                    className="flex w-full flex-col items-center gap-2 rounded-2xl border border-amber-100/14 bg-emerald-950/48 px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.28)]"
+                    data-bgg-zone="reveal-community-cards"
+                    data-tutorial-id="the-gang-showdown-community-cards"
+                    aria-label={t('board.communityCards')}
+                >
+                    <span className="text-xs font-black tracking-[0.12em] text-amber-100 md:text-sm">
+                        {t('board.communityCards')}
+                    </span>
+                    <div className="flex justify-center gap-2 md:gap-3">
+                        {communityCards.map((card, index) => (
+                            <CardFace
+                                key={`${card.rank}-${card.suit}-${index}`}
+                                card={card}
+                                emphasis="showdown"
+                                t={t}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                <div
                     className="grid w-full grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
                     data-bgg-zone="reveal-players"
-                    data-tutorial-id="the-gang-showdown-best-cards"
+                    data-tutorial-id="the-gang-showdown-hole-cards"
                 >
                     {lastShowdown.results.map((result) => (
                         <div
@@ -435,10 +458,10 @@ function ShowdownResultPanel({
                             </div>
                             <div
                                 className="flex justify-center gap-2 md:gap-3"
-                                data-bgg-zone="reveal-best-cards"
+                                data-bgg-zone="reveal-pocket-cards"
                                 aria-label={`${playerName(result.playerId)} ${result.strength.label}`}
                             >
-                                {result.bestCards.map((card, index) => (
+                                {result.pocketCards.map((card, index) => (
                                     <CardFace
                                         key={`${result.playerId}-${card.rank}-${card.suit}-${index}`}
                                         card={card}
@@ -796,6 +819,7 @@ export default function TheGangBoard({ G, dispatch, playerID, matchData, isMulti
                         {core.lastShowdown && (
                             <ShowdownResultPanel
                                 lastShowdown={core.lastShowdown}
+                                communityCards={core.communityCards}
                                 localPlayerId={localPlayerId}
                                 isMultiplayer={isMultiplayer}
                                 onSelectHotseatPlayer={setHotseatPlayerId}

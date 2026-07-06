@@ -100,6 +100,6 @@ export const applyRequestedCommittedTroops = (
         ...pendingTargetAction,
         committedTroops,
         attackPressure,
-        resolutionHint: `${pendingTargetAction.resolutionHint} · 实投${committedTroops}/压${attackPressure}`,
+        resolutionHint: `${pendingTargetAction.resolutionHint} · 实出${committedTroops}/战力${attackPressure}`,
     };
 };

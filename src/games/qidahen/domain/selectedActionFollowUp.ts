@@ -93,7 +93,7 @@ const applyCrossMountainsBoundaryEffect = (
         attackPressure,
         attackBoundaryType: 'plain',
         restriction: `${pendingTargetAction.restriction} · 翻山越岭：长城、山脉边界视为平原`,
-        resolutionHint: `${pendingTargetAction.sourceRegionName ?? '前线'} → ${pendingTargetAction.targetRegionName} · 平原 ${battleWidth} · 投${pendingTargetAction.committedTroops}/压${attackPressure} · 翻山越岭`,
+        resolutionHint: `${pendingTargetAction.sourceRegionName ?? '前线'} → ${pendingTargetAction.targetRegionName} · 平原 ${battleWidth} · 出兵${pendingTargetAction.committedTroops}/战力${attackPressure} · 翻山越岭`,
     };
 };
 

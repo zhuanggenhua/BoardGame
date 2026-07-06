@@ -357,17 +357,20 @@ test.describe('The Gang 教程 E2E', () => {
         await expect(page.getByLabel('摊牌结算')).toBeVisible();
         await expect(page.getByLabel('摊牌结算')).toHaveClass(/fixed/);
         await expect(page.getByLabel('摊牌结算')).toHaveClass(/inset-0/);
-        await expect(page.locator('[data-bgg-zone="reveal-best-cards"]')).toHaveCount(3);
-        await expectImagesLoaded(page, '[data-bgg-zone="reveal-best-cards"] img', 15);
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-community-cards"]')).toBeVisible();
+        await expect(page.locator('[data-tutorial-id="the-gang-showdown-hole-cards"]')).toBeVisible();
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-community-cards"] img', 5);
+        await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"]')).toHaveCount(3);
+        await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 6);
         await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
-        await expect(page.getByText(/摊牌结果会显示/u)).toBeVisible();
+        await expect(page.getByText(/摊牌结果会先显示 5 张公共牌/u)).toBeVisible();
         await game.screenshot('教程摊牌结果反馈', testInfo);
 
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="showdown-reading"]')).toBeVisible();
-        await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-showdown-best-cards');
-        await expect(page.getByText(/读摊牌时先看每位玩家的牌型/u)).toBeVisible();
+        await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-showdown-hole-cards');
+        await expect(page.getByText(/读摊牌时先看公共牌/u)).toBeVisible();
         await expect(page.getByText(/真实牌型越强/u)).toBeVisible();
         await game.screenshot('教程摊牌读法', testInfo);
     });

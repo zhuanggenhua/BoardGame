@@ -202,11 +202,13 @@ describe('The Gang Board 运行入口', () => {
 
         expect(document.querySelector('[data-bgg-zone="reveal-zone"]')).toBeInTheDocument();
         expect(document.querySelector('[data-tutorial-id="the-gang-showdown-result"]')).toBeInTheDocument();
-        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-best-cards"]')).toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-community-cards"]')).toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-hole-cards"]')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="safe-zone"]')).toBeInTheDocument();
         expect(document.querySelector('[data-bgg-zone="reveal-players"]')).toBeInTheDocument();
-        expect(document.querySelectorAll('[data-bgg-zone="reveal-best-cards"]')).toHaveLength(3);
-        expect(document.querySelectorAll('[data-bgg-zone="reveal-best-cards"] img')).toHaveLength(15);
+        expect(document.querySelectorAll('[data-bgg-zone="reveal-community-cards"] img')).toHaveLength(5);
+        expect(document.querySelectorAll('[data-bgg-zone="reveal-pocket-cards"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="reveal-pocket-cards"] img')).toHaveLength(6);
         expect(revealed.lastShowdown?.outcome).toBe('success');
         expect(screen.getByRole('button', { name: 'board.nextHeist' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '摊牌' })).not.toBeInTheDocument();

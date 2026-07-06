@@ -213,7 +213,7 @@ export const buildPendingTargetAction = (
     const sourceRegionName = getPreferredLogicalRegionDisplayName(sourceRegion, selectedRegionId);
     const targetRegionName = getPreferredLogicalRegionDisplayName(resolvedSelectedRegion, selectedRegionId);
     const resolutionHint = actionId === 'raid'
-        ? `${sourceRegionName} → ${targetRegionName} · ${attackBoundaryLabel} ${battleWidth} · 投${committedTroops}/压${attackPressure}${boundaryUnitCap ? `/限${boundaryUnitCap}` : ''}${targetKind === 'siege-attacker' ? ' · 解围' : ''}`
+        ? `${sourceRegionName} → ${targetRegionName} · ${attackBoundaryLabel} ${battleWidth} · 出兵${committedTroops}/战力${attackPressure}${boundaryUnitCap ? `/限${boundaryUnitCap}` : ''}${targetKind === 'siege-attacker' ? ' · 解围' : ''}`
         : `${sourceRegionName} → ${targetRegionName} · ${attackBoundaryLabel} ${battleWidth}`;
 
     return {

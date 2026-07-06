@@ -178,7 +178,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'showdown-reading',
             content: 'game-the-gang:tutorial.steps.showdownReading',
-            highlightTarget: 'the-gang-showdown-best-cards',
+            highlightTarget: 'the-gang-showdown-hole-cards',
             position: 'left',
             infoStep: true,
             viewAs: '0',

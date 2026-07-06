@@ -34,7 +34,8 @@ const stableTutorialTargets = () =>
         'the-gang-next-round',
         'the-gang-reveal-showdown',
         'the-gang-showdown-result',
-        'the-gang-showdown-best-cards',
+        'the-gang-showdown-community-cards',
+        'the-gang-showdown-hole-cards',
     ].includes(target));
 
 describe('The Gang tutorial', () => {
@@ -113,7 +114,7 @@ describe('The Gang tutorial', () => {
             const roundStep = TheGangTutorial.steps.find((step) => step.id === stepId);
             expect(roundStep).toMatchObject({
                 requireAction: true,
-                allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+                allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
                 advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
             });
         }
@@ -134,14 +135,14 @@ describe('The Gang tutorial', () => {
         const revealShowdownStep = TheGangTutorial.steps.find((step) => step.id === 'reveal-showdown');
         expect(revealShowdownStep).toMatchObject({
             requireAction: true,
-            allowedCommands: [THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.SHOWDOWN_REVEALED }],
         });
 
         const showdownReadingStep = TheGangTutorial.steps.find((step) => step.id === 'showdown-reading');
         expect(showdownReadingStep).toMatchObject({
             infoStep: true,
-            highlightTarget: 'the-gang-showdown-best-cards',
+            highlightTarget: 'the-gang-showdown-hole-cards',
         });
         expect(TheGangTutorial.steps.find((step) => step.id === 'showdown')).toMatchObject({
             infoStep: true,
@@ -200,23 +201,18 @@ describe('The Gang tutorial', () => {
             }, fixedRandom);
             for (const event of events) core = reduce(core, event);
         };
-        const endRound = () => {
-            const events = execute(stateOf(core), {
-                type: THE_GANG_COMMANDS.END_ROUND,
-                playerId: '0',
-                payload: {},
-                timestamp: 0,
-            }, fixedRandom);
-            for (const event of events) core = reduce(core, event);
-        };
-        const revealShowdown = () => {
-            const events = execute(stateOf(core), {
-                type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
-                playerId: '0',
-                payload: {},
-                timestamp: 0,
-            }, fixedRandom);
-            for (const event of events) core = reduce(core, event);
+        const approveProgressForAllPlayers = (
+            type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+        ) => {
+            for (const [index, playerId] of core.playerIds.entries()) {
+                const events = execute(stateOf(core), {
+                    type,
+                    playerId,
+                    payload: {},
+                    timestamp: index,
+                }, fixedRandom);
+                for (const event of events) core = reduce(core, event);
+            }
         };
 
         takeChip('0', 1);
@@ -227,7 +223,7 @@ describe('The Gang tutorial', () => {
         expect(document.querySelector('[data-tutorial-id="the-gang-next-round"]')).not.toBeNull();
         readyForNextRound.unmount();
 
-        endRound();
+        approveProgressForAllPlayers(THE_GANG_COMMANDS.END_ROUND);
         expect(core.round).toBe(2);
         expect(core.communityCards).toHaveLength(3);
         expect(core.roundHistory).toHaveLength(1);
@@ -235,11 +231,11 @@ describe('The Gang tutorial', () => {
         takeChip('0', 1);
         takeChip('1', 2);
         takeChip('2', 3);
-        endRound();
+        approveProgressForAllPlayers(THE_GANG_COMMANDS.END_ROUND);
         takeChip('0', 1);
         takeChip('1', 2);
         takeChip('2', 3);
-        endRound();
+        approveProgressForAllPlayers(THE_GANG_COMMANDS.END_ROUND);
         takeChip('0', 1);
         takeChip('1', 2);
         takeChip('2', 3);
@@ -248,7 +244,7 @@ describe('The Gang tutorial', () => {
         expect(document.querySelector('[data-tutorial-id="the-gang-reveal-showdown"]')).not.toBeNull();
         readyForShowdown.unmount();
 
-        revealShowdown();
+        approveProgressForAllPlayers(THE_GANG_COMMANDS.REVEAL_SHOWDOWN);
 
         expect(core.phase).toBe('showdown');
         expect(core.communityCards).toHaveLength(5);
@@ -258,7 +254,8 @@ describe('The Gang tutorial', () => {
         expect(document.querySelector('[data-tutorial-id="the-gang-reveal-showdown"]')).toBeNull();
         expect(document.querySelector('[data-tutorial-id="the-gang-showdown-area"]')).not.toBeNull();
         expect(document.querySelector('[data-tutorial-id="the-gang-showdown-result"]')).not.toBeNull();
-        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-best-cards"]')).not.toBeNull();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-community-cards"]')).not.toBeNull();
+        expect(document.querySelector('[data-tutorial-id="the-gang-showdown-hole-cards"]')).not.toBeNull();
         expect(document.querySelector('[data-bgg-zone="reveal-zone"]')).not.toBeNull();
         unmount();
     });

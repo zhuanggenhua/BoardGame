@@ -493,7 +493,7 @@ const buildSiegeContinueDispatchSelection = (
             attackPressure,
             attackBoundaryType,
             priorityTroops: targetRegion.siegeState.attackerTroops,
-            resolutionHint: `${targetRegionName} 围城续攻 · ${boundaryLabel} ${battleWidth} · 投${committedTroops}/压${attackPressure}${boundaryUnitCap ? `/限${boundaryUnitCap}` : ''}`,
+            resolutionHint: `${targetRegionName} 围城续攻 · ${boundaryLabel} ${battleWidth} · 出兵${committedTroops}/战力${attackPressure}${boundaryUnitCap ? `/限${boundaryUnitCap}` : ''}`,
             pathRegionIds: [targetRegion.id],
             pathLabel: `${targetRegionName} 围城续攻`,
         }],
@@ -626,7 +626,7 @@ export const buildWheelDispatchSelectionFromRegionSemantics = (
                 attackPressure,
                 attackBoundaryType: finalBoundaryType,
                 priorityTroops,
-                resolutionHint: `${pathLabel} · 耗${target.totalTravelCost} · ${finalBoundaryLabel} ${battleWidth} · 投${committedTroops}/压${attackPressure}${boundaryUnitCap ? `/限${boundaryUnitCap}` : ''}${targetKind === 'siege-reinforce' ? ' · 增援围城' : isFriendlySiegedCityTarget(targetRuntimeRegion, attackerFactionId) ? ' · 解围' : ''}`,
+                resolutionHint: `${pathLabel} · 耗${target.totalTravelCost} · ${finalBoundaryLabel} ${battleWidth} · 出兵${committedTroops}/战力${attackPressure}${boundaryUnitCap ? `/限${boundaryUnitCap}` : ''}${targetKind === 'siege-reinforce' ? ' · 增援围城' : isFriendlySiegedCityTarget(targetRuntimeRegion, attackerFactionId) ? ' · 解围' : ''}`,
                 pathRegionIds: [...target.pathRegionIds],
                 pathLabel,
             };

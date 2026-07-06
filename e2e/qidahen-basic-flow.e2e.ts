@@ -1382,7 +1382,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         assertNoFatalFrontendErrors([{ label: 'qidahen-post-battle-dice', diagnostics }]);
     });
 
-    test('待结算面板可选择实际投入数量并按选择占领', async ({ page }) => {
+    test('待结算面板可选择实际出兵数量并按选择占领', async ({ page }) => {
         await setChineseLocale(page);
         await disableAudio(page);
         await disableTutorial(page);
@@ -1431,7 +1431,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
                 committedTroops: 4,
                 attackPressure: 3,
                 attackBoundaryType: 'plain',
-                resolutionHint: '测试：选择实际投入',
+                resolutionHint: '测试：选择实际出兵',
                 defenderPayCost: null,
             };
             next.core.regions = next.core.regions.map((region) => {
@@ -1654,8 +1654,9 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('皮岛 出发');
         const guideRouteCount = await page.locator('[data-testid^="qidahen-map-guide-route-"]').count();
         expect(guideRouteCount).toBeGreaterThanOrEqual(2);
-        const firstGuideRoute = page.locator('[data-testid^="qidahen-map-guide-route-"] polyline').first();
-        await expect(firstGuideRoute).toHaveAttribute('marker-end', /qidahen-map-guide-arrow/);
+        const firstGuideRoute = page.locator('[data-testid^="qidahen-map-guide-route-"]').first();
+        await expect(firstGuideRoute.locator('polyline')).toBeVisible();
+        await expect(firstGuideRoute.locator('[data-testid^="qidahen-map-guide-arrow-head-"]')).toBeVisible();
         await expect(page.locator('[data-testid^="qidahen-map-guide-route-"] circle')).toHaveCount(0);
         await expect(page.locator('[data-testid^="qidahen-map-guide-route-"] text')).toHaveCount(0);
 

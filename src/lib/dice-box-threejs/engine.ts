@@ -228,7 +228,10 @@ export class DiceBoxThreeEngine {
 
     setDieSkins(skins: Array<DiceBoxDieSkin | null>): void {
         this.dieSkins = skins;
-        this.applyPrimarySkinToDicePreset();
+        const didUpdatePreset = this.applyPrimarySkinToDicePreset();
+        if (didUpdatePreset) {
+            this.rebuildExistingDicePresetMaterials();
+        }
         this.applyCurrentSkins();
     }
 
@@ -350,14 +353,14 @@ export class DiceBoxThreeEngine {
         }
     }
 
-    private applyPrimarySkinToDicePreset(): void {
+    private applyPrimarySkinToDicePreset(): boolean {
         const primarySkin = this.dieSkins.find(Boolean);
         const faceImages = primarySkin?.faceImages;
         const faceLabels = primarySkin?.faceLabels;
-        if (!primarySkin || (!faceImages && !faceLabels) || this.activePresetSkinId === primarySkin.id) return;
+        if (!primarySkin || (!faceImages && !faceLabels) || this.activePresetSkinId === primarySkin.id) return false;
 
         const preset = this.box.DiceFactory?.get('d6');
-        if (!preset) return;
+        if (!preset) return false;
 
         preset.labels = faceLabels
             ? [
@@ -384,6 +387,22 @@ export class DiceBoxThreeEngine {
             this.box.DiceFactory.materials_cache = {};
         }
         this.activePresetSkinId = primarySkin.id;
+        return true;
+    }
+
+    private rebuildExistingDicePresetMaterials(): void {
+        const preset = this.box.DiceFactory?.get?.('d6');
+        const createMaterials = this.box.DiceFactory?.createMaterials?.bind(this.box.DiceFactory);
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        if (!preset || !createMaterials || this.box.diceList.length === 0) return;
+
+        this.box.diceList.forEach((die) => {
+            if (die.notation?.type !== 'd6') return;
+            const materials = createMaterials(preset, baseScale / 2, 1);
+            if (!materials.length) return;
+            die.material = materials;
+            materials.forEach((material) => this.normalizeFaceMaterial(material));
+        });
     }
 
     private applyCurrentSkins(): void {

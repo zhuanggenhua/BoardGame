@@ -27,6 +27,7 @@ export interface ShowdownPlayerResult {
     playerId: PlayerId;
     chip: number;
     strength: HandStrength;
+    pocketCards: PlayingCard[];
     bestCards: PlayingCard[];
 }
 

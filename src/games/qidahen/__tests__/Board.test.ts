@@ -464,8 +464,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('onPointerUp={handlePointerUp}');
         expect(boardSource).toContain('viewport={mapViewport}');
         expect(boardSource).toContain('onViewportChange={setMapViewport}');
-        expect(boardSource).toContain("markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
-        expect(boardSource).toContain("markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
+        expect(boardSource).toContain('const buildQidahenGuideArrowHeadPath = (');
+        expect(boardSource).toContain('data-testid={`qidahen-map-guide-arrow-head-${candidate.targetRegionId}`}');
+        expect(boardSource).not.toContain('markerMid={');
+        expect(boardSource).not.toContain('markerEnd={');
+        expect(boardSource).not.toContain('<marker id="qidahen-map-guide-arrow"');
         expect(boardSource).toContain('inferPendingTargetPathRegionIds(pendingTargetAction)');
         expect(boardSource).not.toContain("t('board.map.selectionGuideSource'");
         expect(boardSource).not.toContain('{index + 1}');

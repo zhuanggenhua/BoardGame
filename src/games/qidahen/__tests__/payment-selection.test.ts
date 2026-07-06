@@ -10851,7 +10851,7 @@ describe('七大恨支付手牌选择', () => {
         expect(pending.pendingTargetAction?.resolutionHint).toContain('耗2');
         expect(pending.pendingTargetAction?.resolutionHint).toContain('宁远');
         expect(pending.pendingTargetAction?.resolutionHint).toContain('土默特部');
-        expect(pending.pendingTargetAction?.resolutionHint).toContain('投2/压2');
+        expect(pending.pendingTargetAction?.resolutionHint).toContain('出兵2/战力2');
         expect(pending.currentPlayer).toBe('0');
         expect(pending.wheelActionUsed).toBe(true);
         expect(pending.actionLog[0]?.text).toContain('锁定调度目标');
@@ -11312,7 +11312,7 @@ describe('七大恨支付手牌选择', () => {
             committedTroops: 1,
             attackPressure: 1,
         });
-        expect(candidate?.resolutionHint).toContain('投1/压1');
+        expect(candidate?.resolutionHint).toContain('出兵1/战力1');
     });
 
     it('调骑 4 占领空区时会转移骑兵栈，而不是转移高等级步兵栈', () => {
@@ -15799,7 +15799,7 @@ describe('七大恨支付手牌选择', () => {
             sourceAvailableTroops: 10,
             committedTroops: 10,
         });
-        expect(pending.pendingTargetAction?.resolutionHint).toContain('投10/压');
+        expect(pending.pendingTargetAction?.resolutionHint).toContain('出兵10/战力');
     });
 
     it('结构化守军野战败退时会把幸存特殊部队撤到相邻友方区域', () => {
