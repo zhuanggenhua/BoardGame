@@ -2433,6 +2433,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const dogTradeTargets = React.useMemo(() => resolveDogTradeTargets(core), [core]);
     const activeTradeTargets = canUseDogTrade && dogTradeTargets.length > 0 ? dogTradeTargets : tradeTargets;
     const corpseLootTargets = React.useMemo(() => resolveCorpseLootTargets(core), [core]);
+    const hasCorpseLootTargets = corpseLootTargets.length > 0;
     const selectedTradeTargetPlayerId = React.useMemo(
         () => resolveSelectedTradeTargetPlayerId(activeTradeTargets, previewState.selectedTradeTargetPlayerId),
         [previewState.selectedTradeTargetPlayerId, activeTradeTargets],
@@ -2592,9 +2593,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     matchData,
                 ),
             })
-            : activeTradeTargets.length > 0
-                ? t('board.status.tradeTargetsAvailable', { count: activeTradeTargets.length })
-                : t('board.status.noTradeTargets');
+            : hasCorpseLootTargets
+                ? t('board.status.lootTargetsAvailable', { count: corpseLootTargets.length })
+                : activeTradeTargets.length > 0
+                    ? t('board.status.tradeTargetsAvailable', { count: activeTradeTargets.length })
+                    : t('board.status.noTradeTargets');
     const tradeInstructionText = selectedInventoryCard && selectedTradeTarget
         ? t('board.status.tradeFlowReady', {
             card: selectedInventoryCard.name,
@@ -2611,6 +2614,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : t('board.status.tradeFlowStart');
     const shouldShowMobileTradeStatus = core.recommendedAction !== 'trade'
         || Boolean(selectedCorpseLootTarget)
+        || hasCorpseLootTargets
         || tradeTargets.length === 0;
     const useStatusText = selectedInventoryCard
         ? selectedCardUsedThisTurn
@@ -3304,8 +3308,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         },
         {
             id: 'trade',
-            label: selectedCorpseLootTarget ? t('board.actions.loot') : t('board.actions.trade'),
-            disabled: selectedCorpseLootTarget
+            label: hasCorpseLootTargets ? t('board.actions.loot') : t('board.actions.trade'),
+            disabled: hasCorpseLootTargets
                 ? false
                 : core.currentExplorerInventory.length === 0 || activeTradeTargets.length === 0,
             variant: 'secondary',
@@ -4277,7 +4281,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 0) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
+                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || selectedCorpseLootTarget || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 0) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
                                 <div className="pointer-events-auto absolute left-1/2 top-[86px] z-50 flex max-w-[min(880px,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1">
                                     {roomFocusState ? (
                                         <button
@@ -5014,8 +5018,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     focusRoomInView(explorer.roomId);
                                                     setPreviewState((previousState) => ({
                                                         ...previousState,
-                                                        selectedTradeTargetPlayerId: isTradeCandidate ? explorer.playerId : previousState.selectedTradeTargetPlayerId,
-                                                        tradeSelectionTouched: isTradeCandidate ? true : previousState.tradeSelectionTouched,
+                                                        selectedTradeTargetPlayerId: isTradeCandidate || isCorpseLootCandidate ? explorer.playerId : previousState.selectedTradeTargetPlayerId,
+                                                        selectedCorpseLootCardId: isCorpseLootCandidate ? null : previousState.selectedCorpseLootCardId,
+                                                        tradeSelectionTouched: isTradeCandidate || isCorpseLootCandidate ? true : previousState.tradeSelectionTouched,
                                                     }));
                                                 }}
                                                 data-testid={`betrayal-bottom-teammate-${explorer.playerId}`}

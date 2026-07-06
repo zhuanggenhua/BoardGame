@@ -4990,7 +4990,13 @@ describe('Betrayal first scenario runtime', () => {
     it('同房间尸体上的 Item/Omen 应可每回合搜刮 1 件，且同一尸体同回合不能连续搜刮', () => {
         let core = createCorpseLootReadyCore();
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0' });
+        const missingCardValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0' }),
+        );
+        expect(missingCardValidation.valid).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0', cardId: 'corpse-item-1' });
 
         const lootedByTeammate = core.currentExplorer.playerId === '1'
             ? core.currentExplorer
@@ -5003,7 +5009,7 @@ describe('Betrayal first scenario runtime', () => {
 
         const secondLootValidation = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0', cardId: 'corpse-omen-1' }),
         );
         expect(secondLootValidation.valid).toBe(false);
 
@@ -5013,7 +5019,7 @@ describe('Betrayal first scenario runtime', () => {
 
         const nextTurnLootValidation = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '1', { sourcePlayerId: '0', cardId: 'corpse-omen-1' }),
         );
         expect(nextTurnLootValidation.valid).toBe(true);
     });

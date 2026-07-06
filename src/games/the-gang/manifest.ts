@@ -10,7 +10,7 @@ const entry: GameManifestEntry = {
     category: 'card',
     playersKey: 'games.the-gang.players',
     icon: '🃏',
-    thumbnailPath: 'the-gang/thumbnails/cover',
+    thumbnailPath: 'the-gang/thumbnails/the-gang-vault-heist-thumbnail',
     allowLocalMode: true,
     playerOptions: [3, 4, 5, 6],
     bestPlayers: [4, 5],

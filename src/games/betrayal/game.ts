@@ -3102,7 +3102,7 @@ export function resolveDogTradeTargets(core: BetrayalCore): BetrayalExplorerSumm
 }
 
 function resolveTradeCardIds(core: BetrayalCore, payload: BetrayalCommandMap[typeof BETRAYAL_COMMANDS.TRADE_POSSESSION]): string[] {
-    const cardIds = payload.cardIds?.length ? payload.cardIds : [payload.cardId ?? core.currentExplorer.inventory[0]?.id].filter(Boolean);
+    const cardIds = payload.cardIds?.length ? payload.cardIds : [payload.cardId].filter(Boolean);
     return Array.from(new Set(cardIds)) as string[];
 }
 
@@ -3669,7 +3669,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         case BETRAYAL_COMMANDS.TRADE_POSSESSION: {
             const cardIds = resolveTradeCardIds(core, command.payload);
             const tradeTargets = command.payload.useDog ? resolveDogTradeTargets(core) : resolveTradeTargets(core);
-            const targetPlayerId = command.payload.targetPlayerId ?? tradeTargets[0]?.playerId;
+            const targetPlayerId = command.payload.targetPlayerId;
             if (cardIds.length === 0 || !targetPlayerId) {
                 return { valid: false, error: '缺少交易对象或持有物。' };
             }
@@ -4496,8 +4496,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 .map((cardId) => core.currentExplorer.inventory.find((item) => item.id === cardId))
                 .filter((card): card is BetrayalInventoryCard => Boolean(card));
             const tradeTargets = command.payload.useDog ? resolveDogTradeTargets(core) : resolveTradeTargets(core);
-            const target = tradeTargets.find((item) => item.playerId === command.payload.targetPlayerId)
-                ?? tradeTargets[0]!;
+            const target = tradeTargets.find((item) => item.playerId === command.payload.targetPlayerId)!;
             const dogSourceCardId = command.payload.useDog ? resolveDogTradeSourceCardId(core) ?? undefined : undefined;
             return [nowEvent(EVENTS.POSSESSION_TRADED, {
                 playerId: command.playerId,

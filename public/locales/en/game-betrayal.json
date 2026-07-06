@@ -95,6 +95,7 @@
       "tradeStepPending": "Pending",
       "selected": "Selected",
       "lootTarget": "Loot {{player}}'s corpse",
+      "lootTargetsAvailable": "Lootable corpses: {{count}}",
       "noTradeTargets": "No teammate is in the same room",
       "turnHintMove": "Reach: {{targets}}",
       "turnHintExplore": "Reveal: {{floor}}",

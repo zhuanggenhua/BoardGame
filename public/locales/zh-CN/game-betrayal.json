@@ -96,6 +96,7 @@
       "tradeStepPending": "待选",
       "selected": "已选",
       "lootTarget": "可搜刮：{{player}}的尸体",
+      "lootTargetsAvailable": "可搜刮尸体：{{count}}具",
       "noTradeTargets": "当前没有同房间队友",
       "turnHintMove": "可前往：{{targets}}",
       "turnHintExplore": "可翻：{{floor}}",
