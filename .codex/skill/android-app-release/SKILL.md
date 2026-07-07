@@ -1,6 +1,6 @@
 ---
 name: android-app-release
-description: "本项目 Android App 打包/上传/发布/验包 workflow。用于用户要求“打 app 包”“发安卓包”“上传 APK”“发布原生更新”“更新网站下载的 app”“检查下载到的是正式版还是测试版”“缩 Android 包体”“发 OTA / 发 native”时。核心目标是把 Android 发布固定成：选对发布类型 -> 正式壳构建 -> 上传正确入口 -> 回查 latest.json -> 直接下载线上 APK 验包，不允许停留在本地构建成功或只看 manifest。"
+description: "本项目 Android App 打包/上传/发布/验包 workflow。用于用户要求“打 app 包”“发安卓包”“上传 APK”“发布原生更新”“更新网站下载的 app”“检查下载到的是正式版还是测试版”“缩 Android 包体”“发 OTA / 发 native”，以及在本项目里说“更新部署 / 部署最新 / 发线上”时。核心目标是把 Android 发布固定成：选对发布类型 -> 正式壳构建或 OTA 发布 -> 上传正确入口 -> 回查 latest.json -> 验证线上产物，不允许停留在本地构建成功、服务器部署成功或只看 manifest。"
 ---
 
 # Android App 发布 Skill
@@ -12,6 +12,7 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - 打 Android APK / AAB
 - 上传或发布 Android 原生更新
 - 发布 Android OTA
+- 用户说“更新部署 / 部署最新 / 发线上”
 - 更新网站“下载 App”入口
 - 排查“为什么用户下载到的还是旧包 / 测试包 / 大包”
 - 排查“为什么旧壳没有自动更新”
@@ -24,6 +25,14 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - [docs/ai-rules/asset-pipeline.md](/abs/path/D:/gongzuo/webgame/BoardGame/docs/ai-rules/asset-pipeline.md)
 
 如果用户只要“更新网站下载的 App / 发原生更新”，默认**不用部署网站**；优先走原生发布链路，不要误升级成服务器部署。
+
+如果用户在本项目里说“更新部署 / 部署最新 / 发线上”，默认不是只部署网页/服务器，而是：
+
+1. 先按生产部署入口更新服务器 `latest`
+2. 再发布 Android `stable` OTA
+3. 最后同时回查服务器健康状态与 Android OTA `latest.json`
+
+只有用户当轮明确说“只更新服务器 / 不发 OTA / 不更新 App”，才允许缩小为只做服务器部署。
 
 ## 2. 核心硬规则
 
@@ -92,6 +101,14 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - 除非用户明确说“先别上传 / 只本地打包”，否则不能等用户再催一次“上传”。
 - 完整收口默认到“线上可下载并已验包”为止。
 
+### 2.8 用户说“更新部署 / 部署最新 / 发线上”时默认包含 OTA
+
+- 在本项目语境里，“更新部署 / 部署最新 / 发线上”默认表示**网页/服务端生产部署 + Android stable OTA 发布**，不是二选一。
+- 服务器部署完成但 Android OTA 没发，不能汇报为“更新部署已完成”；只能说“服务器已部署，OTA 尚未发布”。
+- 发布 OTA 的真相源必须是已推送的 git ref。若本地存在无关未提交改动，按 `4.1.1` 处理，不得把它们混进 OTA，也不得因此漏发 OTA。
+- OTA 发布后必须回查 `https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json`，确认 `version / url / checksum / size / notes` 指向本次已推送 ref。
+- 如用户明确要求“不发 OTA / 只更新服务器”，最终汇报必须点明“本次未发布 Android OTA”。
+
 ## 3. 路径选择
 
 ### 3.1 只改 H5 内容
@@ -144,6 +161,20 @@ npm run mobile:android:build:release
 - 只有当未提交改动本身就是本次要发布的 H5 内容、会改变 OTA bundle、或会改变发布配置/版本参数时，才需要先提交并推送后再发 OTA。
 - 如果本地存在无关脏改，发布前只需说明“本次 OTA 使用已推送 ref，以下本地改动不包含在本次发布内”，然后继续触发 workflow 或发布脚本。
 - 发布后仍必须回查线上 `app-updates/android/<channel>/latest.json`，确认 `notes`、`version` 或 bundle URL 能对应本次已推送 ref；不能只看 workflow 成功。
+
+### 4.1.2 “更新部署”组合发布顺序
+
+用户说“更新部署 / 部署最新 / 发线上”且未排除 OTA 时，按以下顺序收口：
+
+1. 确认目标提交已推送到远端，例如 `origin/main` 的最新提交或用户指定 ref。
+2. 等待 Docker 镜像流水线完成，确认 `web` 与 `game-server` 镜像已可用。
+3. 在生产机执行服务器更新：`bash scripts/deploy/deploy-image.sh update`。
+4. 验证生产容器与健康接口，例如 `bash scripts/deploy/deploy-image.sh status` 和 `curl http://127.0.0.1/health`。
+5. 触发 Android OTA workflow：`.github/workflows/android-ota-publish.yml`，`channel=stable`，`git_ref=<本次已推送提交>`，`expected_base_version=<package.json.version>`。
+6. 等待 OTA workflow 成功。
+7. 回查 Android OTA `latest.json` 与 bundle URL，确认它们对应本次提交。
+
+任一步失败时，只能汇报该步骤的真实阻塞；不得用前一步成功替代整条“更新部署”完成。
 
 ### 4.2 本地构建与本地产物验证
 
@@ -230,6 +261,14 @@ https://assets.easyboardgame.top/official/native-app-updates/android/stable/late
 - 线上 `latest.json` 的 `version/versionCode/url/size`
 - 线上实际 APK 的正式壳验证结果
 - 如果没做部署，要明确说“本次未部署网站，只更新原生下载入口”
+
+只要对外说“更新部署已完成 / 发线上已完成”，必须同时给出：
+
+- 服务器部署提交或镜像来源
+- 生产容器状态与健康接口结果
+- Android OTA workflow 结果
+- Android OTA `latest.json` 的 `version / url / checksum / size / notes`
+- 如果用户明确排除了 OTA，要写明“本次按用户要求未发 Android OTA”
 
 ## 6. 失败分类
 
