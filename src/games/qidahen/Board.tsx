@@ -1416,7 +1416,7 @@ const MapToken: React.FC<{
     const isPopulationToken = token.type === 'population';
     const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : (token.type === 'control' || isPopulationToken) ? 'rounded-full' : '';
     const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';
-    const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);
+    const showTokenImage = Boolean(token.imageSrc) && !isPopulationToken && (!isArmyToken || revealFront);
     const pendingCommittedTone = pendingCommittedSelected
         ? {
             opacity: 1,

@@ -470,6 +470,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (');
         expect(boardSource).toContain('const QidahenBattleRollDiceSummary: React.FC<');
         expect(boardSource).toContain('data-testid="qidahen-post-battle-dice-summary"');
+        expect(boardSource).not.toContain('Dice3D');
+        expect(boardSource).not.toContain('data-testid="dice-3d"');
         expect(boardSource).toContain('{postBattleSelection.battleRolls ? (');
         expect(boardSource).toContain('<QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />');
         expect(boardSource).toContain("defaultValue: '{{summary}} · 幸存 {{survivingTroops}}'");
@@ -661,6 +663,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("rounded-[6px]");
         expect(boardSource).toContain("const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : (token.type === 'control' || isPopulationToken) ? 'rounded-full' : '';");
         expect(boardSource).toContain("const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';");
+        expect(boardSource).toContain("const showTokenImage = Boolean(token.imageSrc) && !isPopulationToken && (!isArmyToken || revealFront);");
         expect(boardSource).toContain('className="absolute inset-0 grid place-items-center text-[12px] font-black leading-none"');
         expect(boardSource).toContain("rotate(${token.rotationDeg ?? 0}deg)");
         expect(mapTokenSource).toContain("type: 'population',");
@@ -678,7 +681,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const buildRevealedBattleRegionIds = (');
         expect(boardSource).toContain('pendingTargetAction?.targetRuntimeRegionId,');
         expect(boardSource).toContain('postBattleSelection?.targetRuntimeRegionId,');
-        expect(boardSource).toContain('const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);');
+        expect(boardSource).toContain('const showTokenImage = Boolean(token.imageSrc) && !isPopulationToken && (!isArmyToken || revealFront);');
         expect(boardSource).toContain('data-qidahen-army-face="hidden-back"');
         expect(boardSource).toContain("aria-label={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}");
         expect(boardSource).toContain("armyBackMarker: 'qidahen/markers/blank-rectangular-marker'");
