@@ -188,11 +188,13 @@
       },
       "recruit": {
         "title": "Recruit troops",
-        "summary": "Choose the recruit mode"
+        "summary": "Choose the recruit mode",
+        "mapFirstHint": "Click the map region to recruit in first, then choose the recruit mode."
       },
       "maShiTrade": {
         "title": "Horse market trade",
-        "summary": "Choose how many troops to build"
+        "summary": "Choose how many troops to build",
+        "mapFirstHint": "Click the map region to build troops in first, then choose how many troops to build."
       },
       "khanEdict": {
         "title": "Khan's edict",

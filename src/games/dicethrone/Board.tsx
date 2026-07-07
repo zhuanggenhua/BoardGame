@@ -2114,29 +2114,30 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
-                        diceStage={useBoardDiceStage ? (
-                            <BoardDiceStage
-                                dice={boardStageDice}
-                                rollCount={G.rollCount}
-                                currentPhase={currentPhase}
-                                canInteract={canInteractDice || !!rerollSelectingAction}
-                                isRolling={isRolling}
-                                rerollingDiceIds={rerollingDiceIds}
-                                locale={locale}
-                                onToggleLock={(id) => {
-                                    if (rerollSelectingAction) {
-                                        handlePassiveRerollDieSelect(id);
-                                        return;
-                                    }
-                                    queueLockedDieReturnAnimation(id);
-                                    engineMoves.toggleDieLock(id);
-                                }}
-                                interaction={diceMultistepInteraction}
-                                multistepInteraction={diceMultistepState}
-                                isPassiveRerollMode={!!rerollSelectingAction}
-                            />
-                        ) : null}
                     />
+
+                    {useBoardDiceStage && (
+                        <BoardDiceStage
+                            dice={boardStageDice}
+                            rollCount={G.rollCount}
+                            currentPhase={currentPhase}
+                            canInteract={canInteractDice || !!rerollSelectingAction}
+                            isRolling={isRolling}
+                            rerollingDiceIds={rerollingDiceIds}
+                            locale={locale}
+                            onToggleLock={(id) => {
+                                if (rerollSelectingAction) {
+                                    handlePassiveRerollDieSelect(id);
+                                    return;
+                                }
+                                queueLockedDieReturnAnimation(id);
+                                engineMoves.toggleDieLock(id);
+                            }}
+                            interaction={diceMultistepInteraction}
+                            multistepInteraction={diceMultistepState}
+                            isPassiveRerollMode={!!rerollSelectingAction}
+                        />
+                    )}
 
                     {lockedDieReturnAnimations.map((animation) => {
                         const left = animation.active ? animation.to.left + (animation.to.width / 2) : animation.from.left + (animation.from.width / 2);

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const readBoardSource = () => readFileSync(resolve(TEST_DIR, '..', 'Board.tsx'), 'utf8');
+const readQidahenBasicFlowE2eSource = () => readFileSync(resolve(TEST_DIR, '..', '..', '..', '..', 'e2e', 'qidahen-basic-flow.e2e.ts'), 'utf8');
 const readCommandsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'commands.ts'), 'utf8');
 const readCharacterActionWindowSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterActionWindow.ts'), 'utf8');
 const readCharacterActionWindowDependenciesSource = () => {
@@ -359,6 +360,14 @@ const readWheelRulesSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain'
 const readTurnLabelStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'turnLabelState.ts'), 'utf8');
 
 describe('Qidahen compatibility source guards', () => {
+    it('七大恨教程 E2E 入口必须显式注入大明玩家视角，不能靠渲染兜底掩盖缺视角', () => {
+        const e2eSource = readQidahenBasicFlowE2eSource();
+
+        expect(e2eSource).toContain("const QIDAHEN_BASIC_OPENING_TEST_URL = '/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0';");
+        expect(e2eSource).toContain("await expectMapArmyFace(page, { faction: 'ming', regionId: 'city-region-25', face: 'front' });");
+        expect(e2eSource).toContain("await expectMapArmyFace(page, { faction: 'jin', regionId: 'city-region-13', face: 'hidden-back' });");
+    });
+
     it('桌面舞台应保留显式宽高与缩放锚点，避免宿主缩放后压扁主战区', () => {
         const board = readBoardSource();
 
@@ -516,15 +525,21 @@ describe('Qidahen compatibility source guards', () => {
         expect(source).not.toContain('const selection = getQidahenKhanEdictSelectionForCore(state.core);');
     });
 
-    it('Board 主 UI 也应通过 accessor mirror 读取行动选择，不得继续在视图层手写 interaction/core 双轨拼接', () => {
+    it('Board 主 UI 也应通过 accessor mirror 读取行动选择；地图直选目标必须优先当前 core 选择', () => {
         const source = readBoardSource();
 
         expect(source).toContain('const handLimitDiscardSelection = getQidahenHandLimitDiscardSelectionForCore(core, activeInteraction);');
-        expect(source).toContain('const recruitSelection = getQidahenRecruitSelectionForCore(core, activeInteraction);');
         expect(source).toContain('const diplomacySelection = getQidahenDiplomacySelectionForCore(core, activeInteraction);');
         expect(source).toContain('const internalDispatchSelection = getQidahenInternalDispatchSelectionForCore(core, activeInteraction);');
-        expect(source).toContain('const maShiTradeSelection = getQidahenMaShiTradeSelectionForCore(core, activeInteraction);');
         expect(source).toContain('const khanEdictSelection = getQidahenKhanEdictSelectionForCore(core, activeInteraction);');
+        expect(source).toContain('const recruitSelectionFromCore = getCoreQidahenRecruitSelectionForCore(core);');
+        expect(source).toContain('const recruitSelectionFromMirror = getQidahenRecruitSelectionForCore(core, activeInteraction);');
+        expect(source).toContain('const recruitSelection = core.explicitRegionId && recruitSelectionFromCore');
+        expect(source).toContain('? recruitSelectionFromCore');
+        expect(source).toContain(': recruitSelectionFromMirror;');
+        expect(source).toContain('const maShiTradeSelectionFromCore = getCoreQidahenMaShiTradeSelectionForCore(core);');
+        expect(source).toContain('const maShiTradeSelectionFromMirror = getQidahenMaShiTradeSelectionForCore(core, activeInteraction);');
+        expect(source).toContain('const maShiTradeSelection = core.explicitRegionId && maShiTradeSelectionFromCore');
         expect(source).not.toContain('const handLimitDiscardSelection = handLimitDiscardSelectionFromInteraction ?? core.handLimitDiscardSelection;');
         expect(source).not.toContain('const recruitSelection = recruitSelectionFromInteraction');
         expect(source).not.toContain('diplomacySelectionFromInteraction,');
@@ -4639,10 +4654,24 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionInteractionEventHandlersSource).toContain("} from './actionWindowChoices';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './fortificationMaintenance';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './handLimitDiscard';");
+        expect(turnActionInteractionEventHandlersSource).toContain('const asQidahenResolvedSelectionCarrier = (');
+        expect(turnActionInteractionEventHandlersSource).toContain('...interactionData,');
+        expect(turnActionInteractionEventHandlersSource).toContain('...selectionValueData,');
         expect(turnActionInteractionEventHandlersSource).toContain('const asQidahenInteractionSelectionCarrier = (interactionData?: unknown) => ({ data: interactionData });');
         expect(turnActionInteractionEventHandlersSource).toContain('const resolveQidahenHandLimitDiscardInteractionEvent = (');
         expect(turnActionInteractionEventHandlersSource).toContain('const resolveQidahenRecruitInteractionEvent = (');
         expect(turnActionInteractionEventHandlersSource).toContain('const resolveQidahenFortificationMaintenanceInteractionEvent = (');
+        expect(turnActionInteractionEventHandlersSource).toContain('asQidahenResolvedSelectionCarrier(payload)');
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenRecruitSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenGrantPardonSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenDiplomacySelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenWheelDispatchSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenInternalDispatchSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenMaShiTradeSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenKhanEdictSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenDriveTigerConsentSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenEventCharacterTargetSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
+        expect(turnActionInteractionEventHandlersSource).not.toMatch(/getQidahenEventOpponentHandChoiceSelectionFromInteraction\(\s*asQidahenInteractionSelectionCarrier\(payload\.interactionData\)/);
         expect(turnActionInteractionEventHandlersSource).toContain('getQidahenRecruitSelectionFromInteraction(');
         expect(turnActionInteractionEventHandlersSource).toContain('getQidahenDiplomacySelectionFromInteraction(');
         expect(turnActionInteractionEventHandlersSource).toContain('getQidahenWheelDispatchSelectionFromInteraction(');

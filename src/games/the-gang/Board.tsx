@@ -457,7 +457,6 @@ function ShowdownResultPanel({
                                 key={`${card.rank}-${card.suit}-${index}`}
                                 card={card}
                                 emphasis="showdown"
-                                revealOrder={index}
                                 t={t}
                             />
                         ))}
@@ -491,7 +490,7 @@ function ShowdownResultPanel({
                                 key={`${result.playerId}-${card.rank}-${card.suit}-${index}`}
                                 card={card}
                                 emphasis="showdown"
-                                        revealOrder={communityCards.length + (playerResultIndex.get(result.playerId) ?? 0) * 2 + index}
+                                        revealOrder={(playerResultIndex.get(result.playerId) ?? 0) * 2 + index}
                                 t={t}
                             />
                         ))}

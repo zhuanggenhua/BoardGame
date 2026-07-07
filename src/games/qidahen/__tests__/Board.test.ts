@@ -213,7 +213,8 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('正式联机手牌区只允许本地模式保留 currentFaction fallback，在线 seat 不再退回别人的当前手牌', () => {
-        expect(boardSource).toContain('const currentFactionId = playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId;');
+        expect(boardSource).toContain('const currentFactionId = handLimitDiscardSelection?.factionId');
+        expect(boardSource).toContain('?? (playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId);');
         expect(boardSource).not.toContain('const currentFactionId = viewerFactionId ?? getCurrentFactionId(core);');
     });
 
@@ -363,6 +364,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("title: '点一个进攻目标'");
         expect(boardSource).toContain('hint: `${wheelDispatchSelection.displayAnchorRegionName} 出发`');
         expect(boardSource).toContain("badgeLabel: '选择地区'");
+        expect(boardSource).toContain("title: '选择参与部队'");
+        expect(boardSource).toContain("hint: '先点源地区兵牌确认本次出兵'");
+        expect(boardSource).toContain("badgeLabel: '选择部队'");
+        expect(boardSource).toContain('if (wheelDispatchSelection && (pendingCommittedTroops == null || pendingCommittedTroops <= 0))');
         expect(boardSource).toContain("? '调度目标'");
         expect(boardSource).not.toContain("? '点一个调度目标'");
         expect(boardSource).not.toContain("title: '点一个调度目标'");
@@ -421,6 +426,27 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('selectRegion(candidate.targetRegionId);');
         expect(boardSource).toContain('<div className="sr-only">');
         expect(boardSource).toContain('data-testid={`qidahen-diplomacy-target-${regionId}`}');
+        expect(boardSource).toContain('getQidahenRecruitSelectionForCore as getCoreQidahenRecruitSelectionForCore');
+        expect(boardSource).toContain('getQidahenMaShiTradeSelectionForCore as getCoreQidahenMaShiTradeSelectionForCore');
+        expect(boardSource).toContain('const recruitSelectionFromCore = getCoreQidahenRecruitSelectionForCore(core);');
+        expect(boardSource).toContain('const recruitSelection = core.explicitRegionId && recruitSelectionFromCore');
+        expect(boardSource).toContain('const maShiTradeSelectionFromCore = getCoreQidahenMaShiTradeSelectionForCore(core);');
+        expect(boardSource).toContain('const maShiTradeSelection = core.explicitRegionId && maShiTradeSelectionFromCore');
+        expect(boardSource).toContain('const recruitRegionExplicitlySelected = recruitSelection != null');
+        expect(boardSource).toContain('&& explicitSelectedRuntimeRegionId === recruitSelection.targetRegionId');
+        expect(boardSource).toContain('const maShiTradeRegionExplicitlySelected = maShiTradeSelection != null');
+        expect(boardSource).toContain('&& explicitSelectedRuntimeRegionId === maShiTradeSelection.targetRegionId');
+        expect(boardSource).toContain('mergedValue: { qidahenRecruitSelection: recruitSelection }');
+        expect(boardSource).toContain('mergedValue: { qidahenGrantPardonSelection: grantPardonSelection }');
+        expect(boardSource).toContain('mergedValue: { qidahenInternalDispatchSelection: internalDispatchSelection }');
+        expect(boardSource).toContain('mergedValue: { qidahenKhanEdictSelection: khanEdictSelection }');
+        expect(boardSource).toContain('mergedValue: { qidahenDiplomacySelection: diplomacySelection }');
+        expect(boardSource).toContain('mergedValue: { qidahenMaShiTradeSelection: maShiTradeSelection }');
+        expect(boardSource).toContain('mergedValue: { qidahenDriveTigerConsentSelection: driveTigerConsentSelection }');
+        expect(boardSource).toContain('qidahenWheelDispatchSelection: wheelDispatchSelection');
+        expect(boardSource).toContain("...(pendingCommittedTroops != null ? { committedTroops: pendingCommittedTroops } : {})");
+        expect(boardSource).toContain('data-testid="qidahen-recruit-map-first-hint"');
+        expect(boardSource).toContain('data-testid="qidahen-ma-shi-trade-map-first-hint"');
         expect(boardSource).toContain('data-testid={`qidahen-recruit-choice-${choice.id}`}');
         expect(boardSource).toContain('data-testid={`qidahen-ma-shi-trade-choice-${choice.troopCount}`}');
         expect(boardSource).toContain('data-testid={`qidahen-khan-edict-choice-${choice.id}`}');
@@ -487,8 +513,14 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-pending-committed-selectable={pendingCommittedSelectable ?');
         expect(boardSource).toContain('data-pending-committed-selected={pendingCommittedSelectable ? String(pendingCommittedSelected) : undefined}');
         expect(boardSource).toContain('onSelectPendingCommittedTroops?.(token.troopIndex!)');
-        expect(boardSource).toContain('token.regionId === pendingTargetAction.sourceRegionId');
+        expect(boardSource).toContain("pendingTargetAction?.sourceRegionId ?? wheelDispatchSelection?.sourceRegionId ?? null");
+        expect(boardSource).toContain('token.regionId === pendingCommittedSourceRegionId');
+        expect(boardSource).toContain('token.troopIndex <= activeCommittedMax');
         expect(boardSource).toContain('pendingCommittedSelected={pendingCommittedSelectable && (token.troopIndex ?? 0) <= pendingCommittedSelectedCount}');
+        expect(boardSource).toContain('pendingCommittedTroops ?? pendingTargetAction?.committedTroops ?? 0');
+        expect(boardSource).toContain("pendingCommittedSelectable ? 'none' : `0 2px 8px ${UI_STYLE.shadowSoft}`");
+        expect(boardSource).not.toContain("0 0 0 4px rgba(77, 157, 78, 0.78), 0 5px 14px");
+        expect(boardSource).not.toContain("0 0 0 2px rgba(39, 25, 13, 0.68), 0 2px 8px");
         expect(boardSource).toContain("defaultValue: '实际出兵：点击地图上的源地区兵牌切换数量'");
         expect(boardSource).toContain('<span className="sr-only">');
         expect(boardSource).toContain('data-testid={`qidahen-pending-committed-${committedTroops}`}');
@@ -574,7 +606,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (handCount: number): number => {');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
         expect(boardSource).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
-        expect(boardSource).toContain('className="absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible"');
+        expect(boardSource).toContain('mapTargetSelectionActive?: boolean;');
+        expect(boardSource).toContain("className={`${mapTargetSelectionActive ? 'pointer-events-none' : 'pointer-events-auto'} absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible`}");
+        expect(boardSource).toContain("data-map-target-selection-active={mapTargetSelectionActive ? 'true' : undefined}");
+        expect(boardSource).toContain('const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;');
+        expect(boardSource).toContain('mapTargetSelectionActive={mapTargetSelectionActive}');
         expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
         expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
@@ -635,6 +671,8 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('地图部队必须按暗棋规则隐藏对手正面贴纸，只有己方或战斗公开区域可见正面', () => {
         expect(boardSource).toContain('const shouldRevealQidahenMapArmyToken = (');
+        expect(boardSource).toContain('const currentFactionId = perspectiveFactionId;');
+        expect(boardSource).not.toContain('?? QIDAHEN_FACTION_ORDER.find((factionId) => core.factions[factionId].playerId === core.currentPlayer)');
         expect(boardSource).toContain("if (viewerFactionId != null && token.faction === viewerFactionId) {");
         expect(boardSource).toContain('return token.regionId != null && revealedBattleRegionIds.has(token.regionId);');
         expect(boardSource).toContain('const buildRevealedBattleRegionIds = (');
@@ -642,9 +680,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('postBattleSelection?.targetRuntimeRegionId,');
         expect(boardSource).toContain('const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);');
         expect(boardSource).toContain('data-qidahen-army-face="hidden-back"');
-        expect(boardSource).toContain('aria-label="部队背面"');
+        expect(boardSource).toContain("aria-label={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}");
         expect(boardSource).toContain("armyBackMarker: 'qidahen/markers/blank-rectangular-marker'");
         expect(boardSource).toContain('src={ASSETS.armyBackMarker}');
+        expect(boardSource).toContain("alt={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}");
         expect(boardSource).toContain('revealFront={shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)}');
         expect(boardSource).not.toContain('HIDDEN_ARMY_BACK_BY_FACTION');
         expect(boardSource).not.toContain("src={ASSETS.mingCard}");

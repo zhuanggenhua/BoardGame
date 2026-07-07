@@ -818,13 +818,21 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 }
 
 .tutorial-catalog-stage {
-    --qidahen-map-ink: #20150d;
-    --qidahen-map-panel: rgba(32, 21, 13, 0.78);
-    --qidahen-map-gold: #d2b775;
-    --qidahen-map-ivory: #ead7a7;
-    --qidahen-cinnabar: #9f3426;
-    --qidahen-paper-light: #f3e7c4;
-    --qidahen-shadow: rgba(56, 35, 15, 0.24);
+    --tutorial-catalog-ink: #20150d;
+    --tutorial-catalog-panel: rgba(32, 21, 13, 0.78);
+    --tutorial-catalog-gold: #d2b775;
+    --tutorial-catalog-ivory: #ead7a7;
+    --tutorial-catalog-danger: #9f3426;
+    --tutorial-catalog-paper: #f3e7c4;
+    --tutorial-catalog-shadow: rgba(56, 35, 15, 0.24);
+    --tutorial-catalog-entry-min-height: 96px;
+    --tutorial-catalog-entry-columns: 34px minmax(0, 1fr) auto;
+    --tutorial-catalog-entry-radius: 0.26rem;
+    --tutorial-catalog-entry-border-width: 2px;
+    --tutorial-catalog-entry-padding: 0.7rem 0.82rem;
+    --tutorial-catalog-entry-gap: 0.72rem;
+    --tutorial-catalog-index-size: 34px;
+    --tutorial-catalog-enter-label: "进入";
     --tutorial-catalog-bg:
         linear-gradient(90deg, rgba(32, 21, 13, 0.94), rgba(32, 21, 13, 0.5) 46%, rgba(32, 21, 13, 0.82)),
         radial-gradient(circle at 18% 0%, rgba(210, 183, 117, 0.18), transparent 19rem),
@@ -845,30 +853,40 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     padding: clamp(1.25rem, 3.4vw, 3rem);
-    color: var(--qidahen-map-ivory);
+    color: var(--tutorial-catalog-ivory);
     background: var(--tutorial-catalog-bg);
     scrollbar-width: thin;
     scrollbar-color: rgba(210, 183, 117, 0.72) rgba(32, 21, 13, 0.54);
 }
 
 .tutorial-catalog-stage--betrayal {
-    --qidahen-map-ink: #14180f;
-    --qidahen-map-panel: rgba(20, 28, 20, 0.82);
-    --qidahen-map-gold: #b8975b;
-    --qidahen-map-ivory: #e0d1ae;
-    --qidahen-cinnabar: #7e2f2a;
-    --qidahen-paper-light: #ead9b5;
-    --qidahen-shadow: rgba(12, 10, 7, 0.32);
+    --tutorial-catalog-ink: #11130d;
+    --tutorial-catalog-panel: rgba(20, 28, 20, 0.82);
+    --tutorial-catalog-gold: #b8975b;
+    --tutorial-catalog-ivory: #e0d1ae;
+    --tutorial-catalog-danger: #7e2f2a;
+    --tutorial-catalog-paper: #ead9b5;
+    --tutorial-catalog-shadow: rgba(12, 10, 7, 0.32);
+    --tutorial-catalog-entry-min-height: 118px;
+    --tutorial-catalog-entry-columns: 28px minmax(0, 1fr) 58px;
+    --tutorial-catalog-entry-radius: 0.08rem;
+    --tutorial-catalog-entry-border-width: 1px;
+    --tutorial-catalog-entry-padding: 0.72rem 0.78rem 0.7rem;
+    --tutorial-catalog-entry-gap: 0.64rem;
+    --tutorial-catalog-index-size: 28px;
+    --tutorial-catalog-enter-label: "开门";
     --tutorial-catalog-bg:
-        radial-gradient(circle at 20% 8%, rgba(184, 151, 91, 0.18), transparent 18rem),
-        radial-gradient(circle at 86% 92%, rgba(126, 47, 42, 0.18), transparent 18rem),
-        linear-gradient(135deg, rgba(224, 209, 174, 0.045) 0 1px, transparent 1px 14px),
-        linear-gradient(90deg, rgba(13, 17, 11, 0.96), rgba(31, 45, 29, 0.82) 50%, rgba(13, 17, 11, 0.94)),
+        linear-gradient(90deg, rgba(10, 12, 8, 0.94), rgba(18, 27, 18, 0.7) 42%, rgba(8, 10, 7, 0.96)),
+        repeating-linear-gradient(90deg, rgba(232, 215, 178, 0.035) 0 1px, transparent 1px 46px),
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 20px),
+        radial-gradient(circle at 16% 14%, rgba(184, 151, 91, 0.16), transparent 16rem),
+        radial-gradient(circle at 88% 82%, rgba(126, 47, 42, 0.18), transparent 18rem),
         linear-gradient(180deg, #182216 0%, #0d110b 100%);
     --tutorial-catalog-entry-bg:
-        linear-gradient(90deg, rgba(73, 98, 70, 0.2), transparent 34%),
-        linear-gradient(180deg, rgba(35, 47, 32, 0.96), rgba(16, 20, 14, 0.96));
-    --tutorial-catalog-index-bg: linear-gradient(180deg, rgba(73, 98, 70, 0.94), rgba(33, 47, 31, 0.98));
+        linear-gradient(90deg, rgba(17, 18, 13, 0.98), rgba(28, 38, 25, 0.95) 46%, rgba(11, 12, 9, 0.98)),
+        linear-gradient(180deg, rgba(233, 218, 185, 0.09), rgba(0, 0, 0, 0));
+    --tutorial-catalog-index-bg:
+        linear-gradient(180deg, rgba(184, 151, 91, 0.92), rgba(99, 73, 39, 0.96));
 }
 
 .tutorial-catalog-stage::-webkit-scrollbar {
@@ -881,7 +899,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 }
 
 .tutorial-catalog-stage::-webkit-scrollbar-thumb {
-    background: var(--qidahen-map-gold);
+    background: var(--tutorial-catalog-gold);
     border-radius: 999px;
 }
 
@@ -901,9 +919,8 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     margin-bottom: clamp(0.7rem, 1.8vw, 1.35rem);
     padding-inline: 0.25rem;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: end;
-    column-gap: 1rem;
 }
 
 .tutorial-catalog-stage__eyebrow {
@@ -924,26 +941,9 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     font-weight: 800;
     line-height: 1.04;
     letter-spacing: 0.04em;
-    color: var(--qidahen-map-ivory);
+    color: var(--tutorial-catalog-ivory);
     text-shadow: 0 3px 14px rgba(0, 0, 0, 0.62);
     text-wrap: balance;
-}
-
-.tutorial-catalog-stage__header::after {
-    content: "横屏可滚动";
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    display: block;
-    align-self: end;
-    padding: 0.38rem 0.64rem;
-    border: 2px solid rgba(32, 21, 13, 0.86);
-    background: rgba(32, 21, 13, 0.72);
-    color: rgba(234, 215, 167, 0.82);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.24);
-    white-space: nowrap;
 }
 
 .tutorial-catalog-stage__list {
@@ -957,22 +957,23 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     position: relative;
     isolation: isolate;
     min-width: 0;
-    min-height: 132px;
+    min-height: var(--tutorial-catalog-entry-min-height);
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-    column-gap: 0.84rem;
-    row-gap: 0.48rem;
+    grid-template-columns: var(--tutorial-catalog-entry-columns);
+    grid-template-rows: auto;
+    align-items: center;
+    column-gap: var(--tutorial-catalog-entry-gap);
+    row-gap: 0.34rem;
     overflow: hidden;
-    padding: 0.92rem 1rem 0.88rem;
+    padding: var(--tutorial-catalog-entry-padding);
     cursor: pointer;
     text-align: left;
-    border: 2px solid rgba(32, 21, 13, 0.92);
-    border-radius: 0.42rem;
+    border: var(--tutorial-catalog-entry-border-width) solid rgba(32, 21, 13, 0.92);
+    border-radius: var(--tutorial-catalog-entry-radius);
     background: var(--tutorial-catalog-entry-bg);
     box-shadow:
-        0 4px 0 rgba(0, 0, 0, 0.24),
-        0 12px 24px rgba(0, 0, 0, 0.22),
+        0 3px 0 rgba(0, 0, 0, 0.24),
+        0 9px 18px rgba(0, 0, 0, 0.2),
         inset 0 1px 0 rgba(234, 215, 167, 0.1);
     transform: translateZ(0);
     transition:
@@ -985,7 +986,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     content: "";
     position: absolute;
     inset: 0;
-    border-left: 5px solid var(--tutorial-chapter-accent-safe);
+    border-left: 4px solid var(--tutorial-chapter-accent-safe);
     opacity: 0.86;
     pointer-events: none;
 }
@@ -1016,11 +1017,11 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 .tutorial-catalog-stage__index {
     position: relative;
     z-index: 1;
-    width: 44px;
-    height: 44px;
+    width: var(--tutorial-catalog-index-size);
+    height: var(--tutorial-catalog-index-size);
     display: grid;
     place-items: center;
-    color: var(--qidahen-map-ivory);
+    color: var(--tutorial-catalog-ivory);
     border: 2px solid rgba(32, 21, 13, 0.95);
     border-radius: 0.22rem;
     background: var(--tutorial-catalog-index-bg);
@@ -1039,9 +1040,9 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 }
 
 .tutorial-catalog-stage__entry-title {
-    color: var(--qidahen-map-ivory);
+    color: var(--tutorial-catalog-ivory);
     font-family: ui-serif, "STSong", "SimSun", serif;
-    font-size: clamp(18px, 1.65vw, 23px);
+    font-size: clamp(16px, 1.42vw, 21px);
     font-weight: 800;
     line-height: 1.14;
     letter-spacing: 0.03em;
@@ -1088,24 +1089,25 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     max-width: 32rem;
     color: rgba(234, 215, 167, 0.74);
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.42;
 }
 
 .tutorial-catalog-stage__enter {
     position: relative;
     z-index: 1;
-    grid-column-start: 2;
-    width: fit-content;
-    min-height: 34px;
+    grid-column-start: 3;
+    width: auto;
+    min-height: 30px;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.42rem;
-    padding: 0 0.82rem;
+    padding: 0 0.64rem;
     border: 1px solid rgba(210, 183, 117, 0.32);
     border-radius: 0.2rem;
     background: rgba(32, 21, 13, 0.55);
-    color: var(--qidahen-map-gold);
-    font-size: 12px;
+    color: var(--tutorial-catalog-gold);
+    font-size: 11px;
     font-weight: 900;
     box-shadow: inset 0 1px 0 rgba(234, 215, 167, 0.08);
 }
@@ -1117,9 +1119,115 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     transform: translateY(-0.5px);
 }
 
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__header {
+    align-items: center;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__eyebrow {
+    color: rgba(184, 151, 91, 0.78);
+    font-family: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+    letter-spacing: 0.2em;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__title {
+    font-family: Georgia, "Times New Roman", "SimSun", serif;
+    letter-spacing: 0.015em;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__list {
+    gap: 0.56rem;
+    padding-bottom: 9.8rem;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__entry {
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    border-color: rgba(184, 151, 91, 0.42);
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, 0.28),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.52),
+        inset 0 1px 0 rgba(224, 209, 174, 0.08);
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__entry::before {
+    inset: 0 auto 0 0;
+    width: 5px;
+    border-left: 0;
+    background:
+        linear-gradient(180deg, rgba(184, 151, 91, 0.95), rgba(126, 47, 42, 0.86)),
+        var(--tutorial-chapter-accent-safe);
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__entry::after {
+    inset: 0.34rem;
+    border-color: rgba(184, 151, 91, 0.12);
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__index {
+    align-self: stretch;
+    height: auto;
+    min-height: var(--tutorial-catalog-index-size);
+    color: #11130d;
+    border-color: rgba(8, 9, 6, 0.85);
+    border-radius: 0;
+    font-family: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+    box-shadow:
+        2px 0 0 rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(246, 229, 190, 0.28);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__entry-title {
+    font-family: Georgia, "Times New Roman", "SimSun", serif;
+    font-size: clamp(16px, 1.24vw, 19px);
+    line-height: 1.12;
+    letter-spacing: 0.02em;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__tag {
+    border-color: rgba(184, 151, 91, 0.28);
+    border-radius: 0;
+    background: rgba(10, 11, 8, 0.58);
+    color: rgba(224, 209, 174, 0.78);
+    font-family: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__description {
+    max-width: 29rem;
+    color: rgba(224, 209, 174, 0.68);
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__enter {
+    align-self: stretch;
+    min-height: 0;
+    border-color: rgba(184, 151, 91, 0.38);
+    border-radius: 0;
+    background:
+        linear-gradient(180deg, rgba(126, 47, 42, 0.72), rgba(62, 24, 22, 0.74));
+    color: rgba(238, 220, 183, 0.88);
+    font-family: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+    font-size: 0;
+    letter-spacing: 0.12em;
+    writing-mode: vertical-rl;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__enter::before {
+    content: var(--tutorial-catalog-enter-label);
+    font-size: 11px;
+}
+
+.tutorial-catalog-stage--betrayal .tutorial-catalog-stage__enter::after {
+    content: "";
+    width: 1px;
+    height: 16px;
+    margin-top: 0.4rem;
+    background: currentColor;
+    opacity: 0.62;
+}
+
 @media (max-width: 700px), (max-height: 500px) and (orientation: landscape) {
     .tutorial-catalog-stage {
-        padding: 0.82rem 1rem;
+        padding: 0.7rem 0.82rem;
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
 
@@ -1143,45 +1251,52 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     }
 
     .tutorial-catalog-stage__entry {
-        min-height: 0;
-        grid-template-columns: 38px minmax(0, 1fr);
-        column-gap: 0.72rem;
-        row-gap: 0.38rem;
-        padding: 0.72rem 0.82rem;
+        min-height: 76px;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        column-gap: 0.58rem;
+        row-gap: 0.26rem;
+        padding: 0.54rem 0.62rem;
     }
 
     .tutorial-catalog-stage--betrayal .tutorial-catalog-stage__entry {
-        min-height: 10.8rem;
+        min-height: 104px;
+        grid-template-columns: 24px minmax(0, 1fr) 46px;
+        padding: 0.56rem 0.58rem;
+    }
+
+    .tutorial-catalog-stage--betrayal .tutorial-catalog-stage__list {
+        padding-bottom: 12rem;
     }
 
     .tutorial-catalog-stage__index {
-        width: 38px;
-        height: 38px;
+        width: 30px;
+        height: 30px;
         font-size: 11px;
     }
 
+    .tutorial-catalog-stage--betrayal .tutorial-catalog-stage__index {
+        width: 24px;
+        height: auto;
+    }
+
     .tutorial-catalog-stage__entry-title {
-        font-size: 17px;
+        font-size: 15px;
     }
 
     .tutorial-catalog-stage__description {
         margin-top: 0.32rem;
-        font-size: 12px;
-        line-height: 1.18rem;
+        font-size: 11.5px;
+        line-height: 1.22;
     }
 
     .tutorial-catalog-stage__enter {
-        min-height: 32px;
+        min-height: 28px;
     }
 }
 
 @media (max-width: 520px) and (orientation: portrait) {
     .tutorial-catalog-stage__header {
         grid-template-columns: 1fr;
-    }
-
-    .tutorial-catalog-stage__header::after {
-        display: none;
     }
 
     .tutorial-catalog-stage__list {

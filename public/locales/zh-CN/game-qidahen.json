@@ -188,11 +188,13 @@
       },
       "recruit": {
         "title": "征召军队",
-        "summary": "选择建军方式"
+        "summary": "选择建军方式",
+        "mapFirstHint": "先点击地图上的建军地区，再选择建军方式。"
       },
       "maShiTrade": {
         "title": "马市贸易",
-        "summary": "选择建军数量"
+        "summary": "选择建军数量",
+        "mapFirstHint": "先点击地图上的建军地区，再选择建军数量。"
       },
       "khanEdict": {
         "title": "大汗令箭",

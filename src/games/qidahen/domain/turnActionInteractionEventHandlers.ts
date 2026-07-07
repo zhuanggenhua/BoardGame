@@ -49,7 +49,44 @@ import {
     resolveQidahenEventOpponentHandChoice,
 } from './eventCharacterTargetSelection';
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+    Boolean(value)
+    && typeof value === 'object'
+    && !Array.isArray(value)
+);
+
 const asQidahenInteractionSelectionCarrier = (interactionData?: unknown) => ({ data: interactionData });
+
+const asQidahenResolvedSelectionCarrier = (
+    payload: QidahenInteractionResolutionContext['payload'],
+) => {
+    const interactionData = isRecord(payload.interactionData)
+        ? payload.interactionData
+        : {};
+    const valueData = isRecord(payload.value)
+        ? payload.value
+        : {};
+    const { sourceId: _ignoredValueSourceId, ...selectionValueData } = valueData;
+
+    return {
+        data: {
+            ...interactionData,
+            ...selectionValueData,
+        },
+    };
+};
+
+const getResolvedCommittedTroops = (
+    payload: QidahenInteractionResolutionContext['payload'],
+): number | undefined => {
+    const valueData = isRecord(payload.value)
+        ? payload.value
+        : {};
+    const committedTroops = valueData.committedTroops;
+    return typeof committedTroops === 'number' && Number.isFinite(committedTroops)
+        ? committedTroops
+        : undefined;
+};
 
 const resolveQidahenHandLimitDiscardInteractionEvent = (
     context: QidahenInteractionResolutionContext,
@@ -73,7 +110,7 @@ const resolveQidahenRecruitInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const recruitSelection = getQidahenRecruitSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID
@@ -98,7 +135,7 @@ const resolveQidahenGrantPardonInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const grantPardonSelection = getQidahenGrantPardonSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID
@@ -123,7 +160,7 @@ const resolveQidahenDiplomacyInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const diplomacySelection = getQidahenDiplomacySelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID
@@ -148,7 +185,7 @@ const resolveQidahenWheelDispatchInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const wheelDispatchSelection = getQidahenWheelDispatchSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID
@@ -165,6 +202,7 @@ const resolveQidahenWheelDispatchInteractionEvent = (
         choiceId,
         event.timestamp ?? 0,
         wheelDispatchSelection,
+        getResolvedCommittedTroops(payload),
     );
 };
 
@@ -173,7 +211,7 @@ const resolveQidahenInternalDispatchInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const internalDispatchSelection = getQidahenInternalDispatchSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID
@@ -198,7 +236,7 @@ const resolveQidahenMaShiTradeInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const maShiTradeSelection = getQidahenMaShiTradeSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID
@@ -235,7 +273,7 @@ const resolveQidahenKhanEdictInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const khanEdictSelection = getQidahenKhanEdictSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID
@@ -260,7 +298,7 @@ const resolveQidahenDriveTigerConsentInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const driveTigerConsentSelection = getQidahenDriveTigerConsentSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID
@@ -318,7 +356,7 @@ const resolveQidahenEventCharacterTargetInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const selection = getQidahenEventCharacterTargetSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID
@@ -343,7 +381,7 @@ const resolveQidahenEventOpponentHandChoiceInteractionEvent = (
 ): QidahenCore | null | undefined => {
     const { state, payload, event } = context;
     const selection = getQidahenEventOpponentHandChoiceSelectionFromInteraction(
-        asQidahenInteractionSelectionCarrier(payload.interactionData),
+        asQidahenResolvedSelectionCarrier(payload),
     );
     if (
         payload.sourceId !== QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID

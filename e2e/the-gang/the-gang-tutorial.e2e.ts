@@ -364,7 +364,8 @@ test.describe('The Gang 教程 E2E', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 6);
         await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
-        await expect(page.getByText(/逐张翻开 5 张公共牌/u)).toBeVisible();
+        await expect(page.getByText(/保留已经公开的 5 张公共牌/u)).toBeVisible();
+        await expect(page.getByText(/逐张揭示每位玩家/u)).toBeVisible();
         await expect(page.getByText(/向下滚动查看所有人的真实牌/u)).toBeVisible();
         await game.screenshot('教程摊牌结果反馈', testInfo);
 

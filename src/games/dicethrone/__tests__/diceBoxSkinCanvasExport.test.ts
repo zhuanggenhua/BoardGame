@@ -41,10 +41,10 @@ describe('DiceThrone 骰盒皮肤画布导出', () => {
         expect(Object.keys(skin.faceCanvases)).toHaveLength(6);
         expect(Object.keys(skin.faceImages)).toHaveLength(6);
         expect(skin.preferPresetMaterials).toBe(true);
-        expect(skin.faceCanvases[1].width).toBe(512);
-        expect(skin.faceCanvases[1].height).toBe(512);
-        expect(skin.edgeCanvas.width).toBe(512);
-        expect(skin.edgeCanvas.height).toBe(512);
+        expect(skin.faceCanvases[1].width).toBe(1024);
+        expect(skin.faceCanvases[1].height).toBe(1024);
+        expect(skin.edgeCanvas.width).toBe(1024);
+        expect(skin.edgeCanvas.height).toBe(1024);
         expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(6);
     });
 });

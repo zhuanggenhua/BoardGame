@@ -10,6 +10,7 @@ import {
 import { getQidahenInteractionSelectionStateForCore } from './interactionSelectionAccessors';
 import { materializeNonSiegedCityActionSourceRegion } from './actionSourceRegionState';
 import { applyCommittedTroopRemovalToRegion } from './pendingBattleCombatSupport';
+import { applyRequestedCommittedTroops } from './pendingBattleCommittedTroops';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import { updateQidahenTurnLabel } from './turnLabelState';
@@ -425,6 +426,7 @@ export const resolveQidahenWheelDispatchInteractionChoice = (
     choiceId: string,
     timestamp: number,
     interactionSelection?: QidahenWheelDispatchSelection | null,
+    requestedCommittedTroops?: number,
     dependencies: QidahenActionWindowDispatchDependencies = {
         materializeNonSiegedCityActionSourceRegion,
         applyCommittedTroopRemovalToRegion,
@@ -463,10 +465,14 @@ export const resolveQidahenWheelDispatchInteractionChoice = (
             actionId: 'wheel-dispatch' as const,
             title: '调度进攻待结算',
         };
-    const pendingTargetAction = buildPendingTargetActionFromWheelDispatchChoice(
-        selection,
-        chosenTarget,
-        pendingActionMeta,
+    const pendingTargetAction = applyRequestedCommittedTroops(
+        state,
+        buildPendingTargetActionFromWheelDispatchChoice(
+            selection,
+            chosenTarget,
+            pendingActionMeta,
+        ),
+        requestedCommittedTroops,
     );
     return dependencies.updateTurnLabel({
         ...state,

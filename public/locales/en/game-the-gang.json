@@ -36,7 +36,7 @@
       "finalChip": "The red chip is the final commitment. Read your two pocket cards with all five community cards before choosing your final rank.",
       "finalResponse": "Your teammates take red chips too. The three red chips form the final strength order that showdown will check.",
       "revealShowdown": "After all red chips are chosen, reveal showdown. Showdown also waits for every player to confirm; AI seats confirm automatically. The game compares real hand order against the red chip order.",
-      "showdown": "Showdown flips the five community cards in sequence, then shows each player's two pocket cards, red chip, hand category, and whether the heist succeeded. With more players, scroll down to review everyone's real cards instead of squeezing the settlement into one screen.",
+      "showdown": "Showdown keeps the five already-public community cards visible, then reveals each player's two pocket cards, red chip, hand category, and whether the heist succeeded. With more players, scroll down to review everyone's real cards instead of squeezing the settlement into one screen.",
       "showdownReading": "Read showdown by checking the community cards, then scrolling through each player's two pocket cards and hand category before comparing those hands with the red chips. Stronger real hands should have higher red-chip numbers; if any red-chip order disagrees with real hand strength, the heist fails.",
       "finish": "The loop is: read hand strength, signal rank with chips, reassess as public cards appear, lock final order with red chips, then resolve showdown."
     }

@@ -54,6 +54,23 @@ test.describe('DiceThrone 3D 骰子区域红框验收', () => {
             const rect = stage.getBoundingClientRect();
             const handRect = hand.getBoundingClientRect();
             const style = getComputedStyle(stage);
+            const opponentHeaders = Array.from(document.querySelectorAll('[data-testid^="dt-top-header-"]')) as HTMLElement[];
+            const opponentHeaderRects = opponentHeaders.map((node) => {
+                const headerRect = node.getBoundingClientRect();
+                return {
+                    testId: node.dataset.testid ?? node.getAttribute('data-testid'),
+                    x: headerRect.x,
+                    y: headerRect.y,
+                    width: headerRect.width,
+                    height: headerRect.height,
+                    bottom: headerRect.bottom,
+                };
+            });
+            const opponentHeaderBottom = opponentHeaderRects.reduce((bottom, headerRect) => (
+                Math.max(bottom, headerRect.bottom)
+            ), 0);
+            const viewportCenterX = window.innerWidth / 2;
+            const stageCenterX = rect.x + (rect.width / 2);
             const payload = {
                 className: stage.getAttribute('class'),
                 rect: {
@@ -77,6 +94,9 @@ test.describe('DiceThrone 3D 骰子区域红框验收', () => {
                     height: style.height,
                     position: style.position,
                 },
+                opponentHeaderRects,
+                gapBelowOpponentHeaderPx: rect.y - opponentHeaderBottom,
+                centerOffsetPx: stageCenterX - viewportCenterX,
             };
 
             const old = document.getElementById('__dice_stage_redbox_overlay__');
@@ -105,5 +125,7 @@ test.describe('DiceThrone 3D 骰子区域红框验收', () => {
         await page.screenshot({ path: OUT, fullPage: false });
         console.log(JSON.stringify({ ...data, out: OUT }, null, 2));
         expect(data.overlapWithHandPx).toBe(0);
+        expect(Math.abs(data.centerOffsetPx)).toBeLessThanOrEqual(2);
+        expect(data.gapBelowOpponentHeaderPx).toBeGreaterThanOrEqual(8);
     });
 });

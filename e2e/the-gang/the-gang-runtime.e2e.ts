@@ -243,13 +243,13 @@ test.describe('The Gang 真实入口截图', () => {
 
         const revealZone = page.getByLabel('摊牌结算');
         await expect(revealZone).toBeVisible();
-        await game.screenshot('桌面6人摊牌翻牌过程帧-00-进入结算', testInfo);
+        await game.screenshot('桌面6人摊牌底牌揭示过程帧-00-公共牌已公开', testInfo);
         await page.waitForTimeout(300);
-        await game.screenshot('桌面6人摊牌翻牌过程帧-01-公共牌翻开中', testInfo);
+        await game.screenshot('桌面6人摊牌底牌揭示过程帧-01-首批底牌揭示中', testInfo);
         await page.waitForTimeout(400);
-        await game.screenshot('桌面6人摊牌翻牌过程帧-02-玩家底牌翻开中', testInfo);
+        await game.screenshot('桌面6人摊牌底牌揭示过程帧-02-更多底牌揭示中', testInfo);
         await page.waitForTimeout(500);
-        await game.screenshot('桌面6人摊牌翻牌过程帧-03-更多底牌翻开', testInfo);
+        await game.screenshot('桌面6人摊牌底牌揭示过程帧-03-底牌揭示完成', testInfo);
         await expect(revealZone).toHaveClass(/fixed/);
         await expect(revealZone).toHaveClass(/inset-0/);
         await expect(revealZone).toHaveClass(/overflow-y-auto/);
@@ -259,7 +259,8 @@ test.describe('The Gang 真实入口截图', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="reveal-community-cards"] img', 5);
         await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"]')).toHaveCount(6);
         await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 12);
-        await expect(page.locator('[data-bgg-zone="reveal-card"]')).toHaveCount(17);
+        await expect(page.locator('[data-bgg-zone="reveal-community-cards"] [data-bgg-zone="reveal-card"]')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"] [data-bgg-zone="reveal-card"]')).toHaveCount(12);
         const revealAnimationContract = await page.locator('[data-bgg-zone="reveal-card"]').evaluateAll((nodes) => nodes.map((node) => {
             const element = node as HTMLElement;
             return {
@@ -281,11 +282,6 @@ test.describe('The Gang 真实入口截图', () => {
             { order: '9', animationDelay: '810ms', hasRevealAnimation: true },
             { order: '10', animationDelay: '900ms', hasRevealAnimation: true },
             { order: '11', animationDelay: '990ms', hasRevealAnimation: true },
-            { order: '12', animationDelay: '1080ms', hasRevealAnimation: true },
-            { order: '13', animationDelay: '1170ms', hasRevealAnimation: true },
-            { order: '14', animationDelay: '1260ms', hasRevealAnimation: true },
-            { order: '15', animationDelay: '1350ms', hasRevealAnimation: true },
-            { order: '16', animationDelay: '1440ms', hasRevealAnimation: true },
         ]);
         await expect(page.locator('[data-bgg-zone="top-zone"]').getByAltText('2♣')).toHaveCount(0);
         await expect(page.locator('[data-bgg-zone="top-zone"]').getByAltText('6♣')).toHaveCount(0);
