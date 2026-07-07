@@ -54,6 +54,7 @@ import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaij
 import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
 import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers } from './mega_troopers';
 import { registerHuluwawaAbilities } from './huluwawa';
+import { registerPaladinAbilities } from './paladins';
 import { registerZhongguoAbilities } from './zhongguo';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
@@ -177,6 +178,7 @@ export function initAllAbilities(): void {
     registerMegaTroopersAbilities();
     registerMegaTroopersInteractionHandlers();
     registerHuluwawaAbilities();
+    registerPaladinAbilities();
     registerZhongguoAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
