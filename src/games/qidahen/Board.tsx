@@ -3904,7 +3904,7 @@ const HandCard: React.FC<{
                 data-testid={`qidahen-hand-card-${card.id}`}
                 data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}
                 tabIndex={disabled ? -1 : 0}
-                className={`relative h-full w-full overflow-visible transition-[transform,filter] duration-150 hover:z-50 hover:brightness-[1.03] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 disabled:cursor-not-allowed disabled:opacity-55 ${selected ? '-translate-y-[26px]' : 'hover:-translate-y-[18px]'}`}
+                className={`relative z-20 h-full w-full overflow-visible transition-[transform,filter] duration-150 hover:z-50 hover:brightness-[1.03] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 disabled:cursor-not-allowed disabled:opacity-55 ${selected ? '-translate-y-[26px]' : 'hover:-translate-y-[18px]'}`}
                 onClick={onClick}
                 style={{
                     background: 'transparent',
@@ -3912,21 +3912,11 @@ const HandCard: React.FC<{
                     borderRadius: 7,
                 }}
             >
-                {selected ? (
-                    <span
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-[2px] z-30 rounded-[10px]"
-                        data-testid={`qidahen-hand-card-selected-frame-${card.id}`}
-                        style={{
-                            boxShadow: 'inset 0 0 0 5px #f0d386, inset 0 0 0 7px rgba(70, 45, 20, 0.78), 0 0 18px rgba(240, 211, 134, 0.48)',
-                        }}
-                    />
-                ) : null}
                 <span
                     className="pointer-events-none absolute inset-0 z-0 rounded-[7px]"
                     style={{ boxShadow: selected ? '0 10px 18px rgba(56,35,15,0.28)' : '0 8px 16px rgba(56,35,15,0.18)' }}
                 />
-                <span className="relative z-10 block h-full w-full overflow-hidden rounded-[7px]">
+                <span className="pointer-events-none relative z-10 block h-full w-full overflow-hidden rounded-[7px]">
                     <CardPreviewFit
                         previewRef={card.previewRef}
                         locale={locale}
@@ -4001,6 +3991,12 @@ const HandZone: React.FC<{
     }
     const currentFaction = core.factions[currentFactionId];
     const currentHandCards = core.handCards.filter((card) => card.faction === currentFactionId);
+    const isHandCardSelected = (card: QidahenHandCard): boolean => (
+        selectedPaymentCardIds.includes(card.id)
+        || selectedHandLimitCardIds.includes(card.id)
+        || (core.sunYuanhuaTechSelection?.selectedCardIds.includes(card.id) ?? false)
+        || (core.gaoDiDispatchSelection?.selectedCardId === card.id)
+    );
 
     return (
         <div
@@ -4060,7 +4056,7 @@ const HandZone: React.FC<{
                                 key={card.id}
                                 card={card}
                                 locale={locale}
-                                selected={selectedPaymentCardIds.includes(card.id) || selectedHandLimitCardIds.includes(card.id) || (sunYuanhuaSelection?.selectedCardIds.includes(card.id) ?? false) || (gaoDiSelection?.selectedCardId === card.id)}
+                                selected={isHandCardSelected(card)}
                                 stackIndex={index}
                                 totalCards={currentHandCards.length}
                                 onClick={selectableForHandLimit
@@ -4077,6 +4073,49 @@ const HandZone: React.FC<{
                                         ? () => onTogglePaymentCard(card.id)
                                         : undefined}
                             />
+                        );
+                    })}
+                </div>
+            </div>
+            <div
+                className="pointer-events-none absolute left-1/2 z-[90] flex items-end justify-center overflow-visible"
+                data-testid="qidahen-hand-selection-frame-layer"
+                style={{
+                    bottom: BOTTOM_DOCK_INSET,
+                    transform: 'translateX(-50%)',
+                    height: BOTTOM_DOCK_HEIGHT,
+                    width: 1310,
+                    maxWidth: 'calc(100vw - 320px)',
+                }}
+            >
+                <div className="mx-auto flex min-w-max items-end justify-center px-2">
+                    {currentHandCards.map((card, index) => {
+                        const selected = isHandCardSelected(card);
+                        return (
+                            <div
+                                key={`selected-frame-${card.id}`}
+                                className="pointer-events-none relative shrink-0"
+                                style={{
+                                    width: CARD_DIMENSIONS.hand.width,
+                                    height: CARD_DIMENSIONS.hand.height,
+                                    zIndex: selected ? currentHandCards.length + index + 64 : index + 1,
+                                    marginLeft: index === 0 ? 0 : getQidahenHandCardOverlapPx(currentHandCards.length),
+                                    transform: selected ? `translateY(-${HAND_CARD_SELECTED_LIFT}px)` : undefined,
+                                }}
+                            >
+                                {selected ? (
+                                    <span
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute inset-[2px] rounded-[10px]"
+                                        data-testid={`qidahen-hand-card-selected-frame-${card.id}`}
+                                        style={{
+                                            border: '5px solid #f0d386',
+                                            boxShadow: '0 0 0 2px rgba(70, 45, 20, 0.78), 0 0 18px rgba(240, 211, 134, 0.52)',
+                                            boxSizing: 'border-box',
+                                        }}
+                                    />
+                                ) : null}
+                            </div>
                         );
                     })}
                 </div>

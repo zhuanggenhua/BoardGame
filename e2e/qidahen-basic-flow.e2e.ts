@@ -870,9 +870,13 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
                 .map((testId) => testId.slice('qidahen-hand-card-'.length))
         ));
         const visibleHandCardIdSet = new Set(visibleHandCardIds);
-        const selectedDiscardCardIds = (currentState.core.handLimitDiscardSelection?.candidateCardIds ?? [])
+        const reversedDiscardCandidateIds = [...(currentState.core.handLimitDiscardSelection?.candidateCardIds ?? [])]
             .filter((cardId) => visibleHandCardIdSet.has(cardId))
-            .slice(0, 2);
+            .reverse();
+        const selectedDiscardCardIds = [
+            reversedDiscardCandidateIds[0],
+            reversedDiscardCandidateIds.find((_, index) => index >= 3) ?? reversedDiscardCandidateIds[1],
+        ].filter((cardId): cardId is string => typeof cardId === 'string');
         expect(selectedDiscardCardIds).toHaveLength(2);
         for (const cardId of selectedDiscardCardIds) {
             const cardTestId = `qidahen-hand-card-${cardId}`;
