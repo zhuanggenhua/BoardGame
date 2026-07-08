@@ -10,11 +10,24 @@ const helpText = `
   node scripts/release/deploy-and-ota.mjs [选项]
 
 默认行为:
-  1. 等待 10 分钟
-  2. ssh 到生产机执行: bash scripts/deploy/deploy-image.sh update
-  3. 本地执行: node scripts/mobile/release-android.mjs ota --channel stable
+  1. 先检查 package.json 版本已随本次发布自增
+  2. 等待 10 分钟
+  3. ssh 到生产机执行: bash scripts/deploy/deploy-image.sh update
+  4. 本地执行: node scripts/mobile/release-android.mjs ota --channel stable
+
+准备版本:
+  node scripts/release/deploy-and-ota.mjs --prepare-version
+  node scripts/release/deploy-and-ota.mjs --prepare-version --bump minor
+
+推荐发布顺序:
+  1. 先执行 --prepare-version，默认 patch，会同步更新 package.json.version 与 androidVersionCode
+  2. 提交并 push 版本改动，等待 CI 镜像构建完成
+  3. 再执行 deploy-and-ota，部署 latest 并发布同一产品版本的 stable OTA
 
 选项:
+  --prepare-version          只准备版本自增，不执行部署或 OTA
+  --bump <patch|minor|major> 准备版本自增类型，默认 patch
+  --allow-current-version    跳过“必须先准备版本”的门禁，仅用于明确不改版本的特殊发布
   --wait-minutes <number>    等待多少分钟后再开始，默认 10
   --skip-wait                立即执行，不等待
   --dry-run                  只打印将执行的命令，不真正执行
@@ -41,6 +54,11 @@ const readArgValue = (name, fallback = '') => {
 
 const hasFlag = (name) => rawArgs.includes(`--${name}`);
 
+const VERSION_PREPARED_ENV = 'BG_DEPLOY_VERSION_PREPARED';
+
+const prepareVersion = hasFlag('prepare-version');
+const bumpType = readArgValue('bump', 'patch');
+const allowCurrentVersion = hasFlag('allow-current-version');
 const waitMinutesRaw = readArgValue('wait-minutes', '10');
 const waitMinutes = Number.parseFloat(waitMinutesRaw);
 const dryRun = hasFlag('dry-run');
@@ -56,6 +74,10 @@ const otaExtraArgs = otaExtraRaw ? otaExtraRaw.split(/\s+/).filter(Boolean) : []
 if (hasFlag('help') || rawArgs.includes('-h')) {
     console.log(helpText);
     process.exit(0);
+}
+
+if (!new Set(['patch', 'minor', 'major']).has(bumpType)) {
+    throw new Error(`--bump 只支持 patch | minor | major，当前值: ${bumpType}`);
 }
 
 if (!skipWait && (!Number.isFinite(waitMinutes) || waitMinutes < 0)) {
@@ -85,6 +107,19 @@ const sleep = (ms) => new Promise((resolve) => {
     setTimeout(resolve, ms);
 });
 
+const runNode = async (args, label) => {
+    if (dryRun) {
+        console.log(`[deploy-and-ota] dry-run 将执行 ${label}: ${process.execPath} ${args.join(' ')}`);
+        return;
+    }
+    await runCommand(process.execPath, args, label);
+};
+
+const readPackageVersion = async () => {
+    const { readProjectVersion } = await import('../mobile/version-utils.mjs');
+    return readProjectVersion();
+};
+
 const remoteDeployCommand = deployTag
     ? `cd ${remoteDir} && bash scripts/deploy/deploy-image.sh update ${deployTag}`
     : `cd ${remoteDir} && bash scripts/deploy/deploy-image.sh update`;
@@ -98,6 +133,31 @@ const otaCommandArgs = [
 ];
 
 const main = async () => {
+    if (prepareVersion) {
+        await runNode([
+            'scripts/mobile/bump-project-version.mjs',
+            '--bump',
+            bumpType,
+            ...(dryRun ? ['--dry-run'] : []),
+        ], '准备项目版本自增');
+        console.log(`[deploy-and-ota] 版本准备完成后，请提交并 push package.json / package-lock.json，等待 CI 镜像构建完成，再执行部署与 OTA。`);
+        console.log(`[deploy-and-ota] 部署时请设置环境变量 ${VERSION_PREPARED_ENV}=1；若本次明确不改版本，可改用 --allow-current-version。`);
+        return;
+    }
+
+    const releaseVersion = await readPackageVersion();
+    if (!allowCurrentVersion) {
+        if (process.env[VERSION_PREPARED_ENV] !== '1') {
+            throw new Error(
+                `正式更新部署默认要求先同步自增产品版本与 Android 版本号。`
+                + ` 当前产品版本: ${releaseVersion}。`
+                + ` 请先执行 node scripts/release/deploy-and-ota.mjs --prepare-version，提交并 push 后等待 CI 完成，`
+                + `再设置 ${VERSION_PREPARED_ENV}=1 执行部署；若本次明确不改版本，可加 --allow-current-version。`,
+            );
+        }
+        console.log(`[deploy-and-ota] 已确认本次版本自增准备完成，当前产品版本: ${releaseVersion}`);
+    }
+
     if (!skipWait) {
         const waitMs = Math.round(waitMinutes * 60 * 1000);
         console.log(`[deploy-and-ota] 将在 ${waitMinutes} 分钟后开始部署与 OTA`);
