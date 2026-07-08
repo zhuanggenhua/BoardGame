@@ -2606,5 +2606,37 @@
   "pecos_bill": {
     "atlasId": "tts_atlas_8789f47742",
     "index": 30
+  },
+  "base_enchanted_glade_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 0
+  },
+  "base_fairy_ring_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 1
+  },
+  "base_house_of_nine_lives_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 2
+  },
+  "base_cat_fanciers_alley_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 3
+  },
+  "base_land_of_balance_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 4
+  },
+  "base_pony_paradise_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 5
+  },
+  "base_beautiful_castle_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 6
+  },
+  "base_castle_of_ice_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 7
   }
 }
