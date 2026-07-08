@@ -11,6 +11,7 @@ import {
     resolveQidahenAtlas05OrdinaryHandCardIdentity,
 } from '../domain/handCardIdentity';
 import { buildDrawnHandCards, QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';
+import { syncQidahenMapTokensFromRegions } from '../domain/mapTokens';
 import { getQidahenDirectedPassageRule } from '../domain/movement';
 import {
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
@@ -30,6 +31,7 @@ import { getEffectiveHomelandController } from '../domain/regionRuleSemantics';
 import { getQidahenGrantPardonSelectionForCore } from '../domain/selectionBuilders';
 import { syncQidahenRuntimeInteractionState } from '../domain/runtimeInteractions';
 import { getQidahenScenarioPreset } from '../domain/scenarioPresets';
+import { syncPiecesFromRegions } from '../domain/troopCompat';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_SHAPES, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';
 import type { QidahenCommand, QidahenCore, QidahenDriveTigerConsentSelection, QidahenEvent, QidahenFactionId, QidahenInternalDispatchSelection } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -28305,11 +28307,34 @@ describe('七大恨支付手牌选择', () => {
             expect.objectContaining({ id: 'changbai-control', type: 'control', faction: 'jin' }),
             expect.objectContaining({ id: 'chahar-control', type: 'control', faction: 'mongol' }),
             expect.objectContaining({ id: 'city-region-25-control', type: 'control', faction: 'ming' }),
-            expect.objectContaining({ id: 'city-region-25-pop', type: 'population', faction: 'neutral', value: 1 }),
             expect.objectContaining({ id: 'city-region-22-control', type: 'control', faction: 'ming' }),
             expect.objectContaining({ id: 'city-region-28-jizhen-control', type: 'control', faction: 'ming' }),
-            expect.objectContaining({ id: 'city-region-28-jizhen-pop', type: 'population', faction: 'neutral', value: 1 }),
         ]));
+        expect(core.mapTokens.some((token) => token.type === 'population' || token.id.endsWith('-pop'))).toBe(false);
+        const dongjiang = core.regions.find((region) => region.id === 'city-region-22')!;
+        dongjiang.siegeState = {
+            attackerFactionId: 'jin',
+            attackerTroops: 2,
+            attackerSpecialTroops: [],
+            sourceRegionId: 'city-region-19',
+        };
+        const siegeTokens = syncQidahenMapTokensFromRegions(core.regions, syncPiecesFromRegions(core.regions))
+            .filter((token) => token.type === 'army' && token.id.startsWith('city-region-22-siege-army-'));
+        expect(siegeTokens).toHaveLength(2);
+        expect(siegeTokens).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                faction: 'jin',
+                regionId: 'city-region-22',
+                imageSrc: 'qidahen/units/jin-regular-infantry-unit',
+            }),
+        ]));
+        const averageSiegeTokenX = siegeTokens.reduce((sum, token) => sum + token.x, 0) / siegeTokens.length;
+        const averageSiegeTokenY = siegeTokens.reduce((sum, token) => sum + token.y, 0) / siegeTokens.length;
+        expect(averageSiegeTokenX).toBeCloseTo(940 / QIDAHEN_MAP_WIDTH, 4);
+        expect(averageSiegeTokenY).toBeCloseTo(514 / QIDAHEN_MAP_HEIGHT, 4);
+        expect(averageSiegeTokenX).toBeGreaterThan(0.73);
+        expect(averageSiegeTokenX).toBeLessThan(0.76);
+        expect(Math.max(...siegeTokens.map((token) => token.y))).toBeLessThan(0.60);
         expect(getArmyTokens('jianzhou')).toHaveLength(3);
         expect(getArmyTokens('changbai')).toHaveLength(2);
         expect(getArmyTokens('chahar')).toHaveLength(3);

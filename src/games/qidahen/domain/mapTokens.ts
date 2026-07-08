@@ -39,13 +39,17 @@ const legacyMapTokenBaseIdByRegion: Partial<Record<string, string>> = {
 
 const mapTokenOffsetByRole = {
     army: { x: -16, y: 10 },
-    population: { x: 18, y: 10 },
+    siegeArmy: { x: -34, y: 36 },
     control: { x: 18, y: -16 },
     diplomacy: { x: -18, y: -16 },
     marker: { x: -18, y: -16 },
 } as const;
 
 const clampMapTokenCoordinate = (value: number): number => Math.max(0.02, Math.min(0.98, value));
+
+const siegeArmyAnchorPointByRegionId: Partial<Record<string, { x: number; y: number }>> = {
+    'city-region-22': { x: 940 / QIDAHEN_MAP_WIDTH, y: 514 / QIDAHEN_MAP_HEIGHT },
+};
 
 const getMapTokenPoint = (
     region: Pick<QidahenCore['regions'][number], 'x' | 'y'>,
@@ -167,6 +171,79 @@ const buildMapArmyTokensForRegion = (
     });
 };
 
+const buildMapSiegeAttackerTokensForRegion = (
+    region: QidahenCore['regions'][number],
+    baseId: string,
+    pieces: QidahenCore['pieces'],
+): QidahenCore['mapTokens'] => {
+    if (!region.siegeState || region.siegeState.attackerTroops <= 0) {
+        return [];
+    }
+
+    const siegePieces = pieces
+        .filter((piece) => piece.regionId === region.id && piece.location === 'siege-attacker')
+        .sort((left, right) => (
+            right.level - left.level
+            || (left.troopKind === 'artillery' ? -1 : left.troopKind === 'cavalry' ? 0 : 1)
+            - (right.troopKind === 'artillery' ? -1 : right.troopKind === 'cavalry' ? 0 : 1)
+            || left.id.localeCompare(right.id, 'en')
+        ));
+    const representedTroops = Math.max(region.siegeState.attackerTroops, siegePieces.length);
+    const point = siegeArmyAnchorPointByRegionId[region.id] ?? getMapTokenPoint(region, 'siegeArmy');
+    const displayUnits: Array<Pick<QidahenMapToken, 'faction' | 'imageSrc' | 'rotationDeg'> & { tokenId: string }> = [];
+
+    for (const piece of siegePieces) {
+        displayUnits.push({
+            tokenId: `${baseId}-siege-army-${piece.id}`,
+            faction: piece.faction,
+            imageSrc: getMapArmyImageSrc(region.siegeState.attackerFactionId, {
+                id: piece.sourceStackId,
+                label: piece.label,
+                faction: piece.faction,
+                troopKind: piece.troopKind,
+                count: 1,
+                level: piece.level,
+            }),
+            rotationDeg: piece.rotationDeg,
+        });
+    }
+
+    const fallbackImageSrc = getMapArmyImageSrc(region.siegeState.attackerFactionId, null);
+    while (displayUnits.length < representedTroops) {
+        displayUnits.push({
+            tokenId: `${baseId}-siege-army-fallback-${displayUnits.length + 1}`,
+            faction: region.siegeState.attackerFactionId,
+            imageSrc: fallbackImageSrc,
+            rotationDeg: 0,
+        });
+    }
+
+    const maxColumns = Math.min(3, displayUnits.length);
+    const rowCount = Math.ceil(displayUnits.length / maxColumns);
+    const horizontalSpacing = 20;
+    const verticalSpacing = 18;
+
+    return displayUnits.map((unit, index) => {
+        const currentRow = Math.floor(index / maxColumns);
+        const currentRowStart = currentRow * maxColumns;
+        const currentRowLength = Math.min(maxColumns, displayUnits.length - currentRowStart);
+        const currentColumn = index - currentRowStart;
+        const xOffset = (currentColumn - (currentRowLength - 1) / 2) * horizontalSpacing;
+        const yOffset = (currentRow - (rowCount - 1) / 2) * verticalSpacing;
+        return {
+            id: unit.tokenId,
+            x: clampMapTokenCoordinate(point.x + xOffset / QIDAHEN_MAP_WIDTH),
+            y: clampMapTokenCoordinate(point.y + yOffset / QIDAHEN_MAP_HEIGHT),
+            type: 'army' as const,
+            faction: unit.faction,
+            regionId: region.id,
+            imageSrc: unit.imageSrc,
+            size: 26,
+            rotationDeg: unit.rotationDeg,
+        };
+    });
+};
+
 export const syncQidahenMapTokensFromRegions = (
     regions: QidahenCore['regions'],
     pieces: QidahenCore['pieces'] = syncPiecesFromRegions(regions),
@@ -178,19 +255,7 @@ export const syncQidahenMapTokensFromRegions = (
             const nextTokens: QidahenCore['mapTokens'] = [];
 
             nextTokens.push(...buildMapArmyTokensForRegion(region, baseId, pieces));
-
-            if (region.population > 0) {
-                const point = getMapTokenPoint(region, 'population');
-                nextTokens.push({
-                    id: `${baseId}-pop`,
-                    x: point.x,
-                    y: point.y,
-                    type: 'population',
-                    faction: 'neutral',
-                    value: region.population,
-                    size: 28,
-                });
-            }
+            nextTokens.push(...buildMapSiegeAttackerTokensForRegion(region, baseId, pieces));
 
             if (region.controller !== 'neutral') {
                 const point = getMapTokenPoint(region, 'control');

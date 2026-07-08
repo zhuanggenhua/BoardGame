@@ -331,6 +331,53 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
     return events;
 };
 
+const resolveIgniteHeatOfSoul = (ctx: CustomActionContext): DiceThroneEvent[] => {
+    const currentLimit = ctx.state.players[ctx.attackerId]?.tokenStackLimits?.[TOKEN_IDS.FIRE_MASTERY] || 5;
+    const newLimit = currentLimit + 1;
+    const currentFM = getFireMasteryCount(ctx);
+    const newTotal = Math.min(currentFM + 5, newLimit);
+    const opponentId = ctx.ctx.defenderId;
+
+    return [
+        {
+            type: 'TOKEN_LIMIT_CHANGED',
+            payload: {
+                playerId: ctx.attackerId,
+                tokenId: TOKEN_IDS.FIRE_MASTERY,
+                delta: 1,
+                newLimit,
+                sourceAbilityId: ctx.sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: ctx.timestamp,
+        } as TokenLimitChangedEvent,
+        {
+            type: 'TOKEN_GRANTED',
+            payload: {
+                targetId: ctx.attackerId,
+                tokenId: TOKEN_IDS.FIRE_MASTERY,
+                amount: 5,
+                newTotal,
+                sourceAbilityId: ctx.sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: ctx.timestamp + 0.05,
+        } as TokenGrantedEvent,
+        {
+            type: 'STATUS_APPLIED',
+            payload: {
+                targetId: opponentId,
+                statusId: STATUS_IDS.BURN,
+                stacks: 1,
+                newTotal: getBurnNewTotal(ctx, opponentId),
+                sourceAbilityId: ctx.sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: ctx.timestamp + 0.1,
+        } as StatusAppliedEvent,
+    ];
+};
+
 /**
  * 熔岩盔甲 (Magma Armor) 结算: 根据 base-ability.png 校准
  * 造成 dmgPerFire × [火] 伤害。
@@ -758,6 +805,7 @@ export function registerPyromancerCustomActions(): void {
 
     registerCustomActionHandler('ignite-resolve', (ctx) => resolveIgnite(ctx, 4, 2), { categories: ['damage', 'resource'] });
     registerCustomActionHandler('ignite-2-resolve', (ctx) => resolveIgnite(ctx, 5, 2), { categories: ['damage', 'resource'] });
+    registerCustomActionHandler('ignite-heat-of-soul-resolve', resolveIgniteHeatOfSoul, { categories: ['resource', 'status'] });
 
     registerCustomActionHandler('magma-armor-resolve', (ctx) => resolveMagmaArmor(ctx), { categories: ['damage', 'resource', 'defense'] });
     registerCustomActionHandler('magma-armor-2-resolve', (ctx) => resolveMagmaArmor(ctx, { checkBurn: true }), { categories: ['damage', 'resource', 'defense', 'status'] });

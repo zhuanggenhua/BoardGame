@@ -105,7 +105,7 @@ describe('DiceTray tutorial anchor', () => {
         expect(container.querySelector('[data-tutorial-id="dice-tray"]')).toBeNull();
     });
 
-    it('棋盘内 3D 骰台和隐藏物理源都只应收到未锁定骰子', () => {
+    it('棋盘内 3D 骰台和物理源应保留锁定骰子并标记不参与重投', () => {
         dice3DCalls.length = 0;
         diceField3DCalls.length = 0;
         diceBoxPhysicsSourceCalls.length = 0;
@@ -137,7 +137,8 @@ describe('DiceTray tutorial anchor', () => {
         expect(diceField3DCalls).toHaveLength(0);
         expect(diceBoxPhysicsSourceCalls).toHaveLength(1);
         expect(diceBoxPhysicsSourceCalls[0]?.dice).toMatchObject([
-            { id: 0, value: 1 },
+            { id: 0, value: 1, isKept: false },
+            { id: 1, value: 2, isKept: true },
         ]);
     });
 

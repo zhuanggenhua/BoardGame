@@ -5,15 +5,14 @@
  * 本文件仅保留与 FX 系统无关的辅助功能。
  */
 
-import { useState, useCallback, useRef } from 'react';
-import type React from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 // ============================================================================
 // 全屏震动 Hook（rAF 驱动，指数衰减）
 // ============================================================================
 
 export const useScreenShake = () => {
-  const [shakeStyle, setShakeStyle] = useState<React.CSSProperties>({});
+  const shakeTargetRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number>(0);
 
   const triggerShake = useCallback((
@@ -21,6 +20,10 @@ export const useScreenShake = () => {
     type: 'impact' | 'hit' = 'impact',
   ) => {
     cancelAnimationFrame(rafRef.current);
+    const target = shakeTargetRef.current;
+    if (!target) return;
+
+    target.style.willChange = 'transform';
     const isImpact = type === 'impact';
     const ampX = intensity === 'strong' ? (isImpact ? 4 : 5) : (isImpact ? 2 : 3);
     const ampY = intensity === 'strong' ? (isImpact ? 8 : 4) : (isImpact ? 4 : 2);
@@ -30,7 +33,8 @@ export const useScreenShake = () => {
     const step = () => {
       const elapsed = performance.now() - start;
       if (elapsed >= totalMs) {
-        setShakeStyle({ transform: 'translate3d(0,0,0)' });
+        target.style.transform = 'translate3d(0,0,0)';
+        target.style.willChange = '';
         return;
       }
       const decay = Math.pow(1 - elapsed / totalMs, 2.5);
@@ -38,12 +42,21 @@ export const useScreenShake = () => {
       const phase = elapsed * freq / 1000 * Math.PI * 2;
       const x = Math.sin(phase * 1.3) * ampX * decay;
       const y = Math.cos(phase) * ampY * decay;
-      setShakeStyle({ transform: `translate3d(${x}px, ${y}px, 0)` });
+      target.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
   }, []);
 
-  return { shakeStyle, triggerShake };
+  useEffect(() => () => {
+    cancelAnimationFrame(rafRef.current);
+    const target = shakeTargetRef.current;
+    if (target) {
+      target.style.transform = 'translate3d(0,0,0)';
+      target.style.willChange = '';
+    }
+  }, []);
+
+  return { shakeTargetRef, triggerShake };
 };
 

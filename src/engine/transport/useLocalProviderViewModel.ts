@@ -11,6 +11,7 @@ export function useLocalProviderViewModel(args: {
     reset: () => void;
     playerIds: string[];
     seatControllers: Record<string, AiSeatController>;
+    playerNames?: Record<string, string>;
     localPregameControlledPlayerId: string | null;
     followCurrentTurnPlayer: boolean;
     localPlayerId: string | null;
@@ -20,11 +21,12 @@ export function useLocalProviderViewModel(args: {
             id: Number(id),
             name: resolveSeatPlayerDisplayName({
                 playerId: id,
+                name: args.playerNames?.[id],
                 seatControllers: args.seatControllers,
             }),
             isConnected: true,
         }))
-    ), [args.playerIds, args.seatControllers]);
+    ), [args.playerIds, args.playerNames, args.seatControllers]);
 
     const localBoardPlayerId = useMemo(() => {
         if (args.localPregameControlledPlayerId) {

@@ -160,6 +160,17 @@ function isEmptyGenericUnhandledRejectionNoise(payload: ClientAutoReportPayload)
         && normalizedStack.length === 0;
 }
 
+function isWebKitBareLoadFailedNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}${payload.jsStack ?? ''}${payload.componentStack ?? ''}`.trim();
+    return (payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE) === 'client-unhandled-rejection'
+        && normalizedName === 'typeerror'
+        && normalizedMessage === 'load failed'
+        && payload.errorSource === 'window.unhandledrejection'
+        && normalizedStack.length === 0;
+}
+
 function isBrowserExtensionInjectionNoise(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim().toLowerCase();
     const normalizedStack = `${payload.stack ?? ''}\n${payload.jsStack ?? ''}\n${payload.errorSource ?? ''}`.toLowerCase();
@@ -269,6 +280,9 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isEmptyGenericUnhandledRejectionNoise(payload)) {
+        return true;
+    }
+    if (isWebKitBareLoadFailedNoise(payload)) {
         return true;
     }
     if (isBrowserExtensionInjectionNoise(payload)) {

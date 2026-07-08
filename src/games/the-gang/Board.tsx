@@ -5,6 +5,7 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorialBridge } from '../../contexts/TutorialContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { EndgameOverlay, type ContentSlotProps } from '../../components/game/framework/widgets/EndgameOverlay';
+import { buildPlayerDisplayNameMap } from '../../components/game/framework/playerDisplay';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { formatCard } from './domain/cards';
 import { TEXAS_HOLDEM_HAND_RANK_RULES, type PokerHandRankRule } from './domain/poker';
@@ -368,16 +369,29 @@ function RoundChipColumn({
 
     return (
         <>
-            {chipValues.map((chip) => (
-                <ChipButton
-                    key={`${round}-${chip}`}
-                    round={round}
-                    value={chip}
-                    owner={ownerByChip[chip]}
-                    selected={selectedChip === chip}
-                    onClick={() => onTakeChip(chip)}
-                />
-            ))}
+            {chipValues.map((chip) => {
+                const owner = ownerByChip[chip];
+                if (owner !== undefined) {
+                    return (
+                        <span
+                            key={`${round}-${chip}`}
+                            aria-hidden="true"
+                            className="inline-flex h-[3.5rem] w-[3.5rem] rounded-full border border-dashed border-amber-100/18 bg-black/8 lg:h-[4.75rem] lg:w-[4.75rem]"
+                            data-bgg-zone="token-empty-slot"
+                        />
+                    );
+                }
+
+                return (
+                    <ChipButton
+                        key={`${round}-${chip}`}
+                        round={round}
+                        value={chip}
+                        onClick={() => onTakeChip(chip)}
+                        selected={selectedChip === chip}
+                    />
+                );
+            })}
         </>
     );
 }
@@ -702,10 +716,19 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         Object.entries(core.currentRoundChips).map(([owner, chip]) => [chip, owner]),
     ) as Record<number, string | undefined>;
 
-    const playerName = (id: string) => {
-        const seat = matchData?.find((player) => String(player.id) === id);
-        return seat?.name ?? t('board.playerFallback', { player: Number(id) + 1 });
-    };
+    const playerNames = buildPlayerDisplayNameMap(
+        core.playerIds,
+        matchData,
+        (id) => t('board.playerFallback', { player: Number(id) + 1 }),
+    );
+    const playerName = (id: string) => playerNames[id] ?? t('board.playerFallback', { player: Number(id) + 1 });
+    const otherPlayerIds = core.playerIds.filter((id) => id !== localPlayerId);
+    const shouldShowOpponentCards = core.phase !== 'chip-selection';
+    const visibleOpponentIds = otherPlayerIds.filter((id) => (
+        shouldShowOpponentCards
+        || core.currentRoundChips[id] !== undefined
+        || core.roundHistory.some((entry) => entry.chipsByPlayer[id] !== undefined)
+    ));
 
     const dispatchForPlayer = <K extends string & keyof TheGangCommandMap>(
         type: K,
@@ -742,11 +765,11 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     return (
         <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!G.sys.gameover, isLocalMode: !isMultiplayer }}>
         <main
-            className="the-gang-desktop-table h-full min-h-0 overflow-hidden bg-[#203b23] text-stone-50"
+            className="the-gang-desktop-table h-full min-h-0 overflow-auto bg-[#203b23] text-stone-50"
             data-game-ui="the-gang"
         >
             <section
-                className="relative flex h-full min-h-0 w-full flex-col gap-1 overflow-hidden bg-[#203b23] px-4 py-3 lg:gap-2 lg:px-8 lg:py-5 xl:gap-3 xl:px-12 xl:py-7"
+                className="relative flex min-h-full min-w-[64rem] flex-col gap-1 overflow-hidden bg-[#203b23] px-4 py-3 lg:gap-2 lg:px-8 lg:py-5 xl:gap-3 xl:px-12 xl:py-7"
                 data-layout-contract="bgg-electronic"
                 data-layout-source={BGG_LAYOUT_CONTRACT.source}
                 data-bgg-top-zone={BGG_LAYOUT_CONTRACT.topZone}
@@ -769,25 +792,25 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                 <section className="relative z-10 flex min-h-0 flex-1 flex-col gap-1 lg:gap-2 xl:gap-3" data-testid="the-gang-bgg-board">
                     <section
-                        className="flex shrink-0 justify-evenly gap-3 overflow-visible lg:gap-6"
+                        className="flex min-h-[2.25rem] shrink-0 justify-evenly gap-3 overflow-visible lg:min-h-[3rem] lg:gap-6"
                         data-bgg-zone="top-zone"
-                        data-tutorial-id="the-gang-player-list"
+                        data-tutorial-id="the-gang-opponent-state"
                     >
-                        {core.playerIds.map((id) => {
+                        {visibleOpponentIds.map((id) => {
                             const player = core.players[id];
-                            const isSelf = id === localPlayerId;
-                            const visible = core.phase !== 'chip-selection' && !isSelf;
                             return (
                                 <div
                                     key={id}
                                     className="flex min-w-0 basis-[12rem] flex-col items-center gap-1 lg:basis-[26rem] lg:gap-2"
                                     data-bgg-zone="plboard"
                                 >
-                                    <span
-                                        className={['truncate text-xs font-black tracking-[0.08em] lg:text-sm', isSelf ? 'text-amber-200' : 'text-stone-100/72'].join(' ')}
-                                    >
-                                        {playerName(id)}
-                                    </span>
+                                    {shouldShowOpponentCards && (
+                                        <span
+                                            className="truncate text-xs font-black tracking-[0.08em] text-stone-100/72 lg:text-sm"
+                                        >
+                                            {playerName(id)}
+                                        </span>
+                                    )}
                                     <PlayerChipStrip
                                         roundHistory={core.roundHistory}
                                         currentRound={core.round}
@@ -795,7 +818,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                         playerId={id}
                                     />
                                     <div className="flex justify-center gap-1 lg:gap-1.5">
-                                        {visible && player.pocketCards.map((card, index) => (
+                                        {shouldShowOpponentCards && player.pocketCards.map((card, index) => (
                                             <CardFace key={index} card={card} t={t} />
                                         ))}
                                     </div>
@@ -909,7 +932,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                         )}
                     </div>
 
-                    <aside className="pointer-events-none absolute left-2 top-2 z-30 flex max-w-[min(28rem,calc(100%-1rem))] flex-wrap items-start justify-start gap-1.5 lg:left-3 lg:top-3 lg:gap-2" data-bgg-zone="helper-zone">
+                    <aside className="pointer-events-none absolute left-2 top-2 z-30 hidden max-w-[min(28rem,calc(100%-1rem))] flex-wrap items-start justify-start gap-1.5 lg:left-3 lg:top-3 lg:flex lg:gap-2" data-bgg-zone="helper-zone">
                         {!isMultiplayer && (
                             <div className="pointer-events-auto" data-testid="the-gang-hotseat-switcher">
                                 <h2 className="sr-only">{t('board.localSeat')}</h2>

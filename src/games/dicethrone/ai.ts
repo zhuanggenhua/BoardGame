@@ -93,6 +93,7 @@ type DiceTargetPlan = {
     available: boolean;
     strategicScore: number;
     ambitionScore: number;
+    profileFitScore: number;
 };
 
 type DiceChaseContext = {
@@ -101,11 +102,77 @@ type DiceChaseContext = {
     availableAmbition: number;
     remainingRolls: number;
     diceToolCardCount: number;
+    heroStrategy: DiceThroneHeroStrategyProfile;
 };
 
 type DiceChaseCandidate = {
     plan: DiceTargetPlan;
     chaseScore: number;
+};
+
+type DiceThroneHeroStrategyProfile = {
+    chaseAmbition: number;
+    protectFallback: number;
+    resourceLeverage: number;
+    summary: string;
+};
+
+const DEFAULT_DICETHRONE_HERO_STRATEGY_PROFILE: DiceThroneHeroStrategyProfile = {
+    chaseAmbition: 1,
+    protectFallback: 1,
+    resourceLeverage: 1,
+    summary: '平衡打法',
+};
+
+const DICETHRONE_HERO_STRATEGY_PROFILES: Partial<Record<SelectableCharacterId, DiceThroneHeroStrategyProfile>> = {
+    barbarian: {
+        chaseAmbition: 1.18,
+        protectFallback: 0.88,
+        resourceLeverage: 0.95,
+        summary: '爆发压血',
+    },
+    pyromancer: {
+        chaseAmbition: 1.16,
+        protectFallback: 0.9,
+        resourceLeverage: 1,
+        summary: '高伤压制',
+    },
+    gunslinger: {
+        chaseAmbition: 1.12,
+        protectFallback: 0.95,
+        resourceLeverage: 1.08,
+        summary: '资源转爆发',
+    },
+    samurai: {
+        chaseAmbition: 1.12,
+        protectFallback: 0.96,
+        resourceLeverage: 1.02,
+        summary: '稳定输出',
+    },
+    monk: {
+        chaseAmbition: 0.96,
+        protectFallback: 1.12,
+        resourceLeverage: 1.08,
+        summary: '稳健控场',
+    },
+    paladin: {
+        chaseAmbition: 0.92,
+        protectFallback: 1.18,
+        resourceLeverage: 1.04,
+        summary: '保底防守',
+    },
+    treant: {
+        chaseAmbition: 0.9,
+        protectFallback: 1.2,
+        resourceLeverage: 1.05,
+        summary: '续航防守',
+    },
+    shadow_thief: {
+        chaseAmbition: 1.02,
+        protectFallback: 1,
+        resourceLeverage: 1.18,
+        summary: '资源偷取',
+    },
 };
 
 type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
@@ -513,6 +580,33 @@ const getAbilityAmbitionScore = (
     return 0;
 };
 
+const getAbilityProfileFitScore = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    abilityId: string,
+    phase: TurnPhase,
+): number => {
+    const profile = getDiceThroneStrategyProfile(state, playerId, phase);
+    const fit = scoreActionAgainstStrategyProfile({
+        profile,
+        actionTags: buildAbilityStrategyTags(state, playerId, abilityId),
+        weightMultiplier: 14,
+    });
+    return fit?.score ?? 0;
+};
+
+const getDiceThroneHeroStrategyProfile = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+): DiceThroneHeroStrategyProfile => {
+    const characterId = state.core.players[playerId]?.characterId;
+    if (!characterId || characterId === 'unselected') {
+        return DEFAULT_DICETHRONE_HERO_STRATEGY_PROFILE;
+    }
+    return DICETHRONE_HERO_STRATEGY_PROFILES[characterId as SelectableCharacterId]
+        ?? DEFAULT_DICETHRONE_HERO_STRATEGY_PROFILE;
+};
+
 const DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
     'modify-die-to-6',
     'modify-die-copy',
@@ -564,6 +658,7 @@ const buildDiceTargetPlans = (
     const pushPlan = (abilityId: string, trigger: TriggerCondition | undefined) => {
         const strategicScore = getAbilityStrategicScore(state, playerId, abilityId, phase);
         const ambitionScore = getAbilityAmbitionScore(state, playerId, abilityId, trigger);
+        const profileFitScore = getAbilityProfileFitScore(state, playerId, abilityId, phase);
         const requirements = extractDiceRequirements(trigger);
         if (requirements.length === 0) {
             if (!availableIds.has(abilityId)) return;
@@ -576,6 +671,7 @@ const buildDiceTargetPlans = (
                 available: true,
                 strategicScore,
                 ambitionScore,
+                profileFitScore,
             });
             return;
         }
@@ -588,6 +684,7 @@ const buildDiceTargetPlans = (
                 available: diceOverride ? evaluation.missingCount === 0 : availableIds.has(abilityId),
                 strategicScore,
                 ambitionScore,
+                profileFitScore,
             });
         }
     };
@@ -632,6 +729,7 @@ const scoreDiceTargetPlan = (
     const ambitionScore = canStillChaseHigherPlan ? plan.ambitionScore * 0.16 : 0;
 
     return plan.strategicScore
+        + plan.profileFitScore
         + ambitionScore
         + plan.matchedCount * 18
         - plan.missingCount * missingPenalty
@@ -698,6 +796,7 @@ const getBestStableDiceTargetPlan = (
             : 60;
     const stableScore = (plan: DiceTargetPlan) => (
         plan.strategicScore
+        + plan.profileFitScore
         + plan.matchedCount * 18
         - plan.missingCount * missingPenalty
         + (plan.available ? availableBonus : 0)
@@ -753,6 +852,7 @@ const buildDiceChaseContext = (
         availableAmbition: availablePlan?.ambitionScore ?? 0,
         remainingRolls,
         diceToolCardCount: countAffordableDiceToolCards(state, playerId, phase),
+        heroStrategy: getDiceThroneHeroStrategyProfile(state, playerId),
     };
 };
 
@@ -770,7 +870,9 @@ const scoreHigherAmbitionChasePlan = (
     const expectedUpside = successChance * (plan.strategicScore + plan.ambitionScore * 0.65);
     const fallbackRisk = (1 - successChance) * Math.max(0, currentValue - plan.strategicScore * 0.25);
     const nearMissBonus = closeness * plan.ambitionScore * 0.22;
-    const diceToolBonus = diceToolCardCount * 45;
+    const heroAmbitionBonus = plan.ambitionScore * closeness * (context.heroStrategy.chaseAmbition - 1) * 0.55;
+    const heroFallbackPenalty = Math.max(0, context.heroStrategy.protectFallback - 1) * fallbackRisk * 0.65;
+    const diceToolBonus = diceToolCardCount * 45 * context.heroStrategy.resourceLeverage;
     const ultimateNearMissBonus = plan.ambitionScore >= 300 && plan.matchedCount >= 3
         ? 55
         : 0;
@@ -783,13 +885,16 @@ const scoreHigherAmbitionChasePlan = (
 
     return Number((
         expectedUpside
+        + plan.profileFitScore * 0.7
         + valueGap * 0.35
         + nearMissBonus
+        + heroAmbitionBonus
         + diceToolBonus
         + ultimateNearMissBonus
         + plan.matchedCount * 8
         - plan.missingCount * 32
         - fallbackRisk
+        - heroFallbackPenalty
         - longShotPenalty
         - lastRollPenalty
     ).toFixed(3));
@@ -806,8 +911,29 @@ const buildHigherAmbitionChaseCandidates = (
         }))
         .filter(({ plan }) => plan.missingCount > 0 && plan.missingCount <= 3)
         .filter(({ plan }) => plan.ambitionScore >= context.availableAmbition + 80)
-        .filter(({ chaseScore }) => chaseScore >= 35)
+        .filter(({ plan, chaseScore }) => chaseScore >= getMinimumHigherAmbitionChaseScore(context, plan))
 );
+
+const getMinimumHigherAmbitionChaseScore = (
+    context: DiceChaseContext,
+    plan: DiceTargetPlan,
+): number => {
+    const baseThreshold = 35;
+    const ambitionAdjustment = (1 - context.heroStrategy.chaseAmbition) * 70;
+    const fallbackAdjustment = context.availablePlan
+        ? Math.max(0, context.heroStrategy.protectFallback - 1) * 55
+        : 0;
+    const nearMissAdjustment = plan.matchedCount >= 3
+        ? -Math.max(0, context.heroStrategy.chaseAmbition - 1) * 45
+        : 0;
+
+    return Number((
+        baseThreshold
+        + ambitionAdjustment
+        + fallbackAdjustment
+        + nearMissAdjustment
+    ).toFixed(3));
+};
 
 const pickHigherAmbitionChasePlan = (
     context: DiceChaseContext,

@@ -329,8 +329,7 @@ export const TutorialOverlay: React.FC = () => {
                         const axisClearance = compactTargetBounds
                             ? getPlacementAxisClearance(candidate.placement as 'top' | 'bottom' | 'left' | 'right', candidate.bounds, compactTargetBounds)
                             : 0;
-                        const isSoftVerticalPreference = compactTargetBounds && (preferredPlacement === 'top' || preferredPlacement === 'bottom');
-                        const preferencePenalty = preferredPlacement && candidate.placement !== preferredPlacement && !isSoftVerticalPreference ? 1 : 0;
+                        const preferencePenalty = preferredPlacement && candidate.placement !== preferredPlacement ? 1 : 0;
                         const centerDistancePenalty = rect
                             ? Math.abs(((candidate.bounds.left + candidate.bounds.right) / 2) - ((rect.left + rect.right) / 2))
                             : 0;
@@ -352,7 +351,10 @@ export const TutorialOverlay: React.FC = () => {
                         if (a.centerDistancePenalty !== b.centerDistancePenalty) return b.centerDistancePenalty - a.centerDistancePenalty;
                         return a.index - b.index;
                     });
-                const chosenCompactCandidate = rankedCompactCandidates[0]?.candidate ?? compactCandidates[0];
+                const explicitVerticalCandidate = preferredPlacement === 'top' || preferredPlacement === 'bottom'
+                    ? compactCandidates.find((candidate) => candidate.placement === preferredPlacement)
+                    : undefined;
+                const chosenCompactCandidate = explicitVerticalCandidate ?? rankedCompactCandidates[0]?.candidate ?? compactCandidates[0];
 
                 commitTooltipLayout({
                     style: chosenCompactCandidate.style,

@@ -13,6 +13,7 @@ describe('The Gang manifest', () => {
             capture: true,
             localAi: true,
             remoteAi: false,
+            defaultLocalAiSeats: 'all-opponents',
         });
         expect(engineConfig.gameId).toBe('the-gang');
         expect(audioConfig).toBe(THE_GANG_AUDIO_CONFIG);

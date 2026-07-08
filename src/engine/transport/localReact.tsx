@@ -19,6 +19,7 @@ export interface LocalGameProviderProps {
     children: ReactNode;
     onCommandRejected?: (commandType: string, error: string) => void;
     seatControllers?: Record<string, AiSeatController>;
+    playerNames?: Record<string, string>;
     playerId?: string;
     followCurrentTurnPlayer?: boolean;
     persistSession?: boolean;
@@ -32,6 +33,7 @@ export function LocalGameProvider({
     children,
     onCommandRejected,
     seatControllers = {},
+    playerNames,
     playerId: localPlayerId,
     followCurrentTurnPlayer = false,
     persistSession = false,
@@ -43,6 +45,7 @@ export function LocalGameProvider({
         setupData,
         onCommandRejected,
         seatControllers,
+        playerNames,
         localPlayerId: localPlayerId ?? null,
         followCurrentTurnPlayer,
         persistSession,

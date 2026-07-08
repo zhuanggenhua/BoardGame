@@ -52,9 +52,9 @@ export function shouldShowRailDiceTray(params: {
     useBoardDiceStage: boolean;
     hasKeptDice: boolean;
 }): boolean {
-    return !params.useBoardDiceStage || params.hasKeptDice;
+    return !params.useBoardDiceStage;
 }
 
 export function getRailDiceForCurrentBoard(dice: Die[], useBoardDiceStage: boolean): Die[] {
-    return useBoardDiceStage ? dice.filter((die) => die.isKept) : dice;
+    return useBoardDiceStage ? [] : dice;
 }

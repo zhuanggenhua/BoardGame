@@ -193,7 +193,8 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       }
     }
     const shakeTiming = shake?.timing ?? 'on-impact';
-    if (shake && shakeTiming === 'on-impact') {
+    const suppressShake = event?.params?.suppressShake === true;
+    if (shake && shakeTiming === 'on-impact' && !suppressShake) {
       // 震动强度：优先使用事件上下文中的 intensity（支持动态覆盖）
       const dynamicIntensity = event?.ctx.intensity ?? shake.intensity;
       triggerShakeRef.current?.(dynamicIntensity, shake.type);
@@ -289,7 +290,8 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
         }
       }
       const shakeTiming = shake?.timing ?? 'on-impact';
-      if (shake && shakeTiming === 'immediate') {
+      const suppressShake = input.params?.suppressShake === true;
+      if (shake && shakeTiming === 'immediate' && !suppressShake) {
         triggerShakeRef.current?.(shake.intensity, shake.type);
       }
     }

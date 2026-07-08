@@ -21,7 +21,13 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
     baseScale: 54,
     strength: 0.92,
     iterationLimit: 1000,
-    arrangeSettledDice: true,
+    // dice-box-threejs 的 setDimensions 会同步重建 Cannon 物理墙体。
+    // 棋盘骰台需要把真实反弹边界收进红框内部，而不是只在投影层夹住显示位置。
+    worldWidthScale: 0.64,
+    worldHeightScale: 0.64,
+    // 保留 dice-box-threejs 的真实物理落点。强制重排会在投掷结束后把骰子
+    // 从物理落点瞬间吸到固定队列位置，手机端尤其明显。
+    arrangeSettledDice: false,
     customColorset: {
         name: 'dicethrone-white-plastic-symbol-dice',
         foreground: '#111111',

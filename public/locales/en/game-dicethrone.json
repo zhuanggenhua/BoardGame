@@ -2555,11 +2555,18 @@
     },
     "ignite-2": {
       "name": "Ignite II",
-      "description": "Gain 2 Fire Mastery, inflict Burn, deal 5 + 2× Fire Mastery damage.",
+      "description": "Large Straight: gain 2 Fire Mastery, inflict Burn, deal 5 + 2× Fire Mastery damage. Heat of Soul: increase Fire Mastery stack limit by 1, gain 5 Fire Mastery, and inflict Burn.",
       "effects": {
         "gainFM2": "Gain 2 Fire Mastery",
         "inflictBurn": "Inflict 1 Burn token",
         "main": "Deal 5 base damage. If you have Fire Mastery, deal +2 damage per Fire Mastery."
+      }
+    },
+    "heat-of-soul": {
+      "name": "Heat of Soul",
+      "description": "2 Fire + 2 Fire Soul: increase Fire Mastery stack limit by 1, gain 5 Fire Mastery, and inflict Burn.",
+      "effects": {
+        "main": "Increase Fire Mastery stack limit by 1. Gain 5 Fire Mastery. Inflict 1 Burn token."
       }
     },
     "magma-armor-2": {

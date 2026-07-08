@@ -23,6 +23,7 @@ import type { DicePhysicsState } from '../../lib/dice-physics/types';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import type { MatchPlayerInfo } from '../../engine/transport/protocol';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import type {
@@ -2113,6 +2114,7 @@ function EndgameScreen({
 export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale }: Props) {
     const { t } = useTranslation(['game-betrayal', 'common']);
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep } = useTutorial();
+    const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
     useTutorialBridge(G?.sys?.tutorial, dispatch as (type: string, payload?: unknown) => void);
     const effectiveLocale = locale || 'zh-CN';
     const baseCore = React.useMemo(
@@ -2131,6 +2133,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [confirmedExorciseRollId, setConfirmedExorciseRollId] = React.useState<string | null>(null);
     const [roomGridPan, setRoomGridPan] = React.useState({ x: 0, y: 0 });
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
+    const isPhoneLandscapeLayout = runtimeViewport.width > runtimeViewport.height
+        && runtimeViewport.width <= 1023
+        && runtimeViewport.height <= 520;
     const hasCenteredInitialRoomGridRef = React.useRef(false);
     const roomGridDragRef = React.useRef<RoomGridDragState>({
         isDragging: false,
@@ -2276,11 +2281,34 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         return focusRoomInView(core.currentExplorer.roomId) || focusActiveRoomInView();
     }, [core.currentExplorer.roomId, focusActiveRoomInView, focusRoomInView]);
 
-    const roomCanvasTransformStyle = React.useMemo(() => ({
-        ...roomCanvasStyle,
-        transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0)`,
-        transformOrigin: 'center center',
-    }), [roomCanvasStyle, roomGridPan.x, roomGridPan.y]);
+    const roomCanvasTransformStyle = React.useMemo(() => {
+        if (!isPhoneLandscapeLayout) {
+            return {
+                ...roomCanvasStyle,
+                transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0)`,
+                transformOrigin: 'center center',
+            };
+        }
+
+        const mobileScale = Math.min(
+            1,
+            Math.max(0.58, (runtimeViewport.width - 24) / Number(roomCanvasStyle.width || ROOM_CANVAS_MIN_WIDTH)),
+            Math.max(0.58, (runtimeViewport.height - 116) / Number(roomCanvasStyle.height || ROOM_CANVAS_MIN_HEIGHT)),
+        );
+        return {
+            ...roomCanvasStyle,
+            transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0) scale(${mobileScale})`,
+            transformOrigin: 'center center',
+            ['--betrayal-mobile-room-scale' as string]: String(mobileScale),
+        };
+    }, [
+        isPhoneLandscapeLayout,
+        roomCanvasStyle,
+        roomGridPan.x,
+        roomGridPan.y,
+        runtimeViewport.height,
+        runtimeViewport.width,
+    ]);
 
     React.useEffect(() => {
         if (core.phase !== 'preHaunt') {
@@ -3413,9 +3441,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : isPreview
                     ? 'z-10'
                     : 'z-10 hover:-translate-y-0.5';
-        const outerRingClass = showSelectedState
+        const useMobileOutlineLayer = isPhoneLandscapeLayout;
+        const outerRingClass = !useMobileOutlineLayer && showSelectedState
             ? 'ring-4 ring-[#eecc7e] shadow-[0_0_24px_rgba(238,204,126,0.48)]'
-            : canModifyRecentRoll
+            : !useMobileOutlineLayer && canModifyRecentRoll
                 ? 'ring-4 ring-[#9fe1a7] shadow-[0_0_24px_rgba(159,225,167,0.52)]'
                 : '';
         return (
@@ -3445,6 +3474,27 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 className={`relative w-full overflow-visible text-left transition ${buttonOutlineClass}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
+                {useMobileOutlineLayer && showSelectedState ? (
+                    <span
+                        data-testid={options.testId ? `${options.testId}-selected-outline` : undefined}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute z-20 rounded-[10px] shadow-[0_0_20px_rgba(238,204,126,0.48)]"
+                        style={{
+                            inset: '0',
+                            border: '2px solid #eecc7e',
+                        }}
+                    />
+                ) : useMobileOutlineLayer && canModifyRecentRoll ? (
+                    <span
+                        data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute z-20 rounded-[10px] shadow-[0_0_20px_rgba(159,225,167,0.48)]"
+                        style={{
+                            inset: '0',
+                            border: '2px solid #9fe1a7',
+                        }}
+                    />
+                ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
@@ -3455,7 +3505,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     data-selected-outline={showSelectedState ? 'true' : undefined}
                     data-modifier-outline={canModifyRecentRoll && !showSelectedState ? 'true' : undefined}
                     className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} ${outerRingClass} border ${
-                        showSelectedState
+                        showSelectedState && !useMobileOutlineLayer
                             ? 'border-transparent bg-transparent'
                             : frontVisual
                             ? isCompact
@@ -3467,7 +3517,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     } ${isUsedThisTurn || isUnavailableThisTurn ? 'opacity-60' : ''}`}
                     style={{
                         aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
-                        ...(showSelectedState
+                        ...(showSelectedState && !useMobileOutlineLayer
                             ? {
                                 borderColor: 'transparent',
                                 borderStyle: 'solid',
@@ -3698,7 +3748,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ].join(','),
             }}
         >
-            <div className="relative h-full min-h-full w-full overflow-hidden px-3 py-3 md:px-4 md:py-4">
+            <div
+                className={`relative h-full min-h-full w-full overflow-hidden ${
+                    isPhoneLandscapeLayout
+                        ? 'px-1.5 py-1.5'
+                        : 'px-3 py-3 md:px-4 md:py-4'
+                }`}
+                data-testid={isPhoneLandscapeLayout ? 'betrayal-mobile-landscape-layout' : 'betrayal-desktop-layout'}
+                data-layout-mode={isPhoneLandscapeLayout ? 'phone-landscape-native' : 'desktop-board'}
+            >
                 <header className="pointer-events-none absolute inset-x-4 top-3 z-30 hidden lg:block">
                     <div
                         className="relative min-h-[58px]"
@@ -3734,9 +3792,119 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 </header>
 
                 <main className="absolute inset-0 overflow-hidden">
+                    {isPhoneLandscapeLayout ? (
+                        <section
+                            data-testid="betrayal-mobile-stage-status"
+                            className="pointer-events-none absolute left-2 top-2 z-40 flex items-center gap-2 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-2 py-1.5 shadow-[0_8px_18px_rgba(0,0,0,0.32)] backdrop-blur-sm"
+                        >
+                            <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-full border border-[#5a4930] bg-[rgba(13,18,14,0.86)]">
+                                <OptimizedImage
+                                    src={core.currentExplorer.portraitAsset}
+                                    locale={effectiveLocale}
+                                    alt={core.currentExplorer.displayName}
+                                    className="h-full w-full object-contain"
+                                    draggable={false}
+                                />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="truncate text-[11px] font-semibold tracking-[0.06em] text-[#efe2c4]">
+                                    {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
+                                </div>
+                                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#c8f05e]">
+                                    <span>{t('board.hud.moveLabel')} {core.movesRemaining}</span>
+                                    <span className="text-[#7d725d]">/</span>
+                                    <span>{phaseLabel}</span>
+                                </div>
+                                <div
+                                    data-testid="betrayal-mobile-traits-strip"
+                                    className="mt-1 flex items-center gap-1"
+                                >
+                                    {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
+                                        <span
+                                            key={`mobile-current-trait-${trait}`}
+                                            className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[rgba(214,191,129,0.18)] bg-[rgba(12,16,14,0.72)] px-1 text-[10px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
+                                            title={`${TRAIT_LABEL_LOCAL[trait]} ${core.currentExplorer.traits[trait]}`}
+                                        >
+                                            {core.currentExplorer.traits[trait]}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    ) : null}
+                    {isPhoneLandscapeLayout ? (
+                        <section
+                            data-testid="betrayal-mobile-context-strip"
+                            aria-label="移动端局面信息"
+                            className="pointer-events-auto absolute right-2 top-2 z-40 grid w-[min(296px,34vw)] min-w-[176px] grid-cols-[minmax(0,1fr)_auto] items-start gap-1.5 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-2 py-1.5 text-[#efe2c4] shadow-[0_8px_18px_rgba(0,0,0,0.32)] backdrop-blur-sm"
+                        >
+                            <div className="min-w-0">
+                                <div
+                                    data-testid="betrayal-mobile-deck-summary"
+                                    className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] leading-none"
+                                >
+                                    {deckItems.map((item) => (
+                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-0.5">
+                                            <span className="max-w-[34px] truncate text-[#c4a265]">{item.label.replace('牌堆', '')}</span>
+                                            <span className="font-semibold text-[#f0e2c0]">{item.count}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div
+                                    data-testid="betrayal-mobile-discard-summary"
+                                    className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] leading-none text-[#a89d84]"
+                                >
+                                    <span>{t('board.sections.discard')}</span>
+                                    {discardItems.map((item) => (
+                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-0.5">
+                                            <span className="max-w-[26px] truncate">{item.label.split(' · ')[0].replace('牌堆', '')}</span>
+                                            <span className="font-semibold text-[#d8bf81]">{item.count}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div
+                                    data-testid="betrayal-mobile-teammates-summary"
+                                    className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden text-[9px] leading-none text-[#b7aa92]"
+                                >
+                                    <span className="shrink-0 text-[#c4a265]">{t('board.hud.teammatesLabel')}</span>
+                                    {core.otherExplorers.slice(0, 2).map((explorer) => (
+                                        <span
+                                            key={`mobile-teammate-${explorer.playerId}`}
+                                            className="truncate"
+                                            title={`${resolvePlayerName(explorer.playerId, explorer.displayName, matchData)} · ${core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown')}`}
+                                        >
+                                            {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setReferenceOpen(true)}
+                                    data-testid="betrayal-mobile-open-scenario"
+                                    className="grid h-7 w-7 place-items-center rounded-[7px] border border-[#58472f] bg-[rgba(13,15,12,0.72)] text-[#d8bf81]"
+                                    title={scenarioConfig.presentation.referenceTitle}
+                                >
+                                    <BookOpen size={14} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setRoomPreviewId(core.activeRoomId)}
+                                    data-testid="betrayal-mobile-open-active-room-preview"
+                                    className="grid h-7 w-7 place-items-center rounded-[7px] border border-[#58472f] bg-[rgba(13,15,12,0.72)] text-[#d8bf81]"
+                                    title={t('board.rooms.preview')}
+                                >
+                                    <House size={14} />
+                                </button>
+                            </div>
+                        </section>
+                    ) : null}
                     <section
                         data-testid="betrayal-left-status-rail"
-                        className="pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible"
+                        className={`pointer-events-none absolute left-3 top-3 z-40 max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible ${
+                            isPhoneLandscapeLayout ? 'hidden' : 'grid'
+                        }`}
                     >
                         <article className="pointer-events-auto relative overflow-visible bg-transparent px-1 py-1">
                             <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1 xl:mx-0">
@@ -3950,9 +4118,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         id="betrayal-inventory-section"
                         data-testid="betrayal-inventory-section"
                         data-tutorial-id="betrayal-inventory-zone"
-                        className="pointer-events-auto absolute bottom-2 left-1 z-40 mt-0 w-[calc(62px*5.35+0.5rem*4+0.75rem)] max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] px-0"
+                        className={`pointer-events-auto absolute z-40 mt-0 px-0 ${
+                            isPhoneLandscapeLayout
+                                ? 'bottom-[58px] left-2 w-[min(312px,calc(100vw-6.25rem))]'
+                                : 'bottom-[86px] left-2 w-[320px] max-w-[calc(100vw-1rem)] lg:bottom-2 lg:left-1 lg:w-[calc(62px*5.35+0.5rem*4+0.75rem)] lg:max-w-[calc(62px*5.35+0.5rem*4+0.75rem)]'
+                        }`}
+                        data-mobile-role={isPhoneLandscapeLayout ? 'possession-rail' : undefined}
                     >
-                        <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:pr-4">
+                        <div className={`${isPhoneLandscapeLayout ? 'sr-only' : 'mb-1 flex items-center justify-between gap-3 px-1 xl:pr-4'}`}>
                             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
                                 <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
                                 {t('board.sections.inventory')}
@@ -3970,10 +4143,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 {useStatusText}
                             </div>
                         </div>
-                        <div className="grid gap-2 px-1 xl:px-0 xl:pr-2">
+                        <div className={`${isPhoneLandscapeLayout ? 'grid gap-1 px-0' : 'grid gap-2 px-1 xl:px-0 xl:pr-2'}`}>
                             <section data-testid="betrayal-inventory-group-item">
                                 <div
-                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2"
+                                    className={`${inventoryGroups.item.length === 0 ? 'hidden lg:flex' : 'flex'} ${
+                                        isPhoneLandscapeLayout
+                                            ? 'max-w-full min-h-[52px] items-end gap-1 overflow-x-auto overflow-y-hidden px-0 pb-0.5 pt-0'
+                                            : 'max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] items-end gap-1.5 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1 xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2'
+                                    } min-w-0 smashup-h-scrollbar`}
                                     data-testid="betrayal-inventory-row-item"
                                 >
                                     {inventoryGroups.item.map((item) => renderInventoryCard(item, {
@@ -3984,7 +4161,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </section>
                             <section data-testid="betrayal-inventory-group-omen">
                                 <div
-                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2"
+                                    className={`${inventoryGroups.omen.length === 0 ? 'hidden lg:flex' : 'flex'} ${
+                                        isPhoneLandscapeLayout
+                                            ? 'max-w-full min-h-[52px] items-end gap-1 overflow-x-auto overflow-y-hidden px-0 pb-0.5 pt-0'
+                                            : 'max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] items-end gap-1.5 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1 xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2'
+                                    } min-w-0 smashup-h-scrollbar`}
                                     data-testid="betrayal-inventory-row-omen"
                                 >
                                     {inventoryGroups.omen.map((item) => renderInventoryCard(item, {
@@ -4013,7 +4194,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             id="betrayal-room-panel"
                             data-testid="betrayal-room-panel"
                             data-tutorial-id="betrayal-room-board"
-                            className="flex min-h-0 flex-col bg-transparent p-0"
+                            className={`flex min-h-0 flex-col bg-transparent p-0 ${
+                                isPhoneLandscapeLayout ? 'pb-[108px] pt-9' : 'pb-[86px] lg:pb-0'
+                            }`}
+                            data-mobile-role={isPhoneLandscapeLayout ? 'primary-board-stage' : undefined}
                         >
                             <div className="sr-only">
                                 <span data-testid="betrayal-room-latest-feedback">
@@ -4055,7 +4239,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     data-tutorial-id="betrayal-latest-discovery"
                                     aria-label={`${latestDiscoveryKindLabel} ${core.latestDiscovery!.title}`}
                                     data-allows-inventory-roll-modifiers={rollModifierCardIds.size > 0 ? 'true' : 'false'}
-                                    className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[120] flex items-center justify-center px-4 py-16 md:left-[392px] md:right-[240px]"
+                                    className={`pointer-events-none absolute z-[120] flex items-center justify-center ${
+                                        isPhoneLandscapeLayout
+                                            ? 'inset-0 px-3 pb-[76px] pt-8'
+                                            : 'inset-y-0 left-0 right-0 px-4 py-16 md:left-[392px] md:right-[240px]'
+                                    }`}
                                 >
                                     <div
                                         data-testid="betrayal-discovery-panel-content"
@@ -4098,8 +4286,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         {shouldShowLatestDiscoveryRoll && core.recentRoll ? (
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
-                                                className="h-[min(52vh,440px)] min-h-[360px] w-[min(700px,calc(100vw-2rem))] shrink-0 md:w-[610px]"
-                                                diceClassName="min-h-[280px]"
+                                                className={isPhoneLandscapeLayout
+                                                    ? 'h-[min(74vh,330px)] min-h-[292px] w-[min(620px,calc(100vw-2rem))] shrink-0'
+                                                    : 'h-[min(52vh,440px)] min-h-[360px] w-[min(700px,calc(100vw-2rem))] shrink-0 md:w-[610px]'}
+                                                diceClassName={isPhoneLandscapeLayout ? 'min-h-[210px]' : 'min-h-[280px]'}
                                                 rerollSelection={rabbitFootRerollSelection}
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
@@ -4119,8 +4309,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         >
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
-                                                className="h-[min(48vh,430px)] min-h-[340px] w-full"
-                                                diceClassName="min-h-[260px]"
+                                                className={isPhoneLandscapeLayout ? 'h-[min(72vh,320px)] min-h-[286px] w-full' : 'h-[min(48vh,430px)] min-h-[340px] w-full'}
+                                                diceClassName={isPhoneLandscapeLayout ? 'min-h-[204px]' : 'min-h-[260px]'}
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
                                             />
@@ -4137,18 +4327,28 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 ) : (
                                     <RecentRollPanel
                                         roll={core.recentRoll}
-                                        className="absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2"
+                                        className={isPhoneLandscapeLayout
+                                            ? 'absolute left-1/2 top-1/2 z-40 h-[min(74vh,322px)] min-h-[286px] w-[min(620px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2'
+                                            : 'absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2'}
+                                        diceClassName={isPhoneLandscapeLayout ? 'min-h-[206px]' : undefined}
+                                        openTable={isPhoneLandscapeLayout}
                                         effectiveLocale={effectiveLocale}
                                     />
                                 )
                             ) : null}
 
                             {pendingEventChoice ? (
-                                <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center px-4 py-14">
+                                <div className={`pointer-events-auto absolute inset-0 z-50 flex items-center justify-center ${
+                                    isPhoneLandscapeLayout ? 'px-3 pb-[64px] pt-4' : 'px-4 py-14'
+                                }`}>
                                     <div
                                         data-testid="betrayal-event-choice-panel"
                                         aria-label={pendingEventChoice.sourceTitle}
-                                        className="grid max-h-[min(620px,calc(100vh-7rem))] w-[min(780px,calc(100vw-2rem))] grid-cols-[minmax(220px,360px)_minmax(0,1fr)] gap-5 overflow-hidden border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(25,20,13,0.86),rgba(8,10,8,0.86))] p-5 text-[#f3e0a6] shadow-[0_28px_76px_rgba(0,0,0,0.62)]"
+                                        className={`grid overflow-hidden border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(25,20,13,0.88),rgba(8,10,8,0.88))] text-[#f3e0a6] shadow-[0_28px_76px_rgba(0,0,0,0.62)] ${
+                                            isPhoneLandscapeLayout
+                                                ? 'max-h-[calc(100vh-4.75rem)] w-[min(760px,calc(100vw-1rem))] grid-cols-[minmax(156px,210px)_minmax(0,1fr)] gap-3 p-3'
+                                                : 'max-h-[min(620px,calc(100vh-7rem))] w-[min(780px,calc(100vw-2rem))] grid-cols-[minmax(220px,360px)_minmax(0,1fr)] gap-5 p-5'
+                                        }`}
                                     >
                                         <div className="w-full justify-self-center">
                                             {latestDiscoveryVisual ? (
@@ -4522,10 +4722,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                            <div
-                                ref={roomGridRef}
-                                className="relative min-h-0 flex-1 cursor-grab touch-none overflow-hidden bg-transparent active:cursor-grabbing"
-                                data-testid="betrayal-room-grid"
+                                <div
+                                    ref={roomGridRef}
+                                    className={`relative min-h-0 flex-1 cursor-grab touch-none overflow-hidden bg-transparent active:cursor-grabbing ${
+                                        isPhoneLandscapeLayout ? 'mx-auto grid w-full max-w-none place-items-center' : ''
+                                    }`}
+                                    data-testid="betrayal-room-grid"
                                 aria-label={t('board.sections.rooms')}
                                 onPointerDown={handleRoomGridPointerDown}
                                 onPointerMove={handleRoomGridPointerMove}
@@ -4533,7 +4735,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 onPointerCancel={handleRoomGridPointerEnd}
                             >
                                 <div
-                                    className="relative mx-auto will-change-transform xl:ml-0 xl:mr-auto"
+                                    className={`relative will-change-transform ${
+                                        isPhoneLandscapeLayout ? 'mx-auto' : 'mx-auto xl:ml-0 xl:mr-auto'
+                                    }`}
                                     data-testid="betrayal-room-canvas"
                                     style={roomCanvasTransformStyle}
                                 >
@@ -4804,7 +5008,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             </div>
                             {visibleActionItems.length > 0 && !isEndgameExorciseRollReview ? (
-                                <div className="pointer-events-none absolute inset-x-0 bottom-1 z-50 hidden flex-col items-center justify-end gap-0.5 md:flex">
+                                <div
+                                    data-testid="betrayal-action-rail"
+                                    data-mobile-role={isPhoneLandscapeLayout ? 'pc-action-rail-adapted' : undefined}
+                                    className={`pointer-events-none absolute inset-x-0 z-50 flex-col items-center justify-end gap-0.5 ${
+                                        isPhoneLandscapeLayout
+                                            ? 'bottom-[calc(var(--safe-area-bottom)+0.2rem)] flex'
+                                            : 'bottom-1 hidden md:flex'
+                                    }`}
+                                >
                                     {core.recommendedAction === 'trade' ? (
                                         <div
                                             data-testid="betrayal-trade-flow-banner"
@@ -4878,7 +5090,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                     <section
                         data-testid="betrayal-status-rail"
-                        className="pointer-events-auto absolute bottom-3 right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1"
+                        className={`pointer-events-auto absolute bottom-3 right-3 top-3 z-40 w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1 ${
+                            isPhoneLandscapeLayout ? 'hidden' : 'flex'
+                        }`}
                     >
                         <article
                             id="betrayal-decks-section"
@@ -5188,48 +5402,76 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     ) : null}
                 </MagnifyOverlay>
 
-                {core.recommendedAction === 'trade' || isEndgameExorciseRollReview ? null : (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-[calc(var(--safe-area-bottom)+0.75rem)] md:hidden">
-                    <div className="pointer-events-auto rounded-[18px] border border-[#5f4d31] bg-[rgba(14,20,18,0.92)] p-2 shadow-[0_16px_32px_rgba(0,0,0,0.34)] backdrop-blur-sm">
-                        <div className="mb-2 flex items-center gap-2">
-                            <div className="min-w-0 flex-1 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2">
-                                <div className="text-[10px] uppercase tracking-[0.14em] text-[#a89d84]">
-                                    {t('board.mobile.selectedLabel')}
+                {core.recommendedAction === 'trade' || isEndgameExorciseRollReview || isPhoneLandscapeLayout ? null : (
+                <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 ${
+                    isPhoneLandscapeLayout ? 'hidden' : 'md:hidden'
+                } ${
+                    isPhoneLandscapeLayout
+                        ? 'px-1.5 pb-[calc(var(--safe-area-bottom)+0.2rem)]'
+                        : 'px-3 pb-[calc(var(--safe-area-bottom)+0.75rem)]'
+                }`}>
+                    <div
+                        data-testid="betrayal-mobile-action-rail"
+                        data-mobile-role={isPhoneLandscapeLayout ? 'native-action-rail' : undefined}
+                        className={`pointer-events-auto ${
+                            isPhoneLandscapeLayout
+                                ? 'min-h-[56px] border-0 bg-transparent p-0 shadow-none'
+                                : 'rounded-[18px] border border-[#5f4d31] bg-[rgba(14,20,18,0.92)] p-2 shadow-[0_16px_32px_rgba(0,0,0,0.34)] backdrop-blur-sm'
+                        }`}
+                        style={isPhoneLandscapeLayout ? { minHeight: 56 } : undefined}
+                    >
+                        <div className={`${isPhoneLandscapeLayout ? 'grid grid-cols-1 items-stretch gap-1.5' : 'mb-2 flex items-center gap-2'}`}>
+                            {isPhoneLandscapeLayout ? (
+                                <div className="sr-only" data-testid="betrayal-mobile-a11y-status">
+                                    <span data-testid="betrayal-mobile-selected-card">
+                                        {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
+                                    </span>
+                                    <span data-testid="betrayal-mobile-use-status">{useStatusText}</span>
+                                    {shouldShowMobileTradeStatus ? (
+                                        <span data-testid="betrayal-mobile-trade-status">{tradeStatusText}</span>
+                                    ) : null}
+                                    <span data-testid="betrayal-mobile-action-cue">{actionCueText}</span>
                                 </div>
-                                <div
-                                    className="truncate text-sm font-medium text-[#f3ead6]"
-                                    data-testid="betrayal-mobile-selected-card"
-                                >
-                                    {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
-                                </div>
-                                <div
-                                    className={`mt-1 truncate text-[11px] ${selectedCardUseDisabled ? 'text-[#f0c1a2]' : 'text-[#8db29a]'}`}
-                                    data-testid="betrayal-mobile-use-status"
-                                >
-                                    {useStatusText}
-                                </div>
-                                {shouldShowMobileTradeStatus ? (
-                                    <div
-                                        className={`mt-1 truncate text-[11px] ${
-                                            selectedTradeTarget ? 'text-[#8db29a]' : 'text-[#b8ae98]'
-                                        }`}
-                                        data-testid="betrayal-mobile-trade-status"
-                                    >
-                                        {tradeStatusText}
+                            ) : (
+                                <div className="min-w-0 flex-1 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-[#a89d84]">
+                                        {t('board.mobile.selectedLabel')}
                                     </div>
-                                ) : null}
-                                <div
-                                    className="mt-1 truncate text-[11px] text-[#dbcfae]"
-                                    data-testid="betrayal-mobile-action-cue"
-                                >
-                                    {actionCueText}
+                                    <div
+                                        className="truncate text-sm font-medium text-[#f3ead6]"
+                                        data-testid="betrayal-mobile-selected-card"
+                                    >
+                                        {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
+                                    </div>
+                                    <div
+                                        className={`mt-1 truncate text-[11px] ${selectedCardUseDisabled ? 'text-[#f0c1a2]' : 'text-[#8db29a]'}`}
+                                        data-testid="betrayal-mobile-use-status"
+                                    >
+                                        {useStatusText}
+                                    </div>
+                                    {shouldShowMobileTradeStatus ? (
+                                        <div
+                                            className={`mt-1 truncate text-[11px] ${
+                                                selectedTradeTarget ? 'text-[#8db29a]' : 'text-[#b8ae98]'
+                                            }`}
+                                            data-testid="betrayal-mobile-trade-status"
+                                        >
+                                            {tradeStatusText}
+                                        </div>
+                                    ) : null}
+                                    <div
+                                        className="sr-only"
+                                        data-testid="betrayal-mobile-action-cue"
+                                    >
+                                        {actionCueText}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => scrollToSection('betrayal-inventory-section')}
                                 data-testid="betrayal-mobile-jump-inventory"
-                                className="rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]"
+                                className={`${isPhoneLandscapeLayout ? 'hidden' : ''} shrink-0 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]`}
                             >
                                 {t('board.sections.inventory')}
                             </button>
@@ -5237,12 +5479,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 type="button"
                                 onClick={() => scrollToSection('betrayal-decks-section')}
                                 data-testid="betrayal-mobile-jump-decks"
-                                className="rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]"
+                                className={`${isPhoneLandscapeLayout ? 'hidden' : ''} shrink-0 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]`}
                             >
                                 {t('board.sections.decks')}
                             </button>
-                        </div>
-                        <div className="grid grid-cols-5 gap-2">
+                            <div className={`grid min-w-0 ${
+                                isPhoneLandscapeLayout ? 'grid-cols-5' : 'flex-1 grid-cols-5'
+                            } ${isPhoneLandscapeLayout ? 'min-h-[56px] items-stretch gap-3' : 'gap-2'}`}>
                             {visibleActionItems.map((action) => {
                                 const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
                                 const isRecommended = action.id === core.recommendedAction
@@ -5254,19 +5497,41 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         onClick={actionHandlerMap[action.id]}
                                         disabled={action.disabled}
                                         data-testid={`betrayal-mobile-dock-${action.id}`}
-                                        className={`flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-[14px] border px-1.5 py-1.5 text-[10px] font-medium transition ${
+                                        className={`flex flex-col items-center justify-center transition ${
+                                            isPhoneLandscapeLayout
+                                                ? 'min-h-[56px] gap-0.5 rounded-[5px] border-0 bg-transparent px-1 py-1 text-[11px] font-bold uppercase tracking-[0.08em] shadow-none'
+                                                : 'min-h-[54px] gap-1 rounded-[14px] border px-1.5 py-1.5 text-[10px] font-medium'
+                                        } ${
                                             action.disabled
-                                                ? 'cursor-not-allowed border-[#3e3526] bg-[rgba(22,17,13,0.72)] text-[#6f6758]'
+                                                ? isPhoneLandscapeLayout
+                                                    ? 'cursor-not-allowed text-[#5f584d] opacity-55'
+                                                    : 'cursor-not-allowed border-[#3e3526] bg-[rgba(22,17,13,0.72)] text-[#6f6758]'
                                                 : isRecommended
-                                                    ? 'border-[#c9a35e] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]'
-                                                    : 'border-[#5c4d35] bg-[rgba(30,22,17,0.88)] text-[#d8ccb0]'
+                                                    ? isPhoneLandscapeLayout
+                                                        ? 'text-[#f6ffc4] underline decoration-[#f2cc79] decoration-2 underline-offset-4 hover:text-[#fbffd2]'
+                                                        : 'border-[#c9a35e] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]'
+                                                    : isPhoneLandscapeLayout
+                                                        ? 'text-[#ead8a8] hover:text-[#fff0ba]'
+                                                        : 'border-[#5c4d35] bg-[rgba(30,22,17,0.88)] text-[#d8ccb0]'
                                         }`}
+                                        style={isPhoneLandscapeLayout ? {
+                                            backgroundColor: 'transparent',
+                                            backgroundImage: 'none',
+                                            border: 0,
+                                            boxShadow: 'none',
+                                            textShadow: action.disabled
+                                                ? 'none'
+                                                : isRecommended
+                                                    ? '0 1px 2px rgba(0,0,0,0.9), 0 0 14px rgba(238,244,168,0.48)'
+                                                    : '0 1px 2px rgba(0,0,0,0.88), 0 0 8px rgba(234,216,168,0.28)',
+                                        } : undefined}
                                     >
-                                        <Icon size={14} />
+                                        <Icon size={isPhoneLandscapeLayout ? 18 : 14} strokeWidth={isPhoneLandscapeLayout ? 2.35 : undefined} />
                                         <span>{action.label}</span>
                                     </button>
                                 );
                             })}
+                            </div>
                         </div>
                     </div>
                 </div>

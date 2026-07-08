@@ -33,6 +33,11 @@ const STEP_14A = `${EVIDENCE_DIR}/14A-山屋惊魂-教程-点击兔脚后选择�
 const STEP_14A1 = `${EVIDENCE_DIR}/14A1-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
 const STEP_14B = `${EVIDENCE_DIR}/14B-山屋惊魂-教程-兔脚重投结束.jpg`;
 const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-探索后牌桌结果.jpg`;
+const MOBILE_EVIDENCE_DIR = resolve(process.cwd(), 'test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收');
+const MOBILE_STEP_01 = `${MOBILE_EVIDENCE_DIR}/01-手机横屏-教程书本使用入口.png`;
+const PC_REGRESSION_EVIDENCE_DIR = resolve(process.cwd(), 'test-results/evidence-screenshots/betrayal/pc-regression-current');
+const PC_REGRESSION_STEP_USE_BOOK = `${PC_REGRESSION_EVIDENCE_DIR}/09-pc-第二章使用书本前-current.png`;
+const PC_REGRESSION_STEP_BOARD = `${PC_REGRESSION_EVIDENCE_DIR}/03-pc-房间主视区-current.png`;
 
 const waitForStep = async (page: Parameters<typeof test>[0]['page'], stepId: string, timeout = 15000) => {
     await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
@@ -408,6 +413,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
         await saveScreenshot(page, STEP_09);
 
+        await page.getByTestId('betrayal-inventory-omen-book').click();
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('书本');
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
         await page.getByTestId('betrayal-action-use').click();
         await waitForStep(page, 'open-move-targets');
         await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
@@ -591,6 +599,324 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-move-explore-use', diagnostics }]);
     });
 
+    test('手机横屏下教程真实入口应进入小黑屋移动布局并保持底部操作贴底', async ({ page, context }) => {
+        test.setTimeout(90000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-phone-landscape');
+
+        await page.setViewportSize({ width: 936, height: 432 });
+        await page.goto('/play/betrayal/tutorial/move-explore-use?bgForceCoarsePointer=1', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+        const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
+            .waitFor({ state: 'visible', timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+        if (setupStepVisible) {
+            await clickNext(page);
+        }
+        await waitForStep(page, 'use-book');
+        await expect(page.getByTestId('betrayal-board')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toHaveAttribute('data-layout-mode', 'phone-landscape-native');
+        await expect(page.getByTestId('betrayal-mobile-stage-status')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-traits-strip')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-context-strip')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-deck-summary')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-discard-summary')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-teammates-summary')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-open-scenario')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-open-active-room-preview')).toBeVisible();
+        await expect(page.locator('[data-fab-id="chat"]')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-panel')).toHaveAttribute('data-mobile-role', 'primary-board-stage');
+        await expect(page.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-mobile-role', 'possession-rail');
+        await expect(page.getByTestId('betrayal-action-rail')).toHaveAttribute('data-mobile-role', 'pc-action-rail-adapted');
+        await expect(page.getByTestId('betrayal-inventory-omen-book')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-jump-inventory')).not.toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-jump-decks')).not.toBeVisible();
+        await expect(page.locator('[data-testid^="betrayal-mobile-dock-"]')).toHaveCount(0);
+        await expect(page.locator('button[data-testid^="betrayal-action-"]').first()).toBeVisible();
+
+        const mobileLayout = await page.evaluate(() => {
+            const hasVisibleBoxShadow = (boxShadow: string | null) => {
+                if (!boxShadow || boxShadow === 'none') return false;
+                return boxShadow.split(/,(?![^(]*\))/).some((layer) => {
+                    const rgba = layer.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([.\d]+)\s*\)/);
+                    if (rgba && Number(rgba[1]) === 0) return false;
+                    return !/0px\s+0px\s+0px\s+0px/.test(layer);
+                });
+            };
+            const pcActionButton = document.querySelector<HTMLElement>('button[data-testid^="betrayal-action-"]');
+            const dock = document.querySelector<HTMLElement>('[data-testid="betrayal-action-rail"]')
+                ?? pcActionButton?.closest('.pointer-events-auto') as HTMLElement | null;
+            const board = document.querySelector<HTMLElement>('[data-testid="betrayal-board"]');
+            const layout = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-landscape-layout"]');
+            const stageStatus = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-stage-status"]');
+            const roomGrid = document.querySelector<HTMLElement>('[data-testid="betrayal-room-grid"]');
+            const roomPanel = document.querySelector<HTMLElement>('[data-testid="betrayal-room-panel"]');
+            const inventoryRail = document.querySelector<HTMLElement>('[data-testid="betrayal-inventory-section"]');
+            const actionRail = document.querySelector<HTMLElement>('[data-testid="betrayal-action-rail"]');
+            const traitsStrip = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-traits-strip"]');
+            const contextStrip = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-context-strip"]');
+            const deckSummary = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-deck-summary"]');
+            const discardSummary = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-discard-summary"]');
+            const teammatesSummary = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-teammates-summary"]');
+            const scenarioButton = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-open-scenario"]');
+            const roomPreviewButton = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-open-active-room-preview"]');
+            const floatingChatButton = document.querySelector<HTMLElement>('[data-fab-id="chat"]');
+            const desktopActionButtons = Array.from(document.querySelectorAll<HTMLElement>('button[data-testid^="betrayal-action-"]'));
+            const mobileDockButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="betrayal-mobile-dock-"]'));
+            const roomCanvas = document.querySelector<HTMLElement>('[data-testid="betrayal-room-canvas"]');
+            const selectedCardStatus = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-a11y-status"]');
+            const leftRail = document.querySelector<HTMLElement>('[data-testid="betrayal-left-status-rail"]');
+            const statusRail = document.querySelector<HTMLElement>('[data-testid="betrayal-status-rail"]');
+            const tutorialCard = document.querySelector<HTMLElement>('[data-testid="tutorial-overlay-card"]');
+            const dockRect = dock?.getBoundingClientRect();
+            const boardRect = board?.getBoundingClientRect();
+            const stageStatusRect = stageStatus?.getBoundingClientRect();
+            const roomGridRect = roomGrid?.getBoundingClientRect();
+            const inventoryRailRect = inventoryRail?.getBoundingClientRect();
+            const actionRailRect = actionRail?.getBoundingClientRect();
+            const contextStripRect = contextStrip?.getBoundingClientRect();
+            const selectedCardStatusRect = selectedCardStatus?.getBoundingClientRect();
+            const leftRailRect = leftRail?.getBoundingClientRect();
+            const statusRailRect = statusRail?.getBoundingClientRect();
+            const tutorialRect = tutorialCard?.getBoundingClientRect();
+            const actionRailStyle = actionRail ? getComputedStyle(actionRail) : null;
+            const pcActionButtonStyle = pcActionButton ? getComputedStyle(pcActionButton) : null;
+            const visibleElementCount = (elements: HTMLElement[]) => elements.filter((element) => {
+                const rect = element.getBoundingClientRect();
+                const style = getComputedStyle(element);
+                return rect.width > 0
+                    && rect.height > 0
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && Number(style.opacity || '1') > 0.01;
+            }).length;
+            const isVisible = (element: HTMLElement | null) => {
+                if (!element) return false;
+                const rect = element.getBoundingClientRect();
+                const style = getComputedStyle(element);
+                return rect.width > 0
+                    && rect.height > 0
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && Number(style.opacity || '1') > 0.01;
+            };
+            const visibleHeightAboveDock = dockRect && roomGridRect
+                ? Math.max(0, Math.min(roomGridRect.bottom, dockRect.top) - Math.max(roomGridRect.top, 0))
+                : 0;
+
+            return {
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+                layoutMode: layout?.dataset.layoutMode ?? null,
+                roomPanelRole: roomPanel?.dataset.mobileRole ?? null,
+                inventoryRole: inventoryRail?.dataset.mobileRole ?? null,
+                actionRole: actionRail?.dataset.mobileRole ?? null,
+                dockBottomGap: dockRect ? window.innerHeight - dockRect.bottom : null,
+                dockHeight: dockRect?.height ?? 0,
+                boardWidth: boardRect?.width ?? 0,
+                boardHeight: boardRect?.height ?? 0,
+                roomGridWidth: roomGridRect?.width ?? 0,
+                roomGridHeight: roomGridRect?.height ?? 0,
+                roomCanvasTransform: roomCanvas ? getComputedStyle(roomCanvas).transform : null,
+                selectedCardStatusWidth: selectedCardStatusRect?.width ?? 0,
+                selectedCardStatusHeight: selectedCardStatusRect?.height ?? 0,
+                stageStatusTop: stageStatusRect?.top ?? null,
+                inventoryRailBottomGap: inventoryRailRect ? window.innerHeight - inventoryRailRect.bottom : null,
+                inventoryRailLeft: inventoryRailRect?.left ?? null,
+                actionRailBottomGap: actionRailRect ? window.innerHeight - actionRailRect.bottom : null,
+                actionRailLeft: actionRailRect?.left ?? null,
+                actionRailWidth: actionRailRect?.width ?? 0,
+                contextStripVisible: isVisible(contextStrip),
+                contextStripTop: contextStripRect?.top ?? null,
+                contextStripRightGap: contextStripRect ? window.innerWidth - contextStripRect.right : null,
+                contextStripWidth: contextStripRect?.width ?? 0,
+                traitsStripVisible: isVisible(traitsStrip),
+                deckSummaryVisible: isVisible(deckSummary),
+                discardSummaryVisible: isVisible(discardSummary),
+                teammatesSummaryVisible: isVisible(teammatesSummary),
+                scenarioButtonVisible: isVisible(scenarioButton),
+                roomPreviewButtonVisible: isVisible(roomPreviewButton),
+                floatingChatButtonVisible: isVisible(floatingChatButton),
+                actionRailBackground: actionRailStyle?.backgroundColor ?? null,
+                actionRailBorderTopWidth: actionRailStyle?.borderTopWidth ?? null,
+                actionRailHasVisibleBoxShadow: hasVisibleBoxShadow(actionRailStyle?.boxShadow ?? null),
+                visibleDesktopActionCount: visibleElementCount(desktopActionButtons),
+                visibleMobileDockCount: visibleElementCount(mobileDockButtons),
+                pcActionButtonBackground: pcActionButtonStyle?.backgroundColor ?? null,
+                pcActionButtonBorderTopWidth: pcActionButtonStyle?.borderTopWidth ?? null,
+                pcActionButtonHasVisibleBoxShadow: hasVisibleBoxShadow(pcActionButtonStyle?.boxShadow ?? null),
+                roomPanelBottomPadding: roomPanel ? Number.parseFloat(getComputedStyle(roomPanel).paddingBottom || '0') : 0,
+                roomGridVisibleHeightAboveDock: visibleHeightAboveDock,
+                leftRailDisplay: leftRail ? getComputedStyle(leftRail).display : null,
+                statusRailDisplay: statusRail ? getComputedStyle(statusRail).display : null,
+                leftRailWidth: leftRailRect?.width ?? 0,
+                statusRailWidth: statusRailRect?.width ?? 0,
+                tutorialCenterOffset: tutorialRect
+                    ? Math.abs((tutorialRect.left + tutorialRect.width / 2) - window.innerWidth / 2)
+                    : null,
+            };
+        });
+
+        expect(mobileLayout.viewportWidth).toBeGreaterThan(mobileLayout.viewportHeight);
+        expect(mobileLayout.layoutMode).toBe('phone-landscape-native');
+        expect(mobileLayout.roomPanelRole).toBe('primary-board-stage');
+        expect(mobileLayout.inventoryRole).toBe('possession-rail');
+        expect(mobileLayout.actionRole).toBe('pc-action-rail-adapted');
+        expect(mobileLayout.dockBottomGap).not.toBeNull();
+        expect(mobileLayout.dockBottomGap ?? 999).toBeLessThanOrEqual(10);
+        expect(mobileLayout.actionRailBottomGap ?? 999).toBeLessThanOrEqual(8);
+        expect(mobileLayout.dockHeight).toBeLessThanOrEqual(58);
+        expect(mobileLayout.boardWidth).toBeGreaterThan(800);
+        expect(mobileLayout.boardHeight).toBeGreaterThan(360);
+        expect(mobileLayout.roomGridWidth).toBeGreaterThan(880);
+        expect(mobileLayout.roomGridHeight).toBeGreaterThan(320);
+        expect(mobileLayout.roomGridVisibleHeightAboveDock).toBeGreaterThan(230);
+        expect(mobileLayout.roomPanelBottomPadding).toBeGreaterThanOrEqual(80);
+        expect(mobileLayout.stageStatusTop).not.toBeNull();
+        expect(mobileLayout.stageStatusTop ?? 999).toBeLessThanOrEqual(12);
+        expect(mobileLayout.traitsStripVisible).toBe(true);
+        expect(mobileLayout.contextStripVisible).toBe(true);
+        expect(mobileLayout.deckSummaryVisible).toBe(true);
+        expect(mobileLayout.discardSummaryVisible).toBe(true);
+        expect(mobileLayout.teammatesSummaryVisible).toBe(true);
+        expect(mobileLayout.scenarioButtonVisible).toBe(true);
+        expect(mobileLayout.roomPreviewButtonVisible).toBe(true);
+        expect(mobileLayout.floatingChatButtonVisible).toBe(true);
+        expect(mobileLayout.contextStripTop).not.toBeNull();
+        expect(mobileLayout.contextStripTop ?? 999).toBeLessThanOrEqual(12);
+        expect(mobileLayout.contextStripRightGap).not.toBeNull();
+        expect(mobileLayout.contextStripRightGap ?? 999).toBeLessThanOrEqual(12);
+        expect(mobileLayout.contextStripWidth).toBeGreaterThan(160);
+        expect(mobileLayout.contextStripWidth).toBeLessThanOrEqual(320);
+        expect(mobileLayout.inventoryRailBottomGap).not.toBeNull();
+        expect(mobileLayout.inventoryRailBottomGap ?? 999).toBeLessThanOrEqual(112);
+        expect(mobileLayout.inventoryRailLeft ?? 999).toBeLessThanOrEqual(12);
+        expect(mobileLayout.actionRailLeft ?? -1).toBeLessThanOrEqual(8);
+        expect(mobileLayout.actionRailWidth).toBeGreaterThan(900);
+        expect(mobileLayout.actionRailBackground).toBe('rgba(0, 0, 0, 0)');
+        expect(mobileLayout.actionRailBorderTopWidth).toBe('0px');
+        expect(mobileLayout.actionRailHasVisibleBoxShadow).toBe(false);
+        expect(mobileLayout.visibleDesktopActionCount).toBeGreaterThan(0);
+        expect(mobileLayout.visibleMobileDockCount).toBe(0);
+        expect(mobileLayout.pcActionButtonBackground).toBe('rgba(0, 0, 0, 0)');
+        expect(mobileLayout.pcActionButtonBorderTopWidth).toBe('0px');
+        expect(mobileLayout.pcActionButtonHasVisibleBoxShadow).toBe(false);
+        expect(mobileLayout.roomCanvasTransform).not.toBe('none');
+        expect(mobileLayout.selectedCardStatusWidth).toBeLessThanOrEqual(2);
+        expect(mobileLayout.selectedCardStatusHeight).toBeLessThanOrEqual(2);
+        expect(mobileLayout.leftRailDisplay).toBe('none');
+        expect(mobileLayout.statusRailDisplay).toBe('none');
+        expect(mobileLayout.leftRailWidth).toBe(0);
+        expect(mobileLayout.statusRailWidth).toBe(0);
+        expect(mobileLayout.tutorialCenterOffset).not.toBeNull();
+        expect(mobileLayout.tutorialCenterOffset ?? 999).toBeLessThanOrEqual(96);
+
+        await saveScreenshot(page, MOBILE_STEP_01);
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-phone-landscape', diagnostics }]);
+    });
+
+    test('PC 教程布局不应被手机横屏分支改写', async ({ page, context }) => {
+        test.setTimeout(90000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-pc-layout-regression');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await page.goto('/play/betrayal/tutorial/move-explore-use', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
+            .waitFor({ state: 'visible', timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+        if (setupStepVisible) {
+            await clickNext(page);
+        }
+
+        await waitForStep(page, 'use-book');
+        await expect(page.getByTestId('betrayal-board')).toBeVisible();
+        await expect(page.getByTestId('betrayal-desktop-layout')).toBeVisible();
+        await expect(page.getByTestId('betrayal-desktop-layout')).toHaveAttribute('data-layout-mode', 'desktop-board');
+        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-mobile-stage-status')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-mobile-context-strip')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-mobile-traits-strip')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-left-status-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-status-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-panel')).not.toHaveAttribute('data-mobile-role', /primary-board-stage/);
+        await expect(page.getByTestId('betrayal-inventory-section')).not.toHaveAttribute('data-mobile-role', /possession-rail/);
+
+        const pcLayout = await page.evaluate(() => {
+            const rect = (selector: string) => {
+                const element = document.querySelector<HTMLElement>(selector);
+                if (!element) return null;
+                const box = element.getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                return {
+                    display: style.display,
+                    left: Math.round(box.left),
+                    width: Math.round(box.width),
+                    height: Math.round(box.height),
+                };
+            };
+
+            const roomCanvas = document.querySelector<HTMLElement>('[data-testid="betrayal-room-canvas"]');
+            const roomCanvasScale = (() => {
+                if (!roomCanvas) return null;
+                const transform = window.getComputedStyle(roomCanvas).transform;
+                if (!transform || transform === 'none') return { scaleX: 1, scaleY: 1 };
+                const match = transform.match(/^matrix\(([^)]+)\)$/);
+                if (!match) return null;
+                const parts = match[1].split(',').map((part) => Number(part.trim()));
+                return { scaleX: parts[0], scaleY: parts[3] };
+            })();
+
+            return {
+                viewport: { width: window.innerWidth, height: window.innerHeight },
+                leftRail: rect('[data-testid="betrayal-left-status-rail"]'),
+                rightRail: rect('[data-testid="betrayal-status-rail"]'),
+                inventory: rect('[data-testid="betrayal-inventory-section"]'),
+                mobileActionRail: rect('[data-testid="betrayal-mobile-action-rail"]'),
+                mobileStage: rect('[data-testid="betrayal-mobile-stage-status"]'),
+                roomCanvasScale,
+            };
+        });
+
+        expect(pcLayout.viewport).toEqual({ width: 1600, height: 900 });
+        expect(pcLayout.leftRail?.display).toBe('grid');
+        expect(pcLayout.rightRail?.display).toBe('flex');
+        expect(pcLayout.leftRail?.width).toBeGreaterThan(250);
+        expect(pcLayout.rightRail?.width).toBeGreaterThan(190);
+        expect(pcLayout.inventory?.left).toBeLessThanOrEqual(12);
+        expect(pcLayout.inventory?.width).toBeGreaterThan(330);
+        expect(pcLayout.roomCanvasScale?.scaleX).toBeCloseTo(1, 3);
+        expect(pcLayout.roomCanvasScale?.scaleY).toBeCloseTo(1, 3);
+        expect(pcLayout.mobileActionRail === null || (
+            pcLayout.mobileActionRail.width === 0
+            && pcLayout.mobileActionRail.height === 0
+        )).toBe(true);
+        expect(pcLayout.mobileStage).toBeNull();
+
+        await saveScreenshot(page, PC_REGRESSION_STEP_USE_BOOK);
+
+        await page.getByTestId('betrayal-inventory-omen-book').click();
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('书本');
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+        await page.getByTestId('betrayal-action-use').click();
+        await waitForStep(page, 'open-move-targets');
+        await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
+        await page.getByTestId('betrayal-action-move').click();
+        await waitForStep(page, 'move-to-hallway');
+        await expect(page.getByTestId('betrayal-room-hallway')).toBeVisible();
+        await saveScreenshot(page, PC_REGRESSION_STEP_BOARD);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-pc-layout-regression', diagnostics }]);
+    });
+
     test('叛徒视角教程会从独立章节进入真实攻击和终局', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context, { skipTutorial: false });
@@ -611,10 +937,11 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await clickNext(page);
 
         await waitForStep(page, 'attack-hero');
-        await expect(page.getByTestId('betrayal-room-focus-target')).toContainText(/攻击/);
+        const attackTarget = page.getByTestId('betrayal-bottom-attack-hero-target-1');
+        await expect(attackTarget).toContainText(/攻击/);
         await saveScreenshot(page, STEP_07);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]);
-        await page.getByTestId('betrayal-room-focus-target').click();
+        await attackTarget.click();
 
         await waitForStep(page, 'traitor-finish', 30000);
         const traitorEndgameScreen = page.getByTestId('betrayal-endgame-screen');

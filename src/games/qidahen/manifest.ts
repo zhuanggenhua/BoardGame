@@ -34,7 +34,6 @@ const entry: GameManifestEntry = {
         'qidahen/cards/atlases/korea-special-deck-atlas',
         'qidahen/markers/ming-control-diplomacy-marker-a',
         'qidahen/markers/jin-control-diplomacy-marker-a',
-        'qidahen/markers/blank-rectangular-marker',
         'qidahen/units/ming-regular-infantry-unit',
         'qidahen/units/ming-regular-cavalry-unit',
     ],

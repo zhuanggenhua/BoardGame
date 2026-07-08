@@ -77,10 +77,10 @@ async function saveSettingsPanelScreenshot(
 }
 
 async function waitForBoardDiceSettled(page: Page): Promise<void> {
-    await expect(page.getByTestId('dice-field-3d-canvas')).toBeVisible({ timeout: 8000 });
+    await expect(page.getByTestId('dicethrone-board-dice-box-canvas')).toBeVisible({ timeout: 8000 });
     const readDebugState = async () => page.evaluate(() => {
         const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
-        const canvasNode = document.querySelector('[data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+        const canvasNode = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
         const physicsSource = document.querySelector('[data-testid="dicethrone-board-dice-physics-source"]') as HTMLElement | null;
         const stageRect = stage?.getBoundingClientRect();
         const nodes = Array.from(document.querySelectorAll(
@@ -122,23 +122,26 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
     try {
         await page.waitForFunction(() => {
         const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
-        const canvasNode = document.querySelector('[data-testid="dice-field-3d-canvas"]') as HTMLElement | null;
+        const canvasNode = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
         const physicsSource = document.querySelector('[data-testid="dicethrone-board-dice-physics-source"]') as HTMLElement | null;
         if (!stage || !canvasNode || !physicsSource) return false;
         if (
-            canvasNode.dataset.diceTexturesReady !== 'true'
+            canvasNode.dataset.skinsReady !== 'true'
             || canvasNode.dataset.diceSettled !== 'true'
             || canvasNode.dataset.diceVisualSettled !== 'true'
         ) return false;
         if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
-        if (canvasNode.dataset.dicePhysicsMode !== 'physics-only') return false;
+        if (canvasNode.dataset.worldWidthScale !== '0.64') return false;
+        if (canvasNode.dataset.worldHeightScale !== '0.64') return false;
+        if (Number(canvasNode.dataset.physicsWorldWidth ?? 0) <= 0) return false;
+        if (Number(canvasNode.dataset.physicsWorldHeight ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) > 0.004) return false;
         if (Number(canvasNode.dataset.diceMaxTravel ?? Number.POSITIVE_INFINITY) > 0.012) return false;
         if (physicsSource.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
-        if (physicsSource.dataset.dicePhysicsMode !== 'physics-only') return false;
+        if (physicsSource.dataset.dicePhysicsMode !== 'debug-visible') return false;
         if (physicsSource.dataset.diceSettled !== 'true') return false;
         const physicsStyle = window.getComputedStyle(physicsSource);
-        if (physicsStyle.visibility !== 'hidden' && Number(physicsStyle.opacity) > 0.01) return false;
+        if (physicsStyle.visibility !== 'visible' || Number(physicsStyle.opacity) <= 0.01) return false;
 
         const stageRect = stage.getBoundingClientRect();
         const nodes = Array.from(document.querySelectorAll(
@@ -149,7 +152,7 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
         const positions = nodes.map((node) => {
             const rect = node.getBoundingClientRect();
             const isEngineLayer = node.dataset.renderMode === 'engine';
-            const isReasonableSize = rect.width >= 42 && rect.height >= 42 && rect.width <= 110 && rect.height <= 110;
+            const isReasonableSize = rect.width >= 28 && rect.height >= 28 && rect.width <= 110 && rect.height <= 110;
             const isInsideStage = rect.left >= stageRect.left - 4
                 && rect.top >= stageRect.top - 4
                 && rect.right <= stageRect.right + 4
@@ -204,6 +207,48 @@ async function clickBoardDieCenter(page: Page, dieId: number): Promise<void> {
     await page.mouse.click(point.x, point.y);
 }
 
+async function readBoardDieHitDebug(page: Page, dieId: number) {
+    return await page.evaluate((id) => {
+        const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+        const hitLayer = document.querySelector('[data-testid="dicethrone-board-dice-hit-layer"]') as HTMLElement | null;
+        const die = document.querySelector(
+            `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${id}"]`,
+        ) as HTMLElement | null;
+        const stageRect = stage?.getBoundingClientRect();
+        const hitRect = hitLayer?.getBoundingClientRect();
+        const dieRect = die?.getBoundingClientRect();
+        const centerX = dieRect ? dieRect.left + (dieRect.width / 2) : 0;
+        const centerY = dieRect ? dieRect.top + (dieRect.height / 2) : 0;
+        const topElement = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
+        return {
+            dieId: id,
+            dieDataset: die ? { ...die.dataset } : null,
+            stageRect: stageRect ? {
+                left: stageRect.left,
+                top: stageRect.top,
+                width: stageRect.width,
+                height: stageRect.height,
+            } : null,
+            hitRect: hitRect ? {
+                left: hitRect.left,
+                top: hitRect.top,
+                width: hitRect.width,
+                height: hitRect.height,
+                cursor: window.getComputedStyle(hitLayer!).cursor,
+                zIndex: window.getComputedStyle(hitLayer!).zIndex,
+            } : null,
+            dieRect: dieRect ? {
+                left: dieRect.left,
+                top: dieRect.top,
+                width: dieRect.width,
+                height: dieRect.height,
+            } : null,
+            center: { x: centerX, y: centerY },
+            topTestId: topElement?.dataset.testid ?? topElement?.closest('[data-testid]')?.getAttribute('data-testid') ?? '',
+        };
+    }, dieId);
+}
+
 async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): Promise<void> {
     for (const dieId of dieIds) {
         const dieButton = page.locator(`[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`);
@@ -213,9 +258,8 @@ async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): P
 
     await expect(page.getByTestId('dice-field-3d-underlay')).toBeVisible({ timeout: 3000 });
     await expect(page.locator('[data-testid^="die-selection-underlay-"]')).toHaveCount(0);
-    await expect(page.getByTestId('dice-field-3d-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
-    await expect(page.getByTestId('dice-field-3d-canvas')).toHaveAttribute('data-dice-physics-mode', 'physics-only');
-    await expect(page.getByTestId('dicethrone-board-dice-physics-source')).toHaveAttribute('data-dice-physics-mode', 'physics-only');
+    await expect(page.getByTestId('dicethrone-board-dice-box-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
+    await expect(page.getByTestId('dicethrone-board-dice-physics-source')).toHaveAttribute('data-dice-physics-mode', 'debug-visible');
     await expect(page.locator(
         '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"][data-selected="true"] .border-\\[\\#f2c14e\\]',
     )).toHaveCount(0);
@@ -281,6 +325,44 @@ async function readBoardDieRects(page: Page, dieIds: number[]): Promise<DiceRect
     }), dieIds);
 }
 
+async function readVisibleBoardDieRects(page: Page): Promise<DiceRectSnapshot[]> {
+    return await page.evaluate(() => Array.from(document.querySelectorAll(
+        '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+    )).map((node) => {
+        const element = node as HTMLElement;
+        const rect = element.getBoundingClientRect();
+        const testId = element.dataset.testid ?? element.getAttribute('data-testid') ?? '';
+        const match = testId.match(/die-button-(\d+)/);
+        return {
+            dieId: match ? Number(match[1]) : -1,
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height,
+            rotateX: Number(element.dataset.rotateX ?? Number.NaN),
+            rotateY: Number(element.dataset.rotateY ?? Number.NaN),
+            rotateZ: Number(element.dataset.rotateZ ?? Number.NaN),
+        };
+    }), []);
+}
+
+async function sampleVisibleBoardDieCount(page: Page, durationMs: number): Promise<{ min: number; counts: number[] }> {
+    return await page.evaluate(async (duration) => {
+        const counts: number[] = [];
+        const startedAt = performance.now();
+        while (performance.now() - startedAt < duration) {
+            counts.push(document.querySelectorAll(
+                '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+            ).length);
+            await new Promise((resolve) => window.setTimeout(resolve, 50));
+        }
+        return {
+            min: counts.length > 0 ? Math.min(...counts) : 0,
+            counts,
+        };
+    }, durationMs);
+}
+
 function getVisualMoveDistance(current: DiceRectSnapshot, baseline: DiceRectSnapshot | undefined): number {
     if (
         current.x === null
@@ -296,6 +378,140 @@ function getVisualMoveDistance(current: DiceRectSnapshot, baseline: DiceRectSnap
 }
 
 test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
+    test('手机横屏投掷结束后 3D 骰子仍留在棋盘投骰区', async ({ page, game }, testInfo) => {
+        await page.setViewportSize({ width: 844, height: 390 });
+        await page.addInitScript((storageKey) => {
+            localStorage.setItem(storageKey, 'true');
+            localStorage.setItem('hud_fab_position', JSON.stringify({
+                leftPercent: 0.82,
+                topPercent: 0.66,
+            }));
+        }, BOARD_DICE_3D_STORAGE_KEY);
+
+        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: [],
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 0,
+                rollLimit: 3,
+                rollConfirmed: false,
+                dice: [
+                    { id: 0, value: 1, isKept: false, definitionId: 'monk-dice' },
+                    { id: 1, value: 2, isKept: false, definitionId: 'monk-dice' },
+                    { id: 2, value: 3, isKept: false, definitionId: 'monk-dice' },
+                    { id: 3, value: 4, isKept: false, definitionId: 'monk-dice' },
+                    { id: 4, value: 5, isKept: false, definitionId: 'monk-dice' },
+                ],
+            },
+        });
+
+        await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([1, 2, 3, 4, 5]);
+        });
+
+        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]').first();
+        await expect(rollButton).toBeVisible({ timeout: 10000 });
+        await rollButton.click();
+
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('dicethrone-board-dice-box-canvas')).toBeVisible({ timeout: 8000 });
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state?.core?.rollCount ?? null;
+        }, { timeout: 8000 }).toBe(1);
+
+        await waitForBoardDiceSettled(page);
+        await expect(page.locator(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )).toHaveCount(5);
+        const settledRects = await readVisibleBoardDieRects(page);
+        await page.waitForTimeout(520);
+        const postSettleRects = await readVisibleBoardDieRects(page);
+        const maxPostSettleMove = Math.max(
+            ...postSettleRects.map((rect) => getVisualMoveDistance(
+                rect,
+                settledRects.find((candidate) => candidate.dieId === rect.dieId),
+            )),
+        );
+        expect(maxPostSettleMove).toBeLessThanOrEqual(8);
+
+        const layout = await page.evaluate(() => {
+            const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+            const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+            if (!stage || !canvas) return null;
+            const stageRect = stage.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const diceRects = Array.from(stage.querySelectorAll('[data-testid^="die-button-"]'))
+                .map((node) => {
+                    const rect = (node as HTMLElement).getBoundingClientRect();
+                    return {
+                        left: rect.left,
+                        top: rect.top,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        width: rect.width,
+                        height: rect.height,
+                    };
+                });
+            return {
+                stage: {
+                    left: stageRect.left,
+                    top: stageRect.top,
+                    right: stageRect.right,
+                    bottom: stageRect.bottom,
+                    width: stageRect.width,
+                    height: stageRect.height,
+                },
+                canvas: {
+                    left: canvasRect.left,
+                    top: canvasRect.top,
+                    right: canvasRect.right,
+                    bottom: canvasRect.bottom,
+                    width: canvasRect.width,
+                    height: canvasRect.height,
+                },
+                diceRects,
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                },
+            };
+        });
+
+        expect(layout).not.toBeNull();
+        expect(layout?.stage.width).toBeGreaterThan(180);
+        expect(layout?.stage.height).toBeGreaterThan(180);
+        expect(layout?.stage.right).toBeGreaterThan(0);
+        expect(layout?.stage.left).toBeLessThan(layout?.viewport.width ?? 0);
+        expect(layout?.stage.bottom).toBeGreaterThan(0);
+        expect(layout?.stage.top).toBeLessThan(layout?.viewport.height ?? 0);
+        expect(layout?.canvas.width).toBeGreaterThan(120);
+        expect(layout?.canvas.height).toBeGreaterThan(120);
+        for (const rect of layout?.diceRects ?? []) {
+            expect(rect.width).toBeGreaterThan(28);
+            expect(rect.height).toBeGreaterThan(28);
+            expect(rect.right).toBeGreaterThan(0);
+            expect(rect.left).toBeLessThan(layout?.viewport.width ?? 0);
+            expect(rect.bottom).toBeGreaterThan(0);
+            expect(rect.top).toBeLessThan(layout?.viewport.height ?? 0);
+        }
+
+        await saveBoardDiceStageScreenshot(page, '00-手机横屏投掷结束后-3D骰子仍可见-局部', testInfo);
+        await game.screenshot('00-手机横屏投掷结束后-3D骰子仍可见', testInfo);
+    });
+
     test('设置面板 3D 骰子开关点击前后应真实切换', async ({ page, game }, testInfo) => {
         await page.addInitScript((storageKey) => {
             localStorage.removeItem(storageKey);
@@ -481,7 +697,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         });
     });
 
-    test('开启 3D 后锁定骰子应回到右侧传统骰盘，不留在棋盘内', async ({ page, game }, testInfo) => {
+    test('开启 3D 后锁定骰子仍留在棋盘骰台且右侧旧骰盘不重复出现', async ({ page, game }, testInfo) => {
         await page.addInitScript((storageKey) => {
             localStorage.setItem(storageKey, 'true');
             localStorage.setItem('hud_fab_position', JSON.stringify({
@@ -524,15 +740,158 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
 
         const firstBoardDie = page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]');
         await expect(firstBoardDie).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('card-spotlight-overlay')).toHaveCount(0, { timeout: 5000 });
+        const hitLayer = page.getByTestId('dicethrone-board-dice-hit-layer');
+        await hitLayer.hover({ position: { x: 12, y: 12 } });
+        await expect.poll(async () => await hitLayer.evaluate((node) => window.getComputedStyle(node).cursor)).toContain('pointer');
         await clickBoardDieCenter(page, 0);
 
-        await expect(page.getByTestId('locked-die-return-0')).toBeVisible({ timeout: 1500 });
-        await expect(page.locator('[data-tutorial-id="dice-tray"]')).toBeVisible({ timeout: 5000 });
-        const railFirstDie = page.locator('[data-tutorial-id="dice-tray"] [data-testid="die-button-0"]');
-        await expect(railFirstDie).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(4);
-        await game.screenshot('06-开启3D后锁定骰子回到右侧骰盘', testInfo);
+        await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
+        await expect(page.getByTestId('locked-die-return-0')).toHaveCount(0);
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toHaveCount(1);
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toHaveAttribute('data-clickable', 'true');
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toHaveAttribute('data-selected', 'false');
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toContainText(/锁定|Locked/i);
+
+        const layerState = await page.evaluate(() => {
+            const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+            const hitLayer = document.querySelector('[data-testid="dicethrone-board-dice-hit-layer"]') as HTMLElement | null;
+            const die = document.querySelector('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]') as HTMLElement | null;
+            const stageRect = stage?.getBoundingClientRect();
+            const dieRect = die?.getBoundingClientRect();
+            const centerX = dieRect ? dieRect.left + dieRect.width / 2 : 0;
+            const centerY = dieRect ? dieRect.top + dieRect.height / 2 : 0;
+            const topElement = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
+            return {
+                stageZIndex: stage ? Number(window.getComputedStyle(stage).zIndex) : 0,
+                hitCursor: hitLayer ? window.getComputedStyle(hitLayer).cursor : '',
+                dieTop: dieRect?.top ?? 0,
+                dieLeft: dieRect?.left ?? 0,
+                dieRight: dieRect?.right ?? 0,
+                dieBottom: dieRect?.bottom ?? 0,
+                stageTop: stageRect?.top ?? 0,
+                stageLeft: stageRect?.left ?? 0,
+                stageRight: stageRect?.right ?? 0,
+                stageBottom: stageRect?.bottom ?? 0,
+                topTestId: topElement?.dataset.testid ?? topElement?.closest('[data-testid]')?.getAttribute('data-testid') ?? '',
+            };
+        });
+        expect(layerState.stageZIndex).toBeGreaterThan(600);
+        expect(layerState.hitCursor).toContain('pointer');
+        expect(layerState.dieTop).toBeGreaterThanOrEqual(layerState.stageTop - 1);
+        expect(layerState.dieLeft).toBeGreaterThanOrEqual(layerState.stageLeft - 1);
+        expect(layerState.dieRight).toBeLessThanOrEqual(layerState.stageRight + 1);
+        expect(layerState.dieBottom).toBeLessThanOrEqual(layerState.stageBottom + 1);
+        expect(layerState.topTestId).toMatch(/dicethrone-board-dice-hit-layer|die-button-0/);
+        await expect(page.getByTestId('die-locked-ring-0')).toBeVisible({ timeout: 2000 });
+
+        await game.screenshot('06-开启3D后锁定骰子仍留在棋盘骰台', testInfo);
+    });
+
+    test('开启 3D 后锁定骰子再次投掷时保持原位且不消失', async ({ page, game }, testInfo) => {
+        await page.addInitScript((storageKey) => {
+            localStorage.setItem(storageKey, 'true');
+            localStorage.setItem('hud_fab_position', JSON.stringify({
+                leftPercent: 0.82,
+                topPercent: 0.66,
+            }));
+        }, BOARD_DICE_3D_STORAGE_KEY);
+
+        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: false,
+                dice: [
+                    { id: 0, value: 1, isKept: false },
+                    { id: 1, value: 2, isKept: false },
+                    { id: 2, value: 3, isKept: false },
+                    { id: 3, value: 4, isKept: false },
+                    { id: 4, value: 5, isKept: false },
+                ],
+            },
+        });
+
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+        await waitForBoardDiceSettled(page);
+
+        const lockedDie = page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]');
+        await expect(lockedDie).toHaveAttribute('data-display-value', '1');
+        const beforeLockDebug = await readBoardDieHitDebug(page, 0);
+        await clickBoardDieCenter(page, 0);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state?.core?.dice?.find((die: { id: number }) => die.id === 0)?.isKept ?? null;
+        }, {
+            message: `点击 3D 骰子后未进入锁定状态: ${JSON.stringify(beforeLockDebug)}`,
+            timeout: 2000,
+        }).toBe(true);
+        await expect(page.getByTestId('die-locked-ring-0')).toBeVisible({ timeout: 2000 });
+        await expect(lockedDie).toContainText(/锁定|Locked/i);
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+        await waitForBoardDiceSettled(page);
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+
+        const lockedBeforeRoll = (await readBoardDieRects(page, [0]))[0];
+        const unlockedBeforeRoll = await readBoardDieRects(page, [1, 2, 3, 4]);
+
+        await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([6, 5, 4, 3]);
+        });
+
+        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]').first();
+        await expect(rollButton).toBeEnabled({ timeout: 5000 });
+        await rollButton.click();
+
+        await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+        await expect(page.getByTestId('die-locked-ring-0')).toBeVisible({ timeout: 2000 });
+        await expect(lockedDie).toHaveAttribute('data-display-value', '1');
+
+        const visibleCountDuringReroll = await sampleVisibleBoardDieCount(page, 1200);
+        expect(visibleCountDuringReroll.min, `锁定后再次投掷期间不允许出现全部骰子消失: ${visibleCountDuringReroll.counts.join(',')}`).toBe(5);
+
+        await expect.poll(async () => {
+            const currentRects = await readBoardDieRects(page, [1, 2, 3, 4]);
+            return Math.max(
+                ...currentRects.map((position, posIndex) => getVisualMoveDistance(position, unlockedBeforeRoll[posIndex])),
+            );
+        }, {
+            timeout: 2500,
+            intervals: [80, 120, 180, 240],
+        }).toBeGreaterThan(12);
+
+        await waitForBoardDiceSettled(page);
+        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
+        const lockedAfterRoll = (await readBoardDieRects(page, [0]))[0];
+        const lockedMoveDistance = getVisualMoveDistance(lockedAfterRoll, lockedBeforeRoll);
+        expect(lockedMoveDistance).toBeLessThanOrEqual(8);
+        await expect(lockedDie).toHaveAttribute('data-display-value', '1');
+        await expect(page.getByTestId('die-locked-ring-0')).toBeVisible();
+
+        const stateAfterRoll = await game.getState();
+        expect(stateAfterRoll?.core?.dice?.find((die: { id: number }) => die.id === 0)).toMatchObject({
+            id: 0,
+            value: 1,
+            isKept: true,
+        });
+
+        await game.screenshot('07-锁定后再次投掷-锁定骰子保持原位', testInfo);
     });
 
     test('对方投掷阶段我方响应改骰时，关闭 3D 仍走右侧骰盘，开启后才切到棋盘骰台', async ({ page, game }, testInfo) => {

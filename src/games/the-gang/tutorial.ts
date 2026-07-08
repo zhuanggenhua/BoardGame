@@ -52,7 +52,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'table-response',
             content: 'game-the-gang:tutorial.steps.tableResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
@@ -88,7 +88,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'yellow-response',
             content: 'game-the-gang:tutorial.steps.yellowResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
@@ -124,7 +124,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'orange-response',
             content: 'game-the-gang:tutorial.steps.orangeResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
@@ -152,7 +152,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'final-response',
             content: 'game-the-gang:tutorial.steps.finalResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],

@@ -23,6 +23,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: false,
+        defaultLocalAiSeats: 'all-opponents',
     },
 };
 

@@ -31,6 +31,8 @@ export interface DiceBoxStyleProfile {
     strength?: number;
     iterationLimit?: number;
     arrangeSettledDice?: boolean;
+    worldWidthScale?: number;
+    worldHeightScale?: number;
 }
 
 export interface DiceBoxDieSkin {
@@ -66,6 +68,45 @@ type DiceBoxInternalRuntime = InstanceType<typeof DiceBoxModule> & {
     spawnDice?: (vector: unknown, die?: DiceBoxDie) => void;
     simulateThrow?: () => void;
     steps?: number;
+};
+
+type DiceBoxVectorLike = {
+    x: number;
+    y: number;
+    z: number;
+    set?: (x: number, y: number, z: number) => void;
+};
+
+type DiceBoxQuaternionLike = {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    copy?: (quaternion: DiceBoxQuaternionLike) => void;
+    set?: (x: number, y: number, z: number, w: number) => void;
+};
+
+type DiceBoxBodyLike = {
+    position?: DiceBoxVectorLike;
+    quaternion?: DiceBoxQuaternionLike;
+    velocity?: DiceBoxVectorLike;
+    angularVelocity?: DiceBoxVectorLike;
+    type?: number;
+    mass?: number;
+    updateMassProperties?: () => void;
+    wakeUp?: () => void;
+    sleep?: () => void;
+};
+
+type DiceBoxDieWithBody = DiceBoxDie & {
+    body?: DiceBoxBodyLike;
+};
+
+type DiceBoxDieTransformSnapshot = {
+    position: { x: number; y: number; z: number };
+    quaternion: { x: number; y: number; z: number; w: number };
+    bodyType?: number;
+    bodyMass?: number;
 };
 
 const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
@@ -198,6 +239,9 @@ export class DiceBoxThreeEngine {
 
     destroy(): void {
         this.box.clearDice();
+        this.disposeSceneResources();
+        this.box.renderer?.dispose?.();
+        this.box.renderer?.forceContextLoss?.();
         const canvas = this.box.renderer?.domElement;
         if (canvas?.parentElement === this.container) {
             this.container.removeChild(canvas);
@@ -205,10 +249,22 @@ export class DiceBoxThreeEngine {
     }
 
     resize(): void {
+        const worldWidthScale = this.styleProfile.worldWidthScale ?? 1;
+        const worldHeightScale = this.styleProfile.worldHeightScale ?? 1;
+        const worldWidth = this.container.clientWidth * worldWidthScale;
+        const worldHeight = this.container.clientHeight * worldHeightScale;
         this.box.setDimensions({
-            x: this.container.clientWidth,
-            y: this.container.clientHeight,
+            x: worldWidth,
+            y: worldHeight,
         });
+
+        const canvas = this.box.renderer?.domElement;
+        if (canvas) {
+            canvas.dataset.worldWidthScale = String(worldWidthScale);
+            canvas.dataset.worldHeightScale = String(worldHeightScale);
+            canvas.dataset.physicsWorldWidth = String(Math.round(worldWidth));
+            canvas.dataset.physicsWorldHeight = String(Math.round(worldHeight));
+        }
     }
 
     async rollToValues(values: number[]): Promise<void> {
@@ -234,11 +290,18 @@ export class DiceBoxThreeEngine {
         this.syncValues(values);
     }
 
-    async rerollToValues(indices: number[], values: number[]): Promise<void> {
+    async rerollToValues(indices: number[], values: number[], lockedIndices: number[] = []): Promise<void> {
         if (indices.length === 0) return;
-        await this.box.reroll(indices);
-        this.applyValues(values, indices, true);
-        this.applyCurrentSkins();
+        const lockedSnapshots = this.captureDieTransforms(lockedIndices);
+        this.freezeDice(lockedSnapshots);
+        try {
+            await this.box.reroll(indices);
+            this.restoreDieTransforms(lockedSnapshots, true);
+            this.applyValues(values, indices, true);
+            this.applyCurrentSkins();
+        } finally {
+            this.restoreDieTransforms(lockedSnapshots, false);
+        }
     }
 
     async removeDice(indices: number[]): Promise<void> {
@@ -357,19 +420,23 @@ export class DiceBoxThreeEngine {
 
         const width = Math.max(40, maxX - minX);
         const height = Math.max(40, maxY - minY);
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
 
         const layoutYaw = SETTLED_DICE_LAYOUT[index]?.yaw;
 
         return {
             id,
-            x: (minX + maxX) / 2,
-            y: (minY + maxY) / 2,
+            x: centerX,
+            y: centerY,
             width,
             height,
-            minX,
-            maxX,
-            minY,
-            maxY,
+            minX: centerX - halfWidth,
+            maxX: centerX + halfWidth,
+            minY: centerY - halfHeight,
+            maxY: centerY + halfHeight,
             rotateX: die.rotation.x,
             rotateY: die.rotation.y,
             rotateZ: layoutYaw ?? die.rotation.z,
@@ -396,6 +463,139 @@ export class DiceBoxThreeEngine {
         if (didChange) {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
+    }
+
+    private captureDieTransforms(indices: number[]): Map<number, DiceBoxDieTransformSnapshot> {
+        const snapshots = new Map<number, DiceBoxDieTransformSnapshot>();
+        for (const index of indices) {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            if (!die) continue;
+            const quaternion = die.quaternion as DiceBoxQuaternionLike | undefined;
+            snapshots.set(index, {
+                position: {
+                    x: die.position.x,
+                    y: die.position.y,
+                    z: die.position.z,
+                },
+                quaternion: {
+                    x: quaternion?.x ?? 0,
+                    y: quaternion?.y ?? 0,
+                    z: quaternion?.z ?? 0,
+                    w: quaternion?.w ?? 1,
+                },
+                bodyType: die.body?.type,
+                bodyMass: die.body?.mass,
+            });
+        }
+        return snapshots;
+    }
+
+    private freezeDice(snapshots: Map<number, DiceBoxDieTransformSnapshot>): void {
+        snapshots.forEach((snapshot, index) => {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            if (!die?.body) return;
+            this.applyDieTransform(die, snapshot);
+            die.body.type = 2;
+            die.body.mass = 0;
+            die.body.updateMassProperties?.();
+            die.body.sleep?.();
+        });
+    }
+
+    private restoreDieTransforms(snapshots: Map<number, DiceBoxDieTransformSnapshot>, keepFrozen: boolean): void {
+        snapshots.forEach((snapshot, index) => {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            if (!die) return;
+            this.applyDieTransform(die, snapshot);
+            if (die.body && !keepFrozen) {
+                if (typeof snapshot.bodyType === 'number') {
+                    die.body.type = snapshot.bodyType;
+                }
+                if (typeof snapshot.bodyMass === 'number') {
+                    die.body.mass = snapshot.bodyMass;
+                }
+                die.body.updateMassProperties?.();
+                die.body.wakeUp?.();
+            }
+        });
+        if (snapshots.size > 0) {
+            this.box.renderer.render(this.box.scene, this.box.camera);
+        }
+    }
+
+    private applyDieTransform(die: DiceBoxDieWithBody, snapshot: DiceBoxDieTransformSnapshot): void {
+        die.position.set?.(snapshot.position.x, snapshot.position.y, snapshot.position.z);
+        die.position.x = snapshot.position.x;
+        die.position.y = snapshot.position.y;
+        die.position.z = snapshot.position.z;
+
+        const dieQuaternion = die.quaternion as DiceBoxQuaternionLike | undefined;
+        this.setQuaternion(dieQuaternion, snapshot.quaternion);
+
+        if (die.body) {
+            this.setVector(die.body.position, snapshot.position);
+            this.setQuaternion(die.body.quaternion, snapshot.quaternion);
+            this.setVector(die.body.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+        }
+        die.updateMatrixWorld?.(true);
+    }
+
+    private setVector(vector: DiceBoxVectorLike | undefined, value: { x: number; y: number; z: number }): void {
+        if (!vector) return;
+        vector.set?.(value.x, value.y, value.z);
+        vector.x = value.x;
+        vector.y = value.y;
+        vector.z = value.z;
+    }
+
+    private setQuaternion(
+        quaternion: DiceBoxQuaternionLike | undefined,
+        value: { x: number; y: number; z: number; w: number },
+    ): void {
+        if (!quaternion) return;
+        quaternion.set?.(value.x, value.y, value.z, value.w);
+        quaternion.x = value.x;
+        quaternion.y = value.y;
+        quaternion.z = value.z;
+        quaternion.w = value.w;
+    }
+
+    private disposeSceneResources(): void {
+        const scene = this.box.scene;
+        if (!scene?.traverse) return;
+
+        scene.traverse((object: unknown) => {
+            const candidate = object as {
+                geometry?: { dispose?: () => void };
+                material?: unknown;
+            };
+            candidate.geometry?.dispose?.();
+
+            const materials = Array.isArray(candidate.material)
+                ? candidate.material
+                : [candidate.material];
+            for (const material of materials) {
+                const disposable = material as {
+                    dispose?: () => void;
+                    map?: { dispose?: () => void };
+                    normalMap?: { dispose?: () => void };
+                    roughnessMap?: { dispose?: () => void };
+                    metalnessMap?: { dispose?: () => void };
+                    emissiveMap?: { dispose?: () => void };
+                    bumpMap?: { dispose?: () => void };
+                    alphaMap?: { dispose?: () => void };
+                } | undefined;
+                disposable?.map?.dispose?.();
+                disposable?.normalMap?.dispose?.();
+                disposable?.roughnessMap?.dispose?.();
+                disposable?.metalnessMap?.dispose?.();
+                disposable?.emissiveMap?.dispose?.();
+                disposable?.bumpMap?.dispose?.();
+                disposable?.alphaMap?.dispose?.();
+                disposable?.dispose?.();
+            }
+        });
     }
 
     private restoreDiceWithoutVisibleThrow(values: number[]): void {

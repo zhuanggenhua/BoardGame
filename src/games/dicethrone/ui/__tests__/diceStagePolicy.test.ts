@@ -63,11 +63,11 @@ describe('diceStagePolicy', () => {
         })).toBe(true);
     });
 
-    it('棋盘 3D 开启且已有锁定骰子时，右侧传统骰盘仍应继续显示', () => {
+    it('棋盘 3D 开启且已有锁定骰子时，右侧传统骰盘仍应隐藏', () => {
         expect(shouldShowRailDiceTray({
             useBoardDiceStage: true,
             hasKeptDice: true,
-        })).toBe(true);
+        })).toBe(false);
     });
 
     it('棋盘 3D 开启且没有锁定骰子时，右侧传统骰盘应隐藏', () => {
@@ -77,14 +77,12 @@ describe('diceStagePolicy', () => {
         })).toBe(false);
     });
 
-    it('棋盘 3D 开启时，右侧传统骰盘只应承接已锁定骰子', () => {
+    it('棋盘 3D 开启时，右侧传统骰盘不再承接锁定骰子', () => {
         expect(getRailDiceForCurrentBoard([
             { id: 0, value: 1, isKept: false },
             { id: 1, value: 2, isKept: true },
             { id: 2, value: 3, isKept: false },
-        ] as any, true)).toMatchObject([
-            { id: 1, isKept: true },
-        ]);
+        ] as any, true)).toEqual([]);
     });
 
     it('棋盘 3D 关闭时，右侧传统骰盘应继续显示全部骰子', () => {

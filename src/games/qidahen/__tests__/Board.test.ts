@@ -398,6 +398,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("if (tutorialStepId !== 'choose-grant-pardon-target') {");
         expect(boardSource).toContain("applyTone(choice.sourceRegionId, 'source');");
         expect(boardSource).toContain("applyTone(choice.targetRegionId, 'dispatch');");
+        expect(boardSource).not.toContain('const wheelDispatchCandidateRegionIds = new Set(');
+        expect(boardSource).not.toContain("candidate.targetRuntimeRegionId === wheelDispatchActiveTargetRegionId ? 'activeDispatch' : 'dispatch'");
+        expect(boardSource).not.toContain("applyTone(\\n                    candidate.targetRuntimeRegionId,");
         expect(boardSource).toContain('const mapSelectionGuideUsesRegionHighlight = grantPardonSelection != null');
         expect(boardSource).toContain("|| tutorialStepId === 'choose-grant-pardon-target';");
         expect(boardSource).toContain('const mapSelectionGuideDrawsRoute = mapSelectionGuide != null && !mapSelectionGuideUsesRegionHighlight;');
@@ -406,7 +409,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-tutorial-id={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}');
         expect(boardSource).toContain("topLevelMapSelectionGuide && tutorialStep?.id !== 'choose-grant-pardon-target'");
         expect(boardSource).toContain('const buildQidahenFocusedMapViewport = (');
-        expect(boardSource).toContain('const autoFocusMapCandidate = topLevelMapSelectionGuide?.candidates.length === 1');
+        expect(boardSource).toContain('const buildQidahenFocusedMapViewportForPoints = (');
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIds = React.useMemo(');
+        expect(boardSource).toContain('const focusRegionIds = [');
+        expect(boardSource).toContain('const viewport = buildQidahenFocusedMapViewportForPoints(points);');
         expect(boardSource).not.toContain("const isGrantPardonTarget = candidate.action === 'grant-pardon';");
         expect(boardSource).not.toContain('data-testid={`qidahen-map-guide-target-label-${candidate.targetRegionId}`}');
         expect(boardSource).toContain('sr-only');
@@ -496,6 +502,19 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('onViewportChange={setMapViewport}');
         expect(boardSource).toContain('const buildQidahenGuideDisplayPoints = (');
         expect(boardSource).toContain('const buildQidahenGuideArrowHeadPath = (');
+        expect(boardSource).toContain('const getGuideArmyTokenPoint = (');
+        expect(boardSource).toContain('const getWheelDispatchTargetPoint = (candidate: QidahenWheelDispatchSelection[\'candidates\'][number]) => (');
+        expect(boardSource).toContain('getGuideArmyTokenPoint(candidate.targetRuntimeRegionId, candidate.defenderFactionId)');
+        expect(boardSource).toContain('const center = {');
+        expect(boardSource).toContain('const arrowTip = { x: center.x + unitX * (length * 0.78), y: center.y + unitY * (length * 0.78) };');
+        expect(boardSource).toContain('const leftTail = {');
+        expect(boardSource).toContain('const rightTail = {');
+        expect(boardSource).toContain('`Q ${leftShoulder.x} ${leftShoulder.y} ${arrowTip.x} ${arrowTip.y}`');
+        expect(boardSource).toContain("'Z',");
+        expect(boardSource).toContain('fill="none"');
+        expect(boardSource).toContain('vectorEffect="non-scaling-stroke"');
+        expect(boardSource).toContain('const curveLift = Math.min(108, Math.max(34, distance * 0.14));');
+        expect(boardSource).toContain('return `M ${start.x} ${start.y} C ${control1.x} ${control1.y} ${control2.x} ${control2.y} ${end.x} ${end.y}`;');
         expect(boardSource).toContain('data-guide-target-x={targetPoint.x}');
         expect(boardSource).toContain('data-guide-target-y={targetPoint.y}');
         expect(boardSource).toContain('data-testid={`qidahen-map-guide-arrow-head-${candidate.targetRegionId}`}');
@@ -592,8 +611,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('|| khanEdictSelection != null');
         expect(boardSource).toContain('|| diplomacySelection != null');
         expect(boardSource).toContain('compactRegionTip={compactMapRegionTip}');
-        expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;");
-        expect(boardSource).toContain("const focusedRegion = hoveredRegion ?? displaySelectedRegion;");
+        expect(boardSource).toContain("const pendingCommittedSelectionActive = activeCommittedMax > 0");
+        expect(boardSource).toContain("&& (pendingTargetAction != null || wheelDispatchSelection != null);");
+        expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
+        expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");
+        expect(boardSource).toContain("const focusedRegion = displayHoveredRegion ?? displaySelectedRegion;");
         expect(boardSource).toContain('if (compactRegionTip && core.explicitRegionId) {');
         expect(boardSource).toContain('const selectedRegion = core.explicitRegionId');
         expect(boardSource).toContain('data-map-selected={core.explicitRegionId ?? \'\'}');
@@ -657,18 +679,18 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('applyTone(region.id, region.controller);');
     });
 
-    it('地图 army token 会拆成可旋转的方块棋子，非部队图片 token 才保留数量徽标', () => {
+    it('地图 army token 会拆成可旋转的方块棋子，人口不生成额外地图 token', () => {
         expect(boardSource).toContain("const isArmyToken = token.type === 'army';");
-        expect(boardSource).toContain("const isPopulationToken = token.type === 'population';");
+        expect(boardSource).not.toContain("const isPopulationToken = token.type === 'population';");
         expect(boardSource).toContain("rounded-[6px]");
-        expect(boardSource).toContain("const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : (token.type === 'control' || isPopulationToken) ? 'rounded-full' : '';");
+        expect(boardSource).toContain("const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : token.type === 'control' ? 'rounded-full' : '';");
         expect(boardSource).toContain("const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';");
-        expect(boardSource).toContain("const showTokenImage = Boolean(token.imageSrc) && !isPopulationToken && (!isArmyToken || revealFront);");
-        expect(boardSource).toContain('className="absolute inset-0 grid place-items-center text-[12px] font-black leading-none"');
+        expect(boardSource).toContain("const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);");
+        expect(boardSource).not.toContain(') : isPopulationToken ? (');
         expect(boardSource).toContain("rotate(${token.rotationDeg ?? 0}deg)");
-        expect(mapTokenSource).toContain("type: 'population',");
-        expect(mapTokenSource).toContain('value: region.population,');
-        expect(mapTokenSource).toContain('size: 28,');
+        expect(mapTokenSource).not.toContain("type: 'population',");
+        expect(typesSource).not.toContain("type: 'army' | 'population' | 'control' | 'marker';");
+        expect(typesSource).toContain("type: 'army' | 'control' | 'marker';");
         expect(mapTokenSource).not.toContain('populationMarkerImageSrc');
     });
 
@@ -681,17 +703,44 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const buildRevealedBattleRegionIds = (');
         expect(boardSource).toContain('pendingTargetAction?.targetRuntimeRegionId,');
         expect(boardSource).toContain('postBattleSelection?.targetRuntimeRegionId,');
-        expect(boardSource).toContain('const showTokenImage = Boolean(token.imageSrc) && !isPopulationToken && (!isArmyToken || revealFront);');
+        expect(boardSource).toContain('const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);');
         expect(boardSource).toContain('data-qidahen-army-face="hidden-back"');
         expect(boardSource).toContain("aria-label={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}");
-        expect(boardSource).toContain("armyBackMarker: 'qidahen/markers/blank-rectangular-marker'");
-        expect(boardSource).toContain('src={ASSETS.armyBackMarker}');
-        expect(boardSource).toContain("alt={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}");
-        expect(boardSource).toContain('revealFront={shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)}');
+        expect(boardSource).toContain("const armyHiddenBackColorByFaction: Record<QidahenFactionId | 'neutral', string> = {");
+        expect(boardSource).toContain('background: armyHiddenBackColorByFaction[token.faction]');
+        expect(boardSource).not.toContain('opacity: 0.46');
+        expect(boardSource).not.toContain('grayscale(0.42)');
+        expect(boardSource).not.toContain("armyBackMarker: 'qidahen/markers/blank-rectangular-marker'");
+        expect(boardSource).not.toContain('src={ASSETS.armyBackMarker}');
+        expect(boardSource).not.toContain('qidahen/markers/blank-rectangular-marker');
+        expect(boardSource).not.toContain('qidahen/cards/backs/army');
         expect(boardSource).not.toContain('HIDDEN_ARMY_BACK_BY_FACTION');
+        expect(boardSource).toContain('revealFront={shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)}');
         expect(boardSource).not.toContain("src={ASSETS.mingCard}");
         expect(boardSource).not.toContain("src={ASSETS.mongolCard}");
         expect(boardSource).not.toContain("src={ASSETS.jinCard}");
+    });
+
+    it('选择参与部队必须在军队本体上给绿色邀请态和已选确认态', () => {
+        expect(boardSource).toContain('const pendingCommittedTone = pendingCommittedSelected');
+        expect(boardSource).toContain("boxShadow: '0 0 0 1px rgba(29, 83, 36, 0.6), 0 0 5px rgba(91, 215, 101, 0.28)'");
+        expect(boardSource).toContain("boxShadow: '0 0 0 1px rgba(29, 83, 36, 0.72), 0 0 7px rgba(112, 238, 124, 0.34)'");
+        expect(boardSource).toContain('data-testid={`qidahen-pending-committed-highlight-${token.id}`}');
+        expect(boardSource).toContain("className={`pointer-events-none absolute inset-[-2px] ${tokenShapeClass}`}");
+        expect(boardSource).toContain("border: pendingCommittedSelected ? '1.5px solid #8cf694' : '1.5px solid #69d873'");
+        expect(boardSource).toContain("background: pendingCommittedSelected ? 'rgba(101, 255, 128, 0.045)' : 'rgba(87, 240, 103, 0.028)'");
+        expect(boardSource).toContain('zIndex: Math.max(pendingCommittedSelectable ? 64 : 0, guideTargetTone?.zIndex ?? 0) || undefined');
+        expect(boardSource).toContain('className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
+        expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
+        expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");
+        expect(boardSource).toContain("className={`${pendingCommittedSelectable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}");
+        expect(boardSource).toContain('data-pending-committed-selectable={pendingCommittedSelectable ?');
+        expect(boardSource).toContain('data-pending-committed-selected={pendingCommittedSelectable ? String(pendingCommittedSelected) : undefined}');
+        expect(boardSource).toContain("role={pendingCommittedSelectable ? 'button' : undefined}");
+        expect(boardSource).toContain('aria-pressed={pendingCommittedSelectable ? pendingCommittedSelected : undefined}');
+        expect(boardSource).toContain('onSelectPendingCommittedTroops?.(token.troopIndex!)');
+        expect(boardSource).not.toContain('opacity: 0.46');
+        expect(boardSource).not.toContain('grayscale(0.42)');
     });
 
     it('pending-target 按钮 test id 继续由共享选择渲染统一生成', () => {
@@ -701,6 +750,43 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("return 'qidahen-resolve-pending-action-cavalry-plunder';");
         expect(boardSource).toContain("return 'qidahen-resolve-pending-action-cavalry-plunder-defender';");
         expect(boardSource).toContain("return `qidahen-resolve-pending-action-${choiceId}`;");
+    });
+
+    it('地图进攻指引箭头必须停在目标边缘而不是扎进区域中心', () => {
+        expect(boardSource).toContain(': mapSelectionGuide?.candidates[0]?.targetRegionId ?? null;');
+        expect(boardSource).toContain('const activeGuideTargetCandidate = mapSelectionGuide?.candidates.find');
+        expect(boardSource).toContain('const mapSelectionBannerHint = activeGuideTargetCandidate');
+        expect(boardSource).toContain('当前目标：${activeGuideTargetCandidate.targetRegionName}');
+        expect(boardSource).toContain('{mapSelectionBannerHint}');
+        expect(boardSource).toContain('const sourcePoint = getGuideArmyTokenPoint(');
+        expect(boardSource).toContain('pendingCommittedTroops,');
+        expect(boardSource).toContain('const targetPoint = getWheelDispatchTargetPoint(candidate);');
+        expect(boardSource).toContain('const guideTargetTone = guideTargeted');
+        expect(boardSource).toContain('data-testid={`qidahen-map-guide-token-target-${token.id}`}');
+        expect(boardSource).toContain('targetTokenIds: targetTokens.map((token) => token.id)');
+        expect(boardSource).toContain('targetTokenBounds: targetTokenBounds ?? undefined');
+        expect(boardSource).toContain('const targetPathEndPoint = targetTokenBounds');
+        expect(boardSource).toContain('? { x: targetTokenBounds.left - 6, y: targetTokenBounds.center.y }');
+        expect(boardSource).toContain('guideTargeted={guideTargetedTokenIds.has(token.id)}');
+        expect(boardSource).toContain('guideTargetActive={activeGuideTargetedTokenIds.has(token.id)}');
+        expect(boardSource).toContain('const targetsArmyTokens = (candidate.targetTokenIds?.length ?? 0) > 0;');
+        expect(boardSource).toContain('offsetQidahenGuideEndPoint(pathPoints, targetsArmyTokens ? 0 : activeCandidate ? 28 : 22)');
+        expect(boardSource).toContain('const linePath = buildQidahenGuideLinePath(buildQidahenGuideDisplayPoints(arrowPoints, activeCandidate ? 18 : 14));');
+        expect(boardSource).toContain('data-testid={`qidahen-map-guide-line-${candidate.targetRegionId}`}');
+        expect(boardSource).toContain('const arrowHeadPath = buildQidahenGuideArrowHeadPath(arrowPoints, activeCandidate ? 24 : 18, activeCandidate ? 9 : 6.8);');
+        expect(boardSource).not.toContain('const wheelDispatchCandidateRegionIds = new Set(');
+        expect(boardSource).toContain('const routeColor = activeCandidate ?');
+        expect(boardSource).toContain('strokeWidth={activeCandidate ? 8 : 5}');
+        expect(boardSource).toContain('opacity={activeCandidate ? 0.96 : 0.38}');
+        expect(boardSource).toContain('fill={routeColor}');
+        expect(boardSource).toContain('stroke="none"');
+        expect(boardSource).toContain('const targetFocusPadding = targetsArmyTokens ? activeCandidate ? 7 : 5 : 0;');
+        expect(boardSource).toContain('? candidate.targetTokenBounds.left - targetFocusPadding');
+        expect(boardSource).toContain('? candidate.targetTokenBounds.right + targetFocusPadding');
+        expect(boardSource).toContain('data-testid={`qidahen-map-guide-target-focus-${candidate.targetRegionId}`}');
+        expect(boardSource).toContain('vectorEffect="non-scaling-stroke"');
+        expect(boardSource).not.toContain('points={pointLabel}');
+        expect(boardSource).not.toContain('const arrowHeadPath = buildQidahenGuideArrowHeadPath(pathPoints');
     });
 
     for (const testId of REQUIRED_TEST_IDS) {

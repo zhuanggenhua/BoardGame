@@ -49,6 +49,21 @@ if (typeof window !== 'undefined') {
 
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
 
+function resolveTestPlayerNames(searchParams: URLSearchParams, numPlayers: number): Record<string, string> {
+    const names: Record<string, string> = {};
+    for (let index = 0; index < numPlayers; index += 1) {
+        const id = String(index);
+        const explicitName = searchParams.get(`player${index}Name`)
+            ?? searchParams.get(`playerName${index}`)
+            ?? searchParams.get(`p${index}Name`);
+        const trimmedName = explicitName?.trim();
+        if (trimmedName) {
+            names[id] = trimmedName;
+        }
+    }
+    return names;
+}
+
 export const TestMatchRoom: React.FC = () => {
     const { gameId } = useParams<{ gameId: string }>();
     const [searchParams] = useSearchParams();
@@ -125,6 +140,7 @@ export const TestMatchRoom: React.FC = () => {
             searchParams,
             aiSupport: gameConfig?.ai,
         });
+        const playerNames = resolveTestPlayerNames(searchParams, numPlayers);
         const setupData = buildLocalMatchSetupData(resolvedSetupSelections);
         
         return {
@@ -136,6 +152,7 @@ export const TestMatchRoom: React.FC = () => {
             skipInitialization,
             playerId,
             seatControllers,
+            playerNames,
             setupData,
         };
     }, [gameConfig, searchParams]);
@@ -309,6 +326,7 @@ export const TestMatchRoom: React.FC = () => {
                                         setupData={testConfig.setupData}
                                         onCommandRejected={handleCommandRejected}
                                         seatControllers={testConfig.seatControllers}
+                                        playerNames={testConfig.playerNames}
                                         followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
                                     >
                                         <GameHUD gameId={gameId} mode="test" />

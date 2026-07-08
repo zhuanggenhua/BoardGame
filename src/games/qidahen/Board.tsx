@@ -129,7 +129,6 @@ const ASSETS = {
     mingMarker: 'qidahen/markers/ming-control-diplomacy-marker-a',
     mongolMarker: 'qidahen/markers/mongol-control-diplomacy-marker-a',
     jinMarker: 'qidahen/markers/jin-control-diplomacy-marker-a',
-    armyBackMarker: 'qidahen/markers/blank-rectangular-marker',
 } as const;
 
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
@@ -141,6 +140,22 @@ const QIDAHEN_MAP_MIN_ZOOM = 1;
 const QIDAHEN_MAP_MAX_ZOOM = 2.25;
 
 type QidahenGuidePoint = { x: number; y: number };
+type QidahenGuideBounds = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    center: QidahenGuidePoint;
+};
+type QidahenGuideCandidate = {
+    id: string;
+    targetRegionId: string;
+    targetRegionName: string;
+    resolutionHint?: string;
+    pathPoints: QidahenGuidePoint[];
+    targetTokenIds?: string[];
+    targetTokenBounds?: QidahenGuideBounds;
+};
 
 const buildQidahenGuideDisplayPoints = (
     points: QidahenGuidePoint[],
@@ -173,6 +188,29 @@ const buildQidahenGuideDisplayPoints = (
         result.pop();
     }
     return result.length >= 2 ? result : points;
+};
+
+const offsetQidahenGuideEndPoint = (
+    points: QidahenGuidePoint[],
+    offsetLength: number,
+): QidahenGuidePoint[] => {
+    if (points.length < 2 || offsetLength <= 0) {
+        return points;
+    }
+    const result = points.map((point) => ({ ...point }));
+    const tip = result[result.length - 1];
+    const previous = result[result.length - 2];
+    const dx = tip.x - previous.x;
+    const dy = tip.y - previous.y;
+    const length = Math.hypot(dx, dy);
+    if (length <= 0) {
+        return result;
+    }
+    result[result.length - 1] = {
+        x: tip.x - (dx / length) * offsetLength,
+        y: tip.y - (dy / length) * offsetLength,
+    };
+    return result;
 };
 
 const buildQidahenGuideArrowHeadPath = (
@@ -223,6 +261,29 @@ const buildQidahenGuideArrowHeadPath = (
         `Q ${tail.x} ${tail.y} ${leftTail.x} ${leftTail.y}`,
         'Z',
     ].join(' ');
+};
+
+const buildQidahenGuideLinePath = (points: QidahenGuidePoint[]): string | null => {
+    if (points.length < 2) {
+        return null;
+    }
+    const start = points[0];
+    const end = points[points.length - 1];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    const curveLift = Math.min(108, Math.max(34, distance * 0.14));
+    const normalX = -dy / distance;
+    const normalY = dx / distance;
+    const control1 = {
+        x: start.x + dx * 0.24 + normalX * curveLift,
+        y: start.y + dy * 0.18 + normalY * curveLift,
+    };
+    const control2 = {
+        x: start.x + dx * 0.78 + normalX * (curveLift * 0.72),
+        y: start.y + dy * 0.84 + normalY * (curveLift * 0.72),
+    };
+    return `M ${start.x} ${start.y} C ${control1.x} ${control1.y} ${control2.x} ${control2.y} ${end.x} ${end.y}`;
 };
 
 const CARD_BACK_BY_FACTION: Record<QidahenFactionId, string> = {
@@ -346,6 +407,13 @@ const factionTone: Record<QidahenFactionId, { bg: string; border: string; text: 
     jin: { bg: UI_STYLE.paper, border: UI_STYLE.bronze, text: UI_STYLE.ink, chip: ASSETS.jinMarker },
 };
 
+const armyHiddenBackColorByFaction: Record<QidahenFactionId | 'neutral', string> = {
+    ming: UI_STYLE.cinnabar,
+    mongol: UI_STYLE.oldGold,
+    jin: UI_STYLE.bronze,
+    neutral: UI_STYLE.paperDeep,
+};
+
 const shouldRevealQidahenMapArmyToken = (
     token: QidahenMapToken,
     viewerFactionId: QidahenFactionId | null,
@@ -463,6 +531,31 @@ const buildQidahenFocusedMapViewport = (
         panY: (STAGE_HEIGHT / 2) - MAP_COVER_TOP - point.y * MAP_COVER_SCALE * zoom,
     })
 );
+
+const buildQidahenFocusedMapViewportForPoints = (
+    points: Array<{ x: number; y: number }>,
+    zoom: number = 1.48,
+): QidahenMapViewport | null => {
+    if (points.length <= 0) {
+        return null;
+    }
+    if (points.length === 1) {
+        return buildQidahenFocusedMapViewport(points[0], zoom);
+    }
+    const minX = Math.min(...points.map((point) => point.x));
+    const maxX = Math.max(...points.map((point) => point.x));
+    const minY = Math.min(...points.map((point) => point.y));
+    const maxY = Math.max(...points.map((point) => point.y));
+    const focusPoint = {
+        x: (minX + maxX) / 2,
+        y: (minY + maxY) / 2,
+    };
+    return clampQidahenMapViewport({
+        zoom,
+        panX: (STAGE_WIDTH / 2) - MAP_COVER_LEFT - focusPoint.x * MAP_COVER_SCALE * zoom,
+        panY: (STAGE_HEIGHT * 0.44) - MAP_COVER_TOP - focusPoint.y * MAP_COVER_SCALE * zoom,
+    });
+};
 
 const formatQidahenCandidateRegionSummary = (regionNames: string[]): string => {
     const uniqueNames = Array.from(new Set(regionNames.filter((name) => name.trim().length > 0)));
@@ -1407,29 +1500,39 @@ const MapToken: React.FC<{
     revealFront: boolean;
     pendingCommittedSelected?: boolean;
     pendingCommittedSelectable?: boolean;
+    guideTargeted?: boolean;
+    guideTargetActive?: boolean;
     onSelectPendingCommittedTroops?: (committedTroops: number) => void;
-}> = ({ token, revealFront, pendingCommittedSelected = false, pendingCommittedSelectable = false, onSelectPendingCommittedTroops }) => {
+}> = ({ token, revealFront, pendingCommittedSelected = false, pendingCommittedSelectable = false, guideTargeted = false, guideTargetActive = false, onSelectPendingCommittedTroops }) => {
     const { t } = useTranslation('game-qidahen');
     const size = token.size ?? 30;
     const tone = factionTone[token.faction === 'neutral' ? 'ming' : token.faction];
     const isArmyToken = token.type === 'army';
-    const isPopulationToken = token.type === 'population';
-    const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : (token.type === 'control' || isPopulationToken) ? 'rounded-full' : '';
+    const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : token.type === 'control' ? 'rounded-full' : '';
     const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';
-    const showTokenImage = Boolean(token.imageSrc) && !isPopulationToken && (!isArmyToken || revealFront);
+    const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);
     const pendingCommittedTone = pendingCommittedSelected
         ? {
             opacity: 1,
-            boxShadow: '0 0 0 4px rgba(77, 157, 78, 0.88)',
-            filter: 'brightness(1.08) saturate(1.08)',
+            boxShadow: '0 0 0 1px rgba(29, 83, 36, 0.72), 0 0 7px rgba(112, 238, 124, 0.34)',
+            filter: 'brightness(1.07) saturate(1.08)',
         }
         : pendingCommittedSelectable
             ? {
-                opacity: 0.46,
-                boxShadow: '0 0 0 2px rgba(39, 25, 13, 0.68)',
-                filter: 'grayscale(0.42) brightness(0.86)',
+                opacity: 1,
+                boxShadow: '0 0 0 1px rgba(29, 83, 36, 0.6), 0 0 5px rgba(91, 215, 101, 0.28)',
+                filter: 'brightness(1.04) saturate(1.05)',
             }
             : undefined;
+    const guideTargetTone = guideTargeted
+        ? {
+            boxShadow: guideTargetActive
+                ? '0 0 0 2px rgba(217, 255, 190, 0.92), 0 0 12px rgba(112, 238, 124, 0.52)'
+                : '0 0 0 1.5px rgba(125, 224, 142, 0.74), 0 0 8px rgba(91, 215, 101, 0.34)',
+            zIndex: guideTargetActive ? 66 : 62,
+        }
+        : undefined;
+    const resolvedBoxShadow = [pendingCommittedTone?.boxShadow, guideTargetTone?.boxShadow].filter(Boolean).join(', ') || undefined;
     return (
         <div
             className={`${pendingCommittedSelectable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} absolute grid place-items-center text-[13px] font-black ${tokenShapeClass}`}
@@ -1462,8 +1565,8 @@ const MapToken: React.FC<{
                 transform: `translate(-50%, -50%) rotate(${token.rotationDeg ?? 0}deg)`,
                 opacity: pendingCommittedTone?.opacity,
                 filter: pendingCommittedTone?.filter,
-                boxShadow: pendingCommittedTone?.boxShadow,
-                zIndex: pendingCommittedSelectable ? 8 : undefined,
+                boxShadow: resolvedBoxShadow,
+                zIndex: Math.max(pendingCommittedSelectable ? 64 : 0, guideTargetTone?.zIndex ?? 0) || undefined,
             }}
         >
             {showTokenImage ? (
@@ -1476,14 +1579,6 @@ const MapToken: React.FC<{
                         placeholder={false}
                         style={{ boxShadow: pendingCommittedSelectable ? 'none' : `0 2px 8px ${UI_STYLE.shadowSoft}` }}
                     />
-                    {isPopulationToken && typeof token.value === 'number' ? (
-                        <span
-                            className="absolute inset-0 grid place-items-center text-[12px] font-black leading-none"
-                            style={{ color: UI_STYLE.ink, textShadow: '0 1px 0 rgba(255,247,224,0.45)' }}
-                        >
-                            {token.value}
-                        </span>
-                    ) : null}
                     {showImageValueBadge ? (
                         <span
                             className={`absolute -bottom-1 -right-1 grid min-h-[18px] min-w-[18px] place-items-center border-[2px] px-1 text-[11px] leading-none ${tokenShapeClass}`}
@@ -1499,19 +1594,11 @@ const MapToken: React.FC<{
                     data-qidahen-army-face="hidden-back"
                     style={{
                         borderColor: UI_STYLE.mapInk,
-                        background: UI_STYLE.paperLight,
-                        boxShadow: `inset 0 0 0 1px rgba(255,241,205,0.18), 0 2px 8px ${UI_STYLE.shadowSoft}`,
+                        background: armyHiddenBackColorByFaction[token.faction],
+                        boxShadow: `inset 0 0 0 1px rgba(255,241,205,0.22), 0 2px 8px ${UI_STYLE.shadowSoft}`,
                     }}
                     aria-label={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}
-                >
-                    <OptimizedImage
-                        src={ASSETS.armyBackMarker}
-                        alt={t('board.map.armyBackAlt', { defaultValue: '部队背面' })}
-                        className={`h-full w-full object-cover ${tokenShapeClass}`}
-                        draggable={false}
-                        placeholder={false}
-                    />
-                </span>
+                />
             ) : (
                 <span
                     className={`grid h-full w-full place-items-center border-2 ${tokenShapeClass}`}
@@ -1520,6 +1607,34 @@ const MapToken: React.FC<{
                     {token.value}
                 </span>
             )}
+            {pendingCommittedSelectable ? (
+                <span
+                    aria-hidden="true"
+                    data-testid={`qidahen-pending-committed-highlight-${token.id}`}
+                    className={`pointer-events-none absolute inset-[-2px] ${tokenShapeClass}`}
+                    style={{
+                        border: pendingCommittedSelected ? '1.5px solid #8cf694' : '1.5px solid #69d873',
+                        background: pendingCommittedSelected ? 'rgba(101, 255, 128, 0.045)' : 'rgba(87, 240, 103, 0.028)',
+                        boxShadow: pendingCommittedSelected
+                            ? '0 0 6px rgba(134, 255, 145, 0.42), inset 0 0 3px rgba(134, 255, 145, 0.14)'
+                            : '0 0 5px rgba(93, 240, 108, 0.34), inset 0 0 2px rgba(93, 240, 108, 0.1)',
+                    }}
+                />
+            ) : null}
+            {guideTargeted ? (
+                <span
+                    aria-hidden="true"
+                    data-testid={`qidahen-map-guide-token-target-${token.id}`}
+                    className={`pointer-events-none absolute inset-[-4px] ${tokenShapeClass}`}
+                    style={{
+                        border: guideTargetActive ? '1.5px solid #d9ffbe' : '1.25px solid #7de08e',
+                        background: guideTargetActive ? 'rgba(101, 255, 128, 0.055)' : 'rgba(87, 240, 103, 0.032)',
+                        boxShadow: guideTargetActive
+                            ? '0 0 8px rgba(134, 255, 145, 0.46), inset 0 0 3px rgba(134, 255, 145, 0.12)'
+                            : '0 0 6px rgba(93, 240, 108, 0.34), inset 0 0 2px rgba(93, 240, 108, 0.08)',
+                    }}
+                />
+            ) : null}
         </div>
     );
 };
@@ -1624,11 +1739,6 @@ const MapSceneLayer: React.FC<{
         applyTone(core.gaoDiDispatchSelection?.sourceRegionId, 'source');
         applyTone(internalDispatchSelection?.sourceRegionId, 'source');
         applyTone(pendingTargetAction?.sourceRegionId, 'source');
-        if (pendingCommittedTroops != null && pendingCommittedTroops > 0) {
-            for (const candidate of wheelDispatchSelection?.candidates ?? []) {
-                applyTone(candidate.targetRuntimeRegionId, 'dispatch');
-            }
-        }
         if (isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection)) {
             for (const candidate of core.gaoDiDispatchSelection?.candidates ?? []) {
                 applyTone(candidate.targetRegionId, 'dispatch');
@@ -1680,8 +1790,19 @@ const MapSceneLayer: React.FC<{
         ? core.regions.find((region) => region.id === core.explicitRegionId)
         : undefined;
     const hoveredRegion = hoveredRegionId ? core.regions.find((region) => region.id === hoveredRegionId) : undefined;
-    const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;
-    const focusedRegion = hoveredRegion ?? displaySelectedRegion;
+    const pendingCommittedOptions = getPendingCommittedTroopOptions(pendingTargetAction);
+    const pendingCommittedMax = pendingCommittedOptions.at(-1) ?? 0;
+    const wheelDispatchSelectableTroopCount = wheelDispatchSelection
+        ? Math.max(0, ...wheelDispatchSelection.candidates.map((candidate) => candidate.committedTroops))
+        : 0;
+    const activeCommittedMax = pendingCommittedMax > 0
+        ? pendingCommittedMax
+        : wheelDispatchSelectableTroopCount;
+    const pendingCommittedSelectionActive = activeCommittedMax > 0
+        && (pendingTargetAction != null || wheelDispatchSelection != null);
+    const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;
+    const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;
+    const focusedRegion = displayHoveredRegion ?? displaySelectedRegion;
     const focusedSpecialTroopsSummary = focusedRegion && focusedRegion.specialTroops.length > 0
         ? formatSpecialTroops(focusedRegion.specialTroops)
         : null;
@@ -1910,10 +2031,85 @@ const MapSceneLayer: React.FC<{
         const graphNode = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(regionId);
         return graphNode?.center ?? graphNode?.seed ?? null;
     };
+    const getGuideArmyTokens = (
+        regionId: string | null | undefined,
+        factionId: QidahenFactionId | null | undefined,
+    ) => {
+        if (!regionId || !factionId) {
+            return [];
+        }
+        return core.mapTokens
+            .filter((token) => token.type === 'army' && token.regionId === regionId && token.faction === factionId)
+            .sort((left, right) => (
+                Number(left.troopIndex == null) - Number(right.troopIndex == null)
+                || (left.troopIndex ?? 999) - (right.troopIndex ?? 999)
+                || left.id.localeCompare(right.id, 'en')
+            ));
+    };
+    const getGuideArmyTokenPoint = (
+        regionId: string | null | undefined,
+        factionId: QidahenFactionId | null | undefined,
+        preferredTroopIndex?: number | null,
+    ) => {
+        const matchingTokens = getGuideArmyTokens(regionId, factionId);
+        const preferredToken = preferredTroopIndex == null
+            ? null
+            : matchingTokens.find((token) => token.troopIndex === preferredTroopIndex) ?? null;
+        const targetTokens = preferredToken ? [preferredToken] : matchingTokens;
+        if (targetTokens.length <= 0) {
+            return null;
+        }
+        return {
+            x: (targetTokens.reduce((sum, token) => sum + token.x, 0) / targetTokens.length) * QIDAHEN_MAP_WIDTH,
+            y: (targetTokens.reduce((sum, token) => sum + token.y, 0) / targetTokens.length) * QIDAHEN_MAP_HEIGHT,
+        };
+    };
+    const getGuideArmyTokenBounds = (
+        regionId: string | null | undefined,
+        factionId: QidahenFactionId | null | undefined,
+        preferredTroopIndex?: number | null,
+    ): QidahenGuideBounds | null => {
+        const matchingTokens = getGuideArmyTokens(regionId, factionId);
+        const preferredToken = preferredTroopIndex == null
+            ? null
+            : matchingTokens.find((token) => token.troopIndex === preferredTroopIndex) ?? null;
+        const targetTokens = preferredToken ? [preferredToken] : matchingTokens;
+        if (targetTokens.length <= 0) {
+            return null;
+        }
+        const bounds = targetTokens.reduce(
+            (nextBounds, token) => {
+                const size = token.size ?? 30;
+                const halfSize = size / 2;
+                const centerX = token.x * QIDAHEN_MAP_WIDTH;
+                const centerY = token.y * QIDAHEN_MAP_HEIGHT;
+                return {
+                    left: Math.min(nextBounds.left, centerX - halfSize),
+                    top: Math.min(nextBounds.top, centerY - halfSize),
+                    right: Math.max(nextBounds.right, centerX + halfSize),
+                    bottom: Math.max(nextBounds.bottom, centerY + halfSize),
+                };
+            },
+            { left: Number.POSITIVE_INFINITY, top: Number.POSITIVE_INFINITY, right: Number.NEGATIVE_INFINITY, bottom: Number.NEGATIVE_INFINITY },
+        );
+        return {
+            ...bounds,
+            center: {
+                x: (bounds.left + bounds.right) / 2,
+                y: (bounds.top + bounds.bottom) / 2,
+            },
+        };
+    };
+    const getWheelDispatchTargetPoint = (candidate: QidahenWheelDispatchSelection['candidates'][number]) => (
+        getGuideArmyTokenPoint(candidate.targetRuntimeRegionId, candidate.defenderFactionId)
+            ?? getRegionPoint(candidate.targetRuntimeRegionId)
+    );
     const buildGuidePathPoints = (
         pathRegionIds: string[],
         fallbackSourceRegionId: string | null | undefined,
         fallbackTargetRegionId: string | null | undefined,
+        startPoint?: QidahenGuidePoint | null,
+        endPoint?: QidahenGuidePoint | null,
     ) => {
         const mergedRegionIds = [
             fallbackSourceRegionId,
@@ -1923,7 +2119,14 @@ const MapSceneLayer: React.FC<{
         const points = mergedRegionIds
             .map((regionId) => getRegionPoint(regionId))
             .filter((point): point is NonNullable<typeof point> => point != null);
-        return points.length >= 2 ? points : [];
+        const anchoredPoints = points.map((point, index) => (
+            index === 0 && startPoint
+                ? startPoint
+                : index === points.length - 1 && endPoint
+                    ? endPoint
+                    : point
+        ));
+        return anchoredPoints.length >= 2 ? anchoredPoints : [];
     };
     const inferPendingTargetPathRegionIds = (pending: QidahenCore['pendingTargetAction']): string[] => {
         if (!pending?.sourceRegionId) {
@@ -1960,13 +2163,34 @@ const MapSceneLayer: React.FC<{
                 title: '点一个进攻目标',
                 hint: `${wheelDispatchSelection.displayAnchorRegionName} 出发`,
                 badgeLabel: '选择地区',
-                candidates: wheelDispatchSelection.candidates.map((candidate) => ({
-                    id: candidate.targetRuntimeRegionId,
-                    targetRegionId: candidate.targetRuntimeRegionId,
-                    targetRegionName: candidate.targetRegionName,
-                    resolutionHint: candidate.resolutionHint,
-                    pathPoints: buildGuidePathPoints(candidate.pathRegionIds, wheelDispatchSelection.sourceRegionId, candidate.targetRuntimeRegionId),
-                })),
+                candidates: wheelDispatchSelection.candidates.map((candidate) => {
+                    const sourcePoint = getGuideArmyTokenPoint(
+                        wheelDispatchSelection.sourceRegionId,
+                        wheelDispatchSelection.attackerFactionId,
+                        pendingCommittedTroops,
+                    );
+                    const targetPoint = getWheelDispatchTargetPoint(candidate);
+                    const targetTokens = getGuideArmyTokens(candidate.targetRuntimeRegionId, candidate.defenderFactionId);
+                    const targetTokenBounds = getGuideArmyTokenBounds(candidate.targetRuntimeRegionId, candidate.defenderFactionId);
+                    const targetPathEndPoint = targetTokenBounds
+                        ? { x: targetTokenBounds.left - 6, y: targetTokenBounds.center.y }
+                        : targetPoint;
+                    return {
+                        id: candidate.targetRuntimeRegionId,
+                        targetRegionId: candidate.targetRuntimeRegionId,
+                        targetRegionName: candidate.targetRegionName,
+                        resolutionHint: candidate.resolutionHint,
+                        targetTokenIds: targetTokens.map((token) => token.id),
+                        targetTokenBounds: targetTokenBounds ?? undefined,
+                        pathPoints: buildGuidePathPoints(
+                            candidate.pathRegionIds,
+                            wheelDispatchSelection.sourceRegionId,
+                            candidate.targetRuntimeRegionId,
+                            sourcePoint,
+                            targetPathEndPoint,
+                        ),
+                    };
+                }),
                 candidateSummary: formatQidahenCandidateRegionSummary(wheelDispatchSelection.candidates.map((candidate) => candidate.targetRegionName)),
             };
         }
@@ -2047,13 +2271,26 @@ const MapSceneLayer: React.FC<{
             };
         }
         return null;
-    })();
+    })() as null | {
+        sourceRegionId: string | null | undefined;
+        title: string;
+        hint: string;
+        badgeLabel: string;
+        candidates: QidahenGuideCandidate[];
+        candidateSummary: string;
+    };
     const mapSelectionCandidateRegionIds = new Set(mapSelectionGuide?.candidates.map((candidate) => candidate.targetRegionId) ?? []);
     const activeGuideTargetRegionId = hoveredRegionId && mapSelectionCandidateRegionIds.has(hoveredRegionId)
         ? hoveredRegionId
         : core.explicitRegionId && mapSelectionCandidateRegionIds.has(core.explicitRegionId)
             ? core.explicitRegionId
-            : null;
+            : mapSelectionGuide?.candidates[0]?.targetRegionId ?? null;
+    const activeGuideTargetCandidate = mapSelectionGuide?.candidates.find((candidate) => candidate.targetRegionId === activeGuideTargetRegionId) ?? null;
+    const mapSelectionBannerHint = activeGuideTargetCandidate
+        ? `${mapSelectionGuide?.hint ?? ''} · 当前目标：${activeGuideTargetCandidate.targetRegionName}`
+        : mapSelectionGuide?.hint ?? '';
+    const guideTargetedTokenIds = new Set(mapSelectionGuide?.candidates.flatMap((candidate) => candidate.targetTokenIds ?? []) ?? []);
+    const activeGuideTargetedTokenIds = new Set(activeGuideTargetCandidate?.targetTokenIds ?? []);
     const mapSelectionBannerLeft = (STAGE_WIDTH - MAP_SELECTION_BANNER_WIDTH) / 2;
     const mapSelectionBannerInteractive = mapSelectionGuide != null
         && pendingTargetAction == null
@@ -2065,14 +2302,6 @@ const MapSceneLayer: React.FC<{
         () => buildRevealedBattleRegionIds(pendingTargetAction, core.postBattleSelection),
         [pendingTargetAction, core.postBattleSelection],
     );
-    const pendingCommittedOptions = getPendingCommittedTroopOptions(pendingTargetAction);
-    const pendingCommittedMax = pendingCommittedOptions.at(-1) ?? 0;
-    const wheelDispatchSelectableTroopCount = wheelDispatchSelection
-        ? Math.max(0, ...wheelDispatchSelection.candidates.map((candidate) => candidate.committedTroops))
-        : 0;
-    const activeCommittedMax = pendingCommittedMax > 0
-        ? pendingCommittedMax
-        : wheelDispatchSelectableTroopCount;
     const pendingCommittedSelectedCount = Math.min(
         pendingCommittedTroops ?? pendingTargetAction?.committedTroops ?? 0,
         activeCommittedMax,
@@ -2208,10 +2437,40 @@ const MapSceneLayer: React.FC<{
                                 if (pathPoints.length < 2) {
                                     return null;
                                 }
-                                const displayPoints = buildQidahenGuideDisplayPoints(pathPoints, activeCandidate ? 22 : 18);
-                                const pointLabel = displayPoints.map((point) => `${point.x},${point.y}`).join(' ');
+                                const targetsArmyTokens = (candidate.targetTokenIds?.length ?? 0) > 0;
+                                const arrowPoints = offsetQidahenGuideEndPoint(pathPoints, targetsArmyTokens ? 0 : activeCandidate ? 28 : 22);
+                                const linePath = buildQidahenGuideLinePath(buildQidahenGuideDisplayPoints(arrowPoints, activeCandidate ? 18 : 14));
                                 const targetPoint = pathPoints[pathPoints.length - 1];
-                                const arrowHeadPath = buildQidahenGuideArrowHeadPath(pathPoints, activeCandidate ? 22 : 18, activeCandidate ? 8.4 : 6.8);
+                                const arrowHeadPath = buildQidahenGuideArrowHeadPath(arrowPoints, activeCandidate ? 24 : 18, activeCandidate ? 9 : 6.8);
+                                const targetFocusRadius = activeCandidate ? 28 : 22;
+                                const targetFocusCorner = activeCandidate ? 11 : 8;
+                                const routeColor = activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.7)';
+                                const targetFocusStroke = activeCandidate ? '#ffe2a1' : '#7de08e';
+                                const targetFocusOpacity = activeCandidate ? 0.98 : 0.42;
+                                const targetFocusPadding = targetsArmyTokens ? activeCandidate ? 7 : 5 : 0;
+                                const targetFocusLeft = candidate.targetTokenBounds
+                                    ? candidate.targetTokenBounds.left - targetFocusPadding
+                                    : targetPoint.x - targetFocusRadius;
+                                const targetFocusTop = candidate.targetTokenBounds
+                                    ? candidate.targetTokenBounds.top - targetFocusPadding
+                                    : targetPoint.y - targetFocusRadius;
+                                const targetFocusRight = candidate.targetTokenBounds
+                                    ? candidate.targetTokenBounds.right + targetFocusPadding
+                                    : targetPoint.x + targetFocusRadius;
+                                const targetFocusBottom = candidate.targetTokenBounds
+                                    ? candidate.targetTokenBounds.bottom + targetFocusPadding
+                                    : targetPoint.y + targetFocusRadius;
+                                const boundedTargetFocusCorner = Math.min(
+                                    targetFocusCorner,
+                                    Math.max(4, (targetFocusRight - targetFocusLeft) / 3),
+                                    Math.max(4, (targetFocusBottom - targetFocusTop) / 3),
+                                );
+                                const targetFocusPaths = [
+                                    `M ${targetFocusLeft} ${targetFocusTop + boundedTargetFocusCorner} L ${targetFocusLeft} ${targetFocusTop} L ${targetFocusLeft + boundedTargetFocusCorner} ${targetFocusTop}`,
+                                    `M ${targetFocusRight - boundedTargetFocusCorner} ${targetFocusTop} L ${targetFocusRight} ${targetFocusTop} L ${targetFocusRight} ${targetFocusTop + boundedTargetFocusCorner}`,
+                                    `M ${targetFocusLeft} ${targetFocusBottom - boundedTargetFocusCorner} L ${targetFocusLeft} ${targetFocusBottom} L ${targetFocusLeft + boundedTargetFocusCorner} ${targetFocusBottom}`,
+                                    `M ${targetFocusRight - boundedTargetFocusCorner} ${targetFocusBottom} L ${targetFocusRight} ${targetFocusBottom} L ${targetFocusRight} ${targetFocusBottom - boundedTargetFocusCorner}`,
+                                ];
                                 return (
                                     <g
                                         key={candidate.id}
@@ -2219,24 +2478,47 @@ const MapSceneLayer: React.FC<{
                                         data-guide-target-x={targetPoint.x}
                                         data-guide-target-y={targetPoint.y}
                                     >
-                                        <polyline
-                                            points={pointLabel}
-                                            fill="none"
-                                            stroke={activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.96)'}
-                                            strokeWidth={activeCandidate ? 11 : 8}
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            filter="url(#qidahen-map-guide-glow)"
-                                            opacity={1}
-                                        />
+                                        {linePath ? (
+                                            <path
+                                                d={linePath}
+                                                fill="none"
+                                                stroke={routeColor}
+                                                strokeWidth={activeCandidate ? 8 : 5}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                filter="url(#qidahen-map-guide-glow)"
+                                                opacity={activeCandidate ? 0.96 : 0.38}
+                                                data-testid={`qidahen-map-guide-line-${candidate.targetRegionId}`}
+                                            />
+                                        ) : null}
                                         {arrowHeadPath ? (
                                             <path
                                                 d={arrowHeadPath}
-                                                fill={activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.96)'}
+                                                fill={routeColor}
+                                                stroke="none"
+                                                opacity={activeCandidate ? 1 : 0.42}
                                                 filter="url(#qidahen-map-guide-glow)"
                                                 data-testid={`qidahen-map-guide-arrow-head-${candidate.targetRegionId}`}
                                             />
                                         ) : null}
+                                        <g
+                                            data-testid={`qidahen-map-guide-target-focus-${candidate.targetRegionId}`}
+                                            opacity={targetFocusOpacity}
+                                            filter={activeCandidate ? 'url(#qidahen-map-guide-glow)' : undefined}
+                                        >
+                                            {targetFocusPaths.map((focusPath) => (
+                                                <path
+                                                    key={focusPath}
+                                                    d={focusPath}
+                                                    fill="none"
+                                                    stroke={targetFocusStroke}
+                                                    strokeWidth={activeCandidate ? 3.4 : 2.4}
+                                                    strokeLinecap="square"
+                                                    strokeLinejoin="miter"
+                                                    vectorEffect="non-scaling-stroke"
+                                                />
+                                            ))}
+                                        </g>
                                     </g>
                                 );
                             })}
@@ -2266,6 +2548,8 @@ const MapSceneLayer: React.FC<{
                             revealFront={shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)}
                             pendingCommittedSelectable={pendingCommittedSelectable}
                             pendingCommittedSelected={pendingCommittedSelectable && (token.troopIndex ?? 0) <= pendingCommittedSelectedCount}
+                            guideTargeted={guideTargetedTokenIds.has(token.id)}
+                            guideTargetActive={activeGuideTargetedTokenIds.has(token.id)}
                             onSelectPendingCommittedTroops={handleSelectPendingCommittedTroopsFromMap}
                         />
                     );
@@ -2363,7 +2647,7 @@ const MapSceneLayer: React.FC<{
                         {mapSelectionGuide.title}
                     </div>
                     <div className="mt-1 text-[12px] font-black leading-5" style={{ color: mapSelectionBannerInteractive ? '#dbf5cf' : '#f3d1a5' }}>
-                        {mapSelectionGuide.hint}
+                        {mapSelectionBannerHint}
                     </div>
                 </div>
             ) : null}
@@ -5468,28 +5752,42 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         return null;
     })();
 
-    const autoFocusMapCandidate = topLevelMapSelectionGuide?.candidates.length === 1
-        ? topLevelMapSelectionGuide.candidates[0]
-        : null;
-    const autoFocusMapTargetRegionId = autoFocusMapCandidate?.targetRegionId ?? null;
-    const autoFocusMapTargetKey = autoFocusMapCandidate
-        ? `${autoFocusMapCandidate.action}:${autoFocusMapCandidate.resolutionChoiceId}:${autoFocusMapCandidate.targetRegionId}`
+    const autoFocusMapTargetRegionIds = React.useMemo(
+        () => topLevelMapSelectionGuide?.candidates.map((candidate) => candidate.targetRegionId) ?? [],
+        [topLevelMapSelectionGuide],
+    );
+    const autoFocusMapTargetKey = topLevelMapSelectionGuide && autoFocusMapTargetRegionIds.length > 0
+        ? `${topLevelMapSelectionGuide.title}:${autoFocusMapTargetRegionIds.join('|')}:${wheelDispatchSelection?.sourceRegionId ?? core.gaoDiDispatchSelection?.sourceRegionId ?? internalDispatchSelection?.sourceRegionId ?? grantPardonSelection?.sourceRegionId ?? ''}`
         : null;
     const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;
 
     React.useEffect(() => {
-        if (!autoFocusMapTargetKey || !autoFocusMapTargetRegionId) {
+        if (!autoFocusMapTargetKey || autoFocusMapTargetRegionIds.length <= 0) {
             return;
         }
-        const point = getTopLevelGuideRegionMapPoint(autoFocusMapTargetRegionId);
-        if (!point) {
+        const focusRegionIds = [
+            wheelDispatchSelection?.sourceRegionId,
+            core.gaoDiDispatchSelection?.sourceRegionId,
+            internalDispatchSelection?.sourceRegionId,
+            grantPardonSelection?.sourceRegionId,
+            ...autoFocusMapTargetRegionIds,
+        ];
+        const points = focusRegionIds
+            .map((regionId) => getTopLevelGuideRegionMapPoint(regionId))
+            .filter((point): point is { x: number; y: number } => point != null);
+        const viewport = buildQidahenFocusedMapViewportForPoints(points);
+        if (!viewport) {
             return;
         }
-        setMapViewport(buildQidahenFocusedMapViewport(point));
+        setMapViewport(viewport);
     }, [
         autoFocusMapTargetKey,
-        autoFocusMapTargetRegionId,
+        autoFocusMapTargetRegionIds,
+        core.gaoDiDispatchSelection?.sourceRegionId,
+        grantPardonSelection?.sourceRegionId,
         getTopLevelGuideRegionMapPoint,
+        internalDispatchSelection?.sourceRegionId,
+        wheelDispatchSelection?.sourceRegionId,
     ]);
 
     if (scenarioVotePending) {

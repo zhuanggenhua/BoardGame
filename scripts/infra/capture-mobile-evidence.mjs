@@ -9,6 +9,18 @@ const PHONE_LANDSCAPE_VIEWPORT = { width: 936, height: 432 };
 const TABLET_LANDSCAPE_VIEWPORT = { width: 1024, height: 768 };
 
 const scenarioMap = {
+    'betrayal-tutorial-phone-landscape': {
+        route: '/play/betrayal/tutorial/move-explore-use',
+        output: 'test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程书本使用入口.png',
+        ...PHONE_LANDSCAPE_VIEWPORT,
+        forceCoarsePointer: true,
+    },
+    'betrayal-tutorial-mobile-landscape': {
+        route: '/play/betrayal/tutorial/move-explore-use',
+        output: 'test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程书本使用入口.png',
+        ...PHONE_LANDSCAPE_VIEWPORT,
+        forceCoarsePointer: true,
+    },
     'smashup-tutorial-mobile-landscape': {
         route: '/play/smashup/tutorial',
         output: 'test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/手机横屏下教程浮层不应跑出视口/tutorial-mobile-landscape.png',

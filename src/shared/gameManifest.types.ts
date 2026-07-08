@@ -58,6 +58,7 @@ export interface GameManifestAiSupport {
     capturePolicy?: 'human-only' | 'all-seats';
     localAi: boolean;
     remoteAi: boolean;
+    defaultLocalAiSeats?: 'first-opponent' | 'all-opponents';
 }
 
 export type GameStatusTag = 'under_construction';

@@ -579,6 +579,7 @@ const commandTypes = [
 **你在新游戏里只需要做这些（最小闭环）**：
 1. 在 `game.ts` 配置 `createActionLogSystem({ commandAllowlist, formatEntry })`，`formatEntry` 产出包含 `segments` 的 `ActionLogEntry`。
 2. 若游戏有卡牌：实现 `ui/cardPreviewHelper.ts` 提供 `cardId → CardPreviewRef` 查询，并在 `game.ts` **文件末尾**调用 `registerCardPreviewGetter(gameId, getter)` 注册。
+3. Board 不重复实现日志/撤回 UI：行为日志、操作日志和撤回入口由通用 `GameHUD` / FAB 悬浮球承载。新游戏只负责产出正确 ActionLog 数据和接入 Undo 上下文，不在牌桌主界面、侧栏或底部再加日志面板、最近操作列表或第二套撤回按钮。
 
 > 关键点：Vite SSR 的函数提升陷阱与“注册必须放文件末尾”的原因，详见 `AGENTS.md` / `docs/ai-rules/golden-rules.md`。
 

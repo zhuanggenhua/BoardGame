@@ -13,7 +13,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { createRunner, cmd, createQueuedRandom, createHeroMatchup, advanceTo } from './test-utils';
 import { registerDiceThroneConditions } from '../conditions';
 import { initializeCustomActions } from '../domain/customActions';
-import { HOT_STREAK_2 } from '../heroes/pyromancer/abilities';
+import { HOT_STREAK_2, IGNITE_2 } from '../heroes/pyromancer/abilities';
 
 beforeAll(() => {
     registerDiceThroneConditions();
@@ -112,6 +112,38 @@ describe('火法小顺子二级技能 - 焚灭触发', () => {
                 expect(availableAbilities).toContain('fiery-combo-2');
                 expect(availableAbilities[0]).toBe('incinerate');
             }
+        });
+
+        expect(result.passed).toBe(true);
+    });
+});
+
+describe('火法点燃 II 下半段 - 炎热之魂触发', () => {
+    it('升级点燃 II 后，两火+两火魂应触发炎热之魂', () => {
+        const random = createQueuedRandom([
+            1, 2, 5, 5, 6,
+        ]);
+        const runner = createRunner(random, false);
+
+        const result = runner.run({
+            name: '火法点燃II下半段炎热之魂触发',
+            setup: createHeroMatchup('pyromancer', 'barbarian', (core) => {
+                const player = core.players['0'];
+                if (!player) return;
+                const abilityIndex = player.abilities.findIndex(a => a.id === 'ignite');
+                if (abilityIndex !== -1) {
+                    player.abilities[abilityIndex] = IGNITE_2;
+                    player.abilityLevels.ignite = 2;
+                }
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+            ],
+            expect: (state) => {
+                expect(state.core.availableAbilities).toContain('heat-of-soul');
+                expect(state.core.availableAbilities[0]).toBe('heat-of-soul');
+            },
         });
 
         expect(result.passed).toBe(true);

@@ -142,16 +142,18 @@ const buildCoreReadyForShowdown = () => {
     return core;
 };
 
+const defaultMatchData = [
+    { id: 0, name: '玩家 1', isConnected: true },
+    { id: 1, name: 'AI 2 号位', isConnected: true },
+    { id: 2, name: 'AI 3 号位', isConnected: true },
+];
+
 const renderBoardForCore = (core: TheGangCore) => render(
     <Board
         G={stateOf(core)}
         dispatch={vi.fn() as never}
         playerID="0"
-        matchData={[
-            { id: 0, name: '玩家 1', isConnected: true },
-            { id: 1, name: '玩家 2', isConnected: true },
-            { id: 2, name: '玩家 3', isConnected: true },
-        ]}
+        matchData={defaultMatchData}
         isConnected
     />,
 );
@@ -183,8 +185,13 @@ describe('The Gang Board 运行入口', () => {
         expect(readyForShowdown.roundHistory).toHaveLength(3);
         expect(Object.keys(readyForShowdown.currentRoundChips)).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="card-river"] img')).toHaveLength(5);
-        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(2);
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
+        expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).not.toHaveTextContent('玩家 1');
+        expect(screen.getAllByText('AI 2 号位').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('AI 3 号位').length).toBeGreaterThan(0);
 
         unmount();
 
@@ -209,9 +216,35 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelectorAll('[data-bgg-zone="reveal-community-cards"] img')).toHaveLength(5);
         expect(document.querySelectorAll('[data-bgg-zone="reveal-pocket-cards"]')).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="reveal-pocket-cards"] img')).toHaveLength(6);
+        expect(screen.getAllByText('AI 2 号位').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('AI 3 号位').length).toBeGreaterThan(0);
         expect(revealed.lastShowdown?.outcome).toBe('success');
         expect(screen.getByRole('button', { name: 'board.nextHeist' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: '摊牌' })).not.toBeInTheDocument();
+    });
+
+    test('选筹阶段只在有公开状态时显示对手区，不常驻玩家列表', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const { unmount } = renderBoardForCore(initial);
+
+        expect(document.querySelector('[data-tutorial-id="the-gang-opponent-state"]')).toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(0);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 3 号位');
+
+        unmount();
+
+        const withOpponentChip = reduceCommand(initial, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 2 },
+            timestamp: 1,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+        renderBoardForCore(withOpponentChip);
+
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
     });
 
     test('真实 Board 会把撤回状态提供给通用 HUD 上下文', () => {

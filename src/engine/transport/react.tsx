@@ -142,6 +142,8 @@ export interface LocalGameProviderProps {
     onCommandRejected?: (commandType: string, error: string) => void;
     /** 座位控制器：human / local-ai / remote-ai */
     seatControllers?: Record<string, AiSeatController>;
+    /** 本地模式玩家显示名；没有传入时只对 AI 座位生成 AI 名，真人座位交给 Board fallback。 */
+    playerNames?: Record<string, string>;
     /**
      * 当前玩家 ID（可选）。
      * 设置后会将 playerId 传给 Board（Board 知道"我是谁"）。
@@ -168,6 +170,7 @@ export function LocalGameProvider({
     children,
     onCommandRejected,
     seatControllers = {},
+    playerNames,
     playerId: localPlayerId,
     followCurrentTurnPlayer = false,
     persistSession = false,
@@ -179,6 +182,7 @@ export function LocalGameProvider({
         setupData,
         onCommandRejected,
         seatControllers,
+        playerNames,
         localPlayerId: localPlayerId ?? null,
         followCurrentTurnPlayer,
         persistSession,

@@ -522,6 +522,36 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
+    // ignite-heat-of-soul-resolve: 点燃 II 下半段炎热之魂
+    // ========================================================================
+    describe('ignite-heat-of-soul-resolve (炎热之魂)', () => {
+        it('提升FM上限、获得5FM并给对手施加燃烧', () => {
+            const state = createState({ attackerFM: 2, fmLimit: 5 });
+            const handler = getCustomActionHandler('ignite-heat-of-soul-resolve')!;
+            const events = handler(buildCtx(state, 'heat-of-soul'));
+
+            const limitEvent = eventsOfType(events, 'TOKEN_LIMIT_CHANGED')[0] as any;
+            expect(limitEvent.payload.playerId).toBe('0');
+            expect(limitEvent.payload.tokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
+            expect(limitEvent.payload.newLimit).toBe(6);
+
+            const tokenEvent = eventsOfType(events, 'TOKEN_GRANTED')[0] as any;
+            expect(tokenEvent.payload.targetId).toBe('0');
+            expect(tokenEvent.payload.amount).toBe(5);
+            expect(tokenEvent.payload.newTotal).toBe(6);
+
+            const burnEvent = eventsOfType(events, 'STATUS_APPLIED')[0] as any;
+            expect(burnEvent.payload.targetId).toBe('1');
+            expect(burnEvent.payload.statusId).toBe(STATUS_IDS.BURN);
+
+            const reduced = reduceAll(state, events);
+            expect(reduced.players['0'].tokenStackLimits[TOKEN_IDS.FIRE_MASTERY]).toBe(6);
+            expect(reduced.players['0'].tokens[TOKEN_IDS.FIRE_MASTERY]).toBe(6);
+            expect(reduced.players['1'].statusEffects[STATUS_IDS.BURN]).toBe(1);
+        });
+    });
+
+    // ========================================================================
     // magma-armor-resolve: 基于防御投掷骰面，fire面=1伤害/个，fiery_soul面=1FM/个
     // 防御上下文：attackerId=防御者(0), defenderId=原攻击者(1), target='self' → targetId=0
     // 伤害应作用于原攻击者(1)，不是防御者自身(0)

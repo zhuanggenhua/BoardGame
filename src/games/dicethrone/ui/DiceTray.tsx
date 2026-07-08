@@ -95,7 +95,8 @@ const BOARD_DICE_SCATTER_SLOTS = [
 
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
-const BOARD_DICE_HIT_TARGET_SIZE_PX = 38;
+const BOARD_DICE_HIT_TARGET_SIZE_PX = 44;
+const BOARD_DICE_STAGE_Z_INDEX = UI_Z_INDEX.magnify - 1;
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
@@ -244,13 +245,14 @@ export const DiceTray = ({
         [dice],
     );
     const visibleOverlayDice = React.useMemo(
-        () => (isBoardPresentation ? dice.filter((d) => !d.isKept) : dice),
-        [dice, isBoardPresentation],
+        () => dice,
+        [dice],
     );
     const visiblePhysicsDice = React.useMemo(
         () => visibleOverlayDice.map((die) => ({
             id: die.id,
             value: die.value,
+            isKept: die.isKept,
         })),
         [visibleOverlayDice],
     );
@@ -622,8 +624,8 @@ export const DiceTray = ({
                 )}
                 {isBoardPresentation && (
                     <div
-                        className="absolute inset-0"
-                        style={{ zIndex: UI_Z_INDEX.hud + 6 }}
+                        className={clsx('absolute inset-0', (canToggleDieLock || isInteractionMode) ? 'cursor-pointer' : 'cursor-default')}
+                        style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX + 1 }}
                         data-testid="dicethrone-board-dice-hit-layer"
                         onClick={(event) => {
                             event.stopPropagation();
@@ -648,14 +650,14 @@ export const DiceTray = ({
                     const scatterSlots = isBoardPresentation ? BOARD_DICE_SCATTER_SLOTS : CENTER_DICE_SCATTER_SLOTS;
                     const scatterSlot = scatterSlots[i % scatterSlots.length];
                     const projectedLayout = centerDiceLayout[d.id];
+                    const boardOverlayDiceSizePx = isBoardPresentation
+                        ? resolveBoardOverlayDiceSize(projectedLayout)
+                        : undefined;
                     const centerX = projectedLayout?.x ?? 0;
                     const centerY = projectedLayout?.y ?? 0;
                     const projectedScale = isBoardPresentation ? 0.92 : 0.78;
                     const centerWidth = projectedLayout ? Math.max(60, projectedLayout.width * projectedScale) : 88;
                     const centerHeight = projectedLayout ? Math.max(60, projectedLayout.height * projectedScale) : 88;
-                    const boardOverlayDiceSizePx = isBoardPresentation
-                        ? resolveBoardOverlayDiceSize(projectedLayout)
-                        : undefined;
                     const overlayDiceSize = isBoardPresentation
                         ? `${boardOverlayDiceSizePx}px`
                         : projectedLayout
@@ -704,6 +706,7 @@ export const DiceTray = ({
                                     'absolute rounded-2xl transition-[left,top,width,height,transform,filter] duration-75 ease-out',
                                     'ring-0',
                                     isBoardPresentation ? 'pointer-events-none' : 'pointer-events-auto',
+                                    clickable ? 'cursor-pointer' : 'cursor-default',
                                 )}
                                 style={{
                                     left: projectedLayout ? `${centerX}px` : scatterSlot.left,
@@ -739,8 +742,11 @@ export const DiceTray = ({
                                     <div className="pointer-events-none absolute inset-[-0.28rem] rounded-2xl ring-2 ring-amber-300 shadow-[0_0_18px_rgba(245,158,11,0.55)]" />
                                 )}
                                 {!isInteractionMode && d.isKept && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="max-w-[4.2rem] overflow-hidden text-ellipsis whitespace-nowrap rounded bg-black/55 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20">
+                                    <div className="pointer-events-none absolute inset-[-0.42rem] rounded-2xl ring-[0.24rem] ring-black/80 shadow-[0_0_0.8rem_rgba(0,0,0,0.75)]" data-testid={`die-locked-ring-${d.id}`} />
+                                )}
+                                {!isInteractionMode && d.isKept && (
+                                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                        <div className="max-w-[4.2rem] overflow-hidden text-ellipsis whitespace-nowrap rounded bg-black/70 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20">
                                             {t('dice.locked')}
                                         </div>
                                     </div>
@@ -1078,7 +1084,7 @@ export const BoardDiceStage = ({
             style={{
                 top: 'clamp(76px, 4.6vw, 88px)',
                 transform: 'translateX(-50%)',
-                zIndex: UI_Z_INDEX.hint + 5,
+                zIndex: BOARD_DICE_STAGE_Z_INDEX,
             }}
             data-testid="dicethrone-board-dice-stage"
             data-board-magnify-ignore="true"
