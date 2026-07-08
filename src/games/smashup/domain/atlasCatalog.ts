@@ -32,6 +32,9 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
     { id: SMASHUP_ATLAS_IDS.TITANS, kind: 'card', image: 'smashup/taitan/taitan1', grid: { rows: 7, cols: 3 } },
+    { id: SMASHUP_ATLAS_IDS.SHARKS_POD_CARDS, kind: 'card', image: 'smashup/cards/sharks_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.ALL_STARS_POD_CARDS, kind: 'card', image: 'smashup/cards/all_stars_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.TORNADOS_POD_CARDS, kind: 'card', image: 'smashup/cards/tornados_pod', grid: { rows: 4, cols: 5 } },
 
     { id: SMASHUP_ATLAS_IDS.BASE1, kind: 'base', image: 'smashup/base/base1', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE2, kind: 'base', image: 'smashup/base/base2', grid: { rows: 2, cols: 4 } },
