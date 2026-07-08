@@ -58,7 +58,8 @@
       "teammatesLabel": "Teammates"
     },
     "mobile": {
-      "selectedLabel": "Selected"
+      "selectedLabel": "Selected",
+      "contextStripLabel": "Mobile table summary"
     },
     "sections": {
       "currentExplorer": "Current Explorer",

@@ -3835,7 +3835,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     {isPhoneLandscapeLayout ? (
                         <section
                             data-testid="betrayal-mobile-context-strip"
-                            aria-label="移动端局面信息"
+                            aria-label={t('board.mobile.contextStripLabel')}
                             className="pointer-events-auto absolute right-2 top-2 z-40 grid w-[min(296px,34vw)] min-w-[176px] grid-cols-[minmax(0,1fr)_auto] items-start gap-1.5 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-2 py-1.5 text-[#efe2c4] shadow-[0_8px_18px_rgba(0,0,0,0.32)] backdrop-blur-sm"
                         >
                             <div className="min-w-0">

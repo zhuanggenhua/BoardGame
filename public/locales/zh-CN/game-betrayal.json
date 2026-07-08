@@ -58,7 +58,8 @@
       "teammatesLabel": "队友"
     },
     "mobile": {
-      "selectedLabel": "当前选中"
+      "selectedLabel": "当前选中",
+      "contextStripLabel": "移动端局面信息"
     },
     "sections": {
       "currentExplorer": "当前探索者",
