@@ -47,6 +47,7 @@ import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
 import { registerDragonAbilities } from './dragons';
 import { registerGeekAbilities } from './geeks';
+import { registerAllStarsAbilities } from './all_stars';
 import { registerSuperheroesAbilities, registerSuperheroesInteractionHandlers } from './superheroes';
 import { registerYuanhouAbilities } from './yuanhou';
 import { registerIttyCrittersAbilities } from './itty_critters';
@@ -169,6 +170,7 @@ export function initAllAbilities(): void {
     registerSuperheroesAbilities();
     registerSuperheroesInteractionHandlers();
     registerYuanhouAbilities();
+    registerAllStarsAbilities();
     registerIttyCrittersAbilities();
     registerKaijuAbilities();
     registerKaijuInteractionHandlers();

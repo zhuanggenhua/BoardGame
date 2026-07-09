@@ -625,6 +625,10 @@ describe('派系选择系统', () => {
                 'base_so_so_corral_pod',
                 'base_drakkar_pod',
                 'base_longhouse_pod',
+                'base_shark_reef_pod',
+                'base_trailer_park_pod',
+                'base_the_deep_pod',
+                'base_tornado_alley_pod',
             ]);
 
             const missingPodBaseMappings = getAllBaseDefs()

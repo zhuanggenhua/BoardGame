@@ -1546,6 +1546,18 @@
     "disco_dancers": {
       "name": "迪厅舞王",
       "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
+    },
+    "sharks_pod": {
+      "name": "鲨鱼 (POD版)",
+      "description": "鲨鱼 POD 版本：围绕低力量随从消灭、+1 力量指示物与撕咬连锁展开。"
+    },
+    "tornados_pod": {
+      "name": "龙卷风 (POD版)",
+      "description": "龙卷风 POD 版本：通过移动随从、替换基地与计分窗口移动来打乱战场节奏。"
+    },
+    "all_stars_pod": {
+      "name": "全明星 (POD版)",
+      "description": "跨多个派系精选代表卡组成的 POD 全明星卡组。"
     }
   },
   "tutorial": {
@@ -6114,6 +6126,181 @@
     "base_monkey_lab": {
       "name": "猴子实验室",
       "abilityText": "这里的每个随从上每有一张行动牌，就获得 +1 力量。"
+    },
+    "sharks_blood_in_the_water_pod": {
+      "name": "血腥水域",
+      "effectText": "对一个基地打出。持续：当这里有随从被消灭后，你可以将一个力量 3 或更低的随从作为额外随从打到这里。"
+    },
+    "sharks_torn_apart_pod": {
+      "name": "撕裂",
+      "effectText": "消灭一个力量3或更少的随从，并抽一张牌。"
+    },
+    "sharks_chum_pod": {
+      "name": "鱼饵",
+      "effectText": "对一个随从打出。持续：当一个随从被消灭后，在此随从上放置 1 枚 +1 力量指示物。"
+    },
+    "sharks_feeding_frenzy_pod": {
+      "name": "疯狂进食",
+      "effectText": "选择一个基地。消灭该基地任意数量力量2或更少的随从。"
+    },
+    "sharks_freakin_laser_beam_pod": {
+      "name": "激光束",
+      "effectText": "选择你的一个随从。消灭其所在基地上一个力量不高于它的随从。"
+    },
+    "sharks_air_jaws_pod": {
+      "name": "飞鲨",
+      "effectText": "将你的一个随从移动到另一个基地，然后消灭那里的一个力量3或更少的随从。"
+    },
+    "sharks_dangerous_waters_pod": {
+      "name": "危险水域",
+      "effectText": "对一个基地打出。天赋：选择这里的一个随从。该随从直到回合结束 -2 力量。"
+    },
+    "sharks_week_of_sharks_pod": {
+      "name": "鲨鱼周",
+      "effectText": "对一个基地打出。持续：如果你在这里有随从，则在你的回合结束时额外抓 1 张牌。每回合只能使用一个“鲨鱼周”的能力。"
+    },
+    "sharks_mako_pod": {
+      "name": "灰鲭鲨",
+      "abilityText": "特殊：当你消灭任意基地上的一个随从后，你可以将此随从作为额外随从打到那里。"
+    },
+    "sharks_hammerhead_pod": {
+      "name": "锤头鲨",
+      "abilityText": "持续：当这里有随从被消灭后，在此随从上放置 1 枚 +1 力量指示物。"
+    },
+    "sharks_great_white_pod": {
+      "name": "大白鲨",
+      "abilityText": "天赋：将此随从移动到另一个基地，并消灭那里一个力量 2 或更低的随从。"
+    },
+    "sharks_megalodon_pod": {
+      "name": "巨齿鲨",
+      "abilityText": "你可以消灭这里一个力量 4 或更低的随从。特殊：本基地计分前，你可以消灭这里一个力量 3 或更低的随从。"
+    },
+    "tornados_not_in_kansas_pod": {
+      "name": "不在堪萨斯",
+      "effectText": "消灭一个基地，以及任何打在该基地上或该基地随从上的行动卡。用基地牌库顶的牌替换它。原基地上的所有随从保留在新基地上。"
+    },
+    "tornados_picked_up_pod": {
+      "name": "卷起",
+      "effectText": "特殊：你可以在基地计分前打出此牌。将该基地上的一个随从移动到另一个基地。"
+    },
+    "tornados_ripped_off_pod": {
+      "name": "扯走",
+      "effectText": "将一个打在基地上的行动卡移动到另一个基地，或将一个打在随从上的行动卡移动到另一个随从上。"
+    },
+    "tornados_over_the_rainbow_pod": {
+      "name": "飞越彩虹",
+      "effectText": "特殊：你可以在基地计分前打出此牌。将你另一个基地上的一个随从移动到该基地。"
+    },
+    "tornados_trade_winds_pod": {
+      "name": "信风",
+      "effectText": "选择两个力量3或更少的随从。将每名随从移动到另一名随从的基地上。"
+    },
+    "tornados_whirlwinds_pod": {
+      "name": "旋风群",
+      "effectText": "你可以把任意数量的你的随从移动至其他基地。"
+    },
+    "tornados_gone_with_the_wind_pod": {
+      "name": "随风而逝",
+      "effectText": "特殊能力：在一个基地计分后打出。你可以将该基地上你的一个随从移动到另一个基地，而不是将它放入弃牌堆。"
+    },
+    "tornados_carried_away_pod": {
+      "name": "卷走",
+      "effectText": "将一个随从移动至另一个基地上。"
+    },
+    "tornados_dust_devil_pod": {
+      "name": "尘卷风",
+      "abilityText": "特殊：一个基地计分前，你可以将此随从移动到那里。"
+    },
+    "tornados_twister_pod": {
+      "name": "旋风",
+      "abilityText": "当此随从打到一个基地时，你可以将一个力量 3 或更低的随从从这里移动到另一个基地，或从另一个基地移动到这里。"
+    },
+    "tornados_cyclone_pod": {
+      "name": "气旋",
+      "abilityText": "天赋：将此随从移动到另一个基地。"
+    },
+    "tornados_monster_tornado_pod": {
+      "name": "龙卷风怪物",
+      "abilityText": "天赋：你可以将一个力量 4 或更低的随从从这里移动到另一个基地，或从另一个基地移动到这里。"
+    },
+    "all_stars_seeing_stars_pod": {
+      "name": "手里剑",
+      "effectText": "消灭一个力量为 3 或更低的随从。"
+    },
+    "all_stars_begin_the_summoning_pod": {
+      "name": "开始召唤",
+      "effectText": "将你弃牌堆中的一个随从置于你的牌库顶。本回合你可以额外打出一张战术。"
+    },
+    "all_stars_its_astounding_pod": {
+      "name": "令人震惊",
+      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
+    },
+    "all_stars_full_moon_pod": {
+      "name": "满月",
+      "effectText": "对一个基地打出。持续：你在这里的每个随从获得 +1 力量。"
+    },
+    "all_stars_non_infinite_loop_pod": {
+      "name": "非无限循环",
+      "effectText": "从弃牌堆打出一张行动作为额外行动。结算后你可以将其返回手牌。"
+    },
+    "all_stars_friendship_power_pod": {
+      "name": "友谊之力",
+      "effectText": "将你的一个随从移动到另一个有你随从的基地上。你可以将本卡放到你的牌库顶，以代替放入弃牌堆。"
+    },
+    "all_stars_ghostly_arrival_pod": {
+      "name": "幽灵抵达",
+      "effectText": "你可以打出一个额外的随从和/或一个额外的战术。"
+    },
+    "all_stars_square_deal_pod": {
+      "name": "公平交易",
+      "effectText": "抽牌，直到至少有一名其他玩家的手牌数少于你。"
+    },
+    "all_stars_favor_of_dionysus_pod": {
+      "name": "狄俄尼索斯的恩惠",
+      "effectText": "你的一个随从直到回合结束获得 +1 力量。额外打出 1 个行动。你可以将此牌置于牌库顶，而不是放入弃牌堆。"
+    },
+    "all_stars_prepare_for_battle_pod": {
+      "name": "准备战斗",
+      "effectText": "展示你牌库顶的 3 张牌。抽取其中 2 张，将另一张放到你的牌库顶或牌库底。"
+    },
+    "all_stars_servitor_of_cthulhu_pod": {
+      "name": "克苏鲁的仆人",
+      "abilityText": "天赋：消灭此牌，从你的弃牌堆中选择一张战术卡放到你牌库顶。"
+    },
+    "all_stars_fan_pod": {
+      "name": "粉丝",
+      "abilityText": "特殊：当你消灭任意基地上的一个随从后，将此随从作为额外随从打到那里。"
+    },
+    "all_stars_sprout_pod": {
+      "name": "幼苗",
+      "abilityText": "持续：在你的回合开始时消灭此牌。你可以从牌库搜寻一个力量为 3 或以下的随从，将其作为额外随从打到这里。然后洗牌。"
+    },
+    "all_stars_ensign_pod": {
+      "name": "少尉",
+      "abilityText": "持续：当对手打出一张直接影响你在这里另一个随从的牌时，你可以让该牌改为影响此随从。"
+    },
+    "all_stars_puck_pod": {
+      "name": "帕克",
+      "abilityText": "你可以额外打出一张战术，或抽一张牌。"
+    },
+    "all_stars_lab_assistant_pod": {
+      "name": "实验室助手",
+      "abilityText": "在你的另一个随从上放置一个 +1 力量指示物。"
+    },
+    "all_stars_imperial_dragon_pod": {
+      "name": "帝国龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，抽 1 张牌。"
+    },
+    "all_stars_gelf_pod": {
+      "name": "凝胶精灵",
+      "abilityText": "天赋：从你的牌库搜寻一个非凝胶精灵、力量 4 或更低的随从；将此牌洗入你的牌库，并将该随从作为额外随从打到这里。然后洗牌。"
+    },
+    "all_stars_granny_pod": {
+      "name": "老奶奶",
+      "abilityText": "天赋：查看你牌库顶的牌。你可以将其放到你的牌库底。"
+    },
+    "all_stars_king_rex_pod": {
+      "name": "雷克斯王"
     }
   },
   "debug": {
