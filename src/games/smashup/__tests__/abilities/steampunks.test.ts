@@ -845,7 +845,6 @@ describe('蒸汽朋克 ongoing 能力', () => {
             } as any, defaultTestRandom);
 
             expect(result.success, result.error).toBe(true);
-            const current = getSimpleChoicePrompt(result.finalState, 'steampunk_mechanic');
             const step1 = respondToPromptOption(
                 result.finalState,
                 option => option.value?.cardUid === 'dis-4',
