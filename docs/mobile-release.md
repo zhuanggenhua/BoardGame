@@ -8,7 +8,7 @@
 - OTA 新旧判断：客户端按单调递增的 OTA 内部游标判断；`publishedAt` 只用于审计和展示
 - 所有 OTA channel 默认面向**所有已安装版本**；不再按原生版本写 `target/min/max` 门禁
 - 如果需要客户端拿到更新后立即切换新 bundle，显式传 `--force-update`
-- 更新部署：默认用 `scripts/release/deploy-and-ota.mjs --prepare-version` 同步增加 `package.json.version` 与 Android `androidVersionCode`
+- 更新部署：默认必须走 `node scripts/release/deploy-and-ota.mjs --prepare-version` → 提交 push → 等 CI 镜像完成 → `node scripts/release/deploy-and-ota.mjs`，它包含服务器部署和 Android stable OTA；禁止只跑服务器 `deploy-image.sh update` 后汇报完成
 - 原生 APK：发版时用 `--bump patch|minor|major` 自动更新版本
 - 游戏包：继续走 `package.json.version + gameId + 时间戳` 的派生版本
 - 日常入口统一走新的包装脚本，避免再手打多条命令和 npm 参数透传坑
@@ -36,6 +36,19 @@ node scripts/mobile/release-android.mjs ota --channel stable
 - 如需修复曾经误发过高 bundle 版本号的旧客户端，使用桥接游标，例如 `--ota-version-base 6.0.0` 或显式 `--version 6.0.0-ota-bridge-...`
 - 如需更新后立即切换 bundle，可显式传 `--force-update`
 - 若误传原生版本兼容参数，脚本会直接失败，防止再次误发
+
+完整更新部署：
+
+```bash
+node scripts/release/deploy-and-ota.mjs --prepare-version
+# 提交并 push 版本改动，等待 CI 镜像构建完成
+node scripts/release/deploy-and-ota.mjs
+```
+
+说明：
+- “更新部署 / 发线上 / 部署最新”默认指完整更新部署，不是单独服务器更新。
+- 完整更新部署必须包含服务器 `latest` 镜像更新和 Android `stable` OTA 成功发布；任一步没执行或失败，都只能汇报“完整上线未完成”。
+- 如果用户明确说“不发 OTA / 只更新服务器 / 本次不改版本”，才允许加 `--skip-ota` 或 `--allow-current-version`；汇报时必须说明这是用户缩小后的发布范围。
 
 预演 OTA，不上传：
 
