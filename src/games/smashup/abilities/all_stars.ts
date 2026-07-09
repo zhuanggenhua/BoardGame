@@ -123,7 +123,7 @@ function allStarsImperialDragonTrigger(ctx: TriggerContext): SmashUpEvent[] {
     return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
 }
 
-function allStarsSproutTrigger(ctx: TriggerContext) {
+function allStarsSproutTrigger(ctx: TriggerContext): SmashUpEvent[] {
     return killerPlantSproutTrigger(ctx);
 }
 

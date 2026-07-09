@@ -6,6 +6,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { getFactionCards } from '../data/cards';
 import { hasAbility } from '../domain/abilityRegistry';
 import { getOngoingRuntimeRegistrationShape, getRegisteredOngoingEffectIds } from '../domain/ongoingEffects';
+import { getOngoingPowerModifier } from '../domain/ongoingModifiers';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { AbilityTag } from '../domain/types';
 import { isFactionImplementationInProgress } from '../ui/factionMeta';
@@ -190,6 +191,39 @@ describe('SmashUp Sharks / All-Stars / Tornados POD intake', () => {
         expect(triggerIds.get('all_stars_imperial_dragon_pod')).toEqual(
             expect.arrayContaining(['onMinionPlayed', 'onMinionMoved']),
         );
+        expect(getOngoingPowerModifier({
+            phase: 'play',
+            turnNumber: 1,
+            activePlayerId: '0',
+            players: {
+                '0': { id: '0', deck: [], hand: [], discard: [], victoryPoints: 0 },
+            },
+            bases: [{
+                defId: 'test_base',
+                minions: [{
+                    uid: 'target',
+                    defId: 'test_minion',
+                    owner: '0',
+                    controller: '0',
+                    basePower: 2,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                }],
+                ongoingActions: [{ uid: 'full-moon', defId: 'all_stars_full_moon_pod', ownerId: '0' }],
+            }],
+        }, {
+            uid: 'target',
+            defId: 'test_minion',
+            owner: '0',
+            controller: '0',
+            basePower: 2,
+            powerModifier: 0,
+            tempPowerModifier: 0,
+            talentUsed: false,
+            attachedActions: [],
+        }, 0)).toBe(1);
         expect(hasAbility('all_stars_ensign_pod', 'ongoing')).toBe(false);
         expect(hasAbility('all_stars_king_rex_pod', 'onPlay')).toBe(false);
     });
