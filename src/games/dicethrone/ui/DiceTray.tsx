@@ -100,7 +100,7 @@ const BOARD_DICE_RING_SIZE_MULTIPLIER = 1.35;
 const BOARD_DICE_STAGE_Z_INDEX = UI_Z_INDEX.cardPreviewTooltip + 1;
 const BOARD_DICE_LOCK_LABEL_Z_INDEX = BOARD_DICE_STAGE_Z_INDEX + 2;
 const BOARD_DICE_MOBILE_PROJECTION_Y_OFFSET_PX = -72;
-const BOARD_DICE_MOBILE_PROJECTION_TOP_PADDING_PX = BOARD_DICE_HIT_TARGET_SIZE_PX / 2;
+const BOARD_DICE_MOBILE_PROJECTION_TOP_PADDING_PX = 36;
 const OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME = [
     'pointer-events-auto absolute top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full',
     'border border-white/40 bg-amber-600 text-base font-black leading-none text-white shadow-[0_0_14px_rgba(245,158,11,0.65)]',

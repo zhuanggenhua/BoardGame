@@ -1948,9 +1948,15 @@ describe('Property 21: 保护机制一致性', () => {
 
     // ── 非保护类基地上不触发保护 ──
     test('普通基地上的随从不受任何保护', () => {
-        const normalBaseIds = getAllBaseDefIds().filter(
-            id => id !== 'base_beautiful_castle' && id !== 'base_pony_paradise' && id !== 'base_house_of_nine_lives',
-        );
+        const protectionBaseIds = new Set([
+            'base_beautiful_castle',
+            'base_pony_paradise',
+            'base_house_of_nine_lives',
+            'base_egg_chamber',
+            'base_converted_cave',
+            'base_hideout',
+        ]);
+        const normalBaseIds = getAllBaseDefIds().filter(id => !protectionBaseIds.has(id));
         fc.assert(
             fc.property(
                 fc.integer({ min: 0, max: Math.max(normalBaseIds.length - 1, 0) }),

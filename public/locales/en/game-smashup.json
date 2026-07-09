@@ -1563,6 +1563,18 @@
     "disco_dancers": {
       "name": "Disco Dancers",
       "description": "Chain extra actions, movement, and power counters into scoring-floor momentum."
+    },
+    "sharks_pod": {
+      "name": "Sharks (POD)",
+      "description": "POD version of Sharks: destroy low-power minions, grow with +1 power counters, and chain predatory effects."
+    },
+    "tornados_pod": {
+      "name": "Tornados (POD)",
+      "description": "POD version of Tornados: move minions around the table, disrupt bases, and reshape scoring windows."
+    },
+    "all_stars_pod": {
+      "name": "All-Stars (POD)",
+      "description": "A POD all-star roster of one-card highlights from many Smash Up factions."
     }
   },
   "tutorial": {
@@ -6131,6 +6143,181 @@
     "base_monkey_lab": {
       "name": "Monkey Lab",
       "abilityText": "Each minion here has +1 power for each action played on it."
+    },
+    "sharks_blood_in_the_water_pod": {
+      "name": "Blood in the Water",
+      "effectText": "Play on a base. Ongoing: After a minion is destroyed here, you may play a minion here of power 3 or less as an extra minion."
+    },
+    "sharks_torn_apart_pod": {
+      "name": "Torn Apart",
+      "effectText": "Destroy a minion of power 3 or less and draw a card."
+    },
+    "sharks_chum_pod": {
+      "name": "Chum",
+      "effectText": "Play on a minion. Ongoing: After a minion is destroyed, place a +1 power counter on this minion."
+    },
+    "sharks_feeding_frenzy_pod": {
+      "name": "Feeding Frenzy",
+      "effectText": "Choose a base. Destroy any number of minions there of power 2 or less."
+    },
+    "sharks_freakin_laser_beam_pod": {
+      "name": "Freakin’ Laser Beam",
+      "effectText": "Choose one of your minions. Destroy a minion with equal or lower power at your minion’s base."
+    },
+    "sharks_air_jaws_pod": {
+      "name": "Air Jaws",
+      "effectText": "Move one of your minions to another base, then destroy a minion there of power 3 or less."
+    },
+    "sharks_dangerous_waters_pod": {
+      "name": "Dangerous Waters",
+      "effectText": "Play on a base. Talent: Choose a minion here. It gets -2 power until the end of the turn."
+    },
+    "sharks_week_of_sharks_pod": {
+      "name": "Week of Sharks",
+      "effectText": "Play on a base. Ongoing: If you have a minion here, draw an extra card at the end of your turn. Only use one Week of Sharks ability each turn."
+    },
+    "sharks_mako_pod": {
+      "name": "Mako",
+      "abilityText": "Special: After you destroy a minion on any base, you may play this minion there as an extra minion."
+    },
+    "sharks_hammerhead_pod": {
+      "name": "Hammerhead",
+      "abilityText": "Ongoing: After a minion here is destroyed, place a +1 power counter on this minion."
+    },
+    "sharks_great_white_pod": {
+      "name": "Great White",
+      "abilityText": "Talent: Move this minion to another base and destroy a minion there of power 2 or less."
+    },
+    "sharks_megalodon_pod": {
+      "name": "Megalodon",
+      "abilityText": "You may destroy a minion of power 4 or less here. Special: Before this base scores, you may destroy a minion here of power 3 or less."
+    },
+    "tornados_not_in_kansas_pod": {
+      "name": "Not in Kansas",
+      "effectText": "Destroy a base and any actions played on it or on minions there. Replace it with the top card of the base deck. All minions from the original base remain."
+    },
+    "tornados_picked_up_pod": {
+      "name": "Picked Up",
+      "effectText": "Special: Play before a base scores. Move a minion from there to another base."
+    },
+    "tornados_ripped_off_pod": {
+      "name": "Ripped Off",
+      "effectText": "Transfer an action played on a base to another base or on a minion to another minion."
+    },
+    "tornados_over_the_rainbow_pod": {
+      "name": "Over the Rainbow",
+      "effectText": "Special: Play before a base scores. Move one of your minions from another base to there."
+    },
+    "tornados_trade_winds_pod": {
+      "name": "Trade Winds",
+      "effectText": "Choose two minions of power 3 or less. Move each one to the other’s base."
+    },
+    "tornados_whirlwinds_pod": {
+      "name": "Whirlwinds",
+      "effectText": "You may move any number of your minions to other bases."
+    },
+    "tornados_gone_with_the_wind_pod": {
+      "name": "Gone with the Wind",
+      "effectText": "Special: Play after a base scores. You may move one of your minions from there to another base instead of the discard pile."
+    },
+    "tornados_carried_away_pod": {
+      "name": "Carried Away",
+      "effectText": "Move a minion to another base."
+    },
+    "tornados_dust_devil_pod": {
+      "name": "Dust Devil",
+      "abilityText": "Special: Before a base scores, you may move this minion to there."
+    },
+    "tornados_twister_pod": {
+      "name": "Twister",
+      "abilityText": "You may move a minion of power 3 or less from here to another base, or from another base to here."
+    },
+    "tornados_cyclone_pod": {
+      "name": "Cyclone",
+      "abilityText": "Talent: Move this minion to another base."
+    },
+    "tornados_monster_tornado_pod": {
+      "name": "Monster Tornado",
+      "abilityText": "Talent: Move a minion of power 4 or less from here to another base, or from another base to here."
+    },
+    "all_stars_seeing_stars_pod": {
+      "name": "Seeing Stars",
+      "effectText": "Destroy a minion of power 3 or less."
+    },
+    "all_stars_begin_the_summoning_pod": {
+      "name": "Begin the Summoning",
+      "effectText": "Place a minion from your discard pile on top of your deck. You may play an extra action this turn."
+    },
+    "all_stars_its_astounding_pod": {
+      "name": "It's Astounding",
+      "effectText": "Play an action from your discard pile as an extra action."
+    },
+    "all_stars_full_moon_pod": {
+      "name": "Full Moon",
+      "effectText": "Play on a base. Ongoing: Each of your minions here has +1 power."
+    },
+    "all_stars_non_infinite_loop_pod": {
+      "name": "Non-Infinite Loop",
+      "effectText": "Play an action from the discard pile as an extra action. After it resolves, you may return it to your hand."
+    },
+    "all_stars_friendship_power_pod": {
+      "name": "Friendship Power",
+      "effectText": "Move one of your minions to another base where you have a minion. You may place this card on top of your deck instead of the discard pile."
+    },
+    "all_stars_ghostly_arrival_pod": {
+      "name": "Ghostly Arrival",
+      "effectText": "You may play an extra minion and/or an extra action."
+    },
+    "all_stars_square_deal_pod": {
+      "name": "Square Deal",
+      "effectText": "Draw cards until at least one other player has fewer cards in hand than you."
+    },
+    "all_stars_favor_of_dionysus_pod": {
+      "name": "Favor of Dionysus",
+      "effectText": "One of your minions gains +1 power until the end of the turn. Play an extra action. You may place this card on top of your deck instead of the discard pile."
+    },
+    "all_stars_prepare_for_battle_pod": {
+      "name": "Prepare for Battle",
+      "effectText": "Reveal the top 3 cards of your deck. Draw 2 of them and put the other on the top or bottom of your deck."
+    },
+    "all_stars_servitor_of_cthulhu_pod": {
+      "name": "Servitor of Cthulhu",
+      "abilityText": "Talent: Destroy this card to choose an action from your discard pile and place it on top of your deck."
+    },
+    "all_stars_fan_pod": {
+      "name": "Fan",
+      "abilityText": "Special: After you destroy a minion on a base, play this minion there as an extra minion."
+    },
+    "all_stars_sprout_pod": {
+      "name": "Sprout",
+      "abilityText": "Ongoing: At the start of your turn, destroy this card. You may search your deck for a minion with power 3 or less and play it here as an extra minion. Shuffle your deck."
+    },
+    "all_stars_ensign_pod": {
+      "name": "Ensign",
+      "abilityText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
+    },
+    "all_stars_puck_pod": {
+      "name": "Puck",
+      "abilityText": "You may play an extra action, or draw a card."
+    },
+    "all_stars_lab_assistant_pod": {
+      "name": "Lab Assistant",
+      "abilityText": "Place a +1 power counter on one of your other minions."
+    },
+    "all_stars_imperial_dragon_pod": {
+      "name": "Imperial Dragon",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, draw 1 card."
+    },
+    "all_stars_gelf_pod": {
+      "name": "G.E.L.F.",
+      "abilityText": "Talent: Search your deck for a non-G.E.L.F. minion of power 4 or less. Shuffle this card into your deck and play that minion here as an extra minion. Shuffle your deck."
+    },
+    "all_stars_granny_pod": {
+      "name": "Granny",
+      "abilityText": "Talent: Look at the top card of your deck. You may put it on the bottom of your deck."
+    },
+    "all_stars_king_rex_pod": {
+      "name": "King Rex"
     }
   },
   "debug": {
