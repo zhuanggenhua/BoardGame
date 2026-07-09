@@ -25,6 +25,7 @@ import { SHADOW_FANG_2 } from '../heroes/ninja/abilities';
 import type { AbilityEffect } from '../domain/combat';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { GameTestRunner, type TestCase } from '../../../engine/testing';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
@@ -5179,11 +5180,11 @@ describe('王权骰铸流程测试', () => {
                         '1': { tokens: { [TOKEN_IDS.TAIJI]: 4 } },
                         '0': { discardSize: 1 },
                     },
-                    'sys.interaction.current': null,
                 },
             });
 
             expect(result.assertionErrors).toEqual([]);
+            expect(getCurrentInteractionSummary(result.finalState).id).toBeUndefined();
         });
     });
 
