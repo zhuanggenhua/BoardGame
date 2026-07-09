@@ -28311,6 +28311,9 @@ describe('七大恨支付手牌选择', () => {
             expect.objectContaining({ id: 'city-region-28-jizhen-control', type: 'control', faction: 'ming' }),
         ]));
         expect(core.mapTokens.some((token) => token.type === 'population' || token.id.endsWith('-pop'))).toBe(false);
+        const dongjiangControl = core.mapTokens.find((token) => token.id === 'city-region-22-control');
+        expect(dongjiangControl?.x).toBeCloseTo(881 / QIDAHEN_MAP_WIDTH, 4);
+        expect(dongjiangControl?.y).toBeCloseTo((719 - 58) / QIDAHEN_MAP_HEIGHT, 4);
         const dongjiang = core.regions.find((region) => region.id === 'city-region-22')!;
         dongjiang.siegeState = {
             attackerFactionId: 'jin',
@@ -28318,7 +28321,8 @@ describe('七大恨支付手牌选择', () => {
             attackerSpecialTroops: [],
             sourceRegionId: 'city-region-19',
         };
-        const siegeTokens = syncQidahenMapTokensFromRegions(core.regions, syncPiecesFromRegions(core.regions))
+        const mapTokensWithDongjiangSiege = syncQidahenMapTokensFromRegions(core.regions, syncPiecesFromRegions(core.regions));
+        const siegeTokens = mapTokensWithDongjiangSiege
             .filter((token) => token.type === 'army' && token.id.startsWith('city-region-22-siege-army-'));
         expect(siegeTokens).toHaveLength(2);
         expect(siegeTokens).toEqual(expect.arrayContaining([
@@ -28330,11 +28334,18 @@ describe('七大恨支付手牌选择', () => {
         ]));
         const averageSiegeTokenX = siegeTokens.reduce((sum, token) => sum + token.x, 0) / siegeTokens.length;
         const averageSiegeTokenY = siegeTokens.reduce((sum, token) => sum + token.y, 0) / siegeTokens.length;
-        expect(averageSiegeTokenX).toBeCloseTo(940 / QIDAHEN_MAP_WIDTH, 4);
-        expect(averageSiegeTokenY).toBeCloseTo(514 / QIDAHEN_MAP_HEIGHT, 4);
-        expect(averageSiegeTokenX).toBeGreaterThan(0.73);
-        expect(averageSiegeTokenX).toBeLessThan(0.76);
-        expect(Math.max(...siegeTokens.map((token) => token.y))).toBeLessThan(0.60);
+        expect(averageSiegeTokenX).toBeCloseTo(881 / QIDAHEN_MAP_WIDTH, 4);
+        expect(averageSiegeTokenY).toBeCloseTo((719 + 30) / QIDAHEN_MAP_HEIGHT, 4);
+        expect(Math.max(...siegeTokens.map((token) => token.x)) - Math.min(...siegeTokens.map((token) => token.x)))
+            .toBeCloseTo(36 / QIDAHEN_MAP_WIDTH, 4);
+        const dongjiangArmyTokens = mapTokensWithDongjiangSiege.filter((token) => (
+            token.type === 'army' && token.id.startsWith('city-region-22-army-')
+        ));
+        const averageDongjiangArmyTokenX = dongjiangArmyTokens.reduce((sum, token) => sum + token.x, 0) / dongjiangArmyTokens.length;
+        const averageDongjiangArmyTokenY = dongjiangArmyTokens.reduce((sum, token) => sum + token.y, 0) / dongjiangArmyTokens.length;
+        expect(averageDongjiangArmyTokenX).toBeCloseTo(881 / QIDAHEN_MAP_WIDTH, 4);
+        expect(averageDongjiangArmyTokenY).toBeCloseTo((719 - 18) / QIDAHEN_MAP_HEIGHT, 4);
+        expect(Math.min(...siegeTokens.map((token) => token.y))).toBeGreaterThan(Math.max(...dongjiangArmyTokens.map((token) => token.y)));
         expect(getArmyTokens('jianzhou')).toHaveLength(3);
         expect(getArmyTokens('changbai')).toHaveLength(2);
         expect(getArmyTokens('chahar')).toHaveLength(3);

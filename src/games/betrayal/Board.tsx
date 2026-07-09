@@ -1441,6 +1441,7 @@ function BetrayalHouseDice3DGroup({
         () => roll.dice.map((pip) => createBetrayalHouseDiceSkin(normalizeBetrayalHouseRuleValue(pip))),
         [roll.dice],
     );
+    const rerollingDieIndex = roll.lastRabbitFootRerollDieIndex ?? null;
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
     const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
     const visibleRuleValues = React.useMemo(
@@ -1506,11 +1507,15 @@ function BetrayalHouseDice3DGroup({
             data-dice-visible-rule-values={visibleRuleValues.join(',')}
             data-dice-rule-subtotal={roll.dice.reduce((sum, pip) => sum + pip, 0)}
             data-dice-physical-d6-faces={physicalD6Faces.join(',')}
+            data-dice-rerolling-die-index={rerollingDieIndex ?? undefined}
             className={`relative min-h-0 overflow-visible rounded-[14px] bg-transparent ${className}`}
         >
             <DiceBoxPhysicsSource
                 dice={diceInputs}
-                isRolling
+                isRolling={rerollingDieIndex === null}
+                rerollingDiceIds={rerollingDieIndex !== null
+                    ? [rerollingDieIndex + 1]
+                    : undefined}
                 styleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
                 dieSkins={dieSkins}
                 testId="betrayal-house-dice-physics-source"
@@ -1534,37 +1539,42 @@ function BetrayalHouseDice3DGroup({
                     <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[rgba(241,221,146,0.44)] bg-[rgba(16,12,8,0.74)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f7e6ab] shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
                         {rerollSelection.promptLabel}
                     </div>
-                    {selectableDiceTargets.map((target) => (
-                        <div
-                            key={`${roll.id}-reroll-target-${target.dieIndex}`}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={rerollSelection.getDieActionLabel(target.dieIndex)}
-                            title={rerollSelection.getDieActionLabel(target.dieIndex)}
-                            data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
-                            data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
-                            data-reroll-target-source={target.source}
-                            className="group pointer-events-auto absolute outline-none"
-                            style={{
-                                left: target.source === 'fallback-projection' ? target.fallbackStyle.left : `${target.layout.x}px`,
-                                top: target.source === 'fallback-projection' ? target.fallbackStyle.top : `${target.layout.y}px`,
-                                width: `${target.layout.width + 18}px`,
-                                height: `${target.layout.height + 18}px`,
-                                transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
-                                transformOrigin: 'center center',
-                            }}
-                            onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
-                            onKeyDown={(event) => {
-                                handleRerollTargetKeyDown(event, target.dieIndex);
-                            }}
-                        >
-                            <span className="sr-only">{rerollSelection.getDieActionLabel(target.dieIndex)}</span>
-                            <span
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 rounded-[18px] border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
-                            />
-                        </div>
-                    ))}
+                    {selectableDiceTargets.map((target) => {
+                        const targetCircleSize = Math.max(target.layout.width, target.layout.height) + 18;
+                        return (
+                            <div
+                                key={`${roll.id}-reroll-target-${target.dieIndex}`}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={rerollSelection.getDieActionLabel(target.dieIndex)}
+                                title={rerollSelection.getDieActionLabel(target.dieIndex)}
+                                data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
+                                data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
+                                data-reroll-target-source={target.source}
+                                data-reroll-target-shape="circle"
+                                className="group pointer-events-auto absolute outline-none"
+                                style={{
+                                    left: target.source === 'fallback-projection' ? target.fallbackStyle.left : `${target.layout.x}px`,
+                                    top: target.source === 'fallback-projection' ? target.fallbackStyle.top : `${target.layout.y}px`,
+                                    width: `${targetCircleSize}px`,
+                                    height: `${targetCircleSize}px`,
+                                    transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
+                                    transformOrigin: 'center center',
+                                }}
+                                onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
+                                onKeyDown={(event) => {
+                                    handleRerollTargetKeyDown(event, target.dieIndex);
+                                }}
+                            >
+                                <span className="sr-only">{rerollSelection.getDieActionLabel(target.dieIndex)}</span>
+                                <span
+                                    aria-hidden="true"
+                                    data-highlight-shape="circle"
+                                    className="pointer-events-none absolute inset-0 rounded-full border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             ) : null}
             <div className="sr-only">
@@ -3412,6 +3422,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         const isFocus = options.layout === 'focus';
         const isPreview = options.layout === 'preview';
         const isCompact = options.layout === 'compact';
+        const isTutorialBookTarget = !isPreview
+            && isTutorialActive
+            && tutorialStep?.id === 'use-book'
+            && item.id === 'omen-book';
         const canModifyRecentRoll = !isPreview && rollModifierCardIds.has(item.id);
         const isTradeCompact = isCompact && Boolean(frontVisual) && core.recommendedAction === 'trade';
         const isDenseNoFrontCompact = isCompact && !frontVisual && Boolean(options.compactDenseNoFront);
@@ -3423,6 +3437,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ? { width: `${COMPACT_INVENTORY_CARD_WIDTH}px` }
                 : undefined;
         const showSelectedState = !isPreview && isSelected;
+        const showActionTargetOutline = !showSelectedState && (isTutorialBookTarget || canModifyRecentRoll);
         const titleClass = isPreview
             ? `min-h-[52px] text-[18px] font-semibold leading-[22px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`
             : isFocus
@@ -3441,12 +3456,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : isPreview
                     ? 'z-10'
                     : 'z-10 hover:-translate-y-0.5';
-        const useMobileOutlineLayer = isPhoneLandscapeLayout;
-        const outerRingClass = !useMobileOutlineLayer && showSelectedState
-            ? 'ring-4 ring-[#eecc7e] shadow-[0_0_24px_rgba(238,204,126,0.48)]'
-            : !useMobileOutlineLayer && canModifyRecentRoll
-                ? 'ring-4 ring-[#9fe1a7] shadow-[0_0_24px_rgba(159,225,167,0.52)]'
-                : '';
+        const outerRingClass = '';
         return (
             <div
                 key={`${options.layout}-${item.id}`}
@@ -3471,26 +3481,26 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 data-testid={options.testId}
                 data-roll-modifier-available={canModifyRecentRoll ? 'true' : 'false'}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击选择`}
-                className={`relative w-full overflow-visible text-left transition ${buttonOutlineClass}`}
+                className={`relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${buttonOutlineClass}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
-                {useMobileOutlineLayer && showSelectedState ? (
+                {showSelectedState ? (
                     <span
                         data-testid={options.testId ? `${options.testId}-selected-outline` : undefined}
+                        data-highlight-shape="circle"
                         aria-hidden="true"
-                        className="pointer-events-none absolute z-20 rounded-[10px] shadow-[0_0_20px_rgba(238,204,126,0.48)]"
+                        className="pointer-events-none absolute left-1/2 top-1/2 z-20 aspect-square w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_20px_rgba(238,204,126,0.48)]"
                         style={{
-                            inset: '0',
                             border: '2px solid #eecc7e',
                         }}
                     />
-                ) : useMobileOutlineLayer && canModifyRecentRoll ? (
+                ) : showActionTargetOutline ? (
                     <span
-                        data-testid={options.testId ? `${options.testId}-roll-modifier` : undefined}
+                        data-testid={options.testId ? `${options.testId}-${isTutorialBookTarget ? 'tutorial-target' : 'roll-modifier'}` : undefined}
+                        data-highlight-shape="circle"
                         aria-hidden="true"
-                        className="pointer-events-none absolute z-20 rounded-[10px] shadow-[0_0_20px_rgba(159,225,167,0.48)]"
+                        className="pointer-events-none absolute left-1/2 top-1/2 z-20 aspect-square w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_20px_rgba(159,225,167,0.48)]"
                         style={{
-                            inset: '0',
                             border: '2px solid #9fe1a7',
                         }}
                     />
@@ -3503,9 +3513,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 <div
                     data-testid={options.testId ? `${options.testId}-shell` : undefined}
                     data-selected-outline={showSelectedState ? 'true' : undefined}
+                    data-tutorial-target-outline={isTutorialBookTarget ? 'true' : undefined}
                     data-modifier-outline={canModifyRecentRoll && !showSelectedState ? 'true' : undefined}
                     className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} ${outerRingClass} border ${
-                        showSelectedState && !useMobileOutlineLayer
+                        showSelectedState
                             ? 'border-transparent bg-transparent'
                             : frontVisual
                             ? isCompact
@@ -3514,10 +3525,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             : isCompact
                                 ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
                                 : tone.cardSurfaceClass
-                    } ${isUsedThisTurn || isUnavailableThisTurn ? 'opacity-60' : ''}`}
+                    } ${!isPreview && (isUsedThisTurn || isUnavailableThisTurn) ? 'opacity-60' : ''}`}
                     style={{
                         aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
-                        ...(showSelectedState && !useMobileOutlineLayer
+                        ...(showSelectedState
                             ? {
                                 borderColor: 'transparent',
                                 borderStyle: 'solid',
@@ -3768,7 +3779,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 {phaseLabel}
                             </span>
                         </div>
-                        <div className="absolute right-0 top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md" data-testid="betrayal-status-chip">
+                        <div className="absolute right-[244px] top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md" data-testid="betrayal-status-chip">
                             <div className="text-right">
                                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">{t('board.hud.turnLabel')}</div>
                                 <div className="mt-0.5 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#f0d29a]">
@@ -3795,9 +3806,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     {isPhoneLandscapeLayout ? (
                         <section
                             data-testid="betrayal-mobile-stage-status"
-                            className="pointer-events-none absolute left-2 top-2 z-40 flex items-center gap-2 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-2 py-1.5 shadow-[0_8px_18px_rgba(0,0,0,0.32)] backdrop-blur-sm"
+                            className="pointer-events-none absolute left-2 top-2 z-40 flex min-w-[188px] max-w-[224px] items-start gap-2 rounded-[16px] border border-[#5a4930] bg-[rgba(27,20,16,0.9)] px-2.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.38)] backdrop-blur-sm"
                         >
-                            <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-full border border-[#5a4930] bg-[rgba(13,18,14,0.86)]">
+                            <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#6b5a3d] bg-[rgba(13,18,14,0.86)]">
                                 <OptimizedImage
                                     src={core.currentExplorer.portraitAsset}
                                     locale={effectiveLocale}
@@ -3807,22 +3818,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 />
                             </div>
                             <div className="min-w-0">
-                                <div className="truncate text-[11px] font-semibold tracking-[0.06em] text-[#efe2c4]">
+                                <div className="truncate text-[13px] font-semibold tracking-[0.04em] text-[#efe2c4]">
                                     {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
                                 </div>
-                                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#c8f05e]">
+                                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#c8f05e]">
                                     <span>{t('board.hud.moveLabel')} {core.movesRemaining}</span>
                                     <span className="text-[#7d725d]">/</span>
                                     <span>{phaseLabel}</span>
                                 </div>
                                 <div
                                     data-testid="betrayal-mobile-traits-strip"
-                                    className="mt-1 flex items-center gap-1"
+                                    className="mt-1.5 grid grid-cols-4 gap-1"
                                 >
                                     {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
                                         <span
                                             key={`mobile-current-trait-${trait}`}
-                                            className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[rgba(214,191,129,0.18)] bg-[rgba(12,16,14,0.72)] px-1 text-[10px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
+                                            className={`inline-flex h-[22px] min-w-[24px] items-center justify-center rounded-[7px] border border-[rgba(214,191,129,0.22)] bg-[rgba(12,16,14,0.76)] px-1.5 text-[12px] font-bold ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
                                             title={`${TRAIT_LABEL_LOCAL[trait]} ${core.currentExplorer.traits[trait]}`}
                                         >
                                             {core.currentExplorer.traits[trait]}
@@ -3836,41 +3847,41 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         <section
                             data-testid="betrayal-mobile-context-strip"
                             aria-label={t('board.mobile.contextStripLabel')}
-                            className="pointer-events-auto absolute right-2 top-2 z-40 grid w-[min(296px,34vw)] min-w-[176px] grid-cols-[minmax(0,1fr)_auto] items-start gap-1.5 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-2 py-1.5 text-[#efe2c4] shadow-[0_8px_18px_rgba(0,0,0,0.32)] backdrop-blur-sm"
+                            className="pointer-events-auto absolute right-2 top-2 z-40 grid w-[min(360px,40vw)] min-w-[276px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[16px] border border-[#5a4930] bg-[rgba(27,20,16,0.9)] px-2.5 py-2 text-[#efe2c4] shadow-[0_10px_24px_rgba(0,0,0,0.38)] backdrop-blur-sm"
                         >
                             <div className="min-w-0">
                                 <div
                                     data-testid="betrayal-mobile-deck-summary"
-                                    className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] leading-none"
+                                    className="grid grid-cols-3 gap-1 text-[11px] leading-none"
                                 >
                                     {deckItems.map((item) => (
-                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-0.5">
-                                            <span className="max-w-[34px] truncate text-[#c4a265]">{item.label.replace('牌堆', '')}</span>
-                                            <span className="font-semibold text-[#f0e2c0]">{item.count}</span>
+                                        <span key={`mobile-${item.id}`} className="inline-flex min-w-0 items-center justify-between gap-1 rounded-[7px] border border-[rgba(214,191,129,0.12)] bg-[rgba(12,16,14,0.55)] px-1.5 py-1">
+                                            <span className="truncate text-[#c4a265]">{item.label.replace('牌堆', '')}</span>
+                                            <span className="font-bold text-[#f0e2c0]">{item.count}</span>
                                         </span>
                                     ))}
                                 </div>
                                 <div
                                     data-testid="betrayal-mobile-discard-summary"
-                                    className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] leading-none text-[#a89d84]"
+                                    className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-none text-[#a89d84]"
                                 >
                                     <span>{t('board.sections.discard')}</span>
                                     {discardItems.map((item) => (
-                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-0.5">
-                                            <span className="max-w-[26px] truncate">{item.label.split(' · ')[0].replace('牌堆', '')}</span>
-                                            <span className="font-semibold text-[#d8bf81]">{item.count}</span>
+                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-1">
+                                            <span className="max-w-[42px] truncate">{item.label.split(' · ')[0].replace('牌堆', '')}</span>
+                                            <span className="font-bold text-[#d8bf81]">{item.count}</span>
                                         </span>
                                     ))}
                                 </div>
                                 <div
                                     data-testid="betrayal-mobile-teammates-summary"
-                                    className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden text-[9px] leading-none text-[#b7aa92]"
+                                    className="mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[10px] leading-none text-[#b7aa92]"
                                 >
                                     <span className="shrink-0 text-[#c4a265]">{t('board.hud.teammatesLabel')}</span>
                                     {core.otherExplorers.slice(0, 2).map((explorer) => (
                                         <span
                                             key={`mobile-teammate-${explorer.playerId}`}
-                                            className="truncate"
+                                            className="truncate rounded-full bg-[rgba(12,16,14,0.62)] px-1.5 py-1"
                                             title={`${resolvePlayerName(explorer.playerId, explorer.displayName, matchData)} · ${core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown')}`}
                                         >
                                             {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
@@ -3883,7 +3894,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     type="button"
                                     onClick={() => setReferenceOpen(true)}
                                     data-testid="betrayal-mobile-open-scenario"
-                                    className="grid h-7 w-7 place-items-center rounded-[7px] border border-[#58472f] bg-[rgba(13,15,12,0.72)] text-[#d8bf81]"
+                                    className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
                                     title={scenarioConfig.presentation.referenceTitle}
                                 >
                                     <BookOpen size={14} />
@@ -3892,7 +3903,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     type="button"
                                     onClick={() => setRoomPreviewId(core.activeRoomId)}
                                     data-testid="betrayal-mobile-open-active-room-preview"
-                                    className="grid h-7 w-7 place-items-center rounded-[7px] border border-[#58472f] bg-[rgba(13,15,12,0.72)] text-[#d8bf81]"
+                                    className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
                                     title={t('board.rooms.preview')}
                                 >
                                     <House size={14} />
@@ -4865,10 +4876,16 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                 : 'bg-[linear-gradient(180deg,rgba(3,6,5,0.02),rgba(3,5,5,0.16))]'
                                                 }`}
                                             />
+                                            {canExploreRoom ? (
+                                                <span
+                                                    data-testid={`betrayal-room-explore-card-highlight-${room.id}`}
+                                                    className="pointer-events-none absolute inset-0 z-20 rounded-[4px] border-2 border-[#d3b36d] bg-[radial-gradient(circle_at_50%_46%,rgba(211,179,109,0.18),rgba(211,179,109,0.04)_62%,transparent_82%)] shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_26px_rgba(211,179,109,0.58)]"
+                                                />
+                                            ) : null}
                                             {identityTone ? (
                                                 <div
                                                     data-testid={`betrayal-room-stripe-${room.id}`}
-                                                    className={`absolute left-2 top-2 h-2 w-2 rounded-full border border-white/10 ${identityTone.stripe}`}
+                                                    className={`absolute left-2 top-2 h-2 w-2 rounded-full border border-white/10 ${identityTone.stripe} ${canExploreRoom ? 'hidden' : ''}`}
                                                 />
                                             ) : null}
                                             <div className="pointer-events-none absolute inset-0 rounded-[3px] ring-1 ring-inset ring-[rgba(222,192,133,0.05)]" />
@@ -4979,10 +4996,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             handleExploreRoom(room.id);
                                                         }}
                                                         data-testid={`betrayal-room-explore-target-${room.id}`}
-                                                        className="grid h-4 w-4 place-items-center rounded-full border border-[#d3b36d] bg-[#d3b36d] shadow-[0_0_14px_rgba(211,179,109,0.76)]"
+                                                        className="grid min-h-8 min-w-[72px] place-items-center rounded-[8px] border border-[#d3b36d] bg-[rgba(24,17,8,0.90)] px-2 text-[11px] font-bold tracking-[0.08em] text-[#f5df9a] shadow-[0_0_18px_rgba(211,179,109,0.54)]"
                                                         title={t('board.rooms.explorable')}
                                                     >
-                                                        <span className="sr-only">{t('board.rooms.explorable')}</span>
+                                                        <span>{t('board.actions.explore')}</span>
                                                     </button>
                                                 ) : null}
                                             </div>

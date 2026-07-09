@@ -78,6 +78,7 @@ export function getUsableTokenAmountForTiming(
 ): number {
     const player = state.players[playerId];
     if (!player) return 0;
+    if (timing === 'beforeDamageReceived' && state.pendingDamage?.unblockable === true) return 0;
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
     if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;

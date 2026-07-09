@@ -33,6 +33,7 @@ export interface DiceBoxStyleProfile {
     arrangeSettledDice?: boolean;
     worldWidthScale?: number;
     worldHeightScale?: number;
+    recoverOutOfBounds?: boolean;
 }
 
 export interface DiceBoxDieSkin {
@@ -109,6 +110,11 @@ type DiceBoxDieTransformSnapshot = {
     bodyMass?: number;
 };
 
+type DiceBoxWorldBounds = {
+    width: number;
+    height: number;
+};
+
 const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     id: 'default-green-felt',
     surface: 'green-felt',
@@ -145,6 +151,10 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
     return typeof value === 'number' ? value : null;
 }
 
+function clampNumber(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+}
+
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number }> = [
     { x: -1.24, y: -0.86, yaw: -0.18 },
     { x: -0.44, y: -0.18, yaw: 0.08 },
@@ -159,6 +169,7 @@ export class DiceBoxThreeEngine {
     private readonly styleProfile: DiceBoxStyleProfile;
     private dieSkins: Array<DiceBoxDieSkin | null> = [];
     private activePresetSkinId: string | null = null;
+    private worldBounds: DiceBoxWorldBounds = { width: 0, height: 0 };
 
     private constructor(box: InstanceType<typeof DiceBoxModule>, container: HTMLElement, styleProfile: DiceBoxStyleProfile) {
         this.box = box;
@@ -253,6 +264,7 @@ export class DiceBoxThreeEngine {
         const worldHeightScale = this.styleProfile.worldHeightScale ?? 1;
         const worldWidth = this.container.clientWidth * worldWidthScale;
         const worldHeight = this.container.clientHeight * worldHeightScale;
+        this.worldBounds = { width: worldWidth, height: worldHeight };
         this.box.setDimensions({
             x: worldWidth,
             y: worldHeight,
@@ -314,8 +326,66 @@ export class DiceBoxThreeEngine {
         this.applyCurrentSkins();
     }
 
+    syncSettledValues(values: number[]): void {
+        this.applyValues(values, undefined, true);
+        this.applyCurrentSkins({ arrange: true });
+    }
+
     previewValues(values: number[], indices?: number[]): void {
         this.applyValues(values, indices, false);
+    }
+
+    recoverOutOfBoundsDice(): boolean {
+        if (this.styleProfile.recoverOutOfBounds === false || this.box.diceList.length === 0) return false;
+
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const halfWidth = Math.max(this.worldBounds.width / 2, baseScale * 2.2);
+        const halfHeight = Math.max(this.worldBounds.height / 2, baseScale * 2.2);
+        const maxX = Math.max(baseScale * 4.6, halfWidth + baseScale * 3.4);
+        const maxY = Math.max(baseScale * 4.2, halfHeight + baseScale * 3.2);
+        const maxZ = baseScale * 12;
+        const minZ = -baseScale * 2.4;
+        let didRecover = false;
+
+        this.box.diceList.forEach((die, index) => {
+            const dieWithBody = die as DiceBoxDieWithBody;
+            const position = dieWithBody.body?.position ?? dieWithBody.position;
+            if (!position) return;
+
+            const layout = this.getProjectedLayout(index, index);
+            const canvas = this.box.renderer?.domElement;
+            const isProjectedOutside = Boolean(layout && canvas && (
+                layout.maxX < -canvas.clientWidth * 0.45
+                || layout.minX > canvas.clientWidth * 1.45
+                || layout.maxY < -canvas.clientHeight * 0.45
+                || layout.minY > canvas.clientHeight * 1.45
+            ));
+            const isOutOfBounds = isProjectedOutside
+                || Math.abs(position.x) > maxX
+                || Math.abs(position.y) > maxY
+                || position.z > maxZ
+                || position.z < minZ;
+            if (!isOutOfBounds) return;
+
+            const slot = SETTLED_DICE_LAYOUT[index % SETTLED_DICE_LAYOUT.length] ?? { x: 0, y: 0, yaw: 0 };
+            const target = {
+                x: clampNumber(slot.x * baseScale * 0.72, -maxX * 0.68, maxX * 0.68),
+                y: clampNumber(slot.y * baseScale * 0.62, -maxY * 0.68, maxY * 0.68),
+                z: Math.max(baseScale * 0.72, baseScale * 0.5),
+            };
+            this.setVector(dieWithBody.position, target);
+            this.setVector(dieWithBody.body?.position, target);
+            this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(dieWithBody.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            dieWithBody.body?.wakeUp?.();
+            dieWithBody.updateMatrixWorld?.(true);
+            didRecover = true;
+        });
+
+        if (didRecover) {
+            this.box.renderer.render(this.box.scene, this.box.camera);
+        }
+        return didRecover;
     }
 
     ensureValues(values: number[]): void {
@@ -623,7 +693,7 @@ export class DiceBoxThreeEngine {
             }
         });
         this.applyValues(values, undefined, true);
-        this.applyCurrentSkins();
+        this.applyCurrentSkins({ arrange: true });
     }
 
     private applyPrimarySkinToDicePreset(): boolean {
@@ -678,7 +748,7 @@ export class DiceBoxThreeEngine {
         });
     }
 
-    private applyCurrentSkins(): void {
+    private applyCurrentSkins(options: { arrange?: boolean } = {}): void {
         let didChange = false;
 
         this.box.diceList.forEach((die, dieIndex) => {
@@ -689,7 +759,7 @@ export class DiceBoxThreeEngine {
             }
         });
 
-        if (this.arrangeSettledDice()) {
+        if (options.arrange === true && this.arrangeSettledDice()) {
             didChange = true;
         }
 
@@ -699,7 +769,7 @@ export class DiceBoxThreeEngine {
     }
 
     private arrangeSettledDice(): boolean {
-        if (!this.styleProfile.arrangeSettledDice || this.box.diceList.length === 0) return false;
+        if (this.box.diceList.length === 0) return false;
 
         const dice = this.box.diceList;
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;

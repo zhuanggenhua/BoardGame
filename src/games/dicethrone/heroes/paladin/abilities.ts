@@ -56,6 +56,7 @@ export const RIGHTEOUS_COMBAT_2: AbilityDef = {
                 type: 'rollDie',
                 target: 'self',
                 diceCount: 3,
+                resolutionMode: 'attackBonus',
                 conditionalEffects: [
                     { face: FACES.HELM, bonusDamage: 1 },
                     { face: FACES.SWORD, bonusDamage: 2 },
@@ -63,7 +64,7 @@ export const RIGHTEOUS_COMBAT_2: AbilityDef = {
                     { face: FACES.PRAY, cp: 1 },
                 ]
             },
-            timing: 'withDamage'
+            timing: 'preDefense'
         }
     ]
 };
@@ -98,6 +99,7 @@ export const RIGHTEOUS_COMBAT_3: AbilityDef = {
                         type: 'rollDie',
                         target: 'self',
                         diceCount: 3,
+                        resolutionMode: 'attackBonus',
                         conditionalEffects: [
                             { face: FACES.HELM, bonusDamage: 1 },
                             { face: FACES.SWORD, bonusDamage: 2 },
@@ -105,7 +107,7 @@ export const RIGHTEOUS_COMBAT_3: AbilityDef = {
                             { face: FACES.PRAY, cp: 1 },
                         ]
                     },
-                    timing: 'withDamage'
+                    timing: 'preDefense'
                 }
             ],
             priority: 1
@@ -333,6 +335,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
                     type: 'rollDie',
                     target: 'self',
                     diceCount: 2,
+                    resolutionMode: 'attackBonus',
                     conditionalEffects: [
                         { face: FACES.HELM, bonusDamage: 1 },
                         { face: FACES.SWORD, bonusDamage: 2 },
@@ -340,7 +343,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
                         { face: FACES.PRAY, cp: 1 },
                     ]
                 },
-                timing: 'withDamage'
+                timing: 'preDefense'
             }
         ]
     },

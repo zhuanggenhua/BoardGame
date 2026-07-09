@@ -102,7 +102,7 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
         {
             id: 'use-book',
             content: 'game-betrayal:tutorial.moveExploreUse.steps.useBook',
-            highlightTarget: 'betrayal-action-use',
+            highlightTarget: 'betrayal-inventory-omen-book',
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.USE_POSSESSION],

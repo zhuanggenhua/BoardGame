@@ -9,7 +9,7 @@
  */
 
 import { spawn } from 'child_process';
-import { appendFileSync, existsSync, mkdirSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { runViteCli } from './vite-cli-safe.mjs';
 import { withWindowsHide } from './windows-hide.js';
@@ -48,6 +48,32 @@ function teeProcessWrite(stream, prefix) {
     appendStreamLog(prefix, chunk, encoding);
     return originalWrite(chunk, encoding, callback);
   };
+}
+
+function isDisabledFlag(value) {
+  return /^(0|false|off|no)$/i.test((value || '').trim());
+}
+
+function cleanViteOptimizedDepsOnStart() {
+  if (isDisabledFlag(process.env.BG_VITE_CLEAN_DEPS_ON_START)) {
+    log('[CACHE] 已跳过 Vite 预构建依赖缓存清理：BG_VITE_CLEAN_DEPS_ON_START 禁用');
+    return;
+  }
+
+  const depsDir = join(process.cwd(), 'node_modules', '.vite', 'deps');
+  if (!existsSync(depsDir)) {
+    log('[CACHE] Vite 预构建依赖缓存不存在，无需清理');
+    return;
+  }
+
+  try {
+    rmSync(depsDir, { recursive: true, force: true });
+    log(`[CACHE] 已清理 Vite 预构建依赖缓存: ${depsDir}`);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    log(`[CACHE] 清理 Vite 预构建依赖缓存失败: ${detail}`);
+    throw error;
+  }
 }
 
 async function runViteInline(reason) {
@@ -129,6 +155,7 @@ log(`日志文件: ${logFile}`);
 log(`Node 版本: ${process.version}`);
 log(`工作目录: ${process.cwd()}`);
 log(`内存限制: ${process.execArgv.join(' ')}`);
+cleanViteOptimizedDepsOnStart();
 
 const viteEntry = 'scripts/infra/vite-cli-safe.mjs';
 const viteArgs = createViteArgs();

@@ -64,46 +64,27 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
         .poll(
             async () =>
                 images.evaluateAll((nodes) =>
-                    nodes.map((node) => {
-                        const image = node as HTMLImageElement;
-                        return {
-                            alt: image.alt,
-                            complete: image.complete,
-                            naturalHeight: image.naturalHeight,
-                            naturalWidth: image.naturalWidth,
-                            src: image.currentSrc || image.src,
-                        };
-                    }),
+                    nodes
+                        .map((node) => {
+                            const image = node as HTMLImageElement;
+                            return {
+                                alt: image.alt,
+                                complete: image.complete,
+                                naturalHeight: image.naturalHeight,
+                                naturalWidth: image.naturalWidth,
+                                src: image.currentSrc || image.src,
+                            };
+                        })
+                        .filter((image) =>
+                            !image.complete
+                            || image.src.length === 0
+                            || image.naturalWidth <= 1
+                            || image.naturalHeight <= 1
+                        ),
                 ),
             { message: `等待 ${selector} 的真实图片资源加载完成` },
         )
-        .toEqual(
-            expect.arrayContaining(
-                Array.from({ length: expectedCount }, () =>
-                    expect.objectContaining({
-                        complete: true,
-                        naturalHeight: expect.any(Number),
-                        naturalWidth: expect.any(Number),
-                        src: expect.any(String),
-                    }),
-                ),
-            ),
-        );
-
-    const failedImages = await images.evaluateAll((nodes) =>
-        nodes
-            .map((node) => {
-                const image = node as HTMLImageElement;
-                return {
-                    alt: image.alt,
-                    naturalHeight: image.naturalHeight,
-                    naturalWidth: image.naturalWidth,
-                    src: image.currentSrc || image.src,
-                };
-            })
-            .filter((image) => image.naturalWidth <= 1 || image.naturalHeight <= 1),
-    );
-    expect(failedImages, `${selector} 存在未真实加载的图片`).toEqual([]);
+        .toEqual([]);
     const emptySources = await images.evaluateAll((nodes) =>
         nodes
             .map((node) => {
@@ -181,8 +162,9 @@ async function expectCurrentRoundChips(page: Page, expectedCount: number) {
 }
 
 async function expectAvailableChipButtons(page: Page, chipPrefix: string, expectedValues: number[]) {
+    const tokenPile = page.locator('[data-bgg-zone="token-pile"]');
     for (const value of [1, 2, 3, 4, 5, 6]) {
-        const chipButton = page.getByRole('button', { name: `${chipPrefix} ${value} 星` });
+        const chipButton = tokenPile.getByRole('button', { name: `${chipPrefix} ${value} 星` });
         if (expectedValues.includes(value)) {
             await expect(chipButton).toBeVisible();
         } else {
@@ -218,6 +200,11 @@ test.describe('The Gang 真实入口截图', () => {
             players: 6,
             seed: 'the-gang-e2e-six-player',
             seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
+            seat4: 'human',
+            seat5: 'human',
+            seat6: 'human',
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
@@ -250,6 +237,11 @@ test.describe('The Gang 真实入口截图', () => {
             players: 6,
             seed: 'the-gang-e2e-six-player-showdown',
             seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
+            seat4: 'human',
+            seat5: 'human',
+            seat6: 'human',
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
@@ -435,6 +427,8 @@ test.describe('The Gang 真实入口截图', () => {
             players: 3,
             seed: 'the-gang-e2e-desktop',
             seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();

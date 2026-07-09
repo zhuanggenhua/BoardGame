@@ -58,6 +58,16 @@ export const TheGangTutorial: TutorialManifest = {
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
         },
         {
+            id: 'take-player-chip',
+            content: 'game-the-gang:tutorial.steps.takePlayerChip',
+            highlightTarget: 'the-gang-opponent-state',
+            position: 'left',
+            viewAs: '0',
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.CHIP_TAKEN, match: { playerId: '0' } }],
+        },
+        {
             id: 'advance-round',
             content: 'game-the-gang:tutorial.steps.advanceRound',
             highlightTarget: 'the-gang-next-round',

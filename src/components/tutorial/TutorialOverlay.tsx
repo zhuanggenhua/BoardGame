@@ -641,15 +641,27 @@ export const TutorialOverlay: React.FC = () => {
                         <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
                     ) : null}
 
-                    {isBottomConfirmStep ? null : (
-                        <div className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
-                            isCompactTutorialLayout
-                                ? 'mb-2.5 text-left text-[15px] leading-[1.55]'
-                                : 'mb-4 text-left text-lg leading-relaxed'
-                        }`}>
+                    <div
+                        data-testid="tutorial-overlay-content"
+                        className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
+                            isBottomConfirmStep
+                                ? 'sr-only'
+                                : isCompactTutorialLayout
+                                    ? 'mb-2.5 text-left text-[15px] leading-[1.55]'
+                                    : 'mb-4 text-left text-lg leading-relaxed'
+                        }`}
+                    >
+                        {t(currentStep.content)}
+                    </div>
+
+                    {isBottomConfirmStep ? (
+                        <div
+                            aria-hidden="true"
+                            className="mb-2 max-h-[92px] overflow-y-auto rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] font-bold leading-[1.45] text-[#433422] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
+                        >
                             {t(currentStep.content)}
                         </div>
-                    )}
+                    ) : null}
 
                     {!currentStep.requireAction && (
                         <button

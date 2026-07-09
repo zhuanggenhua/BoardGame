@@ -22,6 +22,7 @@ export interface DiceBoxPhysicsSourceProps {
     rendererMode?: DicePhysicsRendererMode;
     canvasTestId?: string;
     className?: string;
+    style?: React.CSSProperties;
     testId?: string;
     dataAttributes?: Record<string, string>;
     onPhysicsStatesChange?: (states: DicePhysicsState[]) => void;
@@ -36,6 +37,7 @@ export function DiceBoxPhysicsSource({
     rendererMode = 'physics-only',
     canvasTestId,
     className,
+    style,
     testId = 'dice-box-physics-source',
     dataAttributes,
     onPhysicsStatesChange,
@@ -151,6 +153,9 @@ export function DiceBoxPhysicsSource({
                 return;
             }
             lastEmitAt = now;
+            if (!settledRef.current || activeMotionRef.current) {
+                engine.recoverOutOfBoundsDice();
+            }
 
             const states = dice
                 .map((die, index) => engine.getPhysicsState(index, die.id, settledRef.current))
@@ -207,7 +212,7 @@ export function DiceBoxPhysicsSource({
 
             if (isRolling) {
                 if (engine.hasDice(dice.length) && rollingIndices.length === 0) {
-                    engine.syncValues(values);
+                    engine.syncSettledValues(values);
                     previousDiceIdsRef.current = dice.map((die) => die.id);
                     setSettledState(true);
                     return;
@@ -280,7 +285,7 @@ export function DiceBoxPhysicsSource({
                 return;
             }
 
-            engine.syncValues(values);
+            engine.syncSettledValues(values);
             previousDiceIdsRef.current = dice.map((die) => die.id);
             setSettledState(true);
         };
@@ -292,6 +297,7 @@ export function DiceBoxPhysicsSource({
         <div
             ref={containerRef}
             className={className}
+            style={style}
             data-testid={testId}
             data-dice-physics-source="dice-box-threejs"
             data-dice-physics-mode={rendererMode}

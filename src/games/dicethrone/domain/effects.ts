@@ -43,6 +43,38 @@ import {
 import type { AbilityDef } from './combat';
 import { reduce as reduceDiceThroneCore } from './reducer';
 
+const hasBeforeDamageReceivedCard = (
+    state: DiceThroneCore,
+    playerId: PlayerId,
+): boolean => {
+    const player = state.players[playerId];
+    if (!player) return false;
+
+    return player.hand.some(card => {
+        const pendingDamage = card.playCondition?.pendingDamage;
+        if (!pendingDamage || pendingDamage.responseType !== 'beforeDamageReceived') return false;
+        if (pendingDamage.role === 'source') return false;
+        if (card.timing !== 'instant' && card.timing !== 'roll') return false;
+        if (!card.effects?.some(effect => effect.action)) return false;
+        return (player.resources[RESOURCE_IDS.CP] ?? 0) >= card.cpCost;
+    });
+};
+
+const resolveDamageResponseType = (
+    state: DiceThroneCore,
+    defenderId: PlayerId,
+    rawTokenResponseType: 'attackerBoost' | 'defenderMitigation' | null,
+    unblockable: boolean | undefined,
+): 'attackerBoost' | 'defenderMitigation' | null => {
+    const hasDefenderCardResponse = hasBeforeDamageReceivedCard(state, defenderId);
+    if (rawTokenResponseType === 'attackerBoost') return 'attackerBoost';
+    if (rawTokenResponseType === 'defenderMitigation') {
+        if (!unblockable) return 'defenderMitigation';
+        return hasDefenderCardResponse ? 'defenderMitigation' : null;
+    }
+    return hasDefenderCardResponse ? 'defenderMitigation' : null;
+};
+
 // ============================================================================
 // 效果上下文
 // ============================================================================
@@ -602,9 +634,12 @@ function resolveEffectAction(
                         ctx.isDefensiveContext,
                         action.damageScope ?? 'attack'
                     );
-                    const tokenResponseType = action.unblockable && rawTokenResponseType === 'defenderMitigation'
-                        ? null
-                        : rawTokenResponseType;
+                    const tokenResponseType = resolveDamageResponseType(
+                        state,
+                        dmgTargetId,
+                        rawTokenResponseType,
+                        action.unblockable,
+                    );
 
                     if (tokenResponseType) {
                         // 创建待处理伤害，暂停伤害结算
@@ -880,7 +915,11 @@ function resolveEffectAction(
                         // 检查是否需要打开 Token 响应窗口。
                         // 不可防御伤害仍允许攻击方增伤，但禁止防御方减伤/闪避类响应。
                         const shouldAllowAttackerBoost = damageScope === 'attack';
-                        if (shouldCheckTokenResponse && dmgAmount > 0 && (shouldAllowAttackerBoost || !isUnblockable)) {
+                        if (
+                            shouldCheckTokenResponse
+                            && dmgAmount > 0
+                            && (shouldAllowAttackerBoost || !isUnblockable || hasBeforeDamageReceivedCard(state, dmgTargetId))
+                        ) {
                             const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
                                 state,
                                 dmgTargetId,
@@ -896,9 +935,12 @@ function resolveEffectAction(
                                 ctx.isDefensiveContext,
                                 damageScope
                             );
-                            const tokenResponseType = isUnblockable && rawTokenResponseType === 'defenderMitigation'
-                                ? null
-                                : rawTokenResponseType;
+                            const tokenResponseType = resolveDamageResponseType(
+                                state,
+                                dmgTargetId,
+                                rawTokenResponseType,
+                                isUnblockable,
+                            );
 
                             if (tokenResponseType) {
                                 // 替换 DAMAGE_DEALT 为 TOKEN_RESPONSE_REQUESTED

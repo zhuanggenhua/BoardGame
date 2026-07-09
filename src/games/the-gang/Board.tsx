@@ -7,6 +7,8 @@ import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { EndgameOverlay, type ContentSlotProps } from '../../components/game/framework/widgets/EndgameOverlay';
 import { buildPlayerDisplayNameMap } from '../../components/game/framework/playerDisplay';
 import { useEndgame } from '../../hooks/game/useEndgame';
+import { useGameAudio } from '../../lib/audio/useGameAudio';
+import { THE_GANG_AUDIO_CONFIG } from './audio.config';
 import { formatCard } from './domain/cards';
 import { TEXAS_HOLDEM_HAND_RANK_RULES, type PokerHandRankRule } from './domain/poker';
 import {
@@ -16,6 +18,7 @@ import {
     type TheGangCore,
     type TheGangProgressKind,
 } from './domain/types';
+import { THE_GANG_MANIFEST } from './manifest';
 
 type Props = GameBoardProps<TheGangCore, TheGangCommandMap>;
 
@@ -372,14 +375,7 @@ function RoundChipColumn({
             {chipValues.map((chip) => {
                 const owner = ownerByChip[chip];
                 if (owner !== undefined) {
-                    return (
-                        <span
-                            key={`${round}-${chip}`}
-                            aria-hidden="true"
-                            className="inline-flex h-[3.5rem] w-[3.5rem] rounded-full border border-dashed border-amber-100/18 bg-black/8 lg:h-[4.75rem] lg:w-[4.75rem]"
-                            data-bgg-zone="token-empty-slot"
-                        />
-                    );
+                    return null;
                 }
 
                 return (
@@ -569,12 +565,18 @@ function PlayerChipStrip({
     currentRound,
     currentChip,
     playerId,
+    localPlayerId,
+    onTakeCurrentChip,
 }: {
     roundHistory: TheGangCore['roundHistory'];
     currentRound: number;
     currentChip?: number;
     playerId: string;
+    localPlayerId: string;
+    onTakeCurrentChip?: (chip: number) => void;
 }) {
+    const canTakeCurrentChip = currentChip !== undefined && playerId !== localPlayerId && !!onTakeCurrentChip;
+
     return (
         <div className="flex min-h-8 items-center justify-center gap-1.5 lg:min-h-12 lg:gap-2" data-bgg-zone="player-tokens">
             {roundHistory.map((entry) => {
@@ -592,13 +594,30 @@ function PlayerChipStrip({
                 );
             })}
             {currentChip !== undefined && (
-                <ChipDisc
-                    round={currentRound}
-                    value={currentChip}
-                    size="lg"
-                    className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
-                    zone="player-current-token"
-                />
+                canTakeCurrentChip ? (
+                    <button
+                        type="button"
+                        className="rounded-full transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                        data-testid={`the-gang-take-player-chip-${playerId}`}
+                        onClick={() => onTakeCurrentChip(currentChip)}
+                    >
+                        <ChipDisc
+                            round={currentRound}
+                            value={currentChip}
+                            size="lg"
+                            className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
+                            zone="player-current-token"
+                        />
+                    </button>
+                ) : (
+                    <ChipDisc
+                        round={currentRound}
+                        value={currentChip}
+                        size="lg"
+                        className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
+                        zone="player-current-token"
+                    />
+                )
             )}
         </div>
     );
@@ -689,10 +708,23 @@ function TheGangEndgameContent({
     );
 }
 
-export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, isMultiplayer }: Props) {
+export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, seatControllers, isMultiplayer }: Props) {
     const core = G.core;
     const { t } = useTranslation('game-the-gang');
     useTutorialBridge(G.sys.tutorial, dispatch);
+    useGameAudio({
+        config: THE_GANG_AUDIO_CONFIG,
+        gameId: THE_GANG_MANIFEST.id,
+        G: core,
+        ctx: {
+            isGameOver: !!G.sys.gameover || !!core.gameResult,
+        },
+        eventEntries: G.sys.eventStream?.entries,
+        meta: {
+            playerID,
+            isMultiplayer: isMultiplayer === true,
+        },
+    });
     const { overlayProps: endgameProps } = useEndgame({
         result: G.sys.gameover || undefined,
         playerID,
@@ -705,7 +737,12 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     const resolvedHotseatPlayerId = core.playerIds.includes(hotseatPlayerId)
         ? hotseatPlayerId
         : core.playerIds[0];
-    const localPlayerId = !isMultiplayer ? resolvedHotseatPlayerId : (playerID ?? core.playerIds[0]);
+    const hasAiSeat = Object.values(seatControllers ?? {}).some((controller) => controller.type !== 'human');
+    const localHumanPlayerId = core.playerIds.find((id) => (seatControllers?.[id]?.type ?? 'human') === 'human')
+        ?? core.playerIds[0];
+    const localPlayerId = isMultiplayer
+        ? (playerID ?? core.playerIds[0])
+        : (hasAiSeat ? (playerID ?? localHumanPlayerId) : resolvedHotseatPlayerId);
     const localPlayer = core.players[localPlayerId];
     const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
@@ -816,6 +853,8 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                         currentRound={core.round}
                                         currentChip={core.currentRoundChips[id]}
                                         playerId={id}
+                                        localPlayerId={localPlayerId}
+                                        onTakeCurrentChip={core.phase === 'chip-selection' ? takeChip : undefined}
                                     />
                                     <div className="flex justify-center gap-1 lg:gap-1.5">
                                         {shouldShowOpponentCards && player.pocketCards.map((card, index) => (
@@ -933,7 +972,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     </div>
 
                     <aside className="pointer-events-none absolute left-2 top-2 z-30 hidden max-w-[min(28rem,calc(100%-1rem))] flex-wrap items-start justify-start gap-1.5 lg:left-3 lg:top-3 lg:flex lg:gap-2" data-bgg-zone="helper-zone">
-                        {!isMultiplayer && (
+                        {!isMultiplayer && !hasAiSeat && (
                             <div className="pointer-events-auto" data-testid="the-gang-hotseat-switcher">
                                 <h2 className="sr-only">{t('board.localSeat')}</h2>
                                 <div className="flex flex-wrap gap-1.5 rounded-full border border-amber-100/16 bg-emerald-950/48 px-2 py-1 shadow-[0_0.3rem_1rem_rgba(0,0,0,0.22)] backdrop-blur-sm lg:gap-2 lg:px-3">

@@ -15,7 +15,7 @@ import type { PlayerId } from '../../../../engine/types';
 import { registerCustomActionHandler, resolveEffectsToEvents, type CustomActionContext } from '../effects';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
-import { getRollerId } from '../rules';
+import { getPendingBonusSettlementDice, getRollerId } from '../rules';
 import { findHeroCard } from '../../heroes';
 
 // ============================================================================
@@ -88,6 +88,9 @@ export function resolveDiceOwnerId(state?: DiceThroneCore): PlayerId | undefined
 
 function resolveAllowedDieIdsForDiceInteraction(state?: DiceThroneCore): number[] | undefined {
     if (!state) return undefined;
+    if (state.pendingBonusDiceSettlement?.allowDiceModification) {
+        return getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => die.index);
+    }
     if (state.pendingAttack?.defenseAbilityId === 'duel') {
         return [0, 1];
     }

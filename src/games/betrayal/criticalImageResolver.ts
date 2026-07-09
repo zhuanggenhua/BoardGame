@@ -1,6 +1,7 @@
 import type { CriticalImageResolver, CriticalImageResolverResult } from '../../core/types';
 import type { MatchState } from '../../engine/types';
 import type { BetrayalCore } from './game';
+import { EVENT_FRONT_ATLAS_IMAGE_PATHS } from './discoveryAtlas';
 import { BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS } from './possessionAtlas';
 import { BETRAYAL_ROOM_ATLAS_IMAGE_PATHS } from './roomAtlas';
 
@@ -22,6 +23,7 @@ const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     'betrayal/tokens/monsters/werewolf',
     'betrayal/tokens/monsters/ghost',
     ...BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS,
+    ...EVENT_FRONT_ATLAS_IMAGE_PATHS,
     ...BETRAYAL_ROOM_ATLAS_IMAGE_PATHS,
 ];
 

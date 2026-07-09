@@ -14,6 +14,8 @@ let latestModalEntry: null | {
 let latestLocalProviderProps: null | {
     seed: string;
     persistSession?: boolean;
+    seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
+    followCurrentTurnPlayer?: boolean;
 } = null;
 
 const modalClose = vi.fn();
@@ -97,11 +99,15 @@ vi.mock('../../engine/transport/react', () => ({
     LocalGameProvider: (props: {
         seed: string;
         persistSession?: boolean;
+        seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
+        followCurrentTurnPlayer?: boolean;
         children?: React.ReactNode;
     }) => {
         latestLocalProviderProps = {
             seed: props.seed,
             persistSession: props.persistSession,
+            seatControllers: props.seatControllers,
+            followCurrentTurnPlayer: props.followCurrentTurnPlayer,
         };
         return <div data-testid="local-game-provider">{props.children}</div>;
     },
@@ -134,6 +140,10 @@ const runtime: MatchRoomTutorialBoardRuntimeModel = {
     onCommandRejected: vi.fn(),
     title: '学习模式',
     preparingDescription: '正在准备',
+    seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai', difficulty: 'normal' },
+    },
 };
 
 function persistProgressSnapshot() {
@@ -197,6 +207,8 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
 
         await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(seed));
         expect(latestLocalProviderProps?.persistSession).toBe(true);
+        expect(latestLocalProviderProps?.seatControllers).toEqual(runtime.seatControllers);
+        expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(false);
         expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed))).not.toBeNull();
     });
 

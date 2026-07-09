@@ -52,7 +52,7 @@ const DESKTOP_DICE_TRAY_TOKENS = {
     rowGapClassName: 'gap-[0.3vw]',
     dieGapClassName: 'gap-[0.25vw]',
     adjustButtonClassName: 'w-[1.2vw] h-[1.2vw] text-[0.8vw]',
-    lockedLabelClassName: 'max-w-[4.4vw] overflow-hidden text-ellipsis whitespace-nowrap text-[0.6vw] px-[0.4vw] py-[0.1vw]',
+    lockedLabelClassName: 'min-w-max whitespace-nowrap text-[0.6vw] px-[0.4vw] py-[0.1vw]',
     selectedBadgeClassName: 'w-[1vw] h-[1vw] -top-[0.3vw] -right-[0.3vw]',
     selectedBadgeIconClassName: '',
 };
@@ -96,7 +96,13 @@ const BOARD_DICE_SCATTER_SLOTS = [
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
 const BOARD_DICE_HIT_TARGET_SIZE_PX = 44;
-const BOARD_DICE_STAGE_Z_INDEX = UI_Z_INDEX.magnify - 1;
+const BOARD_DICE_RING_SIZE_MULTIPLIER = 1.5;
+const BOARD_DICE_STAGE_Z_INDEX = UI_Z_INDEX.cardPreviewTooltip + 1;
+const OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME = [
+    'pointer-events-auto absolute top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full',
+    'border border-white/40 bg-amber-600 text-base font-black leading-none text-white shadow-[0_0_14px_rgba(245,158,11,0.65)]',
+    'transition hover:scale-110 hover:bg-amber-500 disabled:cursor-not-allowed disabled:border-slate-500/40 disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none',
+].join(' ');
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
@@ -117,6 +123,10 @@ function resolveBoardOverlayDiceSize(layout?: ProjectedDiceLayout): number {
             BOARD_OVERLAY_DICE_SIZE_MAX_PX,
         ),
     );
+}
+
+function resolveBoardDiceRingSize(layout?: ProjectedDiceLayout): number {
+    return Math.round(resolveBoardOverlayDiceSize(layout) * BOARD_DICE_RING_SIZE_MULTIPLIER);
 }
 
 /** 从 multistep-choice interaction 中提取 DiceThrone 元数据 */
@@ -165,6 +175,8 @@ export const DiceTray = ({
     rootPlayerId?: PlayerId;
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const decreaseLabel = t('common.decrease', { ns: 'common' });
+    const increaseLabel = t('common.increase', { ns: 'common' });
     const isCenterPresentation = presentation === 'center';
     const isBoardPresentation = presentation === 'board';
     const isOverlayPresentation = isCenterPresentation || isBoardPresentation;
@@ -533,7 +545,7 @@ export const DiceTray = ({
                                             ${!isInteractionMode && d.isKept ? 'opacity-80' : ''}
                                             ${!clickable && !showAdjustButtons && !showAnyModeButtons ? 'cursor-not-allowed opacity-50' : ''}
                                             ${clickable ? 'cursor-pointer hover:scale-110' : ''}
-                                            ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-lg scale-105' : ''}
+                                            ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105' : ''}
                                         `}
                                     >
                                         <div className="pointer-events-none">
@@ -550,7 +562,7 @@ export const DiceTray = ({
                                         </div>
                                         {!isInteractionMode && d.isKept && (
                                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                                                <div className={`${lockedLabelClassName} font-black text-white bg-black/50 rounded uppercase tracking-wider shadow-sm border border-white/20`}>
+                                                <div className={`${lockedLabelClassName} font-black text-white bg-black/65 rounded uppercase tracking-wider shadow-sm border border-white/20`}>
                                                     {t('dice.locked')}
                                                 </div>
                                             </div>
@@ -609,6 +621,48 @@ export const DiceTray = ({
                     />
                 )}
                 {isBoardPresentation && (
+                    <div className="pointer-events-none absolute inset-0" style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX - 1 }} data-testid="dicethrone-board-dice-ring-layer">
+                        {visibleOverlayDice.map((d) => {
+                            const projectedLayout = centerDiceLayout[d.id];
+                            const selected = isSelected(d.id);
+                            const shouldShowLockedRing = !isInteractionMode && d.isKept;
+
+                            if (!projectedLayout || (!selected && !shouldShowLockedRing)) return null;
+
+                            const ringSize = resolveBoardDiceRingSize(projectedLayout);
+                            const ringZIndex = Math.max(0, Math.round(projectedLayout.maxY));
+
+                            return (
+                                <div
+                                    key={d.id}
+                                    className="pointer-events-none absolute rounded-full"
+                                    style={{
+                                        left: `${projectedLayout.x}px`,
+                                        top: `${projectedLayout.y}px`,
+                                        width: `${ringSize}px`,
+                                        height: `${ringSize}px`,
+                                        transform: 'translate(-50%, -50%)',
+                                        zIndex: ringZIndex,
+                                    }}
+                                >
+                                    {selected && (
+                                        <div
+                                            className="absolute inset-0 rounded-full bg-amber-300/10 ring-[0.2rem] ring-amber-300 shadow-[0_0_1.35rem_rgba(245,158,11,0.72)]"
+                                            data-testid={`die-selected-ring-${d.id}`}
+                                        />
+                                    )}
+                                    {shouldShowLockedRing && (
+                                        <div
+                                            className="absolute inset-0 rounded-full bg-black/10 ring-[0.28rem] ring-black/85 shadow-[0_0_1.15rem_rgba(0,0,0,0.78)]"
+                                            data-testid={`die-locked-ring-${d.id}`}
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+                {isBoardPresentation && (
                     <DiceBoxPhysicsSource
                         dice={visiblePhysicsDice}
                         isRolling={isRolling}
@@ -618,13 +672,18 @@ export const DiceTray = ({
                         rendererMode="debug-visible"
                         canvasTestId="dicethrone-board-dice-box-canvas"
                         className="pointer-events-none absolute inset-0 h-full w-full"
+                        style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX }}
                         onPhysicsStatesChange={handleDicePhysicsStatesChange}
                         testId="dicethrone-board-dice-physics-source"
                     />
                 )}
                 {isBoardPresentation && (
                     <div
-                        className={clsx('absolute inset-0', (canToggleDieLock || isInteractionMode) ? 'cursor-pointer' : 'cursor-default')}
+                        className={clsx(
+                            'absolute inset-0',
+                            (canToggleDieLock || isInteractionMode) ? 'cursor-pointer' : 'cursor-default',
+                            isInteractionMode && (isAdjustMode || isAnyMode) ? 'pointer-events-none' : 'pointer-events-auto',
+                        )}
                         style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX + 1 }}
                         data-testid="dicethrone-board-dice-hit-layer"
                         onClick={(event) => {
@@ -637,6 +696,9 @@ export const DiceTray = ({
                     const selected = isSelected(d.id);
                     const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
                     const canModifyDie = canInteractWithDie(d);
+                    const showOverlayAdjustButtons = isInteractionMode && isAdjustMode && canModifyDie;
+                    const showOverlayAnyModeButtons = isInteractionMode && isAnyMode && canModifyDie
+                        && (isModified || currentSelectCount < maxSelectCount);
                     const isInactiveDie = isInteractionMode && !canModifyDie;
                     const clickable = isInteractionMode
                         ? ((isAnyMode || isAdjustMode)
@@ -703,9 +765,9 @@ export const DiceTray = ({
                                 data-rotate-y={projectedLayout ? projectedLayout.rotateY.toFixed(4) : ''}
                                 data-rotate-z={projectedLayout ? projectedLayout.rotateZ.toFixed(4) : ''}
                                 className={clsx(
-                                    'absolute rounded-2xl transition-[left,top,width,height,transform,filter] duration-75 ease-out',
+                                    'absolute rounded-full transition-[left,top,width,height,transform,filter] duration-75 ease-out',
                                     'ring-0',
-                                    isBoardPresentation ? 'pointer-events-none' : 'pointer-events-auto',
+                                    isBoardPresentation && !showOverlayAdjustButtons && !showOverlayAnyModeButtons ? 'pointer-events-none' : 'pointer-events-auto',
                                     clickable ? 'cursor-pointer' : 'cursor-default',
                                 )}
                                 style={{
@@ -734,22 +796,52 @@ export const DiceTray = ({
                                     </div>
                                 )}
                                 {selected && !isBoardPresentation && (
+                                    <div className="pointer-events-none absolute inset-[-0.28rem] rounded-full ring-2 ring-amber-300 shadow-[0_0_18px_rgba(245,158,11,0.55)]" data-testid={`die-selected-ring-${d.id}`} />
+                                )}
+                                {selected && !isBoardPresentation && !isCenterPresentation && !showOverlayAdjustButtons && !showOverlayAnyModeButtons && (
                                     <div className={`absolute ${selectedBadgeClassName} bg-amber-500 rounded-full flex items-center justify-center z-30`}>
                                         <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
                                     </div>
                                 )}
-                                {selected && isBoardPresentation && (
-                                    <div className="pointer-events-none absolute inset-[-0.28rem] rounded-2xl ring-2 ring-amber-300 shadow-[0_0_18px_rgba(245,158,11,0.55)]" />
-                                )}
-                                {!isInteractionMode && d.isKept && (
-                                    <div className="pointer-events-none absolute inset-[-0.42rem] rounded-2xl ring-[0.24rem] ring-black/80 shadow-[0_0_0.8rem_rgba(0,0,0,0.75)]" data-testid={`die-locked-ring-${d.id}`} />
+                                {!isInteractionMode && d.isKept && !isBoardPresentation && (
+                                    <div className="pointer-events-none absolute inset-[-0.42rem] rounded-full ring-[0.24rem] ring-black/80 shadow-[0_0_0.8rem_rgba(0,0,0,0.75)]" data-testid={`die-locked-ring-${d.id}`} />
                                 )}
                                 {!isInteractionMode && d.isKept && (
                                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                        <div className="max-w-[4.2rem] overflow-hidden text-ellipsis whitespace-nowrap rounded bg-black/70 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20">
+                                        <div className="min-w-max whitespace-nowrap rounded bg-black/75 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20">
                                             {t('dice.locked')}
                                         </div>
                                     </div>
+                                )}
+                                {(showOverlayAdjustButtons || showOverlayAnyModeButtons) && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            data-testid={`die-adjust-decrement-${d.id}`}
+                                            aria-label={`${decreaseLabel} ${displayValue}`}
+                                            className={`${OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME} -left-8`}
+                                            disabled={displayValue <= 1 || (showOverlayAdjustButtons && !canAdjustDown)}
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleAdjust(d.id, -1, d.value);
+                                            }}
+                                        >
+                                            −
+                                        </button>
+                                        <button
+                                            type="button"
+                                            data-testid={`die-adjust-increment-${d.id}`}
+                                            aria-label={`${increaseLabel} ${displayValue}`}
+                                            className={`${OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME} -right-8`}
+                                            disabled={displayValue >= 6 || (showOverlayAdjustButtons && !canAdjustUp)}
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleAdjust(d.id, 1, d.value);
+                                            }}
+                                        >
+                                            +
+                                        </button>
+                                    </>
                                 )}
                             </div>
                         );

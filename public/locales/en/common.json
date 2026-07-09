@@ -74,6 +74,8 @@
   },
   "accept": "Accept",
   "reject": "Reject",
+  "increase": "Increase",
+  "decrease": "Decrease",
   "close": "Close",
   "back": "Back",
   "loading": "Loading",

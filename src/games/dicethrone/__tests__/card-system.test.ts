@@ -14,7 +14,9 @@ import { describe, it, expect } from 'vitest';
 import {
     createRunner,
     createSetupWithHand,
+    createHeroMatchup,
     fixedRandom,
+    createQueuedRandom,
     cmd,
     advanceTo,
     expectedHandSize,
@@ -323,6 +325,47 @@ describe('卡牌系统', () => {
 
             expect(afterResolved.lastResolvedAttackDamage).toBe(2);
             expect(afterResolved.pendingAttack).toBeNull();
+        });
+
+        it('不可防御伤害仍应给防御方打出下次不算的受伤前时机', () => {
+            const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 1]));
+            const result = runner.run({
+                name: '影步不可防御伤害允许下次不算响应',
+                setup: createHeroMatchup('ninja', 'monk', (core) => {
+                    core.players['0'].hand = [];
+                    core.players['1'].hand = core.players['1'].hand.filter(card => card.id === 'card-next-time');
+                    if (!core.players['1'].hand.some(card => card.id === 'card-next-time')) {
+                        const nextTime = core.players['1'].deck.find(card => card.id === 'card-next-time');
+                        if (nextTime) {
+                            core.players['1'].deck = core.players['1'].deck.filter(card => card !== nextTime);
+                            core.players['1'].hand = [nextTime];
+                        }
+                    }
+                    core.players['1'].resources.cp = 1;
+                    core.players['1'].tokens = {};
+                }),
+                commands: [
+                    ...advanceTo('offensiveRoll'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('PLAY_CARD', '1', { cardId: 'card-next-time' }),
+                    cmd('SKIP_TOKEN_RESPONSE', '1'),
+                ],
+                expect: {
+                    players: {
+                        '1': {
+                            hp: INITIAL_HEALTH,
+                            handSize: 0,
+                            discardSize: 1,
+                        },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['1'].damageShields).toEqual([]);
         });
     });
 });

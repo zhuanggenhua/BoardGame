@@ -1,13 +1,17 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import Board from '../Board';
 import { TheGangDomain } from '../domain';
 import { execute, reduce } from '../domain/reducer';
 import { THE_GANG_COMMANDS, THE_GANG_EVENTS, type TheGangCore } from '../domain/types';
 import TheGangTutorial from '../tutorial';
+
+vi.mock('../../../lib/audio/useGameAudio', () => ({
+    useGameAudio: () => undefined,
+}));
 
 const fixedRandom = { random: () => 0 };
 
@@ -50,6 +54,7 @@ describe('The Gang tutorial', () => {
             'hand-rank-reference',
             'chip-choice',
             'table-response',
+            'take-player-chip',
             'advance-round',
             'community-cards',
             'yellow-chip',
@@ -85,6 +90,14 @@ describe('The Gang tutorial', () => {
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
         });
         expect(tableResponseStep?.infoStep).not.toBe(true);
+
+        const takePlayerChipStep = TheGangTutorial.steps.find((step) => step.id === 'take-player-chip');
+        expect(takePlayerChipStep).toMatchObject({
+            highlightTarget: 'the-gang-opponent-state',
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.CHIP_TAKEN, match: { playerId: '0' } }],
+        });
 
         const advanceRoundStep = TheGangTutorial.steps.find((step) => step.id === 'advance-round');
         expect(advanceRoundStep).toMatchObject({

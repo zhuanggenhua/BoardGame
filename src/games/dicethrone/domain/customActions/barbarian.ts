@@ -10,6 +10,7 @@ import type {
     StatusAppliedEvent,
     BonusDieRolledEvent,
     DamageShieldGrantedEvent,
+    BonusDamageAddedEvent,
     BonusDieInfo,
     PendingInteraction,
     InteractionRequestedEvent,
@@ -267,7 +268,6 @@ function handleLuckyRollHeal({ attackerId, sourceAbilityId, state, timestamp, ra
  * 再来点儿 (More Please)：投掷5骰
  * - 增加 1×剑面数 伤害到当前攻击
  * - 施加脑震荡
- * 【已迁移到新伤害计算管线】
  */
 function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
@@ -298,14 +298,16 @@ function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, t
     }
 
     if (swordCount > 0) {
-        const damageCalc = createDamageCalculation({
-            source: { playerId: attackerId, abilityId: sourceAbilityId },
-            target: { playerId: opponentId },
-            baseDamage: swordCount,
-            state,
+        events.push({
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: attackerId,
+                amount: swordCount,
+                sourceCardId: sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
-        });
-        events.push(...damageCalc.toEvents());
+        } as BonusDamageAddedEvent);
     }
 
     events.push({
@@ -371,6 +373,9 @@ function handleBarbarianSteadfastRemoveStatusIfThreeKind({ attackerId, sourceAbi
         selectCount: 1,
         selected: [],
         targetPlayerIds: [attackerId],
+        resumeAttackSettlementOnComplete: state.pendingAttack?.sourceAbilityId === sourceAbilityId
+            ? { stage: 'readyToResolve' }
+            : undefined,
     };
 
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];

@@ -23,7 +23,10 @@ const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-驱魔神志检定骰盘
 const STEP_06B = `${EVIDENCE_DIR}/06B-山屋惊魂-教程-驱魔成功后的终局页.jpg`;
 const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.jpg`;
 const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.jpg`;
+const STEP_08A = `${EVIDENCE_DIR}/08A-山屋惊魂-教程-素材加载门禁.jpg`;
 const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-第二章使用书本前.jpg`;
+const STEP_09B = `${EVIDENCE_DIR}/09B-山屋惊魂-教程-书本已选中准备使用.jpg`;
+const STEP_09A = `${EVIDENCE_DIR}/09A-山屋惊魂-教程-已用书本预览清晰.jpg`;
 const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-第二章使用后移动.jpg`;
 const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-房间牌整张承接-点击前.jpg`;
 const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-房间牌整张承接-点击后.jpg`;
@@ -165,6 +168,9 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
         const shellRect = shell?.getBoundingClientRect();
         return {
             buttonShadowLayers: buttonStyle.boxShadow === 'none' ? 0 : buttonStyle.boxShadow.split('),').length,
+            buttonOutlineStyle: buttonStyle.outlineStyle,
+            buttonOutlineWidth: buttonStyle.outlineWidth,
+            buttonRingShadow: buttonStyle.getPropertyValue('--tw-ring-shadow'),
             shellBoxShadow: shellStyle?.boxShadow ?? null,
             modifierExists: Boolean(modifier),
             selectedOutlineExists: Boolean(selectedOutline),
@@ -172,10 +178,20 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
             selectedBorderRight: selectedOutlineStyle?.borderRightWidth ?? null,
             selectedBorderBottom: selectedOutlineStyle?.borderBottomWidth ?? null,
             selectedBorderLeft: selectedOutlineStyle?.borderLeftWidth ?? null,
+            selectedShape: selectedOutline?.dataset.highlightShape ?? null,
+            selectedBorderRadius: selectedOutlineStyle?.borderTopLeftRadius ?? null,
+            selectedBorderRadiusNumber: selectedOutlineStyle ? Number.parseFloat(selectedOutlineStyle.borderTopLeftRadius) : null,
+            selectedWidth: selectedOutlineRect ? Math.round(selectedOutlineRect.width) : null,
+            selectedHeight: selectedOutlineRect ? Math.round(selectedOutlineRect.height) : null,
             modifierBorderTop: modifierStyle?.borderTopWidth ?? null,
             modifierBorderRight: modifierStyle?.borderRightWidth ?? null,
             modifierBorderBottom: modifierStyle?.borderBottomWidth ?? null,
             modifierBorderLeft: modifierStyle?.borderLeftWidth ?? null,
+            modifierShape: modifier?.dataset.highlightShape ?? null,
+            modifierBorderRadius: modifierStyle?.borderTopLeftRadius ?? null,
+            modifierBorderRadiusNumber: modifierStyle ? Number.parseFloat(modifierStyle.borderTopLeftRadius) : null,
+            modifierWidth: modifierRect ? Math.round(modifierRect.width) : null,
+            modifierHeight: modifierRect ? Math.round(modifierRect.height) : null,
             selectedInsetLeft: selectedOutlineRect && shellRect ? Math.round(selectedOutlineRect.left - shellRect.left) : null,
             selectedInsetRight: selectedOutlineRect && shellRect ? Math.round(shellRect.right - selectedOutlineRect.right) : null,
             selectedInsetTop: selectedOutlineRect && shellRect ? Math.round(selectedOutlineRect.top - shellRect.top) : null,
@@ -187,6 +203,9 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
         };
     });
     expect(outline.buttonShadowLayers, '选中/可改骰按钮外发光不能叠成多圈描边').toBeLessThanOrEqual(2);
+    expect(outline.buttonOutlineStyle, '持有物按钮本体不能再出现矩形焦点框').toBe('none');
+    expect(outline.buttonOutlineWidth, '持有物按钮本体不能再出现矩形焦点框').toBe('0px');
+    expect(outline.buttonRingShadow, '持有物按钮本体不能再叠 Tailwind 矩形 ring').toBe('0 0 #0000');
     expect(outline.shellBoxShadow, '卡牌壳层内部不应额外叠阴影').toBe('none');
     expect(outline.modifierExists, '选中态不能再叠加内部改骰描边，避免左边和下边视觉加粗').toBe(false);
     expect(outline.selectedOutlineExists, '选中态需要一层独立外描边').toBe(true);
@@ -194,6 +213,9 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
     expect(outline.selectedBorderRight).toBe('2px');
     expect(outline.selectedBorderBottom).toBe('2px');
     expect(outline.selectedBorderLeft).toBe('2px');
+    expect(outline.selectedShape, '选中态必须使用圆形高亮圈，而不是矩形外框').toBe('circle');
+    expect(outline.selectedWidth, '圆形选中圈宽高必须一致').toBe(outline.selectedHeight);
+    expect(outline.selectedBorderRadiusNumber ?? 0, '选中态高亮圈圆角半径必须足以形成圆形').toBeGreaterThanOrEqual((outline.selectedWidth ?? 0) / 2 - 1);
     expect(outline.selectedInsetLeft, '选中外描边左侧外扩必须和右侧对称').toBe(outline.selectedInsetRight);
     expect(outline.selectedInsetTop, '选中外描边上侧外扩必须和下侧对称').toBe(outline.selectedInsetBottom);
 };
@@ -246,6 +268,30 @@ const expectDiscoveryPanelDoesNotCoverRollModifier = async (discoveryReveal: Loc
     expect(hitTarget.cardHeight).toBeGreaterThan(24);
     expect(hitTarget.discoveryHit).toBe(false);
     expect(hitTarget.cardHit).toBe(true);
+};
+
+const expectInventoryPreviewCardReadable = async (previewOverlay: Locator) => {
+    const readability = await previewOverlay.getByTestId('betrayal-inventory-preview-card-shell').evaluate((node) => {
+        const shell = node as HTMLElement;
+        const shellStyle = window.getComputedStyle(shell);
+        const button = shell.closest('button') as HTMLElement | null;
+        const buttonStyle = button ? window.getComputedStyle(button) : null;
+        const rect = shell.getBoundingClientRect();
+        return {
+            shellOpacity: Number(shellStyle.opacity),
+            buttonOpacity: Number(buttonStyle?.opacity ?? '1'),
+            shellFilter: shellStyle.filter,
+            buttonFilter: buttonStyle?.filter ?? 'none',
+            width: rect.width,
+            height: rect.height,
+        };
+    });
+    expect(readability.width, '放大预览必须保留可读卡面宽度').toBeGreaterThan(220);
+    expect(readability.height, '放大预览必须保留可读卡面高度').toBeGreaterThan(300);
+    expect(readability.shellOpacity, '已使用卡牌的放大预览不得继承持有区灰化透明度').toBeGreaterThanOrEqual(0.99);
+    expect(readability.buttonOpacity, '已使用卡牌的放大预览外层不得变灰').toBeGreaterThanOrEqual(0.99);
+    expect(readability.shellFilter, '已使用卡牌的放大预览不得灰阶/模糊').toBe('none');
+    expect(readability.buttonFilter, '已使用卡牌的放大预览外层不得灰阶/模糊').toBe('none');
 };
 
 const clickNext = async (page: Parameters<typeof test>[0]['page']) => {
@@ -393,7 +439,31 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-move-explore-use');
 
         await page.setViewportSize({ width: 1600, height: 900 });
+        let releaseCriticalEventAtlas!: () => void;
+        let criticalEventAtlasReleased = false;
+        const criticalEventAtlasGate = new Promise<void>((resolve) => {
+            releaseCriticalEventAtlas = () => {
+                criticalEventAtlasReleased = true;
+                resolve();
+            };
+        });
+        let markCriticalEventAtlasRequested!: () => void;
+        const criticalEventAtlasRequested = new Promise<void>((resolve) => {
+            markCriticalEventAtlasRequested = resolve;
+        });
+        await page.route('**/*event-front-atlas*', async (route) => {
+            markCriticalEventAtlasRequested();
+            if (!criticalEventAtlasReleased) {
+                await criticalEventAtlasGate;
+            }
+            await route.continue();
+        });
         await page.goto('/play/betrayal/tutorial/move-explore-use', { waitUntil: 'domcontentloaded' });
+        await criticalEventAtlasRequested;
+        await expect(page.getByTestId('loading-screen')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('betrayal-board')).not.toBeVisible();
+        await saveScreenshot(page, STEP_08A);
+        releaseCriticalEventAtlas();
         await waitForBetrayalPageReady(page);
 
         const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
@@ -405,10 +475,13 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         }
         await waitForStep(page, 'use-book');
         await expect(page.getByTestId('betrayal-action-use')).toBeVisible();
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('先使用书本');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('先点持有区里的书本卡牌');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('再点“使用”');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('非战斗检定');
         await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('放大镜');
         await expect(page.getByTestId('betrayal-inventory-omen-book')).toBeVisible();
+        await expect(page.getByTestId('betrayal-inventory-omen-book-shell')).toHaveAttribute('data-tutorial-target-outline', 'true');
+        await expect(page.getByTestId('tutorial-highlight-ring')).toHaveAttribute('data-tutorial-highlight-target', 'betrayal-inventory-omen-book');
         await expect(page.getByTestId('betrayal-inventory-omen-book-magnify')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
         await saveScreenshot(page, STEP_09);
@@ -416,9 +489,20 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await page.getByTestId('betrayal-inventory-omen-book').click();
         await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('书本');
         await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+        await expect(page.getByTestId('betrayal-inventory-omen-book')).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByTestId('betrayal-inventory-omen-book-selected-outline')).toBeVisible();
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('再点“使用”');
+        await saveScreenshot(page, STEP_09B);
         await page.getByTestId('betrayal-action-use').click();
         await waitForStep(page, 'open-move-targets');
         await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
+        await page.getByTestId('betrayal-inventory-omen-book-magnify').click();
+        const usedBookPreview = page.getByTestId('betrayal-inventory-preview-overlay');
+        await expect(usedBookPreview).toBeVisible();
+        await expect(usedBookPreview.getByTestId('betrayal-inventory-preview-card-shell')).toBeVisible();
+        await expectInventoryPreviewCardReadable(usedBookPreview);
+        await saveScreenshot(page, STEP_09A);
+        await usedBookPreview.click({ position: { x: 8, y: 8 } });
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
         await page.getByTestId('betrayal-action-move').click();
         await waitForStep(page, 'move-to-hallway');
@@ -435,10 +519,12 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await page.getByTestId('betrayal-action-explore').click();
         const exploreTargetMarker = page.locator('[data-testid^="betrayal-room-explore-target-"]').first();
         await expect(exploreTargetMarker).toBeVisible({ timeout: 10000 });
+        await expect(exploreTargetMarker).toContainText('探索');
         const targetRoomTestId = await exploreTargetMarker.evaluate((node) => node.getAttribute('data-testid')?.replace('betrayal-room-explore-target-', 'betrayal-room-'));
         expect(targetRoomTestId).toBeTruthy();
         const exploreTargetRoom = page.getByTestId(targetRoomTestId!);
         await expect(exploreTargetRoom).toBeVisible();
+        await expect(page.getByTestId(`betrayal-room-explore-card-highlight-${targetRoomTestId!.replace('betrayal-room-', '')}`)).toBeVisible();
         await saveScreenshot(page, STEP_13);
         await exploreTargetRoom.click();
         await waitForStep(page, 'finish', 30000);
@@ -447,7 +533,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const tutorialOverlayCard = page.getByTestId('tutorial-overlay-card');
         await expect(tutorialOverlayCard).toHaveAttribute('data-tutorial-placement', 'center');
         await expect(tutorialOverlayCard).not.toContainText('使用持有物 -> 移动 -> 探索 -> 抽发现牌');
-        await expect.poll(async () => tutorialOverlayCard.evaluate((node) => (node as HTMLElement).innerText)).toBe('下一步');
+        await expect(tutorialOverlayCard).toContainText('兔脚');
+        await expect(tutorialOverlayCard).toContainText('点要重投的那颗骰子');
+        await expect(tutorialOverlayCard).toContainText('不想改骰');
         const discoveryReveal = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryReveal).toBeVisible();
         await expect(discoveryReveal).toHaveAttribute('data-allows-inventory-roll-modifiers', 'true');
@@ -563,6 +651,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const rerollTargetDie = page.getByTestId('betrayal-house-dice-reroll-target-1');
         await expect(rerollTargetDie).toBeVisible();
         await expect(rerollTargetDie).toHaveAttribute('role', 'button');
+        await expect(rerollTargetDie).toHaveAttribute('data-reroll-target-shape', 'circle');
+        const rerollTargetBox = await rerollTargetDie.boundingBox();
+        expect(Math.round(rerollTargetBox?.width ?? 0), '选骰命中区必须是正圆，不是横竖不等的矩形').toBe(Math.round(rerollTargetBox?.height ?? 0));
         const rerollTargetRotateZ = Number(await rerollTargetDie.getAttribute('data-reroll-target-rotate-z'));
         expect(Number.isFinite(rerollTargetRotateZ), '选骰框必须记录物理骰当前旋转角').toBe(true);
         expect(Math.abs(rerollTargetRotateZ), '选骰框必须跟随被选骰子的旋转，而不是固定正矩形').toBeGreaterThan(0.05);
@@ -581,6 +672,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await rerollTargetDie.click();
         await expect(rabbitFootDice).toBeHidden();
         await expect.poll(async () => rollTotal.innerText()).not.toBe(totalBeforeRabbitFoot);
+        await expect(discoveryRollPanel.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-settled', 'false');
         await waitForPhysicalDiceSettled(discoveryRollPanel);
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-subtotal')).toContainText(/骰面合计\s+\d+/);
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-passive-bonus')).toContainText(/加值\s+[+-]\d+/);
@@ -791,8 +883,8 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         expect(mobileLayout.contextStripTop ?? 999).toBeLessThanOrEqual(12);
         expect(mobileLayout.contextStripRightGap).not.toBeNull();
         expect(mobileLayout.contextStripRightGap ?? 999).toBeLessThanOrEqual(12);
-        expect(mobileLayout.contextStripWidth).toBeGreaterThan(160);
-        expect(mobileLayout.contextStripWidth).toBeLessThanOrEqual(320);
+        expect(mobileLayout.contextStripWidth).toBeGreaterThanOrEqual(260);
+        expect(mobileLayout.contextStripWidth).toBeLessThanOrEqual(360);
         expect(mobileLayout.inventoryRailBottomGap).not.toBeNull();
         expect(mobileLayout.inventoryRailBottomGap ?? 999).toBeLessThanOrEqual(112);
         expect(mobileLayout.inventoryRailLeft ?? 999).toBeLessThanOrEqual(12);

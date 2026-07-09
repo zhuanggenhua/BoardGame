@@ -100,7 +100,7 @@ describe('Betrayal 教程配置', () => {
             ['hallway'],
             null,
         ]);
-        expect(actionSteps[0]?.highlightTarget).toBe('betrayal-action-use');
+        expect(actionSteps[0]?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(setupFields?.eventOrder?.map((event) => event.name)).toEqual(['外星几何']);
         expect(JSON.stringify(setupFields)).not.toContain('测试中性事件');
     });
@@ -176,6 +176,8 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('底部 5 个主动作');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitsAndSpeed).toContain('速度');
         expect(zhCNLocale.tutorial.basicSetup.steps.movesRemaining).toContain('剩余移动');
+        expect(zhCNLocale.tutorial.moveExploreUse.steps.useBook).toContain('先点持有区里的书本卡牌');
+        expect(zhCNLocale.tutorial.moveExploreUse.steps.useBook).toContain('再点“使用”');
         expect(zhCNLocale.tutorial.moveExploreUse.steps.exploreUpper).toContain('房间会翻开');
         expect(zhCNLocale.tutorial.moveExploreUse.steps.finish).not.toMatch(/发现牌|回到牌桌/);
         expect(zhCNLocale.tutorial.crimsonJack.steps.heroGoal).toContain('调查杰克');

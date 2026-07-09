@@ -7,6 +7,14 @@ import { useUndo } from '../../../contexts/UndoContext';
 import Board from '../Board';
 import { TheGangDomain, buildShowdownResults } from '../domain';
 import { THE_GANG_COMMANDS, type ShowdownPlayerResult, type TheGangCore } from '../domain/types';
+import { THE_GANG_AUDIO_CONFIG } from '../audio.config';
+import { THE_GANG_MANIFEST } from '../manifest';
+
+const useGameAudioMock = vi.fn();
+
+vi.mock('../../../lib/audio/useGameAudio', () => ({
+    useGameAudio: (...args: unknown[]) => useGameAudioMock(...args),
+}));
 
 const stateOf = (core: TheGangCore): MatchState<TheGangCore> => ({
     core,
@@ -175,6 +183,19 @@ const expectBggTableAnchors = () => {
 };
 
 describe('The Gang Board 运行入口', () => {
+    test('接入 The Gang 音效和 BGM 运行时配置', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        renderBoardForCore(initial);
+
+        expect(useGameAudioMock).toHaveBeenCalledWith(expect.objectContaining({
+            config: THE_GANG_AUDIO_CONFIG,
+            gameId: THE_GANG_MANIFEST.id,
+            G: initial,
+            ctx: { isGameOver: false },
+        }));
+    });
+
     test('真实 Board 可以完成四轮抢劫并显示摊牌结果', () => {
         const readyForShowdown = buildCoreReadyForShowdown();
         const { unmount } = renderBoardForCore(readyForShowdown);
@@ -188,6 +209,7 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
         expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(2);
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="token-empty-slot"]')).toHaveLength(0);
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).not.toHaveTextContent('玩家 1');
         expect(screen.getAllByText('AI 2 号位').length).toBeGreaterThan(0);
@@ -245,6 +267,34 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(1);
         expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
+    });
+
+    test('选筹阶段可以直接点击对手当前轮筹码拿走', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const withOpponentChip = reduceCommand(initial, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 2 },
+            timestamp: 1,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+
+        render(
+            <Board
+                G={stateOf(withOpponentChip)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        screen.getByTestId('the-gang-take-player-chip-1').click();
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
+            __internalPlayerId: '0',
+            chip: 2,
+        });
     });
 
     test('真实 Board 会把撤回状态提供给通用 HUD 上下文', () => {

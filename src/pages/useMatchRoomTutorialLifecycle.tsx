@@ -250,7 +250,8 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     });
     const tutorialModalIdRef = useRef<string | null>(null);
     const currentManifestId = resolvedTutorialManifest?.id ?? null;
-    const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
+    const currentManifestSteps = resolvedTutorialManifest?.steps ?? null;
+    const currentManifestLastStepId = currentManifestSteps?.[currentManifestSteps.length - 1]?.id ?? null;
     const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, tutorialId);
     const nextTutorialId = currentTutorialEntry?.nextTutorialId;
     const completedTutorialCatalogId = resolveCompletedTutorialCatalogId(tutorialCatalog, tutorialId);

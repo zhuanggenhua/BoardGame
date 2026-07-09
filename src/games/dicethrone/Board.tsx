@@ -1966,7 +1966,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         advanceQueue(id);
                     }}
                     onEffectComplete={(id) => {
-                        // 动画完成：兜底推进队列中的下一步（正常情况下会在 impact 时已推进）
+                        // 动画完成：若 impact 回调被跳过，仍必须释放 HP 冻结，避免血条延迟到下一回合才刷新。
+                        const info = fxImpactMapRef.current.get(id);
+                        if (info) {
+                            if (info.bufferKey) {
+                                damageBuffer.release([info.bufferKey]);
+                            }
+                            fxImpactMapRef.current.delete(id);
+                        }
                         advanceQueue(id);
                     }}
                 />

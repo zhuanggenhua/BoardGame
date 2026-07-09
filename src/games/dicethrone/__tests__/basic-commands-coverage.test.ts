@@ -23,6 +23,7 @@ import {
     cmd,
     createSetupWithHand,
     fixedRandom,
+    fistAttackAbilityId,
     type CommandInput,
     createHeroMatchup,
     getCardById,
@@ -906,6 +907,50 @@ describe('AI legal actions', () => {
                 strategyTags: ['purify-control'],
             }),
         }));
+    });
+
+    it('REMOVE_STATUS 指定状态时只移除一层状态', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.players['1'].statusEffects[STATUS_IDS.POISON] = 3;
+        injectPendingInteraction(state, {
+            id: 'remove-one-status-stack',
+            playerId: '0',
+            sourceCardId: 'remove-status-test',
+            type: 'selectStatus',
+            titleKey: 'interaction.selectStatusToRemove',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['1'],
+        });
+
+        const next = execCmd(state, cmd('REMOVE_STATUS', '0', {
+            targetPlayerId: '1',
+            statusId: STATUS_IDS.POISON,
+        }));
+
+        expect(next.core.players['1'].statusEffects[STATUS_IDS.POISON]).toBe(2);
+    });
+
+    it('REMOVE_STATUS 指定僧侣气这类多层标记时只移除一层', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.players['1'].tokens[TOKEN_IDS.TAIJI] = 5;
+        injectPendingInteraction(state, {
+            id: 'remove-one-token-stack',
+            playerId: '0',
+            sourceCardId: 'remove-status-test',
+            type: 'selectStatus',
+            titleKey: 'interaction.selectStatusToRemove',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['1'],
+        });
+
+        const next = execCmd(state, cmd('REMOVE_STATUS', '0', {
+            targetPlayerId: '1',
+            statusId: TOKEN_IDS.TAIJI,
+        }));
+
+        expect(next.core.players['1'].tokens[TOKEN_IDS.TAIJI]).toBe(4);
     });
 
     it('带 transferConfig 的 selectStatus 交互应生成 TRANSFER_STATUS 动作', () => {
@@ -3406,7 +3451,7 @@ describe('AI legal actions', () => {
     });
 
     it('确认骰面后若被对手改骰且仍有剩余投掷次数，应允许继续重投', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3, 4, 4, 4, 4, 4]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 4, 4, 4, 4, 4]);
         const runner = createRunner(random, true);
 
         const afterModify = runner.run({
@@ -3424,8 +3469,9 @@ describe('AI legal actions', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
-                cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 4 }),
+                cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 2 }),
                 cmd('SYS_INTERACTION_CONFIRM', '1'),
             ],
         });

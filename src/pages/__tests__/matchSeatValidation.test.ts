@@ -1257,7 +1257,7 @@ describe('onlineAiSeats', () => {
         expect(resolveDispatchImpl).not.toHaveBeenCalled();
     });
 
-    it('手动强制结束在 legalActionOnly 场景应退回 AI 合法动作，而不是直接判 unavailable', async () => {
+    it('手动强制结束在 legalActionOnly 场景应直接强制推进，不再退回 AI 合法动作', async () => {
         const resolveDispatchImpl = vi.fn().mockResolvedValue({
             kind: 'action',
             resolution: {
@@ -1313,13 +1313,72 @@ describe('onlineAiSeats', () => {
         });
 
         expect(result).toMatchObject({
-            kind: 'legal-action',
-            resolution: {
+            kind: 'force-end-turn',
+            candidate: {
                 playerId: '1',
-                attemptKey: 'manual-legal-action',
+                reason: 'active-turn',
+                resolution: {
+                    action: {
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
+                },
             },
         });
-        expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+        expect(resolveDispatchImpl).not.toHaveBeenCalled();
+    });
+
+    it('DiceThrone 手动强制结束在无交互但攻击阶段卡住时应直接推进阶段', async () => {
+        const resolveDispatchImpl = vi.fn();
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: {
+                gameId: 'dicethrone',
+                onlineAiRecovery: {
+                    activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
+                },
+            },
+            matchId: 'match-manual-dicethrone-attack-stuck',
+            sharedState: {
+                core: {
+                    activePlayerId: '1',
+                    currentPlayerId: '1',
+                    pendingAttack: {
+                        attackerId: '1',
+                        sourceAbilityId: 'steadfast-2-3',
+                    },
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'offensiveRoll',
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            resolveDispatchImpl,
+        });
+
+        expect(result).toMatchObject({
+            kind: 'force-end-turn',
+            candidate: {
+                playerId: '1',
+                reason: 'active-turn',
+                resolution: {
+                    action: {
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
+                },
+            },
+        });
+        expect(resolveDispatchImpl).not.toHaveBeenCalled();
     });
 
     it('手动恢复遇到 compare-roll contestant 时，应把 blocked seat snapshot 交给 dispatch，而不是提前 force-end-turn', async () => {

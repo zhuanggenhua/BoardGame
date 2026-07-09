@@ -24,6 +24,7 @@
       "handRankReference": "The Hands button in the lower-left is the in-game quick reference. Keep it closed most of the time; open it only when you need to confirm the weak-to-strong order before choosing chips or reading showdown.",
       "chipChoice": "Choose an available white chip. A higher number says you think your hand is stronger; a lower number leaves stronger positions for teammates.",
       "tableResponse": "Your teammates take white chips too. Only chips are public for now, so remember the strength signals everyone is giving.",
+      "takePlayerChip": "Try it now: click a teammate's current-round white chip to take it. That player loses the chip, then the AI will choose another available chip. You may still keep only one chip of each color yourself.",
       "advanceRound": "When everyone has a chip, advance the round. Advancing waits for every player to confirm; AI seats confirm automatically. Community cards will appear and everyone reassesses their hand strength.",
       "communityCards": "Community cards can change your best hand. Later rounds add the turn and river, and each round asks for a new chip color.",
       "yellowChip": "Reassess your hand strength and take a yellow chip. Yellow chips revise the strength signal from the white chips.",

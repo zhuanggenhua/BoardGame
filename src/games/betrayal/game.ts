@@ -204,6 +204,7 @@ export interface BetrayalRecentRollState {
         releasedJackSpiritRoomId?: string;
     };
     consumedRabbitFootCardIds: string[];
+    lastRabbitFootRerollDieIndex?: number;
 }
 
 export interface BetrayalPendingEventChoiceState {
@@ -1220,6 +1221,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                     }
                     : undefined,
                 consumedRabbitFootCardIds: [...core.recentRoll.consumedRabbitFootCardIds],
+                lastRabbitFootRerollDieIndex: core.recentRoll.lastRabbitFootRerollDieIndex,
             }
             : null,
         pendingEventChoice: core.pendingEventChoice
@@ -4241,7 +4243,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 dieIndex,
                 newPip,
                 eventRerollEffect: nextEventBranch ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer) : undefined,
-                logText: `${actor.displayName}使用兔脚重掷一颗骰子：${previousPip} → ${newPip}`,
+                logText: `${actor.displayName}使用兔脚重掷第 ${dieIndex + 1} 颗骰子：${previousPip} → ${newPip}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE: {
@@ -5148,6 +5150,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ...recentRoll,
                 dice,
                 consumedRabbitFootCardIds: [...recentRoll.consumedRabbitFootCardIds, event.payload.cardId],
+                lastRabbitFootRerollDieIndex: event.payload.dieIndex,
             };
             const nextTotal = resolveRecentRollTotal(nextRoll);
 
