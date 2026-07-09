@@ -199,7 +199,7 @@ shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 
 - Android / App WebView 下，页面方向控制不是只看前端 `MobileOrientationGuard`。
 - **原生 `MainActivity` 的 `setRequestedOrientation(...)` 是第一层，也是更高优先级**；前端 `MobileOrientationGuard` 只能作为补充与重试，不能替代原生声明。
-- 当前游戏页之所以能稳定横竖屏切换，是因为原生层会识别 `/play/:gameId`，再读取 `game-orientation-map.json` 先把 Activity 切到对应方向。
+- 当前游戏页之所以能稳定横竖屏切换，是因为原生层会识别 `/play/:gameId`，再读取 `game-orientation-map.json` 先把 Activity 切到对应方向。`/play/:gameId/tutorial` 与 `/play/:gameId/tutorial/:tutorialId` 也必须按同一个游戏页规则处理，不能把教程单独当成竖屏页面。
 - 因此，任何**非游戏页**如果也要求固定方向（例如首页 V2 要求横屏），都必须满足下列至少一条：
   - 原生层能显式识别该路由并直接返回目标方向；
   - 或者构建产物中提供可被原生层读取的页面方向元数据，再由 `MainActivity` 决定方向。

@@ -1442,6 +1442,10 @@ function BetrayalHouseDice3DGroup({
         [roll.dice],
     );
     const rerollingDieIndex = roll.lastRabbitFootRerollDieIndex ?? null;
+    const rerollingDiceIds = React.useMemo(
+        () => (rerollingDieIndex !== null ? [rerollingDieIndex + 1] : undefined),
+        [rerollingDieIndex],
+    );
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
     const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
     const visibleRuleValues = React.useMemo(
@@ -1513,9 +1517,7 @@ function BetrayalHouseDice3DGroup({
             <DiceBoxPhysicsSource
                 dice={diceInputs}
                 isRolling={rerollingDieIndex === null}
-                rerollingDiceIds={rerollingDieIndex !== null
-                    ? [rerollingDieIndex + 1]
-                    : undefined}
+                rerollingDiceIds={rerollingDiceIds}
                 styleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
                 dieSkins={dieSkins}
                 testId="betrayal-house-dice-physics-source"

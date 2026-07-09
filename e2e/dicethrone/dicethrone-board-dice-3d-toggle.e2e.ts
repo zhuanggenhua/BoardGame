@@ -131,8 +131,8 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
             || canvasNode.dataset.diceVisualSettled !== 'true'
         ) return false;
         if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
-        if (canvasNode.dataset.worldWidthScale !== '0.64') return false;
-        if (canvasNode.dataset.worldHeightScale !== '0.64') return false;
+        if (canvasNode.dataset.worldWidthScale !== '0.44') return false;
+        if (canvasNode.dataset.worldHeightScale !== '0.44') return false;
         if (Number(canvasNode.dataset.physicsWorldWidth ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.physicsWorldHeight ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) > 0.004) return false;
@@ -254,9 +254,11 @@ async function expectBoardDiceSelectionUnderlay(page: Page, dieIds: number[]): P
         const dieButton = page.locator(`[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`);
         await expect(dieButton).toHaveAttribute('data-render-mode', 'engine');
         await expect(dieButton).toHaveAttribute('data-selected', 'true');
+        await expect(page.getByTestId(`die-selected-ring-${dieId}`)).toBeVisible({ timeout: 3000 });
     }
 
-    await expect(page.getByTestId('dice-field-3d-underlay')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('dicethrone-board-dice-ring-layer')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('dice-field-3d-underlay')).toHaveCount(0);
     await expect(page.locator('[data-testid^="die-selection-underlay-"]')).toHaveCount(0);
     await expect(page.getByTestId('dicethrone-board-dice-box-canvas')).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
     await expect(page.getByTestId('dicethrone-board-dice-physics-source')).toHaveAttribute('data-dice-physics-mode', 'debug-visible');
@@ -379,6 +381,7 @@ function getVisualMoveDistance(current: DiceRectSnapshot, baseline: DiceRectSnap
 
 test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
     test('手机横屏投掷结束后 3D 骰子仍留在棋盘投骰区', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
         await page.setViewportSize({ width: 844, height: 390 });
         await page.addInitScript((storageKey) => {
             localStorage.setItem(storageKey, 'true');
@@ -450,9 +453,15 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const layout = await page.evaluate(() => {
             const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
             const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+            const handArea = document.querySelector('[data-testid="hand-area"]') as HTMLElement | null;
+            const playerBoard = document.querySelector('[data-testid="player-board-surface"]') as HTMLElement | null;
+            const tipBoard = document.querySelector('[data-testid="tip-board-surface"]') as HTMLElement | null;
             if (!stage || !canvas) return null;
             const stageRect = stage.getBoundingClientRect();
             const canvasRect = canvas.getBoundingClientRect();
+            const handRect = handArea?.getBoundingClientRect();
+            const playerBoardRect = playerBoard?.getBoundingClientRect();
+            const tipBoardRect = tipBoard?.getBoundingClientRect();
             const diceRects = Array.from(stage.querySelectorAll('[data-testid^="die-button-"]'))
                 .map((node) => {
                     const rect = (node as HTMLElement).getBoundingClientRect();
@@ -463,8 +472,18 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
                         bottom: rect.bottom,
                         width: rect.width,
                         height: rect.height,
+                        centerX: rect.left + (rect.width / 2),
+                        centerY: rect.top + (rect.height / 2),
                     };
                 });
+            const diceUnion = diceRects.length > 0
+                ? {
+                    left: Math.min(...diceRects.map((rect) => rect.left)),
+                    top: Math.min(...diceRects.map((rect) => rect.top)),
+                    right: Math.max(...diceRects.map((rect) => rect.right)),
+                    bottom: Math.max(...diceRects.map((rect) => rect.bottom)),
+                }
+                : null;
             return {
                 stage: {
                     left: stageRect.left,
@@ -482,7 +501,36 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
                     width: canvasRect.width,
                     height: canvasRect.height,
                 },
+                hand: handRect ? {
+                    left: handRect.left,
+                    top: handRect.top,
+                    right: handRect.right,
+                    bottom: handRect.bottom,
+                    width: handRect.width,
+                    height: handRect.height,
+                } : null,
+                playerBoard: playerBoardRect ? {
+                    left: playerBoardRect.left,
+                    top: playerBoardRect.top,
+                    right: playerBoardRect.right,
+                    bottom: playerBoardRect.bottom,
+                    width: playerBoardRect.width,
+                    height: playerBoardRect.height,
+                } : null,
+                tipBoard: tipBoardRect ? {
+                    left: tipBoardRect.left,
+                    top: tipBoardRect.top,
+                    right: tipBoardRect.right,
+                    bottom: tipBoardRect.bottom,
+                    width: tipBoardRect.width,
+                    height: tipBoardRect.height,
+                } : null,
                 diceRects,
+                diceUnion: diceUnion ? {
+                    ...diceUnion,
+                    width: diceUnion.right - diceUnion.left,
+                    height: diceUnion.bottom - diceUnion.top,
+                } : null,
                 viewport: {
                     width: window.innerWidth,
                     height: window.innerHeight,
@@ -491,14 +539,29 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         });
 
         expect(layout).not.toBeNull();
-        expect(layout?.stage.width).toBeGreaterThan(180);
-        expect(layout?.stage.height).toBeGreaterThan(180);
+        expect(layout?.stage.width).toBeGreaterThanOrEqual(188);
+        expect(layout?.stage.width).toBeLessThanOrEqual(222);
+        expect(layout?.stage.height).toBeGreaterThanOrEqual(188);
+        expect(layout?.stage.height).toBeLessThanOrEqual(222);
         expect(layout?.stage.right).toBeGreaterThan(0);
         expect(layout?.stage.left).toBeLessThan(layout?.viewport.width ?? 0);
         expect(layout?.stage.bottom).toBeGreaterThan(0);
         expect(layout?.stage.top).toBeLessThan(layout?.viewport.height ?? 0);
+        expect(layout?.stage.top).toBeLessThanOrEqual(4);
+        expect(layout?.stage.bottom).toBeLessThanOrEqual(222);
         expect(layout?.canvas.width).toBeGreaterThan(120);
         expect(layout?.canvas.height).toBeGreaterThan(120);
+        expect(layout?.diceUnion).not.toBeNull();
+        expect(layout?.diceUnion?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.width ?? 0) * 0.86);
+        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.48);
+        expect(layout?.diceUnion?.top ?? 0).toBeGreaterThanOrEqual(0);
+        expect(layout?.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(92);
+        if (layout?.playerBoard) {
+            expect(layout.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(layout.playerBoard.top - 2);
+        }
+        if (layout?.tipBoard) {
+            expect(layout.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(layout.tipBoard.top + 76);
+        }
         for (const rect of layout?.diceRects ?? []) {
             expect(rect.width).toBeGreaterThan(28);
             expect(rect.height).toBeGreaterThan(28);
@@ -506,6 +569,19 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             expect(rect.left).toBeLessThan(layout?.viewport.width ?? 0);
             expect(rect.bottom).toBeGreaterThan(0);
             expect(rect.top).toBeLessThan(layout?.viewport.height ?? 0);
+            expect(rect.centerX).toBeGreaterThanOrEqual((layout?.stage.left ?? 0) + ((layout?.stage.width ?? 0) * 0.1));
+            expect(rect.centerX).toBeLessThanOrEqual((layout?.stage.right ?? 0) - ((layout?.stage.width ?? 0) * 0.1));
+            expect(rect.centerY).toBeGreaterThanOrEqual((layout?.stage.top ?? 0) + ((layout?.stage.height ?? 0) * 0.1));
+            expect(rect.centerY).toBeLessThanOrEqual((layout?.stage.bottom ?? 0) - ((layout?.stage.height ?? 0) * 0.1));
+            if (layout?.hand) {
+                expect(rect.bottom).toBeLessThanOrEqual(layout.hand.top - 4);
+            }
+            if (layout?.playerBoard) {
+                expect(rect.bottom).toBeLessThanOrEqual(layout.playerBoard.top + 76);
+            }
+            if (layout?.tipBoard) {
+                expect(rect.bottom).toBeLessThanOrEqual(layout.tipBoard.top + 76);
+            }
         }
 
         await saveBoardDiceStageScreenshot(page, '00-手机横屏投掷结束后-3D骰子仍可见-局部', testInfo);
@@ -742,7 +818,10 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(firstBoardDie).toBeVisible({ timeout: 5000 });
         await expect(page.getByTestId('card-spotlight-overlay')).toHaveCount(0, { timeout: 5000 });
         const hitLayer = page.getByTestId('dicethrone-board-dice-hit-layer');
-        await hitLayer.hover({ position: { x: 12, y: 12 } });
+        await page.mouse.move(
+            (beforeLockDebug.hitRect?.left ?? 0) + 12,
+            (beforeLockDebug.hitRect?.top ?? 0) + 12,
+        );
         await expect.poll(async () => await hitLayer.evaluate((node) => window.getComputedStyle(node).cursor)).toContain('pointer');
         await clickBoardDieCenter(page, 0);
 
@@ -752,7 +831,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toHaveAttribute('data-clickable', 'true');
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toHaveAttribute('data-selected', 'false');
-        await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]')).toContainText(/锁定|Locked/i);
+        await expect(page.getByTestId('die-locked-label-0')).toContainText(/锁定|Locked/i);
 
         const layerState = await page.evaluate(() => {
             const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
@@ -841,7 +920,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             timeout: 2000,
         }).toBe(true);
         await expect(page.getByTestId('die-locked-ring-0')).toBeVisible({ timeout: 2000 });
-        await expect(lockedDie).toContainText(/锁定|Locked/i);
+        await expect(page.getByTestId('die-locked-label-0')).toContainText(/锁定|Locked/i);
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
         await waitForBoardDiceSettled(page);
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);

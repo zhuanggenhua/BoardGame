@@ -98,7 +98,7 @@ const getMapArmyTokenOffsets = (
 ): { x: number; y: number } => {
     if (region.id === 'city-region-22' && displayUnitCount === 2) {
         return {
-            x: index === 0 ? -18 : 18,
+            x: index === 0 ? -12 : 12,
             y: 0,
         };
     }

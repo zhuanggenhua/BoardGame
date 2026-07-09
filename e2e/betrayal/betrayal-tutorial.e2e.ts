@@ -11,6 +11,7 @@ import {
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
 } from './betrayalTestHelpers';
+import { MOBILE_LANDSCAPE_REFERENCE_VIEWPORT } from '../../src/shared/referenceViewports';
 
 const EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-tutorial');
 const STEP_00 = `${EVIDENCE_DIR}/00-山屋惊魂-教程-章节目录.jpg`;
@@ -482,6 +483,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('betrayal-inventory-omen-book')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-omen-book-shell')).toHaveAttribute('data-tutorial-target-outline', 'true');
         await expect(page.getByTestId('tutorial-highlight-ring')).toHaveAttribute('data-tutorial-highlight-target', 'betrayal-inventory-omen-book');
+        await expect(page.getByTestId('tutorial-highlight-ring')).toHaveAttribute('data-tutorial-highlight-shape', 'rect');
         await expect(page.getByTestId('betrayal-inventory-omen-book-magnify')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
         await saveScreenshot(page, STEP_09);
@@ -696,11 +698,15 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await initBetrayalContext(context, { skipTutorial: false });
         const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-phone-landscape');
 
-        await page.setViewportSize({ width: 936, height: 432 });
+        await page.setViewportSize(MOBILE_LANDSCAPE_REFERENCE_VIEWPORT);
         await page.goto('/play/betrayal/tutorial/move-explore-use?bgForceCoarsePointer=1', { waitUntil: 'domcontentloaded' });
         await waitForBetrayalPageReady(page);
 
         await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+        await expect(page.locator('html')).toHaveAttribute('data-game-id', 'betrayal');
+        await expect(page.locator('html')).toHaveAttribute('data-preferred-orientation', 'landscape');
+        await expect(page.locator('html')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
+        await expect(page.getByTestId('mobile-orientation-game-banner')).toHaveCount(0);
         const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
             .waitFor({ state: 'visible', timeout: 5000 })
             .then(() => true)

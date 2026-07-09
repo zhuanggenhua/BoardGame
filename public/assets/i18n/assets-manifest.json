@@ -11026,11 +11026,29 @@
         }
       }
     },
+    "zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail": {
+      "variants": {
+        "webp": {
+          "sha256": "467b496553441c48a946e782e391613f55de814cc10e878cae15bf55573883eb",
+          "bytes": 67012,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/the-gang/thumbnails/cover": {
       "variants": {
         "png": {
           "sha256": "0dbbfae7081bacc90d95b80e13a0e5f1c0ede27a57b58f4b09ba5f8a3065c04f",
           "bytes": 71553,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/thumbnails/the-gang-vault-heist-thumbnail": {
+      "variants": {
+        "png": {
+          "sha256": "9c7b5fdee4de1c811e3fdb86db195953aba22024ba4d4794ed16fcf5dbf4bbdd",
+          "bytes": 295968,
           "mime": "image/png"
         }
       }

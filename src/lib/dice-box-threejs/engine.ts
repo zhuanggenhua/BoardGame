@@ -34,6 +34,9 @@ export interface DiceBoxStyleProfile {
     worldWidthScale?: number;
     worldHeightScale?: number;
     recoverOutOfBounds?: boolean;
+    settledLayoutScale?: number;
+    settledLayout?: Array<{ x: number; y: number; yaw: number }>;
+    compactSettledDice?: boolean;
 }
 
 export interface DiceBoxDieSkin {
@@ -129,6 +132,8 @@ const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     baseScale: 90,
     strength: 0.92,
     iterationLimit: 1000,
+    settledLayoutScale: 1,
+    compactSettledDice: false,
 };
 
 let nextContainerId = 0;
@@ -205,10 +210,13 @@ export class DiceBoxThreeEngine {
         });
         await box.initialize();
         const engine = new DiceBoxThreeEngine(box, container, styleProfile);
+        box.renderer.setClearColor?.(0x000000, 0);
+        box.renderer.setClearAlpha?.(0);
         box.renderer.domElement.style.width = '100%';
         box.renderer.domElement.style.height = '100%';
         box.renderer.domElement.style.display = 'block';
         box.renderer.domElement.style.pointerEvents = 'none';
+        box.renderer.domElement.style.background = 'transparent';
         box.renderer.domElement.dataset.dicePhysicsSource = 'dice-box-threejs';
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
@@ -287,7 +295,9 @@ export class DiceBoxThreeEngine {
         this.applyPrimarySkinToDicePreset();
         await this.box.roll(createNotation(values));
         this.applyValues(values, undefined, true);
-        this.applyCurrentSkins();
+        this.applyCurrentSkins({
+            arrange: this.styleProfile.compactSettledDice === true,
+        });
     }
 
     async restoreValues(values: number[]): Promise<void> {
@@ -310,7 +320,9 @@ export class DiceBoxThreeEngine {
             await this.box.reroll(indices);
             this.restoreDieTransforms(lockedSnapshots, true);
             this.applyValues(values, indices, true);
-            this.applyCurrentSkins();
+            this.applyCurrentSkins({
+                arrange: this.styleProfile.compactSettledDice === true,
+            });
         } finally {
             this.restoreDieTransforms(lockedSnapshots, false);
         }
@@ -328,7 +340,9 @@ export class DiceBoxThreeEngine {
 
     syncSettledValues(values: number[]): void {
         this.applyValues(values, undefined, true);
-        this.applyCurrentSkins({ arrange: true });
+        this.applyCurrentSkins({
+            arrange: this.styleProfile.compactSettledDice === true,
+        });
     }
 
     previewValues(values: number[], indices?: number[]): void {
@@ -367,10 +381,12 @@ export class DiceBoxThreeEngine {
                 || position.z < minZ;
             if (!isOutOfBounds) return;
 
-            const slot = SETTLED_DICE_LAYOUT[index % SETTLED_DICE_LAYOUT.length] ?? { x: 0, y: 0, yaw: 0 };
+            const settledLayout = this.styleProfile.settledLayout ?? SETTLED_DICE_LAYOUT;
+            const slot = settledLayout[index % settledLayout.length] ?? { x: 0, y: 0, yaw: 0 };
+            const settledLayoutScale = this.styleProfile.settledLayoutScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.settledLayoutScale ?? 1;
             const target = {
-                x: clampNumber(slot.x * baseScale * 0.72, -maxX * 0.68, maxX * 0.68),
-                y: clampNumber(slot.y * baseScale * 0.62, -maxY * 0.68, maxY * 0.68),
+                x: clampNumber(slot.x * baseScale * 0.72 * settledLayoutScale, -maxX * 0.68, maxX * 0.68),
+                y: clampNumber(slot.y * baseScale * 0.62 * settledLayoutScale, -maxY * 0.68, maxY * 0.68),
                 z: Math.max(baseScale * 0.72, baseScale * 0.5),
             };
             this.setVector(dieWithBody.position, target);
@@ -773,7 +789,9 @@ export class DiceBoxThreeEngine {
 
         const dice = this.box.diceList;
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
-        const layoutScale = Math.max(baseScale, 82);
+        const settledLayoutScale = this.styleProfile.settledLayoutScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.settledLayoutScale ?? 1;
+        const settledLayout = this.styleProfile.settledLayout ?? SETTLED_DICE_LAYOUT;
+        const layoutScale = Math.max(baseScale, 82) * settledLayoutScale;
         const maxColumns = 5;
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
@@ -783,7 +801,7 @@ export class DiceBoxThreeEngine {
         const z = baseScale * 0.56;
 
         dice.forEach((die, index) => {
-            const layout = SETTLED_DICE_LAYOUT[index];
+            const layout = settledLayout[index];
             const row = Math.floor(index / columns);
             const col = index % columns;
             const rowCount = row === rows - 1 ? cappedDice.length - row * columns : columns;

@@ -14,8 +14,8 @@ const entry: GameManifestEntry = {
     playerOptions: [3, 4, 5, 6],
     bestPlayers: [4, 5],
     tags: ['card_driven', 'cooperative', 'poker'],
-    mobileProfile: 'landscape-adapted',
-    preferredOrientation: 'landscape',
+    mobileProfile: 'portrait-adapted',
+    preferredOrientation: 'portrait',
     mobileLayoutPreset: 'board-shell',
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {

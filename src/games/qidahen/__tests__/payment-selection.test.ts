@@ -28337,7 +28337,7 @@ describe('七大恨支付手牌选择', () => {
         expect(averageSiegeTokenX).toBeCloseTo(881 / QIDAHEN_MAP_WIDTH, 4);
         expect(averageSiegeTokenY).toBeCloseTo((719 + 30) / QIDAHEN_MAP_HEIGHT, 4);
         expect(Math.max(...siegeTokens.map((token) => token.x)) - Math.min(...siegeTokens.map((token) => token.x)))
-            .toBeCloseTo(36 / QIDAHEN_MAP_WIDTH, 4);
+            .toBeCloseTo(24 / QIDAHEN_MAP_WIDTH, 4);
         const dongjiangArmyTokens = mapTokensWithDongjiangSiege.filter((token) => (
             token.type === 'army' && token.id.startsWith('city-region-22-army-')
         ));

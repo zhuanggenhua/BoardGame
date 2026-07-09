@@ -577,6 +577,16 @@ export const TutorialOverlay: React.FC = () => {
     }
 
     const maskOpacity = currentStep.showMask && visibleTargetRect ? 0.6 : 0;
+    const highlightStyle = visibleTargetRect
+        ? {
+            top: visibleTargetRect.top - 4,
+            left: visibleTargetRect.left - 4,
+            width: visibleTargetRect.width + 8,
+            height: visibleTargetRect.height + 8,
+            borderRadius: '12px',
+            boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.3)',
+        } satisfies React.CSSProperties
+        : undefined;
 
     return (
         <div
@@ -602,15 +612,9 @@ export const TutorialOverlay: React.FC = () => {
                     data-testid="tutorial-highlight-ring"
                     data-tutorial-highlight-target={currentStep.highlightTarget}
                     data-tutorial-highlight-step={currentStep.id ?? 'unknown'}
+                    data-tutorial-highlight-shape="rect"
                     className="absolute pointer-events-none"
-                    style={{
-                        top: visibleTargetRect.top - 4,
-                        left: visibleTargetRect.left - 4,
-                        width: visibleTargetRect.width + 8,
-                        height: visibleTargetRect.height + 8,
-                        borderRadius: '12px',
-                        boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.3)',
-                    }}
+                    style={highlightStyle}
                 />
             )}
 

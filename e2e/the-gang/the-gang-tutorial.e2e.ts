@@ -283,13 +283,16 @@ test.describe('The Gang 教程 E2E', () => {
         await expectCurrentRoundChips(page, 3);
         await expectTokenPileChipButtons(page, '白筹码', []);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await expect(page.getByText(/中间筹码池是默认来源/u)).toBeVisible();
+        await expect(page.getByText(/队友面前本轮刚拿的白筹码也还是可拿对象/u)).toBeVisible();
         await game.screenshot('教程首轮全员拿白筹码', testInfo);
 
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="take-player-chip"]')).toBeVisible();
         await expect(page.getByTestId('tutorial-action-hint')).toBeVisible();
         await expect(page.getByText(/实际试一次/u)).toBeVisible();
-        await expect(page.getByText(/点队友面前的当前轮白筹码把它拿走/u)).toBeVisible();
+        await expect(page.getByText(/点队友面前发亮的当前轮白筹码/u)).toBeVisible();
+        await expect(page.getByText(/把它从队友那里拿走/u)).toBeVisible();
         await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-opponent-state');
         const chipsBeforeSteal = await getCurrentRoundChips(page);
         const stolenTargetEntry = Object.entries(chipsBeforeSteal)
@@ -314,7 +317,6 @@ test.describe('The Gang 教程 E2E', () => {
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await game.screenshot('教程实际拿走队友当前轮筹码', testInfo);
 
-        await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="advance-round"]')).toBeVisible();
         await expect(page.locator('[data-tutorial-step="advance-round"]').getByText(/全员确认/u)).toBeVisible();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');

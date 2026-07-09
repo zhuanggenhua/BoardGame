@@ -19,6 +19,7 @@ export interface DiceBoxPhysicsSourceProps {
     rerollingDiceIds?: number[];
     styleProfile?: DiceBoxStyleProfile;
     dieSkins?: Array<DiceBoxDieSkin | null>;
+    requireDieSkins?: boolean;
     rendererMode?: DicePhysicsRendererMode;
     canvasTestId?: string;
     className?: string;
@@ -34,6 +35,7 @@ export function DiceBoxPhysicsSource({
     rerollingDiceIds,
     styleProfile,
     dieSkins,
+    requireDieSkins = false,
     rendererMode = 'physics-only',
     canvasTestId,
     className,
@@ -77,6 +79,14 @@ export function DiceBoxPhysicsSource({
         [dice, rerollingDiceIds],
     );
     const rerollKey = React.useMemo(() => rerollIds.join(','), [rerollIds]);
+    const requiredDieSkinsReady = React.useMemo(
+        () => !requireDieSkins
+            || dice.length === 0
+            || (Array.isArray(dieSkins)
+                && dieSkins.length >= dice.length
+                && dieSkins.slice(0, dice.length).every(Boolean)),
+        [dice.length, dieSkins, requireDieSkins],
+    );
 
     const setSettledState = React.useCallback((nextSettled: boolean) => {
         settledRef.current = nextSettled;
@@ -106,7 +116,7 @@ export function DiceBoxPhysicsSource({
                 engine.resize();
                 engine.setCanvasDiagnostics({
                     settled: settledRef.current,
-                    skinsReady: false,
+                    skinsReady: !requireDieSkins || dice.length === 0,
                 });
                 setEngineReady(true);
                 setEngineVersion((count) => count + 1);
@@ -125,7 +135,7 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [canvasTestId, rendererMode, styleProfile]);
+    }, [canvasTestId, dice.length, rendererMode, requireDieSkins, styleProfile]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -134,10 +144,10 @@ export function DiceBoxPhysicsSource({
             engine.setDieSkins(dieSkins);
             engine.setCanvasDiagnostics({
                 settled: settledRef.current,
-                skinsReady: dieSkins.length > 0,
+                skinsReady: requiredDieSkinsReady,
             });
         }
-    }, [dieSkins, engineVersion]);
+    }, [dieSkins, engineVersion, requiredDieSkinsReady]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -197,6 +207,13 @@ export function DiceBoxPhysicsSource({
     React.useEffect(() => {
         const engine = engineRef.current;
         if (!engineReady || !engine) return;
+        if (!requiredDieSkinsReady) {
+            engine.setCanvasDiagnostics({
+                settled: true,
+                skinsReady: false,
+            });
+            return;
+        }
 
         const run = async () => {
             if (dice.length === 0) {
@@ -291,7 +308,7 @@ export function DiceBoxPhysicsSource({
         };
 
         void run();
-    }, [dice, engineReady, isRolling, lockedIndices, rerollIds, rerollKey, rollingIndices, rollingKey, setSettledState, values]);
+    }, [dice, engineReady, isRolling, lockedIndices, rerollIds, rerollKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
 
     return (
         <div
@@ -302,6 +319,7 @@ export function DiceBoxPhysicsSource({
             data-dice-physics-source="dice-box-threejs"
             data-dice-physics-mode={rendererMode}
             data-dice-settled={settled ? 'true' : 'false'}
+            data-dice-skins-ready={requiredDieSkinsReady ? 'true' : 'false'}
             {...dataAttributes}
         />
     );

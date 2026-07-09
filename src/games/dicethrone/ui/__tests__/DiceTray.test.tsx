@@ -280,11 +280,14 @@ describe('DiceTray tutorial anchor', () => {
 
         expect(screen.getByTestId('die-locked-ring-1')).toHaveClass('rounded-full');
         expect(screen.getByTestId('die-locked-ring-1').parentElement).toHaveStyle({
-            width: '65px',
-            height: '65px',
+            width: '70px',
+            height: '70px',
         });
         expect(screen.getByTestId('die-locked-ring-1').closest('[data-testid="die-button-1"]')).toBeNull();
-        const lockedLabel = screen.getByText('dice.locked');
+        const lockedLabel = screen.getByTestId('die-locked-label-1');
+        const lockedLabelLayer = screen.getByTestId('die-locked-label-layer-1');
+        const physicsLayerStyle = diceBoxPhysicsSourceCalls[0]?.style as React.CSSProperties | undefined;
+        expect(Number(lockedLabelLayer.style.zIndex)).toBeGreaterThan(Number(physicsLayerStyle?.zIndex ?? 0));
         expect(lockedLabel).toHaveClass('min-w-max');
         expect(lockedLabel).toHaveClass('whitespace-nowrap');
         expect(lockedLabel).not.toHaveClass('overflow-hidden');
@@ -310,8 +313,8 @@ describe('DiceTray tutorial anchor', () => {
         const selectedRing = screen.getByTestId('die-selected-ring-0');
         expect(selectedRing).toHaveClass('rounded-full');
         expect(selectedRing.parentElement).toHaveStyle({
-            width: '65px',
-            height: '65px',
+            width: '70px',
+            height: '70px',
         });
         expect(selectedRing.closest('[data-testid="die-button-0"]')).toBeNull();
         expect(selectedRing).not.toHaveClass('rounded-2xl');
@@ -342,6 +345,24 @@ describe('DiceTray tutorial anchor', () => {
 
         incrementButton.click();
         expect(step).toHaveBeenCalledWith({ action: 'adjust', dieId: 0, delta: 1, currentValue: 1 });
+    });
+
+    it('棋盘内 3D 物理骰应等 DiceThrone 骰面皮肤就绪后再生成和投掷', () => {
+        diceBoxPhysicsSourceCalls.length = 0;
+        render(
+            <DiceTray
+                dice={boardDice}
+                rollCount={0}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract={true}
+                isRolling={true}
+                presentation="board"
+            />,
+        );
+
+        expect(diceBoxPhysicsSourceCalls).toHaveLength(1);
+        expect(diceBoxPhysicsSourceCalls[0]?.requireDieSkins).toBe(true);
     });
 
     it('右侧默认掷骰按钮在首掷前仍应保持原来的双按钮布局', () => {

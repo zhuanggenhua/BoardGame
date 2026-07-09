@@ -86,18 +86,21 @@ const CENTER_DICE_SCATTER_SLOTS = [
 ];
 
 const BOARD_DICE_SCATTER_SLOTS = [
-    { left: '15%', top: '71%', rotate: '-22deg', zIndex: 5, world: { x: -2.08, y: -1.07, z: 1.1 } },
-    { left: '32%', top: '27%', rotate: '16deg', zIndex: 2, world: { x: -0.88, y: -1.07, z: -1.4 } },
-    { left: '51%', top: '61%', rotate: '-8deg', zIndex: 4, world: { x: 0.04, y: -1.07, z: 1.14 } },
-    { left: '70%', top: '25%', rotate: '20deg', zIndex: 1, world: { x: 1.28, y: -1.07, z: -1.24 } },
-    { left: '85%', top: '54%', rotate: '-17deg', zIndex: 3, world: { x: 2.08, y: -1.07, z: 0.9 } },
+    { left: '38%', top: '36%', rotate: '-12deg', zIndex: 5, world: { x: -0.58, y: -1.07, z: -0.38 } },
+    { left: '50%', top: '27%', rotate: '8deg', zIndex: 2, world: { x: -0.06, y: -1.07, z: -0.76 } },
+    { left: '50%', top: '48%', rotate: '-4deg', zIndex: 4, world: { x: 0.02, y: -1.07, z: 0.12 } },
+    { left: '62%', top: '36%', rotate: '10deg', zIndex: 1, world: { x: 0.54, y: -1.07, z: -0.34 } },
+    { left: '60%', top: '56%', rotate: '-8deg', zIndex: 3, world: { x: 0.48, y: -1.07, z: 0.52 } },
 ];
 
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
 const BOARD_DICE_HIT_TARGET_SIZE_PX = 44;
-const BOARD_DICE_RING_SIZE_MULTIPLIER = 1.5;
+const BOARD_DICE_RING_SIZE_MULTIPLIER = 1.35;
 const BOARD_DICE_STAGE_Z_INDEX = UI_Z_INDEX.cardPreviewTooltip + 1;
+const BOARD_DICE_LOCK_LABEL_Z_INDEX = BOARD_DICE_STAGE_Z_INDEX + 2;
+const BOARD_DICE_MOBILE_PROJECTION_Y_OFFSET_PX = -72;
+const BOARD_DICE_MOBILE_PROJECTION_TOP_PADDING_PX = BOARD_DICE_HIT_TARGET_SIZE_PX / 2;
 const OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME = [
     'pointer-events-auto absolute top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full',
     'border border-white/40 bg-amber-600 text-base font-black leading-none text-white shadow-[0_0_14px_rgba(245,158,11,0.65)]',
@@ -106,6 +109,13 @@ const OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME = [
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
+}
+
+function resolveMobileBoardProjectionYOffset(layout: ProjectedDiceLayout): number {
+    return Math.max(
+        BOARD_DICE_MOBILE_PROJECTION_Y_OFFSET_PX,
+        BOARD_DICE_MOBILE_PROJECTION_TOP_PADDING_PX - layout.minY,
+    );
 }
 
 function resolveBoardOverlayDiceSize(layout?: ProjectedDiceLayout): number {
@@ -126,7 +136,13 @@ function resolveBoardOverlayDiceSize(layout?: ProjectedDiceLayout): number {
 }
 
 function resolveBoardDiceRingSize(layout?: ProjectedDiceLayout): number {
-    return Math.round(resolveBoardOverlayDiceSize(layout) * BOARD_DICE_RING_SIZE_MULTIPLIER);
+    if (!layout) return Math.round(resolveBoardOverlayDiceSize(layout) * BOARD_DICE_RING_SIZE_MULTIPLIER);
+
+    return Math.round(Math.max(
+        resolveBoardOverlayDiceSize(layout),
+        layout.width,
+        layout.height,
+    ) * BOARD_DICE_RING_SIZE_MULTIPLIER);
 }
 
 /** 从 multistep-choice interaction 中提取 DiceThrone 元数据 */
@@ -248,6 +264,7 @@ export const DiceTray = ({
     const canToggleDieLock = canInteract && rollCount > 0;
     const [centerDiceLayout, setCenterDiceLayout] = React.useState<Record<number, ProjectedDiceLayout>>({});
     const [diceBoxDieSkins, setDiceBoxDieSkins] = React.useState<Array<DiceThroneDiceBoxSkin | null>>([]);
+    const [diceBoxDieSkinsReady, setDiceBoxDieSkinsReady] = React.useState(false);
     const fieldDice = React.useMemo(
         () => dice.map((die) => ({
             id: die.id,
@@ -275,16 +292,24 @@ export const DiceTray = ({
     React.useEffect(() => {
         if (!isBoardPresentation || visibleOverlayDice.length === 0) {
             setDiceBoxDieSkins([]);
+            setDiceBoxDieSkinsReady(!isBoardPresentation || visibleOverlayDice.length === 0);
             return;
         }
 
         let cancelled = false;
+        setDiceBoxDieSkinsReady(false);
         const skinDefinitions = visibleOverlayDice.map((die) => ({
             definitionId: die.definitionId,
         }));
         void loadDiceThroneDiceBoxSkins(skinDefinitions, locale ?? 'zh-CN').then((skins) => {
             if (!cancelled) {
                 setDiceBoxDieSkins(skins);
+                setDiceBoxDieSkinsReady(skins.length >= visibleOverlayDice.length && skins.every(Boolean));
+            }
+        }).catch(() => {
+            if (!cancelled) {
+                setDiceBoxDieSkins([]);
+                setDiceBoxDieSkinsReady(false);
             }
         });
 
@@ -306,25 +331,39 @@ export const DiceTray = ({
             const next: Record<number, ProjectedDiceLayout> = {};
             let changed = layouts.length !== Object.keys(prev).length;
             for (const layout of layouts) {
-                next[layout.id] = layout;
-                const prevLayout = prev[layout.id];
+                const shouldLiftBoardProjection = isBoardPresentation
+                    && typeof window !== 'undefined'
+                    && window.innerWidth <= 900;
+                const projectionYOffset = shouldLiftBoardProjection
+                    ? resolveMobileBoardProjectionYOffset(layout)
+                    : 0;
+                const nextLayout = shouldLiftBoardProjection
+                    ? {
+                        ...layout,
+                        y: layout.y + projectionYOffset,
+                        minY: layout.minY + projectionYOffset,
+                        maxY: layout.maxY + projectionYOffset,
+                    }
+                    : layout;
+                next[nextLayout.id] = nextLayout;
+                const prevLayout = prev[nextLayout.id];
                 if (!prevLayout
-                    || Math.abs(prevLayout.x - layout.x) > 1
-                    || Math.abs(prevLayout.y - layout.y) > 1
-                    || Math.abs(prevLayout.width - layout.width) > 1
-                    || Math.abs(prevLayout.height - layout.height) > 1
-                    || Math.abs(prevLayout.rotateX - layout.rotateX) > 0.02
-                    || Math.abs(prevLayout.rotateY - layout.rotateY) > 0.02
-                    || Math.abs(prevLayout.rotateZ - layout.rotateZ) > 0.02
-                    || prevLayout.selected !== layout.selected
-                    || Math.abs(prevLayout.minY - layout.minY) > 1
-                    || Math.abs(prevLayout.maxY - layout.maxY) > 1) {
+                    || Math.abs(prevLayout.x - nextLayout.x) > 1
+                    || Math.abs(prevLayout.y - nextLayout.y) > 1
+                    || Math.abs(prevLayout.width - nextLayout.width) > 1
+                    || Math.abs(prevLayout.height - nextLayout.height) > 1
+                    || Math.abs(prevLayout.rotateX - nextLayout.rotateX) > 0.02
+                    || Math.abs(prevLayout.rotateY - nextLayout.rotateY) > 0.02
+                    || Math.abs(prevLayout.rotateZ - nextLayout.rotateZ) > 0.02
+                    || prevLayout.selected !== nextLayout.selected
+                    || Math.abs(prevLayout.minY - nextLayout.minY) > 1
+                    || Math.abs(prevLayout.maxY - nextLayout.maxY) > 1) {
                     changed = true;
                 }
             }
             return changed ? next : prev;
         });
-    }, []);
+    }, [isBoardPresentation]);
     const handleDicePhysicsStatesChange = React.useCallback((states: DicePhysicsState[]) => {
         handleProjectedDiceUpdate(states.map((state) => ({
             ...state.layout,
@@ -669,10 +708,14 @@ export const DiceTray = ({
                         rerollingDiceIds={rerollingDiceIds}
                         styleProfile={DICETHRONE_DICE_BOX_STYLE_PROFILE}
                         dieSkins={diceBoxDieSkins}
+                        requireDieSkins={true}
                         rendererMode="debug-visible"
                         canvasTestId="dicethrone-board-dice-box-canvas"
                         className="pointer-events-none absolute inset-0 h-full w-full"
                         style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX }}
+                        dataAttributes={{
+                            'data-dicethrone-dice-skins-ready': diceBoxDieSkinsReady ? 'true' : 'false',
+                        }}
                         onPhysicsStatesChange={handleDicePhysicsStatesChange}
                         testId="dicethrone-board-dice-physics-source"
                     />
@@ -806,7 +849,7 @@ export const DiceTray = ({
                                 {!isInteractionMode && d.isKept && !isBoardPresentation && (
                                     <div className="pointer-events-none absolute inset-[-0.42rem] rounded-full ring-[0.24rem] ring-black/80 shadow-[0_0_0.8rem_rgba(0,0,0,0.75)]" data-testid={`die-locked-ring-${d.id}`} />
                                 )}
-                                {!isInteractionMode && d.isKept && (
+                                {!isInteractionMode && d.isKept && !isBoardPresentation && (
                                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                                         <div className="min-w-max whitespace-nowrap rounded bg-black/75 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20">
                                             {t('dice.locked')}
@@ -846,6 +889,33 @@ export const DiceTray = ({
                             </div>
                         );
                     }
+                })}
+                {isBoardPresentation && visibleOverlayDice.map((d) => {
+                    const projectedLayout = centerDiceLayout[d.id];
+                    if (isInteractionMode || !d.isKept || !projectedLayout) return null;
+
+                    return (
+                        <div
+                            key={`locked-label-${d.id}`}
+                            className="pointer-events-none absolute flex items-center justify-center"
+                            style={{
+                                left: `${projectedLayout.x}px`,
+                                top: `${projectedLayout.y}px`,
+                                width: `${BOARD_DICE_HIT_TARGET_SIZE_PX}px`,
+                                height: `${BOARD_DICE_HIT_TARGET_SIZE_PX}px`,
+                                transform: 'translate(-50%, -50%)',
+                                zIndex: BOARD_DICE_LOCK_LABEL_Z_INDEX,
+                            }}
+                            data-testid={`die-locked-label-layer-${d.id}`}
+                        >
+                            <div
+                                className="min-w-max whitespace-nowrap rounded bg-black/75 px-2 py-0.5 text-[0.68rem] font-black uppercase tracking-wider text-white shadow-sm ring-1 ring-white/20"
+                                data-testid={`die-locked-label-${d.id}`}
+                            >
+                                {t('dice.locked')}
+                            </div>
+                        </div>
+                    );
                 })}
             </div>
         </div>
@@ -1172,9 +1242,9 @@ export const BoardDiceStage = ({
 
     return (
         <div
-            className="pointer-events-none absolute left-1/2 aspect-square w-[clamp(360px,31vw,500px)] max-[900px]:w-[clamp(300px,58vw,430px)]"
+            className="pointer-events-none absolute left-1/2 aspect-square w-[clamp(360px,31vw,500px)] max-[900px]:fixed max-[900px]:w-[clamp(190px,25vw,216px)]"
             style={{
-                top: 'clamp(76px, 4.6vw, 88px)',
+                top: 'max(0px, env(safe-area-inset-top))',
                 transform: 'translateX(-50%)',
                 zIndex: BOARD_DICE_STAGE_Z_INDEX,
             }}

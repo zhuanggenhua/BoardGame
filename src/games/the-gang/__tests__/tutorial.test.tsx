@@ -102,7 +102,7 @@ describe('The Gang tutorial', () => {
         const advanceRoundStep = TheGangTutorial.steps.find((step) => step.id === 'advance-round');
         expect(advanceRoundStep).toMatchObject({
             requireAction: true,
-            allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         });
 

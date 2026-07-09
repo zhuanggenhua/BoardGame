@@ -76,9 +76,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         WebView.setWebContentsDebuggingEnabled(true);
-        // App 默认首页已回到经典主页；在 WebView 上报实际 URL 前，先按竖屏非沉浸式启动，
-        // 避免旧的书本首页默认横屏假设把根路由误锁到 landscape。
-        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        // App 启动阶段还拿不到 WebView 真实路由；默认先保持横屏，避免 /play/:gameId/tutorial
+        // 这类游戏教程页在原生壳里先闪到竖屏。路由上报后仍由 game-orientation-map 决定最终方向。
+        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
         lastNeedsImmersiveWindow = false;
         setRequestedOrientation(lastRequestedOrientation);
         gameOrientations.putAll(loadOrientationMap());
