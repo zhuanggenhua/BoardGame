@@ -66,22 +66,36 @@
 - **THEN** 系统 MUST 要求显式指定正式 channel
 - **AND** MUST 支持 `stable` / `gray` / `edge` 等 channel 的单独预演或发布
 
-### Requirement: 强制 OTA 必须提供阻塞式更新反馈
+### Requirement: 所有 Android OTA 必须强制应用
 
-系统 SHALL 支持把某个 OTA manifest 标记为强制更新，并在客户端用阻塞式更新页向用户展示检查、下载、切换或“必须更新 App”的状态。
+系统 SHALL 将所有 Android OTA 视为强制更新；所有 channel 的 manifest MUST 写入 `forceUpdate = true`，发布入口 MUST NOT 生成非强制 OTA。
 
-#### Scenario: 强制 OTA 下载并立即切换
-- **GIVEN** Android 客户端检测到一个与当前原生版本兼容的 OTA manifest
-- **AND** 该 manifest 明确标记 `forceUpdate = true`
-- **WHEN** 客户端启动并检查该更新
+#### Scenario: 任意 channel 发布 OTA
+- **GIVEN** 发布者选择 `stable`、`gray`、`edge` 或后续新增 channel
+- **WHEN** 系统生成 OTA manifest
+- **THEN** manifest MUST 包含 `forceUpdate = true`
+- **AND** MUST 包含非空的 `forceUpdateTitle` 与 `forceUpdateMessage`
+
+#### Scenario: 自动启动检查发现新 OTA
+- **GIVEN** Android 客户端启动检查发现一个版本高于当前 bundle 的 OTA
+- **WHEN** 客户端开始处理该更新
 - **THEN** 系统 MUST 显示全屏阻塞式更新页
-- **AND** MUST 显示下载进度
-- **AND** 下载完成后 MUST 立即切换到新 bundle，而不是等待下次后台切换
+- **AND** MUST 显示下载或切换进度
+- **AND** 下载完成后 MUST 立即切换到新 bundle，而不是后台排队
 
-#### Scenario: 强制 OTA 需要新原生壳
-- **GIVEN** Android 客户端检测到一个 OTA manifest
-- **AND** 该 manifest 明确标记 `forceUpdate = true`
-- **AND** 该 manifest 与当前 nativeVersion 不兼容
-- **WHEN** 客户端启动并检查该更新
-- **THEN** 系统 MUST 显示“需要更新 App”的阻塞式提示页
-- **AND** 不得继续把当前 H5 入口直接开放给用户
+#### Scenario: 发布者尝试关闭强制更新
+- **GIVEN** 发布者传入 `--no-force-update`、`forceUpdate=false` 或等价配置
+- **WHEN** 发布入口处理该请求
+- **THEN** 系统 MUST 拒绝该发布或固定改写为强制更新
+- **AND** MUST NOT 产出 `forceUpdate` 缺失或为 `false` 的可发布 manifest
+
+### Requirement: Android OTA bundle 必须排除服务器运行时资源
+
+系统 SHALL 为 OTA 使用独立于 embedded APK 的文件分类规则，只携带 Web 本体与资源清单，不重复携带服务器资源主源或移动游戏包提供的嵌套运行时资源。
+
+#### Scenario: dist 同时包含 Web 代码和游戏资源
+- **GIVEN** `dist/` 包含 Vite 根级 JS/CSS、中文语言包、字体、`assets-manifest.json` 和嵌套游戏资源
+- **WHEN** 系统生成 OTA zip
+- **THEN** 系统 MUST 保留 Web 代码、中文语言包、字体和资源清单
+- **AND** MUST 排除 `assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除资源清单外的文件
+- **AND** MUST 输出排除文件数量与字节数供发布审计

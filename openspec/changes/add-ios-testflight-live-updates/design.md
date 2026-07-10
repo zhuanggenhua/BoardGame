@@ -54,6 +54,12 @@ To avoid Android regressions and allow platform-specific compatibility rules, iO
 - `mobile-packages/android/<channel>/...`
 - `mobile-packages/ios/<channel>/...`
 
+### Decision: All mobile H5 live updates are mandatory and lightweight
+
+Every Android and iOS H5 OTA manifest must publish `forceUpdate = true`. Release scripts must reject `--no-force-update`, and automatic startup checks must promote mandatory manifests to blocking immediate application.
+
+Both platforms use the same OTA file classifier: Vite root outputs, Chinese locales, fonts, required public files, and asset manifests are included; nested game images, audio, atlas configs, status atlas JSON, thumbnails, and logos remain on the server asset or mobile game package path.
+
 ### Decision: Introduce mobile-neutral env keys with compatibility fallback
 
 New shared runtime code should prefer mobile-neutral or platform-specific keys, while preserving old Android keys for Android:

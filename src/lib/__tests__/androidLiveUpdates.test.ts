@@ -413,17 +413,16 @@ describe('androidLiveUpdates', () => {
         });
     });
 
-    it('OTA 发布默认不再写强制更新字段', () => {
+    it('OTA 发布默认强制更新并写入默认文案', () => {
         expect(resolveOtaForceUpdateOptions()).toEqual({
-            forceUpdate: false,
-            forceUpdateTitle: '',
-            forceUpdateMessage: '',
+            forceUpdate: true,
+            forceUpdateTitle: '正在更新',
+            forceUpdateMessage: '正在下载必要更新，请稍候',
         });
     });
 
-    it('显式开启强制更新时才写入强更文案', () => {
+    it('OTA 发布允许覆盖强更文案', () => {
         expect(resolveOtaForceUpdateOptions({
-            forceUpdateFlag: true,
             forceUpdateTitle: '自定义标题',
             forceUpdateMessage: '自定义正文',
         })).toEqual({
@@ -433,16 +432,10 @@ describe('androidLiveUpdates', () => {
         });
     });
 
-    it('显式关闭强制更新时保持后台生效语义', () => {
-        expect(resolveOtaForceUpdateOptions({
+    it('OTA 发布禁止显式关闭强制更新', () => {
+        expect(() => resolveOtaForceUpdateOptions({
             noForceUpdateFlag: true,
-            forceUpdateTitle: '自定义标题',
-            forceUpdateMessage: '自定义正文',
-        })).toEqual({
-            forceUpdate: false,
-            forceUpdateTitle: '',
-            forceUpdateMessage: '',
-        });
+        })).toThrow('所有 OTA 已强制更新，禁止使用 --no-force-update。');
     });
 
     it('即时 OTA 请求一发出就会同步切换到 checking 活动态', () => {
@@ -726,7 +719,7 @@ describe('androidLiveUpdates', () => {
         });
     });
 
-    it('强制 OTA manifest 若发现新版本，也只后台排队等待重进 App 生效', async () => {
+    it('强制 OTA manifest 若发现新版本，后台检查也必须立即阻塞应用', async () => {
         vi.resetModules();
 
         vi.doMock('@capacitor/core', () => ({
@@ -810,15 +803,13 @@ describe('androidLiveUpdates', () => {
             status: 'queued',
             version: '0.5.1-ota-2026-04-04T03-34-46-472Z',
             source: 'downloaded',
-            mode: 'background',
+            mode: 'immediate',
         });
         expect(downloadMock).toHaveBeenCalledTimes(1);
-        expect(nextMock).toHaveBeenCalledWith({ id: 'bundle-next' });
-        expect(setMultiDelayMock).toHaveBeenCalledWith({
-            delayConditions: [{ kind: 'background', value: '0' }],
-        });
-        expect(setMock).not.toHaveBeenCalled();
-        expect(states.some((state) => state.blocking)).toBe(false);
+        expect(nextMock).not.toHaveBeenCalled();
+        expect(setMultiDelayMock).not.toHaveBeenCalled();
+        expect(setMock).toHaveBeenCalledWith({ id: 'bundle-next' });
+        expect(states.some((state) => state.blocking)).toBe(true);
     });
 
     it('本地同版本 bundle 若仍在 downloading，不应误判为可直接排队的缓存包', async () => {

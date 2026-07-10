@@ -335,18 +335,19 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 强制约束：
 
-- Android OTA 发布不得把 `public/assets/i18n/**` 这类大体积运行时资源打进 OTA zip；这些资源应继续走 R2 / 游戏包链路，而不是 H5 OTA。
-- `scripts/mobile/publish-android-ota.mjs` 只接受显式命名参数，并要求 `dist/` 已经经过 Android 专用裁剪；若 `dist/` 中仍存在 `dist/assets/i18n/**` 或非 `dist/locales/zh-CN/**` 资源，脚本会直接失败，禁止继续发布。
+- 所有 Android OTA manifest 必须写入 `forceUpdate: true`；`--no-force-update` 和 `force_update=false` 都必须失败。
+- Android OTA 发布不得把嵌套游戏资源打进 OTA zip；`assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除 `assets-manifest.json` 外的资源由打包器确定性排除，并继续走服务器资源主源或移动游戏包。
+- `scripts/mobile/publish-android-ota.mjs` 只接受显式命名参数；非中文语言包和嵌套运行时资源可以存在于 `dist/`，但不得进入最终 OTA zip。
 - 若最终 OTA zip 体积异常过大（当前门禁为 `20MB`），发布脚本必须直接失败，禁止继续覆盖 `latest.json`。
 
 GitHub Actions 自动化：
 
 - 手动 OTA workflow：`.github/workflows/android-ota-publish.yml`
 - 普通 `push main` 不得自动发布 **stable OTA**，也不得自动回写版本号。
-- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`、`ota_version_base`。
+- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`ota_version_base`；兼容字段 `force_update` 必须保持 `true`。
 - 正式门禁：`stable` 应绑定 `android-ota-production` Environment 审批。
 - OTA 内部游标：客户端按 bundle `version` 这个单调递增游标判断新旧；`publishedAt` 只用于审计和展示。若旧客户端曾记住错误大版本，例如 `5.9.0`，可用 `ota_version_base=6.0.0` 发桥接包。
-- 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本默认都必须收到 OTA。若误传这些参数，发布脚本必须直接失败。
+- 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本都必须收到并强制应用 OTA。若误传这些参数或尝试关闭强更，发布脚本必须直接失败。
 
 约束：
 
@@ -502,7 +503,7 @@ Android OTA 产物也走同一个对象存储桶，但前缀独立：
    - `node scripts/mobile/release-android.mjs ota --channel gray --dry-run`
    - `node scripts/mobile/release-android.mjs ota --channel gray --skip-latest`
    - `node scripts/mobile/release-android.mjs ota --channel gray`
-4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0 --force-update`
+4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0`
 5. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`
 
 当前默认发布节奏：

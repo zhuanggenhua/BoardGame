@@ -39,9 +39,9 @@ on:
         default: false
         type: boolean
       force_update:
-        description: '是否强制 OTA（默认关闭；如需下载完成后立即切换请显式开启）'
+        description: '兼容旧触发器的强制更新字段；项目规定必须为 true'
         required: true
-        default: false
+        default: true
         type: boolean
       force_update_title:
         description: '强更页标题（可选）'
@@ -88,6 +88,11 @@ jobs:
 
           if [[ -z "${target_ref}" ]]; then
             target_ref="${GITHUB_SHA}"
+          fi
+
+          if [[ "${force_update}" != "true" ]]; then
+            echo "::error::所有 OTA 已强制更新，force_update 必须为 true。"
+            exit 1
           fi
 
           {
@@ -267,11 +272,7 @@ jobs:
             args+=(--skip-latest)
           fi
 
-          if [[ "${{ steps.params.outputs.force_update }}" == "false" ]]; then
-            args+=(--no-force-update)
-          else
-            args+=(--force-update)
-          fi
+          args+=(--force-update)
 
           if [[ -n "${{ steps.params.outputs.force_update_title }}" ]]; then
             args+=(--force-update-title "${{ steps.params.outputs.force_update_title }}")
@@ -300,7 +301,7 @@ jobs:
             echo "| Bundle Version | ${{ steps.bundle.outputs.bundle_version || '未生成' }} |"
             echo "| Dry Run | ${{ steps.params.outputs.dry_run }} |"
             echo "| Skip Latest | ${{ steps.params.outputs.skip_latest }} |"
-            echo "| Force Update | ${{ steps.params.outputs.force_update || 'false' }} |"
+            echo "| Force Update | true（项目硬门禁） |"
             echo "| Native Compatibility Gate | disabled（所有版本都必须更新） |"
             echo "| Manifest URL | ${{ steps.bundle.outputs.manifest_url || '未生成' }} |"
             echo "| 缺失配置 | ${{ steps.prereq.outputs.missing || '无' }} |"

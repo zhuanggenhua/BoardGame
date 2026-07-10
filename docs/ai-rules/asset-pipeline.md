@@ -314,6 +314,15 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 12. ❌ **禁止**硬编码 `compressed/` 路径
 13. ❌ **禁止**把 `candidate/excluded` 文件混入正式资源树后继续执行 `assets:manifest`、`assets:check`、`assets:upload`
 
+## 移动 OTA 资源边界（强制）
+
+1. **OTA 与 embedded APK 使用不同白名单**：embedded APK 可以为首装或离线兜底保留明确批准的最小资源；OTA zip 不得直接复用 embedded 白名单。
+2. **OTA 只承载 Web 本体**：允许 H5 代码、样式、`locales/zh-CN/**`、字体、必要的小型公共文件和 `assets-manifest.json`。
+3. **嵌套运行时资源默认不进 OTA**：`assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除资源清单外的图片、音频、图集配置、缩略图、状态图集 JSON 和二维码必须从 OTA 排除。
+4. **Vite 根级产物可以保留**：`dist/assets/` 根目录下由 Vite 生成的 JS、CSS、按代码 import 生成的哈希文件属于 Web 本体；不得因为扩展名是图片就盲目删除。
+5. **资源继续走服务器主源或移动游戏包**：被 OTA 排除的正式运行时资源必须能通过服务器资源主源、移动游戏包或已安装资源读取；不得用“从 OTA 删掉了”替代资源链验收。
+6. **发布后必须检查 ZIP 文件清单**：至少确认首页大图、游戏缩略图、`assets/atlas-configs/**`、状态图集 JSON 和支付二维码没有进入 OTA。
+
 ## R2 / CDN 上传与排查规则（强制）
 
 适用于任意游戏的图片、音频、atlas、裁图、图标、提示板切片等运行时资源。

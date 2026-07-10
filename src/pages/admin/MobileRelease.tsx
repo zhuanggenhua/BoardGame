@@ -152,7 +152,6 @@ export default function MobileReleasePage() {
 
     const [otaBundleVersion, setOtaBundleVersion] = useState('');
     const [otaVersionBase, setOtaVersionBase] = useState('6.0.0');
-    const [otaForceUpdate, setOtaForceUpdate] = useState(true);
     const [otaSkipLatest, setOtaSkipLatest] = useState(false);
 
     const [nativeBump, setNativeBump] = useState<typeof BUMP_OPTIONS[number]>('');
@@ -384,9 +383,9 @@ export default function MobileReleasePage() {
                                     />
                                 </label>
                             </div>
-                            <CheckboxRow>
-                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
-                            </CheckboxRow>
+                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                                {pageT('ota.force_update_required')}
+                            </div>
                             <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
                                 {pageT('deployUpdate.description')}
                             </div>
@@ -399,7 +398,7 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                     }, 'toast.preview_success')}
                                 >
                                     {busyAction === 'deploy-update-preview' ? runningText : pageT('actions.preview_command')}
@@ -413,7 +412,7 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                         confirmText: DEPLOY_UPDATE_CONFIRM_TEXT,
                                     }, 'toast.deploy_update_success')}
                                 >
@@ -445,7 +444,6 @@ export default function MobileReleasePage() {
                                 </label>
                             </div>
                             <CheckboxRow>
-                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
                                 <Checkbox checked={otaSkipLatest} onChange={setOtaSkipLatest} label={pageT('form.skip_latest')} />
                             </CheckboxRow>
                             <ActionRow>
@@ -456,7 +454,7 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                         dryRun: true,
                                         skipLatest: otaSkipLatest,
                                     }, 'toast.dry_run_success')}
@@ -471,7 +469,7 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                         dryRun: false,
                                         skipLatest: otaSkipLatest,
                                     }, 'toast.publish_success')}

@@ -6,8 +6,8 @@
 
 - 单独 OTA：可不改 `package.json.version`；但“更新部署 / 发线上”必须先主动自增产品版本
 - OTA 新旧判断：客户端按单调递增的 OTA 内部游标判断；`publishedAt` 只用于审计和展示
-- 所有 OTA channel 默认面向**所有已安装版本**；不再按原生版本写 `target/min/max` 门禁
-- 如果需要客户端拿到更新后立即切换新 bundle，显式传 `--force-update`
+- 所有 OTA channel 面向**所有已安装版本**，并且全部强制更新；不再按原生版本写 `target/min/max` 门禁
+- 客户端发现新 OTA 后必须阻塞下载并立即切换；`--no-force-update` 已禁用
 - 更新部署：默认必须走 `node scripts/release/deploy-and-ota.mjs --prepare-version` → 提交 push → 等 CI 镜像完成 → `node scripts/release/deploy-and-ota.mjs`，它包含服务器部署和 Android stable OTA；禁止只跑服务器 `deploy-image.sh update` 后汇报完成
 - 原生 APK：发版时用 `--bump patch|minor|major` 自动更新版本
 - 游戏包：继续走 `package.json.version + gameId + 时间戳` 的派生版本
@@ -34,7 +34,8 @@ node scripts/mobile/release-android.mjs ota --channel stable
 - OTA manifest 不再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`
 - 当前项目规则是“所有版本都必须更新”，禁止再发“只给某个原生版本”的 OTA
 - 如需修复曾经误发过高 bundle 版本号的旧客户端，使用桥接游标，例如 `--ota-version-base 6.0.0` 或显式 `--version 6.0.0-ota-bridge-...`
-- 如需更新后立即切换 bundle，可显式传 `--force-update`
+- 所有 OTA 都会写入 `forceUpdate: true`；`--force-update` 仅作为旧命令兼容参数，可省略
+- OTA zip 不携带嵌套游戏图片、图集配置、状态图集 JSON、缩略图和支付二维码；这些资源继续走服务器资源主源或移动游戏包
 - 若误传原生版本兼容参数，脚本会直接失败，防止再次误发
 
 完整更新部署：
@@ -143,5 +144,5 @@ OTA：
 - `--skip-build` 只能在你确认本地 release APK 已经是最新时再用
 - 如果只是补发某个已上线版本的 H5 修复，可以单独发 OTA；如果口径是“更新部署 / 发线上”，必须先 bump 版本
 - 发布 OTA 时，本地存在无关未提交改动不应阻塞已经推送的版本发布；应显式指定已推送的 `git_ref` / `--ref`，并说明这些本地改动不包含在本次 OTA 内。只有未提交改动就是要发的 H5 内容或发布配置时，才必须先提交推送。
-- 禁止再把 `stable` OTA 当成“只给某些原生版本”的分流工具；所有版本默认都要能收到 OTA
+- 禁止再把 `stable` OTA 当成“只给某些原生版本”的分流工具；所有版本都要能收到并强制应用 OTA
 - 未经老板明确要求，禁止因为切换发布入口（本地脚本 / GitHub Actions）而改变正式 OTA 的用户可见版本命名或展示口径
