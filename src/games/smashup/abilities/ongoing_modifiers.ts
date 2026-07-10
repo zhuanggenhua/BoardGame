@@ -297,6 +297,7 @@ function registerFairiesModifiers(): void {
         },
         {
             sourceDefId: 'fairies_daisy_chain',
+            variantPolicy: 'baseOnly',
             runtimeIdentity: 'actionFamily',
             compute: (ctx, helpers) => (
                 helpers.sumMinionAttachmentsMatchingRuntimeDefId(
