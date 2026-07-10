@@ -85,6 +85,15 @@
         }
       }
     },
+    "base/compressed/pretty_pretty_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "da9e0bddaab8484471a3853e7b8ad7ac56a4e4135d3c8b56f8caebe37eec510f",
+          "bytes": 247960,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/shayu": {
       "variants": {
         "webp": {
@@ -175,6 +184,15 @@
         }
       }
     },
+    "cards/compressed/all_stars_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "4b3e93c399abf87f2b2d1e79112a41771efe272b53bd5c908ce2eb2c2a1e429c",
+          "bytes": 938194,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/baokemeng": {
       "variants": {
         "webp": {
@@ -229,11 +247,56 @@
         }
       }
     },
+    "cards/compressed/fairies_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "01cb029b054e5036f6fd423538e6a6352d4299aba5d3d516f050544add894c3e",
+          "bytes": 644582,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/kitty_cats_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "fb7477225b18a487dc29debb99fe0fedef32133aba032dbd86d41b7563ad4ad1",
+          "bytes": 668814,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/longzu": {
       "variants": {
         "webp": {
           "sha256": "3850908ee5521dc3e58b77ce142c26a1d5e3909aeb36ca1fe5788ecb207f6e8b",
           "bytes": 953548,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/mermaids_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "3ed44dc79922adeb969d98ae1b83e5f47de34fed3029efadb7263648e0593c80",
+          "bytes": 926414,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/mythic_greeks_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "2d0b5d26dbd8bd1b0a8b2c9ac4fa5084a5beb6982189813b3effc95806f1c16f",
+          "bytes": 3022720,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/mythic_horses_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "42a65958c6623877ffae86eb14f129eb24aad86313b0c0b87f55c6f9ecdd8de1",
+          "bytes": 569044,
           "mime": "image/webp"
         }
       }
@@ -256,11 +319,38 @@
         }
       }
     },
+    "cards/compressed/princesses_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6e42ea33ff08638ce90814d034604c922cd322ffa7305d83f8bd0ca0609d4cf6",
+          "bytes": 852290,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/sharks_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "af4c9e4de03806dbd3ea4d95b87ebeaf2832cc5054d8492049e38a67698dcad6",
+          "bytes": 2188608,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/shayu": {
       "variants": {
         "webp": {
           "sha256": "50af42a5d52a46eb3caa23bdb8df01b7c4d21fb26fe22fbf381269d4cc61c63d",
           "bytes": 899018,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/tornados_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "2ba047ce7c9e13e6d22ecbe3b06a5be17e1aff4bd91d7d439743d43373976d9c",
+          "bytes": 2115602,
           "mime": "image/webp"
         }
       }

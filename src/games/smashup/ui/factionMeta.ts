@@ -161,6 +161,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.GIANT_ANTS, nameKey: 'factions.giant_ants.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.GIANT_ANTS_POD, nameKey: 'factions.giant_ants_pod.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants_pod.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.MERMAIDS, nameKey: 'factions.mermaids.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids.description' },
+    { id: SMASHUP_FACTION_IDS.MERMAIDS_POD, nameKey: 'factions.mermaids_pod.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids_pod.description' },
     { id: SMASHUP_FACTION_IDS.KITTY_CATS, nameKey: 'factions.kitty_cats.name', icon: PawPrint, color: '#c026d3', descriptionKey: 'factions.kitty_cats.description' },
     { id: SMASHUP_FACTION_IDS.KITTY_CATS_POD, nameKey: 'factions.kitty_cats_pod.name', icon: PawPrint, color: '#c026d3', descriptionKey: 'factions.kitty_cats_pod.description' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_HORSES, nameKey: 'factions.mythic_horses.name', icon: Rainbow, color: '#14b8a6', descriptionKey: 'factions.mythic_horses.description' },
@@ -176,6 +177,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description' },
     { id: SMASHUP_FACTION_IDS.TORNADOS_POD, nameKey: 'factions.tornados_pod.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados_pod.description' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS, nameKey: 'factions.mythic_greeks.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks.description' },
+    { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS_POD, nameKey: 'factions.mythic_greeks_pod.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks_pod.description' },
     {
         id: SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
         nameKey: 'factions.kung_fu_fighters.name',

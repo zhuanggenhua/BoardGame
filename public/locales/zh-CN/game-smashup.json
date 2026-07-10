@@ -1582,6 +1582,14 @@
     "paladins": {
       "name": "圣骑士",
       "description": "围绕天赋能力、+1 力量指示物与泰坦联动，将随从逐步培养成关键战力。"
+    },
+    "mermaids_pod": {
+      "name": "美人鱼 (POD版)",
+      "description": "通过 POD 版移动、魅惑与力量压制掌控基地。"
+    },
+    "mythic_greeks_pod": {
+      "name": "希腊神话 (POD版)",
+      "description": "以 POD 版诸神恩惠串联行动触发英雄加成。"
     }
   },
   "tutorial": {
@@ -6589,6 +6597,114 @@
     "base_paladins_roncesvalles_gorge": {
       "name": "龙塞沃峡谷",
       "abilityText": "每当一个泰坦在这里赢得冲突时，该泰坦的拥有者获得 1VP。"
+    },
+    "mermaids_charmed_pod": {
+      "name": "魅惑 (POD版)",
+      "effectText": "选择一个力量 3 或以下的随从。你可以将其移动到另一个你有随从的基地。直到回合结束，它的力量不计入其控制者的总力量。额外打出一张行动牌。"
+    },
+    "mermaids_desert_island_pod": {
+      "name": "无人岛 (POD版)",
+      "effectText": "打在一个基地上。持续：这里的随从不将其力量计入其控制者的总力量。在你的回合开始时消灭此牌。"
+    },
+    "mermaids_shipwreck_cove_pod": {
+      "name": "沉船湾 (POD版)",
+      "effectText": "打在一个基地上。持续：你在这里的随从各有 +1 力量。特殊：此基地计分后，你可以将此牌转移到另一个基地。"
+    },
+    "mermaids_toll_bay_pod": {
+      "name": "死亡海湾 (POD版)",
+      "effectText": "选择一个基地。每有一个其他玩家的随从在那里，抓一张牌。"
+    },
+    "mermaids_siren_song_pod": {
+      "name": "塞壬的歌声 (POD版)",
+      "effectText": "选择一个基地。将每位其他玩家在那里的一个随从移动到另一个你有随从的基地。"
+    },
+    "mermaids_becalmed_shores_pod": {
+      "name": "安静的海岸 (POD版)",
+      "effectText": "打在一个基地上。持续：其他玩家在这里的随从有 -1 力量。天赋：将此行动转移到另一个基地。"
+    },
+    "mermaids_captive_audience_pod": {
+      "name": "迷倒观众 (POD版)",
+      "effectText": "选择一个基地。你在那里一个随从获得 +1 力量直到回合结束，数值等于那里每个不属于你的随从。额外打出一张行动牌。"
+    },
+    "mermaids_ultimate_song_pod": {
+      "name": "最后的歌声 (POD版)",
+      "effectText": "选择一个你有随从的基地。每位其他玩家必须在那里额外打出一个力量 3 或以下的随从，或展示手牌证明没有这样的随从。取消那些随从的能力直到回合结束。你可以在那里额外打出一个随从和一张额外行动牌。"
+    },
+    "mermaids_siren_pod": {
+      "name": "塞壬 (POD版)",
+      "abilityText": "持续：其他玩家在这里的随从计入其控制者总力量时少算 1 点力量。"
+    },
+    "mermaids_charmer_pod": {
+      "name": "迷人的人 (POD版)",
+      "abilityText": "天赋：你可以将此随从移动到另一个基地。然后你可以将另一个玩家一个力量 3 或以下的随从移动到此随从所在基地。"
+    },
+    "mermaids_temptress_pod": {
+      "name": "诱惑者 (POD版)",
+      "abilityText": "持续：如果本回合有一个或更多其他玩家的随从移动到这里，此随从获得 +2 力量直到回合结束。"
+    },
+    "mermaids_mermaid_queen_pod": {
+      "name": "人鱼女王 (POD版)",
+      "abilityText": "将另一个玩家的一个随从移动到这里，或选择这里一个随从。若其力量为 3 或以下，获得其控制权直到回合结束。"
+    },
+    "mythic_greeks_favor_of_hades_pod": {
+      "name": "哈迪斯的恩惠 (POD版)",
+      "effectText": "将你弃牌堆中的一张行动牌放入你的手牌。"
+    },
+    "mythic_greeks_favor_of_ares_pod": {
+      "name": "阿瑞斯的恩惠 (POD版)",
+      "effectText": "你的一个随从获得 +3 力量直到回合结束。"
+    },
+    "mythic_greeks_favor_of_aphrodite_pod": {
+      "name": "阿佛洛狄忒的恩惠 (POD版)",
+      "effectText": "额外打出一个随从。"
+    },
+    "mythic_greeks_favor_of_dionysus_pod": {
+      "name": "狄俄尼索斯的恩惠 (POD版)",
+      "effectText": "你的一个随从获得 +1 力量直到回合结束。额外打出一张行动牌。你可以将此牌放到你的牌库顶，而不是弃牌堆。"
+    },
+    "mythic_greeks_favor_of_athena_pod": {
+      "name": "雅典娜的恩惠 (POD版)",
+      "effectText": "展示你牌库顶 5 张牌。你可以将其中一张展示的行动牌放入手牌，并将其余牌以任意顺序放回牌库顶。"
+    },
+    "mythic_greeks_favor_of_hermes_pod": {
+      "name": "赫尔墨斯的恩惠 (POD版)",
+      "effectText": "额外打出至多两张行动牌。"
+    },
+    "mythic_greeks_favor_of_zeus_pod": {
+      "name": "宙斯的恩惠 (POD版)",
+      "effectText": "一个基地的爆分线降低 5，直到回合结束。"
+    },
+    "mythic_greeks_favor_of_hera_pod": {
+      "name": "赫拉的恩惠 (POD版)",
+      "effectText": "在至多两个你的随从上各放置一个 +1 力量指示物。"
+    },
+    "mythic_greeks_favor_of_apollo_pod": {
+      "name": "阿波罗的恩惠 (POD版)",
+      "effectText": "抓一张牌并额外打出一张行动牌。"
+    },
+    "mythic_greeks_favor_of_poseidon_pod": {
+      "name": "波塞冬的恩惠 (POD版)",
+      "effectText": "将你弃牌堆中至多三张牌洗回你的牌库。"
+    },
+    "mythic_greeks_argonaut_pod": {
+      "name": "阿尔戈英雄 (POD版)",
+      "abilityText": "触发所有会因你打出一张行动牌而触发的能力。特殊：任何你可以打出行动牌的时候，你可以改为打出此牌。"
+    },
+    "mythic_greeks_spartan_pod": {
+      "name": "斯巴达人 (POD版)",
+      "abilityText": "持续：每回合一次，在你打出一张行动牌后，你可以在此随从上放置一个 +1 力量指示物。"
+    },
+    "mythic_greeks_heracles_pod": {
+      "name": "赫拉克勒斯 (POD版)",
+      "abilityText": "持续：任意玩家打出一张行动牌后，此随从获得 +1 力量直到回合结束。"
+    },
+    "mythic_greeks_jason_pod": {
+      "name": "伊阿宋 (POD版)",
+      "abilityText": "持续：每回合一次，在你打出一张行动牌后，你可以选择一个基地，使你在那里所有随从获得 +1 力量直到回合结束。"
+    },
+    "mythic_greeks_odysseus_pod": {
+      "name": "奥德修斯 (POD版)",
+      "abilityText": "持续：在你打出一张行动牌后，在你的一个随从上放置一个 +1 力量指示物。"
     }
   },
   "debug": {

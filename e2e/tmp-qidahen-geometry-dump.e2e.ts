@@ -1760,4 +1760,3 @@ test('只截图第一步选择参与部队高亮', async ({ page }) => {
     await saveScreenshot(page, 'test-results/evidence-screenshots/_shared/qidahen-指挥进攻掷骰流程/01-指挥部队-全部绿色目标与箭头高亮.png');
 });
 });
-
