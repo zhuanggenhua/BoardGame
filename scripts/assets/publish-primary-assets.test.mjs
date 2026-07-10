@@ -15,6 +15,12 @@ test('服务器发布成功即完成，不等待 R2', async () => {
             key: 'official/app-updates/android/stable/latest.json',
             body: '{"version":"test"}\n',
             contentType: 'application/json',
+            backupToR2: true,
+        },
+        {
+            key: 'official/app-updates/android/stable/manifests/test.json',
+            body: '{"version":"test"}\n',
+            contentType: 'application/json',
         },
     ], {
         publishServer: async ({ objects }) => {
@@ -24,8 +30,26 @@ test('服务器发布成功即完成，不等待 R2', async () => {
 
     assert.equal(result.serverPublished, true);
     assert.equal(result.queuedR2Backup, true);
-    assert.equal(result.objectCount, 1);
+    assert.equal(result.objectCount, 2);
+    assert.equal(result.r2BackupObjectCount, 1);
     assert.equal(publishedObjects[0].key, 'official/app-updates/android/stable/latest.json');
+    assert.equal(publishedObjects[0].backupToR2, true);
+    assert.equal(publishedObjects[1].backupToR2, false);
+});
+
+test('未显式标记的发布对象不进入 R2 灾备', async () => {
+    const result = await publishPrimaryAssetBatch([
+        {
+            key: 'official/common/rebuildable/file.json',
+            body: '{}\n',
+        },
+    ], {
+        publishServer: async () => {},
+    });
+
+    assert.equal(result.serverPublished, true);
+    assert.equal(result.queuedR2Backup, false);
+    assert.equal(result.r2BackupObjectCount, 0);
 });
 
 test('服务器发布失败时必须阻止发布完成', async () => {

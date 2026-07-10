@@ -322,10 +322,10 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 1. **公开资源域名和协作者入口保持不变**：正式资源仍通过现有命令发布，运行时仍使用 `https://assets.easyboardgame.top/official/...`。不得要求协作者改成服务器 IP、隐藏源域名或另一套上传命令。
 2. **服务器是发布与在线下载主源**：发布脚本通过受限 SSH 将本批对象写入新 release，完成路径、大小和哈希校验后原子切换 `/home/admin/storage/assets/current`。所有 `official/**` 公网读取首先使用该活动版本。
-3. **R2 只做异步灾备和重建来源**：服务器切换成功后，本批对象进入后台灾备队列，由 `boardgame-asset-backup.timer` 重试写入 R2。R2 不可用、凭据失效或容量不足不得阻止服务器正式发布，也不得把服务器回滚到旧 R2 状态。
-4. **发布完成必须验证服务器命中**：版本化 bundle / APK / 游戏包 URL 必须返回 `X-Asset-Source: server` 后才报告正式发布完成。R2 灾备是否完成应单独记录，不得把 `r2-fallback` 当作正常发布成功。
-5. **大型包只保留当前活动集合**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 进入服务器新 release 后，必须根据各平台、各频道当前清单递归引用裁掉旧发布对象；本批对象在本轮切换中保留，不复制历史全集。
-6. **9GiB 门禁只约束 R2 灾备**：后台灾备预计超过 9GiB 时必须保留队列并输出容量告警，等待安全清理后重试；不得因此撤销、阻塞或延迟已经通过服务器校验的正式发布。
+3. **R2 只做选择性异步灾备和重建来源**：服务器切换成功后，只把显式标记的当前恢复关键对象加入后台灾备队列，由 `boardgame-asset-backup.timer` 重试写入 R2。默认对象不进入 R2；重复别名、历史版本清单、可重新生成的游戏单素材散件不得占用 R2。R2 不可用、凭据失效或容量不足不得阻止服务器正式发布，也不得把服务器回滚到旧 R2 状态。
+4. **发布完成必须验证本次服务器对象**：大型 bundle / APK / 游戏包必须返回 `X-Asset-Source: server`，且 `Content-Length` 与本次产物一致；file-index / latest manifest 等小型 JSON 必须从服务器读取正文并校验本次 SHA-256。旧 fallback ZIP、旧同路径对象或 `r2-fallback` 都不能作为本次发布成功证据。
+5. **服务器活动集合必须闭合到真实对象**：所有 `official/**/assets-manifest.json` 都是普通素材根，必须按 `basePrefix + files 键 + variants 扩展名` 展开真实对象；移动包 `file-index.files[].path` 必须映射为 `official/<path>`。OTA、游戏包和原生安装包仍只保留当前公开清单递归引用对象，不复制历史全集。活动集合默认上限为 4GiB，切换后必须至少保留 5GiB 磁盘空闲。
+6. **9GiB 门禁只约束关键 R2 灾备**：后台灾备预计超过 9GiB 时必须保留关键对象队列并输出容量告警，等待安全清理后重试；非关键对象不得进入队列。不得因此撤销、阻塞或延迟已经通过服务器校验的正式发布。
 7. **清理必须先归档、校验和演练恢复**：R2 候选只有在引用核对、服务器隔离归档、数量/大小/哈希校验和单对象原 key 恢复演练完成后才允许删除。没有用户明确删除许可时，只能生成计划和归档。
 8. **公开链路验证最多等待 3 小时**：服务器原子切换完成后，发布脚本等待公开 URL 返回 `X-Asset-Source: server`，默认上限为 3 小时（`BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS=10800000`）。该等待只处理 Tunnel、Worker 或缓存传播，不等待 R2 灾备。
 
@@ -346,7 +346,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 1. **灾备对象 + 文件索引是内容真相**：同一张图片、音频、图集配置只能有一份路径与哈希真相。服务器活动版本、R2 灾备、Android 已安装素材包、离线缓存和公开 URL 都必须引用同一组 `path/hash/size`；禁止让“服务器文件”“R2 对象”和“App ZIP 包内文件”各自维护独立事实。
 2. **App 素材包必须由同一份索引派生**：`mobile-packages/android/<channel>/file-index/...json` 里的每个 `files[].path/hash/size` 必须能回到正式资源清单或 R2 对象本身；禁止手工改 ZIP、手工改 manifest，或只更新 R2 单文件却不更新 App 可见索引。
-3. **差异化更新是默认目标，不是可选优化**：当只替换少量资源时，正确目标应是：上传变更文件到 R2 → 更新文件索引 / 包 manifest → App 客户端比较本地 file-index 与远端 file-index → 只下载缺失或哈希变化的文件。禁止把“为了让 App 吃到一张新图，重发整包 ZIP”当长期正式方案。
+3. **差异化更新是默认目标，不是可选优化**：当只替换少量资源时，正确目标应是：把变更文件和索引原子发布到服务器主源 → 加入 R2 同 key 灾备队列 → App 客户端比较本地 file-index 与远端 file-index → 只下载缺失或哈希变化的文件。禁止把“为了让 App 吃到一张新图，重发整包 ZIP”当长期正式方案。
 4. **全量 ZIP 只能作为 bootstrap / 兼容兜底**：完整游戏 ZIP 适合作为首次安装、清缓存重建、旧客户端不支持差异下载、或大量资源重排后的兜底包。若当前工具链暂时只能重发整包，最终汇报必须明确写成“当前工具链全量重发，不是差异化更新”，不得包装成商业级素材热更新已完成。
 5. **单一真相的版本号应来自内容索引**：素材包版本应由 file-index checksum、内容哈希集合或明确的资源版本生成；时间戳只能作为发布审计信息。禁止把时间戳 ZIP 版本当成唯一真相，否则同一内容会产生多个等价包，App 难以判断是否真有差异。
 6. **商业游戏常见做法口径**：正式项目通常采用 CDN 上的内容寻址对象、版本 manifest、按资源组拆分 bundle、文件级或 chunk 级 patch；客户端只拉新增/变更 bundle，旧 bundle 留在本地缓存。大包全量下载一般只用于首装、强制修复或跨大版本迁移，不用于每次小素材替换。

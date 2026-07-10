@@ -377,14 +377,15 @@ const resolveUploadSize = (key, body, contentLength) => {
     throw new Error(`上传对象缺少可计算的大小: ${key}`);
 };
 
-const uploadObject = async (key, body, contentType, cacheControl, contentLength) => {
+const uploadObject = async (key, body, contentType, cacheControl, options = {}) => {
     pendingUploads.push({
         key,
         body,
         contentType,
         cacheControl,
-        contentLength,
-        size: resolveUploadSize(key, body, contentLength),
+        contentLength: options.contentLength,
+        size: resolveUploadSize(key, body, options.contentLength),
+        backupToR2: options.backupToR2 === true,
     });
 };
 
@@ -419,7 +420,7 @@ const uploadIndexedAssetObjects = async (includedFiles) => {
             () => createReadStream(entry.fullPath),
             resolveAssetObjectContentType(entry.relativePath),
             'public, max-age=31536000, immutable',
-            statSync(entry.fullPath).size,
+            { contentLength: statSync(entry.fullPath).size },
         );
     }
 };
@@ -662,11 +663,11 @@ const publishSharedAudioPackage = async () => {
             () => createReadStream(zipResult.zipFilePath),
             'application/zip',
             'public, max-age=31536000, immutable',
-            zipResult.bytes,
+            { contentLength: zipResult.bytes, backupToR2: true },
         );
-        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
+        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable', { backupToR2: true });
         await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate', { backupToR2: true });
     }
 
     return {
@@ -681,6 +682,7 @@ const publishSharedAudioPackage = async () => {
         fileIndexChecksum,
         latestManifestKey,
         bundleUrl,
+        publishedInCurrentRun: true,
     };
 };
 
@@ -718,11 +720,11 @@ const publishSingleGamePackage = async (gameId, sharedAudioPackResult) => {
             () => createReadStream(zipResult.zipFilePath),
             'application/zip',
             'public, max-age=31536000, immutable',
-            zipResult.bytes,
+            { contentLength: zipResult.bytes, backupToR2: true },
         );
-        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
+        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable', { backupToR2: true });
         await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate', { backupToR2: true });
     }
 
     return {
@@ -735,6 +737,7 @@ const publishSingleGamePackage = async (gameId, sharedAudioPackResult) => {
         fileIndexKey,
         fileIndexUrl,
         fileIndexChecksum,
+        fileIndexBytes: Buffer.byteLength(fileIndexJson),
         latestManifestKey,
         bundleUrl,
     };
@@ -779,9 +782,9 @@ const publishSingleGameIndexManifest = async (gameId, sharedAudioPackResult) => 
 
     if (!dryRun) {
         await uploadIndexedAssetObjects(includedFiles);
-        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
+        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable', { backupToR2: true });
         await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate', { backupToR2: true });
     }
 
     return {
@@ -794,6 +797,7 @@ const publishSingleGameIndexManifest = async (gameId, sharedAudioPackResult) => 
         fileIndexKey,
         fileIndexUrl,
         fileIndexChecksum: finalFileIndexChecksum,
+        fileIndexBytes: Buffer.byteLength(fileIndexJson),
         latestManifestKey,
         bundleUrl: null,
         fallbackVersion: fallbackAssetPack.version,
@@ -830,10 +834,13 @@ const publishGameManifestOnly = async (gameId, sharedAudioPackResult) => {
     }
     const versionManifestKey = `${packagePrefix}/manifests/${gameId}/${assetPack.version}.json`;
     const latestManifestKey = `${packagePrefix}/games/${gameId}.json`;
+    const latestManifestUrl = `${assetsBaseUrl}/mobile-packages/android/${channel}/games/${encodeURIComponent(gameId)}.json`;
+    const manifestJson = stringifyJsonWithTrailingNewline(manifest);
+    const manifestChecksum = hashJsonPayload(manifest);
 
     if (!dryRun) {
-        await uploadObject(versionManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
-        await uploadObject(latestManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(versionManifestKey, manifestJson, 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, manifestJson, 'application/json', 'public, max-age=60, must-revalidate', { backupToR2: true });
     }
 
     return {
@@ -845,6 +852,9 @@ const publishGameManifestOnly = async (gameId, sharedAudioPackResult) => {
         bundleKey: assetPack.url ? `${packagePrefix}/bundles/${gameId}/${assetPack.version}.zip` : null,
         latestManifestKey,
         bundleUrl: assetPack.url ?? null,
+        latestManifestUrl,
+        manifestBytes: Buffer.byteLength(manifestJson),
+        manifestChecksum,
         manifestOnly: true,
     };
 };
@@ -852,7 +862,7 @@ const publishGameManifestOnly = async (gameId, sharedAudioPackResult) => {
 const targetGames = explicitGameId
     ? [explicitGameId]
     : discoverPackageManagedGames();
-const serverVerificationUrls = [];
+const serverVerificationTargets = [];
 
 if (targetGames.length === 0) {
     throw new Error('没有发现 package-managed 游戏，无法发布游戏包。');
@@ -863,8 +873,11 @@ const sharedAudioPackResult = (manifestOnly || indexManifestOnly || reuseSharedA
     : await publishSharedAudioPackage();
 
 if (sharedAudioPackResult) {
-    if (sharedAudioPackResult.bundleUrl) {
-        serverVerificationUrls.push(sharedAudioPackResult.bundleUrl);
+    if (sharedAudioPackResult.publishedInCurrentRun && sharedAudioPackResult.bundleUrl) {
+        serverVerificationTargets.push({
+            url: sharedAudioPackResult.bundleUrl,
+            expectedSize: sharedAudioPackResult.zipBytes,
+        });
     }
     if (manifestOnly || indexManifestOnly || reuseSharedAudio) {
         console.log('公共音频包已复用远端 latest manifest');
@@ -895,11 +908,23 @@ for (const gameId of targetGames) {
         : indexManifestOnly
             ? await publishSingleGameIndexManifest(gameId, sharedAudioPackResult)
         : await publishSingleGamePackage(gameId, sharedAudioPackResult);
-    if (result.bundleUrl) {
-        serverVerificationUrls.push(result.bundleUrl);
-    }
-    if (result.fallbackBundleUrl) {
-        serverVerificationUrls.push(result.fallbackBundleUrl);
+    if (manifestOnly) {
+        serverVerificationTargets.push({
+            url: result.latestManifestUrl,
+            expectedSize: result.manifestBytes,
+            expectedSha256: result.manifestChecksum,
+        });
+    } else if (indexManifestOnly) {
+        serverVerificationTargets.push({
+            url: result.fileIndexUrl,
+            expectedSize: result.fileIndexBytes,
+            expectedSha256: result.fileIndexChecksum,
+        });
+    } else if (result.bundleUrl) {
+        serverVerificationTargets.push({
+            url: result.bundleUrl,
+            expectedSize: result.zipBytes,
+        });
     }
     if (manifestOnly) {
         console.log(dryRun ? '游戏 manifest 预演完成（未上传）' : '游戏 manifest 上传计划已准备');
@@ -942,7 +967,7 @@ for (const gameId of targetGames) {
 if (!dryRun) {
     await flushPendingUploads();
     console.log(`服务器主源整批发布完成：${pendingUploads.length} 个对象，R2 灾备已进入后台队列`);
-    await waitForServerAssets(serverVerificationUrls);
+    await waitForServerAssets(serverVerificationTargets);
 }
 cleanupTemporaryUploadFiles();
 

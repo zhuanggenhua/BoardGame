@@ -343,6 +343,7 @@ if (!dryRun) {
             size: zipBuffer.length,
             contentType: 'application/zip',
             cacheControl: 'public, max-age=31536000, immutable',
+            backupToR2: true,
         },
         {
             key: versionManifestKey,
@@ -358,13 +359,17 @@ if (!dryRun) {
                 size: Buffer.byteLength(latestManifestBody),
                 contentType: 'application/json',
                 cacheControl: 'public, max-age=60, must-revalidate',
+                backupToR2: true,
             }]
             : []),
     ]);
 }
 
 if (!dryRun && !skipLatest) {
-    await waitForServerAssets([bundleUrl]);
+    await waitForServerAssets([{
+        url: bundleUrl,
+        expectedSize: zipBuffer.length,
+    }]);
 }
 
 const distStats = statSync(path.join(distDir, 'index.html'));

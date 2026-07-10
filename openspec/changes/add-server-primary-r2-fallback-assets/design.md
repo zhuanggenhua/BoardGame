@@ -48,9 +48,10 @@
   - 运行硬上限：9GiB，即 9,663,676,416 字节；
   - 首次清理目标：8GiB 以下；
   - 预留缓冲：至少 1GiB，用于发布过程、月度平均波动和对象替换。
+- R2 只接收显式标记的当前恢复关键对象；默认跳过重复别名、历史版本清单和可重新生成的游戏单素材散件。
 - R2 灾备前必须计算：
   - R2 当前对象总字节数；
-  - 当前灾备队列新增对象大小；
+  - 当前关键对象灾备队列新增对象大小；
   - 覆盖同 key 可释放的旧对象大小；
   - 已隔离且允许删除的历史对象大小。
 - 如果预计灾备后超过 9GiB：
@@ -119,12 +120,12 @@
   - `/official/i18n/**`
   - `/official/common/**` 中非发布包对象
   - `/official/atlas-configs/**`
-  - manifest 证明仍被运行时引用的其他普通素材
+  - 所有 `official/**/assets-manifest.json` 按 `basePrefix + files + variants` 展开的普通素材
   - 各平台、各频道 `app-updates/**/latest.json` 递归引用的当前 OTA bundle
-  - `mobile-packages/**/(games|shared)/*.json` 递归引用的当前 bundle、manifest 和 file-index
+  - `mobile-packages/**/(games|shared)/*.json` 递归引用的当前 bundle、manifest、file-index，以及 file-index 相对路径对应的 `official/<path>` 对象
   - `native-app-updates/**/latest.json` 递归引用的当前安装包
 - 永久排除未被当前清单引用的历史发布产物、临时对象和孤儿对象。
-- 镜像集合由 manifest/file-index 生成，活动发布集合设置 2GiB 上限，并在切换前保证服务器至少保留 5GiB 空闲；禁止用“把 `official/` 全量 sync 到系统盘”代替。
+- 镜像集合由 manifest/file-index 生成，完整活动集合设置 4GiB 上限，并在切换前保证服务器至少保留 5GiB 空闲；禁止用“把 `official/` 全量 sync 到系统盘”代替。
 
 ### Decision: R2 清理先隔离后删除
 - 清理器必须保留：
@@ -175,7 +176,7 @@
 - 服务器源正常时普通素材和三类发布路径均返回 `X-Asset-Source: server`。
 - 停止静态源、制造超时或请求服务器未同步对象时，同 URL 返回 `X-Asset-Source: r2-fallback`。
 - 停止服务器静态源或请求未同步对象时，三类发布路径返回 `X-Asset-Source: r2-fallback`。
-- 服务器活动集合只包含当前清单递归引用对象，当前三类路径总量不超过 2GiB，且同步后服务器至少保留 5GiB 空闲。
+- 服务器活动集合包含普通素材清单展开对象和当前发布清单递归引用对象，总量不超过 4GiB，且同步后服务器至少保留 5GiB 空闲。
 - GET、HEAD、Range、ETag、Content-Type、Cache-Control、Content-Length 和 CORS 行为与现有链路兼容。
 - 素材压力测试期间游戏/API 健康检查持续成功，游戏容器无新增重启，服务器磁盘保持至少 25% 空闲。
 - 移除 Worker Route 后，`assets.easyboardgame.top` 能恢复当前 R2 直出链路。

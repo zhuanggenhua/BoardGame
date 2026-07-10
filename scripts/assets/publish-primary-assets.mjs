@@ -103,6 +103,7 @@ export const stagePrimaryAssetUploads = async (uploads) => {
                 sha256: await hashFile(targetPath),
                 contentType: upload.contentType || 'application/octet-stream',
                 cacheControl: upload.cacheControl || '',
+                backupToR2: upload.backupToR2 === true,
             });
         }
 
@@ -174,11 +175,13 @@ export const publishPrimaryAssetBatch = async (uploads, options = {}) => {
 
     try {
         await publishServer(staged);
+        const r2BackupObjectCount = staged.objects.filter((object) => object.backupToR2).length;
         console.log(`serverPrimaryPublish=completed objects=${staged.objects.length}`);
         return {
             serverPublished: true,
-            queuedR2Backup: true,
+            queuedR2Backup: r2BackupObjectCount > 0,
             objectCount: staged.objects.length,
+            r2BackupObjectCount,
         };
     } finally {
         rmSync(staged.stagingRoot, { recursive: true, force: true });

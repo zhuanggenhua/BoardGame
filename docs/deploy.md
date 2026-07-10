@@ -431,9 +431,10 @@ GitHub Actions 自动化：
 - **所有正式素材与发布包**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
 - **自动回退**：服务器连接失败、1500ms 内没有响应头，或返回 `404`、`408`、`429`、`5xx` 时，Worker 使用同 key 的 R2 对象返回。客户端仍访问原域名。
 - **大型发布包同样服务器优先**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 不再配置绕过 Route，统一进入 Worker。
-- **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存普通素材以及当前公开清单递归引用的 OTA、游戏包和原生安装包。三类发布路径当前活动集合约 493MiB，不复制约 8.25GiB 的历史全集。
+- **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
 - **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖 R2 才能上线。
-- **R2 只做同 key 异步灾备**：服务器切换后生成灾备队列，`boardgame-asset-backup.timer` 后台上传并失败重试。R2 超过 9GiB 门禁时队列保留并告警，但不撤销服务器发布。
+- **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
+- **R2 只做关键对象的同 key 异步灾备**：服务器切换后，只为当前恢复必需对象生成灾备队列，`boardgame-asset-backup.timer` 后台上传并失败重试。默认不备份重复 APK 别名、历史版本清单、游戏单素材散件等可重复或可重建对象。R2 超过 9GiB 门禁时仅保留关键对象队列并告警，但不撤销服务器发布。
 - **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS、同域和自动回退；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
 
 服务器静态源保护参数：

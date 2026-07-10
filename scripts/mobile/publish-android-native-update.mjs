@@ -136,6 +136,7 @@ if (!dryRun) {
             size: apkBuffer.length,
             contentType: 'application/vnd.android.package-archive',
             cacheControl: 'public, max-age=31536000, immutable',
+            backupToR2: true,
         },
         {
             key: versionManifestKey,
@@ -151,13 +152,17 @@ if (!dryRun) {
                 size: Buffer.byteLength(latestManifestBody),
                 contentType: 'application/json',
                 cacheControl: 'public, max-age=60, must-revalidate',
+                backupToR2: true,
             }]
             : []),
     ]);
 }
 
 if (!dryRun && !skipLatest) {
-    await waitForServerAssets([fingerprintedApkUrl]);
+    await waitForServerAssets([{
+        url: fingerprintedApkUrl,
+        expectedSize: apkBuffer.length,
+    }]);
 }
 
 const apkStats = statSync(apkPath);
