@@ -1,8 +1,8 @@
 {
   "manifestVersion": 1,
   "scope": "official",
-  "id": "smashup",
-  "basePrefix": "official/smashup/",
+  "id": "i18n/zh-CN/smashup",
+  "basePrefix": "official/i18n/zh-CN/smashup/",
   "files": {
     "base/baokemeng": {
       "variants": {
@@ -76,6 +76,15 @@
         }
       }
     },
+    "base/compressed/paladin_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "02fbf6e788a5263d6e6b37d3e369e962c3b232112d35e97f49e3bd3f93084c8a",
+          "bytes": 320516,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/shayu": {
       "variants": {
         "webp": {
@@ -109,6 +118,15 @@
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
           "mime": "image/webp"
+        }
+      }
+    },
+    "base/paladin_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "3c1a8b4c137901aa3b76586bc8b42cd9f99d62d1d603e9dfcd5c2fcc4c7423c8",
+          "bytes": 583095,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -220,6 +238,15 @@
         }
       }
     },
+    "cards/compressed/paladin_cards": {
+      "variants": {
+        "webp": {
+          "sha256": "88d7fa52cab93e59bb10e4f4a6001f5637e062ee1f8b2b0b9eb734f544b185a7",
+          "bytes": 1157846,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/pretty_pretty": {
       "variants": {
         "webp": {
@@ -279,6 +306,15 @@
         "png": {
           "sha256": "090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13",
           "bytes": 42040387,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/paladin_cards": {
+      "variants": {
+        "png": {
+          "sha256": "41060b739f0ac7c74e1f8548ded639016f0172bc340087f04ad5e9f42f590bf4",
+          "bytes": 39352254,
           "mime": "image/png"
         }
       }
@@ -355,12 +391,30 @@
         }
       }
     },
+    "taitan/compressed/paladin_seraphim": {
+      "variants": {
+        "webp": {
+          "sha256": "f0100a02d1a11a8bc93c0dfa5136ec658e01289885147ceb5db73d02d0873bd2",
+          "bytes": 416516,
+          "mime": "image/webp"
+        }
+      }
+    },
     "taitan/compressed/taitan1": {
       "variants": {
         "webp": {
           "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
           "bytes": 2185502,
           "mime": "image/webp"
+        }
+      }
+    },
+    "taitan/paladin_seraphim": {
+      "variants": {
+        "png": {
+          "sha256": "8106f3236a1f34c46a311dc730ac2a7a379386c44aaaec61deaa3df5cb7b8e13",
+          "bytes": 3345778,
+          "mime": "image/png"
         }
       }
     },

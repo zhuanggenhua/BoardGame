@@ -64,6 +64,7 @@ import { FAIRIES_CARDS } from './factions/fairies';
 import { HULUWAWA_CARDS } from './factions/huluwawa';
 import { KITTY_CATS_CARDS } from './factions/kitty_cats';
 import { MYTHIC_HORSES_CARDS } from './factions/mythic_horses';
+import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
@@ -210,6 +211,7 @@ registerCards(FAIRIES_CARDS);
 registerCards(HULUWAWA_CARDS);
 registerCards(KITTY_CATS_CARDS);
 registerCards(MYTHIC_HORSES_CARDS);
+registerCards(PALADIN_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(SHARKS_POD_CARDS);
@@ -583,6 +585,31 @@ export const BASE_CARDS_HULUWAWA: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_HULUWAWA);
+
+// ============================================================================
+// 圣骑士 DIY 基地
+// ============================================================================
+export const BASE_CARDS_PALADIN: BaseCardDef[] = [
+    {
+        id: 'base_paladins_monastery',
+        name: '修道院',
+        nameEn: 'Monastery',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_BASES, index: 0 },
+    },
+    {
+        id: 'base_paladins_roncesvalles_gorge',
+        name: '龙塞沃峡谷',
+        nameEn: 'Roncesvalles Gorge',
+        breakpoint: 24,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_BASES, index: 1 },
+    },
+];
+registerBases(BASE_CARDS_PALADIN);
 
 // ============================================================================
 // 扩展基地 (Oops, You Did It Again)

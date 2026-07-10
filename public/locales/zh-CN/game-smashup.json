@@ -1142,7 +1142,8 @@
     "ninja_disguise_choose_base_title": "伪装：选择一个基地",
     "ninja_disguise_choose_play_title": "伪装：选择要打出的手牌随从",
     "ninja_disguise_choose_second_play_title": "伪装：选择第二个要打出的手牌随从",
-    "faction_implementation_in_progress": "实施中"
+    "faction_implementation_in_progress": "实施中",
+    "paladins_heavenly_soldiers_descend_skip_minion_option": "跳过额外随从"
   },
   "mechanics": {
     "madness": {
@@ -1558,6 +1559,10 @@
     "all_stars_pod": {
       "name": "全明星 (POD版)",
       "description": "跨多个派系精选代表卡组成的 POD 全明星卡组。"
+    },
+    "paladins": {
+      "name": "圣骑士",
+      "description": "围绕天赋能力、+1 力量指示物与泰坦联动，将随从逐步培养成关键战力。"
     }
   },
   "tutorial": {
@@ -6301,6 +6306,66 @@
     },
     "all_stars_king_rex_pod": {
       "name": "雷克斯王"
+    },
+    "paladins_roland": {
+      "name": "罗兰",
+      "abilityText": "天赋能力：如果本随从的力量大于 8 且场上没有神圣炽天使，则打出神圣炽天使到这里。"
+    },
+    "paladins_devout_pastor": {
+      "name": "虔诚的牧师",
+      "abilityText": "天赋能力：如果这里没有你的泰坦，则抓一张牌然后弃一张牌。"
+    },
+    "paladins_senior_mentor": {
+      "name": "年迈导师",
+      "abilityText": "天赋能力：在这里的一个没有力量指示物的随从上放置一个 +1 力量指示物。"
+    },
+    "paladins_novice_knight": {
+      "name": "新手骑士",
+      "abilityText": "持续能力：每当这里的你的随从每回合首次使用天赋能力后，在本随从上放置一个 +1 力量指示物。"
+    },
+    "paladins_durandal": {
+      "name": "杜尔南圣剑",
+      "effectText": "打出在一个你的随从上。\n持续能力：这个随从具有能力“天赋能力：如果本回合中你在这里使用了少于 3 个其他天赋能力且场上没有神圣炽天使，则打出神圣炽天使到这里。”"
+    },
+    "paladins_knights_duel": {
+      "name": "骑士决斗",
+      "effectText": "一个你的随从和同一基地上的其他玩家的随从决斗。消灭失败的随从。如果你赢得决斗，在该随从上放置一个 +1 力量指示物。"
+    },
+    "paladins_battle_cry": {
+      "name": "战呼",
+      "effectText": "每个你的随从 +1 力量直到回合结束，每个本回合中使用过天赋能力的你的随从额外 +1 力量直到回合结束。"
+    },
+    "paladins_holy_light_blessing": {
+      "name": "圣光加身",
+      "effectText": "打出在一个你的随从上。\n持续能力：这个随从具有能力“天赋能力：本随从力量 +3 直到回合结束。”"
+    },
+    "paladins_expel": {
+      "name": "驱离",
+      "effectText": "消灭一个打出在随从或基地上的战术。"
+    },
+    "paladins_spread_the_oracle": {
+      "name": "传播圣言",
+      "effectText": "打出在一个你的随从上。\n持续能力：这个随从具有能力“天赋能力：你在本回合可以额外打出一张战术。”"
+    },
+    "paladins_climb_the_holy_stairs": {
+      "name": "登圣长阶",
+      "effectText": "打出在一个你的随从上。\n持续能力：每当这个随从使用天赋能力后，在此随从上放置一个 +1 力量指示物。天赋能力：如果本随从上有大于四个 +1 力量指示物且场上没有神圣炽天使，则打出神圣炽天使到这里并将本战术返回手牌。"
+    },
+    "paladins_heavenly_soldiers_descend": {
+      "name": "神兵天降",
+      "effectText": "特殊能力：在一个基地计分前，额外打出一个随从到这里并使用这里的一个你的随从的天赋能力。"
+    },
+    "paladins_seraphim": {
+      "name": "神圣炽天使",
+      "effectText": "泰坦：作为你的泰坦参与该基地的力量与泰坦冲突。"
+    },
+    "base_paladins_monastery": {
+      "name": "修道院",
+      "abilityText": "每当一个泰坦被打出到这里时，该泰坦的拥有者抓一张牌。"
+    },
+    "base_paladins_roncesvalles_gorge": {
+      "name": "龙塞沃峡谷",
+      "abilityText": "每当一个泰坦在这里赢得冲突时，该泰坦的拥有者获得 1VP。"
     }
   },
   "debug": {
@@ -6367,5 +6432,6 @@
       "off": "标准自由混战",
       "2v2": "2v2 团队模式"
     }
-  }
+  },
+  "interactions": {}
 }

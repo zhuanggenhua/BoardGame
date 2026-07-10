@@ -165,6 +165,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.MYTHIC_HORSES, nameKey: 'factions.mythic_horses.name', icon: Rainbow, color: '#14b8a6', descriptionKey: 'factions.mythic_horses.description' },
     { id: SMASHUP_FACTION_IDS.FAIRIES, nameKey: 'factions.fairies.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies.description' },
     { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'], expansion: 'diy' },
+    { id: SMASHUP_FACTION_IDS.PALADINS, nameKey: 'factions.paladins.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.paladins.description', expansion: 'diy' },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description' },
     { id: SMASHUP_FACTION_IDS.SHARKS_POD, nameKey: 'factions.sharks_pod.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks_pod.description' },

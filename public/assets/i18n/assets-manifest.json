@@ -9046,6 +9046,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/paladin_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "02fbf6e788a5263d6e6b37d3e369e962c3b232112d35e97f49e3bd3f93084c8a",
+          "bytes": 320516,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/shayu": {
       "variants": {
         "webp": {
@@ -9195,6 +9204,15 @@
         "webp": {
           "sha256": "e2cb2ea775bcb4ef44f5c783bb9547e2ac911eb845872e7d15a5137ae4418fd0",
           "bytes": 865614,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/paladin_cards": {
+      "variants": {
+        "webp": {
+          "sha256": "88d7fa52cab93e59bb10e4f4a6001f5637e062ee1f8b2b0b9eb734f544b185a7",
+          "bytes": 1157846,
           "mime": "image/webp"
         }
       }
@@ -9375,6 +9393,15 @@
         "webp": {
           "sha256": "3b171c8ef47af4a11dc93c651ff6825e7c07284ea4326437bac3c3f08d818fae",
           "bytes": 262096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/taitan/compressed/paladin_seraphim": {
+      "variants": {
+        "webp": {
+          "sha256": "f0100a02d1a11a8bc93c0dfa5136ec658e01289885147ceb5db73d02d0873bd2",
+          "bytes": 416516,
           "mime": "image/webp"
         }
       }

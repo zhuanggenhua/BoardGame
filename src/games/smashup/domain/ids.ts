@@ -14,6 +14,7 @@ export const SMASHUP_ATLAS_IDS = {
     BASE9: 'smashup:base9',
     BASE10: 'smashup:base10',
     HULUWAWA_BASES: 'smashup:huluwawa-bases',
+    PALADIN_BASES: 'smashup:paladin-bases',
     CARDS1: 'smashup:cards1',
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
@@ -28,7 +29,9 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS12: 'smashup:cards12',
     CARDS13: 'smashup:cards13',
     HULUWAWA_CARDS: 'smashup:huluwawa-cards',
+    PALADIN_CARDS: 'smashup:paladin-cards',
     HULUWAWA_TITAN: 'smashup:huluwawa-titan',
+    PALADIN_TITAN: 'smashup:paladin-titan',
     TITANS: 'smashup:titans',
     SHARKS_POD_CARDS: 'smashup:sharks-pod-cards',
     ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
@@ -62,6 +65,7 @@ export const SMASHUP_FACTION_IDS = {
     HULUWAWA: 'huluwawa',
     KITTY_CATS: 'kitty_cats',
     MYTHIC_HORSES: 'mythic_horses',
+    PALADINS: 'paladins',
     PRINCESSES: 'princesses',
     SHARKS: 'sharks',
     SHARKS_POD: 'sharks_pod',
@@ -150,6 +154,7 @@ export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
 
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
+    SMASHUP_FACTION_IDS.PALADINS,
 ]);
 
 export function isSmashUpDiyFaction(factionId: string | null | undefined): boolean {
@@ -183,6 +188,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.HULUWAWA]: '葫芦娃',
     [SMASHUP_FACTION_IDS.KITTY_CATS]: '猫咪',
     [SMASHUP_FACTION_IDS.MYTHIC_HORSES]: '小马',
+    [SMASHUP_FACTION_IDS.PALADINS]: '圣骑士',
     [SMASHUP_FACTION_IDS.PRINCESSES]: '公主',
     [SMASHUP_FACTION_IDS.SHARKS]: '鲨鱼',
     [SMASHUP_FACTION_IDS.SHARKS_POD]: '鲨鱼 (POD版)',
