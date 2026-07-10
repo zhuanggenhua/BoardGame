@@ -281,6 +281,18 @@ https://assets.easyboardgame.top/official/native-app-updates/android/stable/late
 - `assets/capacitor.config.json`
 - `assets/public/android-build-meta.json`
 
+### 4.6 真机安装与原始位点验收
+
+- 安装前先用 `dumpsys package top.easyboardgame.app` 核对真机当前 `versionCode / versionName`。线上已经发布新 APK，但真机仍是旧版本时，只能说“原生包已发布，设备尚未升级”，不得说方向、权限或插件问题已经修复。
+- `adb install -r` 返回 `INSTALL_FAILED_ABORTED: User rejected permissions` 时，必须立即停止重复执行同一命令。该结果表示设备安装确认未完成，不是 APK 构建或发布失败。
+- ADB 安装被系统拒绝后的正式回退路径是：
+  1. 将已校验 checksum 的线上 APK 放入设备下载目录；
+  2. 通过系统 `PackageInstaller` 打开该 APK；
+  3. 等待用户解锁设备并在系统界面确认安装；
+  4. 安装完成后再次读取真机 `versionCode`。
+- 不得通过修改设备安全设置、静默授权或绕过锁屏来冒充安装完成。用户尚未解锁或确认安装时，必须把它标记为“真机验收阻塞”，发布链成功不能替代该结果。
+- 安装后必须回到用户原始失败位点。横竖屏问题至少要同时确认：目标游戏页面已打开、真机安装的是目标 `versionCode`、系统实际 rotation/orientation 为横屏；只验证首页、APK 映射文件或 AndroidManifest 均不足以收口。
+
 ## 5. 最终汇报最少证据
 
 只要对外说“Android 包已经更新 / 网站下载已可用 / 原生更新已发”，必须同时给出：
