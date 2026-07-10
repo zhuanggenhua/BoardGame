@@ -16,6 +16,24 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
             .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.worldWidthScale);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldHeightScale)
             .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.worldHeightScale);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldHeightScale)
+            .toBeGreaterThan(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldWidthScale);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.baseScale)
+            .toBeGreaterThanOrEqual(40);
+    });
+
+    it('移动横屏应单独放大相机投影，不通过继续放大物理骰子换清晰度', () => {
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.cameraZoom)
+            .toBeGreaterThan(1);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.cameraZoom)
+            .toBeLessThanOrEqual(1.5);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.baseScale).toBe(40);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.strength)
+            .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.strength);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.initialThrowSpread)
+            .toBeGreaterThanOrEqual(0.7);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.settledSpreadAnimationMs)
+            .toBeGreaterThanOrEqual(180);
     });
 
     it('越界安全回收位置应保持二维散落，而不是退化为单排', () => {

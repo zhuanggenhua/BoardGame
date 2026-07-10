@@ -58,3 +58,68 @@
 - 当前 PC 与移动横屏均达到“五颗骰子逐颗完整可辨认”的验收标准。
 - 当前截图没有出现用户指出的“全叠在一起”。
 - 验收规范与 E2E 已补上对应防回归门禁，后续不能再用节点数量或像素存在覆盖真实图面失败。
+
+## 2026-07-10 App 顶部单排回归修复
+
+### 原始症状
+
+- App 手机横屏中，五颗棋盘 3D 骰子虽然都能看到，但集中在角色面板上沿，视觉上挤成顶部一排。
+- 旧 E2E 只验证“五颗存在、互不完全覆盖、没有挡住手牌”，还把约 200px 的顶部小方形骰台写成固定正确尺寸，因此没有拦住该构图回归。
+
+### 根因
+
+- `BoardDiceStage` 对 `900px` 以下视口做了显式特殊处理：固定在屏幕顶部，舞台约 `198–216px` 且保持方形。
+- 移动物理配置同时使用 `worldWidthScale: 0.9`、`worldHeightScale: 0.75`，横向空间大于纵深，真实投掷停稳后容易沿角色面板上沿聚成横排。
+- 该特殊处理由提交 `e63cc2eb1` 于 2026-07-10 引入，不是 App 缓存旧包。
+
+### 修复
+
+- 移动骰台改为角色面板内的矩形投骰区：向下避开顶部状态栏，并向左对齐角色主面板。
+- 移动物理区域改为 `worldWidthScale: 0.72`、`worldHeightScale: 1.05`，保证纵深大于横向压缩。
+- 移动骰体基准单独提高到 `baseScale: 40`，避免纵向散布后远处骰面缩到不可读。
+- 桌面 3D 骰台与普通右侧骰盘没有修改。
+
+### 新增门禁
+
+- 移动端五颗骰子的纵向中心跨度至少达到 `1.2` 个平均骰体尺寸。
+- 纵向跨度与横向跨度比例至少为 `0.3`，禁止再次退化为横向单排。
+- 保留骰子完整位于舞台内、最小可见尺寸、手牌避让和右侧提示窗零遮挡断言。
+
+### 验证
+
+- `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/ui/__tests__/diceBoxStyleProfiles.test.ts --configLoader native`
+  - 结果：`3 passed`
+- `npm run test:e2e:file -- e2e/dicethrone/dicethrone-board-dice-3d-toggle.e2e.ts --grep "手机横屏投掷结束后"`
+  - 结果：`1 passed`
+- `npm run test:e2e:file -- e2e/dicethrone/dicethrone-board-dice-3d-toggle.e2e.ts --grep "默认关闭，打开后切到棋盘"`
+  - 结果：`1 passed`
+- 最终移动整屏图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-board-dice-3d-toggle.e2e\手机横屏投掷结束后-3D-骰子仍留在棋盘投骰区\00-手机横屏投掷结束后-3D骰子仍可见.jpg`
+  - 五颗骰子已从屏幕上沿单排移入角色面板投骰区，形成可辨认的纵向层次。
+  - 没有进入右侧敌人提示窗，也没有遮挡底部操作区。
+
+### 2026-07-10 最终定位与复验
+
+- 原始症状保持为：App 手机横屏中五颗 3D 骰子仍在上面排成一排。
+- 最终直接根因不是 App 缓存，也不只是物理区域宽高比例：
+  - 平滑落位目标按物理墙体尺寸计算，而移动端相机使用 `cameraZoom: 1.45`，物理墙体明显大于相机当前真正看得见的范围。
+  - 部分目标点因此落到视口外；停稳后的边界回收又使用旧的顶部单排槽位，把骰子重新集中到角色面板上沿。
+- 最终修正：
+  - 平滑落位改为按当前透视相机在骰子高度处的真实可见范围计算目标点。
+  - 五颗骰子使用三上两下的二维槽位，仍在 `rolling` 状态内用约 `220ms` 平滑完成，不在 `settled` 后瞬移。
+  - 自然落点虽然未完全出界、但纵向占用过高时也进入平滑收拢。
+  - 边界安全回收与平滑落位复用同一套相机安全二维槽位，不再回到顶部单排。
+  - 排查阶段临时写入画布的数据诊断已移除，未留在最终运行时。
+- 最新验证：
+  - `npm run typecheck`：通过。
+  - `npx vitest run src/games/dicethrone/ui/__tests__/diceBoxStyleProfiles.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`：`4 passed`。
+  - 手机横屏 `844x390` 与 `932x430` 连续两轮共 4 次通过；移除临时诊断后再跑一轮，两档均通过。
+  - `开启 3D 后锁定骰子仍留在棋盘骰台且右侧旧骰盘不重复出现`：通过。
+  - `开启 3D 后锁定骰子再次投掷时保持原位且不消失`：通过。
+  - 一次误用 `npm run test -- <file>` 触发了全量测试，最终被与本任务无关的“betrayal / the-gang 未配置 cursorTheme”门禁阻断；本轮未修改该范围外问题。
+- 最新移动整屏图：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-board-dice-3d-toggle.e2e\手机横屏-844x390-投掷结束后-3D-骰子仍留在棋盘投骰区\00-手机横屏投掷结束后-3D骰子仍可见.jpg`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-board-dice-3d-toggle.e2e\手机横屏-932x430-投掷结束后-3D-骰子仍留在棋盘投骰区\00-手机横屏投掷结束后-3D骰子仍可见.jpg`
+- 肉眼核图结论：
+  - 两档画面都能数出五颗独立骰子，形成上下两层二维散布，不再退化为屏幕顶部横向单排。
+  - 骰子主体和主要骰面完整可辨认，没有大面积互相覆盖。
+  - 骰台位于顶部对手信息窗下方，没有进入右侧操作区，也没有压住底部手牌区域。

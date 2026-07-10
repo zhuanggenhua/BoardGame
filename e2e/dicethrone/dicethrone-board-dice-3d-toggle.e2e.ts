@@ -6,6 +6,10 @@ import { test, expect } from '../framework';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
 const BOARD_DICE_3D_STORAGE_KEY = 'dicethrone:boardDice3dEnabled';
+const MOBILE_DICE_VIEWPORTS = [
+    { width: 844, height: 390 },
+    { width: 932, height: 430 },
+] as const;
 
 async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
     const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
@@ -218,11 +222,13 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
             || canvasNode.dataset.diceVisualSettled !== 'true'
         ) return false;
         if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
-        const isMobileBoard = window.innerWidth <= 900;
-        const expectedWorldWidthScale = isMobileBoard ? '0.9' : '0.44';
-        const expectedWorldHeightScale = isMobileBoard ? '0.75' : '0.44';
+        const isMobileBoard = window.innerWidth <= 1023;
+        const expectedWorldWidthScale = isMobileBoard ? '0.72' : '0.44';
+        const expectedWorldHeightScale = isMobileBoard ? '1.05' : '0.44';
+        const expectedCameraZoom = isMobileBoard ? '1.45' : '1';
         if (canvasNode.dataset.worldWidthScale !== expectedWorldWidthScale) return false;
         if (canvasNode.dataset.worldHeightScale !== expectedWorldHeightScale) return false;
+        if (canvasNode.dataset.cameraZoom !== expectedCameraZoom) return false;
         if (Number(canvasNode.dataset.physicsWorldWidth ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.physicsWorldHeight ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) > 0.004) return false;
@@ -622,9 +628,10 @@ function expectDiceRectsIndividuallyVisible(
 }
 
 test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
-    test('手机横屏投掷结束后 3D 骰子仍留在棋盘投骰区', async ({ page, game }, testInfo) => {
+    for (const viewport of MOBILE_DICE_VIEWPORTS) {
+    test(`手机横屏 ${viewport.width}x${viewport.height} 投掷结束后 3D 骰子仍留在棋盘投骰区`, async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
-        await page.setViewportSize({ width: 844, height: 390 });
+        await page.setViewportSize(viewport);
         await page.addInitScript((storageKey) => {
             localStorage.setItem(storageKey, 'true');
             localStorage.setItem('hud_fab_position', JSON.stringify({
@@ -789,28 +796,78 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         });
 
         expect(layout).not.toBeNull();
-        expect(layout?.stage.width).toBeGreaterThanOrEqual(188);
-        expect(layout?.stage.width).toBeLessThanOrEqual(222);
-        expect(layout?.stage.height).toBeGreaterThanOrEqual(188);
-        expect(layout?.stage.height).toBeLessThanOrEqual(222);
+        expect(layout?.stage.width).toBeGreaterThanOrEqual(248);
+        expect(layout?.stage.width).toBeLessThanOrEqual(290);
+        expect(layout?.stage.height).toBeGreaterThanOrEqual(164);
+        expect(layout?.stage.height).toBeLessThanOrEqual(190);
         expect(layout?.stage.right).toBeGreaterThan(0);
         expect(layout?.stage.left).toBeLessThan(layout?.viewport.width ?? 0);
         expect(layout?.stage.bottom).toBeGreaterThan(0);
         expect(layout?.stage.top).toBeLessThan(layout?.viewport.height ?? 0);
-        expect(layout?.stage.top).toBeLessThanOrEqual(4);
-        expect(layout?.stage.bottom).toBeLessThanOrEqual(222);
-        expect(layout?.canvas.width).toBeGreaterThan(120);
-        expect(layout?.canvas.height).toBeGreaterThan(120);
+        expect(layout?.stage.top).toBeGreaterThanOrEqual(32);
+        expect(layout?.stage.top).toBeLessThanOrEqual(42);
+        expect(layout?.stage.bottom).toBeLessThanOrEqual(226);
+        expect(Math.abs(
+            (((layout?.stage.left ?? 0) + (layout?.stage.right ?? 0)) / 2)
+            - ((layout?.viewport.width ?? 0) / 2),
+        )).toBeLessThanOrEqual(2);
+        expect(layout?.canvas.width).toBeGreaterThan(220);
+        expect(layout?.canvas.height).toBeGreaterThan(158);
         expect(layout?.diceUnion).not.toBeNull();
+        const averageDieMinDimension = (layout?.diceRects ?? []).reduce(
+            (sum, rect) => sum + Math.min(rect.width, rect.height),
+            0,
+        ) / Math.max(layout?.diceRects.length ?? 0, 1);
+        const horizontalCenterSpan = layout?.diceRects.length
+            ? Math.max(...layout.diceRects.map((rect) => rect.centerX))
+                - Math.min(...layout.diceRects.map((rect) => rect.centerX))
+            : 0;
+        const verticalCenterSpan = layout?.diceRects.length
+            ? Math.max(...layout.diceRects.map((rect) => rect.centerY))
+                - Math.min(...layout.diceRects.map((rect) => rect.centerY))
+            : 0;
+        const spreadDiagnostics = {
+            averageDieMinDimension,
+            horizontalCenterSpan,
+            verticalCenterSpan,
+            verticalSpanInDice: averageDieMinDimension > 0
+                ? verticalCenterSpan / averageDieMinDimension
+                : 0,
+            verticalToHorizontalRatio: horizontalCenterSpan > 0
+                ? verticalCenterSpan / horizontalCenterSpan
+                : 0,
+            diceRects: layout?.diceRects,
+        };
+        expect(
+            spreadDiagnostics.verticalSpanInDice,
+            `移动横屏五颗 3D 骰子不能只挤在顶部一排: ${JSON.stringify(spreadDiagnostics)}`,
+        ).toBeGreaterThanOrEqual(1.2);
+        expect(
+            spreadDiagnostics.verticalToHorizontalRatio,
+            `移动横屏五颗 3D 骰子需要形成二维散布，而不是横向单排: ${JSON.stringify(spreadDiagnostics)}`,
+        ).toBeGreaterThanOrEqual(0.3);
         expect(layout?.diceUnion?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.width ?? 0) * 0.94);
-        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.82);
+        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.9);
         expect(layout?.diceUnion?.left ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual((layout?.stage.left ?? 0) - 4);
         expect(layout?.diceUnion?.right ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.right ?? 0) + 4);
         expect(layout?.diceUnion?.top ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual((layout?.stage.top ?? 0) - 4);
         expect(layout?.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.bottom ?? 0) + 4);
         for (const rect of layout?.diceRects ?? []) {
-            expect(rect.width).toBeGreaterThanOrEqual(24);
-            expect(rect.height).toBeGreaterThanOrEqual(24);
+            const minProjectedDimension = Math.min(rect.width, rect.height);
+            const maxProjectedDimension = Math.max(rect.width, rect.height);
+            const areaEquivalentDiameter = Math.sqrt(rect.width * rect.height);
+            expect(
+                minProjectedDimension,
+                `3D 骰子投影短边不能收窄成细条: ${JSON.stringify(rect)}`,
+            ).toBeGreaterThanOrEqual(20);
+            expect(
+                areaEquivalentDiameter,
+                `3D 骰子投影面积必须保持可辨认尺寸: ${JSON.stringify(rect)}`,
+            ).toBeGreaterThanOrEqual(24);
+            expect(
+                maxProjectedDimension,
+                `3D 骰子投影长边必须保持清晰可辨: ${JSON.stringify(rect)}`,
+            ).toBeGreaterThanOrEqual(28);
             expect(rect.right).toBeGreaterThan(0);
             expect(rect.left).toBeLessThan(layout?.viewport.width ?? 0);
             expect(rect.bottom).toBeGreaterThan(0);
@@ -843,6 +900,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const canvasScreenshotPath = await saveBoardDiceCanvasScreenshot(page, '00-手机横屏投掷结束后-3D骰子真实画布', testInfo);
         await expectBoardDiceCanvasScreenshotHasVisibleDice(canvasScreenshotPath);
     });
+    }
 
     test('设置面板 3D 骰子开关点击前后应真实切换', async ({ page, game }, testInfo) => {
         await page.addInitScript((storageKey) => {
@@ -1214,6 +1272,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         });
 
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#hud-root > [data-testid="dicethrone-board-dice-stage"]')).toBeVisible();
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
         await waitForBoardDiceSettled(page);
 

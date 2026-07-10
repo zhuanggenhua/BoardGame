@@ -56,8 +56,19 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
 export const DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE = {
     ...DICETHRONE_DICE_BOX_STYLE_PROFILE,
     id: 'dicethrone-board-classic-mobile',
-    // 移动横屏舞台本身更窄，若继续使用桌面 0.44 的物理墙体，
-    // 五颗 38px 骰子没有足够空间自然散开，只能互相挤叠。
-    worldWidthScale: 0.9,
-    worldHeightScale: 0.75,
+    baseScale: 40,
+    // 只放大 Three.js 相机投影，不改变骰子实体、物理墙体或自然落点。
+    // 避免为了看清骰面继续放大实体，重新引入拥挤、碰撞和结束瞬移。
+    cameraZoom: 1.45,
+    // 插件默认会让多颗骰子从几乎同一个入口一起飞；移动横屏分成五条
+    // 初始通道后仍走完整物理模拟，投掷结束不做重排，因此不会瞬移。
+    initialThrowSpread: 0.76,
+    // 仅当自然落点仍重叠或接近横排时，在 rolling 状态内平滑完成落位；
+    // 动画完成后才上报 settled，避免投掷结束后的瞬移和静止态漂移。
+    settledSpreadAnimationMs: 220,
+    strength: 1,
+    // 移动横屏要保留足够纵深，不能只扩大横向边界，否则真实投掷
+    // 结束后五颗骰子仍会沿角色面板顶部塌成一排。
+    worldWidthScale: 0.72,
+    worldHeightScale: 1.05,
 } satisfies DiceBoxStyleProfile;

@@ -201,7 +201,7 @@ const BOARD_TOPDOWN_SETTLED_TILTS = [
     [  0.004,  0.2, -0.003 ],
 ] as const;
 
-const BOARD_TOPDOWN_VISUAL_SCALE = 0.62;
+const BOARD_TOPDOWN_VISUAL_SCALE = 0.70;
 const BOARD_TOPDOWN_COLLISION_RADIUS = 0.56;
 
 let sharedBoardShadowTexture: THREE.CanvasTexture | null = null;

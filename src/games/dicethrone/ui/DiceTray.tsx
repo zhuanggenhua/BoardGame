@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Check, Dices, RotateCcw } from 'lucide-react';
@@ -193,7 +194,7 @@ export const DiceTray = ({
     const isOverlayPresentation = isCenterPresentation || isBoardPresentation;
     const isMobileBoardPresentation = isBoardPresentation
         && typeof window !== 'undefined'
-        && window.innerWidth <= 900;
+        && window.innerWidth <= 1023;
     const diceBoxStyleProfile = isMobileBoardPresentation
         ? DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE
         : DICETHRONE_DICE_BOX_STYLE_PROFILE;
@@ -1175,9 +1176,9 @@ export const BoardDiceStage = ({
 
     if (!shouldShowDice) return null;
 
-    return (
+    const stage = (
         <div
-            className="pointer-events-none fixed left-1/2 top-[114px] aspect-square w-[clamp(360px,31vw,500px)] max-[900px]:top-0 max-[900px]:w-[clamp(198px,26vw,216px)]"
+            className="pointer-events-none fixed left-1/2 top-[114px] aspect-square w-[clamp(360px,31vw,500px)] max-[1023px]:top-[clamp(34px,9vh,40px)] max-[1023px]:h-[184px] max-[1023px]:w-[clamp(252px,29vw,270px)] max-[1023px]:aspect-auto"
             style={{
                 transform: 'translateX(-50%)',
                 zIndex: BOARD_DICE_STAGE_Z_INDEX,
@@ -1203,4 +1204,12 @@ export const BoardDiceStage = ({
             />
         </div>
     );
+
+    if (typeof document === 'undefined') {
+        return stage;
+    }
+
+    // 移动端棋盘外层会整体缩放；骰台必须脱离该 transform 上下文，
+    // 否则 fixed 定位、可视尺寸和物理投掷范围都会被同步压缩。
+    return createPortal(stage, document.getElementById('hud-root') ?? document.body);
 };
