@@ -135,7 +135,20 @@ node scripts/mobile/release-android.mjs native --channel stable
 node scripts/mobile/release-android.mjs native --channel stable --bump patch
 ```
 
-### 3.3 只想本地重打 APK，不上传
+### 3.3 改了游戏横竖屏或原生方向映射
+
+- 修改下列任一项都属于 **native 改动**，只发 OTA 不会生效：
+  - `preferredOrientation`
+  - `scripts/game/generate_game_manifests.js` 的方向表生成规则
+  - `android/app/src/main/assets/game-orientation-map.json`
+  - `MainActivity` / `GameOrientationPolicy`
+- 本项目方向不变量是：**除井字棋外，所有游戏默认强制横屏**；未配置或非法方向也必须回退到横屏，只有 `tictactoe` 允许显式 `portrait`。
+- 如果同一轮还修改了 H5 样式/交互，必须同时发布：
+  1. stable OTA，交付最新 H5；
+  2. stable native APK，交付最新方向映射和原生锁屏逻辑。
+- 发布后必须直接检查线上 APK 内的 `assets/game-orientation-map.json`，确认目标游戏为 `landscape`，不能只看源码或 OTA `latest.json`。
+
+### 3.4 只想本地重打 APK，不上传
 
 ```bash
 npm run mobile:android:build:release
@@ -152,6 +165,7 @@ npm run mobile:android:build:release
 - 当前目标是 `OTA` 还是 `native`
 - 是否真的需要部署网站
 - 是否涉及原生版本码递增
+- 是否改了游戏方向；若改了，必须按 native 处理，不能只发 OTA
 
 如果用户说“不要部署，只更新网站下载的 app”，默认是 **native publish，不是 deploy**。
 

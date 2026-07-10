@@ -1,5 +1,6 @@
 /* @vitest-environment happy-dom */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getAllGames, getGameById } from '../../config/games.config';
 import { MOBILE_REFERENCE_VIEWPORT } from '../../shared/referenceViewports';
@@ -22,6 +23,30 @@ describe('mobile support manifest contract', () => {
             expect(game.mobileBattlefieldZoom).toBeDefined();
             expect(game.shellTargets?.length ?? 0).toBeGreaterThan(0);
             expect(game.mobileDelivery?.mode).toBeDefined();
+        }
+    });
+
+    it('all enabled games use landscape except tictactoe and match the Android orientation map', () => {
+        const games = getAllGames().filter((game) => game.type === 'game');
+        const androidOrientationMap = JSON.parse(
+            readFileSync('android/app/src/main/assets/game-orientation-map.json', 'utf8'),
+        ) as Record<string, string>;
+
+        expect(
+            games
+                .filter(
+                    (game) =>
+                        resolveGameMobileSupport(game).preferredOrientation === 'portrait',
+                )
+                .map((game) => game.id),
+        ).toEqual(['tictactoe']);
+
+        for (const game of games) {
+            const expectedOrientation = game.id === 'tictactoe' ? 'portrait' : 'landscape';
+            expect(resolveGameMobileSupport(game).preferredOrientation).toBe(
+                expectedOrientation,
+            );
+            expect(androidOrientationMap[game.id]).toBe(expectedOrientation);
         }
     });
 
