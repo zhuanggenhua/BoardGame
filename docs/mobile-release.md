@@ -7,7 +7,9 @@
 - 单独 OTA：可不改 `package.json.version`；但“更新部署 / 发线上”必须先主动自增产品版本
 - OTA 新旧判断：客户端按单调递增的 OTA 内部游标判断；`publishedAt` 只用于审计和展示
 - 所有 OTA channel 面向**所有已安装版本**，并且全部强制更新；不再按原生版本写 `target/min/max` 门禁
+- Android OTA 内部游标永久下限为 `6.0.0`；默认发布会自动取 `max(package.json.version, 6.0.0)`，禁止再次降回 `0.6.x` 导致历史客户端无法更新
 - 客户端发现新 OTA 后必须阻塞下载并立即切换；`--no-force-update` 已禁用
+- 已上线问题默认走“修代码 -> 提交 push -> stable OTA -> 回查线上”；除非用户明确要求，不操作连接设备、不走 ADB 安装
 - 更新部署：默认必须走 `node scripts/release/deploy-and-ota.mjs --prepare-version` → 提交 push → 等 CI 镜像完成 → `node scripts/release/deploy-and-ota.mjs`，它包含服务器部署和 Android stable OTA；禁止只跑服务器 `deploy-image.sh update` 后汇报完成
 - 原生 APK：发版时用 `--bump patch|minor|major` 自动更新版本
 - 游戏包：继续走 `package.json.version + gameId + 时间戳` 的派生版本
@@ -114,7 +116,7 @@ OTA：
 - `publishedAt` 是发布时间元数据，只用于审计和展示，不作为客户端升级主判断。
 - `--expected-base-version` 仍必须等于 `package.json.version`，用于防止拿错 ref 或拿错产品基线。
 - 单独 OTA 可以沿用当前 `package.json.version`，但“更新部署 / 发线上”不再沿用旧产品版本；必须先通过 `deploy-and-ota --prepare-version` 或等价版本 bump 让 `package.json.version` 与 `androidVersionCode` 同步增加，再提交 push。
-- `--ota-version-base` 只影响内部游标生成，可与产品版本解耦。遇到旧客户端已经记住 `5.9.0` 这类错误大版本时，发一次 `6.0.0-ota-...` 桥接包，旧逻辑才能收到；后续发布继续让内部游标单调递增。
+- `--ota-version-base` 只影响内部游标生成，可与产品版本解耦。Android 默认下限固定为 `6.0.0`；遇到旧客户端已经记住 `5.9.0` 这类错误大版本时，`6.0.0-ota-...` 桥接包才能被识别，后续发布必须继续保持单调递增。
 - 无论走本地脚本还是 GitHub Actions，正式命名口径都必须是 `<ota-version-base>-ota-UTC时间戳` 或人工显式 `--version`；不得改成 `gha-*`、run number 或其他临时别名。
 - 这样做的目的，是让 OTA 内部游标继续保持单调递增，同时让正式上线批次有清晰的产品版本基线。
 
@@ -144,6 +146,7 @@ OTA：
 - `--skip-build` 只能在你确认本地 release APK 已经是最新时再用
 - 如果只是补发某个已上线版本的 H5 修复，可以单独发 OTA；如果口径是“更新部署 / 发线上”，必须先 bump 版本
 - 发布 OTA 时，本地存在无关未提交改动不应阻塞已经推送的版本发布；应显式指定已推送的 `git_ref` / `--ref`，并说明这些本地改动不包含在本次 OTA 内。只有未提交改动就是要发的 H5 内容或发布配置时，才必须先提交推送。
+- 用户反馈线上 OTA 没更新时，先读取线上 `latest.json`，再核对客户端版本比较规则和内部游标；禁止默认转去安装设备包。若当前 stable 游标低于历史已发高游标，直接发布满足永久下限的桥接 OTA。
 - 禁止再把 `stable` OTA 当成“只给某些原生版本”的分流工具；所有版本都要能收到并强制应用 OTA
 - 未经老板明确要求，禁止因为切换发布入口（本地脚本 / GitHub Actions）而改变正式 OTA 的用户可见版本命名或展示口径
 - 发布前必须把用户点名的现实结果逐项归类到 `server / OTA / game package / native`。横竖屏、方向映射、原生权限、插件、系统栏和返回键属于 native；不能因为本轮没有新增 Android diff，就跳过线上 APK 与目标提交的内容对比。

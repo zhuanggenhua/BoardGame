@@ -177,9 +177,7 @@ jobs:
             exit 1
           fi
 
-          if [[ -z "${ota_version_base}" ]]; then
-            ota_version_base="${package_version}"
-          fi
+          ota_version_base="$(node --input-type=module -e "import { resolveAndroidOtaVersionBase } from './scripts/mobile/ota-publish-config.mjs'; console.log(resolveAndroidOtaVersionBase({ packageVersion: process.argv[1], requestedVersionBase: process.argv[2] }))" "${package_version}" "${ota_version_base}")"
 
           if [[ ! "${ota_version_base}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::OTA 内部游标基线非法：${ota_version_base}"
@@ -187,6 +185,7 @@ jobs:
           fi
 
           if [[ -n "${explicit_version}" ]]; then
+            node --input-type=module -e "import { resolveAndroidOtaVersionBase } from './scripts/mobile/ota-publish-config.mjs'; resolveAndroidOtaVersionBase({ packageVersion: process.argv[1], requestedVersionBase: process.argv[2] })" "${package_version}" "${explicit_version}"
             if [[ ! "${explicit_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?(-ota-[0-9TZ.-]+)?$ ]]; then
               echo "::error::显式 OTA 内部游标非法：${explicit_version}"
               exit 1
