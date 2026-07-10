@@ -149,4 +149,4 @@ OTA：
 - 发布前必须把用户点名的现实结果逐项归类到 `server / OTA / game package / native`。横竖屏、方向映射、原生权限、插件、系统栏和返回键属于 native；不能因为本轮没有新增 Android diff，就跳过线上 APK 与目标提交的内容对比。
 - 若线上 APK 内的 `assets/game-orientation-map.json` 缺少目标游戏，或线上壳仍使用旧的缺省方向策略，必须发布新 stable native APK；只发 OTA 不能宣称方向问题已修复。
 - 发布成功只证明产物已交付。最终必须回到用户原始失败位点验收；例如纸牌帮横屏问题要以更新后的真实 App 页面为准，不能用 workflow、manifest 或 APK 文件存在替代。
-- Docker 镜像构建、Android stable OTA 与 native workflow 总运行时间最多 30 分钟；服务器主源传播验证和镜像部署整步保护同样最多 30 分钟。URL、目标结构、预期大小或摘要等确定性参数错误必须首轮失败，禁止伪装成传播慢持续重试。
+- Docker 镜像构建、Android stable OTA 与 native workflow 总运行时间最多 30 分钟；服务器主源传播验证和镜像部署整步保护同样最多 30 分钟。部署脚本必须限制整次变更操作的总耗时，不能把 game-server 与 web 两个串行镜像各自等待 30 分钟后仍称为“整步 30 分钟”。URL、目标结构、预期大小或摘要等确定性参数错误必须首轮失败，禁止伪装成传播慢持续重试。

@@ -133,7 +133,9 @@ BG_DEPLOY_RUNNER_URL=http://host.docker.internal:18761
 BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
 ```
 
-> **镜像拉取超时口径**：直接执行 `deploy-image.sh` 时，单次 `docker pull` 默认最多等待 1800 秒（30 分钟）。`boardgame-deploy-runner` 安装脚本会在宿主机环境文件里设置 `DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0`，避免内外两层重复计时；后台部署改由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS=1800` 提供 30 分钟整步保护。超过 30 分钟仍未完成时必须失败并保留当前运行版本，不得继续无限等待。
+> **部署总超时口径**：直接执行 `deploy-image.sh deploy/update/deploy-local/update-local/rollback/rollback-last` 时，`DEPLOY_TOTAL_TIMEOUT_SECONDS=1800` 会为整次变更操作提供 30 分钟总时限；`DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=1800` 只是单个镜像拉取的次级保护，不能替代整次部署总时限。`boardgame-deploy-runner` 安装脚本会把脚本内层总时限和单镜像时限都设为 `0`，统一由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS=1800` 提供唯一的 30 分钟整步保护，避免重复计时。超过总时限必须失败，不得继续后台假卡死；重新执行前先检查当前容器状态，确认旧版本仍在运行或完成必要回退。
+>
+> **脚本执行入口**：需要变更生产状态的操作必须先把 `deploy-image.sh` 下载为文件，再执行该文件。禁止继续使用 `curl ... | bash` 直接管道执行变更操作，因为管道模式无法安全自重入并施加整次部署总时限。
 >
 > **后台进度日志口径**：runner 环境同时设置 `COMPOSE_PROGRESS=plain` 与 `DOCKER_CLI_HINTS=false`，让 Docker Compose 输出适合后台轮询展示的纯文本拉取阶段，而不是只适合终端刷新的动态进度。
 
