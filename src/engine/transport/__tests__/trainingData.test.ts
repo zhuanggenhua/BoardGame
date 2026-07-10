@@ -313,6 +313,6 @@ describe('trainingData', () => {
         expect(compose).toContain('TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS: ${TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS:-600000}');
         expect(compose).toContain('TRAINING_DATA_PENDING_RETENTION_HOURS: ${TRAINING_DATA_PENDING_RETENTION_HOURS:-24}');
         expect(compose).toContain('- training_data:/data/training-data');
-        expect(compose).toMatch(/\n {2}training_data:\n {4}driver: local/);
+        expect(compose).toMatch(/\r?\n {2}training_data:\r?\n {4}driver: local/);
     });
 });
