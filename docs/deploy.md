@@ -175,6 +175,7 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
 镜像由 GitHub Actions 自动构建并推送到 GHCR（`.github/workflows/docker-publish.yml`）：
 
 - **触发条件**：push 到 `main` 分支 或 创建 `v*` 标签
+- **构建上限**：单次镜像构建与推送 workflow 最多运行 30 分钟；超时必须失败，禁止让部署编排无限等待
 - **镜像地址**：
   - `ghcr.io/zhuanggenhua/boardgame-game:latest`
   - `ghcr.io/zhuanggenhua/boardgame-web:latest`
