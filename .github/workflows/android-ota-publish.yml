@@ -62,7 +62,10 @@ concurrency:
 jobs:
   publish-ota:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-ota-production' || 'android-ota-nonprod' }}
+    env:
+      BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
 
     steps:
       - name: Resolve publish parameters

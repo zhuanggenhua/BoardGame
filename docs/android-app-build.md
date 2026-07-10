@@ -408,6 +408,7 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update-titl
 - 只允许通过 Actions `Android OTA Publish` 手动触发；普通 `push main` 不得自动发布 **stable OTA**。
 - `stable` 应绑定 `android-ota-production` Environment 审批。
 - **原生壳更新始终手动发包**，不走 `main` 自动流程。
+- Android stable OTA 与原生发布 workflow 的整次运行上限为 30 分钟；资源 URL、校验目标、预期大小或摘要无效时必须立即失败，不得进入长时间传播重试。
 - 手动触发时，workflow 只保留发布必要参数；原生版本门禁参数已移除。
 - 如需桥接旧客户端曾经记住的错误大版本，可填 `ota_version_base=6.0.0`，生成 `6.0.0-ota-...` 内部游标。
 - 后台发布中心触发 OTA 时，默认通过 GitHub Actions dispatch 发起 `android-ota-publish.yml`，避免生产机本地构建。生产环境至少配置：

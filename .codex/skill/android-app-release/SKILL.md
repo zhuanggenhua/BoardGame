@@ -114,7 +114,8 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - `--no-force-update` 或等价的 `forceUpdate=false` 必须被拒绝；不能静默发布成后台 OTA。
 - 客户端启动检查遇到强制 OTA 时，必须显示阻塞式更新界面，下载完成后立即切换 bundle。
 - `--force-update` 只作为旧命令兼容参数保留；不传也必须强制更新。
-- 发布后健康检查必须区分“服务器传播尚未完成”和“程序参数无效”。URL 类型错误、`Invalid URL`、`[object Object]` 等参数错误必须首轮立即失败，禁止套用最长 3 小时的传播等待反复重试。
+- 发布后健康检查必须区分“服务器传播尚未完成”和“程序参数无效”。URL 类型错误、`Invalid URL`、`[object Object]`、目标结构错误、预期大小或摘要无效必须首轮立即失败，禁止套用传播等待反复重试。
+- Android stable OTA 与 native workflow 的整次运行上限统一为 30 分钟；服务器主源传播验证和镜像部署整步保护也统一为 30 分钟。超过上限必须失败并保留原线上版本，不得继续后台假卡死。
 
 ## 3. 路径选择
 

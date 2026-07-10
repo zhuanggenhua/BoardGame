@@ -336,7 +336,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 5. **服务器活动集合必须闭合到真实对象**：所有 `official/**/assets-manifest.json` 都是普通素材根，必须按 `basePrefix + files 键 + variants 扩展名` 展开真实对象；移动包 `file-index.files[].path` 必须映射为 `official/<path>`。OTA、游戏包和原生安装包仍只保留当前公开清单递归引用对象，不复制历史全集。活动集合默认上限为 4GiB，切换后必须至少保留 5GiB 磁盘空闲。
 6. **9GiB 门禁只约束关键 R2 灾备**：后台灾备预计超过 9GiB 时必须保留关键对象队列并输出容量告警，等待安全清理后重试；非关键对象不得进入队列。不得因此撤销、阻塞或延迟已经通过服务器校验的正式发布。
 7. **清理必须先归档、校验和演练恢复**：R2 候选只有在引用核对、服务器隔离归档、数量/大小/哈希校验和单对象原 key 恢复演练完成后才允许删除。没有用户明确删除许可时，只能生成计划和归档。
-8. **公开链路验证最多等待 3 小时**：服务器原子切换完成后，发布脚本等待公开 URL 返回 `X-Asset-Source: server`，默认上限为 3 小时（`BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS=10800000`）。该等待只处理 Tunnel、Worker 或缓存传播，不等待 R2 灾备。
+8. **公开链路验证最多等待 30 分钟**：服务器原子切换完成后，发布脚本等待公开 URL 返回 `X-Asset-Source: server`，默认上限为 30 分钟（`BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS=1800000`）。该等待只处理 Tunnel、Worker 或缓存传播，不等待 R2 灾备；URL 类型、目标结构、预期大小或摘要无效时必须首轮立即失败，禁止进入传播重试。
 
 ### 上传收口
 
