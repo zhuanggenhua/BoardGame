@@ -1159,7 +1159,8 @@
     "ninja_disguise_choose_base_title": "Disguise: choose a base",
     "ninja_disguise_choose_play_title": "Disguise: choose the minion card from your hand to play",
     "ninja_disguise_choose_second_play_title": "Disguise: choose the second minion card from your hand to play",
-    "faction_implementation_in_progress": "Implementation in Progress"
+    "faction_implementation_in_progress": "Implementation in Progress",
+    "paladins_heavenly_soldiers_descend_skip_minion_option": "Skip the extra minion"
   },
   "mechanics": {
     "madness": {
@@ -1575,6 +1576,10 @@
     "all_stars_pod": {
       "name": "All-Stars (POD)",
       "description": "A POD all-star roster of one-card highlights from many Smash Up factions."
+    },
+    "paladins": {
+      "name": "Paladins",
+      "description": "A custom faction built around talent abilities, +1 power counters, and titan payoff turns."
     }
   },
   "tutorial": {
@@ -6318,6 +6323,66 @@
     },
     "all_stars_king_rex_pod": {
       "name": "King Rex"
+    },
+    "paladins_roland": {
+      "name": "Roland",
+      "abilityText": "Talent: If this minion has more than 8 power and Seraphim is not in play, play Seraphim here."
+    },
+    "paladins_devout_pastor": {
+      "name": "Devout Pastor",
+      "abilityText": "Talent: If you do not have a titan here, draw a card, then discard a card."
+    },
+    "paladins_senior_mentor": {
+      "name": "Senior Mentor",
+      "abilityText": "Talent: Place a +1 power counter on a minion here that has no power counters."
+    },
+    "paladins_novice_knight": {
+      "name": "Novice Knight",
+      "abilityText": "Ongoing: After one of your minions here uses a talent ability for the first time each turn, place a +1 power counter on this minion."
+    },
+    "paladins_durandal": {
+      "name": "Durandal",
+      "effectText": "Play on one of your minions.\nOngoing: This minion has “Talent: If you have used fewer than 3 other talent abilities here this turn and Seraphim is not in play, play Seraphim here.”"
+    },
+    "paladins_knights_duel": {
+      "name": "Knight's Duel",
+      "effectText": "One of your minions duels another player’s minion at the same base. Destroy the losing minion. If you win the duel, place a +1 power counter on that minion."
+    },
+    "paladins_battle_cry": {
+      "name": "Battle Cry",
+      "effectText": "Each of your minions has +1 power until the end of the turn. Each of your minions that used a talent ability this turn has an additional +1 power until the end of the turn."
+    },
+    "paladins_holy_light_blessing": {
+      "name": "Holy Light Blessing",
+      "effectText": "Play on one of your minions.\nOngoing: This minion has “Talent: This minion has +3 power until the end of the turn.”"
+    },
+    "paladins_expel": {
+      "name": "Expel",
+      "effectText": "Destroy an action played on a minion or base."
+    },
+    "paladins_spread_the_oracle": {
+      "name": "Spread the Oracle",
+      "effectText": "Play on one of your minions.\nOngoing: This minion has “Talent: You may play an extra action this turn.”"
+    },
+    "paladins_climb_the_holy_stairs": {
+      "name": "Climb the Holy Stairs",
+      "effectText": "Play on one of your minions.\nOngoing: After this minion uses a talent ability, place a +1 power counter on this minion. Talent: If this minion has more than four +1 power counters and Seraphim is not in play, play Seraphim here and return this action to your hand."
+    },
+    "paladins_heavenly_soldiers_descend": {
+      "name": "Heavenly Soldiers Descend",
+      "effectText": "Special: Before a base scores, play an extra minion here and use the talent ability of one of your minions here."
+    },
+    "paladins_seraphim": {
+      "name": "Seraphim",
+      "effectText": "Titan: Counts as your titan at this base for power and titan clashes."
+    },
+    "base_paladins_monastery": {
+      "name": "Monastery",
+      "abilityText": "After a titan is played here, that titan’s owner draws a card."
+    },
+    "base_paladins_roncesvalles_gorge": {
+      "name": "Roncesvalles Gorge",
+      "abilityText": "After a titan wins a clash here, that titan’s owner gains 1 VP."
     }
   },
   "debug": {
@@ -6367,5 +6432,6 @@
     "gameOver": "Game Over",
     "scoreTrack": "Score Track",
     "madnessPenalty": "Madness ×{{count}} (-{{penalty}})"
-  }
+  },
+  "interactions": {}
 }
