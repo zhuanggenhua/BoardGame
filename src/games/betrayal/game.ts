@@ -1,4 +1,5 @@
 import { createBaseSystems, createGameEngine } from '../../engine';
+import { registerGameAiRuntime } from '../../engine/ai';
 import { registerCriticalImageResolver } from '../../core';
 import type {
     Command,
@@ -11,6 +12,8 @@ import type {
 } from '../../engine/types';
 import { createCheatSystem } from '../../engine/systems';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
+import { createBetrayalAiRuntime } from './ai';
+import { BETRAYAL_COMMANDS } from './commands';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     BETRAYAL_EXPLORER_CATALOG,
@@ -310,26 +313,6 @@ export interface BetrayalCore {
     scenarioRuntime: BetrayalScenarioRuntimeStatus;
     endgameResult: BetrayalEndgameResult | null;
 }
-
-export const BETRAYAL_COMMANDS = {
-    SELECT_EXPLORER: 'SELECT_EXPLORER',
-    CONFIRM_EXPLORER: 'CONFIRM_EXPLORER',
-    START_SCENARIO: 'START_SCENARIO',
-    MOVE_TO_ROOM: 'MOVE_TO_ROOM',
-    EXPLORE_ROOM: 'EXPLORE_ROOM',
-    USE_POSSESSION: 'USE_POSSESSION',
-    USE_RABBIT_FOOT: 'USE_RABBIT_FOOT',
-    RESOLVE_EVENT_CHOICE: 'RESOLVE_EVENT_CHOICE',
-    USE_ROOM_EFFECT: 'USE_ROOM_EFFECT',
-    TRADE_POSSESSION: 'TRADE_POSSESSION',
-    LOOT_CORPSE: 'LOOT_CORPSE',
-    END_TURN: 'END_TURN',
-    HAUNT_ATTACK: 'HAUNT_ATTACK',
-    LEARN_ABOUT_JACK: 'LEARN_ABOUT_JACK',
-    STUDY_EXORCISM: 'STUDY_EXORCISM',
-    EXORCISE_JACK: 'EXORCISE_JACK',
-    COMPLETE_SCENARIO: 'COMPLETE_SCENARIO',
-} as const;
 
 export type BetrayalCommandType = typeof BETRAYAL_COMMANDS[keyof typeof BETRAYAL_COMMANDS];
 
@@ -5868,6 +5851,16 @@ export const engineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betr
     disableUndo: true,
 });
 
+export const betrayalAiRuntime = createBetrayalAiRuntime({
+    validate: (state, command) => BetrayalDomain.validate(
+        state as MatchState<BetrayalCore>,
+        command as BetrayalCommand,
+    ),
+});
+
 registerCriticalImageResolver('betrayal', betrayalCriticalImageResolver);
+registerGameAiRuntime(betrayalAiRuntime);
 
 export default engineConfig;
+export { BETRAYAL_COMMANDS } from './commands';
+export { BETRAYAL_AUDIO_CONFIG as audioConfig } from './audio.config';

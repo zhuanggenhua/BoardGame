@@ -233,20 +233,28 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("defaultValue: '选择轮盘格'");
         expect(boardSource).toContain('data-testid={`qidahen-wheel-move-target-${choice.id}`}');
         expect(boardSource).toContain('data-tutorial-id={`qidahen-wheel-move-${choice.id}`}');
-        expect(boardSource).toContain('directExecuteOnClick={!isTouchLikeWheelInteraction}');
-        expect(boardSource).toContain("const mediaQuery = safeMatchMedia('(hover: none), (pointer: coarse), (any-pointer: coarse)');");
-        expect(boardSource).toContain('return subscribeMediaQueryChange(mediaQuery, update);');
+        expect(boardSource).toContain('directExecuteOnClick');
+        expect(boardSource).not.toContain("const mediaQuery = safeMatchMedia('(hover: none), (pointer: coarse), (any-pointer: coarse)');");
+        expect(boardSource).not.toContain('return subscribeMediaQueryChange(mediaQuery, update);');
         expect(boardSource).toContain('if (directExecuteOnClick) {');
-        expect(boardSource).toContain('canActivateMove={(moveId, selected) => {');
-        expect(boardSource).toContain('return isTouchLikeWheelInteraction');
-        expect(boardSource).toContain('? (selected');
+        expect(boardSource).toContain('canActivateMove={(moveId) => (');
         expect(boardSource).toContain('isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)');
-        expect(boardSource).toContain('isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId))');
-        expect(boardSource).toContain(': isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);');
+        expect(boardSource).not.toContain('return isTouchLikeWheelInteraction');
+        expect(boardSource).not.toContain('isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId))');
         expect(boardSource).not.toContain('qidahen-wheel-next-step-choice-${choice.id}');
         expect(boardSource).not.toContain('onSelectChoice={executeWheelMove}');
         expect(boardSource).not.toContain('发亮的绿色格就是下一步');
         expect(boardSource).not.toContain('点左上发亮的绿色格');
+    });
+
+    it('轮盘必须显示共享行动标记，并且只高亮当前阶段真正可点击的落点', () => {
+        expect(boardSource).toContain("wheelMarker: 'qidahen/markers/chronology-year-marker'");
+        expect(boardSource).toContain('const activatableMoveChoices = moveChoices.filter');
+        expect(boardSource).toContain('activatableMoveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length)');
+        expect(boardSource).toContain('data-testid="qidahen-wheel-current-marker"');
+        expect(boardSource).toContain('data-wheel-current-position={selectedId}');
+        expect(boardSource).toContain('h-[46px] w-[46px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full');
+        expect(boardSource).toContain('className="h-full w-full scale-[1.08] object-cover"');
     });
 
     it('教程高亮锚点会真实挂到棋盘主区域，而不是只留 tutorial manifest', () => {
@@ -410,7 +418,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("topLevelMapSelectionGuide && tutorialStep?.id !== 'choose-grant-pardon-target'");
         expect(boardSource).toContain('const buildQidahenFocusedMapViewport = (');
         expect(boardSource).toContain('const buildQidahenFocusedMapViewportForPoints = (');
-        expect(boardSource).toContain('const autoFocusMapTargetRegionIds = React.useMemo(');
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIdsKey = topLevelMapSelectionGuide?.candidates');
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIds = autoFocusMapTargetRegionIdsKey');
         expect(boardSource).toContain('const activeTargetPoint = getTopLevelGuideRegionMapPoint(activeTargetRegionId);');
         expect(boardSource).toContain('const focusRegionIds = [');
         expect(boardSource).toContain('? buildQidahenFocusedMapViewport(activeTargetPoint, 1.82)');
@@ -639,7 +648,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;');
         expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (handCount: number): number => {');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
-        expect(boardSource).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 72;');
+        expect(boardSource).toContain('const dockBottomInset = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET : BOTTOM_DOCK_INSET;');
+        expect(boardSource).toContain('bottom: dockBottomInset,');
         expect(boardSource).toContain('mapTargetSelectionActive?: boolean;');
         expect(boardSource).toContain("className={`${mapTargetSelectionActive ? 'pointer-events-none' : 'pointer-events-auto'} absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible`}");
         expect(boardSource).toContain("data-map-target-selection-active={mapTargetSelectionActive ? 'true' : undefined}");
@@ -821,6 +832,19 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('vectorEffect="non-scaling-stroke"');
         expect(boardSource).not.toContain('points={pointLabel}');
         expect(boardSource).not.toContain('const arrowHeadPath = buildQidahenGuideArrowHeadPath(pathPoints');
+    });
+
+    it('地图自动聚焦必须使用稳定目标键，并禁止把相同视角反复写回状态', () => {
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIdsKey = topLevelMapSelectionGuide?.candidates');
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIds = autoFocusMapTargetRegionIdsKey');
+        expect(boardSource).toContain('autoFocusMapTargetRegionIdsKey.split');
+        expect(boardSource).toContain('autoFocusMapTargetRegionIdsKey,');
+        expect(boardSource).toContain('setMapViewport((currentViewport) => (');
+        expect(boardSource).toContain('currentViewport.zoom === viewport.zoom');
+        expect(boardSource).toContain('currentViewport.panX === viewport.panX');
+        expect(boardSource).toContain('currentViewport.panY === viewport.panY');
+        expect(boardSource).not.toContain('[topLevelMapSelectionGuide],');
+        expect(boardSource).not.toContain('setMapViewport(viewport);');
     });
 
     for (const testId of REQUIRED_TEST_IDS) {

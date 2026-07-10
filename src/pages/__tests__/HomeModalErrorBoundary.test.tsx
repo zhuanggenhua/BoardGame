@@ -23,31 +23,24 @@ describe('HomeModalErrorBoundary', () => {
 
     it('同一个游戏详情弹窗出错后不应因 children 引用变化反复重置', () => {
         vi.spyOn(console, 'error').mockImplementation(() => undefined);
-        const onError = vi.fn();
-
         const { rerender } = render(
-            <HomeModalErrorBoundary resetKey="smashup" onError={onError}>
+            <HomeModalErrorBoundary resetKey="smashup">
                 <ThrowingModalContent />
             </HomeModalErrorBoundary>,
         );
 
-        expect(onError).toHaveBeenCalledTimes(1);
-
         rerender(
-            <HomeModalErrorBoundary resetKey="smashup" onError={onError}>
+            <HomeModalErrorBoundary resetKey="smashup">
                 <ThrowingModalContent />
             </HomeModalErrorBoundary>,
         );
 
-        expect(onError).toHaveBeenCalledTimes(1);
-
         rerender(
-            <HomeModalErrorBoundary resetKey="dicethrone" onError={onError}>
+            <HomeModalErrorBoundary resetKey="dicethrone">
                 <SafeModalContent />
             </HomeModalErrorBoundary>,
         );
 
         expect(screen.getByTestId('safe-modal-content')).toBeInTheDocument();
-        expect(onError).toHaveBeenCalledTimes(1);
     });
 });

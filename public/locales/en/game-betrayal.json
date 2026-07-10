@@ -151,6 +151,12 @@
       "title": "First Scenario",
       "objectiveLabel": "Objective",
       "objective": "Explore before the haunt; after it begins, defeat the traitor, place two exorcism circles, and banish Jack's Spirit.",
+      "heroGoalLabel": "Hero Goal",
+      "heroGoal": "Investigate Jack and study two exorcism circles; if needed, knock down the traitor first, then exorcise once Jack's Spirit appears.",
+      "traitorGoalLabel": "Traitor Goal",
+      "traitorGoal": "Stop the heroes from completing the circles and exorcism. Chase and attack them; the traitor wins if every hero falls.",
+      "monsterGoalLabel": "Jack's Spirit",
+      "monsterGoal": "After the traitor is knocked down, Jack's Spirit appears as a monster. The traitor controls it, moves it, attacks heroes, and tries to return to the corpse room to revive.",
       "statusLabel": "Current State",
       "haunt": "Haunt",
       "hauntValue": "Crimson Jack Returns",
@@ -289,61 +295,60 @@
   },
   "tutorial": {
     "basicSetup": {
-      "title": "Setup and Core Loop",
-      "description": "Start from the pre-haunt board and learn the first turn decision entry point.",
+      "title": "Core Turn: Use, Move, Explore",
+      "description": "Start from the pre-haunt board, then use a possession, move, explore, and resolve a discovery check.",
       "steps": {
-        "setupRuntime": "Start from the first scenario before the haunt: explorers are already chosen, so you can focus on what to do during the turn.",
-        "objectiveAndTurn": "Before the haunt, your job is to keep exploring the house. On your turn, the five core actions are move, explore, trade, use, and end turn.",
-        "traitsAndSpeed": "Speed is the first trait to read here. It tells you the movement range your explorer can work with before spending any steps.",
-        "movesRemaining": "The MOVE medallion in the upper-right shows how many steps you still have right now this turn. That current remainder is not always the same as your full speed value.",
-        "roomBoard": "The central room board is the main play area. First read where you are, which rooms are already connected, and where exploration can continue.",
-        "inventoryAndHelp": "The lower-left area is your inventory. Items and omens stay here, and later use, trade, or effect decisions start from those cards.",
-        "finish": "You now know to read the goal, action bar, speed, and room board first. The next chapter walks through use, move, and explore."
-      }
-    },
-    "moveExploreUse": {
-      "title": "Move, Explore, and Use",
-      "description": "Walk through a common pre-haunt rhythm: use a possession, move to a connected room, then explore a new room.",
-      "steps": {
-        "setupRuntime": "Start from the first scenario before the haunt: you already hold the Book, and your current position can still lead to more rooms.",
-        "useBook": "Click the Book card in your inventory first so it gets a selection frame, then click Use. The Book steers the next non-combat check toward Knowledge, making the upcoming discovery easier for Jaden to handle.",
-        "useRope": "Use the rope first. It grants extra movement so you can keep the room exploration going.",
-        "openMoveTargets": "Now choose Move. Rooms glowing green are places you can still reach this turn.",
-        "moveToHallway": "Move into the Hallway. It still connects to a new exit, so the next step can reveal an unknown room.",
-        "moveToGrandStaircase": "Move into the Grand Staircase. It still connects to a new exit, so the next step can reveal an unknown room.",
-        "exploreUpper": "Explore the glowing unknown room. The room flips over, then immediately draws the matching discovery card.",
-        "finish": "This Knowledge check roll is not final yet. You may click the Rabbit's Foot in your inventory, then click the die you want to reroll; click Continue only when you do not want to change the roll."
-      }
-    },
-    "crimsonJack": {
-      "title": "Crimson Jack Objective",
-      "description": "Explain what the heroes and the traitor are trying to do once the first haunt begins.",
-      "steps": {
-        "setupHaunt": "Start from the first scenario after the haunt begins, then read each side's goal.",
-        "hauntReveal": "The first haunt is Crimson Jack Returns. Once the haunt starts, the revealer becomes the traitor.",
-        "heroGoal": "The hero line has three goals: learn about Jack, study two exorcism circles, then banish Jack's Spirit.",
-        "traitorGoal": "The traitor wants to kill the heroes, or return to life through Jack's Spirit. Rooms, movement, and attacks still happen on the same board.",
-        "finish": "You should now understand that this haunt is driven by investigation, circles, Jack's Spirit, and different goals for each side."
+        "setupRuntime": "The haunt has not started yet. Walk through a core turn: read the board, use a possession, move, explore an unknown room, and resolve the discovery.",
+        "objectiveAndTurn": "Your goal is to keep exploring the house. The bottom actions are the main entry points: Move, Explore, Trade, Use, and End Turn.",
+        "traitsAndSpeed": "Read Speed before moving. Speed tells you the farthest you can move this turn.",
+        "movesRemaining": "The movement medallion in the upper-right shows how many steps remain right now. It decreases as you move, so it may not equal your full Speed.",
+        "roomBoard": "The central room board is the main play area. Check where you are, which rooms connect, and where exploration can continue.",
+        "inventoryAndHelp": "The lower-left area is your inventory. Items and omens stay here; later use, trade, and effect choices start from these cards.",
+        "useBook": "Select the Book in your inventory, then click Use. The Book points the next non-combat check toward Knowledge.",
+        "openMoveTargets": "Now choose Move. Glowing rooms are places you can still reach this turn.",
+        "moveToHallway": "Move into the Hallway. It connects to a new exit, so the next step can reveal an unknown room.",
+        "exploreUpper": "Select the explorable face-down room. It reveals as a new room, then immediately draws the matching discovery card.",
+        "finish": "The discovery has entered a Knowledge check. After the dice stop, you may use Rabbit's Foot to reroll one die; continue only when you do not want to change the result."
       }
     },
     "hauntActions": {
-      "title": "Banish Jack's Spirit",
-      "description": "Start from the later first-scenario haunt state, check the reference card, confirm the haunt actions, and complete the exorcism.",
+      "title": "After the Haunt: Read the Goal, Then Exorcise",
+      "description": "After the haunt begins, see why the goal changed before finishing the hero exorcism check.",
       "steps": {
-        "setupReadyToExorcise": "The heroes have learned about Jack and prepared two exorcism circles. Now they need to share a room with Jack's Spirit and complete the exorcism.",
-        "helpEntry": "When haunt terms need a refresher, open the reference card for both-side reminders. It helps you read the haunt without changing the current turn.",
-        "hauntActions": "The haunt-specific actions still live in the bottom action row: learn, study, exorcise, and attack when needed.",
-        "exorciseJack": "Exorcise Jack now. On success, the survivors banish Jack's Spirit.",
-        "endgameReview": "Jack's Spirit is banished, and the survivors escape."
+        "setupReadyToExorcise": "Exploration and omens can push the house into the haunt. This is now Crimson Jack Returns: the heroes must banish Jack's Spirit, and the traitor must stop them.",
+        "helpEntry": "The goal has changed after the haunt: heroes are no longer just exploring. Open the haunt reference to see how each side wins.",
+        "hauntActions": "The exorcism is not appearing out of nowhere. The heroes have already investigated Jack and studied two exorcism circles, so the last step is exorcising him.",
+        "exorciseJack": "Use Exorcise now to make a Sanity check. Once the dice settle, compare the total with the haunt requirement.",
+        "endgameReview": "The exorcism succeeds. Jack's Spirit is banished, and the survivors escape."
+      }
+    },
+    "heroAttackPath": {
+      "title": "Hero Attacks the Traitor",
+      "description": "After opening the haunt reference, show how a hero uses the real attack entry to pressure the traitor.",
+      "steps": {
+        "setupHeroAttack": "Now look at the hero attack branch. The hero has investigated Jack; when the traitor is in the same room, the hero can attack to help release Jack's Spirit.",
+        "heroAttackObjective": "Open the haunt reference first. Heroes do more than exorcise: before the final exorcism, a hero may need to attack the traitor to advance the scenario.",
+        "attackTraitor": "Choose Attack Traitor. Both sides roll dice; because the hero investigated Jack, this attack gains an extra bonus.",
+        "heroAttackReview": "The hero attack has resolved. This view shows the attack dice, the bonus, and the result instead of only describing the rule."
+      }
+    },
+    "jackSpiritPath": {
+      "title": "Jack's Spirit Acts",
+      "description": "After the traitor falls, show Jack's Spirit continuing as a monster that moves and attacks heroes.",
+      "steps": {
+        "setupJackSpirit": "After the traitor is knocked down, Jack's Spirit has appeared and becomes the active threat. It is not background text; it is a monster that keeps acting.",
+        "jackSpiritObjective": "Open the haunt reference first. Jack's Spirit attacks heroes and tries to return to the corpse room so the traitor can revive.",
+        "jackSpiritAttack": "Choose a hero in the same room for the monster attack. Jack's Spirit uses the same real attack roll flow.",
+        "jackSpiritReview": "Jack's Spirit attack has resolved. The same attack dice table shows the dice, total, and outcome."
       }
     },
     "traitorPath": {
-      "title": "Traitor Attack Route",
-      "description": "Enter the first scenario from the traitor's turn and see how the traitor defeats the heroes.",
+      "title": "If the Traitor Succeeds",
+      "description": "Switch to the traitor side and see the alternate ending.",
       "steps": {
-        "setupTraitorTurn": "It is Daryl's traitor turn. The heroes are wounded, and the traitor can keep pressing the attack.",
-        "traitorObjective": "The traitor is not studying circles. The goal is to defeat every hero; if the traitor falls first, Jack's Spirit may take over and try to return.",
-        "attackHero": "Use the room focus entry to attack a hero in the same room. The attack compares both sides and deals damage from the difference.",
+        "setupTraitorTurn": "Now switch to the traitor side. This is not the next step after the hero victory; it demonstrates what happens if the traitor's chase succeeds.",
+        "traitorObjective": "The traitor does not study circles. The traitor closes in, attacks, and tries to knock down every hero.",
+        "attackHero": "Choose a hero in the same room for the enemy attack. The attack rolls both sides, and the difference becomes damage.",
         "traitorFinish": "When every hero falls, Crimson Jack prevails and the traitor wins."
       }
     }

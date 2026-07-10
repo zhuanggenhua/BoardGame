@@ -37,6 +37,29 @@ describe('diceStagePolicy', () => {
         })).toBe(true);
     });
 
+    it('主阶段处理自己发起的奖励骰改面交互时应允许操作骰子', () => {
+        expect(canInteractDiceForCurrentBoard({
+            ...baseParams,
+            isSelfView: false,
+            isViewRolling: false,
+            isRollPhase: false,
+            diceInteractionPlayerId: '1',
+            hasDiceMultistepInteraction: true,
+        })).toBe(true);
+    });
+
+    it('主阶段处理自己发起的奖励骰改面交互时，开启 3D 应显示棋盘骰台', () => {
+        expect(shouldUseBoardDiceStage({
+            ...baseParams,
+            boardDice3dEnabled: true,
+            isSelfView: false,
+            isViewRolling: false,
+            isRollPhase: false,
+            diceInteractionPlayerId: '1',
+            hasDiceMultistepInteraction: true,
+        })).toBe(true);
+    });
+
     it('对方投掷阶段我方响应改对方骰子时，关闭 3D 开关仍应保持旧右侧骰盘路径', () => {
         expect(shouldUseBoardDiceStage({
             ...baseParams,
@@ -54,12 +77,14 @@ describe('diceStagePolicy', () => {
             ...baseParams,
             boardDice3dEnabled: false,
             hasDiceMultistepInteraction: false,
+            rollCount: 0,
         })).toBe(false);
 
         expect(shouldUseBoardDiceStage({
             ...baseParams,
             boardDice3dEnabled: true,
             hasDiceMultistepInteraction: false,
+            rollCount: 0,
         })).toBe(true);
     });
 

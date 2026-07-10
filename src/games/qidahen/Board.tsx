@@ -10,7 +10,6 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useGameAudio } from '../../lib/audio/useGameAudio';
-import { safeMatchMedia, subscribeMediaQueryChange } from '../../lib/mediaQuery';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
@@ -121,14 +120,15 @@ const STAGE_HEIGHT = 1080;
 
 const ASSETS = {
     mainMap: 'qidahen/board/qidahen-main-map',
-    coverCard: 'qidahen/cards/backs/qidahen-cover-card',
-    koreaCard: 'qidahen/cards/backs/korea-card-back',
-    mingCard: 'qidahen/cards/backs/ming-card-back',
+    coverCard: 'qidahen/cards/backs/qidahen-common-card-back',
+    koreaCard: 'qidahen/cards/backs/korea-deck-back',
+    mingCard: 'qidahen/cards/backs/ming-deck-back',
     mongolCard: 'qidahen/cards/backs/mongol-card-back',
     jinCard: 'qidahen/cards/backs/jin-card-back',
     mingMarker: 'qidahen/markers/ming-control-diplomacy-marker-a',
     mongolMarker: 'qidahen/markers/mongol-control-diplomacy-marker-a',
     jinMarker: 'qidahen/markers/jin-control-diplomacy-marker-a',
+    wheelMarker: 'qidahen/markers/chronology-year-marker',
 } as const;
 
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
@@ -380,6 +380,7 @@ const CARD_DIMENSIONS = {
 } as const;
 
 const BOTTOM_DOCK_INSET = 0;
+const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 72;
 const HAND_CARD_SELECTED_LIFT = 26;
 const QIDAHEN_STAGE_BG = '#c8a970';
 const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;
@@ -2841,14 +2842,18 @@ const WheelPanel: React.FC<{
     const [activeMoveId, setActiveMoveId] = React.useState(selectedMoveId);
     const selectedIndex = Math.max(0, WHEEL_SECTORS.findIndex((sector) => sector.id === selectedId));
     const selectedAngle = WHEEL_SECTORS[selectedIndex]?.angle ?? -90;
-    const activeMove = moveChoices.find((choice) => choice.id === activeMoveId)
-        ?? moveChoices.find((choice) => choice.id === selectedMoveId)
-        ?? moveChoices[0];
+    const activatableMoveChoices = moveChoices.filter(
+        (choice) => canActivateMove?.(choice.id, choice.id === selectedMoveId) ?? true,
+    );
+    const activeMove = activatableMoveChoices.find((choice) => choice.id === activeMoveId)
+        ?? activatableMoveChoices.find((choice) => choice.id === selectedMoveId)
+        ?? activatableMoveChoices[0];
     const activeSummary = activeMove ? `${activeMove.label}：${activeMove.drawText}` : moveSummary;
     const activeMoveTargetIndex = activeMove ? (selectedIndex + activeMove.steps) % WHEEL_SECTORS.length : selectedIndex;
     const moveTargetIndices = new Set(
-        moveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length),
+        activatableMoveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length),
     );
+    const currentMarkerPoint = polarToPoint(WHEEL_CENTER, WHEEL_INNER_RADIUS + 30, selectedAngle);
 
     React.useEffect(() => {
         setActiveMoveId(selectedMoveId);
@@ -3100,6 +3105,24 @@ const WheelPanel: React.FC<{
                         })}
                     </g>
                 </svg>
+                <div
+                    className="pointer-events-none absolute z-10 h-[46px] w-[46px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
+                    data-testid="qidahen-wheel-current-marker"
+                    data-wheel-current-position={selectedId}
+                    style={{
+                        left: `${(currentMarkerPoint.x / WHEEL_VIEW) * 100}%`,
+                        top: `${(currentMarkerPoint.y / WHEEL_VIEW) * 100}%`,
+                        filter: 'drop-shadow(0 2px 3px rgba(31, 22, 15, 0.72))',
+                    }}
+                >
+                    <OptimizedImage
+                        src={ASSETS.wheelMarker}
+                        alt={t('board.wheel.currentMarker', { defaultValue: '轮盘行动标记当前位置' })}
+                        className="h-full w-full scale-[1.08] object-cover"
+                        draggable={false}
+                        placeholder={false}
+                    />
+                </div>
             </div>
 
             <div
@@ -4300,6 +4323,21 @@ const HandZone: React.FC<{
     isTutorialTargetAllowed,
 }) => {
     const { t } = useTranslation('game-qidahen');
+    const [isMobileLandscapeViewport, setIsMobileLandscapeViewport] = React.useState(() => (
+        typeof window !== 'undefined'
+        && window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH
+        && window.innerWidth > window.innerHeight
+    ));
+    React.useEffect(() => {
+        const updateViewportMode = () => {
+            setIsMobileLandscapeViewport(window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH && window.innerWidth > window.innerHeight);
+        };
+        updateViewportMode();
+        window.addEventListener('resize', updateViewportMode);
+        return () => {
+            window.removeEventListener('resize', updateViewportMode);
+        };
+    }, []);
     const currentFactionId = handLimitDiscardSelection?.factionId
         ?? (playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId);
     if (!currentFactionId) {
@@ -4313,12 +4351,16 @@ const HandZone: React.FC<{
         || (core.sunYuanhuaTechSelection?.selectedCardIds.includes(card.id) ?? false)
         || (core.gaoDiDispatchSelection?.selectedCardId === card.id)
     );
+    const dockBottomInset = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET : BOTTOM_DOCK_INSET;
 
     return (
         <div
             className="pointer-events-none absolute inset-x-0 bottom-0 z-[80]"
             data-testid="qidahen-bottom-dock"
-            style={{ height: BOTTOM_DOCK_HEIGHT }}
+            style={{
+                height: BOTTOM_DOCK_HEIGHT,
+                bottom: dockBottomInset,
+            }}
         >
             <div className="pointer-events-auto absolute left-[44px]" data-testid="qidahen-draw-anchor" style={{ bottom: BOTTOM_DOCK_INSET }}>
                 <DeckStack
@@ -5180,7 +5222,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         && core.confirmedActionId != null
         && core.payment.required > 0;
     const [mapViewport, setMapViewport] = React.useState<QidahenMapViewport>(DEFAULT_QIDAHEN_MAP_VIEWPORT);
-    const [isTouchLikeWheelInteraction, setIsTouchLikeWheelInteraction] = React.useState(false);
     const [magnifyTarget, setMagnifyTarget] = React.useState<QidahenMagnifyTarget | null>(null);
     const [selectedHandLimitCardIds, setSelectedHandLimitCardIds] = React.useState<string[]>(handLimitDiscardSelection?.selectedCardIds ?? []);
     const factionStageSelectionActive = core.gaoDiDispatchSelection != null
@@ -5247,15 +5288,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     React.useEffect(() => {
         setSelectedHandLimitCardIds(handLimitDiscardSelection?.selectedCardIds ?? []);
     }, [activeHandLimitInteractionId, handLimitDiscardSelection]);
-
-    React.useEffect(() => {
-        const mediaQuery = safeMatchMedia('(hover: none), (pointer: coarse), (any-pointer: coarse)');
-        const update = () => {
-            setIsTouchLikeWheelInteraction(mediaQuery.matches);
-        };
-        update();
-        return subscribeMediaQueryChange(mediaQuery, update);
-    }, []);
 
     const selectWheelMove = React.useCallback((moveId: string) => {
         if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) || !isTutorialTargetAllowed(moveId)) {
@@ -5784,16 +5816,18 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         return null;
     })();
 
-    const autoFocusMapTargetRegionIds = React.useMemo(
-        () => topLevelMapSelectionGuide?.candidates.map((candidate) => candidate.targetRegionId) ?? [],
-        [topLevelMapSelectionGuide],
-    );
-    const autoFocusMapTargetKey = topLevelMapSelectionGuide && autoFocusMapTargetRegionIds.length > 0
-        ? `${topLevelMapSelectionGuide.title}:${autoFocusMapTargetRegionIds.join('|')}:${wheelDispatchSelection?.sourceRegionId ?? core.gaoDiDispatchSelection?.sourceRegionId ?? internalDispatchSelection?.sourceRegionId ?? grantPardonSelection?.sourceRegionId ?? ''}`
+    const autoFocusMapTargetRegionIdsKey = topLevelMapSelectionGuide?.candidates
+        .map((candidate) => candidate.targetRegionId)
+        .join('|') ?? '';
+    const autoFocusMapTargetKey = topLevelMapSelectionGuide && autoFocusMapTargetRegionIdsKey
+        ? `${topLevelMapSelectionGuide.title}:${autoFocusMapTargetRegionIdsKey}:${wheelDispatchSelection?.sourceRegionId ?? core.gaoDiDispatchSelection?.sourceRegionId ?? internalDispatchSelection?.sourceRegionId ?? grantPardonSelection?.sourceRegionId ?? ''}`
         : null;
     const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;
 
     React.useEffect(() => {
+        const autoFocusMapTargetRegionIds = autoFocusMapTargetRegionIdsKey
+            ? autoFocusMapTargetRegionIdsKey.split('|')
+            : [];
         if (!autoFocusMapTargetKey || autoFocusMapTargetRegionIds.length <= 0) {
             return;
         }
@@ -5815,10 +5849,16 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         if (!viewport) {
             return;
         }
-        setMapViewport(viewport);
+        setMapViewport((currentViewport) => (
+            currentViewport.zoom === viewport.zoom
+            && currentViewport.panX === viewport.panX
+            && currentViewport.panY === viewport.panY
+                ? currentViewport
+                : viewport
+        ));
     }, [
         autoFocusMapTargetKey,
-        autoFocusMapTargetRegionIds,
+        autoFocusMapTargetRegionIdsKey,
         core.gaoDiDispatchSelection?.sourceRegionId,
         grantPardonSelection?.sourceRegionId,
         getTopLevelGuideRegionMapPoint,
@@ -5896,14 +5936,10 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 moveSummary={core.wheelMoveSummary}
                 disabled={setupStagePending || core.wheelActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null}
                 emphasized={wheelStageAvailable}
-                directExecuteOnClick={!isTouchLikeWheelInteraction}
-                canActivateMove={(moveId, selected) => {
-                    return isTouchLikeWheelInteraction
-                        ? (selected
-                            ? isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)
-                            : isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId))
-                        : isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);
-                }}
+                directExecuteOnClick
+                canActivateMove={(moveId) => (
+                    isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)
+                )}
                 onSelectMove={selectWheelMove}
                 onExecuteMove={executeWheelMove}
             />

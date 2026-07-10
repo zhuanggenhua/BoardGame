@@ -65,6 +65,7 @@ export interface CardSpotlightItem {
         face?: DieFace;
         timestamp: number;
         presentationKey?: string | number;
+        presentationKind?: 'roll' | 'choice';
         effectKey?: string;
         effectParams?: Record<string, string | number>;
         /** 骰子所属角色（用于图集选择） */
@@ -185,6 +186,7 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                                             size="10vw"
                                             rollingDurationMs={BONUS_DIE_VISIBLE_ROLL_DURATION_MS + index * 120}
                                             presentationKey={die.presentationKey}
+                                            animateOnMount={die.presentationKind !== 'choice'}
                                             characterId={die.characterId}
                                             compact={true}
                                         />

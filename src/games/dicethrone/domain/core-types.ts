@@ -492,6 +492,8 @@ export interface BonusDieInfo {
     effectKey?: string;
     /** 效果描述参数（例如 {{value}}） */
     effectParams?: Record<string, string | number>;
+    /** 展示语义：默认是真实投骰；choice 表示玩家固定选择的结果，不播放投骰误导 */
+    presentationKind?: 'roll' | 'choice';
 }
 
 /**

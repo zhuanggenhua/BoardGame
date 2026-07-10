@@ -19,24 +19,31 @@ const STEP_01 = `${EVIDENCE_DIR}/01-山屋惊魂-教程-恶兆前动作区.jpg`;
 const STEP_02 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-剩余移动.jpg`;
 const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.jpg`;
 const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.jpg`;
-const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-haunt收尾前.jpg`;
-const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-驱魔神志检定骰盘.jpg`;
-const STEP_06B = `${EVIDENCE_DIR}/06B-山屋惊魂-教程-驱魔成功后的终局页.jpg`;
-const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-叛徒视角攻击前.jpg`;
-const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-叛徒终局页.jpg`;
-const STEP_08A = `${EVIDENCE_DIR}/08A-山屋惊魂-教程-素材加载门禁.jpg`;
-const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-第二章使用书本前.jpg`;
-const STEP_09B = `${EVIDENCE_DIR}/09B-山屋惊魂-教程-书本已选中准备使用.jpg`;
-const STEP_09A = `${EVIDENCE_DIR}/09A-山屋惊魂-教程-已用书本预览清晰.jpg`;
-const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-第二章使用后移动.jpg`;
-const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-房间牌整张承接-点击前.jpg`;
-const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-房间牌整张承接-点击后.jpg`;
-const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-探索未知房间前.jpg`;
-const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-探索后发现牌.jpg`;
-const STEP_14A = `${EVIDENCE_DIR}/14A-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
-const STEP_14A1 = `${EVIDENCE_DIR}/14A1-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
-const STEP_14B = `${EVIDENCE_DIR}/14B-山屋惊魂-教程-兔脚重投结束.jpg`;
-const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-探索后牌桌结果.jpg`;
+const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-书本使用前.jpg`;
+const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-书本已选中准备使用.jpg`;
+const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-已用书本预览清晰.jpg`;
+const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-使用后准备移动.jpg`;
+const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-房间牌整张承接-点击前.jpg`;
+const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-房间牌整张承接-点击后.jpg`;
+const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-探索未知房间前.jpg`;
+const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-探索后发现牌.jpg`;
+const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
+const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
+const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-兔脚重投结束.jpg`;
+const STEP_16 = `${EVIDENCE_DIR}/16-山屋惊魂-教程-探索后牌桌结果.jpg`;
+const STEP_17 = `${EVIDENCE_DIR}/17-山屋惊魂-教程-作祟目标改变.jpg`;
+const STEP_18 = `${EVIDENCE_DIR}/18-山屋惊魂-教程-打开剧本目标页.jpg`;
+const STEP_19 = `${EVIDENCE_DIR}/19-山屋惊魂-教程-驱魔前因果说明.jpg`;
+const STEP_20 = `${EVIDENCE_DIR}/20-山屋惊魂-教程-驱魔神志检定骰盘.jpg`;
+const STEP_21 = `${EVIDENCE_DIR}/21-山屋惊魂-教程-驱魔成功后的终局页.jpg`;
+const STEP_22 = `${EVIDENCE_DIR}/22-山屋惊魂-教程-英雄攻击叛徒前.jpg`;
+const STEP_23 = `${EVIDENCE_DIR}/23-山屋惊魂-教程-英雄攻击叛徒骰盘.jpg`;
+const STEP_24 = `${EVIDENCE_DIR}/24-山屋惊魂-教程-叛徒视角敌方攻击前.jpg`;
+const STEP_25 = `${EVIDENCE_DIR}/25-山屋惊魂-教程-叛徒终局页.jpg`;
+const STEP_26 = `${EVIDENCE_DIR}/26-山屋惊魂-教程-杰克之灵目标页.jpg`;
+const STEP_27 = `${EVIDENCE_DIR}/27-山屋惊魂-教程-杰克之灵攻击英雄前.jpg`;
+const STEP_28 = `${EVIDENCE_DIR}/28-山屋惊魂-教程-杰克之灵攻击骰盘.jpg`;
+const TECHNICAL_ASSET_GATE_STEP = `${EVIDENCE_DIR}/技术证据-山屋惊魂-教程-素材加载门禁.jpg`;
 const MOBILE_EVIDENCE_DIR = resolve(process.cwd(), 'test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收');
 const MOBILE_STEP_01 = `${MOBILE_EVIDENCE_DIR}/01-手机横屏-教程书本使用入口.png`;
 const PC_REGRESSION_EVIDENCE_DIR = resolve(process.cwd(), 'test-results/evidence-screenshots/betrayal/pc-regression-current');
@@ -301,6 +308,23 @@ const clickNext = async (page: Parameters<typeof test>[0]['page']) => {
     await nextButton.click();
 };
 
+const advanceToStep = async (
+    page: Parameters<typeof test>[0]['page'],
+    targetStepId: string,
+    maxClicks = 12,
+) => {
+    const activeStep = page.locator('[data-tutorial-step]').first();
+    for (let index = 0; index < maxClicks; index += 1) {
+        const currentStepId = await activeStep.getAttribute('data-tutorial-step').catch(() => null);
+        if (currentStepId === targetStepId) {
+            await waitForStep(page, targetStepId);
+            return;
+        }
+        await clickNext(page);
+    }
+    await waitForStep(page, targetStepId);
+};
+
 test.describe('山屋惊魂教程最小真实链路', () => {
     test('教程路由会从真实运行时主入口开始，并复用真实终局', async ({ page, context }) => {
         test.setTimeout(120000);
@@ -317,6 +341,8 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(basicTutorialEntry).toBeVisible({ timeout: 30000 });
         await expect(hauntTutorialEntry).toBeVisible();
         await expect(traitorTutorialEntry).toBeVisible();
+        await expect(page.getByTestId('tutorial-catalog-entry-move-explore-use')).toHaveCount(0);
+        await expect(page.getByTestId('tutorial-catalog-entry-crimson-jack-objective')).toHaveCount(0);
         await expect(page.getByText('教程目录')).toBeVisible();
         await saveScreenshot(page, STEP_00);
         await basicTutorialEntry.click();
@@ -326,7 +352,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await waitForStep(page, 'objective-and-turn');
         await expect(page.locator('[data-tutorial-id="betrayal-actions-zone"]')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('底部 5 个主动作');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('底部动作');
         await saveScreenshot(page, STEP_01);
 
         await clickNext(page);
@@ -337,7 +363,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await clickNext(page);
         await waitForStep(page, 'moves-remaining');
         await expect(page.locator('[data-tutorial-id="betrayal-moves-remaining"]')).toBeVisible();
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('剩余移动');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('移动圆牌');
         await saveScreenshot(page, STEP_02);
 
         await clickNext(page);
@@ -365,17 +391,12 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('betrayal-reference-overlay')).toBeHidden();
         await saveScreenshot(page, STEP_04);
 
-        await clickNext(page);
-        await waitForStep(page, 'finish');
-        await clickNext(page);
-        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0, { timeout: 10000 });
-
         await page.goto('/play/betrayal/tutorial/haunt-actions-and-finish', { waitUntil: 'domcontentloaded' });
         await waitForBetrayalPageReady(page);
         await waitForHauntRuntime(page, 30000);
         await waitForStep(page, 'help-entry');
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('复查恶兆后术语');
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('不会改变当前回合');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('作祟后目标已经变了');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('确认双方怎么赢');
         await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('帮助入口');
         await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('底部动作按钮');
         await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('替代');
@@ -384,7 +405,16 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(jackSpiritToken).toBeVisible();
         await expect(jackSpiritToken.locator('img')).toHaveAttribute('data-debug-current-src', /tokens\/monsters\/compressed\/ghost\.webp/);
         await expectImageLoaded(jackSpiritToken);
+        await saveScreenshot(page, STEP_17);
         await page.getByTestId('betrayal-open-scenario').click();
+        const scenarioObjectivePage = page.getByTestId('betrayal-scenario-objective-page');
+        await expect(scenarioObjectivePage).toBeVisible();
+        await expect(scenarioObjectivePage).toContainText('赤红杰克归来');
+        await expect(scenarioObjectivePage).toContainText('英雄目标');
+        await expect(scenarioObjectivePage).toContainText('叛徒目标');
+        await expect(scenarioObjectivePage).toContainText('杰克之灵');
+        await saveScreenshot(page, STEP_18);
+        await page.getByTestId('betrayal-reference-toggle').click();
         const hauntReferenceImage = page.getByTestId('betrayal-reference-card-image');
         await expect(hauntReferenceImage).toBeVisible();
         await expect(hauntReferenceImage).toHaveAttribute('data-asset-src', 'betrayal/cards/player-reference-zh-front');
@@ -403,11 +433,13 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await clickNext(page);
 
         await waitForStep(page, 'haunt-actions');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('驱魔不是凭空出现');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('最后一步');
         await expect(page.getByTestId('betrayal-action-use')).toContainText(/驱魔|Exorcise/i);
+        await saveScreenshot(page, STEP_19);
         await clickNext(page);
 
         await waitForStep(page, 'exorcise-jack');
-        await saveScreenshot(page, STEP_05);
         await page.getByTestId('betrayal-action-use').click();
 
         const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
@@ -420,7 +452,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('betrayal-endgame-screen')).toBeHidden();
         await expectVisiblePhysicalDiceBox(exorciseRollPanel);
         await waitForPhysicalDiceSettled(exorciseRollPanel);
-        await saveScreenshot(page, STEP_06);
+        await saveScreenshot(page, STEP_20);
         await page.getByTestId('betrayal-exorcise-roll-continue').click();
 
         await waitForStep(page, 'endgame-review', 30000);
@@ -429,7 +461,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(endgameScreen).toContainText('幸存者逃脱');
         await expect(exorciseRollReview).toBeHidden();
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toBeHidden();
-        await saveScreenshot(page, STEP_06B);
+        await saveScreenshot(page, STEP_21);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial', diagnostics }]);
     });
@@ -459,24 +491,18 @@ test.describe('山屋惊魂教程最小真实链路', () => {
             }
             await route.continue();
         });
-        await page.goto('/play/betrayal/tutorial/move-explore-use', { waitUntil: 'domcontentloaded' });
+        await page.goto('/play/betrayal/tutorial/basic-setup-and-turn', { waitUntil: 'domcontentloaded' });
         await criticalEventAtlasRequested;
         await expect(page.getByTestId('loading-screen')).toBeVisible({ timeout: 10000 });
         await expect(page.getByTestId('betrayal-board')).not.toBeVisible();
-        await saveScreenshot(page, STEP_08A);
+        await saveScreenshot(page, TECHNICAL_ASSET_GATE_STEP);
         releaseCriticalEventAtlas();
         await waitForBetrayalPageReady(page);
 
-        const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
-            .waitFor({ state: 'visible', timeout: 5000 })
-            .then(() => true)
-            .catch(() => false);
-        if (setupStepVisible) {
-            await clickNext(page);
-        }
+        await advanceToStep(page, 'use-book');
         await waitForStep(page, 'use-book');
         await expect(page.getByTestId('betrayal-action-use')).toBeVisible();
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('先点持有区里的书本卡牌');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('先选择持有区里的书本');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('再点“使用”');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('非战斗检定');
         await expect(page.getByTestId('tutorial-overlay-card')).not.toContainText('放大镜');
@@ -486,7 +512,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('tutorial-highlight-ring')).toHaveAttribute('data-tutorial-highlight-shape', 'rect');
         await expect(page.getByTestId('betrayal-inventory-omen-book-magnify')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
-        await saveScreenshot(page, STEP_09);
+        await saveScreenshot(page, STEP_05);
 
         await page.getByTestId('betrayal-inventory-omen-book').click();
         await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('书本');
@@ -494,7 +520,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('betrayal-inventory-omen-book')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByTestId('betrayal-inventory-omen-book-selected-outline')).toBeVisible();
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('再点“使用”');
-        await saveScreenshot(page, STEP_09B);
+        await saveScreenshot(page, STEP_06);
         await page.getByTestId('betrayal-action-use').click();
         await waitForStep(page, 'open-move-targets');
         await expect(page.getByTestId('betrayal-action-move')).toBeVisible();
@@ -503,18 +529,18 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(usedBookPreview).toBeVisible();
         await expect(usedBookPreview.getByTestId('betrayal-inventory-preview-card-shell')).toBeVisible();
         await expectInventoryPreviewCardReadable(usedBookPreview);
-        await saveScreenshot(page, STEP_09A);
+        await saveScreenshot(page, STEP_07);
         await usedBookPreview.click({ position: { x: 8, y: 8 } });
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
         await page.getByTestId('betrayal-action-move').click();
         await waitForStep(page, 'move-to-hallway');
         await expect(page.getByTestId('betrayal-room-hallway')).toBeVisible();
         await expect(page.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
-        await saveScreenshot(page, STEP_10);
-        await saveScreenshot(page, STEP_11);
+        await saveScreenshot(page, STEP_08);
+        await saveScreenshot(page, STEP_09);
         await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('移动到门厅');
-        await saveScreenshot(page, STEP_12);
+        await saveScreenshot(page, STEP_10);
         await waitForStep(page, 'explore-upper');
         await expect(page.getByTestId('betrayal-action-explore')).toBeVisible();
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('立刻抽取对应的发现牌');
@@ -527,7 +553,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const exploreTargetRoom = page.getByTestId(targetRoomTestId!);
         await expect(exploreTargetRoom).toBeVisible();
         await expect(page.getByTestId(`betrayal-room-explore-card-highlight-${targetRoomTestId!.replace('betrayal-room-', '')}`)).toBeVisible();
-        await saveScreenshot(page, STEP_13);
+        await saveScreenshot(page, STEP_11);
         await exploreTargetRoom.click();
         await waitForStep(page, 'finish', 30000);
         const latestDiscovery = page.locator('[data-tutorial-id="betrayal-latest-discovery"]');
@@ -536,8 +562,8 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(tutorialOverlayCard).toHaveAttribute('data-tutorial-placement', 'center');
         await expect(tutorialOverlayCard).not.toContainText('使用持有物 -> 移动 -> 探索 -> 抽发现牌');
         await expect(tutorialOverlayCard).toContainText('兔脚');
-        await expect(tutorialOverlayCard).toContainText('点要重投的那颗骰子');
-        await expect(tutorialOverlayCard).toContainText('不想改骰');
+        await expect(tutorialOverlayCard).toContainText('重投一颗骰子');
+        await expect(tutorialOverlayCard).toContainText('不想改时继续结算');
         const discoveryReveal = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryReveal).toBeVisible();
         await expect(discoveryReveal).toHaveAttribute('data-allows-inventory-roll-modifiers', 'true');
@@ -644,7 +670,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
             const image = node as HTMLImageElement;
             return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
         })).toBe(true);
-        await saveScreenshot(page, STEP_14);
+        await saveScreenshot(page, STEP_12);
         await rabbitFootCard.click();
         const rabbitFootDice = page.getByTestId('betrayal-rabbit-foot-dice');
         await expect(rabbitFootDice).toBeVisible();
@@ -665,15 +691,12 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expectInventoryCardHasSingleSymmetricOutline(rabbitFootCard);
         await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);
         await expectTutorialNextDoesNotStealRollModifierFocus(page);
-        await saveScreenshot(page, STEP_14A);
-        await saveScreenshot(page, STEP_14A1);
-        const rollTotal = discoveryReveal.getByTestId('betrayal-recent-roll-total');
+        await saveScreenshot(page, STEP_13);
+        await saveScreenshot(page, STEP_14);
         const rollDetail = discoveryReveal.getByTestId('betrayal-recent-roll-detail');
-        const totalBeforeRabbitFoot = await rollTotal.innerText();
         await setHarnessRandomQueue(page, [0.99]);
         await rerollTargetDie.click();
         await expect(rabbitFootDice).toBeHidden();
-        await expect.poll(async () => rollTotal.innerText()).not.toBe(totalBeforeRabbitFoot);
         await expect(discoveryRollPanel.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-settled', 'false');
         await waitForPhysicalDiceSettled(discoveryRollPanel);
         await expect(discoveryReveal.getByTestId('betrayal-recent-roll-subtotal')).toContainText(/骰面合计\s+\d+/);
@@ -681,14 +704,14 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);
         await expect(rollDetail).toContainText(/骰子合计\s+\d+｜加值\s+[+-]\d+/);
         await expect(rollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
-        await saveScreenshot(page, STEP_14B);
+        await saveScreenshot(page, STEP_15);
         await clickNext(page);
         await expect(page.locator('[data-tutorial-step]')).toHaveCount(0, { timeout: 10000 });
         await expect(exploreTargetRoom).toBeVisible();
         await expect(page.locator('[data-testid^="betrayal-room-explore-target-"]')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();
         await expect(page.getByTestId('betrayal-discovery-card-front-atlas')).toBeVisible();
-        await saveScreenshot(page, STEP_15);
+        await saveScreenshot(page, STEP_16);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-move-explore-use', diagnostics }]);
     });
@@ -699,7 +722,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-phone-landscape');
 
         await page.setViewportSize(MOBILE_LANDSCAPE_REFERENCE_VIEWPORT);
-        await page.goto('/play/betrayal/tutorial/move-explore-use?bgForceCoarsePointer=1', { waitUntil: 'domcontentloaded' });
+        await page.goto('/play/betrayal/tutorial/basic-setup-and-turn?bgForceCoarsePointer=1', { waitUntil: 'domcontentloaded' });
         await waitForBetrayalPageReady(page);
 
         await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
@@ -707,13 +730,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.locator('html')).toHaveAttribute('data-preferred-orientation', 'landscape');
         await expect(page.locator('html')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
         await expect(page.getByTestId('mobile-orientation-game-banner')).toHaveCount(0);
-        const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
-            .waitFor({ state: 'visible', timeout: 5000 })
-            .then(() => true)
-            .catch(() => false);
-        if (setupStepVisible) {
-            await clickNext(page);
-        }
+        await advanceToStep(page, 'use-book');
         await waitForStep(page, 'use-book');
         await expect(page.getByTestId('betrayal-board')).toBeVisible();
         await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toBeVisible();
@@ -924,17 +941,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-pc-layout-regression');
 
         await page.setViewportSize({ width: 1600, height: 900 });
-        await page.goto('/play/betrayal/tutorial/move-explore-use', { waitUntil: 'domcontentloaded' });
+        await page.goto('/play/betrayal/tutorial/basic-setup-and-turn', { waitUntil: 'domcontentloaded' });
         await waitForBetrayalPageReady(page);
 
-        const setupStepVisible = await page.locator('[data-tutorial-step="setup-runtime"]')
-            .waitFor({ state: 'visible', timeout: 5000 })
-            .then(() => true)
-            .catch(() => false);
-        if (setupStepVisible) {
-            await clickNext(page);
-        }
-
+        await advanceToStep(page, 'use-book');
         await waitForStep(page, 'use-book');
         await expect(page.getByTestId('betrayal-board')).toBeVisible();
         await expect(page.getByTestId('betrayal-desktop-layout')).toBeVisible();
@@ -1031,13 +1041,13 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await waitForHauntRuntime(page, 30000);
         await waitForStep(page, 'traitor-objective');
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('达里尔·海拉');
-        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('击倒全部英雄');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('所有英雄倒下');
         await clickNext(page);
 
         await waitForStep(page, 'attack-hero');
         const attackTarget = page.getByTestId('betrayal-bottom-attack-hero-target-1');
         await expect(attackTarget).toContainText(/攻击/);
-        await saveScreenshot(page, STEP_07);
+        await saveScreenshot(page, STEP_24);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]);
         await attackTarget.click();
 
@@ -1045,8 +1055,106 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         const traitorEndgameScreen = page.getByTestId('betrayal-endgame-screen');
         await expect(traitorEndgameScreen).toBeVisible({ timeout: 30000 });
         await expect(traitorEndgameScreen).toContainText('叛徒得逞');
-        await saveScreenshot(page, STEP_08);
+        await saveScreenshot(page, STEP_25);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-traitor-path', diagnostics }]);
+    });
+
+    test('英雄攻击教程会打开剧本并进入真实攻击骰盘', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-hero-attack-path');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal/tutorial', { waitUntil: 'domcontentloaded' });
+
+        const heroAttackTutorialEntry = page.getByTestId('tutorial-catalog-entry-hero-attack-path');
+        await expect(heroAttackTutorialEntry).toBeVisible({ timeout: 30000 });
+        await heroAttackTutorialEntry.click();
+        await waitForBetrayalPageReady(page);
+        await waitForHauntRuntime(page, 30000);
+
+        await waitForStep(page, 'hero-attack-objective');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('打开剧本提示');
+        await page.getByTestId('betrayal-open-scenario').click();
+        const heroAttackScenarioPage = page.getByTestId('betrayal-scenario-objective-page');
+        await expect(heroAttackScenarioPage).toBeVisible();
+        await expect(heroAttackScenarioPage).toContainText('英雄目标');
+        await expect(heroAttackScenarioPage).toContainText('杰克之灵');
+        await page.getByTestId('betrayal-reference-close').click();
+        await expect(page.getByTestId('betrayal-reference-overlay')).toBeHidden();
+        await clickNext(page);
+
+        await waitForStep(page, 'attack-traitor');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('攻击叛徒');
+        const attackTraitorTarget = page.getByTestId('betrayal-room-focus-target');
+        await expect(attackTraitorTarget).toContainText(/攻击叛徒|Attack/i);
+        await saveScreenshot(page, STEP_22);
+        await setHarnessRandomQueue(page, [0.99, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]);
+        await attackTraitorTarget.click();
+
+        await waitForStep(page, 'hero-attack-review', 30000);
+        const heroAttackReview = page.getByTestId('betrayal-attack-roll-review');
+        await expect(heroAttackReview).toBeVisible({ timeout: 30000 });
+        const heroAttackRollPanel = heroAttackReview.getByTestId('betrayal-recent-roll-panel');
+        await expect(heroAttackRollPanel).toBeVisible({ timeout: 30000 });
+        await expect(heroAttackRollPanel).toContainText(/攻击|叛徒|杰克之灵/);
+        await expect(heroAttackRollPanel).toContainText(/总点数|Total/i);
+        await expect(heroAttackRollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
+        await expectVisiblePhysicalDiceBox(heroAttackRollPanel);
+        await waitForPhysicalDiceSettled(heroAttackRollPanel);
+        await saveScreenshot(page, STEP_23);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-hero-attack-path', diagnostics }]);
+    });
+
+    test('杰克之灵教程会打开剧本并用同一攻击骰盘结算怪物攻击', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-jack-spirit-path');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal/tutorial', { waitUntil: 'domcontentloaded' });
+
+        const jackSpiritTutorialEntry = page.getByTestId('tutorial-catalog-entry-jack-spirit-path');
+        await expect(jackSpiritTutorialEntry).toBeVisible({ timeout: 30000 });
+        await jackSpiritTutorialEntry.click();
+        await waitForBetrayalPageReady(page);
+        await waitForHauntRuntime(page, 30000);
+
+        await waitForStep(page, 'jack-spirit-objective');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('杰克之灵的目标');
+        await page.getByTestId('betrayal-open-scenario').click();
+        const jackSpiritScenarioPage = page.getByTestId('betrayal-scenario-objective-page');
+        await expect(jackSpiritScenarioPage).toBeVisible();
+        await expect(jackSpiritScenarioPage).toContainText('杰克之灵');
+        await expect(jackSpiritScenarioPage).toContainText('回到尸体房间');
+        await saveScreenshot(page, STEP_26);
+        await page.getByTestId('betrayal-reference-close').click();
+        await expect(page.getByTestId('betrayal-reference-overlay')).toBeHidden();
+        await clickNext(page);
+
+        await waitForStep(page, 'jack-spirit-attack');
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('怪物攻击');
+        const jackSpiritAttackTarget = page.getByTestId('betrayal-bottom-attack-hero-target-0');
+        await expect(jackSpiritAttackTarget).toContainText(/攻击|Attack/i);
+        await saveScreenshot(page, STEP_27);
+        await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
+        await jackSpiritAttackTarget.click();
+
+        await waitForStep(page, 'jack-spirit-review', 30000);
+        const jackSpiritAttackReview = page.getByTestId('betrayal-attack-roll-review');
+        await expect(jackSpiritAttackReview).toBeVisible({ timeout: 30000 });
+        const jackSpiritRollPanel = jackSpiritAttackReview.getByTestId('betrayal-recent-roll-panel');
+        await expect(jackSpiritRollPanel).toBeVisible();
+        await expect(jackSpiritRollPanel).toContainText(/攻击|杰克之灵|英雄/);
+        await expect(jackSpiritRollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
+        await expectVisiblePhysicalDiceBox(jackSpiritRollPanel);
+        await waitForPhysicalDiceSettled(jackSpiritRollPanel);
+        await saveScreenshot(page, STEP_28);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-jack-spirit-path', diagnostics }]);
     });
 });

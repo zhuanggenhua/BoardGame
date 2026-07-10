@@ -1,6 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Page } from '@playwright/test';
+import sharp from 'sharp';
 import { test, expect } from '../framework';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
@@ -57,12 +58,98 @@ async function saveBoardDiceStageScreenshot(
     page: Page,
     name: string,
     testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
-) {
+): Promise<string> {
     const stage = page.getByTestId('dicethrone-board-dice-stage');
     await expect(stage).toBeVisible({ timeout: 5000 });
     const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
     await mkdir(dirname(screenshotPath), { recursive: true });
     await stage.screenshot({ path: screenshotPath });
+    return screenshotPath;
+}
+
+async function saveBoardDiceCanvasScreenshot(
+    page: Page,
+    name: string,
+    testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
+): Promise<string> {
+    const canvas = page.getByTestId('dicethrone-board-dice-box-canvas');
+    await expect(canvas).toBeVisible({ timeout: 5000 });
+    const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await canvas.screenshot({ path: screenshotPath });
+    return screenshotPath;
+}
+
+async function expectBoardDiceCanvasScreenshotHasVisibleDice(screenshotPath: string): Promise<void> {
+    const { data, info } = await sharp(screenshotPath)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    let visiblePixelCount = 0;
+    let brightDiceFacePixelCount = 0;
+    let texturedPixelCount = 0;
+    const sampledColumns = new Set<number>();
+    const sampledRows = new Set<number>();
+
+    for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+            const offset = ((y * info.width) + x) * info.channels;
+            const r = data[offset] ?? 0;
+            const g = data[offset + 1] ?? 0;
+            const b = data[offset + 2] ?? 0;
+            const a = data[offset + 3] ?? 0;
+            if (a < 16) continue;
+
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const saturation = max - min;
+            const isVisibleDicePixel = max > 38 && (saturation > 18 || max > 105);
+            if (!isVisibleDicePixel) continue;
+
+            visiblePixelCount += 1;
+            sampledColumns.add(Math.floor(x / 8));
+            sampledRows.add(Math.floor(y / 8));
+            if (r > 118 && g > 118 && b > 118 && saturation < 84) {
+                brightDiceFacePixelCount += 1;
+            }
+            if (saturation > 28 && max > 60) {
+                texturedPixelCount += 1;
+            }
+        }
+    }
+
+    const diagnostics = {
+        screenshotPath,
+        width: info.width,
+        height: info.height,
+        visiblePixelCount,
+        brightDiceFacePixelCount,
+        texturedPixelCount,
+        sampledColumnBuckets: sampledColumns.size,
+        sampledRowBuckets: sampledRows.size,
+    };
+
+    expect(
+        visiblePixelCount,
+        `棋盘 3D 骰子 canvas 里没有足够的真实可见骰子像素: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(900);
+    expect(
+        brightDiceFacePixelCount,
+        `棋盘 3D 骰子 canvas 里缺少可辨认的骰面亮部: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(160);
+    expect(
+        texturedPixelCount,
+        `棋盘 3D 骰子 canvas 里缺少贴图/边缘纹理像素: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(260);
+    expect(
+        sampledColumns.size,
+        `棋盘 3D 骰子 canvas 可见像素横向分布过窄，疑似只截到噪点或单个高光: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(5);
+    expect(
+        sampledRows.size,
+        `棋盘 3D 骰子 canvas 可见像素纵向分布过窄，疑似只截到噪点或单个高光: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(5);
 }
 
 async function saveSettingsPanelScreenshot(
@@ -131,8 +218,11 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
             || canvasNode.dataset.diceVisualSettled !== 'true'
         ) return false;
         if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
-        if (canvasNode.dataset.worldWidthScale !== '0.44') return false;
-        if (canvasNode.dataset.worldHeightScale !== '0.44') return false;
+        const isMobileBoard = window.innerWidth <= 900;
+        const expectedWorldWidthScale = isMobileBoard ? '0.9' : '0.44';
+        const expectedWorldHeightScale = isMobileBoard ? '0.75' : '0.44';
+        if (canvasNode.dataset.worldWidthScale !== expectedWorldWidthScale) return false;
+        if (canvasNode.dataset.worldHeightScale !== expectedWorldHeightScale) return false;
         if (Number(canvasNode.dataset.physicsWorldWidth ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.physicsWorldHeight ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) > 0.004) return false;
@@ -189,22 +279,11 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
 }
 
 async function clickBoardDieCenter(page: Page, dieId: number): Promise<void> {
-    const point = await page.evaluate((id) => {
-        const node = document.querySelector(
-            `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${id}"]`,
-        ) as HTMLElement | null;
-        if (!node) return null;
-        const rect = node.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) return null;
-        return {
-            x: rect.left + (rect.width / 2),
-            y: rect.top + (rect.height / 2),
-        };
-    }, dieId);
-    if (!point) {
-        throw new Error(`未能获取棋盘骰子 ${dieId} 的中心点击坐标`);
-    }
-    await page.mouse.click(point.x, point.y);
+    const dieButton = page.locator(
+        `[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-${dieId}"]`,
+    );
+    await expect(dieButton).toBeVisible({ timeout: 5000 });
+    await dieButton.click();
 }
 
 async function readBoardDieHitDebug(page: Page, dieId: number) {
@@ -333,14 +412,28 @@ async function readVisibleBoardDieRects(page: Page): Promise<DiceRectSnapshot[]>
     )).map((node) => {
         const element = node as HTMLElement;
         const rect = element.getBoundingClientRect();
+        const projectedWidth = Number(element.dataset.projectedWidth ?? Number.NaN);
+        const projectedHeight = Number(element.dataset.projectedHeight ?? Number.NaN);
+        const projectedVisualWidth = Number(element.dataset.projectedVisualWidth ?? Number.NaN);
+        const projectedVisualHeight = Number(element.dataset.projectedVisualHeight ?? Number.NaN);
+        const visualWidth = Number.isFinite(projectedVisualWidth) && projectedVisualWidth > 0
+            ? projectedVisualWidth
+            : Number.isFinite(projectedWidth) && projectedWidth > 0
+                ? projectedWidth
+                : rect.width;
+        const visualHeight = Number.isFinite(projectedVisualHeight) && projectedVisualHeight > 0
+            ? projectedVisualHeight
+            : Number.isFinite(projectedHeight) && projectedHeight > 0
+                ? projectedHeight
+                : rect.height;
         const testId = element.dataset.testid ?? element.getAttribute('data-testid') ?? '';
         const match = testId.match(/die-button-(\d+)/);
         return {
             dieId: match ? Number(match[1]) : -1,
-            x: rect.left,
-            y: rect.top,
-            width: rect.width,
-            height: rect.height,
+            x: rect.left + ((rect.width - visualWidth) / 2),
+            y: rect.top + ((rect.height - visualHeight) / 2),
+            width: visualWidth,
+            height: visualHeight,
             rotateX: Number(element.dataset.rotateX ?? Number.NaN),
             rotateY: Number(element.dataset.rotateY ?? Number.NaN),
             rotateZ: Number(element.dataset.rotateZ ?? Number.NaN),
@@ -377,6 +470,155 @@ function getVisualMoveDistance(current: DiceRectSnapshot, baseline: DiceRectSnap
         return 0;
     }
     return Math.hypot(current.x - baseline.x, current.y - baseline.y);
+}
+
+function analyzeDiceSeparation(rects: DiceRectSnapshot[]): {
+    minCenterDistance: number;
+    minNormalizedCenterDistance: number;
+    maxOverlapRatio: number;
+    closestPair: [number, number] | null;
+    mostOverlappedPair: [number, number] | null;
+} {
+    let minCenterDistance = Number.POSITIVE_INFINITY;
+    let minNormalizedCenterDistance = Number.POSITIVE_INFINITY;
+    let maxOverlapRatio = 0;
+    let closestPair: [number, number] | null = null;
+    let mostOverlappedPair: [number, number] | null = null;
+
+    for (let leftIndex = 0; leftIndex < rects.length; leftIndex += 1) {
+        const left = rects[leftIndex];
+        if (
+            left.x === null
+            || left.y === null
+            || left.width === null
+            || left.height === null
+        ) {
+            continue;
+        }
+
+        for (let rightIndex = leftIndex + 1; rightIndex < rects.length; rightIndex += 1) {
+            const right = rects[rightIndex];
+            if (
+                right.x === null
+                || right.y === null
+                || right.width === null
+                || right.height === null
+            ) {
+                continue;
+            }
+
+            const leftCenterX = left.x + (left.width / 2);
+            const leftCenterY = left.y + (left.height / 2);
+            const rightCenterX = right.x + (right.width / 2);
+            const rightCenterY = right.y + (right.height / 2);
+            const centerDistance = Math.hypot(
+                leftCenterX - rightCenterX,
+                leftCenterY - rightCenterY,
+            );
+            if (centerDistance < minCenterDistance) {
+                minCenterDistance = centerDistance;
+                closestPair = [left.dieId, right.dieId];
+            }
+            const averageMinDimension = (
+                Math.min(left.width, left.height)
+                + Math.min(right.width, right.height)
+            ) / 2;
+            const normalizedCenterDistance = averageMinDimension > 0
+                ? centerDistance / averageMinDimension
+                : 0;
+            if (normalizedCenterDistance < minNormalizedCenterDistance) {
+                minNormalizedCenterDistance = normalizedCenterDistance;
+            }
+
+            const overlapWidth = Math.max(
+                0,
+                Math.min(left.x + left.width, right.x + right.width) - Math.max(left.x, right.x),
+            );
+            const overlapHeight = Math.max(
+                0,
+                Math.min(left.y + left.height, right.y + right.height) - Math.max(left.y, right.y),
+            );
+            const overlapArea = overlapWidth * overlapHeight;
+            const smallerArea = Math.min(left.width * left.height, right.width * right.height);
+            const overlapRatio = smallerArea > 0 ? overlapArea / smallerArea : 0;
+            if (overlapRatio > maxOverlapRatio) {
+                maxOverlapRatio = overlapRatio;
+                mostOverlappedPair = [left.dieId, right.dieId];
+            }
+        }
+    }
+
+    return {
+        minCenterDistance,
+        minNormalizedCenterDistance,
+        maxOverlapRatio,
+        closestPair,
+        mostOverlappedPair,
+    };
+}
+
+function expectDiceRectsIndividuallyVisible(
+    rects: DiceRectSnapshot[],
+    expectedCount: number,
+    context: string,
+): void {
+    const visibleRects = rects.filter((rect) => (
+        rect.dieId >= 0
+        && rect.x !== null
+        && rect.y !== null
+        && rect.width !== null
+        && rect.height !== null
+        && rect.width > 0
+        && rect.height > 0
+    ));
+    const uniqueDieIds = new Set(visibleRects.map((rect) => rect.dieId));
+    const separation = analyzeDiceSeparation(visibleRects);
+    const averageMinDimension = visibleRects.reduce(
+        (sum, rect) => sum + Math.min(rect.width ?? 0, rect.height ?? 0),
+        0,
+    ) / Math.max(visibleRects.length, 1);
+    const centerXs = visibleRects.map((rect) => (rect.x ?? 0) + ((rect.width ?? 0) / 2));
+    const centerYs = visibleRects.map((rect) => (rect.y ?? 0) + ((rect.height ?? 0) / 2));
+    const centerSpan = visibleRects.length > 0
+        ? Math.hypot(
+            Math.max(...centerXs) - Math.min(...centerXs),
+            Math.max(...centerYs) - Math.min(...centerYs),
+        )
+        : 0;
+    const diagnostics = {
+        context,
+        expectedCount,
+        visibleCount: visibleRects.length,
+        uniqueDieCount: uniqueDieIds.size,
+        averageMinDimension,
+        centerSpan,
+        normalizedCenterSpan: averageMinDimension > 0
+            ? centerSpan / averageMinDimension
+            : 0,
+        ...separation,
+        rects: visibleRects,
+    };
+
+    expect(
+        visibleRects.length,
+        `${context} 必须能读取 ${expectedCount} 颗完整骰子的真实投影: ${JSON.stringify(diagnostics)}`,
+    ).toBe(expectedCount);
+    expect(
+        uniqueDieIds.size,
+        `${context} 的骰子投影 ID 不唯一，无法证明逐颗可辨认: ${JSON.stringify(diagnostics)}`,
+    ).toBe(expectedCount);
+    expect(
+        separation.minNormalizedCenterDistance,
+        `${context} 的骰子中心距离相对骰子尺寸过小，视觉上会挤叠成一团: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThanOrEqual(0.68);
+    expect(
+        separation.maxOverlapRatio,
+        `${context} 的骰子轴对齐投影几乎完全覆盖: ${JSON.stringify(diagnostics)}`,
+    ).toBeLessThanOrEqual(0.55);
+    expect(
+        diagnostics.normalizedCenterSpan,
+        `${context} 的五颗骰子整体散布范围过小，疑似全部堆在同一区域: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThanOrEqual(2.2);
 }
 
 test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
@@ -440,6 +682,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
         )).toHaveCount(5);
         const settledRects = await readVisibleBoardDieRects(page);
+        expectDiceRectsIndividuallyVisible(settledRects, 5, '手机横屏投掷结束态');
         await page.waitForTimeout(520);
         const postSettleRects = await readVisibleBoardDieRects(page);
         const maxPostSettleMove = Math.max(
@@ -454,24 +697,39 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
             const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
             const handArea = document.querySelector('[data-testid="hand-area"]') as HTMLElement | null;
-            const playerBoard = document.querySelector('[data-testid="player-board-surface"]') as HTMLElement | null;
             const tipBoard = document.querySelector('[data-testid="tip-board-surface"]') as HTMLElement | null;
             if (!stage || !canvas) return null;
             const stageRect = stage.getBoundingClientRect();
             const canvasRect = canvas.getBoundingClientRect();
             const handRect = handArea?.getBoundingClientRect();
-            const playerBoardRect = playerBoard?.getBoundingClientRect();
             const tipBoardRect = tipBoard?.getBoundingClientRect();
             const diceRects = Array.from(stage.querySelectorAll('[data-testid^="die-button-"]'))
                 .map((node) => {
-                    const rect = (node as HTMLElement).getBoundingClientRect();
+                    const element = node as HTMLElement;
+                    const rect = element.getBoundingClientRect();
+                    const projectedWidth = Number(element.dataset.projectedWidth ?? Number.NaN);
+                    const projectedHeight = Number(element.dataset.projectedHeight ?? Number.NaN);
+                    const projectedVisualWidth = Number(element.dataset.projectedVisualWidth ?? Number.NaN);
+                    const projectedVisualHeight = Number(element.dataset.projectedVisualHeight ?? Number.NaN);
+                    const width = Number.isFinite(projectedVisualWidth) && projectedVisualWidth > 0
+                        ? projectedVisualWidth
+                        : Number.isFinite(projectedWidth) && projectedWidth > 0
+                            ? projectedWidth
+                            : rect.width;
+                    const height = Number.isFinite(projectedVisualHeight) && projectedVisualHeight > 0
+                        ? projectedVisualHeight
+                        : Number.isFinite(projectedHeight) && projectedHeight > 0
+                            ? projectedHeight
+                            : rect.height;
+                    const left = rect.left + ((rect.width - width) / 2);
+                    const top = rect.top + ((rect.height - height) / 2);
                     return {
-                        left: rect.left,
-                        top: rect.top,
-                        right: rect.right,
-                        bottom: rect.bottom,
-                        width: rect.width,
-                        height: rect.height,
+                        left,
+                        top,
+                        right: left + width,
+                        bottom: top + height,
+                        width,
+                        height,
                         centerX: rect.left + (rect.width / 2),
                         centerY: rect.top + (rect.height / 2),
                     };
@@ -509,14 +767,6 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
                     width: handRect.width,
                     height: handRect.height,
                 } : null,
-                playerBoard: playerBoardRect ? {
-                    left: playerBoardRect.left,
-                    top: playerBoardRect.top,
-                    right: playerBoardRect.right,
-                    bottom: playerBoardRect.bottom,
-                    width: playerBoardRect.width,
-                    height: playerBoardRect.height,
-                } : null,
                 tipBoard: tipBoardRect ? {
                     left: tipBoardRect.left,
                     top: tipBoardRect.top,
@@ -552,40 +802,46 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         expect(layout?.canvas.width).toBeGreaterThan(120);
         expect(layout?.canvas.height).toBeGreaterThan(120);
         expect(layout?.diceUnion).not.toBeNull();
-        expect(layout?.diceUnion?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.width ?? 0) * 0.86);
-        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.48);
-        expect(layout?.diceUnion?.top ?? 0).toBeGreaterThanOrEqual(0);
-        expect(layout?.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(92);
-        if (layout?.playerBoard) {
-            expect(layout.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(layout.playerBoard.top - 2);
-        }
-        if (layout?.tipBoard) {
-            expect(layout.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(layout.tipBoard.top + 76);
-        }
+        expect(layout?.diceUnion?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.width ?? 0) * 0.94);
+        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.82);
+        expect(layout?.diceUnion?.left ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual((layout?.stage.left ?? 0) - 4);
+        expect(layout?.diceUnion?.right ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.right ?? 0) + 4);
+        expect(layout?.diceUnion?.top ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual((layout?.stage.top ?? 0) - 4);
+        expect(layout?.diceUnion?.bottom ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.bottom ?? 0) + 4);
         for (const rect of layout?.diceRects ?? []) {
-            expect(rect.width).toBeGreaterThan(28);
-            expect(rect.height).toBeGreaterThan(28);
+            expect(rect.width).toBeGreaterThanOrEqual(24);
+            expect(rect.height).toBeGreaterThanOrEqual(24);
             expect(rect.right).toBeGreaterThan(0);
             expect(rect.left).toBeLessThan(layout?.viewport.width ?? 0);
             expect(rect.bottom).toBeGreaterThan(0);
             expect(rect.top).toBeLessThan(layout?.viewport.height ?? 0);
-            expect(rect.centerX).toBeGreaterThanOrEqual((layout?.stage.left ?? 0) + ((layout?.stage.width ?? 0) * 0.1));
-            expect(rect.centerX).toBeLessThanOrEqual((layout?.stage.right ?? 0) - ((layout?.stage.width ?? 0) * 0.1));
-            expect(rect.centerY).toBeGreaterThanOrEqual((layout?.stage.top ?? 0) + ((layout?.stage.height ?? 0) * 0.1));
-            expect(rect.centerY).toBeLessThanOrEqual((layout?.stage.bottom ?? 0) - ((layout?.stage.height ?? 0) * 0.1));
+            expect(rect.left).toBeGreaterThanOrEqual((layout?.stage.left ?? 0) - 4);
+            expect(rect.right).toBeLessThanOrEqual((layout?.stage.right ?? 0) + 4);
+            expect(rect.top).toBeGreaterThanOrEqual((layout?.stage.top ?? 0) - 4);
+            expect(rect.bottom).toBeLessThanOrEqual((layout?.stage.bottom ?? 0) + 4);
             if (layout?.hand) {
                 expect(rect.bottom).toBeLessThanOrEqual(layout.hand.top - 4);
             }
-            if (layout?.playerBoard) {
-                expect(rect.bottom).toBeLessThanOrEqual(layout.playerBoard.top + 76);
-            }
             if (layout?.tipBoard) {
-                expect(rect.bottom).toBeLessThanOrEqual(layout.tipBoard.top + 76);
+                const overlapWidth = Math.max(
+                    0,
+                    Math.min(rect.right, layout.tipBoard.right) - Math.max(rect.left, layout.tipBoard.left),
+                );
+                const overlapHeight = Math.max(
+                    0,
+                    Math.min(rect.bottom, layout.tipBoard.bottom) - Math.max(rect.top, layout.tipBoard.top),
+                );
+                expect(
+                    overlapWidth * overlapHeight,
+                    `3D 骰子不应遮挡敌人提示窗: ${JSON.stringify({ rect, tipBoard: layout.tipBoard })}`,
+                ).toBeLessThanOrEqual(1);
             }
         }
 
-        await saveBoardDiceStageScreenshot(page, '00-手机横屏投掷结束后-3D骰子仍可见-局部', testInfo);
         await game.screenshot('00-手机横屏投掷结束后-3D骰子仍可见', testInfo);
+        await saveBoardDiceStageScreenshot(page, '01-手机横屏投掷结束后-3D骰子投骰区局部', testInfo);
+        const canvasScreenshotPath = await saveBoardDiceCanvasScreenshot(page, '00-手机横屏投掷结束后-3D骰子真实画布', testInfo);
+        await expectBoardDiceCanvasScreenshotHasVisibleDice(canvasScreenshotPath);
     });
 
     test('设置面板 3D 骰子开关点击前后应真实切换', async ({ page, game }, testInfo) => {
@@ -719,7 +975,51 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         }, { timeout: 5000 }).toBe('true');
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
+        await expect(page.locator(
+            '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+        )).toHaveCount(5);
+        const restoreMotionSamples: Array<{
+            maxLift: number;
+            maxTravel: number;
+        }> = [];
+        for (let sampleIndex = 0; sampleIndex < 8; sampleIndex += 1) {
+            const motion = await page.getByTestId('dicethrone-board-dice-box-canvas').evaluate((node) => ({
+                maxLift: Number((node as HTMLElement).dataset.diceMaxLift ?? Number.POSITIVE_INFINITY),
+                maxTravel: Number((node as HTMLElement).dataset.diceMaxTravel ?? Number.POSITIVE_INFINITY),
+            }));
+            restoreMotionSamples.push(motion);
+            await page.waitForTimeout(80);
+        }
+        expect(
+            Math.max(...restoreMotionSamples.map((sample) => sample.maxLift)),
+            `切换到棋盘 3D 骰子时不应重新抛起骰子: ${JSON.stringify(restoreMotionSamples)}`,
+        ).toBeLessThanOrEqual(0.004);
+        expect(
+            Math.max(...restoreMotionSamples.map((sample) => sample.maxTravel)),
+            `切换到棋盘 3D 骰子时不应重新播放物理滚动: ${JSON.stringify(restoreMotionSamples)}`,
+        ).toBeLessThanOrEqual(0.012);
         await waitForBoardDiceSettled(page);
+        const restoreStableSamples: DiceRectSnapshot[][] = [];
+        for (let sampleIndex = 0; sampleIndex < 5; sampleIndex += 1) {
+            restoreStableSamples.push(await readVisibleBoardDieRects(page));
+            await page.waitForTimeout(80);
+        }
+        const restoreBaselineRects = restoreStableSamples[0] ?? [];
+        const maxRestoreMove = Math.max(
+            ...restoreStableSamples.flatMap((sample) => sample.map((rect) => getVisualMoveDistance(
+                rect,
+                restoreBaselineRects.find((candidate) => candidate.dieId === rect.dieId),
+            ))),
+        );
+        expect(
+            maxRestoreMove,
+            `切换到棋盘 3D 骰子完成首次投影对齐后，五颗骰子应保持静止: ${JSON.stringify(restoreStableSamples)}`,
+        ).toBeLessThanOrEqual(8);
+        expectDiceRectsIndividuallyVisible(
+            await readVisibleBoardDieRects(page),
+            5,
+            'PC 从右侧骰盘切换到棋盘 3D 骰子后的静置态',
+        );
         await saveBoardDiceStageScreenshot(page, '02a-切到棋盘3D骰台-局部', testInfo);
         await closeFabSettingsPanel(page);
         await expect(page.getByTestId('dicethrone-board-dice-stage')).toBeVisible({ timeout: 5000 });
@@ -732,7 +1032,9 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(firstDieButton).toBeVisible({ timeout: 5000 });
         await expect(secondDieButton).toBeVisible({ timeout: 5000 });
         await clickBoardDieCenter(page, 0);
+        await expect(firstDieButton).toHaveAttribute('data-selected', 'true', { timeout: 3000 });
         await clickBoardDieCenter(page, 1);
+        await expect(secondDieButton).toHaveAttribute('data-selected', 'true', { timeout: 3000 });
         await expectBoardDiceSelectionUnderlay(page, [0, 1]);
 
         const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).first();
@@ -753,6 +1055,11 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         }).toBeGreaterThan(12);
 
         await waitForBoardDiceSettled(page);
+        expectDiceRectsIndividuallyVisible(
+            await readVisibleBoardDieRects(page),
+            5,
+            'PC 重投结束后的静置态',
+        );
         await saveBoardDiceStageScreenshot(page, '03a-确认重投后-3D骰子稳定完成-局部', testInfo);
         await game.screenshot('03-确认重投后-3D骰子稳定完成', testInfo);
         const settledRects = await readBoardDieRects(page, [0, 1]);
@@ -817,12 +1124,15 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const firstBoardDie = page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]');
         await expect(firstBoardDie).toBeVisible({ timeout: 5000 });
         await expect(page.getByTestId('card-spotlight-overlay')).toHaveCount(0, { timeout: 5000 });
-        const hitLayer = page.getByTestId('dicethrone-board-dice-hit-layer');
+        const firstBoardDieBox = await firstBoardDie.boundingBox();
+        if (!firstBoardDieBox) {
+            throw new Error('未获取到第一颗 3D 骰子的可见命中区域');
+        }
         await page.mouse.move(
-            (beforeLockDebug.hitRect?.left ?? 0) + 12,
-            (beforeLockDebug.hitRect?.top ?? 0) + 12,
+            firstBoardDieBox.x + (firstBoardDieBox.width / 2),
+            firstBoardDieBox.y + (firstBoardDieBox.height / 2),
         );
-        await expect.poll(async () => await hitLayer.evaluate((node) => window.getComputedStyle(node).cursor)).toContain('pointer');
+        await expect.poll(async () => await firstBoardDie.evaluate((node) => window.getComputedStyle(node).cursor)).toContain('pointer');
         await clickBoardDieCenter(page, 0);
 
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
@@ -835,7 +1145,6 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
 
         const layerState = await page.evaluate(() => {
             const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
-            const hitLayer = document.querySelector('[data-testid="dicethrone-board-dice-hit-layer"]') as HTMLElement | null;
             const die = document.querySelector('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]') as HTMLElement | null;
             const stageRect = stage?.getBoundingClientRect();
             const dieRect = die?.getBoundingClientRect();
@@ -844,7 +1153,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             const topElement = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
             return {
                 stageZIndex: stage ? Number(window.getComputedStyle(stage).zIndex) : 0,
-                hitCursor: hitLayer ? window.getComputedStyle(hitLayer).cursor : '',
+                dieCursor: die ? window.getComputedStyle(die).cursor : '',
                 dieTop: dieRect?.top ?? 0,
                 dieLeft: dieRect?.left ?? 0,
                 dieRight: dieRect?.right ?? 0,
@@ -857,12 +1166,12 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             };
         });
         expect(layerState.stageZIndex).toBeGreaterThan(600);
-        expect(layerState.hitCursor).toContain('pointer');
+        expect(layerState.dieCursor).toContain('pointer');
         expect(layerState.dieTop).toBeGreaterThanOrEqual(layerState.stageTop - 1);
         expect(layerState.dieLeft).toBeGreaterThanOrEqual(layerState.stageLeft - 1);
         expect(layerState.dieRight).toBeLessThanOrEqual(layerState.stageRight + 1);
         expect(layerState.dieBottom).toBeLessThanOrEqual(layerState.stageBottom + 1);
-        expect(layerState.topTestId).toMatch(/dicethrone-board-dice-hit-layer|die-button-0/);
+        expect(layerState.topTestId).toBe('die-button-0');
         await expect(page.getByTestId('die-locked-ring-0')).toBeVisible({ timeout: 2000 });
 
         await game.screenshot('06-开启3D后锁定骰子仍留在棋盘骰台', testInfo);

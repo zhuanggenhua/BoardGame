@@ -50,6 +50,11 @@ services:
       REDIS_PORT: 6379
       FEEDBACK_API_URL: http://web/feedback
       INTERNAL_FEEDBACK_TOKEN: ${INTERNAL_FEEDBACK_TOKEN}
+      TRAINING_DATA_DIR: /data/training-data
+      TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS: ${TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS:-600000}
+      TRAINING_DATA_PENDING_RETENTION_HOURS: ${TRAINING_DATA_PENDING_RETENTION_HOURS:-24}
+    volumes:
+      - training_data:/data/training-data
     # 仅容器内部通信，不暴露到宿主机
     # 如需本地调试可临时取消注释
     # ports:
@@ -88,4 +93,6 @@ volumes:
   mongodb_data:
     driver: local
   redis_data:
+    driver: local
+  training_data:
     driver: local

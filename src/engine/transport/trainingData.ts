@@ -30,8 +30,39 @@ export interface TrainingDecisionSample {
     gameOver?: unknown;
 }
 
+export interface TrainingCompletedMatch {
+    schemaVersion: number;
+    gameId: string;
+    matchId: string;
+    completedAt: number;
+    durationMs: number;
+    finalSample?: TrainingDecisionSample;
+}
+
+export type TrainingMatchCommitResult =
+    | {
+        status: 'committed';
+        committedBytes: number;
+        gameBytes: number;
+        maxBytes: number;
+    }
+    | {
+        status: 'capacity-reached';
+        pendingBytes: number;
+        gameBytes: number;
+        maxBytes: number;
+    }
+    | {
+        status: 'already-committed' | 'empty' | 'failed';
+        committedBytes: number;
+        gameBytes: number;
+        maxBytes: number;
+    };
+
 export interface TrainingDataRecorder {
-    recordDecisionSample(sample: TrainingDecisionSample): void | Promise<void>;
+    stageDecisionSample(sample: TrainingDecisionSample): void | Promise<void>;
+    commitCompletedMatch(match: TrainingCompletedMatch): TrainingMatchCommitResult | Promise<TrainingMatchCommitResult>;
+    discardPendingMatch(match: Pick<TrainingCompletedMatch, 'schemaVersion' | 'gameId' | 'matchId'>): void | Promise<void>;
 }
 
 interface BuildTrainingDecisionSampleArgs {

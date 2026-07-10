@@ -393,7 +393,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
             {
                 description: abilityEffectText('holy-light', 'rollEffect'),
                 action: {
-                    type: 'rollDie', target: 'self', diceCount: 1,
+                    type: 'rollDie', target: 'self', diceCount: 2,
                     conditionalEffects: [
                         { face: FACES.SWORD, grantToken: { tokenId: TOKEN_IDS.CRIT, value: 1 }, effectKey: 'bonusDie.effect.holyLight2.sword' },
                         { face: FACES.HELM, grantToken: { tokenId: TOKEN_IDS.PROTECT, value: 1 }, effectKey: 'bonusDie.effect.holyLight2.helm' },

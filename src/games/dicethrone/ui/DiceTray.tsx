@@ -12,7 +12,10 @@ import { Dice3D, DiceField3D, type ProjectedDiceLayout } from './Dice3D';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
 import { UI_Z_INDEX } from '../../../core';
 import { DiceBoxPhysicsSource } from '../../../lib/dice-physics/DiceBoxPhysicsSource';
-import { DICETHRONE_DICE_BOX_STYLE_PROFILE } from './diceBoxStyleProfiles';
+import {
+    DICETHRONE_DICE_BOX_STYLE_PROFILE,
+    DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE,
+} from './diceBoxStyleProfiles';
 import { loadDiceThroneDiceBoxSkins, type DiceThroneDiceBoxSkin } from './diceThroneDiceBoxSkins';
 
 // ============================================================================
@@ -86,21 +89,20 @@ const CENTER_DICE_SCATTER_SLOTS = [
 ];
 
 const BOARD_DICE_SCATTER_SLOTS = [
-    { left: '38%', top: '36%', rotate: '-12deg', zIndex: 5, world: { x: -0.58, y: -1.07, z: -0.38 } },
-    { left: '50%', top: '27%', rotate: '8deg', zIndex: 2, world: { x: -0.06, y: -1.07, z: -0.76 } },
-    { left: '50%', top: '48%', rotate: '-4deg', zIndex: 4, world: { x: 0.02, y: -1.07, z: 0.12 } },
-    { left: '62%', top: '36%', rotate: '10deg', zIndex: 1, world: { x: 0.54, y: -1.07, z: -0.34 } },
-    { left: '60%', top: '56%', rotate: '-8deg', zIndex: 3, world: { x: 0.48, y: -1.07, z: 0.52 } },
+    { left: '23%', top: '42%', rotate: '-12deg', zIndex: 5, world: { x: -0.58, y: -1.07, z: -0.38 } },
+    { left: '40%', top: '24%', rotate: '8deg', zIndex: 2, world: { x: -0.06, y: -1.07, z: -0.76 } },
+    { left: '50%', top: '52%', rotate: '-4deg', zIndex: 4, world: { x: 0.02, y: -1.07, z: 0.12 } },
+    { left: '67%', top: '30%', rotate: '10deg', zIndex: 1, world: { x: 0.54, y: -1.07, z: -0.34 } },
+    { left: '77%', top: '56%', rotate: '-8deg', zIndex: 3, world: { x: 0.48, y: -1.07, z: 0.52 } },
 ];
 
 const BOARD_OVERLAY_DICE_SIZE_MIN_PX = 42;
 const BOARD_OVERLAY_DICE_SIZE_MAX_PX = 62;
 const BOARD_DICE_HIT_TARGET_SIZE_PX = 44;
+const BOARD_DICE_MOBILE_HIT_TARGET_SIZE_PX = 40;
 const BOARD_DICE_RING_SIZE_MULTIPLIER = 1.35;
 const BOARD_DICE_STAGE_Z_INDEX = UI_Z_INDEX.cardPreviewTooltip + 1;
 const BOARD_DICE_LOCK_LABEL_Z_INDEX = BOARD_DICE_STAGE_Z_INDEX + 2;
-const BOARD_DICE_MOBILE_PROJECTION_Y_OFFSET_PX = -72;
-const BOARD_DICE_MOBILE_PROJECTION_TOP_PADDING_PX = 36;
 const OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME = [
     'pointer-events-auto absolute top-1/2 z-40 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full',
     'border border-white/40 bg-amber-600 text-base font-black leading-none text-white shadow-[0_0_14px_rgba(245,158,11,0.65)]',
@@ -109,13 +111,6 @@ const OVERLAY_DICE_ADJUST_BUTTON_CLASS_NAME = [
 
 function clampNumber(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
-}
-
-function resolveMobileBoardProjectionYOffset(layout: ProjectedDiceLayout): number {
-    return Math.max(
-        BOARD_DICE_MOBILE_PROJECTION_Y_OFFSET_PX,
-        BOARD_DICE_MOBILE_PROJECTION_TOP_PADDING_PX - layout.minY,
-    );
 }
 
 function resolveBoardOverlayDiceSize(layout?: ProjectedDiceLayout): number {
@@ -196,6 +191,12 @@ export const DiceTray = ({
     const isCenterPresentation = presentation === 'center';
     const isBoardPresentation = presentation === 'board';
     const isOverlayPresentation = isCenterPresentation || isBoardPresentation;
+    const isMobileBoardPresentation = isBoardPresentation
+        && typeof window !== 'undefined'
+        && window.innerWidth <= 900;
+    const diceBoxStyleProfile = isMobileBoardPresentation
+        ? DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE
+        : DICETHRONE_DICE_BOX_STYLE_PROFILE;
     const railTokens = DESKTOP_DICE_TRAY_TOKENS;
     const {
         diceSize,
@@ -331,39 +332,25 @@ export const DiceTray = ({
             const next: Record<number, ProjectedDiceLayout> = {};
             let changed = layouts.length !== Object.keys(prev).length;
             for (const layout of layouts) {
-                const shouldLiftBoardProjection = isBoardPresentation
-                    && typeof window !== 'undefined'
-                    && window.innerWidth <= 900;
-                const projectionYOffset = shouldLiftBoardProjection
-                    ? resolveMobileBoardProjectionYOffset(layout)
-                    : 0;
-                const nextLayout = shouldLiftBoardProjection
-                    ? {
-                        ...layout,
-                        y: layout.y + projectionYOffset,
-                        minY: layout.minY + projectionYOffset,
-                        maxY: layout.maxY + projectionYOffset,
-                    }
-                    : layout;
-                next[nextLayout.id] = nextLayout;
-                const prevLayout = prev[nextLayout.id];
+                next[layout.id] = layout;
+                const prevLayout = prev[layout.id];
                 if (!prevLayout
-                    || Math.abs(prevLayout.x - nextLayout.x) > 1
-                    || Math.abs(prevLayout.y - nextLayout.y) > 1
-                    || Math.abs(prevLayout.width - nextLayout.width) > 1
-                    || Math.abs(prevLayout.height - nextLayout.height) > 1
-                    || Math.abs(prevLayout.rotateX - nextLayout.rotateX) > 0.02
-                    || Math.abs(prevLayout.rotateY - nextLayout.rotateY) > 0.02
-                    || Math.abs(prevLayout.rotateZ - nextLayout.rotateZ) > 0.02
-                    || prevLayout.selected !== nextLayout.selected
-                    || Math.abs(prevLayout.minY - nextLayout.minY) > 1
-                    || Math.abs(prevLayout.maxY - nextLayout.maxY) > 1) {
+                    || Math.abs(prevLayout.x - layout.x) > 1
+                    || Math.abs(prevLayout.y - layout.y) > 1
+                    || Math.abs(prevLayout.width - layout.width) > 1
+                    || Math.abs(prevLayout.height - layout.height) > 1
+                    || Math.abs(prevLayout.rotateX - layout.rotateX) > 0.02
+                    || Math.abs(prevLayout.rotateY - layout.rotateY) > 0.02
+                    || Math.abs(prevLayout.rotateZ - layout.rotateZ) > 0.02
+                    || prevLayout.selected !== layout.selected
+                    || Math.abs(prevLayout.minY - layout.minY) > 1
+                    || Math.abs(prevLayout.maxY - layout.maxY) > 1) {
                     changed = true;
                 }
             }
             return changed ? next : prev;
         });
-    }, [isBoardPresentation]);
+    }, []);
     const handleDicePhysicsStatesChange = React.useCallback((states: DicePhysicsState[]) => {
         handleProjectedDiceUpdate(states.map((state) => ({
             ...state.layout,
@@ -447,60 +434,6 @@ export const DiceTray = ({
         multistepInteraction,
         onToggleLock,
         rollCount,
-    ]);
-
-    const handleBoardPresentationClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-        if (!isBoardPresentation) return;
-
-        const stage = event.currentTarget.closest('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
-        const stageRect = (stage ?? event.currentTarget).getBoundingClientRect();
-        const clickX = event.clientX;
-        const clickY = event.clientY;
-        let nearestDieId: number | null = null;
-        let nearestDistance = Number.POSITIVE_INFINITY;
-
-        for (const d of visibleOverlayDice) {
-            const selected = isSelected(d.id);
-            const isModified = isModifyMode && d.id in (modifyResult?.modifications ?? {});
-            const canModifyDie = canInteractWithDie(d);
-            const isInactiveDie = isInteractionMode && !canModifyDie;
-            const clickable = isInteractionMode
-                ? ((isAnyMode || isAdjustMode)
-                    ? !isInactiveDie && (canSelectMore || selected || isModified)
-                    : (!isInactiveDie && (canSelectMore || selected)))
-                : canToggleDieLock;
-            if (!clickable) continue;
-
-            const projectedLayout = centerDiceLayout[d.id];
-            if (!projectedLayout) continue;
-
-            const centerX = stageRect.left + projectedLayout.x;
-            const centerY = stageRect.top + projectedLayout.y;
-            const distance = Math.hypot(clickX - centerX, clickY - centerY);
-            const hitRadius = Math.max(resolveBoardOverlayDiceSize(projectedLayout) / 2, BOARD_DICE_HIT_TARGET_SIZE_PX / 2);
-            if (distance <= hitRadius && distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestDieId = d.id;
-            }
-        }
-
-        if (nearestDieId !== null) {
-            handleOverlayDieClick(nearestDieId);
-        }
-    }, [
-        canInteractWithDie,
-        canSelectMore,
-        canToggleDieLock,
-        centerDiceLayout,
-        handleOverlayDieClick,
-        isAdjustMode,
-        isAnyMode,
-        isBoardPresentation,
-        isInteractionMode,
-        isModifyMode,
-        isSelected,
-        modifyResult?.modifications,
-        visibleOverlayDice,
     ]);
 
     const handleAdjust = (dieId: number, delta: number, currentValue: number) => {
@@ -643,7 +576,7 @@ export const DiceTray = ({
     }
 
     return (
-        <div className={resolvedContainerClassName} onClick={isBoardPresentation ? handleBoardPresentationClick : undefined}>
+        <div className={resolvedContainerClassName}>
             <div className={resolvedTrayInnerClassName}>
                 {!isBoardPresentation && (
                     <DiceField3D
@@ -706,7 +639,7 @@ export const DiceTray = ({
                         dice={visiblePhysicsDice}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
-                        styleProfile={DICETHRONE_DICE_BOX_STYLE_PROFILE}
+                        styleProfile={diceBoxStyleProfile}
                         dieSkins={diceBoxDieSkins}
                         requireDieSkins={true}
                         rendererMode="debug-visible"
@@ -715,6 +648,7 @@ export const DiceTray = ({
                         style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX }}
                         dataAttributes={{
                             'data-dicethrone-dice-skins-ready': diceBoxDieSkinsReady ? 'true' : 'false',
+                            'data-dice-layout-profile': diceBoxStyleProfile.id ?? '',
                         }}
                         onPhysicsStatesChange={handleDicePhysicsStatesChange}
                         testId="dicethrone-board-dice-physics-source"
@@ -722,17 +656,9 @@ export const DiceTray = ({
                 )}
                 {isBoardPresentation && (
                     <div
-                        className={clsx(
-                            'absolute inset-0',
-                            (canToggleDieLock || isInteractionMode) ? 'cursor-pointer' : 'cursor-default',
-                            isInteractionMode && (isAdjustMode || isAnyMode) ? 'pointer-events-none' : 'pointer-events-auto',
-                        )}
+                        className="pointer-events-none absolute inset-0"
                         style={{ zIndex: BOARD_DICE_STAGE_Z_INDEX + 1 }}
                         data-testid="dicethrone-board-dice-hit-layer"
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            handleBoardPresentationClick(event);
-                        }}
                     />
                 )}
                 {visibleOverlayDice.map((d, i) => {
@@ -771,13 +697,16 @@ export const DiceTray = ({
                     const overlayTransform = projectedLayout
                         ? `rotateX(${projectedLayout.rotateX}rad) rotateY(${projectedLayout.rotateY}rad) rotateZ(${projectedLayout.rotateZ}rad)`
                         : undefined;
+                    const boardDiceHitTargetSizePx = isMobileBoardPresentation
+                        ? BOARD_DICE_MOBILE_HIT_TARGET_SIZE_PX
+                        : BOARD_DICE_HIT_TARGET_SIZE_PX;
                     const overlayWidth = isBoardPresentation
-                        ? `${BOARD_DICE_HIT_TARGET_SIZE_PX}px`
+                        ? `${boardDiceHitTargetSizePx}px`
                         : projectedLayout
                             ? `${centerWidth}px`
                             : resolvedDiceSize;
                     const overlayHeight = isBoardPresentation
-                        ? `${BOARD_DICE_HIT_TARGET_SIZE_PX}px`
+                        ? `${boardDiceHitTargetSizePx}px`
                         : projectedLayout
                             ? `${centerHeight}px`
                             : resolvedDiceSize;
@@ -807,10 +736,16 @@ export const DiceTray = ({
                                 data-rotate-x={projectedLayout ? projectedLayout.rotateX.toFixed(4) : ''}
                                 data-rotate-y={projectedLayout ? projectedLayout.rotateY.toFixed(4) : ''}
                                 data-rotate-z={projectedLayout ? projectedLayout.rotateZ.toFixed(4) : ''}
+                                data-projected-width={projectedLayout ? projectedLayout.width.toFixed(2) : ''}
+                                data-projected-height={projectedLayout ? projectedLayout.height.toFixed(2) : ''}
+                                data-projected-visual-width={projectedLayout?.visualWidth?.toFixed(2) ?? ''}
+                                data-projected-visual-height={projectedLayout?.visualHeight?.toFixed(2) ?? ''}
                                 className={clsx(
                                     'absolute rounded-full transition-[left,top,width,height,transform,filter] duration-75 ease-out',
                                     'ring-0',
-                                    isBoardPresentation && !showOverlayAdjustButtons && !showOverlayAnyModeButtons ? 'pointer-events-none' : 'pointer-events-auto',
+                                    isBoardPresentation
+                                        ? (clickable ? 'pointer-events-auto' : 'pointer-events-none')
+                                        : 'pointer-events-auto',
                                     clickable ? 'cursor-pointer' : 'cursor-default',
                                 )}
                                 style={{
@@ -1242,9 +1177,8 @@ export const BoardDiceStage = ({
 
     return (
         <div
-            className="pointer-events-none absolute left-1/2 aspect-square w-[clamp(360px,31vw,500px)] max-[900px]:fixed max-[900px]:w-[clamp(190px,25vw,216px)]"
+            className="pointer-events-none fixed left-1/2 top-[114px] aspect-square w-[clamp(360px,31vw,500px)] max-[900px]:top-0 max-[900px]:w-[clamp(198px,26vw,216px)]"
             style={{
-                top: 'max(0px, env(safe-area-inset-top))',
                 transform: 'translateX(-50%)',
                 zIndex: BOARD_DICE_STAGE_Z_INDEX,
             }}

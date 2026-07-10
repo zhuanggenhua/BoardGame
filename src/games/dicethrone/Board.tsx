@@ -1137,14 +1137,39 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const duelAttackerDisplayDie = React.useMemo(() => createDuelAttackerDisplayDie(G, currentPhase), [G, currentPhase]);
     const duelDefenderDisplayDie = React.useMemo(() => createDuelDefenderDisplayDie(G, currentPhase), [G, currentPhase]);
+    const bonusDiceInteractionDice = React.useMemo(() => {
+        const settlement = G.pendingBonusDiceSettlement;
+        if (!diceMultistepInteraction || !settlement?.allowDiceModification) {
+            return null;
+        }
+
+        return getPendingBonusSettlementDice(settlement).map((bonusDie) => {
+            const existingDie = G.dice.find((die) => die.id === bonusDie.index) ?? G.dice[bonusDie.index];
+            return {
+                ...(existingDie ?? {
+                    id: bonusDie.index,
+                    value: bonusDie.value,
+                    isKept: false,
+                }),
+                id: bonusDie.index,
+                value: bonusDie.value,
+                symbol: bonusDie.face ?? existingDie?.symbol ?? null,
+                symbols: bonusDie.face ? [bonusDie.face] : (existingDie?.symbols ?? []),
+                isKept: false,
+                ownerId: settlement.attackerId,
+                displayOnly: false,
+            } as Die;
+        });
+    }, [G.dice, G.pendingBonusDiceSettlement, diceMultistepInteraction]);
     const rightSidebarDice = React.useMemo(() => {
-        const baseDice = getRailDiceForCurrentBoard(G.dice, useBoardDiceStage);
+        const sourceDice = bonusDiceInteractionDice ?? G.dice;
+        const baseDice = getRailDiceForCurrentBoard(sourceDice, useBoardDiceStage);
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, useBoardDiceStage]);
+    }, [G.dice, bonusDiceInteractionDice, duelAttackerDisplayDie, duelDefenderDisplayDie, useBoardDiceStage]);
     const boardStageDice = React.useMemo(() => {
-        const baseDice = G.dice;
+        const baseDice = bonusDiceInteractionDice ?? G.dice;
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
+    }, [G.dice, bonusDiceInteractionDice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||

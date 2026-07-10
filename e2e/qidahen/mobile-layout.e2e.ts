@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../framework';
 import {
+    attachPageDiagnostics,
     blockAudioRequests,
     blockCdnRequests,
     blockLobbySocket,
@@ -28,49 +29,90 @@ const screenshot = async (page: Page, testName: string, fileName: string) => {
 
 const mountQidahenBoardHarness = async (page: Page) => {
     await page.evaluate(async () => {
+        window.__qidahenHarnessStatus = 'starting';
+        window.__qidahenHarnessError = null;
         const existing = document.getElementById('qidahen-harness-root');
         existing?.remove();
 
-        const host = document.createElement('div');
-        host.id = 'qidahen-harness-root';
-        host.style.cssText = [
-            'position:fixed',
-            'inset:0',
-            'z-index:2147483647',
-            'width:100vw',
-            'height:100vh',
-            'overflow:hidden',
-            'background:#0b0906',
-        ].join(';');
-        document.body.appendChild(host);
+        try {
+            const host = document.createElement('div');
+            host.id = 'qidahen-harness-root';
+            host.style.cssText = [
+                'position:fixed',
+                'inset:0',
+                'z-index:2147483647',
+                'width:100vw',
+                'height:100vh',
+                'overflow:hidden',
+                'background:#0b0906',
+            ].join(';');
+            document.body.appendChild(host);
 
-        const ReactModule = await import('/node_modules/.vite/deps/react.js');
-        const React = ReactModule.default;
-        const ReactDomModule = await import('/node_modules/.vite/deps/react-dom_client.js');
-        const ReactDOM = ReactDomModule.default;
-        const BoardModule = await import('/src/games/qidahen/Board.tsx');
-        const DomainModule = await import('/src/games/qidahen/domain/index.ts');
-        const initialCore = DomainModule.QidahenDomain.setup(['0', '1', '2'], () => 0.42);
+            const ReactModule = await import('/node_modules/.vite/deps/react.js');
+            const React = ReactModule.default;
+            const ReactDomModule = await import('/node_modules/.vite/deps/react-dom_client.js');
+            const ReactDOM = ReactDomModule.default;
+            const BoardModule = await import('/src/games/qidahen/Board.tsx');
+            const AudioModule = await import('/src/contexts/AudioContext.tsx');
+            const ToastModule = await import('/src/contexts/ToastContext.tsx');
+            const TutorialModule = await import('/src/contexts/TutorialContext.tsx');
+            const GameModeModule = await import('/src/contexts/GameModeContext.tsx');
+            const DomainModule = await import('/src/games/qidahen/domain/index.ts');
+            const PipelineModule = await import('/src/engine/pipeline.ts');
+            const GameModule = await import('/src/games/qidahen/game.ts');
+            const playerIds = ['0', '1', '2'];
+            const initialCore = DomainModule.QidahenDomain.setup(playerIds, () => 0.42);
+            const initialSys = PipelineModule.createInitialSystemState(
+                playerIds,
+                GameModule.engineConfig.systems,
+                'qidahen-mobile-layout-harness',
+            );
 
-        const Harness = () => {
-            const [core, setCore] = React.useState(initialCore);
-            const dispatch = React.useCallback((type: string, payload: { regionId?: string }) => {
-                if (type === 'SELECT_REGION' && payload.regionId) {
-                    setCore((current: typeof initialCore) => ({
-                        ...current,
-                        selectedRegionId: payload.regionId,
-                    }));
-                }
-            }, []);
+            const Harness = () => {
+                const [core, setCore] = React.useState(initialCore);
+                const dispatch = React.useCallback((type: string, payload: { regionId?: string }) => {
+                    if (type === 'SELECT_REGION' && payload.regionId) {
+                        setCore((current: typeof initialCore) => ({
+                            ...current,
+                            selectedRegionId: payload.regionId,
+                        }));
+                    }
+                }, [setCore]);
 
-            return React.createElement(BoardModule.default, {
-                G: { core },
-                dispatch,
-                playerID: '0',
-            });
-        };
+                return React.createElement(BoardModule.default, {
+                    G: { core, sys: initialSys },
+                    dispatch,
+                    playerID: '0',
+                });
+            };
 
-        ReactDOM.createRoot(host).render(React.createElement(Harness));
+            ReactDOM.createRoot(host).render(
+                React.createElement(
+                    ToastModule.ToastProvider,
+                    null,
+                    React.createElement(
+                        GameModeModule.GameModeProvider,
+                        { mode: 'test' },
+                        React.createElement(
+                            AudioModule.AudioProvider,
+                            null,
+                            React.createElement(
+                                TutorialModule.TutorialProvider,
+                                null,
+                                React.createElement(Harness),
+                            ),
+                        ),
+                    ),
+                ),
+            );
+            window.__qidahenHarnessStatus = 'render-requested';
+        } catch (error) {
+            window.__qidahenHarnessStatus = 'failed';
+            window.__qidahenHarnessError = error instanceof Error
+                ? `${error.name}: ${error.message}\n${error.stack ?? ''}`
+                : String(error);
+            throw error;
+        }
     });
 };
 
@@ -78,6 +120,7 @@ test.describe('七大恨移动端布局兼容', () => {
     test.setTimeout(120000);
 
     test.beforeEach(async ({ page, context }) => {
+        const diagnostics = attachPageDiagnostics(page);
         await setChineseLocale(context);
         await blockAudioRequests(context);
         await blockLobbySocket(context);
@@ -89,6 +132,21 @@ test.describe('七大恨移动端布局兼容', () => {
             timeout: 15000,
         }).catch(() => undefined);
         await mountQidahenBoardHarness(page);
+        await expect.poll(async () => {
+            const state = await page.evaluate(() => ({
+                status: window.__qidahenHarnessStatus ?? 'missing',
+                error: window.__qidahenHarnessError ?? null,
+                hasHost: document.getElementById('qidahen-harness-root') != null,
+                hasBoard: document.querySelector('[data-testid="qidahen-board"]') != null,
+            }));
+            return JSON.stringify({
+                ...state,
+                diagnostics: diagnostics.errors.slice(-5),
+            });
+        }, {
+            message: 'Qidahen 移动端测试 harness 应成功挂载 Board',
+            timeout: 5000,
+        }).toContain('"hasBoard":true');
     });
 
     test('手机横屏下主地图、手牌和底部操作区应保持可见且不出现顶层横向溢出', async ({ page }) => {
@@ -96,15 +154,70 @@ test.describe('七大恨移动端布局兼容', () => {
 
         await page.setViewportSize({ width: 896, height: 414 });
         await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-board"]')).toBeVisible();
-        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-map-container"]')).toBeVisible();
+        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-map-layer"]')).toBeVisible();
+        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-actions-zone"]')).toBeVisible();
 
         const metrics = await page.evaluate(() => {
             const board = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-board"]');
-            const mapContainer = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-container"]');
+            const mapLayer = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-layer"]');
             const mapContent = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-content"]');
-            const actionButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('#qidahen-harness-root button'))
-                .filter((button) => button.textContent?.includes('确认') || button.textContent?.includes('取消'));
-            const handCards = document.querySelectorAll('#qidahen-harness-root button[class*="h-[142px]"]').length;
+            const actionsZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-actions-zone"]');
+            const handZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-hand-zone"]');
+            const drawPile = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-draw-pile"]');
+            const discardPile = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-discard-pile"]');
+            const actionButtons = Array.from(
+                document.querySelectorAll<HTMLButtonElement>(
+                    '#qidahen-harness-root [data-testid="qidahen-actions-zone"] button',
+                ),
+            );
+            const handCardButtons = Array.from(
+                document.querySelectorAll<HTMLButtonElement>(
+                    '#qidahen-harness-root button[data-testid^="qidahen-hand-card-"]',
+                ),
+            ).filter((button) => (
+                !button.dataset.testid?.startsWith('qidahen-hand-card-kind-')
+                && !button.dataset.testid?.startsWith('qidahen-hand-card-magnify-')
+            ));
+            const visibleHandCardRects = handCardButtons
+                .map((button) => button.getBoundingClientRect())
+                .filter((box) => (
+                    box.width > 0
+                    && box.height > 0
+                    && box.right > 0
+                    && box.left < window.innerWidth
+                    && box.bottom > 0
+                    && box.top < window.innerHeight
+                ));
+            const completeHandCardRects = handCardButtons
+                .map((button) => button.getBoundingClientRect())
+                .filter((box) => (
+                    box.width > 0
+                    && box.height > 0
+                    && box.left >= -1
+                    && box.right <= window.innerWidth + 1
+                    && box.top >= -1
+                    && box.bottom <= window.innerHeight + 1
+                ));
+            const comfortableHandCardRects = completeHandCardRects.filter((box) => (
+                window.innerHeight - box.bottom >= 16
+            ));
+            const getVisibleRatio = (box: DOMRect, clipBox?: DOMRect | null) => {
+                const left = Math.max(box.left, 0, clipBox?.left ?? 0);
+                const top = Math.max(box.top, 0, clipBox?.top ?? 0);
+                const right = Math.min(box.right, window.innerWidth, clipBox?.right ?? window.innerWidth);
+                const bottom = Math.min(box.bottom, window.innerHeight, clipBox?.bottom ?? window.innerHeight);
+                const visibleArea = Math.max(0, right - left) * Math.max(0, bottom - top);
+                const totalArea = Math.max(1, box.width * box.height);
+                return visibleArea / totalArea;
+            };
+            const handZoneBox = handZone?.getBoundingClientRect() ?? null;
+            const readableHandCardRects = handCardButtons
+                .map((button) => button.getBoundingClientRect())
+                .filter((box) => getVisibleRatio(box, handZoneBox) >= 0.96);
+            const loadedHandCardAtlasImages = handCardButtons.filter((button) => {
+                const image = button.querySelector<HTMLImageElement>('img');
+                return image != null && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+            });
 
             const rect = (element: HTMLElement | null) => {
                 if (!element) return null;
@@ -125,29 +238,52 @@ test.describe('七大恨移动端布局兼容', () => {
                 docScrollWidth: document.documentElement.scrollWidth,
                 bodyScrollWidth: document.body.scrollWidth,
                 boardRect: rect(board),
-                mapContainerRect: rect(mapContainer),
+                mapLayerRect: rect(mapLayer),
                 mapContentRect: rect(mapContent),
+                actionsZoneRect: rect(actionsZone),
+                handZoneRect: rect(handZone),
+                drawPileRect: rect(drawPile),
+                discardPileRect: rect(discardPile),
                 actionRects: actionButtons.map((button) => rect(button)).filter(Boolean),
-                handCards,
+                handCards: handCardButtons.length,
+                visibleHandCards: visibleHandCardRects.length,
+                completeHandCards: completeHandCardRects.length,
+                comfortableHandCards: comfortableHandCardRects.length,
+                readableHandCards: readableHandCardRects.length,
+                loadedHandCardAtlasImages: loadedHandCardAtlasImages.length,
             };
         });
 
         expect(metrics.docScrollWidth, 'Qidahen 手机横屏时 documentElement 不应横向溢出').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.bodyScrollWidth, 'Qidahen 手机横屏时 body 不应横向溢出').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.boardRect, '应渲染 Qidahen 主板面').not.toBeNull();
-        expect(metrics.mapContainerRect, '应渲染 Qidahen 地图视口').not.toBeNull();
+        expect(metrics.mapLayerRect, '应渲染 Qidahen 地图交互层').not.toBeNull();
         expect(metrics.mapContentRect, '应渲染 Qidahen 地图内容').not.toBeNull();
-        expect(metrics.handCards, 'Qidahen 手机横屏时手牌区应保留至少一张可见卡牌').toBeGreaterThan(0);
+        expect(metrics.actionsZoneRect, '应渲染 Qidahen 操作区').not.toBeNull();
+        expect(metrics.handZoneRect, '应渲染 Qidahen 手牌区域').not.toBeNull();
+        expect(metrics.drawPileRect, '应渲染 Qidahen 己方抽牌堆').not.toBeNull();
+        expect(metrics.discardPileRect, '应渲染 Qidahen 己方弃牌堆').not.toBeNull();
+        expect(metrics.handCards, 'Qidahen 手机横屏时应渲染玩家手牌按钮').toBeGreaterThan(0);
+        expect(metrics.visibleHandCards, 'Qidahen 手机横屏时手牌区应保留至少一张视口内可见卡牌').toBeGreaterThan(0);
+        expect(metrics.completeHandCards, 'Qidahen 手机横屏时至少一张手牌主体应完整进入视口').toBeGreaterThan(0);
+        expect(metrics.comfortableHandCards, 'Qidahen 手机横屏时至少一张完整手牌应留出可见底部余量').toBeGreaterThan(0);
+        expect(metrics.readableHandCards, 'Qidahen 手机横屏时不能只有中间手牌可辨，当前手牌主体应在可视容器内完整可辨').toBe(metrics.handCards);
+        expect(metrics.loadedHandCardAtlasImages, 'Qidahen 手机横屏时手牌应加载真实牌面图集图片').toBeGreaterThan(0);
 
         expect(metrics.boardRect!.left, 'Qidahen 板面左边界不应出视口').toBeGreaterThanOrEqual(-1);
         expect(metrics.boardRect!.right, 'Qidahen 板面右边界不应出视口').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.boardRect!.bottom, 'Qidahen 板面底边界不应出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
-        expect(metrics.mapContainerRect!.width, 'Qidahen 地图视口在手机横屏下不应塌成窄条').toBeGreaterThan(240);
-        expect(metrics.mapContainerRect!.height, 'Qidahen 地图视口在手机横屏下不应塌成横条').toBeGreaterThan(120);
+        expect(metrics.mapLayerRect!.width, 'Qidahen 地图交互层在手机横屏下不应塌成窄条').toBeGreaterThan(240);
+        expect(metrics.mapLayerRect!.height, 'Qidahen 地图交互层在手机横屏下不应塌成横条').toBeGreaterThan(120);
+        expect(metrics.actionsZoneRect!.bottom, 'Qidahen 操作区不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.drawPileRect!.left, 'Qidahen 手机横屏时左侧抽牌堆不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.drawPileRect!.bottom, 'Qidahen 手机横屏时左侧抽牌堆不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.discardPileRect!.right, 'Qidahen 手机横屏时右侧弃牌堆不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
+        expect(metrics.discardPileRect!.bottom, 'Qidahen 手机横屏时右侧弃牌堆不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
 
-        expect(metrics.actionRects.length, 'Qidahen 手机横屏时底部确认/取消按钮应保留').toBeGreaterThanOrEqual(2);
+        expect(metrics.actionRects.length, 'Qidahen 手机横屏时操作区按钮应保留').toBeGreaterThan(0);
         for (const actionRect of metrics.actionRects) {
-            expect(actionRect!.bottom, 'Qidahen 底部操作按钮不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
+            expect(actionRect!.bottom, 'Qidahen 操作区按钮不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
         }
 
         await screenshot(page, testName, 'qidahen-mobile-landscape-layout.png');

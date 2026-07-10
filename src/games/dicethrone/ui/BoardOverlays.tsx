@@ -256,6 +256,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 ? `${props.pendingBonusDiceSettlement.id}:reroll-${props.pendingBonusDiceSettlement.rerollCount}`
                                 : props.bonusDie.presentationKey
                         }
+                        presentationKind={props.bonusDie.presentationKind}
                         canReroll={props.canRerollBonusDie}
                         rerollLimitReached={Boolean(
                             props.pendingBonusDiceSettlement &&
@@ -283,6 +284,10 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         }
                         forceAutoCloseDelay={props.tutorialSpotlightAutoCloseDelayMs}
                         manualCloseOnly={props.bonusDieManualCloseOnly && props.bonusDie.effectKey !== 'bonusDie.effect.samuraiBackStrikeDie'}
+                        allowBackgroundInteraction={Boolean(
+                            props.pendingBonusDiceSettlement?.displayOnly
+                            && props.pendingBonusDiceSettlement.allowDiceModification
+                        )}
                     />
                 )}
 

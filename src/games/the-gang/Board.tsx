@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { UndoProvider } from '../../contexts/UndoContext';
@@ -410,9 +409,6 @@ function VaultsAlarmsZone({ successes, failures }: { successes: number; failures
 function ShowdownResultPanel({
     lastShowdown,
     communityCards,
-    localPlayerId,
-    isMultiplayer,
-    onSelectHotseatPlayer,
     playerName,
     onNextHeist,
     nextHeistProgress,
@@ -420,9 +416,6 @@ function ShowdownResultPanel({
 }: {
     lastShowdown: NonNullable<TheGangCore['lastShowdown']>;
     communityCards: TheGangCore['communityCards'];
-    localPlayerId: string;
-    isMultiplayer?: boolean;
-    onSelectHotseatPlayer: (playerId: string) => void;
     playerName: (id: string) => string;
     onNextHeist: () => void;
     nextHeistProgress: ProgressButtonState;
@@ -512,35 +505,6 @@ function ShowdownResultPanel({
                 <div className="sr-only" data-bgg-zone="safe-zone">
                     {t('board.safeSettlement')}
                 </div>
-
-                {!isMultiplayer && (
-                    <div
-                        className="flex flex-wrap justify-center gap-2"
-                        data-testid="the-gang-showdown-hotseat-switcher"
-                    >
-                        {lastShowdown.results.map((result) => {
-                            const selected = result.playerId === localPlayerId;
-                            const approved = nextHeistProgress.approvals.includes(result.playerId);
-                            return (
-                                <button
-                                    key={result.playerId}
-                                    type="button"
-                                    aria-pressed={selected}
-                                    onClick={() => onSelectHotseatPlayer(result.playerId)}
-                                    className={[
-                                        'rounded-full border px-3 py-1 text-xs font-black tracking-[0.08em] transition',
-                                        selected
-                                            ? 'border-amber-200 bg-amber-200 text-emerald-950'
-                                            : 'border-emerald-100/30 bg-emerald-950/62 text-emerald-50 hover:border-amber-200/70',
-                                    ].join(' ')}
-                                >
-                                    {playerName(result.playerId)}
-                                    {approved ? ` · ${t('board.progressWaiting')}` : ''}
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
 
                 <button
                     type="button"
@@ -733,16 +697,12 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         isMultiplayer,
     });
 
-    const [hotseatPlayerId, setHotseatPlayerId] = useState(core.playerIds[0]);
-    const resolvedHotseatPlayerId = core.playerIds.includes(hotseatPlayerId)
-        ? hotseatPlayerId
-        : core.playerIds[0];
     const hasAiSeat = Object.values(seatControllers ?? {}).some((controller) => controller.type !== 'human');
     const localHumanPlayerId = core.playerIds.find((id) => (seatControllers?.[id]?.type ?? 'human') === 'human')
         ?? core.playerIds[0];
     const localPlayerId = isMultiplayer
         ? (playerID ?? core.playerIds[0])
-        : (hasAiSeat ? (playerID ?? localHumanPlayerId) : resolvedHotseatPlayerId);
+        : (hasAiSeat ? (playerID ?? localHumanPlayerId) : (playerID ?? core.playerIds[0]));
     const localPlayer = core.players[localPlayerId];
     const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
@@ -759,13 +719,6 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         (id) => t('board.playerFallback', { player: Number(id) + 1 }),
     );
     const playerName = (id: string) => playerNames[id] ?? t('board.playerFallback', { player: Number(id) + 1 });
-    const otherPlayerIds = core.playerIds.filter((id) => id !== localPlayerId);
-    const shouldShowOpponentCards = core.phase !== 'chip-selection';
-    const visibleOpponentIds = otherPlayerIds.filter((id) => (
-        shouldShowOpponentCards
-        || core.currentRoundChips[id] !== undefined
-        || core.roundHistory.some((entry) => entry.chipsByPlayer[id] !== undefined)
-    ));
 
     const dispatchForPlayer = <K extends string & keyof TheGangCommandMap>(
         type: K,
@@ -802,11 +755,11 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     return (
         <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!G.sys.gameover, isLocalMode: !isMultiplayer }}>
         <main
-            className="the-gang-desktop-table h-full min-h-0 overflow-auto bg-[#203b23] text-stone-50"
+            className="the-gang-desktop-table h-full min-h-0 overflow-hidden bg-[#203b23] text-stone-50"
             data-game-ui="the-gang"
         >
             <section
-                className="relative flex min-h-full min-w-[64rem] flex-col gap-1 overflow-hidden bg-[#203b23] px-4 py-3 lg:gap-2 lg:px-8 lg:py-5 xl:gap-3 xl:px-12 xl:py-7"
+                className="relative flex h-full min-h-0 w-full flex-col gap-1 overflow-hidden bg-[#203b23] px-4 py-3 lg:gap-2 lg:px-8 lg:py-5 xl:gap-3 xl:px-12 xl:py-7"
                 data-layout-contract="bgg-electronic"
                 data-layout-source={BGG_LAYOUT_CONTRACT.source}
                 data-bgg-top-zone={BGG_LAYOUT_CONTRACT.topZone}
@@ -829,25 +782,25 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                 <section className="relative z-10 flex min-h-0 flex-1 flex-col gap-1 lg:gap-2 xl:gap-3" data-testid="the-gang-bgg-board">
                     <section
-                        className="flex min-h-[2.25rem] shrink-0 justify-evenly gap-3 overflow-visible lg:min-h-[3rem] lg:gap-6"
+                        className="flex shrink-0 justify-evenly gap-3 overflow-visible lg:gap-6"
                         data-bgg-zone="top-zone"
-                        data-tutorial-id="the-gang-opponent-state"
+                        data-tutorial-id="the-gang-player-list"
                     >
-                        {visibleOpponentIds.map((id) => {
+                        {core.playerIds.map((id) => {
                             const player = core.players[id];
+                            const isSelf = id === localPlayerId;
+                            const visible = core.phase !== 'chip-selection' && !isSelf;
                             return (
                                 <div
                                     key={id}
                                     className="flex min-w-0 basis-[12rem] flex-col items-center gap-1 lg:basis-[26rem] lg:gap-2"
                                     data-bgg-zone="plboard"
                                 >
-                                    {shouldShowOpponentCards && (
-                                        <span
-                                            className="truncate text-xs font-black tracking-[0.08em] text-stone-100/72 lg:text-sm"
-                                        >
-                                            {playerName(id)}
-                                        </span>
-                                    )}
+                                    <span
+                                        className={['truncate text-xs font-black tracking-[0.08em] lg:text-sm', isSelf ? 'text-amber-200' : 'text-stone-100/72'].join(' ')}
+                                    >
+                                        {playerName(id)}
+                                    </span>
                                     <PlayerChipStrip
                                         roundHistory={core.roundHistory}
                                         currentRound={core.round}
@@ -857,7 +810,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                         onTakeCurrentChip={core.phase === 'chip-selection' ? takeChip : undefined}
                                     />
                                     <div className="flex justify-center gap-1 lg:gap-1.5">
-                                        {shouldShowOpponentCards && player.pocketCards.map((card, index) => (
+                                        {visible && player.pocketCards.map((card, index) => (
                                             <CardFace key={index} card={card} t={t} />
                                         ))}
                                     </div>
@@ -960,9 +913,6 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             <ShowdownResultPanel
                                 lastShowdown={core.lastShowdown}
                                 communityCards={core.communityCards}
-                                localPlayerId={localPlayerId}
-                                isMultiplayer={isMultiplayer}
-                                onSelectHotseatPlayer={setHotseatPlayerId}
                                 playerName={playerName}
                                 onNextHeist={startNextHeist}
                                 nextHeistProgress={nextHeistProgress}
@@ -970,35 +920,6 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             />
                         )}
                     </div>
-
-                    <aside className="pointer-events-none absolute left-2 top-2 z-30 hidden max-w-[min(28rem,calc(100%-1rem))] flex-wrap items-start justify-start gap-1.5 lg:left-3 lg:top-3 lg:flex lg:gap-2" data-bgg-zone="helper-zone">
-                        {!isMultiplayer && !hasAiSeat && (
-                            <div className="pointer-events-auto" data-testid="the-gang-hotseat-switcher">
-                                <h2 className="sr-only">{t('board.localSeat')}</h2>
-                                <div className="flex flex-wrap gap-1.5 rounded-full border border-amber-100/16 bg-emerald-950/48 px-2 py-1 shadow-[0_0.3rem_1rem_rgba(0,0,0,0.22)] backdrop-blur-sm lg:gap-2 lg:px-3">
-                                    {core.playerIds.map((id) => {
-                                        const selected = id === localPlayerId;
-                                        return (
-                                            <button
-                                                key={id}
-                                                type="button"
-                                                aria-pressed={selected}
-                                                onClick={() => setHotseatPlayerId(id)}
-                                                className={[
-                                                    'rounded-full px-2.5 py-1 text-[0.68rem] font-black tracking-[0.05em] transition lg:px-3 lg:text-xs',
-                                                    selected
-                                                        ? 'bg-amber-200 text-emerald-950 shadow-[0_0_0.7rem_rgba(251,191,36,0.35)]'
-                                                        : 'text-stone-100/70 hover:bg-white/10 hover:text-stone-100',
-                                                ].join(' ')}
-                                            >
-                                                {playerName(id)}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </aside>
                 </section>
             </section>
             <EndgameOverlay

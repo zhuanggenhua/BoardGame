@@ -25,20 +25,20 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
     // 棋盘骰台需要把真实反弹边界收进红框内部，而不是只在投影层夹住显示位置。
     worldWidthScale: 0.44,
     worldHeightScale: 0.44,
-    settledLayoutScale: 0.24,
+    settledLayoutScale: 0.3,
     settledLayout: [
-        { x: -1.32, y: -0.06, yaw: -0.1 },
-        { x: -0.66, y: 0.02, yaw: 0.04 },
-        { x: 0, y: -0.04, yaw: -0.02 },
-        { x: 0.66, y: 0.02, yaw: 0.08 },
-        { x: 1.32, y: -0.06, yaw: -0.06 },
+        { x: -1.35, y: -0.55, yaw: -0.1 },
+        { x: -0.55, y: 0.55, yaw: 0.04 },
+        { x: 0, y: -0.5, yaw: -0.02 },
+        { x: 0.65, y: 0.45, yaw: 0.08 },
+        { x: 1.35, y: -0.45, yaw: -0.06 },
     ],
     // 红框只是视觉范围；这里启用物理安全回收，避免高速重投时骰子穿出
     // 真实可视骰台后长时间跑到悬浮窗下面或直接看起来消失。
     recoverOutOfBounds: true,
-    // 正常投掷结束后只做 DiceThrone 棋盘 3D 骰的紧凑收束，避免移动端散到
-    // 玩家面板/提示板上；不把这套行为扩散到其它 dice-box 使用方。
-    compactSettledDice: true,
+    // 投掷结束后保留插件原本的自然物理落点。强制收束会在动画结束后瞬移，
+    // 并把移动端五颗骰子压成重叠横排。
+    compactSettledDice: false,
     arrangeSettledDice: false,
     customColorset: {
         name: 'dicethrone-white-plastic-symbol-dice',
@@ -51,4 +51,13 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
             material: 'plastic',
         },
     },
+} satisfies DiceBoxStyleProfile;
+
+export const DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE = {
+    ...DICETHRONE_DICE_BOX_STYLE_PROFILE,
+    id: 'dicethrone-board-classic-mobile',
+    // 移动横屏舞台本身更窄，若继续使用桌面 0.44 的物理墙体，
+    // 五颗 38px 骰子没有足够空间自然散开，只能互相挤叠。
+    worldWidthScale: 0.9,
+    worldHeightScale: 0.75,
 } satisfies DiceBoxStyleProfile;

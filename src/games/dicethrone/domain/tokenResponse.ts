@@ -49,6 +49,23 @@ function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerI
 // Token 可用性检查
 // ============================================================================
 
+export function hasBeforeDamageReceivedCard(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+): boolean {
+    const player = state.players[playerId];
+    if (!player) return false;
+
+    return player.hand.some(card => {
+        const pendingDamage = card.playCondition?.pendingDamage;
+        if (!pendingDamage || pendingDamage.responseType !== 'beforeDamageReceived') return false;
+        if (pendingDamage.role === 'source') return false;
+        if (card.timing !== 'instant' && card.timing !== 'roll') return false;
+        if (!card.effects?.some(effect => effect.action)) return false;
+        return (player.resources[RESOURCE_IDS.CP] ?? 0) >= card.cpCost;
+    });
+}
+
 function resolveAdditionalTokenCosts(
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -78,7 +95,6 @@ export function getUsableTokenAmountForTiming(
 ): number {
     const player = state.players[playerId];
     if (!player) return 0;
-    if (timing === 'beforeDamageReceived' && state.pendingDamage?.unblockable === true) return 0;
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
     if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;

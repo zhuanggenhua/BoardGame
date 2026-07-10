@@ -6,13 +6,20 @@
 ## 当前章节
 
 1. `basic-setup-and-turn`
-   - 目标：直接从真实恶兆前运行时进入，讲清首轮最先要理解的目标、动作、速度与房间牌桌。
-2. `move-explore-use`
-   - 目标：直接在真实恶兆前运行时里走一次使用物品、移动、探索。
-3. `crimson-jack-objective`
-   - 目标：切到真实 haunt 局面，讲清第一剧本英雄与叛徒各自的目标。
-4. `haunt-actions-and-finish`
-   - 目标：从真实第一剧本收官局面进入，看到帮助入口、haunt 动作与真实终局。
+   - 目标：直接从真实恶兆前运行时进入，合并讲清基础回合、持有物使用、移动、探索和发现牌检定。
+2. `haunt-actions-and-finish`
+   - 目标：切到真实第一剧本作祟后局面，先讲清“探索/预兆导致作祟、作祟后目标改变、前置调查完成后才轮到驱魔”，再完成英雄驱魔检定。
+3. `hero-attack-path`
+   - 目标：切到真实第一剧本英雄与叛徒同房间局面，打开剧本确认目标后，演示英雄攻击叛徒和攻击骰盘。
+4. `jack-spirit-path`
+   - 目标：切到真实第一剧本杰克之灵已出现后的局面，打开剧本确认怪物目标，再演示杰克之灵攻击英雄和同一攻击骰盘。
+5. `traitor-path`
+   - 目标：切到叛徒视角，演示叛徒攻击英雄并进入另一种结局。
+
+隐藏兼容入口：
+
+- `move-explore-use`：兼容旧链接，实际指向 `basic-setup-and-turn`。
+- `crimson-jack-objective`：兼容旧链接，实际指向 `haunt-actions-and-finish`。
 
 ## 当前实现状态
 
@@ -63,26 +70,28 @@
 | 当前这回合还剩几步，要看右上角剩余移动提示 | 已覆盖 | `basic-setup-and-turn` | `betrayal-moves-remaining` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02` |
 | 持有区与帮助入口都在真实牌桌里，不另造说明页 | 已覆盖 | `basic-setup-and-turn` | `betrayal-inventory-zone`、`betrayal-reference-entry` | `tutorial.test.ts`、`evidence/betrayal-tutorial/03` |
 | 房间牌桌是主视区 | 已覆盖 | `basic-setup-and-turn` | `betrayal-room-board` | `evidence/betrayal-tutorial/03` |
-| 真实移动会消耗移动点，使用兔脚会先补移动 | 已覆盖 | `move-explore-use` | `USE_POSSESSION` -> `MOVE_TO_ROOM` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
-| 探索会真实翻房间并触发事件 / 物品 / 预兆 | 已覆盖 | `move-explore-use` | `EXPLORE_ROOM` | `tutorial.test.ts` |
-| 第一剧本 haunt 后英雄目标：调查杰克、研究法阵、驱魔 | 已覆盖 | `crimson-jack-objective` | `betrayal-actions-zone` | `tutorial.test.ts`、教程文案断言 |
-| 第一剧本叛徒目标：杀光英雄或借杰克之灵恢复肉身 | 已覆盖 | `crimson-jack-objective` | `betrayal-room-board` | `tutorial.test.ts`、教程文案断言 |
-| haunt 后真实关键动作仍在正式底部动作区 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-action-use` | `tutorial.test.ts`、`evidence/betrayal-tutorial/05` |
-| 英雄驱魔成功后进入真实终局页 | 已覆盖 | `haunt-actions-and-finish` | `EXORCISE_JACK` -> `betrayal-endgame-screen` | `e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/06` |
+| 真实移动会消耗移动点，使用兔脚可改骰 | 已覆盖 | `basic-setup-and-turn` | `USE_POSSESSION` -> `MOVE_TO_ROOM` -> `USE_RABBIT_FOOT` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
+| 可探索的盖着房间会真实翻开，并触发事件 / 物品 / 预兆 | 已覆盖 | `basic-setup-and-turn` | `EXPLORE_ROOM` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/11-12` |
+| 第一剧本作祟后目标改变：探索目标切换为调查杰克、研究法阵、驱魔 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-reference-entry`、杰克之灵 token、作祟后状态条 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/17-山屋惊魂-教程-作祟目标改变.jpg` |
+| 打开剧本目标页是只读参考入口，不得只靠介绍 | 已覆盖 | `haunt-actions-and-finish`、`hero-attack-path`、`jack-spirit-path` | `betrayal-open-scenario` -> `betrayal-scenario-objective-page` -> `betrayal-reference-close`；目标页必须显示英雄目标、叛徒目标、杰克之灵目标 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/18-山屋惊魂-教程-打开剧本目标页.jpg`、`26-山屋惊魂-教程-杰克之灵目标页.jpg` |
+| 驱魔前玩家因果链：前置调查与两处法阵已完成，所以现在才轮到驱魔 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-action-use`、教程浮层因果说明 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/19-山屋惊魂-教程-驱魔前因果说明.jpg` |
+| 第一剧本英雄攻击叛徒：英雄可用正式攻击入口推进剧本 | 已覆盖 | `hero-attack-path` | `HAUNT_ATTACK target=traitor` -> `betrayal-attack-roll-review` -> `betrayal-recent-roll-panel`；攻击骰盘必须和其它主流程投骰一样居中、物理骰可见 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/22-山屋惊魂-教程-英雄攻击叛徒前.jpg`、`evidence/betrayal-tutorial/23-山屋惊魂-教程-英雄攻击叛徒骰盘.jpg` |
+| 第一剧本杰克之灵 / 怪物行动：叛徒倒下后怪物会继续行动并攻击英雄 | 已覆盖 | `jack-spirit-path` | `betrayal-open-scenario` -> `betrayal-scenario-objective-page`；`HAUNT_ATTACK target=hero` -> `betrayal-attack-roll-review` -> `betrayal-recent-roll-panel` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/26-山屋惊魂-教程-杰克之灵目标页.jpg`、`27-山屋惊魂-教程-杰克之灵攻击英雄前.jpg`、`28-山屋惊魂-教程-杰克之灵攻击骰盘.jpg` |
+| 第一剧本敌方攻击：叛徒攻击英雄会投骰对抗并造成伤害 / 终局 | 已覆盖 | `traitor-path` | `HAUNT_ATTACK target=hero` -> `betrayal-endgame-screen` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/24-山屋惊魂-教程-叛徒视角敌方攻击前.jpg`、`evidence/betrayal-tutorial/25-山屋惊魂-教程-叛徒终局页.jpg` |
+| 作祟后真实关键动作仍在正式底部动作区 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-action-use` | `tutorial.test.ts`、`evidence/betrayal-tutorial/18` |
+| 英雄驱魔成功后进入真实终局页 | 已覆盖 | `haunt-actions-and-finish` | `EXORCISE_JACK` -> `betrayal-endgame-screen` | `e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/20-山屋惊魂-教程-驱魔神志检定骰盘.jpg`、`evidence/betrayal-tutorial/21-山屋惊魂-教程-驱魔成功后的终局页.jpg` |
 
 ## 当前仍未承诺的范围
 
-1. 叛徒视角教程
-   - 当前首轮只覆盖英雄线目标与英雄线收尾，没有把叛徒侧完整走成一条真实教学链。
+1. 更多剧本 / 更多 haunt 分支
+   - 当前只承诺第一剧本 `Crimson Jack Returns` 的基础目标、英雄驱魔收尾、英雄攻击叛徒分支、杰克之灵怪物分支、叛徒攻击英雄分支。
 
-2. 更多剧本 / 更多 haunt 分支
-   - 当前只承诺第一剧本 `Crimson Jack Returns` 的基础目标与英雄收尾。
-
-3. 完整规则书级教学
-   - 当前是“多短章真实教程”，不是把所有边界规则都塞进一次长教程。
+2. 完整规则书级教学
+   - 当前是“5 个可见章节 + 2 个隐藏兼容入口”的真实教程，不是把所有边界规则都塞进一次长教程。
 
 ## 当前建议
 
-1. 继续保持“真实页面 + 真实命令 + 短章节”的教程策略，不回退到教程专用壳层。
-2. 下一轮若扩教程，优先补叛徒线真实证据，再考虑更多剧本。
-3. 任何教程新增章节都先补真实锚点与最小 E2E，再扩文案。
+1. 继续保持“真实页面 + 真实命令 + 可见章节不重复”的教程策略，不回退到教程专用壳层。
+2. 玩家链路截图必须保持游玩顺序：基础行动 -> 可探索盖着房间/发现牌 -> 作祟目标改变 -> 打开剧本目标页 -> 驱魔前因果说明 -> 驱魔投骰 -> 结局 -> 英雄攻击分支 -> 杰克之灵怪物分支 -> 敌方攻击分支；素材加载、debug、review 图只能作为技术证据，不混入全链路阶段。
+3. 下一轮若扩教程，优先补更多剧本或第一剧本其它边界分支，不再重复基础移动/探索/驱魔。
+4. 任何教程新增章节都先补重复机制归并表、玩家因果链、真实锚点与最小 E2E，再扩文案。

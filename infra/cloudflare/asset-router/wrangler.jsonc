@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boardgame-asset-router",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-07-10",
+  "workers_dev": true,
+  "vars": {
+    "ORIGIN_BASE_URL": "https://assets-origin.easyboardgame.top",
+    "ORIGIN_TIMEOUT_MS": "1500"
+  },
+  "r2_buckets": [
+    {
+      "binding": "ASSETS_BUCKET",
+      "bucket_name": "boardgame-assets"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

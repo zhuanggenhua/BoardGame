@@ -206,11 +206,11 @@ describe('The Gang Board 运行入口', () => {
         expect(readyForShowdown.roundHistory).toHaveLength(3);
         expect(Object.keys(readyForShowdown.currentRoundChips)).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="card-river"] img')).toHaveLength(5);
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
-        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(2);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
         expect(document.querySelectorAll('[data-bgg-zone="token-empty-slot"]')).toHaveLength(0);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).not.toHaveTextContent('玩家 1');
         expect(screen.getAllByText('AI 2 号位').length).toBeGreaterThan(0);
         expect(screen.getAllByText('AI 3 号位').length).toBeGreaterThan(0);
@@ -245,14 +245,19 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.queryByRole('button', { name: '摊牌' })).not.toBeInTheDocument();
     });
 
-    test('选筹阶段只在有公开状态时显示对手区，不常驻玩家列表', () => {
+    test('选筹阶段显示玩家名但不显示无意义切座，也不在顶部重复底牌', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
         const { unmount } = renderBoardForCore(initial);
 
-        expect(document.querySelector('[data-tutorial-id="the-gang-opponent-state"]')).toBeInTheDocument();
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(0);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 3 号位');
+        expect(document.querySelector('[data-tutorial-id="the-gang-player-list"]')).toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 3 号位');
+        expect(document.querySelector('[data-testid="the-gang-hotseat-switcher"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-testid="the-gang-showdown-hotseat-switcher"]')).not.toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="opponent-cards"] img')).toHaveLength(0);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('2♣');
 
         unmount();
 
@@ -264,9 +269,9 @@ describe('The Gang Board 运行入口', () => {
         } as Parameters<typeof TheGangDomain.execute>[1]);
         renderBoardForCore(withOpponentChip);
 
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
     });
 
     test('选筹阶段可以直接点击对手当前轮筹码拿走', () => {

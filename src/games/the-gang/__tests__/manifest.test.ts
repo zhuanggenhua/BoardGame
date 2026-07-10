@@ -27,8 +27,8 @@ describe('The Gang manifest', () => {
         expect(THE_GANG_MANIFEST.id).toBe('the-gang');
         expect(THE_GANG_MANIFEST.enabled).toBe(true);
         expect(THE_GANG_MANIFEST.thumbnailPath).toBe('the-gang/thumbnails/the-gang-vault-heist-thumbnail');
-        expect(THE_GANG_MANIFEST.mobileProfile).toBe('portrait-adapted');
-        expect(THE_GANG_MANIFEST.preferredOrientation).toBe('portrait');
+        expect(THE_GANG_MANIFEST.mobileProfile).toBe('landscape-adapted');
+        expect(THE_GANG_MANIFEST.preferredOrientation).toBe('landscape');
         expect(THE_GANG_MANIFEST.mobileLayoutPreset).toBe('board-shell');
         expect(THE_GANG_MANIFEST.shellTargets).toContain('pwa');
         expect(THE_GANG_MANIFEST.ai).toEqual({

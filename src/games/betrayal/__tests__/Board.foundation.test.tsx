@@ -63,6 +63,10 @@ vi.mock('../../../components/common/media/OptimizedImage', () => ({
     ),
 }));
 
+vi.mock('../../../lib/audio/useGameAudio', () => ({
+    useGameAudio: vi.fn(),
+}));
+
 type BoardHarnessProps = {
     initialCore: ReturnType<typeof createBetrayalFoundationCore>;
     playerID?: string;
@@ -237,7 +241,7 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-inventory-omen-book'));
         expect(screen.getByTestId('betrayal-mobile-selected-card')).toHaveTextContent('书本');
         expect(screen.getByTestId('betrayal-inventory-omen-book-shell')).toHaveAttribute('data-selected-outline', 'true');
-        expect(screen.queryByTestId('betrayal-inventory-omen-book-selected-outline')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-inventory-omen-book-selected-outline')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-use')).not.toBeDisabled();
 
         fireEvent.click(screen.getByTestId('betrayal-action-use'));

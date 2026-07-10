@@ -407,6 +407,13 @@ GitHub Actions 自动化：
   - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]` 或 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
   - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
+### 训练数据持久化合同
+
+- 生产 `game-server` 必须把 `TRAINING_DATA_DIR` 固定为 `/data/training-data`，并挂载独立命名卷 `training_data`；容器重建不得依赖镜像可写层保存正式训练数据。
+- 决策样本先进入 `pending/`，只有对局真实结束、达到游戏级或全局最低完成时长、且该游戏正式数据未达到 300MiB 时，才原子提交到 `completed/`。
+- `raw/` 与 `archive/` 是既有正式数据目录，容量门禁会继续计入，但本治理变更不会删除、截断或迁移现有文件。
+- 每个游戏达到 300MiB 后整局拒收，新对局不会部分追加到旧文件；异常退出最多留下非正式 `pending` 文件。
+
 ## 资源 /assets 与对象存储映射（官方）
 
 - **开发**：直接使用 `public/assets`（不配置 R2 也能跑通）。
@@ -417,6 +424,48 @@ GitHub Actions 自动化：
 - **资源基址配置**：前端可通过 `VITE_ASSETS_BASE_URL` 覆盖；当前代码内置默认值为 `https://assets.easyboardgame.top/official`。
 - **缓存失效机制**：构建时会扫描 `public/assets`，为资源 URL 自动追加 `?v=<content-hash>`。资源内容变化后 URL 会自动变化，因此 R2 上的图片/音频/SVG 可以安全使用长期缓存。
 - **本地 JSON / 图集配置**：仍走本地 `/assets`，但同样会追加 `?v=<content-hash>`，避免本地回退路径拿到旧配置。
+
+### 生产素材域名：服务器优先、R2 自动回退
+
+- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，不需要知道素材由服务器还是 R2 返回。
+- **普通运行时素材**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
+- **自动回退**：服务器连接失败、1500ms 内没有响应头，或返回 `404`、`408`、`429`、`5xx` 时，Worker 使用同 key 的 R2 对象返回。客户端仍访问原域名。
+- **大型发布包始终绕过服务器**：以下更具体的无脚本 Route 直接使用原 R2 自定义域名：
+  - `assets.easyboardgame.top/official/app-updates/*`
+  - `assets.easyboardgame.top/official/mobile-packages/*`
+  - `assets.easyboardgame.top/official/native-app-updates/*`
+- **R2 仍是真相源**：上传、移动包和 OTA 发布入口不变，正式对象必须先写入 R2。服务器目录只是可从 R2 重建的只读镜像，禁止服务器单边发布。
+- **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS、同域和自动回退；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
+
+服务器静态源保护参数：
+
+- systemd 服务：`boardgame-asset-origin.service`
+- 仅监听：`127.0.0.1:19090`
+- 全局同时传输连接：32
+- 单客户端同时连接：4
+- 每个响应前 1MiB 不限速，之后 2MiB/s
+- CPU 上限：25%
+- 内存上限：128MB
+- IO 权重：10
+
+诊断：
+
+```bash
+curl -I "https://assets.easyboardgame.top/official/common/images/noise.svg?probe=$(date +%s)"
+```
+
+- `X-Asset-Source: server`：普通素材由服务器镜像返回。
+- `X-Asset-Source: r2-fallback`：服务器不可用或缺少对象，本次请求已自动回退 R2。
+- 大型发布包没有 `X-Asset-Source`：命中无脚本 Route，直接由 R2 自定义域名返回。
+
+素材服务运维：
+
+```bash
+sudo systemctl status boardgame-asset-origin.service
+sudo systemctl restart boardgame-asset-origin.service
+```
+
+Worker 回滚只删除 `assets.easyboardgame.top/*` 这一条 catch-all Route，保留三条大型包绕过 Route、DNS 和 R2 自定义域名。删除后普通素材立即恢复原 R2 直出；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器优先。变更快照保存在 `temp/cloudflare-snapshots/`。
 
 ## 非 /assets 静态资源缓存策略（当前主链路）
 

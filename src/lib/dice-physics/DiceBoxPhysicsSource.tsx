@@ -163,9 +163,9 @@ export function DiceBoxPhysicsSource({
                 return;
             }
             lastEmitAt = now;
-            if (!settledRef.current || activeMotionRef.current) {
-                engine.recoverOutOfBoundsDice();
-            }
+            engine.recoverOutOfBoundsDice({
+                strictProjectedBounds: settledRef.current && !activeMotionRef.current,
+            });
 
             const states = dice
                 .map((die, index) => engine.getPhysicsState(index, die.id, settledRef.current))

@@ -23,6 +23,7 @@ import {
 } from './packageManagerService';
 import type { GamePackageCardState, PendingGamePackageInstall, ResolvedGamePackageManifest } from './types';
 import {
+    canInstallResolvedAssetPack,
     createDefaultGamePackageState,
     hasGamePackageUpdateAvailable,
     hasUsableInstalledGamePackageState,
@@ -88,14 +89,6 @@ const resolveManifestAvailableVersion = (
 
 const PREVIEW_MANIFEST_RETRY_BASE_DELAY_MS = 3000;
 const PREVIEW_MANIFEST_RETRY_MAX_DELAY_MS = 15000;
-
-const canInstallResolvedAssetPack = (manifest: ResolvedGamePackageManifest) => Boolean(
-    manifest.assetPackUrl
-    || (
-        manifest.assetPackDiffOnly
-        && manifest.assetPackFileIndexUrl
-    ),
-);
 
 export const useGamePackageState = ({
     gameId,

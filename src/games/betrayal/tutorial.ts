@@ -2,9 +2,10 @@ import type { TutorialCollection, TutorialManifest } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { BETRAYAL_COMMANDS } from './game';
 import {
-    createFirstScenarioHauntTutorialCore,
+    createHeroAttackTraitorReadyTutorialCore,
     createFirstScenarioReadyToExorciseTutorialCore,
     createFirstScenarioReadyToTraitorVictoryTutorialCore,
+    createJackSpiritPostReviveAttackReadyTutorialCore,
     createStartedFirstScenarioTutorialCore,
 } from './testing/firstScenarioTestUtils';
 
@@ -69,39 +70,8 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             viewAs: '0',
         },
         {
-            id: 'finish',
-            content: 'game-betrayal:tutorial.basicSetup.steps.finish',
-            position: 'center',
-            infoStep: true,
-            showMask: true,
-            viewAs: '0',
-        },
-    ],
-};
-
-const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
-    id: 'move-explore-use',
-    numPlayers: 3,
-    allowManualSkip: true,
-    steps: [
-        {
-            id: 'setup-runtime',
-            content: 'game-betrayal:tutorial.moveExploreUse.steps.setupRuntime',
-            position: 'center',
-            showMask: true,
-            viewAs: '0',
-            aiActions: [
-                {
-                    commandType: CHEAT_COMMANDS.MERGE_STATE,
-                    payload: {
-                        fields: createStartedFirstScenarioTutorialCore().core ?? createStartedFirstScenarioTutorialCore(),
-                    },
-                },
-            ],
-        },
-        {
             id: 'use-book',
-            content: 'game-betrayal:tutorial.moveExploreUse.steps.useBook',
+            content: 'game-betrayal:tutorial.basicSetup.steps.useBook',
             highlightTarget: 'betrayal-inventory-omen-book',
             position: 'top',
             requireAction: true,
@@ -112,14 +82,14 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
         },
         {
             id: 'open-move-targets',
-            content: 'game-betrayal:tutorial.moveExploreUse.steps.openMoveTargets',
+            content: 'game-betrayal:tutorial.basicSetup.steps.openMoveTargets',
             highlightTarget: 'betrayal-action-move',
             position: 'top',
             viewAs: '0',
         },
         {
             id: 'move-to-hallway',
-            content: 'game-betrayal:tutorial.moveExploreUse.steps.moveToHallway',
+            content: 'game-betrayal:tutorial.basicSetup.steps.moveToHallway',
             highlightTarget: 'betrayal-room-hallway',
             position: 'top',
             requireAction: true,
@@ -130,7 +100,7 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
         },
         {
             id: 'explore-upper',
-            content: 'game-betrayal:tutorial.moveExploreUse.steps.exploreUpper',
+            content: 'game-betrayal:tutorial.basicSetup.steps.exploreUpper',
             highlightTarget: 'betrayal-action-explore',
             position: 'top',
             requireAction: true,
@@ -140,66 +110,11 @@ const BETRAYAL_MOVE_EXPLORE_USE: TutorialManifest = {
         },
         {
             id: 'finish',
-            content: 'game-betrayal:tutorial.moveExploreUse.steps.finish',
+            content: 'game-betrayal:tutorial.basicSetup.steps.finish',
             highlightTarget: 'betrayal-latest-discovery',
             position: 'center',
             infoStep: true,
             allowedCommands: [BETRAYAL_COMMANDS.USE_RABBIT_FOOT],
-            viewAs: '0',
-        },
-    ],
-};
-
-const BETRAYAL_CRIMSON_JACK_OBJECTIVE: TutorialManifest = {
-    id: 'crimson-jack-objective',
-    numPlayers: 3,
-    allowManualSkip: true,
-    steps: [
-        {
-            id: 'setup-haunt',
-            content: 'game-betrayal:tutorial.crimsonJack.steps.setupHaunt',
-            position: 'center',
-            showMask: true,
-            viewAs: '0',
-            aiActions: [
-                {
-                    commandType: CHEAT_COMMANDS.MERGE_STATE,
-                    payload: {
-                        fields: createFirstScenarioHauntTutorialCore().core ?? createFirstScenarioHauntTutorialCore(),
-                    },
-                },
-            ],
-        },
-        {
-            id: 'haunt-reveal',
-            content: 'game-betrayal:tutorial.crimsonJack.steps.hauntReveal',
-            highlightTarget: 'betrayal-reference-entry',
-            position: 'left',
-            infoStep: true,
-            viewAs: '0',
-        },
-        {
-            id: 'hero-goal',
-            content: 'game-betrayal:tutorial.crimsonJack.steps.heroGoal',
-            highlightTarget: 'betrayal-action-use',
-            position: 'top',
-            infoStep: true,
-            viewAs: '0',
-        },
-        {
-            id: 'traitor-goal',
-            content: 'game-betrayal:tutorial.crimsonJack.steps.traitorGoal',
-            highlightTarget: 'betrayal-room-board',
-            position: 'top',
-            infoStep: true,
-            viewAs: '0',
-        },
-        {
-            id: 'finish',
-            content: 'game-betrayal:tutorial.crimsonJack.steps.finish',
-            position: 'center',
-            infoStep: true,
-            showMask: true,
             viewAs: '0',
         },
     ],
@@ -263,6 +178,106 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
     ],
 };
 
+const BETRAYAL_HERO_ATTACK_PATH: TutorialManifest = {
+    id: 'hero-attack-path',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-hero-attack',
+            content: 'game-betrayal:tutorial.heroAttackPath.steps.setupHeroAttack',
+            position: 'center',
+            showMask: true,
+            viewAs: '0',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createHeroAttackTraitorReadyTutorialCore().core ?? createHeroAttackTraitorReadyTutorialCore(),
+                    },
+                },
+            ],
+        },
+        {
+            id: 'hero-attack-objective',
+            content: 'game-betrayal:tutorial.heroAttackPath.steps.heroAttackObjective',
+            highlightTarget: 'betrayal-reference-entry',
+            position: 'left',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'attack-traitor',
+            content: 'game-betrayal:tutorial.heroAttackPath.steps.attackTraitor',
+            highlightTarget: 'betrayal-room-board',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.HAUNT_ATTACK],
+            randomPolicy: { mode: 'fixed', values: [3, 3, 1, 1, 1, 1, 1, 1] },
+            advanceOnEvents: [{ type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '0', target: 'traitor' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'hero-attack-review',
+            content: 'game-betrayal:tutorial.heroAttackPath.steps.heroAttackReview',
+            highlightTarget: 'betrayal-attack-roll-review',
+            position: 'center',
+            infoStep: true,
+            viewAs: '0',
+        },
+    ],
+};
+
+const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
+    id: 'jack-spirit-path',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-jack-spirit',
+            content: 'game-betrayal:tutorial.jackSpiritPath.steps.setupJackSpirit',
+            position: 'center',
+            showMask: true,
+            viewAs: '2',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createJackSpiritPostReviveAttackReadyTutorialCore().core ?? createJackSpiritPostReviveAttackReadyTutorialCore(),
+                    },
+                },
+            ],
+        },
+        {
+            id: 'jack-spirit-objective',
+            content: 'game-betrayal:tutorial.jackSpiritPath.steps.jackSpiritObjective',
+            highlightTarget: 'betrayal-reference-entry',
+            position: 'left',
+            infoStep: true,
+            viewAs: '2',
+        },
+        {
+            id: 'jack-spirit-attack',
+            content: 'game-betrayal:tutorial.jackSpiritPath.steps.jackSpiritAttack',
+            highlightTarget: 'betrayal-room-board',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.HAUNT_ATTACK],
+            randomPolicy: { mode: 'fixed', values: [3, 3, 3, 3, 1, 1, 1, 1] },
+            advanceOnEvents: [{ type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } }],
+            viewAs: '2',
+        },
+        {
+            id: 'jack-spirit-review',
+            content: 'game-betrayal:tutorial.jackSpiritPath.steps.jackSpiritReview',
+            highlightTarget: 'betrayal-attack-roll-review',
+            position: 'center',
+            infoStep: true,
+            viewAs: '2',
+        },
+    ],
+};
+
 const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
     id: 'traitor-path',
     numPlayers: 3,
@@ -321,19 +336,31 @@ const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
             manifest: BETRAYAL_BASIC_SETUP_AND_TURN,
         },
         'move-explore-use': {
-            titleKey: 'tutorial.moveExploreUse.title',
-            descriptionKey: 'tutorial.moveExploreUse.description',
-            manifest: BETRAYAL_MOVE_EXPLORE_USE,
+            titleKey: 'tutorial.basicSetup.title',
+            descriptionKey: 'tutorial.basicSetup.description',
+            manifest: BETRAYAL_BASIC_SETUP_AND_TURN,
+            hiddenFromCatalog: true,
         },
         'crimson-jack-objective': {
-            titleKey: 'tutorial.crimsonJack.title',
-            descriptionKey: 'tutorial.crimsonJack.description',
-            manifest: BETRAYAL_CRIMSON_JACK_OBJECTIVE,
+            titleKey: 'tutorial.hauntActions.title',
+            descriptionKey: 'tutorial.hauntActions.description',
+            manifest: BETRAYAL_HAUNT_ACTIONS_AND_FINISH,
+            hiddenFromCatalog: true,
         },
         'haunt-actions-and-finish': {
             titleKey: 'tutorial.hauntActions.title',
             descriptionKey: 'tutorial.hauntActions.description',
             manifest: BETRAYAL_HAUNT_ACTIONS_AND_FINISH,
+        },
+        'hero-attack-path': {
+            titleKey: 'tutorial.heroAttackPath.title',
+            descriptionKey: 'tutorial.heroAttackPath.description',
+            manifest: BETRAYAL_HERO_ATTACK_PATH,
+        },
+        'jack-spirit-path': {
+            titleKey: 'tutorial.jackSpiritPath.title',
+            descriptionKey: 'tutorial.jackSpiritPath.description',
+            manifest: BETRAYAL_JACK_SPIRIT_PATH,
         },
         'traitor-path': {
             titleKey: 'tutorial.traitorPath.title',

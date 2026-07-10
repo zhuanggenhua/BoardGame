@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { assertR2CapacityForUploads } from '../assets/r2-capacity-guard.mjs';
 import { zipSync } from 'fflate';
 import {
     resolveOtaForceUpdateOptions,
@@ -377,11 +378,25 @@ const uploadObject = async (key, body, contentType, cacheControl) => {
     }));
 };
 
+const versionManifestBody = `${JSON.stringify(manifest, null, 2)}\n`;
+const latestManifestBody = versionManifestBody;
+
 if (!dryRun) {
+    await assertR2CapacityForUploads({
+        s3Client,
+        bucketName: process.env.R2_BUCKET_NAME,
+        uploads: [
+            { key: bundleKey, size: zipBuffer.length },
+            { key: versionManifestKey, size: Buffer.byteLength(versionManifestBody) },
+            ...(!skipLatest
+                ? [{ key: latestManifestKey, size: Buffer.byteLength(latestManifestBody) }]
+                : []),
+        ],
+    });
     await uploadObject(bundleKey, zipBuffer, 'application/zip', 'public, max-age=31536000, immutable');
-    await uploadObject(versionManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
+    await uploadObject(versionManifestKey, versionManifestBody, 'application/json', 'public, max-age=60, must-revalidate');
     if (!skipLatest) {
-        await uploadObject(latestManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, latestManifestBody, 'application/json', 'public, max-age=60, must-revalidate');
     }
 }
 

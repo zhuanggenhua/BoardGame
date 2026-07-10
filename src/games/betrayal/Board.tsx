@@ -20,6 +20,7 @@ import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSourc
 import type { DiceBoxDieSkin } from '../../lib/dice-box-threejs/engine';
 import type { DiceBoxStyleProfile } from '../../lib/dice-box-threejs/engine';
 import type { DicePhysicsState } from '../../lib/dice-physics/types';
+import { useGameAudio } from '../../lib/audio/useGameAudio';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
@@ -73,6 +74,8 @@ import {
     buildRoomAtlasImageStyle,
     type BetrayalRoomTileVisual,
 } from './roomAtlas';
+import { BETRAYAL_AUDIO_CONFIG } from './audio.config';
+import { BETRAYAL_MANIFEST } from './manifest';
 
 type Props = GameBoardProps<BetrayalCore, BetrayalCommandMap>;
 
@@ -189,11 +192,11 @@ const REFERENCE_CARD_FRAME_WIDTH = `min(92vw, calc(86vh * ${BETRAYAL_POSSESSION_
 const INVENTORY_PREVIEW_FRAME_WIDTH = 'min(84vw, 360px)';
 const COMPACT_INVENTORY_CARD_WIDTH = 64;
 
-type ReferencePageId = 'front' | 'back' | 'traitor' | 'monster';
+type ReferencePageId = 'scenario' | 'front' | 'back' | 'traitor' | 'monster';
 
 type ReferencePage = {
     id: ReferencePageId;
-    asset: string;
+    asset?: string;
 };
 
 const PLAYER_REFERENCE_PAGES: ReferencePage[] = [
@@ -202,6 +205,7 @@ const PLAYER_REFERENCE_PAGES: ReferencePage[] = [
 ];
 
 const HAUNT_REFERENCE_PAGES: ReferencePage[] = [
+    { id: 'scenario' },
     ...PLAYER_REFERENCE_PAGES,
     { id: 'traitor', asset: ASSETS.playerReference.traitor },
     { id: 'monster', asset: ASSETS.playerReference.monster },
@@ -2134,6 +2138,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         [G],
     );
     const viewerPlayerId = String(playerID ?? baseCore.currentPlayer ?? baseCore.playerIds[0] ?? '0');
+    useGameAudio({
+        config: BETRAYAL_AUDIO_CONFIG,
+        gameId: BETRAYAL_MANIFEST.id,
+        G: baseCore,
+        ctx: {
+            phase: baseCore.phase,
+            isGameOver: Boolean(G?.sys?.gameover) || baseCore.phase === 'endgame',
+            isWinner: baseCore.endgameResult
+                ? baseCore.endgameResult.winners.includes(viewerPlayerId)
+                : undefined,
+        },
+        eventEntries: G?.sys?.eventStream?.entries,
+        meta: {
+            playerID: playerID ?? null,
+        },
+    });
     const [selectedExplorerId, setSelectedExplorerId] = React.useState(
         () => baseCore.selectedExplorerByPlayerId[viewerPlayerId] ?? EXPLORER_CATALOG[0]!.explorerId,
     );
@@ -2174,6 +2194,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     ), [baseCore, isEndgameExorciseRollReview]);
     const referencePages = React.useMemo(() => resolveReferencePages(core), [core]);
     const currentReferencePage = referencePages.find((page) => page.id === referenceSide) ?? referencePages[0]!;
+    const currentReferencePageIndex = Math.max(
+        0,
+        referencePages.findIndex((page) => page.id === currentReferencePage.id),
+    );
 
     React.useEffect(() => {
         setPreviewState((previousState) => {
@@ -2195,6 +2219,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             setReferenceSide(referencePages[0]?.id ?? 'front');
         }
     }, [referencePages, referenceSide]);
+
+    const openScenarioReference = React.useCallback(() => {
+        setReferenceSide(core.phase === 'haunt' ? 'scenario' : 'front');
+        setReferenceOpen(true);
+    }, [core.phase]);
 
     React.useEffect(() => {
         setSelectedExplorerId(baseCore.selectedExplorerByPlayerId[viewerPlayerId] ?? EXPLORER_CATALOG[0]!.explorerId);
@@ -3894,7 +3923,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="grid gap-1">
                                 <button
                                     type="button"
-                                    onClick={() => setReferenceOpen(true)}
+                                    onClick={openScenarioReference}
                                     data-testid="betrayal-mobile-open-scenario"
                                     className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
                                     title={scenarioConfig.presentation.referenceTitle}
@@ -4313,11 +4342,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             ) : null}
 
                             {core.recentRoll && !pendingEventChoice && !shouldShowLatestDiscovery ? (
-                                isEndgameExorciseRollReview ? (
+                                isEndgameExorciseRollReview || core.recentRoll.kind === 'attackRoll' ? (
                                     <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center px-4 py-12">
                                         <div
-                                            data-testid="betrayal-exorcise-roll-review"
-                                            data-tutorial-id="betrayal-exorcise-roll-review"
+                                            data-testid={isEndgameExorciseRollReview ? 'betrayal-exorcise-roll-review' : 'betrayal-attack-roll-review'}
+                                            data-tutorial-id={isEndgameExorciseRollReview ? 'betrayal-exorcise-roll-review' : 'betrayal-attack-roll-review'}
                                             className="pointer-events-auto flex w-[min(640px,calc(100vw-2rem))] flex-col items-center gap-3"
                                         >
                                             <RecentRollPanel
@@ -4327,14 +4356,16 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
                                             />
-                                            <button
-                                                type="button"
-                                                data-testid="betrayal-exorcise-roll-continue"
-                                                className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
-                                                onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
-                                            >
-                                                {t('board.endgame.enterEndgame')}
-                                            </button>
+                                            {isEndgameExorciseRollReview ? (
+                                                <button
+                                                    type="button"
+                                                    data-testid="betrayal-exorcise-roll-continue"
+                                                    className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                                                    onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
+                                                >
+                                                    {t('board.endgame.enterEndgame')}
+                                                </button>
+                                            ) : null}
                                         </div>
                                     </div>
                                 ) : (
@@ -5203,7 +5234,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="mt-0.5 flex justify-start gap-1.5">
                             <button
                                 type="button"
-                                onClick={() => setReferenceOpen(true)}
+                                onClick={openScenarioReference}
                                 data-testid="betrayal-open-scenario"
                                 data-tutorial-id="betrayal-reference-entry"
                                 className="inline-flex h-[40px] min-w-[84px] items-center gap-1.5 rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] px-2.5 text-[#d8bf81] transition hover:border-[#8b744d]"
@@ -5366,15 +5397,53 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         >
                             {t('board.reference.close')}
                         </button>
-                        <OptimizedImage
-                            src={currentReferencePage.asset}
-                            locale={effectiveLocale}
-                            alt={t(`board.reference.${currentReferencePage.id}`)}
-                            data-testid="betrayal-reference-card-image"
-                            data-asset-src={currentReferencePage.asset}
-                            className="h-full w-full object-contain shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
-                            draggable={false}
-                        />
+                        {currentReferencePage.id === 'scenario' ? (
+                            <div
+                                data-testid="betrayal-scenario-objective-page"
+                                data-reference-page="scenario"
+                                className="flex h-full w-full flex-col justify-between overflow-hidden border border-[#7b633d] bg-[linear-gradient(180deg,rgba(31,24,15,0.98),rgba(10,12,9,0.98))] p-6 text-[#f3e0b4] shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
+                            >
+                                <div>
+                                    <div className="text-[12px] font-bold uppercase tracking-[0.28em] text-[#c9a35e]">{t('board.scenario.title')}</div>
+                                    <div className="mt-2 text-[32px] font-bold tracking-[0.08em] text-[#fff0b8]">{t('board.scenario.hauntValue')}</div>
+                                    <div className="mt-1 text-[13px] uppercase tracking-[0.2em] text-[#9fb98b]">{scenarioConfig.presentation.hauntObjective}</div>
+                                </div>
+                                <div className="grid gap-3">
+                                    <div className="rounded-[14px] border border-[rgba(211,179,109,0.28)] bg-[rgba(11,13,10,0.64)] p-4">
+                                        <div className="text-[12px] font-bold tracking-[0.22em] text-[#d6b56d]">{t('board.scenario.objectiveLabel')}</div>
+                                        <div className="mt-2 text-[17px] font-semibold leading-7 text-[#fff5cf]">{t('board.scenario.objective')}</div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-[12px] border border-[rgba(142,186,197,0.22)] bg-[rgba(14,24,25,0.55)] p-3">
+                                            <div className="text-[11px] font-bold tracking-[0.18em] text-[#bde2e7]">{t('board.scenario.heroGoalLabel')}</div>
+                                            <div className="mt-1 text-[13px] leading-5 text-[#d8eef1]">{t('board.scenario.heroGoal')}</div>
+                                        </div>
+                                        <div className="rounded-[12px] border border-[rgba(207,113,95,0.22)] bg-[rgba(31,16,13,0.52)] p-3">
+                                            <div className="text-[11px] font-bold tracking-[0.18em] text-[#e8b09f]">{t('board.scenario.traitorGoalLabel')}</div>
+                                            <div className="mt-1 text-[13px] leading-5 text-[#f1d2c8]">{t('board.scenario.traitorGoal')}</div>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-[12px] border border-[rgba(159,123,197,0.22)] bg-[rgba(23,17,31,0.52)] p-3">
+                                        <div className="text-[11px] font-bold tracking-[0.18em] text-[#d9c4ef]">{t('board.scenario.monsterGoalLabel')}</div>
+                                        <div className="mt-1 text-[13px] leading-5 text-[#eadcf7]">{t('board.scenario.monsterGoal')}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between border-t border-[rgba(211,179,109,0.24)] pt-3 text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
+                                    <span>{t('board.scenario.statusLabel')}: {core.phase === 'haunt' ? scenarioConfig.presentation.hauntObjective : scenarioConfig.presentation.runtimeObjective}</span>
+                                    <span>{currentReferencePageIndex + 1}/{referencePages.length}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <OptimizedImage
+                                src={currentReferencePage.asset ?? ASSETS.playerReference.front}
+                                locale={effectiveLocale}
+                                alt={t(`board.reference.${currentReferencePage.id}`)}
+                                data-testid="betrayal-reference-card-image"
+                                data-asset-src={currentReferencePage.asset}
+                                className="h-full w-full object-contain shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
+                                draggable={false}
+                            />
+                        )}
                     </div>
                 </MagnifyOverlay>
 

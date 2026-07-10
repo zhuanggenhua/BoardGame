@@ -119,7 +119,8 @@
       "centerTop": "行",
       "centerRight": "轮",
       "centerLeft": "盘",
-      "centerBottom": "动"
+      "centerBottom": "动",
+      "currentMarker": "轮盘行动标记当前位置"
     },
     "korea": {
       "drawPile": "朝鲜牌库",

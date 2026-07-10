@@ -79,6 +79,8 @@ export interface ProjectedDiceLayout {
     y: number;
     width: number;
     height: number;
+    visualWidth?: number;
+    visualHeight?: number;
     minX: number;
     maxX: number;
     minY: number;
@@ -779,6 +781,19 @@ function buildTargetQuaternion(
         return new THREE.Quaternion().setFromEuler(getBoardTopdownTilt(index));
     }
     return base;
+}
+
+function buildCssSpotlightTransform(value: number, index: number): string {
+    const base = getSettledEuler(value);
+    const tilt = getSpotlightTilt(index);
+    return [
+        `rotateX(${base.x.toFixed(6)}rad)`,
+        `rotateY(${base.y.toFixed(6)}rad)`,
+        `rotateZ(${base.z.toFixed(6)}rad)`,
+        `rotateX(${tilt.x.toFixed(6)}rad)`,
+        `rotateY(${tilt.y.toFixed(6)}rad)`,
+        `rotateZ(${tilt.z.toFixed(6)}rad)`,
+    ].join(' ');
 }
 
 function getExternalPhysicsVisualQuaternion(
@@ -2772,7 +2787,7 @@ export const Dice3D = ({
 
     const animationClass = isSpotlight ? 'animate-dice3d-bonus-tumble' : 'animate-dice3d-tumble';
     const settledTransform = isSpotlight
-        ? `rotateX(-0.28rad) rotateY(0.33rad) rotateZ(-0.05rad)`
+        ? buildCssSpotlightTransform(value, index)
         : (isBoardTopdown
             ? `rotateX(-1.18rad) rotateY(${0.38 + (index * 0.07)}rad) rotateZ(${(-0.1 + (index * 0.035)).toFixed(2)}rad)`
             : `rotateX(0deg) rotateY(0deg)`);

@@ -24,6 +24,7 @@ import {
 import { reduce } from '../domain/reducer';
 import type { AttackResolvedEvent, DamageDealtEvent } from '../domain/types';
 import { INITIAL_CP, HAND_LIMIT, INITIAL_HEALTH } from '../domain/types';
+import { TOKEN_IDS } from '../domain/ids';
 
 describe('卡牌系统', () => {
     describe('卖牌', () => {
@@ -366,6 +367,40 @@ describe('卡牌系统', () => {
 
             expect(result.assertionErrors).toEqual([]);
             expect(result.finalState.core.players['1'].damageShields).toEqual([]);
+        });
+
+        it('攻击方增伤窗口结束后，不可防御伤害仍允许防御方使用太极减伤', () => {
+            const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 1]));
+            const result = runner.run({
+                name: '影步攻击方响应后仍允许防御方太极减伤',
+                setup: createHeroMatchup('ninja', 'monk', (core) => {
+                    core.players['0'].hand = [];
+                    core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
+                    core.players['1'].hand = [];
+                    core.players['1'].tokens = { [TOKEN_IDS.TAIJI]: 1 };
+                }),
+                commands: [
+                    ...advanceTo('offensiveRoll'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'shadow-step' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'),
+                    cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.TAIJI, amount: 1 }),
+                    cmd('SKIP_TOKEN_RESPONSE', '1'),
+                ],
+                expect: {
+                    players: {
+                        '1': {
+                            hp: INITIAL_HEALTH - 5,
+                        },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(1);
+            expect(result.finalState.core.players['1'].tokens[TOKEN_IDS.TAIJI] ?? 0).toBe(0);
         });
     });
 });

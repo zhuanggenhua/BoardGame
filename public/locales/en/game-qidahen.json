@@ -119,7 +119,8 @@
       "centerTop": "Act",
       "centerRight": "ion",
       "centerLeft": "Whe",
-      "centerBottom": "el"
+      "centerBottom": "el",
+      "currentMarker": "Current position of the action wheel marker"
     },
     "korea": {
       "drawPile": "Korea draw pile",

@@ -269,8 +269,9 @@ function formatDiceThroneActionEntry({
             (e): e is BonusDieRolledEvent => e.type === 'BONUS_DIE_ROLLED'
         );
         if (bonusDieEvents.length > 0) {
+            const isChoiceResult = bonusDieEvents.some(event => event.payload.presentationKind === 'choice');
             const rollSegments: ActionLogSegment[] = [
-                i18nSeg('actionLog.cardRollResult'),
+                i18nSeg(isChoiceResult ? 'actionLog.cardChoiceResult' : 'actionLog.cardRollResult'),
             ];
             for (const bde of bonusDieEvents) {
                 const effectKey = bde.payload.effectKey;

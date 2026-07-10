@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { assertR2CapacityForUploads } from '../assets/r2-capacity-guard.mjs';
 
 const rootDir = process.cwd();
 
@@ -144,12 +145,27 @@ const uploadObject = async (key, body, contentType, cacheControl) => {
     }));
 };
 
+const versionManifestBody = `${JSON.stringify(manifest, null, 2)}\n`;
+const latestManifestBody = versionManifestBody;
+
 if (!dryRun) {
+    await assertR2CapacityForUploads({
+        s3Client,
+        bucketName: process.env.R2_BUCKET_NAME,
+        uploads: [
+            { key: apkKey, size: apkBuffer.length },
+            { key: fingerprintedApkKey, size: apkBuffer.length },
+            { key: versionManifestKey, size: Buffer.byteLength(versionManifestBody) },
+            ...(!skipLatest
+                ? [{ key: latestManifestKey, size: Buffer.byteLength(latestManifestBody) }]
+                : []),
+        ],
+    });
     await uploadObject(apkKey, apkBuffer, 'application/vnd.android.package-archive', 'public, max-age=31536000, immutable');
     await uploadObject(fingerprintedApkKey, apkBuffer, 'application/vnd.android.package-archive', 'public, max-age=31536000, immutable');
-    await uploadObject(versionManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
+    await uploadObject(versionManifestKey, versionManifestBody, 'application/json', 'public, max-age=60, must-revalidate');
     if (!skipLatest) {
-        await uploadObject(latestManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, latestManifestBody, 'application/json', 'public, max-age=60, must-revalidate');
     }
 }
 

@@ -13,7 +13,7 @@ import { abilityRegistry } from '../domain/abilities';
 import { CARD_IDS } from '../domain/ids';
 
 import { GameTestRunner, type TestCase, type StateExpectation } from '../../../engine/testing';
-import { createInitialSystemState } from '../../../engine/pipeline';
+import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import {
     BOARD_ROWS,
     BOARD_COLS,
@@ -233,10 +233,10 @@ function createActivatedAbilityHeuristicCore(): SummonerWarsCore {
 function createTargetedAbilityCore(): SummonerWarsCore {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], aiTestRandom, {
-        faction0: 'barbaric',
+        faction0: 'goblin',
         faction1: 'paladin',
     });
-    core.phase = 'move';
+    core.phase = 'attack';
     core.currentPlayer = '0';
 
     for (let row = 0; row < BOARD_ROWS; row += 1) {
@@ -254,74 +254,49 @@ function createTargetedAbilityCore(): SummonerWarsCore {
     }
     ownSummoner.card = {
         ...ownSummoner.card,
-        abilities: [],
+        abilities: ['vanish'],
     };
 
-    const ancestralSourceCard: UnitCard = {
-        id: 'test-ancestral-source',
-        cardType: 'unit',
-        name: '测试祖灵法师',
-        unitClass: 'champion',
-        faction: 'barbaric',
-        strength: 2,
-        life: 4,
-        cost: 2,
-        attackType: 'melee',
-        attackRange: 1,
-        abilities: ['ancestral_bond'],
-        deckSymbols: [],
-    };
     const allyChampionCard: UnitCard = {
-        id: 'test-ancestral-champion',
+        id: 'test-vanish-champion',
         cardType: 'unit',
-        name: '测试祖灵冠军',
+        name: '测试零费冠军',
         unitClass: 'champion',
-        faction: 'barbaric',
+        faction: 'goblin',
         strength: 3,
         life: 5,
-        cost: 3,
+        cost: 0,
         attackType: 'melee',
         attackRange: 1,
         deckSymbols: [],
     };
     const allyCommonCard: UnitCard = {
-        id: 'test-ancestral-common',
+        id: 'test-vanish-common',
         cardType: 'unit',
-        name: '测试祖灵士兵',
+        name: '测试零费士兵',
         unitClass: 'common',
-        faction: 'barbaric',
+        faction: 'goblin',
         strength: 2,
         life: 3,
-        cost: 1,
+        cost: 0,
         attackType: 'melee',
         attackRange: 1,
         deckSymbols: [],
     };
 
-    const sourcePos = {
+    placeTestUnit(core, {
         row: ownSummoner.position.row - 1,
         col: ownSummoner.position.col,
-    };
-    placeTestUnit(core, sourcePos, {
-        card: ancestralSourceCard,
-        owner: '0',
-        hasMoved: true,
-    });
-    placeTestUnit(core, {
-        row: sourcePos.row - 1,
-        col: sourcePos.col,
     }, {
         card: allyChampionCard,
         owner: '0',
-        hasMoved: true,
     });
     placeTestUnit(core, {
-        row: sourcePos.row,
-        col: sourcePos.col - 1,
+        row: ownSummoner.position.row,
+        col: ownSummoner.position.col - 1,
     }, {
         card: allyCommonCard,
         owner: '0',
-        hasMoved: true,
     });
 
     return core;
@@ -1202,6 +1177,72 @@ describe('召唤师战争本地 AI', () => {
         expect(validPositions).toContainEqual(summonPosition);
     });
 
+    it('炽原精灵 AI 完整回合不应重复发动祖灵羁绊无限充能', async () => {
+        const playerIds = ['0', '1'];
+        const core = createInitializedCore(playerIds, aiTestRandom, {
+            faction0: 'paladin',
+            faction1: 'barbaric',
+        });
+        core.currentPlayer = '0';
+        core.phase = 'magic';
+
+        const sys = createInitialSystemState(playerIds, engineConfig.systems as any);
+        sys.phase = 'magic';
+        let state = { core, sys } as any;
+        const pipelineConfig = {
+            domain: engineConfig.domain,
+            systems: engineConfig.systems as any,
+            systemsConfig: engineConfig.systemsConfig,
+        };
+
+        for (let index = 0; index < 2; index += 1) {
+            const result = executePipeline(
+                pipelineConfig,
+                state,
+                { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+                aiTestRandom,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state;
+        }
+        expect(state.core.currentPlayer).toBe('1');
+
+        const actionIds: string[] = [];
+        for (let step = 0; step < 60 && state.core.currentPlayer === '1'; step += 1) {
+            const resolution = await resolveNextLocalAiAction({
+                engineConfig,
+                state,
+                matchId: 'local:summonerwars-barbaric-full-turn',
+                seatControllers: {
+                    '1': { type: 'local-ai' },
+                },
+            });
+            expect(resolution).not.toBeNull();
+            if (!resolution) break;
+
+            actionIds.push(resolution.action.actionId);
+            for (const command of resolution.action.commands) {
+                const result = executePipeline(
+                    pipelineConfig,
+                    state,
+                    {
+                        type: command.type,
+                        playerId: resolution.playerId,
+                        payload: command.payload ?? {},
+                    },
+                    aiTestRandom,
+                    playerIds,
+                );
+                expect(result.success).toBe(true);
+                state = result.state;
+            }
+        }
+
+        expect(state.core.currentPlayer).toBe('0');
+        expect(actionIds.some((actionId) => actionId.includes('ancestral_bond'))).toBe(false);
+    });
+
     it('重燃希望激活时，AI 应将召唤师相邻空格加入召唤候选', () => {
         const core = createInitializedCore(['0', '1'], aiTestRandom, {
             faction0: 'paladin',
@@ -1384,7 +1425,7 @@ describe('召唤师战争本地 AI', () => {
         expect(decision?.actionId).toBe(championAttack?.actionId);
     });
 
-    it('activated ability 会根据效果目标自动补齐 strategy tags', () => {
+    it('AI 只生成真实主动按钮技能，移动后自动技能不应被直推', () => {
         const core = createActivatedAbilityHeuristicCore();
         const sys = createInitialSystemState(['0', '1'], []);
         const actions = buildSummonerWarsAiLegalActions({
@@ -1399,18 +1440,12 @@ describe('召唤师战争本地 AI', () => {
             return action.kind === 'activate-ability' && action.metadata?.abilityId === 'prepare';
         });
 
-        expect(inspireAction?.metadata?.strategyTags).toContain('ability-tempo');
-        expect(inspireAction?.metadata?.strategyTags).toContain('board-control');
-        expect(inspireAction?.metadata?.strategyTags).toContain('summoner-defense');
-        expect(inspireAction?.metadata?.adjacentAllyCount).toBe(3);
-        expect(inspireAction?.metadata?.adjacentChampionCount).toBe(1);
-        expect(inspireAction?.metadata?.adjacentSummonerCount).toBe(1);
-
+        expect(inspireAction).toBeUndefined();
         expect(prepareAction?.metadata?.strategyTags).toEqual(['ability-tempo']);
         expect(prepareAction?.metadata?.selfChargeGain).toBe(1);
     });
 
-    it('多个无目标 activated ability 同时可用时，应优先选择能强化多名友军的能力', async () => {
+    it('本地 AI 策略候选中不应出现移动后自动技能', async () => {
         const core = createActivatedAbilityHeuristicCore();
         const sys = createInitialSystemState(['0', '1'], []);
         const context = buildAiDecisionContext({
@@ -1425,25 +1460,15 @@ describe('召唤师战争本地 AI', () => {
         });
 
         const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
-        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
-            actionId: string;
-            finalScore: number;
-            contributions: Array<{ scorerId: string; score: number }>;
-        }>;
-        const inspireAction = context.legalActions.find((action) => {
-            return action.kind === 'activate-ability' && action.metadata?.abilityId === 'inspire';
-        });
-        const prepareAction = context.legalActions.find((action) => {
-            return action.kind === 'activate-ability' && action.metadata?.abilityId === 'prepare';
-        });
-        const inspireEval = evaluations.find((item) => item.actionId === inspireAction?.actionId);
-        const prepareEval = evaluations.find((item) => item.actionId === prepareAction?.actionId);
-        const inspireAbilityScore = inspireEval?.contributions.find((item) => item.scorerId === 'activated-ability')?.score ?? -Infinity;
-        const prepareAbilityScore = prepareEval?.contributions.find((item) => item.scorerId === 'activated-ability')?.score ?? -Infinity;
+        const directAbilityIds = context.legalActions
+            .filter((action) => action.kind === 'activate-ability')
+            .map((action) => action.metadata?.abilityId);
 
-        expect(inspireAbilityScore).toBeGreaterThan(prepareAbilityScore);
-        expect(inspireEval?.finalScore ?? -Infinity).toBeGreaterThan(prepareEval?.finalScore ?? -Infinity);
-        expect(decision?.actionId).toBe(inspireAction?.actionId);
+        expect(directAbilityIds).toContain('prepare');
+        expect(directAbilityIds).not.toContain('inspire');
+        expect(directAbilityIds).not.toContain('ancestral_bond');
+        expect(decision?.actionId).not.toContain('inspire');
+        expect(decision?.actionId).not.toContain('ancestral_bond');
     });
 
     it('高动作密度下应启用 candidate loop 批次搜索，并产出 lookahead 前瞻贡献', async () => {
@@ -1496,7 +1521,7 @@ describe('召唤师战争本地 AI', () => {
 
         const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
         const targetedActions = context.legalActions.filter((action) => {
-            return action.kind === 'activate-ability' && action.metadata?.abilityId === 'ancestral_bond';
+            return action.kind === 'activate-ability' && action.metadata?.abilityId === 'vanish';
         });
         const championAction = targetedActions.find((action) => action.metadata?.targetUnitClass === 'champion');
         const commonAction = targetedActions.find((action) => action.metadata?.targetUnitClass === 'common');
@@ -1509,7 +1534,7 @@ describe('召唤师战争本地 AI', () => {
     });
 
     it('带目标的 activated ability 在 count 缺省时仍按单目标生成动作', () => {
-        const abilityDef = abilityRegistry.get('ancestral_bond');
+        const abilityDef = abilityRegistry.get('vanish');
         expect(abilityDef?.targetSelection).toBeTruthy();
 
         const originalTargetSelection = abilityDef?.targetSelection
@@ -1517,7 +1542,7 @@ describe('召唤师战争本地 AI', () => {
             : undefined;
 
         if (!abilityDef?.targetSelection) {
-            throw new Error('测试缺少 ancestral_bond.targetSelection');
+            throw new Error('测试缺少 vanish.targetSelection');
         }
 
         abilityDef.targetSelection = {
@@ -1534,7 +1559,7 @@ describe('召唤师战争本地 AI', () => {
             });
 
             const targetedActions = actions.filter((action) => {
-                return action.kind === 'activate-ability' && action.metadata?.abilityId === 'ancestral_bond';
+                return action.kind === 'activate-ability' && action.metadata?.abilityId === 'vanish';
             });
 
             expect(targetedActions.length).toBeGreaterThan(1);
@@ -1544,7 +1569,7 @@ describe('召唤师战争本地 AI', () => {
     });
 
     it('带目标的 activated ability 若 payloadContract 还要求额外字段，则不应生成直推目标动作', () => {
-        const abilityDef = abilityRegistry.get('ancestral_bond');
+        const abilityDef = abilityRegistry.get('vanish');
         expect(abilityDef).toBeTruthy();
 
         const originalInteractionChain = abilityDef?.interactionChain
@@ -1560,7 +1585,7 @@ describe('召唤师战争本地 AI', () => {
             : undefined;
 
         if (!abilityDef) {
-            throw new Error('测试缺少 ancestral_bond');
+            throw new Error('测试缺少 vanish');
         }
 
         abilityDef.interactionChain = {
@@ -1580,7 +1605,7 @@ describe('召唤师战争本地 AI', () => {
             });
 
             const targetedActions = actions.filter((action) => {
-                return action.kind === 'activate-ability' && action.metadata?.abilityId === 'ancestral_bond';
+                return action.kind === 'activate-ability' && action.metadata?.abilityId === 'vanish';
             });
 
             expect(targetedActions).toHaveLength(0);

@@ -99,7 +99,18 @@ vi.mock('../../contexts/DebugContext', () => ({
 
 vi.mock('../../contexts/TutorialContext', () => ({
     useTutorial: () => ({
-        state: null,
+        tutorial: {
+            active: false,
+            manifestId: null,
+            stepIndex: 0,
+            steps: [],
+            step: null,
+        },
+        startTutorial: vi.fn(),
+        closeTutorial: vi.fn(),
+        isActive: false,
+        currentStep: null,
+        isBoardMounted: true,
     }),
 }));
 

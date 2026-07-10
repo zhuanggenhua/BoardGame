@@ -1,0 +1,30 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+    DICETHRONE_DICE_BOX_STYLE_PROFILE,
+    DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE,
+} from '../diceBoxStyleProfiles';
+
+describe('DiceThrone 3D 骰子物理样式合同', () => {
+    it('投掷结束后应保留自然物理落点，禁止强制重排造成瞬移', () => {
+        expect(DICETHRONE_DICE_BOX_STYLE_PROFILE.compactSettledDice).toBe(false);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.compactSettledDice).toBe(false);
+    });
+
+    it('移动横屏应扩大真实物理区域，避免五颗骰子挤成重叠横排', () => {
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldWidthScale)
+            .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.worldWidthScale);
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldHeightScale)
+            .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.worldHeightScale);
+    });
+
+    it('越界安全回收位置应保持二维散落，而不是退化为单排', () => {
+        const layout = DICETHRONE_DICE_BOX_STYLE_PROFILE.settledLayout ?? [];
+        const xValues = layout.map((slot) => slot.x);
+        const yValues = layout.map((slot) => slot.y);
+
+        expect(layout).toHaveLength(5);
+        expect(Math.max(...xValues) - Math.min(...xValues)).toBeGreaterThan(2.5);
+        expect(Math.max(...yValues) - Math.min(...yValues)).toBeGreaterThan(0.9);
+    });
+});

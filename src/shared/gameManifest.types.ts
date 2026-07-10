@@ -56,6 +56,8 @@ export interface GamePreloadAssets {
 export interface GameManifestAiSupport {
     capture: boolean;
     capturePolicy?: 'human-only' | 'all-seats';
+    /** 正式训练数据允许提交的最低完整对局时长；未配置时使用服务端全局门槛。 */
+    trainingMinCompletedDurationMs?: number;
     localAi: boolean;
     remoteAi: boolean;
     defaultLocalAiSeats?: 'first-opponent' | 'all-opponents';

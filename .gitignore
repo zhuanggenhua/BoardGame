@@ -88,6 +88,10 @@ public/assets/**
 !evidence/**/assets/**/*.png
 !evidence/**/screenshots/**/*.png
 !evidence/**/_captured/**/*.png
+# 山屋惊魂教程截图的本地编排、锐化与长图拼接产物。
+# 原始验收截图保留在 evidence/betrayal-tutorial 根目录。
+evidence/betrayal-tutorial/staged/
+evidence/betrayal-tutorial/staged-*/
 !src/games/qidahen/data/region-mask.png
 !src/games/qidahen/data/region-boundary-add.png
 !src/games/qidahen/data/region-boundary-remove.png

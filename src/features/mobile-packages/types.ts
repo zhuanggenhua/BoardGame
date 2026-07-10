@@ -125,6 +125,14 @@ export const hasUsableInstalledGamePackageState = (
     && hasUsableInstalledGamePackageAssetBaseUrl(state.localAssetBaseUrl)
 );
 
+export const canInstallResolvedAssetPack = (manifest: ResolvedGamePackageManifest) => Boolean(
+    manifest.assetPackUrl
+    || (
+        manifest.assetPackDiffOnly
+        && manifest.assetPackFileIndexUrl
+    ),
+);
+
 export const hasGamePackageUpdateAvailable = (
     installedVersion?: string,
     availableVersion?: string,

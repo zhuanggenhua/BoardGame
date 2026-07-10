@@ -3,30 +3,39 @@ import type { Page } from '@playwright/test';
 
 const THE_GANG_GAME_ID = 'the-gang';
 
-async function selectHotseat(page: Page, seatName: string, scope: 'board' | 'showdown' = 'board') {
-    const testId = scope === 'showdown'
-        ? 'the-gang-showdown-hotseat-switcher'
-        : 'the-gang-hotseat-switcher';
-    const seatButton = page.getByTestId(testId).getByRole('button', { name: seatName });
-    await seatButton.click({ force: true });
-    await expect(seatButton).toHaveAttribute('aria-pressed', 'true');
-}
-
-async function chooseChipForSeat(page: Page, seatName: string, chipLabel: string) {
-    await selectHotseat(page, seatName);
+async function chooseVisibleChip(page: Page, chipLabel: string) {
     await page.getByRole('button', { name: chipLabel }).click();
 }
 
-async function chooseAllPlayerChips(page: Page, chipPrefix: string) {
-    await chooseChipForSeat(page, '玩家 1', `${chipPrefix} 1 星`);
-    await chooseChipForSeat(page, '玩家 2', `${chipPrefix} 2 星`);
-    await chooseChipForSeat(page, '玩家 3', `${chipPrefix} 3 星`);
+async function chooseRoundChipsByCommand(page: Page, chipsByPlayer: Record<string, number>) {
+    for (const [playerId, chip] of Object.entries(chipsByPlayer)) {
+        await dispatchTheGangCommand(page, playerId, 'TAKE_CHIP', { chip });
+    }
 }
 
-async function chooseChipsForSeats(page: Page, chipPrefix: string, playerCount: number) {
-    for (let seat = 1; seat <= playerCount; seat += 1) {
-        await chooseChipForSeat(page, `玩家 ${seat}`, `${chipPrefix} ${seat} 星`);
+async function chooseAllPlayerChips(page: Page, chipPrefix: string) {
+    await chooseVisibleChip(page, `${chipPrefix} 1 星`);
+    await chooseRoundChipsByCommand(page, { 1: 2, 2: 3 });
+}
+
+async function chooseChipsForSeats(page: Page, playerCount: number) {
+    const chipsByPlayer = Object.fromEntries(
+        Array.from({ length: playerCount }, (_, index) => [String(index), index + 1]),
+    );
+    await chooseRoundChipsByCommand(page, chipsByPlayer);
+}
+
+async function commandTypeForProgressButton(buttonName: string) {
+    if (buttonName === '下一轮') {
+        return 'END_ROUND';
     }
+    if (buttonName === '摊牌') {
+        return 'REVEAL_SHOWDOWN';
+    }
+    if (buttonName === '下一次抢劫') {
+        return 'START_NEXT_HEIST';
+    }
+    throw new Error(`未支持的纸牌帮进度按钮：${buttonName}`);
 }
 
 async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
@@ -34,14 +43,14 @@ async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
 }
 
 async function confirmProgressForSeats(page: Page, buttonName: string, playerCount: number) {
-    const hotseatScope = buttonName === '下一次抢劫' ? 'showdown' : 'board';
-    for (let seat = 1; seat <= playerCount; seat += 1) {
-        await selectHotseat(page, `玩家 ${seat}`, hotseatScope);
-        await page.getByRole('button', { name: buttonName }).click();
-        if (seat < playerCount) {
-            await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(seat);
-            await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
-        }
+    const commandType = await commandTypeForProgressButton(buttonName);
+    await page.getByRole('button', { name: buttonName }).click();
+    if (playerCount > 1) {
+        await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(1);
+        await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
+    }
+    for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
+        await dispatchTheGangCommand(page, String(seatIndex), commandType);
     }
 }
 
@@ -98,13 +107,13 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
 
 async function expectMiddleRoundFullState(page: Page) {
     await expect(page.locator('[data-bgg-zone="hand-chips-previous"]')).toHaveCount(3);
-    await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(6);
-    await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+    await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(9);
+    await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
     await expectAvailableChipButtons(page, '红筹码', []);
     await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
     await expectImagesLoaded(page, '[data-bgg-zone="hand-chips-previous"] img', 3);
-    await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 6);
-    await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+    await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 9);
+    await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
     await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
 }
 
@@ -208,10 +217,8 @@ test.describe('The Gang 真实入口截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
-        const switcher = page.getByTestId('the-gang-hotseat-switcher');
-        for (let seat = 1; seat <= 6; seat += 1) {
-            await expect(switcher.getByRole('button', { name: `玩家 ${seat}` })).toBeVisible();
-        }
+        await expect(page.getByTestId('the-gang-hotseat-switcher')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(5);
         await expectChipRoundForPlayerCount(page, '白筹码', 6);
         await expect(page.locator('[data-bgg-zone="card-river"]')).toHaveCount(1);
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).toBeVisible();
@@ -219,8 +226,7 @@ test.describe('The Gang 真实入口截图', () => {
         await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(5);
         await game.screenshot('桌面6人满人数首轮可操作状态', testInfo);
 
-        await chooseChipsForSeats(page, '白筹码', 6);
-        await selectHotseat(page, '玩家 1');
+        await chooseChipsForSeats(page, 6);
         await expectCurrentRoundChips(page, 6);
         await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(5);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
@@ -246,20 +252,19 @@ test.describe('The Gang 真实入口截图', () => {
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
         await expectChipRoundForPlayerCount(page, '白筹码', 6);
-        await chooseChipsForSeats(page, '白筹码', 6);
+        await chooseChipsForSeats(page, 6);
 
         await confirmProgressForSeats(page, '下一轮', 6);
         await expectChipRoundForPlayerCount(page, '黄筹码', 6);
-        await chooseChipsForSeats(page, '黄筹码', 6);
+        await chooseChipsForSeats(page, 6);
 
         await confirmProgressForSeats(page, '下一轮', 6);
         await expectChipRoundForPlayerCount(page, '橙筹码', 6);
-        await chooseChipsForSeats(page, '橙筹码', 6);
+        await chooseChipsForSeats(page, 6);
 
         await confirmProgressForSeats(page, '下一轮', 6);
         await expectChipRoundForPlayerCount(page, '红筹码', 6);
-        await chooseChipsForSeats(page, '红筹码', 6);
-        await selectHotseat(page, '玩家 1');
+        await chooseChipsForSeats(page, 6);
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
 
         await confirmProgressForSeats(page, '摊牌', 6);
@@ -367,7 +372,7 @@ test.describe('The Gang 真实入口截图', () => {
         await dispatchTheGangCommand(page, '1', 'TAKE_CHIP', { chip: 2 });
         await dispatchTheGangCommand(page, '2', 'TAKE_CHIP', { chip: 3 });
         await expectCurrentRoundChips(page, 3);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
@@ -389,14 +394,21 @@ test.describe('The Gang 真实入口截图', () => {
 
         await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-profile', 'landscape-adapted');
+        await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-preferred-orientation', 'landscape');
+        await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).toBeVisible();
-        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="token-pile"]')).toBeInViewport();
+        await expect(page.locator('[data-bgg-zone="hand-cards"]')).toBeInViewport();
+        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('玩家 1');
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('AI 2 号位');
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('AI 3 号位');
+        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="opponent-cards"] img')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(3);
         await expect(page.getByTestId('the-gang-hotseat-switcher')).not.toBeVisible();
         await expect(page.getByTestId('the-gang-showdown-hotseat-switcher')).toHaveCount(0);
-        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(0);
-        await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('AI 2 号位');
-        await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('AI 3 号位');
-        await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('玩家 1');
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('玩家 1');
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).not.toContainText('玩家 1');
 
         const scrollMetrics = await page.locator('[data-game-ui="the-gang"]').evaluate((node) => {
@@ -406,17 +418,26 @@ test.describe('The Gang 真实入口截图', () => {
                 clientWidth: element.clientWidth,
                 scrollHeight: element.scrollHeight,
                 scrollWidth: element.scrollWidth,
+                scrollLeft: element.scrollLeft,
             };
         });
         expect(scrollMetrics.scrollWidth).toBeGreaterThan(scrollMetrics.clientWidth);
         expect(scrollMetrics.scrollHeight).toBeGreaterThanOrEqual(scrollMetrics.clientHeight);
+        expect(scrollMetrics.scrollLeft).toBeGreaterThan(0);
+        expect(scrollMetrics.scrollLeft).toBeLessThan(scrollMetrics.scrollWidth - scrollMetrics.clientWidth);
 
         await page.locator('[data-game-ui="the-gang"]').evaluate((node) => {
             const element = node as HTMLElement;
             element.scrollTo({ left: Math.max(0, element.scrollWidth - element.clientWidth), top: 0, behavior: 'instant' });
         });
         const scrolledLeft = await page.locator('[data-game-ui="the-gang"]').evaluate((node) => (node as HTMLElement).scrollLeft);
-        expect(scrolledLeft).toBeGreaterThan(0);
+        expect(scrolledLeft).toBeGreaterThan(scrollMetrics.scrollLeft);
+        await page.locator('[data-game-ui="the-gang"]').evaluate((node) => {
+            const element = node as HTMLElement;
+            element.scrollTo({ left: Math.max(0, (element.scrollWidth - element.clientWidth) / 2), top: 0, behavior: 'instant' });
+        });
+        await expect(page.locator('[data-bgg-zone="token-pile"]')).toBeInViewport();
+        await expect(page.locator('[data-bgg-zone="hand-cards"]')).toBeInViewport();
         await game.screenshot('移动竖屏真实牌桌可横向滚动查看', testInfo);
     });
 
@@ -442,9 +463,8 @@ test.describe('The Gang 真实入口截图', () => {
         await game.screenshot('桌面首轮可操作状态', testInfo);
 
         await chooseAllPlayerChips(page, '白筹码');
-        await selectHotseat(page, '玩家 1');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await game.screenshot('桌面首轮全员筹码已选', testInfo);
 
@@ -459,10 +479,8 @@ test.describe('The Gang 真实入口截图', () => {
         await confirmProgressForAllPlayers(page, '下一轮');
         await expectChipRound(page, '红筹码');
 
-        await chooseChipForSeat(page, '玩家 1', '红筹码 2 星');
-        await chooseChipForSeat(page, '玩家 2', '红筹码 1 星');
-        await chooseChipForSeat(page, '玩家 3', '红筹码 3 星');
-        await selectHotseat(page, '玩家 1');
+        await chooseVisibleChip(page, '红筹码 2 星');
+        await chooseRoundChipsByCommand(page, { 1: 1, 2: 3 });
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
         await expectMiddleRoundFullState(page);
         await game.screenshot('桌面中局满元素已拿新筹码待摊牌', testInfo);

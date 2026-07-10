@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Zip, ZipDeflate } from 'fflate';
+import { assertR2CapacityForUploads } from '../assets/r2-capacity-guard.mjs';
 
 const rootDir = process.cwd();
 
@@ -54,6 +55,17 @@ const STABLE_ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const tempZipRoot = path.join(tmpdir(), 'boardgame-mobile-packages');
 const runId = `${process.pid}-${Date.now()}`;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const pendingUploads = [];
+const temporaryUploadFiles = new Set();
+const cleanupTemporaryUploadFiles = () => {
+    for (const filePath of temporaryUploadFiles) {
+        try {
+            unlinkSync(filePath);
+        } catch {}
+    }
+    temporaryUploadFiles.clear();
+};
+process.once('exit', cleanupTemporaryUploadFiles);
 const readArgValue = (name, fallback = '') => {
     const prefix = `--${name}=`;
     const direct = args.find((arg) => arg.startsWith(prefix));
@@ -374,7 +386,7 @@ const fetchRemoteJson = async (url) => {
 
 const resolveUploadBody = (body) => (typeof body === 'function' ? body() : body);
 
-const uploadObject = async (key, body, contentType, cacheControl, contentLength) => {
+const sendUploadObject = async (key, body, contentType, cacheControl, contentLength) => {
     if (!s3Client) {
         throw new Error('dry-run 模式下不应执行上传');
     }
@@ -407,6 +419,50 @@ const uploadObject = async (key, body, contentType, cacheControl, contentLength)
         }
     }
     throw lastError;
+};
+
+const resolveUploadSize = (key, body, contentLength) => {
+    if (typeof contentLength === 'number') {
+        return contentLength;
+    }
+    if (typeof body === 'string') {
+        return Buffer.byteLength(body);
+    }
+    if (Buffer.isBuffer(body) || ArrayBuffer.isView(body)) {
+        return body.byteLength;
+    }
+    throw new Error(`上传对象缺少可计算的大小: ${key}`);
+};
+
+const uploadObject = async (key, body, contentType, cacheControl, contentLength) => {
+    pendingUploads.push({
+        key,
+        body,
+        contentType,
+        cacheControl,
+        contentLength,
+        size: resolveUploadSize(key, body, contentLength),
+    });
+};
+
+const flushPendingUploads = async () => {
+    if (pendingUploads.length === 0) {
+        return;
+    }
+    await assertR2CapacityForUploads({
+        s3Client,
+        bucketName: process.env.R2_BUCKET_NAME,
+        uploads: pendingUploads.map(({ key, size }) => ({ key, size })),
+    });
+    for (const upload of pendingUploads) {
+        await sendUploadObject(
+            upload.key,
+            upload.body,
+            upload.contentType,
+            upload.cacheControl,
+            upload.contentLength,
+        );
+    }
 };
 
 const resolveAssetObjectContentType = (relativePath) => {
@@ -649,6 +705,7 @@ const publishSharedAudioPackage = async () => {
 
     const tempZipPath = path.join(tempZipRoot, `${runId}-shared-${SHARED_AUDIO_PACK_GAME_ID}.zip`);
     const zipResult = await createAndroidCompatibleZipFile(includedFiles, tempZipPath);
+    temporaryUploadFiles.add(zipResult.zipFilePath);
     const checksum = zipResult.checksum;
     const packageVersion = buildSharedAudioPackageVersion(checksum);
     const fileIndexPayload = await buildFileIndexPayload(includedFiles, packageVersion);
@@ -669,23 +726,17 @@ const publishSharedAudioPackage = async () => {
         fileIndexChecksum,
     });
 
-    try {
-        if (!dryRun) {
-            await uploadObject(
-                bundleKey,
-                () => createReadStream(zipResult.zipFilePath),
-                'application/zip',
-                'public, max-age=31536000, immutable',
-                zipResult.bytes,
-            );
-            await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
-            await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-            await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-        }
-    } finally {
-        try {
-            unlinkSync(zipResult.zipFilePath);
-        } catch {}
+    if (!dryRun) {
+        await uploadObject(
+            bundleKey,
+            () => createReadStream(zipResult.zipFilePath),
+            'application/zip',
+            'public, max-age=31536000, immutable',
+            zipResult.bytes,
+        );
+        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
+        await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
     }
 
     return {
@@ -708,6 +759,7 @@ const publishSingleGamePackage = async (gameId, sharedAudioPackResult) => {
     const { includedFiles } = buildGamePackageEntries(gameId);
     const tempZipPath = path.join(tempZipRoot, `${runId}-${gameId}.zip`);
     const zipResult = await createAndroidCompatibleZipFile(includedFiles, tempZipPath);
+    temporaryUploadFiles.add(zipResult.zipFilePath);
     const checksum = zipResult.checksum;
     const fileIndexPayload = await buildFileIndexPayload(includedFiles, packageVersion);
     const fileIndexJson = stringifyJsonWithTrailingNewline(fileIndexPayload);
@@ -730,23 +782,17 @@ const publishSingleGamePackage = async (gameId, sharedAudioPackResult) => {
         modulePack: null,
     });
 
-    try {
-        if (!dryRun) {
-            await uploadObject(
-                bundleKey,
-                () => createReadStream(zipResult.zipFilePath),
-                'application/zip',
-                'public, max-age=31536000, immutable',
-                zipResult.bytes,
-            );
-            await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
-            await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-            await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
-        }
-    } finally {
-        try {
-            unlinkSync(zipResult.zipFilePath);
-        } catch {}
+    if (!dryRun) {
+        await uploadObject(
+            bundleKey,
+            () => createReadStream(zipResult.zipFilePath),
+            'application/zip',
+            'public, max-age=31536000, immutable',
+            zipResult.bytes,
+        );
+        await uploadObject(fileIndexKey, fileIndexJson, 'application/json', 'public, max-age=31536000, immutable');
+        await uploadObject(versionManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
+        await uploadObject(latestManifestKey, stringifyJsonWithTrailingNewline(manifest), 'application/json', 'public, max-age=60, must-revalidate');
     }
 
     return {
@@ -889,7 +935,7 @@ if (sharedAudioPackResult) {
     if (manifestOnly || indexManifestOnly || reuseSharedAudio) {
         console.log('公共音频包已复用远端 latest manifest');
     } else {
-        console.log(dryRun ? '公共音频包预演完成（未上传）' : '公共音频包已发布');
+        console.log(dryRun ? '公共音频包预演完成（未上传）' : '公共音频包上传计划已准备');
     }
     console.log(`gameId=${sharedAudioPackResult.gameId}`);
     console.log(`channel=${channel}`);
@@ -916,11 +962,11 @@ for (const gameId of targetGames) {
             ? await publishSingleGameIndexManifest(gameId, sharedAudioPackResult)
         : await publishSingleGamePackage(gameId, sharedAudioPackResult);
     if (manifestOnly) {
-        console.log(dryRun ? '游戏 manifest 预演完成（未上传）' : '游戏 manifest 已补刷');
+        console.log(dryRun ? '游戏 manifest 预演完成（未上传）' : '游戏 manifest 上传计划已准备');
     } else if (indexManifestOnly) {
-        console.log(dryRun ? '游戏 file-index/manifest 差异刷新预演完成（未上传 ZIP）' : '游戏 file-index/manifest 已差异刷新（未上传 ZIP）');
+        console.log(dryRun ? '游戏 file-index/manifest 差异刷新预演完成（未上传 ZIP）' : '游戏 file-index/manifest 上传计划已准备（不上传 ZIP）');
     } else {
-        console.log(dryRun ? '游戏包预演完成（未上传）' : '游戏包已发布');
+        console.log(dryRun ? '游戏包预演完成（未上传）' : '游戏包上传计划已准备');
     }
     console.log(`gameId=${result.gameId}`);
     console.log(`channel=${channel}`);
@@ -952,6 +998,12 @@ for (const gameId of targetGames) {
         }
         console.log('---');
     }
+
+if (!dryRun) {
+    await flushPendingUploads();
+    console.log(`R2 整批上传完成：${pendingUploads.length} 个对象`);
+}
+cleanupTemporaryUploadFiles();
 
 if (explicitGameId && existsSync(path.join(assetsRoot, 'i18n', 'zh-CN', explicitGameId))) {
     const stats = statSync(path.join(assetsRoot, 'i18n', 'zh-CN', explicitGameId));
