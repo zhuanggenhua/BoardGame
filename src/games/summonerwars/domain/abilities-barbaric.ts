@@ -33,7 +33,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     name: abilityText('ancestral_bond', 'name'),
     description: abilityText('ancestral_bond', 'description'),
     sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
-    trigger: 'activated',
+    trigger: 'afterMove',
     effects: [
       { type: 'custom', actionId: 'ancestral_bond_transfer' },
     ],
@@ -167,7 +167,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     name: abilityText('inspire', 'name'),
     description: abilityText('inspire', 'description'),
     sfxKey: 'magic.rock.35.earth_magic_whoosh_01',
-    trigger: 'activated',
+    trigger: 'afterMove',
     effects: [
       { type: 'addCharge', target: 'adjacentAllies', value: 1 },
     ],
@@ -319,7 +319,7 @@ export const BARBARIC_ABILITIES: AbilityDef[] = [
     name: abilityText('spirit_bond', 'name'),
     description: abilityText('spirit_bond', 'description'),
     sfxKey: 'fantasy.elemental_sword_earthattack_01',
-    trigger: 'activated',
+    trigger: 'afterMove',
     usesPerTurn: 1,
     effects: [
       { type: 'custom', actionId: 'spirit_bond_action' },

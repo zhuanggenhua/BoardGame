@@ -16,22 +16,6 @@ import {
 
 const STALE_SEAT_RECOVERY_MIN_INTERVAL_MS = 1200;
 
-function shouldPreferManualLegalActionRecoveryForPublicPregame(args: {
-    sharedState: MatchState<unknown>;
-    candidate: NonNullable<ReturnType<typeof resolveManualForceEndAiPhase>>;
-    engineConfig: OnlineAiRecoveryEngineConfig;
-}): boolean {
-    if (args.candidate.reason !== 'active-turn') {
-        return false;
-    }
-    if (args.engineConfig.onlineAiRecovery?.publicPregameLegalActionPhases?.length) {
-        return false;
-    }
-
-    const phase = typeof args.sharedState.sys?.phase === 'string' ? args.sharedState.sys.phase : '';
-    return phase === 'factionSelect';
-}
-
 export async function resolveManualOnlineAiRecovery(args: {
     engineConfig: OnlineAiRecoveryEngineConfig;
     matchId: string;
@@ -65,15 +49,7 @@ export async function resolveManualOnlineAiRecovery(args: {
         engineConfig: args.engineConfig,
         gameId: args.engineConfig.gameId,
     });
-    if (
-        candidate
-        && candidate.legalActionOnly !== true
-        && !shouldPreferManualLegalActionRecoveryForPublicPregame({
-            sharedState: args.sharedState,
-            candidate,
-            engineConfig: args.engineConfig,
-        })
-    ) {
+    if (candidate) {
         return {
             kind: 'force-end-turn',
             candidate,

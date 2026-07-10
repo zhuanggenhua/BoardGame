@@ -89,7 +89,12 @@ export function getDefaultSeatController(
     numPlayers: number,
     aiSupport?: AiSupportProfile,
 ): AiSeatController {
-    if (playerIndex === 1 && numPlayers > 1 && aiSupport?.localAi) {
+    if (
+        playerIndex > 0
+        && numPlayers > 1
+        && aiSupport?.localAi
+        && (aiSupport.defaultLocalAiSeats === 'all-opponents' || playerIndex === 1)
+    ) {
         return { type: 'local-ai', difficulty: DEFAULT_LOCAL_AI_DIFFICULTY };
     }
     return { type: 'human' };

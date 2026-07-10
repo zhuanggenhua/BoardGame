@@ -23,6 +23,7 @@ export function useLocalGameProviderRuntime(args: {
     setupData: unknown;
     onCommandRejected?: (commandType: string, error: string) => void;
     seatControllers: Record<string, AiSeatController>;
+    playerNames?: Record<string, string>;
     localPlayerId: string | null;
     followCurrentTurnPlayer: boolean;
     persistSession: boolean;
@@ -91,6 +92,7 @@ export function useLocalGameProviderRuntime(args: {
         reset,
         playerIds,
         seatControllers: args.seatControllers,
+        playerNames: args.playerNames,
         localPregameControlledPlayerId,
         followCurrentTurnPlayer: args.followCurrentTurnPlayer,
         localPlayerId: args.localPlayerId,

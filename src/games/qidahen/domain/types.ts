@@ -678,7 +678,7 @@ export interface QidahenMapToken {
     id: string;
     x: number;
     y: number;
-    type: 'army' | 'population' | 'control' | 'marker';
+    type: 'army' | 'control' | 'marker';
     faction: QidahenFactionId | 'neutral';
     regionId?: string;
     troopIndex?: number;

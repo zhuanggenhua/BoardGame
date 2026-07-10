@@ -166,7 +166,7 @@ export const resolveGameMobileSupport = (
             ? 'landscape'
             : mobileProfile === 'portrait-adapted'
                 ? 'portrait'
-                : undefined);
+                : 'landscape');
     const mobileLayoutPreset = entry?.mobileLayoutPreset
         ?? (mobileProfile === 'landscape-adapted'
             ? 'board-shell'

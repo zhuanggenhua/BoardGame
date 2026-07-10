@@ -343,6 +343,44 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('WKWebView 空堆栈 Load failed 噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('webkit-bare-load-failed', {
+            content: '[auto][unhandledrejection] Load failed',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Load failed',
+            errorSource: 'window.unhandledrejection',
+            stack: '',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('有站内堆栈的 Load failed 不会被 WKWebView 噪音规则误过滤', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('real-app-load-failed', {
+            content: '[auto][unhandledrejection] Load failed',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Load failed',
+            errorSource: 'window.unhandledrejection',
+            stack: 'TypeError: Load failed\n    at loadRoomDetails (https://easyboardgame.top/assets/index-Cmi8y5la.js:120:15)',
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it('模块脚本 MIME type 噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

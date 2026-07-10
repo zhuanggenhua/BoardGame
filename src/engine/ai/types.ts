@@ -37,6 +37,7 @@ export interface AiSupportProfile {
     capture: boolean;
     localAi: boolean;
     remoteAi: boolean;
+    defaultLocalAiSeats?: 'first-opponent' | 'all-opponents';
 }
 
 export type AiDifficultyLevel = 'easy' | 'normal' | 'hard' | 'expert';

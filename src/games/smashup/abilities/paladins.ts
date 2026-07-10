@@ -71,7 +71,7 @@ function getSetAsideSeraphim(state: SmashUpCore, playerId: PlayerId): TitanState
 }
 
 function playSeraphimHere(
-    ctx: Pick<AbilityContext, 'state' | 'playerId' | 'baseIndex' | 'now' | 'random'> & Partial<Pick<AbilityContext, 'cardUid'>>,
+    ctx: Pick<AbilityContext, 'state' | 'matchState' | 'playerId' | 'baseIndex' | 'now' | 'random'> & Partial<Pick<AbilityContext, 'cardUid'>>,
     reason: string,
     options?: { currentTalentMinionUid?: string },
 ): AbilityResult {
@@ -654,8 +654,9 @@ function handleHeavenlyMinion(state: MatchState<SmashUpCore>, playerId: PlayerId
                 : base),
         };
     }, state.core);
+    const promptState = queueHeavenlyTalentPrompt({ ...state, core: nextCore }, playerId, baseIndex, timestamp);
     return {
-        state: queueHeavenlyTalentPrompt({ ...state, core: nextCore }, playerId, baseIndex, timestamp),
+        state: { ...promptState, core: state.core },
         events,
     };
 }

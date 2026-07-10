@@ -1,7 +1,7 @@
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig } from '../../lib/audio/types';
 import { THE_GANG_EVENTS, type TheGangCore } from './domain/types';
 
-export const THE_GANG_CHIP_TAKEN_KEY = 'coins.decks_and_cards_sound_fx_pack.small_coin_drop_001';
+export const THE_GANG_CHIP_TAKEN_KEY = 'token.decks_and_cards_sound_fx_pack.token_place_soft_001';
 export const THE_GANG_ROUND_ENDED_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_deal_1';
 export const THE_GANG_SHOWDOWN_REVEALED_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_1';
 export const THE_GANG_NEXT_HEIST_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_c';

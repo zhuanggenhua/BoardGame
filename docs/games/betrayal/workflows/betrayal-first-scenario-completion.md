@@ -34,7 +34,7 @@
   - `npx eslint src/games/betrayal/tutorial.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario-corpse-loot.e2e.ts`：0 error
   - `git diff --check -- src/games/betrayal/tutorial.ts public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json src/games/betrayal/__tests__/tutorial.test.ts e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario-corpse-loot.e2e.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx`：通过，仅 LF/CRLF 提示
 - 当前结论：
-  - 教程已经从 4 个短章扩到 5 个短章，新增叛徒视角最小收尾章节。
+  - 教程已压成 3 个可见章节：基础回合、作祟后看目标再驱魔、如果叛徒得手；旧移动探索与赤红杰克目标章节仅保留隐藏兼容入口。
   - 叛徒视角教程不是只写配置，已经通过真实页面攻击和终局截图证据。
   - 搜尸边界不是只验证第一次成功，已经补到二次限制的真实页面证据。
   - 发现牌揭示现在使用正式事件牌图集，图集合同锁定为 `6076x6376 / 9x5`，并通过 `外星几何` 第 `24` 格页面截图验证。

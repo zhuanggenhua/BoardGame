@@ -28,9 +28,18 @@ export interface DiceBoxStyleProfile {
     gravityMultiplier?: number;
     lightIntensity?: number;
     baseScale?: number;
+    cameraZoom?: number;
+    initialThrowSpread?: number;
+    settledSpreadAnimationMs?: number;
     strength?: number;
     iterationLimit?: number;
     arrangeSettledDice?: boolean;
+    worldWidthScale?: number;
+    worldHeightScale?: number;
+    recoverOutOfBounds?: boolean;
+    settledLayoutScale?: number;
+    settledLayout?: Array<{ x: number; y: number; yaw: number }>;
+    compactSettledDice?: boolean;
 }
 
 export interface DiceBoxDieSkin {
@@ -38,7 +47,7 @@ export interface DiceBoxDieSkin {
     faceCanvases: Record<number, HTMLCanvasElement>;
     topFaceCanvas?: HTMLCanvasElement;
     edgeCanvas?: HTMLCanvasElement;
-    faceImages?: Record<number, HTMLImageElement>;
+    faceImages?: Record<number, HTMLImageElement | HTMLCanvasElement>;
     faceLabels?: Record<number, string>;
     preferPresetMaterials?: boolean;
 }
@@ -54,8 +63,13 @@ export interface DiceBoxEngineConfig {
     themeCustomColorset?: DiceBoxConfig['theme_customColorset'];
 }
 
+type DiceBoxThrowVector = {
+    pos?: DiceBoxVectorLike;
+    velocity?: DiceBoxVectorLike;
+};
+
 type DiceBoxInternalNotationVector = {
-    vectors?: unknown[];
+    vectors?: DiceBoxThrowVector[];
     result?: number[];
 };
 
@@ -63,9 +77,54 @@ type DiceBoxInternalRuntime = InstanceType<typeof DiceBoxModule> & {
     iteration?: number;
     notationVectors?: DiceBoxInternalNotationVector | null;
     startClickThrow?: (notation: string) => DiceBoxInternalNotationVector | null;
-    spawnDice?: (vector: unknown, die?: DiceBoxDie) => void;
+    spawnDice?: (vector: DiceBoxThrowVector, die?: DiceBoxDie) => void;
     simulateThrow?: () => void;
     steps?: number;
+};
+
+type DiceBoxVectorLike = {
+    x: number;
+    y: number;
+    z: number;
+    set?: (x: number, y: number, z: number) => void;
+};
+
+type DiceBoxQuaternionLike = {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    copy?: (quaternion: DiceBoxQuaternionLike) => void;
+    set?: (x: number, y: number, z: number, w: number) => void;
+};
+
+type DiceBoxBodyLike = {
+    position?: DiceBoxVectorLike;
+    quaternion?: DiceBoxQuaternionLike;
+    velocity?: DiceBoxVectorLike;
+    angularVelocity?: DiceBoxVectorLike;
+    type?: number;
+    mass?: number;
+    updateMassProperties?: () => void;
+    wakeUp?: () => void;
+    sleep?: () => void;
+    aabbNeedsUpdate?: boolean;
+};
+
+type DiceBoxDieWithBody = DiceBoxDie & {
+    body?: DiceBoxBodyLike;
+};
+
+type DiceBoxDieTransformSnapshot = {
+    position: { x: number; y: number; z: number };
+    quaternion: { x: number; y: number; z: number; w: number };
+    bodyType?: number;
+    bodyMass?: number;
+};
+
+type DiceBoxWorldBounds = {
+    width: number;
+    height: number;
 };
 
 const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
@@ -82,6 +141,8 @@ const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     baseScale: 90,
     strength: 0.92,
     iterationLimit: 1000,
+    settledLayoutScale: 1,
+    compactSettledDice: false,
 };
 
 let nextContainerId = 0;
@@ -104,6 +165,10 @@ function readDieValue(die: DiceBoxDie | undefined): number | null {
     return typeof value === 'number' ? value : null;
 }
 
+function clampNumber(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+}
+
 const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number }> = [
     { x: -1.24, y: -0.86, yaw: -0.18 },
     { x: -0.44, y: -0.18, yaw: 0.08 },
@@ -111,6 +176,30 @@ const SETTLED_DICE_LAYOUT: Array<{ x: number; y: number; yaw: number }> = [
     { x: 1.08, y: -0.22, yaw: 0.16 },
     { x: 0.84, y: -1.04, yaw: -0.12 },
 ];
+const SETTLED_SPREAD_SLOTS_BY_COUNT: Record<number, Array<{ x: number; y: number }>> = {
+    2: [
+        { x: -0.34, y: 0 },
+        { x: 0.34, y: 0 },
+    ],
+    3: [
+        { x: -0.48, y: -0.28 },
+        { x: 0.48, y: -0.22 },
+        { x: 0, y: 0.42 },
+    ],
+    4: [
+        { x: -0.4, y: -0.4 },
+        { x: 0.4, y: -0.36 },
+        { x: -0.34, y: 0.4 },
+        { x: 0.34, y: 0.44 },
+    ],
+    5: [
+        { x: -0.55, y: -0.34 },
+        { x: 0, y: -0.39 },
+        { x: 0.55, y: -0.3 },
+        { x: -0.3, y: 0.34 },
+        { x: 0.3, y: 0.39 },
+    ],
+};
 const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
@@ -118,6 +207,7 @@ export class DiceBoxThreeEngine {
     private readonly styleProfile: DiceBoxStyleProfile;
     private dieSkins: Array<DiceBoxDieSkin | null> = [];
     private activePresetSkinId: string | null = null;
+    private worldBounds: DiceBoxWorldBounds = { width: 0, height: 0 };
 
     private constructor(box: InstanceType<typeof DiceBoxModule>, container: HTMLElement, styleProfile: DiceBoxStyleProfile) {
         this.box = box;
@@ -153,10 +243,14 @@ export class DiceBoxThreeEngine {
         });
         await box.initialize();
         const engine = new DiceBoxThreeEngine(box, container, styleProfile);
+        engine.applyCameraProfile();
+        box.renderer.setClearColor?.(0x000000, 0);
+        box.renderer.setClearAlpha?.(0);
         box.renderer.domElement.style.width = '100%';
         box.renderer.domElement.style.height = '100%';
         box.renderer.domElement.style.display = 'block';
         box.renderer.domElement.style.pointerEvents = 'none';
+        box.renderer.domElement.style.background = 'transparent';
         box.renderer.domElement.dataset.dicePhysicsSource = 'dice-box-threejs';
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
@@ -198,6 +292,9 @@ export class DiceBoxThreeEngine {
 
     destroy(): void {
         this.box.clearDice();
+        this.disposeSceneResources();
+        this.box.renderer?.dispose?.();
+        this.box.renderer?.forceContextLoss?.();
         const canvas = this.box.renderer?.domElement;
         if (canvas?.parentElement === this.container) {
             this.container.removeChild(canvas);
@@ -205,9 +302,274 @@ export class DiceBoxThreeEngine {
     }
 
     resize(): void {
+        const worldWidthScale = this.styleProfile.worldWidthScale ?? 1;
+        const worldHeightScale = this.styleProfile.worldHeightScale ?? 1;
+        const worldWidth = this.container.clientWidth * worldWidthScale;
+        const worldHeight = this.container.clientHeight * worldHeightScale;
+        this.worldBounds = { width: worldWidth, height: worldHeight };
         this.box.setDimensions({
-            x: this.container.clientWidth,
-            y: this.container.clientHeight,
+            x: worldWidth,
+            y: worldHeight,
+        });
+        this.applyCameraProfile();
+
+        const canvas = this.box.renderer?.domElement;
+        if (canvas) {
+            canvas.dataset.worldWidthScale = String(worldWidthScale);
+            canvas.dataset.worldHeightScale = String(worldHeightScale);
+            canvas.dataset.physicsWorldWidth = String(Math.round(worldWidth));
+            canvas.dataset.physicsWorldHeight = String(Math.round(worldHeight));
+            canvas.dataset.cameraZoom = String(this.styleProfile.cameraZoom ?? 1);
+        }
+    }
+
+    private applyCameraProfile(): void {
+        const cameraZoom = this.styleProfile.cameraZoom ?? 1;
+        const camera = this.box.camera as {
+            zoom?: number;
+            updateProjectionMatrix?: () => void;
+        } | undefined;
+        if (!camera || !Number.isFinite(cameraZoom) || cameraZoom <= 0) return;
+
+        camera.zoom = cameraZoom;
+        camera.updateProjectionMatrix?.();
+        this.box.renderer?.render?.(this.box.scene, this.box.camera);
+    }
+
+    private getVisibleWorldHalfExtentsAtZ(worldZ: number): { x: number; y: number } {
+        const camera = this.box.camera as {
+            fov?: number;
+            aspect?: number;
+            zoom?: number;
+            position?: { z?: number };
+        } | undefined;
+        const fov = camera?.fov ?? 20;
+        const aspect = camera?.aspect ?? (
+            this.container.clientHeight > 0
+                ? this.container.clientWidth / this.container.clientHeight
+                : 1
+        );
+        const zoom = Math.max(camera?.zoom ?? 1, 0.01);
+        const cameraZ = camera?.position?.z ?? 0;
+        const distance = Math.max(1, Math.abs(cameraZ - worldZ));
+        const halfHeight = distance * Math.tan((fov * Math.PI) / 360) / zoom;
+        return {
+            x: halfHeight * aspect,
+            y: halfHeight,
+        };
+    }
+
+    private async withInitialThrowSpread<T>(run: () => Promise<T>): Promise<T> {
+        const spread = this.styleProfile.initialThrowSpread;
+        const runtime = this.box as DiceBoxInternalRuntime;
+        const originalStartClickThrow = runtime.startClickThrow;
+        if (!Number.isFinite(spread) || !spread || spread <= 0 || !originalStartClickThrow) {
+            return await run();
+        }
+
+        runtime.startClickThrow = (notation: string) => {
+            const notationVectors = originalStartClickThrow.call(runtime, notation);
+            this.applyInitialThrowSpread(notationVectors, spread);
+            return notationVectors;
+        };
+
+        try {
+            return await run();
+        } finally {
+            runtime.startClickThrow = originalStartClickThrow;
+        }
+    }
+
+    private applyInitialThrowSpread(
+        notationVectors: DiceBoxInternalNotationVector | null,
+        rawSpread: number,
+    ): void {
+        const vectors = notationVectors?.vectors;
+        if (!vectors || vectors.length < 2) return;
+
+        const spread = clampNumber(rawSpread, 0, 0.82);
+        const firstVelocity = vectors.find((vector) => vector.velocity)?.velocity;
+        if (!firstVelocity) return;
+
+        const horizontalFlight = Math.abs(firstVelocity.x) >= Math.abs(firstVelocity.y);
+        const laneDimension = horizontalFlight ? this.worldBounds.height : this.worldBounds.width;
+        // dice-box 的墙体坐标约为 ±0.93 * dimension，不是 ±dimension / 2。
+        // 使用完整维度分配通道，确保五颗骰子的首帧中心距大于骰体尺寸。
+        const laneExtent = Math.max(1, laneDimension * spread);
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const middle = (vectors.length - 1) / 2;
+
+        vectors.forEach((vector, index) => {
+            if (!vector.pos || !vector.velocity) return;
+
+            const lane = middle === 0 ? 0 : (index - middle) / middle;
+            const speed = Math.hypot(vector.velocity.x, vector.velocity.y);
+            const lateralVelocity = lane * speed * 0.16;
+
+            if (horizontalFlight) {
+                vector.pos.y = lane * laneExtent;
+                vector.velocity.y = lateralVelocity;
+            } else {
+                vector.pos.x = lane * laneExtent;
+                vector.velocity.x = lateralVelocity;
+            }
+
+            vector.pos.z += (index % 2) * baseScale * 0.35;
+        });
+    }
+
+    private needsSettledSpreadAnimation(): boolean {
+        const layouts = this.box.diceList
+            .map((_, index) => this.getProjectedLayout(index, index))
+            .filter((layout): layout is DiceBoxProjectedLayout => Boolean(layout));
+        if (layouts.length !== this.box.diceList.length || layouts.length < 2) return false;
+        const canvas = this.box.renderer?.domElement;
+        const hasProjectedOutOfBounds = Boolean(canvas && layouts.some((layout) => {
+            const halfWidth = (layout.visualWidth ?? layout.width) / 2;
+            const halfHeight = (layout.visualHeight ?? layout.height) / 2;
+            return layout.x - halfWidth < 4
+                || layout.x + halfWidth > canvas.clientWidth - 4
+                || layout.y - halfHeight < 4
+                || layout.y + halfHeight > canvas.clientHeight - 4;
+        }));
+        if (hasProjectedOutOfBounds) return true;
+        if (canvas) {
+            const projectedTop = Math.min(...layouts.map((layout) => (
+                layout.y - ((layout.visualHeight ?? layout.height) / 2)
+            )));
+            const projectedBottom = Math.max(...layouts.map((layout) => (
+                layout.y + ((layout.visualHeight ?? layout.height) / 2)
+            )));
+            if (projectedBottom - projectedTop > canvas.clientHeight * 0.86) {
+                return true;
+            }
+        }
+
+        const minDimensions = layouts.map((layout) => Math.min(
+            layout.visualWidth ?? layout.width,
+            layout.visualHeight ?? layout.height,
+        ));
+        const averageMinDimension = minDimensions.reduce((sum, value) => sum + value, 0) / minDimensions.length;
+        const centerXs = layouts.map((layout) => layout.x);
+        const centerYs = layouts.map((layout) => layout.y);
+        const horizontalCenterSpan = Math.max(...centerXs) - Math.min(...centerXs);
+        const verticalCenterSpan = Math.max(...centerYs) - Math.min(...centerYs);
+        const normalizedVerticalSpan = averageMinDimension > 0
+            ? verticalCenterSpan / averageMinDimension
+            : 0;
+        const normalizedCenterSpan = averageMinDimension > 0
+            ? Math.hypot(horizontalCenterSpan, verticalCenterSpan) / averageMinDimension
+            : 0;
+        let minNormalizedCenterDistance = Number.POSITIVE_INFINITY;
+        let maxOverlapRatio = 0;
+
+        for (let leftIndex = 0; leftIndex < layouts.length; leftIndex += 1) {
+            const left = layouts[leftIndex];
+            const leftWidth = left.visualWidth ?? left.width;
+            const leftHeight = left.visualHeight ?? left.height;
+            for (let rightIndex = leftIndex + 1; rightIndex < layouts.length; rightIndex += 1) {
+                const right = layouts[rightIndex];
+                const rightWidth = right.visualWidth ?? right.width;
+                const rightHeight = right.visualHeight ?? right.height;
+                const centerDistance = Math.hypot(left.x - right.x, left.y - right.y);
+                const pairAverageMinDimension = (
+                    Math.min(leftWidth, leftHeight)
+                    + Math.min(rightWidth, rightHeight)
+                ) / 2;
+                minNormalizedCenterDistance = Math.min(
+                    minNormalizedCenterDistance,
+                    pairAverageMinDimension > 0 ? centerDistance / pairAverageMinDimension : 0,
+                );
+
+                const overlapWidth = Math.max(
+                    0,
+                    Math.min(left.x + (leftWidth / 2), right.x + (rightWidth / 2))
+                    - Math.max(left.x - (leftWidth / 2), right.x - (rightWidth / 2)),
+                );
+                const overlapHeight = Math.max(
+                    0,
+                    Math.min(left.y + (leftHeight / 2), right.y + (rightHeight / 2))
+                    - Math.max(left.y - (leftHeight / 2), right.y - (rightHeight / 2)),
+                );
+                const smallerArea = Math.min(leftWidth * leftHeight, rightWidth * rightHeight);
+                maxOverlapRatio = Math.max(
+                    maxOverlapRatio,
+                    smallerArea > 0 ? (overlapWidth * overlapHeight) / smallerArea : 0,
+                );
+            }
+        }
+
+        return minNormalizedCenterDistance < 0.72
+            || maxOverlapRatio > 0.5
+            || normalizedVerticalSpan < 1.25
+            || normalizedCenterSpan < 2.3;
+    }
+
+    private async animateSettledSpreadIfNeeded(): Promise<void> {
+        const durationMs = this.styleProfile.settledSpreadAnimationMs ?? 0;
+        const diceCount = this.box.diceList.length;
+        if (durationMs <= 0 || diceCount < 2 || diceCount > 5 || !this.needsSettledSpreadAnimation()) {
+            return;
+        }
+
+        const slots = SETTLED_SPREAD_SLOTS_BY_COUNT[diceCount] ?? [];
+        const entries = this.box.diceList
+            .map((die, index) => {
+                const dieWithBody = die as DiceBoxDieWithBody;
+                const position = dieWithBody.body?.position ?? dieWithBody.position;
+                return {
+                    die: dieWithBody,
+                    index,
+                    start: { x: position.x, y: position.y, z: position.z },
+                };
+            })
+            .sort((left, right) => left.start.x - right.start.x || left.start.y - right.start.y);
+        const assignments = entries.map((entry, sortedIndex) => ({
+            ...entry,
+            target: (() => {
+                const slot = slots[sortedIndex];
+                if (!slot) return entry.start;
+                const visibleHalfExtents = this.getVisibleWorldHalfExtentsAtZ(entry.start.z);
+                return {
+                    x: slot.x * visibleHalfExtents.x,
+                    y: slot.y * visibleHalfExtents.y,
+                    z: entry.start.z,
+                };
+            })(),
+        }));
+        const startAt = performance.now();
+
+        await new Promise<void>((resolve) => {
+            const step = (now: number) => {
+                const progress = clampNumber((now - startAt) / durationMs, 0, 1);
+                const eased = 1 - ((1 - progress) ** 3);
+
+                assignments.forEach(({ die, start, target }) => {
+                    const position = {
+                        x: start.x + ((target.x - start.x) * eased),
+                        y: start.y + ((target.y - start.y) * eased),
+                        z: start.z,
+                    };
+                    this.setVector(die.position, position);
+                    this.setVector(die.body?.position, position);
+                    this.setVector(die.body?.velocity, { x: 0, y: 0, z: 0 });
+                    this.setVector(die.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+                    if (die.body) {
+                        die.body.aabbNeedsUpdate = true;
+                    }
+                    die.updateMatrixWorld?.(true);
+                });
+                this.box.renderer.render(this.box.scene, this.box.camera);
+
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                    return;
+                }
+
+                assignments.forEach(({ die }) => die.body?.sleep?.());
+                resolve();
+            };
+            window.requestAnimationFrame(step);
         });
     }
 
@@ -217,9 +579,10 @@ export class DiceBoxThreeEngine {
             return;
         }
         this.applyPrimarySkinToDicePreset();
-        await this.box.roll(createNotation(values));
+        await this.withInitialThrowSpread(() => this.box.roll(createNotation(values)));
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
+        await this.animateSettledSpreadIfNeeded();
     }
 
     async restoreValues(values: number[]): Promise<void> {
@@ -234,11 +597,18 @@ export class DiceBoxThreeEngine {
         this.syncValues(values);
     }
 
-    async rerollToValues(indices: number[], values: number[]): Promise<void> {
+    async rerollToValues(indices: number[], values: number[], lockedIndices: number[] = []): Promise<void> {
         if (indices.length === 0) return;
-        await this.box.reroll(indices);
-        this.applyValues(values, indices, true);
-        this.applyCurrentSkins();
+        const lockedSnapshots = this.captureDieTransforms(lockedIndices);
+        this.freezeDice(lockedSnapshots);
+        try {
+            await this.box.reroll(indices);
+            this.restoreDieTransforms(lockedSnapshots, true);
+            this.applyValues(values, indices, true);
+            this.applyCurrentSkins();
+        } finally {
+            this.restoreDieTransforms(lockedSnapshots, false);
+        }
     }
 
     async removeDice(indices: number[]): Promise<void> {
@@ -251,8 +621,95 @@ export class DiceBoxThreeEngine {
         this.applyCurrentSkins();
     }
 
+    syncSettledValues(values: number[]): void {
+        this.applyValues(values, undefined, true);
+        this.applyCurrentSkins();
+    }
+
     previewValues(values: number[], indices?: number[]): void {
         this.applyValues(values, indices, false);
+    }
+
+    recoverOutOfBoundsDice(options: { strictProjectedBounds?: boolean } = {}): boolean {
+        if (this.styleProfile.recoverOutOfBounds === false || this.box.diceList.length === 0) return false;
+
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const halfWidth = Math.max(this.worldBounds.width / 2, baseScale * 2.2);
+        const halfHeight = Math.max(this.worldBounds.height / 2, baseScale * 2.2);
+        const maxX = Math.max(baseScale * 4.6, halfWidth + baseScale * 3.4);
+        const maxY = Math.max(baseScale * 4.2, halfHeight + baseScale * 3.2);
+        const maxZ = baseScale * 12;
+        const minZ = -baseScale * 2.4;
+        let didRecover = false;
+
+        this.box.diceList.forEach((die, index) => {
+            const dieWithBody = die as DiceBoxDieWithBody;
+            const position = dieWithBody.body?.position ?? dieWithBody.position;
+            if (!position) return;
+
+            const layout = this.getProjectedLayout(index, index);
+            const canvas = this.box.renderer?.domElement;
+            const visualHalfWidth = (layout?.visualWidth ?? layout?.width ?? 0) / 2;
+            const visualHalfHeight = (layout?.visualHeight ?? layout?.height ?? 0) / 2;
+            const isProjectedOutside = Boolean(layout && canvas && (
+                options.strictProjectedBounds
+                    ? layout.x - visualHalfWidth < -4
+                        || layout.x + visualHalfWidth > canvas.clientWidth + 4
+                        || layout.y - visualHalfHeight < -4
+                        || layout.y + visualHalfHeight > canvas.clientHeight + 4
+                    : layout.maxX < -canvas.clientWidth * 0.45
+                        || layout.minX > canvas.clientWidth * 1.45
+                        || layout.maxY < -canvas.clientHeight * 0.45
+                        || layout.minY > canvas.clientHeight * 1.45
+            ));
+            const isOutOfBounds = isProjectedOutside
+                || Math.abs(position.x) > maxX
+                || Math.abs(position.y) > maxY
+                || position.z > maxZ
+                || position.z < minZ;
+            if (!isOutOfBounds) return;
+
+            const useCameraSafeSpread = (this.styleProfile.settledSpreadAnimationMs ?? 0) > 0;
+            const target = useCameraSafeSpread
+                ? (() => {
+                    const slots = SETTLED_SPREAD_SLOTS_BY_COUNT[this.box.diceList.length] ?? [];
+                    const slot = slots[index] ?? { x: 0, y: 0 };
+                    const visibleHalfExtents = this.getVisibleWorldHalfExtentsAtZ(position.z);
+                    return {
+                        x: slot.x * visibleHalfExtents.x,
+                        y: slot.y * visibleHalfExtents.y,
+                        z: position.z,
+                    };
+                })()
+                : (() => {
+                    const settledLayout = this.styleProfile.settledLayout ?? SETTLED_DICE_LAYOUT;
+                    const slot = settledLayout[index % settledLayout.length] ?? { x: 0, y: 0, yaw: 0 };
+                    const settledLayoutScale = this.styleProfile.settledLayoutScale
+                        ?? DEFAULT_DICE_BOX_STYLE_PROFILE.settledLayoutScale
+                        ?? 1;
+                    return {
+                        x: clampNumber(slot.x * baseScale * 0.72 * settledLayoutScale, -maxX * 0.68, maxX * 0.68),
+                        y: clampNumber(slot.y * baseScale * 0.62 * settledLayoutScale, -maxY * 0.68, maxY * 0.68),
+                        z: Math.max(baseScale * 0.72, baseScale * 0.5),
+                    };
+                })();
+            this.setVector(dieWithBody.position, target);
+            this.setVector(dieWithBody.body?.position, target);
+            this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(dieWithBody.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            if (options.strictProjectedBounds) {
+                dieWithBody.body?.sleep?.();
+            } else {
+                dieWithBody.body?.wakeUp?.();
+            }
+            dieWithBody.updateMatrixWorld?.(true);
+            didRecover = true;
+        });
+
+        if (didRecover) {
+            this.box.renderer.render(this.box.scene, this.box.camera);
+        }
+        return didRecover;
     }
 
     ensureValues(values: number[]): void {
@@ -355,21 +812,29 @@ export class DiceBoxThreeEngine {
             return null;
         }
 
-        const width = Math.max(40, maxX - minX);
-        const height = Math.max(40, maxY - minY);
+        const visualWidth = Math.max(1, maxX - minX);
+        const visualHeight = Math.max(1, maxY - minY);
+        const width = Math.max(40, visualWidth);
+        const height = Math.max(40, visualHeight);
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
 
         const layoutYaw = SETTLED_DICE_LAYOUT[index]?.yaw;
 
         return {
             id,
-            x: (minX + maxX) / 2,
-            y: (minY + maxY) / 2,
+            x: centerX,
+            y: centerY,
             width,
             height,
-            minX,
-            maxX,
-            minY,
-            maxY,
+            visualWidth,
+            visualHeight,
+            minX: centerX - halfWidth,
+            maxX: centerX + halfWidth,
+            minY: centerY - halfHeight,
+            maxY: centerY + halfHeight,
             rotateX: die.rotation.x,
             rotateY: die.rotation.y,
             rotateZ: layoutYaw ?? die.rotation.z,
@@ -398,6 +863,139 @@ export class DiceBoxThreeEngine {
         }
     }
 
+    private captureDieTransforms(indices: number[]): Map<number, DiceBoxDieTransformSnapshot> {
+        const snapshots = new Map<number, DiceBoxDieTransformSnapshot>();
+        for (const index of indices) {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            if (!die) continue;
+            const quaternion = die.quaternion as DiceBoxQuaternionLike | undefined;
+            snapshots.set(index, {
+                position: {
+                    x: die.position.x,
+                    y: die.position.y,
+                    z: die.position.z,
+                },
+                quaternion: {
+                    x: quaternion?.x ?? 0,
+                    y: quaternion?.y ?? 0,
+                    z: quaternion?.z ?? 0,
+                    w: quaternion?.w ?? 1,
+                },
+                bodyType: die.body?.type,
+                bodyMass: die.body?.mass,
+            });
+        }
+        return snapshots;
+    }
+
+    private freezeDice(snapshots: Map<number, DiceBoxDieTransformSnapshot>): void {
+        snapshots.forEach((snapshot, index) => {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            if (!die?.body) return;
+            this.applyDieTransform(die, snapshot);
+            die.body.type = 2;
+            die.body.mass = 0;
+            die.body.updateMassProperties?.();
+            die.body.sleep?.();
+        });
+    }
+
+    private restoreDieTransforms(snapshots: Map<number, DiceBoxDieTransformSnapshot>, keepFrozen: boolean): void {
+        snapshots.forEach((snapshot, index) => {
+            const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+            if (!die) return;
+            this.applyDieTransform(die, snapshot);
+            if (die.body && !keepFrozen) {
+                if (typeof snapshot.bodyType === 'number') {
+                    die.body.type = snapshot.bodyType;
+                }
+                if (typeof snapshot.bodyMass === 'number') {
+                    die.body.mass = snapshot.bodyMass;
+                }
+                die.body.updateMassProperties?.();
+                die.body.wakeUp?.();
+            }
+        });
+        if (snapshots.size > 0) {
+            this.box.renderer.render(this.box.scene, this.box.camera);
+        }
+    }
+
+    private applyDieTransform(die: DiceBoxDieWithBody, snapshot: DiceBoxDieTransformSnapshot): void {
+        die.position.set?.(snapshot.position.x, snapshot.position.y, snapshot.position.z);
+        die.position.x = snapshot.position.x;
+        die.position.y = snapshot.position.y;
+        die.position.z = snapshot.position.z;
+
+        const dieQuaternion = die.quaternion as DiceBoxQuaternionLike | undefined;
+        this.setQuaternion(dieQuaternion, snapshot.quaternion);
+
+        if (die.body) {
+            this.setVector(die.body.position, snapshot.position);
+            this.setQuaternion(die.body.quaternion, snapshot.quaternion);
+            this.setVector(die.body.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+        }
+        die.updateMatrixWorld?.(true);
+    }
+
+    private setVector(vector: DiceBoxVectorLike | undefined, value: { x: number; y: number; z: number }): void {
+        if (!vector) return;
+        vector.set?.(value.x, value.y, value.z);
+        vector.x = value.x;
+        vector.y = value.y;
+        vector.z = value.z;
+    }
+
+    private setQuaternion(
+        quaternion: DiceBoxQuaternionLike | undefined,
+        value: { x: number; y: number; z: number; w: number },
+    ): void {
+        if (!quaternion) return;
+        quaternion.set?.(value.x, value.y, value.z, value.w);
+        quaternion.x = value.x;
+        quaternion.y = value.y;
+        quaternion.z = value.z;
+        quaternion.w = value.w;
+    }
+
+    private disposeSceneResources(): void {
+        const scene = this.box.scene;
+        if (!scene?.traverse) return;
+
+        scene.traverse((object: unknown) => {
+            const candidate = object as {
+                geometry?: { dispose?: () => void };
+                material?: unknown;
+            };
+            candidate.geometry?.dispose?.();
+
+            const materials = Array.isArray(candidate.material)
+                ? candidate.material
+                : [candidate.material];
+            for (const material of materials) {
+                const disposable = material as {
+                    dispose?: () => void;
+                    map?: { dispose?: () => void };
+                    normalMap?: { dispose?: () => void };
+                    roughnessMap?: { dispose?: () => void };
+                    metalnessMap?: { dispose?: () => void };
+                    emissiveMap?: { dispose?: () => void };
+                    bumpMap?: { dispose?: () => void };
+                    alphaMap?: { dispose?: () => void };
+                } | undefined;
+                disposable?.map?.dispose?.();
+                disposable?.normalMap?.dispose?.();
+                disposable?.roughnessMap?.dispose?.();
+                disposable?.metalnessMap?.dispose?.();
+                disposable?.emissiveMap?.dispose?.();
+                disposable?.bumpMap?.dispose?.();
+                disposable?.alphaMap?.dispose?.();
+                disposable?.dispose?.();
+            }
+        });
+    }
+
     private restoreDiceWithoutVisibleThrow(values: number[]): void {
         const box = this.box as DiceBoxInternalRuntime;
         const notationVectors = box.startClickThrow?.(createNotation(values));
@@ -423,20 +1021,21 @@ export class DiceBoxThreeEngine {
             }
         });
         this.applyValues(values, undefined, true);
-        this.applyCurrentSkins();
+        // 从 2D 切换到 3D 时只做一次无动画的静态散落，避免新建骰子重叠；
+        // 真实投掷和重投不会经过这里，因此不会产生结束后二次瞬移。
+        this.applyCurrentSkins({ arrange: true });
     }
 
     private applyPrimarySkinToDicePreset(): boolean {
         const primarySkin = this.dieSkins.find(Boolean);
-        const faceImages = primarySkin?.faceImages;
         const faceLabels = primarySkin?.faceLabels;
-        if (!primarySkin || (!faceImages && !faceLabels) || this.activePresetSkinId === primarySkin.id) return false;
+        if (!primarySkin || this.activePresetSkinId === primarySkin.id) return false;
 
         const preset = this.box.DiceFactory?.get('d6');
         if (!preset) return false;
 
-        preset.labels = faceLabels
-            ? [
+        if (faceLabels) {
+            preset.labels = [
                 '',
                 '',
                 faceLabels[1] ?? '',
@@ -445,17 +1044,8 @@ export class DiceBoxThreeEngine {
                 faceLabels[4] ?? '',
                 faceLabels[5] ?? '',
                 faceLabels[6] ?? '',
-            ]
-            : [
-                '',
-                '',
-                faceImages?.[1] ?? primarySkin.faceCanvases[1],
-                faceImages?.[2] ?? primarySkin.faceCanvases[2],
-                faceImages?.[3] ?? primarySkin.faceCanvases[3],
-                faceImages?.[4] ?? primarySkin.faceCanvases[4],
-                faceImages?.[5] ?? primarySkin.faceCanvases[5],
-                faceImages?.[6] ?? primarySkin.faceCanvases[6],
             ];
+        }
         if (this.box.DiceFactory?.materials_cache) {
             this.box.DiceFactory.materials_cache = {};
         }
@@ -478,7 +1068,7 @@ export class DiceBoxThreeEngine {
         });
     }
 
-    private applyCurrentSkins(): void {
+    private applyCurrentSkins(options: { arrange?: boolean } = {}): void {
         let didChange = false;
 
         this.box.diceList.forEach((die, dieIndex) => {
@@ -489,7 +1079,7 @@ export class DiceBoxThreeEngine {
             }
         });
 
-        if (this.arrangeSettledDice()) {
+        if (options.arrange === true && this.arrangeSettledDice()) {
             didChange = true;
         }
 
@@ -499,11 +1089,13 @@ export class DiceBoxThreeEngine {
     }
 
     private arrangeSettledDice(): boolean {
-        if (!this.styleProfile.arrangeSettledDice || this.box.diceList.length === 0) return false;
+        if (this.box.diceList.length === 0) return false;
 
         const dice = this.box.diceList;
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
-        const layoutScale = Math.max(baseScale, 82);
+        const settledLayoutScale = this.styleProfile.settledLayoutScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.settledLayoutScale ?? 1;
+        const settledLayout = this.styleProfile.settledLayout ?? SETTLED_DICE_LAYOUT;
+        const layoutScale = Math.max(baseScale, 82) * settledLayoutScale;
         const maxColumns = 5;
         const cappedDice = dice.slice(0, maxColumns);
         const columns = Math.min(cappedDice.length, maxColumns);
@@ -511,15 +1103,13 @@ export class DiceBoxThreeEngine {
         const spacingX = layoutScale * 1.86;
         const spacingY = layoutScale * 1.68;
         const z = baseScale * 0.56;
-
         dice.forEach((die, index) => {
-            const layout = SETTLED_DICE_LAYOUT[index];
+            const layout = settledLayout[index];
             const row = Math.floor(index / columns);
             const col = index % columns;
             const rowCount = row === rows - 1 ? cappedDice.length - row * columns : columns;
             const x = layout ? layout.x * spacingX : (col - (rowCount - 1) / 2) * spacingX;
             const y = layout ? layout.y * spacingY : (row - (rows - 1) / 2) * spacingY;
-
             die.position.set?.(x, y, z);
             die.position.x = x;
             die.position.y = y;

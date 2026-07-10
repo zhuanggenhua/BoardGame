@@ -2429,4 +2429,76 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
 
         expect(result).toBeNull();
     });
+
+    it('手动强制结束在 AI 阶段无显式阻塞面时，也应返回兜底推进命令', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                    queue: [],
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const result = resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(result).toMatchObject({
+            playerId: '1',
+            reason: 'active-turn',
+            resolution: {
+                action: {
+                    commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                },
+            },
+        });
+    });
+
+    it('手动强制结束在真人阶段且无 AI 阻塞面时，不应借 AI 座位伪造推进', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                    queue: [],
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const result = resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(result).toBeNull();
+    });
 });

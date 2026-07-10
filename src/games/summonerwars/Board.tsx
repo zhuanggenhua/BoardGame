@@ -352,7 +352,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   // 摧毁效果
   const { effects: destroyEffects, pushEffect: pushDestroyEffect, removeEffect: removeDestroyEffect } = useDestroyEffects();
   // 全屏震动
-  const { shakeStyle, triggerShake } = useScreenShake();
+  const { shakeTargetRef, triggerShake } = useScreenShake();
   // FX 系统（替代原 useBoardEffects，注入音效/震动回调实现反馈包自动触发）
   const fxBus = useFxBus(summonerWarsFxRegistry, {
     playSound,
@@ -679,7 +679,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     for (const dmg of pending.damages) {
       // 受伤音：由 COMBAT_DAMAGE 的 FeedbackPack 自动处理
       const damageSoundKey = resolveDamageSoundKey(dmg.damage);
-      fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey });
+      fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey, suppressShake: true });
     }
   };
 
@@ -713,7 +713,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       // 气浪到达目标：播放伤害特效（音效 + 震动由 FeedbackPack 自动处理）
       for (const dmg of pendingRangedDamagesRef.current) {
         const damageSoundKey = resolveDamageSoundKey(dmg.damage);
-        fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey });
+        fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey, suppressShake: true });
       }
       swAttackDebugLog('board_ranged_shockwave_resolved', {
         fxId: id,
@@ -1120,7 +1120,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
             <div className="relative min-h-0 flex-1 overflow-hidden">
                 <div className="relative h-full overflow-hidden">
                   {/* 地图层 */}
-                  <div className="absolute inset-0 z-10 flex items-center justify-center" data-testid="sw-map-layer" data-tutorial-id="sw-map-area" style={shakeStyle}>
+                  <div ref={shakeTargetRef} className="absolute inset-0 z-10 flex items-center justify-center" data-testid="sw-map-layer" data-tutorial-id="sw-map-area">
                 <MapContainer
                   className="w-full h-full flex items-center justify-center"
                   style={{ paddingLeft: mapPaddingLeft, paddingRight: mapPaddingRight }}

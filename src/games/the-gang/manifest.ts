@@ -4,7 +4,6 @@ const entry: GameManifestEntry = {
     id: 'the-gang',
     type: 'game',
     enabled: true,
-    statusTag: 'under_construction',
     titleKey: 'games.the-gang.title',
     descriptionKey: 'games.the-gang.description',
     category: 'card',
@@ -23,6 +22,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: false,
+        defaultLocalAiSeats: 'all-opponents',
     },
 };
 

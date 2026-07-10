@@ -21,7 +21,12 @@ import type {
     MatchPlayerInfo,
     BatchDispatchMeta,
 } from './protocol';
-import type { TrainingDataRecorder, TrainingDecisionSample } from './trainingData';
+import type {
+    TrainingCompletedMatch,
+    TrainingDataRecorder,
+    TrainingDecisionSample,
+    TrainingMatchCommitResult,
+} from './trainingData';
 import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
@@ -200,12 +205,6 @@ type CommandFailureFeedbackPayload = {
     progressMarker: string;
     stateSnapshot: string;
     actionLog?: string;
-};
-
-type PendingTrainingSamples = {
-    matchId: string;
-    gameId: string;
-    samples: TrainingDecisionSample[];
 };
 
 const UNSATISFIABLE_INTERACTION_REASONS = new Set([
@@ -851,7 +850,7 @@ export interface GameTransportServerConfig {
     /** 游戏结束回调（可选） */
     onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
     trainingDataRecorder?: TrainingDataRecorder;
-    trainingDataMinMatchDurationMs?: number;
+    trainingDataMinCompletedMatchDurationMs?: number;
     rulesVersion?: string | null;
     gameManifests?: GameManifestIndex;
     onlineAiRecoveryTickMs?: number;
@@ -874,7 +873,7 @@ export class GameTransportServer {
     private readonly authenticate?: GameTransportServerConfig['authenticate'];
     private readonly onGameOver?: GameTransportServerConfig['onGameOver'];
     private readonly trainingDataRecorder?: TrainingDataRecorder;
-    private readonly trainingDataMinMatchDurationMs: number;
+    private readonly trainingDataMinCompletedMatchDurationMs: number | null;
     private readonly rulesVersion: string | null;
     private readonly gameManifests: GameManifestIndex;
     private readonly onlineAiRecoveryTickMs: number;
@@ -891,8 +890,6 @@ export class GameTransportServer {
     private readonly onlineAiOverlayResyncCooldown = new Map<string, number>();
     private readonly onlineAiRecoveryInFlight = new Set<string>();
     private onlineAiRecoveryTimer: ReturnType<typeof setInterval> | null = null;
-    private readonly pendingTrainingSamples = new Map<string, PendingTrainingSamples>();
-    private readonly eligibleTrainingMatches = new Set<string>();
 
     constructor(config: GameTransportServerConfig) {
         this.io = config.io;
@@ -904,9 +901,12 @@ export class GameTransportServer {
         this.authenticate = config.authenticate;
         this.onGameOver = config.onGameOver;
         this.trainingDataRecorder = config.trainingDataRecorder;
-        this.trainingDataMinMatchDurationMs = Number.isFinite(config.trainingDataMinMatchDurationMs ?? 0)
-            ? Math.max(0, config.trainingDataMinMatchDurationMs ?? 0)
-            : 0;
+        this.trainingDataMinCompletedMatchDurationMs = (
+            Number.isFinite(config.trainingDataMinCompletedMatchDurationMs)
+            && (config.trainingDataMinCompletedMatchDurationMs ?? 0) > 0
+        )
+            ? config.trainingDataMinCompletedMatchDurationMs!
+            : null;
         this.rulesVersion = config.rulesVersion ?? null;
         this.gameManifests = config.gameManifests ?? {};
         this.onlineAiRecoveryTickMs = config.onlineAiRecoveryTickMs ?? DEFAULT_ONLINE_AI_RECOVERY_TICK_MS;
@@ -4096,15 +4096,14 @@ export class GameTransportServer {
         return Date.now() - createdAt;
     }
 
-    private isTrainingCaptureEligible(match: ActiveMatch): boolean {
-        if (this.trainingDataMinMatchDurationMs <= 0) {
-            return true;
+    private resolveTrainingMinCompletedDurationMs(match: ActiveMatch): number | null {
+        const manifestDurationMs = this.gameManifests[
+            match.engineConfig.gameId
+        ]?.ai?.trainingMinCompletedDurationMs;
+        if (Number.isFinite(manifestDurationMs) && (manifestDurationMs ?? 0) > 0) {
+            return manifestDurationMs!;
         }
-        const durationMs = this.resolveTrainingMatchDurationMs(match);
-        if (durationMs === null) {
-            return false;
-        }
-        return durationMs >= this.trainingDataMinMatchDurationMs;
+        return this.trainingDataMinCompletedMatchDurationMs;
     }
 
     private recordTrainingDecisionSample(args: {
@@ -4119,100 +4118,142 @@ export class GameTransportServer {
         gameOver?: unknown;
     }): void {
         if (!this.trainingDataRecorder) return;
+
+        const matchIdentity = {
+            schemaVersion: 1,
+            gameId: args.match.engineConfig.gameId,
+            matchId: args.match.matchID,
+        } as const;
+        const isCompleted = args.gameOver !== undefined && args.gameOver !== null;
         const manifest = this.gameManifests[args.match.engineConfig.gameId];
-        if (manifest?.ai?.capture === false) return;
+        if (manifest?.ai?.capture === false) {
+            if (isCompleted) {
+                this.discardPendingTrainingMatch(matchIdentity);
+            }
+            return;
+        }
+
+        const minDurationMs = this.resolveTrainingMinCompletedDurationMs(args.match);
+        if (minDurationMs === null) {
+            if (isCompleted) {
+                this.discardPendingTrainingMatch(matchIdentity);
+            }
+            return;
+        }
+
         const seatControllers = extractSetupSeatControllers(args.match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerID);
         const capturePolicy = manifest?.ai?.capturePolicy ?? DEFAULT_TRAINING_CAPTURE_POLICY;
-        if (capturePolicy === 'human-only' && seatControllerType !== 'human') {
-            return;
-        }
-
-        const sample = buildTrainingDecisionSample({
-            rulesVersion: this.rulesVersion,
-            gameId: args.match.engineConfig.gameId,
-            matchId: args.match.matchID,
-            playerId: args.playerID,
-            seatControllerType,
-            stateIdBefore: args.stateIdBefore,
-            stateIdAfter: args.stateIdAfter,
-            commandType: args.commandType,
-            payload: args.payload,
-            preState: args.preState,
-            postState: args.postState,
-            legalActions: buildAiDecisionContext({
+        const shouldCaptureCommand = (
+            capturePolicy !== 'human-only'
+            || seatControllerType === 'human'
+        );
+        const sample = shouldCaptureCommand
+            ? buildTrainingDecisionSample({
+                rulesVersion: this.rulesVersion,
                 gameId: args.match.engineConfig.gameId,
                 matchId: args.match.matchID,
                 playerId: args.playerID,
-                visibleState: args.preState as MatchState<unknown>,
-                rulesVersion: this.rulesVersion,
-                decisionBudgetMs: 250,
-                source: 'online',
-            }).legalActions,
-            gameOver: args.gameOver,
+                seatControllerType,
+                stateIdBefore: args.stateIdBefore,
+                stateIdAfter: args.stateIdAfter,
+                commandType: args.commandType,
+                payload: args.payload,
+                preState: args.preState,
+                postState: args.postState,
+                legalActions: buildAiDecisionContext({
+                    gameId: args.match.engineConfig.gameId,
+                    matchId: args.match.matchID,
+                    playerId: args.playerID,
+                    visibleState: args.preState as MatchState<unknown>,
+                    rulesVersion: this.rulesVersion,
+                    decisionBudgetMs: 250,
+                    source: 'online',
+                }).legalActions,
+                gameOver: args.gameOver,
+            })
+            : undefined;
+
+        if (!isCompleted) {
+            if (sample) {
+                this.stageTrainingDecisionSample(sample);
+            }
+            return;
+        }
+
+        const durationMs = this.resolveTrainingMatchDurationMs(args.match);
+        if (durationMs === null || durationMs < minDurationMs) {
+            this.discardPendingTrainingMatch(matchIdentity);
+            return;
+        }
+
+        this.commitCompletedTrainingMatch({
+            ...matchIdentity,
+            completedAt: Date.now(),
+            durationMs,
+            ...(sample ? { finalSample: sample } : {}),
         });
-
-        const matchId = args.match.matchID;
-        if (this.eligibleTrainingMatches.has(matchId)) {
-            this.recordTrainingDecisionSampleNow(sample);
-            if (args.gameOver) {
-                this.eligibleTrainingMatches.delete(matchId);
-                this.pendingTrainingSamples.delete(matchId);
-            }
-            return;
-        }
-
-        const pending = this.pendingTrainingSamples.get(matchId) ?? {
-            matchId,
-            gameId: args.match.engineConfig.gameId,
-            samples: [],
-        };
-        pending.samples.push(sample);
-        this.pendingTrainingSamples.set(matchId, pending);
-
-        if (this.isTrainingCaptureEligible(args.match)) {
-            this.eligibleTrainingMatches.add(matchId);
-            this.flushTrainingDecisionSamples(matchId, args.gameOver);
-            if (args.gameOver) {
-                this.eligibleTrainingMatches.delete(matchId);
-            }
-            return;
-        }
-
-        if (args.gameOver) {
-            this.pendingTrainingSamples.delete(matchId);
-        }
     }
 
-    private flushTrainingDecisionSamples(matchID: string, gameOver?: unknown): void {
-        const pending = this.pendingTrainingSamples.get(matchID);
-        if (!pending || pending.samples.length === 0) {
-            this.pendingTrainingSamples.delete(matchID);
-            return;
-        }
-
-        this.pendingTrainingSamples.delete(matchID);
-
-        for (const sample of pending.samples) {
-            if (gameOver && sample.gameOver === undefined) {
-                sample.gameOver = gameOver;
-            }
-            this.recordTrainingDecisionSampleNow(sample, pending);
-        }
+    private stageTrainingDecisionSample(sample: TrainingDecisionSample): void {
+        Promise.resolve(this.trainingDataRecorder?.stageDecisionSample(sample)).catch((error) => {
+            this.logTrainingDataFailure('stage', sample, error);
+        });
     }
 
-    private recordTrainingDecisionSampleNow(
-        sample: TrainingDecisionSample,
-        context?: { matchId: string; gameId: string },
-    ): void {
-        Promise.resolve(this.trainingDataRecorder?.recordDecisionSample(sample)).catch((error) => {
-            logger.warn('[GameTransport] training data capture failed', {
-                matchID: context?.matchId ?? sample.matchId,
-                gameId: context?.gameId ?? sample.gameId,
-                commandType: sample.command.type,
-                playerID: sample.playerId,
-                error: error instanceof Error ? error.message : String(error),
+    private commitCompletedTrainingMatch(match: TrainingCompletedMatch): void {
+        Promise.resolve(this.trainingDataRecorder?.commitCompletedMatch(match))
+            .then((result) => {
+                if (!result) return;
+                this.logTrainingCommitResult(match, result);
+            })
+            .catch((error) => {
+                this.logTrainingDataFailure('commit', match, error);
             });
+    }
+
+    private discardPendingTrainingMatch(
+        match: Pick<TrainingCompletedMatch, 'schemaVersion' | 'gameId' | 'matchId'>,
+    ): void {
+        Promise.resolve(this.trainingDataRecorder?.discardPendingMatch(match)).catch((error) => {
+            this.logTrainingDataFailure('discard', match, error);
+        });
+    }
+
+    private logTrainingCommitResult(
+        match: TrainingCompletedMatch,
+        result: TrainingMatchCommitResult,
+    ): void {
+        if (result.status === 'capacity-reached') {
+            logger.warn('[GameTransport] training data game capacity reached', {
+                matchID: match.matchId,
+                gameId: match.gameId,
+                pendingBytes: result.pendingBytes,
+                gameBytes: result.gameBytes,
+                maxBytes: result.maxBytes,
+            });
+        } else if (result.status === 'failed') {
+            logger.warn('[GameTransport] training data match commit skipped after staging failure', {
+                matchID: match.matchId,
+                gameId: match.gameId,
+            });
+        }
+    }
+
+    private logTrainingDataFailure(
+        operation: 'stage' | 'commit' | 'discard',
+        context: Pick<TrainingCompletedMatch, 'gameId' | 'matchId'> | TrainingDecisionSample,
+        error: unknown,
+    ): void {
+        logger.warn('[GameTransport] training data capture failed', {
+            operation,
+            matchID: context.matchId,
+            gameId: context.gameId,
+            ...('command' in context ? {
+                commandType: context.command.type,
+                playerID: context.playerId,
+            } : {}),
+            error: error instanceof Error ? error.message : String(error),
         });
     }
 

@@ -35,8 +35,8 @@ public class MainActivity extends BridgeActivity {
     private static final String TAG = "MainActivity";
     private static final long URL_POLL_INTERVAL_MS = 400L;
     private static final String PLAY_SEGMENT = "play";
-    private static final String ORIENTATION_LANDSCAPE = "landscape";
-    private static final String ORIENTATION_PORTRAIT = "portrait";
+    private static final String ORIENTATION_LANDSCAPE = GameOrientationPolicy.LANDSCAPE;
+    private static final String ORIENTATION_PORTRAIT = GameOrientationPolicy.PORTRAIT;
     private static final String HOME_STYLE_BOOK = "book";
     private static final String HOME_STYLE_CLASSIC = "classic";
     private static final String HOME_STYLE_QUERY_VERSION_KEY = "homeStyleVersion";
@@ -76,9 +76,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         WebView.setWebContentsDebuggingEnabled(true);
-        // App 默认首页已回到经典主页；在 WebView 上报实际 URL 前，先按竖屏非沉浸式启动，
-        // 避免旧的书本首页默认横屏假设把根路由误锁到 landscape。
-        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        // App 启动阶段还拿不到 WebView 真实路由；默认先保持横屏，避免 /play/:gameId/tutorial
+        // 这类游戏教程页在原生壳里先闪到竖屏。路由上报后仍由 game-orientation-map 决定最终方向。
+        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
         lastNeedsImmersiveWindow = false;
         setRequestedOrientation(lastRequestedOrientation);
         gameOrientations.putAll(loadOrientationMap());
@@ -185,7 +185,7 @@ public class MainActivity extends BridgeActivity {
     private int resolveRequestedOrientation(String url) {
         String gameId = extractGameId(url);
         if (gameId != null) {
-            String orientation = gameOrientations.getOrDefault(gameId, ORIENTATION_PORTRAIT);
+            String orientation = GameOrientationPolicy.resolve(gameOrientations, gameId);
             if (ORIENTATION_LANDSCAPE.equals(orientation)) {
                 return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
             }
@@ -300,10 +300,10 @@ public class MainActivity extends BridgeActivity {
             Iterator<String> keys = json.keys();
             while (keys.hasNext()) {
                 String key = keys.next();
-                map.put(key, json.optString(key, ORIENTATION_PORTRAIT));
+                map.put(key, json.optString(key, ORIENTATION_LANDSCAPE));
             }
         } catch (IOException | JSONException ignored) {
-            // Fallback to portrait when the generated map is unavailable.
+            // Game routes default to landscape when the generated map is unavailable.
         }
         return map;
     }

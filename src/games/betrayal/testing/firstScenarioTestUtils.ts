@@ -152,7 +152,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-north' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.STUDY_EXORCISM, '0', {}, 100, hauntSuccessRandom);
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
@@ -275,6 +275,10 @@ export function createHeroAttackTraitorReadyCore(): BetrayalCore {
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
     return core;
+}
+
+export function createHeroAttackTraitorReadyTutorialCore(): BetrayalCore {
+    return applyTutorialDiscoveryOrder(createHeroAttackTraitorReadyCore());
 }
 
 export function playFirstScenarioToTraitorVictory(): BetrayalCore {
@@ -405,4 +409,8 @@ export function createJackSpiritPostReviveAttackReadyCore(): BetrayalCore {
     let core = createJackSpiritReviveReadyCore();
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
     return core;
+}
+
+export function createJackSpiritPostReviveAttackReadyTutorialCore(): BetrayalCore {
+    return applyTutorialDiscoveryOrder(createJackSpiritPostReviveAttackReadyCore());
 }

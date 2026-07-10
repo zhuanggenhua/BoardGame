@@ -329,8 +329,7 @@ export const TutorialOverlay: React.FC = () => {
                         const axisClearance = compactTargetBounds
                             ? getPlacementAxisClearance(candidate.placement as 'top' | 'bottom' | 'left' | 'right', candidate.bounds, compactTargetBounds)
                             : 0;
-                        const isSoftVerticalPreference = compactTargetBounds && (preferredPlacement === 'top' || preferredPlacement === 'bottom');
-                        const preferencePenalty = preferredPlacement && candidate.placement !== preferredPlacement && !isSoftVerticalPreference ? 1 : 0;
+                        const preferencePenalty = preferredPlacement && candidate.placement !== preferredPlacement ? 1 : 0;
                         const centerDistancePenalty = rect
                             ? Math.abs(((candidate.bounds.left + candidate.bounds.right) / 2) - ((rect.left + rect.right) / 2))
                             : 0;
@@ -352,7 +351,10 @@ export const TutorialOverlay: React.FC = () => {
                         if (a.centerDistancePenalty !== b.centerDistancePenalty) return b.centerDistancePenalty - a.centerDistancePenalty;
                         return a.index - b.index;
                     });
-                const chosenCompactCandidate = rankedCompactCandidates[0]?.candidate ?? compactCandidates[0];
+                const explicitVerticalCandidate = preferredPlacement === 'top' || preferredPlacement === 'bottom'
+                    ? compactCandidates.find((candidate) => candidate.placement === preferredPlacement)
+                    : undefined;
+                const chosenCompactCandidate = explicitVerticalCandidate ?? rankedCompactCandidates[0]?.candidate ?? compactCandidates[0];
 
                 commitTooltipLayout({
                     style: chosenCompactCandidate.style,
@@ -575,6 +577,16 @@ export const TutorialOverlay: React.FC = () => {
     }
 
     const maskOpacity = currentStep.showMask && visibleTargetRect ? 0.6 : 0;
+    const highlightStyle = visibleTargetRect
+        ? {
+            top: visibleTargetRect.top - 4,
+            left: visibleTargetRect.left - 4,
+            width: visibleTargetRect.width + 8,
+            height: visibleTargetRect.height + 8,
+            borderRadius: '12px',
+            boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.3)',
+        } satisfies React.CSSProperties
+        : undefined;
 
     return (
         <div
@@ -600,15 +612,9 @@ export const TutorialOverlay: React.FC = () => {
                     data-testid="tutorial-highlight-ring"
                     data-tutorial-highlight-target={currentStep.highlightTarget}
                     data-tutorial-highlight-step={currentStep.id ?? 'unknown'}
+                    data-tutorial-highlight-shape="rect"
                     className="absolute pointer-events-none"
-                    style={{
-                        top: visibleTargetRect.top - 4,
-                        left: visibleTargetRect.left - 4,
-                        width: visibleTargetRect.width + 8,
-                        height: visibleTargetRect.height + 8,
-                        borderRadius: '12px',
-                        boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.3)',
-                    }}
+                    style={highlightStyle}
                 />
             )}
 
@@ -639,15 +645,27 @@ export const TutorialOverlay: React.FC = () => {
                         <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
                     ) : null}
 
-                    {isBottomConfirmStep ? null : (
-                        <div className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
-                            isCompactTutorialLayout
-                                ? 'mb-2.5 text-left text-[15px] leading-[1.55]'
-                                : 'mb-4 text-left text-lg leading-relaxed'
-                        }`}>
+                    <div
+                        data-testid="tutorial-overlay-content"
+                        className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
+                            isBottomConfirmStep
+                                ? 'sr-only'
+                                : isCompactTutorialLayout
+                                    ? 'mb-2.5 text-left text-[15px] leading-[1.55]'
+                                    : 'mb-4 text-left text-lg leading-relaxed'
+                        }`}
+                    >
+                        {t(currentStep.content)}
+                    </div>
+
+                    {isBottomConfirmStep ? (
+                        <div
+                            aria-hidden="true"
+                            className="mb-2 max-h-[92px] overflow-y-auto rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] font-bold leading-[1.45] text-[#433422] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
+                        >
                             {t(currentStep.content)}
                         </div>
-                    )}
+                    ) : null}
 
                     {!currentStep.requireAction && (
                         <button

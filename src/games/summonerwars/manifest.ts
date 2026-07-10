@@ -18,6 +18,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: false,
+        trainingMinCompletedDurationMs: 25 * 60 * 1000,
     },
     cursorTheme: 'summonerwars-ethereal',
     fontFamily: { display: 'Bebas Neue' },

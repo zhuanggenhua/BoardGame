@@ -1,0 +1,12 @@
+[Unit]
+Description=Retry BoardGame R2 disaster backup queue
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Persistent=true
+Unit=boardgame-asset-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -277,15 +277,12 @@ const SOCKET_IO_SERVER_TRANSPORTS =
             : process.env.NODE_ENV === 'production'
                 ? ['websocket']
                 : ['websocket', 'polling'];
-const DEFAULT_TRAINING_DATA_MIN_MATCH_DURATION_MS = 10 * 60 * 1000;
-const TRAINING_DATA_MIN_MATCH_DURATION_MS = (() => {
-    const raw = process.env.TRAINING_DATA_MIN_MATCH_DURATION_MS;
-    if (!raw) return DEFAULT_TRAINING_DATA_MIN_MATCH_DURATION_MS;
+const TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS = (() => {
+    const raw = process.env.TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS
+        ?? process.env.TRAINING_DATA_MIN_MATCH_DURATION_MS;
+    if (!raw) return undefined;
     const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed)) {
-        return DEFAULT_TRAINING_DATA_MIN_MATCH_DURATION_MS;
-    }
-    return Math.max(0, parsed);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 })();
 
 // ============================================================================
@@ -467,7 +464,7 @@ const gameTransport = new GameTransportServer({
     games: SERVER_ENGINES,
     gameManifests: SERVER_GAME_MANIFEST_BY_ID,
     trainingDataRecorder,
-    trainingDataMinMatchDurationMs: TRAINING_DATA_MIN_MATCH_DURATION_MS,
+    trainingDataMinCompletedMatchDurationMs: TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS,
     rulesVersion: process.env.npm_package_version ?? null,
     offlineGraceMs: 300000, // 5 分钟：给断线玩家充足的重连时间
     authenticate: async (matchID, playerID, credentials, metadata) => {

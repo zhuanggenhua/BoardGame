@@ -53,13 +53,25 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 **强制规则**：生产环境更新必须**等待 CI 镜像构建完成**后再执行（对应 commit/tag 的镜像已推送到仓库）。  
 未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
 
-**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，默认应执行两步：① 服务器执行 `bash deploy-image.sh update`，也就是部署 `latest`；② 本地发布 Android `stable` OTA。推荐统一入口：
+**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，默认不是单独更新服务器，而是按“版本自增 -> 提交 push -> 等 CI -> 服务器 latest -> Android stable OTA”执行。产品版本号 `package.json.version` 与 Android `androidVersionCode` 必须同步自增；只有用户明确说“本次不改版本”时，才允许跳过。
 
 ```bash
-node scripts/release/deploy-and-ota.mjs --skip-wait
+# 1) 先准备版本，默认 patch；也可显式传 --bump minor / --bump major
+node scripts/release/deploy-and-ota.mjs --prepare-version
+
+# 2) 提交并 push package.json / package-lock.json，等待 CI 镜像构建完成
+
+# 3) 部署 latest 并发布 stable OTA
+BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait
 ```
 
-如果用户明确说“只更新服务器”或“这次不发 OTA”，才允许缩小为只执行 `bash deploy-image.sh update`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+PowerShell 下第 3 步写法：
+
+```powershell
+$env:BG_DEPLOY_VERSION_PREPARED='1'; node scripts/release/deploy-and-ota.mjs --skip-wait
+```
+
+如果用户明确说“只更新服务器”或“这次不发 OTA”，才允许缩小为只执行 `bash deploy-image.sh update`。如果用户明确说“这次不改版本”，执行统一入口时必须显式加 `--allow-current-version`，避免误把旧产品版本再次发布成最新。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
 
 **镜像拉取等待口径（强制）**：`docker pull` / `deploy-image.sh update` 正在下载镜像层时，只要能看到层进度、已下载字节数或阶段变化，就默认继续等待，不得把“下载慢”直接判定为失败并改走补救链路。只有满足以下任一条件，才允许进入 fallback：连续多次超时且同一层无新增进度；明确报网络/认证/磁盘错误；服务器或本机/CI 对同一镜像均无法完成拉取；或用户明确要求停止等待。切换 fallback 时，必须说明这是“镜像分发补救”，不是正式镜像拉取链路已成功。
 
@@ -121,7 +133,7 @@ BG_DEPLOY_RUNNER_URL=http://host.docker.internal:18761
 BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
 ```
 
-> **后台镜像拉取超时口径**：`boardgame-deploy-runner` 安装脚本会在宿主机环境文件里设置 `DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0`，也就是不再让 `deploy-image.sh` 用默认 300 秒中断单次 `docker pull`。后台部署仍由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS` 的整步超时兜底，默认 20 分钟；如果需要更短或更长的整体部署保护，应改 runner 的整步超时，而不是恢复 300 秒镜像拉取内层超时。
+> **镜像拉取超时口径**：直接执行 `deploy-image.sh` 时，单次 `docker pull` 默认最多等待 10800 秒（3 小时）。`boardgame-deploy-runner` 安装脚本会在宿主机环境文件里设置 `DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0`，避免内外两层重复计时；后台部署改由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS=10800` 提供 3 小时整步保护。如果需要调整整体部署保护，应修改 runner 的整步超时，不要恢复短时镜像拉取限制。
 >
 > **后台进度日志口径**：runner 环境同时设置 `COMPOSE_PROGRESS=plain` 与 `DOCKER_CLI_HINTS=false`，让 Docker Compose 输出适合后台轮询展示的纯文本拉取阶段，而不是只适合终端刷新的动态进度。
 
@@ -395,6 +407,13 @@ GitHub Actions 自动化：
   - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]` 或 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
   - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
+### 训练数据持久化合同
+
+- 生产 `game-server` 必须把 `TRAINING_DATA_DIR` 固定为 `/data/training-data`，并挂载独立命名卷 `training_data`；容器重建不得依赖镜像可写层保存正式训练数据。
+- 决策样本先进入 `pending/`，只有对局真实结束、达到游戏级或全局最低完成时长、且该游戏正式数据未达到 300MiB 时，才原子提交到 `completed/`。
+- `raw/` 与 `archive/` 是既有正式数据目录，容量门禁会继续计入，但本治理变更不会删除、截断或迁移现有文件。
+- 每个游戏达到 300MiB 后整局拒收，新对局不会部分追加到旧文件；异常退出最多留下非正式 `pending` 文件。
+
 ## 资源 /assets 与对象存储映射（官方）
 
 - **开发**：直接使用 `public/assets`（不配置 R2 也能跑通）。
@@ -405,6 +424,52 @@ GitHub Actions 自动化：
 - **资源基址配置**：前端可通过 `VITE_ASSETS_BASE_URL` 覆盖；当前代码内置默认值为 `https://assets.easyboardgame.top/official`。
 - **缓存失效机制**：构建时会扫描 `public/assets`，为资源 URL 自动追加 `?v=<content-hash>`。资源内容变化后 URL 会自动变化，因此 R2 上的图片/音频/SVG 可以安全使用长期缓存。
 - **本地 JSON / 图集配置**：仍走本地 `/assets`，但同样会追加 `?v=<content-hash>`，避免本地回退路径拿到旧配置。
+
+### 生产素材域名：服务器优先、R2 自动回退
+
+- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，不需要知道素材由服务器还是 R2 返回。
+- **所有正式素材与发布包**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
+- **自动回退**：服务器连接失败、1500ms 内没有响应头，或返回 `404`、`408`、`429`、`5xx` 时，Worker 使用同 key 的 R2 对象返回。客户端仍访问原域名。
+- **大型发布包同样服务器优先**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 不再配置绕过 Route，统一进入 Worker。
+- **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
+- **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖 R2 才能上线。
+- **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
+- **R2 只做关键对象的同 key 异步灾备**：服务器切换后，只为当前恢复必需对象生成灾备队列，`boardgame-asset-backup.timer` 后台上传并失败重试。默认不备份重复 APK 别名、历史版本清单、游戏单素材散件等可重复或可重建对象。R2 超过 9GiB 门禁时仅保留关键对象队列并告警，但不撤销服务器发布。
+- **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS、同域和自动回退；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
+
+服务器静态源保护参数：
+
+- systemd 服务：`boardgame-asset-origin.service`
+- R2 灾备队列：`boardgame-asset-backup.service` / `boardgame-asset-backup.timer`
+- 灾难重建命令：`boardgame-asset-sync.service`，只允许人工启动，不再配置 timer
+- 仅监听：`127.0.0.1:19090`
+- 全局同时传输连接：32
+- 单客户端同时连接：4
+- 每个响应前 1MiB 不限速，之后 2MiB/s
+- CPU 上限：25%
+- 内存上限：128MB
+- IO 权重：10
+
+诊断：
+
+```bash
+curl -I "https://assets.easyboardgame.top/official/common/images/noise.svg?probe=$(date +%s)"
+```
+
+- `X-Asset-Source: server`：普通素材或发布包由服务器活动版本返回。
+- `X-Asset-Source: r2-fallback`：服务器不可用或缺少对象，本次请求已自动回退 R2。
+
+素材服务运维：
+
+```bash
+sudo systemctl status boardgame-asset-origin.service
+sudo systemctl restart boardgame-asset-origin.service
+sudo systemctl status boardgame-asset-backup.timer
+sudo systemctl start boardgame-asset-backup.service
+sudo systemctl start boardgame-asset-sync.service # 仅服务器损坏后从 R2 手工重建
+```
+
+Worker 回滚删除 `assets.easyboardgame.top/*` 这一条 catch-all Route 后，全部素材立即恢复原 R2 自定义域名直出；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器主源。变更快照保存在 `temp/cloudflare-snapshots/`。
 
 ## 非 /assets 静态资源缓存策略（当前主链路）
 
@@ -442,10 +507,10 @@ Android OTA 产物也走同一个对象存储桶，但前缀独立：
 
 当前默认发布节奏：
 
-1. 开发者把产品版本号写进 `package.json`，例如 `0.6.0`。
-2. 合入 `main` 后等待常规 CI 通过。
-3. 在后台或 GitHub Actions 手动触发 OTA 发布，显式确认 `expected_base_version`。
-4. 发布脚本生成或接收单调递增的 OTA 内部游标；桥接场景可临时使用 `6.0.0-ota-...`，但产品版本仍保持 `0.6.0`。
+1. 使用 `node scripts/release/deploy-and-ota.mjs --prepare-version` 让产品版本号主动自增；默认 patch，会同步更新 `package.json.version`、`package-lock.json` 和 Android `androidVersionCode`。
+2. 提交并 push 版本改动，等待常规 CI 镜像构建完成，确保 `latest` 镜像已经包含这次版本号。
+3. 执行 `BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`，服务器部署 `latest`，并发布同一产品版本基线的 Android `stable` OTA。
+4. 发布脚本生成或接收单调递增的 OTA 内部游标；桥接场景可临时使用 `6.0.0-ota-...`，但本次发布的产品基线仍必须来自已提交的 `package.json.version`。
 
 ## UGC 资源前缀预留（未实现）
 

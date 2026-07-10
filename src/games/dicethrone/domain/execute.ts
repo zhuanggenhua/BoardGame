@@ -37,6 +37,7 @@ import {
     getTokenStackLimit,
     getSeatingOrder,
     isTeamMode,
+    getPendingBonusSettlementDice,
 } from './rules';
 import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
 import { applyEvents } from './utils';
@@ -74,6 +75,44 @@ const isArtificerNanobotPassiveActivation = (
 const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
     if (!playerId) return false;
     return findPlayerAbility(state, playerId, abilityId) !== null;
+};
+
+const buildAfterRollConfirmedWindowEvent = (
+    state: DiceThroneCore,
+    rollerId: PlayerId,
+    phase: TurnPhase,
+    timestamp: number,
+    commandType: string,
+): ResponseWindowOpenedEvent | null => {
+    const rollSignature = buildAfterRollConfirmedSignature(state);
+    if (hasAfterRollConfirmedWindowBeenHandled(state, rollSignature)) {
+        return null;
+    }
+
+    const responseTriggerId = getCombatOpponentId(state, rollerId) ?? rollerId;
+    const responderQueue = getResponderQueue(
+        state,
+        'afterRollConfirmed',
+        responseTriggerId,
+        undefined,
+        rollerId,
+        phase,
+    );
+    if (responderQueue.length === 0) {
+        return null;
+    }
+
+    return {
+        type: 'RESPONSE_WINDOW_OPENED',
+        payload: {
+            windowId: `afterRollConfirmed-${timestamp}`,
+            responderQueue,
+            windowType: 'afterRollConfirmed',
+            sourceId: rollSignature,
+        },
+        sourceCommandType: commandType,
+        timestamp,
+    };
 };
 
 const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
@@ -440,36 +479,22 @@ export function execute(
             // - 排除 rollerId（当前投掷方），因为他们可以主动出牌
             // - triggerId 是对手（优先响应）
             // 例如：防御阶段防御方确认骰面，攻击方可以响应（强制重投等）
+            // 进攻投掷阶段需要等攻击技能选定后再给对手改骰响应时机。
             // 
             // 关键：必须用 ROLL_CONFIRMED 事件应用后的状态来检查响应窗口
             // 否则 rollConfirmed 仍为 false，requireRollConfirmed 的卡牌（如抬一手）会被过滤掉
             const stateAfterConfirm = applyEvents(state, [event] as DiceThroneEvent[], reduce);
-            const rollSignature = buildAfterRollConfirmedSignature(stateAfterConfirm);
-            if (hasAfterRollConfirmedWindowBeenHandled(stateAfterConfirm, rollSignature)) {
-                break;
-            }
-            const responseTriggerId = getCombatOpponentId(stateAfterConfirm, rollerId) ?? rollerId;
-            const responderQueue = getResponderQueue(
-                stateAfterConfirm,
-                'afterRollConfirmed',
-                responseTriggerId,
-                undefined,
-                rollerId,
-                phase,
-            );
-            if (responderQueue.length > 0) {
-                const windowId = `afterRollConfirmed-${timestamp}`;
-                const responseWindowEvent: ResponseWindowOpenedEvent = {
-                    type: 'RESPONSE_WINDOW_OPENED',
-                    payload: {
-                        windowId,
-                        responderQueue,
-                        windowType: 'afterRollConfirmed',
-                        sourceId: rollSignature,
-                    },
-                    sourceCommandType: command.type,
+            if (phase !== 'offensiveRoll') {
+                const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+                    stateAfterConfirm,
+                    rollerId,
+                    phase,
                     timestamp,
-                };
+                    command.type,
+                );
+                if (!responseWindowEvent) {
+                    break;
+                }
                 events.push(responseWindowEvent);
                 return events; // 等待响应窗口关闭
             }
@@ -534,6 +559,19 @@ export function execute(
                     timestamp,
                 };
                 events.push(attackEvent);
+
+                const stateAfterAttack = applyEvents(state, events as DiceThroneEvent[], reduce);
+                const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+                    stateAfterAttack,
+                    state.activePlayerId,
+                    phase,
+                    timestamp,
+                    command.type,
+                );
+                if (responseWindowEvent) {
+                    events.push(responseWindowEvent);
+                    return events; // 等待攻击选定后的改骰响应窗口关闭
+                }
             }
             break;
         }
@@ -603,10 +641,13 @@ export function execute(
         case 'MODIFY_DIE': {
             const { dieId, newValue } = command.payload as { dieId: number; newValue: number };
             const die = state.dice.find(d => d.id === dieId);
-            if (die) {
+            const pendingBonusDie = state.pendingBonusDiceSettlement?.allowDiceModification === true
+                ? getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).find(d => d.index === dieId)
+                : undefined;
+            if (die || pendingBonusDie) {
                 const event: DieModifiedEvent = {
                     type: 'DIE_MODIFIED',
-                    payload: { dieId, oldValue: die.value, newValue, playerId: command.playerId },
+                    payload: { dieId, oldValue: die?.value ?? pendingBonusDie?.value ?? newValue, newValue, playerId: command.playerId },
                     sourceCommandType: command.type,
                     timestamp,
                 };
@@ -617,6 +658,7 @@ export function execute(
                 if (phase === 'offensiveRoll'
                     && state.pendingAttack
                     && !state.pendingAttack.isUltimate
+                    && die
                     && newValue !== die.value) {
                     events.push({
                         type: 'ABILITY_RESELECTION_REQUIRED',
@@ -695,28 +737,27 @@ export function execute(
             const targetPlayer = state.players[targetPlayerId];
             if (targetPlayer) {
                 if (statusId) {
-                    // 移除单个状态
+                    // 移除单个状态/标记的一层；“移除全部”走 statusId 为空的分支。
                     const currentStacks = targetPlayer.statusEffects[statusId] ?? 0;
                     if (currentStacks > 0) {
                         // 检查状态是否可被移除
                         if (isRemovableStatusId(state, statusId)) {
                             const event: StatusRemovedEvent = {
                                 type: 'STATUS_REMOVED',
-                                payload: { targetId: targetPlayerId, statusId, stacks: currentStacks },
+                                payload: { targetId: targetPlayerId, statusId, stacks: 1 },
                                 sourceCommandType: command.type,
                                 timestamp,
                             };
                             events.push(event);
                         }
-                    }
-                    // 也检查 tokens
-                    const tokenAmount = targetPlayer.tokens[statusId] ?? 0;
-                    if (tokenAmount > 0) {
+                    } else {
+                        // 也检查 tokens
+                        const tokenAmount = targetPlayer.tokens[statusId] ?? 0;
                         // 检查 token 是否可被移除
-                        if (isRemovableStatusId(state, statusId)) {
+                        if (tokenAmount > 0 && isRemovableStatusId(state, statusId)) {
                             events.push({
                                 type: 'TOKEN_CONSUMED',
-                                payload: { playerId: targetPlayerId, tokenId: statusId, amount: tokenAmount, newTotal: 0 },
+                                payload: { playerId: targetPlayerId, tokenId: statusId, amount: 1, newTotal: Math.max(0, tokenAmount - 1) },
                                 sourceCommandType: command.type,
                                 timestamp,
                             } as DiceThroneEvent);

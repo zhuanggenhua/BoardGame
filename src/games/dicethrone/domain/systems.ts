@@ -26,6 +26,7 @@ import { RESOURCE_IDS } from './resources';
 import { CP_MAX } from './core-types';
 import { getActiveDice } from './rules';
 import { isRemovableStatusId } from './statusRemoval';
+import { updatePendingAttackSettlementStage } from './utils';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -33,6 +34,7 @@ const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'min-selection-unreachable',
     'no-legal-actions',
 ]);
+
 type EmergencySkipContext = {
     sourceId?: string;
     interactionData?: unknown;
@@ -160,6 +162,31 @@ function syncCurrentChoiceAnchorWithInteraction(
         core: {
             ...state.core,
             currentChoiceSourceAbilityId: sourceId,
+        },
+    };
+}
+
+function markCurrentAttackReadyAfterInteraction(
+    state: MatchState<DiceThroneCore>,
+    interactionData: DtInteractionDescriptor,
+): MatchState<DiceThroneCore> {
+    const sourceId = interactionData.sourceCardId;
+    const pendingAttack = state.core.pendingAttack;
+    const resume = interactionData.resumeAttackSettlementOnComplete;
+    if (
+        !resume
+        || !sourceId
+        || !pendingAttack
+        || pendingAttack.sourceAbilityId !== sourceId
+    ) {
+        return state;
+    }
+
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            pendingAttack: updatePendingAttackSettlementStage(pendingAttack, resume.stage) ?? pendingAttack,
         },
     };
 }
@@ -650,6 +677,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             && dtEvent.type === 'CARD_DISCARDED';
                         if (isStatusSelectionCompleted || isHandCardSelectionCompleted) {
                             statusInteractionCompleted = true;
+                            newState = markCurrentAttackReadyAfterInteraction(newState, interactionData);
                             // 业务完成事件已经由领域层生成；系统层只清理当前交互。
                             newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                         }

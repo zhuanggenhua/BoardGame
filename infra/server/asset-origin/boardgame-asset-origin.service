@@ -1,0 +1,35 @@
+[Unit]
+Description=BoardGame read-only asset origin
+After=network-online.target
+Wants=network-online.target
+ConditionPathIsDirectory=/home/admin/storage/assets/current
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/storage/assets/origin
+ExecStartPre=/usr/bin/mkdir -p /home/admin/storage/assets/origin/runtime
+ExecStartPre=/usr/sbin/nginx -e stderr -t -p /home/admin/storage/assets/origin/ -c nginx.conf
+ExecStart=/usr/sbin/nginx -e stderr -p /home/admin/storage/assets/origin/ -c nginx.conf -g "daemon off;"
+ExecReload=/usr/sbin/nginx -e stderr -p /home/admin/storage/assets/origin/ -c nginx.conf -s reload
+ExecStop=/usr/sbin/nginx -e stderr -p /home/admin/storage/assets/origin/ -c nginx.conf -s quit
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=10s
+Nice=10
+CPUQuota=25%
+IOWeight=10
+MemoryMax=128M
+TasksMax=64
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/admin/storage/assets/origin/runtime
+ReadOnlyPaths=/home/admin/storage/assets
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

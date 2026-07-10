@@ -20,9 +20,11 @@ import { DiceBoxPhysicsSource } from '../../lib/dice-physics/DiceBoxPhysicsSourc
 import type { DiceBoxDieSkin } from '../../lib/dice-box-threejs/engine';
 import type { DiceBoxStyleProfile } from '../../lib/dice-box-threejs/engine';
 import type { DicePhysicsState } from '../../lib/dice-physics/types';
+import { useGameAudio } from '../../lib/audio/useGameAudio';
 import {
     ResourceTraySkeleton,
 } from '../../components/game/framework';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import type { MatchPlayerInfo } from '../../engine/transport/protocol';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import type {
@@ -72,6 +74,8 @@ import {
     buildRoomAtlasImageStyle,
     type BetrayalRoomTileVisual,
 } from './roomAtlas';
+import { BETRAYAL_AUDIO_CONFIG } from './audio.config';
+import { BETRAYAL_MANIFEST } from './manifest';
 
 type Props = GameBoardProps<BetrayalCore, BetrayalCommandMap>;
 
@@ -188,11 +192,11 @@ const REFERENCE_CARD_FRAME_WIDTH = `min(92vw, calc(86vh * ${BETRAYAL_POSSESSION_
 const INVENTORY_PREVIEW_FRAME_WIDTH = 'min(84vw, 360px)';
 const COMPACT_INVENTORY_CARD_WIDTH = 64;
 
-type ReferencePageId = 'front' | 'back' | 'traitor' | 'monster';
+type ReferencePageId = 'scenario' | 'front' | 'back' | 'traitor' | 'monster';
 
 type ReferencePage = {
     id: ReferencePageId;
-    asset: string;
+    asset?: string;
 };
 
 const PLAYER_REFERENCE_PAGES: ReferencePage[] = [
@@ -201,6 +205,7 @@ const PLAYER_REFERENCE_PAGES: ReferencePage[] = [
 ];
 
 const HAUNT_REFERENCE_PAGES: ReferencePage[] = [
+    { id: 'scenario' },
     ...PLAYER_REFERENCE_PAGES,
     { id: 'traitor', asset: ASSETS.playerReference.traitor },
     { id: 'monster', asset: ASSETS.playerReference.monster },
@@ -1440,6 +1445,11 @@ function BetrayalHouseDice3DGroup({
         () => roll.dice.map((pip) => createBetrayalHouseDiceSkin(normalizeBetrayalHouseRuleValue(pip))),
         [roll.dice],
     );
+    const rerollingDieIndex = roll.lastRabbitFootRerollDieIndex ?? null;
+    const rerollingDiceIds = React.useMemo(
+        () => (rerollingDieIndex !== null ? [rerollingDieIndex + 1] : undefined),
+        [rerollingDieIndex],
+    );
     const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
     const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>([]);
     const visibleRuleValues = React.useMemo(
@@ -1505,11 +1515,13 @@ function BetrayalHouseDice3DGroup({
             data-dice-visible-rule-values={visibleRuleValues.join(',')}
             data-dice-rule-subtotal={roll.dice.reduce((sum, pip) => sum + pip, 0)}
             data-dice-physical-d6-faces={physicalD6Faces.join(',')}
+            data-dice-rerolling-die-index={rerollingDieIndex ?? undefined}
             className={`relative min-h-0 overflow-visible rounded-[14px] bg-transparent ${className}`}
         >
             <DiceBoxPhysicsSource
                 dice={diceInputs}
-                isRolling
+                isRolling={rerollingDieIndex === null}
+                rerollingDiceIds={rerollingDiceIds}
                 styleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
                 dieSkins={dieSkins}
                 testId="betrayal-house-dice-physics-source"
@@ -1533,37 +1545,42 @@ function BetrayalHouseDice3DGroup({
                     <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-[rgba(241,221,146,0.44)] bg-[rgba(16,12,8,0.74)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#f7e6ab] shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
                         {rerollSelection.promptLabel}
                     </div>
-                    {selectableDiceTargets.map((target) => (
-                        <div
-                            key={`${roll.id}-reroll-target-${target.dieIndex}`}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={rerollSelection.getDieActionLabel(target.dieIndex)}
-                            title={rerollSelection.getDieActionLabel(target.dieIndex)}
-                            data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
-                            data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
-                            data-reroll-target-source={target.source}
-                            className="group pointer-events-auto absolute outline-none"
-                            style={{
-                                left: target.source === 'fallback-projection' ? target.fallbackStyle.left : `${target.layout.x}px`,
-                                top: target.source === 'fallback-projection' ? target.fallbackStyle.top : `${target.layout.y}px`,
-                                width: `${target.layout.width + 18}px`,
-                                height: `${target.layout.height + 18}px`,
-                                transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
-                                transformOrigin: 'center center',
-                            }}
-                            onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
-                            onKeyDown={(event) => {
-                                handleRerollTargetKeyDown(event, target.dieIndex);
-                            }}
-                        >
-                            <span className="sr-only">{rerollSelection.getDieActionLabel(target.dieIndex)}</span>
-                            <span
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 rounded-[18px] border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
-                            />
-                        </div>
-                    ))}
+                    {selectableDiceTargets.map((target) => {
+                        const targetCircleSize = Math.max(target.layout.width, target.layout.height) + 18;
+                        return (
+                            <div
+                                key={`${roll.id}-reroll-target-${target.dieIndex}`}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={rerollSelection.getDieActionLabel(target.dieIndex)}
+                                title={rerollSelection.getDieActionLabel(target.dieIndex)}
+                                data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
+                                data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
+                                data-reroll-target-source={target.source}
+                                data-reroll-target-shape="circle"
+                                className="group pointer-events-auto absolute outline-none"
+                                style={{
+                                    left: target.source === 'fallback-projection' ? target.fallbackStyle.left : `${target.layout.x}px`,
+                                    top: target.source === 'fallback-projection' ? target.fallbackStyle.top : `${target.layout.y}px`,
+                                    width: `${targetCircleSize}px`,
+                                    height: `${targetCircleSize}px`,
+                                    transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
+                                    transformOrigin: 'center center',
+                                }}
+                                onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
+                                onKeyDown={(event) => {
+                                    handleRerollTargetKeyDown(event, target.dieIndex);
+                                }}
+                            >
+                                <span className="sr-only">{rerollSelection.getDieActionLabel(target.dieIndex)}</span>
+                                <span
+                                    aria-hidden="true"
+                                    data-highlight-shape="circle"
+                                    className="pointer-events-none absolute inset-0 rounded-full border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             ) : null}
             <div className="sr-only">
@@ -2113,6 +2130,7 @@ function EndgameScreen({
 export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale }: Props) {
     const { t } = useTranslation(['game-betrayal', 'common']);
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep } = useTutorial();
+    const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
     useTutorialBridge(G?.sys?.tutorial, dispatch as (type: string, payload?: unknown) => void);
     const effectiveLocale = locale || 'zh-CN';
     const baseCore = React.useMemo(
@@ -2120,6 +2138,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         [G],
     );
     const viewerPlayerId = String(playerID ?? baseCore.currentPlayer ?? baseCore.playerIds[0] ?? '0');
+    useGameAudio({
+        config: BETRAYAL_AUDIO_CONFIG,
+        gameId: BETRAYAL_MANIFEST.id,
+        G: baseCore,
+        ctx: {
+            phase: baseCore.phase,
+            isGameOver: Boolean(G?.sys?.gameover) || baseCore.phase === 'endgame',
+            isWinner: baseCore.endgameResult
+                ? baseCore.endgameResult.winners.includes(viewerPlayerId)
+                : undefined,
+        },
+        eventEntries: G?.sys?.eventStream?.entries,
+        meta: {
+            playerID: playerID ?? null,
+        },
+    });
     const [selectedExplorerId, setSelectedExplorerId] = React.useState(
         () => baseCore.selectedExplorerByPlayerId[viewerPlayerId] ?? EXPLORER_CATALOG[0]!.explorerId,
     );
@@ -2131,6 +2165,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [confirmedExorciseRollId, setConfirmedExorciseRollId] = React.useState<string | null>(null);
     const [roomGridPan, setRoomGridPan] = React.useState({ x: 0, y: 0 });
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
+    const isPhoneLandscapeLayout = runtimeViewport.width > runtimeViewport.height
+        && runtimeViewport.width <= 1023
+        && runtimeViewport.height <= 520;
     const hasCenteredInitialRoomGridRef = React.useRef(false);
     const roomGridDragRef = React.useRef<RoomGridDragState>({
         isDragging: false,
@@ -2157,6 +2194,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     ), [baseCore, isEndgameExorciseRollReview]);
     const referencePages = React.useMemo(() => resolveReferencePages(core), [core]);
     const currentReferencePage = referencePages.find((page) => page.id === referenceSide) ?? referencePages[0]!;
+    const currentReferencePageIndex = Math.max(
+        0,
+        referencePages.findIndex((page) => page.id === currentReferencePage.id),
+    );
 
     React.useEffect(() => {
         setPreviewState((previousState) => {
@@ -2178,6 +2219,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             setReferenceSide(referencePages[0]?.id ?? 'front');
         }
     }, [referencePages, referenceSide]);
+
+    const openScenarioReference = React.useCallback(() => {
+        setReferenceSide(core.phase === 'haunt' ? 'scenario' : 'front');
+        setReferenceOpen(true);
+    }, [core.phase]);
 
     React.useEffect(() => {
         setSelectedExplorerId(baseCore.selectedExplorerByPlayerId[viewerPlayerId] ?? EXPLORER_CATALOG[0]!.explorerId);
@@ -2276,11 +2322,34 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         return focusRoomInView(core.currentExplorer.roomId) || focusActiveRoomInView();
     }, [core.currentExplorer.roomId, focusActiveRoomInView, focusRoomInView]);
 
-    const roomCanvasTransformStyle = React.useMemo(() => ({
-        ...roomCanvasStyle,
-        transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0)`,
-        transformOrigin: 'center center',
-    }), [roomCanvasStyle, roomGridPan.x, roomGridPan.y]);
+    const roomCanvasTransformStyle = React.useMemo(() => {
+        if (!isPhoneLandscapeLayout) {
+            return {
+                ...roomCanvasStyle,
+                transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0)`,
+                transformOrigin: 'center center',
+            };
+        }
+
+        const mobileScale = Math.min(
+            1,
+            Math.max(0.58, (runtimeViewport.width - 24) / Number(roomCanvasStyle.width || ROOM_CANVAS_MIN_WIDTH)),
+            Math.max(0.58, (runtimeViewport.height - 116) / Number(roomCanvasStyle.height || ROOM_CANVAS_MIN_HEIGHT)),
+        );
+        return {
+            ...roomCanvasStyle,
+            transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0) scale(${mobileScale})`,
+            transformOrigin: 'center center',
+            ['--betrayal-mobile-room-scale' as string]: String(mobileScale),
+        };
+    }, [
+        isPhoneLandscapeLayout,
+        roomCanvasStyle,
+        roomGridPan.x,
+        roomGridPan.y,
+        runtimeViewport.height,
+        runtimeViewport.width,
+    ]);
 
     React.useEffect(() => {
         if (core.phase !== 'preHaunt') {
@@ -3384,6 +3453,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         const isFocus = options.layout === 'focus';
         const isPreview = options.layout === 'preview';
         const isCompact = options.layout === 'compact';
+        const isTutorialBookTarget = !isPreview
+            && isTutorialActive
+            && tutorialStep?.id === 'use-book'
+            && item.id === 'omen-book';
         const canModifyRecentRoll = !isPreview && rollModifierCardIds.has(item.id);
         const isTradeCompact = isCompact && Boolean(frontVisual) && core.recommendedAction === 'trade';
         const isDenseNoFrontCompact = isCompact && !frontVisual && Boolean(options.compactDenseNoFront);
@@ -3395,6 +3468,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ? { width: `${COMPACT_INVENTORY_CARD_WIDTH}px` }
                 : undefined;
         const showSelectedState = !isPreview && isSelected;
+        const showActionTargetOutline = !showSelectedState && (isTutorialBookTarget || canModifyRecentRoll);
         const titleClass = isPreview
             ? `min-h-[52px] text-[18px] font-semibold leading-[22px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`
             : isFocus
@@ -3413,11 +3487,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 : isPreview
                     ? 'z-10'
                     : 'z-10 hover:-translate-y-0.5';
-        const outerRingClass = showSelectedState
-            ? 'ring-4 ring-[#eecc7e] shadow-[0_0_24px_rgba(238,204,126,0.48)]'
-            : canModifyRecentRoll
-                ? 'ring-4 ring-[#9fe1a7] shadow-[0_0_24px_rgba(159,225,167,0.52)]'
-                : '';
+        const outerRingClass = '';
         return (
             <div
                 key={`${options.layout}-${item.id}`}
@@ -3442,9 +3512,30 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 data-testid={options.testId}
                 data-roll-modifier-available={canModifyRecentRoll ? 'true' : 'false'}
                 title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击选择`}
-                className={`relative w-full overflow-visible text-left transition ${buttonOutlineClass}`}
+                className={`relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${buttonOutlineClass}`}
                 aria-pressed={isPreview ? undefined : isSelected}
             >
+                {showSelectedState ? (
+                    <span
+                        data-testid={options.testId ? `${options.testId}-selected-outline` : undefined}
+                        data-highlight-shape="circle"
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-1/2 top-1/2 z-20 aspect-square w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_20px_rgba(238,204,126,0.48)]"
+                        style={{
+                            border: '2px solid #eecc7e',
+                        }}
+                    />
+                ) : showActionTargetOutline ? (
+                    <span
+                        data-testid={options.testId ? `${options.testId}-${isTutorialBookTarget ? 'tutorial-target' : 'roll-modifier'}` : undefined}
+                        data-highlight-shape="circle"
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-1/2 top-1/2 z-20 aspect-square w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_20px_rgba(159,225,167,0.48)]"
+                        style={{
+                            border: '2px solid #9fe1a7',
+                        }}
+                    />
+                ) : null}
                 {isUsedThisTurn || isUnavailableThisTurn ? (
                     <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
                         {t(isUsedThisTurn ? 'board.status.cardUsedTag' : 'board.status.cardUnavailableTag')}
@@ -3453,6 +3544,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 <div
                     data-testid={options.testId ? `${options.testId}-shell` : undefined}
                     data-selected-outline={showSelectedState ? 'true' : undefined}
+                    data-tutorial-target-outline={isTutorialBookTarget ? 'true' : undefined}
                     data-modifier-outline={canModifyRecentRoll && !showSelectedState ? 'true' : undefined}
                     className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} ${outerRingClass} border ${
                         showSelectedState
@@ -3464,7 +3556,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             : isCompact
                                 ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
                                 : tone.cardSurfaceClass
-                    } ${isUsedThisTurn || isUnavailableThisTurn ? 'opacity-60' : ''}`}
+                    } ${!isPreview && (isUsedThisTurn || isUnavailableThisTurn) ? 'opacity-60' : ''}`}
                     style={{
                         aspectRatio: BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
                         ...(showSelectedState
@@ -3698,7 +3790,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ].join(','),
             }}
         >
-            <div className="relative h-full min-h-full w-full overflow-hidden px-3 py-3 md:px-4 md:py-4">
+            <div
+                className={`relative h-full min-h-full w-full overflow-hidden ${
+                    isPhoneLandscapeLayout
+                        ? 'px-1.5 py-1.5'
+                        : 'px-3 py-3 md:px-4 md:py-4'
+                }`}
+                data-testid={isPhoneLandscapeLayout ? 'betrayal-mobile-landscape-layout' : 'betrayal-desktop-layout'}
+                data-layout-mode={isPhoneLandscapeLayout ? 'phone-landscape-native' : 'desktop-board'}
+            >
                 <header className="pointer-events-none absolute inset-x-4 top-3 z-30 hidden lg:block">
                     <div
                         className="relative min-h-[58px]"
@@ -3710,7 +3810,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 {phaseLabel}
                             </span>
                         </div>
-                        <div className="absolute right-0 top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md" data-testid="betrayal-status-chip">
+                        <div className="absolute right-[244px] top-0 flex items-center justify-end gap-3 rounded-[8px] border border-[rgba(114,91,52,0.28)] bg-[rgba(8,13,11,0.58)] px-3 py-1.5 shadow-[0_14px_30px_rgba(0,0,0,0.18)] backdrop-blur-md" data-testid="betrayal-status-chip">
                             <div className="text-right">
                                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">{t('board.hud.turnLabel')}</div>
                                 <div className="mt-0.5 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#f0d29a]">
@@ -3734,9 +3834,119 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 </header>
 
                 <main className="absolute inset-0 overflow-hidden">
+                    {isPhoneLandscapeLayout ? (
+                        <section
+                            data-testid="betrayal-mobile-stage-status"
+                            className="pointer-events-none absolute left-2 top-2 z-40 flex min-w-[188px] max-w-[224px] items-start gap-2 rounded-[16px] border border-[#5a4930] bg-[rgba(27,20,16,0.9)] px-2.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.38)] backdrop-blur-sm"
+                        >
+                            <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#6b5a3d] bg-[rgba(13,18,14,0.86)]">
+                                <OptimizedImage
+                                    src={core.currentExplorer.portraitAsset}
+                                    locale={effectiveLocale}
+                                    alt={core.currentExplorer.displayName}
+                                    className="h-full w-full object-contain"
+                                    draggable={false}
+                                />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="truncate text-[13px] font-semibold tracking-[0.04em] text-[#efe2c4]">
+                                    {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
+                                </div>
+                                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#c8f05e]">
+                                    <span>{t('board.hud.moveLabel')} {core.movesRemaining}</span>
+                                    <span className="text-[#7d725d]">/</span>
+                                    <span>{phaseLabel}</span>
+                                </div>
+                                <div
+                                    data-testid="betrayal-mobile-traits-strip"
+                                    className="mt-1.5 grid grid-cols-4 gap-1"
+                                >
+                                    {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
+                                        <span
+                                            key={`mobile-current-trait-${trait}`}
+                                            className={`inline-flex h-[22px] min-w-[24px] items-center justify-center rounded-[7px] border border-[rgba(214,191,129,0.22)] bg-[rgba(12,16,14,0.76)] px-1.5 text-[12px] font-bold ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
+                                            title={`${TRAIT_LABEL_LOCAL[trait]} ${core.currentExplorer.traits[trait]}`}
+                                        >
+                                            {core.currentExplorer.traits[trait]}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    ) : null}
+                    {isPhoneLandscapeLayout ? (
+                        <section
+                            data-testid="betrayal-mobile-context-strip"
+                            aria-label={t('board.mobile.contextStripLabel')}
+                            className="pointer-events-auto absolute right-2 top-2 z-40 grid w-[min(360px,40vw)] min-w-[276px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[16px] border border-[#5a4930] bg-[rgba(27,20,16,0.9)] px-2.5 py-2 text-[#efe2c4] shadow-[0_10px_24px_rgba(0,0,0,0.38)] backdrop-blur-sm"
+                        >
+                            <div className="min-w-0">
+                                <div
+                                    data-testid="betrayal-mobile-deck-summary"
+                                    className="grid grid-cols-3 gap-1 text-[11px] leading-none"
+                                >
+                                    {deckItems.map((item) => (
+                                        <span key={`mobile-${item.id}`} className="inline-flex min-w-0 items-center justify-between gap-1 rounded-[7px] border border-[rgba(214,191,129,0.12)] bg-[rgba(12,16,14,0.55)] px-1.5 py-1">
+                                            <span className="truncate text-[#c4a265]">{item.label.replace('牌堆', '')}</span>
+                                            <span className="font-bold text-[#f0e2c0]">{item.count}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div
+                                    data-testid="betrayal-mobile-discard-summary"
+                                    className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-none text-[#a89d84]"
+                                >
+                                    <span>{t('board.sections.discard')}</span>
+                                    {discardItems.map((item) => (
+                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-1">
+                                            <span className="max-w-[42px] truncate">{item.label.split(' · ')[0].replace('牌堆', '')}</span>
+                                            <span className="font-bold text-[#d8bf81]">{item.count}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div
+                                    data-testid="betrayal-mobile-teammates-summary"
+                                    className="mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[10px] leading-none text-[#b7aa92]"
+                                >
+                                    <span className="shrink-0 text-[#c4a265]">{t('board.hud.teammatesLabel')}</span>
+                                    {core.otherExplorers.slice(0, 2).map((explorer) => (
+                                        <span
+                                            key={`mobile-teammate-${explorer.playerId}`}
+                                            className="truncate rounded-full bg-[rgba(12,16,14,0.62)] px-1.5 py-1"
+                                            title={`${resolvePlayerName(explorer.playerId, explorer.displayName, matchData)} · ${core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown')}`}
+                                        >
+                                            {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid gap-1">
+                                <button
+                                    type="button"
+                                    onClick={openScenarioReference}
+                                    data-testid="betrayal-mobile-open-scenario"
+                                    className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
+                                    title={scenarioConfig.presentation.referenceTitle}
+                                >
+                                    <BookOpen size={14} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setRoomPreviewId(core.activeRoomId)}
+                                    data-testid="betrayal-mobile-open-active-room-preview"
+                                    className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
+                                    title={t('board.rooms.preview')}
+                                >
+                                    <House size={14} />
+                                </button>
+                            </div>
+                        </section>
+                    ) : null}
                     <section
                         data-testid="betrayal-left-status-rail"
-                        className="pointer-events-none absolute left-3 top-3 z-40 grid max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible"
+                        className={`pointer-events-none absolute left-3 top-3 z-40 max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible ${
+                            isPhoneLandscapeLayout ? 'hidden' : 'grid'
+                        }`}
                     >
                         <article className="pointer-events-auto relative overflow-visible bg-transparent px-1 py-1">
                             <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1 xl:mx-0">
@@ -3950,9 +4160,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         id="betrayal-inventory-section"
                         data-testid="betrayal-inventory-section"
                         data-tutorial-id="betrayal-inventory-zone"
-                        className="pointer-events-auto absolute bottom-2 left-1 z-40 mt-0 w-[calc(62px*5.35+0.5rem*4+0.75rem)] max-w-[calc(62px*5.35+0.5rem*4+0.75rem)] px-0"
+                        className={`pointer-events-auto absolute z-40 mt-0 px-0 ${
+                            isPhoneLandscapeLayout
+                                ? 'bottom-[58px] left-2 w-[min(312px,calc(100vw-6.25rem))]'
+                                : 'bottom-[86px] left-2 w-[320px] max-w-[calc(100vw-1rem)] lg:bottom-2 lg:left-1 lg:w-[calc(62px*5.35+0.5rem*4+0.75rem)] lg:max-w-[calc(62px*5.35+0.5rem*4+0.75rem)]'
+                        }`}
+                        data-mobile-role={isPhoneLandscapeLayout ? 'possession-rail' : undefined}
                     >
-                        <div className="mb-1 flex items-center justify-between gap-3 px-1 xl:pr-4">
+                        <div className={`${isPhoneLandscapeLayout ? 'sr-only' : 'mb-1 flex items-center justify-between gap-3 px-1 xl:pr-4'}`}>
                             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
                                 <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
                                 {t('board.sections.inventory')}
@@ -3970,10 +4185,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 {useStatusText}
                             </div>
                         </div>
-                        <div className="grid gap-2 px-1 xl:px-0 xl:pr-2">
+                        <div className={`${isPhoneLandscapeLayout ? 'grid gap-1 px-0' : 'grid gap-2 px-1 xl:px-0 xl:pr-2'}`}>
                             <section data-testid="betrayal-inventory-group-item">
                                 <div
-                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2"
+                                    className={`${inventoryGroups.item.length === 0 ? 'hidden lg:flex' : 'flex'} ${
+                                        isPhoneLandscapeLayout
+                                            ? 'max-w-full min-h-[52px] items-end gap-1 overflow-x-auto overflow-y-hidden px-0 pb-0.5 pt-0'
+                                            : 'max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] items-end gap-1.5 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1 xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2'
+                                    } min-w-0 smashup-h-scrollbar`}
                                     data-testid="betrayal-inventory-row-item"
                                 >
                                     {inventoryGroups.item.map((item) => renderInventoryCard(item, {
@@ -3984,7 +4203,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </section>
                             <section data-testid="betrayal-inventory-group-omen">
                                 <div
-                                    className="flex max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] min-w-0 items-end gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pr-1 smashup-h-scrollbar xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2"
+                                    className={`${inventoryGroups.omen.length === 0 ? 'hidden lg:flex' : 'flex'} ${
+                                        isPhoneLandscapeLayout
+                                            ? 'max-w-full min-h-[52px] items-end gap-1 overflow-x-auto overflow-y-hidden px-0 pb-0.5 pt-0'
+                                            : 'max-w-[calc(62px*4.35+0.375rem*3)] min-h-[92px] items-end gap-1.5 overflow-x-auto overflow-y-hidden px-1 pb-2 pt-1 xl:max-w-[calc(62px*5.35+0.5rem*4)] xl:gap-2'
+                                    } min-w-0 smashup-h-scrollbar`}
                                     data-testid="betrayal-inventory-row-omen"
                                 >
                                     {inventoryGroups.omen.map((item) => renderInventoryCard(item, {
@@ -4013,7 +4236,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             id="betrayal-room-panel"
                             data-testid="betrayal-room-panel"
                             data-tutorial-id="betrayal-room-board"
-                            className="flex min-h-0 flex-col bg-transparent p-0"
+                            className={`flex min-h-0 flex-col bg-transparent p-0 ${
+                                isPhoneLandscapeLayout ? 'pb-[108px] pt-9' : 'pb-[86px] lg:pb-0'
+                            }`}
+                            data-mobile-role={isPhoneLandscapeLayout ? 'primary-board-stage' : undefined}
                         >
                             <div className="sr-only">
                                 <span data-testid="betrayal-room-latest-feedback">
@@ -4055,7 +4281,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     data-tutorial-id="betrayal-latest-discovery"
                                     aria-label={`${latestDiscoveryKindLabel} ${core.latestDiscovery!.title}`}
                                     data-allows-inventory-roll-modifiers={rollModifierCardIds.size > 0 ? 'true' : 'false'}
-                                    className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[120] flex items-center justify-center px-4 py-16 md:left-[392px] md:right-[240px]"
+                                    className={`pointer-events-none absolute z-[120] flex items-center justify-center ${
+                                        isPhoneLandscapeLayout
+                                            ? 'inset-0 px-3 pb-[76px] pt-8'
+                                            : 'inset-y-0 left-0 right-0 px-4 py-16 md:left-[392px] md:right-[240px]'
+                                    }`}
                                 >
                                     <div
                                         data-testid="betrayal-discovery-panel-content"
@@ -4098,8 +4328,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         {shouldShowLatestDiscoveryRoll && core.recentRoll ? (
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
-                                                className="h-[min(52vh,440px)] min-h-[360px] w-[min(700px,calc(100vw-2rem))] shrink-0 md:w-[610px]"
-                                                diceClassName="min-h-[280px]"
+                                                className={isPhoneLandscapeLayout
+                                                    ? 'h-[min(74vh,330px)] min-h-[292px] w-[min(620px,calc(100vw-2rem))] shrink-0'
+                                                    : 'h-[min(52vh,440px)] min-h-[360px] w-[min(700px,calc(100vw-2rem))] shrink-0 md:w-[610px]'}
+                                                diceClassName={isPhoneLandscapeLayout ? 'min-h-[210px]' : 'min-h-[280px]'}
                                                 rerollSelection={rabbitFootRerollSelection}
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
@@ -4110,45 +4342,57 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             ) : null}
 
                             {core.recentRoll && !pendingEventChoice && !shouldShowLatestDiscovery ? (
-                                isEndgameExorciseRollReview ? (
+                                isEndgameExorciseRollReview || core.recentRoll.kind === 'attackRoll' ? (
                                     <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center px-4 py-12">
                                         <div
-                                            data-testid="betrayal-exorcise-roll-review"
-                                            data-tutorial-id="betrayal-exorcise-roll-review"
+                                            data-testid={isEndgameExorciseRollReview ? 'betrayal-exorcise-roll-review' : 'betrayal-attack-roll-review'}
+                                            data-tutorial-id={isEndgameExorciseRollReview ? 'betrayal-exorcise-roll-review' : 'betrayal-attack-roll-review'}
                                             className="pointer-events-auto flex w-[min(640px,calc(100vw-2rem))] flex-col items-center gap-3"
                                         >
                                             <RecentRollPanel
                                                 roll={core.recentRoll}
-                                                className="h-[min(48vh,430px)] min-h-[340px] w-full"
-                                                diceClassName="min-h-[260px]"
+                                                className={isPhoneLandscapeLayout ? 'h-[min(72vh,320px)] min-h-[286px] w-full' : 'h-[min(48vh,430px)] min-h-[340px] w-full'}
+                                                diceClassName={isPhoneLandscapeLayout ? 'min-h-[204px]' : 'min-h-[260px]'}
                                                 effectiveLocale={effectiveLocale}
                                                 openTable
                                             />
-                                            <button
-                                                type="button"
-                                                data-testid="betrayal-exorcise-roll-continue"
-                                                className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
-                                                onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
-                                            >
-                                                {t('board.endgame.enterEndgame')}
-                                            </button>
+                                            {isEndgameExorciseRollReview ? (
+                                                <button
+                                                    type="button"
+                                                    data-testid="betrayal-exorcise-roll-continue"
+                                                    className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                                                    onClick={() => setConfirmedExorciseRollId(core.recentRoll?.id ?? null)}
+                                                >
+                                                    {t('board.endgame.enterEndgame')}
+                                                </button>
+                                            ) : null}
                                         </div>
                                     </div>
                                 ) : (
                                     <RecentRollPanel
                                         roll={core.recentRoll}
-                                        className="absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2"
+                                        className={isPhoneLandscapeLayout
+                                            ? 'absolute left-1/2 top-1/2 z-40 h-[min(74vh,322px)] min-h-[286px] w-[min(620px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2'
+                                            : 'absolute left-1/2 top-[86px] z-40 w-[min(420px,calc(100vw-2rem))] -translate-x-1/2'}
+                                        diceClassName={isPhoneLandscapeLayout ? 'min-h-[206px]' : undefined}
+                                        openTable={isPhoneLandscapeLayout}
                                         effectiveLocale={effectiveLocale}
                                     />
                                 )
                             ) : null}
 
                             {pendingEventChoice ? (
-                                <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center px-4 py-14">
+                                <div className={`pointer-events-auto absolute inset-0 z-50 flex items-center justify-center ${
+                                    isPhoneLandscapeLayout ? 'px-3 pb-[64px] pt-4' : 'px-4 py-14'
+                                }`}>
                                     <div
                                         data-testid="betrayal-event-choice-panel"
                                         aria-label={pendingEventChoice.sourceTitle}
-                                        className="grid max-h-[min(620px,calc(100vh-7rem))] w-[min(780px,calc(100vw-2rem))] grid-cols-[minmax(220px,360px)_minmax(0,1fr)] gap-5 overflow-hidden border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(25,20,13,0.86),rgba(8,10,8,0.86))] p-5 text-[#f3e0a6] shadow-[0_28px_76px_rgba(0,0,0,0.62)]"
+                                        className={`grid overflow-hidden border border-[rgba(211,179,109,0.42)] bg-[linear-gradient(180deg,rgba(25,20,13,0.88),rgba(8,10,8,0.88))] text-[#f3e0a6] shadow-[0_28px_76px_rgba(0,0,0,0.62)] ${
+                                            isPhoneLandscapeLayout
+                                                ? 'max-h-[calc(100vh-4.75rem)] w-[min(760px,calc(100vw-1rem))] grid-cols-[minmax(156px,210px)_minmax(0,1fr)] gap-3 p-3'
+                                                : 'max-h-[min(620px,calc(100vh-7rem))] w-[min(780px,calc(100vw-2rem))] grid-cols-[minmax(220px,360px)_minmax(0,1fr)] gap-5 p-5'
+                                        }`}
                                     >
                                         <div className="w-full justify-self-center">
                                             {latestDiscoveryVisual ? (
@@ -4522,10 +4766,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                            <div
-                                ref={roomGridRef}
-                                className="relative min-h-0 flex-1 cursor-grab touch-none overflow-hidden bg-transparent active:cursor-grabbing"
-                                data-testid="betrayal-room-grid"
+                                <div
+                                    ref={roomGridRef}
+                                    className={`relative min-h-0 flex-1 cursor-grab touch-none overflow-hidden bg-transparent active:cursor-grabbing ${
+                                        isPhoneLandscapeLayout ? 'mx-auto grid w-full max-w-none place-items-center' : ''
+                                    }`}
+                                    data-testid="betrayal-room-grid"
                                 aria-label={t('board.sections.rooms')}
                                 onPointerDown={handleRoomGridPointerDown}
                                 onPointerMove={handleRoomGridPointerMove}
@@ -4533,7 +4779,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 onPointerCancel={handleRoomGridPointerEnd}
                             >
                                 <div
-                                    className="relative mx-auto will-change-transform xl:ml-0 xl:mr-auto"
+                                    className={`relative will-change-transform ${
+                                        isPhoneLandscapeLayout ? 'mx-auto' : 'mx-auto xl:ml-0 xl:mr-auto'
+                                    }`}
                                     data-testid="betrayal-room-canvas"
                                     style={roomCanvasTransformStyle}
                                 >
@@ -4661,10 +4909,16 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                 : 'bg-[linear-gradient(180deg,rgba(3,6,5,0.02),rgba(3,5,5,0.16))]'
                                                 }`}
                                             />
+                                            {canExploreRoom ? (
+                                                <span
+                                                    data-testid={`betrayal-room-explore-card-highlight-${room.id}`}
+                                                    className="pointer-events-none absolute inset-0 z-20 rounded-[4px] border-2 border-[#d3b36d] bg-[radial-gradient(circle_at_50%_46%,rgba(211,179,109,0.18),rgba(211,179,109,0.04)_62%,transparent_82%)] shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_26px_rgba(211,179,109,0.58)]"
+                                                />
+                                            ) : null}
                                             {identityTone ? (
                                                 <div
                                                     data-testid={`betrayal-room-stripe-${room.id}`}
-                                                    className={`absolute left-2 top-2 h-2 w-2 rounded-full border border-white/10 ${identityTone.stripe}`}
+                                                    className={`absolute left-2 top-2 h-2 w-2 rounded-full border border-white/10 ${identityTone.stripe} ${canExploreRoom ? 'hidden' : ''}`}
                                                 />
                                             ) : null}
                                             <div className="pointer-events-none absolute inset-0 rounded-[3px] ring-1 ring-inset ring-[rgba(222,192,133,0.05)]" />
@@ -4775,10 +5029,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             handleExploreRoom(room.id);
                                                         }}
                                                         data-testid={`betrayal-room-explore-target-${room.id}`}
-                                                        className="grid h-4 w-4 place-items-center rounded-full border border-[#d3b36d] bg-[#d3b36d] shadow-[0_0_14px_rgba(211,179,109,0.76)]"
+                                                        className="grid min-h-8 min-w-[72px] place-items-center rounded-[8px] border border-[#d3b36d] bg-[rgba(24,17,8,0.90)] px-2 text-[11px] font-bold tracking-[0.08em] text-[#f5df9a] shadow-[0_0_18px_rgba(211,179,109,0.54)]"
                                                         title={t('board.rooms.explorable')}
                                                     >
-                                                        <span className="sr-only">{t('board.rooms.explorable')}</span>
+                                                        <span>{t('board.actions.explore')}</span>
                                                     </button>
                                                 ) : null}
                                             </div>
@@ -4804,7 +5058,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             </div>
                             {visibleActionItems.length > 0 && !isEndgameExorciseRollReview ? (
-                                <div className="pointer-events-none absolute inset-x-0 bottom-1 z-50 hidden flex-col items-center justify-end gap-0.5 md:flex">
+                                <div
+                                    data-testid="betrayal-action-rail"
+                                    data-mobile-role={isPhoneLandscapeLayout ? 'pc-action-rail-adapted' : undefined}
+                                    className={`pointer-events-none absolute inset-x-0 z-50 flex-col items-center justify-end gap-0.5 ${
+                                        isPhoneLandscapeLayout
+                                            ? 'bottom-[calc(var(--safe-area-bottom)+0.2rem)] flex'
+                                            : 'bottom-1 hidden md:flex'
+                                    }`}
+                                >
                                     {core.recommendedAction === 'trade' ? (
                                         <div
                                             data-testid="betrayal-trade-flow-banner"
@@ -4878,7 +5140,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                     <section
                         data-testid="betrayal-status-rail"
-                        className="pointer-events-auto absolute bottom-3 right-3 top-3 z-40 flex w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1"
+                        className={`pointer-events-auto absolute bottom-3 right-3 top-3 z-40 w-[216px] min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 md:px-1 ${
+                            isPhoneLandscapeLayout ? 'hidden' : 'flex'
+                        }`}
                     >
                         <article
                             id="betrayal-decks-section"
@@ -4970,7 +5234,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="mt-0.5 flex justify-start gap-1.5">
                             <button
                                 type="button"
-                                onClick={() => setReferenceOpen(true)}
+                                onClick={openScenarioReference}
                                 data-testid="betrayal-open-scenario"
                                 data-tutorial-id="betrayal-reference-entry"
                                 className="inline-flex h-[40px] min-w-[84px] items-center gap-1.5 rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] px-2.5 text-[#d8bf81] transition hover:border-[#8b744d]"
@@ -5133,15 +5397,53 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         >
                             {t('board.reference.close')}
                         </button>
-                        <OptimizedImage
-                            src={currentReferencePage.asset}
-                            locale={effectiveLocale}
-                            alt={t(`board.reference.${currentReferencePage.id}`)}
-                            data-testid="betrayal-reference-card-image"
-                            data-asset-src={currentReferencePage.asset}
-                            className="h-full w-full object-contain shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
-                            draggable={false}
-                        />
+                        {currentReferencePage.id === 'scenario' ? (
+                            <div
+                                data-testid="betrayal-scenario-objective-page"
+                                data-reference-page="scenario"
+                                className="flex h-full w-full flex-col justify-between overflow-hidden border border-[#7b633d] bg-[linear-gradient(180deg,rgba(31,24,15,0.98),rgba(10,12,9,0.98))] p-6 text-[#f3e0b4] shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
+                            >
+                                <div>
+                                    <div className="text-[12px] font-bold uppercase tracking-[0.28em] text-[#c9a35e]">{t('board.scenario.title')}</div>
+                                    <div className="mt-2 text-[32px] font-bold tracking-[0.08em] text-[#fff0b8]">{t('board.scenario.hauntValue')}</div>
+                                    <div className="mt-1 text-[13px] uppercase tracking-[0.2em] text-[#9fb98b]">{scenarioConfig.presentation.hauntObjective}</div>
+                                </div>
+                                <div className="grid gap-3">
+                                    <div className="rounded-[14px] border border-[rgba(211,179,109,0.28)] bg-[rgba(11,13,10,0.64)] p-4">
+                                        <div className="text-[12px] font-bold tracking-[0.22em] text-[#d6b56d]">{t('board.scenario.objectiveLabel')}</div>
+                                        <div className="mt-2 text-[17px] font-semibold leading-7 text-[#fff5cf]">{t('board.scenario.objective')}</div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-[12px] border border-[rgba(142,186,197,0.22)] bg-[rgba(14,24,25,0.55)] p-3">
+                                            <div className="text-[11px] font-bold tracking-[0.18em] text-[#bde2e7]">{t('board.scenario.heroGoalLabel')}</div>
+                                            <div className="mt-1 text-[13px] leading-5 text-[#d8eef1]">{t('board.scenario.heroGoal')}</div>
+                                        </div>
+                                        <div className="rounded-[12px] border border-[rgba(207,113,95,0.22)] bg-[rgba(31,16,13,0.52)] p-3">
+                                            <div className="text-[11px] font-bold tracking-[0.18em] text-[#e8b09f]">{t('board.scenario.traitorGoalLabel')}</div>
+                                            <div className="mt-1 text-[13px] leading-5 text-[#f1d2c8]">{t('board.scenario.traitorGoal')}</div>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-[12px] border border-[rgba(159,123,197,0.22)] bg-[rgba(23,17,31,0.52)] p-3">
+                                        <div className="text-[11px] font-bold tracking-[0.18em] text-[#d9c4ef]">{t('board.scenario.monsterGoalLabel')}</div>
+                                        <div className="mt-1 text-[13px] leading-5 text-[#eadcf7]">{t('board.scenario.monsterGoal')}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between border-t border-[rgba(211,179,109,0.24)] pt-3 text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
+                                    <span>{t('board.scenario.statusLabel')}: {core.phase === 'haunt' ? scenarioConfig.presentation.hauntObjective : scenarioConfig.presentation.runtimeObjective}</span>
+                                    <span>{currentReferencePageIndex + 1}/{referencePages.length}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <OptimizedImage
+                                src={currentReferencePage.asset ?? ASSETS.playerReference.front}
+                                locale={effectiveLocale}
+                                alt={t(`board.reference.${currentReferencePage.id}`)}
+                                data-testid="betrayal-reference-card-image"
+                                data-asset-src={currentReferencePage.asset}
+                                className="h-full w-full object-contain shadow-[0_24px_56px_rgba(0,0,0,0.44)]"
+                                draggable={false}
+                            />
+                        )}
                     </div>
                 </MagnifyOverlay>
 
@@ -5188,48 +5490,76 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     ) : null}
                 </MagnifyOverlay>
 
-                {core.recommendedAction === 'trade' || isEndgameExorciseRollReview ? null : (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-[calc(var(--safe-area-bottom)+0.75rem)] md:hidden">
-                    <div className="pointer-events-auto rounded-[18px] border border-[#5f4d31] bg-[rgba(14,20,18,0.92)] p-2 shadow-[0_16px_32px_rgba(0,0,0,0.34)] backdrop-blur-sm">
-                        <div className="mb-2 flex items-center gap-2">
-                            <div className="min-w-0 flex-1 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2">
-                                <div className="text-[10px] uppercase tracking-[0.14em] text-[#a89d84]">
-                                    {t('board.mobile.selectedLabel')}
+                {core.recommendedAction === 'trade' || isEndgameExorciseRollReview || isPhoneLandscapeLayout ? null : (
+                <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 ${
+                    isPhoneLandscapeLayout ? 'hidden' : 'md:hidden'
+                } ${
+                    isPhoneLandscapeLayout
+                        ? 'px-1.5 pb-[calc(var(--safe-area-bottom)+0.2rem)]'
+                        : 'px-3 pb-[calc(var(--safe-area-bottom)+0.75rem)]'
+                }`}>
+                    <div
+                        data-testid="betrayal-mobile-action-rail"
+                        data-mobile-role={isPhoneLandscapeLayout ? 'native-action-rail' : undefined}
+                        className={`pointer-events-auto ${
+                            isPhoneLandscapeLayout
+                                ? 'min-h-[56px] border-0 bg-transparent p-0 shadow-none'
+                                : 'rounded-[18px] border border-[#5f4d31] bg-[rgba(14,20,18,0.92)] p-2 shadow-[0_16px_32px_rgba(0,0,0,0.34)] backdrop-blur-sm'
+                        }`}
+                        style={isPhoneLandscapeLayout ? { minHeight: 56 } : undefined}
+                    >
+                        <div className={`${isPhoneLandscapeLayout ? 'grid grid-cols-1 items-stretch gap-1.5' : 'mb-2 flex items-center gap-2'}`}>
+                            {isPhoneLandscapeLayout ? (
+                                <div className="sr-only" data-testid="betrayal-mobile-a11y-status">
+                                    <span data-testid="betrayal-mobile-selected-card">
+                                        {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
+                                    </span>
+                                    <span data-testid="betrayal-mobile-use-status">{useStatusText}</span>
+                                    {shouldShowMobileTradeStatus ? (
+                                        <span data-testid="betrayal-mobile-trade-status">{tradeStatusText}</span>
+                                    ) : null}
+                                    <span data-testid="betrayal-mobile-action-cue">{actionCueText}</span>
                                 </div>
-                                <div
-                                    className="truncate text-sm font-medium text-[#f3ead6]"
-                                    data-testid="betrayal-mobile-selected-card"
-                                >
-                                    {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
-                                </div>
-                                <div
-                                    className={`mt-1 truncate text-[11px] ${selectedCardUseDisabled ? 'text-[#f0c1a2]' : 'text-[#8db29a]'}`}
-                                    data-testid="betrayal-mobile-use-status"
-                                >
-                                    {useStatusText}
-                                </div>
-                                {shouldShowMobileTradeStatus ? (
-                                    <div
-                                        className={`mt-1 truncate text-[11px] ${
-                                            selectedTradeTarget ? 'text-[#8db29a]' : 'text-[#b8ae98]'
-                                        }`}
-                                        data-testid="betrayal-mobile-trade-status"
-                                    >
-                                        {tradeStatusText}
+                            ) : (
+                                <div className="min-w-0 flex-1 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-[#a89d84]">
+                                        {t('board.mobile.selectedLabel')}
                                     </div>
-                                ) : null}
-                                <div
-                                    className="mt-1 truncate text-[11px] text-[#dbcfae]"
-                                    data-testid="betrayal-mobile-action-cue"
-                                >
-                                    {actionCueText}
+                                    <div
+                                        className="truncate text-sm font-medium text-[#f3ead6]"
+                                        data-testid="betrayal-mobile-selected-card"
+                                    >
+                                        {selectedInventoryCard?.name || t('board.status.noSelectedCard')}
+                                    </div>
+                                    <div
+                                        className={`mt-1 truncate text-[11px] ${selectedCardUseDisabled ? 'text-[#f0c1a2]' : 'text-[#8db29a]'}`}
+                                        data-testid="betrayal-mobile-use-status"
+                                    >
+                                        {useStatusText}
+                                    </div>
+                                    {shouldShowMobileTradeStatus ? (
+                                        <div
+                                            className={`mt-1 truncate text-[11px] ${
+                                                selectedTradeTarget ? 'text-[#8db29a]' : 'text-[#b8ae98]'
+                                            }`}
+                                            data-testid="betrayal-mobile-trade-status"
+                                        >
+                                            {tradeStatusText}
+                                        </div>
+                                    ) : null}
+                                    <div
+                                        className="sr-only"
+                                        data-testid="betrayal-mobile-action-cue"
+                                    >
+                                        {actionCueText}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => scrollToSection('betrayal-inventory-section')}
                                 data-testid="betrayal-mobile-jump-inventory"
-                                className="rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]"
+                                className={`${isPhoneLandscapeLayout ? 'hidden' : ''} shrink-0 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]`}
                             >
                                 {t('board.sections.inventory')}
                             </button>
@@ -5237,12 +5567,13 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 type="button"
                                 onClick={() => scrollToSection('betrayal-decks-section')}
                                 data-testid="betrayal-mobile-jump-decks"
-                                className="rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]"
+                                className={`${isPhoneLandscapeLayout ? 'hidden' : ''} shrink-0 rounded-[14px] border border-[#5a4930] bg-[rgba(27,20,16,0.82)] px-3 py-2 text-xs font-medium text-[#dbcfae]`}
                             >
                                 {t('board.sections.decks')}
                             </button>
-                        </div>
-                        <div className="grid grid-cols-5 gap-2">
+                            <div className={`grid min-w-0 ${
+                                isPhoneLandscapeLayout ? 'grid-cols-5' : 'flex-1 grid-cols-5'
+                            } ${isPhoneLandscapeLayout ? 'min-h-[56px] items-stretch gap-3' : 'gap-2'}`}>
                             {visibleActionItems.map((action) => {
                                 const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
                                 const isRecommended = action.id === core.recommendedAction
@@ -5254,19 +5585,41 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         onClick={actionHandlerMap[action.id]}
                                         disabled={action.disabled}
                                         data-testid={`betrayal-mobile-dock-${action.id}`}
-                                        className={`flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-[14px] border px-1.5 py-1.5 text-[10px] font-medium transition ${
+                                        className={`flex flex-col items-center justify-center transition ${
+                                            isPhoneLandscapeLayout
+                                                ? 'min-h-[56px] gap-0.5 rounded-[5px] border-0 bg-transparent px-1 py-1 text-[11px] font-bold uppercase tracking-[0.08em] shadow-none'
+                                                : 'min-h-[54px] gap-1 rounded-[14px] border px-1.5 py-1.5 text-[10px] font-medium'
+                                        } ${
                                             action.disabled
-                                                ? 'cursor-not-allowed border-[#3e3526] bg-[rgba(22,17,13,0.72)] text-[#6f6758]'
+                                                ? isPhoneLandscapeLayout
+                                                    ? 'cursor-not-allowed text-[#5f584d] opacity-55'
+                                                    : 'cursor-not-allowed border-[#3e3526] bg-[rgba(22,17,13,0.72)] text-[#6f6758]'
                                                 : isRecommended
-                                                    ? 'border-[#c9a35e] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]'
-                                                    : 'border-[#5c4d35] bg-[rgba(30,22,17,0.88)] text-[#d8ccb0]'
+                                                    ? isPhoneLandscapeLayout
+                                                        ? 'text-[#f6ffc4] underline decoration-[#f2cc79] decoration-2 underline-offset-4 hover:text-[#fbffd2]'
+                                                        : 'border-[#c9a35e] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]'
+                                                    : isPhoneLandscapeLayout
+                                                        ? 'text-[#ead8a8] hover:text-[#fff0ba]'
+                                                        : 'border-[#5c4d35] bg-[rgba(30,22,17,0.88)] text-[#d8ccb0]'
                                         }`}
+                                        style={isPhoneLandscapeLayout ? {
+                                            backgroundColor: 'transparent',
+                                            backgroundImage: 'none',
+                                            border: 0,
+                                            boxShadow: 'none',
+                                            textShadow: action.disabled
+                                                ? 'none'
+                                                : isRecommended
+                                                    ? '0 1px 2px rgba(0,0,0,0.9), 0 0 14px rgba(238,244,168,0.48)'
+                                                    : '0 1px 2px rgba(0,0,0,0.88), 0 0 8px rgba(234,216,168,0.28)',
+                                        } : undefined}
                                     >
-                                        <Icon size={14} />
+                                        <Icon size={isPhoneLandscapeLayout ? 18 : 14} strokeWidth={isPhoneLandscapeLayout ? 2.35 : undefined} />
                                         <span>{action.label}</span>
                                     </button>
                                 );
                             })}
+                            </div>
                         </div>
                     </div>
                 </div>

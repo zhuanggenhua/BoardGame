@@ -20,7 +20,7 @@ set -euo pipefail
 #
 # 环境变量（可选，用于非交互环境）：
 #   JWT_SECRET=xxx bash deploy-image.sh
-#   DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=300 bash deploy-image.sh update
+#   DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=10800 bash deploy-image.sh update
 #
 # 架构：Cloudflare CDN (HTTPS) → 服务器 80 端口 → Docker web 容器 (NestJS monolith) → 内部 game-server
 # 同域部署，无 CORS 问题。Cloudflare 自动缓存静态资源，服务器只承担 API 和 WebSocket 带宽。
@@ -56,7 +56,7 @@ PUBLIC_ENTRY_SYNC_RETRY="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
 PUBLIC_ENTRY_SYNC_DELAY="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
 REQUIRE_PUBLIC_ENTRY_SYNC="${REQUIRE_PUBLIC_ENTRY_SYNC:-1}"
 CLOUDFLARE_PURGE_MODE="${CLOUDFLARE_PURGE_MODE:-auto}"
-DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-300}"
+DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-10800}"
 
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
@@ -1250,7 +1250,7 @@ ensure_local_target_image() {
 
 pull_image_ref() {
   local image_ref="${1:-}"
-  local timeout_seconds="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-300}"
+  local timeout_seconds="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-10800}"
   local pull_status=0
 
   if [ -z "$image_ref" ]; then

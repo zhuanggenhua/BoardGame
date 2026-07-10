@@ -14,6 +14,7 @@ import type {
     MatchRoomOnlineStageAdapter,
     MatchRoomTutorialStageAdapter,
 } from './useMatchRoomPageRuntimeModel';
+import { getDefaultSeatController } from '../engine/ai/seatControllers';
 
 function buildMatchRoomOnlineAiRuntimeModel(args: {
     matchId: string;
@@ -150,6 +151,18 @@ export function buildMatchRoomTutorialBoardRuntimeModel(args: {
         numPlayers: stage.tutorialManifest?.numPlayers
             ?? stage.engineConfig.minPlayers
             ?? 2,
+        seatControllers: Object.fromEntries(
+            Array.from(
+                {
+                    length: stage.tutorialManifest?.numPlayers
+                        ?? stage.engineConfig.minPlayers
+                        ?? 2,
+                },
+                (_, index) => [String(index), getDefaultSeatController(index, stage.tutorialManifest?.numPlayers
+                    ?? stage.engineConfig.minPlayers
+                    ?? 2, stage.aiSupport)],
+            ),
+        ),
         onCommandRejected: stage.onCommandRejected,
         title: tLobby('matchRoom.title.tutorial'),
         preparingDescription: tLobby('matchRoom.preparingMatch'),

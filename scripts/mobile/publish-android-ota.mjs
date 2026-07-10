@@ -2,8 +2,8 @@ import { config } from 'dotenv';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { zipSync } from 'fflate';
+import { publishPrimaryAssetBatch } from '../assets/publish-primary-assets.mjs';
 import {
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
@@ -12,6 +12,7 @@ import {
     DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
     DIST_LOGOS_RETAIN_RELATIVE_PATHS,
 } from '../deploy/prune-web-dist-assets.mjs';
+import { waitForServerAssets } from './wait-for-server-assets.mjs';
 
 const rootDir = process.cwd();
 const OTA_REMOTE_EXCLUDED_PREFIXES = [
@@ -255,23 +256,6 @@ if (isNonReleaseAndroidAppId(androidBuildMeta.appId.trim())) {
     throw new Error(`dist/android-build-meta.json 检测到测试壳 appId=${androidBuildMeta.appId.trim()}，已阻止 OTA 发布。`);
 }
 
-if (!dryRun) {
-    const requiredEnv = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME'];
-    const missingEnv = requiredEnv.filter((key) => !process.env[key]);
-    if (missingEnv.length > 0) {
-        throw new Error(`缺少 R2 环境变量: ${missingEnv.join(', ')}`);
-    }
-}
-
-const s3Client = new S3Client({
-    region: 'auto',
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    },
-});
-
 const classifyOtaFile = (relativePath) => {
     if (OTA_REMOTE_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
         return 'optional-skip';
@@ -367,22 +351,44 @@ const manifest = {
 };
 const publishedAtHumanTime = formatHumanTime(publishedAt);
 
-const uploadObject = async (key, body, contentType, cacheControl) => {
-    await s3Client.send(new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Key: key,
-        Body: body,
-        ContentType: contentType,
-        CacheControl: cacheControl,
-    }));
-};
+const versionManifestBody = `${JSON.stringify(manifest, null, 2)}\n`;
+const latestManifestBody = versionManifestBody;
 
 if (!dryRun) {
-    await uploadObject(bundleKey, zipBuffer, 'application/zip', 'public, max-age=31536000, immutable');
-    await uploadObject(versionManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
-    if (!skipLatest) {
-        await uploadObject(latestManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
-    }
+    await publishPrimaryAssetBatch([
+        {
+            key: bundleKey,
+            body: zipBuffer,
+            size: zipBuffer.length,
+            contentType: 'application/zip',
+            cacheControl: 'public, max-age=31536000, immutable',
+            backupToR2: true,
+        },
+        {
+            key: versionManifestKey,
+            body: versionManifestBody,
+            size: Buffer.byteLength(versionManifestBody),
+            contentType: 'application/json',
+            cacheControl: 'public, max-age=60, must-revalidate',
+        },
+        ...(!skipLatest
+            ? [{
+                key: latestManifestKey,
+                body: latestManifestBody,
+                size: Buffer.byteLength(latestManifestBody),
+                contentType: 'application/json',
+                cacheControl: 'public, max-age=60, must-revalidate',
+                backupToR2: true,
+            }]
+            : []),
+    ]);
+}
+
+if (!dryRun && !skipLatest) {
+    await waitForServerAssets([{
+        url: bundleUrl,
+        expectedSize: zipBuffer.length,
+    }]);
 }
 
 const distStats = statSync(path.join(distDir, 'index.html'));

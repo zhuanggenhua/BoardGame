@@ -390,7 +390,7 @@ describe('Paladins DIY faction playable behavior', () => {
         const playPrompt = getSimpleChoicePrompt(special.finalState, 'paladins_heavenly_soldiers_descend');
         const extra = getPromptOption(playPrompt, option => option.value?.cardUid === 'extra', 'extra minion');
         const played = respondToPrompt(special.finalState, extra.id, '0');
-        expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('extra');
+        expect(played.finalState.core.bases[0].minions.filter(minion => minion.uid === 'extra')).toHaveLength(1);
         const talentPrompt = getSimpleChoicePrompt(played.finalState, 'paladins_heavenly_soldiers_descend_talent');
         const mentor = getPromptOption(talentPrompt, option => option.value?.minionUid === 'extra', 'mentor talent');
         const talentChosen = respondToPrompt(played.finalState, mentor.id, '0');

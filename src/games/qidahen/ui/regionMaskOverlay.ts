@@ -2,7 +2,17 @@ import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from './mapGra
 
 type OverlayRgba = readonly [number, number, number, number];
 
-export type RegionMaskOverlayToneKey = 'selected' | 'source' | 'dispatch' | 'hovered' | 'pending' | 'ming' | 'mongol' | 'jin' | 'neutral';
+export type RegionMaskOverlayToneKey =
+    | 'selected'
+    | 'source'
+    | 'dispatch'
+    | 'activeDispatch'
+    | 'hovered'
+    | 'pending'
+    | 'ming'
+    | 'mongol'
+    | 'jin'
+    | 'neutral';
 
 type RegionMaskOverlayToneConfig = {
     fill: OverlayRgba;
@@ -54,15 +64,26 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         outerGlowRadius: 5,
     },
     dispatch: {
-        fill: [46, 166, 82, 96],
+        fill: [46, 166, 82, 58],
         stroke: [238, 255, 226, 252],
         innerStrokeRadius: 2,
-        outerFill: [46, 166, 82, 78],
+        outerFill: [46, 166, 82, 46],
         outerFillRadius: 4,
         outerStroke: [161, 246, 170, 244],
         outerStrokeRadius: 5,
-        outerGlow: [86, 214, 118, 110],
+        outerGlow: [86, 214, 118, 92],
         outerGlowRadius: 9,
+    },
+    activeDispatch: {
+        fill: [80, 206, 105, 76],
+        stroke: [248, 255, 226, 255],
+        innerStrokeRadius: 2,
+        outerFill: [80, 206, 105, 58],
+        outerFillRadius: 5,
+        outerStroke: [206, 255, 190, 255],
+        outerStrokeRadius: 7,
+        outerGlow: [112, 238, 124, 132],
+        outerGlowRadius: 12,
     },
     hovered: {
         fill: [238, 190, 94, 82],

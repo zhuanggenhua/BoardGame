@@ -22,7 +22,12 @@ import type {
     MatchStorage,
     StoredMatchState,
 } from '../storage';
-import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
+import type {
+    TrainingCompletedMatch,
+    TrainingDataRecorder,
+    TrainingDecisionSample,
+    TrainingMatchCommitResult,
+} from '../trainingData';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
 import diceThroneEngineConfig from '../../../games/dicethrone/game';
 import splendorEngineConfig from '../../../games/splendor/game';
@@ -573,15 +578,43 @@ const nextTick = async (): Promise<void> => {
 };
 
 class MockTrainingDataRecorder implements TrainingDataRecorder {
-    readonly samples: TrainingDecisionSample[] = [];
+    readonly pending = new Map<string, TrainingDecisionSample[]>();
+    readonly completedMatches: TrainingDecisionSample[][] = [];
 
-    recordDecisionSample(sample: TrainingDecisionSample): void {
-        this.samples.push(sample);
+    stageDecisionSample(sample: TrainingDecisionSample): void {
+        const samples = this.pending.get(sample.matchId) ?? [];
+        samples.push(sample);
+        this.pending.set(sample.matchId, samples);
+    }
+
+    commitCompletedMatch(match: TrainingCompletedMatch): TrainingMatchCommitResult {
+        const samples = this.pending.get(match.matchId) ?? [];
+        if (match.finalSample) samples.push(match.finalSample);
+        this.pending.delete(match.matchId);
+        this.completedMatches.push(samples);
+        return {
+            status: 'committed',
+            committedBytes: 1,
+            gameBytes: 1,
+            maxBytes: 300 * 1024 * 1024,
+        };
+    }
+
+    discardPendingMatch(match: Pick<TrainingCompletedMatch, 'matchId'>): void {
+        this.pending.delete(match.matchId);
     }
 }
 
 class FailingTrainingDataRecorder implements TrainingDataRecorder {
-    recordDecisionSample(): Promise<void> {
+    stageDecisionSample(): Promise<void> {
+        return Promise.reject(new Error('disk-full'));
+    }
+
+    commitCompletedMatch(): Promise<TrainingMatchCommitResult> {
+        return Promise.reject(new Error('disk-full'));
+    }
+
+    discardPendingMatch(): Promise<void> {
         return Promise.reject(new Error('disk-full'));
     }
 }
@@ -3485,7 +3518,10 @@ describe('GameTransportServer（离座与重连）', () => {
 
         await storage.createMatch('match-train-1', {
             initialState: createStoredState(),
-            metadata: createMetadata('cred-0'),
+            metadata: {
+                ...createMetadata('cred-0'),
+                createdAt: Date.now() - 1000,
+            },
         });
 
         const server = new GameTransportServer({
@@ -3493,6 +3529,7 @@ describe('GameTransportServer（离座与重连）', () => {
             storage,
             games: [createEngineConfigWithGameOver()],
             trainingDataRecorder: recorder,
+            trainingDataMinCompletedMatchDurationMs: 1,
             rulesVersion: 'test-rules-v1',
             authenticate: async (_matchID, playerID, credentials, metadata) => {
                 return metadata.players[playerID]?.credentials === credentials;
@@ -3505,8 +3542,9 @@ describe('GameTransportServer（离座与重连）', () => {
         await socket.clientEmit('sync', 'match-train-1', '0', 'cred-0');
         await socket.clientEmit('command', 'match-train-1', 'TEST_CMD', { foo: 'bar' }, 'cred-0');
 
-        expect(recorder.samples).toHaveLength(1);
-        expect(recorder.samples[0]).toMatchObject({
+        expect(recorder.completedMatches).toHaveLength(1);
+        expect(recorder.completedMatches[0]).toHaveLength(1);
+        expect(recorder.completedMatches[0][0]).toMatchObject({
             rulesVersion: 'test-rules-v1',
             gameId: 'test-game',
             matchId: 'match-train-1',
@@ -3520,8 +3558,8 @@ describe('GameTransportServer（离座与重连）', () => {
             },
             legalActions: [],
         });
-        expect(recorder.samples[0].preState).toBeTruthy();
-        expect(recorder.samples[0].postState).toBeTruthy();
+        expect(recorder.completedMatches[0][0].preState).toBeTruthy();
+        expect(recorder.completedMatches[0][0].postState).toBeTruthy();
     });
 
     it('教程 AI 裸 RESPOND 经过 socket command 入口时，应自动补当前 interactionId', async () => {
@@ -3752,7 +3790,10 @@ describe('GameTransportServer（离座与重连）', () => {
 
         await storage.createMatch('match-train-fail', {
             initialState: createStoredState(),
-            metadata: createMetadata('cred-0'),
+            metadata: {
+                ...createMetadata('cred-0'),
+                createdAt: Date.now() - 1000,
+            },
         });
 
         const server = new GameTransportServer({
@@ -3760,6 +3801,7 @@ describe('GameTransportServer（离座与重连）', () => {
             storage,
             games: [createEngineConfigWithGameOver()],
             trainingDataRecorder: new FailingTrainingDataRecorder(),
+            trainingDataMinCompletedMatchDurationMs: 1,
             authenticate: async (_matchID, playerID, credentials, metadata) => {
                 return metadata.players[playerID]?.credentials === credentials;
             },
@@ -3777,7 +3819,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(hasEvent(socket, 'error')).toBe(false);
     });
 
-    it('训练采集应在达到时长门槛后才写入', async () => {
+    it('未完成对局即使超过时长门槛也不得提交正式训练数据', async () => {
         vi.useFakeTimers();
         const now = Date.now();
         const minDurationMs = 10 * 60 * 1000;
@@ -3801,7 +3843,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 storage,
                 games: [createEngineConfig()],
                 trainingDataRecorder: recorder,
-                trainingDataMinMatchDurationMs: minDurationMs,
+                trainingDataMinCompletedMatchDurationMs: minDurationMs,
                 authenticate: async (_matchID, playerID, credentials, metadata) => {
                     return metadata.players[playerID]?.credentials === credentials;
                 },
@@ -3813,17 +3855,51 @@ describe('GameTransportServer（离座与重连）', () => {
             await socket.clientEmit('sync', 'match-train-duration', '0', 'cred-duration');
             await socket.clientEmit('command', 'match-train-duration', 'TEST_CMD', { foo: 'bar' }, 'cred-duration');
 
-            expect(recorder.samples).toHaveLength(0);
+            expect(recorder.completedMatches).toHaveLength(0);
 
             vi.setSystemTime(now + minDurationMs + 1000);
             await socket.clientEmit('command', 'match-train-duration', 'TEST_CMD_2', { foo: 'baz' }, 'cred-duration');
 
-            expect(recorder.samples).toHaveLength(2);
-            expect(recorder.samples[0].command.type).toBe('TEST_CMD');
-            expect(recorder.samples[1].command.type).toBe('TEST_CMD_2');
+            expect(recorder.completedMatches).toHaveLength(0);
+            expect(recorder.pending.get('match-train-duration')?.map((sample) => sample.command.type))
+                .toEqual(['TEST_CMD', 'TEST_CMD_2']);
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it('完整对局低于时长门槛时不得提交正式训练数据', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const recorder = new MockTrainingDataRecorder();
+
+        await storage.createMatch('match-train-too-short', {
+            initialState: createStoredState(),
+            metadata: {
+                ...createMetadata('cred-too-short'),
+                createdAt: Date.now(),
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithGameOver()],
+            trainingDataRecorder: recorder,
+            trainingDataMinCompletedMatchDurationMs: 10 * 60 * 1000,
+            authenticate: async (_matchID, playerID, credentials, metadata) => (
+                metadata.players[playerID]?.credentials === credentials
+            ),
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-train-too-short');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-train-too-short', '0', 'cred-too-short');
+        await socket.clientEmit('command', 'match-train-too-short', 'TEST_CMD', {}, 'cred-too-short');
+
+        expect(recorder.completedMatches).toHaveLength(0);
+        expect(recorder.pending.has('match-train-too-short')).toBe(false);
     });
 
     it('默认应跳过 AI seat 的训练样本，只记录真人 seat', async () => {
@@ -3835,6 +3911,7 @@ describe('GameTransportServer（离座与重连）', () => {
             initialState: createStoredState(),
             metadata: {
                 ...createMetadata('cred-ai'),
+                createdAt: Date.now() - 1000,
                 players: {
                     '0': { name: '玩家0', credentials: 'cred-ai', isConnected: false },
                     '1': { name: 'AI 玩家1', credentials: 'cred-ai-seat-1', isConnected: false },
@@ -3851,8 +3928,9 @@ describe('GameTransportServer（离座与重连）', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithGameOver()],
+            games: [createEngineConfig()],
             trainingDataRecorder: recorder,
+            trainingDataMinCompletedMatchDurationMs: 1,
             authenticate: async (_matchID, playerID, credentials, metadata) => {
                 return metadata.players[playerID]?.credentials === credentials;
             },
@@ -3864,15 +3942,15 @@ describe('GameTransportServer（离座与重连）', () => {
         await socket.clientEmit('sync', 'match-train-human-only', '0', 'cred-ai');
         await socket.clientEmit('command', 'match-train-human-only', 'TEST_CMD', { foo: 'bar' }, 'cred-ai');
 
-        expect(recorder.samples).toHaveLength(1);
-        expect(recorder.samples[0]).toMatchObject({
+        expect(recorder.pending.get('match-train-human-only')).toHaveLength(1);
+        expect(recorder.pending.get('match-train-human-only')?.[0]).toMatchObject({
             playerId: '0',
             seatControllerType: 'human',
         });
 
         await server.executeCommand('match-train-human-only', '1', 'AI_CMD', { auto: true });
 
-        expect(recorder.samples).toHaveLength(1);
+        expect(recorder.pending.get('match-train-human-only')).toHaveLength(1);
     });
 
     it('manifest 声明 all-seats 时应继续采集 AI seat 样本', async () => {
@@ -3884,6 +3962,7 @@ describe('GameTransportServer（离座与重连）', () => {
             initialState: createStoredState(),
             metadata: {
                 ...createMetadata('cred-ai-all'),
+                createdAt: Date.now() - 1000,
                 players: {
                     '0': { name: '玩家0', credentials: 'cred-ai-all', isConnected: false },
                     '1': { name: 'AI 玩家1', credentials: 'cred-ai-seat-1', isConnected: false },
@@ -3900,12 +3979,13 @@ describe('GameTransportServer（离座与重连）', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithGameOver()],
+            games: [createEngineConfig()],
             gameManifests: {
                 'test-game': {
                     ai: {
                         capture: true,
                         capturePolicy: 'all-seats',
+                        trainingMinCompletedDurationMs: 1,
                         localAi: true,
                         remoteAi: true,
                     },
@@ -3923,8 +4003,8 @@ describe('GameTransportServer（离座与重连）', () => {
         await socket.clientEmit('sync', 'match-train-all-seats', '0', 'cred-ai-all');
         await server.executeCommand('match-train-all-seats', '1', 'AI_CMD', { auto: true });
 
-        expect(recorder.samples).toHaveLength(1);
-        expect(recorder.samples[0]).toMatchObject({
+        expect(recorder.pending.get('match-train-all-seats')).toHaveLength(1);
+        expect(recorder.pending.get('match-train-all-seats')?.[0]).toMatchObject({
             playerId: '1',
             seatControllerType: 'local-ai',
             command: {

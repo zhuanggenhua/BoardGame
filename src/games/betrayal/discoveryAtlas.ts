@@ -30,6 +30,10 @@ export const EVENT_FRONT_ATLAS: SpriteAtlasConfig = {
     rowHeights: [1275, 1275, 1275, 1275, 1276],
 };
 
+export const EVENT_FRONT_ATLAS_IMAGE_PATHS = [
+    'betrayal/cards/event-front-atlas',
+];
+
 export const EVENT_FRONT_FRAME_BY_TITLE: Record<string, number> = {
     标本剥制: 0,
     磁带播放器: 2,
