@@ -331,10 +331,7 @@ if (!dryRun) {
 }
 
 if (!dryRun && !skipLatest) {
-    await waitForServerAssets([{
-        url: bundleUrl,
-        expectedSize: zipBuffer.length,
-    }]);
+    await waitForServerAssets([bundleUrl]);
 }
 
 const distStats = statSync(path.join(distDir, 'index.html'));

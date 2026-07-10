@@ -20,6 +20,7 @@
 4. OTA zip 只承载 H5 代码、样式、中文语言包、字体、必要的小型公共文件和资源清单。
 5. `assets/**` 下的嵌套游戏图片、音频、图集配置、状态图集 JSON、缩略图、首页大图和 `logos/**` 不进入 OTA；这些对象继续由服务器资源主源、移动游戏包或已安装资源提供。
 6. Android embedded APK 可以为首装或离线兜底保留必要本地资源，但该 embedded 白名单不得直接复用于 OTA zip。
+7. 发布后健康检查只允许对真实的服务器传播延迟做长时间重试；URL 类型或参数格式错误必须立即失败，不得用 3 小时等待上限掩盖程序错误。
 
 ## 不覆盖范围
 
@@ -31,6 +32,7 @@
 - 任意 OTA 发布入口生成的 manifest 均包含 `forceUpdate: true`。
 - 任意关闭 OTA 强制更新的参数均无法产出可发布 manifest。
 - 自动启动检查遇到强制 OTA 时返回立即应用模式，并调用 bundle 切换而不是后台排队。
+- 发布脚本向健康检查传入合法 URL 字符串；若出现 `Invalid URL`、`[object Object]` 或等价参数错误，任务必须立即失败并显示根因。
 - OTA zip 不包含：
   - `assets/atlas-configs/smashup/2833984701.json`
   - `assets/common/images/home-v2/book-catalog-wide/1.png`
