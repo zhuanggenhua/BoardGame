@@ -16,6 +16,7 @@ import {
     changeMinionController,
     getMinionPower,
     grantContextualExtraAction,
+    grantContextualExtraMinion,
 } from '../domain/abilityHelpers';
 import { isMinionTargetAllowed } from '../domain/effectSemantics';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
@@ -332,6 +333,10 @@ function kittyCatsMuffin(ctx: AbilityContext): AbilityResult {
     return queueTemporaryControlChoice(ctx, 'kitty_cats_muffin', 5);
 }
 
+function kittyCatsMuffinPod(ctx: AbilityContext): AbilityResult {
+    return queueTemporaryControlChoice(ctx, 'kitty_cats_muffin_pod', 3);
+}
+
 function kittyCatsQueenFluffy(ctx: AbilityContext): AbilityResult {
     return queueTemporaryControlChoice(ctx, 'kitty_cats_queen_fluffy', 3);
 }
@@ -342,6 +347,10 @@ function kittyCatsCatsPaw(ctx: AbilityContext): AbilityResult {
 
 function kittyCatsCanHasCheeseburger(ctx: AbilityContext): AbilityResult {
     return queueTemporaryControlChoice(ctx, 'kitty_cats_can_has_cheeseburger', 5, ctx.baseIndex, 'action');
+}
+
+function kittyCatsCanHasCheeseburgerPod(ctx: AbilityContext): AbilityResult {
+    return queueTemporaryControlChoice(ctx, 'kitty_cats_can_has_cheeseburger_pod', 3, ctx.baseIndex, 'action');
 }
 
 function kittyCatsCatFight(ctx: AbilityContext): AbilityResult {
@@ -366,6 +375,17 @@ function kittyCatsNineLives(ctx: AbilityContext): AbilityResult {
     );
 }
 
+function kittyCatsNineLivesPod(ctx: AbilityContext): AbilityResult {
+    return queueMinionChoice(
+        ctx,
+        'kitty_cats_nine_lives_pod',
+        '九条命 POD：消灭你的一个随从并额外打出一个随从',
+        collectMinions(ctx.matchState.core, minion => minion.controller === ctx.playerId),
+        'minion',
+        'ui.kitty_cats_nine_lives_title',
+    );
+}
+
 function kittyCatsWhiskers(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [grantContextualExtraAction(ctx, 'kitty_cats_whiskers')];
     const targets = collectMinions(ctx.matchState.core, minion => minion.controller === ctx.playerId);
@@ -377,6 +397,25 @@ function kittyCatsWhiskers(ctx: AbilityContext): AbilityResult {
         buildMinionOptions(ctx.matchState.core, targets),
         {
             sourceId: 'kitty_cats_whiskers',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.kitty_cats_whiskers_title',
+        },
+    );
+    return { events, matchState: queueInteraction(ctx.matchState, prompt) };
+}
+
+function kittyCatsWhiskersPod(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [grantContextualExtraAction(ctx, 'kitty_cats_whiskers_pod')];
+    const targets = collectMinions(ctx.matchState.core, minion => minion.controller === ctx.playerId);
+    if (targets.length === 0) return { events };
+    const prompt = createSimpleChoice(
+        `kitty_cats_whiskers_pod_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '威斯克 POD：消灭你的一个随从并额外打出一个行动',
+        buildMinionOptions(ctx.matchState.core, targets),
+        {
+            sourceId: 'kitty_cats_whiskers_pod',
             targetType: 'minion',
             autoResolveIfSingle: false,
             titleKey: 'ui.kitty_cats_whiskers_title',
@@ -535,6 +574,43 @@ function handleNineLivesDestroy(
     };
 }
 
+function handleNineLivesPodDestroy(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    value: unknown,
+    data: Record<string, unknown> | undefined,
+    random: RandomFn,
+    timestamp: number,
+) {
+    const result = handleDestroyOwnMinion(state, playerId, value, data, random, timestamp, {
+        sourceDefId: 'kitty_cats_nine_lives_pod',
+        sourceKind: 'action',
+        reason: 'kitty_cats_nine_lives_pod',
+    });
+    return {
+        state: result.state,
+        events: [
+            ...result.events,
+            grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'kitty_cats_nine_lives_pod'),
+        ],
+    };
+}
+
+function handleWhiskersPodDestroy(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    value: unknown,
+    data: Record<string, unknown> | undefined,
+    random: RandomFn,
+    timestamp: number,
+) {
+    return handleDestroyOwnMinion(state, playerId, value, data, random, timestamp, {
+        sourceDefId: 'kitty_cats_whiskers_pod',
+        sourceKind: 'nonAction',
+        reason: 'kitty_cats_whiskers_pod',
+    });
+}
+
 function handleInvisibleBicycleMinions(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -632,13 +708,17 @@ function handleHangInThere(
 export function registerKittyCatsAbilities(): void {
     registerAbility('kitty_cats_mr_grumpers', 'onPlay', kittyCatsMrGrumpers);
     registerAbility('kitty_cats_muffin', 'onPlay', kittyCatsMuffin);
+    registerAbility('kitty_cats_muffin_pod', 'onPlay', kittyCatsMuffinPod);
     registerAbility('kitty_cats_whiskers', 'talent', kittyCatsWhiskers);
+    registerAbility('kitty_cats_whiskers_pod', 'talent', kittyCatsWhiskersPod);
     registerAbility('kitty_cats_queen_fluffy', 'talent', kittyCatsQueenFluffy);
     registerAbility('kitty_cats_cat_fight', 'onPlay', kittyCatsCatFight);
     registerAbility('kitty_cats_cats_paw', 'onPlay', kittyCatsCatsPaw);
     registerAbility('kitty_cats_invisible_bicycle', 'onPlay', kittyCatsInvisibleBicycle);
     registerAbility('kitty_cats_nine_lives', 'onPlay', kittyCatsNineLives);
+    registerAbility('kitty_cats_nine_lives_pod', 'onPlay', kittyCatsNineLivesPod);
     registerAbility('kitty_cats_can_has_cheeseburger', 'special', kittyCatsCanHasCheeseburger);
+    registerAbility('kitty_cats_can_has_cheeseburger_pod', 'special', kittyCatsCanHasCheeseburgerPod);
     registerTrigger('kitty_cats_hang_in_there', 'onMinionDestroyed', kittyCatsHangInThereOnDestroyed, {
         phase: 'replacement',
         perInstance: true,
@@ -647,12 +727,16 @@ export function registerKittyCatsAbilities(): void {
     registerInteractionHandler('kitty_cats_mr_grumpers', (state, playerId, value, data, random, timestamp) =>
         handleTempPower(state, playerId, value, data, random, timestamp, -2, 'kitty_cats_mr_grumpers'));
     registerInteractionHandler('kitty_cats_whiskers', handleWhiskersDestroy);
+    registerInteractionHandler('kitty_cats_whiskers_pod', handleWhiskersPodDestroy);
     registerInteractionHandler('kitty_cats_muffin', handleTemporaryControl('kitty_cats_muffin'));
+    registerInteractionHandler('kitty_cats_muffin_pod', handleTemporaryControl('kitty_cats_muffin_pod'));
     registerInteractionHandler('kitty_cats_queen_fluffy', handleTemporaryControl('kitty_cats_queen_fluffy'));
     registerInteractionHandler('kitty_cats_cats_paw', handleTemporaryControl('kitty_cats_cats_paw'));
     registerInteractionHandler('kitty_cats_can_has_cheeseburger', handleTemporaryControl('kitty_cats_can_has_cheeseburger'));
+    registerInteractionHandler('kitty_cats_can_has_cheeseburger_pod', handleTemporaryControl('kitty_cats_can_has_cheeseburger_pod'));
     registerInteractionHandler('kitty_cats_cat_fight', handleCatFight);
     registerInteractionHandler('kitty_cats_nine_lives', handleNineLivesDestroy);
+    registerInteractionHandler('kitty_cats_nine_lives_pod', handleNineLivesPodDestroy);
     registerInteractionHandler('kitty_cats_invisible_bicycle_minions', handleInvisibleBicycleMinions);
     registerInteractionHandler('kitty_cats_invisible_bicycle_base', handleInvisibleBicycleBase);
     registerInteractionHandler('kitty_cats_hang_in_there', handleHangInThere);

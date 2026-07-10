@@ -806,6 +806,9 @@
     "base_fairy_ring_title": "Fairy Circle: choose to play an extra minion here or an extra action",
     "base_fairy_ring_extra_minion_option": "Play an extra minion here",
     "base_fairy_ring_extra_action_option": "Play an extra action",
+    "fairies_titania_pod_return_title": "Titania: choose an opponent's minion to return to its owner's hand",
+    "princesses_griselda_pod_title": "Griselda: take back an Heirloom, or play an extra Heirloom action",
+    "princesses_griselda_pod_extra_action_option": "Play an extra Heirloom action",
     "base_land_of_balance_title": "Land of Balance: choose one of your minions to move here",
     "base_house_of_nine_lives_title": "House of Nine Lives: move that minion to House of Nine Lives?",
     "base_house_of_nine_lives_move_option": "Move to House of Nine Lives",
@@ -1564,6 +1567,22 @@
     "disco_dancers": {
       "name": "Disco Dancers",
       "description": "Chain extra actions, movement, and power counters into scoring-floor momentum."
+    },
+    "kitty_cats_pod": {
+      "name": "Kitty Cats (POD)",
+      "description": "POD version of Kitty Cats, using the official POD card sheet."
+    },
+    "mythic_horses_pod": {
+      "name": "Mythic Horses (POD)",
+      "description": "POD version of Mythic Horses, using the official POD card sheet."
+    },
+    "fairies_pod": {
+      "name": "Fairies (POD)",
+      "description": "POD version of Fairies, using the official POD card sheet."
+    },
+    "princesses_pod": {
+      "name": "Princesses (POD)",
+      "description": "POD version of Princesses, using the official POD card sheet."
     },
     "sharks_pod": {
       "name": "Sharks (POD)",
@@ -4420,35 +4439,35 @@
       "abilityText": "On your turn, you may play one extra minion of power 2 or less here."
     },
     "base_cat_fanciers_alley_pod": {
-      "name": "Cat Fancier's Alley",
-      "abilityText": "Once per turn, you may destroy one of your minions here to draw a card."
+      "name": "Cool Cat's Alley",
+      "abilityText": "Once on your turn, you may destroy one of your minions here to draw a card."
     },
     "base_house_of_nine_lives_pod": {
-      "name": "House of Nine Lives",
-      "abilityText": "If a minion would be destroyed at another base, its owner may move it here instead."
+      "name": "The House of Nine Lives",
+      "abilityText": "If a minion at another base would be destroyed, its owner may move it here instead."
     },
     "base_enchanted_glade_pod": {
-      "name": "Enchanted Glade",
+      "name": "Enchanted Glen",
       "abilityText": "After you play an action on a minion here, draw a card."
     },
     "base_fairy_ring_pod": {
-      "name": "Fairy Circle",
-      "abilityText": "The first time you play a minion here on each turn, you may play an extra minion here or an extra action."
+      "name": "Fairy Ring",
+      "abilityText": "After the first time you play a minion here each turn, you may play an extra minion here or play an extra action."
     },
     "base_beautiful_castle_pod": {
       "name": "Beautiful Castle",
-      "abilityText": "Minions here of power 5 or more are unaffected by other players' cards."
+      "abilityText": "Minions here with printed power 5 or greater are not affected by opponents' cards."
     },
     "base_castle_of_ice_pod": {
-      "name": "Castle of Ice",
+      "name": "Ice Castle",
       "abilityText": "Minions cannot be played here."
     },
     "base_land_of_balance_pod": {
-      "name": "Land of Balance",
+      "name": "Equaria",
       "abilityText": "After you play a minion here, you may move one of your minions from another base to here."
     },
     "base_pony_paradise_pod": {
-      "name": "Pony Paradise",
+      "name": "Pony Land",
       "abilityText": "If you have two or more minions here, your minions here cannot be destroyed."
     },
     "base_north_pole_pod": {
@@ -6148,6 +6167,210 @@
     "base_monkey_lab": {
       "name": "Monkey Lab",
       "abilityText": "Each minion here has +1 power for each action played on it."
+    },
+    "kitty_cats_mr_grumpers_pod": {
+      "name": "Mr. Grumpers",
+      "abilityText": "You may give a minion -2 power until the start of your next turn."
+    },
+    "kitty_cats_muffin_pod": {
+      "name": "Muffin",
+      "abilityText": "Take control of a minion of power 3 or less until the end of the turn."
+    },
+    "kitty_cats_whiskers_pod": {
+      "name": "Whiskers",
+      "abilityText": "Talent: Play an extra action. Destroy one of your minions."
+    },
+    "kitty_cats_queen_fluffy_pod": {
+      "name": "Queen Fluffy",
+      "abilityText": "Talent: Take control of a minion of power 3 or less until the end of the turn."
+    },
+    "kitty_cats_hang_in_there_pod": {
+      "name": "Hang in There",
+      "effectText": "Play on one of your minions.\nOngoing: If this minion would be destroyed, move it to another base and destroy this action instead."
+    },
+    "kitty_cats_nine_lives_pod": {
+      "name": "Nine Lives",
+      "effectText": "Destroy one of your minions. Play an extra minion."
+    },
+    "kitty_cats_invisible_bicycle_pod": {
+      "name": "Invisible Bicycle",
+      "effectText": "Choose a base. Move any number of minions of power 2 or less from there to another base."
+    },
+    "kitty_cats_cats_paw_pod": {
+      "name": "Cat's Paw",
+      "effectText": "Take control of a minion of power 5 or less until the end of the turn."
+    },
+    "kitty_cats_grumpiness_pod": {
+      "name": "Grumpiness",
+      "effectText": "Play on a minion.\nOngoing: This minion has -2 power."
+    },
+    "kitty_cats_cat_fight_pod": {
+      "name": "Cat Fight",
+      "effectText": "Choose one of your minions. Draw cards equal to its power. Destroy that minion."
+    },
+    "kitty_cats_can_has_cheeseburger_pod": {
+      "name": "Can Has Cheeseburger?",
+      "effectText": "Special: Before a base scores, take control of a minion there of power 3 or less until the end of the turn."
+    },
+    "kitty_cats_hissy_fit_pod": {
+      "name": "Hissy Fit",
+      "effectText": "Play on a base.\nOngoing: Other players' minions here have -1 power."
+    },
+    "mythic_horses_pinkie_pod": {
+      "name": "Pinkie",
+      "abilityText": "Ongoing: If you have another minion here, this minion has +1 power."
+    },
+    "mythic_horses_seastar_pod": {
+      "name": "Seastar",
+      "abilityText": "If you play this minion on a base where you have another minion, you may play an extra minion this turn. Use this ability only once each turn."
+    },
+    "mythic_horses_rainbow_pod": {
+      "name": "Rainbow",
+      "abilityText": "Talent: If you have another minion here, draw a card."
+    },
+    "mythic_horses_starlyte_pod": {
+      "name": "Starlyte",
+      "abilityText": "Ongoing: This minion has +1 power for each other of your minions here."
+    },
+    "mythic_horses_friendship_power_pod": {
+      "name": "Friendship Power",
+      "effectText": "Move one of your minions to another base where you have a minion. You may place this card on top of your deck instead of the discard pile."
+    },
+    "mythic_horses_togetherness_power_pod": {
+      "name": "Togetherness Power",
+      "effectText": "Play an extra minion on a base where you have a minion."
+    },
+    "mythic_horses_teaching_power_pod": {
+      "name": "Teaching Power",
+      "effectText": "Special: Before a base scores, reveal one card from the top of your deck for each of your minions there. Play one revealed minion as an extra minion there. Put the rest on top of your deck in any order."
+    },
+    "mythic_horses_sharing_power_pod": {
+      "name": "Sharing Power",
+      "effectText": "Play on a base.\nOngoing: At the end of your turn, if you have two or more minions here, draw a card."
+    },
+    "mythic_horses_encouragement_power_pod": {
+      "name": "Encouragement Power",
+      "effectText": "Play on one of your minions.\nOngoing: This minion has +1 power for each other of your minions here."
+    },
+    "mythic_horses_freedom_power_pod": {
+      "name": "Freedom Power",
+      "effectText": "Return an action played on a base or minion to its owner's hand."
+    },
+    "mythic_horses_adventure_power_pod": {
+      "name": "Adventure Power",
+      "effectText": "Choose a base. Move any number of your minions to that base."
+    },
+    "mythic_horses_super_future_space_armor_power_pod": {
+      "name": "Super Future Space Armor Power",
+      "effectText": "Each of your minions on a base with another of your minions gains +2 power until the end of the turn."
+    },
+    "fairies_tinx_pod": {
+      "name": "Tinx",
+      "abilityText": "You may transfer an action played on another minion to this one."
+    },
+    "fairies_puck_pod": {
+      "name": "Puck",
+      "abilityText": "You may play an extra action, or draw a card."
+    },
+    "fairies_glymmer_pod": {
+      "name": "Glymmer",
+      "abilityText": "Talent: Until the start of your next turn, either another minion has -4 power, to a minimum of 0, or this minion has +1 power."
+    },
+    "fairies_titania_pod": {
+      "name": "Titania",
+      "abilityText": "Return an opponent's minion to its owner's hand, or play an extra minion."
+    },
+    "fairies_enchantment_pod": {
+      "name": "Enchantment",
+      "effectText": "Play on a base. Choose one: Ongoing, all minions here have +1 power; or Ongoing, all minions here have -1 power."
+    },
+    "fairies_fairy_ballet_pod": {
+      "name": "Fairy Ballet",
+      "effectText": "Choose one: Draw two cards; or draw a card and play an extra action."
+    },
+    "fairies_playful_tricks_pod": {
+      "name": "Playful Tricks",
+      "effectText": "Destroy up to two actions played on minions and/or bases, or play Spirit of the Forest."
+    },
+    "fairies_leaf_armor_pod": {
+      "name": "Leaf Armor",
+      "effectText": "Play on a minion.\nOngoing: This minion has the ability \"Talent: This minion gains +2 power until the end of the turn.\""
+    },
+    "fairies_magic_ward_pod": {
+      "name": "Magic Ward",
+      "effectText": "Play on a base.\nOngoing: Other players cannot play actions on this base or on minions here."
+    },
+    "fairies_magic_acorns_pod": {
+      "name": "Magic Acorns",
+      "effectText": "Choose one: Each other player discards a random card; or draw a card and play an extra action."
+    },
+    "fairies_daisy_chain_pod": {
+      "name": "Daisy Chain",
+      "effectText": "Play on a minion.\nOngoing: If you control this minion, it has +2 power; otherwise it has -2 power."
+    },
+    "fairies_ladybug_pod": {
+      "name": "Ladybug",
+      "effectText": "Play on a minion.\nOngoing: This minion cannot be destroyed. Talent: Transfer this action to another minion."
+    },
+    "princesses_griselda_pod": {
+      "name": "Griselda",
+      "abilityText": "Talent: Draw a Heirloom from your discard pile, or play a Heirloom as an extra action."
+    },
+    "princesses_sleeping_beauty_pod": {
+      "name": "Sleeping Beauty",
+      "abilityText": "Ongoing: If this minion would go to the discard pile, shuffle it into your deck instead."
+    },
+    "princesses_eliza_pod": {
+      "name": "Eliza",
+      "abilityText": "Ongoing: Other players cannot play more than one extra card per turn."
+    },
+    "princesses_marie_degraw_pod": {
+      "name": "Marie DeGraw",
+      "abilityText": "Talent: Reveal the top card of your deck. If it is a minion, draw it. Otherwise, place it on the bottom of your deck."
+    },
+    "princesses_apricot_pod": {
+      "name": "Apricot",
+      "abilityText": "Talent: Destroy another player's minion of power 2 or less here."
+    },
+    "princesses_snow_white_pod": {
+      "name": "Snow White",
+      "abilityText": "Talent: Move a minion from another base to here."
+    },
+    "princesses_skillet_pod": {
+      "name": "Skillet",
+      "effectText": "Destroy a minion of power 2 or less and draw a card."
+    },
+    "princesses_tale_as_old_as_time_pod": {
+      "name": "Tale as Old as Time",
+      "effectText": "Choose a base and move all of your minions to it."
+    },
+    "princesses_true_loves_kiss_pod": {
+      "name": "True Love’s Kiss",
+      "effectText": "Move a minion to another base."
+    },
+    "princesses_heirloom_pod": {
+      "name": "Heirloom",
+      "effectText": "Play on a minion.\nOngoing: This minion has +1 power for each Heirloom on it. This card cannot be destroyed."
+    },
+    "princesses_direct_to_dvd_sequel_pod": {
+      "name": "Direct to DVD Sequel",
+      "effectText": "Shuffle a minion from your discard pile into your deck and draw a card."
+    },
+    "princesses_some_day_my_prince_will_come_pod": {
+      "name": "Some Day My Prince Will Come",
+      "effectText": "Special: Before a base scores, move a minion from there to another base."
+    },
+    "princesses_fairy_godmother_pod": {
+      "name": "Fairy Godmother",
+      "effectText": "Choose one: Draw two cards; or one minion gains +3 power until the end of the turn."
+    },
+    "princesses_happily_ever_after_pod": {
+      "name": "Happily Ever After",
+      "effectText": "Play on a base.\nOngoing: If you are the winner here when this base scores, gain 1 VP."
+    },
+    "princesses_woodland_helpers_pod": {
+      "name": "Woodland Helpers",
+      "effectText": "Play on a base.\nOngoing: After you play a standard action, you may place it on the bottom of your deck instead of your discard pile."
     },
     "sharks_blood_in_the_water_pod": {
       "name": "Blood in the Water",

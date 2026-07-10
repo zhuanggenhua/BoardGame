@@ -17,6 +17,7 @@ import {
     makeMatchState,
     getSimpleChoicePrompt,
     getPromptOption,
+    getPromptOptions,
     respondToPrompt,
     expectNoPrompt,
     resolveDestroyedMinions,
@@ -664,5 +665,200 @@ describe('Princesses abilities', () => {
 
         expect(result.valid).toBe(false);
         expect(result.error).toBe('受伊莱莎限制：你本回合不能再打出额外牌');
+    });
+
+    it('princesses_skillet_pod 消灭低力量随从后只抽一张牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('skillet-pod-1', 'princesses_skillet_pod', 'action', '0')],
+                    deck: [
+                        makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('draw-2', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('enemy-small', 'wizard_apprentice', '1', 2),
+                    makeMinion('enemy-big', 'pirate_first_mate', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'skillet-pod-1' } },
+            defaultTestRandom,
+        );
+        expect(played.success, played.error).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'princesses_skillet');
+        const target = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-small', 'destroy target');
+        expect(getPromptOptions(prompt).some((entry: any) => entry.value?.minionUid === 'enemy-big')).toBe(false);
+        const resolved = respondToPrompt(played.finalState, target.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-small');
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-2']);
+    });
+
+    it('princesses_fairy_godmother_pod 抽牌分支抽两张牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('fg-pod-1', 'princesses_fairy_godmother_pod', 'action', '0')],
+                    deck: [
+                        makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('draw-2', 'robot_microbot_beta', 'minion', '0'),
+                        makeCard('draw-3', 'wizard_summon', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'fg-pod-1' } },
+            defaultTestRandom,
+        );
+        expect(played.success, played.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'princesses_fairy_godmother_pod');
+        const drawOption = getPromptOption(prompt, entry => entry.value?.choice === 'draw', 'draw option');
+
+        const resolved = respondToPrompt(played.finalState, drawOption.id, '0', defaultTestRandom);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-3']);
+    });
+
+    it('princesses_fairy_godmother_pod buff 分支给目标 +3 力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('fg-pod-1', 'princesses_fairy_godmother_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'fg-pod-1' } },
+            defaultTestRandom,
+        );
+        expect(played.success, played.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'princesses_fairy_godmother_pod');
+        const buffOption = getPromptOption(prompt, entry => entry.value?.choice === 'buff', 'buff option');
+        const choseBuff = respondToPrompt(played.finalState, buffOption.id, '0', defaultTestRandom);
+
+        const targetPrompt = getSimpleChoicePrompt(choseBuff.finalState, 'princesses_fairy_godmother_target');
+        const target = getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'ally-1', 'buff target');
+        const resolved = respondToPrompt(choseBuff.finalState, target.id, '0', defaultTestRandom);
+
+        const ally = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        expect(ally).toBeDefined();
+        expect(getEffectivePower(resolved.finalState.core, ally!, 0)).toBe(5);
+    });
+
+    it('princesses_woodland_helpers_pod 只对刚打出的标准行动触发，不对 ongoing 行动触发', () => {
+        const ongoingCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('heirloom-pod-1', 'princesses_heirloom_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{ uid: 'woodland-pod-1', defId: 'princesses_woodland_helpers_pod', ownerId: '0' }],
+            }],
+        });
+
+        const skipped = fireTriggers(ongoingCore, 'onActionPlayed', {
+            state: ongoingCore,
+            matchState: makeMatchState(ongoingCore),
+            playerId: '0',
+            sourceEventId: 'action-played:heirloom-pod-1:0',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+        expect(skipped.events).toHaveLength(0);
+        expectNoPrompt(skipped.matchState!);
+
+        const standardCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-1', 'robot_microbot_alpha', 'minion', '0')],
+                    discard: [makeCard('skillet-pod-1', 'princesses_skillet_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{ uid: 'woodland-pod-1', defId: 'princesses_woodland_helpers_pod', ownerId: '0' }],
+            }],
+        });
+
+        const triggered = fireTriggers(standardCore, 'onActionPlayed', {
+            state: standardCore,
+            matchState: makeMatchState(standardCore),
+            playerId: '0',
+            sourceEventId: 'action-played:skillet-pod-1:0',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+        const prompt = getSimpleChoicePrompt(triggered.matchState!, 'princesses_woodland_helpers');
+        const moveOption = getPromptOption(prompt, entry => entry.value?.choice === 'move_to_bottom', 'move-to-bottom option');
+        const resolved = respondToPrompt(triggered.matchState!, moveOption.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('skillet-pod-1');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-1', 'skillet-pod-1']);
+    });
+
+    it('princesses_griselda_pod 可选择取回传家宝，或选择额外行动分支', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('heirloom-pod-1', 'princesses_heirloom_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('griselda-pod-1', 'princesses_griselda_pod', '0', 5)],
+                ongoingActions: [],
+            }],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'griselda-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        expect(talent.success, talent.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(talent.finalState, 'princesses_griselda_pod');
+        getPromptOption(prompt, entry => entry.value?.cardUid === 'heirloom-pod-1', 'recover heirloom');
+        const extraAction = getPromptOption(prompt, entry => entry.value?.choice === 'play_extra_action', 'extra action branch');
+
+        const resolved = respondToPrompt(talent.finalState, extraAction.id, '0', defaultTestRandom);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('heirloom-pod-1');
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                restrictToCardDefId: 'princesses_heirloom_pod',
+            }),
+        }));
     });
 });

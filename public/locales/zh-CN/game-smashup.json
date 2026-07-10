@@ -782,6 +782,9 @@
     "base_fairy_ring_title": "精灵之环：选择额外打出一个随从到这里，或额外打出一张行动卡",
     "base_fairy_ring_extra_minion_option": "额外打出一个随从到这里",
     "base_fairy_ring_extra_action_option": "额外打出一张行动卡",
+    "fairies_titania_pod_return_title": "泰坦妮娅：选择一个对手随从移回其拥有者手牌",
+    "princesses_griselda_pod_title": "格丽泽尔达：取回一张传家宝，或额外打出一张传家宝行动",
+    "princesses_griselda_pod_extra_action_option": "额外打出一张传家宝行动",
     "base_land_of_balance_title": "平衡之地：选择一个己方随从移动到这里",
     "base_house_of_nine_lives_title": "九命之家：是否将随从移动到九命之家？",
     "base_house_of_nine_lives_move_option": "移动到九命之家",
@@ -1547,6 +1550,22 @@
     "disco_dancers": {
       "name": "迪厅舞王",
       "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
+    },
+    "kitty_cats_pod": {
+      "name": "猫咪 (POD版)",
+      "description": "猫咪 POD 版，使用官方 POD 卡图。"
+    },
+    "mythic_horses_pod": {
+      "name": "小马 (POD版)",
+      "description": "小马 POD 版，使用官方 POD 卡图。"
+    },
+    "fairies_pod": {
+      "name": "仙灵 (POD版)",
+      "description": "仙灵 POD 版，使用官方 POD 卡图。"
+    },
+    "princesses_pod": {
+      "name": "公主 (POD版)",
+      "description": "公主 POD 版，使用官方 POD 卡图。"
     },
     "sharks_pod": {
       "name": "鲨鱼 (POD版)",
@@ -4406,36 +4425,36 @@
       "abilityText": "在你的回合，你可以额外打出一个力量 2 或更低的随从到这里。"
     },
     "base_cat_fanciers_alley_pod": {
-      "name": "诡猫巷",
-      "abilityText": "每回合一次，你可以消灭一个你在这里的随从以抽一张牌。"
+      "name": "酷猫巷",
+      "abilityText": "在你的回合每回合一次，你可以摧毁你在这里的一个仆从以抽一张牌。"
     },
     "base_house_of_nine_lives_pod": {
       "name": "九命之家",
-      "abilityText": "如果一个随从在另一个基地将要被消灭，其拥有者可以改为将它移动到这里。"
+      "abilityText": "如果另一个基地的一个仆从将要被摧毁，其拥有者可以改为将其移动到这里。"
     },
     "base_enchanted_glade_pod": {
-      "name": "迷人峡谷",
-      "abilityText": "在你打出一张战术到这里的一个随从上后，抽一张牌。"
+      "name": "结界谷",
+      "abilityText": "在你打出一张行动到这里的一个仆从上后，抽一张牌。"
     },
     "base_fairy_ring_pod": {
-      "name": "仙灵圈",
-      "abilityText": "每回合你第一次打出一个随从到这里后，你可以额外打出一个随从到这里，或额外打出一张战术。"
+      "name": "精灵之环",
+      "abilityText": "每回合你第一次打出一个仆从到这里后，你可以额外打出一个仆从到这里，或额外打出一张行动。"
     },
     "base_beautiful_castle_pod": {
       "name": "美丽城堡",
-      "abilityText": "这里力量为 5 或以上的随从不受对手牌的影响。"
+      "abilityText": "这里印刷力量为 5 或更高的仆从不受对手牌影响。"
     },
     "base_castle_of_ice_pod": {
       "name": "冰之城堡",
-      "abilityText": "随从不能被打出到这里。"
+      "abilityText": "不能打出仆从到这里。"
     },
     "base_land_of_balance_pod": {
-      "name": "平衡之地",
-      "abilityText": "在你打出一个随从到这里后，你可以从另一个基地移动一个你的随从到这里。"
+      "name": "艾夸利亚",
+      "abilityText": "在你打出一个仆从到这里后，你可以将你的一个仆从从另一个基地移动到这里。"
     },
     "base_pony_paradise_pod": {
-      "name": "小马乐园",
-      "abilityText": "如果你在这里有两个或更多随从，你在这里的随从不能被消灭。"
+      "name": "小马之地",
+      "abilityText": "如果你在这里有两个或更多仆从，你在这里的仆从不能被摧毁。"
     },
     "base_north_pole_pod": {
       "name": "北极基地",
@@ -6131,6 +6150,210 @@
     "base_monkey_lab": {
       "name": "猴子实验室",
       "abilityText": "这里的每个随从上每有一张行动牌，就获得 +1 力量。"
+    },
+    "kitty_cats_mr_grumpers_pod": {
+      "name": "坏脾气先生",
+      "abilityText": "你可以令一个仆从直到你的下个回合开始时具有 -2 力量。"
+    },
+    "kitty_cats_muffin_pod": {
+      "name": "松饼",
+      "abilityText": "控制一个力量为 3 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_whiskers_pod": {
+      "name": "威斯克",
+      "abilityText": "天赋：打出一张额外的行动。摧毁你的一个仆从。"
+    },
+    "kitty_cats_queen_fluffy_pod": {
+      "name": "毛茸茸女王",
+      "abilityText": "天赋：控制一个力量为 3 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_hang_in_there_pod": {
+      "name": "坚持下去",
+      "effectText": "打出到你的一个仆从上。\n持续：如果这个仆从将要被摧毁，将其移动到另一个基地并改为摧毁本行动。"
+    },
+    "kitty_cats_nine_lives_pod": {
+      "name": "九条命",
+      "effectText": "摧毁你的一个仆从。打出一个额外的仆从。"
+    },
+    "kitty_cats_invisible_bicycle_pod": {
+      "name": "隐形自行车",
+      "effectText": "选择一个基地。从那里移动任意数量力量为 2 或更低的仆从到另一个基地。"
+    },
+    "kitty_cats_cats_paw_pod": {
+      "name": "猫咪的爪子",
+      "effectText": "控制一个力量为 5 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_grumpiness_pod": {
+      "name": "悲哀",
+      "effectText": "打出到一个仆从上。\n持续：这个仆从具有 -2 力量。"
+    },
+    "kitty_cats_cat_fight_pod": {
+      "name": "猫咪打架",
+      "effectText": "选择你的一个仆从。抽等同于其力量的牌。摧毁那个仆从。"
+    },
+    "kitty_cats_can_has_cheeseburger_pod": {
+      "name": "我能吃起士堡吗?",
+      "effectText": "特殊：在一个基地计分前，控制那里一个力量为 3 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_hissy_fit_pod": {
+      "name": "发脾气",
+      "effectText": "打出到一个基地上。\n持续：其他玩家在这里的仆从具有 -1 力量。"
+    },
+    "mythic_horses_pinkie_pod": {
+      "name": "萍琪",
+      "abilityText": "持续：如果你在这里有另一个仆从，本仆从具有 +1 力量。"
+    },
+    "mythic_horses_seastar_pod": {
+      "name": "海星",
+      "abilityText": "如果你将本仆从打到一个有你另一个仆从的基地，本回合你可以打出一个额外的仆从。每回合只能使用此能力一次。"
+    },
+    "mythic_horses_rainbow_pod": {
+      "name": "彩虹",
+      "abilityText": "天赋：如果你在这里有另一个仆从，抽一张牌。"
+    },
+    "mythic_horses_starlyte_pod": {
+      "name": "星耀",
+      "abilityText": "持续：这里每有你的另一个仆从，本仆从具有 +1 力量。"
+    },
+    "mythic_horses_friendship_power_pod": {
+      "name": "友谊之力",
+      "effectText": "将你的一个仆从移动到另一个有你仆从的基地。你可以将本卡放到你的牌库顶，以代替放入弃牌堆。"
+    },
+    "mythic_horses_togetherness_power_pod": {
+      "name": "同行之力",
+      "effectText": "在一个有你仆从的基地上打出一张额外的仆从。"
+    },
+    "mythic_horses_teaching_power_pod": {
+      "name": "教学之力",
+      "effectText": "特殊：在一个基地计分前，该基地上每有你一个仆从，从你的牌库顶展示一张牌。将其中一个展示的仆从作为额外仆从打到该基地。将其余牌以任意顺序放回你的牌库顶。"
+    },
+    "mythic_horses_sharing_power_pod": {
+      "name": "分享之力",
+      "effectText": "打出到一个基地上。\n持续：在你的回合结束时，如果你在这里有两个或更多仆从，抽一张牌。"
+    },
+    "mythic_horses_encouragement_power_pod": {
+      "name": "鼓舞之力",
+      "effectText": "打出到你的一个仆从上。\n持续：这里每有你的另一个仆从，这个仆从具有 +1 力量。"
+    },
+    "mythic_horses_freedom_power_pod": {
+      "name": "自由之力",
+      "effectText": "将一张打在基地或仆从上的行动放回其拥有者手牌。"
+    },
+    "mythic_horses_adventure_power_pod": {
+      "name": "冒险之力",
+      "effectText": "选择一个基地。将任意数量你的仆从移动到该基地。"
+    },
+    "mythic_horses_super_future_space_armor_power_pod": {
+      "name": "超未来装甲之力",
+      "effectText": "你在有你另一个仆从的基地上的每个仆从，直到回合结束具有 +2 力量。"
+    },
+    "fairies_tinx_pod": {
+      "name": "Tinx",
+      "abilityText": "你可以将打在另一个仆从上的一张行动转移到本仆从上。"
+    },
+    "fairies_puck_pod": {
+      "name": "Puck",
+      "abilityText": "你可以打出一张额外的行动，或抽一张牌。"
+    },
+    "fairies_glymmer_pod": {
+      "name": "格丽默",
+      "abilityText": "天赋：直到你的下个回合开始时，选择另一个仆从具有 -4 力量，最低为 0；或本仆从具有 +1 力量。"
+    },
+    "fairies_titania_pod": {
+      "name": "泰坦妮娅",
+      "abilityText": "将一个对手的仆从放回其拥有者手牌，或打出一个额外的仆从。"
+    },
+    "fairies_enchantment_pod": {
+      "name": "结果",
+      "effectText": "打出到一个基地上。选择一项：持续，这里的所有仆从具有 +1 力量；或持续，这里的所有仆从具有 -1 力量。"
+    },
+    "fairies_fairy_ballet_pod": {
+      "name": "精灵芭蕾",
+      "effectText": "选择一项：抽两张牌；或抽一张牌并打出一张额外的行动。"
+    },
+    "fairies_playful_tricks_pod": {
+      "name": "有趣的把戏",
+      "effectText": "摧毁至多两张打在仆从和/或基地上的行动，或打出丛林之灵。"
+    },
+    "fairies_leaf_armor_pod": {
+      "name": "叶之甲",
+      "effectText": "打出到一个仆从上。\n持续：这个仆从具有“天赋：本仆从直到回合结束具有 +2 力量。”"
+    },
+    "fairies_magic_ward_pod": {
+      "name": "魔法守护",
+      "effectText": "打出到一个基地上。\n持续：其他玩家不能在这个基地上或这里的仆从上打出行动。"
+    },
+    "fairies_magic_acorns_pod": {
+      "name": "魔法橡子",
+      "effectText": "选择一项：每位其他玩家随机弃掉一张牌；或你抽一张牌并打出一张额外的行动。"
+    },
+    "fairies_daisy_chain_pod": {
+      "name": "雏菊花环",
+      "effectText": "打出到一个仆从上。\n持续：如果你控制这个仆从，它具有 +2 力量；否则它具有 -2 力量。"
+    },
+    "fairies_ladybug_pod": {
+      "name": "甲虫夫人",
+      "effectText": "打出到一个仆从上。\n持续：这个仆从不能被摧毁。天赋：将本行动转移到另一个仆从上。"
+    },
+    "princesses_griselda_pod": {
+      "name": "格丽泽尔达",
+      "abilityText": "天赋：从你的弃牌堆抽取一张传家宝，或将一张传家宝作为额外行动打出。"
+    },
+    "princesses_sleeping_beauty_pod": {
+      "name": "睡美人",
+      "abilityText": "持续：如果本仆从将要进入弃牌堆，改为将其洗入你的牌库。"
+    },
+    "princesses_eliza_pod": {
+      "name": "伊莱莎",
+      "abilityText": "持续：其他玩家每回合不能打出超过一张额外牌。"
+    },
+    "princesses_marie_degraw_pod": {
+      "name": "玛丽·德格劳",
+      "abilityText": "天赋：展示你牌库顶的牌。如果它是一个仆从，抽取它；否则，将其放到你的牌库底。"
+    },
+    "princesses_apricot_pod": {
+      "name": "杏子公主",
+      "abilityText": "天赋：摧毁另一个玩家在这里的一个力量为 2 或更低的仆从。"
+    },
+    "princesses_snow_white_pod": {
+      "name": "白雪公主",
+      "abilityText": "天赋：将一个仆从从另一个基地移动到这里。"
+    },
+    "princesses_skillet_pod": {
+      "name": "平底锅",
+      "effectText": "摧毁一个力量为 2 或更低的仆从并抽一张牌。"
+    },
+    "princesses_tale_as_old_as_time_pod": {
+      "name": "古老的传说",
+      "effectText": "选择一个基地并将你的所有仆从移动到那里。"
+    },
+    "princesses_true_loves_kiss_pod": {
+      "name": "真爱之吻",
+      "effectText": "移动一个仆从到另一个基地。"
+    },
+    "princesses_heirloom_pod": {
+      "name": "传家宝",
+      "effectText": "打出到一个仆从上。\n持续：该仆从身上的每张传家宝使其具有 +1 力量。本卡不能被摧毁。"
+    },
+    "princesses_direct_to_dvd_sequel_pod": {
+      "name": "直出结局",
+      "effectText": "将你弃牌堆中的一个仆从洗入你的牌库并抽一张牌。"
+    },
+    "princesses_some_day_my_prince_will_come_pod": {
+      "name": "总有一天我的王子会来的",
+      "effectText": "特殊：在一个基地计分前，将一个仆从从那里移动到另一个基地。"
+    },
+    "princesses_fairy_godmother_pod": {
+      "name": "妖精奶奶",
+      "effectText": "选择一项：抽两张牌；或一个仆从直到回合结束具有 +3 力量。"
+    },
+    "princesses_happily_ever_after_pod": {
+      "name": "永远幸福",
+      "effectText": "打出到一个基地上。\n持续：如果这里计分时你是这里的赢家，获得 1VP。"
+    },
+    "princesses_woodland_helpers_pod": {
+      "name": "丛林帮手",
+      "effectText": "打出到一个基地上。\n持续：在你打出一张标准行动后，你可以将它放到你的牌库底而不是弃牌堆。"
     },
     "sharks_blood_in_the_water_pod": {
       "name": "血腥水域",

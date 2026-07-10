@@ -29,6 +29,10 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS11, kind: 'card', image: 'smashup/cards/yuanhou', grid: { rows: 6, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS12, kind: 'card', image: 'smashup/cards/longzu', grid: { rows: 5, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS13, kind: 'card', image: 'smashup/cards/zhongguo', grid: { rows: 7, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.KITTY_CATS_POD_CARDS, kind: 'card', image: 'smashup/cards/kitty_cats_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.MYTHIC_HORSES_POD_CARDS, kind: 'card', image: 'smashup/cards/mythic_horses_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.FAIRIES_POD_CARDS, kind: 'card', image: 'smashup/cards/fairies_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.PRINCESSES_POD_CARDS, kind: 'card', image: 'smashup/cards/princesses_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_CARDS, kind: 'card', image: 'smashup/cards/paladin_cards', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
@@ -48,6 +52,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.BASE8, kind: 'base', image: 'smashup/base/baokemeng', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE9, kind: 'base', image: 'smashup/base/yuanhou', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE10, kind: 'base', image: 'smashup/base/zhongguo', grid: { rows: 4, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, kind: 'base', image: 'smashup/base/pretty_pretty_pod', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, kind: 'base', image: 'smashup/base/huluwawa_bases', grid: { rows: 1, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_BASES, kind: 'base', image: 'smashup/base/paladin_bases', grid: { rows: 1, cols: 2 } },
 ];
