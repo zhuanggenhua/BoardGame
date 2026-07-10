@@ -51,6 +51,8 @@ PR 一侧新增：
 
 - 聚合清单与 SmashUp 游戏级清单补入 10 组本轮合并结果中的 POD 图集资源。
 - 美人鱼 POD 与希腊神话 POD 两张新图集均已进入清单。
+- PR 新增的 `mermaids_pod.webp` 与 `mythic_greeks_pod.webp` 都是 4×5、20 张派系卡图集，不包含基地图片。
+- 人鱼水池（`base_mermaid_pool_pod`）、人鱼暗礁（`base_mermaid_reef_pod`）、特尔斐的神谕（`base_oracle_at_delphi_pod`）与特洛伊木马（`base_wooden_horse_pod`）没有独立 POD 基地图，沿用现有基地图片并由文字覆盖层展示 POD 文案；资源映射测试将它们纳入既有文字回退名单。
 - 保留游戏级清单原有 `id=i18n/zh-CN/smashup` 与 `basePrefix=official/i18n/zh-CN/smashup/`。
 - 清除误执行全局增量扫描产生的 DiceThrone 哈希变化和其他游戏无关清单变化。
 - Android 游戏包素材合同改为使用已提交的资源清单补齐被 Git 忽略的大素材元数据，避免本机完整素材环境与 CI 精简检出得到不同结论。
@@ -59,6 +61,7 @@ PR 一侧新增：
 ## 验证
 
 - 新派系、基础能力、POD 注册审计、持续力量与既有齐柏林飞艇回归测试：6 个文件、179 条测试通过。
+- 派系选择与 POD 基地图映射测试：46 条测试通过，确认四个无独立 POD 基地图的基地均走既有文字回退。
 - 两份资源清单仅新增上述 10 组 SmashUp 资源，清单元数据未改变。
 - `npm run typecheck`：通过。
 - `npm run i18n:check`：通过。
