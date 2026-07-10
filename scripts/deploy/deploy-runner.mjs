@@ -12,7 +12,7 @@ const port = Number.parseInt(process.env.BG_DEPLOY_RUNNER_PORT || '18761', 10);
 const token = process.env.BG_DEPLOY_RUNNER_TOKEN || '';
 const allowUnauthenticated = process.env.BG_DEPLOY_RUNNER_ALLOW_UNAUTHENTICATED === '1';
 const outputLimit = 200_000;
-const deployStepTimeoutMs = readPositiveIntegerEnv('BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS', 20 * 60) * 1000;
+const deployStepTimeoutMs = readPositiveIntegerEnv('BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS', 3 * 60 * 60) * 1000;
 const mobileReleaseStepTimeoutMs = readPositiveIntegerEnv('BG_DEPLOY_RUNNER_MOBILE_STEP_TIMEOUT_SECONDS', 30 * 60) * 1000;
 const jobs = new Map();
 
