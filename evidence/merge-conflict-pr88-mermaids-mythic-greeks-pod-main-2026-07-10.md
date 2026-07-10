@@ -53,6 +53,7 @@ PR 一侧新增：
 - 美人鱼 POD 与希腊神话 POD 两张新图集均已进入清单。
 - 保留游戏级清单原有 `id=i18n/zh-CN/smashup` 与 `basePrefix=official/i18n/zh-CN/smashup/`。
 - 清除误执行全局增量扫描产生的 DiceThrone 哈希变化和其他游戏无关清单变化。
+- Android 游戏包测试中的 SmashUp 候选资源计数由 77 更新为 87，对应本次清单补齐的 10 组合法 POD 图集。
 
 ## 验证
 
@@ -62,6 +63,7 @@ PR 一侧新增：
 - `npm run i18n:check`：通过。
 - 11 个相关 TypeScript 文件的定向 ESLint：0 个错误；美人鱼能力文件保留 13 条既有 `any` 警告。
 - `i18n/zh-CN/smashup` 资源清单增量校验：通过。
+- Android 游戏包素材内容测试：8 条测试通过。
 - 暂存差异格式检查：通过。
 
 ## 结果

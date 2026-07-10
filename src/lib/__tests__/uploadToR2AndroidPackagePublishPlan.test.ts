@@ -283,7 +283,7 @@ describe('Android 游戏包素材内容', () => {
             sum + statSync(path.join(assetsRoot, relativePath)).size
         ), 0);
 
-        expect(smashUpPackageFiles.length).toBe(77);
+        expect(smashUpPackageFiles.length).toBe(87);
         expect(totalBytes).toBeLessThan(100 * 1024 * 1024);
         expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/longzu.webp');
         expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/sharks_pod.webp');
