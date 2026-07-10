@@ -428,18 +428,19 @@ GitHub Actions 自动化：
 ### 生产素材域名：服务器优先、R2 自动回退
 
 - **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，不需要知道素材由服务器还是 R2 返回。
-- **普通运行时素材**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
+- **所有正式素材与发布包**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
 - **自动回退**：服务器连接失败、1500ms 内没有响应头，或返回 `404`、`408`、`429`、`5xx` 时，Worker 使用同 key 的 R2 对象返回。客户端仍访问原域名。
-- **大型发布包始终绕过服务器**：以下更具体的无脚本 Route 直接使用原 R2 自定义域名：
-  - `assets.easyboardgame.top/official/app-updates/*`
-  - `assets.easyboardgame.top/official/mobile-packages/*`
-  - `assets.easyboardgame.top/official/native-app-updates/*`
-- **R2 仍是真相源**：上传、移动包和 OTA 发布入口不变，正式对象必须先写入 R2。服务器目录只是可从 R2 重建的只读镜像，禁止服务器单边发布。
+- **大型发布包同样服务器优先**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 不再配置绕过 Route，统一进入 Worker。
+- **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存普通素材以及当前公开清单递归引用的 OTA、游戏包和原生安装包。三类发布路径当前活动集合约 493MiB，不复制约 8.25GiB 的历史全集。
+- **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖 R2 才能上线。
+- **R2 只做同 key 异步灾备**：服务器切换后生成灾备队列，`boardgame-asset-backup.timer` 后台上传并失败重试。R2 超过 9GiB 门禁时队列保留并告警，但不撤销服务器发布。
 - **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS、同域和自动回退；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
 
 服务器静态源保护参数：
 
 - systemd 服务：`boardgame-asset-origin.service`
+- R2 灾备队列：`boardgame-asset-backup.service` / `boardgame-asset-backup.timer`
+- 灾难重建命令：`boardgame-asset-sync.service`，只允许人工启动，不再配置 timer
 - 仅监听：`127.0.0.1:19090`
 - 全局同时传输连接：32
 - 单客户端同时连接：4
@@ -454,18 +455,20 @@ GitHub Actions 自动化：
 curl -I "https://assets.easyboardgame.top/official/common/images/noise.svg?probe=$(date +%s)"
 ```
 
-- `X-Asset-Source: server`：普通素材由服务器镜像返回。
+- `X-Asset-Source: server`：普通素材或发布包由服务器活动版本返回。
 - `X-Asset-Source: r2-fallback`：服务器不可用或缺少对象，本次请求已自动回退 R2。
-- 大型发布包没有 `X-Asset-Source`：命中无脚本 Route，直接由 R2 自定义域名返回。
 
 素材服务运维：
 
 ```bash
 sudo systemctl status boardgame-asset-origin.service
 sudo systemctl restart boardgame-asset-origin.service
+sudo systemctl status boardgame-asset-backup.timer
+sudo systemctl start boardgame-asset-backup.service
+sudo systemctl start boardgame-asset-sync.service # 仅服务器损坏后从 R2 手工重建
 ```
 
-Worker 回滚只删除 `assets.easyboardgame.top/*` 这一条 catch-all Route，保留三条大型包绕过 Route、DNS 和 R2 自定义域名。删除后普通素材立即恢复原 R2 直出；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器优先。变更快照保存在 `temp/cloudflare-snapshots/`。
+Worker 回滚删除 `assets.easyboardgame.top/*` 这一条 catch-all Route 后，全部素材立即恢复原 R2 自定义域名直出；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器主源。变更快照保存在 `temp/cloudflare-snapshots/`。
 
 ## 非 /assets 静态资源缓存策略（当前主链路）
 

@@ -1,9 +1,3 @@
-const DIRECT_R2_PREFIXES = [
-    '/official/app-updates/',
-    '/official/mobile-packages/',
-    '/official/native-app-updates/',
-];
-
 const ORIGIN_FALLBACK_STATUSES = new Set([404, 408, 429]);
 const FORWARDED_REQUEST_HEADERS = [
     'accept',
@@ -13,10 +7,6 @@ const FORWARDED_REQUEST_HEADERS = [
     'if-unmodified-since',
     'range',
 ];
-
-export const isDirectR2Path = (pathname) => (
-    DIRECT_R2_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-);
 
 export const shouldFallbackToR2 = (status) => (
     ORIGIN_FALLBACK_STATUSES.has(status) || status >= 500
@@ -170,11 +160,6 @@ export const createAssetRouter = ({ fetchImpl = fetch } = {}) => async (request,
             status: 405,
             headers: { Allow: 'GET, HEAD' },
         });
-    }
-
-    const { pathname } = new URL(request.url);
-    if (isDirectR2Path(pathname)) {
-        return fetchFromR2(request, env, 'r2-direct');
     }
 
     try {
