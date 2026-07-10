@@ -2,7 +2,7 @@
 - [x] 1.1 导出当前 Cloudflare DNS、R2 自定义域名、Tunnel、Worker Route 和相关脚本配置
 - [x] 1.2 记录当前素材域名代表性 GET/HEAD/Range/ETag/CORS 响应作为兼容基线
 - [ ] 1.3 新建 R2 密钥，更新 CI、本机和服务器并验证上传/读取
-- [ ] 1.4 撤销旧 R2 密钥并验证旧凭据失效
+- [x] 1.4 撤销旧 R2 密钥并验证旧凭据失效
 - [x] 1.4a 将 `.env.example` 中真实配置替换为空占位符
 - [ ] 1.5 清理 root npm 缓存和历史 coredump，并记录清理前后磁盘用量
 - [ ] 1.6 为 Docker JSON 日志、应用文件日志和 systemd coredump 配置容量上限
