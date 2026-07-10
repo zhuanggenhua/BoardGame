@@ -130,6 +130,13 @@ async function loadMatchRoomWithOnlineMocks(args?: {
 
     vi.doMock('../../contexts/TutorialContext', () => ({
         useTutorial: () => ({
+            tutorial: {
+                active: false,
+                manifestId: null,
+                stepIndex: 0,
+                steps: [],
+                step: null,
+            },
             startTutorial: vi.fn(),
             closeTutorial: vi.fn(),
             isActive: false,

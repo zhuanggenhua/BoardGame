@@ -39,9 +39,23 @@ import {
     shouldOpenTokenResponse,
     createPendingDamage,
     createTokenResponseRequestedEvent,
+    hasBeforeDamageReceivedCard,
 } from './tokenResponse';
 import type { AbilityDef } from './combat';
 import { reduce as reduceDiceThroneCore } from './reducer';
+
+const resolveDamageResponseType = (
+    state: DiceThroneCore,
+    defenderId: PlayerId,
+    rawTokenResponseType: 'attackerBoost' | 'defenderMitigation' | null,
+): 'attackerBoost' | 'defenderMitigation' | null => {
+    const isUltimateDamage = state.pendingAttack?.isUltimate === true;
+    const hasDefenderCardResponse = hasBeforeDamageReceivedCard(state, defenderId);
+    if (rawTokenResponseType === 'attackerBoost') return 'attackerBoost';
+    if (isUltimateDamage) return null;
+    if (rawTokenResponseType === 'defenderMitigation') return 'defenderMitigation';
+    return hasDefenderCardResponse ? 'defenderMitigation' : null;
+};
 
 // ============================================================================
 // 效果上下文
@@ -289,6 +303,8 @@ export interface BonusDiceRollConfig {
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
     /** 自定义奖励骰收口处理器 ID（用于按骰面而非点数结算的技能） */
     customResolutionId?: string;
+    /** 允许普通改骰牌修改这组奖励骰，并在确认结算时读取改后的结果 */
+    allowDiceModification?: boolean;
     /** 可选：构建每颗奖励骰的 effectParams（用于文案插值/日志展示） */
     effectParamsBuilder?: (params: { value: number; index: number; face: DieFace }) => Record<string, string | number>;
 }
@@ -363,6 +379,7 @@ export function createBonusDiceWithReroll(
             attackBonusSourceCardId: config.attackBonusSourceCardId,
             postSettleBonusDamageAdds: config.postSettleBonusDamageAdds,
             customResolutionId: config.customResolutionId,
+            allowDiceModification: config.allowDiceModification,
         };
         events.push({
             type: 'BONUS_DICE_REROLL_REQUESTED',
@@ -388,14 +405,18 @@ export function createBonusDiceWithReroll(
                     readyToSettle: false,
                     displayOnly: true,
                     showTotal: config.showTotal ?? true,
+                    customResolutionId: config.customResolutionId,
+                    allowDiceModification: config.allowDiceModification,
                 },
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
         } as BonusDiceRerollRequestedEvent);
 
-        // 调用方提供的结算逻辑（伤害/状态等）
-        events.push(...resolveNoToken(dice));
+        // 可被改骰的 displayOnly 奖励骰必须等玩家确认后，用改后的骰面结算。
+        if (!config.allowDiceModification) {
+            events.push(...resolveNoToken(dice));
+        }
     }
 
     return events;
@@ -602,9 +623,11 @@ function resolveEffectAction(
                         ctx.isDefensiveContext,
                         action.damageScope ?? 'attack'
                     );
-                    const tokenResponseType = action.unblockable && rawTokenResponseType === 'defenderMitigation'
-                        ? null
-                        : rawTokenResponseType;
+                    const tokenResponseType = resolveDamageResponseType(
+                        state,
+                        dmgTargetId,
+                        rawTokenResponseType,
+                    );
 
                     if (tokenResponseType) {
                         // 创建待处理伤害，暂停伤害结算
@@ -878,9 +901,14 @@ function resolveEffectAction(
                         const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
 
                         // 检查是否需要打开 Token 响应窗口。
-                        // 不可防御伤害仍允许攻击方增伤，但禁止防御方减伤/闪避类响应。
+                        // 普通不可防御伤害只跳过防御技能，卡牌与状态 Token 仍按自身条件响应。
+                        // 终极技能的防御方响应由 resolveDamageResponseType 统一封锁。
                         const shouldAllowAttackerBoost = damageScope === 'attack';
-                        if (shouldCheckTokenResponse && dmgAmount > 0 && (shouldAllowAttackerBoost || !isUnblockable)) {
+                        if (
+                            shouldCheckTokenResponse
+                            && dmgAmount > 0
+                            && (shouldAllowAttackerBoost || !isUnblockable || hasBeforeDamageReceivedCard(state, dmgTargetId))
+                        ) {
                             const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
                                 state,
                                 dmgTargetId,
@@ -896,9 +924,11 @@ function resolveEffectAction(
                                 ctx.isDefensiveContext,
                                 damageScope
                             );
-                            const tokenResponseType = isUnblockable && rawTokenResponseType === 'defenderMitigation'
-                                ? null
-                                : rawTokenResponseType;
+                            const tokenResponseType = resolveDamageResponseType(
+                                state,
+                                dmgTargetId,
+                                rawTokenResponseType,
+                            );
 
                             if (tokenResponseType) {
                                 // 替换 DAMAGE_DEALT 为 TOKEN_RESPONSE_REQUESTED

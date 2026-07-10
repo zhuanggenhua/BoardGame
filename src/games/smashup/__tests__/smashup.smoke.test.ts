@@ -10537,6 +10537,7 @@ describe('smashup', () => {
         const currentTitanIds = TITAN_CARD_DEFS.map(def => def.id);
         expect(currentTitanIds).toEqual([
             'huluwawa_little_king_kong',
+            'paladins_seraphim',
             'dinosaurs_fort_titanosaurus',
             'ninjas_invisible_ninja',
             'bear_cavalry_major_ursa',
@@ -10569,7 +10570,7 @@ describe('smashup', () => {
             'sphinx',
             'pecos_bill',
         ]);
-        expect(TITAN_CARD_DEFS).toHaveLength(32);
+        expect(TITAN_CARD_DEFS).toHaveLength(33);
         expect(getTitanDef('dinosaurs_fort_titanosaurus')?.abilityTags).toEqual(['special', 'ongoing', 'talent']);
         expect(getTitanDef('dinosaurs_fort_titanosaurus')?.activatableAbilities).toEqual([
             { kind: 'special', zone: 'setaside', window: 'playCards' },

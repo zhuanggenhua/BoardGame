@@ -11,6 +11,8 @@ import type { CustomActionContext } from '../domain/effects';
 import { initializeCustomActions } from '../domain/customActions';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { monkDiceDefinition } from '../heroes/monk/diceConfig';
+import { reduce } from '../domain/reducer';
+import { getBonusDiceSettlementHandler } from '../domain/bonusDiceSettlement';
 
 initializeCustomActions();
 registerDiceDefinition(monkDiceDefinition);
@@ -200,6 +202,20 @@ describe('僧侣 Custom Action 运行时行为断言', () => {
     // one-throw-fortune-cp: 投1骰，获得ceil(value/2)CP
     // ========================================================================
     describe('one-throw-fortune-cp (一掷千金)', () => {
+        const settleOneThrowFortune = (state: DiceThroneCore, events: DiceThroneEvent[]) => {
+            const settlementEvent = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED')[0] as any;
+            const settledState = reduce(state, settlementEvent);
+            const settlement = settledState.pendingBonusDiceSettlement;
+            expect(settlement).toBeTruthy();
+            const settlementHandler = getBonusDiceSettlementHandler('one-throw-fortune-cp');
+            expect(settlementHandler).toBeTruthy();
+            return settlementHandler!({
+                state: settledState,
+                settlement: settlement!,
+                timestamp: 1000,
+            })?.followupEvents ?? [];
+        };
+
         it('投出6获得3CP', () => {
             const state = createState({ cp: 5 });
             const handler = getCustomActionHandler('one-throw-fortune-cp')!;
@@ -209,9 +225,10 @@ describe('僧侣 Custom Action 运行时行为断言', () => {
             ctx.targetId = '0' as any;
             const events = handler(ctx);
 
-            const cp = eventsOfType(events, 'CP_CHANGED');
+            const cp = eventsOfType(settleOneThrowFortune(state, events), 'CP_CHANGED');
             expect(cp).toHaveLength(1);
             expect((cp[0] as any).payload.delta).toBe(3); // ceil(6/2)
+            expect((cp[0] as any).payload.newValue).toBe(8);
         });
 
         it('投出1获得1CP', () => {
@@ -223,7 +240,10 @@ describe('僧侣 Custom Action 运行时行为断言', () => {
             ctx.targetId = '0' as any;
             const events = handler(ctx);
 
-            expect((eventsOfType(events, 'CP_CHANGED')[0] as any).payload.delta).toBe(1);
+            const cp = eventsOfType(settleOneThrowFortune(state, events), 'CP_CHANGED');
+            expect(cp).toHaveLength(1);
+            expect((cp[0] as any).payload.delta).toBe(1); // ceil(1/2)
+            expect((cp[0] as any).payload.newValue).toBe(6);
         });
     });
 

@@ -151,6 +151,9 @@ export interface GameBoardProps<
     /** 对局中的玩家信息（名称、连接状态） */
     matchData?: MatchPlayerInfo[];
 
+    /** 本地/在线座位控制器：human / local-ai / remote-ai，供 Board 区分热座与人机局 */
+    seatControllers?: Record<string, import('../ai/types').AiSeatController>;
+
     /** 是否为多人在线模式 */
     isMultiplayer?: boolean;
 

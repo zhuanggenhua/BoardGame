@@ -1038,6 +1038,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
             }
 
             const isForceUpdate = manifest.forceUpdate === true;
+            const resolvedApplyMode = isForceUpdate ? 'immediate' : applyMode;
 
             try {
                 const { CapacitorUpdater } = updaterModule;
@@ -1083,7 +1084,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     compatibility,
                 });
                 if (!compatibility.compatible) {
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         clearImmediateActivityPhase();
                     }
                     const requiredNativeVersion = resolveManifestRequiredNativeVersion(manifest);
@@ -1129,7 +1130,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
 
                 const manifestVsCurrent = compareBundleVersion(manifest.version, current.bundle.version);
                 if (manifestVsCurrent <= 0) {
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         clearImmediateActivityPhase();
                     }
                     emitCriticalOtaLog('already-up-to-date', {
@@ -1146,7 +1147,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     return { status: 'up-to-date' } as const;
                 }
 
-                if (applyMode === 'immediate') {
+                if (resolvedApplyMode === 'immediate') {
                     setImmediateActivityPhase('checking', { version: manifest.version });
                     emitForceState(onForceStateChange, {
                         phase: 'checking',
@@ -1181,7 +1182,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     logMobileRuntime('OTA', 'cached-bundle-hit', {
                         cachedBundle,
                     });
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         setImmediateActivityPhase('applying', {
                             version: manifest.version,
                             progressPercent: 100,
@@ -1240,7 +1241,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 const downloadHandle: PluginListenerHandle | null = null;
 
                 try {
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         setImmediateActivityPhase('downloading', { version: manifest.version });
                         emitForceState(onForceStateChange, {
                             phase: 'downloading',
@@ -1291,7 +1292,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
 
                     await removeListenerSafely(downloadHandle);
 
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         setImmediateActivityPhase('applying', {
                             version: manifest.version,
                             progressPercent: 100,
@@ -1347,14 +1348,14 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         status: 'queued',
                         version: manifest.version,
                         source: 'downloaded',
-                        mode: applyMode,
+                        mode: resolvedApplyMode,
                     } as const;
                 } catch (error) {
                     await removeListenerSafely(downloadHandle);
                     throw error;
                 }
             } catch (error) {
-                if (applyMode === 'immediate') {
+                if (resolvedApplyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
                 const reason = error instanceof Error ? error.message : String(error);

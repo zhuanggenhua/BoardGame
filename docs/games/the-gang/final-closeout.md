@@ -45,8 +45,9 @@
 - `openspec validate add-the-gang-data-and-runtime-closeout --strict --no-interactive`：2026-07-05 复验通过。
 - `openspec validate the-gang --strict --no-interactive`：2026-07-05 复验通过。
 - `npx vitest run src/games/the-gang --configLoader native`：2026-07-05 08:22 复验通过，8 files / 20 tests passed。
-- `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-runtime.e2e.ts "桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果"`：2026-07-05 17:05 复验通过，1 test passed；桌面核心流程以 1920×1080 基线通过真实 UI 完成一次四轮抢劫，且图片加载断言覆盖公共牌、历史筹码、当前筹码。
-- 最新桌面中局满元素截图已重新生成并打开给用户看：`test-results/evidence-screenshots/the-gang/the-gang-runtime.e2e/桌面端可通过真实-UI-完成一次四轮抢劫并显示摊牌结果/桌面中局满元素已拿新筹码待摊牌.jpg`；AI 已复看 `temp/the-gang-intake/the-gang-1920-desktop-contact.jpg` 并确认历史筹码、当前红筹码、中央五张公共牌、红筹码区、底部手牌和“摊牌”入口同屏可见，不再是白块截图。
+- 历史验证（2026-07-05 旧热座版本）：`node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-runtime.e2e.ts "桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果"` 复验通过，1 test passed；该结果保留为当时版本的桌面流程与素材证据，不再代表 2026-07-10 后的单客户端玩家视角合同。
+- 历史桌面中局满元素截图：`test-results/evidence-screenshots/the-gang/the-gang-runtime.e2e/桌面端可通过真实-UI-完成一次四轮抢劫并显示摊牌结果/桌面中局满元素已拿新筹码待摊牌.jpg`；图面仍可证明历史筹码、当前红筹码、中央五张公共牌、红筹码区、底部手牌和“摊牌”入口曾同屏可见，但不得用来证明当前多人自然操作或热座合同。
+- 现行交互与验证口径见 `docs/games/the-gang/user-stories/online-viewer-and-landscape-contract-2026-07-10.md`：当前玩家使用可见 UI，其它座位可在代表态测试中用状态注入补齐；多人身份、权限和同步必须另用多客户端验证。
 - `npx vitest run src/games/the-gang/__tests__/tutorial.test.tsx --configLoader native`：2026-07-05 复验通过，3 tests passed。
 - `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-tutorial.e2e.ts "桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈"`：2026-07-05 17:06 复验通过，1 test passed；截图目录为 `test-results/evidence-screenshots/the-gang/the-gang-tutorial.e2e/桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈/`，且图片加载断言覆盖公共牌、历史筹码、当前筹码。
 - 教程关键图已打开给用户看：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg`；本次 PureRef 新建了 4 个进程 `21064,22068,29900,42044` 而非复用旧窗口。这证明桌面教程端到端，不等于整体最终完成。

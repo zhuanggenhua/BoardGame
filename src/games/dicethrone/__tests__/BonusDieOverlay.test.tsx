@@ -226,6 +226,56 @@ describe('BonusDieOverlay', () => {
         expect(html).not.toContain('bonusDie.confirmDamage');
     });
 
+    it('可改骰的 displayOnly 结算保留确认伤害入口', () => {
+        const html = renderToStaticMarkup(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                bonusDice={buildBonusDice()}
+                canReroll={false}
+                displayOnly
+                allowBackgroundInteraction
+                onSkipReroll={vi.fn()}
+            />
+        );
+
+        expect(html).toContain('bonusDie.confirmDamage');
+        expect(html).not.toContain('bonusDie.closeSpotlight');
+    });
+
+    it('固定选择结果不应显示为投掷结果，也不播放投骰揭示动画', () => {
+        const html = renderToStaticMarkup(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                value={4}
+                face="gear"
+                effectKey="bonusDie.effect.artificerWrenchStrikeGear"
+                presentationKind="choice"
+            />
+        );
+
+        expect(html).toContain('data-animate-on-mount="false"');
+        expect(html).not.toContain('data-animate-on-mount="true"');
+    });
+
+    it('displayOnly 固定选择面板应显示选择结果而不是投掷结果', () => {
+        const html = renderToStaticMarkup(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                bonusDice={[{ index: 0, value: 4, face: 'gear' as any, presentationKind: 'choice' }]}
+                canReroll={false}
+                displayOnly
+                presentationKind="choice"
+            />
+        );
+
+        expect(html).toContain('bonusDie.choiceResult');
+        expect(html).not.toContain('bonusDie.diceResult');
+        expect(html).toContain('data-animate-on-mount="false"');
+    });
+
     it('displayOnly 多骰特写点击骰子内容时应冒泡关闭容器', () => {
         const onClose = vi.fn();
         vi.useFakeTimers();

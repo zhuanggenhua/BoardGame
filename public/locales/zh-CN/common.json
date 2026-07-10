@@ -74,6 +74,8 @@
   },
   "accept": "接受",
   "reject": "拒绝",
+  "increase": "增加",
+  "decrease": "减少",
   "close": "关闭",
   "back": "返回",
   "loading": "加载中",

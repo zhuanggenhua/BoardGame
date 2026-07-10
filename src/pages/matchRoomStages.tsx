@@ -163,7 +163,10 @@ export const MatchRoomTutorialBoardStage = ({ stage }: { stage: MatchRoomTutoria
 
     return (
         <GameModeProvider mode="tutorial">
-            <MatchRoomTutorialBoardStageRuntime runtime={stage.runtime} />
+            <MatchRoomTutorialBoardStageRuntime
+                key={`${stage.runtime.gameId ?? 'unknown'}:${stage.runtime.tutorialId ?? stage.runtime.tutorialManifest?.id ?? 'tutorial'}`}
+                runtime={stage.runtime}
+            />
         </GameModeProvider>
     );
 };

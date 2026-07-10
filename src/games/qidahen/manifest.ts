@@ -26,9 +26,9 @@ const entry: GameManifestEntry = {
     },
     criticalImages: [
         'qidahen/board/qidahen-main-map',
-        'qidahen/cards/backs/ming-card-back',
-        'qidahen/cards/backs/korea-card-back',
-        'qidahen/cards/backs/qidahen-cover-card',
+        'qidahen/cards/backs/ming-deck-back',
+        'qidahen/cards/backs/korea-deck-back',
+        'qidahen/cards/backs/qidahen-common-card-back',
         'qidahen/cards/atlases/ming-faction-deck-atlas',
         'qidahen/cards/atlases/mongol-faction-deck-atlas',
         'qidahen/cards/atlases/korea-special-deck-atlas',

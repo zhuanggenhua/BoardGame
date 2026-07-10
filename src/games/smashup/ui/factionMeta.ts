@@ -163,12 +163,19 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.MERMAIDS, nameKey: 'factions.mermaids.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids.description' },
     { id: SMASHUP_FACTION_IDS.MERMAIDS_POD, nameKey: 'factions.mermaids_pod.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids_pod.description' },
     { id: SMASHUP_FACTION_IDS.KITTY_CATS, nameKey: 'factions.kitty_cats.name', icon: PawPrint, color: '#c026d3', descriptionKey: 'factions.kitty_cats.description' },
+    { id: SMASHUP_FACTION_IDS.KITTY_CATS_POD, nameKey: 'factions.kitty_cats_pod.name', icon: PawPrint, color: '#c026d3', descriptionKey: 'factions.kitty_cats_pod.description' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_HORSES, nameKey: 'factions.mythic_horses.name', icon: Rainbow, color: '#14b8a6', descriptionKey: 'factions.mythic_horses.description' },
+    { id: SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD, nameKey: 'factions.mythic_horses_pod.name', icon: Rainbow, color: '#14b8a6', descriptionKey: 'factions.mythic_horses_pod.description' },
     { id: SMASHUP_FACTION_IDS.FAIRIES, nameKey: 'factions.fairies.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies.description' },
+    { id: SMASHUP_FACTION_IDS.FAIRIES_POD, nameKey: 'factions.fairies_pod.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies_pod.description' },
     { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'], expansion: 'diy' },
+    { id: SMASHUP_FACTION_IDS.PALADINS, nameKey: 'factions.paladins.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.paladins.description', expansion: 'diy' },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
+    { id: SMASHUP_FACTION_IDS.PRINCESSES_POD, nameKey: 'factions.princesses_pod.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses_pod.description' },
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description' },
+    { id: SMASHUP_FACTION_IDS.SHARKS_POD, nameKey: 'factions.sharks_pod.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks_pod.description' },
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description' },
+    { id: SMASHUP_FACTION_IDS.TORNADOS_POD, nameKey: 'factions.tornados_pod.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados_pod.description' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS, nameKey: 'factions.mythic_greeks.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks.description' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS_POD, nameKey: 'factions.mythic_greeks_pod.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks_pod.description' },
     {
@@ -220,6 +227,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.MEGA_TROOPERS, nameKey: 'factions.mega_troopers.name', icon: Bot, color: '#dc2626', descriptionKey: 'factions.mega_troopers.description' },
     { id: SMASHUP_FACTION_IDS.SKELETONS, nameKey: 'factions.skeletons.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons.description', mechanicRule: BURY_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.WORLD_CHAMPS, nameKey: 'factions.world_champs.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.world_champs.description' },
+    { id: SMASHUP_FACTION_IDS.ALL_STARS_POD, nameKey: 'factions.all_stars_pod.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.all_stars_pod.description' },
     // POD 版本阵营：英文和中文都显示（英文用户的主版本）
     { id: SMASHUP_FACTION_IDS.NINJAS_POD, nameKey: 'factions.ninjas_pod.name', icon: ShurikenIcon, color: '#991b1b', descriptionKey: 'factions.ninjas_pod.description' },
 ];

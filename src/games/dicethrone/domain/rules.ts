@@ -762,6 +762,27 @@ const getAttackModifierPlayFailureReason = (
     return null;
 };
 
+const canPlayRollCardOutsideRollPhaseWithDiceResult = (
+    state: DiceThroneCore,
+    card: AbilityCard,
+    phase: TurnPhase,
+): boolean => (
+    (card.timing === 'roll' || card.timing === 'instant')
+    && hasAnyDiceEffect(card)
+    && (phase === 'upkeep' || phase === 'income' || phase === 'main1' || phase === 'main2')
+    && (
+        (
+            state.dice.length > 0
+            && state.rollCount > 0
+            && state.rollConfirmed
+        )
+        || (
+            state.pendingBonusDiceSettlement?.allowDiceModification === true
+            && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+        )
+    )
+);
+
 const matchesPendingDamagePlayCondition = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -888,8 +909,10 @@ const checkStandardCardPlay = (
         const isAfterAttackRollResponse =
             responseWindowType === 'afterAttackResolved'
             && card.playCondition?.requireMinDamageDealt !== undefined;
+        const isDiceResultInterference = canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase);
         if (
             !isAfterAttackRollResponse
+            && !isDiceResultInterference
             && phase !== 'offensiveRoll'
             && phase !== 'targetingRoll'
             && phase !== 'defensiveRoll'
@@ -902,6 +925,23 @@ const checkStandardCardPlay = (
 
     if (card.cpCost > 0 && playerCp < card.cpCost) {
         return { ok: false, reason: 'notEnoughCp' };
+    }
+
+    if (card.timing === 'roll' && hasAnyDiceEffect(card)) {
+        const diceEffectTarget = getDiceEffectTarget(card);
+        if (diceEffectTarget === 'self' && playerId !== getRollerId(state, phase)) {
+            return { ok: false, reason: 'requireIsRoller' };
+        }
+    }
+
+    if (
+        !responseWindowType
+        && phase === 'offensiveRoll'
+        && hasAnyDiceEffect(card)
+        && playerId !== getRollerId(state, phase)
+        && !state.pendingAttack?.sourceAbilityId
+    ) {
+        return { ok: false, reason: 'attackModifierRequiresSelectedAttack' };
     }
 
     const attackModifierFailureReason = getAttackModifierPlayFailureReason(state, playerId, card, phase);
@@ -933,11 +973,15 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireHasRolled && state.rollCount === 0) {
-            return { ok: false, reason: 'requireHasRolled' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireHasRolled' };
+            }
         }
 
         if (cond.requireDiceExists && state.dice.length === 0) {
-            return { ok: false, reason: 'requireDiceExists' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireDiceExists' };
+            }
         }
 
         if (cond.requireMinDiceCount && state.dice.length < cond.requireMinDiceCount) {

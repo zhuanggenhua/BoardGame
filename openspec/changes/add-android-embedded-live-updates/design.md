@@ -28,14 +28,20 @@
   - Required fields:
     - `bundleVersion`
     - `channel`
-    - `minBinaryVersion`
-    - `targetBinaryVersionRange` 或等价字段
     - `hash/signature`
     - `publishedAt`
-  - Rationale: 必须防止新 bundle 被旧壳错误加载。
+    - `forceUpdate = true`
+  - Rule: manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本都必须收到 OTA。
+  - Rationale: 当前产品规则是统一全量更新，不再使用原生版本门禁分流。
 
-- Decision: OTA 激活采用“下载 -> 校验 -> 标记待激活 -> 下次启动生效”为默认策略
-  - Rationale: 比“下载后立刻热切换页面”更稳，容易做回滚，也更符合桌游对局中断风险控制。
+- Decision: 所有 OTA 采用“检查 -> 阻塞下载 -> 校验 -> 立即切换”为统一策略
+  - Rule: 发布入口不得提供有效的 `--no-force-update` / `forceUpdate=false` 路径。
+  - Rationale: 用户已明确裁定所有 OTA 都必须强制更新，不能再让自动启动检查退回后台排队。
+
+- Decision: OTA 与 embedded APK 使用独立资源白名单
+  - Rule: OTA 只保留 H5 代码、样式、中文语言包、字体、必要小文件与 `assets-manifest.json`。
+  - Rule: `assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除资源清单外的嵌套运行时资源必须从 OTA 排除。
+  - Rationale: embedded 首包兜底资源不应导致 OTA 重复携带服务器或游戏包已经提供的素材。
 
 - Decision: 必须支持启动失败自动回滚到上一个可用 bundle 或 APK 内置 bundle
   - Rationale: 没有自动回滚的 OTA 不是可上线方案。
@@ -81,7 +87,7 @@
 1. 保持当前 `embedded` 默认模式不变
 2. 接入 OTA runtime 与本地 bundle registry
 3. 增加 bundle manifest 与发布流程
-4. 先在 Android 灰度渠道验证 OTA 下载、激活、回滚
+4. 先在 Android 灰度渠道验证阻塞下载、立即激活、回滚与轻量包内容
 5. 验证稳定后，把“前端改动默认走 OTA”写入正式发布规范
 6. 将 `remote` 标记为非主线兼容模式
 7. 接入 GitHub Actions main push 自动正式发版，并增加版本回写与循环保护

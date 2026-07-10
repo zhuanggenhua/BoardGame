@@ -1,3 +1,4 @@
+// @asset-pipeline-allow
 import type { CSSProperties } from 'react';
 import { getLocalizedAssetPath } from '../../../core';
 import {
@@ -88,7 +89,9 @@ type EnglishMapConfig = { atlasId: string; index: number };
 
 const REQUIRED_TTS_ATLAS_IDS = Array.from(
     new Set(
-        Object.values(smashUpEnglishMap as Record<string, EnglishMapConfig>).map(entry => entry.atlasId)
+        Object.values(smashUpEnglishMap as Record<string, EnglishMapConfig>)
+            .map(entry => entry.atlasId)
+            .filter(atlasId => atlasId.startsWith('tts_atlas_'))
     )
 ).sort();
 

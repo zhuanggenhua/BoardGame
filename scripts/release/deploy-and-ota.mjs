@@ -13,7 +13,7 @@ const helpText = `
   1. 先检查 package.json 版本已随本次发布自增
   2. 等待 10 分钟
   3. ssh 到生产机执行: bash scripts/deploy/deploy-image.sh update
-  4. 本地执行: node scripts/mobile/release-android.mjs ota --channel stable
+  4. 本地执行强制更新 OTA: node scripts/mobile/release-android.mjs ota --channel stable --force-update
 
 准备版本:
   node scripts/release/deploy-and-ota.mjs --prepare-version
@@ -36,7 +36,7 @@ const helpText = `
   --deploy-tag <tag>         远端执行 update <tag>；不传则执行 update latest
   --ota-channel <name>       OTA channel，默认 stable
   --skip-ota                 只更新服务器，不执行本地 Android OTA 发布
-  --ota-extra "<args>"       追加给 release-android ota 的额外参数
+  --ota-extra "<args>"       追加给 release-android ota 的额外参数；禁止传 --no-force-update
 `.trim();
 
 const readArgValue = (name, fallback = '') => {
@@ -70,6 +70,10 @@ const otaChannel = readArgValue('ota-channel', 'stable');
 const skipOta = hasFlag('skip-ota');
 const otaExtraRaw = readArgValue('ota-extra', '').trim();
 const otaExtraArgs = otaExtraRaw ? otaExtraRaw.split(/\s+/).filter(Boolean) : [];
+
+if (otaExtraArgs.includes('--no-force-update')) {
+    throw new Error('所有 OTA 已强制更新，--ota-extra 禁止传入 --no-force-update。');
+}
 
 if (hasFlag('help') || rawArgs.includes('-h')) {
     console.log(helpText);
@@ -129,6 +133,7 @@ const otaCommandArgs = [
     'ota',
     '--channel',
     otaChannel,
+    '--force-update',
     ...otaExtraArgs,
 ];
 

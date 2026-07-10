@@ -204,12 +204,6 @@ createRefChainSuite<AbilityDef>({
  * 新增 activated 技能时必须同步更新此映射。
  */
 const ACTIVATED_UI_CONFIRMED = new Map<string, string>([
-    // afterMove 自动触发（execute.ts MOVE_UNIT → ABILITY_TRIGGERED → useGameEvents → Board）
-    ['inspire',        'afterMove:auto — MOVE_UNIT 自动充能相邻友方，无 UI 交互'],
-    ['spirit_bond',    'afterMove:ui  — StatusBanners 充能自身/转移选择 + cell interaction'],
-    ['ancestral_bond', 'afterMove:ui  — StatusBanners + cell interaction 选目标'],
-    ['structure_shift', 'afterMove:ui  — StatusBanners + cell interaction 选建筑'],
-    ['frost_axe',      'afterMove:ui  — StatusBanners 充能自身/附加士兵 + cell interaction'],
     ['vanish',         'button:attack — Board.tsx 攻击阶段按钮 + cell interaction 0费友方单位'],
     // 手动触发（Board.tsx 静态按钮 → ACTIVATE_ABILITY）
     ['prepare',        'button:move   — Board.tsx 移动阶段按钮'],

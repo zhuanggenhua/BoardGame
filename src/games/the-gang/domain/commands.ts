@@ -33,10 +33,7 @@ function validateTakeChip(core: TheGangCore, playerId: string, chip: number): Va
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
     if (!getChipValues(core.playerIds.length).includes(chip)) return failure('invalidChip');
-
-    const occupiedByOther = Object.entries(core.currentRoundChips)
-        .some(([owner, ownerChip]) => owner !== playerId && ownerChip === chip);
-    if (occupiedByOther) return failure('chipTaken');
+    if (core.currentRoundChips[playerId] === chip) return failure('chipAlreadyHeld');
 
     return success();
 }

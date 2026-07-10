@@ -80,20 +80,18 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
   - 想让“展示口径”回到 `0.5.58`，不能直接靠原生包降版本完成
 - 遇到“网页想显示 58，但旧壳要自动更新”的需求，必须先把**显示版本**和**原生递增版本码**分开处理，不能直接硬回退原生版本。
 
-### 2.6 Android embedded 必须保持轻包
+### 2.6 Android embedded 与 OTA 必须分别控制包体
 
 - `public/assets/**` 只允许正式运行时资源。
-- 禁止把以下内容打进 Android embedded / OTA：
+- Android embedded APK 可以为首装和离线兜底保留经过明确白名单确认的最小资源。
+- Android OTA 不得复用 embedded 白名单；以下内容禁止进入 OTA zip：
   - `public/assets/common/audio/**`
-  - `public/assets/common/images/mascot/**`
-  - `public/assets/common/images/home-v2/book-close/**`
-  - `public/assets/common/images/home-v2/catalog-thumbnails/**`
-  - `public/assets/common/images/home-v2/generated-reference-homepage/**`
-  - `public/assets/common/images/home-v2/overview-spread/**`
-  - `public/assets/common/images/home-v2/reference-homepage/**`
-  - `public/assets/common/images/home-v2/reference-thumbnails/**`
-  - `public/assets/i18n/**`
+  - `public/assets/common/images/**`
+  - `public/assets/atlas-configs/**`
+  - `public/assets/i18n/**` 下除 `assets-manifest.json` 外的图片、音频和运行时配置
+  - `public/logos/**`
   - 参考图、预览图、生成图、中间产物
+- OTA 只允许 H5 代码、样式、`locales/zh-CN/**`、字体、必要的小型公共文件和 `assets-manifest.json`。
 - 一旦包体异常变大，先查 `public/assets/**` 和 `dist/`，不要先猜 CDN、缓存或签名。
 
 ### 2.7 用户说“上传 / 发原生更新 / 改网站下载 app”时，默认自动做完
@@ -108,6 +106,16 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - 发布 OTA 的真相源必须是已推送的 git ref。若本地存在无关未提交改动，按 `4.1.1` 处理，不得把它们混进 OTA，也不得因此漏发 OTA。
 - OTA 发布后必须回查 `https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json`，确认 `version / url / checksum / size / notes` 指向本次已推送 ref。
 - 如用户明确要求“不发 OTA / 只更新服务器”，最终汇报必须点明“本次未发布 Android OTA”。
+
+### 2.9 所有 OTA 必须强制更新
+
+- Android 所有 channel 的 OTA manifest 必须写入 `forceUpdate: true`。
+- 发布脚本、统一发布入口、后台发布页、服务端接口和 GitHub Actions 都不得提供有效的关闭入口。
+- `--no-force-update` 或等价的 `forceUpdate=false` 必须被拒绝；不能静默发布成后台 OTA。
+- 客户端启动检查遇到强制 OTA 时，必须显示阻塞式更新界面，下载完成后立即切换 bundle。
+- `--force-update` 只作为旧命令兼容参数保留；不传也必须强制更新。
+- 发布后健康检查必须区分“服务器传播尚未完成”和“程序参数无效”。URL 类型错误、`Invalid URL`、`[object Object]`、目标结构错误、预期大小或摘要无效必须首轮立即失败，禁止套用传播等待反复重试。
+- Docker 镜像构建、Android stable OTA 与 native workflow 的整次运行上限统一为 30 分钟；服务器主源传播验证和镜像部署整步保护也统一为 30 分钟。超过上限必须失败并保留原线上版本，不得继续后台假卡死。
 
 ## 3. 路径选择
 
@@ -135,7 +143,22 @@ node scripts/mobile/release-android.mjs native --channel stable
 node scripts/mobile/release-android.mjs native --channel stable --bump patch
 ```
 
-### 3.3 只想本地重打 APK，不上传
+### 3.3 改了游戏横竖屏或原生方向映射
+
+- 修改下列任一项都属于 **native 改动**，只发 OTA 不会生效：
+  - `preferredOrientation`
+  - `scripts/game/generate_game_manifests.js` 的方向表生成规则
+  - `android/app/src/main/assets/game-orientation-map.json`
+  - `MainActivity` / `GameOrientationPolicy`
+- 本项目方向不变量是：**除井字棋外，所有游戏默认强制横屏**；未配置或非法方向也必须回退到横屏，只有 `tictactoe` 允许显式 `portrait`。
+- 如果同一轮还修改了 H5 样式/交互，必须同时发布：
+  1. stable OTA，交付最新 H5；
+  2. stable native APK，交付最新方向映射和原生锁屏逻辑。
+- 判断是否需要 native 不能只看“本轮有没有修改 Android 文件”。只要用户验收目标涉及横竖屏，就必须下载线上 stable APK，对比其中的 `assets/game-orientation-map.json` 和目标提交的原生方向策略；线上 APK 缺少目标游戏、仍使用旧的缺省方向，或版本早于目标策略时，native 发布仍是必需交付。
+- 发布后必须直接检查线上 APK 内的 `assets/game-orientation-map.json`，确认目标游戏为 `landscape`，不能只看源码或 OTA `latest.json`。
+- 横竖屏问题的最终验收位点是更新后的真实 App 页面；workflow、manifest 和 APK 内容只能证明交付条件成立，不能替代“目标游戏实际横屏”的用户可见验收。
+
+### 3.4 只想本地重打 APK，不上传
 
 ```bash
 npm run mobile:android:build:release
@@ -152,6 +175,9 @@ npm run mobile:android:build:release
 - 当前目标是 `OTA` 还是 `native`
 - 是否真的需要部署网站
 - 是否涉及原生版本码递增
+- 是否改了游戏方向；若改了，必须按 native 处理，不能只发 OTA
+- 用户点名的每个现实结果分别由 `server / OTA / game package / native` 哪一层交付；没有完成这张交付矩阵前，不得开始发布。
+- 即使本轮没有新增原生 diff，也必须检查线上 APK 是否落后于目标提交已有的原生能力；“源码里已经有”不等于“用户手机里的壳已经有”。
 
 如果用户说“不要部署，只更新网站下载的 app”，默认是 **native publish，不是 deploy**。
 
@@ -173,6 +199,8 @@ npm run mobile:android:build:release
 5. 触发 Android OTA workflow：`.github/workflows/android-ota-publish.yml`，`channel=stable`，`git_ref=<本次已推送提交>`，`expected_base_version=<package.json.version>`。
 6. 等待 OTA workflow 成功。
 7. 回查 Android OTA `latest.json` 与 bundle URL，确认它们对应本次提交。
+8. 若交付矩阵包含方向映射、原生权限、插件、系统栏、返回键或其它 native 能力，触发 `.github/workflows/android-native-update-publish.yml`，并直接下载线上 APK 验证目标原生内容。
+9. 回到用户原始失败位点做真实验收；例如横竖屏问题必须确认更新后的目标游戏实际进入横屏，不能以 OTA/APK 发布成功代替。
 
 任一步失败时，只能汇报该步骤的真实阻塞；不得用前一步成功替代整条“更新部署”完成。
 

@@ -142,15 +142,20 @@ export function execute(
 
 export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
     switch (event.type) {
-        case THE_GANG_EVENTS.CHIP_TAKEN:
+        case THE_GANG_EVENTS.CHIP_TAKEN: {
+            const nextRoundChips = Object.fromEntries(
+                Object.entries(core.currentRoundChips)
+                    .filter(([owner, chip]) => owner === event.payload.playerId || chip !== event.payload.chip),
+            );
             return {
                 ...core,
                 currentRoundChips: {
-                    ...core.currentRoundChips,
+                    ...nextRoundChips,
                     [event.payload.playerId]: event.payload.chip,
                 },
                 pendingProgress: undefined,
             };
+        }
         case THE_GANG_EVENTS.PROGRESS_APPROVED:
             return {
                 ...core,

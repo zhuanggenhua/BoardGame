@@ -16,9 +16,10 @@ const entry: GameManifestEntry = {
     tags: ['card_driven'],
     bestPlayers: [4, 5],
     ai: {
-        capture: false,
-        localAi: false,
+        capture: true,
+        localAi: true,
         remoteAi: false,
+        defaultLocalAiSeats: 'all-opponents',
     },
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',

@@ -375,11 +375,7 @@ export class AdminMobileReleaseService {
         if (otaVersionBase) {
             args.push('--ota-version-base', otaVersionBase);
         }
-        if (dto.forceUpdate === false) {
-            args.push('--no-force-update');
-        } else {
-            args.push('--force-update');
-        }
+        args.push('--force-update');
         if (dto.dryRun) {
             args.push('--dry-run');
         }
@@ -484,7 +480,7 @@ export class AdminMobileReleaseService {
             ota_version_base: dto.otaVersionBase?.trim() || '',
             dry_run: dto.dryRun ? 'true' : 'false',
             skip_latest: dto.skipLatest ? 'true' : 'false',
-            force_update: dto.forceUpdate === false ? 'false' : 'true',
+            force_update: 'true',
         };
         const forceUpdateTitle = dto.forceUpdateTitle?.trim();
         if (forceUpdateTitle) {
@@ -652,7 +648,7 @@ export class AdminMobileReleaseService {
             channel: dto.channel ?? 'stable',
             version: dto.version,
             otaVersionBase: dto.otaVersionBase,
-            forceUpdate: dto.forceUpdate ?? true,
+            forceUpdate: true,
             dryRun: false,
             skipLatest: false,
         };

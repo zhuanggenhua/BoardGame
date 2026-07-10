@@ -58,7 +58,6 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'mermaids_becalmed_shores', location: 'base', target: 'opponentMinions', delta: -1 },
     { defId: 'mermaids_shipwreck_cove', location: 'base', target: 'ownerMinions', delta: 1 },
     { defId: 'world_champs_bewitched', location: 'minion', target: 'self', delta: 2 },
-    { defId: 'fairies_leaf_armor', location: 'minion', target: 'self', delta: 1 },
     { defId: 'shapeshifters_splice_as_nice', location: 'minion', target: 'self', delta: 2 },
     { defId: 'cyborg_apes_cyberevolution', location: 'minion', target: 'self', delta: 3 },
     { defId: 'werewolf_full_moon', location: 'base', target: 'ownerMinions', delta: 1 },
@@ -290,8 +289,15 @@ function registerWorldChampsModifiers(): void {
 function registerFairiesModifiers(): void {
     registerCustomPowerModifiers([
         {
+            sourceDefId: 'fairies_leaf_armor',
+            variantPolicy: 'baseOnly',
+            compute: (ctx) => (
+                ctx.minion.attachedActions.filter(action => action.defId === 'fairies_leaf_armor').length
+            ),
+        },
+        {
             sourceDefId: 'fairies_daisy_chain',
-            runtimeIdentity: 'actionFamily',
+            variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => (
                 helpers.sumMinionAttachmentsMatchingRuntimeDefId(
                     ctx,
@@ -302,7 +308,7 @@ function registerFairiesModifiers(): void {
         },
         {
             sourceDefId: 'fairies_enchantment',
-            runtimeIdentity: 'actionFamily',
+            variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => (
                 helpers.sumBaseOngoingsMatchingRuntimeDefId(ctx, 'fairies_enchantment', (action) => {
                     const mode = action.metadata?.fairiesEnchantmentMode;
@@ -486,11 +492,23 @@ function registerMythicHorsesModifiers(): void {
     registerCustomPowerModifiers([
         {
             sourceDefId: 'mythic_horses_starlyte',
+            variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => {
                 if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'mythic_horses_starlyte')) return 0;
                 return helpers.countMinionsOnBaseControlledBy(ctx, ctx.minion.controller, {
                     excludeSelf: true,
                 });
+            },
+        },
+        {
+            sourceDefId: 'mythic_horses_starlyte_pod',
+            variantPolicy: 'override',
+            compute: (ctx) => {
+                if (ctx.minion.defId !== 'mythic_horses_starlyte_pod') return 0;
+                return ctx.base.minions.filter(minion => (
+                    minion.uid !== ctx.minion.uid
+                    && minion.controller === ctx.minion.controller
+                )).length;
             },
         },
         {
@@ -504,15 +522,30 @@ function registerMythicHorsesModifiers(): void {
         },
         {
             sourceDefId: 'mythic_horses_encouragement_power',
-            runtimeIdentity: 'actionFamily',
-            compute: (ctx, helpers) => (
-                helpers.sumMinionAttachmentsMatchingRuntimeDefId(
-                    ctx,
-                    'mythic_horses_encouragement_power',
-                    (action) => helpers.countMinionsOnBaseControlledBy(ctx, action.ownerId, {
-                        excludeSelf: true,
-                    }),
-                )
+            variantPolicy: 'baseOnly',
+            compute: (ctx) => (
+                ctx.minion.attachedActions.reduce((total, action) => {
+                    if (action.defId !== 'mythic_horses_encouragement_power') return total;
+                    const otherOwnerMinionCount = ctx.base.minions.filter(minion => (
+                        minion.uid !== ctx.minion.uid
+                        && minion.controller === action.ownerId
+                    )).length;
+                    return total + otherOwnerMinionCount;
+                }, 0)
+            ),
+        },
+        {
+            sourceDefId: 'mythic_horses_encouragement_power_pod',
+            variantPolicy: 'override',
+            compute: (ctx) => (
+                ctx.minion.attachedActions.reduce((total, action) => {
+                    if (action.defId !== 'mythic_horses_encouragement_power_pod') return total;
+                    const hasOtherOwnerMinion = ctx.base.minions.some(minion => (
+                        minion.uid !== ctx.minion.uid
+                        && minion.controller === action.ownerId
+                    ));
+                    return hasOtherOwnerMinion ? total + 1 : total;
+                }, 0)
             ),
         },
     ]);

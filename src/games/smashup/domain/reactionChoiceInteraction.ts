@@ -39,7 +39,7 @@ export function getSmashUpReactionChoiceOptions(
     ) as ReactionOption[];
     const interactionOwnsLiveRefresh = typeof interaction.data.optionsGenerator === 'function'
         || interaction.data.autoRefresh !== undefined;
-    if (interactionOwnsLiveRefresh || refreshedOptions.length > 0) {
+    if (interactionOwnsLiveRefresh) {
         return refreshedOptions;
     }
 

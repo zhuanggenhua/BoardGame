@@ -7,8 +7,8 @@ export default function TutorialMatchRoomWithAudio() {
     const routeKey = `${location.pathname}${location.search}${location.hash}`;
 
     return (
-        <AudioProvider>
-            <MatchRoom key={routeKey} />
+        <AudioProvider key={routeKey}>
+            <MatchRoom />
         </AudioProvider>
     );
 }

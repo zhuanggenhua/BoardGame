@@ -31,6 +31,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: true,
+        trainingMinCompletedDurationMs: 10 * 60 * 1000,
     },
 };
 

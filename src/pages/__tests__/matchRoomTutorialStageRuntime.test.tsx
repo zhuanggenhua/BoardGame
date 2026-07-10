@@ -1,6 +1,7 @@
 /* @vitest-environment happy-dom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MatchRoomTutorialBoardRuntime, type MatchRoomTutorialBoardRuntimeModel } from '../matchRoomTutorialStageRuntime';
 import { buildTutorialProgressSeed } from '../useMatchRoomTutorialLifecycle';
@@ -14,7 +15,11 @@ let latestModalEntry: null | {
 let latestLocalProviderProps: null | {
     seed: string;
     persistSession?: boolean;
+    seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
+    followCurrentTurnPlayer?: boolean;
 } = null;
+const localProviderSeeds: string[] = [];
+const localProviderLifecycle: string[] = [];
 
 const modalClose = vi.fn();
 const openModal = vi.fn((entry: NonNullable<typeof latestModalEntry>) => {
@@ -97,12 +102,24 @@ vi.mock('../../engine/transport/react', () => ({
     LocalGameProvider: (props: {
         seed: string;
         persistSession?: boolean;
+        seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
+        followCurrentTurnPlayer?: boolean;
         children?: React.ReactNode;
     }) => {
+        const mountedSeed = useRef(props.seed).current;
+        useEffect(() => {
+            localProviderLifecycle.push(`mount:${mountedSeed}`);
+            return () => {
+                localProviderLifecycle.push(`unmount:${mountedSeed}`);
+            };
+        }, [mountedSeed]);
         latestLocalProviderProps = {
             seed: props.seed,
             persistSession: props.persistSession,
+            seatControllers: props.seatControllers,
+            followCurrentTurnPlayer: props.followCurrentTurnPlayer,
         };
+        localProviderSeeds.push(props.seed);
         return <div data-testid="local-game-provider">{props.children}</div>;
     },
     BoardBridge: () => <div data-testid="board-bridge" />,
@@ -113,6 +130,14 @@ const manifest: TutorialManifest = {
     steps: [
         { id: 'intro', content: 'intro' },
         { id: 'play-card', content: 'play-card' },
+    ],
+};
+
+const reclaimManifest: TutorialManifest = {
+    id: 'wheel-reclaim',
+    steps: [
+        { id: 'overview', content: 'overview' },
+        { id: 'choose-move', content: 'choose-move' },
     ],
 };
 
@@ -134,6 +159,10 @@ const runtime: MatchRoomTutorialBoardRuntimeModel = {
     onCommandRejected: vi.fn(),
     title: '学习模式',
     preparingDescription: '正在准备',
+    seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai', difficulty: 'normal' },
+    },
 };
 
 function persistProgressSnapshot() {
@@ -169,6 +198,8 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         window.localStorage.clear();
         latestModalEntry = null;
         latestLocalProviderProps = null;
+        localProviderSeeds.length = 0;
+        localProviderLifecycle.length = 0;
         modalClose.mockReset();
         openModal.mockClear();
         closeModal.mockClear();
@@ -197,6 +228,8 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
 
         await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(seed));
         expect(latestLocalProviderProps?.persistSession).toBe(true);
+        expect(latestLocalProviderProps?.seatControllers).toEqual(runtime.seatControllers);
+        expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(false);
         expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed))).not.toBeNull();
     });
 
@@ -219,5 +252,42 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
 
         await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(seed));
         expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed))).toBeNull();
+    });
+
+    it('同一教程页面切到隐藏续章时，会用新章节 seed 重新挂载本地教程局', async () => {
+        const initialSeed = buildTutorialProgressSeed(runtime.gameId, runtime.tutorialId, runtime.tutorialManifest?.id);
+        const reclaimRuntime: MatchRoomTutorialBoardRuntimeModel = {
+            ...runtime,
+            tutorialId: 'wheel-reclaim',
+            tutorialManifest: reclaimManifest,
+        };
+        const reclaimSeed = buildTutorialProgressSeed(
+            reclaimRuntime.gameId,
+            reclaimRuntime.tutorialId,
+            reclaimRuntime.tutorialManifest?.id,
+        );
+
+        const { rerender } = render(
+            <MemoryRouter>
+                <MatchRoomTutorialBoardRuntime runtime={runtime} />
+            </MemoryRouter>,
+        );
+        await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(initialSeed));
+        expect(localProviderLifecycle).toEqual([`mount:${initialSeed}`]);
+
+        rerender(
+            <MemoryRouter>
+                <MatchRoomTutorialBoardRuntime runtime={reclaimRuntime} />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(reclaimSeed));
+        expect(localProviderSeeds).toContain(initialSeed as string);
+        expect(localProviderSeeds).toContain(reclaimSeed as string);
+        expect(localProviderLifecycle).toEqual([
+            `mount:${initialSeed}`,
+            `unmount:${initialSeed}`,
+            `mount:${reclaimSeed}`,
+        ]);
     });
 });

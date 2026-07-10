@@ -3,7 +3,7 @@
  *
  * 卡牌规则：选择对手的1颗骰子，强制他重掷该骰子
  * - 费用：1 CP
- * - timing: roll（只能在投掷阶段使用）
+ * - timing: roll（通常在投掷阶段使用；非投掷阶段若仍保留已确认骰子判定结果，也可响应骰面）
  * - playCondition:
  *   - requireIsNotRoller: 不能是当前投掷方（只能在对手投掷时使用）
  *   - requireRollConfirmed: 对手必须已确认骰面
@@ -124,16 +124,27 @@ describe('抬一手（card-give-hand）边界测试', () => {
             expect((result as any).reason).toBe('requireIsNotRoller');
         });
 
-        it('main1 阶段不能打出（timing=roll 限制）', () => {
+        it('main1 阶段有已确认骰子判定结果时可以打出', () => {
             const core = makeCore({ rollConfirmed: true, rollCount: 1 });
             const result = checkPlayCard(core, '1', giveHandCard, 'main1');
-            expect(result.ok).toBe(false);
-            expect((result as any).reason).toBe('wrongPhaseForRoll');
+            expect(result.ok).toBe(true);
         });
 
-        it('main2 阶段不能打出', () => {
+        it('main2 阶段有已确认骰子判定结果时可以打出', () => {
             const core = makeCore({ rollConfirmed: true, rollCount: 1 });
             const result = checkPlayCard(core, '1', giveHandCard, 'main2');
+            expect(result.ok).toBe(true);
+        });
+
+        it('upkeep 阶段有已确认骰子判定结果时可以打出', () => {
+            const core = makeCore({ rollConfirmed: true, rollCount: 1 });
+            const result = checkPlayCard(core, '1', giveHandCard, 'upkeep');
+            expect(result.ok).toBe(true);
+        });
+
+        it('main1 阶段骰面未确认时不能打出', () => {
+            const core = makeCore({ rollConfirmed: false, rollCount: 1 });
+            const result = checkPlayCard(core, '1', giveHandCard, 'main1');
             expect(result.ok).toBe(false);
             expect((result as any).reason).toBe('wrongPhaseForRoll');
         });
@@ -142,6 +153,7 @@ describe('抬一手（card-give-hand）边界测试', () => {
             const core = makeCore({ rollConfirmed: true, rollCount: 1 });
             const result = checkPlayCard(core, '1', giveHandCard, 'discard');
             expect(result.ok).toBe(false);
+            expect((result as any).reason).toBe('wrongPhaseForRoll');
         });
     });
 

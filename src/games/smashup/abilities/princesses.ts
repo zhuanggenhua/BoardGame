@@ -14,6 +14,7 @@ import {
     buildValidatedMoveEvents,
     createSkipOption,
     getMinionPower,
+    grantContextualExtraAction,
     peekDeckTop,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
@@ -24,7 +25,7 @@ import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, DeckReorderedEvent, OngoingDetachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 
 type ButtonChoice = {
-    choice?: 'draw' | 'buff' | 'move_to_bottom';
+    choice?: 'draw' | 'buff' | 'play_extra_action' | 'move_to_bottom';
     skip?: boolean;
 };
 
@@ -53,9 +54,9 @@ type PrincessesRuntimePromptContext = {
 };
 
 type PrincessesDestroyMinionPromptContext = PrincessesRuntimePromptContext & {
-    sourceId: 'princesses_apricot' | 'princesses_skillet';
+    sourceId: 'princesses_apricot' | 'princesses_skillet' | 'princesses_skillet_pod';
     title: string;
-    reason: 'princesses_apricot' | 'princesses_skillet';
+    reason: 'princesses_apricot' | 'princesses_skillet' | 'princesses_skillet_pod';
     targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
     drawCount?: number;
 };
@@ -85,6 +86,11 @@ type PrincessesFairyGodmotherPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+    sourceId: 'princesses_fairy_godmother' | 'princesses_fairy_godmother_pod';
+    sourceDefId: string;
+    title: string;
+    drawCount: number;
+    buffAmount: number;
 };
 
 type PrincessesSnowWhitePromptContext = PrincessesRuntimePromptContext & {
@@ -101,6 +107,10 @@ type PrincessesWoodlandHelpersPromptContext = {
     defId: string;
     ownerId: PlayerId;
     cardName: string;
+};
+
+type PrincessesGriseldaPodPromptContext = PrincessesRuntimePromptContext & {
+    options: Array<{ cardUid: string; defId: string; label: string }>;
 };
 
 let princessesRuntimePromptCounter = 0;
@@ -232,6 +242,38 @@ function princessesWoodlandHelpers(ctx: TriggerContext): TriggerResult | SmashUp
     const discardOwnerId = discardOwnerEntry?.[0] as PlayerId | undefined;
     const card = discardOwnerEntry?.[1].discard.find(entry => entry.uid === cardUid);
     if (!discardOwnerId || !card || card.type !== 'action') return [];
+
+    const result = executeAbilityProgram(princessesWoodlandHelpersPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: helperControllerId,
+        now: ctx.now,
+        cardUid,
+        defId: card.defId,
+        ownerId: discardOwnerId,
+        cardName: getCardDef(card.defId)?.name ?? card.defId,
+    } satisfies PrincessesWoodlandHelpersPromptContext);
+    return {
+        events: result.events,
+        matchState: result.matchState,
+    };
+}
+
+function princessesWoodlandHelpersPod(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    const helperControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.playerId !== helperControllerId) return [];
+    if (!ctx.matchState) return [];
+    const cardUid = parseActionCardUid(ctx.sourceEventId);
+    if (!cardUid) return [];
+
+    const discardOwnerEntry = Object.entries(ctx.state.players).find(([, player]) =>
+        player.discard.some(entry => entry.uid === cardUid && entry.type === 'action'),
+    );
+    const discardOwnerId = discardOwnerEntry?.[0] as PlayerId | undefined;
+    const card = discardOwnerEntry?.[1].discard.find(entry => entry.uid === cardUid);
+    const cardDef = card ? getCardDef(card.defId) : undefined;
+    if (!discardOwnerId || !card || card.type !== 'action' || cardDef?.type !== 'action' || cardDef.subtype !== 'standard') {
+        return [];
+    }
 
     const result = executeAbilityProgram(princessesWoodlandHelpersPromptProgram, {
         matchState: ctx.matchState,
@@ -381,7 +423,15 @@ export function registerPrincessesAbilities(): void {
         program: princessesFairyGodmotherPromptProgram,
         createContext: createPrincessesFairyGodmotherContext,
     });
+    registerAbilityProgram('princesses_fairy_godmother_pod', 'onPlay', {
+        program: princessesFairyGodmotherPromptProgram,
+        createContext: createPrincessesFairyGodmotherContext,
+    });
     registerAbilityProgram('princesses_skillet', 'onPlay', {
+        program: princessesSkilletProgram,
+        createContext: createPrincessesSkilletContext,
+    });
+    registerAbilityProgram('princesses_skillet_pod', 'onPlay', {
         program: princessesSkilletProgram,
         createContext: createPrincessesSkilletContext,
     });
@@ -401,6 +451,10 @@ export function registerPrincessesAbilities(): void {
         program: princessesGriseldaProgram,
         createContext: createPrincessesGriseldaContext,
     });
+    registerAbilityProgram('princesses_griselda_pod', 'talent', {
+        program: princessesGriseldaPodProgram,
+        createContext: createPrincessesGriseldaPodContext,
+    });
 
     registerTrigger('princesses_happily_ever_after', 'afterScoring', princessesHappilyEverAfter, {
         perInstance: true,
@@ -408,6 +462,11 @@ export function registerPrincessesAbilities(): void {
         playerContext: 'sourceController',
     });
     registerTrigger('princesses_woodland_helpers', 'onActionPlayed', princessesWoodlandHelpers, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        baseScoped: false,
+    });
+    registerTrigger('princesses_woodland_helpers_pod', 'onActionPlayed', princessesWoodlandHelpersPod, {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
@@ -470,14 +529,23 @@ function createPrincessesDirectToDvdSequelContext(ctx: AbilityContext): Princess
 }
 
 function createPrincessesFairyGodmotherContext(ctx: AbilityContext): PrincessesFairyGodmotherPromptContext {
+    const isPod = ctx.defId === 'princesses_fairy_godmother_pod';
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        sourceId: isPod ? 'princesses_fairy_godmother_pod' : 'princesses_fairy_godmother',
+        sourceDefId: ctx.defId,
+        title: isPod
+            ? '妖精奶奶：抽两张牌，或者让一个仆从获得 +3 力量直到回合结束'
+            : '妖精奶奶：抽一张牌，或者让一个仆从获得 +2 力量直到回合结束',
+        drawCount: isPod ? 2 : 1,
+        buffAmount: isPod ? 3 : 2,
     };
 }
 
 function createPrincessesSkilletContext(ctx: AbilityContext): PrincessesDestroyMinionPromptContext {
+    const isPod = ctx.defId === 'princesses_skillet_pod';
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -485,8 +553,8 @@ function createPrincessesSkilletContext(ctx: AbilityContext): PrincessesDestroyM
         sourceDefId: ctx.defId,
         sourceId: 'princesses_skillet',
         title: '平底锅：选择一个力量为 2 或更小的仆从',
-        reason: 'princesses_skillet',
-        drawCount: 3,
+        reason: isPod ? 'princesses_skillet_pod' : 'princesses_skillet',
+        drawCount: isPod ? 1 : 3,
         targets: collectAllMinions(ctx.state)
             .filter(target => {
                 const live = ctx.state.bases[target.baseIndex]?.minions.find(minion => minion.uid === target.uid);
@@ -552,6 +620,23 @@ function createPrincessesGriseldaContext(ctx: AbilityContext): PrincessesDiscard
         title: '格丽泽尔达：选择你弃牌堆中的一张传家宝回到手牌',
         reason: 'princesses_griselda',
         mode: 'recover',
+        options: (player?.discard ?? [])
+            .filter(card => card.defId === 'princesses_heirloom' || card.defId === 'princesses_heirloom_pod')
+            .map(card => ({
+                cardUid: card.uid,
+                defId: card.defId,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+            })),
+    };
+}
+
+function createPrincessesGriseldaPodContext(ctx: AbilityContext): PrincessesGriseldaPodPromptContext {
+    const player = ctx.state.players[ctx.playerId];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: ctx.defId,
         options: (player?.discard ?? [])
             .filter(card => card.defId === 'princesses_heirloom' || card.defId === 'princesses_heirloom_pod')
             .map(card => ({
@@ -750,6 +835,56 @@ const princessesGriseldaPromptProgram = createPromptProgram<
     },
 });
 
+const princessesGriseldaPodPromptProgram = createPromptProgram<
+    PrincessesGriseldaPodPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_griselda_pod',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_griselda_pod_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        '格丽泽尔达：取回一张传家宝，或额外打出一张传家宝行动',
+        [
+            ...buildPrincessesDiscardCardOptions(context.options),
+            {
+                id: 'extra-action',
+                label: '额外打出一张传家宝行动',
+                labelKey: 'ui.princesses_griselda_pod_extra_action_option',
+                value: { choice: 'play_extra_action' },
+                displayMode: 'button' as const,
+            },
+        ],
+        {
+            sourceId: 'princesses_griselda_pod',
+            titleKey: 'ui.princesses_griselda_pod_title',
+            targetType: 'generic',
+            autoRefresh: 'discard',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as (CardChoice & ButtonChoice) | undefined;
+        if (selected?.choice === 'play_extra_action') {
+            return {
+                matchState: state,
+                events: [grantContextualExtraAction(
+                    { playerId, now: timestamp, matchState: state },
+                    'princesses_griselda_pod',
+                    { restrictToCardDefId: 'princesses_heirloom_pod' },
+                )],
+            };
+        }
+        if (!selected?.cardUid) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [recoverCardsFromDiscard(playerId, [selected.cardUid], 'princesses_griselda_pod', timestamp)],
+        };
+    },
+});
+
 const princessesDirectToDvdSequelProgram = createEffectProgram<
     PrincessesDiscardSelectionPromptContext,
     SmashUpCore,
@@ -768,6 +903,18 @@ const princessesGriseldaProgram = createEffectProgram<
     context.options.length === 0
         ? { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] }
         : { events: [], nextProgram: princessesGriseldaPromptProgram }
+));
+
+const princessesGriseldaPodProgram = createEffectProgram<
+    PrincessesGriseldaPodPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => (
+    context.options.length === 0
+        ? {
+            events: [grantContextualExtraAction(context, 'princesses_griselda_pod')],
+        }
+        : { events: [], nextProgram: princessesGriseldaPodPromptProgram }
 ));
 
 const princessesTrueLovesKissProgram = createEffectProgram<
@@ -1011,11 +1158,11 @@ const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_fairy_godmother_target_${princessesRuntimePromptCounter++}`,
         context.playerId,
-        '妖精奶奶：选择一个仆从获得 +2 力量直到回合结束',
+        `妖精奶奶：选择一个仆从获得 +${context.buffAmount} 力量直到回合结束`,
         buildMinionTargetOptions(collectAllMinions(context.matchState.core), {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
-            sourceDefId: 'princesses_fairy_godmother',
+            sourceDefId: context.sourceDefId,
             effectType: 'power_change',
         }),
         {
@@ -1025,7 +1172,7 @@ const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
             titleKey: 'ui.princesses_fairy_godmother_target_title',
         },
     ),
-    onResolve: ({ state, value, timestamp }) => {
+    onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice | undefined;
         if (!selected?.minionUid || selected.baseIndex === undefined) {
             return { matchState: state, events: [] };
@@ -1036,8 +1183,8 @@ const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
                 addTempPower(
                     selected.minionUid,
                     selected.baseIndex,
-                    2,
-                    'princesses_fairy_godmother',
+                    context.buffAmount,
+                    context.sourceId,
                     timestamp,
                 ),
             ],
@@ -1054,25 +1201,25 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `princesses_fairy_godmother_${princessesRuntimePromptCounter++}`,
         context.playerId,
-        '妖精奶奶：抽一张牌，或者让一个仆从获得 +2 力量直到回合结束',
+        context.title,
         [
             {
                 id: 'draw',
-                label: '抽一张牌',
+                label: `抽${context.drawCount}张牌`,
                 labelKey: 'ui.princesses_fairy_godmother_draw_option',
                 value: { choice: 'draw' },
                 displayMode: 'button' as const,
             },
             {
                 id: 'buff',
-                label: '给予 +2 力量',
+                label: `给予 +${context.buffAmount} 力量`,
                 labelKey: 'ui.princesses_fairy_godmother_buff_option',
                 value: { choice: 'buff' },
                 displayMode: 'button' as const,
             },
         ],
         {
-            sourceId: 'princesses_fairy_godmother',
+            sourceId: context.sourceId,
             targetType: 'button',
             autoResolveIfSingle: false,
             titleKey: 'ui.princesses_fairy_godmother_title',
@@ -1085,7 +1232,7 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
         if (selected?.choice === 'draw') {
             return {
                 matchState: state,
-                events: buildStandardDrawEventsFromRuntimeContext(args, playerId, 1),
+                events: buildStandardDrawEventsFromRuntimeContext(args, playerId, context.drawCount),
             };
         }
         if (selected?.choice !== 'buff') {

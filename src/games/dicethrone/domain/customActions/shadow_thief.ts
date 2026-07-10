@@ -127,7 +127,7 @@ function handleStealCp3(context: CustomActionContext) { return handleStealCpWith
 function handleStealCp4(context: CustomActionContext) { return handleStealCpWithAmount(context, 4); }
 // handleStealCp5 and 6 are defined later
 
-function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state, timestamp }: CustomActionContext, amount: number): DiceThroneEvent[] {
+function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state, timestamp, action }: CustomActionContext, amount: number): DiceThroneEvent[] {
     const faceCounts = getOffensiveAttackFaceCounts(state);
     const hasShadow = (faceCounts[FACE.SHADOW] || 0) > 0;
     const events: DiceThroneEvent[] = [];
@@ -135,9 +135,9 @@ function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state,
     let gained = amount;
 
     if (hasShadow) {
-        // Steal from opponent (Up to 2 CP)
+        // Base Steal allows only 1 CP from the opponent; upgraded Steal raises this via ability definition.
         const targetCp = state.players[targetId]?.resources[RESOURCE_IDS.CP] ?? 0;
-        const stealLimit = 2; // Fixed steal limit for Shadow Thief
+        const stealLimit = Math.max(0, Number(action?.stealLimit ?? 2));
         const stolenAmount = Math.min(targetCp, stealLimit);
 
         if (stolenAmount > 0) {

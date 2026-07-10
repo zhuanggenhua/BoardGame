@@ -62,12 +62,20 @@ import { MERMAIDS_POD_CARDS } from './factions/mermaids_pod';
 import { SKELETONS_CARDS } from './factions/skeletons';
 import { WORLD_CHAMPS_CARDS } from './factions/world_champs';
 import { FAIRIES_CARDS } from './factions/fairies';
+import { FAIRIES_POD_CARDS } from './factions/fairies_pod';
 import { HULUWAWA_CARDS } from './factions/huluwawa';
 import { KITTY_CATS_CARDS } from './factions/kitty_cats';
+import { KITTY_CATS_POD_CARDS } from './factions/kitty_cats_pod';
 import { MYTHIC_HORSES_CARDS } from './factions/mythic_horses';
+import { MYTHIC_HORSES_POD_CARDS } from './factions/mythic_horses_pod';
+import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
+import { PRINCESSES_POD_CARDS } from './factions/princesses_pod';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
+import { SHARKS_POD_CARDS } from './factions/sharks_pod';
+import { ALL_STARS_POD_CARDS } from './factions/all_stars_pod';
+import { TORNADOS_POD_CARDS } from './factions/tornados_pod';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 import { MYTHIC_GREEKS_POD_CARDS } from './factions/mythic_greeks_pod';
 import { SHAPESHIFTERS_CARDS } from './factions/shapeshifters';
@@ -207,12 +215,20 @@ registerCards(MERMAIDS_POD_CARDS);
 registerCards(SKELETONS_CARDS);
 registerCards(WORLD_CHAMPS_CARDS);
 registerCards(FAIRIES_CARDS);
+registerCards(FAIRIES_POD_CARDS);
 registerCards(HULUWAWA_CARDS);
 registerCards(KITTY_CATS_CARDS);
+registerCards(KITTY_CATS_POD_CARDS);
 registerCards(MYTHIC_HORSES_CARDS);
+registerCards(MYTHIC_HORSES_POD_CARDS);
+registerCards(PALADIN_CARDS);
 registerCards(PRINCESSES_CARDS);
+registerCards(PRINCESSES_POD_CARDS);
 registerCards(SHARKS_CARDS);
+registerCards(SHARKS_POD_CARDS);
+registerCards(ALL_STARS_POD_CARDS);
 registerCards(TORNADOS_CARDS);
+registerCards(TORNADOS_POD_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
 registerCards(MYTHIC_GREEKS_POD_CARDS);
 registerCards(SHAPESHIFTERS_CARDS);
@@ -581,6 +597,31 @@ export const BASE_CARDS_HULUWAWA: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_HULUWAWA);
+
+// ============================================================================
+// 圣骑士 DIY 基地
+// ============================================================================
+export const BASE_CARDS_PALADIN: BaseCardDef[] = [
+    {
+        id: 'base_paladins_monastery',
+        name: '修道院',
+        nameEn: 'Monastery',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_BASES, index: 0 },
+    },
+    {
+        id: 'base_paladins_roncesvalles_gorge',
+        name: '龙塞沃峡谷',
+        nameEn: 'Roncesvalles Gorge',
+        breakpoint: 24,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_BASES, index: 1 },
+    },
+];
+registerBases(BASE_CARDS_PALADIN);
 
 // ============================================================================
 // 扩展基地 (Oops, You Did It Again)
@@ -1679,6 +1720,66 @@ const POD_BASE_OVERRIDES_EXTENDED: BaseCardDef[] = [
         breakpoint: 20,
         vpAwards: [4, 2, 2],
         faction: SMASHUP_FACTION_IDS.VAMPIRES_POD,
+    }),
+
+    // Pretty Pretty Smash Up POD
+    buildPodBaseOverrideFromRegistry('base_enchanted_glade_pod', {
+        nameEn: 'Enchanted Glen',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.FAIRIES_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 0 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_fairy_ring_pod', {
+        nameEn: 'Fairy Ring',
+        breakpoint: 26,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.FAIRIES_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 1 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_house_of_nine_lives_pod', {
+        nameEn: 'The House of Nine Lives',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.KITTY_CATS_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 2 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_cat_fanciers_alley_pod', {
+        name: '酷猫巷',
+        nameEn: "Cool Cat's Alley",
+        breakpoint: 18,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.KITTY_CATS_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 3 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_land_of_balance_pod', {
+        name: '艾夸利亚',
+        nameEn: 'Equaria',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 4 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_pony_paradise_pod', {
+        nameEn: 'Pony Land',
+        breakpoint: 18,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 5 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_beautiful_castle_pod', {
+        nameEn: 'Beautiful Castle',
+        breakpoint: 22,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.PRINCESSES_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 6 },
+    }),
+    buildPodBaseOverrideFromRegistry('base_castle_of_ice_pod', {
+        nameEn: 'Ice Castle',
+        breakpoint: 15,
+        vpAwards: [3, 2, 2],
+        faction: SMASHUP_FACTION_IDS.PRINCESSES_POD,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, index: 7 },
     }),
 ];
 registerBases(POD_BASE_OVERRIDES_EXTENDED);

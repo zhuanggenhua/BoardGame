@@ -799,6 +799,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(eventsOfType(resolvedEvents, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
             face: 'gear',
             effectKey: 'bonusDie.effect.artificerWrenchStrikeGear',
+            presentationKind: 'choice',
         });
         expect(eventsOfType(resolvedEvents, 'BONUS_DAMAGE_ADDED')[0]?.payload.amount).toBe(2);
         expect(resolvedState.pendingAttack?.bonusDamage).toBe(2);
@@ -844,6 +845,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(eventsOfType(resolvedEvents, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
             face: 'electricity',
             effectKey: 'bonusDie.effect.artificerWrenchStrikeElectricity',
+            presentationKind: 'choice',
         });
         expect(eventsOfType(resolvedEvents, 'TOKEN_GRANTED')[0]?.payload).toMatchObject({
             targetId: '0',
@@ -932,6 +934,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             value: 6,
             face: 'electricity',
             effectKey: 'bonusDie.effect.artificerWrenchStrikeElectricity',
+            presentationKind: 'choice',
         });
         const tokenGranted = eventsOfType(responded.events as DiceThroneEvent[], 'TOKEN_GRANTED')[0];
         expect(tokenGranted?.payload).toMatchObject({
@@ -1731,6 +1734,54 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
         expect(resolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
         expect(resolution.nextState.pendingAttack?.settlementStage).toBe('readyToResolve');
+    });
+
+    it('真本能量不能被防御方用卡牌、闪避或太极响应', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        const ability = getArtificerAbility(state.core, 'maximum-power');
+        state.core.players['0'].hand = [];
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+        const nextTime = state.core.players['1'].deck.find(card => card.id === 'card-next-time');
+        expect(nextTime).toBeDefined();
+        state.core.players['1'].deck = state.core.players['1'].deck.filter(card => card !== nextTime);
+        state.core.players['1'].hand = [nextTime!];
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 1;
+        state.core.players['1'].tokens[TOKEN_IDS.EVASIVE] = 1;
+        state.core.players['1'].tokens[TOKEN_IDS.TAIJI] = 3;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'maximum-power',
+            isDefendable: false,
+            isUltimate: true,
+            damage: 10,
+            bonusDamage: 0,
+            preDefenseResolved: true,
+            damageResolved: false,
+            attackFaceCounts: { [ARTIFICER_DICE_FACE_IDS.ELECTRICITY]: 5 },
+        } as DiceThroneCore['pendingAttack'];
+
+        const events = resolveEffectsToEvents(ability.effects ?? [], 'withDamage', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'maximum-power',
+            state: state.core,
+            damageDealt: 0,
+            timestamp: 303,
+        }, { random: fixedRandom });
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'TOKEN_RESPONSE_REQUESTED')).toHaveLength(0);
+        expect(eventsOfType(events, 'DAMAGE_DEALT')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 10,
+            actualDamage: 10,
+            sourceAbilityId: 'maximum-power',
+        });
+        expect(next.players['1'].tokens[TOKEN_IDS.EVASIVE]).toBe(1);
+        expect(next.players['1'].tokens[TOKEN_IDS.TAIJI]).toBe(3);
+        expect(next.players['1'].hand.map(card => card.id)).toEqual(['card-next-time']);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
     });
 
     it('工匠 upkeep 存在可点纳米机器人时不应被 autoContinue 直接跳过', () => {

@@ -54,7 +54,7 @@
 
 ## Important Constraints
 - UI must be responsive (Desktop/Tablet).
-- All games must support both local and online multiplayer.
+- 正式产品交付以联机玩家身份为默认合同；`LocalGameProvider`、`allowLocalMode`、本地 AI 或测试入口可继续承载教程、开发、自动化验证和明确批准的单人加 AI 场景，但不自动意味着游戏必须提供多个真人共用一个客户端的热座切换。任何正式本地多人产品能力必须由对应游戏 spec 或用户故事单独声明。
 - Tutorial system must be generic enough to support different game types.
 - Support lightweight UGC prototypes with minimal setup.
 

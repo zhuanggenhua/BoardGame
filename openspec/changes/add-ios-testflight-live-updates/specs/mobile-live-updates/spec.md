@@ -31,6 +31,23 @@ The system SHALL expose mobile live update runtime APIs using platform-neutral n
 - **THEN** the UI MUST call a platform-neutral live update API
 - **AND** Android-specific exports MAY remain as aliases only for compatibility during migration
 
+### Requirement: All mobile live updates must be mandatory and lightweight
+
+The system SHALL publish every Android and iOS H5 live update with `forceUpdate = true` and SHALL exclude nested runtime game assets from OTA bundles.
+
+#### Scenario: Publish a mobile OTA on any channel
+- **GIVEN** the release owner selects an Android or iOS `stable`, `gray`, or `edge` channel
+- **WHEN** the live update manifest and zip are generated
+- **THEN** the manifest MUST contain `forceUpdate = true`
+- **AND** the release path MUST NOT allow a non-mandatory OTA
+- **AND** the zip MUST exclude nested game images, audio, atlas configs, status atlas JSON, thumbnails, and logos
+
+#### Scenario: Mobile startup check finds a mandatory update
+- **GIVEN** the native mobile app finds a newer OTA manifest
+- **WHEN** the automatic startup check handles the update
+- **THEN** the app MUST block normal use while downloading
+- **AND** MUST apply the downloaded bundle immediately instead of only queuing it for a later restart
+
 ### Requirement: iOS live updates must respect app review boundaries
 
 The system SHALL document and enforce that iOS live updates are limited to BoardGame Web runtime content and do not introduce unsupported native capabilities or transform the app into a different product.

@@ -372,7 +372,7 @@ const buildAndroidOrientationMapFile = ({ entries, outputPath }) => {
     const map = Object.fromEntries(
         entries
             .filter((entry) => entry.enabled)
-            .map((entry) => [entry.id, entry.preferredOrientation ?? 'portrait']),
+            .map((entry) => [entry.id, entry.preferredOrientation ?? 'landscape']),
     );
     return writeFileIfChanged(outputPath, `${JSON.stringify(map, null, 2)}\n`);
 };

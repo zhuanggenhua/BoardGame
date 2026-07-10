@@ -14,6 +14,7 @@ import {
     createQueuedRandom,
     createRunner,
     createSetupWithHand,
+    fistAttackAbilityId,
 } from './test-utils';
 
 function assertWindowLockedWithInteraction(
@@ -33,7 +34,7 @@ function assertWindowLockedWithInteraction(
 
 describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
     it('弹一手（modify-die-adjust-1, target=select）：完整流程', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const result1 = runner.run({
@@ -51,6 +52,7 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
             ],
         });
@@ -77,7 +79,7 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
     });
 
     it('惊不惊喜（modify-die-any-1, target=select）：窗口锁定', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const result = runner.run({
@@ -95,6 +97,7 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
             ],
         });
@@ -106,7 +109,7 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
     });
 
     it('意不意外（modify-die-any-2, target=select）：窗口锁定', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const result = runner.run({
@@ -124,6 +127,7 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-unexpected' }),
             ],
         });
@@ -157,7 +161,7 @@ describe('modifyDie 严格超限回归', () => {
     });
 
     it('card-unexpected 只能修改 2 颗骰子，第 3 次 MODIFY_DIE 会被拒绝', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const setupResult = runner.run({
@@ -175,6 +179,7 @@ describe('modifyDie 严格超限回归', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-unexpected' }),
             ],
         });
@@ -192,14 +197,14 @@ describe('modifyDie 严格超限回归', () => {
         expect(thirdModify.error).toBe('modify_die_limit_reached');
 
         const diceValues = thirdModify.finalState.core.dice.map((die: any) => die.value);
-        expect(diceValues.slice(0, 5)).toEqual([4, 5, 3, 3, 3]);
+        expect(diceValues.slice(0, 5)).toEqual([4, 5, 1, 1, 1]);
 
         const completedDieIds = (thirdModify.finalState.sys.interaction?.current?.data as any)?.completedDieIds;
         expect(completedDieIds).toEqual([0, 1]);
     });
 
     it('card-unexpected 重复修改同一颗骰子时，应拒绝重复消费且不得提前完成交互', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const setupResult = runner.run({
@@ -217,6 +222,7 @@ describe('modifyDie 严格超限回归', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-unexpected' }),
             ],
         });
@@ -236,7 +242,7 @@ describe('modifyDie 严格超限回归', () => {
 
 describe('响应窗口交互锁定：骰子重掷类（selectDie）', () => {
     it('抬一手（reroll-opponent-die-1, target=opponent）：窗口锁定', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3, 1]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 6]);
         const runner = createRunner(random, true);
 
         const result = runner.run({
@@ -254,6 +260,7 @@ describe('响应窗口交互锁定：骰子重掷类（selectDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
             ],
         });
@@ -267,7 +274,7 @@ describe('响应窗口交互锁定：骰子重掷类（selectDie）', () => {
 
 describe('响应窗口交互锁定：取消交互', () => {
     it('交互锁定期间 RESPONSE_PASS 应被拒绝，且不得提前清掉窗口或交互', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const setupResult = runner.run({
@@ -285,6 +292,7 @@ describe('响应窗口交互锁定：取消交互', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
             ],
         });
@@ -301,7 +309,7 @@ describe('响应窗口交互锁定：取消交互', () => {
     });
 
     it('取消弹一手交互后，卡牌返回手牌', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1]);
         const runner = createRunner(random, true);
 
         const result1 = runner.run({
@@ -319,6 +327,7 @@ describe('响应窗口交互锁定：取消交互', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
             ],
         });

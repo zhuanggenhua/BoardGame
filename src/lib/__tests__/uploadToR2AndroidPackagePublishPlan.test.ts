@@ -283,8 +283,12 @@ describe('Android 游戏包素材内容', () => {
             sum + statSync(path.join(assetsRoot, relativePath)).size
         ), 0);
 
-        expect(smashUpPackageFiles.length).toBe(74);
+        expect(smashUpPackageFiles.length).toBe(77);
         expect(totalBytes).toBeLessThan(100 * 1024 * 1024);
+        expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/longzu.webp');
+        expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/sharks_pod.webp');
+        expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/all_stars_pod.webp');
+        expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/tornados_pod.webp');
         expect(smashUpPackageFiles).toContain('i18n/en/smashup/cards/compressed/tts_atlas_0b888d02fd.webp');
         expect(smashUpPackageFiles).toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0157978c57.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/cards/compressed/tts_atlas_0157978c57.webp');

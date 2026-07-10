@@ -10,7 +10,7 @@ import type {
     HeroState,
 } from './types';
 import type { RandomFn } from '../../../engine/types';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getTokenStackLimit } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
@@ -823,6 +823,30 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
     event
 ) => {
     const { dieId, newValue } = event.payload;
+    const pendingBonusDiceSettlement = state.pendingBonusDiceSettlement?.allowDiceModification
+        ? {
+            ...state.pendingBonusDiceSettlement,
+            dice: getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => {
+                if (die.index !== dieId) return die;
+                const face = die.effectKey?.startsWith('bonusDie.effect.powderKeg.')
+                    ? String(newValue)
+                    : (getPlayerDieFace(state, state.pendingBonusDiceSettlement!.attackerId, newValue) ?? String(newValue));
+                return {
+                    ...die,
+                    value: newValue,
+                    face,
+                    effectKey: die.effectKey?.startsWith('bonusDie.effect.powderKeg.')
+                        ? `bonusDie.effect.powderKeg.${newValue}`
+                        : die.effectKey,
+                    effectParams: {
+                        ...die.effectParams,
+                        value: newValue,
+                        ...(die.effectKey === 'bonusDie.effect.gainCp' ? { cp: Math.ceil(newValue / 2) } : {}),
+                    },
+                };
+            }),
+        }
+        : state.pendingBonusDiceSettlement;
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;
@@ -832,7 +856,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
 
     const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 
-    return { ...state, dice: newDice, rollConfirmed };
+    return { ...state, dice: newDice, rollConfirmed, pendingBonusDiceSettlement };
 };
 
 /**
