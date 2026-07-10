@@ -25,6 +25,7 @@ import { SHADOW_FANG_2 } from '../heroes/ninja/abilities';
 import type { AbilityEffect } from '../domain/combat';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { GameTestRunner, type TestCase } from '../../../engine/testing';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
@@ -1069,6 +1070,7 @@ describe('王权骰铸流程测试', () => {
                 ...advanceTo('offensiveRoll', '0'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
             ]) {
                 const command = {
                     type: input.type,
@@ -1203,6 +1205,7 @@ describe('王权骰铸流程测试', () => {
                 ...advanceTo('offensiveRoll', '0'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
             ]) {
                 const command = {
                     type: input.type,
@@ -2283,12 +2286,10 @@ describe('王权骰铸流程测试', () => {
                 playerIds,
             );
             expect(targetResolveResult.success).toBe(true);
-            const attackResolvedEvent = (targetResolveResult.events as DiceThroneEvent[]).find(
-                (event): event is Extract<DiceThroneEvent, { type: 'ATTACK_RESOLVED' }> => event.type === 'ATTACK_RESOLVED',
-            );
             state = targetResolveResult.state as MatchState<DiceThroneCore>;
 
-            expect(attackResolvedEvent?.payload.defenderId).toBe('1');
+            expect(state.core.pendingAttack?.defenderId).toBe('1');
+            expect(state.sys.phase).toBe('defensiveRoll');
             expect(state.core.pendingAttack?.deferredAttackModifierCardIds ?? []).toEqual([]);
             expect(state.core.players['1'].statusEffects[STATUS_IDS.CONCUSSION]).toBe(1);
             expect(state.core.players['3'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);
@@ -2823,6 +2824,7 @@ describe('王权骰铸流程测试', () => {
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 ],
             });
             expect(result.assertionErrors).toEqual([]);
@@ -2846,6 +2848,7 @@ describe('王权骰铸流程测试', () => {
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 ],
             });
             expect(result.assertionErrors).toEqual([]);
@@ -2853,11 +2856,11 @@ describe('王权骰铸流程测试', () => {
             expect(result.finalState.sys.responseWindow?.current?.responderQueue).toEqual(['1']);
         });
 
-        it('响应窗口：对手仅持有 self 骰子卡时不应打开 afterRollConfirmed', () => {
+        it('响应窗口：对手仅持有真正只能改自己骰子的卡时不应打开 afterRollConfirmed', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
             const result = runner.run({
                 name: 'afterRollConfirmed 不打开 - self only',
-                setup: createSetupWithHand(['card-me-too'], {
+                setup: createSetupWithHand(['card-play-six'], {
                     playerId: '1',
                     cp: 10,
                     mutate: (core) => {
@@ -5038,6 +5041,7 @@ describe('王权骰铸流程测试', () => {
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                     cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
                     cmd('REROLL_DIE', '1', { dieId: 0 }),
                 ],
@@ -5087,6 +5091,7 @@ describe('王权骰铸流程测试', () => {
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                     cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
                     cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 6 }),
                     cmd('SYS_INTERACTION_CONFIRM', '1'),
@@ -5154,6 +5159,32 @@ describe('王权骰铸流程测试', () => {
                 },
             });
             expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('起开：选择僧侣气这类多层标记时，只移除 1 层而不是整类清空', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '起开 remove one taiji token',
+                setup: createSetupWithHand(['card-get-away'], {
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['1'].tokens[TOKEN_IDS.TAIJI] = 5;
+                    },
+                }),
+                commands: [
+                    cmd('PLAY_CARD', '0', { cardId: 'card-get-away' }),
+                    cmd('REMOVE_STATUS', '0', { targetPlayerId: '1', statusId: TOKEN_IDS.TAIJI }),
+                ],
+                expect: {
+                    players: {
+                        '1': { tokens: { [TOKEN_IDS.TAIJI]: 4 } },
+                        '0': { discardSize: 1 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(getCurrentInteractionSummary(result.finalState).id).toBeUndefined();
         });
     });
 

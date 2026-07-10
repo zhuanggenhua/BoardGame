@@ -1,4 +1,5 @@
 import { createBaseSystems, createGameEngine } from '../../engine';
+import { registerGameAiRuntime } from '../../engine/ai';
 import { registerCriticalImageResolver } from '../../core';
 import type {
     Command,
@@ -11,6 +12,8 @@ import type {
 } from '../../engine/types';
 import { createCheatSystem } from '../../engine/systems';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
+import { createBetrayalAiRuntime } from './ai';
+import { BETRAYAL_COMMANDS } from './commands';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     BETRAYAL_EXPLORER_CATALOG,
@@ -204,6 +207,7 @@ export interface BetrayalRecentRollState {
         releasedJackSpiritRoomId?: string;
     };
     consumedRabbitFootCardIds: string[];
+    lastRabbitFootRerollDieIndex?: number;
 }
 
 export interface BetrayalPendingEventChoiceState {
@@ -309,26 +313,6 @@ export interface BetrayalCore {
     scenarioRuntime: BetrayalScenarioRuntimeStatus;
     endgameResult: BetrayalEndgameResult | null;
 }
-
-export const BETRAYAL_COMMANDS = {
-    SELECT_EXPLORER: 'SELECT_EXPLORER',
-    CONFIRM_EXPLORER: 'CONFIRM_EXPLORER',
-    START_SCENARIO: 'START_SCENARIO',
-    MOVE_TO_ROOM: 'MOVE_TO_ROOM',
-    EXPLORE_ROOM: 'EXPLORE_ROOM',
-    USE_POSSESSION: 'USE_POSSESSION',
-    USE_RABBIT_FOOT: 'USE_RABBIT_FOOT',
-    RESOLVE_EVENT_CHOICE: 'RESOLVE_EVENT_CHOICE',
-    USE_ROOM_EFFECT: 'USE_ROOM_EFFECT',
-    TRADE_POSSESSION: 'TRADE_POSSESSION',
-    LOOT_CORPSE: 'LOOT_CORPSE',
-    END_TURN: 'END_TURN',
-    HAUNT_ATTACK: 'HAUNT_ATTACK',
-    LEARN_ABOUT_JACK: 'LEARN_ABOUT_JACK',
-    STUDY_EXORCISM: 'STUDY_EXORCISM',
-    EXORCISE_JACK: 'EXORCISE_JACK',
-    COMPLETE_SCENARIO: 'COMPLETE_SCENARIO',
-} as const;
 
 export type BetrayalCommandType = typeof BETRAYAL_COMMANDS[keyof typeof BETRAYAL_COMMANDS];
 
@@ -1220,6 +1204,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                     }
                     : undefined,
                 consumedRabbitFootCardIds: [...core.recentRoll.consumedRabbitFootCardIds],
+                lastRabbitFootRerollDieIndex: core.recentRoll.lastRabbitFootRerollDieIndex,
             }
             : null,
         pendingEventChoice: core.pendingEventChoice
@@ -4241,7 +4226,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 dieIndex,
                 newPip,
                 eventRerollEffect: nextEventBranch ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer) : undefined,
-                logText: `${actor.displayName}使用兔脚重掷一颗骰子：${previousPip} → ${newPip}`,
+                logText: `${actor.displayName}使用兔脚重掷第 ${dieIndex + 1} 颗骰子：${previousPip} → ${newPip}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE: {
@@ -5148,6 +5133,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ...recentRoll,
                 dice,
                 consumedRabbitFootCardIds: [...recentRoll.consumedRabbitFootCardIds, event.payload.cardId],
+                lastRabbitFootRerollDieIndex: event.payload.dieIndex,
             };
             const nextTotal = resolveRecentRollTotal(nextRoll);
 
@@ -5865,6 +5851,16 @@ export const engineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betr
     disableUndo: true,
 });
 
+export const betrayalAiRuntime = createBetrayalAiRuntime({
+    validate: (state, command) => BetrayalDomain.validate(
+        state as MatchState<BetrayalCore>,
+        command as BetrayalCommand,
+    ),
+});
+
 registerCriticalImageResolver('betrayal', betrayalCriticalImageResolver);
+registerGameAiRuntime(betrayalAiRuntime);
 
 export default engineConfig;
+export { BETRAYAL_COMMANDS } from './commands';
+export { BETRAYAL_AUDIO_CONFIG as audioConfig } from './audio.config';

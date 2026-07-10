@@ -24,6 +24,7 @@ import type {
     DamageDealtEvent,
     DamageShieldGrantedEvent,
     BonusDieRolledEvent,
+    PendingBonusDiceSettlement,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -41,6 +42,7 @@ import {
     getTargetingRollChoiceOptions,
     getTargetingRollChoiceOwnerId,
     isTeamMode,
+    getPendingBonusSettlementDice,
 } from './rules';
 import { resolveAttack, resolveAttackWithSneakImmunityAfterDefense, resolveOffensivePreDefenseEffects, resolvePostDamageEffects, resolveWithDamageAfterChoice } from './attack';
 import { resourceSystem } from './resourceSystem';
@@ -63,6 +65,7 @@ import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
 import { hasSpentTreantTreeSpiritThisTurn, hasUsablePassiveAction } from './passiveAbility';
+import { registerBonusDiceSettlementHandler } from './bonusDiceSettlement';
 import {
     POWDER_KEG_TRANSFER_CHOICE_ID,
     POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
@@ -73,6 +76,7 @@ import {
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
+const POWDER_KEG_SETTLEMENT_ID = 'powder-keg-upkeep';
 
 const formatSeatLabel = (playerId: string): string => {
     const seatNumber = Number.parseInt(playerId, 10) + 1;
@@ -129,6 +133,44 @@ const hasPendingBonusDiceSettlement = (core: DiceThroneCore): boolean =>
 const hasInteractivePendingBonusDiceSettlement = (core: DiceThroneCore): boolean =>
     hasPendingBonusDiceSettlement(core)
     && core.pendingBonusDiceSettlement?.displayOnly !== true;
+
+registerBonusDiceSettlementHandler(POWDER_KEG_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+    const playerId = settlement.attackerId;
+    const value = Math.max(1, Math.min(6, Math.trunc(getPendingBonusSettlementDice(settlement)[0]?.value ?? 1)));
+    const followupEvents: DiceThroneEvent[] = [];
+
+    if (value <= 2) {
+        followupEvents.push(...buildPowderKegExplosionEvents({
+            state,
+            targetId: playerId,
+            sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 0.01,
+        }));
+    } else if (value === 6) {
+        const targetIds = getPowderKegTransferTargetIds(state, playerId);
+        if (targetIds.length > 0) {
+            followupEvents.push({
+                type: 'CHOICE_REQUESTED',
+                payload: {
+                    playerId,
+                    sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+                    titleKey: 'choices.powderKegTransfer.title',
+                    options: targetIds.map((targetId, index) => ({
+                        value: index,
+                        customId: POWDER_KEG_TRANSFER_CHOICE_ID,
+                        labelKey: 'choices.powderKegTransfer.give',
+                        labelParams: { target: formatSeatLabel(targetId) },
+                    })),
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 0.01,
+            } as ChoiceRequestedEvent);
+        }
+    }
+
+    return { totalDamage: 0, followupEvents };
+});
 
 function extractResolvedInteractionChoiceShape(event: GameEvent): { sourceId?: string; customIds: string[] } | null {
     if (event.type !== 'SYS_INTERACTION_RESOLVED') {
@@ -718,7 +760,30 @@ function resolvePowderKegUpkeepEvents(
     if (!player || (player.statusEffects[STATUS_IDS.POWDER_KEG] ?? 0) <= 0) return [];
 
     const value = random.d(6);
-    const events: DiceThroneEvent[] = [{
+    const die = {
+        index: 0,
+        value,
+        face: String(value),
+        effectKey: `bonusDie.effect.powderKeg.${value}`,
+        effectParams: { value },
+    };
+    const settlement: PendingBonusDiceSettlement = {
+        id: `${POWDER_KEG_SETTLEMENT_ID}-${timestamp}`,
+        sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+        attackerId: playerId,
+        targetId: playerId,
+        dice: [die],
+        rerollCostTokenId: '',
+        rerollCostAmount: 0,
+        rerollCount: 0,
+        maxRerollCount: 0,
+        readyToSettle: false,
+        displayOnly: true,
+        showTotal: false,
+        customResolutionId: POWDER_KEG_SETTLEMENT_ID,
+        allowDiceModification: true,
+    };
+    return [{
         type: 'BONUS_DIE_ROLLED',
         payload: {
             value,
@@ -729,42 +794,12 @@ function resolvePowderKegUpkeepEvents(
         },
         sourceCommandType: commandType,
         timestamp,
+    } as DiceThroneEvent, {
+        type: 'BONUS_DICE_REROLL_REQUESTED',
+        payload: { settlement },
+        sourceCommandType: commandType,
+        timestamp,
     } as DiceThroneEvent];
-
-    if (value <= 2) {
-        events.push(...buildPowderKegExplosionEvents({
-            state: core,
-            targetId: playerId,
-            sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
-            sourceCommandType: commandType,
-            timestamp: timestamp + 0.01,
-        }));
-        return events;
-    }
-
-    if (value === 6) {
-        const targetIds = getPowderKegTransferTargetIds(core, playerId);
-        if (targetIds.length === 0) return events;
-
-        events.push({
-            type: 'CHOICE_REQUESTED',
-            payload: {
-                playerId,
-                sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
-                titleKey: 'choices.powderKegTransfer.title',
-                options: targetIds.map((targetId, index) => ({
-                    value: index,
-                    customId: POWDER_KEG_TRANSFER_CHOICE_ID,
-                    labelKey: 'choices.powderKegTransfer.give',
-                    labelParams: { target: formatSeatLabel(targetId) },
-                })),
-            },
-            sourceCommandType: commandType,
-            timestamp: timestamp + 0.01,
-        } as ChoiceRequestedEvent);
-    }
-
-    return events;
 }
 
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {

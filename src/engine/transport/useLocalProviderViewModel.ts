@@ -75,6 +75,7 @@ export function useLocalProviderViewModel(args: {
         dispatch,
         playerId: localBoardPlayerId,
         matchPlayers,
+        seatControllers: args.seatControllers,
         isConnected: true,
         isMultiplayer: false,
         reset: args.reset,

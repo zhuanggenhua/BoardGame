@@ -5,6 +5,7 @@ import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let mockSearchParams = new URLSearchParams();
+let mockGameId = 'fantasyrealms';
 const localGameProviderSpy = vi.fn();
 const gamePageRuntimeProviderSpy = vi.fn();
 
@@ -21,7 +22,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('react-router-dom', () => ({
-    useParams: () => ({ gameId: 'fantasyrealms' }),
+    useParams: () => ({ gameId: mockGameId }),
     useSearchParams: () => [mockSearchParams, vi.fn()],
 }));
 
@@ -161,8 +162,24 @@ vi.mock('../../games/pageRuntimeAdapter', () => ({
     },
 }));
 
+vi.mock('../../games/qidahen/tutorialSetup', () => ({
+    buildQidahenTutorialSetupData: vi.fn((tutorialId?: string) => (
+        tutorialId === 'water-dispatch'
+            ? {
+                numPlayers: 3,
+                setupSelections: { scenario: 'post-sarhu-1619' },
+                setupData: {
+                    setupSelections: { scenario: 'post-sarhu-1619' },
+                    qidahenTutorialCoreTransform: () => ({ transformed: true }),
+                },
+            }
+            : null
+    )),
+}));
+
 describe('TestMatchRoom', () => {
     beforeEach(() => {
+        mockGameId = 'fantasyrealms';
         mockSearchParams = new URLSearchParams();
         localGameProviderSpy.mockClear();
         gamePageRuntimeProviderSpy.mockClear();
@@ -263,5 +280,24 @@ describe('TestMatchRoom', () => {
         expect(gamePageRuntimeProviderSpy).toHaveBeenCalled();
         const latestCall = gamePageRuntimeProviderSpy.mock.calls.at(-1)?.[0] as { gameId?: string | null };
         expect(latestCall.gameId).toBe('fantasyrealms');
+    });
+
+    it('七大恨测试路由带 tutorialSetup 时，应使用对应教程前置状态', async () => {
+        mockGameId = 'qidahen';
+        mockSearchParams = new URLSearchParams('tutorialSetup=water-dispatch&players=3&playerID=0');
+        const { TestMatchRoom } = await import('../TestMatchRoom');
+
+        render(<TestMatchRoom />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        expect(latestCall.numPlayers).toBe(3);
+        expect(latestCall.setupData).toMatchObject({
+            setupSelections: { scenario: 'post-sarhu-1619' },
+            qidahenTutorialCoreTransform: expect.any(Function),
+        });
     });
 });

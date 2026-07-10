@@ -14,6 +14,7 @@ import { useMatchRoomStageControllers } from './useMatchRoomStageControllers';
 import { useMatchRoomTutorialLifecycle } from './useMatchRoomTutorialLifecycle';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
+import type { GameManifestAiSupport } from '../games/manifest.types';
 
 export type MatchRoomPageRuntimeSetupModel = Pick<
     ReturnType<typeof useMatchRoomRuntimeSetup>,
@@ -102,6 +103,7 @@ export type MatchRoomTutorialStageAdapter = {
     tutorialManifest: TutorialManifest | null;
     board: MatchRoomPageRuntimeSetupModel['tutorialBoard'];
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
+    aiSupport?: GameManifestAiSupport;
     onCommandRejected: MatchRoomPageStageControllersModel['handleCommandRejected'];
     loadingProgressText: MatchRoomPageRuntimeSetupModel['tutorialLoadingProgressText'];
 };
@@ -189,10 +191,11 @@ function buildMatchRoomPageShellAdapter(args: {
 
 function buildMatchRoomTutorialStageAdapter(args: {
     tutorialId?: string;
+    gameConfig?: MatchRoomPageIdentityModel['gameConfig'];
     runtimeSetup: MatchRoomPageRuntimeSetupModel;
     stageControllers: MatchRoomPageStageControllersModel;
 }): MatchRoomTutorialStageAdapter {
-    const { tutorialId, runtimeSetup, stageControllers } = args;
+    const { tutorialId, gameConfig, runtimeSetup, stageControllers } = args;
 
     return {
         tutorialId,
@@ -200,6 +203,7 @@ function buildMatchRoomTutorialStageAdapter(args: {
         tutorialManifest: runtimeSetup.resolvedTutorialManifest,
         board: runtimeSetup.tutorialBoard,
         engineConfig: runtimeSetup.engineConfig,
+        aiSupport: gameConfig?.ai,
         onCommandRejected: stageControllers.handleCommandRejected,
         loadingProgressText: runtimeSetup.tutorialLoadingProgressText,
     };
@@ -490,6 +494,7 @@ export function useMatchRoomPageRuntimeModel(args: {
         stages: {
             tutorial: buildMatchRoomTutorialStageAdapter({
                 tutorialId,
+                gameConfig: pageIdentity.gameConfig,
                 runtimeSetup,
                 stageControllers,
             }),

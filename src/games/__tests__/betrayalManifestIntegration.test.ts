@@ -50,11 +50,25 @@ describe('betrayal manifest integration', () => {
             'move-explore-use',
             'crimson-jack-objective',
             'haunt-actions-and-finish',
+            'hero-attack-path',
+            'jack-spirit-path',
+            'traitor-path',
+        ]);
+        expect(Object.entries(implementation?.tutorialCatalog?.tutorials ?? {})
+            .filter(([, entry]) => entry.hiddenFromCatalog !== true)
+            .map(([id]) => id)).toEqual([
+            'basic-setup-and-turn',
+            'haunt-actions-and-finish',
+            'hero-attack-path',
+            'jack-spirit-path',
             'traitor-path',
         ]);
         expect(resolveGameTutorialManifest('betrayal')).toEqual(
             implementation?.tutorialCatalog?.tutorials['basic-setup-and-turn']?.manifest ?? null,
         );
+        expect(resolveGameTutorialManifest('betrayal', 'move-explore-use')?.id).toBe('basic-setup-and-turn');
+        expect(resolveGameTutorialManifest('betrayal', 'crimson-jack-objective')?.id).toBe('haunt-actions-and-finish');
         expect(resolveGameTutorialManifest('betrayal', 'haunt-actions-and-finish')?.id).toBe('haunt-actions-and-finish');
+        expect(resolveGameTutorialManifest('betrayal', 'jack-spirit-path')?.id).toBe('jack-spirit-path');
     });
 });

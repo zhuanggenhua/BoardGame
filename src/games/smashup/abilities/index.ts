@@ -47,6 +47,7 @@ import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
 import { registerDragonAbilities } from './dragons';
 import { registerGeekAbilities } from './geeks';
+import { registerAllStarsAbilities } from './all_stars';
 import { registerSuperheroesAbilities, registerSuperheroesInteractionHandlers } from './superheroes';
 import { registerYuanhouAbilities } from './yuanhou';
 import { registerIttyCrittersAbilities } from './itty_critters';
@@ -54,6 +55,7 @@ import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaij
 import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
 import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers } from './mega_troopers';
 import { registerHuluwawaAbilities } from './huluwawa';
+import { registerPaladinAbilities } from './paladins';
 import { registerZhongguoAbilities } from './zhongguo';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
@@ -169,6 +171,7 @@ export function initAllAbilities(): void {
     registerSuperheroesAbilities();
     registerSuperheroesInteractionHandlers();
     registerYuanhouAbilities();
+    registerAllStarsAbilities();
     registerIttyCrittersAbilities();
     registerKaijuAbilities();
     registerKaijuInteractionHandlers();
@@ -177,6 +180,7 @@ export function initAllAbilities(): void {
     registerMegaTroopersAbilities();
     registerMegaTroopersInteractionHandlers();
     registerHuluwawaAbilities();
+    registerPaladinAbilities();
     registerZhongguoAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();

@@ -11,7 +11,7 @@ import {
 } from '../../../core';
 import { getOptimizedImageUrls, getLocalizedAssetPath } from '../../../core/AssetLoader';
 import { OptimizedImage } from './OptimizedImage';
-import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
+import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteImgStyle } from '../../../engine/primitives/spriteAtlas';
 import {
     registerCardAtlasSource,
     getCardAtlasSource,
@@ -578,8 +578,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         return null;
     }
 
-    const atlasStyle = computeSpriteStyle(index, atlasConfig ?? source.config);
-    const backgroundImage = effectiveLoaded && activeUrl ? `url("${activeUrl}")` : '';
+    const atlasStyle = computeSpriteImgStyle(index, atlasConfig ?? source.config);
 
     return (
         <div
@@ -589,11 +588,32 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             className={`${effectiveLoaded ? '' : 'atlas-shimmer'} ${className ?? ''}`}
             title={title}
             style={{
-                backgroundImage,
-                backgroundRepeat: 'no-repeat',
-                ...atlasStyle,
+                aspectRatio: atlasStyle.aspectRatio,
+                overflow: 'hidden',
+                position: 'relative',
                 ...style,
             }}
-        />
+        >
+            {effectiveLoaded && activeUrl ? (
+                <img
+                    alt={title ?? ''}
+                    data-card-atlas-img="true"
+                    draggable={false}
+                    src={activeUrl}
+                    style={{
+                        height: atlasStyle.imgHeight,
+                        left: 0,
+                        maxWidth: 'none',
+                        pointerEvents: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        transform: `translate(${atlasStyle.translateX}, ${atlasStyle.translateY})`,
+                        transformOrigin: 'top left',
+                        userSelect: 'none',
+                        width: atlasStyle.imgWidth,
+                    }}
+                />
+            ) : null}
+        </div>
     );
 }

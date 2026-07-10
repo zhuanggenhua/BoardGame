@@ -488,3 +488,13 @@ domain/
 > SmashUp 专项规则已下沉到 `docs/games/smashup/destroy-pending-save.md`。
 
 修改 `processDestroyTriggers`、`postProcessSystemEvents` 或相关 trigger 逻辑时，必须先读 SmashUp 专项文档；不要把 SmashUp 当前 runtime 的白名单合同提升成跨游戏通用规则。
+
+### SmashUp 当前 runtime 例外
+
+SmashUp 当前消灭触发 runtime 仍依赖 `PREVENT_DESTROY_SOURCE_IDS` 白名单识别交互式 replacement，避免把普通死亡效果交互误判成 pendingSave。新增或删除相关入口时，必须同步 `src/games/smashup/domain/reducer.ts`、`src/games/smashup/rule/ENGINE_GUIDE.md`、`docs/games/smashup/destroy-pending-save.md` 与对应契约测试。
+
+当前白名单合同至少包含：
+
+- `base_nine_lives_intercept`
+- `giant_ant_drone_prevent_destroy`
+- `pirate_buccaneer_move`

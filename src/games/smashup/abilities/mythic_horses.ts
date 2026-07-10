@@ -243,8 +243,9 @@ function mythicHorsesSeastarPod(ctx: AbilityContext): AbilityResult {
     const base = ctx.matchState.core.bases[ctx.baseIndex];
     if (!base) return { events: [] };
     const source = base.minions.find(minion => minion.uid === ctx.cardUid);
+    if (!source) return { events: [] };
     const hasOtherOwnMinion = base.minions.some(minion => (
-        minion.uid !== source?.uid
+        minion.uid !== source.uid
         && minion.controller === ctx.playerId
     ));
     if (!hasOtherOwnMinion) return { events: [] };

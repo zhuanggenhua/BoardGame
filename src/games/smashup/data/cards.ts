@@ -67,10 +67,14 @@ import { KITTY_CATS_CARDS } from './factions/kitty_cats';
 import { KITTY_CATS_POD_CARDS } from './factions/kitty_cats_pod';
 import { MYTHIC_HORSES_CARDS } from './factions/mythic_horses';
 import { MYTHIC_HORSES_POD_CARDS } from './factions/mythic_horses_pod';
+import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { PRINCESSES_POD_CARDS } from './factions/princesses_pod';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
+import { SHARKS_POD_CARDS } from './factions/sharks_pod';
+import { ALL_STARS_POD_CARDS } from './factions/all_stars_pod';
+import { TORNADOS_POD_CARDS } from './factions/tornados_pod';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 import { SHAPESHIFTERS_CARDS } from './factions/shapeshifters';
 import { CYBORG_APES_CARDS } from './factions/cyborg_apes';
@@ -214,10 +218,14 @@ registerCards(KITTY_CATS_CARDS);
 registerCards(KITTY_CATS_POD_CARDS);
 registerCards(MYTHIC_HORSES_CARDS);
 registerCards(MYTHIC_HORSES_POD_CARDS);
+registerCards(PALADIN_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(PRINCESSES_POD_CARDS);
 registerCards(SHARKS_CARDS);
+registerCards(SHARKS_POD_CARDS);
+registerCards(ALL_STARS_POD_CARDS);
 registerCards(TORNADOS_CARDS);
+registerCards(TORNADOS_POD_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
 registerCards(SHAPESHIFTERS_CARDS);
 registerCards(CYBORG_APES_CARDS);
@@ -585,6 +593,31 @@ export const BASE_CARDS_HULUWAWA: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_HULUWAWA);
+
+// ============================================================================
+// 圣骑士 DIY 基地
+// ============================================================================
+export const BASE_CARDS_PALADIN: BaseCardDef[] = [
+    {
+        id: 'base_paladins_monastery',
+        name: '修道院',
+        nameEn: 'Monastery',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_BASES, index: 0 },
+    },
+    {
+        id: 'base_paladins_roncesvalles_gorge',
+        name: '龙塞沃峡谷',
+        nameEn: 'Roncesvalles Gorge',
+        breakpoint: 24,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_BASES, index: 1 },
+    },
+];
+registerBases(BASE_CARDS_PALADIN);
 
 // ============================================================================
 // 扩展基地 (Oops, You Did It Again)

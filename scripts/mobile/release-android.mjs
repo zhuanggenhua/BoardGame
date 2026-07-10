@@ -54,6 +54,7 @@ full 额外选项:
 
 说明:
   - OTA 发布已禁止隐式版本；发布时会强制传 --expected-base-version=<package.json.version>
+  - 所有 OTA 都强制更新；--no-force-update 已禁用
   - OTA 客户端按 bundle version 这个内部游标判断新旧；publishedAt 只用于审计和展示
   - OTA / native / full 可使用 --bump 自动递增版本后再发布
   - full 的顺序固定为: OTA -> packages(可选) -> native
@@ -221,6 +222,12 @@ const ensureNoForbiddenOtaCompatibilityArgs = (sourceArgs = args) => {
     );
 };
 
+const ensureForcedOta = (sourceArgs = args) => {
+    if (hasFlag('no-force-update', sourceArgs)) {
+        throw new Error('所有 OTA 已强制更新，禁止使用 --no-force-update。');
+    }
+};
+
 const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
@@ -232,7 +239,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
         'force-update-message',
         'notes',
     ]),
-    new Set(['dry-run', 'skip-latest', 'force-update', 'no-force-update']),
+    new Set(['dry-run', 'skip-latest', 'force-update']),
     sourceArgs,
 );
 
@@ -307,6 +314,7 @@ const buildOtaArgsWithExpectedVersion = (releaseVersion, sourceArgs = args) => [
 const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
+    ensureForcedOta();
     await runDoctor();
     await runTypecheck();
     await runSync();
@@ -345,6 +353,7 @@ const shouldRunPackagesInFull = () => hasFlag('with-packages', args) || Boolean(
 const runFullRelease = async () => {
     const nativeInfo = prepareNativeVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
+    ensureForcedOta();
     await runDoctor();
     await runSync();
     logStep(`发布 Android OTA (expectedBaseVersion=${nativeInfo.version})`);

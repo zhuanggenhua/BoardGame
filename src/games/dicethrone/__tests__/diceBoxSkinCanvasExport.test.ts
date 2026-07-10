@@ -4,15 +4,13 @@ import { loadDiceThroneDiceBoxSkin } from '../ui/diceThroneDiceBoxSkins';
 
 describe('DiceThrone 骰盒皮肤画布导出', () => {
     const originalImage = globalThis.Image;
-    const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
 
     afterEach(() => {
         globalThis.Image = originalImage;
-        HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
         vi.restoreAllMocks();
     });
 
-    it('用正式骰面素材导出透明符号层给插件原生骰体', async () => {
+    it('用正式骰面素材生成画布贴图，不再导出 dataURL 给第三方文本材质', async () => {
         class AutoLoadImage {
             onload: (() => void) | null = null;
             onerror: (() => void) | null = null;
@@ -34,17 +32,18 @@ describe('DiceThrone 骰盒皮肤画布导出', () => {
         }
 
         globalThis.Image = AutoLoadImage as unknown as typeof Image;
-        HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,test-symbol');
+        const toDataURLSpy = vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL');
 
         const skin = await loadDiceThroneDiceBoxSkin('monk-dice', 'zh-CN');
 
         expect(Object.keys(skin.faceCanvases)).toHaveLength(6);
         expect(Object.keys(skin.faceImages)).toHaveLength(6);
-        expect(skin.preferPresetMaterials).toBe(true);
+        expect('preferPresetMaterials' in skin).toBe(false);
         expect(skin.faceCanvases[1].width).toBe(1024);
         expect(skin.faceCanvases[1].height).toBe(1024);
+        expect(skin.faceImages[1]).toBe(skin.faceCanvases[1]);
         expect(skin.edgeCanvas.width).toBe(1024);
         expect(skin.edgeCanvas.height).toBe(1024);
-        expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(6);
+        expect(toDataURLSpy).not.toHaveBeenCalled();
     });
 });

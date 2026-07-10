@@ -854,5 +854,11 @@ describe('Princesses abilities', () => {
         const resolved = respondToPrompt(talent.finalState, extraAction.id, '0', defaultTestRandom);
         expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('heirloom-pod-1');
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                restrictToCardDefId: 'princesses_heirloom_pod',
+            }),
+        }));
     });
 });

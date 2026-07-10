@@ -117,16 +117,17 @@ export const CenterBoard = ({
     }, [isLayoutEditing, onMagnifyImage]);
 
     return (
-        <div
-            className={shellFrameClassName}
-            style={boardUiTuning.shellTranslateX === 0
-                ? undefined
-                : { transform: `translateX(${boardUiTuning.shellTranslateX}vw)` }}
-        >
+        <>
             <div
-                className="relative flex items-center justify-center"
-                style={{ gap: `${boardUiTuning.centerBoardGapVw}vw` }}
+                className={shellFrameClassName}
+                style={boardUiTuning.shellTranslateX === 0
+                    ? undefined
+                    : { transform: `translateX(${boardUiTuning.shellTranslateX}vw)` }}
             >
+                <div
+                    className="relative flex items-center justify-center"
+                    style={{ gap: `${boardUiTuning.centerBoardGapVw}vw` }}
+                >
                 <div
                     className={`relative w-auto shadow-2xl z-0 group transition-[outline] duration-300 rounded-[0.8vw] overflow-visible ${isLayoutEditing ? '' : 'cursor-zoom-in'} ${coreAreaHighlighted ? 'outline outline-4 outline-dashed outline-amber-400 outline-offset-[0.1vw]' : ''}`}
                     style={{
@@ -371,8 +372,9 @@ export const CenterBoard = ({
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
             {diceStage}
-        </div>
+        </>
     );
 };

@@ -166,8 +166,8 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
 
 - 运行时插件：`@capgo/capacitor-updater`
 - 发布源：自托管 manifest + zip bundle，当前约定放在对象存储 `official/app-updates/android/<channel>/...`
-- 当前默认发布策略：**后台 OTA**
-- 默认行为：启动后后台检查；一旦发现兼容的新 bundle，后台下载并排队，切到后台或下次重启后生效
+- 当前发布策略：**所有 OTA 强制更新**
+- 默认行为：启动后检查；一旦发现新的 bundle，立即显示阻塞式更新页，下载完成后切换 bundle 并重启页面
 - 启动确认：App 每次原生启动时尽早调用 `notifyAppReady()`，避免已下载 bundle 被插件自动回滚
 
 ### OTA 何时生效
@@ -178,16 +178,10 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
 
 ### 当前升级策略
 
-- 普通 OTA
-  - 这是当前默认发布策略
-  - manifest 默认不声明 `forceUpdate: true`
-  - App 启动后后台检查，兼容则后台下载
-  - 下载完成后排队，切到后台或下次重启后生效
-  - 不阻塞用户
-- 带 `forceUpdate: true` 的 OTA
-  - 对兼容当前原生壳的 bundle，仍然按普通 OTA 处理
-  - 不再在当前会话显示阻塞式下载/切换页
-  - 仍然是后台下载并排队，切到后台或下次重启后生效
+- 所有 OTA manifest 必须声明 `forceUpdate: true`
+- 自动启动检查遇到新 bundle 时必须进入立即模式，显示阻塞式下载与切换反馈
+- 发布脚本、后台发布中心和 GitHub Actions 都不得提供有效的非强制 OTA 入口
+- `--no-force-update` 或等价的 `forceUpdate=false` 必须被拒绝
 - 原生版本门禁（已废弃）
   - 不再按 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion` 做 OTA 分流
   - 即便 manifest 误带这些字段，运行时也会忽略并继续走 OTA
@@ -398,14 +392,15 @@ node scripts/mobile/release-android.mjs ota --channel stable
 当前 OTA 规则已改为统一全量更新：
 
 - OTA manifest 默认不再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`
-- 所有 channel（包括 `stable`）默认都面向所有已安装版本
-- 如果需要客户端拿到更新后立即切换 bundle，可显式传 `--force-update`
+- 所有 channel（包括 `stable`）都面向所有已安装版本，并固定写入 `forceUpdate: true`
+- 客户端检测到新 OTA 后必须阻塞下载并立即切换；`--no-force-update` 已禁用
+- OTA 打包器只保留 H5 代码、中文语言包、字体、必要公共文件和资源清单；嵌套游戏资源继续走服务器资源主源或移动游戏包
 - 若误传任何原生版本兼容参数，发布脚本会直接失败，防止再次发出“只给某个原生版本”的错误 OTA
 
 如果你要自定义强更文案：
 
 ```bash
-node scripts/mobile/release-android.mjs ota --channel stable --force-update --force-update-title "正在更新" --force-update-message "正在下载必要更新，请稍候"
+node scripts/mobile/release-android.mjs ota --channel stable --force-update-title "正在更新" --force-update-message "正在下载必要更新，请稍候"
 ```
 
 如果走 GitHub Actions 自动化：
@@ -434,8 +429,8 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 - `--version <bundleVersion>`：手动指定 bundle 版本号
 - `--ota-version-base <semver>`：未显式指定 `--version` 时，用于生成 bundle 内部游标；可与 `package.json.version` 解耦
 - `--native-version <version>`：当前打包对应的原生版本，默认取 `package.json.version`
-- `--force-update`：这次 OTA 下载完成后立即切换 bundle
-- `--no-force-update`：关闭“下载完成后立即切换”的行为
+- `--force-update`：旧命令兼容参数，可省略；所有 OTA 本来就会强制更新
+- `--no-force-update`：已禁用，传入后发布直接失败
 - `--force-update-title <text>`：覆盖 OTA 更新提示标题
 - `--force-update-message <text>`：覆盖 OTA 更新提示正文
 - `--notes <text>`：写入 manifest 备注
@@ -447,7 +442,7 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 - OTA manifest 默认不再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`
 - 所有 channel 默认都面向所有已安装版本
 - 如误传任何原生版本兼容参数，发布脚本会直接失败
-- `forceUpdate` 只表示客户端拿到更新后是否立即切换 bundle，不再承担“按原生版本阻断”的语义
+- `forceUpdate` 固定为 `true`，表示客户端必须阻塞下载并立即切换 bundle，不承担“按原生版本阻断”的语义
 
 当前发布脚本会写入：
 
@@ -513,8 +508,8 @@ Manifest 字段说明：
 
 - 预演发布先用 `--dry-run`
 - 小流量验证建议先发 `gray` 之类独立 channel，再切 `stable`
-- 当前 App 主线 OTA 语义仍是“启动后后台检查，发现新 bundle 则后台下载并排队”
-- 如需“下载完成后立即切换”，需显式触发即时 OTA（例如通过发布参数 + 客户端即时检查入口）
+- 当前 App 主线 OTA 语义是“启动检查发现新 bundle 后，阻塞下载并立即切换”
+- 必须验证自动启动检查也会进入立即模式，不能只验证手动更新按钮
 - 运行时不再按原生版本门禁阻断 OTA；若涉及原生能力变更，请按原生发布流程更新 APK / AAB
 - 若本次改动涉及原生层，仍必须重新打包安装验证，不能把 OTA 当成原生更新替代品
 
@@ -523,14 +518,14 @@ Manifest 字段说明：
 以后正式 Android OTA 发版统一按当前项目规则执行：
 
 1. OTA 默认面向所有已安装版本，不再通过 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion` 做分流。
-2. 如需客户端下载完成后立即切换 bundle，可显式传 `--force-update`。
+2. 所有 OTA 必须写入 `forceUpdate: true`，客户端下载完成后立即切换 bundle；不允许关闭。
 3. 如果改动涉及原生能力、权限、插件或壳层代码，仍然要另外发原生 APK / AAB；不要把 OTA 当成原生更新替代品。
 4. 正式 OTA 的 bundle 版本必须继续沿用 `<ota-version-base>-ota-UTC时间戳` 或人工显式 `--version` 口径。默认 `ota-version-base=package.json.version`；桥接旧客户端时可临时升到更高内部游标，例如 `6.0.0`。客户端升级主判断依赖这个内部游标单调递增，`publishedAt` 只用于审计和展示。切换发布入口（本地脚本 / GitHub Actions / 手工补发）时，不得擅自改成 `gha-*`、run number 或其他临时展示格式。
 
 推荐命令：
 
 ```bash
-node scripts/mobile/release-android.mjs ota --channel stable --force-update
+node scripts/mobile/release-android.mjs ota --channel stable
 ```
 
 ## 正式发版前检查

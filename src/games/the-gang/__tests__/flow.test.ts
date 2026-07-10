@@ -85,7 +85,7 @@ describe('The Gang domain flow', () => {
         expect(engineConfig.maxPlayers).toBe(6);
     });
 
-    test('每轮筹码不能重复，且所有玩家选完前不能推进', () => {
+    test('当前轮可以拿别人面前的筹码，原持有人失去该筹码，且失去筹码的人还能再拿', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-validation-test');
         let state = adapter.setup(['0', '1', '2']);
 
@@ -102,7 +102,16 @@ describe('The Gang domain flow', () => {
             playerId: '1',
             payload: { chip: 1 },
             timestamp: 2,
-        })).toMatchObject({ valid: false, error: 'chipTaken' });
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 1 },
+            timestamp: 2,
+        }).state;
+
+        expect(state.core.currentRoundChips).toEqual({ '1': 1 });
 
         expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.END_ROUND,
@@ -111,15 +120,27 @@ describe('The Gang domain flow', () => {
             timestamp: 3,
         })).toMatchObject({ valid: false, error: 'missingChips' });
 
-        for (const [index, playerId] of ['1', '2'].entries()) {
-            state = adapter.execute(state, {
-                type: THE_GANG_COMMANDS.TAKE_CHIP,
-                playerId,
-                payload: { chip: index + 2 },
-                timestamp: index + 4,
-                skipValidation: true,
-            }).state;
-        }
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 2 },
+            timestamp: 4,
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 2 },
+            timestamp: 4,
+        }).state;
+        expect(state.core.currentRoundChips).toEqual({ '1': 1, '0': 2 });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '2',
+            payload: { chip: 3 },
+            timestamp: 5,
+        }).state;
 
         expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.END_ROUND,
@@ -127,6 +148,13 @@ describe('The Gang domain flow', () => {
             payload: {},
             timestamp: 6,
         })).toMatchObject({ valid: true });
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 1 },
+            timestamp: 7,
+        })).toMatchObject({ valid: false, error: 'chipAlreadyHeld' });
     });
 
     test('推进轮次、摊牌和下一次抢劫都必须等待全员确认', () => {

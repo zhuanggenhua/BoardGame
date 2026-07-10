@@ -273,10 +273,10 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // more-please-roll-damage: 投5骰，剑面数伤害+脑震荡
+    // more-please-roll-damage: 投5骰，剑面数加到当前攻击+脑震荡
     // ========================================================================
     describe('more-please-roll-damage (再来点儿)', () => {
-        it('5个剑面造成5点伤害并施加脑震荡（target:self 场景）', () => {
+        it('5个剑面应加入本次攻击加伤并施加脑震荡（target:self 场景）', () => {
             const state = createState({});
             const handler = getCustomActionHandler('more-please-roll-damage')!;
             const events = handler(buildCtx(state, 'more-please-roll-damage', {
@@ -284,11 +284,14 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 targetSelf: true,
             }));
 
-            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
-            expect(dmg).toHaveLength(1);
-            expect((dmg[0] as any).payload.amount).toBe(5);
-            // D10 关键断言：伤害目标必须是对手 '1'
-            expect((dmg[0] as any).payload.targetId).toBe('1');
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            const bonus = eventsOfType(events, 'BONUS_DAMAGE_ADDED');
+            expect(bonus).toHaveLength(1);
+            expect((bonus[0] as any).payload).toMatchObject({
+                playerId: '0',
+                amount: 5,
+                sourceCardId: 'more-please-roll-damage',
+            });
 
             const status = eventsOfType(events, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);

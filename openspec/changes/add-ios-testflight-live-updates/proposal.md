@@ -13,6 +13,8 @@ The target is not App Store public listing. The target is a signed iOS app that 
 - Generalize the existing Android H5 OTA model into a cross-platform mobile live update model.
 - Keep Android native APK self-update as Android-only; define iOS native binary updates as TestFlight builds only.
 - Add iOS-specific OTA manifest and game package publish paths using the same channel semantics as Android.
+- Apply the project-wide mandatory OTA policy to iOS: every channel publishes `forceUpdate = true` and cannot opt out.
+- Reuse the shared lightweight OTA file classifier so iOS H5 bundles do not duplicate nested game assets.
 - Add platform-aware runtime detection so existing Android-only managers are not copied into iOS code paths under Android names.
 - Add iOS build and release documentation for local Mac/Xcode archive and later CI automation.
 
@@ -37,7 +39,7 @@ The target is not App Store public listing. The target is a signed iOS app that 
 ## Non-Goals
 
 - No App Store public listing in this change.
-- No Android behavior changes except compatibility-preserving refactors needed for shared mobile abstractions.
+- Android artifact paths and native update behavior remain unchanged; the project-wide mandatory H5 OTA policy applies consistently to both platforms.
 - No iOS IPA sideload distribution as the primary path.
 - No iOS native binary self-update. iOS native updates MUST go through TestFlight/App Store Connect.
 - No new game UI mobile redesign in this change.

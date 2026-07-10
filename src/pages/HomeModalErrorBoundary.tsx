@@ -4,7 +4,6 @@ import { reportClientAutoFeedbackOnce } from '../lib/feedback/clientAutoReport';
 type HomeModalErrorBoundaryProps = {
     children: ReactNode;
     resetKey: string;
-    onError: () => void;
 };
 
 type HomeModalErrorBoundaryState = {
@@ -39,7 +38,6 @@ export class HomeModalErrorBoundary extends Component<HomeModalErrorBoundaryProp
             jsStack,
             componentStack,
         });
-        this.props.onError();
     }
 
     public componentDidUpdate(prevProps: HomeModalErrorBoundaryProps) {

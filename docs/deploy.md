@@ -133,7 +133,7 @@ BG_DEPLOY_RUNNER_URL=http://host.docker.internal:18761
 BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
 ```
 
-> **后台镜像拉取超时口径**：`boardgame-deploy-runner` 安装脚本会在宿主机环境文件里设置 `DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0`，也就是不再让 `deploy-image.sh` 用默认 300 秒中断单次 `docker pull`。后台部署仍由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS` 的整步超时兜底，默认 20 分钟；如果需要更短或更长的整体部署保护，应改 runner 的整步超时，而不是恢复 300 秒镜像拉取内层超时。
+> **镜像拉取超时口径**：直接执行 `deploy-image.sh` 时，单次 `docker pull` 默认最多等待 10800 秒（3 小时）。`boardgame-deploy-runner` 安装脚本会在宿主机环境文件里设置 `DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0`，避免内外两层重复计时；后台部署改由 `BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS=10800` 提供 3 小时整步保护。如果需要调整整体部署保护，应修改 runner 的整步超时，不要恢复短时镜像拉取限制。
 >
 > **后台进度日志口径**：runner 环境同时设置 `COMPOSE_PROGRESS=plain` 与 `DOCKER_CLI_HINTS=false`，让 Docker Compose 输出适合后台轮询展示的纯文本拉取阶段，而不是只适合终端刷新的动态进度。
 
@@ -335,18 +335,19 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 强制约束：
 
-- Android OTA 发布不得把 `public/assets/i18n/**` 这类大体积运行时资源打进 OTA zip；这些资源应继续走 R2 / 游戏包链路，而不是 H5 OTA。
-- `scripts/mobile/publish-android-ota.mjs` 只接受显式命名参数，并要求 `dist/` 已经经过 Android 专用裁剪；若 `dist/` 中仍存在 `dist/assets/i18n/**` 或非 `dist/locales/zh-CN/**` 资源，脚本会直接失败，禁止继续发布。
+- 所有 Android OTA manifest 必须写入 `forceUpdate: true`；`--no-force-update` 和 `force_update=false` 都必须失败。
+- Android OTA 发布不得把嵌套游戏资源打进 OTA zip；`assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除 `assets-manifest.json` 外的资源由打包器确定性排除，并继续走服务器资源主源或移动游戏包。
+- `scripts/mobile/publish-android-ota.mjs` 只接受显式命名参数；非中文语言包和嵌套运行时资源可以存在于 `dist/`，但不得进入最终 OTA zip。
 - 若最终 OTA zip 体积异常过大（当前门禁为 `20MB`），发布脚本必须直接失败，禁止继续覆盖 `latest.json`。
 
 GitHub Actions 自动化：
 
 - 手动 OTA workflow：`.github/workflows/android-ota-publish.yml`
 - 普通 `push main` 不得自动发布 **stable OTA**，也不得自动回写版本号。
-- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`、`ota_version_base`。
+- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`ota_version_base`；兼容字段 `force_update` 必须保持 `true`。
 - 正式门禁：`stable` 应绑定 `android-ota-production` Environment 审批。
 - OTA 内部游标：客户端按 bundle `version` 这个单调递增游标判断新旧；`publishedAt` 只用于审计和展示。若旧客户端曾记住错误大版本，例如 `5.9.0`，可用 `ota_version_base=6.0.0` 发桥接包。
-- 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本默认都必须收到 OTA。若误传这些参数，发布脚本必须直接失败。
+- 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本都必须收到并强制应用 OTA。若误传这些参数或尝试关闭强更，发布脚本必须直接失败。
 
 约束：
 
@@ -407,6 +408,13 @@ GitHub Actions 自动化：
   - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]` 或 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
   - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
+### 训练数据持久化合同
+
+- 生产 `game-server` 必须把 `TRAINING_DATA_DIR` 固定为 `/data/training-data`，并挂载独立命名卷 `training_data`；容器重建不得依赖镜像可写层保存正式训练数据。
+- 决策样本先进入 `pending/`，只有对局真实结束、达到游戏级或全局最低完成时长、且该游戏正式数据未达到 300MiB 时，才原子提交到 `completed/`。
+- `raw/` 与 `archive/` 是既有正式数据目录，容量门禁会继续计入，但本治理变更不会删除、截断或迁移现有文件。
+- 每个游戏达到 300MiB 后整局拒收，新对局不会部分追加到旧文件；异常退出最多留下非正式 `pending` 文件。
+
 ## 资源 /assets 与对象存储映射（官方）
 
 - **开发**：直接使用 `public/assets`（不配置 R2 也能跑通）。
@@ -417,6 +425,52 @@ GitHub Actions 自动化：
 - **资源基址配置**：前端可通过 `VITE_ASSETS_BASE_URL` 覆盖；当前代码内置默认值为 `https://assets.easyboardgame.top/official`。
 - **缓存失效机制**：构建时会扫描 `public/assets`，为资源 URL 自动追加 `?v=<content-hash>`。资源内容变化后 URL 会自动变化，因此 R2 上的图片/音频/SVG 可以安全使用长期缓存。
 - **本地 JSON / 图集配置**：仍走本地 `/assets`，但同样会追加 `?v=<content-hash>`，避免本地回退路径拿到旧配置。
+
+### 生产素材域名：服务器优先、R2 自动回退
+
+- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，不需要知道素材由服务器还是 R2 返回。
+- **所有正式素材与发布包**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
+- **自动回退**：服务器连接失败、1500ms 内没有响应头，或返回 `404`、`408`、`429`、`5xx` 时，Worker 使用同 key 的 R2 对象返回。客户端仍访问原域名。
+- **大型发布包同样服务器优先**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 不再配置绕过 Route，统一进入 Worker。
+- **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
+- **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖 R2 才能上线。
+- **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
+- **R2 只做关键对象的同 key 异步灾备**：服务器切换后，只为当前恢复必需对象生成灾备队列，`boardgame-asset-backup.timer` 后台上传并失败重试。默认不备份重复 APK 别名、历史版本清单、游戏单素材散件等可重复或可重建对象。R2 超过 9GiB 门禁时仅保留关键对象队列并告警，但不撤销服务器发布。
+- **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS、同域和自动回退；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
+
+服务器静态源保护参数：
+
+- systemd 服务：`boardgame-asset-origin.service`
+- R2 灾备队列：`boardgame-asset-backup.service` / `boardgame-asset-backup.timer`
+- 灾难重建命令：`boardgame-asset-sync.service`，只允许人工启动，不再配置 timer
+- 仅监听：`127.0.0.1:19090`
+- 全局同时传输连接：32
+- 单客户端同时连接：4
+- 每个响应前 1MiB 不限速，之后 2MiB/s
+- CPU 上限：25%
+- 内存上限：128MB
+- IO 权重：10
+
+诊断：
+
+```bash
+curl -I "https://assets.easyboardgame.top/official/common/images/noise.svg?probe=$(date +%s)"
+```
+
+- `X-Asset-Source: server`：普通素材或发布包由服务器活动版本返回。
+- `X-Asset-Source: r2-fallback`：服务器不可用或缺少对象，本次请求已自动回退 R2。
+
+素材服务运维：
+
+```bash
+sudo systemctl status boardgame-asset-origin.service
+sudo systemctl restart boardgame-asset-origin.service
+sudo systemctl status boardgame-asset-backup.timer
+sudo systemctl start boardgame-asset-backup.service
+sudo systemctl start boardgame-asset-sync.service # 仅服务器损坏后从 R2 手工重建
+```
+
+Worker 回滚删除 `assets.easyboardgame.top/*` 这一条 catch-all Route 后，全部素材立即恢复原 R2 自定义域名直出；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器主源。变更快照保存在 `temp/cloudflare-snapshots/`。
 
 ## 非 /assets 静态资源缓存策略（当前主链路）
 
@@ -449,7 +503,7 @@ Android OTA 产物也走同一个对象存储桶，但前缀独立：
    - `node scripts/mobile/release-android.mjs ota --channel gray --dry-run`
    - `node scripts/mobile/release-android.mjs ota --channel gray --skip-latest`
    - `node scripts/mobile/release-android.mjs ota --channel gray`
-4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0 --force-update`
+4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0`
 5. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`
 
 当前默认发布节奏：

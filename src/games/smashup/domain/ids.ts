@@ -15,6 +15,7 @@ export const SMASHUP_ATLAS_IDS = {
     BASE10: 'smashup:base10',
     PRETTY_PRETTY_POD_BASES: 'smashup:pretty-pretty-pod-bases',
     HULUWAWA_BASES: 'smashup:huluwawa-bases',
+    PALADIN_BASES: 'smashup:paladin-bases',
     CARDS1: 'smashup:cards1',
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
@@ -33,8 +34,13 @@ export const SMASHUP_ATLAS_IDS = {
     FAIRIES_POD_CARDS: 'smashup:fairies-pod-cards',
     PRINCESSES_POD_CARDS: 'smashup:princesses-pod-cards',
     HULUWAWA_CARDS: 'smashup:huluwawa-cards',
+    PALADIN_CARDS: 'smashup:paladin-cards',
     HULUWAWA_TITAN: 'smashup:huluwawa-titan',
+    PALADIN_TITAN: 'smashup:paladin-titan',
     TITANS: 'smashup:titans',
+    SHARKS_POD_CARDS: 'smashup:sharks-pod-cards',
+    ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
+    TORNADOS_POD_CARDS: 'smashup:tornados-pod-cards',
 } as const;
 
 export const SMASHUP_CARD_BACK = {
@@ -67,10 +73,13 @@ export const SMASHUP_FACTION_IDS = {
     KITTY_CATS_POD: 'kitty_cats_pod',
     MYTHIC_HORSES: 'mythic_horses',
     MYTHIC_HORSES_POD: 'mythic_horses_pod',
+    PALADINS: 'paladins',
     PRINCESSES: 'princesses',
     PRINCESSES_POD: 'princesses_pod',
     SHARKS: 'sharks',
+    SHARKS_POD: 'sharks_pod',
     TORNADOS: 'tornados',
+    TORNADOS_POD: 'tornados_pod',
     MYTHIC_GREEKS: 'mythic_greeks',
     SHAPESHIFTERS: 'shapeshifters',
     CYBORG_APES: 'cyborg_apes',
@@ -124,6 +133,7 @@ export const SMASHUP_FACTION_IDS = {
     MERMAIDS: 'mermaids',
     SKELETONS: 'skeletons',
     WORLD_CHAMPS: 'world_champs',
+    ALL_STARS_POD: 'all_stars_pod',
     SUPERHEROES: 'superheroes',
     MISKATONIC_UNIVERSITY_POD: 'miskatonic_university_pod',
     NINJAS_POD: 'ninjas_pod',
@@ -153,6 +163,7 @@ export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
 
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
+    SMASHUP_FACTION_IDS.PALADINS,
 ]);
 
 export function isSmashUpDiyFaction(factionId: string | null | undefined): boolean {
@@ -189,10 +200,13 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.KITTY_CATS_POD]: '猫咪 (POD版)',
     [SMASHUP_FACTION_IDS.MYTHIC_HORSES]: '小马',
     [SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD]: '小马 (POD版)',
+    [SMASHUP_FACTION_IDS.PALADINS]: '圣骑士',
     [SMASHUP_FACTION_IDS.PRINCESSES]: '公主',
     [SMASHUP_FACTION_IDS.PRINCESSES_POD]: '公主 (POD版)',
     [SMASHUP_FACTION_IDS.SHARKS]: '鲨鱼',
+    [SMASHUP_FACTION_IDS.SHARKS_POD]: '鲨鱼 (POD版)',
     [SMASHUP_FACTION_IDS.TORNADOS]: '龙卷风',
+    [SMASHUP_FACTION_IDS.TORNADOS_POD]: '龙卷风 (POD版)',
     [SMASHUP_FACTION_IDS.MYTHIC_GREEKS]: '希腊神话',
     [SMASHUP_FACTION_IDS.SHAPESHIFTERS]: '变形者',
     [SMASHUP_FACTION_IDS.CYBORG_APES]: '电子猿',
@@ -243,6 +257,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.MERMAIDS]: '美人鱼',
     [SMASHUP_FACTION_IDS.SKELETONS]: '骷髅',
     [SMASHUP_FACTION_IDS.WORLD_CHAMPS]: '世界冠军',
+    [SMASHUP_FACTION_IDS.ALL_STARS_POD]: '全明星 (POD版)',
     [SMASHUP_FACTION_IDS.SUPERHEROES]: '超级英雄',
     [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD]: '米斯卡塔尼克 (POD版)',
     [SMASHUP_FACTION_IDS.NINJAS_POD]: '忍者 (POD版)',

@@ -474,8 +474,12 @@ function createFairiesBranchEffectContext(
     return { matchState: state, playerId, random, now: timestamp };
 }
 
-function createTitaniaReturnBranchFootprint(state: SmashUpCore, playerId: PlayerId) {
-    const options = buildTitaniaReturnOptions(state, playerId);
+function createTitaniaReturnBranchFootprint(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (minion: MinionOnBase) => boolean = () => true,
+) {
+    const options = buildTitaniaReturnOptions(state, playerId, predicate);
     const reads: SmashUpReactionResourceRef[] = [];
     const writes: SmashUpReactionResourceRef[] = [{ kind: 'targetAvailability' }];
 
@@ -1079,7 +1083,11 @@ function fairiesTitaniaPod(ctx: AbilityContext): AbilityResult {
             'return-minion',
             '将一个对手随从移回其拥有者手牌',
             'return_minion_pod',
-            createTitaniaReturnBranchFootprint(ctx.state, ctx.playerId),
+            createTitaniaReturnBranchFootprint(
+                ctx.state,
+                ctx.playerId,
+                minion => minion.controller !== ctx.playerId,
+            ),
         ),
     ];
 

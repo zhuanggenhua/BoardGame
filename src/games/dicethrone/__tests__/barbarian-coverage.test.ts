@@ -20,7 +20,7 @@ import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { DiceThroneDomain } from '../domain';
 import { STATUS_IDS } from '../domain/ids';
-import { SLAP_2 } from '../heroes/barbarian/abilities';
+import { SLAP_2, STEADFAST_2 } from '../heroes/barbarian/abilities';
 import {
     testSystems,
     createQueuedRandom,
@@ -295,6 +295,45 @@ describe('狂战士 GTR 技能覆盖', () => {
             });
             expect(result.assertionErrors).toEqual([]);
         });
+
+        it('坚韧 II 清状态后应完成攻击收口并进入 main2', () => {
+            const random = createQueuedRandom([4, 4, 4, 1, 6]);
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain, systems: testSystems,
+                playerIds: ['0', '1'], random,
+                setup: (playerIds, setupRandom) => {
+                    const state = createBarbarianSetup()(playerIds, setupRandom);
+                    const player = state.core.players['0'];
+                    player.abilities = player.abilities.map((ability) => (
+                        ability.id === 'steadfast' ? STEADFAST_2 : ability
+                    ));
+                    player.abilityLevels.steadfast = 2;
+                    player.statusEffects[STATUS_IDS.POISON] = 1;
+                    return state;
+                },
+                assertFn: assertState, silent: true,
+            });
+
+            const result = runner.run({
+                name: '坚韧 II 清状态后完成攻击收口',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'steadfast-2-3' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('REMOVE_STATUS', '0', { targetPlayerId: '0', statusId: STATUS_IDS.POISON }),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': { hp: 55, statusEffects: { [STATUS_IDS.POISON]: 0 } },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+        });
     });
 
     // ========================================================================
@@ -362,6 +401,57 @@ describe('狂战士 GTR 技能覆盖', () => {
                 },
             });
             expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('5个力量面叠加攻击修正时，应同时结算狂怒本体伤害和修正伤害', () => {
+            const random = createQueuedRandom([
+                6, 6, 6, 6, 6, // 狂怒
+                1, 1, 6, 6, 6, // 再来点：2 个剑面，+2 伤害
+            ]);
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: (playerIds, setupRandom) => {
+                    const state = createBarbarianSetup()(playerIds, setupRandom);
+                    state.core.players['0'].hand = [state.core.players['0'].deck.find(card => card.id === 'card-more-please')!];
+                    state.core.players['0'].deck = state.core.players['0'].deck.filter(card => card.id !== 'card-more-please');
+                    state.core.players['0'].resources.cp = 2;
+                    state.core.players['1'].hand = [];
+                    state.core.players['1'].deck = [];
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: '狂怒 + 再来点 = 17 总伤害',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'rage' }),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-more-please' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                ],
+                expect: {
+                    turnPhase: 'offensiveRoll',
+                    players: {
+                        '1': {
+                            hp: 33,
+                            statusEffects: {
+                                [STATUS_IDS.DAZE]: 0,
+                                [STATUS_IDS.CONCUSSION]: 1,
+                            },
+                        },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.lastResolvedAttackDamage).toBe(17);
         });
     });
 

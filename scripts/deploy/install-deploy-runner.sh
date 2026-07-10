@@ -65,7 +65,8 @@ $SUDO tee "$ENV_PATH" >/dev/null <<EOF
 BG_DEPLOY_RUNNER_HOST=${RUNNER_HOST}
 BG_DEPLOY_RUNNER_PORT=${RUNNER_PORT}
 BG_DEPLOY_RUNNER_TOKEN=${RUNNER_TOKEN}
-# 后台部署由 deploy-runner 的整步超时兜底，避免慢速镜像层被 deploy-image.sh 的默认 300s 内层超时误杀。
+# 后台部署由 deploy-runner 的三小时整步超时兜底，避免慢速镜像层被 deploy-image.sh 的内层超时重复计时。
+BG_DEPLOY_RUNNER_DEPLOY_STEP_TIMEOUT_SECONDS=10800
 DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=0
 # 固定 Docker Compose 为纯文本进度，方便后台日志轮询展示真实拉取阶段。
 COMPOSE_PROGRESS=plain

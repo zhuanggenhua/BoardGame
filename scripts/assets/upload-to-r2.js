@@ -19,12 +19,16 @@
 
 import { config } from 'dotenv';
 import { existsSync } from 'fs';
-import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, extname, sep } from 'path';
 import { createHash } from 'crypto';
 import { spawnSync } from 'child_process';
 import mime from 'mime-types';
+import {
+  assertR2CapacityForUploads,
+  listR2ObjectInventory,
+} from './r2-capacity-guard.mjs';
 
 // 加载环境变量：先读 .env，再用 .env.example 补齐缺失键
 if (existsSync('.env')) {
@@ -261,33 +265,6 @@ function computeMD5(buffer) {
   return createHash('md5').update(buffer).digest('hex');
 }
 
-// 获取远程所有对象的 ETag 映射
-async function listRemoteObjects(prefix) {
-  const remoteMap = new Map();
-  let continuationToken;
-  
-  do {
-    const command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: prefix,
-      ContinuationToken: continuationToken,
-    });
-    const response = await s3Client.send(command);
-    
-    if (response.Contents) {
-      for (const obj of response.Contents) {
-        // R2 ETag 是 MD5 哈希值（带引号），例如 "abc123def456"
-        const etag = obj.ETag?.replace(/"/g, '');
-        remoteMap.set(obj.Key, etag);
-      }
-    }
-    
-    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
-  } while (continuationToken);
-  
-  return remoteMap;
-}
-
 // 静态资源缓存策略：
 // - 运行时 URL 会自动追加 ?v=<content-hash>，内容变更后 URL 立刻变化。
 // - 因此媒体资源（webp、ogg、svg）可以安全使用长期 immutable 缓存。
@@ -325,14 +302,19 @@ async function main() {
   
   console.log(`📦 找到 ${files.length} 个符合条件的本地文件`);
   
-  // 获取远程文件列表
-  let remoteMap = new Map();
-  if (!forceUpload) {
-    console.log('🔍 获取远程文件列表进行变更检测...');
-    remoteMap = await listRemoteObjects('official/');
-    console.log(`   远程共 ${remoteMap.size} 个文件\n`);
-  } else {
-    console.log('⚡ 强制模式：跳过变更检测，上传所有文件\n');
+  console.log('🔍 获取 R2 完整对象清单进行容量预检...');
+  const remoteInventory = await listR2ObjectInventory({
+    s3Client,
+    bucketName: BUCKET_NAME,
+  });
+  const remoteMap = new Map(
+    [...remoteInventory.entries()]
+      .filter(([key]) => key.startsWith('official/'))
+      .map(([key, object]) => [key, object.etag]),
+  );
+  console.log(`   R2 共 ${remoteInventory.size} 个对象，official/ 下 ${remoteMap.size} 个文件\n`);
+  if (forceUpload) {
+    console.log('⚡ 强制模式：跳过变更检测，计划上传所有本地文件\n');
   }
   
   if (checkOnly) {
@@ -344,6 +326,7 @@ async function main() {
   let failed = 0;
   let newFiles = 0;
   let changed = 0;
+  const uploadPlan = [];
   
   for (const file of files) {
     const relativePath = relative(join(process.cwd(), 'public', 'assets'), file);
@@ -380,18 +363,46 @@ async function main() {
         }
       }
       
-      await uploadFile(fileContent, remotePath, file);
-      console.log(`✅ ${remotePath}`);
-      uploaded++;
-      if (packageManagedGameId) {
-        uploadedPackageManagedGames.add(packageManagedGameId);
-      }
-      if (isSharedAudioAsset(relativePath)) {
-        hasUploadedSharedAudioAssets = true;
-      }
+      uploadPlan.push({
+        file,
+        relativePath,
+        remotePath,
+        localSize,
+        packageManagedGameId,
+      });
     } catch (error) {
       console.error(`❌ ${remotePath}: ${error.message}`);
       failed++;
+    }
+  }
+
+  if (!checkOnly && uploadPlan.length > 0) {
+    await assertR2CapacityForUploads({
+      s3Client,
+      bucketName: BUCKET_NAME,
+      currentObjects: remoteInventory,
+      uploads: uploadPlan.map((entry) => ({
+        key: entry.remotePath,
+        size: entry.localSize,
+      })),
+    });
+
+    for (const entry of uploadPlan) {
+      try {
+        const fileContent = readFileSync(entry.file);
+        await uploadFile(fileContent, entry.remotePath, entry.file);
+        console.log(`✅ ${entry.remotePath}`);
+        uploaded++;
+        if (entry.packageManagedGameId) {
+          uploadedPackageManagedGames.add(entry.packageManagedGameId);
+        }
+        if (isSharedAudioAsset(entry.relativePath)) {
+          hasUploadedSharedAudioAssets = true;
+        }
+      } catch (error) {
+        console.error(`❌ ${entry.remotePath}: ${error.message}`);
+        failed++;
+      }
     }
   }
   

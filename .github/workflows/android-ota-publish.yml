@@ -39,9 +39,9 @@ on:
         default: false
         type: boolean
       force_update:
-        description: '是否强制 OTA（默认关闭；如需下载完成后立即切换请显式开启）'
+        description: '兼容旧触发器的强制更新字段；项目规定必须为 true'
         required: true
-        default: false
+        default: true
         type: boolean
       force_update_title:
         description: '强更页标题（可选）'
@@ -90,6 +90,11 @@ jobs:
             target_ref="${GITHUB_SHA}"
           fi
 
+          if [[ "${force_update}" != "true" ]]; then
+            echo "::error::所有 OTA 已强制更新，force_update 必须为 true。"
+            exit 1
+          fi
+
           {
             echo "channel=${channel}"
             echo "target_ref=${target_ref}"
@@ -109,10 +114,8 @@ jobs:
         shell: bash
         env:
           ANDROID_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
           DRY_RUN: ${{ steps.params.outputs.dry_run }}
         run: |
           missing=()
@@ -122,10 +125,8 @@ jobs:
           fi
 
           if [[ "${DRY_RUN}" != "true" ]]; then
-            [[ -n "${R2_ACCOUNT_ID}" ]] || missing+=("R2_ACCOUNT_ID")
-            [[ -n "${R2_ACCESS_KEY_ID}" ]] || missing+=("R2_ACCESS_KEY_ID")
-            [[ -n "${R2_SECRET_ACCESS_KEY}" ]] || missing+=("R2_SECRET_ACCESS_KEY")
-            [[ -n "${R2_BUCKET_NAME}" ]] || missing+=("R2_BUCKET_NAME")
+            [[ -n "${ASSET_SERVER_SSH_PRIVATE_KEY}" ]] || missing+=("ASSET_SERVER_SSH_PRIVATE_KEY")
+            [[ -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}" ]] || missing+=("ASSET_SERVER_SSH_KNOWN_HOSTS")
           fi
 
           if [[ ${#missing[@]} -eq 0 ]]; then
@@ -234,13 +235,25 @@ jobs:
         if: steps.prereq.outputs.ready == 'true'
         run: npm run mobile:android:sync
 
+      - name: Configure asset server SSH
+        if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
+        shell: bash
+        env:
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
+          chmod 600 "${HOME}/.ssh/asset-publisher"
+          printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
       - name: Publish Android OTA bundle
         if: steps.prereq.outputs.ready == 'true'
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
+          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
         shell: bash
         run: |
           args=(
@@ -259,11 +272,7 @@ jobs:
             args+=(--skip-latest)
           fi
 
-          if [[ "${{ steps.params.outputs.force_update }}" == "false" ]]; then
-            args+=(--no-force-update)
-          else
-            args+=(--force-update)
-          fi
+          args+=(--force-update)
 
           if [[ -n "${{ steps.params.outputs.force_update_title }}" ]]; then
             args+=(--force-update-title "${{ steps.params.outputs.force_update_title }}")
@@ -292,7 +301,7 @@ jobs:
             echo "| Bundle Version | ${{ steps.bundle.outputs.bundle_version || '未生成' }} |"
             echo "| Dry Run | ${{ steps.params.outputs.dry_run }} |"
             echo "| Skip Latest | ${{ steps.params.outputs.skip_latest }} |"
-            echo "| Force Update | ${{ steps.params.outputs.force_update || 'false' }} |"
+            echo "| Force Update | true（项目硬门禁） |"
             echo "| Native Compatibility Gate | disabled（所有版本都必须更新） |"
             echo "| Manifest URL | ${{ steps.bundle.outputs.manifest_url || '未生成' }} |"
             echo "| 缺失配置 | ${{ steps.prereq.outputs.missing || '无' }} |"

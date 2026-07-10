@@ -868,7 +868,11 @@ const princessesGriseldaPodPromptProgram = createPromptProgram<
         if (selected?.choice === 'play_extra_action') {
             return {
                 matchState: state,
-                events: [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'princesses_griselda_pod')],
+                events: [grantContextualExtraAction(
+                    { playerId, now: timestamp, matchState: state },
+                    'princesses_griselda_pod',
+                    { restrictToCardDefId: 'princesses_heirloom_pod' },
+                )],
             };
         }
         if (!selected?.cardUid) {

@@ -80,20 +80,18 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
   - 想让“展示口径”回到 `0.5.58`，不能直接靠原生包降版本完成
 - 遇到“网页想显示 58，但旧壳要自动更新”的需求，必须先把**显示版本**和**原生递增版本码**分开处理，不能直接硬回退原生版本。
 
-### 2.6 Android embedded 必须保持轻包
+### 2.6 Android embedded 与 OTA 必须分别控制包体
 
 - `public/assets/**` 只允许正式运行时资源。
-- 禁止把以下内容打进 Android embedded / OTA：
+- Android embedded APK 可以为首装和离线兜底保留经过明确白名单确认的最小资源。
+- Android OTA 不得复用 embedded 白名单；以下内容禁止进入 OTA zip：
   - `public/assets/common/audio/**`
-  - `public/assets/common/images/mascot/**`
-  - `public/assets/common/images/home-v2/book-close/**`
-  - `public/assets/common/images/home-v2/catalog-thumbnails/**`
-  - `public/assets/common/images/home-v2/generated-reference-homepage/**`
-  - `public/assets/common/images/home-v2/overview-spread/**`
-  - `public/assets/common/images/home-v2/reference-homepage/**`
-  - `public/assets/common/images/home-v2/reference-thumbnails/**`
-  - `public/assets/i18n/**`
+  - `public/assets/common/images/**`
+  - `public/assets/atlas-configs/**`
+  - `public/assets/i18n/**` 下除 `assets-manifest.json` 外的图片、音频和运行时配置
+  - `public/logos/**`
   - 参考图、预览图、生成图、中间产物
+- OTA 只允许 H5 代码、样式、`locales/zh-CN/**`、字体、必要的小型公共文件和 `assets-manifest.json`。
 - 一旦包体异常变大，先查 `public/assets/**` 和 `dist/`，不要先猜 CDN、缓存或签名。
 
 ### 2.7 用户说“上传 / 发原生更新 / 改网站下载 app”时，默认自动做完
@@ -108,6 +106,15 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - 发布 OTA 的真相源必须是已推送的 git ref。若本地存在无关未提交改动，按 `4.1.1` 处理，不得把它们混进 OTA，也不得因此漏发 OTA。
 - OTA 发布后必须回查 `https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json`，确认 `version / url / checksum / size / notes` 指向本次已推送 ref。
 - 如用户明确要求“不发 OTA / 只更新服务器”，最终汇报必须点明“本次未发布 Android OTA”。
+
+### 2.9 所有 OTA 必须强制更新
+
+- Android 所有 channel 的 OTA manifest 必须写入 `forceUpdate: true`。
+- 发布脚本、统一发布入口、后台发布页、服务端接口和 GitHub Actions 都不得提供有效的关闭入口。
+- `--no-force-update` 或等价的 `forceUpdate=false` 必须被拒绝；不能静默发布成后台 OTA。
+- 客户端启动检查遇到强制 OTA 时，必须显示阻塞式更新界面，下载完成后立即切换 bundle。
+- `--force-update` 只作为旧命令兼容参数保留；不传也必须强制更新。
+- 发布后健康检查必须区分“服务器传播尚未完成”和“程序参数无效”。URL 类型错误、`Invalid URL`、`[object Object]` 等参数错误必须首轮立即失败，禁止套用最长 3 小时的传播等待反复重试。
 
 ## 3. 路径选择
 
@@ -135,7 +142,20 @@ node scripts/mobile/release-android.mjs native --channel stable
 node scripts/mobile/release-android.mjs native --channel stable --bump patch
 ```
 
-### 3.3 只想本地重打 APK，不上传
+### 3.3 改了游戏横竖屏或原生方向映射
+
+- 修改下列任一项都属于 **native 改动**，只发 OTA 不会生效：
+  - `preferredOrientation`
+  - `scripts/game/generate_game_manifests.js` 的方向表生成规则
+  - `android/app/src/main/assets/game-orientation-map.json`
+  - `MainActivity` / `GameOrientationPolicy`
+- 本项目方向不变量是：**除井字棋外，所有游戏默认强制横屏**；未配置或非法方向也必须回退到横屏，只有 `tictactoe` 允许显式 `portrait`。
+- 如果同一轮还修改了 H5 样式/交互，必须同时发布：
+  1. stable OTA，交付最新 H5；
+  2. stable native APK，交付最新方向映射和原生锁屏逻辑。
+- 发布后必须直接检查线上 APK 内的 `assets/game-orientation-map.json`，确认目标游戏为 `landscape`，不能只看源码或 OTA `latest.json`。
+
+### 3.4 只想本地重打 APK，不上传
 
 ```bash
 npm run mobile:android:build:release
@@ -152,6 +172,7 @@ npm run mobile:android:build:release
 - 当前目标是 `OTA` 还是 `native`
 - 是否真的需要部署网站
 - 是否涉及原生版本码递增
+- 是否改了游戏方向；若改了，必须按 native 处理，不能只发 OTA
 
 如果用户说“不要部署，只更新网站下载的 app”，默认是 **native publish，不是 deploy**。
 

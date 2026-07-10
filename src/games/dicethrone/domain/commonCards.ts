@@ -130,7 +130,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-play-six', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        playCondition: { requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: cardEffectText('card-play-six', 'modifyDieTo6'), action: { type: 'custom', target: 'self', customActionId: 'modify-die-to-6' }, timing: 'immediate' }],
     },
     {
@@ -165,7 +165,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-i-can-again', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        playCondition: { requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: cardEffectText('card-i-can-again', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {
@@ -175,7 +175,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-me-too', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true, requireMinDiceCount: 2 },
+        playCondition: { requireIsRoller: true, requireDiceExists: true, requireHasRolled: true, requireMinDiceCount: 2 },
         effects: [{ description: cardEffectText('card-me-too', 'copyOneDieValue'), action: { type: 'custom', target: 'self', customActionId: 'modify-die-copy' }, timing: 'immediate' }],
     },
     {
@@ -195,7 +195,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'roll',
         description: cardText('card-worthy-of-me', 'description'),
-        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        playCondition: { requireIsRoller: true, requireDiceExists: true, requireHasRolled: true },
         effects: [{ description: cardEffectText('card-worthy-of-me', 'rerollUpTo2Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-2' }, timing: 'immediate' }],
     },
     {

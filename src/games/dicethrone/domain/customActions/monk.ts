@@ -13,7 +13,9 @@ import type {
     TokenLimitChangedEvent,
     RollLimitChangedEvent,
 } from '../types';
+import { CP_MAX } from '../types';
 import { registerCustomActionHandler, createBonusDiceWithReroll, type CustomActionContext } from '../effects';
+import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 
 
@@ -92,25 +94,42 @@ function handleMeditationDamage({ ctx, targetId, sourceAbilityId, state, timesta
 }
 
 /** 一掷千金：投掷1骰子，获得½数值的CP（向上取整） */
+const ONE_THROW_FORTUNE_SETTLEMENT_ID = 'one-throw-fortune-cp';
+
 function handleOneThrowFortuneCp({ targetId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
     const events: DiceThroneEvent[] = [];
     const dieValue = random.d(6);
     const face = getPlayerDieFace(state, targetId, dieValue) ?? '';
-    const cpGain = Math.ceil(dieValue / 2);
     events.push({
         type: 'BONUS_DIE_ROLLED',
-        payload: { value: dieValue, face, playerId: targetId, targetPlayerId: targetId, effectKey: 'bonusDie.effect.gainCp', effectParams: { cp: cpGain } },
+        payload: { value: dieValue, face, playerId: targetId, targetPlayerId: targetId, effectKey: 'bonusDie.effect.gainCp', effectParams: { cp: Math.ceil(dieValue / 2), value: dieValue } },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as BonusDieRolledEvent);
-
     events.push({
-        type: 'CP_CHANGED',
-        payload: { playerId: targetId, delta: cpGain, newValue: (state.players[targetId]?.resources[RESOURCE_IDS.CP] ?? 0) + cpGain, sourceAbilityId },
+        type: 'BONUS_DICE_REROLL_REQUESTED',
+        payload: {
+            settlement: {
+                id: `${sourceAbilityId}-display-${timestamp}`,
+                sourceAbilityId,
+                attackerId: targetId,
+                targetId,
+                dice: [{ index: 0, value: dieValue, face, effectKey: 'bonusDie.effect.gainCp', effectParams: { cp: Math.ceil(dieValue / 2), value: dieValue } }],
+                rerollCostTokenId: '',
+                rerollCostAmount: 0,
+                rerollCount: 0,
+                maxRerollCount: 0,
+                readyToSettle: false,
+                displayOnly: true,
+                showTotal: false,
+                customResolutionId: ONE_THROW_FORTUNE_SETTLEMENT_ID,
+                allowDiceModification: true,
+            },
+        },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
-    });
+    } as DiceThroneEvent);
     return events;
 }
 
@@ -304,6 +323,26 @@ function handleGrantExtraRoll({ targetId, sourceAbilityId, state, timestamp }: C
 // ============================================================================
 
 export function registerMonkCustomActions(): void {
+    registerBonusDiceSettlementHandler(ONE_THROW_FORTUNE_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const dieValue = Math.max(1, Math.min(6, Math.trunc(settlement.dice[0]?.value ?? 1)));
+        const cpGain = Math.ceil(dieValue / 2);
+        const currentCp = state.players[settlement.attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+        return {
+            totalDamage: 0,
+            followupEvents: [{
+                type: 'CP_CHANGED',
+                payload: {
+                    playerId: settlement.attackerId,
+                    delta: cpGain,
+                    newValue: Math.min(CP_MAX, currentCp + cpGain),
+                    sourceAbilityId: settlement.sourceAbilityId,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 0.01,
+            }],
+        };
+    });
+
     // --- 防御技能相关 ---
     registerCustomActionHandler('meditation-taiji', handleMeditationTaiji, {
         categories: ['resource'],

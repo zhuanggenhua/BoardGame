@@ -5,7 +5,7 @@ export const MYTHIC_HORSES_POD_MINIONS: MinionCardDef[] = [
     {
         id: 'mythic_horses_pinkie_pod',
         type: 'minion',
-        name: 'Pinkie',
+        name: '萍琪',
         nameEn: 'Pinkie',
         faction: SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD,
         power: 2,

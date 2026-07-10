@@ -65,7 +65,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
     name: abilityText('structure_shift', 'name'),
     description: abilityText('structure_shift', 'description'),
     sfxKey: 'fantasy.elemental_sword_iceattack_v1',
-    trigger: 'activated',
+    trigger: 'afterMove',
     effects: [
       { type: 'custom', actionId: 'structure_shift_push_pull' },
     ],
@@ -240,7 +240,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
     name: abilityText('frost_axe', 'name'),
     description: abilityText('frost_axe', 'description'),
     sfxKey: 'fantasy.elemental_sword_iceattack_v3',
-    trigger: 'activated',
+    trigger: 'afterMove',
     effects: [
       { type: 'custom', actionId: 'frost_axe_action' },
     ],

@@ -12,12 +12,10 @@ export interface DiceThroneDiceBoxSkin {
     definitionId?: string;
     faceCanvases: Record<number, HTMLCanvasElement>;
     edgeCanvas: HTMLCanvasElement;
-    faceImages: Record<number, HTMLImageElement>;
-    preferPresetMaterials: true;
+    faceImages: Record<number, HTMLCanvasElement>;
 }
 
 const DICE_BOX_ATLAS_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
-const TRANSPARENT_PIXEL_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 const DICE_BOX_FACE_CANVAS_SIZE = 1024;
 const DICE_BOX_FACE_ART_SCALE = 0.68;
 const DICE_BOX_BACKGROUND_DISTANCE_TOLERANCE = 44;
@@ -72,22 +70,6 @@ const drawDieFaceBase = (ctx: CanvasRenderingContext2D, size: number) => {
     ctx.lineWidth = size * 0.018;
     drawRoundedRect(ctx, size * 0.01, size * 0.01, size - size * 0.02, size - size * 0.02, radius);
     ctx.stroke();
-};
-
-const createPresetLabelCanvas = (faceValue: number, atlasImage: HTMLImageElement | null) => {
-    const size = DICE_BOX_FACE_CANVAS_SIZE;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.clearRect(0, 0, size, size);
-    drawOfficialAtlasFace(ctx, atlasImage, faceValue, size);
-
-    return canvas;
 };
 
 const loadImageFromCandidates = (urls: string[]): Promise<HTMLImageElement | null> => new Promise((resolve) => {
@@ -312,16 +294,6 @@ const createFaceCanvas = (
     return canvas;
 };
 
-const canvasToImage = (canvas: HTMLCanvasElement): Promise<HTMLImageElement> => new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    try {
-        image.src = canvas.toDataURL('image/png');
-    } catch {
-        image.src = TRANSPARENT_PIXEL_SRC;
-    }
-});
-
 export async function loadDiceThroneDiceBoxSkin(
     definitionId?: string,
     locale = 'zh-CN',
@@ -331,12 +303,13 @@ export async function loadDiceThroneDiceBoxSkin(
     const spriteUrls = resolveSpriteAssetUrls(spriteAssetPath, locale);
     const atlasImage = await loadImageFromCandidates(spriteUrls);
     const faceCanvases: Record<number, HTMLCanvasElement> = {};
-    const faceImages: Record<number, HTMLImageElement> = {};
+    const faceImages: Record<number, HTMLCanvasElement> = {};
     const edgeCanvas = createEdgeCanvas();
 
     for (const faceValue of DICE_BOX_ATLAS_FACE_VALUES) {
-        faceCanvases[faceValue] = createFaceCanvas(faceValue, atlasImage);
-        faceImages[faceValue] = await canvasToImage(createPresetLabelCanvas(faceValue, atlasImage));
+        const faceCanvas = createFaceCanvas(faceValue, atlasImage);
+        faceCanvases[faceValue] = faceCanvas;
+        faceImages[faceValue] = faceCanvas;
     }
 
     return {
@@ -345,7 +318,6 @@ export async function loadDiceThroneDiceBoxSkin(
         faceCanvases,
         edgeCanvas,
         faceImages,
-        preferPresetMaterials: true,
     };
 }
 

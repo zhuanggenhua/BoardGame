@@ -10,13 +10,13 @@ const TABLET_LANDSCAPE_VIEWPORT = { width: 1024, height: 768 };
 
 const scenarioMap = {
     'betrayal-tutorial-phone-landscape': {
-        route: '/play/betrayal/tutorial/move-explore-use',
+        route: '/play/betrayal/tutorial/basic-setup-and-turn',
         output: 'test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程书本使用入口.png',
         ...PHONE_LANDSCAPE_VIEWPORT,
         forceCoarsePointer: true,
     },
     'betrayal-tutorial-mobile-landscape': {
-        route: '/play/betrayal/tutorial/move-explore-use',
+        route: '/play/betrayal/tutorial/basic-setup-and-turn',
         output: 'test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程书本使用入口.png',
         ...PHONE_LANDSCAPE_VIEWPORT,
         forceCoarsePointer: true,

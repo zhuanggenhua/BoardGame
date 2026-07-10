@@ -3,14 +3,15 @@ import type { CriticalImageResolver } from '../../core/types';
 export const qidahenCriticalImageResolver: CriticalImageResolver = () => ({
     critical: [
         'qidahen/board/qidahen-main-map',
-        'qidahen/cards/backs/ming-card-back',
-        'qidahen/cards/backs/korea-card-back',
-        'qidahen/cards/backs/qidahen-cover-card',
+        'qidahen/cards/backs/ming-deck-back',
+        'qidahen/cards/backs/korea-deck-back',
+        'qidahen/cards/backs/qidahen-common-card-back',
         'qidahen/cards/atlases/ming-faction-deck-atlas',
         'qidahen/cards/atlases/mongol-faction-deck-atlas',
         'qidahen/cards/atlases/korea-special-deck-atlas',
         'qidahen/markers/ming-control-diplomacy-marker-a',
         'qidahen/markers/jin-control-diplomacy-marker-a',
+        'qidahen/markers/chronology-year-marker',
         'qidahen/units/ming-regular-infantry-unit',
         'qidahen/units/ming-regular-cavalry-unit',
     ],
