@@ -298,7 +298,6 @@ function registerFairiesModifiers(): void {
         {
             sourceDefId: 'fairies_daisy_chain',
             variantPolicy: 'baseOnly',
-            runtimeIdentity: 'actionFamily',
             compute: (ctx, helpers) => (
                 helpers.sumMinionAttachmentsMatchingRuntimeDefId(
                     ctx,
@@ -309,7 +308,7 @@ function registerFairiesModifiers(): void {
         },
         {
             sourceDefId: 'fairies_enchantment',
-            runtimeIdentity: 'actionFamily',
+            variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => (
                 helpers.sumBaseOngoingsMatchingRuntimeDefId(ctx, 'fairies_enchantment', (action) => {
                     const mode = action.metadata?.fairiesEnchantmentMode;
