@@ -11,7 +11,8 @@
 - **WHEN** 游戏 manifest 生成完成
 - **THEN** 生成清单 MUST 包含 `the-gang`
 - **AND** `the-gang` MUST 暴露前端 Board 与服务端 engineConfig
-- **AND** manifest MUST 声明本地模式、横屏移动适配和本地 AI 支持
+- **AND** manifest MUST 声明横屏移动适配和本地 AI / 测试运行能力
+- **AND** 本地 AI / 测试运行能力 MUST NOT 被解释为多个真人共用一个客户端的热座产品合同
 
 ### Requirement: 基础抢劫流程
 The Gang 基础版 SHALL 以抢劫为单局子流程，每次抢劫包含 4 轮筹码选择，并在第 4 轮后进入摊牌判定。
@@ -97,13 +98,18 @@ The Gang SHALL maintain auditable source and intake contracts before external ru
 - **AND** 在 Board 尚未按布局合同复核时，真实页面 E2E MUST 只能作为运行时流程验证，不得作为 UI 复刻完成证据
 
 ### Requirement: The Gang runtime entry validation
-The Gang SHALL have a real-entry validation path that proves the registered game can be entered and a base heist can be completed through the user-facing board. The core-flow E2E MUST use visible UI controls for chip choices and public progression; test harness command dispatch MUST NOT substitute the player-facing flow. Runtime entry validation SHALL NOT override unresolved base-game material blockers.
+The Gang SHALL have a supported-entry validation path that proves the registered game can be entered and the current viewer can operate through the user-facing board. One client MUST remain bound to one viewer identity and MUST NOT expose a multi-human hotseat switcher. The current viewer's key chip choices and public progression MUST use visible UI controls. A single-client representative-state E2E MAY use state injection or test command dispatch for other seats, but it MUST be labeled as state-injection evidence and MUST NOT claim natural multi-client flow, seat authorization, or synchronization. Runtime entry validation SHALL NOT override unresolved base-game material blockers.
 
 #### Scenario: One heist playable through the board
 - **GIVEN** `the-gang` is discoverable from the generated game registry
-- **WHEN** a user enters a The Gang match from a supported local or online entry
+- **WHEN** a user enters a The Gang match from a supported online entry or an approved local-AI/test entry
 - **THEN** the board MUST reach the first actionable chip-selection state
-- **AND** the user-facing flow MUST complete four rounds by selecting chips through visible seat/chip controls and revealing a success/failure result through the visible progression controls
+- **AND** all player names and public chip states MUST remain visible without a hotseat switcher
+- **AND** hidden hand contents MUST remain limited to the current viewer
+- **AND** the current viewer MUST select chips and use visible progression controls through the user-facing board
+- **AND** other seats MAY be driven by state injection or test commands only when the evidence is explicitly reported as a representative-state test
+- **AND** evidence claiming natural multiplayer operation, seat authorization, or synchronization MUST use separate player clients
+- **AND** mobile delivery MUST treat landscape as the primary orientation; portrait evidence MAY validate compatibility and key-region visibility without requiring direct horizontal scrolling inside the Board
 - **AND** desktop and mobile landscape evidence MUST be recorded for the current implementation
 - **AND** if required base-game assets are still missing, blocked, or unapproved as programmatic replacements, this validation MUST be reported only as runtime-code validation and MUST NOT close base-game completion
 
@@ -116,7 +122,7 @@ The system SHALL record The Gang public gameplay actions in `G.sys.actionLog.ent
 - **AND** the log MUST NOT reveal hidden hand card details
 
 ### Requirement: The Gang Visible Local AI
-The system SHALL provide a visible local AI runtime for The Gang that uses the shared AI decision contract and existing game command pipeline.
+The system SHALL provide a visible local AI runtime for The Gang that uses the shared AI decision contract and existing game command pipeline. This runtime SHALL represent one human viewer with AI seats or a test/tutorial path and SHALL NOT require a multi-human hotseat switcher.
 
 #### Scenario: AI chooses from legal actions
 - **GIVEN** The Gang is in chip-selection phase

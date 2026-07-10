@@ -201,7 +201,7 @@ async function expectHudActionLogAndUndoAvailable(page: Page) {
     await expect(page.getByText('可以请求撤回上一步操作')).toBeVisible();
 }
 
-test.describe('The Gang 真实入口截图', () => {
+test.describe('The Gang 测试入口与代表态截图', () => {
     test('桌面端 6 人满人数布局可显示所有玩家席位', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
         await page.setViewportSize({ width: 1920, height: 1080 });
@@ -374,7 +374,7 @@ test.describe('The Gang 真实入口截图', () => {
         await expectCurrentRoundChips(page, 3);
         await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expect(page.getByTestId('the-gang-progress-vote-dots')).toBeVisible();
@@ -382,7 +382,7 @@ test.describe('The Gang 真实入口截图', () => {
         await game.screenshot('移动横屏首轮全员筹码已选且HUD可用', testInfo);
     });
 
-    test('移动竖屏仍渲染真实牌桌并允许滚动查看', async ({ game, page }, testInfo) => {
+    test('移动竖屏在横屏优先合同下仍保留关键牌桌区域', async ({ game, page }, testInfo) => {
         test.setTimeout(90000);
         await page.setViewportSize({ width: 390, height: 844 });
         await game.openTestGame(THE_GANG_GAME_ID, {
@@ -411,37 +411,10 @@ test.describe('The Gang 真实入口截图', () => {
         await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('玩家 1');
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).not.toContainText('玩家 1');
 
-        const scrollMetrics = await page.locator('[data-game-ui="the-gang"]').evaluate((node) => {
-            const element = node as HTMLElement;
-            return {
-                clientHeight: element.clientHeight,
-                clientWidth: element.clientWidth,
-                scrollHeight: element.scrollHeight,
-                scrollWidth: element.scrollWidth,
-                scrollLeft: element.scrollLeft,
-            };
-        });
-        expect(scrollMetrics.scrollWidth).toBeGreaterThan(scrollMetrics.clientWidth);
-        expect(scrollMetrics.scrollHeight).toBeGreaterThanOrEqual(scrollMetrics.clientHeight);
-        expect(scrollMetrics.scrollLeft).toBeGreaterThan(0);
-        expect(scrollMetrics.scrollLeft).toBeLessThan(scrollMetrics.scrollWidth - scrollMetrics.clientWidth);
-
-        await page.locator('[data-game-ui="the-gang"]').evaluate((node) => {
-            const element = node as HTMLElement;
-            element.scrollTo({ left: Math.max(0, element.scrollWidth - element.clientWidth), top: 0, behavior: 'instant' });
-        });
-        const scrolledLeft = await page.locator('[data-game-ui="the-gang"]').evaluate((node) => (node as HTMLElement).scrollLeft);
-        expect(scrolledLeft).toBeGreaterThan(scrollMetrics.scrollLeft);
-        await page.locator('[data-game-ui="the-gang"]').evaluate((node) => {
-            const element = node as HTMLElement;
-            element.scrollTo({ left: Math.max(0, (element.scrollWidth - element.clientWidth) / 2), top: 0, behavior: 'instant' });
-        });
-        await expect(page.locator('[data-bgg-zone="token-pile"]')).toBeInViewport();
-        await expect(page.locator('[data-bgg-zone="hand-cards"]')).toBeInViewport();
-        await game.screenshot('移动竖屏真实牌桌可横向滚动查看', testInfo);
+        await game.screenshot('移动竖屏横屏优先下仍保留关键牌桌区域', testInfo);
     });
 
-    test('桌面端可通过真实 UI 完成一次四轮抢劫并显示摊牌结果', async ({ game, page }, testInfo) => {
+    test('桌面端当前玩家使用可见 UI、其它座位用代表态完成四轮抢劫并显示摊牌结果', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
         await page.setViewportSize({ width: 1920, height: 1080 });
         await game.openTestGame(THE_GANG_GAME_ID, {
