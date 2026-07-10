@@ -153,7 +153,9 @@ node scripts/mobile/release-android.mjs native --channel stable --bump patch
 - 如果同一轮还修改了 H5 样式/交互，必须同时发布：
   1. stable OTA，交付最新 H5；
   2. stable native APK，交付最新方向映射和原生锁屏逻辑。
+- 判断是否需要 native 不能只看“本轮有没有修改 Android 文件”。只要用户验收目标涉及横竖屏，就必须下载线上 stable APK，对比其中的 `assets/game-orientation-map.json` 和目标提交的原生方向策略；线上 APK 缺少目标游戏、仍使用旧的缺省方向，或版本早于目标策略时，native 发布仍是必需交付。
 - 发布后必须直接检查线上 APK 内的 `assets/game-orientation-map.json`，确认目标游戏为 `landscape`，不能只看源码或 OTA `latest.json`。
+- 横竖屏问题的最终验收位点是更新后的真实 App 页面；workflow、manifest 和 APK 内容只能证明交付条件成立，不能替代“目标游戏实际横屏”的用户可见验收。
 
 ### 3.4 只想本地重打 APK，不上传
 
@@ -173,6 +175,8 @@ npm run mobile:android:build:release
 - 是否真的需要部署网站
 - 是否涉及原生版本码递增
 - 是否改了游戏方向；若改了，必须按 native 处理，不能只发 OTA
+- 用户点名的每个现实结果分别由 `server / OTA / game package / native` 哪一层交付；没有完成这张交付矩阵前，不得开始发布。
+- 即使本轮没有新增原生 diff，也必须检查线上 APK 是否落后于目标提交已有的原生能力；“源码里已经有”不等于“用户手机里的壳已经有”。
 
 如果用户说“不要部署，只更新网站下载的 app”，默认是 **native publish，不是 deploy**。
 
@@ -194,6 +198,8 @@ npm run mobile:android:build:release
 5. 触发 Android OTA workflow：`.github/workflows/android-ota-publish.yml`，`channel=stable`，`git_ref=<本次已推送提交>`，`expected_base_version=<package.json.version>`。
 6. 等待 OTA workflow 成功。
 7. 回查 Android OTA `latest.json` 与 bundle URL，确认它们对应本次提交。
+8. 若交付矩阵包含方向映射、原生权限、插件、系统栏、返回键或其它 native 能力，触发 `.github/workflows/android-native-update-publish.yml`，并直接下载线上 APK 验证目标原生内容。
+9. 回到用户原始失败位点做真实验收；例如横竖屏问题必须确认更新后的目标游戏实际进入横屏，不能以 OTA/APK 发布成功代替。
 
 任一步失败时，只能汇报该步骤的真实阻塞；不得用前一步成功替代整条“更新部署”完成。
 
