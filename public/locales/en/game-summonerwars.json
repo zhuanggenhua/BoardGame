@@ -83,7 +83,17 @@
     "opponentActiveEvents": "Opponent Active Effects",
     "activeEvents": "Active Effects",
     "attached": "Attached",
-    "click_to_magnify": "Click to Magnify"
+    "click_to_magnify": "Click to Magnify",
+    "tapLifeHud": {
+      "ownerFriendly": "Friendly",
+      "ownerEnemy": "Enemy",
+      "type": {
+        "unit": "Unit",
+        "structure": "Structure"
+      },
+      "meta": "{{owner}} · {{type}} · {{row}}-{{col}}",
+      "life": "Life {{current}}/{{max}}"
+    }
   },
   "debug": {
     "phase_labels": {

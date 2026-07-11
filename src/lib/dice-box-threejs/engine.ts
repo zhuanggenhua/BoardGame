@@ -401,7 +401,7 @@ export class DiceBoxThreeEngine {
         const vectors = notationVectors?.vectors;
         if (!vectors || vectors.length < 2) return;
 
-        const spread = clampNumber(rawSpread, 0, 0.82);
+        const spread = clampNumber(rawSpread, 0, 0.96);
         const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
         const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
         const firstVelocity = vectors.find((vector) => vector.velocity)?.velocity;
