@@ -239,6 +239,7 @@ const shieldReassignmentPromptProgram = createPromptProgram<ShieldReassignmentCo
             {
                 sourceId: 'shield_reassignment',
                 targetType: 'minion',
+                titleKey: 'ui.shield_reassignment_title',
                 multi: { min: 0, max: Math.min(2, options.length) },
                 responseValidationMode: 'live',
                 autoResolveIfSingle: false,
@@ -314,6 +315,7 @@ const shieldSuperiorFirepowerPromptProgram = createPromptProgram<MarvelPromptCon
             {
                 sourceId: 'shield_superior_firepower',
                 targetType: 'ongoing',
+                titleKey: 'ui.shield_superior_firepower_title',
                 responseValidationMode: 'live',
             },
         );
@@ -382,6 +384,7 @@ const chooseMoveDestinationPromptProgram = createPromptProgram<MoveMinionContext
         {
             sourceId: context.sourceId,
             targetType: 'base',
+            titleKey: 'ui.marvel_choose_base_title',
             responseValidationMode: 'live',
         },
     ),
@@ -428,6 +431,7 @@ const ultimatesMoveDestinationPromptProgram = createPromptProgram<UltimatesMoveC
         {
             sourceId: context.sourceId,
             targetType: 'base',
+            titleKey: 'ui.ultimates_move_with_bonus_destination_title',
             responseValidationMode: 'live',
         },
     ),
@@ -492,6 +496,7 @@ const powerAndSpeedMovePromptProgram = createPromptProgram<PowerAndSpeedContext,
         {
             sourceId: 'ultimates_power_and_speed_move',
             targetType: 'base',
+            titleKey: 'ui.ultimates_power_and_speed_move_title',
             responseValidationMode: 'live',
             autoResolveIfSingle: false,
         },
@@ -537,6 +542,7 @@ const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, Sm
             {
                 sourceId: 'ultimates_cosmic_knowledge',
                 targetType: 'hand',
+                titleKey: 'ui.ultimates_cosmic_knowledge_title',
                 multi: { min: 0, max: hand.length },
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
@@ -589,6 +595,7 @@ const heroicLandingSourcePromptProgram = createPromptProgram<HeroicLandingContex
             {
                 sourceId: 'ultimates_heroic_landing_source',
                 targetType: 'minion',
+                titleKey: 'ui.ultimates_heroic_landing_source_title',
                 responseValidationMode: 'live',
                 autoResolveIfSingle: false,
             },
@@ -634,6 +641,7 @@ const heroicLandingDestinationPromptProgram = createPromptProgram<
         {
             sourceId: 'ultimates_heroic_landing_destination',
             targetType: 'base',
+            titleKey: 'ui.ultimates_heroic_landing_destination_title',
             responseValidationMode: 'live',
         },
     ),
@@ -723,6 +731,7 @@ const coordinatedAttackPromptProgram = createPromptProgram<CoordinatedAttackCont
             {
                 sourceId: 'ultimates_coordinated_attack',
                 targetType: 'minion',
+                titleKey: 'ui.ultimates_coordinated_attack_title',
                 multi: { min: 0, max: Math.min(3, minionOptions.length) },
                 responseValidationMode: 'live',
                 autoResolveIfSingle: false,
@@ -823,6 +832,7 @@ const spiderVerseDeckOrderPromptProgram = createPromptProgram<SpiderVerseDeckOrd
         {
             sourceId: `${context.sourceId}_order`,
             targetType: 'generic',
+            titleKey: 'ui.spider_verse_deck_order_title',
             responseValidationMode: 'live',
         },
     ),
@@ -855,6 +865,7 @@ const spiderVerseDeckSelectionPromptProgram = createPromptProgram<SpiderVerseDec
         {
             sourceId: `${context.sourceId}_pick`,
             targetType: 'generic',
+            titleKey: 'ui.spider_verse_deck_selection_title',
             responseValidationMode: 'live',
         },
     ),
@@ -944,12 +955,13 @@ const spiderVerseViewFromAbovePromptProgram = createPromptProgram<MarvelPromptCo
         context.playerId,
         '高处不胜寒：声明要展示到的牌类型',
         [
-            { id: 'minion', label: '角色', value: { cardType: 'minion' } satisfies ViewFromAboveTypeChoice },
-            { id: 'action', label: '法术', value: { cardType: 'action' } satisfies ViewFromAboveTypeChoice },
+            { id: 'minion', label: '角色', labelKey: 'ui.spider_verse_view_from_above_minion_option', value: { cardType: 'minion' } satisfies ViewFromAboveTypeChoice },
+            { id: 'action', label: '法术', labelKey: 'ui.spider_verse_view_from_above_action_option', value: { cardType: 'action' } satisfies ViewFromAboveTypeChoice },
         ],
         {
             sourceId: 'spider_verse_view_from_above',
             targetType: 'generic',
+            titleKey: 'ui.spider_verse_view_from_above_title',
             responseValidationMode: 'live',
         },
     ),

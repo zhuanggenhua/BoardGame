@@ -202,6 +202,9 @@ const discardCardsPromptProgram = createPromptProgram<DiscardPromptContext, Smas
             {
                 sourceId: context.sourceId,
                 targetType: 'generic',
+                titleKey: context.sourceId === 'avengers_hawkeye'
+                    ? 'ui.avengers_hawkeye_discard_title'
+                    : 'ui.avengers_jarvis_discard_title',
                 multi: { min: count, max: count },
                 responseValidationMode: 'live',
                 autoResolveIfSingle: count === 1,
@@ -261,6 +264,7 @@ const blackWidowPromptProgram = createPromptProgram<
             {
                 sourceId: 'avengers_black_widow',
                 targetType: 'minion',
+                titleKey: 'ui.avengers_black_widow_title',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
             },
@@ -308,6 +312,7 @@ const avengersAssemblePromptProgram = createPromptProgram<AvengersPromptContext,
             {
                 sourceId: 'avengers_assemble',
                 targetType: 'generic',
+                titleKey: 'ui.avengers_assemble_title',
                 multi: { min: 0, max: Math.min(2, options.length) },
                 responseValidationMode: 'live',
                 autoResolveIfSingle: false,
@@ -365,6 +370,7 @@ const moveMinionDestinationPromptProgram = createPromptProgram<MovePromptContext
         {
             sourceId: 'avengers_repulsor_boots_move',
             targetType: 'base',
+            titleKey: 'ui.avengers_repulsor_boots_move_title',
             responseValidationMode: 'live',
         },
     ),
@@ -434,6 +440,9 @@ const repulsorBootsSourcePromptProgram = createPromptProgram<
             {
                 sourceId: 'avengers_repulsor_boots_source',
                 targetType: 'minion',
+                titleKey: context.special
+                    ? 'ui.avengers_repulsor_boots_source_special_title'
+                    : 'ui.avengers_repulsor_boots_source_title',
                 responseValidationMode: 'live',
             },
         );
@@ -486,6 +495,7 @@ const ironManDestinationPromptProgram = createPromptProgram<IronManPromptContext
         {
             sourceId: 'avengers_iron_man_destination',
             targetType: 'base',
+            titleKey: 'ui.avengers_iron_man_destination_title',
             responseValidationMode: 'live',
         },
     ),
@@ -562,6 +572,7 @@ const ironManCompanionPromptProgram = createPromptProgram<IronManPromptContext, 
             {
                 sourceId: 'avengers_iron_man_companion',
                 targetType: 'minion',
+                titleKey: 'ui.avengers_iron_man_companion_title',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
             },
@@ -609,6 +620,7 @@ const thorDestinationPromptProgram = createPromptProgram<ThorPromptContext, Smas
             {
                 sourceId: 'avengers_thor_mjolnir_destination',
                 targetType: 'minion',
+                titleKey: 'ui.avengers_thor_mjolnir_destination_title',
                 responseValidationMode: 'live',
             },
         );
@@ -658,6 +670,7 @@ const thorSourcePromptProgram = createPromptProgram<
         {
             sourceId: 'avengers_thor_mjolnir_source',
             targetType: 'generic',
+            titleKey: 'ui.avengers_thor_mjolnir_source_title',
             responseValidationMode: 'live',
         },
     ),
@@ -692,6 +705,7 @@ const hawkeyeArrowsPickPromptProgram = createPromptProgram<HawkeyeArrowsPromptCo
         {
             sourceId: 'avengers_hawkeyes_arrows_pick',
             targetType: 'generic',
+            titleKey: 'ui.avengers_hawkeyes_arrows_pick_title',
             responseValidationMode: 'live',
         },
     ),
@@ -737,12 +751,13 @@ const hulkSmashReplacePromptProgram = createPromptProgram<HulkSmashPromptContext
         context.playerId,
         '浩克冲击：你可以让浩克摧毁并替换这个基地',
         [
-            { id: 'replace', label: '替换基地', value: { replace: true }, displayMode: 'button' as const },
+            { id: 'replace', label: '替换基地', labelKey: 'ui.avengers_hulk_smash_replace_option', value: { replace: true }, displayMode: 'button' as const },
             createSkipOption(),
         ],
         {
             sourceId: 'avengers_hulk_smash_replace',
             targetType: 'button',
+            titleKey: 'ui.avengers_hulk_smash_replace_title',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
         },
@@ -813,6 +828,7 @@ const hulkSmashArtifactsPromptProgram = createPromptProgram<HulkSmashPromptConte
             {
                 sourceId: 'avengers_hulk_smash_artifacts',
                 targetType: 'generic',
+                titleKey: 'ui.avengers_hulk_smash_artifacts_title',
                 multi: { min: 0, max: actions.length },
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
@@ -928,6 +944,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
                 {
                     sourceId: 'avengers_modular_tech_destination',
                     targetType: 'base',
+                    titleKey: 'ui.avengers_modular_tech_destination_base_title',
                     responseValidationMode: 'live',
                 },
             );
@@ -956,6 +973,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
             {
                 sourceId: 'avengers_modular_tech_destination',
                 targetType: 'minion',
+                titleKey: 'ui.avengers_modular_tech_destination_minion_title',
                 responseValidationMode: 'live',
             },
         );
@@ -1001,13 +1019,16 @@ const modularSourcePromptProgram = createPromptProgram<
         '模块化技术：选择要移动的装备或基地神器',
         context.sources.map((source, index) => ({
             id: `source-${index}`,
-            label: getCardDef(source.actionDefId ?? '')?.name ?? source.actionDefId ?? '持续行动',
+            ...(source.actionDefId
+                ? { label: getCardDef(source.actionDefId)?.name ?? source.actionDefId }
+                : { labelKey: 'ui.avengers_modular_tech_source_fallback_option' }),
             value: source,
             displayMode: 'card' as const,
         })),
         {
             sourceId: 'avengers_modular_tech_source',
             targetType: 'generic',
+            titleKey: 'ui.avengers_modular_tech_source_title',
             responseValidationMode: 'live',
         },
     ),
@@ -1044,6 +1065,9 @@ const strategizePromptProgram = createPromptProgram<StrategizePromptContext, Sma
             {
                 sourceId: 'avengers_strategize_order',
                 targetType: 'generic',
+                titleKey: context.selectedTopUids.length === 0
+                    ? 'ui.avengers_strategize_order_first_title'
+                    : 'ui.avengers_strategize_order_second_title',
                 responseValidationMode: 'live',
             },
         );
