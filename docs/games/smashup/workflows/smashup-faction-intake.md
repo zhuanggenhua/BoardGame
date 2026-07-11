@@ -10,7 +10,7 @@
 - faction/card/base 静态数据录入
 - locale 文本录入
 - UI faction metadata 接入
-- R2 上传
+- 发布到服务器资源主源
 - intake 阶段的 Vitest / E2E / evidence
 
 本工作流面向“给定图片即可复刻录入”的场景，**不包含派系完整 gameplay ability handler 的实现**。
@@ -72,7 +72,7 @@ intake 的目标不是“尽快改代码”，而是交付一份能安全进入 
 
 - 本地 `public/assets/i18n/.../compressed/*.webp` 文件存在
 - 运行时引用已经接入代码
-- 远端 R2 / CDN 已上传并验证可访问
+- `https://assets.easyboardgame.top/official/...` 公开资源域名已返回服务器主源内容，并验证可访问
 
 不能只用“git 里有没有图片文件”作为完成判据。
 
@@ -136,7 +136,7 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 注意：
 
 - 这些文件默认不会进入 git 变更列表
-- 必须额外做上传验证，否则本地可用但默认资源基址仍可能 404
+- 必须额外做服务器资源主源发布与公开 URL 回查，否则本地可用但默认资源基址仍可能 404
 
 ### 4. 确认切片网格与索引
 
@@ -243,7 +243,7 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 - 名称 key
 - 显示顺序
 
-### 9. 上传 R2
+### 9. 发布到服务器资源主源
 
 如果默认资源基址仍是：
 
@@ -251,12 +251,12 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 https://assets.easyboardgame.top/official
 ```
 
-则新 atlas 必须上传，否则默认运行态会 404。
+则新 atlas 必须发布到服务器资源主源，否则默认运行态会 404。
 
-本步骤的“是否必须上传、失败后如何汇报”按通用规则执行：
+本步骤的“是否必须发布、失败后如何汇报”按通用规则执行：
 
 - `docs/ai-rules/data-entry.md` § 资源上传收口
-- `docs/ai-rules/asset-pipeline.md` § R2 / CDN 上传收口规则（强制）
+- `docs/deploy.md` § 生产素材域名：服务器主源
 
 检查差异：
 
@@ -264,20 +264,20 @@ https://assets.easyboardgame.top/official
 npm run assets:check
 ```
 
-如果只想上传本次新增 atlas，建议用最小上传脚本或定向上传，避免把无关文件一起推送。
+如果只想发布本次新增 atlas，建议用最小发布脚本或定向发布，避免把无关文件一起推送。
 
 额外门禁：
 
 - 新增 `cards/<atlas>` 或 `base/<atlas>` 后，除了游戏级 `public/assets/i18n/zh-CN/smashup/assets-manifest.json`，还必须确认根级 `public/assets/i18n/assets-manifest.json` 也已经出现对应键；不能只看 incremental validate 通过。
-- 如果经旧派系对照确认某批基地实际复用既有 atlas，就不要再把“候选 longzu 基地图”留在 `public/assets/i18n/zh-CN/smashup/base/` 等正式运行时目录。错图/候选图必须移出或删除，再执行上传。
+- 如果经旧派系对照确认某批基地实际复用既有 atlas，就不要再把“候选 longzu 基地图”留在 `public/assets/i18n/zh-CN/smashup/base/` 等正式运行时目录。错图/候选图必须移出或删除，再执行发布。
 - 真实发布阻塞以运行时会请求的 URL 为准。像手牌卡图这类运行时 atlas，最终必须给出远端 `HEAD 200` 的完整路径，不能只证明本地 PNG/WebP 存在。
 
-本次实际上传对象：
+本次实际发布对象：
 
 - `official/i18n/zh-CN/smashup/cards/compressed/aiji.webp`
 - `official/i18n/zh-CN/smashup/base/compressed/aiji_base.webp`
 
-上传后必须验证远端 `HEAD 200`。
+发布后必须用公开资源域名验证远端 `HEAD 200`，并确认响应来自服务器主源。
 
 ### 10. 运行 intake 自动化验证
 
@@ -377,7 +377,7 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops 四派�
 - [ ] faction/card/base 静态数据已接入
 - [ ] locale 已补齐
 - [ ] faction metadata 已接入
-- [ ] R2 已上传并验证
+- [ ] 服务器资源主源已发布并验证
 - [ ] Vitest 通过
 - [ ] typecheck 通过
 - [ ] OpenSpec 校验通过

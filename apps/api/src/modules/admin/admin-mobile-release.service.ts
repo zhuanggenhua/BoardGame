@@ -174,7 +174,7 @@ export class AdminMobileReleaseService {
 
             const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildOtaManifestUrl(dto.channel);
-            const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
+            const latest = dto.dryRun ? null : await this.requireLatestManifest(manifestUrl, 'Android OTA');
 
             return {
                 ok: true,
@@ -201,7 +201,7 @@ export class AdminMobileReleaseService {
             const args = this.buildNativeReleaseArgs(dto);
             const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildNativeManifestUrl(dto.channel);
-            const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
+            const latest = dto.dryRun ? null : await this.requireLatestManifest(manifestUrl, 'Android 原生更新');
 
             return {
                 ok: true,
@@ -930,5 +930,22 @@ export class AdminMobileReleaseService {
         } catch {
             return null;
         }
+    }
+
+    private async requireLatestManifest(url: string, releaseKind: string): Promise<LatestManifest> {
+        const latest = await this.fetchLatestManifest(url);
+        const missingFields = latest
+            ? (['version', 'url', 'checksum', 'size'] as const).filter((field) => latest[field] === undefined || latest[field] === null || latest[field] === '')
+            : ['latest.json'];
+
+        if (!latest || missingFields.length > 0) {
+            throw new HttpException({
+                message: `${releaseKind} 发布后无法确认线上 latest.json。发布不能静默成功，请先修通服务器资源入口再重试。`,
+                error: 'latest manifest unavailable',
+                manifestUrl: url,
+                missingFields,
+            }, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        return latest;
     }
 }

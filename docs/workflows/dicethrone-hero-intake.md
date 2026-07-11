@@ -9,7 +9,7 @@
 - 骰面、Token、能力、卡牌静态数据录入
 - i18n 与规则文档同步
 - 资源 manifest 重建
-- R2 上传与 CDN 回查
+- 发布到服务器资源主源并回查公开资源域名
 - Vitest / E2E / evidence 收口
 
 本工作流面向“已有图片与规则材料，先完成正确录入”的场景，不替代复杂机制设计本身。
@@ -32,7 +32,7 @@
 - 汉化图 / 当前任务约定图片：中文名称、中文描述、图内顺序、裁图定位
 - 官方规则书 / 官方 PDF / 官方图：高优先级英文对照源
 - Wiki：辅助英文名、补充裁定、发现冲突，不反向覆盖中文主真相源
-- 当前任务 worktree：本轮资源、裁图、manifest、上传结果的唯一工作现场
+- 当前任务 worktree：本轮资源、裁图、manifest、服务器资源主源发布结果的唯一工作现场
 
 ## 资源完成判据
 
@@ -43,7 +43,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 本地 `public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/*.webp` 存在
 - `public/assets/i18n/zh-CN/dicethrone/assets-manifest.json` 已重建
 - 运行时代码已接入引用
-- 远端 R2 / CDN 对代表性 URL 返回 `200`
+- `https://assets.easyboardgame.top/official/...` 公开资源域名对代表性 URL 返回 `200`，且内容来自服务器主源
 
 补充口径：
 
@@ -254,12 +254,12 @@ node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN 
 - 本轮临时裁图、核对图、临时 atlas 是否留在 `temp/` / `test-results/` / 忽略目录，而不是 `public/assets/`
 - `CardPreview` / `OptimizedImage` / `getOptimizedImageUrls()` 最终请求的路径是否真实存在
 
-### 8. 上传 R2 并回查
+### 8. 发布到服务器资源主源并回查
 
-本步骤的“是否必须上传、失败后如何汇报”按通用规则执行：
+本步骤的“是否必须发布、失败后如何汇报”按通用规则执行：
 
 - `docs/ai-rules/data-entry.md` § 资源上传收口
-- `docs/ai-rules/asset-pipeline.md` § R2 / CDN 上传收口规则（强制）
+- `docs/deploy.md` § 生产素材域名：服务器主源
 
 建议顺序：
 
@@ -268,7 +268,7 @@ npm run assets:check
 npm run assets:upload
 ```
 
-上传后必须至少回查这些代表性 URL：
+发布后必须至少用公开资源域名回查这些代表性 URL：
 
 - 主 atlas 1 个
 - 正式单卡图 1 个（如果本轮新增）

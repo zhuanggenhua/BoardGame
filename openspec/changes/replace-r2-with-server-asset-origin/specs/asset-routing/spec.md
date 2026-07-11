@@ -14,10 +14,11 @@
 - **THEN** DNS MUST resolve to a grey-cloud A record for the server IP
 - **AND** 响应 MUST NOT contain Cloudflare Worker-only headers such as `CF-Ray`
 - **AND** TLS MUST be served by the server with a public trusted certificate
+- **AND** 验收 MUST use the real domain name with SNI, not `https://8.148.71.102/**` or server-local curl as a substitute
 - **AND** `/official/**` MUST keep CORS, range requests, cache headers, and download rate limits
 
 #### Scenario: 源站不可用
-- **WHEN** 服务器隐藏源连接失败、超时或抛出异常
+- **WHEN** 服务器 443 直连入口不可用、超时或抛出异常
 - **THEN** 系统 MUST 返回可观测的错误响应
 - **AND** MUST NOT 将响应伪装为 R2 回退成功
 
@@ -27,7 +28,7 @@
 #### Scenario: 应用更新包下载
 - **WHEN** 请求路径位于 `/official/app-updates/**`
 - **THEN** 系统 MUST 从服务器活动版本返回对象
-- **AND** MUST NOT 存在绕过 Worker 直连 R2 的路由
+- **AND** MUST NOT 存在绕过服务器直连去读取 R2 的路由
 
 #### Scenario: 移动素材包下载
 - **WHEN** 请求路径位于 `/official/mobile-packages/**`
