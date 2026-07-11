@@ -39,7 +39,7 @@ describe('POD power modifier registration', () => {
         expect(powerModifierIds.has('base_monkey_lab_pod')).toBe(false);
         expect(powerModifierIds.has('fairies_daisy_chain_pod')).toBe(false);
         expect(powerModifierIds.has('fairies_enchantment_pod')).toBe(false);
-        expect(powerModifierIds.has('mermaids_temptress_pod')).toBe(false);
+        expect(powerModifierIds.has('mermaids_temptress_pod')).toBe(true);
         expect(powerModifierIds.has('base_minionPowerBonus_pod')).toBe(false);
         expect(powerModifierIds.has('shapeshifters_copycat_copied_power_pod')).toBe(false);
         expect(powerModifierIds.has('shapeshifters_cellular_bonding_copied_power_pod')).toBe(false);

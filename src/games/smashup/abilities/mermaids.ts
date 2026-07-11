@@ -1201,15 +1201,16 @@ function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
         return { events: [] };
     }
     if (!ctx.matchState) return { events: [] };
-    const ownerId = findOngoingOwnerOnBases(ctx.state, ctx.sourceCardUid, 'mermaids_shipwreck_cove', ctx.sourceControllerId);
+    const sourceDefId = ctx.sourceDefId ?? 'mermaids_shipwreck_cove';
+    const ownerId = findOngoingOwnerOnBases(ctx.state, ctx.sourceCardUid, sourceDefId, ctx.sourceControllerId);
     return executeAbilityProgram(
         mermaidsOngoingMovePromptProgram,
         createMermaidsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
             cardUid: ctx.sourceCardUid,
-            defId: 'mermaids_shipwreck_cove',
+            defId: sourceDefId,
             ownerId,
             fromBaseIndex: ctx.sourceBaseIndex,
-            reason: 'mermaids_shipwreck_cove',
+            reason: sourceDefId,
             title: '沉船湾：你可以把这张牌移到另一个基地',
             titleKey: 'ui.mermaids_shipwreck_cove_move_title',
             allowSkip: true,
@@ -1232,24 +1233,34 @@ function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
     })();
     return [buildOngoingDetachedEvent({
         cardUid: ctx.sourceCardUid,
-        defId: 'mermaids_desert_island',
+        defId: ctx.sourceDefId ?? 'mermaids_desert_island',
         ownerId,
-        reason: 'mermaids_desert_island',
+        reason: ctx.sourceDefId ?? 'mermaids_desert_island',
         now: ctx.now,
     })];
 }
 
 export function registerMermaidsAbilities(): void {
     registerAbilityProgram('mermaids_charmer', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmerTalent) });
+    registerAbilityProgram('mermaids_charmer_pod', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmerTalent) });
     registerAbilityProgram('mermaids_mermaid_queen', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsMermaidQueenOnPlay) });
+    registerAbilityProgram('mermaids_mermaid_queen_pod', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsMermaidQueenOnPlay) });
     registerAbilityProgram('mermaids_ultimate_song', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsUltimateSongOnPlay) });
+    registerAbilityProgram('mermaids_ultimate_song_pod', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsUltimateSongOnPlay) });
     registerAbilityProgram('mermaids_captive_audience', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCaptiveAudienceOnPlay) });
+    registerAbilityProgram('mermaids_captive_audience_pod', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCaptiveAudienceOnPlay) });
     registerAbilityProgram('mermaids_becalmed_shores', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsBecalmedShoresTalent) });
+    registerAbilityProgram('mermaids_becalmed_shores_pod', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsBecalmedShoresTalent) });
     registerAbilityProgram('mermaids_siren_song', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsSirenSongOnPlay) });
+    registerAbilityProgram('mermaids_siren_song_pod', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsSirenSongOnPlay) });
     registerAbility('mermaids_toll_bay', 'onPlay', mermaidsTollBayOnPlay);
+    registerAbility('mermaids_toll_bay_pod', 'onPlay', mermaidsTollBayOnPlay);
     registerAbility('mermaids_shipwreck_cove', 'special', mermaidsShipwreckCoveSpecial);
+    registerAbility('mermaids_shipwreck_cove_pod', 'special', mermaidsShipwreckCoveSpecial);
     registerAbilityProgram('mermaids_charmed', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmedOnPlay) });
+    registerAbilityProgram('mermaids_charmed_pod', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmedOnPlay) });
     registerAbility('mermaids_desert_island', 'onPlay', mermaidsDesertIslandOnPlay);
+    registerAbility('mermaids_desert_island_pod', 'onPlay', mermaidsDesertIslandOnPlay);
 
     registerTrigger('mermaids_shipwreck_cove', 'afterScoring', mermaidsShipwreckCoveAfterScoring, {
         optional: true,
@@ -1257,7 +1268,19 @@ export function registerMermaidsAbilities(): void {
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
+    registerTrigger('mermaids_shipwreck_cove_pod', 'afterScoring', mermaidsShipwreckCoveAfterScoring, {
+        optional: true,
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+        effectContract: selfDetachOrderingContract,
+    });
+    registerTrigger('mermaids_desert_island_pod', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',

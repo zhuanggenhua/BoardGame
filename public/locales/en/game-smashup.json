@@ -1599,6 +1599,14 @@
     "paladins": {
       "name": "Paladins",
       "description": "A custom faction built around talent abilities, +1 power counters, and titan payoff turns."
+    },
+    "mermaids_pod": {
+      "name": "Mermaids (POD)",
+      "description": "Control bases with POD movement tricks and power suppression."
+    },
+    "mythic_greeks_pod": {
+      "name": "Mythic Greeks (POD)",
+      "description": "Chain POD divine favors and trigger heroic action bonuses."
     }
   },
   "tutorial": {
@@ -6606,6 +6614,114 @@
     "base_paladins_roncesvalles_gorge": {
       "name": "Roncesvalles Gorge",
       "abilityText": "After a titan wins a clash here, that titan’s owner gains 1 VP."
+    },
+    "mermaids_charmed_pod": {
+      "name": "Charmed (POD)",
+      "effectText": "Choose a minion of power 3 or less. You may move it to another base where you have a minion. It doesn't add its power to its controller's total until the end of the turn. Play an extra action."
+    },
+    "mermaids_desert_island_pod": {
+      "name": "Desert Island (POD)",
+      "effectText": "Play on a base. Ongoing: Minions here do not add their power to their controller's total. Destroy this card at the start of your turn."
+    },
+    "mermaids_shipwreck_cove_pod": {
+      "name": "Shipwreck Cove (POD)",
+      "effectText": "Play on a base. Ongoing: Your minions here each have +1 power. Special: After this base scores, you may transfer this card to another base."
+    },
+    "mermaids_toll_bay_pod": {
+      "name": "Toll Bay (POD)",
+      "effectText": "Choose a base. Draw a card for each other player's minion there."
+    },
+    "mermaids_siren_song_pod": {
+      "name": "Siren Song (POD)",
+      "effectText": "Choose a base. Move one of each other player's minions there to one other base where you have a minion."
+    },
+    "mermaids_becalmed_shores_pod": {
+      "name": "Becalmed Shores (POD)",
+      "effectText": "Play on a base. Ongoing: Other players' minions here have -1 power. Talent: Transfer this action to another base."
+    },
+    "mermaids_captive_audience_pod": {
+      "name": "Captive Audience (POD)",
+      "effectText": "Choose a base. One of your minions there gains +1 power until the end of the turn for each minion there you don't own. Play an extra action."
+    },
+    "mermaids_ultimate_song_pod": {
+      "name": "Ultimate Song (POD)",
+      "effectText": "Choose a base where you have a minion. Each other player must play a minion there of power 3 or less as an extra minion or reveal a hand with no such minions. Cancel those minions' abilities until the end of the turn. You may play an extra minion there and an extra action."
+    },
+    "mermaids_siren_pod": {
+      "name": "Siren (POD)",
+      "abilityText": "Ongoing: Other players' minions here add 1 less power to their controller's total."
+    },
+    "mermaids_charmer_pod": {
+      "name": "Charmer (POD)",
+      "abilityText": "Talent: You may move this minion to another base. Then you may move another player's minion of power 3 or less to this minion's base."
+    },
+    "mermaids_temptress_pod": {
+      "name": "Temptress (POD)",
+      "abilityText": "Ongoing: If one or more minions of other players have moved to here during this turn, this minion has +2 power until the end of the turn."
+    },
+    "mermaids_mermaid_queen_pod": {
+      "name": "Mermaid Queen (POD)",
+      "abilityText": "Move another player's minion to here or choose a minion here. If it has 3 or less power, take control of it until the end of the turn."
+    },
+    "mythic_greeks_favor_of_hades_pod": {
+      "name": "Favor of Hades (POD)",
+      "effectText": "Place an action card from your discard pile into your hand."
+    },
+    "mythic_greeks_favor_of_ares_pod": {
+      "name": "Favor of Ares (POD)",
+      "effectText": "One of your minions gains +3 power until the end of the turn."
+    },
+    "mythic_greeks_favor_of_aphrodite_pod": {
+      "name": "Favor of Aphrodite (POD)",
+      "effectText": "Play an extra minion."
+    },
+    "mythic_greeks_favor_of_dionysus_pod": {
+      "name": "Favor of Dionysus (POD)",
+      "effectText": "One of your minions gains +1 power until the end of the turn. Play extra action. You may place this card on top of your deck instead of discard pile."
+    },
+    "mythic_greeks_favor_of_athena_pod": {
+      "name": "Favor of Athena (POD)",
+      "effectText": "Reveal the top 5 cards of your deck. You may place one of the revealed actions into your hand, and return the rest to the top of your deck in any order."
+    },
+    "mythic_greeks_favor_of_hermes_pod": {
+      "name": "Favor of Hermes (POD)",
+      "effectText": "Play up to two extra actions."
+    },
+    "mythic_greeks_favor_of_zeus_pod": {
+      "name": "Favor of Zeus (POD)",
+      "effectText": "Reduce the breakpoint of a base by 5 until the end of the turn."
+    },
+    "mythic_greeks_favor_of_hera_pod": {
+      "name": "Favor of Hera (POD)",
+      "effectText": "Place a +1 power counter on up to two of your minions."
+    },
+    "mythic_greeks_favor_of_apollo_pod": {
+      "name": "Favor of Apollo (POD)",
+      "effectText": "Draw a card and play an extra action."
+    },
+    "mythic_greeks_favor_of_poseidon_pod": {
+      "name": "Favor of Poseidon (POD)",
+      "effectText": "Shuffle up to three cards from your discard pile into your deck."
+    },
+    "mythic_greeks_argonaut_pod": {
+      "name": "Argonaut (POD)",
+      "abilityText": "Trigger all abilities that would trigger from you playing an action. Special: Any time you can play an action, you can play this card instead."
+    },
+    "mythic_greeks_spartan_pod": {
+      "name": "Spartan (POD)",
+      "abilityText": "Ongoing: Once per turn, after you play an action, you may place a +1 power counter on this minion."
+    },
+    "mythic_greeks_heracles_pod": {
+      "name": "Heracles (POD)",
+      "abilityText": "Ongoing: After any player plays an action, this minion gains +1 power until the end of the turn."
+    },
+    "mythic_greeks_jason_pod": {
+      "name": "Jason (POD)",
+      "abilityText": "Ongoing: Once per turn, after you play an action, you may choose a base and give your minions there +1 power until the end of the turn."
+    },
+    "mythic_greeks_odysseus_pod": {
+      "name": "Odysseus (POD)",
+      "abilityText": "Ongoing: After you play an action, place a +1 power counter on one of your minions."
     }
   },
   "debug": {

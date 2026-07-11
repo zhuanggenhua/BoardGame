@@ -33,6 +33,8 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.MYTHIC_HORSES_POD_CARDS, kind: 'card', image: 'smashup/cards/mythic_horses_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.FAIRIES_POD_CARDS, kind: 'card', image: 'smashup/cards/fairies_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.PRINCESSES_POD_CARDS, kind: 'card', image: 'smashup/cards/princesses_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.MERMAIDS_POD_CARDS, kind: 'card', image: 'smashup/cards/mermaids_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.MYTHIC_GREEKS_POD_CARDS, kind: 'card', image: 'smashup/cards/mythic_greeks_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_CARDS, kind: 'card', image: 'smashup/cards/paladin_cards', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
