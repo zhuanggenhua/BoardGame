@@ -204,6 +204,13 @@ const SETTLED_SPREAD_SLOTS_BY_COUNT: Record<number, Array<{ x: number; y: number
     ],
 };
 const WORLD_UP = new Vector3(0, 0, 1);
+type DiceBoxStageSafeRect = {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+};
+
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
@@ -774,7 +781,7 @@ export class DiceBoxThreeEngine {
             ? Math.max(baseScale * 0.78, halfHeight - (baseScale * 0.95))
             : 0;
         const enforceSafeBounds = useNearestBoundsRecovery
-            && (options.enforceSafeBounds === true || !options.strictProjectedBounds);
+            && options.enforceSafeBounds === true;
         let didRecover = false;
 
         this.box.diceList.forEach((die, index) => {
@@ -890,10 +897,15 @@ export class DiceBoxThreeEngine {
         if (this.styleProfile.fitWorldToCameraView !== true || this.box.diceList.length < 2) return false;
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
-        const minScreenDistance = Math.max(24, baseScale * 0.84);
-        const maxWorldNudge = baseScale * (options.settleAfter ? 0.34 : 0.22);
-        const passCount = options.settleAfter ? 4 : 1;
+        const minScreenDistance = Math.max(options.settleAfter ? 30 : 24, baseScale * (options.settleAfter ? 0.92 : 0.84));
+        const maxWorldNudge = baseScale * (options.settleAfter ? 0.48 : 0.22);
+        const passCount = options.settleAfter ? 6 : 1;
+        const safeRect = options.settleAfter ? this.getProjectedSafeRect(baseScale) : null;
         let didSeparate = false;
+
+        if (safeRect && this.clampDiceToProjectedSafeRect(safeRect)) {
+            didSeparate = true;
+        }
 
         for (let pass = 0; pass < passCount; pass += 1) {
             const layouts = this.box.diceList
@@ -936,6 +948,10 @@ export class DiceBoxThreeEngine {
                         z: rightPosition.z,
                     };
 
+                    if (safeRect) {
+                        this.clampWorldTargetToProjectedSafeRect(leftDie, leftTarget, safeRect);
+                        this.clampWorldTargetToProjectedSafeRect(rightDie, rightTarget, safeRect);
+                    }
                     this.setVector(leftDie.position, leftTarget);
                     this.setVector(leftDie.body?.position, leftTarget);
                     this.setVector(rightDie.position, rightTarget);
@@ -967,6 +983,10 @@ export class DiceBoxThreeEngine {
                     didSeparateThisPass = true;
                 }
             }
+            if (safeRect && this.clampDiceToProjectedSafeRect(safeRect)) {
+                didSeparate = true;
+                didSeparateThisPass = true;
+            }
             if (!didSeparateThisPass) break;
         }
 
@@ -974,6 +994,82 @@ export class DiceBoxThreeEngine {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
         return didSeparate;
+    }
+
+    private getProjectedSafeRect(baseScale: number): DiceBoxStageSafeRect | null {
+        const canvas = this.box.renderer?.domElement;
+        if (!canvas) return null;
+
+        const paddingX = Math.max(8, baseScale * 0.1);
+        const paddingTop = Math.max(6, baseScale * 0.08);
+        const bottomInset = Math.max(18, baseScale * 0.48);
+        return {
+            minX: paddingX,
+            maxX: Math.max(paddingX, canvas.clientWidth - paddingX),
+            minY: paddingTop,
+            maxY: Math.max(paddingTop, canvas.clientHeight - bottomInset),
+        };
+    }
+
+    private clampDiceToProjectedSafeRect(safeRect: DiceBoxStageSafeRect): boolean {
+        let didClamp = false;
+        this.box.diceList.forEach((die, index) => {
+            const dieWithBody = die as DiceBoxDieWithBody;
+            const position = dieWithBody.body?.position ?? dieWithBody.position;
+            const layout = this.getProjectedLayout(index, index);
+            if (!position || !layout) return;
+
+            const target = { x: position.x, y: position.y, z: position.z };
+            if (!this.clampWorldTargetToProjectedSafeRect(dieWithBody, target, safeRect)) return;
+
+            this.setVector(dieWithBody.position, target);
+            this.setVector(dieWithBody.body?.position, target);
+            this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(dieWithBody.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            if (dieWithBody.body) {
+                dieWithBody.body.aabbNeedsUpdate = true;
+                dieWithBody.body.sleep?.();
+            }
+            dieWithBody.updateMatrixWorld?.(true);
+            didClamp = true;
+        });
+        return didClamp;
+    }
+
+    private clampWorldTargetToProjectedSafeRect(
+        die: DiceBoxDieWithBody,
+        target: { x: number; y: number; z: number },
+        safeRect: DiceBoxStageSafeRect,
+    ): boolean {
+        const layout = this.getProjectedLayoutForWorldTarget(die, target);
+        if (!layout) return false;
+
+        const halfWidth = (layout.visualWidth ?? layout.width) / 2;
+        const halfHeight = (layout.visualHeight ?? layout.height) / 2;
+        let dx = 0;
+        let dy = 0;
+        if (layout.x - halfWidth < safeRect.minX) {
+            dx = safeRect.minX - (layout.x - halfWidth);
+        } else if (layout.x + halfWidth > safeRect.maxX) {
+            dx = safeRect.maxX - (layout.x + halfWidth);
+        }
+        if (layout.y - halfHeight < safeRect.minY) {
+            dy = safeRect.minY - (layout.y - halfHeight);
+        } else if (layout.y + halfHeight > safeRect.maxY) {
+            dy = safeRect.maxY - (layout.y + halfHeight);
+        }
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return false;
+
+        const z = target.z;
+        const currentScreenPoint = this.getWorldPointAtScreenFraction(layout.x / (this.box.renderer?.domElement?.clientWidth ?? 1), layout.y / (this.box.renderer?.domElement?.clientHeight ?? 1), z);
+        const shiftedScreenPoint = this.getWorldPointAtScreenFraction(
+            (layout.x + dx) / (this.box.renderer?.domElement?.clientWidth ?? 1),
+            (layout.y + dy) / (this.box.renderer?.domElement?.clientHeight ?? 1),
+            z,
+        );
+        target.x += shiftedScreenPoint.x - currentScreenPoint.x;
+        target.y += shiftedScreenPoint.y - currentScreenPoint.y;
+        return true;
     }
 
     ensureValues(values: number[]): void {
