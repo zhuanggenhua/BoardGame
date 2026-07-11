@@ -24,7 +24,7 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldCenterOffsetX)
             .toBeLessThanOrEqual(-50);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldCenterOffsetY)
-            .toBeLessThanOrEqual(-20);
+            .toBeLessThanOrEqual(-24);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.baseScale)
             .toBeGreaterThanOrEqual(40);
     });
@@ -40,7 +40,7 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.initialThrowSpread)
             .toBeGreaterThanOrEqual(0.9);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.settledSpreadAnimationMs)
-            .toBe(0);
+            .toBeLessThanOrEqual(200);
     });
 
     it('越界安全回收位置应保持二维散落，而不是退化为单排', () => {

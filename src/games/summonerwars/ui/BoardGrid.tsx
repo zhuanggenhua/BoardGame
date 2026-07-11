@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { HudPortal, UI_Z_INDEX } from '../../../core/ui';
 import type { GridConfig } from '../../../core/ui/board-layout.types';
 import { cellToNormalizedBounds } from '../../../core/ui/board-hit-test';
-import type { SummonerWarsCore, CellCoord, PlayerId, BoardUnit, BoardStructure } from '../domain/types';
+import type { SummonerWarsCore, CellCoord, PlayerId } from '../domain/types';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import { CardSprite } from './CardSprite';
 import { getUnitSpriteConfig, getStructureSpriteConfig } from './spriteHelpers';
