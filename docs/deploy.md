@@ -436,7 +436,9 @@ GitHub Actions 自动化：
 - **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
 - **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖对象存储才能上线。
 - **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
-- **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS 与同域；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
+- **玩家素材下载必须是服务器直连**：`https://assets.easyboardgame.top/official/**` 的完成态是 Cloudflare 灰云 `A -> 8.148.71.102`，由服务器本机 `boardgame-asset-origin.service` 在 443 端口直接返回素材。只把服务器放在 Cloudflare Worker 后面当源站，不算玩家直连。
+- **直连验收口径**：必须同时满足 `remote_ip=8.148.71.102`、响应里没有 `CF-Ray` / `Server: cloudflare`、`X-Asset-Source: server`、目标 URL 返回真实素材大小而不是主站 HTML。`http://8.148.71.102/official/**` 默认不是验收入口，除非已明确配置 80 上的素材路由。
+- **Cloudflare Worker 只作回滚/诊断**：Worker 可以保留为历史回滚路径，但不能作为当前完成态。汇报时必须区分“服务器作为源站”和“玩家直连服务器”，不得把二者混说。
 
 服务器静态源保护参数：
 

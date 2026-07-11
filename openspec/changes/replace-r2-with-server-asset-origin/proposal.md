@@ -5,7 +5,7 @@
 
 ## What Changes
 - **BREAKING**: `assets.easyboardgame.top/official/**` 不再从 R2 读取，也不再在源站失败时自动回退 R2。
-- Cloudflare Worker 只代理服务器隐藏源；R2 bucket binding 从 Worker 配置移除。
+- 公开素材域名切为灰云直连服务器 443；Cloudflare Worker 只保留为历史回滚/诊断入口，R2 bucket binding 从 Worker 配置移除。
 - 素材上传、OTA、原生更新、移动素材包发布只写服务器 staging/release，并在公开域名验证服务器对象。
 - 服务器不再生成 R2 灾备队列；R2 同步/备份 systemd 单元改为禁用的遗留入口。
 - `npm run assets:*` 保持命令名不变，但内部切换到服务器发布脚本，避免协作者改流程。

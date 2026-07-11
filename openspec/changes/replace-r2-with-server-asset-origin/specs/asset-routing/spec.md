@@ -5,9 +5,16 @@
 
 #### Scenario: 普通素材从服务器返回
 - **WHEN** 客户端请求 `https://assets.easyboardgame.top/official/**` 下的普通素材
-- **THEN** 系统 MUST 请求服务器隐藏源上的同一路径
+- **THEN** 系统 MUST 从服务器活动版本返回同一路径
 - **AND** MUST NOT 读取 R2 或其他对象存储作为自动回退
 - **AND** MUST 通过诊断响应头标识服务器来源
+
+#### Scenario: 域名直连服务器
+- **WHEN** 验证 `https://assets.easyboardgame.top/official/**`
+- **THEN** DNS MUST resolve to a grey-cloud A record for the server IP
+- **AND** 响应 MUST NOT contain Cloudflare Worker-only headers such as `CF-Ray`
+- **AND** TLS MUST be served by the server with a public trusted certificate
+- **AND** `/official/**` MUST keep CORS, range requests, cache headers, and download rate limits
 
 #### Scenario: 源站不可用
 - **WHEN** 服务器隐藏源连接失败、超时或抛出异常
