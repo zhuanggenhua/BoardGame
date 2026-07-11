@@ -655,7 +655,84 @@ export class DiceBoxThreeEngine {
         this.applyValues(values, indices, false);
     }
 
-    recoverOutOfBoundsDice(options: { strictProjectedBounds?: boolean } = {}): boolean {
+    settleDiceIntoSafeSpread(): boolean {
+        if (this.styleProfile.fitWorldToCameraView !== true || this.box.diceList.length < 2) return false;
+
+        const screenSlots = this.box.diceList.length === 5
+            ? [
+                { x: 0.18, y: 0.62, yaw: -0.1 },
+                { x: 0.34, y: 0.20, yaw: 0.04 },
+                { x: 0.56, y: 0.48, yaw: -0.02 },
+                { x: 0.68, y: 0.20, yaw: 0.08 },
+                { x: 0.38, y: 0.68, yaw: -0.06 },
+            ]
+            : null;
+        if (!screenSlots) return false;
+
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const sortedEntries = this.box.diceList
+            .map((die, index) => {
+                const dieWithBody = die as DiceBoxDieWithBody;
+                const position = dieWithBody.body?.position ?? dieWithBody.position;
+                return {
+                    die: dieWithBody,
+                    index,
+                    position,
+                };
+            })
+            .filter((entry): entry is {
+                die: DiceBoxDieWithBody;
+                index: number;
+                position: DiceBoxVectorLike;
+            } => Boolean(entry.position))
+            .sort((left, right) => left.position.x - right.position.x || left.position.y - right.position.y);
+        if (sortedEntries.length !== this.box.diceList.length) return false;
+
+        sortedEntries.forEach((entry, sortedIndex) => {
+            const slot = screenSlots[sortedIndex] ?? { x: 0.5, y: 0.5, yaw: 0 };
+            const z = baseScale * 1.56;
+            const target = this.getWorldPointAtScreenFraction(slot.x, slot.y, z);
+            const settledQuaternion = new Quaternion()
+                .setFromAxisAngle(WORLD_UP, slot.yaw)
+                .normalize();
+            this.setVector(entry.die.position, target);
+            this.setVector(entry.die.body?.position, target);
+            this.setVector(entry.die.body?.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(entry.die.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            this.setQuaternion(entry.die.quaternion as DiceBoxQuaternionLike | undefined, settledQuaternion);
+            this.setQuaternion(entry.die.body?.quaternion, settledQuaternion);
+            if (entry.die.body) {
+                entry.die.body.aabbNeedsUpdate = true;
+                entry.die.body.sleep?.();
+            }
+            entry.die.updateMatrixWorld?.(true);
+        });
+
+        this.box.renderer.render(this.box.scene, this.box.camera);
+        return true;
+    }
+
+    private getWorldPointAtScreenFraction(xFraction: number, yFraction: number, worldZ: number): { x: number; y: number; z: number } {
+        const camera = this.box.camera as {
+            position?: Vector3;
+        };
+        const canvas = this.box.renderer?.domElement;
+        if (!camera?.position || !canvas) {
+            return { x: 0, y: 0, z: worldZ };
+        }
+
+        const ndcX = (clampNumber(xFraction, 0, 1) * 2) - 1;
+        const ndcY = 1 - (clampNumber(yFraction, 0, 1) * 2);
+        const point = new Vector3(ndcX, ndcY, 0.5).unproject(this.box.camera);
+        const direction = point.sub(camera.position).normalize();
+        const distanceToPlane = Math.abs(direction.z) > 0.0001
+            ? (worldZ - camera.position.z) / direction.z
+            : 0;
+        const worldPoint = camera.position.clone().add(direction.multiplyScalar(distanceToPlane));
+        return { x: worldPoint.x, y: worldPoint.y, z: worldZ };
+    }
+
+    recoverOutOfBoundsDice(options: { strictProjectedBounds?: boolean; enforceSafeBounds?: boolean } = {}): boolean {
         if (this.styleProfile.recoverOutOfBounds === false || this.box.diceList.length === 0) return false;
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
@@ -675,6 +752,16 @@ export class DiceBoxThreeEngine {
             : Math.max(baseScale * 4.2, halfHeight + baseScale * 3.2);
         const maxZ = baseScale * 12;
         const minZ = -baseScale * 2.4;
+        const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
+        const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
+        const safeHalfWidth = useNearestBoundsRecovery
+            ? Math.max(baseScale * 0.78, halfWidth - (baseScale * 0.95))
+            : 0;
+        const safeHalfHeight = useNearestBoundsRecovery
+            ? Math.max(baseScale * 0.78, halfHeight - (baseScale * 0.95))
+            : 0;
+        const enforceSafeBounds = useNearestBoundsRecovery
+            && options.enforceSafeBounds === true;
         let didRecover = false;
 
         this.box.diceList.forEach((die, index) => {
@@ -697,7 +784,13 @@ export class DiceBoxThreeEngine {
                         || layout.maxY < -canvas.clientHeight * 0.45
                         || layout.minY > canvas.clientHeight * 1.45
             ));
+            const isOutsideSafeX = enforceSafeBounds
+                && (position.x < centerOffsetX - safeHalfWidth || position.x > centerOffsetX + safeHalfWidth);
+            const isOutsideSafeY = enforceSafeBounds
+                && (position.y < centerOffsetY - safeHalfHeight || position.y > centerOffsetY + safeHalfHeight);
+            const isOutsideSafeBounds = isOutsideSafeX || isOutsideSafeY;
             const isOutOfBounds = isProjectedOutside
+                || isOutsideSafeBounds
                 || Math.abs(position.x) > maxX
                 || Math.abs(position.y) > maxY
                 || position.z > maxZ
@@ -707,14 +800,12 @@ export class DiceBoxThreeEngine {
             const useCameraSafeSpread = (this.styleProfile.settledSpreadAnimationMs ?? 0) > 0;
             const target = useNearestBoundsRecovery
                 ? (() => {
-                    const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
-                    const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
-                    const safeHalfWidth = Math.max(baseScale * 0.78, halfWidth - (baseScale * 0.95));
-                    const safeHalfHeight = Math.max(baseScale * 0.78, halfHeight - (baseScale * 0.95));
                     return {
                         x: clampNumber(position.x, centerOffsetX - safeHalfWidth, centerOffsetX + safeHalfWidth),
                         y: clampNumber(position.y, centerOffsetY - safeHalfHeight, centerOffsetY + safeHalfHeight),
-                        z: clampNumber(position.z, baseScale * 0.58, maxZ * 0.35),
+                        z: position.z > maxZ || position.z < minZ
+                            ? clampNumber(position.z, baseScale * 0.58, maxZ * 0.35)
+                            : position.z,
                     };
                 })()
                 : useCameraSafeSpread
@@ -742,8 +833,26 @@ export class DiceBoxThreeEngine {
                 })();
             this.setVector(dieWithBody.position, target);
             this.setVector(dieWithBody.body?.position, target);
-            this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
-            this.setVector(dieWithBody.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            if (useNearestBoundsRecovery && !options.strictProjectedBounds && isOutsideSafeBounds) {
+                const velocity = dieWithBody.body?.velocity;
+                const nextVelocity = {
+                    x: velocity?.x ?? 0,
+                    y: velocity?.y ?? 0,
+                    z: velocity?.z ?? 0,
+                };
+                if (isOutsideSafeX && ((position.x < centerOffsetX - safeHalfWidth && nextVelocity.x < 0)
+                    || (position.x > centerOffsetX + safeHalfWidth && nextVelocity.x > 0))) {
+                    nextVelocity.x *= -0.58;
+                }
+                if (isOutsideSafeY && ((position.y < centerOffsetY - safeHalfHeight && nextVelocity.y < 0)
+                    || (position.y > centerOffsetY + safeHalfHeight && nextVelocity.y > 0))) {
+                    nextVelocity.y *= -0.58;
+                }
+                this.setVector(dieWithBody.body?.velocity, nextVelocity);
+            } else {
+                this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
+                this.setVector(dieWithBody.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+            }
             if (options.strictProjectedBounds) {
                 dieWithBody.body?.sleep?.();
             } else {

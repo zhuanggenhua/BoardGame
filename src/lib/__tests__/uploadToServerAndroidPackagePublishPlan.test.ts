@@ -236,6 +236,43 @@ const isSharedAudioPackagePath = (relativePath: string) => {
         && !temporaryAssetNamePattern.test(normalized);
 };
 
+const toSharedAudioPackagePath = (src: string) => {
+    const normalized = src.replace(/\\/g, '/').replace(/^\/+/, '');
+    const lastSlash = normalized.lastIndexOf('/');
+    const dir = lastSlash >= 0 ? normalized.slice(0, lastSlash) : '';
+    const filename = lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+    return `common/audio/${dir ? `${dir}/` : ''}compressed/${filename}`;
+};
+
+const collectPackageManagedBgmKeys = () => {
+    const gamesRoot = path.join(process.cwd(), 'src', 'games');
+    const rows: Array<{ gameId: string; key: string }> = [];
+
+    for (const entry of readdirSync(gamesRoot, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const manifestPath = path.join(gamesRoot, entry.name, 'manifest.ts');
+        const audioConfigPath = path.join(gamesRoot, entry.name, 'audio.config.ts');
+        if (!existsSync(manifestPath) || !existsSync(audioConfigPath)) continue;
+
+        const manifest = readFileSync(manifestPath, 'utf8');
+        if (!/mode:\s*'package-managed'/.test(manifest)) continue;
+
+        const audioConfig = readFileSync(audioConfigPath, 'utf8');
+        const keys = [...new Set(
+            [...audioConfig.matchAll(/['"`](bgm\.[^'"`]+)['"`]/g)]
+                .map((match) => match[1]),
+        )].sort((left, right) => left.localeCompare(right));
+
+        for (const key of keys) {
+            rows.push({ gameId: entry.name, key });
+        }
+    }
+
+    return rows.sort((left, right) => (
+        left.gameId.localeCompare(right.gameId) || left.key.localeCompare(right.key)
+    ));
+};
+
 describe('upload-to-server 安卓素材包刷新预演', () => {
     it('DiceThrone 游戏资源上传后应只刷新 DiceThrone 差异索引并复用共享音频包', () => {
         const result = runPublishPlan(
@@ -292,6 +329,31 @@ describe('Android 游戏包素材内容', () => {
         expect(sharedAudioPackageFiles.every((relativePath) => path.extname(relativePath).toLowerCase() === '.ogg')).toBe(true);
         expect(sharedAudioPackageFiles).not.toContain('common/audio/registry.json');
         expect(sharedAudioPackageFiles).not.toContain('common/audio/phrase-mappings.zh-CN.json');
+    });
+
+    it('所有包管理游戏配置的 BGM 都必须进入共享音频包候选资源', () => {
+        const { allAssetPaths } = getAssetCatalog();
+        const sharedAudioPackageFiles = new Set(allAssetPaths.filter(isSharedAudioPackagePath));
+        const registry = JSON.parse(readFileSync(
+            path.join(process.cwd(), 'src', 'assets', 'audio', 'registry-slim.json'),
+            'utf8',
+        )) as { entries?: Array<{ key: string; src?: string; type?: string }> };
+        const registryByKey = new Map((registry.entries ?? []).map((entry) => [entry.key, entry]));
+
+        const missing = collectPackageManagedBgmKeys()
+            .map(({ gameId, key }) => {
+                const entry = registryByKey.get(key);
+                const packagePath = entry?.src ? toSharedAudioPackagePath(entry.src) : null;
+                return {
+                    gameId,
+                    key,
+                    packagePath,
+                    ok: entry?.type === 'bgm' && packagePath !== null && sharedAudioPackageFiles.has(packagePath),
+                };
+            })
+            .filter((row) => !row.ok);
+
+        expect(missing).toEqual([]);
     });
 
     it('所有移动端游戏包候选资源如果存在同哈希重复，必须作为待收口风险可见', () => {

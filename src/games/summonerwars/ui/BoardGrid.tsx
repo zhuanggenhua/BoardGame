@@ -41,7 +41,7 @@ const BOARD_GRID_Z = {
 } as const;
 
 const LIFE_BADGE_STYLE: React.CSSProperties = {
-  fontSize: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.01)`,
+  fontSize: `clamp(14px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.01), 22px)`,
   paddingInline: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
   paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.001)`,
 };
