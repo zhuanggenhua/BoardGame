@@ -1142,7 +1142,21 @@
     "ninja_disguise_choose_base_title": "伪装：选择一个基地",
     "ninja_disguise_choose_play_title": "伪装：选择要打出的手牌随从",
     "ninja_disguise_choose_second_play_title": "伪装：选择第二个要打出的手牌随从",
-    "faction_implementation_in_progress": "实施中"
+    "faction_implementation_in_progress": "实施中",
+    "mega_troopers_form_megabot_pod_title": "合体超级佐德：选择超级佐德要进入的基地",
+    "mega_troopers_form_megabot_pod_move_title": "合体超级佐德：将任意数量你的随从移动到超级佐德所在基地",
+    "mega_troopers_red_trooper_pod_title": "红骑士：在另一个基地打出或移动超级佐德",
+    "mega_troopers_lightning_crystal_pod_title": "闪电水晶：消灭一张行动牌或一个泰坦",
+    "mega_troopers_its_blitzin_time_pod_title": "闪电时刻：选择你的一个随从",
+    "mega_troopers_plan_for_more_pod_title": "谋划更多：抓取一张牌或额外打出一个展示的随从",
+    "mega_troopers_plan_for_more_pod_order_title": "谋划更多：将其余牌放到牌库顶和/或牌库底",
+    "mega_troopers_beta_6_pod_title": "贝塔6号：在你的一个随从上放置 +1 力量指示物",
+    "mega_troopers_blue_trooper_pod_title": "蓝骑士：抓一张牌或获得 +2 力量",
+    "mega_troopers_blue_trooper_pod_draw": "抓 1 张牌",
+    "mega_troopers_blue_trooper_pod_power": "此随从直到你的回合结束获得 +2 力量",
+    "mega_troopers_lightning_rescue_pod_title": "闪电救援：你可以额外打出一个行动",
+    "mega_troopers_blitzing_sword_attack_pod_title": "闪电剑攻击：消灭一个力量 4 或以下的随从",
+    "mega_troopers_power_pose_pod_after_scoring_title": "胜利姿态：你可以在替换基地额外打出一个随从"
   },
   "mechanics": {
     "madness": {
@@ -1546,6 +1560,22 @@
     "disco_dancers": {
       "name": "迪厅舞王",
       "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
+    },
+    "dragons_pod": {
+      "name": "龙族（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与龙族一致。"
+    },
+    "superheroes_pod": {
+      "name": "超级英雄（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与超级英雄一致。"
+    },
+    "magical_girls_pod": {
+      "name": "魔法少女（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与魔法少女一致。"
+    },
+    "mega_troopers_pod": {
+      "name": "超级战队（POD版）",
+      "description": "采用新版计分窗口行动、战队成员特殊能力、超级佐德支援与欧米伽协议的 POD 版本。"
     }
   },
   "tutorial": {
@@ -6114,6 +6144,66 @@
     "base_monkey_lab": {
       "name": "猴子实验室",
       "abilityText": "这里的每个随从上每有一张行动牌，就获得 +1 力量。"
+    },
+    "mega_troopers_blitzing_sword_attack_pod": {
+      "name": "闪电剑攻击",
+      "effectText": "特殊：在一个有你泰坦的基地计分前，消灭那里一个力量 4 或以下的随从。"
+    },
+    "mega_troopers_form_megabot_pod": {
+      "name": "合体超级佐德！",
+      "effectText": "打出超级佐德，或将任意数量你的随从移动到超级佐德所在基地。"
+    },
+    "mega_troopers_its_blitzin_time_pod": {
+      "name": "闪电时刻！",
+      "effectText": "你的一个随从直到回合结束获得 +4 力量。"
+    },
+    "mega_troopers_lightning_rescue_pod": {
+      "name": "闪电救援！",
+      "effectText": "特殊：在一个基地计分前，若你在那里有随从且力量不是最多，你可以额外打出一个行动。"
+    },
+    "mega_troopers_power_pose_pod": {
+      "name": "胜利姿态",
+      "effectText": "对一个基地打出。持续：此基地计分前，若你的力量不是最多，抓两张牌。此基地计分后，若你获胜，你可以在替换基地额外打出一个力量 3 或以下的随从。"
+    },
+    "mega_troopers_lightning_crystal_pod": {
+      "name": "闪电水晶",
+      "effectText": "消灭一张行动牌或一个泰坦。"
+    },
+    "mega_troopers_omega_protocol_pod": {
+      "name": "欧米伽协议",
+      "effectText": "对一个基地打出。持续：每个其他玩家的回合开始时，此基地直到该回合结束临界点 -10。"
+    },
+    "mega_troopers_plan_for_more_pod": {
+      "name": "谋划更多！",
+      "effectText": "查看你牌库顶三张牌。你可以抓取其中一张，或将其中一个随从作为额外随从打出。将其余牌按任意顺序放到你的牌库顶和/或牌库底。"
+    },
+    "mega_troopers_beta_6_pod": {
+      "name": "贝塔6号",
+      "abilityText": "特殊：任意基地计分前，你可以在你的一个随从上放置一枚 +1 力量指示物。"
+    },
+    "mega_troopers_green_trooper_pod": {
+      "name": "绿骑士",
+      "abilityText": "特殊：一个基地计分前，你可以将此随从作为额外随从打到那里。"
+    },
+    "mega_troopers_pink_trooper_pod": {
+      "name": "粉骑士",
+      "abilityText": "特殊：此基地计分后，将你在这里一个力量 3 或以下的随从返回手牌，而不是置入弃牌堆。"
+    },
+    "mega_troopers_black_trooper_pod": {
+      "name": "黑骑士",
+      "abilityText": "持续：一个特殊能力使用后，此随从直到回合结束获得 +1 力量。"
+    },
+    "mega_troopers_blue_trooper_pod": {
+      "name": "蓝骑士",
+      "abilityText": "特殊：任意基地计分前，你可以抓一张牌，或令此随从直到你的回合结束获得 +2 力量。"
+    },
+    "mega_troopers_yellow_trooper_pod": {
+      "name": "黄骑士",
+      "abilityText": "特殊：此基地计分前，你可以将你的另一个随从移动到这里。"
+    },
+    "mega_troopers_red_trooper_pod": {
+      "name": "红骑士",
+      "abilityText": "持续：你可以额外拥有一个在场泰坦。天赋：在另一个基地打出超级佐德，或移动超级佐德。"
     }
   },
   "debug": {

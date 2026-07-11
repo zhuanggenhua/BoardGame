@@ -90,7 +90,9 @@ const REQUIRED_TTS_ATLAS_IDS = Array.from(
     new Set(
         Object.values(smashUpEnglishMap as Record<string, EnglishMapConfig>).map(entry => entry.atlasId)
     )
-).sort();
+)
+    .filter(atlasId => !SMASHUP_ATLAS_DEFINITIONS.some(atlas => atlas.id === atlasId))
+    .sort();
 
 /**
  * 初始化 SmashUp 所有图集（模块加载时同步注册）

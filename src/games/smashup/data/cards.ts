@@ -75,9 +75,13 @@ import { TIME_TRAVELERS_CARDS } from './factions/time_travelers';
 import { ITTY_CRITTERS_CARDS } from './factions/itty_critters';
 import { KAIJU_CARDS } from './factions/kaiju';
 import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
+import { MAGICAL_GIRLS_POD_CARDS } from './factions/magical_girls_pod';
 import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
+import { MEGA_TROOPERS_POD_CARDS } from './factions/mega_troopers_pod';
 import { DRAGONS_CARDS } from './factions/dragons';
+import { DRAGONS_POD_CARDS } from './factions/dragons_pod';
 import { SUPERHEROES_CARDS } from './factions/superheroes';
+import { SUPERHEROES_POD_CARDS } from './factions/superheroes_pod';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -218,9 +222,13 @@ registerCards(TIME_TRAVELERS_CARDS);
 registerCards(ITTY_CRITTERS_CARDS);
 registerCards(KAIJU_CARDS);
 registerCards(MAGICAL_GIRLS_CARDS);
+registerCards(MAGICAL_GIRLS_POD_CARDS);
 registerCards(MEGA_TROOPERS_CARDS);
+registerCards(MEGA_TROOPERS_POD_CARDS);
 registerCards(DRAGONS_CARDS);
+registerCards(DRAGONS_POD_CARDS);
 registerCards(SUPERHEROES_CARDS);
+registerCards(SUPERHEROES_POD_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
