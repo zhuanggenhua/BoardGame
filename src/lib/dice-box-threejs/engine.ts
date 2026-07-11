@@ -443,11 +443,13 @@ export class DiceBoxThreeEngine {
         });
     }
 
-    private needsSettledSpreadAnimation(): boolean {
+    private needsSettledSpreadAnimation(options: { excludedIndices?: number[] } = {}): boolean {
+        const excludedIndices = new Set(options.excludedIndices ?? []);
         const layouts = this.box.diceList
-            .map((_, index) => this.getProjectedLayout(index, index))
+            .map((_, index) => (excludedIndices.has(index) ? null : this.getProjectedLayout(index, index)))
             .filter((layout): layout is DiceBoxProjectedLayout => Boolean(layout));
-        if (layouts.length !== this.box.diceList.length || layouts.length < 2) return false;
+        const activeDiceCount = this.box.diceList.length - excludedIndices.size;
+        if (layouts.length !== activeDiceCount || layouts.length < 2) return false;
         const canvas = this.box.renderer?.domElement;
         const hasProjectedOutOfBounds = Boolean(canvas && layouts.some((layout) => {
             const halfWidth = (layout.visualWidth ?? layout.width) / 2;
@@ -530,16 +532,19 @@ export class DiceBoxThreeEngine {
             || normalizedCenterSpan < 2.3;
     }
 
-    private async animateSettledSpreadIfNeeded(): Promise<void> {
+    async animateSettledSpreadIfNeeded(options: { excludedIndices?: number[] } = {}): Promise<void> {
         const durationMs = this.styleProfile.settledSpreadAnimationMs ?? 0;
         const diceCount = this.box.diceList.length;
-        if (durationMs <= 0 || diceCount < 2 || diceCount > 5 || !this.needsSettledSpreadAnimation()) {
+        const excludedIndices = new Set(options.excludedIndices ?? []);
+        if (durationMs <= 0 || diceCount < 2 || diceCount > 5 || !this.needsSettledSpreadAnimation({ excludedIndices: [...excludedIndices] })) {
             return;
         }
 
-        const slots = SETTLED_SPREAD_SLOTS_BY_COUNT[diceCount] ?? [];
+        const activeDiceCount = diceCount - excludedIndices.size;
+        const slots = SETTLED_SPREAD_SLOTS_BY_COUNT[activeDiceCount] ?? [];
         const entries = this.box.diceList
             .map((die, index) => {
+                if (excludedIndices.has(index)) return null;
                 const dieWithBody = die as DiceBoxDieWithBody;
                 const position = dieWithBody.body?.position ?? dieWithBody.position;
                 return {
@@ -548,6 +553,11 @@ export class DiceBoxThreeEngine {
                     start: { x: position.x, y: position.y, z: position.z },
                 };
             })
+            .filter((entry): entry is {
+                die: DiceBoxDieWithBody;
+                index: number;
+                start: { x: number; y: number; z: number };
+            } => Boolean(entry))
             .sort((left, right) => left.start.x - right.start.x || left.start.y - right.start.y);
         const assignments = entries.map((entry, sortedIndex) => ({
             ...entry,
@@ -555,9 +565,13 @@ export class DiceBoxThreeEngine {
                 const slot = slots[sortedIndex];
                 if (!slot) return entry.start;
                 const visibleHalfExtents = this.getVisibleWorldHalfExtentsAtZ(entry.start.z);
+                const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
+                const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
+                const safeHalfWidth = Math.max(1, (this.worldBounds.width / 2) - ((this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90) * 0.9));
+                const safeHalfHeight = Math.max(1, (this.worldBounds.height / 2) - ((this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90) * 0.9));
                 return {
-                    x: slot.x * visibleHalfExtents.x,
-                    y: slot.y * visibleHalfExtents.y,
+                    x: clampNumber(slot.x * visibleHalfExtents.x, centerOffsetX - safeHalfWidth, centerOffsetX + safeHalfWidth),
+                    y: clampNumber(slot.y * visibleHalfExtents.y, centerOffsetY - safeHalfHeight, centerOffsetY + safeHalfHeight),
                     z: entry.start.z,
                 };
             })(),
@@ -607,7 +621,6 @@ export class DiceBoxThreeEngine {
         await this.withInitialThrowSpread(() => this.box.roll(createNotation(values)));
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
-        await this.animateSettledSpreadIfNeeded();
     }
 
     async restoreValues(values: number[]): Promise<void> {
@@ -761,7 +774,7 @@ export class DiceBoxThreeEngine {
             ? Math.max(baseScale * 0.78, halfHeight - (baseScale * 0.95))
             : 0;
         const enforceSafeBounds = useNearestBoundsRecovery
-            && options.enforceSafeBounds === true;
+            && (options.enforceSafeBounds === true || !options.strictProjectedBounds);
         let didRecover = false;
 
         this.box.diceList.forEach((die, index) => {
@@ -848,6 +861,11 @@ export class DiceBoxThreeEngine {
                     || (position.y > centerOffsetY + safeHalfHeight && nextVelocity.y > 0))) {
                     nextVelocity.y *= -0.58;
                 }
+                this.setVector(dieWithBody.body?.angularVelocity, {
+                    x: dieWithBody.body?.angularVelocity?.x ?? 0,
+                    y: dieWithBody.body?.angularVelocity?.y ?? 0,
+                    z: dieWithBody.body?.angularVelocity?.z ?? 0,
+                });
                 this.setVector(dieWithBody.body?.velocity, nextVelocity);
             } else {
                 this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
