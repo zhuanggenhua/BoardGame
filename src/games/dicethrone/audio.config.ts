@@ -20,24 +20,15 @@ const resolveTokenSfx = (state: DiceThroneCore, tokenId?: string): string | null
     return def?.sfxKey ?? null;
 };
 
-// DT 专属 BGM
-const BGM_DRAGON_DANCE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_main';
-const BGM_DRAGON_DANCE_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_intensity_2';
-const BGM_SHIELDS_KEY = 'bgm.fantasy.fantasy_music_pack_vol.shields_and_spears_rt_2.fantasy_vol5_shields_and_spears_main';
-const BGM_SHIELDS_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.shields_and_spears_rt_2.fantasy_vol5_shields_and_spears_intensity_2';
-const BGM_HANG_THEM_KEY = 'bgm.fantasy.fantasy_music_pack_vol.hang_them_rt_3.fantasy_vol5_hang_them_main';
-const BGM_MY_KINGDOM_KEY = 'bgm.fantasy.fantasy_music_pack_vol.my_kingdom_rt_2.fantasy_vol5_my_kingdom_main';
-const BGM_HANG_THEM_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.hang_them_rt_3.fantasy_vol5_hang_them_intensity_2';
-const BGM_MY_KINGDOM_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.my_kingdom_rt_2.fantasy_vol5_my_kingdom_intensity_2';
-const BGM_STORMBORN_KEY = 'bgm.fantasy.fantasy_music_pack_vol.stormborn_destiny_rt_6.fantasy_vol7_stormborn_destiny_main';
-const BGM_STORMBORN_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.stormborn_destiny_rt_6.fantasy_vol7_stormborn_destiny_intensity_2';
-// Fantasy Vol 3/8 曲目
-const BGM_OGRES_KEY = 'bgm.fantasy.fantasy_music_pack_vol.ogres_rt_1.ogres_main';
-const BGM_OGRES_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.ogres_rt_1.ogres_intensity_2';
-const BGM_NOCK_KEY = 'bgm.fantasy.fantasy_music_pack_vol.nock_rt_2.nock_main';
-const BGM_NOCK_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.nock_rt_2.nock_intensity_2';
-const BGM_FIREBORN_KEY = 'bgm.fantasy.fantasy_music_pack_vol.fireborn_rt_2.fantasy_vol8_fireborn_main';
-const BGM_FIREBORN_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.fireborn_rt_2.fantasy_vol8_fireborn_intensity_2';
+// DT BGM：只引用当前共享音频包中已有压缩 OGG 的曲目，避免 App 已安装包读取缺文件。
+const BGM_ALPHA_KEY = 'bgm.heroes_music_pack_vol.alpha_rt_6.heroes_alpha_main';
+const BGM_DAUNTLESS_KEY = 'bgm.heroes_music_pack_vol.dauntless_rt_5.heroes_dauntless_main';
+const BGM_MAGNUS_KEY = 'bgm.heroes_music_pack_vol.magnus_rt_6.heroes_magnus_main';
+const BGM_TERMINUS_KEY = 'bgm.heroes_music_pack_vol.terminus_rt_4.heroes_terminus_main';
+const BGM_INVICTUS_KEY = 'bgm.epic_music_pack_vol.invictus_rt_5.epic_vol5_invictus_main';
+const BGM_HERCULES_KEY = 'bgm.epic_music_pack_vol.hercules_rt_3.epic_vol5_hercules_main';
+const BGM_ZENITH_KEY = 'bgm.epic_music_pack_vol.zenith_rt_3.epic_vol5_zenith_main';
+const BGM_GO_NOW_KEY = 'bgm.epic_music_pack_vol.go_now_rt_4.epic_vol5_go_now_main';
 
 const DICE_ROLL_SINGLE_KEY = 'dice.decks_and_cards_sound_fx_pack.dice_roll_velvet_001';
 const DICE_ROLL_MULTI_KEYS = [
@@ -61,45 +52,29 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
         'fantasy.gothic_fantasy_sound_fx_pack_vol.musical.drums_of_fate_002',
     ],
     bgm: [
-        // --- normal 组（4 首）---
-        { key: BGM_STORMBORN_KEY, name: 'Stormborn Destiny', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_HANG_THEM_KEY, name: 'Hang Them', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_MY_KINGDOM_KEY, name: 'My Kingdom', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_STORMBORN_INTENSE_KEY, name: 'Stormborn Destiny (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        // --- battle 组（11 首）---
-        { key: BGM_DRAGON_DANCE_KEY, name: 'Dragon Dance', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_SHIELDS_KEY, name: 'Shields and Spears', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_OGRES_KEY, name: 'Ogres', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_HANG_THEM_INTENSE_KEY, name: 'Hang Them (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_MY_KINGDOM_INTENSE_KEY, name: 'My Kingdom (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_DRAGON_DANCE_INTENSE_KEY, name: 'Dragon Dance (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_SHIELDS_INTENSE_KEY, name: 'Shields and Spears (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_OGRES_INTENSE_KEY, name: 'Ogres (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_NOCK_KEY, name: 'Nock!', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_NOCK_INTENSE_KEY, name: 'Nock! (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_FIREBORN_KEY, name: 'Fireborn', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_FIREBORN_INTENSE_KEY, name: 'Fireborn (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        // --- normal 组 ---
+        { key: BGM_ALPHA_KEY, name: 'Alpha', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        { key: BGM_DAUNTLESS_KEY, name: 'Dauntless', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        { key: BGM_MAGNUS_KEY, name: 'Magnus', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        { key: BGM_TERMINUS_KEY, name: 'Terminus', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        // --- battle 组 ---
+        { key: BGM_INVICTUS_KEY, name: 'Invictus', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        { key: BGM_HERCULES_KEY, name: 'Hercules', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        { key: BGM_ZENITH_KEY, name: 'Zenith', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        { key: BGM_GO_NOW_KEY, name: 'Go Now', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
     ],
     bgmGroups: {
         normal: [
-            BGM_STORMBORN_KEY,
-            BGM_HANG_THEM_KEY,
-            BGM_MY_KINGDOM_KEY,
-            BGM_STORMBORN_INTENSE_KEY,
+            BGM_ALPHA_KEY,
+            BGM_DAUNTLESS_KEY,
+            BGM_MAGNUS_KEY,
+            BGM_TERMINUS_KEY,
         ],
         battle: [
-            BGM_DRAGON_DANCE_KEY,
-            BGM_SHIELDS_KEY,
-            BGM_OGRES_KEY,
-            BGM_HANG_THEM_INTENSE_KEY,
-            BGM_MY_KINGDOM_INTENSE_KEY,
-            BGM_DRAGON_DANCE_INTENSE_KEY,
-            BGM_SHIELDS_INTENSE_KEY,
-            BGM_OGRES_INTENSE_KEY,
-            BGM_NOCK_KEY,
-            BGM_NOCK_INTENSE_KEY,
-            BGM_FIREBORN_KEY,
-            BGM_FIREBORN_INTENSE_KEY,
+            BGM_INVICTUS_KEY,
+            BGM_HERCULES_KEY,
+            BGM_ZENITH_KEY,
+            BGM_GO_NOW_KEY,
         ],
     },
     feedbackResolver: (event, context): SoundKey | null => {
@@ -217,12 +192,12 @@ export const DICETHRONE_AUDIO_CONFIG: GameAudioConfig = {
                 const { currentPhase } = context.ctx as { currentPhase?: TurnPhase };
                 return currentPhase === 'offensiveRoll' || currentPhase === 'targetingRoll' || currentPhase === 'defensiveRoll';
             },
-            key: BGM_DRAGON_DANCE_KEY,
+            key: BGM_INVICTUS_KEY,
             group: 'battle',
         },
         {
             when: () => true,
-            key: BGM_STORMBORN_KEY,
+            key: BGM_ALPHA_KEY,
             group: 'normal',
         },
     ],

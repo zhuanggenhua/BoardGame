@@ -1,32 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-    createAssetRouter,
-    shouldFallbackToR2,
-} from './index.mjs';
+import { createAssetRouter } from './index.mjs';
 
-const createR2Object = ({
-    body = 'r2-body',
-    etag = '"r2-etag"',
-    range,
-    size = Buffer.byteLength(body),
-} = {}) => ({
-    body,
-    httpEtag: etag,
-    range,
-    size,
-    writeHttpMetadata(headers) {
-        headers.set('Content-Type', 'application/octet-stream');
-    },
+const createEnv = () => ({
+    ORIGIN_BASE_URL: 'https://origin.example.test',
+    ORIGIN_TIMEOUT_MS: '1500',
+    ORIGIN_TOKEN: 'test-token',
 });
 
-const createR2Metadata = (options) => {
-    const object = createR2Object(options);
-    delete object.body;
-    return object;
-};
-
-test('大型发布路径必须先请求服务器', async () => {
+test('大型发布路径必须请求服务器源', async () => {
     let requestedOriginUrl = '';
     const router = createAssetRouter({
         fetchImpl: async (request) => {
@@ -34,16 +16,10 @@ test('大型发布路径必须先请求服务器', async () => {
             return new Response('origin-package', { status: 200 });
         },
     });
-    const env = {
-        ASSETS_BUCKET: { get: async () => null },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
 
     const response = await router(
         new Request('https://assets.example.test/official/app-updates/android/stable/latest.json'),
-        env,
+        createEnv(),
     );
 
     assert.equal(requestedOriginUrl, 'https://origin.example.test/official/app-updates/android/stable/latest.json');
@@ -51,71 +27,34 @@ test('大型发布路径必须先请求服务器', async () => {
     assert.equal(await response.text(), 'origin-package');
 });
 
-test('大型发布路径回退 R2 的完整 GET 即使返回全范围信息也必须保持 200', async () => {
+test('OPTIONS 预检返回跨域头且不访问源站', async () => {
+    let originRequested = false;
     const router = createAssetRouter({
-        fetchImpl: async () => new Response('missing', { status: 404 }),
-    });
-    const env = {
-        ASSETS_BUCKET: {
-            get: async () => createR2Object({
-                body: 'data',
-                range: { offset: 0, length: 4 },
-                size: 4,
-            }),
+        fetchImpl: async () => {
+            originRequested = true;
+            return new Response('origin-body', { status: 200 });
         },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
+    });
 
     const response = await router(
-        new Request('https://assets.example.test/official/app-updates/file.bin'),
-        env,
-    );
-
-    assert.equal(response.status, 200);
-    assert.equal(response.headers.get('Content-Range'), null);
-    assert.equal(response.headers.get('Content-Length'), '4');
-    assert.equal(response.headers.get('X-Asset-Source'), 'r2-fallback');
-    assert.equal(await response.text(), 'data');
-});
-
-test('大型发布路径回退 R2 的完整 HEAD 即使返回全范围信息也必须保持 200', async () => {
-    const router = createAssetRouter({
-        fetchImpl: async () => new Response('missing', { status: 404 }),
-    });
-    const env = {
-        ASSETS_BUCKET: {
-            get: async () => createR2Object({
-                body: 'data',
-                range: { offset: 0, length: 4 },
-                size: 4,
-            }),
-        },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
-
-    const response = await router(
-        new Request('https://assets.example.test/official/app-updates/file.bin', {
-            method: 'HEAD',
+        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'http://localhost',
+                'Access-Control-Request-Method': 'GET',
+                'Access-Control-Request-Headers': 'cache-control',
+            },
         }),
-        env,
+        createEnv(),
     );
 
-    assert.equal(response.status, 200);
-    assert.equal(response.headers.get('Content-Range'), null);
-    assert.equal(response.headers.get('Content-Length'), '4');
-    assert.equal(response.headers.get('X-Asset-Source'), 'r2-fallback');
+    assert.equal(response.status, 204);
+    assert.equal(originRequested, false);
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, HEAD, OPTIONS');
+    assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'cache-control');
+    assert.equal(response.headers.get('X-Asset-Source'), 'preflight');
     assert.equal(await response.text(), '');
-});
-
-test('源站缺失、限流和服务错误必须触发回退', () => {
-    assert.equal(shouldFallbackToR2(404), true);
-    assert.equal(shouldFallbackToR2(429), true);
-    assert.equal(shouldFallbackToR2(503), true);
-    assert.equal(shouldFallbackToR2(206), false);
 });
 
 test('源站成功时保留响应并标识 server', async () => {
@@ -128,16 +67,10 @@ test('源站成功时保留响应并标识 server', async () => {
             },
         }),
     });
-    const env = {
-        ASSETS_BUCKET: { get: async () => null },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
 
     const response = await router(
         new Request('https://assets.example.test/official/common/image.webp'),
-        env,
+        createEnv(),
     );
 
     assert.equal(response.status, 200);
@@ -147,139 +80,70 @@ test('源站成功时保留响应并标识 server', async () => {
     assert.equal(await response.text(), 'origin-body');
 });
 
-test('源站 503 时从 R2 返回 Range 响应', async () => {
-    let requestedKey = '';
+test('源站 404 不再回退对象存储', async () => {
     const router = createAssetRouter({
-        fetchImpl: async () => new Response('unavailable', { status: 503 }),
+        fetchImpl: async () => new Response('missing', { status: 404 }),
     });
-    const env = {
-        ASSETS_BUCKET: {
-            async get(key) {
-                requestedKey = key;
-                return createR2Object({
-                    body: 'bc',
-                    range: { offset: 1, length: 2 },
-                    size: 4,
-                });
-            },
-        },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
 
     const response = await router(
-        new Request('https://assets.example.test/official/common/file.bin', {
-            headers: { Range: 'bytes=1-2' },
-        }),
-        env,
+        new Request('https://assets.example.test/official/common/missing.webp'),
+        createEnv(),
     );
 
-    assert.equal(requestedKey, 'official/common/file.bin');
-    assert.equal(response.status, 206);
-    assert.equal(response.headers.get('Content-Range'), 'bytes 1-2/4');
-    assert.equal(response.headers.get('X-Asset-Source'), 'r2-fallback');
-    assert.equal(await response.text(), 'bc');
+    assert.equal(response.status, 404);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(await response.text(), 'missing');
 });
 
-test('HEAD 回退不返回响应体', async () => {
+test('源站 5xx 标识 server-error 且不回退对象存储', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => new Response('bad gateway', { status: 502 }),
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/file.bin'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 502);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server-error');
+    assert.equal(await response.text(), 'bad gateway');
+});
+test('源站离线返回 server-error，不读取 R2', async () => {
     const router = createAssetRouter({
         fetchImpl: async () => {
             throw new Error('origin offline');
         },
     });
-    const env = {
-        ASSETS_BUCKET: {
-            get: async () => createR2Object({ body: 'data', size: 4 }),
-        },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '10',
-        ORIGIN_TOKEN: 'test-token',
-    };
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/file.bin'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 502);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server-error');
+    assert.equal(await response.text(), 'Asset origin unavailable');
+});
+
+test('HEAD 请求不返回响应体', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => new Response('origin-body', {
+            status: 200,
+            headers: {
+                'Content-Length': '11',
+            },
+        }),
+    });
 
     const response = await router(
         new Request('https://assets.example.test/official/common/file.bin', {
             method: 'HEAD',
         }),
-        env,
+        createEnv(),
     );
 
     assert.equal(response.status, 200);
-    assert.equal(response.headers.get('Content-Length'), '4');
-    assert.equal(response.headers.get('X-Asset-Source'), 'r2-fallback');
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
     assert.equal(await response.text(), '');
-});
-
-test('R2 条件请求未修改时返回 304 且不返回响应体', async () => {
-    const router = createAssetRouter({
-        fetchImpl: async () => new Response('unavailable', { status: 503 }),
-    });
-    const env = {
-        ASSETS_BUCKET: {
-            get: async () => createR2Metadata({ size: 4 }),
-        },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
-
-    const response = await router(
-        new Request('https://assets.example.test/official/common/file.bin', {
-            headers: { 'If-None-Match': '"r2-etag"' },
-        }),
-        env,
-    );
-
-    assert.equal(response.status, 304);
-    assert.equal(response.headers.get('ETag'), '"r2-etag"');
-    assert.equal(response.headers.get('X-Asset-Source'), 'r2-fallback');
-    assert.equal(await response.text(), '');
-});
-
-test('R2 条件请求前置条件失败时返回 412 且不返回响应体', async () => {
-    const router = createAssetRouter({
-        fetchImpl: async () => new Response('unavailable', { status: 503 }),
-    });
-    const env = {
-        ASSETS_BUCKET: {
-            get: async () => createR2Metadata({ size: 4 }),
-        },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
-
-    const response = await router(
-        new Request('https://assets.example.test/official/common/file.bin', {
-            headers: { 'If-Match': '"different-etag"' },
-        }),
-        env,
-    );
-
-    assert.equal(response.status, 412);
-    assert.equal(response.headers.get('ETag'), '"r2-etag"');
-    assert.equal(response.headers.get('X-Asset-Source'), 'r2-fallback');
-    assert.equal(await response.text(), '');
-});
-
-test('R2 读取异常不得伪装成范围请求错误', async () => {
-    const router = createAssetRouter({
-        fetchImpl: async () => new Response('unavailable', { status: 503 }),
-    });
-    const storageError = new Error('R2 service unavailable');
-    const env = {
-        ASSETS_BUCKET: {
-            get: async () => {
-                throw storageError;
-            },
-        },
-        ORIGIN_BASE_URL: 'https://origin.example.test',
-        ORIGIN_TIMEOUT_MS: '1500',
-        ORIGIN_TOKEN: 'test-token',
-    };
-
-    await assert.rejects(
-        router(new Request('https://assets.example.test/official/common/file.bin'), env),
-        storageError,
-    );
 });

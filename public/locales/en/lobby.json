@@ -262,6 +262,7 @@
     "mine": "Mine",
     "enabledExpansions": "Exp",
     "scenario": "Scenario",
+    "scenarioPending": "Scenario TBD",
     "seatSeparator": " / ",
     "emptySlot": "Empty",
     "ownerMustReconnect": "This is your room. Please reconnect.",

@@ -452,7 +452,7 @@ const UnitCell: React.FC<{
   currentGrid: GridConfig;
   props: BoardGridProps;
   isTapLifeVisible: boolean;
-  onCellClick: (row: number, col: number, lifeInspectKey: string) => void;
+  onCellClick: (row: number, col: number, lifeInspectKey: string, pointerType?: string) => void;
 }> = ({
   row,
   col,
@@ -472,6 +472,7 @@ const UnitCell: React.FC<{
   const spriteConfig = getUnitSpriteConfig(unit);
   const isMyUnit = unit.owner === myPlayerId;
   const unitInspectKey = `unit-${unit.instanceId}`;
+  const lastPointerTypeRef = useRef<string | null>(null);
   // 视觉伤害：攻击动画期間优先读缓冲值，避免血条在动画 impact 前就变化
   const damage = props.damageBuffer
     ? props.damageBuffer.get(`${row}-${col}`, unit.damage)
@@ -499,6 +500,7 @@ const UnitCell: React.FC<{
       props.onMagnifyUnit(payload);
     },
   });
+  const touchInspectProps = getTouchInspectProps(unitInspectKey, unit);
 
   const isAttacker = props.attackAnimState
     && props.attackAnimState.attacker.row === row
@@ -566,7 +568,11 @@ const UnitCell: React.FC<{
       data-unit-name={unit.card.name}
       data-unit-life={life}
       data-unit-damage={unit.damage}
-      {...getTouchInspectProps(unitInspectKey, unit)}
+      {...touchInspectProps}
+      onPointerDown={(event) => {
+        lastPointerTypeRef.current = event.pointerType;
+        touchInspectProps.onPointerDown(event);
+      }}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
@@ -576,7 +582,7 @@ const UnitCell: React.FC<{
       }}
       onClick={() => {
         if (shouldBlockInspectClick(unitInspectKey)) return;
-        onCellClick(viewCoord.row, viewCoord.col, unitInspectKey);
+        onCellClick(viewCoord.row, viewCoord.col, unitInspectKey, lastPointerTypeRef.current ?? undefined);
       }}
       initial={shouldAnimateEntry ? { opacity: 0, scale: 1.1 } : false}
       animate={{ opacity: 1, scale: 1 }}
@@ -732,7 +738,7 @@ const StructureCell: React.FC<{
   myPlayerId: string;
   props: BoardGridProps;
   isTapLifeVisible: boolean;
-  onCellClick: (row: number, col: number, lifeInspectKey: string) => void;
+  onCellClick: (row: number, col: number, lifeInspectKey: string, pointerType?: string) => void;
 }> = ({
   row,
   col,
@@ -748,6 +754,7 @@ const StructureCell: React.FC<{
   const isMyStructure = structure.owner === myPlayerId;
   const shouldAnimateEntry = props.enableEntryAnimations ?? false;
   const structureInspectKey = `structure-${row}-${col}-${structure.cardId}`;
+  const lastPointerTypeRef = useRef<string | null>(null);
   // 视觉伤害：攻击动画期间优先读缓冲值
   const damage = props.damageBuffer
     ? props.damageBuffer.get(`${row}-${col}`, structure.damage)
@@ -765,6 +772,7 @@ const StructureCell: React.FC<{
       props.onMagnifyStructure(payload);
     },
   });
+  const touchInspectProps = getTouchInspectProps(structureInspectKey, structure);
 
   return (
     <motion.div
@@ -778,7 +786,11 @@ const StructureCell: React.FC<{
       data-structure-life={life}
       data-structure-damage={structure.damage}
       data-structure-gate={structure.card.isGate ? 'true' : 'false'}
-      {...getTouchInspectProps(structureInspectKey, structure)}
+      {...touchInspectProps}
+      onPointerDown={(event) => {
+        lastPointerTypeRef.current = event.pointerType;
+        touchInspectProps.onPointerDown(event);
+      }}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
@@ -794,7 +806,7 @@ const StructureCell: React.FC<{
       layout="position"
       onClick={() => {
         if (shouldBlockInspectClick(structureInspectKey)) return;
-        onCellClick(viewCoord.row, viewCoord.col, structureInspectKey);
+        onCellClick(viewCoord.row, viewCoord.col, structureInspectKey, lastPointerTypeRef.current ?? undefined);
       }}
     >
       <motion.div
@@ -891,7 +903,7 @@ export const BoardGrid: React.FC<BoardGridProps> = (props) => {
     clearArmed: clearLifeInspect,
     armOrActivate,
   } = useArmedActivation<string>({
-    requireArming: isTouchFirstInteraction,
+    requireArming: true,
     isKeyValid: isLifeInspectKeyValid,
     validationDeps: [core.board],
   });
@@ -905,11 +917,21 @@ export const BoardGrid: React.FC<BoardGridProps> = (props) => {
     row: number,
     col: number,
     lifeInspectKey: string,
+    pointerType?: string,
   ) => {
+    const shouldUseTouchFirstInteraction = isTouchFirstInteraction
+      || pointerType === 'touch'
+      || pointerType === 'pen';
+    if (!shouldUseTouchFirstInteraction) {
+      clearLifeInspect();
+      onCellClick(row, col);
+      return;
+    }
+
     armOrActivate(lifeInspectKey, {
       onActivate: () => onCellClick(row, col),
     });
-  }, [armOrActivate, onCellClick]);
+  }, [armOrActivate, clearLifeInspect, isTouchFirstInteraction, onCellClick]);
 
   const [enableEntryAnimations, setEnableEntryAnimations] = React.useState(false);
   React.useEffect(() => {

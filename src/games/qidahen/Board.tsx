@@ -3,6 +3,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
+import {
+    ZoomPanViewport,
+    type ZoomPanViewportState,
+    type ZoomPanViewportZoomAnchorArgs,
+} from '../../components/game/framework';
 import type { CardPreviewRef } from '../../core/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import type { GameBoardProps } from '../../engine/transport/protocol';
@@ -1785,20 +1790,11 @@ const MapSceneLayer: React.FC<{
 }> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialGuideTargetRegionId, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const currentFactionId = perspectiveFactionId;
-    const mapLayerRef = React.useRef<HTMLDivElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const hitmapRef = React.useRef<Uint8ClampedArray | null>(null);
     const runtimeRegionIdByPixelRef = React.useRef<Array<string | null> | null>(null);
     const [runtimeRegionOwnership, setRuntimeRegionOwnership] = React.useState<Array<string | null> | null>(null);
-    const dragStateRef = React.useRef<{
-        pointerId: number;
-        startClientX: number;
-        startClientY: number;
-        startPanX: number;
-        startPanY: number;
-        moved: boolean;
-    } | null>(null);
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const [maskVersion, setMaskVersion] = React.useState(0);
 
@@ -1980,100 +1976,46 @@ const MapSceneLayer: React.FC<{
         setHoveredRegionId(getRegionFromPointer(event));
     }, [getRegionFromPointer]);
 
-    const handleMapWheel = React.useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        const layer = mapLayerRef.current;
-        if (!layer) {
-            return;
-        }
-        const rect = layer.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) {
-            return;
-        }
-        const stageX = ((event.clientX - rect.left) / rect.width) * STAGE_WIDTH;
-        const stageY = ((event.clientY - rect.top) / rect.height) * STAGE_HEIGHT;
-        const nextZoom = clampNumber(
-            viewport.zoom * (event.deltaY < 0 ? 1.14 : 0.88),
-            QIDAHEN_MAP_MIN_ZOOM,
-            QIDAHEN_MAP_MAX_ZOOM,
-        );
-        if (Math.abs(nextZoom - viewport.zoom) < 0.001) {
-            return;
-        }
-        const mapX = (stageX - MAP_COVER_LEFT - viewport.panX) / (MAP_COVER_SCALE * viewport.zoom);
-        const mapY = (stageY - MAP_COVER_TOP - viewport.panY) / (MAP_COVER_SCALE * viewport.zoom);
+    const controlledMapViewport = React.useMemo<ZoomPanViewportState>(() => ({
+        zoomLevel: viewport.zoom,
+        position: {
+            x: viewport.panX,
+            y: viewport.panY,
+        },
+    }), [viewport.panX, viewport.panY, viewport.zoom]);
+
+    const handleControlledViewportChange = React.useCallback((nextViewport: ZoomPanViewportState) => {
+        setHoveredRegionId(null);
         onViewportChange(clampQidahenMapViewport({
-            zoom: nextZoom,
-            panX: stageX - MAP_COVER_LEFT - mapX * MAP_COVER_SCALE * nextZoom,
-            panY: stageY - MAP_COVER_TOP - mapY * MAP_COVER_SCALE * nextZoom,
+            zoom: nextViewport.zoomLevel,
+            panX: nextViewport.position.x,
+            panY: nextViewport.position.y,
         }));
-    }, [onViewportChange, viewport.panX, viewport.panY, viewport.zoom]);
+    }, [onViewportChange]);
 
-    const handlePointerDown = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-        if (event.button !== 0) {
-            return;
-        }
-        event.currentTarget.setPointerCapture?.(event.pointerId);
-        dragStateRef.current = {
-            pointerId: event.pointerId,
-            startClientX: event.clientX,
-            startClientY: event.clientY,
-            startPanX: viewport.panX,
-            startPanY: viewport.panY,
-            moved: false,
+    const resolveMapZoomAnchorPosition = React.useCallback(({
+        position,
+        zoomLevel,
+        nextZoomLevel,
+        pointer,
+        containerRect,
+    }: ZoomPanViewportZoomAnchorArgs) => {
+        const stageX = ((pointer.clientX - containerRect.left) / containerRect.width) * STAGE_WIDTH;
+        const stageY = ((pointer.clientY - containerRect.top) / containerRect.height) * STAGE_HEIGHT;
+        const mapX = (stageX - MAP_COVER_LEFT - position.x) / (MAP_COVER_SCALE * zoomLevel);
+        const mapY = (stageY - MAP_COVER_TOP - position.y) / (MAP_COVER_SCALE * zoomLevel);
+        return {
+            x: stageX - MAP_COVER_LEFT - mapX * MAP_COVER_SCALE * nextZoomLevel,
+            y: stageY - MAP_COVER_TOP - mapY * MAP_COVER_SCALE * nextZoomLevel,
         };
-    }, [viewport.panX, viewport.panY]);
-
-    const handleCanvasPointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-        const dragState = dragStateRef.current;
-        if (dragState && dragState.pointerId === event.pointerId) {
-            const layer = mapLayerRef.current;
-            if (!layer) {
-                return;
-            }
-            const rect = layer.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) {
-                return;
-            }
-            const deltaX = ((event.clientX - dragState.startClientX) / rect.width) * STAGE_WIDTH;
-            const deltaY = ((event.clientY - dragState.startClientY) / rect.height) * STAGE_HEIGHT;
-            if (!dragState.moved && Math.abs(deltaX) + Math.abs(deltaY) >= 6) {
-                dragState.moved = true;
-            }
-            if (dragState.moved) {
-                setHoveredRegionId(null);
-                onViewportChange(clampQidahenMapViewport({
-                    zoom: viewport.zoom,
-                    panX: dragState.startPanX + deltaX,
-                    panY: dragState.startPanY + deltaY,
-                }));
-                return;
-            }
-        }
-        handlePointerMove(event);
-    }, [handlePointerMove, onViewportChange, viewport.zoom]);
+    }, []);
 
     const handlePointerUp = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-        const dragState = dragStateRef.current;
-        if (!dragState || dragState.pointerId !== event.pointerId) {
-            return;
-        }
-        event.currentTarget.releasePointerCapture?.(event.pointerId);
-        dragStateRef.current = null;
-        if (dragState.moved) {
-            return;
-        }
         const regionId = getRegionFromPointer(event);
         if (regionId) {
             onSelectRegion(regionId);
         }
     }, [getRegionFromPointer, onSelectRegion]);
-
-    const handlePointerCancel = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-        if (dragStateRef.current?.pointerId === event.pointerId) {
-            dragStateRef.current = null;
-        }
-    }, []);
 
     const tipLeft = focusedRegion
         ? Math.min(
@@ -2555,17 +2497,45 @@ const MapSceneLayer: React.FC<{
     }, [activeCommittedMax, onSelectPendingCommittedTroops]);
 
     return (
-        <div
-            ref={mapLayerRef}
+        <ZoomPanViewport
             className={`${mapHitTestingDisabled ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 z-10 overflow-hidden`}
-            data-testid="qidahen-map-layer"
-            data-tutorial-id="qidahen-map-layer"
-            data-map-layout="full-bleed-cover"
-            data-map-selected={core.explicitRegionId ?? ''}
-            data-map-zoom={viewport.zoom}
-            data-map-pan-x={viewport.panX}
-            data-map-pan-y={viewport.panY}
-            onWheel={handleMapWheel}
+            contentClassName="absolute inset-0"
+            containerTestId="qidahen-map-layer"
+            contentTestId="qidahen-map-viewport-content"
+            scaleTestId="qidahen-map-scale"
+            initialScale={DEFAULT_QIDAHEN_MAP_VIEWPORT.zoom}
+            minScale={QIDAHEN_MAP_MIN_ZOOM}
+            maxScale={QIDAHEN_MAP_MAX_ZOOM}
+            controlledViewport={controlledMapViewport}
+            onControlledViewportChange={handleControlledViewportChange}
+            coordinateSize={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}
+            clampViewport={(nextViewport) => {
+                const clampedViewport = clampQidahenMapViewport({
+                    zoom: nextViewport.zoomLevel,
+                    panX: nextViewport.position.x,
+                    panY: nextViewport.position.y,
+                });
+                return {
+                    zoomLevel: clampedViewport.zoom,
+                    position: {
+                        x: clampedViewport.panX,
+                        y: clampedViewport.panY,
+                    },
+                };
+            }}
+            getZoomAnchorPosition={resolveMapZoomAnchorPosition}
+            wheelZoomFactor={1.14}
+            renderContentTransform={false}
+            scaleBadgeClassName="border-[#3f2d18] bg-[rgba(24,16,9,0.88)] text-[#f4dfad]"
+            ariaLabel={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
+            containerProps={{
+                'data-tutorial-id': 'qidahen-map-layer',
+                'data-map-layout': 'full-bleed-cover',
+                'data-map-selected': core.explicitRegionId ?? '',
+                'data-map-zoom': viewport.zoom,
+                'data-map-pan-x': viewport.panX,
+                'data-map-pan-y': viewport.panY,
+            } as React.HTMLAttributes<HTMLDivElement>}
             style={{
                 background: '#c8a970',
             }}
@@ -2835,15 +2805,9 @@ const MapSceneLayer: React.FC<{
                     className={`${mapHitTestingDisabled ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 h-full w-full cursor-pointer opacity-0`}
                     data-testid="qidahen-map-hitmap-canvas"
                     data-tutorial-id={tutorialMapTargetRegionId ? 'qidahen-map-target-song-jin' : undefined}
-                    onPointerMove={handleCanvasPointerMove}
-                    onPointerLeave={() => {
-                        if (!dragStateRef.current) {
-                            setHoveredRegionId(null);
-                        }
-                    }}
-                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerLeave={() => setHoveredRegionId(null)}
                     onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerCancel}
                     aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
                 />
             </div>
@@ -3009,7 +2973,7 @@ const MapSceneLayer: React.FC<{
                     ) : null}
                 </div>
             ) : null}
-        </div>
+        </ZoomPanViewport>
     );
 };
 
@@ -4373,10 +4337,12 @@ const ActionsZone: React.FC<{
                     {core.wuzhenChaohaSelection ? (
                         <div className="mt-2" data-testid="qidahen-wuzhen-chaoha-selection">
                             <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
-                                点击绿色步兵牌，指定其提前在炮兵阶段攻击。
+                                {t('board.actions.wuzhenChaoha.hint', { defaultValue: '点击绿色步兵牌，指定其提前在炮兵阶段攻击。' })}
                             </div>
                             <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-                                <span style={{ color: '#f3d1a5' }}>销毁《火炮技术》：</span>
+                                <span style={{ color: '#f3d1a5' }}>
+                                    {t('board.actions.wuzhenChaoha.artilleryTechLabel', { defaultValue: '销毁《火炮技术》：' })}
+                                </span>
                                 {Array.from(
                                     { length: core.wuzhenChaohaSelection.maxDestroyedArtilleryTechCount + 1 },
                                     (_, count) => count,
@@ -4397,7 +4363,7 @@ const ActionsZone: React.FC<{
                                                 borderRadius: 3,
                                             }}
                                         >
-                                            {count} 张
+                                            {t('board.actions.wuzhenChaoha.artilleryTechCount', { count, defaultValue: '{{count}} 张' })}
                                         </button>
                                     );
                                 })}
@@ -4409,13 +4375,13 @@ const ActionsZone: React.FC<{
                                 onClick={onCancelWuzhenChaoha}
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
-                                取消
+                                {t('board.actions.cancel', { defaultValue: '取消' })}
                             </button>
                         </div>
                     ) : core.instigateDefectionSelection ? (
                         <div className="mt-2" data-testid="qidahen-instigate-defection-selection">
                             <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
-                                点击绿色兵牌选择要策反的敌方次级部队。
+                                {t('board.actions.instigateDefection.hint', { defaultValue: '点击绿色兵牌选择要策反的敌方次级部队。' })}
                             </div>
                             <button
                                 type="button"
@@ -4424,13 +4390,17 @@ const ActionsZone: React.FC<{
                                 onClick={onCancelInstigateDefection}
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
-                                取消
+                                {t('board.actions.cancel', { defaultValue: '取消' })}
                             </button>
                         </div>
                     ) : core.pincerAdvanceSelection ? (
                         <div className="mt-2" data-testid="qidahen-pincer-advance-selection">
                             <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
-                                点击绿色兵牌选择增援，已选 {core.pincerAdvanceSelection.selectedChoiceIds.length}/{core.pincerAdvanceSelection.maxTroops}
+                                {t('board.actions.pincerAdvance.hint', {
+                                    selected: core.pincerAdvanceSelection.selectedChoiceIds.length,
+                                    max: core.pincerAdvanceSelection.maxTroops,
+                                    defaultValue: '点击绿色兵牌选择增援，已选 {{selected}}/{{max}}',
+                                })}
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <button
@@ -4441,7 +4411,7 @@ const ActionsZone: React.FC<{
                                     onClick={onResolvePincerAdvance}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
-                                    确认增援
+                                    {t('board.actions.pincerAdvance.confirm', { defaultValue: '确认增援' })}
                                 </button>
                                 <button
                                     type="button"
@@ -4450,14 +4420,14 @@ const ActionsZone: React.FC<{
                                     onClick={onCancelPincerAdvance}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
-                                    取消
+                                    {t('board.actions.cancel', { defaultValue: '取消' })}
                                 </button>
                             </div>
                         </div>
                     ) : core.infantryCavalryCombinedSelection ? (
                         <div className="mt-2" data-testid="qidahen-infantry-cavalry-combined-selection">
                             <div className="mb-2 text-[11px]" style={{ color: '#f3d1a5' }}>
-                                步骑联合：选择骑兵撤离，或让骑兵转入步兵阶段共同攻击。
+                                {t('board.actions.infantryCavalryCombined.hint', { defaultValue: '步骑联合：选择骑兵撤离，或让骑兵转入步兵阶段共同攻击。' })}
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <button
@@ -4467,7 +4437,7 @@ const ActionsZone: React.FC<{
                                     onClick={() => onResolveInfantryCavalryCombined('withdraw-cavalry')}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
-                                    骑兵撤离
+                                    {t('board.actions.infantryCavalryCombined.withdraw', { defaultValue: '骑兵撤离' })}
                                 </button>
                                 <button
                                     type="button"
@@ -4476,7 +4446,7 @@ const ActionsZone: React.FC<{
                                     onClick={() => onResolveInfantryCavalryCombined('joint-attack')}
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
-                                    步骑联合攻击
+                                    {t('board.actions.infantryCavalryCombined.jointAttack', { defaultValue: '步骑联合攻击' })}
                                 </button>
                             </div>
                         </div>

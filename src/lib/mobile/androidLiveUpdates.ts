@@ -123,6 +123,11 @@ export interface AndroidOtaManifest {
     forceUpdateMessage?: string;
 }
 
+type AndroidOtaManifestReadResult =
+    | { status: 'success'; manifest: AndroidOtaManifest }
+    | { status: 'missing' }
+    | { status: 'error'; reason: string };
+
 export type AndroidLiveUpdateResult =
     | { status: 'disabled' | 'not-native' | 'manifest-missing' | 'up-to-date' }
     | { status: 'incompatible'; version: string; reason: string; requiredNativeVersion?: string }
@@ -526,10 +531,16 @@ const getConfigFromMetaEnv = (envOverride?: Record<string, string | boolean | un
     return readAndroidLiveUpdateConfig(metaEnv);
 };
 
+const buildManifestRequestUrl = (url: string) => {
+    const parsedUrl = new URL(url);
+    parsedUrl.searchParams.set('ota-check', String(Date.now()));
+    return parsedUrl.toString();
+};
+
 const readManifest = async (
     url: string,
     timeoutMs: number = DEFAULT_MANIFEST_TIMEOUT_MS,
-): Promise<AndroidOtaManifest | null> => {
+): Promise<AndroidOtaManifestReadResult> => {
     logMobileRuntime('OTA', 'manifest-fetch-start', { url, timeoutMs });
     emitCriticalOtaLog('manifest-fetch-start', { url, timeoutMs });
     const abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -537,18 +548,16 @@ const readManifest = async (
         abortController?.abort();
     }, timeoutMs);
     try {
-        const response = await fetch(url, {
+        const response = await fetch(buildManifestRequestUrl(url), {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
-                'Cache-Control': 'no-cache',
             },
-            cache: 'no-store',
             ...(abortController ? { signal: abortController.signal } : {}),
         });
         if (response.status === 404) {
             logMobileRuntime('OTA', 'manifest-fetch-404', { url }, 'warn');
-            return null;
+            return { status: 'missing' };
         }
         if (!response.ok) {
             throw new Error(`manifest request failed: ${response.status}`);
@@ -590,8 +599,9 @@ const readManifest = async (
             minNativeVersion: manifest.minNativeVersion,
             maxNativeVersion: manifest.maxNativeVersion,
         });
-        return manifest;
+        return { status: 'success', manifest };
     } catch (error) {
+        const reason = getErrorMessage(error);
         console.warn('[OTA] 读取 manifest 失败', error);
         logMobileRuntime('OTA', 'manifest-fetch-failed', {
             url,
@@ -601,7 +611,7 @@ const readManifest = async (
             url,
             error,
         });
-        return null;
+        return { status: 'error', reason };
     } finally {
         clearTimeout(timeoutHandle);
     }
@@ -661,7 +671,8 @@ export const readAndroidLiveUpdateSnapshot = async (
         return snapshot;
     }
 
-    const manifest = includeManifest ? await readManifest(config.manifestUrl) : null;
+    const manifestResult = includeManifest ? await readManifest(config.manifestUrl) : null;
+    const manifest = manifestResult?.status === 'success' ? manifestResult.manifest : null;
     let current: CurrentBundleResult;
     try {
         current = await updaterModule.CapacitorUpdater.current();
@@ -1016,11 +1027,11 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 return { status: 'error', reason: '未能加载 OTA 插件' } as const;
             }
 
-            const manifest = await readManifest(
+            const manifestResult = await readManifest(
                 config.manifestUrl,
                 Math.max(DEFAULT_MANIFEST_TIMEOUT_MS, config.appReadyTimeoutMs),
             );
-            if (!manifest) {
+            if (manifestResult.status === 'missing') {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
@@ -1036,6 +1047,39 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 });
                 return { status: 'manifest-missing' } as const;
             }
+            if (manifestResult.status === 'error') {
+                if (applyMode === 'immediate') {
+                    clearImmediateActivityPhase();
+                }
+                const reason = `OTA 清单读取失败：${manifestResult.reason}`;
+                logMobileRuntime('OTA', 'background-check-manifest-error', {
+                    manifestUrl: config.manifestUrl,
+                    reason,
+                }, 'error');
+                emitCriticalOtaLog('background-check-manifest-error', {
+                    manifestUrl: config.manifestUrl,
+                    reason,
+                });
+                updateOtaDebugState({
+                    stage: 'background-check-manifest-error',
+                    resultStatus: 'error',
+                    reason,
+                });
+                if (applyMode === 'immediate' || options.force === true) {
+                    emitForceState(onForceStateChange, {
+                        phase: 'error',
+                        blocking: true,
+                        title: '更新失败',
+                        message: '无法读取更新清单，请检查网络后重试。',
+                        reason,
+                    });
+                } else {
+                    emitForceState(onForceStateChange, HIDDEN_FORCE_UPDATE_STATE);
+                }
+                return { status: 'error', reason } as const;
+            }
+
+            const manifest = manifestResult.manifest;
 
             const isForceUpdate = manifest.forceUpdate === true;
             const resolvedApplyMode = isForceUpdate ? 'immediate' : applyMode;

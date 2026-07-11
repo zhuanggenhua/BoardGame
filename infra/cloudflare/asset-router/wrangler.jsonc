@@ -8,12 +8,6 @@
     "ORIGIN_BASE_URL": "https://assets-origin.easyboardgame.top",
     "ORIGIN_TIMEOUT_MS": "1500"
   },
-  "r2_buckets": [
-    {
-      "binding": "ASSETS_BUCKET",
-      "bucket_name": "boardgame-assets"
-    }
-  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1

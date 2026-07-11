@@ -21,11 +21,35 @@ interface ElementSize {
     height: number;
 }
 
+export interface ZoomPanViewportPosition {
+    x: number;
+    y: number;
+}
+
+export interface ZoomPanViewportState {
+    zoomLevel: number;
+    position: ZoomPanViewportPosition;
+}
+
+export interface ZoomPanViewportZoomAnchorArgs {
+    position: ZoomPanViewportPosition;
+    zoomLevel: number;
+    nextZoomLevel: number;
+    pointer: TouchPoint;
+    containerRect: DOMRect;
+    coordinateSize?: ElementSize;
+}
+
 const getTouchDistance = (touchA: TouchPoint, touchB: TouchPoint) => {
     const dx = touchA.clientX - touchB.clientX;
     const dy = touchA.clientY - touchB.clientY;
     return Math.sqrt(dx * dx + dy * dy);
 };
+
+const getTouchCenter = (touchA: TouchPoint, touchB: TouchPoint): TouchPoint => ({
+    clientX: (touchA.clientX + touchB.clientX) / 2,
+    clientY: (touchA.clientY + touchB.clientY) / 2,
+});
 
 const measureElementSize = (element: HTMLElement | null): ElementSize => {
     if (!element) {
@@ -58,6 +82,14 @@ export interface ZoomPanViewportProps {
     interactionDisabled?: boolean;
     panToTarget?: string | null;
     panToScale?: number;
+    controlledViewport?: ZoomPanViewportState;
+    onControlledViewportChange?: (viewport: ZoomPanViewportState) => void;
+    coordinateSize?: ElementSize;
+    clampViewport?: (viewport: ZoomPanViewportState) => ZoomPanViewportState;
+    getZoomAnchorPosition?: (args: ZoomPanViewportZoomAnchorArgs) => ZoomPanViewportPosition;
+    wheelZoomFactor?: number;
+    renderContentTransform?: boolean;
+    containerProps?: React.HTMLAttributes<HTMLDivElement>;
     containerTestId?: string;
     contentTestId?: string;
     scaleTestId?: string;
@@ -79,6 +111,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     interactionDisabled = false,
     panToTarget,
     panToScale,
+    controlledViewport,
+    onControlledViewportChange,
+    coordinateSize,
+    clampViewport,
+    getZoomAnchorPosition,
+    wheelZoomFactor,
+    renderContentTransform = true,
+    containerProps,
     containerTestId,
     contentTestId,
     scaleTestId,
@@ -109,6 +149,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const [isDragging, setIsDragging] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isScaleBadgeVisible, setIsScaleBadgeVisible] = useState(false);
+
+    const isControlled = controlledViewport != null && onControlledViewportChange != null;
+    const activeZoomLevel = controlledViewport?.zoomLevel ?? zoomLevel;
+    const activePosition = controlledViewport?.position ?? position;
 
     const setContainerNode = useCallback((node: HTMLDivElement | null) => {
         containerRef.current = node;
@@ -141,8 +185,8 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             ),
         )
         : 1;
-    const scale = baseScale * zoomLevel;
-    const isAtDefaultZoom = Math.abs(zoomLevel - initialScale) <= SCALE_EPSILON;
+    const scale = baseScale * activeZoomLevel;
+    const isAtDefaultZoom = Math.abs(activeZoomLevel - initialScale) <= SCALE_EPSILON;
     const shouldShowScaleBadge = isScaleBadgeVisible || !isAtDefaultZoom;
 
     const clearScaleBadgeTimer = useCallback(() => {
@@ -158,6 +202,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             animationTimerRef.current = null;
         }
     }, []);
+
+    const clampZoomLevel = useCallback((nextZoomLevel: number) => (
+        Math.max(minScale, Math.min(maxScale, nextZoomLevel))
+    ), [maxScale, minScale]);
 
     const revealScaleBadge = useCallback((nextZoomLevel: number) => {
         clearScaleBadgeTimer();
@@ -198,7 +246,70 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             y: Math.min(maxOffsetY, Math.max(-maxOffsetY, y)),
         };
     }, [containerSize.height, containerSize.width, contentSize.height, contentSize.width, dragBoundsPaddingRatioY, scale]);
-    const clampedPosition = clampPosition(position.x, position.y, scale);
+
+    const clampViewportState = useCallback((nextViewport: ZoomPanViewportState): ZoomPanViewportState => {
+        const nextZoomLevel = clampZoomLevel(nextViewport.zoomLevel);
+        const rawViewport = {
+            zoomLevel: nextZoomLevel,
+            position: nextViewport.position,
+        };
+        if (clampViewport) {
+            return clampViewport(rawViewport);
+        }
+        return {
+            zoomLevel: nextZoomLevel,
+            position: clampPosition(
+                rawViewport.position.x,
+                rawViewport.position.y,
+                baseScale * nextZoomLevel,
+            ),
+        };
+    }, [baseScale, clampPosition, clampViewport, clampZoomLevel]);
+
+    const applyViewport = useCallback((nextViewport: ZoomPanViewportState) => {
+        const clampedViewport = clampViewportState(nextViewport);
+        if (isControlled) {
+            onControlledViewportChange?.(clampedViewport);
+            return clampedViewport;
+        }
+        setZoomLevel(clampedViewport.zoomLevel);
+        setPosition(clampedViewport.position);
+        return clampedViewport;
+    }, [clampViewportState, isControlled, onControlledViewportChange]);
+
+    const clampedPosition = clampViewport ? activePosition : clampPosition(activePosition.x, activePosition.y, scale);
+
+    const convertDeltaToViewportUnits = useCallback((deltaX: number, deltaY: number) => {
+        if (!coordinateSize) {
+            return { x: deltaX, y: deltaY };
+        }
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect || rect.width <= 0 || rect.height <= 0) {
+            return { x: deltaX, y: deltaY };
+        }
+        return {
+            x: (deltaX / rect.width) * coordinateSize.width,
+            y: (deltaY / rect.height) * coordinateSize.height,
+        };
+    }, [coordinateSize]);
+
+    const resolveZoomPosition = useCallback((nextZoomLevel: number, pointer?: TouchPoint) => {
+        if (!pointer || !getZoomAnchorPosition) {
+            return activePosition;
+        }
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (!containerRect || containerRect.width <= 0 || containerRect.height <= 0) {
+            return activePosition;
+        }
+        return getZoomAnchorPosition({
+            position: activePosition,
+            zoomLevel: activeZoomLevel,
+            nextZoomLevel,
+            pointer,
+            containerRect,
+            coordinateSize,
+        });
+    }, [activePosition, activeZoomLevel, coordinateSize, getZoomAnchorPosition]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -295,9 +406,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             isPointerDownRef.current = false;
             setIsDragging(false);
             pinchStartDistanceRef.current = getTouchDistance(event.touches[0], event.touches[1]);
-            pinchStartZoomRef.current = zoomLevel;
+            pinchStartZoomRef.current = activeZoomLevel;
         }
-    }, [clampedPosition.x, clampedPosition.y, interactionDisabled, zoomLevel]);
+    }, [activeZoomLevel, clampedPosition.x, clampedPosition.y, interactionDisabled]);
 
     const handleTouchMove = useCallback((event: React.TouchEvent) => {
         if (interactionDisabled) return;
@@ -312,10 +423,13 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             setIsAnimating(false);
 
             const distance = getTouchDistance(event.touches[0], event.touches[1]);
-            const nextZoomLevel = Math.max(minScale, Math.min(maxScale, startZoomLevel * (distance / startDistance)));
+            const nextZoomLevel = clampZoomLevel(startZoomLevel * (distance / startDistance));
+            const nextPosition = resolveZoomPosition(nextZoomLevel, getTouchCenter(event.touches[0], event.touches[1]));
             revealScaleBadge(nextZoomLevel);
-            setZoomLevel(nextZoomLevel);
-            setPosition((current) => clampPosition(current.x, current.y, baseScale * nextZoomLevel));
+            applyViewport({
+                zoomLevel: nextZoomLevel,
+                position: nextPosition,
+            });
             return;
         }
 
@@ -334,12 +448,24 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         setIsDragging(true);
         setIsAnimating(false);
 
-        const nextPosition = {
-            x: positionStartRef.current.x + dx,
-            y: positionStartRef.current.y + dy,
-        };
-        setPosition(clampPosition(nextPosition.x, nextPosition.y));
-    }, [baseScale, clampPosition, clearAnimationTimer, interactionDisabled, maxScale, minScale, revealScaleBadge]);
+        const viewportDelta = convertDeltaToViewportUnits(dx, dy);
+        applyViewport({
+            zoomLevel: activeZoomLevel,
+            position: {
+                x: positionStartRef.current.x + viewportDelta.x,
+                y: positionStartRef.current.y + viewportDelta.y,
+            },
+        });
+    }, [
+        activeZoomLevel,
+        applyViewport,
+        clampZoomLevel,
+        clearAnimationTimer,
+        convertDeltaToViewportUnits,
+        interactionDisabled,
+        resolveZoomPosition,
+        revealScaleBadge,
+    ]);
 
     const handleTouchEnd = useCallback((event: React.TouchEvent) => {
         if (event.touches.length >= 2) return;
@@ -375,11 +501,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             setIsDragging(true);
             setIsAnimating(false);
 
-            const nextPosition = {
-                x: positionStartRef.current.x + dx,
-                y: positionStartRef.current.y + dy,
-            };
-            setPosition(clampPosition(nextPosition.x, nextPosition.y));
+            const viewportDelta = convertDeltaToViewportUnits(dx, dy);
+            applyViewport({
+                zoomLevel: activeZoomLevel,
+                position: {
+                    x: positionStartRef.current.x + viewportDelta.x,
+                    y: positionStartRef.current.y + viewportDelta.y,
+                },
+            });
         };
 
         const handleGlobalMouseUp = () => {
@@ -394,7 +523,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             window.removeEventListener('mousemove', handleGlobalMouseMove);
             window.removeEventListener('mouseup', handleGlobalMouseUp);
         };
-    }, [clampPosition, clearAnimationTimer]);
+    }, [activeZoomLevel, applyViewport, clearAnimationTimer, convertDeltaToViewportUnits]);
 
     const handleWheel = useCallback((event: WheelEvent) => {
         if (interactionDisabled) return;
@@ -403,14 +532,32 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         clearAnimationTimer();
         setIsAnimating(false);
 
-        const delta = event.deltaY > 0 ? -0.1 : 0.1;
-        setZoomLevel((currentZoomLevel) => {
-            const nextZoomLevel = Math.max(minScale, Math.min(maxScale, currentZoomLevel + delta));
-            revealScaleBadge(nextZoomLevel);
-            setPosition((current) => clampPosition(current.x, current.y, baseScale * nextZoomLevel));
-            return nextZoomLevel;
+        const nextZoomLevel = clampZoomLevel(
+            wheelZoomFactor
+                ? activeZoomLevel * (event.deltaY < 0 ? wheelZoomFactor : 1 / wheelZoomFactor)
+                : activeZoomLevel + (event.deltaY > 0 ? -0.1 : 0.1),
+        );
+        if (Math.abs(nextZoomLevel - activeZoomLevel) < 0.001) return;
+
+        const nextPosition = resolveZoomPosition(nextZoomLevel, {
+            clientX: event.clientX,
+            clientY: event.clientY,
         });
-    }, [baseScale, clampPosition, clearAnimationTimer, interactionDisabled, maxScale, minScale, revealScaleBadge]);
+        revealScaleBadge(nextZoomLevel);
+        applyViewport({
+            zoomLevel: nextZoomLevel,
+            position: nextPosition,
+        });
+    }, [
+        activeZoomLevel,
+        applyViewport,
+        clampZoomLevel,
+        clearAnimationTimer,
+        interactionDisabled,
+        resolveZoomPosition,
+        revealScaleBadge,
+        wheelZoomFactor,
+    ]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -426,8 +573,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             clearAnimationTimer();
             hideScaleBadge();
             setIsAnimating(true);
-            setZoomLevel(initialScale);
-            setPosition({ x: 0, y: 0 });
+            applyViewport({
+                zoomLevel: initialScale,
+                position: { x: 0, y: 0 },
+            });
             animationTimerRef.current = window.setTimeout(() => {
                 setIsAnimating(false);
                 animationTimerRef.current = null;
@@ -441,7 +590,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             }
             clearAnimationTimer();
         };
-    }, [clearAnimationTimer, hideScaleBadge, initialScale, interactionDisabled, panToTarget]);
+    }, [applyViewport, clearAnimationTimer, hideScaleBadge, initialScale, interactionDisabled, panToTarget]);
 
     useEffect(() => {
         if (!panToTarget || !contentRef.current || !containerRef.current) return undefined;
@@ -459,9 +608,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             const contentHeight = contentEl.offsetHeight;
             if (!contentWidth || !contentHeight) return;
 
-            const currentZoomLevel = zoomLevel;
+            const currentZoomLevel = activeZoomLevel;
             const targetZoomLevel = panToScale != null
-                ? Math.max(minScale, Math.min(maxScale, panToScale))
+                ? clampZoomLevel(panToScale)
                 : currentZoomLevel;
             const targetScale = baseScale * targetZoomLevel;
 
@@ -487,15 +636,17 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             const contentCenterY = contentHeight / 2;
             const targetTx = (contentCenterX - targetCenterX) * targetScale;
             const targetTy = (contentCenterY - targetCenterY) * targetScale;
-            const nextPosition = clampPosition(targetTx, targetTy, targetScale);
+            const nextViewport = clampViewportState({
+                zoomLevel: targetZoomLevel,
+                position: { x: targetTx, y: targetTy },
+            });
 
             clearAnimationTimer();
             setIsAnimating(true);
             if (targetZoomLevel !== currentZoomLevel) {
-                revealScaleBadge(targetZoomLevel);
-                setZoomLevel(targetZoomLevel);
+                revealScaleBadge(nextViewport.zoomLevel);
             }
-            setPosition(nextPosition);
+            applyViewport(nextViewport);
             animationTimerRef.current = window.setTimeout(() => {
                 setIsAnimating(false);
                 animationTimerRef.current = null;
@@ -504,25 +655,34 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
         return () => cancelAnimationFrame(rafId);
     }, [
+        activeZoomLevel,
+        applyViewport,
         baseScale,
-        clampPosition,
+        clampViewportState,
+        clampZoomLevel,
         clearAnimationTimer,
         containerSize.height,
         containerSize.width,
         contentSize.height,
         contentSize.width,
-        maxScale,
-        minScale,
         panToScale,
         panToTarget,
         revealScaleBadge,
-        zoomLevel,
     ]);
+
+    const contentTransformStyle: React.CSSProperties = renderContentTransform
+        ? {
+            transform: `translate(${clampedPosition.x}px, ${clampedPosition.y}px) scale(${scale})`,
+            transition: isDragging ? 'none' : isAnimating ? 'transform 350ms ease-out' : 'transform 75ms',
+            willChange: isDragging || isAnimating ? 'transform' : 'auto',
+        }
+        : {};
 
     return (
         <div
+            {...containerProps}
             ref={setContainerNode}
-            className={`relative overflow-hidden select-none ${className}`}
+            className={`relative overflow-hidden select-none ${containerProps?.className ?? ''} ${className}`}
             onMouseDown={handleMouseDown}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -535,9 +695,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 event.stopPropagation();
             }}
             onDragStart={(event) => event.preventDefault()}
-            aria-label={ariaLabel}
-            data-testid={containerTestId}
+            aria-label={ariaLabel ?? containerProps?.['aria-label']}
+            data-testid={containerTestId ?? containerProps?.['data-testid']}
             style={{
+                ...containerProps?.style,
                 ...style,
                 cursor: interactionDisabled ? 'default' : isDragging ? 'grabbing' : 'grab',
                 userSelect: 'none',
@@ -550,7 +711,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 data-testid={scaleTestId}
                 aria-hidden={!shouldShowScaleBadge}
             >
-                {formatScaleBadge ? formatScaleBadge(zoomLevel) : `${Math.round(zoomLevel * 100)}%`}
+                {formatScaleBadge ? formatScaleBadge(activeZoomLevel) : `${Math.round(activeZoomLevel * 100)}%`}
             </div>
 
             <div
@@ -559,10 +720,8 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 data-testid={contentTestId}
                 style={{
                     ...contentStyle,
-                    transform: `translate(${clampedPosition.x}px, ${clampedPosition.y}px) scale(${scale})`,
-                    transition: isDragging ? 'none' : isAnimating ? 'transform 350ms ease-out' : 'transform 75ms',
-                    willChange: isDragging || isAnimating ? 'transform' : 'auto',
-                    pointerEvents: isDragging ? 'none' : 'auto',
+                    ...contentTransformStyle,
+                    pointerEvents: isDragging ? 'none' : contentStyle?.pointerEvents ?? 'auto',
                 }}
             >
                 {children}
@@ -572,5 +731,3 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 });
 
 ZoomPanViewport.displayName = 'ZoomPanViewport';
-
-export default ZoomPanViewport;

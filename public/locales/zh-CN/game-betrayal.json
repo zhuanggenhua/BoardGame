@@ -51,6 +51,8 @@
       "emptySeat": "空位",
       "scenarioStepTitle": "选择剧本",
       "scenarioSelected": "当前剧本",
+      "scenarioDialogTitle": "选择剧本",
+      "closeScenarioDialog": "关闭",
       "scenarioOnly": "本轮可用剧本",
       "scenarioStepSubtitle": "当前版本已接入首剧本，确认后进入恶兆前探索。",
       "pageUp": "上一组探索者",
@@ -326,6 +328,12 @@
   },
   "errors": {
     "readOnly": "当前是只读基础运行时骨架，尚未开放正式玩法命令。"
+  },
+  "setup": {
+    "scenario": {
+      "label": "当前剧本",
+      "firstScenario": "赤红杰克归来"
+    }
   },
   "tutorial": {
     "basicSetup": {

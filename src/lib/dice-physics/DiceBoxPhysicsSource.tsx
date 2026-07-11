@@ -95,6 +95,29 @@ export function DiceBoxPhysicsSource({
         [dice.length, dieSkins, requireDieSkins],
     );
 
+    const emitPhysicsStates = React.useCallback((engine: DiceBoxThreeEngine, nextSettled: boolean) => {
+        const states = dice
+            .map((die, index) => engine.getPhysicsState(index, die.id, nextSettled))
+            .filter((state): state is DicePhysicsState => Boolean(state));
+
+        const snapshot = states.map((state) => [
+            state.id,
+            Math.round(state.layout.x),
+            Math.round(state.layout.y),
+            Math.round(state.layout.width),
+            Math.round(state.layout.height),
+            state.motion.rotateX.toFixed(2),
+            state.motion.rotateY.toFixed(2),
+            state.motion.rotateZ.toFixed(2),
+            state.settled ? '1' : '0',
+        ].join(':')).join('|');
+
+        if (snapshot !== lastPhysicsSnapshotRef.current) {
+            lastPhysicsSnapshotRef.current = snapshot;
+            onPhysicsStatesChange?.(states);
+        }
+    }, [dice, onPhysicsStatesChange]);
+
     const setSettledState = React.useCallback((nextSettled: boolean) => {
         settledRef.current = nextSettled;
         engineRef.current?.setCanvasDiagnostics({
@@ -173,27 +196,11 @@ export function DiceBoxPhysicsSource({
             engine.recoverOutOfBoundsDice({
                 strictProjectedBounds: settledRef.current && !activeMotionRef.current,
             });
-
-            const states = dice
-                .map((die, index) => engine.getPhysicsState(index, die.id, settledRef.current))
-                .filter((state): state is DicePhysicsState => Boolean(state));
-
-            const snapshot = states.map((state) => [
-                state.id,
-                Math.round(state.layout.x),
-                Math.round(state.layout.y),
-                Math.round(state.layout.width),
-                Math.round(state.layout.height),
-                state.motion.rotateX.toFixed(2),
-                state.motion.rotateY.toFixed(2),
-                state.motion.rotateZ.toFixed(2),
-                state.settled ? '1' : '0',
-            ].join(':')).join('|');
-
-            if (snapshot !== lastPhysicsSnapshotRef.current) {
-                lastPhysicsSnapshotRef.current = snapshot;
-                onPhysicsStatesChange?.(states);
+            if (!settledRef.current && activeMotionRef.current) {
+                engine.separateOverlappingDice();
             }
+
+            emitPhysicsStates(engine, settledRef.current);
             frameId = window.requestAnimationFrame(tick);
         };
 
@@ -209,7 +216,7 @@ export function DiceBoxPhysicsSource({
             window.cancelAnimationFrame(frameId);
             observer?.disconnect();
         };
-    }, [dice, engineVersion, onPhysicsStatesChange]);
+    }, [dice, emitPhysicsStates, engineVersion]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -251,6 +258,8 @@ export function DiceBoxPhysicsSource({
                             await engine.rollToValues(values);
                         }
                     } finally {
+                        engine.separateOverlappingDice({ settleAfter: true });
+                        emitPhysicsStates(engine, true);
                         if (activeMotionRef.current?.type === 'roll' && activeMotionRef.current.key === rollingKey) {
                             activeMotionRef.current = null;
                         }
@@ -273,6 +282,8 @@ export function DiceBoxPhysicsSource({
                 try {
                     await engine.rerollToValues(rerollIndices, targetValues, targetLockedIndices);
                 } finally {
+                    engine.separateOverlappingDice({ settleAfter: true });
+                    emitPhysicsStates(engine, true);
                     if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === key) {
                         activeMotionRef.current = null;
                     }
@@ -339,7 +350,7 @@ export function DiceBoxPhysicsSource({
         };
 
         void run();
-    }, [dice, engineReady, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
+    }, [dice, emitPhysicsStates, engineReady, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
 
     return (
         <div

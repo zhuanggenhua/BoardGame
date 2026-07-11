@@ -59,16 +59,18 @@ export const DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE = {
     baseScale: 40,
     // 只放大 Three.js 相机投影，不改变骰子实体、物理墙体或自然落点。
     // 避免为了看清骰面继续放大实体，重新引入拥挤、碰撞和结束瞬移。
-    cameraZoom: 1.45,
+    cameraZoom: 1.66,
     // 插件默认会让多颗骰子从几乎同一个入口一起飞；移动横屏分成五条
     // 初始通道后仍走完整物理模拟，投掷结束不做重排，因此不会瞬移。
-    initialThrowSpread: 0.76,
+    initialThrowSpread: 0.82,
     // 移动端必须保留真实物理落点；停稳后再搬到槽位会被肉眼看成瞬移。
     settledSpreadAnimationMs: 0,
     strength: 1,
     // 红框就是移动端投骰物理范围：按相机真实可见范围收进舞台内，
     // 不再只靠结束后的投影回收把跑出去的骰子拉回来。
     fitWorldToCameraView: true,
-    worldWidthScale: 0.62,
-    worldHeightScale: 0.78,
+    worldWidthScale: 0.5,
+    worldHeightScale: 0.82,
+    worldCenterOffsetX: -58,
+    worldCenterOffsetY: 0,
 } satisfies DiceBoxStyleProfile;

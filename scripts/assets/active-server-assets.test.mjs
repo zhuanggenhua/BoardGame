@@ -5,7 +5,7 @@ import {
     extractAssetReferences,
     isActiveRootKey,
     resolveActiveAssetSet,
-} from './sync-active-r2-assets.mjs';
+} from './active-server-assets.mjs';
 
 const metadata = (size, modTime = '2026-07-10T00:00:00Z', hash = '') => ({
     size,

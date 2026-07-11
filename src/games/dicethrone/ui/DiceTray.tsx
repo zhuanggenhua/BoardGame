@@ -1182,7 +1182,7 @@ export const BoardDiceStage = ({
 
     const stage = (
         <div
-            className="pointer-events-none fixed left-1/2 top-[114px] aspect-square w-[clamp(360px,31vw,500px)] max-[1023px]:top-[clamp(34px,9vh,40px)] max-[1023px]:h-[184px] max-[1023px]:w-[clamp(252px,29vw,270px)] max-[1023px]:aspect-auto"
+            className="pointer-events-none fixed left-1/2 top-[114px] aspect-square w-[clamp(360px,31vw,500px)] max-[1023px]:top-[clamp(18px,5.2vh,24px)] max-[1023px]:h-[128px] max-[1023px]:w-[clamp(252px,29vw,282px)] max-[1023px]:aspect-auto"
             style={{
                 transform: 'translateX(-50%)',
                 zIndex: BOARD_DICE_STAGE_Z_INDEX,

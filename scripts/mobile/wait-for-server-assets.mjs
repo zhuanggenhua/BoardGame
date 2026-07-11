@@ -102,6 +102,37 @@ const validateResponse = async ({ response, target }) => {
     return '';
 };
 
+const validateCorsPreflight = async ({ fetchImpl, target }) => {
+    const response = await fetchImpl(target.url, {
+        method: 'OPTIONS',
+        headers: {
+            Origin: 'http://localhost',
+            'Access-Control-Request-Method': 'GET',
+            'Access-Control-Request-Headers': 'cache-control',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(30_000),
+    });
+    const allowOrigin = response.headers.get('Access-Control-Allow-Origin') || '';
+    const allowMethods = response.headers.get('Access-Control-Allow-Methods') || '';
+    const allowHeaders = response.headers.get('Access-Control-Allow-Headers') || '';
+    const normalizedHeaders = allowHeaders.toLowerCase();
+
+    if (!response.ok) {
+        return `corsPreflightStatus=${response.status}`;
+    }
+    if (allowOrigin !== '*' && allowOrigin !== 'http://localhost') {
+        return `corsAllowOrigin=${allowOrigin || '(missing)'}`;
+    }
+    if (!allowMethods.toUpperCase().split(/\s*,\s*/).includes('GET')) {
+        return `corsAllowMethods=${allowMethods || '(missing)'}`;
+    }
+    if (normalizedHeaders !== '*' && !normalizedHeaders.split(/\s*,\s*/).includes('cache-control')) {
+        return `corsAllowHeaders=${allowHeaders || '(missing)'}`;
+    }
+    return '';
+};
+
 export const waitForServerAssets = async (values, options = {}) => {
     const pendingTargets = normalizeTargets(values);
     if (pendingTargets.length === 0) return;
@@ -115,6 +146,7 @@ export const waitForServerAssets = async (values, options = {}) => {
         10 * 1000,
     );
     const fetchImpl = options.fetchImpl ?? fetch;
+    const requireCorsPreflight = options.requireCorsPreflight === true;
     const deadline = Date.now() + timeoutMs;
     let lastFailure = '';
 
@@ -122,6 +154,13 @@ export const waitForServerAssets = async (values, options = {}) => {
         const failures = [];
         for (const target of pendingTargets) {
             try {
+                if (requireCorsPreflight) {
+                    const preflightFailure = await validateCorsPreflight({ fetchImpl, target });
+                    if (preflightFailure) {
+                        failures.push(`${target.url} ${preflightFailure}`);
+                        continue;
+                    }
+                }
                 const checkUrl = new URL(target.url);
                 checkUrl.searchParams.set('server-primary-check', String(Date.now()));
                 const response = await fetchImpl(checkUrl, {

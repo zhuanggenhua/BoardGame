@@ -68,10 +68,8 @@ export const AndroidLiveUpdateManager = () => {
 
             if (result.status === 'error') {
                 console.warn('[OTA] 后台检查失败', result.reason);
-                if (options?.interactive) {
-                    if (shouldShowAndroidOtaToastOncePerDay('error')) {
-                        toast.error(result.reason, t('nativeUpdate.eyebrow'));
-                    }
+                if (shouldShowAndroidOtaToastOncePerDay('error')) {
+                    toast.error(result.reason, t('nativeUpdate.eyebrow'));
                 }
                 return;
             }

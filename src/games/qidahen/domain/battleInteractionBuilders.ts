@@ -40,6 +40,7 @@ function buildQidahenFeignedRetreatInteraction(
         [{
             id: 'skip',
             label: '不使用',
+            labelKey: 'board.actions.common.skip',
             value: { choiceId: 'skip' },
             displayMode: 'button' as const,
             description: '保留手牌并继续原骑兵劫掠',
@@ -85,6 +86,9 @@ function buildQidahenRaidAndAmbushInteraction(
         : [{
             id: selection.phase === 'offer' ? 'skip' : 'skip-follow-up',
             label: selection.phase === 'offer' ? '不使用' : '不追加战术',
+            labelKey: selection.phase === 'offer'
+                ? 'board.actions.common.skip'
+                : 'board.actions.raidAndAmbush.skipFollowUp',
             value: { choiceId: selection.phase === 'offer' ? 'skip' : 'skip-follow-up' },
             displayMode: 'button' as const,
             description: selection.phase === 'offer'

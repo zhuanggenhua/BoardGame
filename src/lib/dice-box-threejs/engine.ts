@@ -32,6 +32,8 @@ export interface DiceBoxStyleProfile {
     initialThrowSpread?: number;
     settledSpreadAnimationMs?: number;
     fitWorldToCameraView?: boolean;
+    worldCenterOffsetX?: number;
+    worldCenterOffsetY?: number;
     strength?: number;
     iterationLimit?: number;
     arrangeSettledDice?: boolean;
@@ -310,7 +312,7 @@ export class DiceBoxThreeEngine {
         const visibleHalfExtents = fitToCameraView
             ? this.getVisibleWorldHalfExtentsAtZ(this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90)
             : null;
-        const worldWidth = fitToCameraView && visibleHalfExtents
+            const worldWidth = fitToCameraView && visibleHalfExtents
             ? visibleHalfExtents.x * 2 * worldWidthScale
             : this.container.clientWidth * worldWidthScale;
         const worldHeight = fitToCameraView && visibleHalfExtents
@@ -330,6 +332,8 @@ export class DiceBoxThreeEngine {
             canvas.dataset.physicsWorldHeight = String(Math.round(worldHeight));
             canvas.dataset.cameraZoom = String(this.styleProfile.cameraZoom ?? 1);
             canvas.dataset.fitWorldToCameraView = fitToCameraView ? 'true' : 'false';
+            canvas.dataset.worldCenterOffsetX = String(this.styleProfile.worldCenterOffsetX ?? 0);
+            canvas.dataset.worldCenterOffsetY = String(this.styleProfile.worldCenterOffsetY ?? 0);
         }
     }
 
@@ -398,6 +402,8 @@ export class DiceBoxThreeEngine {
         if (!vectors || vectors.length < 2) return;
 
         const spread = clampNumber(rawSpread, 0, 0.82);
+        const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
+        const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
         const firstVelocity = vectors.find((vector) => vector.velocity)?.velocity;
         if (!firstVelocity) return;
 
@@ -413,18 +419,27 @@ export class DiceBoxThreeEngine {
             if (!vector.pos || !vector.velocity) return;
 
             const lane = middle === 0 ? 0 : (index - middle) / middle;
+            const row = index % 2 === 0 ? -1 : 1;
+            const forwardStagger = vectors.length > 1
+                ? ((index - middle) / vectors.length) * baseScale * 0.92
+                : 0;
             const speed = Math.hypot(vector.velocity.x, vector.velocity.y);
-            const lateralVelocity = lane * speed * 0.16;
+            const lateralVelocity = lane * speed * 0.24;
+            const forwardVelocityNudge = row * speed * 0.055;
 
             if (horizontalFlight) {
-                vector.pos.y = lane * laneExtent;
+                vector.pos.x += centerOffsetX + forwardStagger;
+                vector.pos.y = centerOffsetY + (lane * laneExtent);
+                vector.velocity.x += forwardVelocityNudge;
                 vector.velocity.y = lateralVelocity;
             } else {
-                vector.pos.x = lane * laneExtent;
+                vector.pos.x = centerOffsetX + (lane * laneExtent);
+                vector.pos.y += centerOffsetY + forwardStagger;
                 vector.velocity.x = lateralVelocity;
+                vector.velocity.y += forwardVelocityNudge;
             }
 
-            vector.pos.z += (index % 2) * baseScale * 0.35;
+            vector.pos.z += (index % 2) * baseScale * 0.5;
         });
     }
 
@@ -644,10 +659,20 @@ export class DiceBoxThreeEngine {
         if (this.styleProfile.recoverOutOfBounds === false || this.box.diceList.length === 0) return false;
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
-        const halfWidth = Math.max(this.worldBounds.width / 2, baseScale * 2.2);
-        const halfHeight = Math.max(this.worldBounds.height / 2, baseScale * 2.2);
-        const maxX = Math.max(baseScale * 4.6, halfWidth + baseScale * 3.4);
-        const maxY = Math.max(baseScale * 4.2, halfHeight + baseScale * 3.2);
+        const useNearestBoundsRecovery = this.styleProfile.fitWorldToCameraView === true;
+        const useStrictCameraBounds = useNearestBoundsRecovery && options.strictProjectedBounds === true;
+        const halfWidth = useNearestBoundsRecovery
+            ? Math.max(this.worldBounds.width / 2, baseScale * 0.95)
+            : Math.max(this.worldBounds.width / 2, baseScale * 2.2);
+        const halfHeight = useNearestBoundsRecovery
+            ? Math.max(this.worldBounds.height / 2, baseScale * 0.95)
+            : Math.max(this.worldBounds.height / 2, baseScale * 2.2);
+        const maxX = useStrictCameraBounds
+            ? Math.max(baseScale * 1.15, halfWidth + baseScale * 0.45)
+            : Math.max(baseScale * 4.6, halfWidth + baseScale * 3.4);
+        const maxY = useStrictCameraBounds
+            ? Math.max(baseScale * 1.15, halfHeight + baseScale * 0.45)
+            : Math.max(baseScale * 4.2, halfHeight + baseScale * 3.2);
         const maxZ = baseScale * 12;
         const minZ = -baseScale * 2.4;
         let didRecover = false;
@@ -680,7 +705,19 @@ export class DiceBoxThreeEngine {
             if (!isOutOfBounds) return;
 
             const useCameraSafeSpread = (this.styleProfile.settledSpreadAnimationMs ?? 0) > 0;
-            const target = useCameraSafeSpread
+            const target = useNearestBoundsRecovery
+                ? (() => {
+                    const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
+                    const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
+                    const safeHalfWidth = Math.max(baseScale * 0.78, halfWidth - (baseScale * 0.95));
+                    const safeHalfHeight = Math.max(baseScale * 0.78, halfHeight - (baseScale * 0.95));
+                    return {
+                        x: clampNumber(position.x, centerOffsetX - safeHalfWidth, centerOffsetX + safeHalfWidth),
+                        y: clampNumber(position.y, centerOffsetY - safeHalfHeight, centerOffsetY + safeHalfHeight),
+                        z: clampNumber(position.z, baseScale * 0.58, maxZ * 0.35),
+                    };
+                })()
+                : useCameraSafeSpread
                 ? (() => {
                     const slots = SETTLED_SPREAD_SLOTS_BY_COUNT[this.box.diceList.length] ?? [];
                     const slot = slots[index] ?? { x: 0, y: 0 };
@@ -720,6 +757,96 @@ export class DiceBoxThreeEngine {
             this.box.renderer.render(this.box.scene, this.box.camera);
         }
         return didRecover;
+    }
+
+    separateOverlappingDice(options: { settleAfter?: boolean } = {}): boolean {
+        if (this.styleProfile.fitWorldToCameraView !== true || this.box.diceList.length < 2) return false;
+
+        const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const minScreenDistance = Math.max(24, baseScale * 0.84);
+        const maxWorldNudge = baseScale * (options.settleAfter ? 0.34 : 0.22);
+        const passCount = options.settleAfter ? 4 : 1;
+        let didSeparate = false;
+
+        for (let pass = 0; pass < passCount; pass += 1) {
+            const layouts = this.box.diceList
+                .map((_, index) => this.getProjectedLayout(index, index))
+                .filter((layout): layout is DiceBoxProjectedLayout => Boolean(layout));
+            if (layouts.length !== this.box.diceList.length) return didSeparate;
+
+            let didSeparateThisPass = false;
+            for (let leftIndex = 0; leftIndex < layouts.length; leftIndex += 1) {
+                for (let rightIndex = leftIndex + 1; rightIndex < layouts.length; rightIndex += 1) {
+                    const left = layouts[leftIndex];
+                    const right = layouts[rightIndex];
+                    const dx = right.x - left.x;
+                    const dy = right.y - left.y;
+                    const distance = Math.hypot(dx, dy);
+                    const leftMin = Math.min(left.visualWidth ?? left.width, left.visualHeight ?? left.height);
+                    const rightMin = Math.min(right.visualWidth ?? right.width, right.visualHeight ?? right.height);
+                    const targetDistance = Math.max(minScreenDistance, ((leftMin + rightMin) / 2) * 0.86);
+                    if (distance >= targetDistance) continue;
+
+                    const leftDie = this.box.diceList[leftIndex] as DiceBoxDieWithBody;
+                    const rightDie = this.box.diceList[rightIndex] as DiceBoxDieWithBody;
+                    const leftPosition = leftDie.body?.position ?? leftDie.position;
+                    const rightPosition = rightDie.body?.position ?? rightDie.position;
+                    if (!leftPosition || !rightPosition) continue;
+
+                    const safeDistance = distance > 0.001 ? distance : 1;
+                    const correctionRatio = clampNumber((targetDistance - distance) / targetDistance, 0.18, 1);
+                    const pushScale = maxWorldNudge * correctionRatio;
+                    const pushX = clampNumber((-dx / safeDistance) * pushScale, -maxWorldNudge, maxWorldNudge);
+                    const pushY = clampNumber((dy / safeDistance) * pushScale, -maxWorldNudge, maxWorldNudge);
+                    const leftTarget = {
+                        x: leftPosition.x + pushX,
+                        y: leftPosition.y + pushY,
+                        z: leftPosition.z,
+                    };
+                    const rightTarget = {
+                        x: rightPosition.x - pushX,
+                        y: rightPosition.y - pushY,
+                        z: rightPosition.z,
+                    };
+
+                    this.setVector(leftDie.position, leftTarget);
+                    this.setVector(leftDie.body?.position, leftTarget);
+                    this.setVector(rightDie.position, rightTarget);
+                    this.setVector(rightDie.body?.position, rightTarget);
+                    this.setVector(
+                        leftDie.body?.velocity,
+                        options.settleAfter ? { x: 0, y: 0, z: 0 } : { x: pushX * 0.18, y: pushY * 0.18, z: 0 },
+                    );
+                    this.setVector(
+                        rightDie.body?.velocity,
+                        options.settleAfter ? { x: 0, y: 0, z: 0 } : { x: -pushX * 0.18, y: -pushY * 0.18, z: 0 },
+                    );
+                    if (options.settleAfter) {
+                        this.setVector(leftDie.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+                        this.setVector(rightDie.body?.angularVelocity, { x: 0, y: 0, z: 0 });
+                    }
+                    if (leftDie.body) leftDie.body.aabbNeedsUpdate = true;
+                    if (rightDie.body) rightDie.body.aabbNeedsUpdate = true;
+                    if (options.settleAfter) {
+                        leftDie.body?.sleep?.();
+                        rightDie.body?.sleep?.();
+                    } else {
+                        leftDie.body?.wakeUp?.();
+                        rightDie.body?.wakeUp?.();
+                    }
+                    leftDie.updateMatrixWorld?.(true);
+                    rightDie.updateMatrixWorld?.(true);
+                    didSeparate = true;
+                    didSeparateThisPass = true;
+                }
+            }
+            if (!didSeparateThisPass) break;
+        }
+
+        if (didSeparate) {
+            this.box.renderer.render(this.box.scene, this.box.camera);
+        }
+        return didSeparate;
     }
 
     ensureValues(values: number[]): void {

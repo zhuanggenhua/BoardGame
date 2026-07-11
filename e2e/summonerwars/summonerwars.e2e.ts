@@ -5711,7 +5711,7 @@ test.describe('SummonerWars', () => {
       window.matchMedia = ((query: string) => {
         const clauses = query.split(',').map(clause => clause.trim());
         if (clauses.some(clause => clause === '(hover: none)')) {
-          return createMediaQueryList(query, true);
+          return createMediaQueryList(query, false);
         }
         if (clauses.some(clause => clause === '(pointer: coarse)')) {
           return createMediaQueryList(query, false);
@@ -5732,10 +5732,12 @@ test.describe('SummonerWars', () => {
       width: window.innerWidth,
       coarsePointer: window.matchMedia('(pointer: coarse)').matches,
       hoverNone: window.matchMedia('(hover: none)').matches,
+      maxTouchPoints: navigator.maxTouchPoints,
     }));
     expect(capabilities.width).toBeGreaterThan(1023);
     expect(capabilities.coarsePointer).toBe(false);
-    expect(capabilities.hoverNone).toBe(true);
+    expect(capabilities.hoverNone).toBe(false);
+    expect(capabilities.maxTouchPoints).toBeGreaterThan(0);
 
     const unitTestId = await tabletPage
       .locator('[data-testid^="sw-unit-"][data-cell-coord][data-owner="0"]:visible')
@@ -5768,7 +5770,7 @@ test.describe('SummonerWars', () => {
     await expect(unit).toBeVisible({ timeout: 5000 });
     await expect(unitCell).toHaveAttribute('data-selected', 'false');
     await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
-    await unit.click();
+    await unit.tap();
     await expect(unitLife).toHaveAttribute('data-tap-visible', 'true');
     await expect(unitLife).toHaveCSS('opacity', '1');
     await expect(unitCell).toHaveAttribute('data-selected', 'false');
@@ -5780,7 +5782,7 @@ test.describe('SummonerWars', () => {
       fullPage: false,
     });
 
-    await unit.click();
+    await unit.tap();
     await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
     await expect(unitCell).toHaveAttribute('data-selected', 'true');
 
@@ -5809,7 +5811,7 @@ test.describe('SummonerWars', () => {
     const structureLife = structure.locator('[data-testid^="sw-structure-life-"]');
     await expect(structure).toBeVisible({ timeout: 5000 });
     await expect(structureLife).toHaveAttribute('data-tap-visible', 'false');
-    await structure.click();
+    await structure.tap();
     await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
     await expect(structureLife).toHaveAttribute('data-tap-visible', 'true');
     await expect(structureLife).toHaveCSS('opacity', '1');
@@ -5841,7 +5843,7 @@ test.describe('SummonerWars', () => {
     }
     const emptyCell = tabletPage.getByTestId(emptyCellTestId);
     await expect(emptyCell).toBeVisible({ timeout: 5000 });
-    await emptyCell.click();
+    await emptyCell.tap();
     await expect(structureLife).toHaveAttribute('data-tap-visible', 'false');
 
     await tabletContext.close();

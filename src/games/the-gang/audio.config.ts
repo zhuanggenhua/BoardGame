@@ -9,8 +9,8 @@ export const THE_GANG_SHOWDOWN_SUCCESS_KEY = 'ui.general.mini_games_sound_effect
 export const THE_GANG_SHOWDOWN_WIN_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win';
 export const THE_GANG_SHOWDOWN_LOSE_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose';
 
-const THE_GANG_BGM_NORMAL_KEY = 'bgm.ethereal.ethereal_music_pack.enigmatic_badger_rt_7.ethereal_enigmatic_badger_main';
-const THE_GANG_BGM_SHOWDOWN_KEY = 'bgm.ethereal.ethereal_music_pack.enigmatic_badger_rt_7.ethereal_enigmatic_badger_intensity_2';
+const THE_GANG_BGM_NORMAL_KEY = 'bgm.villains_music_pack_vol.double_agent_rt_5.villains_double_agent_main';
+const THE_GANG_BGM_SHOWDOWN_KEY = 'bgm.villains_music_pack_vol.the_boss_rt_5.villains_the_boss_main';
 
 type ShowdownPayload = {
     record?: {
@@ -54,13 +54,13 @@ export const THE_GANG_AUDIO_CONFIG: GameAudioConfig = {
     bgm: [
         {
             key: THE_GANG_BGM_NORMAL_KEY,
-            name: 'Enigmatic Badger',
+            name: 'Double Agent',
             src: '',
             volume: 0.38,
         },
         {
             key: THE_GANG_BGM_SHOWDOWN_KEY,
-            name: 'Enigmatic Badger Intense',
+            name: 'The Boss',
             src: '',
             volume: 0.42,
         },

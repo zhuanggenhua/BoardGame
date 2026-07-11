@@ -384,7 +384,7 @@ const ensureNoBlockedEmbeddedAssets = (baseDir, label) => {
     const suffix = blockedPaths.length > 5 ? ` 等 ${blockedPaths.length} 项` : '';
     throw new Error(
         `${label} 仍包含禁止内置到 Android embedded 包的运行时资源: ${sample}${suffix}。`
-        + ' 这些资源必须继续走 R2 / 游戏包链路，不能被打进 APK。',
+        + ' 这些资源必须继续走远程素材 / 游戏包链路，不能被打进 APK。',
     );
 };
 

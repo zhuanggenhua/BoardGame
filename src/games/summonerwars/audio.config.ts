@@ -16,23 +16,15 @@ import { PALADIN_ABILITIES } from './domain/abilities-paladin';
 import { FROST_ABILITIES } from './domain/abilities-frost';
 import { BARBARIC_ABILITIES } from './domain/abilities-barbaric';
 
-const BGM_TO_THE_WALL_KEY = 'bgm.fantasy.fantasy_music_pack_vol.to_the_wall_rt_2.to_the_wall_main';
-const BGM_TO_THE_WALL_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.to_the_wall_rt_2.to_the_wall_intensity_2';
-const BGM_CORSAIR_KEY = 'bgm.fantasy.fantasy_music_pack_vol.corsair_rt_3.fantasy_vol5_corsair_main';
-const BGM_LONELY_BARD_KEY = 'bgm.fantasy.fantasy_music_pack_vol.lonely_bard_rt_3.fantasy_vol5_lonely_bard_main';
-const BGM_CORSAIR_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.corsair_rt_3.fantasy_vol5_corsair_intensity_2';
-const BGM_LONELY_BARD_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.lonely_bard_rt_3.fantasy_vol5_lonely_bard_intensity_2';
-const BGM_LUMINESCE_KEY = 'bgm.ethereal.ethereal_music_pack.luminesce_rt_4.ethereal_luminesce_main';
-const BGM_LUMINESCE_INTENSE_KEY = 'bgm.ethereal.ethereal_music_pack.luminesce_rt_4.ethereal_luminesce_intensity_2';
-const BGM_WIND_CHIME_KEY = 'bgm.ethereal.ethereal_music_pack.wind_chime_rt_5.ethereal_wind_chime_main';
-const BGM_WIND_CHIME_INTENSE_KEY = 'bgm.ethereal.ethereal_music_pack.wind_chime_rt_5.ethereal_wind_chime_intensity_2';
-// 新增 Fantasy Vol 7/8 曲目
-const BGM_ELDER_AWAKENING_KEY = 'bgm.fantasy.fantasy_music_pack_vol.elder_awakening_rt_2.fantasy_vol7_elder_awakening_main';
-const BGM_ELDER_AWAKENING_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.elder_awakening_rt_2.fantasy_vol7_elder_awakening_intensity_2';
-const BGM_FEYSONG_KEY = 'bgm.fantasy.fantasy_music_pack_vol.feysong_fields_rt_3.fantasy_vol7_feysong_fields_main';
-const BGM_FEYSONG_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.feysong_fields_rt_3.fantasy_vol7_feysong_fields_intensity_2';
-const BGM_STONE_CHANT_KEY = 'bgm.fantasy.fantasy_music_pack_vol.stone_chant_rt_3.fantasy_vol8_stone_chant_main';
-const BGM_STONE_CHANT_INTENSE_KEY = 'bgm.fantasy.fantasy_music_pack_vol.stone_chant_rt_3.fantasy_vol8_stone_chant_intensity_2';
+// 召唤师战争 BGM：只引用当前共享音频包中已有压缩 OGG 的曲目，避免 App 已安装包读取缺文件。
+const BGM_EDGE_OF_HONOR_KEY = 'bgm.japanese_music_pack_vol.edge_of_honor_rt_3.japanese_vol3_edge_of_honor_main';
+const BGM_AN_OATH_KEY = 'bgm.japanese_music_pack_vol.an_oath_rt_2.japanese_vol3_an_oath_main';
+const BGM_THE_ENCAMPMENT_KEY = 'bgm.japanese_music_pack_vol.the_encampment_rt_4.japanese_vol3_the_encampment_main';
+const BGM_SHADOW_AND_LIGHT_KEY = 'bgm.japanese_music_pack_vol.shadow_and_light_rt_3.japanese_vol3_shadow_and_light_main';
+const BGM_TENSE_SPARRING_KEY = 'bgm.japanese_music_pack_vol.tense_sparring_rt_6.japanese_vol3_tense_sparring_main';
+const BGM_LAST_CHANCE_KEY = 'bgm.japanese_music_pack_vol.last_chance_rt_5.japanese_vol3_last_chance_main';
+const BGM_END_OF_THE_WAR_KEY = 'bgm.japanese_music_pack_vol.end_of_the_war_rt_5.japanese_vol3_end_of_the_war_main';
+const BGM_NIOH_KEY = 'bgm.japanese_music_pack_vol.nioh_rt_6.japanese_vol3_nioh_main';
 const STINGER_WIN_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win';
 const STINGER_LOSE_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose';
 
@@ -377,45 +369,29 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
         ...DICE_ROLL_KEYS,
     ],
     bgm: [
-        // --- normal 组（7 首）---
-        { key: BGM_TO_THE_WALL_KEY, name: 'To The Wall', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_CORSAIR_KEY, name: 'Corsair', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_LONELY_BARD_KEY, name: 'Lonely Bard', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_LUMINESCE_KEY, name: 'Luminesce', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_WIND_CHIME_KEY, name: 'Wind Chime', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_ELDER_AWAKENING_KEY, name: 'Elder Awakening', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        { key: BGM_FEYSONG_KEY, name: 'Feysong Fields', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
-        // --- battle 组（9 首）---
-        { key: BGM_STONE_CHANT_KEY, name: 'Stone Chant', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_TO_THE_WALL_INTENSE_KEY, name: 'To The Wall (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_CORSAIR_INTENSE_KEY, name: 'Corsair (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_LONELY_BARD_INTENSE_KEY, name: 'Lonely Bard (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_LUMINESCE_INTENSE_KEY, name: 'Luminesce (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_WIND_CHIME_INTENSE_KEY, name: 'Wind Chime (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_ELDER_AWAKENING_INTENSE_KEY, name: 'Elder Awakening (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_FEYSONG_INTENSE_KEY, name: 'Feysong Fields (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
-        { key: BGM_STONE_CHANT_INTENSE_KEY, name: 'Stone Chant (Intensity 2)', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        // --- normal 组 ---
+        { key: BGM_EDGE_OF_HONOR_KEY, name: 'Edge Of Honor', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        { key: BGM_AN_OATH_KEY, name: 'An Oath', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        { key: BGM_THE_ENCAMPMENT_KEY, name: 'The Encampment', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        { key: BGM_SHADOW_AND_LIGHT_KEY, name: 'Shadow And Light', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle' } },
+        // --- battle 组 ---
+        { key: BGM_TENSE_SPARRING_KEY, name: 'Tense Sparring', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        { key: BGM_LAST_CHANCE_KEY, name: 'Last Chance', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        { key: BGM_END_OF_THE_WAR_KEY, name: 'End of the War', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
+        { key: BGM_NIOH_KEY, name: 'Nioh', src: '', volume: 0.5, category: { group: 'bgm', sub: 'battle_intense' } },
     ],
     bgmGroups: {
         normal: [
-            BGM_TO_THE_WALL_KEY,
-            BGM_CORSAIR_KEY,
-            BGM_LONELY_BARD_KEY,
-            BGM_LUMINESCE_KEY,
-            BGM_WIND_CHIME_KEY,
-            BGM_ELDER_AWAKENING_KEY,
-            BGM_FEYSONG_KEY,
+            BGM_EDGE_OF_HONOR_KEY,
+            BGM_AN_OATH_KEY,
+            BGM_THE_ENCAMPMENT_KEY,
+            BGM_SHADOW_AND_LIGHT_KEY,
         ],
         battle: [
-            BGM_STONE_CHANT_KEY,
-            BGM_TO_THE_WALL_INTENSE_KEY,
-            BGM_CORSAIR_INTENSE_KEY,
-            BGM_LONELY_BARD_INTENSE_KEY,
-            BGM_LUMINESCE_INTENSE_KEY,
-            BGM_WIND_CHIME_INTENSE_KEY,
-            BGM_ELDER_AWAKENING_INTENSE_KEY,
-            BGM_FEYSONG_INTENSE_KEY,
-            BGM_STONE_CHANT_INTENSE_KEY,
+            BGM_TENSE_SPARRING_KEY,
+            BGM_LAST_CHANCE_KEY,
+            BGM_END_OF_THE_WAR_KEY,
+            BGM_NIOH_KEY,
         ],
     },
     feedbackResolver: (event, context): SoundKey | null => {
@@ -479,12 +455,12 @@ export const SUMMONER_WARS_AUDIO_CONFIG: GameAudioConfig = {
                 const { currentPhase } = context.ctx as { currentPhase?: GamePhase };
                 return currentPhase === 'attack';
             },
-            key: BGM_STONE_CHANT_KEY,
+            key: BGM_TENSE_SPARRING_KEY,
             group: 'battle',
         },
         {
             when: () => true,
-            key: BGM_TO_THE_WALL_KEY,
+            key: BGM_EDGE_OF_HONOR_KEY,
             group: 'normal',
         },
     ],

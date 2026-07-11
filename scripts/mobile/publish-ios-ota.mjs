@@ -259,7 +259,7 @@ const zipBuffer = Buffer.from(zipSync(otaEntries, { level: 9 }));
 if (zipBuffer.length > MAX_IOS_OTA_ZIP_BYTES) {
     throw new Error(
         `iOS OTA 包体异常过大：${zipBuffer.length} bytes。`
-        + ' 当前发布链路会自动排除默认走 R2 的图片/音频资源，并只保留本地必需文件。'
+        + ' 当前发布链路会自动排除远程素材目录，并只保留本地必需文件。'
         + ' 请检查 dist 是否混入了不应进入 OTA 的大资源，禁止继续发布。',
     );
 }
@@ -290,7 +290,6 @@ if (!dryRun) {
             size: zipBuffer.length,
             contentType: 'application/zip',
             cacheControl: 'public, max-age=31536000, immutable',
-            backupToR2: true,
         },
         {
             key: versionManifestKey,
@@ -306,7 +305,6 @@ if (!dryRun) {
                 size: Buffer.byteLength(latestManifestBody),
                 contentType: 'application/json',
                 cacheControl: 'public, max-age=60, must-revalidate',
-                backupToR2: true,
             }]
             : []),
     ]);

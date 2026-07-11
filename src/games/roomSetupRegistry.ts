@@ -9,6 +9,7 @@ import {
     buildFantasyRealmsPublicRoomSummary,
     getFantasyRealmsAllowedPlayerCounts,
 } from './fantasyrealms/roomSetup';
+import { buildBetrayalPublicRoomSummary } from './betrayal/roomSetup';
 import { buildQidahenPublicRoomSummary } from './qidahen/roomSetup';
 import { buildSmashUpPublicRoomSummary } from './smashup/roomSetup';
 
@@ -26,6 +27,7 @@ const PLAYER_OPTIONS_RESOLVERS: Record<string, PlayerOptionsResolver | undefined
 };
 
 const PUBLIC_SETUP_SUMMARY_BUILDERS: Record<string, PublicSetupSummaryBuilder | undefined> = {
+    betrayal: buildBetrayalPublicRoomSummary,
     fantasyrealms: buildFantasyRealmsPublicRoomSummary,
     qidahen: buildQidahenPublicRoomSummary,
     smashup: buildSmashUpPublicRoomSummary,

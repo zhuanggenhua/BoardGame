@@ -1,4 +1,3 @@
-const ORIGIN_FALLBACK_STATUSES = new Set([404, 408, 429]);
 const FORWARDED_REQUEST_HEADERS = [
     'accept',
     'if-match',
@@ -7,10 +6,6 @@ const FORWARDED_REQUEST_HEADERS = [
     'if-unmodified-since',
     'range',
 ];
-
-export const shouldFallbackToR2 = (status) => (
-    ORIGIN_FALLBACK_STATUSES.has(status) || status >= 500
-);
 
 const resolveTimeoutMs = (value) => {
     const parsed = Number(value);
@@ -28,11 +23,19 @@ const applySharedHeaders = (headers, source) => {
     headers.set('X-Content-Type-Options', 'nosniff');
 };
 
-const defaultCacheControl = (key) => (
-    key.endsWith('.json')
-        ? 'public, max-age=300, stale-while-revalidate=60'
-        : 'public, max-age=31536000, immutable'
-);
+const buildCorsPreflightResponse = (request) => {
+    const headers = new Headers({
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Max-Age': '86400',
+    });
+    const requestedHeaders = request.headers.get('Access-Control-Request-Headers');
+    headers.set(
+        'Access-Control-Allow-Headers',
+        requestedHeaders || 'Accept, Cache-Control, Content-Type, Range, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since',
+    );
+    applySharedHeaders(headers, 'preflight');
+    return new Response(null, { status: 204, headers });
+};
 
 const buildOriginRequest = (request, env) => {
     const incomingUrl = new URL(request.url);
@@ -71,82 +74,12 @@ const fetchOrigin = async (request, env, fetchImpl) => {
     }
 };
 
-const resolveConditionalStatus = (request) => (
-    request.headers.has('if-none-match') || request.headers.has('if-modified-since')
-        ? 304
-        : 412
-);
-
-const resolveRange = (range, objectSize) => {
-    if (!range) return null;
-    if ('offset' in range && 'length' in range) {
-        return { offset: range.offset, length: range.length };
-    }
-    if ('suffix' in range) {
-        const length = Math.min(range.suffix, objectSize);
-        return { offset: objectSize - length, length };
-    }
-    return null;
-};
-
-export const fetchFromR2 = async (request, env, source) => {
-    const url = new URL(request.url);
-    const key = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
-
-    const object = await env.ASSETS_BUCKET.get(key, {
-        onlyIf: request.headers,
-        range: request.headers,
-    });
-
-    if (object === null) {
-        const headers = new Headers({ 'Cache-Control': 'no-store' });
-        applySharedHeaders(headers, source);
-        return new Response('Object Not Found', { status: 404, headers });
-    }
-
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set('ETag', object.httpEtag);
-    if (!headers.has('Cache-Control')) {
-        headers.set('Cache-Control', defaultCacheControl(key));
-    }
-    applySharedHeaders(headers, source);
-
-    if (!('body' in object)) {
-        headers.delete('Content-Length');
-        return new Response(null, {
-            status: resolveConditionalStatus(request),
-            headers,
-        });
-    }
-
-    const hasRangeRequest = request.headers.has('range');
-    const resolvedRange = hasRangeRequest
-        ? resolveRange(object.range, object.size)
-        : null;
-    let status = 200;
-    if (resolvedRange) {
-        status = 206;
-        headers.set(
-            'Content-Range',
-            `bytes ${resolvedRange.offset}-${resolvedRange.offset + resolvedRange.length - 1}/${object.size}`,
-        );
-        headers.set('Content-Length', String(resolvedRange.length));
-    } else {
-        headers.set('Content-Length', String(object.size));
-    }
-
-    return new Response(request.method === 'HEAD' ? null : object.body, {
-        status,
-        headers,
-    });
-};
-
 const withServerSource = (request, response) => {
+    const source = response.status >= 500 ? 'server-error' : 'server';
     const headers = new Headers(response.headers);
     headers.delete('CDN-Cache-Control');
     headers.delete('Cloudflare-CDN-Cache-Control');
-    applySharedHeaders(headers, 'server');
+    applySharedHeaders(headers, source);
     return new Response(request.method === 'HEAD' ? null : response.body, {
         status: response.status,
         statusText: response.statusText,
@@ -155,23 +88,24 @@ const withServerSource = (request, response) => {
 };
 
 export const createAssetRouter = ({ fetchImpl = fetch } = {}) => async (request, env) => {
+    if (request.method === 'OPTIONS') {
+        return buildCorsPreflightResponse(request);
+    }
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
         return new Response('Method Not Allowed', {
             status: 405,
-            headers: { Allow: 'GET, HEAD' },
+            headers: { Allow: 'GET, HEAD, OPTIONS' },
         });
     }
 
     try {
-        const originResponse = await fetchOrigin(request, env, fetchImpl);
-        if (!shouldFallbackToR2(originResponse.status)) {
-            return withServerSource(request, originResponse);
-        }
+        return withServerSource(request, await fetchOrigin(request, env, fetchImpl));
     } catch {
-        // Origin connection and response-header timeouts intentionally fall through to R2.
+        const headers = new Headers({ 'Cache-Control': 'no-store' });
+        applySharedHeaders(headers, 'server-error');
+        return new Response('Asset origin unavailable', { status: 502, headers });
     }
-
-    return fetchFromR2(request, env, 'r2-fallback');
 };
 
 const assetRouter = createAssetRouter();

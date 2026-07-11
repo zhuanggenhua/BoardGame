@@ -223,13 +223,14 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
         ) return false;
         if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
         const isMobileBoard = window.innerWidth <= 1023;
-        const expectedWorldWidthScale = isMobileBoard ? '0.62' : '0.44';
-        const expectedWorldHeightScale = isMobileBoard ? '0.78' : '0.44';
-        const expectedCameraZoom = isMobileBoard ? '1.45' : '1';
+        const expectedWorldWidthScale = isMobileBoard ? '0.5' : '0.44';
+        const expectedWorldHeightScale = isMobileBoard ? '0.82' : '0.44';
+        const expectedCameraZoom = isMobileBoard ? '1.66' : '1';
         if (canvasNode.dataset.worldWidthScale !== expectedWorldWidthScale) return false;
         if (canvasNode.dataset.worldHeightScale !== expectedWorldHeightScale) return false;
         if (canvasNode.dataset.cameraZoom !== expectedCameraZoom) return false;
         if (isMobileBoard && canvasNode.dataset.fitWorldToCameraView !== 'true') return false;
+        if (isMobileBoard && canvasNode.dataset.worldCenterOffsetX !== '-58') return false;
         if (Number(canvasNode.dataset.physicsWorldWidth ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.physicsWorldHeight ?? 0) <= 0) return false;
         if (Number(canvasNode.dataset.diceMaxLift ?? Number.POSITIVE_INFINITY) > 0.004) return false;
@@ -706,11 +707,28 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             const canvas = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
             const handArea = document.querySelector('[data-testid="hand-area"]') as HTMLElement | null;
             const tipBoard = document.querySelector('[data-testid="tip-board-surface"]') as HTMLElement | null;
+            const actionButtons = document.querySelector('[data-tutorial-id="dice-roll-button"]')?.parentElement as HTMLElement | null;
             if (!stage || !canvas) return null;
             const stageRect = stage.getBoundingClientRect();
             const canvasRect = canvas.getBoundingClientRect();
             const handRect = handArea?.getBoundingClientRect();
             const tipBoardRect = tipBoard?.getBoundingClientRect();
+            const actionButtonsRect = actionButtons?.getBoundingClientRect();
+            const abilityRects = Array.from(document.querySelectorAll(
+                '[data-ability-slot-scope="main-board"][data-ability-slot]',
+            ))
+                .map((node) => {
+                    const rect = (node as HTMLElement).getBoundingClientRect();
+                    return {
+                        left: rect.left,
+                        top: rect.top,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        width: rect.width,
+                        height: rect.height,
+                    };
+                })
+                .filter((rect) => rect.width > 1 && rect.height > 1);
             const diceRects = Array.from(stage.querySelectorAll('[data-testid^="die-button-"]'))
                 .map((node) => {
                     const element = node as HTMLElement;
@@ -783,6 +801,15 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
                     width: tipBoardRect.width,
                     height: tipBoardRect.height,
                 } : null,
+                actionButtons: actionButtonsRect ? {
+                    left: actionButtonsRect.left,
+                    top: actionButtonsRect.top,
+                    right: actionButtonsRect.right,
+                    bottom: actionButtonsRect.bottom,
+                    width: actionButtonsRect.width,
+                    height: actionButtonsRect.height,
+                } : null,
+                abilityRects,
                 diceRects,
                 diceUnion: diceUnion ? {
                     ...diceUnion,
@@ -798,22 +825,22 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
 
         expect(layout).not.toBeNull();
         expect(layout?.stage.width).toBeGreaterThanOrEqual(248);
-        expect(layout?.stage.width).toBeLessThanOrEqual(290);
-        expect(layout?.stage.height).toBeGreaterThanOrEqual(164);
-        expect(layout?.stage.height).toBeLessThanOrEqual(190);
+        expect(layout?.stage.width).toBeLessThanOrEqual(286);
+        expect(layout?.stage.height).toBeGreaterThanOrEqual(124);
+        expect(layout?.stage.height).toBeLessThanOrEqual(132);
         expect(layout?.stage.right).toBeGreaterThan(0);
         expect(layout?.stage.left).toBeLessThan(layout?.viewport.width ?? 0);
         expect(layout?.stage.bottom).toBeGreaterThan(0);
         expect(layout?.stage.top).toBeLessThan(layout?.viewport.height ?? 0);
-        expect(layout?.stage.top).toBeGreaterThanOrEqual(32);
-        expect(layout?.stage.top).toBeLessThanOrEqual(42);
-        expect(layout?.stage.bottom).toBeLessThanOrEqual(226);
+        expect(layout?.stage.top).toBeGreaterThanOrEqual(17);
+        expect(layout?.stage.top).toBeLessThanOrEqual(25);
+        expect(layout?.stage.bottom).toBeLessThanOrEqual(154);
         expect(Math.abs(
             (((layout?.stage.left ?? 0) + (layout?.stage.right ?? 0)) / 2)
             - ((layout?.viewport.width ?? 0) / 2),
         )).toBeLessThanOrEqual(2);
         expect(layout?.canvas.width).toBeGreaterThan(220);
-        expect(layout?.canvas.height).toBeGreaterThan(158);
+        expect(layout?.canvas.height).toBeGreaterThan(120);
         expect(layout?.diceUnion).not.toBeNull();
         const averageDieMinDimension = (layout?.diceRects ?? []).reduce(
             (sum, rect) => sum + Math.min(rect.width, rect.height),
@@ -848,7 +875,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             `移动横屏五颗 3D 骰子需要形成二维散布，而不是横向单排: ${JSON.stringify(spreadDiagnostics)}`,
         ).toBeGreaterThanOrEqual(0.3);
         expect(layout?.diceUnion?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.width ?? 0) * 0.94);
-        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.9);
+        expect(layout?.diceUnion?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.height ?? 0) * 0.96);
         expect(layout?.diceUnion?.left ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual((layout?.stage.left ?? 0) - 4);
         expect(layout?.diceUnion?.right ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((layout?.stage.right ?? 0) + 4);
         expect(layout?.diceUnion?.top ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual((layout?.stage.top ?? 0) - 4);
@@ -880,6 +907,20 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             if (layout?.hand) {
                 expect(rect.bottom).toBeLessThanOrEqual(layout.hand.top - 4);
             }
+            for (const abilityRect of layout?.abilityRects ?? []) {
+                const overlapWidth = Math.max(
+                    0,
+                    Math.min(rect.right, abilityRect.right) - Math.max(rect.left, abilityRect.left),
+                );
+                const overlapHeight = Math.max(
+                    0,
+                    Math.min(rect.bottom, abilityRect.bottom) - Math.max(rect.top, abilityRect.top),
+                );
+                expect(
+                    overlapWidth * overlapHeight,
+                    `3D 骰子不应遮挡技能卡可操作区域: ${JSON.stringify({ rect, abilityRect })}`,
+                ).toBeLessThanOrEqual(1);
+            }
             if (layout?.tipBoard) {
                 const overlapWidth = Math.max(
                     0,
@@ -892,6 +933,20 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
                 expect(
                     overlapWidth * overlapHeight,
                     `3D 骰子不应遮挡敌人提示窗: ${JSON.stringify({ rect, tipBoard: layout.tipBoard })}`,
+                ).toBeLessThanOrEqual(1);
+            }
+            if (layout?.actionButtons) {
+                const overlapWidth = Math.max(
+                    0,
+                    Math.min(rect.right, layout.actionButtons.right) - Math.max(rect.left, layout.actionButtons.left),
+                );
+                const overlapHeight = Math.max(
+                    0,
+                    Math.min(rect.bottom, layout.actionButtons.bottom) - Math.max(rect.top, layout.actionButtons.top),
+                );
+                expect(
+                    overlapWidth * overlapHeight,
+                    `3D 骰子不应遮挡投掷/确认按钮区: ${JSON.stringify({ rect, actionButtons: layout.actionButtons })}`,
                 ).toBeLessThanOrEqual(1);
             }
         }

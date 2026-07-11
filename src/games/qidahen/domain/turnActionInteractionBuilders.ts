@@ -578,6 +578,7 @@ function buildQidahenOpenGateSurrenderInteraction(
         {
             id: 'jin-effect',
             label: '只执行第一项',
+            labelKey: 'board.actions.openGateSurrender.options.jinEffect',
             value: { choiceId: 'jin-effect' },
             displayMode: 'button' as const,
             description: '后金可弃掉任意数量在场人物，再按剩余人物数每张弃掉 2 个部队。',
@@ -585,6 +586,7 @@ function buildQidahenOpenGateSurrenderInteraction(
         {
             id: 'ming-effect',
             label: '只执行第二项',
+            labelKey: 'board.actions.openGateSurrender.options.mingEffect',
             value: { choiceId: 'ming-effect' },
             displayMode: 'button' as const,
             description: '由大明选择一个派系，弃掉该派系全部在场人物。',
@@ -592,6 +594,7 @@ function buildQidahenOpenGateSurrenderInteraction(
         {
             id: 'both',
             label: '两项都执行',
+            labelKey: 'board.actions.openGateSurrender.options.both',
             value: { choiceId: 'both' },
             displayMode: 'button' as const,
             description: '先执行第一项，再执行第二项。',
@@ -647,6 +650,7 @@ function buildQidahenOpenGateSurrenderInteraction(
         '开门迎降',
         options,
         {
+            titleKey: 'board.actions.openGateSurrender.title',
             sourceId: QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,

@@ -19,6 +19,7 @@ import {
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import { createBetrayalAiRuntime } from './ai';
 import { BETRAYAL_COMMANDS } from './commands';
+import { readBetrayalScenarioId } from './roomSetup';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     BETRAYAL_EXPLORER_CATALOG,
@@ -1267,9 +1268,13 @@ function buildRepresentativeRuntimeExplorers(core: BetrayalCore): BetrayalExplor
     });
 }
 
-function makeBaseCore(playerIds: string[], phase: BetrayalPhase, random: RandomFn): BetrayalCore {
+function makeBaseCore(
+    playerIds: string[],
+    phase: BetrayalPhase,
+    random: RandomFn,
+    scenarioId: BetrayalScenarioId = DEFAULT_BETRAYAL_SCENARIO_ID,
+): BetrayalCore {
     const normalizedPlayerIds = normalizePlayerIds(playerIds);
-    const scenarioId = DEFAULT_BETRAYAL_SCENARIO_ID;
     const rooms = createInitialRoomLayout(BETRAYAL_SHARED_PRE_HAUNT_SETUP.startingRoomLayout);
     const discoveryState = createShuffledDiscoveryState(random);
     const currentExplorer = createExplorer(
@@ -1333,8 +1338,9 @@ function makeBaseCore(playerIds: string[], phase: BetrayalPhase, random: RandomF
 export function createBetrayalCharacterSelectCore(
     playerIds: string[] = ['0', '1', '2', '3'],
     random: RandomFn = DEFAULT_BETRAYAL_RANDOM,
+    setupData?: unknown,
 ): BetrayalCore {
-    return makeBaseCore(playerIds, 'characterSelect', random);
+    return makeBaseCore(playerIds, 'characterSelect', random, readBetrayalScenarioId(setupData));
 }
 
 export function createBetrayalFoundationCore(
@@ -5746,7 +5752,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
 
 export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalEvent> = {
     gameId: 'betrayal',
-    setup: (playerIds: PlayerId[], random: RandomFn) => createBetrayalCharacterSelectCore(playerIds, random),
+    setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown) => createBetrayalCharacterSelectCore(playerIds, random, setupData),
     validate: validateCommand,
     execute: executeCommand,
     reduce: reduceEvent,

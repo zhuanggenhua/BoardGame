@@ -51,6 +51,8 @@
       "emptySeat": "Empty",
       "scenarioStepTitle": "Choose Scenario",
       "scenarioSelected": "Current Scenario",
+      "scenarioDialogTitle": "Choose Scenario",
+      "closeScenarioDialog": "Close",
       "scenarioOnly": "Available Scenario",
       "scenarioStepSubtitle": "The first scenario is available in this build. Confirm to enter pre-haunt exploration.",
       "pageUp": "Previous explorers",
@@ -325,6 +327,12 @@
   },
   "errors": {
     "readOnly": "This is a read-only foundation skeleton. Gameplay commands are not enabled yet."
+  },
+  "setup": {
+    "scenario": {
+      "label": "Current Scenario",
+      "firstScenario": "Crimson Jack Returns"
+    }
   },
   "tutorial": {
     "basicSetup": {

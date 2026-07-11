@@ -19,7 +19,7 @@ import {
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SERVER_PUBLISH_MANIFEST_FILE } from './publish-primary-assets.mjs';
-import { resolveActiveAssetSet } from './sync-active-r2-assets.mjs';
+import { resolveActiveAssetSet } from './active-server-assets.mjs';
 
 const MANAGED_PUBLISH_PREFIXES = [
     'official/app-updates/',
@@ -183,29 +183,6 @@ const nextLink = path.join(assetsRoot, `.current-${releaseId}-${process.pid}`);
 symlinkSync(releaseDir, nextLink, 'dir');
 renameSync(nextLink, currentLink);
 
-const backupQueueRoot = path.join(assetsRoot, 'backup-queue');
-const backupQueueDir = path.join(backupQueueRoot, releaseId);
-const backupObjects = manifest.objects.filter((object) => object.backupToR2 === true);
-if (backupObjects.length > 0) {
-    mkdirSync(backupQueueRoot, { recursive: true });
-    rmSync(backupQueueDir, { recursive: true, force: true });
-    mkdirSync(backupQueueDir, { recursive: true });
-    for (const object of backupObjects) {
-        const sourcePath = resolveWithin(stagingRoot, object.key);
-        const destinationPath = resolveWithin(backupQueueDir, object.key);
-        mkdirSync(path.dirname(destinationPath), { recursive: true });
-        copyFileSync(sourcePath, destinationPath);
-    }
-    writeFileSync(
-        path.join(backupQueueDir, SERVER_PUBLISH_MANIFEST_FILE),
-        `${JSON.stringify({
-            ...manifest,
-            objects: backupObjects,
-        }, null, 2)}\n`,
-    );
-}
-
 console.log(`serverPrimaryRelease=${releaseId}`);
 console.log(`serverPrimaryObjects=${manifest.objects.length}`);
-console.log(`r2BackupObjects=${backupObjects.length}`);
-console.log(`r2BackupQueued=${backupObjects.length > 0 ? backupQueueDir : 'none'}`);
+console.log('assetBackupQueue=disabled');

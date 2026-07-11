@@ -3,7 +3,6 @@ import { useInRouterContext } from 'react-router-dom';
 import {
     BookOpen,
     ChevronDown,
-    ChevronLeft,
     ChevronRight,
     ChevronUp,
     Compass,
@@ -1006,7 +1005,7 @@ function CharacterSelectScreen({
     const [scenarioSelectionOpen, setScenarioSelectionOpen] = React.useState(false);
     const [mobileExplorerPage, setMobileExplorerPage] = React.useState(0);
     const [abilityTooltipOpen, setAbilityTooltipOpen] = React.useState(false);
-    const mobileExplorerPageSize = 2;
+    const mobileExplorerPageSize = 6;
     const mobileExplorerPageCount = Math.max(1, Math.ceil(EXPLORER_CATALOG.length / mobileExplorerPageSize));
     const selectedExplorerIndex = Math.max(0, EXPLORER_CATALOG.findIndex((explorer) => explorer.explorerId === selectedExplorerId));
     const mobileVisibleExplorers = EXPLORER_CATALOG.slice(
@@ -1033,12 +1032,8 @@ function CharacterSelectScreen({
             onConfirmExplorer();
             return;
         }
-        if (!scenarioSelectionOpen) {
-            setScenarioSelectionOpen(true);
-            return;
-        }
         onStartScenario();
-    }, [isReady, onConfirmExplorer, onStartScenario, scenarioSelectionOpen]);
+    }, [isReady, onConfirmExplorer, onStartScenario]);
 
     return (
         <div
@@ -1082,7 +1077,7 @@ function CharacterSelectScreen({
                                 <span className="h-px w-16 bg-[linear-gradient(90deg,#9f854d,transparent)]" />
                             </div>
                             <div className="text-[15px] font-semibold uppercase tracking-[0.16em] text-[#e7c783] sm:text-[18px] lg:text-[24px] lg:tracking-[0.28em]">
-                                {scenarioSelectionOpen ? t('board.characterSelect.scenarioStepTitle') : t('board.characterSelect.title')}
+                                {t('board.characterSelect.title')}
                             </div>
                         </div>
                         <div className="border-l border-[#5e4b2e]">
@@ -1200,123 +1195,81 @@ function CharacterSelectScreen({
                         <section className="relative flex min-h-0 items-stretch justify-center px-2 lg:px-5">
                             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
                             <div className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
-                            {scenarioSelectionOpen ? (
-                                <div
-                                    data-testid="betrayal-scenario-select-step"
-                                    className="flex h-full w-full max-w-[720px] flex-col justify-center py-2 lg:py-4"
+                            <div
+                                className="hidden min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 overflow-y-auto py-4 lg:grid"
+                                data-testid="betrayal-character-selection-grid"
+                                data-tutorial-id="betrayal-character-selection-grid"
+                            >
+                                {EXPLORER_CATALOG.map((explorer) => {
+                                    const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
+                                    const selected = explorer.explorerId === selectedExplorerId;
+                                    const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
+                                    return (
+                                        <ExplorerPentagonCard
+                                            key={explorer.explorerId}
+                                            explorer={explorer}
+                                            compact
+                                            selected={selected}
+                                            ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
+                                            taken={taken}
+                                            effectiveLocale={effectiveLocale}
+                                            onClick={() => onSelectExplorer(explorer.explorerId)}
+                                        />
+                                    );
+                                })}
+                            </div>
+                            <div
+                                className="flex h-full min-h-0 w-full flex-col items-center justify-center gap-1.5 py-1 lg:hidden"
+                                data-testid="betrayal-character-mobile-pager"
+                            >
+                                <button
+                                    type="button"
+                                    data-testid="betrayal-character-page-up"
+                                    aria-label={t('board.characterSelect.pageUp')}
+                                    disabled={mobileExplorerPage === 0}
+                                    onClick={() => setMobileExplorerPage((page) => Math.max(0, page - 1))}
+                                    className="grid h-8 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
                                 >
-                                    <div className="relative overflow-hidden border border-[rgba(214,191,129,0.44)] bg-[linear-gradient(180deg,rgba(30,24,16,0.94),rgba(8,12,10,0.96))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.36)] lg:p-6">
-                                        <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.12)]" />
-                                        <div className="relative">
-                                            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c9a35e] lg:text-[12px]">
-                                                {t('board.characterSelect.scenarioSelected')}
-                                            </div>
-                                            <h2 className="mt-2 text-[20px] font-bold tracking-[0.08em] text-[#fff0b8] lg:text-[32px]">
-                                                {t('board.scenario.hauntValue')}
-                                            </h2>
-                                            <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#9fb98b] lg:text-[13px]">
-                                                {scenarioConfig.presentation.runtimeObjective}
-                                            </div>
-                                            <div className="mt-4 grid gap-3 lg:mt-6 lg:grid-cols-2">
-                                                <div className="rounded-[12px] border border-[rgba(211,179,109,0.26)] bg-[rgba(12,16,13,0.62)] p-3">
-                                                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d6b56d] lg:text-[11px]">
-                                                        {t('board.scenario.objectiveLabel')}
-                                                    </div>
-                                                    <div className="mt-1 text-[13px] leading-5 text-[#fff5cf] lg:text-[15px]">
-                                                        {t('board.scenario.objective')}
-                                                    </div>
-                                                </div>
-                                                <div className="rounded-[12px] border border-[rgba(126,182,127,0.24)] bg-[rgba(18,30,20,0.58)] p-3">
-                                                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b5ef42] lg:text-[11px]">
-                                                        {t('board.characterSelect.scenarioOnly')}
-                                                    </div>
-                                                    <div className="mt-1 text-[13px] leading-5 text-[#dcecc7] lg:text-[15px]">
-                                                        {t('board.characterSelect.scenarioStepSubtitle')}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <ChevronUp size={16} />
+                                </button>
+                                <div className="grid min-h-0 flex-1 grid-cols-3 content-center justify-items-center gap-x-1 gap-y-0.5">
+                                    {mobileVisibleExplorers.map((explorer) => {
+                                        const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
+                                        const selected = explorer.explorerId === selectedExplorerId;
+                                        const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
+                                        return (
+                                            <ExplorerPentagonCard
+                                                key={explorer.explorerId}
+                                                explorer={explorer}
+                                                compact
+                                                selected={selected}
+                                                ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
+                                                taken={taken}
+                                                effectiveLocale={effectiveLocale}
+                                                onClick={() => onSelectExplorer(explorer.explorerId)}
+                                            />
+                                        );
+                                    })}
                                 </div>
-                            ) : (
-                                <>
-                                    <div
-                                        className="hidden min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 overflow-y-auto py-4 lg:grid"
-                                        data-testid="betrayal-character-selection-grid"
-                                        data-tutorial-id="betrayal-character-selection-grid"
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        data-testid="betrayal-character-page-down"
+                                        aria-label={t('board.characterSelect.pageDown')}
+                                        disabled={mobileExplorerPage >= mobileExplorerPageCount - 1}
+                                        onClick={() => setMobileExplorerPage((page) => Math.min(mobileExplorerPageCount - 1, page + 1))}
+                                        className="grid h-8 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
                                     >
-                                        {EXPLORER_CATALOG.map((explorer) => {
-                                            const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
-                                            const selected = explorer.explorerId === selectedExplorerId;
-                                            const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
-                                            return (
-                                                <ExplorerPentagonCard
-                                                    key={explorer.explorerId}
-                                                    explorer={explorer}
-                                                    compact
-                                                    selected={selected}
-                                                    ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
-                                                    taken={taken}
-                                                    effectiveLocale={effectiveLocale}
-                                                    onClick={() => onSelectExplorer(explorer.explorerId)}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                    <div
-                                        className="flex h-full min-h-0 w-full flex-col items-center justify-center gap-1.5 py-1 lg:hidden"
-                                        data-testid="betrayal-character-mobile-pager"
+                                        <ChevronDown size={16} />
+                                    </button>
+                                    <span
+                                        data-testid="betrayal-character-mobile-page-label"
+                                        className="min-w-[3.5rem] text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]"
                                     >
-                                        <button
-                                            type="button"
-                                            data-testid="betrayal-character-page-up"
-                                            aria-label={t('board.characterSelect.pageUp')}
-                                            disabled={mobileExplorerPage === 0}
-                                            onClick={() => setMobileExplorerPage((page) => Math.max(0, page - 1))}
-                                            className="grid h-9 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
-                                        >
-                                            <ChevronUp size={18} />
-                                        </button>
-                                        <div className="grid min-h-0 flex-1 content-center justify-items-center gap-1.5">
-                                            {mobileVisibleExplorers.map((explorer) => {
-                                                const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
-                                                const selected = explorer.explorerId === selectedExplorerId;
-                                                const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
-                                                return (
-                                                    <ExplorerPentagonCard
-                                                        key={explorer.explorerId}
-                                                        explorer={explorer}
-                                                        compact
-                                                        selected={selected}
-                                                        ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
-                                                        taken={taken}
-                                                        effectiveLocale={effectiveLocale}
-                                                        onClick={() => onSelectExplorer(explorer.explorerId)}
-                                                    />
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                data-testid="betrayal-character-page-down"
-                                                aria-label={t('board.characterSelect.pageDown')}
-                                                disabled={mobileExplorerPage >= mobileExplorerPageCount - 1}
-                                                onClick={() => setMobileExplorerPage((page) => Math.min(mobileExplorerPageCount - 1, page + 1))}
-                                                className="grid h-9 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
-                                            >
-                                                <ChevronDown size={18} />
-                                            </button>
-                                            <span
-                                                data-testid="betrayal-character-mobile-page-label"
-                                                className="min-w-[3.5rem] text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]"
-                                            >
-                                                {mobileExplorerPage + 1}/{mobileExplorerPageCount}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                                        {mobileExplorerPage + 1}/{mobileExplorerPageCount}
+                                    </span>
+                                </div>
+                            </div>
                         </section>
                     </main>
 
@@ -1380,15 +1333,29 @@ function CharacterSelectScreen({
                                 );
                             })}
                         </div>
-                        <div className="grid grid-cols-[58px_minmax(0,1fr)_58px] lg:grid-cols-[120px_minmax(0,1fr)_108px]">
+                        <div className="grid grid-cols-[58px_minmax(92px,0.72fr)_minmax(0,1fr)] lg:grid-cols-[120px_minmax(170px,0.75fr)_minmax(0,1fr)]">
                             <button
                                 type="button"
-                                disabled={scenarioSelectionOpen}
                                 onClick={() => onSelectExplorer(availableExplorer.explorerId)}
-                                className="relative inline-flex min-h-[58px] items-center justify-center gap-1 border-l border-[#5e4b2e] px-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)] disabled:cursor-not-allowed disabled:opacity-35 lg:min-h-[126px] lg:gap-3 lg:text-[16px] lg:tracking-[0.18em]"
+                                className="relative inline-flex min-h-[58px] items-center justify-center gap-1 border-l border-[#5e4b2e] px-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)] lg:min-h-[126px] lg:gap-3 lg:text-[16px] lg:tracking-[0.18em]"
                             >
                                 <span className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                 {t('board.characterSelect.random')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setScenarioSelectionOpen(true)}
+                                data-testid="betrayal-character-scenario-button"
+                                aria-haspopup="dialog"
+                                aria-expanded={scenarioSelectionOpen}
+                                className="relative inline-flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-0.5 border-l border-[#5e4b2e] px-1 text-center transition hover:bg-[rgba(214,191,129,0.06)] lg:min-h-[126px] lg:px-3"
+                            >
+                                <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[#c9a35e] lg:text-[11px] lg:tracking-[0.18em]">
+                                    {t('board.characterSelect.scenarioSelected')}
+                                </span>
+                                <span className="max-w-full truncate text-[11px] font-bold tracking-[0.04em] text-[#fff0b8] lg:text-[17px]">
+                                    {t('board.scenario.hauntValue')}
+                                </span>
                             </button>
                             <button
                                 type="button"
@@ -1400,23 +1367,60 @@ function CharacterSelectScreen({
                                 <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
                                 {!isReady
                                     ? t('board.characterSelect.confirm')
-                                    : scenarioSelectionOpen
-                                        ? t('board.characterSelect.startScenario')
-                                        : t('board.characterSelect.chooseScenario')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setScenarioSelectionOpen(false)}
-                                className="relative inline-flex min-h-[58px] items-center justify-center gap-1 border-l border-[#5e4b2e] px-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)] lg:min-h-[126px] lg:gap-2 lg:px-4 lg:text-[15px] lg:tracking-[0.18em]"
-                            >
-                                <span className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-                                <ChevronLeft size={16} />
-                                {t('board.characterSelect.back')}
+                                    : t('board.characterSelect.startScenario')}
                             </button>
                         </div>
                     </footer>
                 </div>
             </div>
+            {scenarioSelectionOpen ? (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    data-testid="betrayal-scenario-select-dialog"
+                    className="absolute inset-0 z-50 grid place-items-center bg-[rgba(2,6,5,0.72)] px-4 py-3"
+                    onClick={() => setScenarioSelectionOpen(false)}
+                >
+                    <div
+                        className="relative w-full max-w-[560px] overflow-hidden border border-[rgba(214,191,129,0.46)] bg-[linear-gradient(180deg,rgba(30,24,16,0.98),rgba(8,12,10,0.98))] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.48)] lg:p-6"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.12)]" />
+                        <div className="relative">
+                            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c9a35e] lg:text-[12px]">
+                                {t('board.characterSelect.scenarioDialogTitle')}
+                            </div>
+                            <button
+                                type="button"
+                                data-testid="betrayal-scenario-option-first-scenario"
+                                aria-pressed="true"
+                                onClick={() => setScenarioSelectionOpen(false)}
+                                className="mt-3 w-full rounded-[12px] border border-[#b5ef42] bg-[rgba(41,62,25,0.42)] p-3 text-left shadow-[inset_0_0_0_1px_rgba(181,239,66,0.14)] lg:p-4"
+                            >
+                                <div className="text-[18px] font-bold tracking-[0.06em] text-[#fff0b8] lg:text-[24px]">
+                                    {t('board.scenario.hauntValue')}
+                                </div>
+                                <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-[#9fb98b] lg:text-[13px]">
+                                    {scenarioConfig.presentation.runtimeObjective}
+                                </div>
+                                <div className="mt-3 text-[12px] leading-5 text-[#e8dfc8] lg:text-[14px]">
+                                    {t('board.characterSelect.scenarioStepSubtitle')}
+                                </div>
+                            </button>
+                            <div className="mt-4 flex justify-end">
+                                <button
+                                    type="button"
+                                    data-testid="betrayal-scenario-dialog-close"
+                                    onClick={() => setScenarioSelectionOpen(false)}
+                                    className="inline-flex min-h-[34px] items-center justify-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] transition hover:border-[#e2c57e]"
+                                >
+                                    {t('board.characterSelect.closeScenarioDialog')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 }

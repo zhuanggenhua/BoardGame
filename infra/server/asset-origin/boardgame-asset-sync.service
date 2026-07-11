@@ -1,5 +1,5 @@
 [Unit]
-Description=BoardGame manual R2 disaster rebuild
+Description=BoardGame disabled legacy asset rebuild
 After=network-online.target
 Wants=network-online.target
 
@@ -9,7 +9,7 @@ User=admin
 Group=admin
 Environment=HOME=/home/admin
 WorkingDirectory=/home/admin/storage/assets/control
-ExecStart=/usr/bin/node /home/admin/storage/assets/control/sync-active-r2-assets.mjs --remote r2-boardgame:boardgame-assets --assets-root /home/admin/storage/assets --bwlimit 4M
+ExecStart=/usr/bin/true
 Nice=15
 IOSchedulingClass=idle
 CPUQuota=25%

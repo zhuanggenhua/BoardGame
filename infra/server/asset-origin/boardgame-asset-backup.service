@@ -1,5 +1,5 @@
 [Unit]
-Description=BoardGame server-primary asset R2 backup queue
+Description=BoardGame disabled legacy asset backup queue
 After=network-online.target
 Wants=network-online.target
 
@@ -9,7 +9,7 @@ User=admin
 Group=admin
 Environment=HOME=/home/admin
 WorkingDirectory=/home/admin/storage/assets/control
-ExecStart=/usr/bin/node /home/admin/storage/assets/control/backup-server-assets-to-r2.mjs --remote r2-boardgame:boardgame-assets --assets-root /home/admin/storage/assets
+ExecStart=/usr/bin/true
 Nice=15
 IOSchedulingClass=idle
 CPUQuota=25%

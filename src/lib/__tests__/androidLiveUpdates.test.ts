@@ -549,6 +549,74 @@ describe('androidLiveUpdates', () => {
         expect(states.some((state) => state.blocking)).toBe(false);
     });
 
+    it('OTA 清单读取失败时必须返回显式错误并显示阻塞错误态', async () => {
+        vi.resetModules();
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+
+        const currentMock = vi.fn();
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: currentMock,
+                list: vi.fn(),
+                download: vi.fn(),
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: vi.fn(async () => ({ remove: async () => undefined })),
+            },
+        }));
+
+        const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
+        const states: Array<{ phase: string; blocking: boolean; reason?: string }> = [];
+
+        const result = await startAndroidLiveUpdateBackgroundCheck({
+            force: true,
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+                VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS: '15000',
+            },
+            onForceStateChange: (state) => {
+                states.push({
+                    phase: state.phase,
+                    blocking: state.blocking,
+                    reason: state.reason,
+                });
+            },
+        });
+
+        expect(result).toEqual({
+            status: 'error',
+            reason: 'OTA 清单读取失败：Failed to fetch',
+        });
+        expect(fetchMock).toHaveBeenCalledWith(
+            expect.stringContaining('https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json?ota-check='),
+            expect.objectContaining({
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+            }),
+        );
+        expect(currentMock).not.toHaveBeenCalled();
+        expect(states).toContainEqual({
+            phase: 'error',
+            blocking: true,
+            reason: 'OTA 清单读取失败：Failed to fetch',
+        });
+    });
+
     it('后台 OTA 检查遇到更老基线的 latest manifest 时，必须视为已是最新而不是回退下载', async () => {
         vi.resetModules();
         vi.stubEnv('VITE_ANDROID_OTA_ENABLED', 'true');

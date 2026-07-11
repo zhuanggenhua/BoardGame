@@ -60,6 +60,51 @@ test('服务器已经返回目标对象时立即完成', async () => {
     assert.equal(requestMethod, 'HEAD');
 });
 
+test('要求 CORS 预检时会先验证 cache-control 请求头可通过', async () => {
+    const requestMethods = [];
+
+    await waitForServerAssets(
+        ['https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json'],
+        {
+            requireCorsPreflight: true,
+            fetchImpl: async (_url, init) => {
+                requestMethods.push(init.method);
+                if (init.method === 'OPTIONS') {
+                    return new Response(null, {
+                        status: 204,
+                        headers: {
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                            'Access-Control-Allow-Headers': 'cache-control',
+                        },
+                    });
+                }
+                return new Response(null, {
+                    status: 200,
+                    headers: { 'X-Asset-Source': 'server' },
+                });
+            },
+        },
+    );
+
+    assert.deepEqual(requestMethods, ['OPTIONS', 'HEAD']);
+});
+
+test('要求 CORS 预检但线上不支持 OPTIONS 时继续等待并最终失败', async () => {
+    await assert.rejects(
+        waitForServerAssets(
+            ['https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json'],
+            {
+                requireCorsPreflight: true,
+                intervalMs: 0,
+                timeoutMs: 1,
+                fetchImpl: async () => new Response('Method Not Allowed', { status: 405 }),
+            },
+        ),
+        /corsPreflightStatus=405/,
+    );
+});
+
 test('大型发布对象通过 HEAD 校验服务器来源和内容大小', async () => {
     let requestMethod = '';
 
