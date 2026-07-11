@@ -31,6 +31,7 @@ describe('DiceBoxPhysicsSource', () => {
             setCanvasDiagnostics: vi.fn(),
             setDieSkins: vi.fn(),
             recoverOutOfBoundsDice: vi.fn(),
+            freezeSettledDice: vi.fn(),
             separateOverlappingDice: vi.fn(),
             settleDiceIntoSafeSpread: vi.fn(),
             getPhysicsState: vi.fn(),

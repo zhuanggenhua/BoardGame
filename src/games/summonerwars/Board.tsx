@@ -104,10 +104,6 @@ const MOBILE_LANDSCAPE_MAP_INITIAL_SCALE = 1.18;
 const MOBILE_LANDSCAPE_MAP_PADDING = '4vw';
 const DESKTOP_MAP_SIDE_RATIO = 0.1;
 const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
-const MAP_INTERNAL_TARGETS = new Set([
-  'sw-my-summoner', 'sw-enemy-summoner', 'sw-my-gate', 'sw-start-archer',
-]);
-
 export const SummonerWarsBoard: React.FC<Props> = ({
   G, dispatch, playerID, reset, matchData, isMultiplayer, locale,
 }) => {
@@ -239,14 +235,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     && !tutorialStep.requireAction
     && !(tutorialStep.allowedCommands && tutorialStep.allowedCommands.length > 0)
     && !(tutorialStep.advanceOnEvents && tutorialStep.advanceOnEvents.length > 0);
-
-  // 教程自动平移：当高亮目标在地图内部时，传给 MapContainer 让其自动居中并放大
-  // 地图内部的 tutorial-id：sw-my-summoner, sw-enemy-summoner, sw-my-gate, sw-start-archer（在 BoardGrid 内）
-  const mapPanTarget = (isTutorialActive && tutorialStep?.highlightTarget && MAP_INTERNAL_TARGETS.has(tutorialStep.highlightTarget))
-    ? tutorialStep.highlightTarget
-    : null;
-  // 聚焦到单个单位/建筑时放大到 1.8x，让卡牌清晰可见
-  const MAP_PAN_SCALE = 1.8;
 
   // 重赛系统（通用 hook，同时修复缺失的 registerReset）
   const { overlayProps: endgameProps } = useEndgame({
@@ -1127,8 +1115,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   initialScale={mapInitialScale}
                   dragBoundsPaddingRatioY={0.3}
                   interactionDisabled={mapInteractionDisabled}
-                  panToTarget={mapPanTarget}
-                  panToScale={mapPanTarget ? MAP_PAN_SCALE : undefined}
                   containerTestId="sw-map-container"
                   contentTestId="sw-map-content"
                   scaleTestId="sw-map-scale"

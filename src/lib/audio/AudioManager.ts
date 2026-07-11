@@ -1082,6 +1082,8 @@ class AudioManagerClass {
                             'audioRuntime.toast.preload_failed_title',
                         );
                     },
+                }).catch(() => {
+                    // 后台预加载失败已在 onError 中记录并降级，不能冒泡成 window.unhandledrejection。
                 });
             }
             if (index < pending.length) {

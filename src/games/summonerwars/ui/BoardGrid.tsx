@@ -7,7 +7,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, useAnimate } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { HudPortal, UI_Z_INDEX } from '../../../core/ui';
 import type { GridConfig } from '../../../core/ui/board-layout.types';
 import { cellToNormalizedBounds } from '../../../core/ui/board-hit-test';
 import type { SummonerWarsCore, CellCoord, PlayerId } from '../domain/types';
@@ -42,9 +41,11 @@ const BOARD_GRID_Z = {
 } as const;
 
 const LIFE_BADGE_STYLE: React.CSSProperties = {
-  fontSize: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.01)`,
-  paddingInline: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
-  paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.001)`,
+  fontSize: `clamp(44px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.055), 58px)`,
+  lineHeight: 0.95,
+  paddingInline: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.018)`,
+  paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.007)`,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.65)',
 };
 const MAGNIFY_BUTTON_STYLE: React.CSSProperties = {
   top: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.006)`,
@@ -70,100 +71,6 @@ export function getCellPosition(row: number, col: number, grid: GridConfig) {
 
 /** 格子唯一 key */
 const getCellKey = (row: number, col: number) => `${row}-${col}`;
-
-type LifeHudTarget = {
-  type: 'unit' | 'structure';
-  name: string;
-  owner: PlayerId;
-  row: number;
-  col: number;
-  life: number;
-  damage: number;
-};
-
-function getTapLifeHudTarget(core: SummonerWarsCore, inspectKey: string | null): LifeHudTarget | null {
-  if (!inspectKey) return null;
-
-  for (let row = 0; row < BOARD_ROWS; row++) {
-    for (let col = 0; col < BOARD_COLS; col++) {
-      const cell = core.board[row]?.[col];
-      const unit = cell?.unit;
-      if (unit && inspectKey === `unit-${unit.instanceId}`) {
-        return {
-          type: 'unit',
-          name: unit.card.name,
-          owner: unit.owner,
-          row,
-          col,
-          life: getEffectiveLife(unit, core),
-          damage: unit.damage,
-        };
-      }
-
-      const structure = cell?.structure;
-      if (structure && inspectKey === `structure-${row}-${col}-${structure.cardId}`) {
-        return {
-          type: 'structure',
-          name: structure.card.name,
-          owner: structure.owner,
-          row,
-          col,
-          life: getEffectiveStructureLife(core, structure),
-          damage: structure.damage,
-        };
-      }
-    }
-  }
-
-  return null;
-}
-
-const TapLifeHudBadge: React.FC<{
-  core: SummonerWarsCore;
-  inspectKey: string | null;
-  myPlayerId: string;
-}> = ({ core, inspectKey, myPlayerId }) => {
-  const { t } = useTranslation('game-summonerwars');
-  const target = React.useMemo(
-    () => getTapLifeHudTarget(core, inspectKey),
-    [core, inspectKey],
-  );
-  if (!target) return null;
-
-  const currentLife = Math.max(0, target.life - target.damage);
-  const isMine = target.owner === myPlayerId;
-  const ownerLabel = isMine
-    ? t('ui.tapLifeHud.ownerFriendly')
-    : t('ui.tapLifeHud.ownerEnemy');
-  const targetTypeLabel = target.type === 'unit'
-    ? t('ui.tapLifeHud.type.unit')
-    : t('ui.tapLifeHud.type.structure');
-
-  return (
-    <HudPortal>
-      <div
-        data-testid="sw-tap-life-hud"
-        className="fixed left-4 top-[8.5rem] max-w-[42vw] rounded-lg border border-white/70 bg-black/90 px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.75)] pointer-events-none"
-        style={{ zIndex: UI_Z_INDEX.overlayRaised }}
-      >
-        <div className="text-[13px] font-semibold leading-none tracking-wide text-white/75">
-          {t('ui.tapLifeHud.meta', {
-            owner: ownerLabel,
-            type: targetTypeLabel,
-            row: target.row + 1,
-            col: target.col + 1,
-          })}
-        </div>
-        <div className="mt-1 truncate text-[15px] font-bold leading-tight text-white/95">
-          {target.name}
-        </div>
-        <div className="mt-1 text-[28px] font-black leading-none text-emerald-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-          {t('ui.tapLifeHud.life', { current: currentLife, max: target.life })}
-        </div>
-      </div>
-    </HudPortal>
-  );
-};
 
 // ============================================================================
 // Props
@@ -1050,11 +957,6 @@ export const BoardGrid: React.FC<BoardGridProps> = (props) => {
         props={{ ...props, enableEntryAnimations }}
         tapLifeInspectKey={tapLifeInspectKey}
         onCellClick={handleCardCellClick}
-      />
-      <TapLifeHudBadge
-        core={core}
-        inspectKey={tapLifeInspectKey}
-        myPlayerId={myPlayerId}
       />
     </>
   );

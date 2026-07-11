@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setAssetsBaseUrl, setCommonAudioAssetBaseOverride } from '../../../core/AssetLoader';
+import { setAssetsBaseUrl, setCommonAudioAssetBaseOverride, signalCriticalImagesReady } from '../../../core/AssetLoader';
 import { AUDIO_RUNTIME_TOAST_EVENT } from '../audioRuntimeNotifications';
 
 const { howlInstances, readInstalledGamePackageAssetBlobUrl } = vi.hoisted(() => ({
@@ -243,6 +243,41 @@ describe('AudioManager', () => {
         expect(howlInstances[1].options.src).toEqual([
             'https://assets.easyboardgame.top/official/common/audio/sfx/ui/compressed/click.ogg',
         ]);
+    });
+
+    it('后台预加载音频失败时只标记失败，不产生未处理 Promise', async () => {
+        vi.useFakeTimers();
+        signalCriticalImagesReady();
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const unhandledSpy = vi.fn();
+        window.addEventListener('unhandledrejection', unhandledSpy);
+
+        const config: GameAudioConfig = {
+            sounds: {
+                click: { src: 'sfx/ui/click.ogg' },
+            },
+        };
+
+        AudioManager.registerAll(config, 'common/audio');
+        AudioManager.preloadKeys(['click']);
+
+        await vi.runAllTimersAsync();
+        expect(howlInstances).toHaveLength(1);
+
+        const firstLoadError = howlInstances[0].options.onloaderror as ((id: number, error: unknown) => void);
+        firstLoadError(1, new Error('Failed loading audio file with status: 502.'));
+        await vi.runAllTimersAsync();
+
+        expect(howlInstances).toHaveLength(2);
+        const fallbackLoadError = howlInstances[1].options.onloaderror as ((id: number, error: unknown) => void);
+        fallbackLoadError(1, new Error('Failed loading audio file with status: 502.'));
+        await vi.runAllTimersAsync();
+
+        expect(AudioManager.isFailed('click')).toBe(true);
+        expect(unhandledSpy).not.toHaveBeenCalled();
+
+        window.removeEventListener('unhandledrejection', unhandledSpy);
+        consoleErrorSpy.mockRestore();
     });
 
     it('BGM 使用手动循环而不是 Howler 内建 loop，避免 vendor 递归重播', () => {

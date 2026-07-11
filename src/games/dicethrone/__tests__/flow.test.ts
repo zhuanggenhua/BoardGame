@@ -4986,6 +4986,28 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
+        it('我又行了：至多 5 颗允许少选 1 颗后确认', () => {
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 6]));
+            const result = runner.run({
+                name: '我又行了 reroll-5 少选',
+                setup: createSetupWithHand(['card-i-can-again'], { cp: 10 }),
+                commands: [
+                    ...advanceTo('offensiveRoll'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-i-can-again' }),
+                    cmd('REROLL_DIE', '0', { dieId: 0 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
+                ],
+                expect: {
+                    diceValues: [6, 1, 1, 1, 1],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+        });
+
         it('抬一手：强制对手重掷 1 颗骰子（防御阶段，进攻方响应）', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 2, 2, 2, 2, 6]));
             // PLAY_CARD is step 10: ADVANCE+ROLL+CONFIRM+PASS*2+SELECT+ADVANCE+ROLL+CONFIRM+PLAY_CARD

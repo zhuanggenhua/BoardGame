@@ -196,21 +196,38 @@ const SETTLED_SPREAD_SLOTS_BY_COUNT: Record<number, Array<{ x: number; y: number
         { x: 0.34, y: 0.44 },
     ],
     5: [
-        { x: -0.55, y: -0.34 },
-        { x: 0, y: -0.39 },
-        { x: 0.55, y: -0.3 },
-        { x: -0.3, y: 0.34 },
-        { x: 0.3, y: 0.39 },
+        { x: -0.86, y: -0.38 },
+        { x: 0, y: -0.48 },
+        { x: 0.86, y: -0.34 },
+        { x: -0.62, y: 0.46 },
+        { x: 0.62, y: 0.5 },
+    ],
+};
+const SETTLED_SCREEN_SLOTS_BY_COUNT: Record<number, Array<{ x: number; y: number; yaw: number }>> = {
+    2: [
+        { x: 0.36, y: 0.54, yaw: -0.08 },
+        { x: 0.64, y: 0.5, yaw: 0.08 },
+    ],
+    3: [
+        { x: 0.26, y: 0.62, yaw: -0.1 },
+        { x: 0.5, y: 0.32, yaw: 0.04 },
+        { x: 0.74, y: 0.6, yaw: 0.12 },
+    ],
+    4: [
+        { x: 0.24, y: 0.64, yaw: -0.12 },
+        { x: 0.44, y: 0.34, yaw: 0.06 },
+        { x: 0.62, y: 0.66, yaw: -0.04 },
+        { x: 0.8, y: 0.36, yaw: 0.12 },
+    ],
+    5: [
+        { x: 0.2, y: 0.62, yaw: -0.12 },
+        { x: 0.36, y: 0.58, yaw: 0.06 },
+        { x: 0.5, y: 0.38, yaw: -0.04 },
+        { x: 0.66, y: 0.16, yaw: 0.12 },
+        { x: 0.78, y: 0.3, yaw: -0.08 },
     ],
 };
 const WORLD_UP = new Vector3(0, 0, 1);
-type DiceBoxStageSafeRect = {
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-};
-
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
@@ -549,6 +566,9 @@ export class DiceBoxThreeEngine {
 
         const activeDiceCount = diceCount - excludedIndices.size;
         const slots = SETTLED_SPREAD_SLOTS_BY_COUNT[activeDiceCount] ?? [];
+        const screenSlots = this.styleProfile.fitWorldToCameraView === true
+            ? SETTLED_SCREEN_SLOTS_BY_COUNT[activeDiceCount] ?? []
+            : [];
         const entries = this.box.diceList
             .map((die, index) => {
                 if (excludedIndices.has(index)) return null;
@@ -564,21 +584,38 @@ export class DiceBoxThreeEngine {
                 die: DiceBoxDieWithBody;
                 index: number;
                 start: { x: number; y: number; z: number };
-            } => Boolean(entry))
-            .sort((left, right) => left.start.x - right.start.x || left.start.y - right.start.y);
+            } => Boolean(entry));
         const assignments = entries.map((entry, sortedIndex) => ({
             ...entry,
+            yaw: screenSlots[sortedIndex]?.yaw,
             target: (() => {
                 const slot = slots[sortedIndex];
+                const screenSlot = screenSlots[sortedIndex];
+                const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+                if (screenSlot) {
+                    const targetZ = baseScale * 0.78;
+                    const target = this.getWorldPointAtScreenFraction(screenSlot.x, screenSlot.y, targetZ);
+                    if (
+                        Number.isFinite(target.x)
+                        && Number.isFinite(target.y)
+                        && Number.isFinite(target.z)
+                        && Math.abs(target.x) < baseScale * 12
+                        && Math.abs(target.y) < baseScale * 12
+                    ) {
+                        return target;
+                    }
+                }
                 if (!slot) return entry.start;
                 const visibleHalfExtents = this.getVisibleWorldHalfExtentsAtZ(entry.start.z);
                 const centerOffsetX = this.styleProfile.worldCenterOffsetX ?? 0;
                 const centerOffsetY = this.styleProfile.worldCenterOffsetY ?? 0;
-                const safeHalfWidth = Math.max(1, (this.worldBounds.width / 2) - ((this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90) * 0.9));
-                const safeHalfHeight = Math.max(1, (this.worldBounds.height / 2) - ((this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90) * 0.9));
+                // dice-box 的物理墙在 ±display.containerWidth/Height * 0.93，
+                // 这里不能再按一半宽高夹目标，否则移动端五颗骰子会被压成一团。
+                const safeHalfWidth = Math.max(baseScale * 0.82, this.worldBounds.width * 0.78);
+                const safeHalfHeight = Math.max(baseScale * 0.82, this.worldBounds.height * 0.68);
                 return {
-                    x: clampNumber(slot.x * visibleHalfExtents.x, centerOffsetX - safeHalfWidth, centerOffsetX + safeHalfWidth),
-                    y: clampNumber(slot.y * visibleHalfExtents.y, centerOffsetY - safeHalfHeight, centerOffsetY + safeHalfHeight),
+                    x: clampNumber(slot.x * visibleHalfExtents.x + centerOffsetX, centerOffsetX - safeHalfWidth, centerOffsetX + safeHalfWidth),
+                    y: clampNumber(slot.y * visibleHalfExtents.y + centerOffsetY, centerOffsetY - safeHalfHeight, centerOffsetY + safeHalfHeight),
                     z: entry.start.z,
                 };
             })(),
@@ -590,14 +627,21 @@ export class DiceBoxThreeEngine {
                 const progress = clampNumber((now - startAt) / durationMs, 0, 1);
                 const eased = 1 - ((1 - progress) ** 3);
 
-                assignments.forEach(({ die, start, target }) => {
+                assignments.forEach(({ die, start, target, yaw }) => {
                     const position = {
                         x: start.x + ((target.x - start.x) * eased),
                         y: start.y + ((target.y - start.y) * eased),
-                        z: start.z,
+                        z: start.z + ((target.z - start.z) * eased),
                     };
                     this.setVector(die.position, position);
                     this.setVector(die.body?.position, position);
+                    if (typeof yaw === 'number') {
+                        const settledQuaternion = new Quaternion()
+                            .setFromAxisAngle(WORLD_UP, yaw)
+                            .normalize();
+                        this.setQuaternion(die.quaternion as DiceBoxQuaternionLike | undefined, settledQuaternion);
+                        this.setQuaternion(die.body?.quaternion, settledQuaternion);
+                    }
                     this.setVector(die.body?.velocity, { x: 0, y: 0, z: 0 });
                     this.setVector(die.body?.angularVelocity, { x: 0, y: 0, z: 0 });
                     if (die.body) {
@@ -628,6 +672,7 @@ export class DiceBoxThreeEngine {
         await this.withInitialThrowSpread(() => this.box.roll(createNotation(values)));
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
+        await this.animateSettledSpreadIfNeeded();
     }
 
     async restoreValues(values: number[]): Promise<void> {
@@ -651,6 +696,7 @@ export class DiceBoxThreeEngine {
             this.restoreDieTransforms(lockedSnapshots, true);
             this.applyValues(values, indices, true);
             this.applyCurrentSkins();
+            await this.animateSettledSpreadIfNeeded({ excludedIndices: lockedIndices });
         } finally {
             this.restoreDieTransforms(lockedSnapshots, false);
         }
@@ -793,6 +839,11 @@ export class DiceBoxThreeEngine {
             const canvas = this.box.renderer?.domElement;
             const visualHalfWidth = (layout?.visualWidth ?? layout?.width ?? 0) / 2;
             const visualHalfHeight = (layout?.visualHeight ?? layout?.height ?? 0) / 2;
+            const isFullyInsideProjectedStage = Boolean(layout && canvas
+                && layout.x - visualHalfWidth >= -4
+                && layout.x + visualHalfWidth <= canvas.clientWidth + 4
+                && layout.y - visualHalfHeight >= -4
+                && layout.y + visualHalfHeight <= canvas.clientHeight + 4);
             const isProjectedOutside = Boolean(layout && canvas && (
                 options.strictProjectedBounds
                     ? layout.x - visualHalfWidth < -4
@@ -809,6 +860,9 @@ export class DiceBoxThreeEngine {
             const isOutsideSafeY = enforceSafeBounds
                 && (position.y < centerOffsetY - safeHalfHeight || position.y > centerOffsetY + safeHalfHeight);
             const isOutsideSafeBounds = isOutsideSafeX || isOutsideSafeY;
+            if (options.strictProjectedBounds && isFullyInsideProjectedStage && !isOutsideSafeBounds) {
+                return;
+            }
             const isOutOfBounds = isProjectedOutside
                 || isOutsideSafeBounds
                 || Math.abs(position.x) > maxX
@@ -898,14 +952,9 @@ export class DiceBoxThreeEngine {
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
         const minScreenDistance = Math.max(options.settleAfter ? 30 : 24, baseScale * (options.settleAfter ? 0.92 : 0.84));
-        const maxWorldNudge = baseScale * (options.settleAfter ? 0.48 : 0.22);
+        const maxWorldNudge = baseScale * (options.settleAfter ? 0.46 : 0.22);
         const passCount = options.settleAfter ? 6 : 1;
-        const safeRect = options.settleAfter ? this.getProjectedSafeRect(baseScale) : null;
         let didSeparate = false;
-
-        if (safeRect && this.clampDiceToProjectedSafeRect(safeRect)) {
-            didSeparate = true;
-        }
 
         for (let pass = 0; pass < passCount; pass += 1) {
             const layouts = this.box.diceList
@@ -948,10 +997,6 @@ export class DiceBoxThreeEngine {
                         z: rightPosition.z,
                     };
 
-                    if (safeRect) {
-                        this.clampWorldTargetToProjectedSafeRect(leftDie, leftTarget, safeRect);
-                        this.clampWorldTargetToProjectedSafeRect(rightDie, rightTarget, safeRect);
-                    }
                     this.setVector(leftDie.position, leftTarget);
                     this.setVector(leftDie.body?.position, leftTarget);
                     this.setVector(rightDie.position, rightTarget);
@@ -983,10 +1028,6 @@ export class DiceBoxThreeEngine {
                     didSeparateThisPass = true;
                 }
             }
-            if (safeRect && this.clampDiceToProjectedSafeRect(safeRect)) {
-                didSeparate = true;
-                didSeparateThisPass = true;
-            }
             if (!didSeparateThisPass) break;
         }
 
@@ -996,80 +1037,21 @@ export class DiceBoxThreeEngine {
         return didSeparate;
     }
 
-    private getProjectedSafeRect(baseScale: number): DiceBoxStageSafeRect | null {
-        const canvas = this.box.renderer?.domElement;
-        if (!canvas) return null;
-
-        const paddingX = Math.max(8, baseScale * 0.1);
-        const paddingTop = Math.max(6, baseScale * 0.08);
-        const bottomInset = Math.max(18, baseScale * 0.48);
-        return {
-            minX: paddingX,
-            maxX: Math.max(paddingX, canvas.clientWidth - paddingX),
-            minY: paddingTop,
-            maxY: Math.max(paddingTop, canvas.clientHeight - bottomInset),
-        };
-    }
-
-    private clampDiceToProjectedSafeRect(safeRect: DiceBoxStageSafeRect): boolean {
-        let didClamp = false;
-        this.box.diceList.forEach((die, index) => {
+    freezeSettledDice(): void {
+        let didFreeze = false;
+        this.box.diceList.forEach((die) => {
             const dieWithBody = die as DiceBoxDieWithBody;
-            const position = dieWithBody.body?.position ?? dieWithBody.position;
-            const layout = this.getProjectedLayout(index, index);
-            if (!position || !layout) return;
-
-            const target = { x: position.x, y: position.y, z: position.z };
-            if (!this.clampWorldTargetToProjectedSafeRect(dieWithBody, target, safeRect)) return;
-
-            this.setVector(dieWithBody.position, target);
-            this.setVector(dieWithBody.body?.position, target);
-            this.setVector(dieWithBody.body?.velocity, { x: 0, y: 0, z: 0 });
-            this.setVector(dieWithBody.body?.angularVelocity, { x: 0, y: 0, z: 0 });
-            if (dieWithBody.body) {
-                dieWithBody.body.aabbNeedsUpdate = true;
-                dieWithBody.body.sleep?.();
-            }
+            if (!dieWithBody.body) return;
+            this.setVector(dieWithBody.body.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(dieWithBody.body.angularVelocity, { x: 0, y: 0, z: 0 });
+            dieWithBody.body.aabbNeedsUpdate = true;
+            dieWithBody.body.sleep?.();
             dieWithBody.updateMatrixWorld?.(true);
-            didClamp = true;
+            didFreeze = true;
         });
-        return didClamp;
-    }
-
-    private clampWorldTargetToProjectedSafeRect(
-        die: DiceBoxDieWithBody,
-        target: { x: number; y: number; z: number },
-        safeRect: DiceBoxStageSafeRect,
-    ): boolean {
-        const layout = this.getProjectedLayoutForWorldTarget(die, target);
-        if (!layout) return false;
-
-        const halfWidth = (layout.visualWidth ?? layout.width) / 2;
-        const halfHeight = (layout.visualHeight ?? layout.height) / 2;
-        let dx = 0;
-        let dy = 0;
-        if (layout.x - halfWidth < safeRect.minX) {
-            dx = safeRect.minX - (layout.x - halfWidth);
-        } else if (layout.x + halfWidth > safeRect.maxX) {
-            dx = safeRect.maxX - (layout.x + halfWidth);
+        if (didFreeze) {
+            this.box.renderer.render(this.box.scene, this.box.camera);
         }
-        if (layout.y - halfHeight < safeRect.minY) {
-            dy = safeRect.minY - (layout.y - halfHeight);
-        } else if (layout.y + halfHeight > safeRect.maxY) {
-            dy = safeRect.maxY - (layout.y + halfHeight);
-        }
-        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return false;
-
-        const z = target.z;
-        const currentScreenPoint = this.getWorldPointAtScreenFraction(layout.x / (this.box.renderer?.domElement?.clientWidth ?? 1), layout.y / (this.box.renderer?.domElement?.clientHeight ?? 1), z);
-        const shiftedScreenPoint = this.getWorldPointAtScreenFraction(
-            (layout.x + dx) / (this.box.renderer?.domElement?.clientWidth ?? 1),
-            (layout.y + dy) / (this.box.renderer?.domElement?.clientHeight ?? 1),
-            z,
-        );
-        target.x += shiftedScreenPoint.x - currentScreenPoint.x;
-        target.y += shiftedScreenPoint.y - currentScreenPoint.y;
-        return true;
     }
 
     ensureValues(values: number[]): void {

@@ -434,6 +434,7 @@ GitHub Actions 自动化：
 - **禁止对象存储回退**：服务器 443 入口连接失败、超时、缺少对象或返回 5xx 时，客户端应看到明确失败或服务器状态，不能读取对象存储兜底，也不能把旧对象伪装成本次发布成功。
 - **大型发布包同样服务器直连**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 与普通素材一样，统一由服务器 443 的 `/home/admin/storage/assets/current` 返回，不再配置 Worker / R2 路由。
 - **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
+- **服务器 current 只保留运行时交付物**：普通素材清单递归展开时只能把 `compressed/*.webp`、`compressed/*.ogg`、运行时 `.svg/.json` 以及 OTA / 原生 / 移动包所需 `.zip/.apk` 纳入活动集合；源 `.png/.jpg/.jpeg/.mp3/.wav` 只能留在本地用于再压缩，不能进入线上 `current`。
 - **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖对象存储才能上线。
 - **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
 - **玩家素材下载必须是服务器直连**：`https://assets.easyboardgame.top/official/**` 的完成态是 Cloudflare 灰云 `A -> 8.148.71.102`，由服务器本机 `boardgame-asset-origin.service` 在 443 端口直接返回素材。只把服务器放在 Cloudflare Worker 后面当源站，不算玩家直连。

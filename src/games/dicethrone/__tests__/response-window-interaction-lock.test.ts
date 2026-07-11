@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { execute as executeDomainCommand } from '../domain/execute';
 import { RESOURCE_IDS } from '../domain/resources';
 import { getResponderQueue } from '../domain/rules';
-import { diceModifyReducer, diceModifyToCommands } from '../domain/systems';
+import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands } from '../domain/systems';
 import {
     advanceTo,
     cmd,
@@ -247,6 +247,42 @@ describe('modifyDie 严格超限回归', () => {
         expect(diceModifyToCommands(result, 2)).toEqual([
             { type: 'MODIFY_DIE', payload: { dieId: 0, newValue: 2 } },
             { type: 'MODIFY_DIE', payload: { dieId: 1, newValue: 5 } },
+        ]);
+    });
+
+    it('card-me-too 本地 copy 模式重复点同一源骰不得提前形成两步', () => {
+        let result = { modifications: {}, modCount: 0, totalAdjustment: 0 };
+
+        result = diceModifyReducer(result, { action: 'select', dieId: 4, dieValue: 6 }, { mode: 'copy' }, 2);
+        result = diceModifyReducer(result, { action: 'select', dieId: 4, dieValue: 6 }, { mode: 'copy' }, 2);
+
+        expect(result).toEqual({
+            modifications: { 4: 6 },
+            modCount: 1,
+            totalAdjustment: 0,
+        });
+        expect(diceModifyToCommands(result, 2)).toEqual([
+            { type: 'MODIFY_DIE', payload: { dieId: 4, newValue: 6 } },
+        ]);
+    });
+
+    it('reroll up to N 本地选择不得超过 selectCount，但允许少选后确认', () => {
+        let result = { selectedDiceIds: [] };
+
+        result = diceSelectReducer(result, { action: 'toggle', dieId: 0 }, 2);
+        result = diceSelectReducer(result, { action: 'toggle', dieId: 1 }, 2);
+        result = diceSelectReducer(result, { action: 'toggle', dieId: 2 }, 2);
+
+        expect(result).toEqual({ selectedDiceIds: [0, 1] });
+        expect(diceSelectToCommands(result, 2)).toEqual([
+            { type: 'REROLL_DIE', payload: { dieId: 0 } },
+            { type: 'REROLL_DIE', payload: { dieId: 1 } },
+        ]);
+
+        result = diceSelectReducer(result, { action: 'toggle', dieId: 1 }, 2);
+        expect(result).toEqual({ selectedDiceIds: [0] });
+        expect(diceSelectToCommands(result, 2)).toEqual([
+            { type: 'REROLL_DIE', payload: { dieId: 0 } },
         ]);
     });
 

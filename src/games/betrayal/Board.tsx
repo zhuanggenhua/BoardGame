@@ -2418,8 +2418,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const isPhoneLandscapeLayout = runtimeViewport.width > runtimeViewport.height
         && runtimeViewport.width <= 1023
         && runtimeViewport.height <= 520;
-    const hasCenteredInitialRoomGridRef = React.useRef(false);
-    const hasUserAdjustedRoomGridViewportRef = React.useRef(false);
     const isEndgameExorciseRollReview = baseCore.phase === 'endgame'
         && baseCore.recentRoll?.kind === 'hauntActionTraitCheck'
         && baseCore.recentRoll.sourceTitle === '驱魔'
@@ -2529,10 +2527,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const previewRoomVisual = previewRoom
         ? resolveRoomTileVisual(previewRoom, previewRoom.state === 'discovered')
         : null;
-    const focusRoomsInView = React.useCallback((roomIds: string[], options: { force?: boolean } = {}) => {
-        if (hasUserAdjustedRoomGridViewportRef.current && !options.force) {
-            return false;
-        }
+    const focusRoomsInView = React.useCallback((roomIds: string[]) => {
         const roomGrid = roomGridRef.current;
         if (!roomGrid) {
             return false;
@@ -2548,47 +2543,20 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             return false;
         }
         setRoomGridFocusTarget(null);
-        window.requestAnimationFrame(() => setRoomGridFocusTarget(targetId));
+        window.requestAnimationFrame(() => {
+            setRoomGridFocusTarget(targetId);
+        });
         return true;
     }, []);
 
-    const focusRoomInView = React.useCallback((roomId: string, options?: { force?: boolean }) => (
-        focusRoomsInView([roomId], options)
+    const focusRoomInView = React.useCallback((roomId: string) => (
+        focusRoomsInView([roomId])
     ), [focusRoomsInView]);
-
-    const focusActiveRoomInView = React.useCallback(() => {
-        return focusRoomInView(core.activeRoomId);
-    }, [core.activeRoomId, focusRoomInView]);
-
-    const focusInitialExplorerRoomInView = React.useCallback(() => {
-        return focusRoomInView(core.currentExplorer.roomId) || focusActiveRoomInView();
-    }, [core.currentExplorer.roomId, focusActiveRoomInView, focusRoomInView]);
 
     const roomCanvasTransformStyle = React.useMemo(() => ({
         ...roomCanvasStyle,
         transformOrigin: 'center center',
     }), [roomCanvasStyle]);
-
-    const handleRoomGridUserViewportChange = React.useCallback(() => {
-        hasUserAdjustedRoomGridViewportRef.current = true;
-        setRoomGridFocusTarget(null);
-    }, []);
-
-    React.useEffect(() => {
-        if (core.phase !== 'preHaunt') {
-            hasCenteredInitialRoomGridRef.current = false;
-            hasUserAdjustedRoomGridViewportRef.current = false;
-            setRoomGridFocusTarget(null);
-            return undefined;
-        }
-        if (hasCenteredInitialRoomGridRef.current) {
-            return undefined;
-        }
-        const frameId = window.requestAnimationFrame(() => {
-            hasCenteredInitialRoomGridRef.current = focusInitialExplorerRoomInView();
-        });
-        return () => window.cancelAnimationFrame(frameId);
-    }, [core.phase, focusInitialExplorerRoomInView]);
 
     const phaseItems = React.useMemo(
         () => [
@@ -4989,7 +4957,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     dragBoundsPaddingRatioY={0.18}
                                     panToTarget={roomGridFocusTarget}
                                     panToScale={roomGridFocusTarget ? 1.15 : undefined}
-                                    onUserViewportChange={handleRoomGridUserViewportChange}
                                     contentStyle={roomCanvasTransformStyle}
                                     ariaLabel={t('board.sections.rooms')}
                                 >
@@ -5485,7 +5452,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             key={`sidebar-teammate-${explorer.playerId}`}
                                             type="button"
                                             onClick={() => {
-                                                    focusRoomInView(explorer.roomId, { force: true });
+                                                    focusRoomInView(explorer.roomId);
                                                     if (isAttackTarget) {
                                                         handleAttackAction('hero', explorer.playerId);
                                                         return;

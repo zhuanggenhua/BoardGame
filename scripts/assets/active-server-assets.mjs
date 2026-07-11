@@ -6,6 +6,10 @@ export const isActiveRootKey = (key) => (
     || /official\/mobile-packages\/[^/]+\/[^/]+\/(?:games|shared)\/[^/]+\.json$/.test(key)
 );
 
+const SOURCE_ASSET_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'mp3', 'wav']);
+const RUNTIME_MEDIA_EXTENSIONS = new Set(['webp', 'ogg']);
+const DIRECT_RUNTIME_EXTENSIONS = new Set(['svg', 'json', 'zip', 'apk']);
+
 const hasSafePathSegments = (value) => {
     const segments = value.split('/');
     return segments.length > 0
@@ -17,6 +21,25 @@ const normalizeOfficialObjectKey = (value) => {
     const candidate = value.replace(/^\/+/, '');
     if (!candidate.startsWith('official/') || candidate.endsWith('/')) return '';
     return hasSafePathSegments(candidate) ? candidate : '';
+};
+
+const getOfficialObjectExtension = (key) => {
+    const fileName = key.split('/').at(-1) ?? '';
+    const dotIndex = fileName.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex === fileName.length - 1) return '';
+    return fileName.slice(dotIndex + 1).toLowerCase();
+};
+
+export const isPublishableActiveObjectKey = (key) => {
+    const normalized = normalizeOfficialObjectKey(key);
+    if (!normalized) return false;
+
+    const extension = getOfficialObjectExtension(normalized);
+    if (SOURCE_ASSET_EXTENSIONS.has(extension)) return false;
+    if (RUNTIME_MEDIA_EXTENSIONS.has(extension)) {
+        return normalized.split('/').includes('compressed');
+    }
+    return DIRECT_RUNTIME_EXTENSIONS.has(extension);
 };
 
 const normalizeOfficialPrefix = (value) => {
@@ -42,7 +65,7 @@ const normalizeRelativeAssetPath = (value) => {
 };
 
 const appendReference = (output, candidate) => {
-    if (candidate && !output.includes(candidate)) {
+    if (candidate && isPublishableActiveObjectKey(candidate) && !output.includes(candidate)) {
         output.push(candidate);
     }
 };

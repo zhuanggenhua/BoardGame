@@ -258,8 +258,8 @@ export function DiceBoxPhysicsSource({
                             await engine.rollToValues(values);
                         }
                     } finally {
-                        engine.separateOverlappingDice({ settleAfter: true });
                         engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
+                        engine.freezeSettledDice();
                         emitPhysicsStates(engine, true);
                         if (activeMotionRef.current?.type === 'roll' && activeMotionRef.current.key === rollingKey) {
                             activeMotionRef.current = null;
@@ -283,8 +283,8 @@ export function DiceBoxPhysicsSource({
                 try {
                     await engine.rerollToValues(rerollIndices, targetValues, targetLockedIndices);
                 } finally {
-                    engine.separateOverlappingDice({ settleAfter: true });
                     engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
+                    engine.freezeSettledDice();
                     emitPhysicsStates(engine, true);
                     if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === key) {
                         activeMotionRef.current = null;

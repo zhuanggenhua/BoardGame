@@ -20,11 +20,11 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldHeightScale)
             .toBeGreaterThan(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldWidthScale);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldHeightScale)
-            .toBeLessThanOrEqual(0.84);
+            .toBeLessThanOrEqual(0.74);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldCenterOffsetX)
             .toBeLessThanOrEqual(-50);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldCenterOffsetY)
-            .toBeLessThanOrEqual(-24);
+            .toBeLessThanOrEqual(-40);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.baseScale)
             .toBeGreaterThanOrEqual(40);
     });
@@ -38,7 +38,7 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.strength)
             .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.strength);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.initialThrowSpread)
-            .toBeGreaterThanOrEqual(0.9);
+            .toBeGreaterThanOrEqual(0.94);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.settledSpreadAnimationMs)
             .toBeLessThanOrEqual(200);
     });

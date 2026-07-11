@@ -141,6 +141,31 @@ function resolveBoardDiceRingSize(layout?: ProjectedDiceLayout): number {
     ) * BOARD_DICE_RING_SIZE_MULTIPLIER);
 }
 
+function clampBoardOverlayCenter(value: number, size: number, fallback: number): number {
+    if (!Number.isFinite(value)) return fallback;
+
+    const halfSize = Math.max(0, size / 2);
+    return clampNumber(value, halfSize, Math.max(halfSize, fallback - halfSize));
+}
+
+function resolveBoardDiceStageSize(isMobileBoardPresentation: boolean): { width: number; height: number } {
+    if (typeof window === 'undefined') {
+        return isMobileBoardPresentation
+            ? { width: 252, height: 128 }
+            : { width: 420, height: 420 };
+    }
+
+    if (isMobileBoardPresentation) {
+        return {
+            width: clampNumber(window.innerWidth * 0.29, 252, 282),
+            height: 128,
+        };
+    }
+
+    const size = clampNumber(window.innerWidth * 0.31, 360, 500);
+    return { width: size, height: size };
+}
+
 /** 从 multistep-choice interaction 中提取 DiceThrone 元数据 */
 function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
     if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
@@ -695,8 +720,22 @@ export const DiceTray = ({
                     const boardOverlayDiceSizePx = isBoardPresentation
                         ? resolveBoardOverlayDiceSize(projectedLayout)
                         : undefined;
-                    const centerX = projectedLayout?.x ?? 0;
-                    const centerY = projectedLayout?.y ?? 0;
+                    const boardDiceHitTargetSizePx = isMobileBoardPresentation
+                        ? BOARD_DICE_MOBILE_HIT_TARGET_SIZE_PX
+                        : BOARD_DICE_HIT_TARGET_SIZE_PX;
+                    const boardDiceStageSize = isBoardPresentation
+                        ? resolveBoardDiceStageSize(isMobileBoardPresentation)
+                        : null;
+                    const centerX = projectedLayout && isBoardPresentation
+                        ? clampBoardOverlayCenter(projectedLayout.x, boardDiceHitTargetSizePx, boardDiceStageSize?.width ?? 0)
+                        : projectedLayout?.x ?? 0;
+                    const centerY = projectedLayout && isBoardPresentation
+                        ? clampBoardOverlayCenter(
+                            projectedLayout.y,
+                            boardDiceHitTargetSizePx,
+                            boardDiceStageSize?.height ?? 0,
+                        )
+                        : projectedLayout?.y ?? 0;
                     const projectedScale = isBoardPresentation ? 0.92 : 0.78;
                     const centerWidth = projectedLayout ? Math.max(60, projectedLayout.width * projectedScale) : 88;
                     const centerHeight = projectedLayout ? Math.max(60, projectedLayout.height * projectedScale) : 88;
@@ -708,9 +747,6 @@ export const DiceTray = ({
                     const overlayTransform = projectedLayout
                         ? `rotateX(${projectedLayout.rotateX}rad) rotateY(${projectedLayout.rotateY}rad) rotateZ(${projectedLayout.rotateZ}rad)`
                         : undefined;
-                    const boardDiceHitTargetSizePx = isMobileBoardPresentation
-                        ? BOARD_DICE_MOBILE_HIT_TARGET_SIZE_PX
-                        : BOARD_DICE_HIT_TARGET_SIZE_PX;
                     const overlayWidth = isBoardPresentation
                         ? `${boardDiceHitTargetSizePx}px`
                         : projectedLayout

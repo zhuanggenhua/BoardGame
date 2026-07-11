@@ -61,8 +61,8 @@ export const DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE = {
     // 避免为了看清骰面继续放大实体，重新引入拥挤、碰撞和结束瞬移。
     cameraZoom: 1.66,
     // 插件默认会让多颗骰子从几乎同一个入口一起飞；移动横屏分成五条
-    // 初始通道后仍走完整物理模拟，投掷结束不做重排，因此不会瞬移。
-    initialThrowSpread: 0.9,
+    // 初始通道后仍走完整物理模拟，投掷结束前完成分散，避免落地后瞬移。
+    initialThrowSpread: 0.96,
     // 只在自然落点挤叠/越界时做短平滑分散，避免停稳后硬切到新位置。
     settledSpreadAnimationMs: 180,
     strength: 1,
@@ -70,7 +70,7 @@ export const DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE = {
     // 不再只靠结束后的投影回收把跑出去的骰子拉回来。
     fitWorldToCameraView: true,
     worldWidthScale: 0.5,
-    worldHeightScale: 0.82,
+    worldHeightScale: 0.72,
     worldCenterOffsetX: -58,
-    worldCenterOffsetY: -26,
+    worldCenterOffsetY: -42,
 } satisfies DiceBoxStyleProfile;

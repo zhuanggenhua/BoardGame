@@ -478,6 +478,12 @@ export const getNextPlayerId = (state: DiceThroneCore): PlayerId => {
  * 获取当前掷骰玩家 ID
  */
 export const getRollerId = (state: DiceThroneCore, phase?: TurnPhase): PlayerId => {
+    if (
+        state.pendingBonusDiceSettlement?.allowDiceModification === true
+        && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+    ) {
+        return state.pendingBonusDiceSettlement.attackerId;
+    }
     if (phase === 'defensiveRoll') {
         return state.pendingAttack?.defenderId ?? state.activePlayerId;
     }
@@ -937,7 +943,7 @@ const checkStandardCardPlay = (
     if (
         !responseWindowType
         && phase === 'offensiveRoll'
-        && hasAnyDiceEffect(card)
+        && card.isAttackModifier === true
         && playerId !== getRollerId(state, phase)
         && !state.pendingAttack?.sourceAbilityId
     ) {
@@ -985,15 +991,24 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireMinDiceCount && state.dice.length < cond.requireMinDiceCount) {
-            return { ok: false, reason: 'requireMinDiceCount' };
+            const diceResultCount = state.pendingBonusDiceSettlement?.allowDiceModification === true
+                ? getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length
+                : state.dice.length;
+            if (diceResultCount < cond.requireMinDiceCount) {
+                return { ok: false, reason: 'requireMinDiceCount' };
+            }
         }
 
         if (cond.requireOpponentDiceExists && state.dice.length === 0) {
-            return { ok: false, reason: 'requireOpponentDiceExists' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireOpponentDiceExists' };
+            }
         }
 
         if (cond.requireRollConfirmed && !state.rollConfirmed) {
-            return { ok: false, reason: 'requireRollConfirmed' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireRollConfirmed' };
+            }
         }
 
         if (cond.requireNotRollConfirmed && state.rollConfirmed) {

@@ -622,6 +622,10 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
         }
 
         if (beforeAttackAbility === 'healing') {
+          const healTargetUnit = getUnitAt(state.core, target);
+          if (!healTargetUnit || healTargetUnit.owner !== playerId) return;
+          if (healTargetUnit.card.unitClass !== 'common' && healTargetUnit.card.unitClass !== 'champion') return;
+
           const player = state.core.players[playerId];
           const options: PromptOption<SwInteractionValue>[] = player.hand.map((card) => ({
             id: card.id,

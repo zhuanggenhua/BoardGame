@@ -228,6 +228,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         setIsScaleBadgeVisible(false);
     }, [clearScaleBadgeTimer]);
 
+    const markUserViewportChanged = useCallback(() => {
+        onUserViewportChange?.();
+    }, [onUserViewportChange]);
+
     useEffect(() => {
         return () => {
             clearScaleBadgeTimer();
@@ -434,7 +438,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             const nextZoomLevel = clampZoomLevel(startZoomLevel * (distance / startDistance));
             const nextPosition = resolveZoomPosition(nextZoomLevel, getTouchCenter(event.touches[0], event.touches[1]));
             revealScaleBadge(nextZoomLevel);
-            onUserViewportChange?.();
+            markUserViewportChanged();
             applyViewport({
                 zoomLevel: nextZoomLevel,
                 position: nextPosition,
@@ -458,7 +462,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         setIsAnimating(false);
 
         const viewportDelta = convertDeltaToViewportUnits(dx, dy);
-        onUserViewportChange?.();
+        markUserViewportChanged();
         applyViewport({
             zoomLevel: activeZoomLevel,
             position: {
@@ -473,7 +477,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         clearAnimationTimer,
         convertDeltaToViewportUnits,
         interactionDisabled,
-        onUserViewportChange,
+        markUserViewportChanged,
         resolveZoomPosition,
         revealScaleBadge,
     ]);
@@ -513,7 +517,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             setIsAnimating(false);
 
             const viewportDelta = convertDeltaToViewportUnits(dx, dy);
-            onUserViewportChange?.();
+            markUserViewportChanged();
             applyViewport({
                 zoomLevel: activeZoomLevel,
                 position: {
@@ -535,7 +539,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             window.removeEventListener('mousemove', handleGlobalMouseMove);
             window.removeEventListener('mouseup', handleGlobalMouseUp);
         };
-    }, [activeZoomLevel, applyViewport, clearAnimationTimer, convertDeltaToViewportUnits, onUserViewportChange]);
+    }, [activeZoomLevel, applyViewport, clearAnimationTimer, convertDeltaToViewportUnits, markUserViewportChanged]);
 
     const handleWheel = useCallback((event: WheelEvent) => {
         if (interactionDisabled) return;
@@ -556,7 +560,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             clientY: event.clientY,
         });
         revealScaleBadge(nextZoomLevel);
-        onUserViewportChange?.();
+        markUserViewportChanged();
         applyViewport({
             zoomLevel: nextZoomLevel,
             position: nextPosition,
@@ -567,7 +571,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         clampZoomLevel,
         clearAnimationTimer,
         interactionDisabled,
-        onUserViewportChange,
+        markUserViewportChanged,
         resolveZoomPosition,
         revealScaleBadge,
         wheelZoomFactor,

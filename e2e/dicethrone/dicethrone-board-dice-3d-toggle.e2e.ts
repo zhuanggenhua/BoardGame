@@ -224,7 +224,7 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
         if (canvasNode.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
         const isMobileBoard = window.innerWidth <= 1023;
         const expectedWorldWidthScale = isMobileBoard ? '0.5' : '0.44';
-        const expectedWorldHeightScale = isMobileBoard ? '0.82' : '0.44';
+        const expectedWorldHeightScale = isMobileBoard ? '0.72' : '0.44';
         const expectedCameraZoom = isMobileBoard ? '1.66' : '1';
         if (canvasNode.dataset.worldWidthScale !== expectedWorldWidthScale) return false;
         if (canvasNode.dataset.worldHeightScale !== expectedWorldHeightScale) return false;

@@ -574,10 +574,56 @@ const buildGameManifestPayload = ({
         : null,
 });
 
+const formatErrorMessage = (error) => (
+    error instanceof Error ? error.message : String(error)
+);
+
+const buildDryRunSharedAudioPackResult = () => {
+    const { includedFiles } = buildSharedAudioPackageEntries();
+    return {
+        gameId: SHARED_AUDIO_PACK_GAME_ID,
+        packageVersion: `${packageJson.version}-${SHARED_AUDIO_PACK_GAME_ID}-dry-run`,
+        zipBytes: null,
+        fileCount: includedFiles.length,
+        checksum: 'dry-run-shared-audio-checksum',
+        fileIndexUrl: `${assetsBaseUrl}/mobile-packages/android/${channel}/file-index/shared/${encodeURIComponent(SHARED_AUDIO_PACK_GAME_ID)}/dry-run.json`,
+        fileIndexChecksum: 'dry-run-shared-audio-file-index',
+        bundleKey: `${packagePrefix}/bundles/shared/${SHARED_AUDIO_PACK_GAME_ID}/dry-run.zip`,
+        latestManifestKey: `${packagePrefix}/shared/${SHARED_AUDIO_PACK_GAME_ID}.json`,
+        bundleUrl: `${assetsBaseUrl}/mobile-packages/android/${channel}/bundles/shared/${encodeURIComponent(SHARED_AUDIO_PACK_GAME_ID)}/dry-run.zip`,
+    };
+};
+
+const buildDryRunGameManifest = (gameId) => ({
+    gameId,
+    runtimeChannel: channel,
+    publishedAt: new Date().toISOString(),
+    modulePack: null,
+    assetPack: {
+        id: gameId,
+        version: `${packageJson.version}-${gameId}-dry-run-full`,
+        url: `${assetsBaseUrl}/mobile-packages/android/${channel}/bundles/${encodeURIComponent(gameId)}/dry-run-full.zip`,
+        checksum: 'dry-run-full-asset-pack-checksum',
+        bytes: null,
+        fileCount: 0,
+    },
+});
+
 const loadRemoteSharedAudioPackResult = async () => {
-    const manifest = await fetchRemoteJson(`${assetsBaseUrl}/mobile-packages/android/${channel}/shared/${SHARED_AUDIO_PACK_GAME_ID}.json`);
+    let manifest;
+    try {
+        manifest = await fetchRemoteJson(`${assetsBaseUrl}/mobile-packages/android/${channel}/shared/${SHARED_AUDIO_PACK_GAME_ID}.json`);
+    } catch (error) {
+        if (!dryRun) throw error;
+        console.warn(`dry-run: 远端 shared audio manifest 不可用，使用本地预演占位：${formatErrorMessage(error)}`);
+        return buildDryRunSharedAudioPackResult();
+    }
     const assetPack = manifest?.assetPack;
     if (!assetPack?.version || !assetPack?.url || !assetPack?.checksum) {
+        if (dryRun) {
+            console.warn('dry-run: 远端 shared audio manifest 不完整，使用本地预演占位。');
+            return buildDryRunSharedAudioPackResult();
+        }
         throw new Error('远端 shared audio manifest 不完整，无法执行 manifest-only');
     }
     return {
@@ -613,8 +659,19 @@ const resolveRemoteFullAssetPack = (gameId, assetPack) => {
 };
 
 const loadRemoteGameManifest = async (gameId) => {
-    const manifest = await fetchRemoteJson(`${assetsBaseUrl}/mobile-packages/android/${channel}/games/${gameId}.json`);
+    let manifest;
+    try {
+        manifest = await fetchRemoteJson(`${assetsBaseUrl}/mobile-packages/android/${channel}/games/${gameId}.json`);
+    } catch (error) {
+        if (!dryRun) throw error;
+        console.warn(`dry-run: 远端游戏 manifest 不可用，使用本地预演占位：${gameId}：${formatErrorMessage(error)}`);
+        return buildDryRunGameManifest(gameId);
+    }
     if (!manifest?.assetPack?.version) {
+        if (dryRun) {
+            console.warn(`dry-run: 远端游戏 manifest 不完整，使用本地预演占位：${gameId}`);
+            return buildDryRunGameManifest(gameId);
+        }
         throw new Error(`远端游戏 manifest 不完整，无法执行 manifest-only: ${gameId}`);
     }
     resolveRemoteFullAssetPack(gameId, manifest.assetPack);

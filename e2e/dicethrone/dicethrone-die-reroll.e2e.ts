@@ -25,6 +25,123 @@ async function dragHandCardToPlay(page: any, cardId: string): Promise<void> {
 }
 
 test.describe('DiceThrone - 选择骰子重投', () => {
+    test('card-i-can-again 至多 5 颗时可少选 1 颗并手动确认结算', async ({ page, game }, testInfo) => {
+        await game.openTestGame('dicethrone');
+
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: ['card-i-can-again'],
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: false,
+                dice: [
+                    { id: 0, value: 1, isKept: false },
+                    { id: 1, value: 2, isKept: false },
+                    { id: 2, value: 3, isKept: false },
+                    { id: 3, value: 4, isKept: false },
+                    { id: 4, value: 5, isKept: false },
+                ],
+            },
+        });
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-i-can-again'),
+                diceCount: state?.core?.dice?.length ?? 0,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            hasCard: true,
+            diceCount: 5,
+        });
+
+        await dragHandCardToPlay(page, 'card-i-can-again');
+
+        await expect.poll(async () => {
+            const interaction = (await game.getState())?.sys?.interaction?.current;
+            const meta = interaction?.data?.meta;
+            return {
+                dtType: meta?.dtType ?? null,
+                selectCount: meta?.selectCount ?? null,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            dtType: 'selectDie',
+            selectCount: 5,
+        });
+
+        await game.screenshot('i-can-again-select-dice-overlay', testInfo);
+
+        const firstDieButton = page.locator('[data-testid="die-button-0"]');
+        await expect(firstDieButton).toBeVisible({ timeout: 5000 });
+        await firstDieButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                dtType: state?.sys?.interaction?.current?.data?.meta?.dtType ?? null,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            interactionKind: 'multistep-choice',
+            dtType: 'selectDie',
+        });
+
+        await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([6]);
+        });
+
+        await game.screenshot('i-can-again-one-die-selected-before-confirm', testInfo);
+
+        const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).first();
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await confirmButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const lastEvents = (state?.sys?.eventStream?.entries ?? []).slice(-8);
+            return {
+                firstDie: state?.core?.dice?.[0]?.value ?? null,
+                otherDice: (state?.core?.dice ?? []).slice(1).map((die: any) => die.value),
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                handIds: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+                lastEventTypes: lastEvents.map((entry: any) => entry.event?.type),
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            firstDie: 6,
+            otherDice: [2, 3, 4, 5],
+            interactionKind: null,
+            handIds: [],
+        });
+
+        await game.screenshot('i-can-again-settled-one-die', testInfo);
+
+        const finalState = await game.getState();
+        const finalHandIds = (finalState?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id);
+        const finalEventTypes = (finalState?.sys?.eventStream?.entries ?? [])
+            .slice(-8)
+            .map((entry: any) => entry.event?.type);
+
+        expect(finalState?.core?.dice?.[0]?.value ?? null).toBe(6);
+        expect(finalState?.core?.dice?.slice(1).map((die: any) => die.value)).toEqual([2, 3, 4, 5]);
+        expect(finalHandIds).not.toContain('card-i-can-again');
+        expect(finalEventTypes).toContain('CARD_PLAYED');
+        expect(finalEventTypes).toContain('DIE_REROLLED');
+    });
+
     test('card-worthy-of-me 应通过 framework 场景完成单骰重投', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
@@ -68,11 +185,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             diceCount: 5,
         });
 
-        const rerollCard = page
-            .locator('[data-card-id="card-worthy-of-me"], [data-card-key^="card-worthy-of-me-"]')
-            .first();
-        await expect(rerollCard).toBeVisible({ timeout: 5000 });
-        await rerollCard.click();
+        await dragHandCardToPlay(page, 'card-worthy-of-me');
 
         await expect.poll(async () => {
             const interaction = (await game.getState())?.sys?.interaction?.current;
@@ -395,11 +508,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             return state?.core?.players?.['1']?.resources?.hp ?? null;
         }, { timeout: 5000 }).toBe(50);
 
-        const highNoonCard = page
-            .locator('[data-card-id="card-high-noon"], [data-card-key^="card-high-noon-"]')
-            .first();
-        await expect(highNoonCard).toBeVisible({ timeout: 5000 });
-        await highNoonCard.click();
+        await dragHandCardToPlay(page, 'card-high-noon');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -472,11 +581,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             window.__BG_TEST_HARNESS__?.dice.setValues([4]);
         });
 
-        const highNoonCard = page
-            .locator('[data-card-id="card-high-noon"], [data-card-key^="card-high-noon-"]')
-            .first();
-        await expect(highNoonCard).toBeVisible({ timeout: 5000 });
-        await highNoonCard.click();
+        await dragHandCardToPlay(page, 'card-high-noon');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -548,11 +653,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             window.__BG_TEST_HARNESS__?.dice.setValues([6]);
         });
 
-        const highNoonCard = page
-            .locator('[data-card-id="card-high-noon"], [data-card-key^="card-high-noon-"]')
-            .first();
-        await expect(highNoonCard).toBeVisible({ timeout: 5000 });
-        await highNoonCard.click();
+        await dragHandCardToPlay(page, 'card-high-noon');
 
         await expect.poll(async () => {
             const state = await game.getState();

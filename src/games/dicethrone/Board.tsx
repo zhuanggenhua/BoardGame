@@ -549,6 +549,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     localReducer: (current: unknown, step: unknown) =>
                         diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, selectCount),
                     toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, selectCount),
+                    getCompletedSteps: (result: DiceModifyResult) => result.modCount,
                     // any/adjust 模式：手动确认，禁用 auto-confirm
                     maxSteps: isManualConfirmMode ? undefined : originalData.maxSteps,
                     minSteps: isManualConfirmMode ? 1 : originalData.minSteps,
@@ -558,14 +559,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
         if (meta.dtType === 'selectDie') {
             const originalData = sysInteraction.data as Record<string, unknown>;
+            const selectCount = Number(meta.selectCount) || 1;
             return {
                 ...sysInteraction,
                 data: {
                     ...sysInteraction.data,
                     initialResult: { selectedDiceIds: [] } as DiceSelectResult,
                     localReducer: (current: unknown, step: unknown) =>
-                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep),
-                    toCommands: diceSelectToCommands,
+                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, selectCount),
+                    toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, selectCount),
+                    getCompletedSteps: (result: DiceSelectResult) => result.selectedDiceIds.length,
                     maxSteps: undefined,
                     minSteps: 1,
                     allowedDieIds: originalData.allowedDieIds,

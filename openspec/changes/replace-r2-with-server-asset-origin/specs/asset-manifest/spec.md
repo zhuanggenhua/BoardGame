@@ -21,3 +21,17 @@
 - **WHEN** 服务器应用发布清单并切换 `current`
 - **THEN** 系统 MUST 输出服务器 release 结果
 - **AND** MUST NOT 复制本批对象到 R2 backup queue
+
+### Requirement: 服务器活动版本不得包含源媒体文件
+系统 SHALL 在递归计算服务器活动版本时只保留运行时交付物，且 SHALL NOT 将源图片或源音频纳入 `current`。
+
+#### Scenario: 分层素材清单包含源图和压缩图
+- **WHEN** `assets-manifest.json` 同时声明 `.png/.jpg/.jpeg` 源图变体和 `compressed/*.webp` 运行时变体
+- **THEN** 服务器活动版本 MUST include only the `compressed/*.webp` runtime variant
+- **AND** MUST NOT include the source image variant in `current`
+
+#### Scenario: Android file-index 或移动包发布
+- **WHEN** 发布 Android 游戏素材包或差异 file-index
+- **THEN** 图片 MUST come from `compressed/*.webp`
+- **AND** 音频 MUST come from `compressed/*.ogg`
+- **AND** `.png/.jpg/.jpeg/.mp3/.wav` MUST NOT enter the file-index or ZIP

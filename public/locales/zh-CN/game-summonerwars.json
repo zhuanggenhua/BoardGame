@@ -83,17 +83,7 @@
     "opponentActiveEvents": "对方持续效果",
     "activeEvents": "持续效果",
     "attached": "附加",
-    "click_to_magnify": "点击放大",
-    "tapLifeHud": {
-      "ownerFriendly": "我方",
-      "ownerEnemy": "敌方",
-      "type": {
-        "unit": "单位",
-        "structure": "建筑"
-      },
-      "meta": "{{owner}} · {{type}} · {{row}}-{{col}}",
-      "life": "生命 {{current}}/{{max}}"
-    }
+    "click_to_magnify": "点击放大"
   },
   "debug": {
     "phase_labels": {
