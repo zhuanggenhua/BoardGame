@@ -259,4 +259,47 @@ describe('MobileReleasePage', () => {
         });
         expect(publishBody).not.toHaveProperty('skipLatest');
     });
+
+    it('原生更新正式发布请求不再携带跳过 latest.json 参数', async () => {
+        let publishBody: Record<string, unknown> | null = null;
+        const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = typeof input === 'string' ? input : input.toString();
+            const method = init?.method ?? 'GET';
+            if (method === 'GET' && url.includes('/mobile-release/android/status')) {
+                return jsonResponse(baseStatus);
+            }
+            if (method === 'POST' && url.endsWith('/mobile-release/android/native/publish')) {
+                publishBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+                return jsonResponse({
+                    ok: true,
+                    kind: 'native',
+                    mode: 'publish',
+                    command: 'node scripts/mobile/publish-android-native-update.mjs --channel stable',
+                    output: 'Android 原生更新发布完成。',
+                });
+            }
+            throw new Error(`Unexpected request: ${method} ${url}`);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<MobileReleasePage />);
+
+        const publishButton = await screen.findByRole('button', { name: 'admin.mobileReleasePage.actions.publish_native' });
+        expect(publishButton).toBeEnabled();
+
+        fireEvent.click(publishButton);
+
+        await waitFor(() => {
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/admin-api/mobile-release/android/native/publish',
+                expect.objectContaining({ method: 'POST' }),
+            );
+        });
+        expect(publishBody).toMatchObject({
+            channel: 'stable',
+            dryRun: false,
+            forceUpdate: true,
+        });
+        expect(publishBody).not.toHaveProperty('skipLatest');
+    });
 });
