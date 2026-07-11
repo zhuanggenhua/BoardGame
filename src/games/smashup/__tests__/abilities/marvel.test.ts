@@ -625,7 +625,11 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
         });
         expect(view.events).toEqual([]);
         const viewPrompt = getSimpleChoicePrompt(view.matchState!, 'spider_verse_view_from_above');
-        expect(viewPrompt.options.map((option: any) => option.label)).toEqual(['角色', '法术']);
+        expect(viewPrompt.options.map((option: any) => option.label)).toEqual([
+            'ui.spider_verse_view_from_above_minion_option',
+            'ui.spider_verse_view_from_above_action_option',
+        ]);
+        expect(viewPrompt.options.map((option: any) => option.value?.cardType)).toEqual(['minion', 'action']);
         const declaredMinion = respondToPromptOption(
             view.matchState!,
             (option: any) => option.value?.cardType === 'minion',

@@ -6,6 +6,7 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     createSkipOption,
@@ -549,7 +550,8 @@ const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, Sm
             },
         );
     },
-    onResolve: ({ state, playerId, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, playerId, value, timestamp } = args;
         const choices = (Array.isArray(value) ? value : []) as CardChoice[];
         const selected = new Set(
             choices.map(choice => choice.cardUid).filter((uid): uid is string => !!uid),
@@ -573,7 +575,7 @@ const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, Sm
         return {
             events: [
                 ...bottomEvents,
-                ...buildStandardDrawEvents(projected.core, playerId, selectedCards.length + 1, random, timestamp),
+                ...buildStandardDrawEventsFromRuntimeContext({ ...args, state: projected }, playerId, selectedCards.length + 1),
             ],
         };
     },
