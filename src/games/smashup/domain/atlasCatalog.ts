@@ -29,6 +29,8 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS11, kind: 'card', image: 'smashup/cards/yuanhou', grid: { rows: 6, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS12, kind: 'card', image: 'smashup/cards/longzu', grid: { rows: 5, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS13, kind: 'card', image: 'smashup/cards/zhongguo', grid: { rows: 7, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.ITTY_CRITTERS_POD_CARDS, kind: 'card', image: 'smashup/cards/itty_critters_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.TIME_TRAVELERS_POD_CARDS, kind: 'card', image: 'smashup/cards/time_travelers_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
     { id: SMASHUP_ATLAS_IDS.TITANS, kind: 'card', image: 'smashup/taitan/taitan1', grid: { rows: 7, cols: 3 } },

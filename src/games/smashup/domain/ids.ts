@@ -27,6 +27,8 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS11: 'smashup:cards11',
     CARDS12: 'smashup:cards12',
     CARDS13: 'smashup:cards13',
+    ITTY_CRITTERS_POD_CARDS: 'smashup:itty-critters-pod-cards',
+    TIME_TRAVELERS_POD_CARDS: 'smashup:time-travelers-pod-cards',
     HULUWAWA_CARDS: 'smashup:huluwawa-cards',
     HULUWAWA_TITAN: 'smashup:huluwawa-titan',
     TITANS: 'smashup:titans',
@@ -69,6 +71,7 @@ export const SMASHUP_FACTION_IDS = {
     GHOSTS_POD: 'ghosts_pod',
     IGNOBLES: 'ignobles',
     ITTY_CRITTERS: 'itty_critters',
+    ITTY_CRITTERS_POD: 'itty_critters_pod',
     KAIJU: 'kaiju',
     MAGICAL_GIRLS: 'magical_girls',
     MEGA_TROOPERS: 'mega_troopers',
@@ -82,6 +85,7 @@ export const SMASHUP_FACTION_IDS = {
     SAMURAI_POD: 'samurai_pod',
     SUPER_SPIES: 'super_spies',
     TIME_TRAVELERS: 'time_travelers',
+    TIME_TRAVELERS_POD: 'time_travelers_pod',
     TRICKSTERS: 'tricksters',
     TRICKSTERS_POD: 'tricksters_pod',
     VIKINGS: 'vikings',
@@ -189,6 +193,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.COWBOYS]: '牛仔',
     [SMASHUP_FACTION_IDS.IGNOBLES]: '没落贵族',
     [SMASHUP_FACTION_IDS.ITTY_CRITTERS]: '迷你萌宠',
+    [SMASHUP_FACTION_IDS.ITTY_CRITTERS_POD]: '迷你萌宠 (POD版)',
     [SMASHUP_FACTION_IDS.KAIJU]: '怪兽',
     [SMASHUP_FACTION_IDS.MAGICAL_GIRLS]: '魔法少女',
     [SMASHUP_FACTION_IDS.MEGA_TROOPERS]: '超级战队',
@@ -235,6 +240,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.NINJAS_POD]: '忍者 (POD版)',
     [SMASHUP_FACTION_IDS.SUPER_SPIES]: '超级间谍',
     [SMASHUP_FACTION_IDS.TIME_TRAVELERS]: '时间旅行者',
+    [SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD]: '时间旅行者 (POD版)',
 };
 
 FACTION_DISPLAY_NAMES[SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD] = '古埃及人 (POD版)';

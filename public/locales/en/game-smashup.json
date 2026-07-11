@@ -1520,6 +1520,10 @@
       "name": "Itty Critters",
       "description": "Search, play, and recycle tiny power-2 minions for flexible tactical bursts."
     },
+    "itty_critters_pod": {
+      "name": "Itty Critters (POD)",
+      "description": "A POD-ready Itty Critters deck with its own bases and card atlas while sharing the classic play style."
+    },
     "kaiju": {
       "name": "Kaiju",
       "description": "Devastate bases with titan support, play-on-base actions, and breakpoint pressure."
@@ -1547,6 +1551,10 @@
     "time_travelers": {
       "name": "Time Travelers",
       "description": "Recycle discards, return cards to hand, alter base replacement, and replay key turns."
+    },
+    "time_travelers_pod": {
+      "name": "Time Travelers (POD)",
+      "description": "A POD-ready Time Travelers deck with its own bases and card atlas while sharing the classic time-loop toolkit."
     },
     "kung_fu_fighters": {
       "name": "Kung Fu Fighters",

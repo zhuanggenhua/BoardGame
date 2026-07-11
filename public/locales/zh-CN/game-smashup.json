@@ -1503,6 +1503,10 @@
       "name": "迷你萌宠",
       "description": "以低力量萌宠的检索、临时上场与回收循环来适应不同基地。"
     },
+    "itty_critters_pod": {
+      "name": "迷你萌宠（POD）",
+      "description": "POD 版迷你萌宠，使用独立基地与专属卡图，同时沿用经典萌宠的检索、临时上场与回收打法。"
+    },
     "kaiju": {
       "name": "怪兽",
       "description": "围绕泰坦、基地行动与破坏点压制，逐步把基地变成怪兽战场。"
@@ -1530,6 +1534,10 @@
     "time_travelers": {
       "name": "时间旅行者",
       "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
+    },
+    "time_travelers_pod": {
+      "name": "时间旅行者（POD）",
+      "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
     },
     "kung_fu_fighters": {
       "name": "功夫斗士",
