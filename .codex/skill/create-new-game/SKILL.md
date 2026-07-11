@@ -97,7 +97,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 > 详细规则已拆到 `references/preflight-gates.md`。开始目录创建、规则录入、素材落盘、PDF 转 Markdown、图片/位置驱动 intake、对象粒度或资源准入裁定前，先读该 reference。
 
 最小执行口径：
-- 先确认主分支基线、R2 本地同步、真相源/对照源、素材处理授权和目标 gameId。
+- 先确认主分支基线、服务器素材主源本地同步、真相源/对照源、素材处理授权和目标 gameId。
 - 用户问“添加新游戏怎么做”时，必须主动给输入清单、默认流程和验收边界。
 - 素材驱动 UI、规则驱动对象粒度、空间载体 setup、数据驱动边界，必须先裁定职责再实施。
 - 资源准入必须先建规则配件表白名单；正式资源、候选资源、参考图和排除项不能混放。
@@ -618,7 +618,7 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
 - 补齐游戏 i18n 文案、教学配置、音频配置和关键图片预加载。
 - 音频细则读 `docs/ai-rules/audio-assets.md` 和 `.codex/skill/audio-integration/SKILL.md`。
 - 关键图片预加载读 `docs/ai-rules/critical-image-preload.md`。
-- 资源落盘、压缩、manifest、R2/CDN 回查按 `docs/ai-rules/asset-pipeline.md`。
+- 资源落盘、压缩、manifest、服务器素材主源回查按 `docs/ai-rules/asset-pipeline.md`。
 - 最终验证至少覆盖清单生成、游戏测试、类型检查、资源检查/上传和真实入口可玩性。
 
 ---

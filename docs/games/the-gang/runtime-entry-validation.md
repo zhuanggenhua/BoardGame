@@ -8,7 +8,7 @@
 - 现行口径的真相参考为 `docs/games/the-gang/user-stories/online-viewer-and-landscape-contract-2026-07-10.md`。
 - 最新“给用户看图”已用 PureRef 打开；AI 复看只针对桌面中局满元素截图。
 - 桌面教程链已追加独立 E2E：`node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-tutorial.e2e.ts "桌面教程覆盖读牌力、选筹码、公共牌推进和摊牌反馈"`，覆盖开场、读底牌、全员拿白筹码、公共牌推进、红筹码最终承诺、满元素待摊牌和摊牌结果反馈。
-- 教程关键图已用 PureRef 打开给用户看：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg`。这只关闭桌面教程截图交付，不关闭 R2/CDN、手机验收和最终完成口径。
+- 教程关键图已用 PureRef 打开给用户看：`教程满元素待摊牌.jpg` 与 `教程摊牌结果反馈.jpg`。这只关闭桌面教程截图交付，不关闭服务器素材主源发布、手机验收和最终完成口径。
 
 ## 已验证路径
 

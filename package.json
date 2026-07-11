@@ -106,6 +106,7 @@
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "deploy:runner": "node scripts/deploy/deploy-runner.mjs",
     "release:deploy-and-ota": "node scripts/release/deploy-and-ota.mjs",
+    "audit:no-r2-runtime": "node scripts/audit/assert-no-r2-runtime.mjs",
     "merge:audit": "node scripts/verify/merge-conflict-audit.mjs",
     "merge:audit:strict": "node scripts/verify/merge-conflict-audit.mjs --fail-on-single-side",
     "verify:open-image": "node scripts/verify/open-verified-image.mjs",
