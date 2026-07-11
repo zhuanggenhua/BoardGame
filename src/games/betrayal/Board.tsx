@@ -1,8 +1,11 @@
 import React from 'react';
+import { useInRouterContext } from 'react-router-dom';
 import {
     BookOpen,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     Compass,
     Footprints,
     Handshake,
@@ -23,7 +26,9 @@ import type { DicePhysicsState } from '../../lib/dice-physics/types';
 import { useGameAudio } from '../../lib/audio/useGameAudio';
 import {
     ResourceTraySkeleton,
+    ZoomPanViewport,
 } from '../../components/game/framework';
+import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import type { MatchPlayerInfo } from '../../engine/transport/protocol';
 import type { GameBoardProps } from '../../engine/transport/protocol';
@@ -79,6 +84,27 @@ import { BETRAYAL_MANIFEST } from './manifest';
 
 type Props = GameBoardProps<BetrayalCore, BetrayalCommandMap>;
 
+function BetrayalDebugPanel(props: {
+    G: Props['G'];
+    dispatch: Props['dispatch'];
+    playerID: Props['playerID'];
+}) {
+    const isInRouter = useInRouterContext();
+    if (!isInRouter) {
+        return null;
+    }
+
+    return (
+        <GameDebugPanel
+            G={props.G}
+            dispatch={props.dispatch}
+            playerID={props.playerID}
+            aiSupport={BETRAYAL_MANIFEST.ai}
+            playerOptions={BETRAYAL_MANIFEST.playerOptions}
+        />
+    );
+}
+
 type DeckTrayItem = {
     id: string;
     label: string;
@@ -102,15 +128,6 @@ type PreviewState = {
     useIdolForExplore: boolean;
     tradeSelectionTouched: boolean;
     interactionMode: 'default' | 'move' | 'explore';
-};
-
-type RoomGridDragState = {
-    isDragging: boolean;
-    startX: number;
-    startY: number;
-    startPanX: number;
-    startPanY: number;
-    hasMoved: boolean;
 };
 
 const ROOM_TILE_SIZE = 184;
@@ -189,7 +206,9 @@ const ACTION_ICON_BY_ID = {
 
 const ENDGAME_MEDALLION_CLIP_PATH = 'polygon(50% 0%, 85% 11%, 100% 42%, 83% 85%, 50% 100%, 17% 85%, 0% 42%, 15% 11%)';
 const REFERENCE_CARD_FRAME_WIDTH = `min(92vw, calc(86vh * ${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO}))`;
-const INVENTORY_PREVIEW_FRAME_WIDTH = 'min(84vw, 360px)';
+const INVENTORY_PREVIEW_MAX_WIDTH = 360;
+const INVENTORY_PREVIEW_VIEWPORT_WIDTH_RATIO = 0.84;
+const INVENTORY_PREVIEW_VERTICAL_GUTTER = 80;
 const COMPACT_INVENTORY_CARD_WIDTH = 64;
 
 type ReferencePageId = 'scenario' | 'front' | 'back' | 'traitor' | 'monster';
@@ -331,7 +350,7 @@ function isBetrayalCore(value: unknown): value is BetrayalCore {
         && Array.isArray(candidate.rooms);
 }
 
-function createInitialPreviewState(core: BetrayalCore): PreviewState {
+function createInitialPreviewState(_core: BetrayalCore): PreviewState {
     return {
         selectedInventoryCardId: null,
         selectedTradeTargetPlayerId: null,
@@ -906,8 +925,8 @@ function ExplorerPentagonCard({
     onClick?: () => void;
 }) {
     const stateLabel = taken && !selected ? '已占用' : ready ? '已就绪' : selected ? '已选择' : '选择';
-    const assetHeightClass = compact ? 'h-[232px]' : 'h-[280px]';
-    const widthClass = compact ? 'w-[224px]' : 'w-full max-w-[348px]';
+    const assetHeightClass = compact ? 'h-[92px] sm:h-[108px] lg:h-[232px]' : 'h-[112px] sm:h-[168px] lg:h-[280px]';
+    const widthClass = compact ? 'w-[120px] sm:w-[138px] lg:w-[224px]' : 'w-full max-w-[150px] sm:max-w-[240px] lg:max-w-[348px]';
     const stateToneClass = taken && !selected
         ? 'border-[#5c5548] bg-[rgba(14,14,12,0.9)] text-[#8e8371]'
         : ready
@@ -983,6 +1002,43 @@ function CharacterSelectScreen({
         const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
         return !selectedByPlayer || selectedByPlayer === viewerPlayerId;
     }) ?? EXPLORER_CATALOG[0]!;
+    const scenarioConfig = getBetrayalScenarioConfig(core.scenarioId);
+    const [scenarioSelectionOpen, setScenarioSelectionOpen] = React.useState(false);
+    const [mobileExplorerPage, setMobileExplorerPage] = React.useState(0);
+    const [abilityTooltipOpen, setAbilityTooltipOpen] = React.useState(false);
+    const mobileExplorerPageSize = 2;
+    const mobileExplorerPageCount = Math.max(1, Math.ceil(EXPLORER_CATALOG.length / mobileExplorerPageSize));
+    const selectedExplorerIndex = Math.max(0, EXPLORER_CATALOG.findIndex((explorer) => explorer.explorerId === selectedExplorerId));
+    const mobileVisibleExplorers = EXPLORER_CATALOG.slice(
+        mobileExplorerPage * mobileExplorerPageSize,
+        mobileExplorerPage * mobileExplorerPageSize + mobileExplorerPageSize,
+    );
+
+    React.useEffect(() => {
+        setMobileExplorerPage(Math.floor(selectedExplorerIndex / mobileExplorerPageSize));
+    }, [selectedExplorerIndex]);
+
+    React.useEffect(() => {
+        if (!isReady) {
+            setScenarioSelectionOpen(false);
+        }
+    }, [isReady]);
+
+    React.useEffect(() => {
+        setAbilityTooltipOpen(false);
+    }, [selectedExplorerId]);
+
+    const handlePrimaryAction = React.useCallback(() => {
+        if (!isReady) {
+            onConfirmExplorer();
+            return;
+        }
+        if (!scenarioSelectionOpen) {
+            setScenarioSelectionOpen(true);
+            return;
+        }
+        onStartScenario();
+    }, [isReady, onConfirmExplorer, onStartScenario, scenarioSelectionOpen]);
 
     return (
         <div
@@ -998,7 +1054,7 @@ function CharacterSelectScreen({
                 ].join(','),
             }}
         >
-            <div className="mx-auto flex h-full w-full max-w-[1760px] p-3 md:p-4">
+            <div className="mx-auto flex h-full w-full max-w-[1760px] p-1.5 sm:p-2 lg:p-4">
                 <div className="relative flex h-full w-full flex-col overflow-hidden border border-[#7d643a] bg-[rgba(8,15,13,0.94)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
                     <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(132,170,82,0.06),transparent_28%)]" />
@@ -1007,46 +1063,46 @@ function CharacterSelectScreen({
                     <div className="pointer-events-none absolute bottom-1 left-1 h-4 w-4 border-b border-l border-[rgba(216,191,129,0.6)]" />
                     <div className="pointer-events-none absolute bottom-1 right-1 h-4 w-4 border-b border-r border-[rgba(216,191,129,0.6)]" />
 
-                    <header className="grid min-h-[104px] grid-cols-[360px_1fr_240px] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]">
-                        <div className="relative flex items-center overflow-hidden border-r border-[#5e4b2e] px-6 py-3">
+                    <header className="grid min-h-[64px] grid-cols-[minmax(132px,1fr)_minmax(0,1fr)_86px] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))] sm:grid-cols-[minmax(180px,1fr)_minmax(0,1fr)_112px] lg:min-h-[104px] lg:grid-cols-[360px_1fr_240px]">
+                        <div className="relative flex items-center overflow-hidden border-r border-[#5e4b2e] px-2 py-2 sm:px-3 lg:px-6 lg:py-3">
                             <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.26),transparent)]" />
                             <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
-                            <div className="relative flex h-[72px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.28)] bg-[linear-gradient(180deg,rgba(8,12,11,0.74),rgba(5,8,7,0.92))] px-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
+                            <div className="relative flex h-[46px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.28)] bg-[linear-gradient(180deg,rgba(8,12,11,0.74),rgba(5,8,7,0.92))] px-2 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)] lg:h-[72px] lg:px-3">
                                 <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
-                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt={t('title')} className="relative h-[56px] w-full object-contain object-left" draggable={false} />
+                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt={t('title')} className="relative h-[34px] w-full object-contain object-left lg:h-[56px]" draggable={false} />
                             </div>
                         </div>
-                        <div className="relative flex items-center justify-center px-6 py-4 text-center">
-                            <div className="pointer-events-none absolute left-[16%] top-1/2 flex items-center gap-2">
+                        <div className="relative flex items-center justify-center px-2 py-2 text-center lg:px-6 lg:py-4">
+                            <div className="pointer-events-none absolute left-[16%] top-1/2 hidden items-center gap-2 lg:flex">
                                 <span className="h-px w-16 bg-[linear-gradient(90deg,transparent,#9f854d)]" />
                                 <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
                             </div>
-                            <div className="pointer-events-none absolute right-[16%] top-1/2 flex items-center gap-2">
+                            <div className="pointer-events-none absolute right-[16%] top-1/2 hidden items-center gap-2 lg:flex">
                                 <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
                                 <span className="h-px w-16 bg-[linear-gradient(90deg,#9f854d,transparent)]" />
                             </div>
-                            <div className="text-[24px] font-semibold uppercase tracking-[0.28em] text-[#e7c783]">
-                                {t('board.characterSelect.title')}
+                            <div className="text-[15px] font-semibold uppercase tracking-[0.16em] text-[#e7c783] sm:text-[18px] lg:text-[24px] lg:tracking-[0.28em]">
+                                {scenarioSelectionOpen ? t('board.characterSelect.scenarioStepTitle') : t('board.characterSelect.title')}
                             </div>
                         </div>
                         <div className="border-l border-[#5e4b2e]">
-                            <div className="flex h-full flex-col items-center justify-center px-4 py-3 text-center">
-                                <div className="text-xs uppercase tracking-[0.2em] text-[#d8bf81]">{t('board.characterSelect.playersLabel')}</div>
-                                <div className="mt-1 text-[22px] font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
-                                <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#9e8c69]">
+                            <div className="flex h-full flex-col items-center justify-center px-2 py-2 text-center lg:px-4 lg:py-3">
+                                <div className="text-[10px] uppercase tracking-[0.16em] text-[#d8bf81] lg:text-xs lg:tracking-[0.2em]">{t('board.characterSelect.playersLabel')}</div>
+                                <div className="mt-0.5 text-[16px] font-semibold text-[#a8e850] lg:mt-1 lg:text-[22px]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
+                                <div className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-[#9e8c69] lg:mt-1 lg:text-[10px] lg:tracking-[0.16em]">
                                     {t('board.characterSelect.readyCountLabel')}
                                 </div>
                             </div>
                         </div>
                     </header>
 
-                    <main className="grid min-h-0 flex-1 grid-cols-[440px_minmax(0,1fr)] gap-0 px-5 pb-3 pt-4 xl:grid-cols-[472px_minmax(0,1fr)]">
-                        <aside className="relative flex min-h-0 flex-col pr-6">
+                    <main className="grid min-h-0 flex-1 grid-cols-[minmax(178px,0.78fr)_minmax(0,1fr)] gap-0 px-2 pb-2 pt-2 sm:grid-cols-[minmax(220px,0.85fr)_minmax(0,1fr)] lg:grid-cols-[440px_minmax(0,1fr)] lg:px-5 lg:pb-3 lg:pt-4 xl:grid-cols-[472px_minmax(0,1fr)]">
+                        <aside className="relative flex min-h-0 flex-col pr-2 lg:pr-6">
                             <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
-                            <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-4 pt-4">
+                            <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2 lg:px-5 lg:pb-4 lg:pt-4">
                                 <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28),transparent)]" />
                                 <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
-                                <div className="flex justify-center px-2 pt-1">
+                                <div className="flex justify-center px-1 pt-0 lg:px-2 lg:pt-1">
                                     <ExplorerPentagonCard
                                         explorer={selectedExplorer}
                                         selected
@@ -1055,41 +1111,41 @@ function CharacterSelectScreen({
                                         effectiveLocale={effectiveLocale}
                                     />
                                 </div>
-                                <section className="relative mt-3 flex-1 overflow-hidden px-2 pb-3 pt-3">
+                                <section className="relative mt-1.5 flex-1 overflow-visible px-1 pb-2 pt-2 lg:mt-3 lg:px-2 lg:pb-3 lg:pt-3">
                                     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
                                     <div className="grid gap-3">
-                                        <h2 className="truncate text-[24px] font-semibold uppercase tracking-[0.14em] text-[#f3dfae]">{selectedExplorer.displayName}</h2>
-                                        <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-[#b9aa84]">
-                                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(214,191,129,0.18)] bg-[rgba(15,16,13,0.42)] px-3 py-1">
+                                        <h2 className="truncate text-[15px] font-semibold uppercase tracking-[0.08em] text-[#f3dfae] sm:text-[18px] lg:text-[24px] lg:tracking-[0.14em]">{selectedExplorer.displayName}</h2>
+                                        <div className="flex flex-wrap items-center gap-1.5 text-[9px] uppercase tracking-[0.12em] text-[#b9aa84] lg:gap-3 lg:text-[11px] lg:tracking-[0.18em]">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(214,191,129,0.18)] bg-[rgba(15,16,13,0.42)] px-2 py-0.5 lg:gap-2 lg:px-3 lg:py-1">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#d8bf81]" />
                                                 {t('board.characterSelect.currentSelection')}
                                             </span>
-                                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(110,133,66,0.26)] bg-[rgba(23,33,19,0.36)] px-3 py-1 text-[#b5ef42]">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(110,133,66,0.26)] bg-[rgba(23,33,19,0.36)] px-2 py-0.5 text-[#b5ef42] lg:gap-2 lg:px-3 lg:py-1">
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#b5ef42]" />
                                                 {isReady ? t('board.characterSelect.ready') : t('board.characterSelect.pending')}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="relative mt-4 px-1 py-1">
+                                    <div className="relative mt-2 px-0.5 py-1 lg:mt-4 lg:px-1">
                                         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-                                        <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
+                                        <div className="mb-1.5 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81] lg:mb-3 lg:gap-3 lg:text-[11px] lg:tracking-[0.22em]">
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28))]" />
                                             <span>{t('board.characterSelect.traitsTitle')}</span>
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(214,191,129,0.28),transparent)]" />
                                         </div>
-                                        <div className="grid gap-2.5">
+                                        <div className="grid gap-1.5 lg:gap-2.5">
                                         {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
-                                            <div key={trait} className="grid grid-cols-[92px_minmax(0,1fr)_28px] items-center gap-3 text-sm">
+                                            <div key={trait} className="grid grid-cols-[58px_minmax(0,1fr)_22px] items-center gap-1.5 text-[11px] sm:grid-cols-[72px_minmax(0,1fr)_24px] sm:gap-2 lg:grid-cols-[92px_minmax(0,1fr)_28px] lg:gap-3 lg:text-sm">
                                                 <span className={`inline-flex items-center gap-2 font-semibold ${TRAIT_TONE_CLASS[trait].text}`}>
-                                                    <OptimizedImage src={ASSETS.trait[trait]} locale={effectiveLocale} alt="" className="h-5 w-5 object-contain opacity-86" draggable={false} />
+                                                    <OptimizedImage src={ASSETS.trait[trait]} locale={effectiveLocale} alt="" className="h-3 w-3 object-contain opacity-86 lg:h-5 lg:w-5" draggable={false} />
                                                     {TRAIT_LABEL_LOCAL[trait]}
                                                 </span>
-                                                <div className="grid grid-cols-6 gap-1.5">
+                                                <div className="grid grid-cols-6 gap-1 lg:gap-1.5">
                                                     {Array.from({ length: 6 }).map((_, index) => (
                                                         <span
                                                             key={index}
-                                                            className={`h-3.5 rounded-full border ${
+                                                            className={`h-2 rounded-full border lg:h-3.5 ${
                                                                 index < selectedExplorer.traits[trait]
                                                                     ? TRAIT_TONE_CLASS[trait].active
                                                                     : TRAIT_TONE_CLASS[trait].inactive
@@ -1097,64 +1153,178 @@ function CharacterSelectScreen({
                                                         />
                                                     ))}
                                                 </div>
-                                                <span className="text-right text-base font-semibold text-[#f1e8d4]">{selectedExplorer.traits[trait]}</span>
+                                                <span className="text-right text-xs font-semibold text-[#f1e8d4] lg:text-base">{selectedExplorer.traits[trait]}</span>
                                             </div>
                                         ))}
                                     </div>
                                     </div>
-                                    <div className="mt-5 border-t border-[rgba(78,65,45,0.54)] pt-4">
-                                        <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
+                                    <div className="mt-2 border-t border-[rgba(78,65,45,0.54)] pt-2 lg:mt-5 lg:pt-4">
+                                        <div className="mb-2 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81] lg:mb-3 lg:gap-3 lg:text-[11px] lg:tracking-[0.22em]">
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28))]" />
                                             <span>{t('board.characterSelect.abilityTitle')}</span>
                                             <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(214,191,129,0.28),transparent)]" />
                                         </div>
-                                        <div className="px-1 py-1">
-                                            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(110,133,66,0.46)] bg-[rgba(23,33,19,0.62)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b5ef42]">
+                                        <div className="relative px-1 py-1">
+                                            <button
+                                                type="button"
+                                                data-testid="betrayal-character-ability-trigger"
+                                                aria-expanded={abilityTooltipOpen}
+                                                aria-describedby={abilityTooltipOpen ? 'betrayal-character-ability-tooltip' : undefined}
+                                                onClick={() => setAbilityTooltipOpen(true)}
+                                                onMouseEnter={() => setAbilityTooltipOpen(true)}
+                                                onMouseLeave={() => setAbilityTooltipOpen(false)}
+                                                onFocus={() => setAbilityTooltipOpen(true)}
+                                                onBlur={() => setAbilityTooltipOpen(false)}
+                                                className="inline-flex min-h-[32px] cursor-pointer items-center gap-2 rounded-full border border-[rgba(110,133,66,0.46)] bg-[rgba(23,33,19,0.62)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#b5ef42] transition hover:border-[#b5ef42] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5ef42] lg:text-[11px] lg:tracking-[0.18em]"
+                                            >
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#b5ef42]" />
                                                 {selectedExplorer.abilityName}
-                                            </div>
-                                            <div className="mt-3 max-w-[340px] text-[12px] leading-5 text-[#d6ccb2]">
-                                                {selectedExplorer.abilityText}
-                                            </div>
+                                            </button>
+                                            {abilityTooltipOpen ? (
+                                                <div
+                                                    id="betrayal-character-ability-tooltip"
+                                                    role="tooltip"
+                                                    data-testid="betrayal-character-ability-tooltip"
+                                                    className="absolute left-0 top-[calc(100%+0.35rem)] z-40 max-w-[min(72vw,340px)] rounded-[12px] border border-[rgba(181,239,66,0.34)] bg-[rgba(11,16,13,0.96)] px-3 py-2 text-[12px] leading-5 text-[#e8dfc8] shadow-[0_18px_36px_rgba(0,0,0,0.42)]"
+                                                >
+                                                    {selectedExplorer.abilityText}
+                                                </div>
+                                            ) : null}
+                                            <div className="sr-only">{t('board.characterSelect.abilityHint')}</div>
                                         </div>
                                     </div>
                                 </section>
                             </section>
                         </aside>
 
-                        <section className="relative flex min-h-0 items-center justify-center px-5">
+                        <section className="relative flex min-h-0 items-stretch justify-center px-2 lg:px-5">
                             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
                             <div className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
-                            <div
-                                className="grid min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 py-4"
-                                data-tutorial-id="betrayal-character-selection-grid"
-                            >
-                                {EXPLORER_CATALOG.slice(1).map((explorer) => {
-                                    const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
-                                    const selected = explorer.explorerId === selectedExplorerId;
-                                    const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
-                                    return (
-                                        <ExplorerPentagonCard
-                                            key={explorer.explorerId}
-                                            explorer={explorer}
-                                            compact
-                                            selected={selected}
-                                            ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
-                                            taken={taken}
-                                            effectiveLocale={effectiveLocale}
-                                            onClick={() => onSelectExplorer(explorer.explorerId)}
-                                        />
-                                    );
-                                })}
-                            </div>
+                            {scenarioSelectionOpen ? (
+                                <div
+                                    data-testid="betrayal-scenario-select-step"
+                                    className="flex h-full w-full max-w-[720px] flex-col justify-center py-2 lg:py-4"
+                                >
+                                    <div className="relative overflow-hidden border border-[rgba(214,191,129,0.44)] bg-[linear-gradient(180deg,rgba(30,24,16,0.94),rgba(8,12,10,0.96))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.36)] lg:p-6">
+                                        <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.12)]" />
+                                        <div className="relative">
+                                            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c9a35e] lg:text-[12px]">
+                                                {t('board.characterSelect.scenarioSelected')}
+                                            </div>
+                                            <h2 className="mt-2 text-[20px] font-bold tracking-[0.08em] text-[#fff0b8] lg:text-[32px]">
+                                                {t('board.scenario.hauntValue')}
+                                            </h2>
+                                            <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#9fb98b] lg:text-[13px]">
+                                                {scenarioConfig.presentation.runtimeObjective}
+                                            </div>
+                                            <div className="mt-4 grid gap-3 lg:mt-6 lg:grid-cols-2">
+                                                <div className="rounded-[12px] border border-[rgba(211,179,109,0.26)] bg-[rgba(12,16,13,0.62)] p-3">
+                                                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d6b56d] lg:text-[11px]">
+                                                        {t('board.scenario.objectiveLabel')}
+                                                    </div>
+                                                    <div className="mt-1 text-[13px] leading-5 text-[#fff5cf] lg:text-[15px]">
+                                                        {t('board.scenario.objective')}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-[12px] border border-[rgba(126,182,127,0.24)] bg-[rgba(18,30,20,0.58)] p-3">
+                                                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b5ef42] lg:text-[11px]">
+                                                        {t('board.characterSelect.scenarioOnly')}
+                                                    </div>
+                                                    <div className="mt-1 text-[13px] leading-5 text-[#dcecc7] lg:text-[15px]">
+                                                        {t('board.characterSelect.scenarioStepSubtitle')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div
+                                        className="hidden min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 overflow-y-auto py-4 lg:grid"
+                                        data-testid="betrayal-character-selection-grid"
+                                        data-tutorial-id="betrayal-character-selection-grid"
+                                    >
+                                        {EXPLORER_CATALOG.map((explorer) => {
+                                            const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
+                                            const selected = explorer.explorerId === selectedExplorerId;
+                                            const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
+                                            return (
+                                                <ExplorerPentagonCard
+                                                    key={explorer.explorerId}
+                                                    explorer={explorer}
+                                                    compact
+                                                    selected={selected}
+                                                    ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
+                                                    taken={taken}
+                                                    effectiveLocale={effectiveLocale}
+                                                    onClick={() => onSelectExplorer(explorer.explorerId)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                    <div
+                                        className="flex h-full min-h-0 w-full flex-col items-center justify-center gap-1.5 py-1 lg:hidden"
+                                        data-testid="betrayal-character-mobile-pager"
+                                    >
+                                        <button
+                                            type="button"
+                                            data-testid="betrayal-character-page-up"
+                                            aria-label={t('board.characterSelect.pageUp')}
+                                            disabled={mobileExplorerPage === 0}
+                                            onClick={() => setMobileExplorerPage((page) => Math.max(0, page - 1))}
+                                            className="grid h-9 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
+                                        >
+                                            <ChevronUp size={18} />
+                                        </button>
+                                        <div className="grid min-h-0 flex-1 content-center justify-items-center gap-1.5">
+                                            {mobileVisibleExplorers.map((explorer) => {
+                                                const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
+                                                const selected = explorer.explorerId === selectedExplorerId;
+                                                const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
+                                                return (
+                                                    <ExplorerPentagonCard
+                                                        key={explorer.explorerId}
+                                                        explorer={explorer}
+                                                        compact
+                                                        selected={selected}
+                                                        ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
+                                                        taken={taken}
+                                                        effectiveLocale={effectiveLocale}
+                                                        onClick={() => onSelectExplorer(explorer.explorerId)}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                data-testid="betrayal-character-page-down"
+                                                aria-label={t('board.characterSelect.pageDown')}
+                                                disabled={mobileExplorerPage >= mobileExplorerPageCount - 1}
+                                                onClick={() => setMobileExplorerPage((page) => Math.min(mobileExplorerPageCount - 1, page + 1))}
+                                                className="grid h-9 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
+                                            >
+                                                <ChevronDown size={18} />
+                                            </button>
+                                            <span
+                                                data-testid="betrayal-character-mobile-page-label"
+                                                className="min-w-[3.5rem] text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]"
+                                            >
+                                                {mobileExplorerPage + 1}/{mobileExplorerPageCount}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </section>
                     </main>
 
-                    <footer className="grid grid-cols-[minmax(0,1fr)_520px] border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]">
-                        <div className="grid grid-cols-[124px_repeat(6,minmax(92px,1fr))] overflow-hidden">
-                            <div className="flex flex-col justify-center border-r border-[#5e4b2e] px-3 py-3 text-center">
-                                <div className="text-[11px] uppercase tracking-[0.2em] text-[#d8bf81]">{t('board.characterSelect.playersLabel')}</div>
-                                <div className="mt-1 text-[16px] font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
+                    <footer className="grid grid-cols-[minmax(0,1fr)_minmax(220px,260px)] border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))] lg:grid-cols-[minmax(0,1fr)_520px]">
+                        <div className="grid grid-cols-[54px_repeat(6,minmax(34px,1fr))] overflow-hidden lg:grid-cols-[124px_repeat(6,minmax(92px,1fr))]">
+                            <div className="flex flex-col justify-center border-r border-[#5e4b2e] px-1 py-1.5 text-center lg:px-3 lg:py-3">
+                                <div className="text-[8px] uppercase tracking-[0.12em] text-[#d8bf81] lg:text-[11px] lg:tracking-[0.2em]">{t('board.characterSelect.playersLabel')}</div>
+                                <div className="mt-0.5 text-[13px] font-semibold text-[#a8e850] lg:mt-1 lg:text-[16px]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
                             </div>
                             {Array.from({ length: 6 }).map((_, seatIndex) => {
                                 const playerId = core.playerIds[seatIndex] ?? null;
@@ -1172,13 +1342,13 @@ function CharacterSelectScreen({
                                 return (
                                     <div
                                         key={playerId ?? `empty-seat-${seatIndex}`}
-                                        className={`flex min-w-0 flex-col items-center justify-center border-r border-[#5e4b2e] px-2 py-2 text-center last:border-r-0 ${
+                                        className={`flex min-w-0 flex-col items-center justify-center border-r border-[#5e4b2e] px-0.5 py-1 text-center last:border-r-0 lg:px-2 lg:py-2 ${
                                             selectedId
                                                 ? 'bg-[rgba(75,116,59,0.08)] text-[#d9f0b8]'
                                                 : 'bg-[rgba(9,13,12,0.22)] text-[#8d8678]'
                                         }`}
                                     >
-                                        <div className={`grid h-[66px] w-[66px] place-items-center overflow-hidden ${
+                                        <div className={`grid h-[28px] w-[28px] place-items-center overflow-hidden sm:h-[34px] sm:w-[34px] lg:h-[66px] lg:w-[66px] ${
                                             selectedId
                                                 ? 'bg-[rgba(13,19,16,0.78)]'
                                                 : 'bg-[rgba(13,17,15,0.56)]'
@@ -1195,9 +1365,9 @@ function CharacterSelectScreen({
                                                 <span className="text-[24px] text-[#3f473f]">—</span>
                                             )}
                                         </div>
-                                        <div className="mt-1 text-[11px] font-semibold tracking-[0.12em] text-[#d7bf85]">P{seatIndex + 1}</div>
-                                        <div className="mt-0.5 max-w-[82px] truncate text-[11px]">{playerName}</div>
-                                        <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${
+                                        <div className="mt-0.5 text-[9px] font-semibold tracking-[0.08em] text-[#d7bf85] lg:mt-1 lg:text-[11px] lg:tracking-[0.12em]">P{seatIndex + 1}</div>
+                                        <div className="hidden mt-0.5 max-w-[82px] truncate text-[11px] lg:block">{playerName}</div>
+                                        <div className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-1 py-0.5 text-[8px] lg:mt-1 lg:px-2 lg:text-[10px] ${
                                             ready
                                                 ? 'border border-[rgba(132,171,82,0.42)] bg-[rgba(39,57,28,0.42)] text-[#b5ef42]'
                                                 : selectedId
@@ -1210,31 +1380,37 @@ function CharacterSelectScreen({
                                 );
                             })}
                         </div>
-                        <div className="grid grid-cols-[120px_minmax(0,1fr)_108px]">
+                        <div className="grid grid-cols-[58px_minmax(0,1fr)_58px] lg:grid-cols-[120px_minmax(0,1fr)_108px]">
                             <button
                                 type="button"
+                                disabled={scenarioSelectionOpen}
                                 onClick={() => onSelectExplorer(availableExplorer.explorerId)}
-                                className="relative inline-flex min-h-[126px] items-center justify-center gap-3 border-l border-[#5e4b2e] text-[16px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
+                                className="relative inline-flex min-h-[58px] items-center justify-center gap-1 border-l border-[#5e4b2e] px-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)] disabled:cursor-not-allowed disabled:opacity-35 lg:min-h-[126px] lg:gap-3 lg:text-[16px] lg:tracking-[0.18em]"
                             >
                                 <span className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                                 {t('board.characterSelect.random')}
                             </button>
                             <button
                                 type="button"
-                                onClick={isReady ? onStartScenario : onConfirmExplorer}
+                                onClick={handlePrimaryAction}
                                 data-testid="betrayal-character-confirm"
                                 data-tutorial-id="betrayal-character-confirm"
-                                className="relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] bg-[linear-gradient(180deg,rgba(95,135,44,0.24),rgba(54,81,22,0.76))] text-[26px] font-semibold uppercase tracking-[0.18em] text-[#dfff8f] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.3),rgba(61,91,25,0.82))]"
+                                className="relative inline-flex min-h-[58px] items-center justify-center gap-2 border-l border-[#5e4b2e] bg-[linear-gradient(180deg,rgba(95,135,44,0.24),rgba(54,81,22,0.76))] px-2 text-[15px] font-semibold uppercase tracking-[0.1em] text-[#dfff8f] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.3),rgba(61,91,25,0.82))] lg:min-h-[126px] lg:text-[26px] lg:tracking-[0.18em]"
                             >
                                 <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
-                                {isReady ? t('board.characterSelect.start') : t('board.characterSelect.confirm')}
+                                {!isReady
+                                    ? t('board.characterSelect.confirm')
+                                    : scenarioSelectionOpen
+                                        ? t('board.characterSelect.startScenario')
+                                        : t('board.characterSelect.chooseScenario')}
                             </button>
                             <button
                                 type="button"
-                                className="relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] px-4 text-[15px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
+                                onClick={() => setScenarioSelectionOpen(false)}
+                                className="relative inline-flex min-h-[58px] items-center justify-center gap-1 border-l border-[#5e4b2e] px-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)] lg:min-h-[126px] lg:gap-2 lg:px-4 lg:text-[15px] lg:tracking-[0.18em]"
                             >
                                 <span className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-                                <ChevronLeft size={18} />
+                                <ChevronLeft size={16} />
                                 {t('board.characterSelect.back')}
                             </button>
                         </div>
@@ -2163,20 +2339,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [roomPreviewId, setRoomPreviewId] = React.useState<string | null>(null);
     const [inventoryPreviewCardId, setInventoryPreviewCardId] = React.useState<string | null>(null);
     const [confirmedExorciseRollId, setConfirmedExorciseRollId] = React.useState<string | null>(null);
-    const [roomGridPan, setRoomGridPan] = React.useState({ x: 0, y: 0 });
+    const [roomGridFocusTarget, setRoomGridFocusTarget] = React.useState<string | null>(null);
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
     const isPhoneLandscapeLayout = runtimeViewport.width > runtimeViewport.height
         && runtimeViewport.width <= 1023
         && runtimeViewport.height <= 520;
     const hasCenteredInitialRoomGridRef = React.useRef(false);
-    const roomGridDragRef = React.useRef<RoomGridDragState>({
-        isDragging: false,
-        startX: 0,
-        startY: 0,
-        startPanX: 0,
-        startPanY: 0,
-        hasMoved: false,
-    });
     const isEndgameExorciseRollReview = baseCore.phase === 'endgame'
         && baseCore.recentRoll?.kind === 'hauntActionTraitCheck'
         && baseCore.recentRoll.sourceTitle === '驱魔'
@@ -2297,18 +2465,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (roomShells.length === 0) {
             return false;
         }
-        const gridRect = roomGrid.getBoundingClientRect();
-        const roomRects = roomShells.map((roomShell) => roomShell.getBoundingClientRect());
-        const left = Math.min(...roomRects.map((roomRect) => roomRect.left));
-        const right = Math.max(...roomRects.map((roomRect) => roomRect.right));
-        const top = Math.min(...roomRects.map((roomRect) => roomRect.top));
-        const bottom = Math.max(...roomRects.map((roomRect) => roomRect.bottom));
-        const deltaX = (gridRect.left + (gridRect.width / 2)) - ((left + right) / 2);
-        const deltaY = (gridRect.top + (gridRect.height / 2)) - ((top + bottom) / 2);
-        setRoomGridPan((previousPan) => ({
-            x: previousPan.x + deltaX,
-            y: previousPan.y + deltaY,
-        }));
+        const targetId = roomShells[0]?.dataset.zoomPanTarget ?? null;
+        if (!targetId || typeof window === 'undefined') {
+            return false;
+        }
+        setRoomGridFocusTarget(null);
+        window.requestAnimationFrame(() => setRoomGridFocusTarget(targetId));
         return true;
     }, []);
 
@@ -2322,39 +2484,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         return focusRoomInView(core.currentExplorer.roomId) || focusActiveRoomInView();
     }, [core.currentExplorer.roomId, focusActiveRoomInView, focusRoomInView]);
 
-    const roomCanvasTransformStyle = React.useMemo(() => {
-        if (!isPhoneLandscapeLayout) {
-            return {
-                ...roomCanvasStyle,
-                transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0)`,
-                transformOrigin: 'center center',
-            };
-        }
-
-        const mobileScale = Math.min(
-            1,
-            Math.max(0.58, (runtimeViewport.width - 24) / Number(roomCanvasStyle.width || ROOM_CANVAS_MIN_WIDTH)),
-            Math.max(0.58, (runtimeViewport.height - 116) / Number(roomCanvasStyle.height || ROOM_CANVAS_MIN_HEIGHT)),
-        );
-        return {
-            ...roomCanvasStyle,
-            transform: `translate3d(${roomGridPan.x}px, ${roomGridPan.y}px, 0) scale(${mobileScale})`,
-            transformOrigin: 'center center',
-            ['--betrayal-mobile-room-scale' as string]: String(mobileScale),
-        };
-    }, [
-        isPhoneLandscapeLayout,
-        roomCanvasStyle,
-        roomGridPan.x,
-        roomGridPan.y,
-        runtimeViewport.height,
-        runtimeViewport.width,
-    ]);
+    const roomCanvasTransformStyle = React.useMemo(() => ({
+        ...roomCanvasStyle,
+        transformOrigin: 'center center',
+    }), [roomCanvasStyle]);
 
     React.useEffect(() => {
         if (core.phase !== 'preHaunt') {
             hasCenteredInitialRoomGridRef.current = false;
-            setRoomGridPan({ x: 0, y: 0 });
+            setRoomGridFocusTarget(null);
             return undefined;
         }
         if (hasCenteredInitialRoomGridRef.current) {
@@ -2384,6 +2522,37 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         ?? null;
     const selectedInventoryUseEffect = selectedInventoryCard ? resolveUseEffect(selectedInventoryCard) : null;
     const previewInventoryCard = core.currentExplorerInventory.find((item) => item.id === inventoryPreviewCardId) ?? null;
+    const inventoryPreviewFrameWidth = React.useMemo(() => {
+        if (runtimeViewport.width <= 0 || runtimeViewport.height <= 0) {
+            return `min(84vw, ${INVENTORY_PREVIEW_MAX_WIDTH}px)`;
+        }
+
+        const availableWidth = Math.max(
+            0,
+            runtimeViewport.width - runtimeViewport.safeArea.left - runtimeViewport.safeArea.right,
+        );
+        const availableHeight = Math.max(
+            0,
+            runtimeViewport.height
+                - runtimeViewport.safeArea.top
+                - runtimeViewport.safeArea.bottom
+                - INVENTORY_PREVIEW_VERTICAL_GUTTER,
+        );
+        const width = Math.min(
+            INVENTORY_PREVIEW_MAX_WIDTH,
+            availableWidth * INVENTORY_PREVIEW_VIEWPORT_WIDTH_RATIO,
+            availableHeight * BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
+        );
+
+        return `${Math.max(96, width).toFixed(3)}px`;
+    }, [
+        runtimeViewport.height,
+        runtimeViewport.safeArea.bottom,
+        runtimeViewport.safeArea.left,
+        runtimeViewport.safeArea.right,
+        runtimeViewport.safeArea.top,
+        runtimeViewport.width,
+    ]);
     const inventoryGroups = React.useMemo(
         () => ({
             item: core.currentExplorerInventory.filter((item) => item.kind === 'item'),
@@ -2941,75 +3110,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             behavior: 'smooth',
             block: 'start',
         });
-    }, []);
-
-    const handleRoomGridPointerDown = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-        if (event.button !== 0) {
-            return;
-        }
-        const grid = roomGridRef.current;
-        if (!grid) {
-            return;
-        }
-
-        roomGridDragRef.current = {
-            isDragging: true,
-            startX: event.clientX,
-            startY: event.clientY,
-            startPanX: roomGridPan.x,
-            startPanY: roomGridPan.y,
-            hasMoved: false,
-        };
-        grid.setPointerCapture(event.pointerId);
-        grid.setAttribute('data-drag-ready', 'true');
-    }, [roomGridPan.x, roomGridPan.y]);
-
-    const handleRoomGridPointerMove = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-        const grid = roomGridRef.current;
-        const dragState = roomGridDragRef.current;
-        if (!grid || !dragState.isDragging) {
-            return;
-        }
-
-        const deltaX = event.clientX - dragState.startX;
-        const deltaY = event.clientY - dragState.startY;
-        if (!dragState.hasMoved && Math.hypot(deltaX, deltaY) > 4) {
-            dragState.hasMoved = true;
-            grid.setAttribute('data-dragging', 'true');
-        }
-        if (dragState.hasMoved) {
-            event.preventDefault();
-        }
-        setRoomGridPan({
-            x: dragState.startPanX + deltaX,
-            y: dragState.startPanY + deltaY,
-        });
-    }, []);
-
-    const handleRoomGridPointerEnd = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-        const grid = roomGridRef.current;
-        const dragState = roomGridDragRef.current;
-        if (!grid || !dragState.isDragging) {
-            return;
-        }
-
-        dragState.isDragging = false;
-        grid.removeAttribute('data-drag-ready');
-        grid.removeAttribute('data-dragging');
-        if (grid.hasPointerCapture(event.pointerId)) {
-            grid.releasePointerCapture(event.pointerId);
-        }
-
-        if (dragState.hasMoved) {
-            const suppressClick = (clickEvent: MouseEvent) => {
-                clickEvent.preventDefault();
-                clickEvent.stopPropagation();
-            };
-            grid.addEventListener('click', suppressClick, { capture: true });
-            window.setTimeout(() => {
-                grid.removeEventListener('click', suppressClick, { capture: true });
-            }, 200);
-        }
     }, []);
 
     React.useEffect(() => {
@@ -3756,26 +3856,40 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     if (baseCore.phase === 'characterSelect') {
         return (
-            <CharacterSelectScreen
-                core={baseCore}
-                matchData={matchData}
-                effectiveLocale={effectiveLocale}
-                viewerPlayerId={viewerPlayerId}
-                selectedExplorerId={selectedExplorerId}
-                onSelectExplorer={handleSelectExplorer}
-                onConfirmExplorer={handleConfirmExplorer}
-                onStartScenario={handleStartScenario}
-            />
+            <>
+                <CharacterSelectScreen
+                    core={baseCore}
+                    matchData={matchData}
+                    effectiveLocale={effectiveLocale}
+                    viewerPlayerId={viewerPlayerId}
+                    selectedExplorerId={selectedExplorerId}
+                    onSelectExplorer={handleSelectExplorer}
+                    onConfirmExplorer={handleConfirmExplorer}
+                    onStartScenario={handleStartScenario}
+                />
+                <BetrayalDebugPanel
+                    G={G}
+                    dispatch={dispatch}
+                    playerID={playerID}
+                />
+            </>
         );
     }
 
     if (core.phase === 'endgame') {
         return (
-            <EndgameScreen
-                core={core}
-                matchData={matchData}
-                effectiveLocale={effectiveLocale}
-            />
+            <>
+                <EndgameScreen
+                    core={core}
+                    matchData={matchData}
+                    effectiveLocale={effectiveLocale}
+                />
+                <BetrayalDebugPanel
+                    G={G}
+                    dispatch={dispatch}
+                    playerID={playerID}
+                />
+            </>
         );
     }
 
@@ -3790,6 +3904,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ].join(','),
             }}
         >
+            <BetrayalDebugPanel
+                G={G}
+                dispatch={dispatch}
+                playerID={playerID}
+            />
             <div
                 className={`relative h-full min-h-full w-full overflow-hidden ${
                     isPhoneLandscapeLayout
@@ -4766,24 +4885,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                                <div
+                                <ZoomPanViewport
                                     ref={roomGridRef}
-                                    className={`relative min-h-0 flex-1 cursor-grab touch-none overflow-hidden bg-transparent active:cursor-grabbing ${
+                                    className={`relative min-h-0 flex-1 bg-transparent ${
                                         isPhoneLandscapeLayout ? 'mx-auto grid w-full max-w-none place-items-center' : ''
                                     }`}
-                                    data-testid="betrayal-room-grid"
-                                aria-label={t('board.sections.rooms')}
-                                onPointerDown={handleRoomGridPointerDown}
-                                onPointerMove={handleRoomGridPointerMove}
-                                onPointerUp={handleRoomGridPointerEnd}
-                                onPointerCancel={handleRoomGridPointerEnd}
-                            >
-                                <div
-                                    className={`relative will-change-transform ${
+                                    contentClassName={`relative ${
                                         isPhoneLandscapeLayout ? 'mx-auto' : 'mx-auto xl:ml-0 xl:mr-auto'
                                     }`}
-                                    data-testid="betrayal-room-canvas"
-                                    style={roomCanvasTransformStyle}
+                                    containerTestId="betrayal-room-grid"
+                                    contentTestId="betrayal-room-canvas"
+                                    scaleTestId="betrayal-room-map-scale"
+                                    initialScale={isPhoneLandscapeLayout ? 0.78 : 1}
+                                    minScale={0.55}
+                                    maxScale={2.4}
+                                    dragBoundsPaddingRatioY={0.18}
+                                    panToTarget={roomGridFocusTarget}
+                                    panToScale={roomGridFocusTarget ? 1.15 : undefined}
+                                    contentStyle={roomCanvasTransformStyle}
+                                    ariaLabel={t('board.sections.rooms')}
                                 >
                                 {core.rooms.map((room) => {
                                     const tone = FLOOR_TONE[room.floor];
@@ -4831,6 +4951,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         <div
                                             key={room.id}
                                             data-testid={`betrayal-room-shell-${room.id}`}
+                                            data-zoom-pan-target={`betrayal-room-${room.id}`}
                                             className="group absolute overflow-visible"
                                             style={{
                                                 ...resolveRoomTileStyle(room),
@@ -5055,8 +5176,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         </div>
                                     );
                                     })}
-                                </div>
-                            </div>
+                                </ZoomPanViewport>
                             {visibleActionItems.length > 0 && !isEndgameExorciseRollReview ? (
                                 <div
                                     data-testid="betrayal-action-rail"
@@ -5474,12 +5594,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     overlayTestId="betrayal-inventory-preview-overlay"
                     overlayClassName="bg-[rgba(3,6,5,0.74)] p-4 md:p-6"
                     containerClassName="rounded-none overflow-visible bg-transparent"
+                    closeLabel={t('board.reference.close')}
                 >
                     {previewInventoryCard ? (
                         <div
-                            className="pointer-events-auto relative"
+                            className="pointer-events-auto relative cursor-zoom-out"
+                            onClick={() => setInventoryPreviewCardId(null)}
                             style={{
-                                width: INVENTORY_PREVIEW_FRAME_WIDTH,
+                                width: inventoryPreviewFrameWidth,
                                 aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
                             }}
                         >

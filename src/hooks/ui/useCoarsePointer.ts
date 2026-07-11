@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { safeMatchMedia, subscribeMediaQueryChange } from '../../lib/mediaQuery';
 
-const COARSE_POINTER_QUERY = '(pointer: coarse)';
+// 保留旧 Hook 名称；无悬浮设备同样需要触控优先的交互回退。
+const TOUCH_FIRST_INTERACTION_QUERY = '(pointer: coarse), (hover: none)';
 const FORCE_COARSE_POINTER_QUERY_KEY = 'bgForceCoarsePointer';
 
 const getForcedCoarsePointer = () => {
@@ -32,7 +33,7 @@ const getIsCoarsePointer = () => {
         return false;
     }
 
-    return safeMatchMedia(COARSE_POINTER_QUERY).matches;
+    return safeMatchMedia(TOUCH_FIRST_INTERACTION_QUERY).matches;
 };
 
 export function useCoarsePointer() {
@@ -48,7 +49,7 @@ export function useCoarsePointer() {
             return undefined;
         }
 
-        const mediaQuery = safeMatchMedia(COARSE_POINTER_QUERY);
+        const mediaQuery = safeMatchMedia(TOUCH_FIRST_INTERACTION_QUERY);
         const updatePointer = () => {
             setIsCoarsePointer(mediaQuery.matches);
         };

@@ -31,6 +31,7 @@ export interface DiceBoxStyleProfile {
     cameraZoom?: number;
     initialThrowSpread?: number;
     settledSpreadAnimationMs?: number;
+    fitWorldToCameraView?: boolean;
     strength?: number;
     iterationLimit?: number;
     arrangeSettledDice?: boolean;
@@ -304,14 +305,22 @@ export class DiceBoxThreeEngine {
     resize(): void {
         const worldWidthScale = this.styleProfile.worldWidthScale ?? 1;
         const worldHeightScale = this.styleProfile.worldHeightScale ?? 1;
-        const worldWidth = this.container.clientWidth * worldWidthScale;
-        const worldHeight = this.container.clientHeight * worldHeightScale;
+        this.applyCameraProfile();
+        const fitToCameraView = this.styleProfile.fitWorldToCameraView === true;
+        const visibleHalfExtents = fitToCameraView
+            ? this.getVisibleWorldHalfExtentsAtZ(this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90)
+            : null;
+        const worldWidth = fitToCameraView && visibleHalfExtents
+            ? visibleHalfExtents.x * 2 * worldWidthScale
+            : this.container.clientWidth * worldWidthScale;
+        const worldHeight = fitToCameraView && visibleHalfExtents
+            ? visibleHalfExtents.y * 2 * worldHeightScale
+            : this.container.clientHeight * worldHeightScale;
         this.worldBounds = { width: worldWidth, height: worldHeight };
         this.box.setDimensions({
             x: worldWidth,
             y: worldHeight,
         });
-        this.applyCameraProfile();
 
         const canvas = this.box.renderer?.domElement;
         if (canvas) {
@@ -320,6 +329,7 @@ export class DiceBoxThreeEngine {
             canvas.dataset.physicsWorldWidth = String(Math.round(worldWidth));
             canvas.dataset.physicsWorldHeight = String(Math.round(worldHeight));
             canvas.dataset.cameraZoom = String(this.styleProfile.cameraZoom ?? 1);
+            canvas.dataset.fitWorldToCameraView = fitToCameraView ? 'true' : 'false';
         }
     }
 

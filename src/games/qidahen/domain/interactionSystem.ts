@@ -60,6 +60,7 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
                 if (
                     event.type === 'PENDING_ACTION_RESOLVED'
                     || event.type === 'POST_BATTLE_DECISION_RESOLVED'
+                    || event.type === 'WUZHEN_CHAOHA_RESOLVED'
                 ) {
                     shouldClearRuntimeInteractionCurrent = true;
                 }

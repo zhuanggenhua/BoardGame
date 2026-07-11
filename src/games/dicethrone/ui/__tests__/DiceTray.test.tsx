@@ -108,7 +108,10 @@ const boardDice: Die[] = [
     { id: 1, value: 2, isKept: true, definitionId: 'monk-dice' },
 ];
 
-function createModifyInteraction(mode: 'adjust' | 'any' = 'adjust'): InteractionDescriptor<MultistepChoiceData<DiceModifyStep, DiceModifyResult>> {
+function createModifyInteraction(
+    mode: 'adjust' | 'any' = 'adjust',
+    selectCount = 1,
+): InteractionDescriptor<MultistepChoiceData<DiceModifyStep, DiceModifyResult>> {
     return {
         id: `modify-${mode}`,
         kind: 'multistep-choice',
@@ -126,7 +129,7 @@ function createModifyInteraction(mode: 'adjust' | 'any' = 'adjust'): Interaction
                 dieModifyConfig: mode === 'adjust'
                     ? { mode: 'adjust', adjustRange: { min: -1, max: 1 } }
                     : { mode: 'any' },
-                selectCount: 1,
+                selectCount,
                 diceOwnerId: undefined,
                 targetOpponentDice: false,
             },
@@ -345,6 +348,31 @@ describe('DiceTray tutorial anchor', () => {
 
         incrementButton.click();
         expect(step).toHaveBeenCalledWith({ action: 'adjust', dieId: 0, delta: 1, currentValue: 1 });
+    });
+
+    it('右侧传统骰盘的任意改面模式应允许分别修改两颗骰子', () => {
+        const step = vi.fn();
+        render(
+            <DiceTray
+                dice={[
+                    { id: 0, value: 6, isKept: false, definitionId: 'monk-dice' },
+                    { id: 1, value: 6, isKept: false, definitionId: 'monk-dice' },
+                ]}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract={true}
+                isRolling={false}
+                interaction={createModifyInteraction('any', 2)}
+                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step)}
+            />,
+        );
+
+        screen.getByTestId('die-adjust-decrement-0').click();
+        screen.getByTestId('die-adjust-decrement-1').click();
+
+        expect(step).toHaveBeenNthCalledWith(1, { action: 'setAny', dieId: 0, newValue: 5 });
+        expect(step).toHaveBeenNthCalledWith(2, { action: 'setAny', dieId: 1, newValue: 5 });
     });
 
     it('棋盘内 3D 物理骰应等 DiceThrone 骰面皮肤就绪后再生成和投掷', () => {

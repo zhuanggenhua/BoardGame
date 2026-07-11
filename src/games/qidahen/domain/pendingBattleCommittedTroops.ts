@@ -2,6 +2,7 @@ import {
     computeQidahenAttackPressure,
     computeQidahenEffectiveCommittedTroops,
 } from './attackRules';
+import { updateQidahenPrimaryForceCommittedTroops } from './battleForceCommitments';
 import { getPendingActionSourceForceSnapshot } from './battleState';
 import { hasActiveCharacter } from './characterPresenceAccessors';
 import type { QidahenMovementProfileId } from './movement';
@@ -97,8 +98,7 @@ export const applyRequestedCommittedTroops = (
 
     const attackPressure = computeQidahenAttackPressure(committedTroops, pendingTargetAction.battleWidth);
     return {
-        ...pendingTargetAction,
-        committedTroops,
+        ...updateQidahenPrimaryForceCommittedTroops(pendingTargetAction, committedTroops),
         attackPressure,
         resolutionHint: `${pendingTargetAction.resolutionHint} · 实出${committedTroops}/战力${attackPressure}`,
     };

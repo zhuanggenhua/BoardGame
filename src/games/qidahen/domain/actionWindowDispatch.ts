@@ -11,6 +11,7 @@ import { getQidahenInteractionSelectionStateForCore } from './interactionSelecti
 import { materializeNonSiegedCityActionSourceRegion } from './actionSourceRegionState';
 import { applyCommittedTroopRemovalToRegion } from './pendingBattleCombatSupport';
 import { applyRequestedCommittedTroops } from './pendingBattleCommittedTroops';
+import { createQidahenBattleForceCommitment } from './battleForceCommitments';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import { updateQidahenTurnLabel } from './turnLabelState';
@@ -103,6 +104,16 @@ const buildPendingTargetActionFromWheelDispatchChoice = (
     attackBoundaryType: candidate.attackBoundaryType,
     resolutionHint: candidate.resolutionHint,
     defenderPayCost: null,
+    forceCommitments: [createQidahenBattleForceCommitment({
+        sourceRegionId: selection.sourceRegionId,
+        sourceRegionName: selection.sourceRegionName,
+        sourceAvailableTroops: candidate.sourceAvailableTroops,
+        committedTroops: candidate.committedTroops,
+        movementProfileId: selection.movementProfileId,
+        battleWidth: candidate.battleWidth,
+        boundaryUnitCap: candidate.boundaryUnitCap,
+        attackBoundaryType: candidate.attackBoundaryType,
+    })],
 });
 
 const resolveGaoDiDispatch = (

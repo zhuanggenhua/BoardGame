@@ -65,25 +65,27 @@
 
 ## 当前真实截图证据
 
-当前 `e2e/qidahen/qidahen-closeout.e2e.ts` 已在 2026-07-02 全量回跑并实际产出以下截图组：
+当前 `e2e/qidahen/qidahen-closeout.e2e.ts` 已在 2026-07-11 从当前工作区全量回跑，`16/16` 通过；当前唯一有效桌面截图批次为：
 
-- `01-12`：基础回合
+- `test-results/evidence-screenshots/_shared/qidahen-教程完成/current-closeout-final-20260711`
+
+该批次实际产出以下截图组：
+
+- `00`：教程目录
+- `01-12a`：基础回合
 - `13-15`：轮盘代价与推进
 - `15a-15f`：轮盘开垦、军屯、征兵训练隐藏续章
+- `15g`：轮盘主章节续到隐藏开垦教程
 - `16-18`：升级军备
 - `19-22`：事件行动
 - `23-27a`：进攻与野战、断后后的战后处理、战后占领结果
-- `26-27`：战败撤退
 - `28-29`：战败撤退
 - `30-31a`：攻城与围城
 - `32-35`（含 `33a`、`33b`）：外交与雇佣
 - `36-41`：年中、新年与纪年
 - `42-46`：朝鲜与地图特例
 
-注意：
-
-- 目录里同时留着旧编号残留和新编号，不可直接把文件存在当成覆盖充分的证据。
-- 当前有效截图应以 2026-07-02 刷新的新编号组为主；旧编号残留只能作为历史候选，不再作为当前验收主证据。
+当前批次共 61 张桌面截图；另有 2 张移动横屏最终图。两类证据已发布到服务器任务 `boardgame/qidahen-tutorial-closeout`，远端清单共 63 张。历史目录和旧编号只能作为候选或回归对照，不得覆盖上述当前批次。
 
 ## 目标 6 章的真实覆盖现状
 
@@ -203,7 +205,7 @@
 
 | 规则条目 | 目标章节 | 当前状态 | 当前证据 | 当前缺口 |
 | :--- | :--- | :--- | :--- | :--- |
-| 胜利目标：16 区 / 攻首都 / 3 威望 | `basic-opening` | 已部分证明 | `01` | 仍需确认最终基础章不会再被旁白腔带偏 |
+| 胜利目标：16 区 / 攻首都 / 3 威望 | `basic-opening` | 已覆盖 | `01` | 当前玩家文案已明确三种赢法；后续文案修改仍需防止作者旁白腔回流 |
 | 回合骨架：手牌上限 -> 转轮盘 -> 手牌行动 + 轮盘行动 | `basic-opening` | 已覆盖 | `02-05` `07-12` | 基础章已从真实手牌上限弃牌进入轮盘真实选择，再完成一次手牌行动；轮盘行动由真实轮盘点击完成，横幅只做结果提示 |
 | 手牌行动全集：执行事件 / 升级军备 / 势力行动 | `basic-opening` `wheel-shared-cost` | 未完整覆盖 | `06-09` `16-22` | 当前只证明了势力行动与抽象按钮链；正式局没有规则书口径的事件牌/军备牌一级入口 |
 | 手牌四种类型：事件 / 军备 / 战术 / 银两 | `basic-opening` | 已覆盖 | `05` | 无 |
@@ -252,35 +254,14 @@
 - 轮盘发展章已由 `15g` 证明 `wheel-shared-cost` 完成后会真实续到 `wheel-reclaim`，并由 `wheel-reclaim / wheel-military-farm / wheel-recruit-train` 等隐藏续章继续承接轮盘分支。
 - 年序章与地图特例章虽然已分开命名，也已补到朝鲜朝贡/耗损摘要链，但部分证据仍偏摘要态，没有把关键规则真正教透。
 
-## 文案通过后的实施清单
+## 当前维护与验收入口
 
-### 一定要改的源码文件
+- 玩家可见章节、隐藏续章和串联关系：`src/games/qidahen/tutorial.ts`
+- 教程预设状态：`src/games/qidahen/tutorialSetup.ts`
+- 玩家文案：`public/locales/zh-CN/game-qidahen.json`、`public/locales/en/game-qidahen.json`
+- 当前端到端链：`e2e/qidahen/qidahen-closeout.e2e.ts`
+- 当前桌面截图：`test-results/evidence-screenshots/_shared/qidahen-教程完成/current-closeout-final-20260711`
+- 当前视觉核验：`test-results/evidence-image-validation/qidahen-tutorial-closeout.json`
+- 当前收口记录：`evidence/qidahen/qidahen-tutorial-closeout-e2e-test.md`
 
-- `src/games/qidahen/tutorial.ts`
-- `src/games/qidahen/tutorialSetup.ts`
-- `public/locales/zh-CN/game-qidahen.json`
-- `public/locales/en/game-qidahen.json`
-- `e2e/qidahen/qidahen-closeout.e2e.ts`
-
-### 一定要补的真实证据
-
-1. 基础章：
-   - 真实证明“完整首回合顺序”的截图或交互链
-2. 战斗章：
-   - 已补骑兵避战、骑兵劫掠、中立入侵、水路移动、骑兵城战减值与战术牌真实打出窗口；后续不要把教程注入牌误当 2.4 正式普通手牌真相源
-3. 攻城章：
-   - 已补山海关真实守城宣告、城战待结算、骑兵城战减值、围城选择与同章占领对照；`31a` 证明攻下城市后选择占领会真正改控制权
-4. 轮盘发展章：
-   - 至少证明主章节串起轮盘代价与后续系统，而不是只靠隐藏续章名字收口
-5. 年序章：
-   - 至少补一条人物判定或战败标记近景
-6. 地图特例章：
-   - 至少补一条朝鲜朝贡 / 朝鲜耗损 / 真实水路入口
-
-### 文案通过后建议的落地顺序
-
-1. 改 `tutorial.ts`
-2. 改中英文语言包
-3. 改 `tutorialSetup.ts`
-4. 改 `qidahen-closeout.e2e.ts`
-5. 串行重拍截图并核图
+后续只要修改章节、文案、交互承接物或截图顺序，必须同步更新上述源码、矩阵和当前证据。教程注入牌、隐藏续章和抽象按钮链仍不得被用来替代正式普通手牌真相源，也不得替 OpenSpec `2.4 / 4.5` 的未完成项背书。

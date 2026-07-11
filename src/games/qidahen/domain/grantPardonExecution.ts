@@ -10,6 +10,7 @@ import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import type {
     QidahenCore,
+    QidahenFactionId,
     QidahenGrantPardonChoice,
     QidahenSeasonSummary,
 } from './types';
@@ -52,6 +53,7 @@ export const resolveQidahenGrantPardonExecution = (
     factions: QidahenCore['factions'],
     timestamp: number,
     choice?: QidahenGrantPardonChoice | null,
+    executorFactionId: QidahenFactionId = 'ming',
     dependencies: QidahenGrantPardonExecutionDependencies = {
         buildSeasonSummary,
         materializeNonSiegedCityActionSourceRegion,
@@ -63,13 +65,13 @@ export const resolveQidahenGrantPardonExecution = (
     const runtimeRegions = state.regions.filter((region) => !region.isLogicalRegion);
     const grantPardonSourceRegion = runtimeRegions.find((region) => (
         region.id === choice?.sourceRegionId
-        && region.controller !== 'ming'
+        && region.controller !== executorFactionId
         && getNonSiegedCityActionSourceSnapshot(region).troops > 0
     ));
     const grantPardonDestinationRegion = grantPardonSourceRegion
         ? runtimeRegions.find((region) => (
             region.id === choice?.targetRegionId
-            && region.controller === 'ming'
+            && region.controller === executorFactionId
             && grantPardonSourceRegion.adjacentRegionIds.includes(region.id)
         )) ?? null
         : null;
@@ -97,7 +99,7 @@ export const resolveQidahenGrantPardonExecution = (
                 actionTargetRegion,
                 1,
                 [],
-                `${actionTargetRegion.name} 接收 1 个经赐印招安归化的大明部队。`,
+                `${actionTargetRegion.name} 接收 1 个经赐印招安归化的${state.factions[executorFactionId].name}部队。`,
             );
         }
         return region;
@@ -106,9 +108,9 @@ export const resolveQidahenGrantPardonExecution = (
     const nextRegions = dependencies.refreshRuntimeRegionRules(nextRuntimeRegions, state.fortifications);
     const nextFactions: QidahenCore['factions'] = {
         ...factions,
-        ming: {
-            ...factions.ming,
-            troops: factions.ming.troops + 1,
+        [executorFactionId]: {
+            ...factions[executorFactionId],
+            troops: factions[executorFactionId].troops + 1,
         },
     };
     const sourceFactionId = grantPardonSourceRegion.controller;
@@ -122,7 +124,7 @@ export const resolveQidahenGrantPardonExecution = (
     return {
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('赐印招安', timestamp, [
-            `${grantPardonSourceRegion.name} 有 1 个部队被招安，转入 ${grantPardonDestinationRegion.name} 并成为大明部队。`,
+            `${grantPardonSourceRegion.name} 有 1 个部队被招安，转入 ${grantPardonDestinationRegion.name} 并成为${state.factions[executorFactionId].name}部队。`,
         ]),
         regions: nextRegions,
         selectedRegionId: grantPardonDestinationRegion.id,

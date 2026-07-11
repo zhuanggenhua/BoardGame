@@ -17,50 +17,116 @@ import {
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const ROOT_DISCOVERY_RULES = [
-    {
-        prefix: 'official/app-updates/',
-        includes: ['**/latest.json'],
-    },
-    {
-        prefix: 'official/mobile-packages/',
-        includes: ['**/games/*.json', '**/shared/*.json'],
-    },
-    {
-        prefix: 'official/native-app-updates/',
-        includes: ['**/latest.json'],
-    },
-];
 const DEFAULT_REMOTE = 'r2-boardgame:boardgame-assets';
 const DEFAULT_ASSETS_ROOT = '/home/admin/storage/assets';
-const DEFAULT_MAX_ACTIVE_BYTES = 2 * 1024 * 1024 * 1024;
+const DEFAULT_MAX_ACTIVE_BYTES = 4 * 1024 * 1024 * 1024;
 const DEFAULT_MIN_FREE_BYTES = 5 * 1024 * 1024 * 1024;
 
 export const isActiveRootKey = (key) => (
-    /official\/(?:app-updates|native-app-updates)\/[^/]+\/[^/]+\/latest\.json$/.test(key)
+    /^official\/(?:.+\/)?assets-manifest\.json$/.test(key)
+    || /official\/(?:app-updates|native-app-updates)\/[^/]+\/[^/]+\/latest\.json$/.test(key)
     || /official\/mobile-packages\/[^/]+\/[^/]+\/(?:games|shared)\/[^/]+\.json$/.test(key)
 );
 
+const hasSafePathSegments = (value) => {
+    const segments = value.split('/');
+    return segments.length > 0
+        && segments.every((segment) => segment && segment !== '.' && segment !== '..');
+};
+
+const normalizeOfficialObjectKey = (value) => {
+    if (typeof value !== 'string') return '';
+    const candidate = value.replace(/^\/+/, '');
+    if (!candidate.startsWith('official/') || candidate.endsWith('/')) return '';
+    return hasSafePathSegments(candidate) ? candidate : '';
+};
+
+const normalizeOfficialPrefix = (value) => {
+    if (typeof value !== 'string' || !value.startsWith('official/') || !value.endsWith('/')) {
+        return '';
+    }
+    const withoutTrailingSlash = value.slice(0, -1);
+    return hasSafePathSegments(withoutTrailingSlash) ? value : '';
+};
+
+const normalizeRelativeAssetPath = (value) => {
+    if (typeof value !== 'string'
+        || value.length === 0
+        || value.trim() !== value
+        || value.startsWith('/')
+        || value.includes('\\')
+        || /^[A-Za-z]:/.test(value)
+        || /^[a-z][a-z0-9+.-]*:/i.test(value)
+        || !hasSafePathSegments(value)) {
+        return '';
+    }
+    return value;
+};
+
+const appendReference = (output, candidate) => {
+    if (candidate && !output.includes(candidate)) {
+        output.push(candidate);
+    }
+};
+
+const extractDirectReference = (value) => {
+    if (typeof value !== 'string') return '';
+    if (/^https?:\/\//i.test(value)) {
+        try {
+            const url = new URL(value);
+            const marker = url.pathname.indexOf('/official/');
+            if (marker >= 0) {
+                return normalizeOfficialObjectKey(decodeURIComponent(url.pathname.slice(marker + 1)));
+            }
+        } catch {
+            return '';
+        }
+        return '';
+    }
+    return normalizeOfficialObjectKey(value);
+};
+
+const extractFileIndexReferences = (value, output) => {
+    if (!Array.isArray(value?.files)) return;
+    for (const entry of value.files) {
+        const relativePath = normalizeRelativeAssetPath(entry?.path);
+        if (relativePath) {
+            appendReference(output, `official/${relativePath}`);
+        }
+    }
+};
+
+const extractAssetManifestReferences = (value, output) => {
+    if (!value
+        || typeof value !== 'object'
+        || Array.isArray(value)
+        || value.manifestVersion !== 1
+        || value.scope !== 'official'
+        || !value.files
+        || Array.isArray(value.files)
+        || typeof value.files !== 'object') {
+        return;
+    }
+
+    const basePrefix = normalizeOfficialPrefix(value.basePrefix);
+    if (!basePrefix) return;
+
+    for (const [logicalPath, definition] of Object.entries(value.files)) {
+        const safeLogicalPath = normalizeRelativeAssetPath(logicalPath);
+        if (!safeLogicalPath || !definition?.variants || typeof definition.variants !== 'object') {
+            continue;
+        }
+        for (const extension of Object.keys(definition.variants)) {
+            const safeExtension = extension.replace(/^\./, '');
+            if (!/^[a-z0-9]+$/i.test(safeExtension)) continue;
+            appendReference(output, `${basePrefix}${safeLogicalPath}.${safeExtension}`);
+        }
+    }
+};
+
 export const extractAssetReferences = (value, output = []) => {
     if (typeof value === 'string') {
-        let candidate = '';
-        if (/^https?:\/\//i.test(value)) {
-            try {
-                const url = new URL(value);
-                const marker = url.pathname.indexOf('/official/');
-                if (marker >= 0) {
-                    candidate = decodeURIComponent(url.pathname.slice(marker + 1));
-                }
-            } catch {
-                return output;
-            }
-        } else if (value.startsWith('official/')) {
-            candidate = value;
-        }
-
-        if (candidate) {
-            output.push(candidate.replace(/^\/+/, ''));
-        }
+        appendReference(output, extractDirectReference(value));
         return output;
     }
 
@@ -72,6 +138,8 @@ export const extractAssetReferences = (value, output = []) => {
     }
 
     if (value && typeof value === 'object') {
+        extractFileIndexReferences(value, output);
+        extractAssetManifestReferences(value, output);
         for (const item of Object.values(value)) {
             extractAssetReferences(item, output);
         }
@@ -170,93 +238,33 @@ const runCommand = (command, args, options = {}) => new Promise((resolve, reject
     });
 });
 
-const discoverRootObjects = async (remote) => {
-    const roots = new Map();
-    for (const rule of ROOT_DISCOVERY_RULES) {
-        const args = [
-            'lsf',
-            `${remote}/${rule.prefix}`,
-            '--recursive',
-            '--files-only',
-            '--format',
-            'pst',
-            '--separator',
-            '|',
-        ];
-        for (const pattern of rule.includes) {
-            args.push('--include', pattern);
-        }
-        const raw = await runCommand('rclone', args);
-        for (const line of raw.split(/\r?\n/)) {
-            if (!line.trim()) continue;
-            const [relativePath, size, modTime] = line.split('|');
-            roots.set(`${rule.prefix}${relativePath}`, {
-                size: Number(size),
-                modTime,
-                hash: '',
-            });
-        }
-    }
-    return roots;
-};
-
-const statRemoteObject = async (remote, key) => {
+const discoverRemoteObjects = async (remote) => {
+    const objects = new Map();
     const raw = await runCommand('rclone', [
-        'lsjson',
-        '--stat',
-        `${remote}/${key}`,
-        '--no-mimetype',
+        'lsf',
+        `${remote}/official/`,
+        '--recursive',
+        '--files-only',
+        '--format',
+        'pst',
+        '--separator',
+        '|',
     ]);
-    const item = JSON.parse(raw);
-    return {
-        size: Number(item.Size ?? 0),
-        modTime: item.ModTime || '',
-        hash: '',
-    };
+    for (const line of raw.split(/\r?\n/)) {
+        if (!line.trim()) continue;
+        const [relativePath, size, modTime] = line.split('|');
+        objects.set(`official/${relativePath}`, {
+            size: Number(size),
+            modTime,
+            hash: '',
+        });
+    }
+    return objects;
 };
 
 const readRemoteJson = async (remote, key) => {
     const raw = await runCommand('rclone', ['cat', `${remote}/${key}`]);
     return JSON.parse(raw);
-};
-
-const resolveRemoteActiveAssetSet = async ({ remote, rootObjects }) => {
-    const objects = new Map(rootObjects);
-    const roots = [...rootObjects.keys()].sort();
-    const active = new Set();
-    const unresolved = new Set();
-    const queue = [...roots];
-
-    while (queue.length > 0) {
-        const key = queue.shift();
-        if (!key || active.has(key)) continue;
-
-        if (!objects.has(key)) {
-            try {
-                objects.set(key, await statRemoteObject(remote, key));
-            } catch {
-                unresolved.add(key);
-                continue;
-            }
-        }
-
-        active.add(key);
-        if (!key.endsWith('.json')) continue;
-
-        const parsed = await readRemoteJson(remote, key);
-        for (const reference of extractAssetReferences(parsed)) {
-            if (!active.has(reference)) {
-                queue.push(reference);
-            }
-        }
-    }
-
-    return {
-        active,
-        objects,
-        roots,
-        unresolved,
-    };
 };
 
 const readReleaseMetadata = async (releasePath) => {
@@ -370,7 +378,10 @@ const main = async () => {
         currentPath = null;
     }
     const previousMetadata = await readReleaseMetadata(currentPath);
-    const rootObjects = await discoverRootObjects(options.remote);
+    const remoteObjects = await discoverRemoteObjects(options.remote);
+    const rootObjects = new Map(
+        [...remoteObjects].filter(([key]) => isActiveRootKey(key)),
+    );
     const rootKeys = new Set(rootObjects.keys());
     const rootFingerprint = createActiveFingerprint(rootKeys, rootObjects);
     if (previousMetadata?.rootFingerprint === rootFingerprint) {
@@ -380,9 +391,9 @@ const main = async () => {
         return;
     }
 
-    const resolved = await resolveRemoteActiveAssetSet({
-        remote: options.remote,
-        rootObjects,
+    const resolved = await resolveActiveAssetSet({
+        objects: remoteObjects,
+        readJson: (key) => readRemoteJson(options.remote, key),
     });
     if (resolved.unresolved.size > 0) {
         throw new Error(`当前清单引用了不存在的对象: ${[...resolved.unresolved].join(', ')}`);

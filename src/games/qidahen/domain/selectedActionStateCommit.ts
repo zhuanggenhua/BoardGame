@@ -16,8 +16,6 @@ import type {
     QidahenFactionId,
 } from './types';
 
-const QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID = 'qidahen-atlas05-1625-jade-casket-unearthed';
-
 interface QidahenSelectedActionStateCommitDependencies {
     applyVictoryStatus: (
         state: QidahenCore,
@@ -84,11 +82,6 @@ export function commitQidahenSelectedActionState(
     const hasHuangtaijiBonus = currentFactionId === 'jin' && hasActiveCharacter(state, 'jin', 'jin-huangtaiji');
     const usedBonusFactionAction = state.factionActionUsed && hasRemainingFactionAction(state, currentFactionId);
     const shouldKeepDriveTigerDispatchSelectionOffHost = followUp.turnPhase === 'drive-tiger-consent';
-    const guihuaPrestigeMarkerController = actionId === 'play-event-card'
-        && selectedEventActionCardPersistent
-        && selectedEventActionCardDefId === QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID
-        ? currentFactionId
-        : state.guihuaPrestigeMarkerController;
     const executedState = dependencies.applyVictoryStatus({
         ...state,
         selectedRegionId: followUp.selectedRegionId,
@@ -135,7 +128,6 @@ export function commitQidahenSelectedActionState(
                 },
             ]
             : state.activeEventCards,
-        guihuaPrestigeMarkerController,
         regions,
         factions,
         pendingTargetAction: followUp.pendingTargetAction,

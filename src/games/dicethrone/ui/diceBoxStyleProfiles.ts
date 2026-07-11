@@ -63,12 +63,12 @@ export const DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE = {
     // 插件默认会让多颗骰子从几乎同一个入口一起飞；移动横屏分成五条
     // 初始通道后仍走完整物理模拟，投掷结束不做重排，因此不会瞬移。
     initialThrowSpread: 0.76,
-    // 仅当自然落点仍重叠或接近横排时，在 rolling 状态内平滑完成落位；
-    // 动画完成后才上报 settled，避免投掷结束后的瞬移和静止态漂移。
-    settledSpreadAnimationMs: 220,
+    // 移动端必须保留真实物理落点；停稳后再搬到槽位会被肉眼看成瞬移。
+    settledSpreadAnimationMs: 0,
     strength: 1,
-    // 移动横屏要保留足够纵深，不能只扩大横向边界，否则真实投掷
-    // 结束后五颗骰子仍会沿角色面板顶部塌成一排。
-    worldWidthScale: 0.72,
-    worldHeightScale: 1.05,
+    // 红框就是移动端投骰物理范围：按相机真实可见范围收进舞台内，
+    // 不再只靠结束后的投影回收把跑出去的骰子拉回来。
+    fitWorldToCameraView: true,
+    worldWidthScale: 0.62,
+    worldHeightScale: 0.78,
 } satisfies DiceBoxStyleProfile;

@@ -653,11 +653,10 @@ export function execute(
                 };
                 events.push(event);
                 
-                // 规则 3.3 步骤 3：如果骰面被修改且已选择技能，触发重选
-                // 注意：终极技能不受影响（行动锁定）
+                // 规则 3.3 步骤 3：如果骰面被修改且已选择技能，触发重选。
+                // 终极技能只有正式发动后才行动锁定；发动前仍可被改骰取消。
                 if (phase === 'offensiveRoll'
                     && state.pendingAttack
-                    && !state.pendingAttack.isUltimate
                     && die
                     && newValue !== die.value) {
                     events.push({
@@ -702,8 +701,8 @@ export function execute(
             };
             events.push(event);
             
-            // 规则 3.3 步骤 3：如果骰面被重掷且已选择技能，触发重选
-            // 注意：终极技能不受影响（行动锁定）
+            // 规则 3.3 步骤 3：如果骰面被重掷且已选择技能，触发重选。
+            // 终极技能只有正式发动后才行动锁定；发动前仍可被重掷取消。
             const currentInteraction = matchState.sys?.interaction?.current;
             const interactionMeta = currentInteraction?.kind === 'multistep-choice'
                 ? (currentInteraction.data as { meta?: { dtType?: string; skipAbilityReselection?: boolean } } | undefined)?.meta
@@ -713,8 +712,7 @@ export function execute(
 
             if (!skipAbilityReselection
                 && phase === 'offensiveRoll'
-                && state.pendingAttack
-                && !state.pendingAttack.isUltimate) {
+                && state.pendingAttack) {
                 events.push({
                     type: 'ABILITY_RESELECTION_REQUIRED',
                     payload: {
@@ -1140,10 +1138,10 @@ export function execute(
                     timestamp: timestamp + 1,
                 } as DieRerolledEvent);
 
-                // 重掷后如果在进攻阶段且已选技能，触发重选
+                // 重掷后如果在进攻阶段且已选技能，触发重选。
+                // 终极技能只有正式发动后才行动锁定；发动前仍可被重掷取消。
                 if (phase === 'offensiveRoll'
                     && state.pendingAttack
-                    && !state.pendingAttack.isUltimate
                     && newValue !== die.value) {
                     events.push({
                         type: 'ABILITY_RESELECTION_REQUIRED',

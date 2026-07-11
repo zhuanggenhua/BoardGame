@@ -602,6 +602,53 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it.each([
+        [
+            'this.i.at is not a function',
+            'TypeError: this.i.at is not a function\n    at e.u (https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:136)',
+        ],
+        [
+            't.entries.at is not a function',
+            'TypeError: t.entries.at is not a function\n    at https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773',
+        ],
+    ])('Cloudflare 统计脚本的旧 Safari at 兼容噪音会被过滤：%s', async (message, stack) => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce(`cloudflare-beacon-at-noise:${message}`, {
+            content: `[auto][window.error] ${message}`,
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: message,
+            errorSource: `https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:136`,
+            stack,
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('Cloudflare 堆栈中混入站内调用时不会按 at 兼容噪音过滤', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('cloudflare-beacon-at-with-app-frame', {
+            content: '[auto][window.error] t.entries.at is not a function',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 't.entries.at is not a function',
+            errorSource: 'https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773',
+            stack: 'TypeError: t.entries.at is not a function\n    at https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773\n    at reportMetric (https://easyboardgame.top/src/lib/metrics.ts:12:3)',
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it('Script error. 浏览器通用噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

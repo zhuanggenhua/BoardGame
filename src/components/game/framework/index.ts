@@ -12,6 +12,8 @@ export { PlayerPanelSkeleton } from './PlayerPanelSkeleton';
 export { HandAreaSkeleton } from './HandAreaSkeleton';
 export { ActionBarSkeleton } from './ActionBarSkeleton';
 export { ResourceTraySkeleton } from './ResourceTraySkeleton';
+export { ZoomPanViewport } from './ZoomPanViewport';
+export type { ZoomPanViewportProps } from './ZoomPanViewport';
 export { SpotlightSkeleton } from './SpotlightSkeleton';
 export { MobileBattlefieldViewport, MobileBoardShell } from './MobileBoardShell';
 export { CardListOverlay } from './CardListOverlay';

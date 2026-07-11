@@ -5,6 +5,7 @@ import path from 'node:path';
 import { zipSync } from 'fflate';
 import { publishPrimaryAssetBatch } from '../assets/publish-primary-assets.mjs';
 import {
+    resolveAndroidOtaVersionBase,
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
 import { classifyOtaBundleFile } from './ota-bundle-files.mjs';
@@ -129,10 +130,20 @@ const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.tr
 const nativeVersion = readArgValue('native-version', packageJson.version);
 const expectedBaseVersion = readArgValue('expected-base-version', '').trim();
 const explicitBundleVersion = readArgValue('version', '');
-const otaVersionBase = readArgValue(
+const requestedOtaVersionBase = readArgValue(
     'ota-version-base',
-    process.env.ANDROID_OTA_VERSION_BASE?.trim() || packageJson.version,
+    process.env.ANDROID_OTA_VERSION_BASE?.trim() || '',
 ).trim();
+const otaVersionBase = resolveAndroidOtaVersionBase({
+    packageVersion: packageJson.version,
+    requestedVersionBase: requestedOtaVersionBase,
+});
+if (explicitBundleVersion) {
+    resolveAndroidOtaVersionBase({
+        packageVersion: packageJson.version,
+        requestedVersionBase: explicitBundleVersion,
+    });
+}
 const notes = readArgValue('notes', 'Android embedded OTA bundle');
 const forbiddenCompatibilityArgs = [
     'target-native-version',

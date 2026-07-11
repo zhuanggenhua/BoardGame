@@ -1453,13 +1453,6 @@ export const getResponderQueue = (
     excludeId: PlayerId | undefined,
     phase: TurnPhase
 ): PlayerId[] => {
-    // 规则 4.4：终极技能行动锁定 - 对手不能采取任何行动
-    // 影响的窗口：afterRollConfirmed
-    if (state.pendingAttack?.isUltimate && windowType === 'afterRollConfirmed') {
-        // 终极技能激活后，对手不能响应，返回空队列
-        return [];
-    }
-    
     const allPlayers = getPlayerOrder(state);
     const queue: PlayerId[] = [];
     const shouldExcludeSameTeam = isTeamMode(state);

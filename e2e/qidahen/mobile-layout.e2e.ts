@@ -48,6 +48,17 @@ const mountQidahenBoardHarness = async (page: Page) => {
             ].join(';');
             document.body.appendChild(host);
 
+            const backgroundModalRoot = document.getElementById('modal-root');
+            if (backgroundModalRoot) {
+                backgroundModalRoot.id = 'qidahen-background-modal-root';
+            }
+            const boardMount = document.createElement('div');
+            boardMount.id = 'qidahen-harness-board-root';
+            boardMount.style.cssText = 'position:absolute;inset:0;';
+            const modalRoot = document.createElement('div');
+            modalRoot.id = 'modal-root';
+            host.append(boardMount, modalRoot);
+
             const ReactModule = await import('/node_modules/.vite/deps/react.js');
             const React = ReactModule.default;
             const ReactDomModule = await import('/node_modules/.vite/deps/react-dom_client.js');
@@ -86,7 +97,7 @@ const mountQidahenBoardHarness = async (page: Page) => {
                 });
             };
 
-            ReactDOM.createRoot(host).render(
+            ReactDOM.createRoot(boardMount).render(
                 React.createElement(
                     ToastModule.ToastProvider,
                     null,
@@ -268,7 +279,7 @@ test.describe('七大恨移动端布局兼容', () => {
         expect(metrics.completeHandCards, 'Qidahen 手机横屏时至少一张手牌主体应完整进入视口').toBeGreaterThan(0);
         expect(metrics.comfortableHandCards, 'Qidahen 手机横屏时至少一张完整手牌应留出可见底部余量').toBeGreaterThan(0);
         expect(metrics.readableHandCards, 'Qidahen 手机横屏时不能只有中间手牌可辨，当前手牌主体应在可视容器内完整可辨').toBe(metrics.handCards);
-        expect(metrics.loadedHandCardAtlasImages, 'Qidahen 手机横屏时手牌应加载真实牌面图集图片').toBeGreaterThan(0);
+        expect(metrics.loadedHandCardAtlasImages, 'Qidahen 手机横屏时每张手牌都应加载真实牌面图集图片').toBe(metrics.handCards);
 
         expect(metrics.boardRect!.left, 'Qidahen 板面左边界不应出视口').toBeGreaterThanOrEqual(-1);
         expect(metrics.boardRect!.right, 'Qidahen 板面右边界不应出视口').toBeLessThanOrEqual(metrics.innerWidth + 1);
@@ -286,6 +297,27 @@ test.describe('七大恨移动端布局兼容', () => {
             expect(actionRect!.bottom, 'Qidahen 操作区按钮不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
         }
 
-        await screenshot(page, testName, 'qidahen-mobile-landscape-layout.png');
+        await screenshot(page, testName, '01-手机横屏-四张手牌完整可见.png');
+
+        const firstMagnifyButton = page.locator(
+            '#qidahen-harness-root button[data-testid^="qidahen-hand-card-magnify-"]',
+        ).first();
+        await expect(firstMagnifyButton).toBeVisible();
+        await firstMagnifyButton.click();
+
+        const magnifyOverlay = page.getByTestId('qidahen-card-magnify-overlay');
+        const magnifyContent = page.getByTestId('qidahen-card-magnify-content');
+        await expect(magnifyOverlay).toBeVisible();
+        await expect(magnifyContent).toBeVisible();
+        const magnifyBox = await magnifyContent.boundingBox();
+        expect(magnifyBox, '移动横屏手牌放大卡面应有可见尺寸').not.toBeNull();
+        expect(magnifyBox!.x, '移动横屏手牌放大卡面左边界不应出视口').toBeGreaterThanOrEqual(0);
+        expect(magnifyBox!.x + magnifyBox!.width, '移动横屏手牌放大卡面右边界不应出视口').toBeLessThanOrEqual(metrics.innerWidth);
+        expect(magnifyBox!.y, '移动横屏手牌放大卡面顶边界不应出视口').toBeGreaterThanOrEqual(0);
+        expect(magnifyBox!.y + magnifyBox!.height, '移动横屏手牌放大卡面底边界不应出视口').toBeLessThanOrEqual(metrics.innerHeight);
+
+        await screenshot(page, testName, '02-手机横屏-手牌放大查看.png');
+        await page.getByRole('button', { name: '关闭查看' }).click();
+        await expect(magnifyOverlay).toBeHidden();
     });
 });

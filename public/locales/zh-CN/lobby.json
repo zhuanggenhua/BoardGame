@@ -1060,7 +1060,8 @@
         "release_ready": "发布环境"
       },
       "ota": {
-        "title": "Android OTA"
+        "title": "Android OTA",
+        "force_update_required": "所有 OTA 均为强制更新：客户端检测到新版本后会阻塞下载并立即切换，发布入口不允许关闭。"
       },
       "packages": {
         "title": "Android 游戏包"

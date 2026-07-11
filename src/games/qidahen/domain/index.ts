@@ -12,6 +12,8 @@ import {
 import { reduceQidahenResolvedEvent } from './resolvedEventReducers';
 import { createInitialCore, createInitialCoreForInMatchScenarioVote } from './initialCoreSetup';
 import { syncQidahenSpecialRuleState } from './specialRuleState';
+import { syncQidahenJadeCasketControlAfterRegionChange } from './jadeCasketControl';
+import { applyQidahenVictoryStatus } from './victoryResolution';
 import type { QidahenCommand, QidahenCore, QidahenEvent } from './types';
 import { playerView } from './view';
 
@@ -69,11 +71,21 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
     },
 
     reduce: (state, event): QidahenCore => {
-        const reducedCore = reduceQidahenResolvedEvent(state, event);
-        if (reducedCore) {
+        const reducedCore = reduceQidahenResolvedEvent(state, event)
+            ?? reduceQidahenDirectInputEvent(state, event)
+            ?? state;
+        const syncedCore = syncQidahenJadeCasketControlAfterRegionChange(state, reducedCore);
+        if (syncedCore === reducedCore) {
             return reducedCore;
         }
-        return reduceQidahenDirectInputEvent(state, event) ?? state;
+        const jadeCasketTransferred = syncedCore.activeEventCards !== reducedCore.activeEventCards;
+        if (!jadeCasketTransferred || reducedCore.victoryStatus?.condition !== 'prestige') {
+            return syncedCore;
+        }
+        return applyQidahenVictoryStatus({
+            ...syncedCore,
+            victoryStatus: state.victoryStatus,
+        });
     },
 
     playerView,

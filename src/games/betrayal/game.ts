@@ -11,6 +11,11 @@ import type {
     ValidationResult,
 } from '../../engine/types';
 import { createCheatSystem } from '../../engine/systems';
+import {
+    BETRAYAL_ACTION_LOG_ALLOWLIST,
+    BETRAYAL_UNDO_ALLOWLIST,
+    formatBetrayalActionEntry,
+} from './actionLog';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import { createBetrayalAiRuntime } from './ai';
 import { BETRAYAL_COMMANDS } from './commands';
@@ -36,9 +41,18 @@ import {
     type BetrayalScenarioOutcome,
     type BetrayalTraitKey as ConfigTraitKey,
     type BetrayalTraitorSelectionPolicy,
-    type BetrayalUseEffectSeed,
     type BetrayalSurvivorSelectionPolicy,
 } from './scenarioConfig';
+import {
+    POSSESSION_USE_EFFECTS as USE_EFFECTS,
+    resolveInventoryEffectId,
+    resolveUseEffect,
+    type PossessionUseEffectProfile,
+    type UseEffectProfile,
+} from './possessionEffects';
+
+export { resolveUseEffect } from './possessionEffects';
+export type { PossessionUseEffectProfile, UseEffectProfile } from './possessionEffects';
 
 export type BetrayalTraitKey = ConfigTraitKey;
 export type BetrayalInventoryKind = ConfigInventoryKind;
@@ -545,29 +559,6 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = BETRAYAL_EXPLORER_CA
 
 type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 
-export type UseEffectProfile = BetrayalUseEffectSeed;
-export type PossessionUseEffectProfile = UseEffectProfile | {
-    mode: 'nextNonCombatTraitReplacement';
-    replacementTrait: BetrayalTraitKey;
-    sanityCost: number;
-    recommendedAction: BetrayalRecommendedAction;
-} | {
-    mode: 'healTraits';
-    traits: BetrayalTraitKey[];
-    consumeOnUse: boolean;
-    target: 'self' | 'selfOrSameRoomExplorer';
-    recommendedAction: BetrayalRecommendedAction;
-} | {
-    mode: 'placeExplorer';
-    target: 'anyDiscoveredRoom';
-    consumeOnUse: boolean;
-    recommendedAction: BetrayalRecommendedAction;
-} | {
-    mode: 'moveOthersInRoom';
-    target: 'sameRoomOtherExplorersAndMonsters';
-    recommendedAction: BetrayalRecommendedAction;
-};
-
 type EventTemplate = BetrayalEventSeed;
 type EventEffectSnapshot = NonNullable<BetrayalRecentRollState['eventEffectSnapshot']>;
 
@@ -582,58 +573,6 @@ const ROOM_DISCOVERY_POOL: Record<BetrayalRoomNode['floor'], RoomTemplate[]> = {
     ground: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.map((room) => ({ ...room, tags: [...room.tags] })),
     upper: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.map((room) => ({ ...room, tags: [...room.tags] })),
     basement: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.map((room) => ({ ...room, tags: [...room.tags] })),
-};
-
-const USE_EFFECTS: Record<string, PossessionUseEffectProfile> = {
-    'omen-book': {
-        mode: 'nextNonCombatTraitReplacement',
-        replacementTrait: 'knowledge',
-        sanityCost: 1,
-        recommendedAction: 'explore',
-    },
-    notebook: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
-    'medical-kit': {
-        mode: 'healTraits',
-        traits: ['might', 'speed', 'knowledge', 'sanity'],
-        consumeOnUse: true,
-        target: 'selfOrSameRoomExplorer',
-        recommendedAction: 'explore',
-    },
-    mask: {
-        mode: 'moveOthersInRoom',
-        target: 'sameRoomOtherExplorersAndMonsters',
-        recommendedAction: 'move',
-    },
-    map: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
-    journal: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
-    'holy-water': {
-        mode: 'healTraits',
-        traits: ['might', 'speed'],
-        consumeOnUse: true,
-        target: 'self',
-        recommendedAction: 'explore',
-    },
-    manuscript: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
 };
 
 const TRAIT_CHECK_PASSIVE_BONUSES: Record<string, Partial<Record<BetrayalTraitKey, number>>> = {
@@ -3193,17 +3132,6 @@ function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInve
 function resolveEvent(core: BetrayalCore): EventTemplate {
     const drawnCount = countDrawnCards(core, 'event');
     return cloneEventTemplate(core.eventOrder[drawnCount % core.eventOrder.length]!);
-}
-
-function resolveInventoryEffectId(cardId: string): string {
-    return cardId
-        .replace(/-preview-\d+$/, '')
-        .replace(/-armory-\d+-\d+$/, '')
-        .replace(/-\d+$/, '');
-}
-
-export function resolveUseEffect(card: BetrayalInventoryCard): PossessionUseEffectProfile | null {
-    return USE_EFFECTS[resolveInventoryEffectId(card.id)] ?? null;
 }
 
 function formatEffectLabel(effect: PossessionUseEffectProfile): string {
@@ -5838,7 +5766,15 @@ export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalE
 };
 
 const systems = [
-    ...createBaseSystems<BetrayalCore>(),
+    ...createBaseSystems<BetrayalCore>({
+        actionLog: {
+            commandAllowlist: BETRAYAL_ACTION_LOG_ALLOWLIST,
+            formatEntry: formatBetrayalActionEntry,
+        },
+        undo: {
+            snapshotCommandAllowlist: BETRAYAL_UNDO_ALLOWLIST,
+        },
+    }),
     createCheatSystem<BetrayalCore>(),
 ];
 
@@ -5848,7 +5784,6 @@ export const engineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betr
     minPlayers: 3,
     maxPlayers: 6,
     commandTypes: Object.values(BETRAYAL_COMMANDS),
-    disableUndo: true,
 });
 
 export const betrayalAiRuntime = createBetrayalAiRuntime({

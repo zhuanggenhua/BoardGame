@@ -47,6 +47,7 @@ export interface DiceField3DProps {
     selectedDieIds?: number[];
     isRolling: boolean;
     rerollingDiceIds?: number[];
+    rerollAnimationSeq?: number;
     locale?: string;
     characterId?: string;
     slots: Array<{
@@ -1039,6 +1040,7 @@ export const DiceField3D = ({
     selectedDieIds = [],
     isRolling,
     rerollingDiceIds,
+    rerollAnimationSeq,
     locale,
     characterId = 'monk',
     slots,
@@ -1079,12 +1081,13 @@ export const DiceField3D = ({
             wasRolling: boolean;
             settledVisualX: number | null;
             settledVisualZ: number | null;
+            lastRerollAnimationSeq: number;
         }>;
         raycaster: THREE.Raycaster;
         pointer: THREE.Vector2;
         disposed: boolean;
     } | null>(null);
-    const rollingRef = React.useRef({ isRolling, rerollingDiceIds });
+    const rollingRef = React.useRef({ isRolling, rerollingDiceIds, rerollAnimationSeq });
     const selectedDieIdsRef = React.useRef(new Set<number>(selectedDieIds));
     const signature = React.useMemo(
         () => dice.map((die) => `${die.id}:${die.value}:${die.definitionId ?? ''}`).join('|'),
@@ -1102,8 +1105,8 @@ export const DiceField3D = ({
     );
 
     React.useEffect(() => {
-        rollingRef.current = { isRolling, rerollingDiceIds };
-    }, [isRolling, rerollingDiceIds]);
+        rollingRef.current = { isRolling, rerollingDiceIds, rerollAnimationSeq };
+    }, [isRolling, rerollAnimationSeq, rerollingDiceIds]);
 
     React.useEffect(() => {
         selectedDieIdsRef.current = new Set(selectedDieIds);
@@ -1349,6 +1352,7 @@ export const DiceField3D = ({
                 wasRolling: false,
                 settledVisualX: null,
                 settledVisualZ: null,
+                lastRerollAnimationSeq: 0,
             };
         });
 
@@ -1626,7 +1630,16 @@ export const DiceField3D = ({
                     item.mesh.position.z = item.posZ;
                     return;
                 }
-                const dieRolling = rolling.isRolling || Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
+                const rerollingThisDie = Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
+                const rerollSeq = rolling.rerollAnimationSeq ?? 0;
+                const hasNewRerollEdge = rerollingThisDie
+                    && rerollSeq > 0
+                    && item.lastRerollAnimationSeq !== rerollSeq;
+                if (hasNewRerollEdge) {
+                    item.wasRolling = false;
+                    item.lastRerollAnimationSeq = rerollSeq;
+                }
+                const dieRolling = rolling.isRolling || rerollingThisDie;
                 const wasRolling = item.wasRolling;
                 if (dieRolling) {
                     if (!wasRolling) {

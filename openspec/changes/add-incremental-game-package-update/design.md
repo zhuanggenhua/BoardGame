@@ -117,7 +117,7 @@ Android native
 - `assets:upload` 触发 manifest/index-only 后，如果没有同时保留完整 ZIP 兜底，旧客户端可能无法更新；因此完整 ZIP 不能删除，只是不作为默认小素材更新路径。
 - 对大量小文件变更，文件级下载可能比单 ZIP 慢；需要限制并发数并保留全量 fallback。
 - 本地 `installed-files-index.json` 是差异更新关键状态，必须原子写入；损坏时应清楚回退全量。
-- 如果远端单文件对象和 `file-index` 不一致，App 可能下载到错误版本；发布脚本必须在更新 manifest 前完成远端对象回查或至少校验目标哈希。
+- 如果远端单文件对象和 `file-index` 不一致，App 可能下载到错误版本；发布脚本必须把变更对象、file-index 和 manifest 原子写入服务器 release，并在报告成功前读取本次 file-index 正文校验大小和 SHA-256，不能用旧 fallback ZIP 代替。
 
 ## Migration Plan
 1. 调整 OpenSpec 与文档口径：明确当前已有 `file-index` 基础设施，目标是接通差异更新闭环。

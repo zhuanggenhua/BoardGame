@@ -161,6 +161,7 @@ export const DiceTray = ({
     canInteract,
     isRolling,
     rerollingDiceIds,
+    rerollAnimationSeq,
     locale,
     interaction,
     multistepInteraction,
@@ -175,6 +176,7 @@ export const DiceTray = ({
     canInteract: boolean;
     isRolling: boolean;
     rerollingDiceIds?: number[];
+    rerollAnimationSeq?: number;
     locale?: string;
     /** 当前骰子交互描述符（从 sys.interaction.current 读取） */
     interaction?: InteractionDescriptor;
@@ -493,6 +495,9 @@ export const DiceTray = ({
                             <div key={d.id} className={`relative flex items-center ${rowGapClassName}`}>
                                 {(showAdjustButtons || showAnyModeButtons) && (
                                     <button
+                                        type="button"
+                                        data-testid={`die-adjust-decrement-${d.id}`}
+                                        aria-label={`${decreaseLabel} ${displayValue}`}
                                         onClick={() => handleAdjust(d.id, -1, d.value)}
                                         disabled={displayValue <= 1 || (showAdjustButtons && !canAdjustDown)}
                                         className={`${adjustButtonClassName} rounded-full flex items-center justify-center font-bold transition-all duration-150 ${(displayValue <= 1 || (showAdjustButtons && !canAdjustDown))
@@ -558,6 +563,9 @@ export const DiceTray = ({
 
                                 {(showAdjustButtons || showAnyModeButtons) && (
                                     <button
+                                        type="button"
+                                        data-testid={`die-adjust-increment-${d.id}`}
+                                        aria-label={`${increaseLabel} ${displayValue}`}
                                         onClick={() => handleAdjust(d.id, 1, d.value)}
                                         disabled={displayValue >= 6 || (showAdjustButtons && !canAdjustUp)}
                                         className={`${adjustButtonClassName} rounded-full flex items-center justify-center font-bold transition-all duration-150 ${(displayValue >= 6 || (showAdjustButtons && !canAdjustUp))
@@ -585,6 +593,7 @@ export const DiceTray = ({
                         selectedDieIds={selectedDieIds}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
+                        rerollAnimationSeq={rerollAnimationSeq}
                         locale={locale}
                         characterId={resolveCharacterIdFromDiceDefinitionId(dice[0]?.definitionId)}
                         slots={CENTER_DICE_SCATTER_SLOTS}
@@ -640,6 +649,7 @@ export const DiceTray = ({
                         dice={visiblePhysicsDice}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
+                        rerollAnimationSeq={rerollAnimationSeq}
                         styleProfile={diceBoxStyleProfile}
                         dieSkins={diceBoxDieSkins}
                         requireDieSkins={true}
@@ -874,7 +884,6 @@ export const DiceActions = ({
     setIsRolling,
     interaction,
     multistepInteraction,
-    setRerollingDiceIds,
     presentation = 'rail',
 }: {
     rollCount: number;
@@ -890,8 +899,6 @@ export const DiceActions = ({
     interaction?: InteractionDescriptor;
     /** useMultistepInteraction 返回的状态和操作 */
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
-    /** 设置重掷动画骰子 ID */
-    setRerollingDiceIds: (ids: number[]) => void;
     /** rail 用于右侧栏，center 用于中场舞台 */
     presentation?: 'rail' | 'center';
 }) => {
@@ -964,14 +971,6 @@ export const DiceActions = ({
 
     const handleConfirmClick = () => {
         if (isInteractionMode && multistepInteraction) {
-            // selectDie 模式：触发重掷动画
-            if (dtMeta?.dtType === 'selectDie') {
-                const selectResult = multistepInteraction.result as DiceSelectResult | null;
-                if (selectResult && selectResult.selectedDiceIds.length > 0) {
-                    setRerollingDiceIds(selectResult.selectedDiceIds);
-                    setTimeout(() => setRerollingDiceIds([]), 600);
-                }
-            }
             multistepInteraction.confirm();
             return;
         }
@@ -1086,6 +1085,7 @@ export const CenterDiceStage = ({
     canInteract,
     isRolling,
     rerollingDiceIds,
+    rerollAnimationSeq,
     locale,
     interaction,
     multistepInteraction,
@@ -1098,6 +1098,7 @@ export const CenterDiceStage = ({
     canInteract: boolean;
     isRolling: boolean;
     rerollingDiceIds?: number[];
+    rerollAnimationSeq?: number;
     locale?: string;
     interaction?: InteractionDescriptor;
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
@@ -1132,6 +1133,7 @@ export const CenterDiceStage = ({
                             canInteract={canInteract}
                             isRolling={isRolling}
                             rerollingDiceIds={rerollingDiceIds}
+                            rerollAnimationSeq={rerollAnimationSeq}
                             locale={locale}
                             interaction={interaction}
                             multistepInteraction={multistepInteraction}
@@ -1153,6 +1155,7 @@ export const BoardDiceStage = ({
     canInteract,
     isRolling,
     rerollingDiceIds,
+    rerollAnimationSeq,
     locale,
     interaction,
     multistepInteraction,
@@ -1165,6 +1168,7 @@ export const BoardDiceStage = ({
     canInteract: boolean;
     isRolling: boolean;
     rerollingDiceIds?: number[];
+    rerollAnimationSeq?: number;
     locale?: string;
     interaction?: InteractionDescriptor;
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
@@ -1196,6 +1200,7 @@ export const BoardDiceStage = ({
                 canInteract={canInteract}
                 isRolling={isRolling}
                 rerollingDiceIds={rerollingDiceIds}
+                rerollAnimationSeq={rerollAnimationSeq}
                 locale={locale}
                 interaction={interaction}
                 multistepInteraction={multistepInteraction}

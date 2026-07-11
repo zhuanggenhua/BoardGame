@@ -11,6 +11,9 @@ import {
 import {
     resolveQidahenWheelMoveExecuted,
 } from './wheelMoveExecution';
+import {
+    reduceQidahenDefeatInDetailRegionSelected,
+} from './defeatInDetail';
 import type {
     QidahenCore,
     QidahenEvent,
@@ -45,7 +48,11 @@ const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS_BY_EVENT_TYPE = new Map<
 const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
     defineDirectInputEventReducer(
         ['REGION_SELECTED'],
-        (state, event) => reduceQidahenRegionSelected(
+        (state, event) => reduceQidahenDefeatInDetailRegionSelected(
+            state,
+            event.payload.regionId,
+            event.timestamp,
+        ) ?? reduceQidahenRegionSelected(
             state,
             event.payload.regionId,
             event.timestamp,

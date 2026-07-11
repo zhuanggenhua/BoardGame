@@ -24,6 +24,9 @@
 - [x] 2.6 建立 R2 后台灾备 service/timer，停用 R2 到服务器的自动覆盖 timer
 - [x] 2.7 验证服务器发布校验失败时旧 release 继续可用，且可切回上一个已验证 release
 - [x] 2.8 验证 R2 任务停止时服务器仍可发布，随后灾备队列可异步补传
+- [x] 2.9 将普通素材清单和移动 file-index 的真实对象引用纳入活动集合
+- [x] 2.10 将发布成功验证绑定到本次对象大小或 JSON 正文 SHA-256
+- [x] 2.11 将完整活动集合上限调整为 4GiB，并保留至少 5GiB 空闲保护
 
 ## 3. Cloudflare 同域回退
 - [x] 3.1 新增隐藏 Tunnel hostname，回源服务器独立静态端口且不影响现有 API hostname
@@ -57,3 +60,4 @@
 - [x] 6.3 验证现有协作者上传命令和移动/OTA 发布命令无需改变
 - [x] 6.4 执行正式 Route 上线、源站停机回退、Route 移除回滚三组端到端验证
 - [x] 6.5 运行 `openspec validate add-server-primary-r2-fallback-assets --strict --no-interactive`
+- [x] 6.6 补充活动集合展开与服务器对象校验的 Node 回归测试

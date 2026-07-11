@@ -24,6 +24,8 @@ import { normalizeUnitBoosts } from '../domain/helpers';
 import { StrengthBoostIndicator } from './StrengthBoostIndicator';
 import type { UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
+import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
+import { useArmedActivation } from '../../../hooks/ui/useArmedActivation';
 import { BOARD_SHELL_REFERENCE_WIDTH } from './layoutConstants';
 
 // ============================================================================
@@ -125,8 +127,8 @@ interface BoardGridProps {
   onMagnifyStructure: (structure: import('../domain/types').BoardStructure) => void;
   onMagnifyEventCard?: (card: import('../domain/types').EventCard) => void;
   onMagnifySpriteConfig?: (config: { atlasId: string; frameIndex: number }) => void;
-  // 用于动画追踪
-  newUnitIds?: Set<string>;
+  // 首屏完成后允许新挂载单位播放入场动画
+  enableEntryAnimations?: boolean;
 }
 
 // ============================================================================
@@ -156,7 +158,8 @@ const GridLayer: React.FC<{
   core: SummonerWarsCore;
   fromViewCoord: (c: CellCoord) => CellCoord;
   props: BoardGridProps;
-}> = ({ currentGrid, core, fromViewCoord, props }) => (
+  onCellClick: (row: number, col: number) => void;
+}> = ({ currentGrid, core, fromViewCoord, props, onCellClick }) => (
   <div className="absolute inset-0">
     {Array.from({ length: currentGrid.rows }).map((_, row) =>
       Array.from({ length: currentGrid.cols }).map((_, col) => {
@@ -171,7 +174,7 @@ const GridLayer: React.FC<{
         return (
           <div
             key={cellKey}
-            onClick={() => props.onCellClick(viewCoord.row, viewCoord.col)}
+            onClick={() => onCellClick(viewCoord.row, viewCoord.col)}
             data-testid={`sw-cell-${gameCoord.row}-${gameCoord.col}`}
             data-cell-coord={`${gameCoord.row}-${gameCoord.col}`}
             data-row={gameCoord.row}
@@ -331,7 +334,17 @@ const CardLayer: React.FC<{
   myPlayerId: string;
   toViewCoord: (c: CellCoord) => CellCoord;
   props: BoardGridProps;
-}> = ({ core, currentGrid, myPlayerId, toViewCoord, props }) => (
+  tapLifeInspectKey: string | null;
+  onCellClick: (row: number, col: number, lifeInspectKey: string) => void;
+}> = ({
+  core,
+  currentGrid,
+  myPlayerId,
+  toViewCoord,
+  props,
+  tapLifeInspectKey,
+  onCellClick,
+}) => (
   <div className="absolute inset-0 pointer-events-none">
     {Array.from({ length: BOARD_ROWS }).map((_, row) =>
       Array.from({ length: BOARD_COLS }).map((_, col) => {
@@ -360,6 +373,8 @@ const CardLayer: React.FC<{
               toViewCoord={toViewCoord}
               currentGrid={currentGrid}
               props={props}
+              isTapLifeVisible={tapLifeInspectKey === `unit-${cell.unit.instanceId}`}
+              onCellClick={onCellClick}
             />
           );
         }
@@ -374,6 +389,8 @@ const CardLayer: React.FC<{
               viewCoord={viewCoord}
               myPlayerId={myPlayerId}
               props={props}
+              isTapLifeVisible={tapLifeInspectKey === `structure-${row}-${col}-${cell.structure.cardId}`}
+              onCellClick={onCellClick}
             />
           );
         }
@@ -434,8 +451,23 @@ const UnitCell: React.FC<{
   toViewCoord: (c: CellCoord) => CellCoord;
   currentGrid: GridConfig;
   props: BoardGridProps;
-}> = ({ row, col, unit, pos, viewCoord, core, myPlayerId, toViewCoord, currentGrid, props }) => {
-  const isNew = props.newUnitIds?.has(unit.instanceId) ?? false;
+  isTapLifeVisible: boolean;
+  onCellClick: (row: number, col: number, lifeInspectKey: string) => void;
+}> = ({
+  row,
+  col,
+  unit,
+  pos,
+  viewCoord,
+  core,
+  myPlayerId,
+  toViewCoord,
+  currentGrid,
+  props,
+  isTapLifeVisible,
+  onCellClick,
+}) => {
+  const shouldAnimateEntry = props.enableEntryAnimations ?? false;
   const { t, i18n } = useTranslation('game-summonerwars');
   const spriteConfig = getUnitSpriteConfig(unit);
   const isMyUnit = unit.owner === myPlayerId;
@@ -544,11 +576,11 @@ const UnitCell: React.FC<{
       }}
       onClick={() => {
         if (shouldBlockInspectClick(unitInspectKey)) return;
-        props.onCellClick(viewCoord.row, viewCoord.col);
+        onCellClick(viewCoord.row, viewCoord.col, unitInspectKey);
       }}
-      initial={isNew ? { opacity: 0, scale: 1.1 } : false}
+      initial={shouldAnimateEntry ? { opacity: 0, scale: 1.1 } : false}
       animate={{ opacity: 1, scale: 1 }}
-      transition={isNew ? {
+      transition={shouldAnimateEntry ? {
         type: 'spring', stiffness: 80, damping: 15, mass: 1.2,
       } : {
         layout: { type: 'spring', stiffness: 300, damping: 30 },
@@ -595,7 +627,11 @@ const UnitCell: React.FC<{
           )}
           {/* 悬停显示生命值 - 保持正向可读 */}
           <div
-            className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyUnit ? 'rotate-180' : ''}`}
+            data-testid={`sw-unit-life-${row}-${col}`}
+            data-tap-visible={isTapLifeVisible ? 'true' : 'false'}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity pointer-events-none ${
+              isTapLifeVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            } ${!isMyUnit ? 'rotate-180' : ''}`}
             style={{ zIndex: BOARD_GRID_Z.overlay }}
           >
             <span
@@ -695,10 +731,22 @@ const StructureCell: React.FC<{
   viewCoord: CellCoord;
   myPlayerId: string;
   props: BoardGridProps;
-}> = ({ row, col, structure, pos, viewCoord, myPlayerId, props }) => {
+  isTapLifeVisible: boolean;
+  onCellClick: (row: number, col: number, lifeInspectKey: string) => void;
+}> = ({
+  row,
+  col,
+  structure,
+  pos,
+  viewCoord,
+  myPlayerId,
+  props,
+  isTapLifeVisible,
+  onCellClick,
+}) => {
   const spriteConfig = getStructureSpriteConfig(structure);
   const isMyStructure = structure.owner === myPlayerId;
-  const isNew = props.newUnitIds?.has(structure.cardId) ?? false;
+  const shouldAnimateEntry = props.enableEntryAnimations ?? false;
   const structureInspectKey = `structure-${row}-${col}-${structure.cardId}`;
   // 视觉伤害：攻击动画期间优先读缓冲值
   const damage = props.damageBuffer
@@ -737,7 +785,7 @@ const StructureCell: React.FC<{
         width: `${pos.width}%`,
         height: `${pos.height}%`,
       }}
-      initial={isNew ? { opacity: 0 } : false}
+      initial={shouldAnimateEntry ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       transition={{
         layout: { type: 'spring', stiffness: 300, damping: 30 },
@@ -746,12 +794,12 @@ const StructureCell: React.FC<{
       layout="position"
       onClick={() => {
         if (shouldBlockInspectClick(structureInspectKey)) return;
-        props.onCellClick(viewCoord.row, viewCoord.col);
+        onCellClick(viewCoord.row, viewCoord.col, structureInspectKey);
       }}
     >
       <motion.div
         className={`relative w-[85%] group ${!isMyStructure ? 'rotate-180' : ''}`}
-        initial={isNew ? { opacity: 0, scale: 1.1 } : false}
+        initial={shouldAnimateEntry ? { opacity: 0, scale: 1.1 } : false}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ type: 'spring', stiffness: 100, damping: 20 }}
       >
@@ -782,7 +830,11 @@ const StructureCell: React.FC<{
           })()}
           {/* 悬停显示生命值 - 保持正向可读 */}
           <div
-            className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyStructure ? 'rotate-180' : ''}`}
+            data-testid={`sw-structure-life-${row}-${col}`}
+            data-tap-visible={isTapLifeVisible ? 'true' : 'false'}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity pointer-events-none ${
+              isTapLifeVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            } ${!isMyStructure ? 'rotate-180' : ''}`}
             style={{ zIndex: BOARD_GRID_Z.overlay }}
           >
             <span
@@ -815,41 +867,72 @@ const StructureCell: React.FC<{
 // ============================================================================
 
 export const BoardGrid: React.FC<BoardGridProps> = (props) => {
-  const { core, currentGrid, shouldFlipView, myPlayerId } = props;
+  const {
+    core,
+    currentGrid,
+    shouldFlipView,
+    myPlayerId,
+    onCellClick,
+  } = props;
   const { toViewCoord, fromViewCoord } = useViewCoords(shouldFlipView);
-
-  // 追踪新出现的单位用于播放召唤动画
-  const prevUnitIdsRef = React.useRef<Set<string>>(new Set());
-  const newUnitIds = React.useMemo(() => {
-    const current = new Set<string>();
-    core.board.forEach(row => row.forEach(cell => {
-      if (cell.unit) current.add(cell.unit.instanceId);
-      if (cell.structure) current.add(cell.structure.cardId);
-    }));
-
-    if (prevUnitIdsRef.current.size === 0) {
-      prevUnitIdsRef.current = current;
-      return new Set<string>();
+  const isTouchFirstInteraction = useCoarsePointer();
+  const isLifeInspectKeyValid = React.useCallback((key: string) => {
+    for (let row = 0; row < BOARD_ROWS; row++) {
+      for (let col = 0; col < BOARD_COLS; col++) {
+        const cell = core.board[row]?.[col];
+        if (cell?.unit && key === `unit-${cell.unit.instanceId}`) return true;
+        if (cell?.structure && key === `structure-${row}-${col}-${cell.structure.cardId}`) return true;
+      }
     }
-
-    const added = new Set<string>();
-    current.forEach(id => {
-      if (!prevUnitIdsRef.current.has(id)) added.add(id);
-    });
-
-    prevUnitIdsRef.current = current;
-    return added;
+    return false;
   }, [core.board]);
+  const {
+    armedKey: tapLifeInspectKey,
+    clearArmed: clearLifeInspect,
+    armOrActivate,
+  } = useArmedActivation<string>({
+    requireArming: isTouchFirstInteraction,
+    isKeyValid: isLifeInspectKeyValid,
+    validationDeps: [core.board],
+  });
+
+  const handleGridCellClick = React.useCallback((row: number, col: number) => {
+    clearLifeInspect();
+    onCellClick(row, col);
+  }, [clearLifeInspect, onCellClick]);
+
+  const handleCardCellClick = React.useCallback((
+    row: number,
+    col: number,
+    lifeInspectKey: string,
+  ) => {
+    armOrActivate(lifeInspectKey, {
+      onActivate: () => onCellClick(row, col),
+    });
+  }, [armOrActivate, onCellClick]);
+
+  const [enableEntryAnimations, setEnableEntryAnimations] = React.useState(false);
+  React.useEffect(() => {
+    setEnableEntryAnimations(true);
+  }, []);
 
   return (
     <>
-      <GridLayer currentGrid={currentGrid} core={core} fromViewCoord={fromViewCoord} props={props} />
+      <GridLayer
+        currentGrid={currentGrid}
+        core={core}
+        fromViewCoord={fromViewCoord}
+        props={props}
+        onCellClick={handleGridCellClick}
+      />
       <CardLayer
         core={core}
         currentGrid={currentGrid}
         myPlayerId={myPlayerId}
         toViewCoord={toViewCoord}
-        props={{ ...props, newUnitIds }}
+        props={{ ...props, enableEntryAnimations }}
+        tapLifeInspectKey={tapLifeInspectKey}
+        onCellClick={handleCardCellClick}
       />
     </>
   );

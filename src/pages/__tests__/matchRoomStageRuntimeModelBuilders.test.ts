@@ -34,7 +34,7 @@ describe('buildMatchRoomTutorialBoardRuntimeModel', () => {
         expect(runtime?.tutorialManifest?.id).toBe('haunt-actions-and-finish');
     });
 
-    it('教程运行时复用普通本地开局的默认 AI 座位配置', () => {
+    it('教程运行时所有座位都由当前用户操作，不得启用本地 AI 代选', () => {
         const runtime = buildMatchRoomTutorialBoardRuntimeModel({
             gameId: 'the-gang',
             tLobby,
@@ -65,8 +65,8 @@ describe('buildMatchRoomTutorialBoardRuntimeModel', () => {
 
         expect(runtime?.seatControllers).toEqual({
             '0': { type: 'human' },
-            '1': { type: 'local-ai', difficulty: 'normal' },
-            '2': { type: 'local-ai', difficulty: 'normal' },
+            '1': { type: 'human' },
+            '2': { type: 'human' },
         });
     });
 

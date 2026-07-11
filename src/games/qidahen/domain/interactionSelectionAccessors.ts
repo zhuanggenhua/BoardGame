@@ -10,6 +10,7 @@ import {
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
     QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
     QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
+    QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
     QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID,
     QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID,
     QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
@@ -41,6 +42,7 @@ import type {
     QidahenInternalDispatchSelection,
     QidahenKhanEdictSelection,
     QidahenMaShiTradeSelection,
+    QidahenOpenGateSurrenderSelection,
     QidahenPendingTargetAction,
     QidahenPostBattleSelection,
     QidahenRecruitSelection,
@@ -86,10 +88,12 @@ const getQidahenDriveTigerConsentDispatchSelectionForCore = (
     }
     const shouldRebuildDriveTigerDispatchSelection = core.lastFactionActionId === 'drive-tiger'
         && !core.wheelActionUsed;
+    const commanderFactionId = getFactionIdByPlayerId(core, core.currentPlayer);
     return shouldRebuildDriveTigerDispatchSelection
+        && commanderFactionId
         ? buildDriveTigerDispatchSelectionFromRegionSemantics(
             core,
-            'ming',
+            commanderFactionId,
             getQidahenLockedRegionSelectionSemantics(core),
         )
         : null;
@@ -405,6 +409,7 @@ export function getQidahenDriveTigerConsentSelectionForCore(
         return null;
     }
     const targetFactionName = core.factions[dispatchSelection.attackerFactionId].name;
+    const commanderFactionName = core.factions[commanderFactionId].name;
     const committedTroopLimit = dispatchSelection.candidates.reduce(
         (max, candidate) => Math.max(max, candidate.committedTroops),
         0,
@@ -418,7 +423,7 @@ export function getQidahenDriveTigerConsentSelectionForCore(
             {
                 id: 'accept',
                 label: '同意受指挥',
-                detail: `${targetFactionName} 同意后，先抽 6 张手牌，再由大明指挥最多 ${committedTroopLimit || 6} 个部队进行调度进攻。`,
+                detail: `${targetFactionName} 同意后，先抽 6 张手牌，再由${commanderFactionName}指挥最多 ${committedTroopLimit || 6} 个部队进行调度进攻。`,
             },
             {
                 id: 'decline',
@@ -562,6 +567,29 @@ export function getQidahenEventOpponentHandChoiceSelectionForCore(
         isActive: (currentCore) => currentCore.turnPhase === 'event-opponent-hand-choice',
         readInteraction: getQidahenEventOpponentHandChoiceSelectionFromInteraction,
         readCore: (currentCore) => currentCore.eventOpponentHandChoiceSelection,
+    });
+}
+
+export function getQidahenOpenGateSurrenderSelectionFromInteraction(
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenOpenGateSurrenderSelection | null {
+    return readQidahenInteractionSelectionField(
+        interaction?.data,
+        QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
+        'qidahenOpenGateSurrenderSelection',
+    );
+}
+
+export function getQidahenOpenGateSurrenderSelectionForCore(
+    core: QidahenCore,
+    interaction?: QidahenInteractionSelectionCarrier | null,
+): QidahenOpenGateSurrenderSelection | null {
+    return getQidahenInteractionSelectionMirrorForCore({
+        core,
+        interaction,
+        isActive: (currentCore) => currentCore.turnPhase === 'open-gate-surrender',
+        readInteraction: getQidahenOpenGateSurrenderSelectionFromInteraction,
+        readCore: (currentCore) => currentCore.openGateSurrenderSelection,
     });
 }
 

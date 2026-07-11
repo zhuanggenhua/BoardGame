@@ -3,6 +3,14 @@ import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MobileOrientationGuard } from '../MobileOrientationGuard';
 
+const lockOrientationMock = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock('@capacitor/screen-orientation', () => ({
+    ScreenOrientation: {
+        lock: lockOrientationMock,
+    },
+}));
+
 const setViewport = (width: number, height: number) => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
@@ -37,6 +45,14 @@ const renderGuard = () => render(
 
 const renderBetrayalGuard = () => render(
     <MemoryRouter initialEntries={["/play/betrayal/tutorial/basic-setup-and-turn"]}>
+        <MobileOrientationGuard>
+            <div data-testid="game-content">game content</div>
+        </MobileOrientationGuard>
+    </MemoryRouter>,
+);
+
+const renderTheGangGuard = () => render(
+    <MemoryRouter initialEntries={['/play/the-gang/local']}>
         <MobileOrientationGuard>
             <div data-testid="game-content">game content</div>
         </MobileOrientationGuard>
@@ -91,6 +107,20 @@ describe('MobileOrientationGuard native orientation behavior', () => {
 
         expect(screen.getByTestId('game-content')).toBeTruthy();
         expect(screen.queryByText('正在切换横屏…')).toBeNull();
+    });
+
+    it('纸牌帮路由必须通过已打包的原生插件请求横屏', () => {
+        vi.useFakeTimers();
+        setViewport(390, 844);
+        setNativeAppShell(true);
+
+        renderTheGangGuard();
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
+
+        expect(lockOrientationMock).toHaveBeenCalledWith({ orientation: 'landscape' });
+        expect(screen.getByTestId('game-content')).toBeTruthy();
     });
 
     it('legacy Android shell with only androidBridge is still handled by the global native shell path', () => {

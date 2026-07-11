@@ -13,12 +13,47 @@ import {
     type BetrayalTraitKey,
     type BetrayalUseEffectSeed as UseEffectProfile,
 } from './scenarioConfig';
+import {
+    resolveInventoryEffectId,
+    resolveUseEffect,
+} from './possessionEffects';
+
+interface BetrayalAiInventoryCard {
+    id: string;
+    name: string;
+    kind: 'item' | 'omen';
+}
 
 interface BetrayalAiExplorer {
     playerId: string;
+    explorerId: string;
     displayName: string;
     roomId: string;
     traits: Record<BetrayalTraitKey, number>;
+    inventory: BetrayalAiInventoryCard[];
+}
+
+interface BetrayalAiMonster {
+    id: string;
+    name: string;
+    roomId: string;
+}
+
+interface BetrayalAiRecentRoll {
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck';
+    playerId: string;
+    dice: number[];
+    passiveBonus: number;
+    branchThresholds?: { min: number; label: string }[];
+    latestLabel: string;
+    attack?: {
+        target: 'traitor' | 'hero' | 'jack-spirit';
+        defenderRoll: number;
+    };
+    deathPrevention?: {
+        minTotal: number;
+    };
+    consumedRabbitFootCardIds: string[];
 }
 
 interface BetrayalAiRoom {
@@ -41,7 +76,17 @@ interface BetrayalAiCore {
     currentPlayer: string;
     currentExplorer: BetrayalAiExplorer;
     otherExplorers: BetrayalAiExplorer[];
+    monsters: BetrayalAiMonster[];
     rooms: BetrayalAiRoom[];
+    usedCardIdsThisTurn: string[];
+    turnStartInventoryCardIds: string[];
+    receivedCardIdsThisTurnByPlayerId: Record<string, string[]>;
+    nextNonCombatTraitReplacement: {
+        playerId: string;
+        sourceCardId: string;
+        replacementTrait: BetrayalTraitKey;
+    } | null;
+    recentRoll: BetrayalAiRecentRoll | null;
     pendingEventChoice: {
         playerId: string;
         sourceTitle: string;
@@ -83,6 +128,11 @@ const ACTION_KINDS = {
     LEARN_ABOUT_JACK: 'learn-about-jack',
     STUDY_EXORCISM: 'study-exorcism',
     EXORCISE_JACK: 'exorcise-jack',
+    USE_POSSESSION: 'use-possession',
+    TRADE_POSSESSION: 'trade-possession',
+    LOOT_CORPSE: 'loot-corpse',
+    USE_RABBIT_FOOT: 'use-rabbit-foot',
+    USE_ROOM_EFFECT: 'use-room-effect',
     END_TURN: 'end-turn',
 } as const;
 
@@ -321,6 +371,372 @@ function findExplorer(core: BetrayalAiCore, playerId: PlayerId): BetrayalAiExplo
     return getAllExplorers(core).find((explorer) => explorer.playerId === playerId) ?? null;
 }
 
+function resolveExplorerTraitDeficit(
+    explorer: BetrayalAiExplorer,
+    traits: BetrayalTraitKey[],
+): number {
+    const template = BETRAYAL_EXPLORER_CATALOG.find((entry) => entry.explorerId === explorer.explorerId);
+    if (!template) return 0;
+    return traits.reduce((total, trait) => (
+        total + Math.max(0, template.traits[trait] - explorer.traits[trait])
+    ), 0);
+}
+
+function resolveRelocationScore(
+    core: BetrayalAiCore,
+    playerId: PlayerId,
+    targetRoomId: string,
+): number {
+    const actor = findExplorer(core, playerId);
+    if (!actor) return 0;
+    const objectiveRoomIds = resolveObjectiveRoomIds(core, playerId);
+    if (objectiveRoomIds.length === 0) return 0;
+    const currentDistance = Math.min(...objectiveRoomIds.map((roomId) => (
+        roomDistance(core, actor.roomId, roomId)
+    )));
+    const targetDistance = Math.min(...objectiveRoomIds.map((roomId) => (
+        roomDistance(core, targetRoomId, roomId)
+    )));
+    const improvement = currentDistance - targetDistance;
+    return improvement > 0 ? 650 + improvement * 40 : 0;
+}
+
+function buildPossessionActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const core = state.core;
+    const actor = findExplorer(core, playerId);
+    if (!actor) return [];
+
+    const actions: AiLegalAction[] = [];
+    const add = (args: {
+        card: BetrayalAiInventoryCard;
+        payload: Record<string, unknown>;
+        label: string;
+        score: number;
+        idParts?: Array<string | number>;
+        metadata?: Record<string, unknown>;
+    }) => {
+        if (args.score <= 0) return;
+        const action = createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.USE_POSSESSION,
+            payload: { cardId: args.card.id, ...args.payload },
+            kind: ACTION_KINDS.USE_POSSESSION,
+            label: args.label,
+            idParts: [args.card.id, ...(args.idParts ?? [])],
+            metadata: {
+                cardId: args.card.id,
+                possessionEffectId: resolveInventoryEffectId(args.card.id),
+                strategicScore: args.score,
+                visibleStepDelayPolicy: 'visible',
+                ...args.metadata,
+            },
+        });
+        if (action) actions.push(action);
+    };
+
+    for (const card of actor.inventory) {
+        const effect = resolveUseEffect(card);
+        if (!effect) continue;
+
+        if (effect.mode === 'nextNonCombatTraitReplacement') {
+            const canAfford = actor.traits.sanity > effect.sanityCost;
+            const alreadyPrepared = core.nextNonCombatTraitReplacement?.playerId === playerId;
+            add({
+                card,
+                payload: {},
+                label: `使用${card.name}`,
+                score: canAfford && !alreadyPrepared ? 520 : 0,
+            });
+            continue;
+        }
+
+        if (effect.mode === 'healTraits') {
+            const targets = effect.target === 'self'
+                ? [actor]
+                : getAllExplorers(core).filter((explorer) => (
+                    explorer.playerId === playerId
+                    || (
+                        explorer.roomId === actor.roomId
+                        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                    )
+                ));
+            for (const target of targets) {
+                const deficit = resolveExplorerTraitDeficit(target, effect.traits);
+                add({
+                    card,
+                    payload: { targetPlayerId: target.playerId },
+                    label: `用${card.name}治疗${target.displayName}`,
+                    score: deficit > 0 ? 700 + deficit * 35 : 0,
+                    idParts: [target.playerId],
+                    metadata: {
+                        targetPlayerId: target.playerId,
+                        healedTraitDeficit: deficit,
+                    },
+                });
+            }
+            continue;
+        }
+
+        if (effect.mode === 'placeExplorer') {
+            for (const room of core.rooms) {
+                if (room.state !== 'discovered' || room.id === actor.roomId) continue;
+                const relocationScore = resolveRelocationScore(core, playerId, room.id);
+                add({
+                    card,
+                    payload: { targetRoomId: room.id },
+                    label: `用${card.name}前往${room.name}`,
+                    score: relocationScore,
+                    idParts: [room.id],
+                    metadata: { targetRoomId: room.id },
+                });
+            }
+            continue;
+        }
+
+        const sameRoomTargetCount = getAllExplorers(core)
+            .filter((explorer) => (
+                explorer.playerId !== playerId
+                && explorer.roomId === actor.roomId
+                && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+            )).length
+            + core.monsters.filter((monster) => monster.roomId === actor.roomId).length;
+        if (sameRoomTargetCount === 0) continue;
+        for (const room of core.rooms) {
+            if (room.state !== 'discovered' || room.id === actor.roomId) continue;
+            add({
+                card,
+                payload: { targetRoomId: room.id },
+                label: `使用${card.name}移动同房目标到${room.name}`,
+                score: 280 + sameRoomTargetCount * 20,
+                idParts: [room.id],
+                metadata: {
+                    targetRoomId: room.id,
+                    movedTargetCount: sameRoomTargetCount,
+                },
+            });
+        }
+    }
+
+    return actions;
+}
+
+function isSameFaction(core: BetrayalAiCore, leftPlayerId: string, rightPlayerId: string): boolean {
+    if (core.phase === 'preHaunt') return true;
+    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
+    return (leftPlayerId === traitorPlayerId) === (rightPlayerId === traitorPlayerId);
+}
+
+function resolveCardHolderScore(
+    card: BetrayalAiInventoryCard,
+    explorer: BetrayalAiExplorer,
+): number {
+    const effectId = resolveInventoryEffectId(card.id);
+    const totalTraits = Object.values(explorer.traits).reduce((total, value) => total + value, 0);
+    switch (effectId) {
+        case 'omen-book':
+            return explorer.traits.knowledge * 5 + explorer.traits.sanity * 2;
+        case 'medical-kit':
+            return resolveExplorerTraitDeficit(
+                explorer,
+                ['might', 'speed', 'knowledge', 'sanity'],
+            ) * 10 + explorer.traits.speed;
+        case 'holy-water':
+            return resolveExplorerTraitDeficit(explorer, ['might', 'speed']) * 12;
+        case 'map':
+        case 'notebook':
+        case 'journal':
+        case 'manuscript':
+            return explorer.traits.speed * 5 + explorer.traits.knowledge;
+        case 'rope':
+            return 40 - explorer.traits.might - explorer.traits.speed;
+        case 'mask':
+        case 'dog':
+            return explorer.traits.speed * 5 + explorer.traits.sanity;
+        default:
+            return card.kind === 'item'
+                ? explorer.traits.might * 4 + explorer.traits.speed * 2
+                : totalTraits;
+    }
+}
+
+function buildTradeActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const core = state.core;
+    const actor = findExplorer(core, playerId);
+    if (!actor) return [];
+
+    const actions: AiLegalAction[] = [];
+    for (const target of getAllExplorers(core)) {
+        if (
+            target.playerId === playerId
+            || core.scenarioRuntime.deadExplorerPlayerIds.includes(target.playerId)
+            || !isSameFaction(core, playerId, target.playerId)
+        ) {
+            continue;
+        }
+        for (const card of actor.inventory) {
+            if (core.usedCardIdsThisTurn.includes(card.id)) continue;
+            const tradeGain = resolveCardHolderScore(card, target) - resolveCardHolderScore(card, actor);
+            if (tradeGain < 6) continue;
+
+            const modes = target.roomId === actor.roomId ? [false] : [true];
+            for (const useDog of modes) {
+                if (useDog && resolveInventoryEffectId(card.id) === 'dog') continue;
+                const action = createValidatedAction({
+                    validate,
+                    state,
+                    playerId,
+                    type: BETRAYAL_COMMANDS.TRADE_POSSESSION,
+                    payload: {
+                        cardId: card.id,
+                        targetPlayerId: target.playerId,
+                        useDog,
+                    },
+                    kind: ACTION_KINDS.TRADE_POSSESSION,
+                    label: useDog
+                        ? `让狗把${card.name}送给${target.displayName}`
+                        : `把${card.name}交给${target.displayName}`,
+                    idParts: [useDog ? 'dog' : 'normal', card.id, target.playerId],
+                    metadata: {
+                        cardId: card.id,
+                        targetPlayerId: target.playerId,
+                        useDog,
+                        tradeGain,
+                        strategicScore: 390 + tradeGain * 4,
+                        visibleStepDelayPolicy: 'visible',
+                    },
+                });
+                if (action) actions.push(action);
+            }
+        }
+    }
+    return actions;
+}
+
+function buildLootActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const core = state.core;
+    const actor = findExplorer(core, playerId);
+    if (!actor) return [];
+
+    return getAllExplorers(core)
+        .filter((explorer) => (
+            explorer.playerId !== playerId
+            && core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+            && explorer.roomId === actor.roomId
+        ))
+        .flatMap((source) => source.inventory.map((card) => createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.LOOT_CORPSE,
+            payload: {
+                sourcePlayerId: source.playerId,
+                cardId: card.id,
+            },
+            kind: ACTION_KINDS.LOOT_CORPSE,
+            label: `从${source.displayName}的尸体取得${card.name}`,
+            idParts: [source.playerId, card.id],
+            metadata: {
+                sourcePlayerId: source.playerId,
+                cardId: card.id,
+                strategicScore: 820 + resolveCardHolderScore(card, actor),
+                visibleStepDelayPolicy: 'visible',
+            },
+        })))
+        .filter((action): action is AiLegalAction => Boolean(action));
+}
+
+function shouldRerollRecentResult(recentRoll: BetrayalAiRecentRoll): boolean {
+    const total = recentRoll.dice.reduce((sum, pip) => sum + pip, 0) + recentRoll.passiveBonus;
+    if (recentRoll.branchThresholds?.length) {
+        const bestThreshold = Math.max(...recentRoll.branchThresholds.map((branch) => branch.min));
+        return total < bestThreshold;
+    }
+    if (recentRoll.kind === 'attackRoll' && recentRoll.attack) {
+        return total <= recentRoll.attack.defenderRoll;
+    }
+    if (recentRoll.kind === 'roomEndTurnTraitCheck') {
+        return total < 5;
+    }
+    if (recentRoll.kind === 'deathPrevention' && recentRoll.deathPrevention) {
+        return total < recentRoll.deathPrevention.minTotal;
+    }
+    if (recentRoll.kind === 'hauntActionTraitCheck') {
+        return /失败|未成功|未完成/.test(recentRoll.latestLabel);
+    }
+    if (recentRoll.kind === 'mysticElevator') {
+        return total < 4;
+    }
+    return false;
+}
+
+function buildRabbitFootActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const core = state.core;
+    const recentRoll = core.recentRoll;
+    const owner = findExplorer(core, playerId);
+    if (!recentRoll || recentRoll.playerId !== playerId || !owner || !shouldRerollRecentResult(recentRoll)) {
+        return [];
+    }
+
+    const cards = owner.inventory.filter((card) => resolveInventoryEffectId(card.id) === 'rope');
+    return cards.flatMap((card) => recentRoll.dice.map((pip, dieIndex) => createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+        payload: { cardId: card.id, dieIndex },
+        kind: ACTION_KINDS.USE_RABBIT_FOOT,
+        label: `用${card.name}重掷第${dieIndex + 1}颗骰子`,
+        idParts: [card.id, dieIndex],
+        metadata: {
+            cardId: card.id,
+            dieIndex,
+            previousPip: pip,
+            strategicScore: 1250 + (3 - pip) * 40,
+            visibleStepDelayPolicy: 'visible',
+        },
+    })))
+        .filter((action): action is AiLegalAction => Boolean(action));
+}
+
+function buildRoomEffectActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const action = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.USE_ROOM_EFFECT,
+        payload: {},
+        kind: ACTION_KINDS.USE_ROOM_EFFECT,
+        label: '使用当前房间效果',
+        metadata: {
+            strategicScore: 820,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    return action ? [action] : [];
+}
+
 function buildTurnActions(
     validate: BetrayalAiValidator,
     state: BetrayalState,
@@ -333,6 +749,16 @@ function buildTurnActions(
     const add = (action: AiLegalAction | null) => {
         if (action) actions.push(action);
     };
+
+    const actorIsDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId);
+    if (!actorIsDead) {
+        actions.push(
+            ...buildPossessionActions(validate, state, playerId),
+            ...buildTradeActions(validate, state, playerId),
+            ...buildLootActions(validate, state, playerId),
+            ...buildRoomEffectActions(validate, state, playerId),
+        );
+    }
 
     for (const room of core.rooms) {
         if (room.state !== 'discovered') continue;
@@ -475,6 +901,11 @@ function buildBetrayalAiLegalActions(
         return eventChoiceActions;
     }
 
+    const rabbitFootActions = buildRabbitFootActions(validate, state, args.playerId);
+    if (rabbitFootActions.length > 0) {
+        return rabbitFootActions;
+    }
+
     return buildTurnActions(validate, state, args.playerId);
 }
 
@@ -603,6 +1034,9 @@ function scoreEventChoice(core: BetrayalAiCore, action: AiLegalAction): number {
 function scoreAction(context: AiDecisionContext, action: AiLegalAction): number {
     const state = context.visibleState as BetrayalState;
     const core = state.core;
+    const strategicScore = typeof action.metadata?.strategicScore === 'number'
+        ? action.metadata.strategicScore
+        : 0;
     switch (action.kind) {
         case ACTION_KINDS.SELECT_EXPLORER:
             return 1000;
@@ -622,6 +1056,16 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 1000;
         case ACTION_KINDS.HERO_ATTACK_TRAITOR:
             return 900;
+        case ACTION_KINDS.USE_RABBIT_FOOT:
+            return strategicScore;
+        case ACTION_KINDS.USE_ROOM_EFFECT:
+            return Math.min(strategicScore, 820);
+        case ACTION_KINDS.LOOT_CORPSE:
+            return Math.min(strategicScore, 860);
+        case ACTION_KINDS.USE_POSSESSION:
+            return Math.min(strategicScore, 880);
+        case ACTION_KINDS.TRADE_POSSESSION:
+            return Math.min(strategicScore, 780);
         case ACTION_KINDS.EXPLORE_ROOM:
             return 800;
         case ACTION_KINDS.MOVE_TO_ROOM:
@@ -671,6 +1115,11 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.LEARN_ABOUT_JACK,
                 ACTION_KINDS.STUDY_EXORCISM,
                 ACTION_KINDS.EXORCISE_JACK,
+                ACTION_KINDS.USE_POSSESSION,
+                ACTION_KINDS.TRADE_POSSESSION,
+                ACTION_KINDS.LOOT_CORPSE,
+                ACTION_KINDS.USE_RABBIT_FOOT,
+                ACTION_KINDS.USE_ROOM_EFFECT,
             ],
         },
         localPolicies: {

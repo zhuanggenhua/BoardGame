@@ -79,7 +79,7 @@ describe('七大恨 AI', () => {
         const seenCommandTypes: string[] = [];
         const visitedPlayers = new Set<string>();
 
-        for (let step = 0; step < 8; step += 1) {
+        for (let step = 0; step < 16; step += 1) {
             const resolution = await resolveNextLocalAiAction({
                 engineConfig,
                 state,
@@ -97,6 +97,18 @@ describe('七大恨 AI', () => {
             visitedPlayers.add(resolution.playerId);
 
             state = applyAiResolution(state, resolution);
+
+            const reachedMainFlowAcrossAllPlayers = (
+                state.core.pendingScenarioCharacterChoices.length === 0
+                && state.core.pendingScenarioArmamentChoices.length === 0
+                && seenCommandTypes.includes(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE)
+                && seenCommandTypes.includes(QIDAHEN_COMMANDS.EXECUTE_ACTION)
+                && seenCommandTypes.includes('SYS_INTERACTION_RESPOND')
+                && ['0', '1', '2'].every((playerId) => visitedPlayers.has(playerId))
+            );
+            if (reachedMainFlowAcrossAllPlayers) {
+                break;
+            }
         }
 
         expect(state.core.pendingScenarioCharacterChoices).toEqual([]);

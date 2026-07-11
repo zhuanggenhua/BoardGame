@@ -368,6 +368,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         setIsRolling,
         rerollingDiceIds,
         setRerollingDiceIds,
+        rerollAnimationSeq,
+        setRerollAnimationSeq,
         activatingAbilityId,
         setActivatingAbilityId,
         discardHighlighted,
@@ -451,6 +453,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     useDieRerollAnimationConsumer({
         eventStreamEntries: rawG.sys.eventStream?.entries ?? [],
         setRerollingDiceIds,
+        setRerollAnimationSeq,
     });
 
     // 追踪已激活的攻击修正卡
@@ -1098,9 +1101,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             dieId
         );
         setRerollSelectingAction(null);
-        setRerollingDiceIds([dieId]);
-        setTimeout(() => setRerollingDiceIds([]), 600);
-    }, [rerollSelectingAction, engineMoves, setRerollingDiceIds, G.dice]);
+    }, [rerollSelectingAction, engineMoves, G.dice]);
 
     const passiveAbilityProps = React.useMemo(() => {
         if (playerPassives.length === 0) return null;
@@ -2056,6 +2057,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 canInteract={canInteractDice || !!rerollSelectingAction}
                                 isRolling={isRolling}
                                 rerollingDiceIds={rerollingDiceIds}
+                                rerollAnimationSeq={rerollAnimationSeq}
                                 locale={locale}
                             onToggleLock={(id) => {
                                 if (rerollSelectingAction) {
@@ -2081,7 +2083,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         isRolling={isRolling}
                         setIsRolling={(rolling: boolean) => setIsRolling(rolling)}
                         rerollingDiceIds={rerollingDiceIds}
-                        setRerollingDiceIds={setRerollingDiceIds}
+                        rerollAnimationSeq={rerollAnimationSeq}
                         locale={locale}
                         onToggleLock={(id) => {
                             // 被动重掷选择模式：点击骰子直接执行重掷

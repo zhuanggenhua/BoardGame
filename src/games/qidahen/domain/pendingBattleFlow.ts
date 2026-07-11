@@ -30,6 +30,10 @@ import {
 import {
     advanceQidahenTurnIfReady,
 } from './turnAdvance';
+import {
+    advanceQidahenDefeatInDetailResolution,
+} from './defeatInDetail';
+import { buildQidahenFeignedRetreatSelection } from './feignedRetreatSelection';
 import type {
     QidahenBattleRolls,
     QidahenCasualtyPriority,
@@ -144,6 +148,26 @@ export const resolveQidahenPendingActionFromPayload = (
         currentPendingTargetAction,
         payload.committedTroops,
     );
+    const feignedRetreatSelection = buildQidahenFeignedRetreatSelection(
+        state,
+        pendingTargetAction,
+        payload,
+    );
+    if (feignedRetreatSelection) {
+        return {
+            ...state,
+            pendingTargetAction,
+            feignedRetreatSelection,
+            lastSeasonSummary: {
+                id: `summary-${timestamp}`,
+                title: '诈败诱敌',
+                lines: [
+                    `${state.factions[pendingTargetAction.attackerFactionId].name} 宣告骑兵劫掠。`,
+                    `${state.factions[pendingTargetAction.defenderFactionId].name} 可直接点击真实手牌「诈败诱敌」，或选择不使用。`,
+                ],
+            },
+        };
+    }
     const resolution = dependencies.resolvePendingTargetAction(
         state,
         pendingTargetAction,
@@ -158,11 +182,16 @@ export const resolveQidahenPendingActionFromPayload = (
         payload.defenderCasualtyPriority ?? 'highest-level',
         payload.battleRolls,
     );
+    const orderedResolution = advanceQidahenDefeatInDetailResolution(
+        state,
+        pendingTargetAction,
+        resolution,
+    );
     return applyPendingActionResolutionToBattleFlowState(
         state,
         payload.playerId,
         pendingTargetAction,
-        resolution,
+        orderedResolution,
         timestamp,
         dependencies,
     );

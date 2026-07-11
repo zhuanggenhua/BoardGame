@@ -9,6 +9,7 @@
 - [x] 2.2 调整 `upload-to-r2.js` 的 package-managed 后续动作：普通游戏素材变更默认触发差异索引刷新，不默认重发完整 ZIP
 - [x] 2.3 保留完整 ZIP 显式重建路径，用于首次发布、强制修复、旧客户端兼容和增量失败 fallback
 - [ ] 2.4 生成 manifest 前校验 R2 单文件对象与目标 `file-index` 路径合同一致
+- [x] 2.5 index/manifest-only 发布完成后从服务器主源校验本次 file-index 正文大小和 SHA-256
 
 ## 3. 客户端：真实文件级差异安装
 - [x] 3.1 Android 原生层读取远端 `file-index` 并校验 `fileIndexChecksum`

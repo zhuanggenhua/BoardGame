@@ -6,6 +6,7 @@ import type { EventStreamEntry } from '../../../engine/types';
 interface UseDieRerollAnimationConsumerConfig {
     eventStreamEntries: EventStreamEntry[];
     setRerollingDiceIds: (ids: number[]) => void;
+    setRerollAnimationSeq?: (seq: number | ((seq: number) => number)) => void;
     clearDelayMs?: number;
 }
 
@@ -13,6 +14,7 @@ export function useDieRerollAnimationConsumer(config: UseDieRerollAnimationConsu
     const {
         eventStreamEntries,
         setRerollingDiceIds,
+        setRerollAnimationSeq,
         clearDelayMs = 600,
     } = config;
     const { consumeNew } = useEventStreamCursor({ entries: eventStreamEntries });
@@ -53,9 +55,10 @@ export function useDieRerollAnimationConsumer(config: UseDieRerollAnimationConsu
             clearTimeout(clearTimerRef.current);
         }
         setRerollingDiceIds(rerolledDiceIds);
+        setRerollAnimationSeq?.((seq) => seq + 1);
         clearTimerRef.current = setTimeout(() => {
             clearTimerRef.current = null;
             setRerollingDiceIds([]);
         }, clearDelayMs);
-    }, [clearDelayMs, clearRerollAnimation, consumeNew, eventStreamEntries, setRerollingDiceIds]);
+    }, [clearDelayMs, clearRerollAnimation, consumeNew, eventStreamEntries, setRerollAnimationSeq, setRerollingDiceIds]);
 }

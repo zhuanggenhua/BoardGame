@@ -17,6 +17,7 @@ export interface DiceBoxPhysicsSourceProps {
     dice: DicePhysicsDieInput[];
     isRolling: boolean;
     rerollingDiceIds?: number[];
+    rerollAnimationSeq?: number;
     styleProfile?: DiceBoxStyleProfile;
     dieSkins?: Array<DiceBoxDieSkin | null>;
     requireDieSkins?: boolean;
@@ -33,6 +34,7 @@ export function DiceBoxPhysicsSource({
     dice,
     isRolling,
     rerollingDiceIds,
+    rerollAnimationSeq = 0,
     styleProfile,
     dieSkins,
     requireDieSkins = false,
@@ -48,6 +50,7 @@ export function DiceBoxPhysicsSource({
     const engineRef = React.useRef<DiceBoxThreeEngine | null>(null);
     const previousDiceIdsRef = React.useRef<number[]>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
+    const pendingRerollMotionRef = React.useRef<{ key: string; indices: number[]; values: number[]; lockedIndices: number[] } | null>(null);
     const settledRef = React.useRef(true);
     const lastPhysicsSnapshotRef = React.useRef('');
     const [engineVersion, setEngineVersion] = React.useState(0);
@@ -79,6 +82,10 @@ export function DiceBoxPhysicsSource({
         [dice, rerollingDiceIds],
     );
     const rerollKey = React.useMemo(() => rerollIds.join(','), [rerollIds]);
+    const rerollMotionKey = React.useMemo(
+        () => (rerollIds.length > 0 ? `${rerollAnimationSeq}:${rerollKey}` : ''),
+        [rerollAnimationSeq, rerollIds.length, rerollKey],
+    );
     const requiredDieSkinsReady = React.useMemo(
         () => !requireDieSkins
             || dice.length === 0
@@ -256,23 +263,47 @@ export function DiceBoxPhysicsSource({
                 return;
             }
 
+            const playRerollMotion = async (
+                key: string,
+                rerollIndices: number[],
+                targetValues: number[],
+                targetLockedIndices: number[],
+            ) => {
+                activeMotionRef.current = { type: 'reroll', key };
+                try {
+                    await engine.rerollToValues(rerollIndices, targetValues, targetLockedIndices);
+                } finally {
+                    if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === key) {
+                        activeMotionRef.current = null;
+                    }
+                    previousDiceIdsRef.current = dice.map((die) => die.id);
+                    setSettledState(true);
+                    const pending = pendingRerollMotionRef.current;
+                    if (pending) {
+                        pendingRerollMotionRef.current = null;
+                        setSettledState(false);
+                        await playRerollMotion(pending.key, pending.indices, pending.values, pending.lockedIndices);
+                    }
+                }
+            };
+
             if (rerollIds.length > 0) {
                 const rerollIndices = rerollIds
                     .map((dieId) => dice.findIndex((die) => die.id === dieId))
                     .filter((index) => index >= 0);
                 if (rerollIndices.length > 0) {
                     setSettledState(false);
-                    if (activeMotionRef.current?.type !== 'reroll' || activeMotionRef.current.key !== rerollKey) {
-                        activeMotionRef.current = { type: 'reroll', key: rerollKey };
-                        try {
-                            await engine.rerollToValues(rerollIndices, values, lockedIndices);
-                        } finally {
-                            if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === rerollKey) {
-                                activeMotionRef.current = null;
-                            }
-                            previousDiceIdsRef.current = dice.map((die) => die.id);
-                            setSettledState(true);
+                    if (activeMotionRef.current?.type === 'reroll') {
+                        if (activeMotionRef.current.key !== rerollMotionKey) {
+                            pendingRerollMotionRef.current = {
+                                key: rerollMotionKey,
+                                indices: rerollIndices,
+                                values: [...values],
+                                lockedIndices: [...lockedIndices],
+                            };
                         }
+                    } else if (activeMotionRef.current?.type !== 'reroll' || activeMotionRef.current.key !== rerollMotionKey) {
+                        await playRerollMotion(rerollMotionKey, rerollIndices, values, lockedIndices);
                     }
                     return;
                 }
@@ -308,7 +339,7 @@ export function DiceBoxPhysicsSource({
         };
 
         void run();
-    }, [dice, engineReady, isRolling, lockedIndices, rerollIds, rerollKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
+    }, [dice, engineReady, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
 
     return (
         <div

@@ -74,10 +74,11 @@ const walkFiles = (root, relativePath = '', output = []) => {
 };
 
 const pruneInactiveManagedObjects = async (releaseDir, publishedKeys) => {
-    const managedKeys = MANAGED_PUBLISH_PREFIXES.flatMap((prefix) => (
-        walkFiles(releaseDir, prefix)
+    const releaseKeys = walkFiles(releaseDir, 'official');
+    const managedKeys = releaseKeys.filter((key) => (
+        MANAGED_PUBLISH_PREFIXES.some((prefix) => key.startsWith(prefix))
     ));
-    const objects = new Map(managedKeys.map((key) => [
+    const objects = new Map(releaseKeys.map((key) => [
         key,
         { size: statSync(resolveWithin(releaseDir, key)).size },
     ]));

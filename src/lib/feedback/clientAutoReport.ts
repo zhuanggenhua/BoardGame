@@ -192,9 +192,13 @@ function isCloudflareBeaconNoise(payload: ClientAutoReportPayload): boolean {
     if (!normalizedStack.includes('static.cloudflareinsights.com/beacon.min.js')) {
         return false;
     }
+    if (hasAppStackFrame(payload.stack) || hasAppStackFrame(payload.jsStack) || hasAppStackFrame(payload.componentStack)) {
+        return false;
+    }
 
     return normalizedMessage === "cannot read properties of undefined (reading 'readystate')"
-        || normalizedMessage === 'cannot read properties of undefined (reading "readystate")';
+        || normalizedMessage === 'cannot read properties of undefined (reading "readystate")'
+        || normalizedMessage.endsWith('.at is not a function');
 }
 
 function isAnonymousTopLevelDocumentSource(errorSource: string): boolean {

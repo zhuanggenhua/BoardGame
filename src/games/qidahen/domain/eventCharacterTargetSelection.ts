@@ -6,8 +6,6 @@ import {
 } from './regionFocusSemantics';
 import { buildGrantPardonSelectionFromRegionSemantics } from './selectionBuilders';
 import {
-    canResolveQidahenCharacterJudgement,
-    resolveQidahenSingleCharacterJudgement,
 } from './seasonResolution';
 import { advanceQidahenTurnIfReady } from './turnAdvance';
 import { updateQidahenTurnLabel } from './turnLabelState';
@@ -20,7 +18,6 @@ import type {
 } from './types';
 
 const COUNTER_SPY_PLOT_CARD_DEF_ID = 'qidahen-atlas05-1600-counter-spy-plot';
-const POWER_STRUGGLE_COUP_CARD_DEF_ID = 'qidahen-atlas05-1621-power-struggle-coup';
 const MONGOL_NOBLES_CONGRESS_CARD_DEF_ID = 'qidahen-atlas05-1623-mongol-nobles-congress';
 const GINSENG_AND_SABLE_CARD_DEF_ID = 'qidahen-atlas05-1630-ginseng-and-sable';
 const TRIBUTE_EDICT_CARD_DEF_ID = 'qidahen-atlas05-1633-tribute-edict';
@@ -66,54 +63,6 @@ export function buildQidahenCounterSpyPlotSelection(
         summary: '弃 2 张手牌，指定并移除一张合法的对手在场人物牌。',
         eventCardId: eventCard.id,
         eventCardDefId: COUNTER_SPY_PLOT_CARD_DEF_ID,
-        eventCardLabel: eventCard.label,
-        ownerFactionId,
-        ownerFactionName: state.factions[ownerFactionId].name,
-        paymentCardIds: [...paymentCardIds],
-        choices,
-    };
-}
-
-export function buildQidahenPowerStruggleCoupCharacterJudgementSelection(
-    state: QidahenCore,
-    ownerFactionId: QidahenFactionId,
-    eventCard: QidahenHandCard,
-    paymentCardIds: readonly string[],
-): QidahenEventCharacterTargetSelection | null {
-    if (eventCard.cardDefId !== POWER_STRUGGLE_COUP_CARD_DEF_ID) {
-        return null;
-    }
-
-    const choices = (Object.keys(state.factions) as QidahenFactionId[])
-        .filter((factionId) => factionId !== ownerFactionId)
-        .flatMap((factionId) => {
-            const faction = state.factions[factionId];
-            return faction.characters
-                .filter((character) => (
-                    character.inPlay
-                    && !character.removedFromGame
-                    && canResolveQidahenCharacterJudgement(character.id)
-                ))
-                .map((character) => ({
-                    id: `${factionId}:${character.id}`,
-                    characterId: character.id,
-                    characterName: character.name,
-                    factionId,
-                    factionName: faction.name,
-                    detail: `对${faction.name}在场人物「${character.name}」执行一次既有人物判定。`,
-                }));
-        });
-
-    if (choices.length === 0) {
-        return null;
-    }
-
-    return {
-        source: 'power-struggle-coup-character-judgement',
-        title: '开门迎降',
-        summary: '选择 1 张敌方在场人物，按既有人物额外判定表执行一次掷骰判定；第二项效果规则仍未锁定。',
-        eventCardId: eventCard.id,
-        eventCardDefId: POWER_STRUGGLE_COUP_CARD_DEF_ID,
         eventCardLabel: eventCard.label,
         ownerFactionId,
         ownerFactionName: state.factions[ownerFactionId].name,
@@ -457,64 +406,6 @@ export function resolveQidahenEventCharacterTargetChoice(
         return state;
     }
 
-    if (selection.source === 'power-struggle-coup-character-judgement') {
-        const judgement = resolveQidahenSingleCharacterJudgement(
-            state,
-            choice.factionId,
-            choice.characterId,
-        );
-        if (!judgement) {
-            return state;
-        }
-
-        const removedPaymentCardIds = new Set(selection.paymentCardIds);
-        const discardedCardCount = Math.max(0, selection.paymentCardIds.length - 1);
-        const nextState = updateQidahenTurnLabel({
-            ...state,
-            turnPhase: 'action-window',
-            eventCharacterTargetSelection: null,
-            selectedPaymentCardIds: [],
-            selectedHandActionCardId: null,
-            payment: buildPaymentState('play-event-card', 0),
-            handCards: state.handCards.filter((card) => !removedPaymentCardIds.has(card.id)),
-            discardPileCount: state.discardPileCount + discardedCardCount,
-            factions: {
-                ...judgement.factions,
-                [selection.ownerFactionId]: {
-                    ...judgement.factions[selection.ownerFactionId],
-                    handCount: Math.max(0, judgement.factions[selection.ownerFactionId].handCount - selection.paymentCardIds.length),
-                    discardPileCount: Math.max(0, judgement.factions[selection.ownerFactionId].discardPileCount ?? 0) + discardedCardCount,
-                },
-            },
-            factionActionUsed: true,
-            lastFactionActionId: 'play-event-card',
-            confirmedActionId: 'play-event-card',
-            activeEventCards: state.activeEventCards,
-            lastSeasonSummary: {
-                id: `summary-${timestamp}`,
-                title: '开门迎降',
-                lines: [
-                    `对${choice.factionName}在场人物「${choice.characterName}」执行人物判定：${judgement.summary}。`,
-                    '开门迎降使用后移出游戏；此牌未进入弃牌堆。',
-                    '第二项“大明……”效果文本仍未锁定，本次只结算人物判定窄口。',
-                    discardedCardCount > 0
-                        ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
-                        : '没有额外弃牌费用。',
-                ],
-            },
-            actionLog: [
-                {
-                    id: `log-${timestamp}`,
-                    faction: selection.ownerFactionId,
-                    text: `${selection.ownerFactionName} 执行事件「开门迎降」，对${choice.factionName}人物「${choice.characterName}」执行人物判定：${judgement.summary}，事件牌移出游戏。`,
-                },
-                ...state.actionLog,
-            ].slice(0, 6),
-        });
-
-        return advanceQidahenTurnIfReady(nextState, timestamp);
-    }
-
     if (selection.source !== 'counter-spy-plot') {
         return state;
     }
@@ -669,10 +560,12 @@ export function resolveQidahenEventOpponentHandChoice(
             ].slice(0, 6),
         });
 
-        if (selection.targetFactionId === 'ming' && choice.id === 'grant-pardon') {
+        if (choice.id === 'grant-pardon') {
+            const executorFactionId = selection.targetFactionId;
             const grantPardonSelection = buildGrantPardonSelectionFromRegionSemantics(
                 nextState,
                 getQidahenLockedRegionSelectionSemantics(nextState),
+                executorFactionId,
             );
             if (!grantPardonSelection) {
                 return advanceQidahenTurnIfReady(updateQidahenTurnLabel({
@@ -686,7 +579,7 @@ export function resolveQidahenEventOpponentHandChoice(
                             discardedCardCount > 0
                                 ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
                                 : '没有额外弃牌费用。',
-                            '赐印招安：当前没有可招安的相邻敌军。',
+                            `赐印招安：当前没有与${selection.targetFactionName}控制区相邻的可招安敌军。`,
                         ],
                     },
                 }), timestamp);
@@ -694,6 +587,7 @@ export function resolveQidahenEventOpponentHandChoice(
             const tributeEdictGrantPardonSelection = {
                 ...grantPardonSelection,
                 executionSource: 'tribute-edict' as const,
+                executorFactionId,
             };
 
             const displayAnchorRegionId = tributeEdictGrantPardonSelection.displayAnchorRegionId
@@ -701,7 +595,7 @@ export function resolveQidahenEventOpponentHandChoice(
                 ?? nextState.selectedRegionId;
             return updateQidahenTurnLabel({
                 ...nextState,
-                currentPlayer: state.factions.ming.playerId,
+                currentPlayer: state.factions[executorFactionId].playerId,
                 turnPhase: 'grant-pardon-choice',
                 selectedActionId: 'grant-pardon',
                 confirmedActionId: 'grant-pardon',
@@ -723,7 +617,7 @@ export function resolveQidahenEventOpponentHandChoice(
                         discardedCardCount > 0
                             ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
                             : '没有额外弃牌费用。',
-                        '等待大明选择赐印招安的目标部队和接收区。',
+                        `等待${selection.targetFactionName}选择赐印招安的目标部队和接收区。`,
                     ],
                 },
                 actionLog: [
@@ -737,10 +631,11 @@ export function resolveQidahenEventOpponentHandChoice(
             });
         }
 
-        if (selection.targetFactionId === 'ming' && choice.id === 'drive-tiger') {
+        if (choice.id === 'drive-tiger') {
+            const commanderFactionId = selection.targetFactionId;
             const dispatchSelection = buildDriveTigerDispatchSelectionFromRegionSemantics(
                 nextState,
-                'ming',
+                commanderFactionId,
                 getQidahenLockedRegionSelectionSemantics(nextState),
             );
             if (!dispatchSelection) {
@@ -755,7 +650,7 @@ export function resolveQidahenEventOpponentHandChoice(
                             discardedCardCount > 0
                                 ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
                                 : '没有额外弃牌费用。',
-                            '驱虎吞狼：当前没有可由大明指挥的对手调度进攻来源。',
+                            `驱虎吞狼：当前没有可由${selection.targetFactionName}指挥的对手调度进攻来源。`,
                         ],
                     },
                 }), timestamp);
@@ -763,7 +658,7 @@ export function resolveQidahenEventOpponentHandChoice(
 
             return updateQidahenTurnLabel({
                 ...nextState,
-                currentPlayer: state.factions.ming.playerId,
+                currentPlayer: state.factions[commanderFactionId].playerId,
                 turnPhase: 'drive-tiger-consent',
                 selectedActionId: 'drive-tiger',
                 confirmedActionId: 'drive-tiger',
@@ -778,7 +673,7 @@ export function resolveQidahenEventOpponentHandChoice(
                         discardedCardCount > 0
                             ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
                             : '没有额外弃牌费用。',
-                        `等待${state.factions[dispatchSelection.attackerFactionId].name}决定是否接受大明指挥。`,
+                        `等待${state.factions[dispatchSelection.attackerFactionId].name}决定是否接受${selection.targetFactionName}指挥。`,
                     ],
                 },
                 actionLog: [

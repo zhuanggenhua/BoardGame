@@ -211,6 +211,9 @@ const buildMapArmyTokensForRegion = (
             faction: unit.faction,
             regionId: region.id,
             troopIndex: index + 1,
+            troopKind: fieldPieces[index]?.troopKind
+                ?? (region.controller === 'neutral' ? 'infantry' : getRegularTroopKindForFaction(region.controller)),
+            pieceId: fieldPieces[index]?.id,
             imageSrc: unit.imageSrc,
             size: 26,
             rotationDeg: unit.rotationDeg,
@@ -274,6 +277,10 @@ const buildMapSiegeAttackerTokensForRegion = (
             type: 'army' as const,
             faction: unit.faction,
             regionId: region.id,
+            troopIndex: index + 1,
+            troopKind: siegePieces[index]?.troopKind
+                ?? getRegularTroopKindForFaction(region.siegeState!.attackerFactionId),
+            pieceId: siegePieces[index]?.id,
             imageSrc: unit.imageSrc,
             size: 26,
             rotationDeg: unit.rotationDeg,
@@ -320,18 +327,23 @@ export const syncQidahenMapTokensFromRegions = (
                 });
             }
 
-            for (const [index, marker] of region.eventMarkers.entries()) {
+            let visibleMarkerIndex = 0;
+            for (const marker of region.eventMarkers) {
+                if (!marker.imageSrc && !marker.mapLabel) {
+                    continue;
+                }
                 const point = getMapTokenPoint(region, 'marker');
                 nextTokens.push({
                     id: marker.id,
-                    x: clampMapTokenCoordinate(point.x + (index * 14) / QIDAHEN_MAP_WIDTH),
-                    y: clampMapTokenCoordinate(point.y + (index * 14) / QIDAHEN_MAP_HEIGHT),
+                    x: clampMapTokenCoordinate(point.x + (visibleMarkerIndex * 14) / QIDAHEN_MAP_WIDTH),
+                    y: clampMapTokenCoordinate(point.y + (visibleMarkerIndex * 14) / QIDAHEN_MAP_HEIGHT),
                     type: 'marker',
                     faction: 'neutral',
                     imageSrc: marker.imageSrc,
-                    value: marker.imageSrc ? undefined : marker.label,
+                    value: marker.imageSrc ? undefined : marker.mapLabel,
                     size: 27,
                 });
+                visibleMarkerIndex += 1;
             }
 
             return nextTokens;

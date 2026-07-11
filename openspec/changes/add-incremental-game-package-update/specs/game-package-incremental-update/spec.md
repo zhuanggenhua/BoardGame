@@ -19,6 +19,12 @@
 - **THEN** 系统 MAY 生成并上传完整 ZIP
 - **AND** MUST 同时生成对应 `file-index` 与 manifest
 
+#### Scenario: 差异发布成功判据
+- **WHEN** index/manifest-only 发布写入新的单文件对象、`file-index` 和最新 manifest
+- **THEN** 发布命令 MUST 从服务器主源读取本次唯一 `file-index`
+- **AND** MUST 校验其正文大小和 `fileIndexChecksum`
+- **AND** MUST NOT 使用旧完整 ZIP 或 fallback URL 可读取作为差异发布成功证据
+
 ### Requirement: 远端文件索引作为 App 素材包更新真相源
 系统 SHALL 使用 R2 单文件对象、远端 `file-index` 和游戏包 manifest 共同定义 App 素材包目标状态，完整 ZIP 仅作为首装与回退载体。
 

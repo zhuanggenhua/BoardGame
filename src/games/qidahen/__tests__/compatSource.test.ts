@@ -390,12 +390,14 @@ describe('Qidahen compatibility source guards', () => {
         expect(board).toContain('top: stageMetrics.top,');
     });
 
-    it('底部手牌坞应固定锚到底边并限制宽度，避免抽牌堆与弃牌堆被挤出主视口', () => {
+    it('底部手牌坞应锚到底边并支持移动横屏抬升，同时限制宽度避免牌堆被挤出主视口', () => {
         const board = readBoardSource();
 
         expect(board).toContain('data-testid="qidahen-bottom-dock"');
-        expect(board).toContain('className="pointer-events-auto absolute inset-x-0 bottom-0 z-30"');
-        expect(board).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
+        expect(board).toContain('className="pointer-events-none absolute inset-x-0 bottom-0 z-[80]"');
+        expect(board).toContain('const dockBottomInset = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET : BOTTOM_DOCK_INSET;');
+        expect(board).toContain('height: BOTTOM_DOCK_HEIGHT,');
+        expect(board).toContain('bottom: dockBottomInset,');
         expect(board).toContain('data-testid="qidahen-hand-zone"');
         expect(board).toContain('data-ui-role="qidahen-hand-dock"');
         expect(board).toContain("maxWidth: 'calc(100vw - 320px)'");
@@ -1157,7 +1159,7 @@ describe('Qidahen compatibility source guards', () => {
         const registrySource = readResolvedEventReducerRegistrySource();
 
         expect(indexSource).toContain("} from './resolvedEventReducers';");
-        expect(indexSource).toContain('const reducedCore = reduceQidahenResolvedEvent(state, event);');
+        expect(indexSource).toContain('const reducedCore = reduceQidahenResolvedEvent(state, event)');
         expect(indexSource).not.toContain("} from './actionWindowResolvedEventOrchestration';");
         expect(indexSource).not.toContain('resolveQidahenActionWindowResolvedEventForTurnFlow');
         expect(indexSource).not.toContain("} from './actionWindowResolvedEventBridge';");
@@ -1346,7 +1348,7 @@ describe('Qidahen compatibility source guards', () => {
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
         expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('return reduceQidahenDirectInputEvent(state, event) ?? state;');
+        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './selectionInputState';");
         expect(indexSource).not.toContain('reduceQidahenSelectionInputEvent,');
         expect(indexSource).not.toContain('type QidahenSelectionInputStateDependencies,');
@@ -1416,7 +1418,7 @@ describe('Qidahen compatibility source guards', () => {
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
         expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('return reduceQidahenDirectInputEvent(state, event) ?? state;');
+        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './regionSelectionReducer';");
         expect(indexSource).not.toContain('const QIDAHEN_REGION_SELECTED_DEPENDENCIES: QidahenRegionSelectedDependencies = {');
         expect(indexSource).not.toContain('return reduceQidahenRegionSelected(');
@@ -2169,7 +2171,7 @@ describe('Qidahen compatibility source guards', () => {
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
         expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('return reduceQidahenDirectInputEvent(state, event) ?? state;');
+        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './previewActionReducer';");
         expect(indexSource).not.toContain("} from './previewActionConfirmedEventBridge';");
         expect(indexSource).not.toContain('type QidahenPreviewActionConfirmedDependencies,');
@@ -2985,7 +2987,7 @@ describe('Qidahen compatibility source guards', () => {
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
         expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('return reduceQidahenDirectInputEvent(state, event) ?? state;');
+        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './wheelMoveExecution';");
         expect(indexSource).not.toContain('resolveQidahenWheelMoveExecuted,');
         expect(indexSource).not.toContain('type QidahenWheelMoveExecutionDependencies,');
@@ -3994,7 +3996,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingTargetResolutionSource).not.toContain('getNeutralGarrisonTroops,');
         expect(pendingTargetResolutionSource).toContain('QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS,');
         expect(pendingTargetResolutionSource).toContain("const neutralGarrisonTroops = pendingTargetAction.targetKind === 'siege-attacker'");
-        expect(pendingTargetResolutionSource).toContain('? Math.max(0, Math.min(battleRegion.population, QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS))');
+        expect(pendingTargetResolutionSource).toContain('getQidahenEffectivePopulation(battleRegion)');
+        expect(pendingTargetResolutionSource).not.toContain('? Math.max(0, Math.min(battleRegion.population, QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS))');
         expect(pendingTargetResolutionSource).toContain('const siegeReinforcementResolution = resolvePendingSiegeReinforcementAction(');
         expect(pendingTargetResolutionSource).toContain('const battleResolution = resolvePendingBattleTargetAction(');
         expect(pendingTargetResolutionSource).toContain('const marriageSubjugationResolution = resolvePendingMarriageSubjugationTargetAction(');

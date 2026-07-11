@@ -495,6 +495,7 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             position: 'top',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
+            allowedTargets: ['city-region-14'],
         },
         {
             id: 'border-width',

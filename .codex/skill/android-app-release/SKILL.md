@@ -45,12 +45,13 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
   3. 直接下载线上 APK 验包
 - 禁止停在“我已经本地打好了”。
 
-### 2.2 release 与真机测试默认必须是正式壳
+### 2.2 对外发布与明确要求的真机验收必须使用正式壳
 
-- `prepare-release / build-release / build-bundle / 真机安装测试 / 下载链路测试` 默认必须落到：
+- `prepare-release / build-release / build-bundle / 下载链路测试`，以及用户明确要求的真机安装验收，必须落到：
   - `appId = top.easyboardgame.app`
   - `appName = 易桌游`
-- 本项目日常真机验证直接使用正式包名和正式应用名，避免测试壳与正式壳的数据目录、下载任务、自动更新入口、URL scheme 不一致。
+- 只有用户明确要求“真机验证 / 安装到设备 / 看设备实际效果”时才进入设备链；线上问题不得默认转成 ADB 安装或连接设备排查。
+- 进入真机验证时使用正式包名和正式应用名，避免测试壳与正式壳的数据目录、下载任务、自动更新入口、URL scheme 不一致。
 - `debug / run / sync` 不得擅自切成 `top.easyboardgame.app.debug`。只有用户当轮明确要求“并存安装测试包 / debug 包 / 不覆盖正式包”时，才允许使用测试壳，并且最终汇报必须标明不是正式包验证。
 - 只要用户目标是对外发布，任何 `debug / 测试 / qa / dev` 壳都视为失败产物。
 
@@ -116,6 +117,14 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - `--force-update` 只作为旧命令兼容参数保留；不传也必须强制更新。
 - 发布后健康检查必须区分“服务器传播尚未完成”和“程序参数无效”。URL 类型错误、`Invalid URL`、`[object Object]`、目标结构错误、预期大小或摘要无效必须首轮立即失败，禁止套用传播等待反复重试。
 - Docker 镜像构建、Android stable OTA 与 native workflow 的整次运行上限统一为 30 分钟；服务器主源传播验证和镜像部署整步保护也统一为 30 分钟。部署脚本必须约束整次变更操作，禁止把两个串行镜像各自 30 分钟的等待误报成“整次部署 30 分钟”。直接执行脚本时由 `DEPLOY_TOTAL_TIMEOUT_SECONDS=1800` 负责整次时限；通过 deploy runner 执行时只保留 runner 的 30 分钟整步时限，关闭脚本内层重复计时。超过上限必须失败，不得继续后台假卡死；再次操作前必须先确认当前容器版本与健康状态。
+
+### 2.10 线上问题默认走正式发布链，不默认走设备
+
+- 用户说明问题已经上线、要求修线上或要求更新 OTA 时，默认流程是：锁定线上 `latest.json` 与目标提交 -> 修代码 -> 提交并 push -> 发布 stable OTA -> 回查线上 manifest 与 bundle。
+- 连接设备、ADB 安装、系统安装器和真机版本读取只属于用户明确要求后的附加验收，不得替代正式发布，也不得作为线上修复的默认入口。
+- 用户反馈“OTA 无法更新”时，先比较线上 manifest 的内部游标与历史客户端可能记录的最高游标。当前 Android OTA 内部游标永久不得低于 `6.0.0`；低于该下限的发布必须失败。
+- 若历史错误高游标导致客户端把新包判成旧包，必须发布高于历史值的 stable 桥接 OTA，并保持后续游标单调递增；不能只改文档、重发低游标包或要求用户重装。
+- 只有证据证明原生壳缺少必要插件、权限或系统能力时才追加 native 发布；native 不能替代应交付的 OTA。
 
 ## 3. 路径选择
 
@@ -281,8 +290,9 @@ https://assets.easyboardgame.top/official/native-app-updates/android/stable/late
 - `assets/capacitor.config.json`
 - `assets/public/android-build-meta.json`
 
-### 4.6 真机安装与原始位点验收
+### 4.6 用户明确要求时的真机安装与原始位点验收
 
+- 本节不是线上修复的默认步骤。只有用户明确要求设备验收时才执行；否则以正式 OTA/native 发布和线上回查收口。
 - 安装前先用 `dumpsys package top.easyboardgame.app` 核对真机当前 `versionCode / versionName`。线上已经发布新 APK，但真机仍是旧版本时，只能说“原生包已发布，设备尚未升级”，不得说方向、权限或插件问题已经修复。
 - `adb install -r` 返回 `INSTALL_FAILED_ABORTED: User rejected permissions` 时，必须立即停止重复执行同一命令。该结果表示设备安装确认未完成，不是 APK 构建或发布失败。
 - ADB 安装被系统拒绝后的正式回退路径是：

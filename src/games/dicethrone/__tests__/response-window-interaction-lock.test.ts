@@ -7,14 +7,20 @@
  * 直到交互完成或取消。
  */
 import { describe, expect, it } from 'vitest';
+import { execute as executeDomainCommand } from '../domain/execute';
+import { RESOURCE_IDS } from '../domain/resources';
+import { getResponderQueue } from '../domain/rules';
 import { diceModifyReducer, diceModifyToCommands } from '../domain/systems';
 import {
     advanceTo,
     cmd,
+    createHeroMatchup,
     createQueuedRandom,
     createRunner,
     createSetupWithHand,
+    fixedRandom,
     fistAttackAbilityId,
+    getCardById,
 } from './test-utils';
 
 function assertWindowLockedWithInteraction(
@@ -31,6 +37,60 @@ function assertWindowLockedWithInteraction(
     expect(responseWindow, '响应窗口应保持打开').toBeDefined();
     expect(responseWindow?.pendingInteractionId, '响应窗口应被交互锁定').toBeDefined();
 }
+
+function createUltimatePreActivationState() {
+    const state = createHeroMatchup('cursed_pirate', 'monk', (core) => {
+        core.players['1'].hand = [getCardById('card-unexpected')];
+        core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+    })(['0', '1'], fixedRandom);
+
+    state.sys.phase = 'offensiveRoll';
+    state.core.activePlayerId = '0';
+    state.core.rollCount = 1;
+    state.core.rollConfirmed = true;
+    state.core.dice = state.core.dice.map((die, index) => ({
+        ...die,
+        value: 6,
+        symbol: index < 5 ? 'skull' : die.symbol,
+        symbols: index < 5 ? ['skull'] : die.symbols,
+    }));
+    state.core.pendingAttack = {
+        attackerId: '0',
+        defenderId: '1',
+        sourceAbilityId: 'merciless-plunder',
+        isDefendable: false,
+        isUltimate: true,
+    };
+
+    return state;
+}
+
+describe('终极技能发动前响应时机', () => {
+    it('选中终极技能后仍应让对手进入掷骰确认响应窗口', () => {
+        const state = createUltimatePreActivationState();
+
+        expect(getResponderQueue(
+            state.core,
+            'afterRollConfirmed',
+            '1',
+            undefined,
+            '0',
+            'offensiveRoll',
+        )).toEqual(['1']);
+    });
+
+    it('终极技能发动前骰面被修改时应取消当前选择并要求重选', () => {
+        const state = createUltimatePreActivationState();
+        const events = executeDomainCommand(state, {
+            type: 'MODIFY_DIE',
+            playerId: '1',
+            payload: { dieId: 0, newValue: 5 },
+            timestamp: 1,
+        } as any, fixedRandom);
+
+        expect(events.map((event) => event.type)).toContain('ABILITY_RESELECTION_REQUIRED');
+    });
+});
 
 describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
     it('弹一手（modify-die-adjust-1, target=select）：完整流程', () => {
@@ -140,6 +200,36 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
 });
 
 describe('modifyDie 严格超限回归', () => {
+    it('咒缚海盗三颗 6 应能用意不意外一次补成五颗 6', () => {
+        const random = createQueuedRandom([6, 6, 6, 1, 1]);
+        const runner = createRunner(random, true);
+
+        const result = runner.run({
+            name: '咒缚海盗三颗 6 使用意不意外补成五颗 6',
+            setup: createHeroMatchup('cursed_pirate', 'monk', (core) => {
+                core.players['0'].hand = [getCardById('card-unexpected')];
+                core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+                core.players['1'].hand = [];
+                core.players['1'].deck = [];
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('PLAY_CARD', '0', { cardId: 'card-unexpected' }),
+                cmd('MODIFY_DIE', '0', { dieId: 3, newValue: 6 }),
+                cmd('MODIFY_DIE', '0', { dieId: 4, newValue: 6 }),
+                cmd('SYS_INTERACTION_CONFIRM', '0'),
+            ],
+            expect: {
+                diceValues: [6, 6, 6, 6, 6],
+                pendingInteraction: null,
+                players: { '0': { discardSize: 1 } },
+            },
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+    });
+
     it('card-unexpected 本地 any-2 预览不得累计到第 3/4 颗骰子', () => {
         let result = { modifications: {}, modCount: 0, totalAdjustment: 0 };
 

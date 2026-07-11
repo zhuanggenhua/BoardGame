@@ -1060,7 +1060,8 @@
         "release_ready": "Release Environment"
       },
       "ota": {
-        "title": "Android OTA"
+        "title": "Android OTA",
+        "force_update_required": "All OTA releases are mandatory. Clients block while downloading and switch immediately; release entry points cannot disable this."
       },
       "packages": {
         "title": "Android Game Packages"

@@ -1,7 +1,11 @@
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
-import { buildQidahenRuntimeRegionIdByPixel, resolveQidahenSharedPrintedRegionAnchors } from '../ui/runtimeRegionOwnership';
+import {
+    buildQidahenRuntimeRegionIdByPixel,
+    resolveQidahenRuntimeRegionEntryPoint,
+    resolveQidahenSharedPrintedRegionAnchors,
+} from '../ui/runtimeRegionOwnership';
 import { getQidahenRuntimeRegionIdsForPrintedRegionId, QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from '../ui/mapGraph';
 
 const REGION_MASK_PATH = resolve(process.cwd(), 'src/games/qidahen/data/region-mask.png');
@@ -60,5 +64,31 @@ describe('qidahen runtime region ownership', () => {
         expect(pixelCountByRuntimeRegionId.get('city-region-19-liaoxi')).toBeGreaterThan(0);
         expect(pixelCountByRuntimeRegionId.get('city-region-28-jizhen')).toBeGreaterThan(0);
         expect(pixelCountByRuntimeRegionId.get('city-region-28')).toBeGreaterThan(0);
+    });
+
+    it('地图路线会停在从来源方向进入目标区域的边界内侧，而不是指向区域中心', () => {
+        const width = 12;
+        const height = 8;
+        const ownership: Array<string | null> = new Array(width * height).fill('source');
+        for (let y = 0; y < height; y += 1) {
+            for (let x = 7; x < width; x += 1) {
+                ownership[(y * width) + x] = 'target';
+            }
+        }
+
+        const point = resolveQidahenRuntimeRegionEntryPoint(
+            ownership,
+            width,
+            height,
+            'target',
+            { x: 1, y: 4 },
+            { x: 10, y: 4 },
+            1,
+        );
+
+        expect(point).not.toBeNull();
+        expect(point!.x).toBeGreaterThanOrEqual(7);
+        expect(point!.x).toBeLessThan(10);
+        expect(point!.y).toBeCloseTo(4);
     });
 });

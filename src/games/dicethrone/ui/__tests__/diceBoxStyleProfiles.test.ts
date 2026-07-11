@@ -11,7 +11,8 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.compactSettledDice).toBe(false);
     });
 
-    it('移动横屏应扩大真实物理区域，避免五颗骰子挤成重叠横排', () => {
+    it('移动横屏应把真实物理区域收进红框，而不是只靠结束回收', () => {
+        expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.fitWorldToCameraView).toBe(true);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldWidthScale)
             .toBeGreaterThan(DICETHRONE_DICE_BOX_STYLE_PROFILE.worldWidthScale);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.worldHeightScale)
@@ -33,7 +34,7 @@ describe('DiceThrone 3D 骰子物理样式合同', () => {
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.initialThrowSpread)
             .toBeGreaterThanOrEqual(0.7);
         expect(DICETHRONE_MOBILE_DICE_BOX_STYLE_PROFILE.settledSpreadAnimationMs)
-            .toBeGreaterThanOrEqual(180);
+            .toBe(0);
     });
 
     it('越界安全回收位置应保持二维散落，而不是退化为单排', () => {

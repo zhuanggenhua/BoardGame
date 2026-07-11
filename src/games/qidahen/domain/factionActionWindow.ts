@@ -125,9 +125,10 @@ export const getQidahenSelectedActionCost = (
         return undefined;
     }
     const sourceCard = state.handCards.find((card) => card.id === state.selectedHandActionCardId);
-    return sourceCard?.cardDefId === counterSpyPlotCardDefId || sourceCard?.cardDefId === tributeEdictCardDefId
-        ? 2
-        : undefined;
+    if (sourceCard?.cardDefId === counterSpyPlotCardDefId) {
+        return 3;
+    }
+    return sourceCard?.cardDefId === tributeEdictCardDefId ? 2 : undefined;
 };
 
 export const getQidahenSelectedActionPaymentProgress = (

@@ -19,11 +19,14 @@ describe('DiceThrone portrait atlas contract', () => {
             expect(style.backgroundImage).not.toContain('characterhead2');
         }
 
-        for (const characterId of ['treant', 'ninja', 'zhanshujia', 'cursed_pirate'] as const) {
+        for (const characterId of ['treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'huntress'] as const) {
             const style = getPortraitStyle(characterId, 'zh-CN');
             expect(style.backgroundImage).toContain('characterhead2');
             expect(style.backgroundImage).not.toContain('character-portraits');
         }
+
+        expect(getPortraitStyle('huntress', 'zh-CN').backgroundPosition)
+            .toBe('80.0000% 16.6634%');
     });
 
     it('头像资源本体尺寸与 manifest hash 必须匹配分流合同', async () => {
