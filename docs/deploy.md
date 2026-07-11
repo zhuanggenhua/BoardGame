@@ -355,7 +355,7 @@ GitHub Actions 自动化：
 约束：
 
 - `--dry-run` 只本地打 zip 和 manifest，不上传
-- Android native embedded APK 也必须遵守“轻包体”约束：只允许内置壳运行必需的 H5 bundle 与轻量静态文件，`public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路。
+- Android native embedded APK 也必须遵守“轻包体”约束：只允许内置壳运行必需的 H5 bundle 与轻量静态文件，`public/assets/common/audio/**` 这类运行时大资源必须继续走服务器资源主源 / 游戏包链路。
 - `scripts/mobile/android.mjs` 会在 Android embedded 构建阶段主动裁掉 `dist/assets/common/audio/**`，并在 `dist/` 或 `android/app/src/main/assets/public/` 里仍检测到这些前缀时直接失败。
 - `--skip-latest` 会上传 bundle 与版本 manifest，但不会切换该 channel 的 `latest.json`
 - 正式覆盖 `latest.json` 后，指向该 channel 的 Android App 会在下一次启动后的后台检查中感知到新 bundle，并在切后台或重启后生效
@@ -418,34 +418,30 @@ GitHub Actions 自动化：
 - `raw/` 与 `archive/` 是既有正式数据目录，容量门禁会继续计入，但本治理变更不会删除、截断或迁移现有文件。
 - 每个游戏达到 300MiB 后整局拒收，新对局不会部分追加到旧文件；异常退出最多留下非正式 `pending` 文件。
 
-## 资源 /assets 与对象存储映射（官方）
+## 资源 /assets 与服务器资源主源（官方）
 
-- **开发**：直接使用 `public/assets`（不配置 R2 也能跑通）。
+- **开发**：直接使用 `public/assets`（不配置远程资源也能跑通）。
 - **生产默认**：前端资源基址为官方资源域名 `https://assets.easyboardgame.top/official`。
-- **生产兼容方案**：也可将 `/assets/*` 反代到对象存储（如 Cloudflare R2）。
-- **对象存储 key 前缀**：`official/<gameId>/...`
+- **服务器发布 key 前缀**：`official/<gameId>/...`
   - 路径对应：`/assets/<gameId>/...` ⇄ `official/<gameId>/...`
 - **资源基址配置**：前端可通过 `VITE_ASSETS_BASE_URL` 覆盖；当前代码内置默认值为 `https://assets.easyboardgame.top/official`。
-- **缓存失效机制**：构建时会扫描 `public/assets`，为资源 URL 自动追加 `?v=<content-hash>`。资源内容变化后 URL 会自动变化，因此 R2 上的图片/音频/SVG 可以安全使用长期缓存。
+- **缓存失效机制**：构建时会扫描 `public/assets`，为资源 URL 自动追加 `?v=<content-hash>`。资源内容变化后 URL 会自动变化，因此服务器主源上的图片/音频/SVG 可以安全使用长期缓存。
 - **本地 JSON / 图集配置**：仍走本地 `/assets`，但同样会追加 `?v=<content-hash>`，避免本地回退路径拿到旧配置。
 
-### 生产素材域名：服务器优先、R2 自动回退
+### 生产素材域名：服务器主源
 
-- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，不需要知道素材由服务器还是 R2 返回。
+- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，该域名背后唯一正式内容来源是服务器活动版本。
 - **所有正式素材与发布包**：`assets.easyboardgame.top/*` 进入 `boardgame-asset-router` Worker。Worker 先请求隐藏源 `assets-origin.easyboardgame.top`，隐藏源再通过 Tunnel 访问生产机 `127.0.0.1:19090`。
-- **自动回退**：服务器连接失败、1500ms 内没有响应头，或返回 `404`、`408`、`429`、`5xx` 时，Worker 使用同 key 的 R2 对象返回。客户端仍访问原域名。
+- **禁止对象存储回退**：服务器连接失败、超时、缺少对象或返回 5xx 时，Worker 必须返回明确的服务器错误或服务器状态，不能读取对象存储兜底，也不能把旧对象伪装成本次发布成功。
 - **大型发布包同样服务器优先**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 不再配置绕过 Route，统一进入 Worker。
 - **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
-- **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖 R2 才能上线。
+- **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在通过专用受限 SSH 密钥把本批对象直接写入服务器 staging，校验后原子切换 `current`。不再等待或依赖对象存储才能上线。
 - **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
-- **R2 只做关键对象的同 key 异步灾备**：服务器切换后，只为当前恢复必需对象生成灾备队列，`boardgame-asset-backup.timer` 后台上传并失败重试。默认不备份重复 APK 别名、历史版本清单、游戏单素材散件等可重复或可重建对象。R2 超过 9GiB 门禁时仅保留关键对象队列并告警，但不撤销服务器发布。
-- **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS、同域和自动回退；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
+- **这不是客户端裸 IP 直连**：请求仍经过 Cloudflare Worker 和 Tunnel，因此保留 HTTPS 与同域；不能承诺与客户端直接访问服务器公网 IP 完全相同的延迟。
 
 服务器静态源保护参数：
 
 - systemd 服务：`boardgame-asset-origin.service`
-- R2 灾备队列：`boardgame-asset-backup.service` / `boardgame-asset-backup.timer`
-- 灾难重建命令：`boardgame-asset-sync.service`，只允许人工启动，不再配置 timer
 - 仅监听：`127.0.0.1:19090`
 - 全局同时传输连接：32
 - 单客户端同时连接：4
@@ -461,23 +457,20 @@ curl -I "https://assets.easyboardgame.top/official/common/images/noise.svg?probe
 ```
 
 - `X-Asset-Source: server`：普通素材或发布包由服务器活动版本返回。
-- `X-Asset-Source: r2-fallback`：服务器不可用或缺少对象，本次请求已自动回退 R2。
+- `X-Asset-Source: server-error`：服务器静态源不可用或返回服务端错误；这不是发布成功证据，必须回到服务器活动版本排查。
 
 素材服务运维：
 
 ```bash
 sudo systemctl status boardgame-asset-origin.service
 sudo systemctl restart boardgame-asset-origin.service
-sudo systemctl status boardgame-asset-backup.timer
-sudo systemctl start boardgame-asset-backup.service
-sudo systemctl start boardgame-asset-sync.service # 仅服务器损坏后从 R2 手工重建
 ```
 
-Worker 回滚删除 `assets.easyboardgame.top/*` 这一条 catch-all Route 后，全部素材立即恢复原 R2 自定义域名直出；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器主源。变更快照保存在 `temp/cloudflare-snapshots/`。
+Worker 回滚删除 `assets.easyboardgame.top/*` 这一条 catch-all Route 后，素材域名会失去当前服务器主源路由；重新绑定该 Route 到 `boardgame-asset-router` 即恢复服务器主源。变更快照保存在 `temp/cloudflare-snapshots/`。
 
 ## 非 /assets 静态资源缓存策略（当前主链路）
 
-- **适用范围**：`/fonts/*`、`/logos/*`、大多数 `/game-data/*` 即使没有上 R2，也可以使用长期缓存；关键不在“是否走对象存储”，而在“URL 是否带内容版本指纹”。
+- **适用范围**：`/fonts/*`、`/logos/*`、大多数 `/game-data/*` 可以使用长期缓存；关键不在“是否走远程存储”，而在“URL 是否带内容版本指纹”。
 - **当前实现**：构建阶段会为 `public/fonts`、`public/logos`、静态 `public/game-data` 生成内容 hash，并在最终 `index.html`、字体 CSS、运行时代码引用里自动追加 `?v=<content-hash>`。
 - **服务端缓存头**：生产单体服务会把上述目录按 `Cache-Control: public, max-age=31536000, immutable` 提供；浏览器或 Cloudflare 拿到新 URL 才会请求新内容。
 - **例外文件**：`/game-data/summonerwars.layout.json` 仍保持 `no-cache, no-store, must-revalidate`，因为它承载运行时布局编辑结果，不能误进长期缓存。
@@ -494,7 +487,7 @@ Worker 回滚删除 `assets.easyboardgame.top/*` 这一条 catch-all Route 后�
 3. 校验清单：`npm run assets:validate`（缺文件/变体不一致会报错）。
 4. 上传资源与清单到对象存储（路径 `official/<gameId>/...`）。
 5. 如仅修改了对象元数据（例如 `Cache-Control`），使用 `npm run assets:upload:force` 重新上传；常规图片/音频资源内容更新不需要手动 purge，因为 URL 会随内容 hash 自动变化。
-6. 但 **Web 首页入口与 Vite 产物映射不是 R2 资源**。若线上反馈表现为“源站已是新版本，公网仍在发旧 `index-*.js` / `MatchRoom-*.js`”，必须改走 Cloudflare purge / 公网入口一致性排查，而不是继续猜修业务代码。
+6. 但 **Web 首页入口与 Vite 产物映射不是服务器资源主源的素材对象**。若线上反馈表现为“源站已是新版本，公网仍在发旧 `index-*.js` / `MatchRoom-*.js`”，必须改走 Cloudflare purge / 公网入口一致性排查，而不是继续猜修业务代码。
 
 ### Android OTA 产物发布流程
 
@@ -549,7 +542,7 @@ Android OTA 产物也走同一个对象存储桶，但前缀独立：
 
 **本地开发**：直接复制 `.env.example` 即可。
 
-**强制约定**：凡是本地开发脚本、资源脚本或校验脚本会读取的环境变量，新增或修改时必须同步更新 `.env.example`。不能假设“只写进 `.env` 就够了”，也不能依赖“`.env` 缺字段时自动回退到 `.env.example`”，因为只要本机存在 `.env`，很多脚本就会优先读取它；如果 `.env` 里缺少某个字段，脚本可能直接报错。`R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME` 属于这类必须同时维护在 `.env.example` 的变量。
+**强制约定**：凡是本地开发脚本、资源脚本或校验脚本会读取的环境变量，新增或修改时必须同步更新 `.env.example`。不能假设“只写进 `.env` 就够了”，也不能依赖“`.env` 缺字段时自动回退到 `.env.example`”，因为只要本机存在 `.env`，很多脚本就会优先读取它；如果 `.env` 里缺少某个字段，脚本可能直接报错。
 
 **生产环境（最小配置）**：只需密钥和域名，其余由 `docker-compose.prod.yml` 覆盖。
 
@@ -571,7 +564,7 @@ WEB_ORIGINS=https://your-domain.com
 
 - **入口可切换**：域名解析使用 DNS（建议 TTL 设短一些），或使用 Cloudflare 做一层代理入口；迁移时只改源站 IP。
 - **状态外置**：
-  - 静态资源 `/assets/*` 放对象存储（如 Cloudflare R2 / COS / OSS），避免资源随服务器迁移。
+  - 静态资源 `/assets/*` 走可迁移的服务器资源主源和公开资源域名；迁移时同步活动资源目录并切换 DNS/Cloudflare 路由。
   - 数据库数据可导出导入（MongoDB 走 `mongodump/mongorestore`）。
   - `.env` 等配置文件纳入安全备份（不要只放在服务器上）。
 - **部署可重复**：优先使用一键脚本；新机器只需“装 Docker -> 运行脚本”。

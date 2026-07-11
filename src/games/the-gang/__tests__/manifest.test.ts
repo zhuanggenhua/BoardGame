@@ -56,7 +56,7 @@ describe('The Gang manifest', () => {
         expect(rootAssetManifest.files?.[rootCompressedThumbnailKey]).toBeDefined();
     });
 
-    test('大厅缩略图会生成移动端可回退到 R2 的新压缩图片候选地址', () => {
+    test('大厅缩略图会生成移动端可回退到官方资源域名的新压缩图片候选地址', () => {
         setLocalizedImageIndexForTesting({
             'i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail': 1,
         });

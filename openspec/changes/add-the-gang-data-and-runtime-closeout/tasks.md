@@ -20,7 +20,7 @@
 ## 2. Runtime Resource Closeout
 - [x] 2.1 只复制并压缩已 locked 的基础版运行时图片资源；未 locked 的必需对象必须保持阻塞或取得明确替代批准
 - [x] 2.2 重建 asset manifest 并确认 The Gang 新增资源 hash/bytes 匹配
-- [ ] 2.3 上传 R2/CDN 并抽查代表性资源 URL；若环境阻塞，明确列出未上传资源和影响
+- [ ] 2.3 发布到服务器资源主源/官方资源域名 并抽查代表性资源 URL；若环境阻塞，明确列出未上传资源和影响
 - [x] 2.4 不把既有 DiceThrone manifest 漂移混入本 change
 - [x] 2.5 牌背 `the-gang/cards/card-back` 已语义落盘、压缩、写入 The Gang manifest，并接入隐藏牌运行时
 
@@ -42,4 +42,4 @@
 ## 5. Verification
 - [x] 5.1 `openspec validate add-the-gang-data-and-runtime-closeout --strict --no-interactive`
 - [x] 5.2 The Gang 定向测试与 typecheck 继续通过
-- [ ] 5.3 对齐表逐项证明：基础版素材已接入，BGG 电子版桌面过程态已通过；R2/CDN、手机验收和最终完成口径仍需继续，当前只标记 `in_progress`
+- [ ] 5.3 对齐表逐项证明：基础版素材已接入，BGG 电子版桌面过程态已通过；官方资源域名/服务器资源、手机验收和最终完成口径仍需继续，当前只标记 `in_progress`

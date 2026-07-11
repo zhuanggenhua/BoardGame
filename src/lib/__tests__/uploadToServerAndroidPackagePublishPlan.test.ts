@@ -8,7 +8,7 @@ const runPublishPlan = (...assetPaths: string[]) => {
     const result = spawnSync(
         process.execPath,
         [
-            path.join(process.cwd(), 'scripts', 'assets', 'upload-to-r2.js'),
+            path.join(process.cwd(), 'scripts', 'assets', 'upload-to-server.js'),
             '--android-package-publish-plan',
             ...assetPaths,
         ],
@@ -236,7 +236,7 @@ const isSharedAudioPackagePath = (relativePath: string) => {
         && !temporaryAssetNamePattern.test(normalized);
 };
 
-describe('upload-to-r2 安卓素材包刷新预演', () => {
+describe('upload-to-server 安卓素材包刷新预演', () => {
     it('DiceThrone 游戏资源上传后应只刷新 DiceThrone 差异索引并复用共享音频包', () => {
         const result = runPublishPlan(
             'official/i18n/zh-CN/dicethrone/images/barbarian/compressed/player-board.webp',

@@ -65,7 +65,7 @@ type DeployRunnerHealthResponse = {
         packageScript?: boolean;
         dist?: boolean;
         releaseApk?: boolean;
-        r2Configured?: boolean;
+        serverAssetsReady?: boolean;
     };
 };
 
@@ -109,8 +109,7 @@ export class AdminMobileReleaseService {
             deployScript: existsSync(path.join(this.rootDir, 'scripts/deploy/deploy-image.sh')),
             dist: existsSync(path.join(this.rootDir, 'dist/android-build-meta.json')),
             releaseApk: existsSync(path.join(this.rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
-            r2Configured: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME']
-                .every((key) => Boolean(process.env[key])),
+            serverAssetsReady: existsSync(path.join(this.rootDir, 'scripts/assets/apply-server-asset-publish.mjs')),
         };
         const deployRunnerReady = Boolean(deployRunnerHealth?.ok);
         const deployScriptReady = hasRunnerConfig
@@ -140,7 +139,7 @@ export class AdminMobileReleaseService {
                 otaWorkflow: otaWorkflowReady,
                 dist: runnerReleaseReady?.dist ?? localReleaseReady.dist,
                 releaseApk: runnerReleaseReady?.releaseApk ?? localReleaseReady.releaseApk,
-                r2Configured: runnerReleaseReady?.r2Configured ?? localReleaseReady.r2Configured,
+                serverAssetsReady: runnerReleaseReady?.serverAssetsReady ?? localReleaseReady.serverAssetsReady,
             },
             deploy: {
                 statusCommand: this.buildDeployCommand(['status']),

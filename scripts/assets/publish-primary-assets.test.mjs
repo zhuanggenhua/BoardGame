@@ -8,7 +8,7 @@ import {
     stagePrimaryAssetUploads,
 } from './publish-primary-assets.mjs';
 
-test('服务器发布成功即完成，不产生 R2 灾备状态', async () => {
+test('服务器发布成功即完成，不产生对象存储灾备状态', async () => {
     let publishedObjects = [];
     const result = await publishPrimaryAssetBatch([
         {
@@ -30,17 +30,17 @@ test('服务器发布成功即完成，不产生 R2 灾备状态', async () => {
     assert.equal(result.serverPublished, true);
     assert.equal(result.objectCount, 2);
     assert.equal(publishedObjects[0].key, 'official/app-updates/android/stable/latest.json');
-    assert.equal('backupToR2' in publishedObjects[0], false);
-    assert.equal('backupToR2' in publishedObjects[1], false);
+    assert.equal('objectStorageBackup' in publishedObjects[0], false);
+    assert.equal('objectStorageBackup' in publishedObjects[1], false);
 });
 
-test('旧的 backupToR2 标记会被忽略', async () => {
+test('旧的对象存储灾备标记会被忽略', async () => {
     let publishedObjects = [];
     const result = await publishPrimaryAssetBatch([
         {
             key: 'official/common/rebuildable/file.json',
             body: '{}\n',
-            backupToR2: true,
+            objectStorageBackup: true,
         },
     ], {
         publishServer: async ({ objects }) => {
@@ -50,7 +50,7 @@ test('旧的 backupToR2 标记会被忽略', async () => {
 
     assert.equal(result.serverPublished, true);
     assert.equal(result.objectCount, 1);
-    assert.equal('backupToR2' in publishedObjects[0], false);
+    assert.equal('objectStorageBackup' in publishedObjects[0], false);
 });
 
 test('服务器发布失败时必须阻止发布完成', async () => {

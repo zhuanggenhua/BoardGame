@@ -31,7 +31,7 @@ const baseStatus = {
         otaWorkflow: false,
         dist: true,
         releaseApk: true,
-        r2Configured: true,
+        serverAssetsReady: true,
     },
     deploy: {
         statusCommand: 'bash scripts/deploy/deploy-image.sh status',
@@ -215,7 +215,7 @@ describe('MobileReleasePage', () => {
                 script: false,
                 otaWorkflow: true,
                 dist: false,
-                r2Configured: false,
+                serverAssetsReady: false,
             },
         };
         let publishBody: Record<string, unknown> | null = null;

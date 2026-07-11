@@ -53,7 +53,7 @@ type AndroidReleaseStatus = {
         otaWorkflow?: boolean;
         dist: boolean;
         releaseApk: boolean;
-        r2Configured: boolean;
+        serverAssetsReady: boolean;
     };
     deploy: {
         statusCommand: string;
@@ -199,9 +199,9 @@ export default function MobileReleasePage() {
     const nativeApkReady = !nativeSkipBuild || Boolean(status?.releaseReady.releaseApk);
     const canRunNative = Boolean(canRun && nativeApkReady && status?.releaseReady.script && status?.releaseReady.nativeScript);
     const canRunPackages = Boolean(canRun && status?.releaseReady.script && status?.releaseReady.packageScript);
-    const canPublishOta = Boolean(canRunOta && (status?.releaseReady.r2Configured || status?.releaseReady.otaWorkflow));
-    const canPublishNative = Boolean(canRunNative && status?.releaseReady.r2Configured);
-    const canPublishPackages = Boolean(canRunPackages && status?.releaseReady.r2Configured);
+    const canPublishOta = Boolean(canRunOta && (status?.releaseReady.serverAssetsReady || status?.releaseReady.otaWorkflow));
+    const canPublishNative = Boolean(canRunNative && status?.releaseReady.serverAssetsReady);
+    const canPublishPackages = Boolean(canRunPackages && status?.releaseReady.serverAssetsReady);
     const canPreviewDeployUpdate = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteDeployUpdate = Boolean(
         canPreviewDeployUpdate
@@ -336,9 +336,9 @@ export default function MobileReleasePage() {
                         value={status?.native.latest?.version ?? '-'}
                     />
                     <MetricCard
-                        icon={<ShieldCheck size={18} className={status?.releaseReady.r2Configured ? 'text-emerald-600' : 'text-red-500'} />}
+                        icon={<ShieldCheck size={18} className={status?.releaseReady.serverAssetsReady ? 'text-emerald-600' : 'text-red-500'} />}
                         label={pageT('cards.release_ready')}
-                        value={status?.releaseReady.r2Configured ? pageT('status.ready') : pageT('status.not_ready')}
+                        value={status?.releaseReady.serverAssetsReady ? pageT('status.ready') : pageT('status.not_ready')}
                     />
                 </div>
 

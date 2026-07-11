@@ -109,7 +109,7 @@ test('源站 5xx 标识 server-error 且不回退对象存储', async () => {
     assert.equal(response.headers.get('X-Asset-Source'), 'server-error');
     assert.equal(await response.text(), 'bad gateway');
 });
-test('源站离线返回 server-error，不读取 R2', async () => {
+test('源站离线返回 server-error，不读取任何对象存储兜底', async () => {
     const router = createAssetRouter({
         fetchImpl: async () => {
             throw new Error('origin offline');
