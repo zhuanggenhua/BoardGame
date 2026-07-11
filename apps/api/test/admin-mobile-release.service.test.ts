@@ -69,6 +69,10 @@ describe('AdminMobileReleaseService', () => {
             status: HttpStatus.SERVICE_UNAVAILABLE,
             response: expect.objectContaining({
                 error: 'latest manifest unavailable',
+                failure: expect.objectContaining({
+                    reason: 'http-error',
+                    status: 503,
+                }),
                 missingFields: ['latest.json'],
             }),
         });
@@ -99,7 +103,40 @@ describe('AdminMobileReleaseService', () => {
             status: HttpStatus.SERVICE_UNAVAILABLE,
             response: expect.objectContaining({
                 error: 'latest manifest unavailable',
+                failure: null,
                 missingFields: ['checksum', 'size'],
+            }),
+        });
+    });
+
+    it('正式 Android OTA 发布后 latest.json 不是 JSON 必须带失败原因', async () => {
+        const service = new AdminMobileReleaseService();
+        vi.spyOn(service as unknown as { runAndroidRelease(args: string[]): Promise<unknown> }, 'runAndroidRelease').mockResolvedValue({
+            exitCode: 0,
+            output: 'OTA bundle 已发布',
+            parsed: {},
+        });
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => {
+                throw new SyntaxError('Unexpected token < in JSON');
+            },
+        }));
+
+        await expect(service.publishAndroidOta({
+            channel: 'stable',
+            dryRun: false,
+            forceUpdate: true,
+            skipLatest: false,
+        })).rejects.toMatchObject({
+            status: HttpStatus.SERVICE_UNAVAILABLE,
+            response: expect.objectContaining({
+                error: 'latest manifest unavailable',
+                failure: expect.objectContaining({
+                    reason: 'invalid-json',
+                    message: 'Unexpected token < in JSON',
+                }),
+                missingFields: ['latest.json'],
             }),
         });
     });

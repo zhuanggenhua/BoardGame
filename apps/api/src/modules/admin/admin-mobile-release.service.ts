@@ -43,6 +43,18 @@ type LatestManifest = {
     notes?: string;
 };
 
+type LatestManifestReadResult = {
+    latest: LatestManifest | null;
+    failure: LatestManifestReadFailure | null;
+};
+
+type LatestManifestReadFailure = {
+    reason: 'http-error' | 'invalid-json' | 'network-error';
+    status?: number;
+    statusText?: string;
+    message?: string;
+};
+
 type DeployRunnerResponse = {
     ok?: boolean;
     mode?: string;
@@ -97,8 +109,8 @@ export class AdminMobileReleaseService {
         const packageJson = this.readPackageJson();
         const otaManifestUrl = this.buildOtaManifestUrl(channel);
         const nativeManifestUrl = this.buildNativeManifestUrl(channel);
-        const otaManifest = await this.fetchLatestManifest(otaManifestUrl);
-        const nativeManifest = await this.fetchLatestManifest(nativeManifestUrl);
+        const otaManifestResult = await this.readLatestManifest(otaManifestUrl);
+        const nativeManifestResult = await this.readLatestManifest(nativeManifestUrl);
         const deployRunnerHealth = await this.fetchDeployRunnerHealth();
         const runnerReleaseReady = deployRunnerHealth?.release;
         const hasRunnerConfig = this.isDeployRunnerConfigured();
@@ -123,14 +135,17 @@ export class AdminMobileReleaseService {
             androidVersionCode: packageJson.androidVersionCode,
             channel,
             manifestUrl: otaManifestUrl,
-            latest: otaManifest,
+            latest: otaManifestResult.latest,
+            latestError: otaManifestResult.failure,
             ota: {
                 manifestUrl: otaManifestUrl,
-                latest: otaManifest,
+                latest: otaManifestResult.latest,
+                latestError: otaManifestResult.failure,
             },
             native: {
                 manifestUrl: nativeManifestUrl,
-                latest: nativeManifest,
+                latest: nativeManifestResult.latest,
+                latestError: nativeManifestResult.failure,
             },
             releaseReady: {
                 script: runnerReleaseReady?.script ?? localReleaseReady.script,
@@ -918,22 +933,48 @@ export class AdminMobileReleaseService {
         });
     }
 
-    private async fetchLatestManifest(url: string): Promise<LatestManifest | null> {
+    private async readLatestManifest(url: string): Promise<LatestManifestReadResult> {
         try {
             const response = await fetch(url, {
                 headers: { 'Cache-Control': 'no-cache' },
             });
             if (!response.ok) {
-                return null;
+                return {
+                    latest: null,
+                    failure: {
+                        reason: 'http-error',
+                        status: response.status,
+                        statusText: response.statusText,
+                    },
+                };
             }
-            return await response.json() as LatestManifest;
-        } catch {
-            return null;
+            try {
+                return {
+                    latest: await response.json() as LatestManifest,
+                    failure: null,
+                };
+            } catch (error) {
+                return {
+                    latest: null,
+                    failure: {
+                        reason: 'invalid-json',
+                        message: error instanceof Error ? error.message : String(error),
+                    },
+                };
+            }
+        } catch (error) {
+            return {
+                latest: null,
+                failure: {
+                    reason: 'network-error',
+                    message: error instanceof Error ? error.message : String(error),
+                },
+            };
         }
     }
 
     private async requireLatestManifest(url: string, releaseKind: string): Promise<LatestManifest> {
-        const latest = await this.fetchLatestManifest(url);
+        const { latest, failure } = await this.readLatestManifest(url);
         const missingFields = latest
             ? (['version', 'url', 'checksum', 'size'] as const).filter((field) => latest[field] === undefined || latest[field] === null || latest[field] === '')
             : ['latest.json'];
@@ -943,6 +984,7 @@ export class AdminMobileReleaseService {
                 message: `${releaseKind} 发布后无法确认线上 latest.json。发布不能静默成功，请先修通服务器资源入口再重试。`,
                 error: 'latest manifest unavailable',
                 manifestUrl: url,
+                failure,
                 missingFields,
             }, HttpStatus.SERVICE_UNAVAILABLE);
         }
