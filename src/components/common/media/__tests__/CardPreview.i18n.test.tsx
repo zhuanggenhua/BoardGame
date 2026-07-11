@@ -466,6 +466,59 @@ describe('CardPreview i18n atlas path', () => {
         }
     });
 
+    it('懒注册 atlas fallback 加载成功后应在提升 source 后继续渲染 img', async () => {
+        const atlasId = 'test:card-preview:lazy-fallback-promotes-source';
+        const atlasImage = 'smashup/cards/lazy-fallback-promotes-source';
+        registerLazyCardAtlasSource(atlasId, {
+            image: atlasImage,
+            grid: { rows: 1, cols: 1 },
+        });
+
+        const primaryUrl = getCardAtlasCandidateUrls(atlasImage, 'zh-CN')[0];
+
+        class MockImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 100;
+            naturalHeight = 200;
+            complete = false;
+            currentSrc = '';
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+                this.complete = true;
+                setTimeout(() => {
+                    this.onload?.();
+                }, 0);
+            }
+        }
+
+        vi.stubGlobal('Image', MockImage as unknown as typeof Image);
+
+        try {
+            const { container } = render(
+                <CardPreview previewRef={{ type: 'atlas', atlasId, index: 0 }} locale="zh-CN" />
+            );
+
+            await waitFor(() => {
+                const atlasNode = container.querySelector('[data-card-atlas-frame="true"]');
+                const atlasImageNode = container.querySelector('img[data-card-atlas-img="true"]');
+                expect(atlasNode).not.toBeNull();
+                expect(atlasImageNode).not.toBeNull();
+                expect(atlasImageNode?.getAttribute('src')).toBe(primaryUrl);
+                expect(atlasNode?.className).not.toContain('atlas-shimmer');
+            });
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('懒注册图集不应把 1x1 占位图当成有效 atlas', () => {
         const atlasId = 'test:card-preview:lazy-atlas-placeholder';
         registerLazyCardAtlasSource(atlasId, {

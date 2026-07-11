@@ -383,8 +383,13 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         () => (source ? getCardAtlasCandidateUrls(source.image, effectiveLocale) : []),
         [effectiveLocale, source],
     );
+    const lazyRegistration = useMemo(
+        () => (source ? undefined : getLazyRegistration(atlasId)),
+        [atlasId, source],
+    );
 
     const checkKey = `${atlasId}|${source?.image ?? ''}|${effectiveLocale}`;
+    const fallbackCheckKey = `${atlasId}|${lazyRegistration?.image ?? ''}|${effectiveLocale}`;
     const loadedCandidateUrl = useMemo(
         () => (source ? getResolvedImageCandidateUrl(checkUrls, source.image, effectiveLocale) : ''),
         [checkUrls, effectiveLocale, source],
@@ -528,7 +533,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
     // 自行加载图片获取尺寸，触发懒解析提升
     useEffect(() => {
         if (source) return; // 已有 source，无需 fallback
-        const lazy = getLazyRegistration(atlasId);
+        const lazy = lazyRegistration;
         if (!lazy) return; // 非懒注册，无法 fallback
 
         let cancelled = false;
@@ -551,7 +556,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             markImageLoaded(lazy.image, effectiveLocale, result.img);
             markImageLoaded(result.url, undefined, result.img);
             setLoadState((current) => ({
-                checkKey: current.checkKey,
+                checkKey: current.checkKey === checkKey ? current.checkKey : fallbackCheckKey,
                 activeUrl: result.url,
                 loaded: true,
             }));
@@ -561,7 +566,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         return () => {
             cancelled = true;
         };
-    }, [source, atlasId, effectiveLocale, retryVersion, scheduleAtlasRetry]);
+    }, [source, atlasId, checkKey, effectiveLocale, fallbackCheckKey, lazyRegistration, retryVersion, scheduleAtlasRetry]);
 
     if (!source) {
         // 显示 shimmer 占位而非 null，等待 fallback 加载完成
