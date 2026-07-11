@@ -31,6 +31,11 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS13, kind: 'card', image: 'smashup/cards/zhongguo', grid: { rows: 7, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
+    { id: SMASHUP_ATLAS_IDS.SHARKS_POD_CARDS, kind: 'card', image: 'smashup/cards/sharks_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.SKELETONS_POD_CARDS, kind: 'card', image: 'smashup/cards/skeletons_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.MYTHIC_GREEKS_POD_CARDS, kind: 'card', image: 'smashup/cards/mythic_greeks_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.SHAPESHIFTERS_POD_CARDS, kind: 'card', image: 'smashup/cards/shapeshifters_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.DRAGONS_POD_CARDS, kind: 'card', image: 'smashup/cards/dragons_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.TITANS, kind: 'card', image: 'smashup/taitan/taitan1', grid: { rows: 7, cols: 3 } },
 
     { id: SMASHUP_ATLAS_IDS.BASE1, kind: 'base', image: 'smashup/base/base1', grid: { rows: 4, cols: 4 } },

@@ -1563,6 +1563,26 @@
     "disco_dancers": {
       "name": "Disco Dancers",
       "description": "Chain extra actions, movement, and power counters into scoring-floor momentum."
+    },
+    "skeletons_pod": {
+      "name": "Skeletons (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Skeletons."
+    },
+    "sharks_pod": {
+      "name": "Sharks (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Sharks."
+    },
+    "mythic_greeks_pod": {
+      "name": "Mythic Greeks (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Mythic Greeks."
+    },
+    "dragons_pod": {
+      "name": "Dragons (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Dragons."
+    },
+    "shapeshifters_pod": {
+      "name": "Shapeshifters (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Shapeshifters."
     }
   },
   "tutorial": {

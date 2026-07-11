@@ -940,26 +940,35 @@ export function registerDragonAbilities(): void {
     registerBaseAbilitySuppression('dragons_raze', (state, baseIndex) =>
         state.bases[baseIndex]?.ongoingActions.some(action => action.defId === 'dragons_raze') ?? false,
     );
-    registerBaseVpModifier('dragons_great_wyrm', (state, baseIndex, playerId, currentVp) => {
-        if (currentVp <= 0) return 0;
-        const base = state.bases[baseIndex];
-        if (!base) return 0;
-        const penalty = base.minions.filter(minion =>
-            minion.defId === 'dragons_great_wyrm'
-            && minion.controller !== playerId,
-        ).length;
-        return -penalty;
-    });
-    registerBaseVpModifier('dragons_ruins', (state, baseIndex, playerId, currentVp) => {
-        if (currentVp <= 0) return 0;
-        const base = state.bases[baseIndex];
-        if (!base) return 0;
-        const penalty = base.ongoingActions.filter(action =>
-            action.defId === 'dragons_ruins'
-            && getOngoingActionControllerId(action) !== playerId,
-        ).length;
-        return -penalty;
-    });
+    const registerGreatWyrmVpPenalty = (sourceDefId: string) => {
+        registerBaseVpModifier(sourceDefId, (state, baseIndex, playerId, currentVp) => {
+            if (currentVp <= 0) return 0;
+            const base = state.bases[baseIndex];
+            if (!base) return 0;
+            const penalty = base.minions.filter(minion =>
+                minion.defId === sourceDefId
+                && minion.controller !== playerId,
+            ).length;
+            return -penalty;
+        });
+    };
+    registerGreatWyrmVpPenalty('dragons_great_wyrm');
+    registerGreatWyrmVpPenalty('dragons_great_wyrm_pod');
+
+    const registerRuinsVpPenalty = (sourceDefId: string) => {
+        registerBaseVpModifier(sourceDefId, (state, baseIndex, playerId, currentVp) => {
+            if (currentVp <= 0) return 0;
+            const base = state.bases[baseIndex];
+            if (!base) return 0;
+            const penalty = base.ongoingActions.filter(action =>
+                action.defId === sourceDefId
+                && getOngoingActionControllerId(action) !== playerId,
+            ).length;
+            return -penalty;
+        });
+    };
+    registerRuinsVpPenalty('dragons_ruins');
+    registerRuinsVpPenalty('dragons_ruins_pod');
 
     registerInteractionHandler('dragons_dangerous_ground', (state, playerId, value, _data, _random, timestamp) => {
         const selected = value as HandCardChoice;

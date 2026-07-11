@@ -1546,6 +1546,26 @@
     "disco_dancers": {
       "name": "迪厅舞王",
       "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
+    },
+    "skeletons_pod": {
+      "name": "骷髅 (POD版)",
+      "description": "POD 卡图版本；玩法与骷髅一致，使用独立卡牌与基地身份。"
+    },
+    "sharks_pod": {
+      "name": "鲨鱼 (POD版)",
+      "description": "POD 卡图版本；玩法与鲨鱼一致，使用独立卡牌与基地身份。"
+    },
+    "mythic_greeks_pod": {
+      "name": "希腊神话 (POD版)",
+      "description": "POD 卡图版本；玩法与希腊神话一致，使用独立卡牌与基地身份。"
+    },
+    "dragons_pod": {
+      "name": "龙 (POD版)",
+      "description": "POD 卡图版本；玩法与龙一致，使用独立卡牌与基地身份。"
+    },
+    "shapeshifters_pod": {
+      "name": "变形者 (POD版)",
+      "description": "POD 卡图版本；玩法与变形者一致，使用独立卡牌与基地身份。"
     }
   },
   "tutorial": {
