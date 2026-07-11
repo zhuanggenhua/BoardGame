@@ -594,6 +594,72 @@ function registerDragonModifiers(): void {
 function registerSuperheroesModifiers(): void {
 }
 
+function registerAvengersModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'avengers_caps_shield',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => {
+                let bonus = 0;
+                for (const host of ctx.base.minions) {
+                    if (!helpers.matchesRuntimeDefId(host.defId, 'avengers_captain_america')) continue;
+                    for (const action of host.attachedActions) {
+                        if (!helpers.matchesRuntimeDefId(action.defId, 'avengers_caps_shield')) continue;
+                        if (getActionControllerId(action) !== ctx.minion.controller) continue;
+                        bonus += 1;
+                    }
+                }
+                return bonus;
+            },
+        },
+        {
+            sourceDefId: 'avengers_mjolnir',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'avengers_mjolnir',
+                    () => helpers.matchesRuntimeDefId(ctx.minion.defId, 'avengers_thor') ? 2 : -2,
+                )
+            ),
+        },
+    ]);
+}
+
+function registerMarvelWaveOneModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'shield_agent',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'shield_agent')) return 0;
+                return helpers.countMinionsOnBaseControlledBy(ctx, ctx.minion.controller, {
+                    excludeSelf: true,
+                }) > 0 ? 1 : 0;
+            },
+        },
+        {
+            sourceDefId: 'spider_verse_bond',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'spider_verse_bond',
+                    (action) => helpers.countMinionsOnBaseControlledBy(ctx, getActionControllerId(action), {
+                        excludeSelf: true,
+                    }),
+                )
+            ),
+        },
+        {
+            sourceDefId: 'spider_verse_webbed_up',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'spider_verse_webbed_up') * -2
+            ),
+        },
+    ]);
+}
+
 function registerZhongguoModifiers(): void {
     registerCustomPowerModifiers([
         {
@@ -645,6 +711,8 @@ export function registerAllOngoingModifiers(): void {
     registerWerewolfModifiers();
     registerDragonModifiers();
     registerSuperheroesModifiers();
+    registerAvengersModifiers();
+    registerMarvelWaveOneModifiers();
     registerYuanhouModifiers();
     registerZhongguoModifiers();
 }

@@ -981,13 +981,14 @@ export function addOngoingCardCounter(
 /** 队列化随从打出后效果（如打出后自动+1指示物），在 fireMinionPlayedTriggers 中消费 */
 export function queueMinionPlayEffect(
     playerId: PlayerId,
-    effect: 'addPowerCounter',
+    effect: 'addPowerCounter' | 'addTempPower',
     amount: number,
-    now: number
+    now: number,
+    reason?: string,
 ): SmashUpEvent {
     return {
         type: SU_EVENTS.MINION_PLAY_EFFECT_QUEUED,
-        payload: { playerId, effect, amount },
+        payload: { playerId, effect, amount, ...(reason ? { reason } : {}) },
         timestamp: now,
     } as unknown as SmashUpEvent;
 }
@@ -1510,6 +1511,13 @@ export function fireMinionPlayedTriggers(params: {
         const effect = player.pendingMinionPlayEffects[0];
         if (effect.effect === 'addPowerCounter') {
             events.push(addPowerCounter(cardUid, baseIndex, effect.amount, 'pendingMinionPlayEffect', now));
+        } else if (effect.effect === 'addTempPower') {
+            events.push(addTempPower(cardUid, baseIndex, effect.amount, effect.reason ?? 'pendingMinionPlayEffect', now, {
+                sourcePlayerId: playerId,
+                sourceDefId: effect.reason,
+                sourceControllerId: playerId,
+                sourceBaseIndex: baseIndex,
+            }));
         }
         // 生成消费事件（reducer 负责 shift 队列）
         events.push({
