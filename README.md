@@ -49,7 +49,7 @@ AI 驱动的现代化桌游平台，专注于**桌游教学**与**联机对战**
 
 **后端**：自研游戏引擎 (Koa + Socket.IO) · NestJS · MongoDB · Redis · Winston (日志系统)
 
-**基础设施**：Docker · Docker Compose · GitHub Actions CI/CD · Cloudflare Pages / R2
+**基础设施**：Docker · Docker Compose · GitHub Actions CI/CD · 服务器素材主源 / 公开资源域名
 
 ## 📦 项目结构
 
@@ -255,8 +255,8 @@ npm run check:arch         # 架构检查
 
 # 音频注册表 & 资源上传（新增/修改音频文件后必须执行）
 node scripts/audio/generate_common_audio_registry.js  # 重新生成音频注册表
-npm run assets:download  # 从 R2 下载资源到本地（合作者 clone 后首次运行）
-npm run assets:upload    # 上传压缩资源到 R2（需配置 R2_* 环境变量）
+npm run assets:download  # 服务器素材主源兼容入口；当前不再从对象存储反向同步
+npm run assets:upload    # 上传压缩资源到服务器素材主源
 npm run setup:figma:mcp  # 给当前协作者补 Codex/OpenClaw 的 Figma MCP 配置
 npm run setup:figma:mcp:login # 首次授权或凭据失效时重新走一次网页登录
 npm run setup:figma:mcp:window # 打开独立终端执行仓库内 Figma MCP 接入脚本
@@ -265,7 +265,7 @@ npm run setup:figma:mcp:window:login # 打开独立终端并继续 Figma OAuth �
 git push --no-verify
 ```
 
-> **注意**：新增或修改音频文件后，需要依次执行 `compress:audio` → `generate_common_audio_registry.js` → `assets:upload`，否则远程 `registry.json` 缺少新 key 会导致音频无法播放。
+> **注意**：新增或修改音频文件后，需要依次执行 `compress:audio` → `generate_common_audio_registry.js` → `assets:upload`，否则服务器素材主源的 `registry.json` 缺少新 key 会导致音频无法播放。
 
 ## 🧪 测试
 

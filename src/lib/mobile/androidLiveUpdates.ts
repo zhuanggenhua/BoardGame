@@ -129,7 +129,7 @@ type AndroidOtaManifestReadResult =
     | { status: 'error'; reason: string };
 
 export type AndroidLiveUpdateResult =
-    | { status: 'disabled' | 'not-native' | 'manifest-missing' | 'up-to-date' }
+    | { status: 'disabled' | 'not-native' | 'up-to-date' }
     | { status: 'incompatible'; version: string; reason: string; requiredNativeVersion?: string }
     | { status: 'queued'; version: string; source: 'downloaded' | 'cached'; mode: 'background' | 'immediate' }
     | { status: 'error'; reason: string };
@@ -403,6 +403,25 @@ const emitCriticalOtaLog = (
 };
 
 const updateOtaDebugState = (_patch: Record<string, unknown>) => {};
+
+const emitOtaErrorState = (
+    onForceStateChange: AndroidLiveUpdateStartOptions['onForceStateChange'],
+    options: {
+        version?: string;
+        title?: string;
+        message: string;
+        reason: string;
+    },
+) => {
+    emitForceState(onForceStateChange, {
+        phase: 'error',
+        blocking: true,
+        version: options.version,
+        title: options.title ?? '更新失败',
+        message: options.message,
+        reason: options.reason,
+    });
+};
 
 export const compareVersion = (left: string, right: string) => {
     const leftParts = parseVersionParts(left);
@@ -1035,17 +1054,26 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
+                const reason = `OTA 清单不存在：${config.manifestUrl}`;
                 logMobileRuntime('OTA', 'background-check-manifest-missing', {
                     manifestUrl: config.manifestUrl,
+                    reason,
                 }, 'warn');
                 emitCriticalOtaLog('background-check-manifest-missing', {
                     manifestUrl: config.manifestUrl,
+                    reason,
                 });
                 updateOtaDebugState({
                     stage: 'background-check-manifest-missing',
-                    resultStatus: 'manifest-missing',
+                    resultStatus: 'error',
+                    reason,
                 });
-                return { status: 'manifest-missing' } as const;
+                emitOtaErrorState(onForceStateChange, {
+                    title: '更新清单不存在',
+                    message: '无法找到更新清单，请稍后重试或重新安装最新版本。',
+                    reason,
+                });
+                return { status: 'error', reason } as const;
             }
             if (manifestResult.status === 'error') {
                 if (applyMode === 'immediate') {
@@ -1065,17 +1093,11 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     resultStatus: 'error',
                     reason,
                 });
-                if (applyMode === 'immediate' || options.force === true) {
-                    emitForceState(onForceStateChange, {
-                        phase: 'error',
-                        blocking: true,
-                        title: '更新失败',
-                        message: '无法读取更新清单，请检查网络后重试。',
-                        reason,
-                    });
-                } else {
-                    emitForceState(onForceStateChange, HIDDEN_FORCE_UPDATE_STATE);
-                }
+                emitOtaErrorState(onForceStateChange, {
+                    title: '更新失败',
+                    message: '无法读取更新清单，请检查网络后重试。',
+                    reason,
+                });
                 return { status: 'error', reason } as const;
             }
 
@@ -1417,16 +1439,12 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     reason,
                     manifestVersion: manifest.version,
                 });
-                if (isForceUpdate) {
-                    emitForceState(onForceStateChange, {
-                        phase: 'error',
-                        blocking: true,
-                        version: manifest.version,
-                        title: buildForceUpdateTitle(manifest, '更新失败'),
-                        message: buildForceUpdateMessage(manifest, '下载或切换新版本失败，请重试。'),
-                        reason,
-                    });
-                }
+                emitOtaErrorState(onForceStateChange, {
+                    version: manifest.version,
+                    title: buildForceUpdateTitle(manifest, '更新失败'),
+                    message: buildForceUpdateMessage(manifest, '下载或切换新版本失败，请重试。'),
+                    reason,
+                });
                 return {
                     status: 'error',
                     reason,

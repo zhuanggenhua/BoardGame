@@ -332,7 +332,6 @@ SMTP_PASS=xxx
 
 ```bash
 node scripts/mobile/release-android.mjs ota --channel stable --dry-run
-node scripts/mobile/release-android.mjs ota --channel stable --skip-latest
 node scripts/mobile/release-android.mjs ota --channel stable
 ```
 
@@ -347,7 +346,7 @@ GitHub Actions 自动化：
 
 - 手动 OTA workflow：`.github/workflows/android-ota-publish.yml`
 - 普通 `push main` 不得自动发布 **stable OTA**，也不得自动回写版本号。
-- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`ota_version_base`；兼容字段 `force_update` 必须保持 `true`。
+- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`ota_version_base`；兼容字段 `force_update` 必须保持 `true`。`skip_latest` 仅允许 dry-run 诊断，正式发布传入会直接失败。
 - 正式门禁：`stable` 应绑定 `android-ota-production` Environment 审批。
 - OTA 内部游标：客户端按 bundle `version` 这个单调递增游标判断新旧；`publishedAt` 只用于审计和展示。若旧客户端曾记住错误大版本，例如 `5.9.0`，可用 `ota_version_base=6.0.0` 发桥接包。
 - 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本都必须收到并强制应用 OTA。若误传这些参数或尝试关闭强更，发布脚本必须直接失败。
@@ -357,7 +356,7 @@ GitHub Actions 自动化：
 - `--dry-run` 只本地打 zip 和 manifest，不上传
 - Android native embedded APK 也必须遵守“轻包体”约束：只允许内置壳运行必需的 H5 bundle 与轻量静态文件，`public/assets/common/audio/**` 这类运行时大资源必须继续走服务器资源主源 / 游戏包链路。
 - `scripts/mobile/android.mjs` 会在 Android embedded 构建阶段主动裁掉 `dist/assets/common/audio/**`，并在 `dist/` 或 `android/app/src/main/assets/public/` 里仍检测到这些前缀时直接失败。
-- `--skip-latest` 会上传 bundle 与版本 manifest，但不会切换该 channel 的 `latest.json`
+- 正式发布必须切换该 channel 的 `latest.json`，否则 Android App 无法发现新 bundle；`--skip-latest` 仅允许 dry-run 诊断
 - 正式覆盖 `latest.json` 后，指向该 channel 的 Android App 会在下一次启动后的后台检查中感知到新 bundle，并在切后台或重启后生效
 - OTA 只覆盖 Web bundle；涉及原生层改动时仍必须重新发 APK / AAB
 
@@ -497,7 +496,6 @@ Android OTA 产物也走同一个对象存储桶，但前缀独立：
 2. OTA 发布必须由人工/后台触发，`stable` 需要走正式审批。
 3. 若只想单独操作 OTA 灰度/预演，继续手动执行：
    - `node scripts/mobile/release-android.mjs ota --channel gray --dry-run`
-   - `node scripts/mobile/release-android.mjs ota --channel gray --skip-latest`
    - `node scripts/mobile/release-android.mjs ota --channel gray`
 4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0`
 5. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`

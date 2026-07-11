@@ -104,10 +104,10 @@ test.describe('山屋惊魂基本流程', () => {
         await expect(mobilePager.getByTestId('betrayal-character-mobile-page-label')).toHaveText('1/2');
         await saveScreenshot(page, MOBILE_CHARACTER_SCREENSHOT);
 
-        await page.getByTestId('betrayal-character-confirm').click();
-        await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/开始剧本/);
-        await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('赤红杰克归来');
-        await page.getByTestId('betrayal-character-scenario-button').click();
+        await page.getByTestId('betrayal-character-confirm-mobile').click();
+        await expect(page.getByTestId('betrayal-character-confirm-mobile')).toHaveText(/开始剧本/);
+        await expect(page.getByTestId('betrayal-character-scenario-button-mobile')).toContainText('赤红杰克归来');
+        await page.getByTestId('betrayal-character-scenario-button-mobile').click();
         await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeVisible();
         await expect(page.getByTestId('betrayal-scenario-option-first-scenario')).toContainText('赤红杰克归来');
         await saveScreenshot(page, MOBILE_SCENARIO_SCREENSHOT);

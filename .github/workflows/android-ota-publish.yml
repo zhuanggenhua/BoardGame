@@ -34,7 +34,7 @@ on:
         default: false
         type: boolean
       skip_latest:
-        description: '上传 bundle，但不覆盖 latest.json'
+        description: '仅允许 dry_run 诊断；正式发布禁止跳过 latest.json'
         required: true
         default: false
         type: boolean
@@ -95,6 +95,11 @@ jobs:
 
           if [[ "${force_update}" != "true" ]]; then
             echo "::error::所有 OTA 已强制更新，force_update 必须为 true。"
+            exit 1
+          fi
+
+          if [[ "${skip_latest}" == "true" && "${dry_run}" != "true" ]]; then
+            echo "::error::正式 Android OTA 发布禁止跳过 latest.json。手机端依赖 latest.json 发现更新，跳过会导致无法更新。"
             exit 1
           fi
 

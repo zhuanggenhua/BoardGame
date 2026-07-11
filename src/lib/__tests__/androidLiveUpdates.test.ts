@@ -12,6 +12,8 @@ import {
     shouldTryAllSocketTransports,
 } from '../socketConnectionConfig';
 import {
+    checkAndroidNativeUpdateAvailability,
+    fetchAndroidNativeUpdateManifest,
     isAndroidNativeUpdateAvailable,
     readAndroidNativeUpdateConfig,
     resolveAndroidWebAppDownload,
@@ -187,6 +189,61 @@ describe('androidLiveUpdates', () => {
             url: currentVersionedApkUrl,
             source: 'versioned',
         });
+    });
+
+    it('网页登录下载入口读取不到 latest.json 时仍允许回退下载', async () => {
+        const manifest = await fetchAndroidNativeUpdateManifest(
+            'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+            vi.fn(async () => ({
+                ok: false,
+                status: 404,
+                json: async () => ({}),
+            } as Response)),
+        );
+
+        expect(manifest).toBeNull();
+    });
+
+    it('手机内原生更新检查读取不到 latest.json 时必须抛错', async () => {
+        vi.resetModules();
+        vi.stubEnv('VITE_ANDROID_NATIVE_UPDATE_ENABLED', 'true');
+        vi.stubEnv('VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL', 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json');
+        vi.stubEnv('VITE_CAPACITOR_APP_ID', 'top.easyboardgame.app');
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: false,
+            status: 404,
+            json: async () => ({}),
+        } as Response)));
+
+        vi.doMock('@capacitor/core', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('@capacitor/core')>();
+            return {
+                ...actual,
+                registerPlugin: vi.fn(() => ({
+                    getAppInfo: vi.fn().mockResolvedValue({
+                        packageName: 'top.easyboardgame.app',
+                        versionName: '0.5.0',
+                        versionCode: 500,
+                        canRequestPackageInstalls: true,
+                    }),
+                })),
+            };
+        });
+        vi.doMock('../mobile/androidRuntime', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('../mobile/androidRuntime')>();
+            return {
+                ...actual,
+                isNativeAndroidRuntime: () => true,
+            };
+        });
+
+        const {
+            checkAndroidNativeUpdateAvailability: checkAvailability,
+        } = await import('../mobile/androidNativeUpdates');
+
+        await expect(checkAvailability()).rejects.toThrow(
+            '原生更新清单不存在：https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+        );
     });
 
     it('版本比较按数值段处理', () => {
@@ -614,6 +671,72 @@ describe('androidLiveUpdates', () => {
             phase: 'error',
             blocking: true,
             reason: 'OTA 清单读取失败：Failed to fetch',
+        });
+    });
+
+    it('OTA 清单不存在时必须返回显式错误并显示阻塞错误态', async () => {
+        vi.resetModules();
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+
+        const currentMock = vi.fn();
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: currentMock,
+                list: vi.fn(),
+                download: vi.fn(),
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: vi.fn(async () => ({ remove: async () => undefined })),
+            },
+        }));
+
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            status: 404,
+            ok: false,
+            headers: {
+                get: () => null,
+            },
+            json: vi.fn(),
+        }));
+
+        const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
+        const states: Array<{ phase: string; blocking: boolean; reason?: string }> = [];
+
+        const result = await startAndroidLiveUpdateBackgroundCheck({
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+                VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS: '15000',
+            },
+            onForceStateChange: (state) => {
+                states.push({
+                    phase: state.phase,
+                    blocking: state.blocking,
+                    reason: state.reason,
+                });
+            },
+        });
+
+        expect(result).toEqual({
+            status: 'error',
+            reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+        });
+        expect(currentMock).not.toHaveBeenCalled();
+        expect(states).toContainEqual({
+            phase: 'error',
+            blocking: true,
+            reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
         });
     });
 
@@ -1575,6 +1698,59 @@ describe('androidLiveUpdates', () => {
                 ttlMs: 3000,
             });
         });
+    });
+
+    it('AndroidLiveUpdateManager 后台 OTA 错误应保留错误遮罩，不再用一次性 toast 静默降级', async () => {
+        vi.resetModules();
+
+        const toastErrorMock = vi.fn();
+        const startMock = vi.fn()
+            .mockImplementationOnce(async (options?: {
+                onForceStateChange?: (state: { phase: string; blocking: boolean; reason?: string }) => void;
+            }) => {
+                options?.onForceStateChange?.({
+                    phase: 'error',
+                    blocking: true,
+                    reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                });
+                return {
+                    status: 'error',
+                    reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                } as const;
+            });
+
+        vi.doMock('../mobile/androidLiveUpdates', () => ({
+            registerAndroidLiveUpdateListeners: vi.fn().mockResolvedValue(undefined),
+            subscribeAndroidLiveUpdateRequests: vi.fn(() => () => undefined),
+            startAndroidLiveUpdateBackgroundCheck: startMock,
+        }));
+        vi.doMock('../mobile/androidNativeUpdates', () => ({
+            requestAndroidNativeUpdateCheck: vi.fn(),
+        }));
+        vi.doMock('../mobile/androidRuntime', () => ({
+            isNativeAndroidRuntime: () => true,
+        }));
+        vi.doMock('../../contexts/ToastContext', () => ({
+            useToast: () => ({
+                success: vi.fn(),
+                error: toastErrorMock,
+            }),
+        }));
+        vi.doMock('../../components/system/AndroidForceUpdateGate', () => ({
+            AndroidForceUpdateGate: ({ state }: { state: { phase: string; blocking: boolean; reason?: string } }) => (
+                createElement('div', { 'data-testid': 'force-update-phase' }, `${state.phase}:${String(state.blocking)}:${state.reason ?? ''}`)
+            ),
+        }));
+
+        const { AndroidLiveUpdateManager } = await import('../../components/system/AndroidLiveUpdateManager');
+        const view = render(createElement(AndroidLiveUpdateManager));
+
+        await waitFor(() => {
+            expect(view.getByTestId('force-update-phase').textContent).toBe(
+                'error:true:OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+            );
+        });
+        expect(toastErrorMock).not.toHaveBeenCalled();
     });
 
     it('AndroidNativeUpdateManager 非强更自动检查应后台预下载，但手动检查才允许进入安装链路', async () => {

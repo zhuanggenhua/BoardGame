@@ -64,7 +64,7 @@ iOS OTA 发布脚本
 - --force-update-message <text>
 - --notes <text>
 - --dry-run
-- --skip-latest
+- --skip-latest 仅允许 dry-run 诊断；正式 iOS OTA 禁止跳过 latest.json
 - --help
 `.trim();
 
@@ -152,6 +152,9 @@ const {
 });
 const dryRun = hasFlag('dry-run');
 const skipLatest = hasFlag('skip-latest');
+if (skipLatest && !dryRun) {
+    throw new Error('正式 iOS OTA 发布禁止使用 --skip-latest。手机端依赖 latest.json 发现更新，跳过会导致无法更新。');
+}
 const distDir = path.join(rootDir, 'dist');
 const iosBuildMetaPath = path.join(distDir, 'ios-build-meta.json');
 const buildInstant = new Date();

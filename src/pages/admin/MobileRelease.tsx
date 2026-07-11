@@ -152,11 +152,9 @@ export default function MobileReleasePage() {
 
     const [otaBundleVersion, setOtaBundleVersion] = useState('');
     const [otaVersionBase, setOtaVersionBase] = useState('6.0.0');
-    const [otaSkipLatest, setOtaSkipLatest] = useState(false);
 
     const [nativeBump, setNativeBump] = useState<typeof BUMP_OPTIONS[number]>('');
     const [nativeForceUpdate, setNativeForceUpdate] = useState(true);
-    const [nativeSkipLatest, setNativeSkipLatest] = useState(false);
     const [nativeSkipBuild, setNativeSkipBuild] = useState(false);
     const [nativeNotes, setNativeNotes] = useState('');
 
@@ -443,9 +441,6 @@ export default function MobileReleasePage() {
                                     />
                                 </label>
                             </div>
-                            <CheckboxRow>
-                                <Checkbox checked={otaSkipLatest} onChange={setOtaSkipLatest} label={pageT('form.skip_latest')} />
-                            </CheckboxRow>
                             <ActionRow>
                                 <ActionButton
                                     icon={<CheckCircle2 size={16} />}
@@ -456,7 +451,6 @@ export default function MobileReleasePage() {
                                         otaVersionBase: otaVersionBase.trim() || undefined,
                                         forceUpdate: true,
                                         dryRun: true,
-                                        skipLatest: otaSkipLatest,
                                     }, 'toast.dry_run_success')}
                                 >
                                     {busyAction === 'ota-dry-run' ? runningText : pageT('actions.dry_run')}
@@ -471,7 +465,6 @@ export default function MobileReleasePage() {
                                         otaVersionBase: otaVersionBase.trim() || undefined,
                                         forceUpdate: true,
                                         dryRun: false,
-                                        skipLatest: otaSkipLatest,
                                     }, 'toast.publish_success')}
                                 >
                                     {busyAction === 'ota-publish' ? runningText : pageT('actions.publish')}
@@ -506,7 +499,6 @@ export default function MobileReleasePage() {
                             </div>
                             <CheckboxRow>
                                 <Checkbox checked={nativeForceUpdate} onChange={setNativeForceUpdate} label={pageT('form.force_update')} />
-                                <Checkbox checked={nativeSkipLatest} onChange={setNativeSkipLatest} label={pageT('form.skip_latest')} />
                                 <Checkbox checked={nativeSkipBuild} onChange={setNativeSkipBuild} label={pageT('form.skip_build')} />
                             </CheckboxRow>
                             <ActionRow>
@@ -516,7 +508,6 @@ export default function MobileReleasePage() {
                                     onClick={() => void runAction('native-dry-run', '/mobile-release/android/native/publish', {
                                         channel,
                                         dryRun: true,
-                                        skipLatest: nativeSkipLatest,
                                         skipBuild: nativeSkipBuild,
                                         forceUpdate: nativeForceUpdate,
                                         notes: nativeNotes.trim() || undefined,
@@ -532,7 +523,6 @@ export default function MobileReleasePage() {
                                         channel,
                                         bump: nativeBump || undefined,
                                         dryRun: false,
-                                        skipLatest: nativeSkipLatest,
                                         skipBuild: nativeSkipBuild,
                                         forceUpdate: nativeForceUpdate,
                                         notes: nativeNotes.trim() || undefined,

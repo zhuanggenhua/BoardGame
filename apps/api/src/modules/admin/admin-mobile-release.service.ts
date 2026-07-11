@@ -85,6 +85,8 @@ type DeployRunnerRequest = {
 
 const OUTPUT_LIMIT = 200_000;
 const ANDROID_OTA_WORKFLOW_ID = 'android-ota-publish.yml';
+const ANDROID_OTA_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android OTA 发布禁止跳过 latest.json。手机端依赖 latest.json 发现更新，跳过会导致无法更新。';
+const ANDROID_NATIVE_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android 原生更新发布禁止跳过 latest.json。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。';
 
 @Injectable()
 export class AdminMobileReleaseService {
@@ -365,6 +367,7 @@ export class AdminMobileReleaseService {
     }
 
     private buildOtaReleaseArgs(dto: AndroidOtaReleaseDto) {
+        this.assertAndroidOtaLatestEnabled(dto);
         const args = ['ota', '--channel', dto.channel];
         const version = dto.version?.trim();
         if (version) {
@@ -471,6 +474,7 @@ export class AdminMobileReleaseService {
     }
 
     private buildAndroidOtaWorkflowInputs(dto: AndroidOtaReleaseDto, packageVersion: string, gitRef: string) {
+        this.assertAndroidOtaLatestEnabled(dto);
         const inputs: Record<string, string> = {
             channel: dto.channel,
             git_ref: gitRef,
@@ -492,7 +496,20 @@ export class AdminMobileReleaseService {
         return inputs;
     }
 
+    private assertAndroidOtaLatestEnabled(dto: Pick<AndroidOtaReleaseDto, 'dryRun' | 'skipLatest'>) {
+        if (dto.skipLatest && !dto.dryRun) {
+            throw new HttpException(ANDROID_OTA_SKIP_LATEST_FORBIDDEN_MESSAGE, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private assertAndroidNativeLatestEnabled(dto: Pick<AndroidNativeReleaseDto, 'dryRun' | 'skipLatest'>) {
+        if (dto.skipLatest && !dto.dryRun) {
+            throw new HttpException(ANDROID_NATIVE_SKIP_LATEST_FORBIDDEN_MESSAGE, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     private buildNativeReleaseArgs(dto: AndroidNativeReleaseDto) {
+        this.assertAndroidNativeLatestEnabled(dto);
         const args = ['native', '--channel', dto.channel];
         if (dto.bump) {
             args.push('--bump', dto.bump);

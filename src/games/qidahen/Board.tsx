@@ -151,10 +151,8 @@ const ASSETS = {
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
 const MAP_COVER_LEFT = (STAGE_WIDTH - QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE) / 2;
 const MAP_COVER_TOP = (STAGE_HEIGHT - QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE) / 2;
-const MAP_COVER_WIDTH = QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE;
-const MAP_COVER_HEIGHT = QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE;
 const QIDAHEN_MAP_MIN_ZOOM = 1;
-const QIDAHEN_MAP_MAX_ZOOM = 2.25;
+const QIDAHEN_MAP_MAX_ZOOM = 5;
 
 type QidahenGuidePoint = { x: number; y: number };
 type QidahenGuideBounds = {
@@ -556,16 +554,10 @@ const clampNumber = (value: number, min: number, max: number): number => (
 
 const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {
     const zoom = clampNumber(viewport.zoom, QIDAHEN_MAP_MIN_ZOOM, QIDAHEN_MAP_MAX_ZOOM);
-    const scaledWidth = MAP_COVER_WIDTH * zoom;
-    const scaledHeight = MAP_COVER_HEIGHT * zoom;
-    const minPanX = STAGE_WIDTH - scaledWidth - MAP_COVER_LEFT;
-    const maxPanX = -MAP_COVER_LEFT;
-    const minPanY = STAGE_HEIGHT - scaledHeight - MAP_COVER_TOP;
-    const maxPanY = -MAP_COVER_TOP;
     return {
         zoom,
-        panX: clampNumber(viewport.panX, minPanX, maxPanX),
-        panY: clampNumber(viewport.panY, minPanY, maxPanY),
+        panX: viewport.panX,
+        panY: viewport.panY,
     };
 };
 
@@ -2506,6 +2498,7 @@ const MapSceneLayer: React.FC<{
             initialScale={DEFAULT_QIDAHEN_MAP_VIEWPORT.zoom}
             minScale={QIDAHEN_MAP_MIN_ZOOM}
             maxScale={QIDAHEN_MAP_MAX_ZOOM}
+            panBoundsMode="free"
             controlledViewport={controlledMapViewport}
             onControlledViewportChange={handleControlledViewportChange}
             coordinateSize={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}

@@ -432,6 +432,7 @@
       "permission": "Allow installing apps from unknown sources to continue.",
       "installing": "Launching the system installer. Please wait.",
       "error": "Download or verification failed. Please retry.",
+      "checkFailed": "Unable to read the app update manifest. Check latest.json and network connectivity.",
       "default": "Preparing the update. Please wait."
     },
     "eyebrow": "App update",

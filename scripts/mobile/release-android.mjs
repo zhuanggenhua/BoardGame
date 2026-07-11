@@ -34,7 +34,7 @@ Android 统一发布入口
 常用选项:
   --channel <stable|gray|edge>
   --dry-run
-  --skip-latest
+  --skip-latest 仅允许 Android OTA dry-run 诊断；正式 Android OTA 禁止跳过 latest.json
 
 ota / native / full 额外选项:
   --bump <patch|minor|major>   自动更新 package.json / package-lock.json 版本
@@ -55,6 +55,7 @@ full 额外选项:
 说明:
   - OTA 发布已禁止隐式版本；发布时会强制传 --expected-base-version=<package.json.version>
   - 所有 OTA 都强制更新；--no-force-update 已禁用
+  - 正式 Android OTA 必须写入 latest.json，禁止跳过更新发现入口
   - OTA 客户端按 bundle version 这个内部游标判断新旧；publishedAt 只用于审计和展示
   - OTA / native / full 可使用 --bump 自动递增版本后再发布
   - full 的顺序固定为: OTA -> packages(可选) -> native

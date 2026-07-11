@@ -59,7 +59,6 @@ export const AndroidLiveUpdateManager = () => {
             if (
                 result.status === 'up-to-date'
                 || result.status === 'disabled'
-                || result.status === 'manifest-missing'
                 || result.status === 'not-native'
             ) {
                 setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
@@ -68,9 +67,6 @@ export const AndroidLiveUpdateManager = () => {
 
             if (result.status === 'error') {
                 console.warn('[OTA] 后台检查失败', result.reason);
-                if (shouldShowAndroidOtaToastOncePerDay('error')) {
-                    toast.error(result.reason, t('nativeUpdate.eyebrow'));
-                }
                 return;
             }
 

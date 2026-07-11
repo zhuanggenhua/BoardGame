@@ -26,7 +26,7 @@ on:
         default: false
         type: boolean
       skip_latest:
-        description: '上传 APK 与版本 manifest，但不覆盖 latest.json'
+        description: '仅允许 dry_run 诊断；正式发布禁止跳过 latest.json'
         required: true
         default: false
         type: boolean
@@ -63,6 +63,11 @@ jobs:
 
           if [[ -z "${expected_version}" ]]; then
             echo "::error::禁止隐式原生包发布：expected_version 不能为空。"
+            exit 1
+          fi
+
+          if [[ "${skip_latest}" == "true" && "${dry_run}" != "true" ]]; then
+            echo "::error::正式 Android 原生更新发布禁止跳过 latest.json。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。"
             exit 1
           fi
 

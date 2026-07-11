@@ -1,0 +1,165 @@
+name: Auto Merge
+
+on:
+  pull_request_target:
+    types:
+      - labeled
+      - unlabeled
+      - opened
+      - reopened
+      - ready_for_review
+      - review_requested
+      - synchronize
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
+      - edited
+  check_suite:
+    types:
+      - completed
+  workflow_run:
+    workflows:
+      - Quality Gate
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to evaluate
+        required: false
+        type: number
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.event.check_suite.pull_requests[0].number || inputs.pr || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    name: Auto merge eligible pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      AUTOMERGE_LABELS: automerge,auto-merge,ai-merge
+    steps:
+      - name: Resolve pull request number
+        id: pr
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr="${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.event.check_suite.pull_requests[0].number || inputs.pr }}"
+          if [[ -z "${pr}" ]]; then
+            echo "No pull request is attached to this event."
+            echo "number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "number=${pr}" >> "$GITHUB_OUTPUT"
+
+      - name: Evaluate merge gates
+        id: gates
+        if: steps.pr.outputs.number != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr="${{ steps.pr.outputs.number }}"
+          json="$(gh pr view "$pr" --repo "$REPO" --json state,isDraft,labels,mergeStateStatus,reviewDecision,statusCheckRollup)"
+
+          state="$(jq -r '.state' <<< "$json")"
+          is_draft="$(jq -r '.isDraft' <<< "$json")"
+          merge_state="$(jq -r '.mergeStateStatus' <<< "$json")"
+          review_decision="$(jq -r '.reviewDecision // ""' <<< "$json")"
+
+          has_label="$(
+            jq -r --arg labels "$AUTOMERGE_LABELS" '
+              ($labels | split(",") | map(ascii_downcase)) as $allowed
+              | [.labels[].name | ascii_downcase] as $actual
+              | any($actual[]; . as $name | $allowed | index($name))
+            ' <<< "$json"
+          )"
+
+          pending_checks="$(
+            jq '[.statusCheckRollup[]?
+              | select((.workflowName // "") != "Auto Merge" and (.name // "") != "Auto merge eligible pull request")
+              | select(.status != "COMPLETED")
+            ] | length' <<< "$json"
+          )"
+
+          failed_checks="$(
+            jq '[.statusCheckRollup[]?
+              | select((.workflowName // "") != "Auto Merge" and (.name // "") != "Auto merge eligible pull request")
+              | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL"))
+            ] | length' <<< "$json"
+          )"
+
+          if [[ "$state" != "OPEN" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "reason=PR is not open: ${state}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$is_draft" == "true" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "reason=PR is a draft" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$has_label" != "true" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "reason=missing automerge label" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$pending_checks" != "0" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "reason=${pending_checks} check(s) still pending" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$failed_checks" != "0" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "reason=${failed_checks} check(s) failed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$review_decision" == "CHANGES_REQUESTED" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "reason=changes requested by review" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          case "$merge_state" in
+            CLEAN|HAS_HOOKS|UNSTABLE)
+              echo "eligible=true" >> "$GITHUB_OUTPUT"
+              echo "reason=ready" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "eligible=false" >> "$GITHUB_OUTPUT"
+              echo "reason=merge state is ${merge_state}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Enable or complete squash merge
+        if: steps.gates.outputs.eligible == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr="${{ steps.pr.outputs.number }}"
+          gh pr merge "$pr" --repo "$REPO" --squash
+
+      - name: Report skipped merge
+        if: steps.pr.outputs.number != '' && steps.gates.outputs.eligible != 'true'
+        shell: bash
+        run: |
+          echo "PR #${{ steps.pr.outputs.number }} was not auto-merged: ${{ steps.gates.outputs.reason }}"

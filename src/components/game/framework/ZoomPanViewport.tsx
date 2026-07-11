@@ -79,11 +79,13 @@ export interface ZoomPanViewportProps {
     minScale?: number;
     maxScale?: number;
     dragBoundsPaddingRatioY?: number;
+    panBoundsMode?: 'content' | 'free';
     interactionDisabled?: boolean;
     panToTarget?: string | null;
     panToScale?: number;
     controlledViewport?: ZoomPanViewportState;
     onControlledViewportChange?: (viewport: ZoomPanViewportState) => void;
+    onUserViewportChange?: () => void;
     coordinateSize?: ElementSize;
     clampViewport?: (viewport: ZoomPanViewportState) => ZoomPanViewportState;
     getZoomAnchorPosition?: (args: ZoomPanViewportZoomAnchorArgs) => ZoomPanViewportPosition;
@@ -108,11 +110,13 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     minScale = 0.5,
     maxScale = 3,
     dragBoundsPaddingRatioY = 0,
+    panBoundsMode = 'content',
     interactionDisabled = false,
     panToTarget,
     panToScale,
     controlledViewport,
     onControlledViewportChange,
+    onUserViewportChange,
     coordinateSize,
     clampViewport,
     getZoomAnchorPosition,
@@ -141,6 +145,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const scaleBadgeTimerRef = useRef<number | null>(null);
     const animationTimerRef = useRef<number | null>(null);
     const suppressNextClickRef = useRef(false);
+    const handledPanInstructionRef = useRef<string | null>(null);
 
     const [zoomLevel, setZoomLevel] = useState(initialScale);
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -231,6 +236,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     }, [clearAnimationTimer, clearScaleBadgeTimer]);
 
     const clampPosition = useCallback((x: number, y: number, nextScale = scale) => {
+        if (panBoundsMode === 'free') {
+            return { x, y };
+        }
         if (!containerSize.width || !containerSize.height || !contentSize.width || !contentSize.height) {
             return { x, y };
         }
@@ -245,7 +253,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             x: Math.min(maxOffsetX, Math.max(-maxOffsetX, x)),
             y: Math.min(maxOffsetY, Math.max(-maxOffsetY, y)),
         };
-    }, [containerSize.height, containerSize.width, contentSize.height, contentSize.width, dragBoundsPaddingRatioY, scale]);
+    }, [containerSize.height, containerSize.width, contentSize.height, contentSize.width, dragBoundsPaddingRatioY, panBoundsMode, scale]);
 
     const clampViewportState = useCallback((nextViewport: ZoomPanViewportState): ZoomPanViewportState => {
         const nextZoomLevel = clampZoomLevel(nextViewport.zoomLevel);
@@ -426,6 +434,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             const nextZoomLevel = clampZoomLevel(startZoomLevel * (distance / startDistance));
             const nextPosition = resolveZoomPosition(nextZoomLevel, getTouchCenter(event.touches[0], event.touches[1]));
             revealScaleBadge(nextZoomLevel);
+            onUserViewportChange?.();
             applyViewport({
                 zoomLevel: nextZoomLevel,
                 position: nextPosition,
@@ -449,6 +458,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         setIsAnimating(false);
 
         const viewportDelta = convertDeltaToViewportUnits(dx, dy);
+        onUserViewportChange?.();
         applyViewport({
             zoomLevel: activeZoomLevel,
             position: {
@@ -463,6 +473,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         clearAnimationTimer,
         convertDeltaToViewportUnits,
         interactionDisabled,
+        onUserViewportChange,
         resolveZoomPosition,
         revealScaleBadge,
     ]);
@@ -502,6 +513,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             setIsAnimating(false);
 
             const viewportDelta = convertDeltaToViewportUnits(dx, dy);
+            onUserViewportChange?.();
             applyViewport({
                 zoomLevel: activeZoomLevel,
                 position: {
@@ -523,7 +535,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             window.removeEventListener('mousemove', handleGlobalMouseMove);
             window.removeEventListener('mouseup', handleGlobalMouseUp);
         };
-    }, [activeZoomLevel, applyViewport, clearAnimationTimer, convertDeltaToViewportUnits]);
+    }, [activeZoomLevel, applyViewport, clearAnimationTimer, convertDeltaToViewportUnits, onUserViewportChange]);
 
     const handleWheel = useCallback((event: WheelEvent) => {
         if (interactionDisabled) return;
@@ -544,6 +556,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             clientY: event.clientY,
         });
         revealScaleBadge(nextZoomLevel);
+        onUserViewportChange?.();
         applyViewport({
             zoomLevel: nextZoomLevel,
             position: nextPosition,
@@ -554,6 +567,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         clampZoomLevel,
         clearAnimationTimer,
         interactionDisabled,
+        onUserViewportChange,
         resolveZoomPosition,
         revealScaleBadge,
         wheelZoomFactor,
@@ -593,8 +607,15 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     }, [applyViewport, clearAnimationTimer, hideScaleBadge, initialScale, interactionDisabled, panToTarget]);
 
     useEffect(() => {
-        if (!panToTarget || !contentRef.current || !containerRef.current) return undefined;
+        if (!panToTarget) {
+            handledPanInstructionRef.current = null;
+            return undefined;
+        }
+        if (!contentRef.current || !containerRef.current) return undefined;
         if (!containerSize.width || !containerSize.height || !contentSize.width || !contentSize.height) return undefined;
+
+        const panInstructionKey = `${panToTarget}:${panToScale ?? 'current'}`;
+        if (handledPanInstructionRef.current === panInstructionKey) return undefined;
 
         const rafId = requestAnimationFrame(() => {
             const contentEl = contentRef.current;
@@ -646,6 +667,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             if (targetZoomLevel !== currentZoomLevel) {
                 revealScaleBadge(nextViewport.zoomLevel);
             }
+            handledPanInstructionRef.current = panInstructionKey;
             applyViewport(nextViewport);
             animationTimerRef.current = window.setTimeout(() => {
                 setIsAnimating(false);
@@ -688,6 +710,11 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
+            onPointerUpCapture={(event) => {
+                if (!suppressNextClickRef.current) return;
+                event.preventDefault();
+                event.stopPropagation();
+            }}
             onClickCapture={(event) => {
                 if (!suppressNextClickRef.current) return;
                 suppressNextClickRef.current = false;

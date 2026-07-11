@@ -41,9 +41,20 @@ const BOARD_GRID_Z = {
 } as const;
 
 const LIFE_BADGE_STYLE: React.CSSProperties = {
-  fontSize: `clamp(14px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.01), 22px)`,
+  fontSize: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.01)`,
   paddingInline: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
   paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.001)`,
+};
+const TAP_LIFE_BADGE_STYLE: React.CSSProperties = {
+  ...LIFE_BADGE_STYLE,
+  fontSize: `clamp(60px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.036), 72px)`,
+  lineHeight: 1,
+  paddingInline: `clamp(14px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.012), 22px)`,
+  paddingBlock: `clamp(7px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.005), 10px)`,
+  border: '2px solid rgba(255,255,255,0.9)',
+  borderRadius: `clamp(12px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.006), 18px)`,
+  boxShadow: '0 4px 18px rgba(0,0,0,0.7), 0 0 14px rgba(255,255,255,0.45)',
+  textShadow: '0 2px 4px rgba(0,0,0,0.9)',
 };
 const MAGNIFY_BUTTON_STYLE: React.CSSProperties = {
   top: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.006)`,
@@ -642,7 +653,7 @@ const UnitCell: React.FC<{
           >
             <span
               className={`font-bold rounded ${damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white'}`}
-              style={LIFE_BADGE_STYLE}
+              style={isTapLifeVisible ? TAP_LIFE_BADGE_STYLE : LIFE_BADGE_STYLE}
             >
               {life - damage}/{life}
             </span>
@@ -851,7 +862,7 @@ const StructureCell: React.FC<{
           >
             <span
               className={`font-bold rounded ${damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white'}`}
-              style={LIFE_BADGE_STYLE}
+              style={isTapLifeVisible ? TAP_LIFE_BADGE_STYLE : LIFE_BADGE_STYLE}
             >
               {life - damage}/{life}
             </span>

@@ -257,5 +257,6 @@ describe('MobileReleasePage', () => {
             dryRun: false,
             forceUpdate: true,
         });
+        expect(publishBody).not.toHaveProperty('skipLatest');
     });
 });

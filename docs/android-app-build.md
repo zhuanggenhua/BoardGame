@@ -7,10 +7,10 @@
 - Android Release / OTA workflow 默认优先读取与 `.env.example` 一致的同名配置。
 - 后端地址优先使用 GitHub Variables 的 `VITE_BACKEND_URL`。
 - `ANDROID_VITE_BACKEND_URL` 只作为兼容旧配置的别名，不再是唯一入口。
-- OTA 对象存储仍使用 GitHub Secrets：`R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`。
+- OTA 发布到服务器素材主源，不再要求对象存储凭据。
 - 推荐最小配置：
   - Variables: `VITE_BACKEND_URL`、`VITE_ASSETS_BASE_URL`、`CAPACITOR_APP_ID`、`CAPACITOR_APP_NAME`
-  - Secrets: `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`
+  - Secrets: 服务器素材主源发布所需的受限 SSH / 发布令牌
 
 ## 命令
 
@@ -40,7 +40,7 @@
 - `embedded`：默认模式（未显式指定时生效）
   - 将 `dist/` 同步到 `android/app/src/main/assets/public/`
   - APK 只内置壳运行必需的 H5 bundle 与轻量静态文件
-  - `public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路，禁止跟随 embedded 打进 APK
+  - `public/assets/common/audio/**` 这类运行时大资源必须继续走服务器素材主源 / 游戏包链路，禁止跟随 embedded 打进 APK
   - 这是当前主线发布方案
 - `remote`：仅在明确指定时启用
   - 通过 `Capacitor server.url` 加载线上页面
@@ -92,7 +92,7 @@ ANDROID_REMOTE_WEB_URL=https://your-domain.com
   - `assets/common/images/home-v2/overview-spread/**`
   - `assets/common/images/home-v2/reference-homepage/**`
   - `assets/common/images/home-v2/reference-thumbnails/**`
-- 这条门禁的本质约束是：**native APK 不得重复内置本应从 R2 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
+- 这条门禁的本质约束是：**native APK 不得重复内置本应从服务器素材主源 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
 
 ## 原生 APK 自更新
 
@@ -132,11 +132,7 @@ npm run mobile:android:native-update:publish -- --channel stable --dry-run
 npm run mobile:android:native-update:publish -- --channel stable
 ```
 
-如果只想先上传 APK 和版本 manifest，不切 `latest.json`：
-
-```bash
-npm run mobile:android:native-update:publish -- --channel stable --skip-latest
-```
+正式 Android 原生更新必须切换 `latest.json`，否则手机端无法发现新版 APK。`--skip-latest` 仅允许配合 `--dry-run` 做参数诊断，正式发布传入会直接失败。
 
 当前默认发布路径：
 
@@ -165,7 +161,7 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
 ## 当前 OTA 实现
 
 - 运行时插件：`@capgo/capacitor-updater`
-- 发布源：自托管 manifest + zip bundle，当前约定放在对象存储 `official/app-updates/android/<channel>/...`
+- 发布源：自托管 manifest + zip bundle，当前约定放在服务器素材主源 `official/app-updates/android/<channel>/...`
 - 当前发布策略：**所有 OTA 强制更新**
 - 默认行为：启动后检查；一旦发现新的 bundle，立即显示阻塞式更新页，下载完成后切换 bundle 并重启页面
 - 启动确认：App 每次原生启动时尽早调用 `notifyAppReady()`，避免已下载 bundle 被插件自动回滚
@@ -288,11 +284,11 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 - `official/mobile-packages/android/<channel>/manifests/<gameId>/<version>.json`
 - `official/mobile-packages/android/<channel>/games/<gameId>.json`
 
-### R2 单文件资源更新
+### 服务器素材主源单文件资源更新
 
 日常只替换少量游戏资源时，不应默认重发完整 ZIP。正确链路是：
 
-1. 上传变更后的 R2 单文件对象，例如 `official/i18n/zh-CN/dicethrone/.../compressed/player-board.webp`
+1. 上传变更后的服务器素材主源单文件对象，例如 `official/i18n/zh-CN/dicethrone/.../compressed/player-board.webp`
 2. 刷新目标游戏的 `file-index/<gameId>/<version>.json`
 3. 刷新 `games/<gameId>.json` 指到新的差异索引版本
 4. App 读取远端 `file-index`，与本地 `installed-files-index.json` 比对，只下载新增或哈希变化文件
@@ -300,7 +296,7 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 本地预演某个资源路径会触发哪个 App 素材包刷新：
 
 ```bash
-node scripts/assets/upload-to-r2.js --android-package-publish-plan official/i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp
+node scripts/assets/upload-to-server.js --android-package-publish-plan official/i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp
 ```
 
 普通游戏资源变更的预期命令应包含：
@@ -321,7 +317,7 @@ node scripts/mobile/publish-android-game-packages.mjs --channel stable --game di
 
 验收时必须拆开三件事：
 
-- R2 单文件对象是否已上传并可访问
+- 服务器素材主源单文件对象是否已上传并可访问
 - `games/<gameId>.json` 是否已指向新的 `file-index` 版本
 - 真机 App 是否只下载 changed 文件，并且本地哈希与远端 `file-index` 一致
 
@@ -377,13 +373,7 @@ manifest 结构示例：
 node scripts/mobile/release-android.mjs ota --channel stable --dry-run
 ```
 
-4. 如果只想先上传 bundle 和版本 manifest，不立刻切 `latest.json`：
-
-```bash
-node scripts/mobile/release-android.mjs ota --channel stable --skip-latest
-```
-
-5. 确认无误后再正式更新 channel 的 `latest.json`：
+4. 正式更新 channel 的 `latest.json`：
 
 ```bash
 node scripts/mobile/release-android.mjs ota --channel stable
@@ -436,7 +426,7 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update-titl
 - `--force-update-message <text>`：覆盖 OTA 更新提示正文
 - `--notes <text>`：写入 manifest 备注
 - `--dry-run`：只打 zip、算 checksum、打印 manifest，不上传
-- `--skip-latest`：上传 zip 和版本 manifest，但不覆盖 `<channel>/latest.json`
+- `--skip-latest`：仅允许配合 `--dry-run` 做参数诊断；正式 Android OTA 禁止跳过 `<channel>/latest.json`
 
 兼容字段生成规则：
 
@@ -552,10 +542,7 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 需要的 GitHub Secrets：
 
-- `R2_ACCOUNT_ID`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET_NAME`
+- 服务器素材主源发布所需的受限 SSH / 发布令牌
 
 可选 GitHub Variables：
 

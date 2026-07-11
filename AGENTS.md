@@ -277,13 +277,13 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `.codex/skill/adapt-game-mobile/SKILL.md` — 给现有游戏做移动端适配时必读。
 - `.codex/skill/git-operations/SKILL.md` — 需要提交、push、同步主分支、处理 pre-push 阻塞、PR、merge、fork、worktree、远端协议时必读。
 - `.codex/skill/create-new-game/SKILL.md` — 创建/添加新游戏时必读，且必须先开 `feat/game-<gameId>` 分支。
-- `docs/deploy.md` — 部署、构建产物、环境变量注入、线上/本地差异、CDN/R2 资源问题时必读。
+- `docs/deploy.md` — 部署、构建产物、环境变量注入、线上/本地差异、服务器素材主源 / 公开资源域名问题时必读。
   - **生产部署操作规范（强制）**：生产环境更新必须使用 `bash scripts/deploy/deploy-image.sh update`（基于 `docker-compose.prod.yml`）。**禁止在生产服务器上直接运行 `docker compose up -d`**（会使用默认的 `docker-compose.yml`，端口映射和环境变量与生产不同）。排查生产问题时，必须先读 `docs/deploy.md` 了解部署架构，禁止凭猜测给出服务器操作命令。
   - **生产最新部署入口口径（强制）**：用户说“更新部署 / 部署最新 / 发线上”且未明确指定版本时，默认目标不是“只更新服务器”，而是一次完整上线：版本自增 + 服务器更新 + Android stable OTA 发布。默认必须优先走 `node scripts/release/deploy-and-ota.mjs --prepare-version` 准备版本，再在版本提交并 push、CI 镜像构建完成后执行 `node scripts/release/deploy-and-ota.mjs`；禁止手工拆成“只执行 `bash scripts/deploy/deploy-image.sh update` 后就汇报完成”。只有用户明确说“只更新服务器 / 不发 OTA / 本次不改版本”时，才允许缩小对应范围，且汇报必须写明这是缩小发布，不是完整更新部署。
   - **生产最新部署 tag 口径（强制）**：服务器步骤必须由项目发布编排或生产脚本执行 `bash scripts/deploy/deploy-image.sh update`，也就是部署 CI 推送到 GHCR 的 `latest`。禁止根据 commit SHA、短 SHA、run number 或个人推测临时拼出 `update <tag>`；只有用户明确指定 tag，或已经用 CI 输出 / GHCR / `docker manifest inspect` 证明 `web` 与 `game-server` 两个镜像都存在同一个精确 tag 时，才允许执行 `update <tag>`，并必须在汇报中写明验证证据。
   - **生产最新部署收口门槛（强制）**：`update` 命令成功只代表服务器镜像已更新，**不等于完整上线完成**。完整“更新部署 / 发线上”收口前必须同时验证：① 服务器 `WEB_REV` / `GAME_REV` 或等价健康检查命中目标发布对象；② Android `stable` OTA 已触发并成功，且 `git_ref` / `expected_base_version` / channel 对得上本次发布；③ 若本次按默认口径发版，`package.json.version` 与 Android `androidVersionCode` 已随发布提交同步增加。任一项缺失、失败、需审批或尚未执行时，只能汇报“服务器已更新，但完整上线未完成 / OTA 未完成”，不得把任务标记完成。
   - **Git 工作区变更控制（强制）**：未经用户当轮明确许可，不得执行会改变工作区状态或文件内容的操作（例如 `git stash`、`git clean`、`git restore`）。如确需隔离/清理未提交改动，必须先说明目的与影响，再等用户确认。项目内 Git command guard 的能力边界、wrapper 用法与 `pre-rebase` 硬拦方案，统一以 `.codex/skill/git-operations/SKILL.md` 为准。
-  - **Android OTA 包体规范（强制）**：Android OTA 只允许承载 H5 bundle 与轻量静态文件，**禁止**把 `public/assets/i18n/**`、大图集、大卡图或其他应走 R2 / 游戏包链路的资源打进 OTA zip。发布 Android OTA 时必须使用 `scripts/mobile/publish-android-ota.mjs` 这条受门禁保护的链路；若产物异常超过轻量包体阈值（当前脚本门禁 `20MB`）必须直接失败，禁止继续发布。
+  - **Android OTA 包体规范（强制）**：Android OTA 只允许承载 H5 bundle 与轻量静态文件，**禁止**把 `public/assets/i18n/**`、大图集、大卡图或其他应走服务器素材主源 / 游戏包链路的资源打进 OTA zip。发布 Android OTA 时必须使用 `scripts/mobile/publish-android-ota.mjs` 这条受门禁保护的链路；若产物异常超过轻量包体阈值（当前脚本门禁 `20MB`）必须直接失败，禁止继续发布。
   - **Android OTA 版本门禁规范（强制）**：当前项目规则是“所有已安装版本默认都必须更新 OTA”。禁止再通过 `targetNativeVersion`、`minNativeVersion`、`maxNativeVersion`、`allow-legacy-shells` 等方式把 OTA 只发给某个原生版本或版本区间；发布脚本与 GitHub Actions 都必须保持这一禁令，若误传相关参数必须直接失败，不能静默带着错误门禁发出去。
   - **Android OTA 版本命名规范（强制）**：正式 OTA 的用户可见 bundle 版本必须继续沿用项目既有口径 `package.json.version-ota-UTC时间戳`。未经老板明确要求，不得因为切换发布入口（本地脚本 / GitHub Actions / 手工补发）而擅自改成 `gha-*`、run number、临时别名或其他展示格式。
   - **Android 发布前 TypeScript 门禁（强制）**：发布 Android OTA / Native / Full 前必须通过一次 TypeScript `typecheck`（避免仅在移动端分支触发的漏 import / 漏导出在构建期被放过）。推荐统一使用 `node scripts/mobile/release-android.mjs <ota|native|full>`（该入口已内置 typecheck）；如因特殊原因绕过该入口，必须在发布前显式执行 `npm run typecheck` 并确保通过。
@@ -783,7 +783,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
     - **注册时机**：模块顶层同步注册，禁止在 `useEffect` 中异步注册（消除首帧 shimmer）。
     - **核心原则**：图片资源需要国际化（路径包含 `/i18n/{locale}/`），图集配置文件不需要国际化。
   - **未来扩展**：英文版上线时，将英文图片放入 `i18n/en/<gameId>/`，代码无需修改。
-  - **CDN 部署**：运行 `npm run assets:upload -- --sync` 同步到 CDN。
+    - **服务器素材主源发布**：运行 `npm run assets:upload -- --sync` 同步到服务器素材主源，并通过公开资源域名回查。
 - **音频架构（强制）**：
   - **设计规范**：显式 > 隐式、智能默认 + 可覆盖、单一真实来源、类型安全
   - **事件定义**（`domain/events.ts`）：使用 `defineEvents()` 定义音频策略；`immediate` 事件必须写完整形式 `{ audio: 'immediate', sound: KEY }`，不能偷写成字符串。

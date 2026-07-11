@@ -67,6 +67,9 @@ const forceUpdateMessage = forceUpdate
     : '';
 const dryRun = hasFlag('dry-run');
 const skipLatest = hasFlag('skip-latest');
+if (skipLatest && !dryRun) {
+    throw new Error('正式 Android 原生更新发布禁止使用 --skip-latest。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。');
+}
 const apkPath = path.resolve(
     rootDir,
     readArgValue('apk', path.join('android', 'app', 'build', 'outputs', 'apk', 'release', 'easyboardgame-release.apk')),
