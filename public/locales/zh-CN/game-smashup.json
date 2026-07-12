@@ -1146,7 +1146,42 @@
     "ninja_disguise_choose_play_title": "伪装：选择要打出的手牌随从",
     "ninja_disguise_choose_second_play_title": "伪装：选择第二个要打出的手牌随从",
     "faction_implementation_in_progress": "实施中",
-    "paladins_heavenly_soldiers_descend_skip_minion_option": "跳过额外随从"
+    "paladins_heavenly_soldiers_descend_skip_minion_option": "跳过额外随从",
+    "avengers_hawkeye_discard_title": "鹰眼：弃掉两张牌",
+    "avengers_jarvis_discard_title": "贾维斯：弃掉一张牌",
+    "avengers_black_widow_title": "黑寡妇：你可以摧毁这里一个力量5或更少的角色",
+    "avengers_assemble_title": "复仇者集结：选择至多两名弃牌堆角色洗回牌库",
+    "avengers_repulsor_boots_move_title": "斥力靴：选择目标基地",
+    "avengers_repulsor_boots_source_special_title": "斥力靴：选择要移动的钢铁侠",
+    "avengers_repulsor_boots_source_title": "斥力靴：选择要移动的你的角色",
+    "avengers_iron_man_destination_title": "钢铁侠：选择要移动到的基地",
+    "avengers_iron_man_companion_title": "钢铁侠：你可以选择这里另一个你的角色一同移动",
+    "avengers_thor_mjolnir_destination_title": "索尔：选择雷神锤的新装备角色",
+    "avengers_thor_mjolnir_source_title": "索尔：选择要移动的雷神锤",
+    "avengers_hawkeyes_arrows_pick_title": "鹰眼箭：选择抽取一张展示的法术",
+    "avengers_hulk_smash_replace_option": "替换基地",
+    "avengers_hulk_smash_replace_title": "浩克冲击：你可以让浩克摧毁并替换这个基地",
+    "avengers_hulk_smash_artifacts_title": "浩克冲击：选择任意数量该基地上的基地神器",
+    "avengers_modular_tech_destination_base_title": "模块化技术：选择神器的新基地",
+    "avengers_modular_tech_destination_minion_title": "模块化技术：选择装备的新角色",
+    "avengers_modular_tech_source_fallback_option": "持续行动",
+    "avengers_modular_tech_source_title": "模块化技术：选择要移动的装备或基地神器",
+    "avengers_strategize_order_first_title": "战略部署：选择牌库顶第一张牌",
+    "avengers_strategize_order_second_title": "战略部署：选择牌库顶第二张牌",
+    "shield_reassignment_title": "调任：选择至多两个你的其他基地角色移动到目标基地",
+    "shield_superior_firepower_title": "强大的火力：选择力量不超过3的角色或一个基地神器",
+    "marvel_choose_base_title": "选择目标基地",
+    "ultimates_move_with_bonus_destination_title": "选择目标基地",
+    "ultimates_power_and_speed_move_title": "力量与速度：可以将该角色移动到另一个基地",
+    "ultimates_cosmic_knowledge_title": "宇宙知识：选择任意数量手牌放到牌库底",
+    "ultimates_heroic_landing_source_title": "英雄登场：选择一个你的角色移动，或跳过结束",
+    "ultimates_heroic_landing_destination_title": "英雄登场：选择目标基地",
+    "ultimates_coordinated_attack_title": "协同攻击：选择至多三个其他基地的己方角色移动到此基地",
+    "spider_verse_deck_order_title": "将剩余牌按任意顺序放到牌库顶和/或牌库底",
+    "spider_verse_deck_selection_title": "选择其中一张加入手牌",
+    "spider_verse_view_from_above_minion_option": "角色",
+    "spider_verse_view_from_above_action_option": "法术",
+    "spider_verse_view_from_above_title": "高处不胜寒：声明要展示到的牌类型"
   },
   "mechanics": {
     "madness": {
@@ -1590,6 +1625,22 @@
     "mythic_greeks_pod": {
       "name": "希腊神话 (POD版)",
       "description": "以 POD 版诸神恩惠串联行动触发英雄加成。"
+    },
+    "avengers": {
+      "name": "复仇者",
+      "description": "聚集经典英雄、装备和战术爆发，在关键基地用天赋、移动与特殊计分窗口翻盘。"
+    },
+    "shield": {
+      "name": "神盾局",
+      "description": "依靠特工协作、额外部署、调任和救援任务，在基地之间快速集结火力。"
+    },
+    "spider_verse": {
+      "name": "蜘蛛宇宙",
+      "description": "使用特殊时机、牌库操控、保护和附着行动，在计分前后制造灵活反应。"
+    },
+    "ultimates": {
+      "name": "终极战队",
+      "description": "围绕移动、临时力量和手牌调度，快速抵达目标基地并放大团队协同。"
     }
   },
   "tutorial": {
@@ -6705,6 +6756,258 @@
     "mythic_greeks_odysseus_pod": {
       "name": "奥德修斯 (POD版)",
       "abilityText": "持续：在你打出一张行动牌后，在你的一个随从上放置一个 +1 力量指示物。"
+    },
+    "avengers_black_widow": {
+      "name": "黑寡妇",
+      "abilityText": "你可以摧毁一个在这里力量5或更少的角色。"
+    },
+    "avengers_captain_america": {
+      "name": "美国队长",
+      "abilityText": "天赋：在这里的你的每个其他角色获得+1力量直到回合结束。"
+    },
+    "avengers_hawkeye": {
+      "name": "鹰眼",
+      "abilityText": "抽三张牌。弃掉两张牌。"
+    },
+    "avengers_hulk": {
+      "name": "浩克",
+      "abilityText": "天赋：这个角色获得+2力量直到回合结束。"
+    },
+    "avengers_iron_man": {
+      "name": "钢铁侠",
+      "abilityText": "天赋：移动这个角色和至多一个你的其他角色从这里移动到其他基地。"
+    },
+    "avengers_thor": {
+      "name": "索尔",
+      "abilityText": "搜索你的牌库和/或弃牌堆寻找雷神之锤，展示并抽取它。如果你搜索了牌库，重洗它。天赋：移动雷神之锤从一个角色到另一个角色。"
+    },
+    "avengers_assemble": {
+      "name": "复仇者集结",
+      "abilityText": "重洗至多两名角色从你的弃牌堆到你的牌库。",
+      "effectText": "重洗至多两名角色从你的弃牌堆到你的牌库。"
+    },
+    "avengers_caps_shield": {
+      "name": "美队的盾牌",
+      "abilityText": "角色装备。持续：你在这里的角色不受其他玩家法术的影响。如果该角色是美国队长，他们每人同时获得+1力量。",
+      "effectText": "角色装备。持续：你在这里的角色不受其他玩家法术的影响。如果该角色是美国队长，他们每人同时获得+1力量。"
+    },
+    "avengers_hawkeyes_arrows": {
+      "name": "鹰眼箭",
+      "abilityText": "展示你牌库顶的牌直到你展示出两张法术。抽取一张法术然后把剩余的洗入你的牌库。如果鹰眼在游戏中，你可以打出抽取的牌作为额外法术。",
+      "effectText": "展示你牌库顶的牌直到你展示出两张法术。抽取一张法术然后把剩余的洗入你的牌库。如果鹰眼在游戏中，你可以打出抽取的牌作为额外法术。"
+    },
+    "avengers_hulk_smash": {
+      "name": "浩克冲击",
+      "abilityText": "选择一个基地。摧毁任意数量该基地上的基地神器。如果浩克在这里，你可以摧毁这个基地和所有它上面的装备，然后翻开基地牌库顶的牌替换它。所有角色留在新基地。",
+      "effectText": "选择一个基地。摧毁任意数量该基地上的基地神器。如果浩克在这里，你可以摧毁这个基地和所有它上面的装备，然后翻开基地牌库顶的牌替换它。所有角色留在新基地。"
+    },
+    "avengers_jarvis": {
+      "name": "J.A.R.V.I.S.",
+      "abilityText": "基地神器。天赋：抽一张牌。弃一张牌。",
+      "effectText": "基地神器。天赋：抽一张牌。弃一张牌。"
+    },
+    "avengers_mjolnir": {
+      "name": "雷神锤",
+      "abilityText": "角色装备。持续：如果雷神锤由索尔装备，它+2力量。否则，它-2力量。",
+      "effectText": "角色装备。持续：如果雷神锤由索尔装备，它+2力量。否则，它-2力量。"
+    },
+    "avengers_modular_tech": {
+      "name": "模块化技术",
+      "abilityText": "移动一个你的装备从一个角色身上到另一个角色身上，或一件神器从一个基地到另一个基地。打出一个额外的法术。",
+      "effectText": "移动一个你的装备从一个角色身上到另一个角色身上，或一件神器从一个基地到另一个基地。打出一个额外的法术。"
+    },
+    "avengers_repulsor_boots": {
+      "name": "斥力靴",
+      "abilityText": "移动一个你的角色移动到另一个基地。特殊：你可以在一个基地计分前打出这张卡来移动钢铁侠。",
+      "effectText": "移动一个你的角色移动到另一个基地。特殊：你可以在一个基地计分前打出此牌来移动钢铁侠。"
+    },
+    "avengers_strategize": {
+      "name": "战略部署",
+      "abilityText": "查看你牌库顶的四张牌。以任意顺序放置两张在你的牌库顶。其余的放在牌库底。",
+      "effectText": "查看你牌库顶的四张牌。以任意顺序放置两张在你的牌库顶。其余的放在牌库底。"
+    },
+    "avengers_tactical_advantage": {
+      "name": "战术优势",
+      "abilityText": "选择一个角色获得+3力量直到回合结束。",
+      "effectText": "选择一个角色获得+3力量直到回合结束。"
+    },
+    "avengers_thunder_and_lightning": {
+      "name": "雷霆闪电",
+      "abilityText": "摧毁一个力量3或更少的角色。",
+      "effectText": "摧毁一个力量3或更少的角色。"
+    },
+    "avengers_widows_bite": {
+      "name": "蜘蛛之吻",
+      "abilityText": "特殊：一个基地计分前打出。其他玩家在这里的每个角色获得-1力量直到回合结束。如果黑寡妇在这里，她获得+2力量直到回合结束。",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。其他玩家在这里的每个角色获得-1力量直到回合结束。如果黑寡妇在这里，她获得+2力量直到回合结束。"
+    },
+    "shield_nick_fury": {
+      "name": "尼克-弗瑞",
+      "abilityText": "你可以打出一个额外的角色到这里。"
+    },
+    "shield_maria_hill": {
+      "name": "玛丽亚·希尔",
+      "abilityText": "持续：你在这里打出其他角色后，这个角色获得+1力量直到回合结束。"
+    },
+    "shield_phil_coulson": {
+      "name": "菲尔·科尔森",
+      "abilityText": "你可以额外打出一个力量2或更底的角色到这里。"
+    },
+    "shield_agent": {
+      "name": "神盾局探员",
+      "abilityText": "持续：如果有另一个你的角色在这里，这个角色获得+1力量。"
+    },
+    "shield_entry_point": {
+      "name": "进入点",
+      "abilityText": "打出一个额外的角色。",
+      "effectText": "打出一个额外的角色。"
+    },
+    "shield_mission_debriefing": {
+      "name": "任务汇报",
+      "abilityText": "选择一个基地。在那里每有一个你的角色就抽一张牌。",
+      "effectText": "选择一个基地。在那里每有一个你的角色就抽一张牌。"
+    },
+    "shield_proving_ground": {
+      "name": "试验场",
+      "abilityText": "基地神器。天赋：在这里打出一个力量3或更底的角色作为额外角色。",
+      "effectText": "基地神器。天赋：在这里打出一个力量3或更底的角色作为额外角色。"
+    },
+    "shield_reassignment": {
+      "name": "调任",
+      "abilityText": "选择一个基地。移动至多两个你的角色从其他基地到这里。",
+      "effectText": "选择一个基地。移动至多两个你的角色从其他基地到这里。"
+    },
+    "shield_rescue_mission": {
+      "name": "救援任务",
+      "abilityText": "特殊：一个基地计分后，重洗你在那里的所有角色到他们拥有者的牌库然后抽一张牌。",
+      "effectText": "特殊：一个基地计分后，重洗你在那里的所有角色到他们拥有者的牌库然后抽一张牌。"
+    },
+    "shield_superior_firepower": {
+      "name": "强大的火力",
+      "abilityText": "摧毁一个基地神器或一个力量3或更底的角色。",
+      "effectText": "摧毁一个基地神器或一个力量3或更底的角色。"
+    },
+    "shield_troop_drop": {
+      "name": "空投部队",
+      "abilityText": "额外打出一个力量3或更底的角色。",
+      "effectText": "额外打出一个力量3或更底的角色。"
+    },
+    "shield_together": {
+      "name": "并肩作战",
+      "abilityText": "每个你目前打出的角色都获得+1力量直到回合结束。",
+      "effectText": "每个你目前打出的角色都获得+1力量直到回合结束。"
+    },
+    "spider_verse_spider_man": {
+      "name": "蜘蛛侠",
+      "abilityText": "持续：在你打出一张有特殊能力的牌后，这个角色获得+1力量，直到回合结束。"
+    },
+    "spider_verse_ghost_spider": {
+      "name": "幽灵蜘蛛侠",
+      "abilityText": "查看你牌库顶的三张牌，抽取其中一张，然后以任意顺序返回剩下的到你的牌库顶和/或牌库底。"
+    },
+    "spider_verse_miles_morales": {
+      "name": "迈尔斯·莫拉莱斯",
+      "abilityText": "特殊：在基地计分前，如果你有一个角色在那里，你可以在那里打出这个角色，并给予它-1力量，直到回合结束。"
+    },
+    "spider_verse_spider_man_2099": {
+      "name": "蜘蛛侠2099",
+      "abilityText": "持续：此角色不能被其他玩家的牌所摧毁。"
+    },
+    "spider_verse_great_responsibility": {
+      "name": "…责任越大",
+      "abilityText": "打出一个额外的角色。特殊：你可以在一个你拥有角色的基地计分前打出它。在这里打出一个额外的角色，它获得-1力量直到回合结束。",
+      "effectText": "打出一个额外的角色。特殊：你可以在一个你拥有角色的基地计分前打出此牌。在这里打出一个额外的角色，它获得-1力量直到回合结束。"
+    },
+    "spider_verse_spider_reflexes": {
+      "name": "蜘蛛反应",
+      "abilityText": "查看你牌库顶的三张牌，抽取其中一张，然后将剩余的以任意顺序放在你的牌库顶和/或牌库底。你可以打出一个额外的法术。",
+      "effectText": "查看你牌库顶的三张牌，抽取其中一张，然后将剩余的以任意顺序放在你的牌库顶和/或牌库底。你可以打出一个额外的法术。"
+    },
+    "spider_verse_spider_sense": {
+      "name": "蜘蛛感应",
+      "abilityText": "抽取两张牌。特殊：你可以在有你角色的基地计分后打出。",
+      "effectText": "抽取两张牌。特殊：你可以在有你角色的基地计分后打出。"
+    },
+    "spider_verse_bond": {
+      "name": "蜘蛛侠-平行宇宙",
+      "abilityText": "角色装备。持续：每有一个你的其他角色在这里，这个角色获得+1力量。",
+      "effectText": "角色装备。持续：每有一个你的其他角色在这里，这个角色获得+1力量。"
+    },
+    "spider_verse_view_from_above": {
+      "name": "高处不胜寒",
+      "abilityText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗牌洗回你的牌库。",
+      "effectText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗牌洗回你的牌库。"
+    },
+    "spider_verse_webbed_up": {
+      "name": "束缚",
+      "abilityText": "角色装备。持续：这个角色获得-2力量然后它的能力被取消。",
+      "effectText": "角色装备。持续：这个角色获得-2力量然后它的能力被取消。"
+    },
+    "spider_verse_with_great_power": {
+      "name": "能力越大…",
+      "abilityText": "一个角色获得+3力量直到回合结束。特殊：你可以在一个基地计分前打出这张牌。一个在这里的角色获得+2力量代替+3。",
+      "effectText": "一个角色获得+3力量直到回合结束。特殊：你可以在一个基地计分前打出此牌。一个在这里的角色获得+2力量代替+3。"
+    },
+    "spider_verse_friendly_neighborhood_hero": {
+      "name": "你的好邻居英雄",
+      "abilityText": "特殊：在基地计分后，将你的一个角色放在它的拥有者牌库顶。",
+      "effectText": "特殊：在基地计分后，将你的一个角色放在它的拥有者牌库顶。"
+    },
+    "ultimates_captain_marvel": {
+      "name": "惊奇队长",
+      "abilityText": "天赋：把这个角色移动到另一个基地。你当前在那里的其他角色都获得+1力量，直到回合结束。"
+    },
+    "ultimates_spectrum": {
+      "name": "光谱",
+      "abilityText": "天赋：把这个角色移动到另一个基地。"
+    },
+    "ultimates_america_chavez": {
+      "name": "美国小姐",
+      "abilityText": "持续：在另一个角色进入或离开这个基地后，这个角色获得+1力量，直到本回合结束。"
+    },
+    "ultimates_blue_marvel": {
+      "name": "蓝奇",
+      "abilityText": "持续：在这个角色移动到另一个基地后，它获得+1的力量，直到本回合结束。"
+    },
+    "ultimates_aid_from_allies": {
+      "name": "盟国的援助",
+      "abilityText": "基地神器。抽一张牌。持续：当你把一个或多个角色移动到这里后，抽一张牌。",
+      "effectText": "基地神器。抽一张牌。持续：当你把一个或多个角色移动到这里后，抽一张牌。"
+    },
+    "ultimates_coordinated_attack": {
+      "name": "协同攻击",
+      "abilityText": "选择一个基地。将你至多三个角色从其他基地移动到那里。他们每个人都获得+1力量，直到回合结束。",
+      "effectText": "选择一个基地。将你至多三个角色从其他基地移动到那里。他们每个人都获得+1力量，直到回合结束。"
+    },
+    "ultimates_cosmic_knowledge": {
+      "name": "宇宙知识",
+      "abilityText": "放置任意数量你的手牌到牌库底，抽取比你放置多一张的牌。",
+      "effectText": "放置任意数量你的手牌到牌库底，抽取比你放置多一张的牌。"
+    },
+    "ultimates_first_to_arrive": {
+      "name": "最先到达",
+      "abilityText": "在一个你没有角色的基地打出一个额外的角色。",
+      "effectText": "在一个你没有角色的基地打出一个额外的角色。"
+    },
+    "ultimates_heroic_landing": {
+      "name": "英雄登场",
+      "abilityText": "将你的任意数量的角色移动到其他基地。",
+      "effectText": "将你的任意数量的角色移动到其他基地。"
+    },
+    "ultimates_lift_and_carry": {
+      "name": "搬运",
+      "abilityText": "把一个角色移动到另一个基地。",
+      "effectText": "把一个角色移动到另一个基地。"
+    },
+    "ultimates_power_and_speed": {
+      "name": "力量与速度",
+      "abilityText": "你的一个角色获得+2力量，直到回合结束。你可以将其移动到另一个基地。",
+      "effectText": "你的一个角色获得+2力量，直到回合结束。你可以将其移动到另一个基地。"
+    },
+    "ultimates_scramble": {
+      "name": "争夺",
+      "abilityText": "把你的一个角色移动到另一个基地。特别：你可以在计分前打出。",
+      "effectText": "把你的一个角色移动到另一个基地。特殊：你可以在一个基地计分前打出此牌。"
     }
   },
   "debug": {

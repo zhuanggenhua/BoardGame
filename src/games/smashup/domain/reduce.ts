@@ -2717,13 +2717,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAY_EFFECT_QUEUED: {
-            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter'; amount: number } }).payload;
+            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower'; amount: number; reason?: string } }).payload;
             const qPlayer = state.players[qPayload.playerId];
             if (!qPlayer) return state;
             const prev = qPlayer.pendingMinionPlayEffects ?? [];
             return {
                 ...state,
-                players: { ...state.players, [qPayload.playerId]: { ...qPlayer, pendingMinionPlayEffects: [...prev, { effect: qPayload.effect, amount: qPayload.amount }] } },
+                players: { ...state.players, [qPayload.playerId]: { ...qPlayer, pendingMinionPlayEffects: [...prev, { effect: qPayload.effect, amount: qPayload.amount, ...(qPayload.reason ? { reason: qPayload.reason } : {}) }] } },
             };
         }
 

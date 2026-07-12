@@ -1163,7 +1163,42 @@
     "ninja_disguise_choose_play_title": "Disguise: choose the minion card from your hand to play",
     "ninja_disguise_choose_second_play_title": "Disguise: choose the second minion card from your hand to play",
     "faction_implementation_in_progress": "Implementation in Progress",
-    "paladins_heavenly_soldiers_descend_skip_minion_option": "Skip the extra minion"
+    "paladins_heavenly_soldiers_descend_skip_minion_option": "Skip the extra minion",
+    "avengers_hawkeye_discard_title": "Hawkeye: discard two cards",
+    "avengers_jarvis_discard_title": "J.A.R.V.I.S.: discard one card",
+    "avengers_black_widow_title": "Black Widow: you may destroy a minion here with power 5 or less",
+    "avengers_assemble_title": "Avengers Assemble: choose up to two minions in your discard pile to shuffle into your deck",
+    "avengers_repulsor_boots_move_title": "Repulsor Boots: choose a destination base",
+    "avengers_repulsor_boots_source_special_title": "Repulsor Boots: choose Iron Man to move",
+    "avengers_repulsor_boots_source_title": "Repulsor Boots: choose one of your minions to move",
+    "avengers_iron_man_destination_title": "Iron Man: choose the base to move to",
+    "avengers_iron_man_companion_title": "Iron Man: you may choose another of your minions here to move with him",
+    "avengers_thor_mjolnir_destination_title": "Thor: choose the new minion to equip Mjolnir",
+    "avengers_thor_mjolnir_source_title": "Thor: choose Mjolnir to move",
+    "avengers_hawkeyes_arrows_pick_title": "Hawkeye's Arrows: choose a revealed action to draw",
+    "avengers_hulk_smash_replace_option": "Replace base",
+    "avengers_hulk_smash_replace_title": "Hulk Smash: you may have Hulk destroy and replace this base",
+    "avengers_hulk_smash_artifacts_title": "Hulk Smash: choose any number of base artifacts on this base",
+    "avengers_modular_tech_destination_base_title": "Modular Tech: choose the artifact's new base",
+    "avengers_modular_tech_destination_minion_title": "Modular Tech: choose the equipment's new minion",
+    "avengers_modular_tech_source_fallback_option": "Ongoing action",
+    "avengers_modular_tech_source_title": "Modular Tech: choose equipment or a base artifact to move",
+    "avengers_strategize_order_first_title": "Strategize: choose the first card for the top of your deck",
+    "avengers_strategize_order_second_title": "Strategize: choose the second card for the top of your deck",
+    "shield_reassignment_title": "Reassignment: choose up to two of your minions at other bases to move to the target base",
+    "shield_superior_firepower_title": "Superior Firepower: choose a minion of power 3 or less or a base artifact",
+    "marvel_choose_base_title": "Choose a destination base",
+    "ultimates_move_with_bonus_destination_title": "Choose a destination base",
+    "ultimates_power_and_speed_move_title": "Power and Speed: you may move this minion to another base",
+    "ultimates_cosmic_knowledge_title": "Cosmic Knowledge: choose any number of cards in your hand to put on the bottom of your deck",
+    "ultimates_heroic_landing_source_title": "Heroic Landing: choose one of your minions to move, or skip to finish",
+    "ultimates_heroic_landing_destination_title": "Heroic Landing: choose a destination base",
+    "ultimates_coordinated_attack_title": "Coordinated Attack: choose up to three of your minions at other bases to move here",
+    "spider_verse_deck_order_title": "Put the remaining cards on the top and/or bottom of your deck in any order",
+    "spider_verse_deck_selection_title": "Choose one of them to put into your hand",
+    "spider_verse_view_from_above_minion_option": "Minion",
+    "spider_verse_view_from_above_action_option": "Action",
+    "spider_verse_view_from_above_title": "View from Above: declare the card type to reveal until"
   },
   "mechanics": {
     "madness": {
@@ -1607,6 +1642,22 @@
     "mythic_greeks_pod": {
       "name": "Mythic Greeks (POD)",
       "description": "Chain POD divine favors and trigger heroic action bonuses."
+    },
+    "avengers": {
+      "name": "Avengers",
+      "description": "Assemble iconic heroes, gear, and tactical bursts to swing key bases with talents, movement, and scoring-window plays."
+    },
+    "shield": {
+      "name": "S.H.I.E.L.D.",
+      "description": "Coordinate agents with extra plays, redeployments, rescue missions, and concentrated firepower."
+    },
+    "spider_verse": {
+      "name": "Spider-Verse",
+      "description": "Use special timing, deck control, protection, and attached actions to react before and after scoring."
+    },
+    "ultimates": {
+      "name": "Ultimates",
+      "description": "Exploit movement, temporary power, and hand cycling to arrive where the fight matters most."
     }
   },
   "tutorial": {
@@ -6722,6 +6773,258 @@
     "mythic_greeks_odysseus_pod": {
       "name": "Odysseus (POD)",
       "abilityText": "Ongoing: After you play an action, place a +1 power counter on one of your minions."
+    },
+    "avengers_black_widow": {
+      "name": "Black Widow",
+      "abilityText": "You may destroy a character here of power 5 or less."
+    },
+    "avengers_captain_america": {
+      "name": "Captain America",
+      "abilityText": "Talent: Each of your other characters here gains +1 power until the end of the turn."
+    },
+    "avengers_hawkeye": {
+      "name": "Hawkeye",
+      "abilityText": "Draw three cards. Discard two cards."
+    },
+    "avengers_hulk": {
+      "name": "Hulk",
+      "abilityText": "Talent: This character gains +2 power until the end of the turn."
+    },
+    "avengers_iron_man": {
+      "name": "Iron Man",
+      "abilityText": "Talent: Move this character and up to one of your other characters from here to another base."
+    },
+    "avengers_thor": {
+      "name": "Thor",
+      "abilityText": "Search your deck and/or discard pile for Mjolnir, reveal it, and draw it. If you searched your deck, shuffle it. Talent: Move Mjolnir from one character to another."
+    },
+    "avengers_assemble": {
+      "name": "Avengers Assemble",
+      "abilityText": "Shuffle up to two characters from your discard pile into your deck.",
+      "effectText": "Shuffle up to two characters from your discard pile into your deck."
+    },
+    "avengers_caps_shield": {
+      "name": "Cap's Shield",
+      "abilityText": "Character attachment. Ongoing: Your characters here are unaffected by other players' spells. If that character is Captain America, they each also gain +1 power.",
+      "effectText": "Character attachment. Ongoing: Your characters here are unaffected by other players' spells. If that character is Captain America, they each also gain +1 power."
+    },
+    "avengers_hawkeyes_arrows": {
+      "name": "Hawkeye's Arrows",
+      "abilityText": "Reveal cards from the top of your deck until you reveal two spells. Draw one spell, then shuffle the rest into your deck. If Hawkeye is in play, you may play the drawn card as an extra spell.",
+      "effectText": "Reveal cards from the top of your deck until you reveal two spells. Draw one spell, then shuffle the rest into your deck. If Hawkeye is in play, you may play the drawn card as an extra spell."
+    },
+    "avengers_hulk_smash": {
+      "name": "Hulk Smash",
+      "abilityText": "Choose a base. Destroy any number of base artifacts on that base. If Hulk is here, you may destroy this base and all attachments on it, then reveal the top card of the base deck to replace it. All characters remain on the new base.",
+      "effectText": "Choose a base. Destroy any number of base artifacts on that base. If Hulk is here, you may destroy this base and all attachments on it, then reveal the top card of the base deck to replace it. All characters remain on the new base."
+    },
+    "avengers_jarvis": {
+      "name": "J.A.R.V.I.S.",
+      "abilityText": "Base artifact. Talent: Draw a card. Discard a card.",
+      "effectText": "Base artifact. Talent: Draw a card. Discard a card."
+    },
+    "avengers_mjolnir": {
+      "name": "Mjolnir",
+      "abilityText": "Character attachment. Ongoing: If Mjolnir is attached to Thor, it has +2 power. Otherwise, it has -2 power.",
+      "effectText": "Character attachment. Ongoing: If Mjolnir is attached to Thor, it has +2 power. Otherwise, it has -2 power."
+    },
+    "avengers_modular_tech": {
+      "name": "Modular Tech",
+      "abilityText": "Move one of your attachments from one character to another, or an artifact from one base to another. Play an extra spell.",
+      "effectText": "Move one of your attachments from one character to another, or an artifact from one base to another. Play an extra spell."
+    },
+    "avengers_repulsor_boots": {
+      "name": "Repulsor Boots",
+      "abilityText": "Move one of your characters to another base. Special: Before a base scores, you may play this card to move Iron Man.",
+      "effectText": "Move one of your characters to another base. Special: Before a base scores, you may play this card to move Iron Man."
+    },
+    "avengers_strategize": {
+      "name": "Strategize",
+      "abilityText": "Look at the top four cards of your deck. Put two on top of your deck in any order. Put the rest on the bottom of your deck.",
+      "effectText": "Look at the top four cards of your deck. Put two on top of your deck in any order. Put the rest on the bottom of your deck."
+    },
+    "avengers_tactical_advantage": {
+      "name": "Tactical Advantage",
+      "abilityText": "Choose a character. It gains +3 power until the end of the turn.",
+      "effectText": "Choose a character. It gains +3 power until the end of the turn."
+    },
+    "avengers_thunder_and_lightning": {
+      "name": "Thunder and Lightning",
+      "abilityText": "Destroy a character of power 3 or less.",
+      "effectText": "Destroy a character of power 3 or less."
+    },
+    "avengers_widows_bite": {
+      "name": "Widow's Bite",
+      "abilityText": "Special: Play before a base scores. Each other player's character here gets -1 power until the end of the turn. If Black Widow is here, she gains +2 power until the end of the turn.",
+      "effectText": "Special: Play before a base scores. Each other player's character here gets -1 power until the end of the turn. If Black Widow is here, she gains +2 power until the end of the turn."
+    },
+    "shield_nick_fury": {
+      "name": "Nick Fury",
+      "abilityText": "You may play an extra character here."
+    },
+    "shield_maria_hill": {
+      "name": "Maria Hill",
+      "abilityText": "Ongoing: After you play another character here, this character gains +1 power until the end of the turn."
+    },
+    "shield_phil_coulson": {
+      "name": "Phil Coulson",
+      "abilityText": "You may play an extra character of power 2 or less here."
+    },
+    "shield_agent": {
+      "name": "S.H.I.E.L.D. Agent",
+      "abilityText": "Ongoing: If another of your characters is here, this character gains +1 power."
+    },
+    "shield_entry_point": {
+      "name": "Entry Point",
+      "abilityText": "Play an extra character.",
+      "effectText": "Play an extra character."
+    },
+    "shield_mission_debriefing": {
+      "name": "Mission Debriefing",
+      "abilityText": "Choose a base. Draw a card for each of your characters there.",
+      "effectText": "Choose a base. Draw a card for each of your characters there."
+    },
+    "shield_proving_ground": {
+      "name": "Proving Ground",
+      "abilityText": "Base artifact. Talent: Play a character of power 3 or less here as an extra character.",
+      "effectText": "Base artifact. Talent: Play a character of power 3 or less here as an extra character."
+    },
+    "shield_reassignment": {
+      "name": "Reassignment",
+      "abilityText": "Choose a base. Move up to two of your characters from other bases to here.",
+      "effectText": "Choose a base. Move up to two of your characters from other bases to here."
+    },
+    "shield_rescue_mission": {
+      "name": "Rescue Mission",
+      "abilityText": "Special: After a base scores, shuffle all of your characters there into their owners' decks, then draw a card.",
+      "effectText": "Special: After a base scores, shuffle all of your characters there into their owners' decks, then draw a card."
+    },
+    "shield_superior_firepower": {
+      "name": "Superior Firepower",
+      "abilityText": "Destroy a base artifact or a character of power 3 or less.",
+      "effectText": "Destroy a base artifact or a character of power 3 or less."
+    },
+    "shield_troop_drop": {
+      "name": "Troop Drop",
+      "abilityText": "Play an extra character of power 3 or less.",
+      "effectText": "Play an extra character of power 3 or less."
+    },
+    "shield_together": {
+      "name": "Together",
+      "abilityText": "Each character you currently have in play gains +1 power until the end of the turn.",
+      "effectText": "Each character you currently have in play gains +1 power until the end of the turn."
+    },
+    "spider_verse_spider_man": {
+      "name": "Spider-Man",
+      "abilityText": "Ongoing: After you play a card with a special ability, this character gains +1 power until the end of the turn."
+    },
+    "spider_verse_ghost_spider": {
+      "name": "Ghost-Spider",
+      "abilityText": "Look at the top three cards of your deck, draw one of them, then return the rest to the top and/or bottom of your deck in any order."
+    },
+    "spider_verse_miles_morales": {
+      "name": "Miles Morales",
+      "abilityText": "Special: Before a base scores, if you have a character there, you may play this character there and give it -1 power until the end of the turn."
+    },
+    "spider_verse_spider_man_2099": {
+      "name": "Spider-Man 2099",
+      "abilityText": "Ongoing: This character cannot be destroyed by other players' cards."
+    },
+    "spider_verse_great_responsibility": {
+      "name": "...Comes Great Responsibility",
+      "abilityText": "Play an extra character. Special: Before a base where you have a character scores, you may play it. Play an extra character here; it gets -1 power until the end of the turn.",
+      "effectText": "Play an extra character. Special: Before a base where you have a character scores, you may play it. Play an extra character here; it gets -1 power until the end of the turn."
+    },
+    "spider_verse_spider_reflexes": {
+      "name": "Spider Reflexes",
+      "abilityText": "Look at the top three cards of your deck, draw one of them, then put the rest on the top and/or bottom of your deck in any order. You may play an extra spell.",
+      "effectText": "Look at the top three cards of your deck, draw one of them, then put the rest on the top and/or bottom of your deck in any order. You may play an extra spell."
+    },
+    "spider_verse_spider_sense": {
+      "name": "Spider-Sense",
+      "abilityText": "Draw two cards. Special: You may play this after a base where you have a character scores.",
+      "effectText": "Draw two cards. Special: You may play this after a base where you have a character scores."
+    },
+    "spider_verse_bond": {
+      "name": "Spider-Verse Bond",
+      "abilityText": "Character attachment. Ongoing: This character gains +1 power for each of your other characters here.",
+      "effectText": "Character attachment. Ongoing: This character gains +1 power for each of your other characters here."
+    },
+    "spider_verse_view_from_above": {
+      "name": "The View From Above",
+      "abilityText": "Say \"character\" or \"spell\". Reveal cards from the top of your deck until you reveal a card of that type, then draw it. Shuffle the rest back into your deck.",
+      "effectText": "Say \"character\" or \"spell\". Reveal cards from the top of your deck until you reveal a card of that type, then draw it. Shuffle the rest back into your deck."
+    },
+    "spider_verse_webbed_up": {
+      "name": "Webbed Up",
+      "abilityText": "Character attachment. Ongoing: This character gets -2 power and then its ability is canceled.",
+      "effectText": "Character attachment. Ongoing: This character gets -2 power and then its ability is canceled."
+    },
+    "spider_verse_with_great_power": {
+      "name": "With Great Power...",
+      "abilityText": "A character gains +3 power until the end of the turn. Special: Before a base scores, you may play this card. A character here gains +2 power instead of +3.",
+      "effectText": "A character gains +3 power until the end of the turn. Special: Before a base scores, you may play this card. A character here gains +2 power instead of +3."
+    },
+    "spider_verse_friendly_neighborhood_hero": {
+      "name": "Your Friendly Neighborhood Hero",
+      "abilityText": "Special: After a base scores, put one of your characters on top of its owner's deck.",
+      "effectText": "Special: After a base scores, put one of your characters on top of its owner's deck."
+    },
+    "ultimates_captain_marvel": {
+      "name": "Captain Marvel",
+      "abilityText": "Talent: Move this character to another base. Your other characters currently there each gain +1 power until the end of the turn."
+    },
+    "ultimates_spectrum": {
+      "name": "Spectrum",
+      "abilityText": "Talent: Move this character to another base."
+    },
+    "ultimates_america_chavez": {
+      "name": "America Chavez",
+      "abilityText": "Ongoing: After another character enters or leaves this base, this character gains +1 power until the end of the turn."
+    },
+    "ultimates_blue_marvel": {
+      "name": "Blue Marvel",
+      "abilityText": "Ongoing: After this character moves to another base, it gains +1 power until the end of the turn."
+    },
+    "ultimates_aid_from_allies": {
+      "name": "Aid from Allies",
+      "abilityText": "Base artifact. Draw a card. Ongoing: After you move one or more characters here, draw a card.",
+      "effectText": "Base artifact. Draw a card. Ongoing: After you move one or more characters here, draw a card."
+    },
+    "ultimates_coordinated_attack": {
+      "name": "Coordinated Attack",
+      "abilityText": "Choose a base. Move up to three of your characters from other bases there. Each of them gains +1 power until the end of the turn.",
+      "effectText": "Choose a base. Move up to three of your characters from other bases there. Each of them gains +1 power until the end of the turn."
+    },
+    "ultimates_cosmic_knowledge": {
+      "name": "Cosmic Knowledge",
+      "abilityText": "Place any number of cards from your hand on the bottom of your deck, then draw one more card than the number you placed.",
+      "effectText": "Place any number of cards from your hand on the bottom of your deck, then draw one more card than the number you placed."
+    },
+    "ultimates_first_to_arrive": {
+      "name": "First to Arrive",
+      "abilityText": "Play an extra character at a base where you have no characters.",
+      "effectText": "Play an extra character at a base where you have no characters."
+    },
+    "ultimates_heroic_landing": {
+      "name": "Heroic Landing",
+      "abilityText": "Move any number of your characters to other bases.",
+      "effectText": "Move any number of your characters to other bases."
+    },
+    "ultimates_lift_and_carry": {
+      "name": "Lift and Carry",
+      "abilityText": "Move a character to another base.",
+      "effectText": "Move a character to another base."
+    },
+    "ultimates_power_and_speed": {
+      "name": "Power and Speed",
+      "abilityText": "One of your characters gains +2 power until the end of the turn. You may move it to another base.",
+      "effectText": "One of your characters gains +2 power until the end of the turn. You may move it to another base."
+    },
+    "ultimates_scramble": {
+      "name": "Scramble",
+      "abilityText": "Move one of your characters to another base. Special: You may play this before scoring.",
+      "effectText": "Move one of your characters to another base. Special: You may play this before scoring."
     }
   },
   "debug": {

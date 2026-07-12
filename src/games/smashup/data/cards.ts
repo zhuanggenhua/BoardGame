@@ -88,6 +88,10 @@ import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
 import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
 import { DRAGONS_CARDS } from './factions/dragons';
 import { SUPERHEROES_CARDS } from './factions/superheroes';
+import { AVENGERS_CARDS } from './factions/avengers';
+import { SHIELD_CARDS } from './factions/shield';
+import { SPIDER_VERSE_CARDS } from './factions/spider_verse';
+import { ULTIMATES_CARDS } from './factions/ultimates';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -241,6 +245,10 @@ registerCards(MAGICAL_GIRLS_CARDS);
 registerCards(MEGA_TROOPERS_CARDS);
 registerCards(DRAGONS_CARDS);
 registerCards(SUPERHEROES_CARDS);
+registerCards(AVENGERS_CARDS);
+registerCards(SHIELD_CARDS);
+registerCards(SPIDER_VERSE_CARDS);
+registerCards(ULTIMATES_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
