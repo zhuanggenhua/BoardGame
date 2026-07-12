@@ -25,6 +25,7 @@ const args = process.argv.slice(2);
 const allowedValueArgs = new Set([
     'channel',
     'version',
+    'display-version',
     'ota-version-base',
     'native-version',
     'expected-base-version',
@@ -57,6 +58,7 @@ Android OTA 发布脚本
 参数：
 - --channel <name>
 - --version <bundleVersion>
+- --display-version <number> 用户可见发布号；不传则从线上 latest.json 自动递增，最低 600
 - --ota-version-base <semver> 仅用于未显式 --version 时生成 OTA 内部游标；默认取 package.json.version
 - --native-version <version>
 - --expected-base-version <package.json.version>
@@ -130,6 +132,7 @@ const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.tr
 const nativeVersion = readArgValue('native-version', packageJson.version);
 const expectedBaseVersion = readArgValue('expected-base-version', '').trim();
 const explicitBundleVersion = readArgValue('version', '');
+const explicitDisplayVersion = readArgValue('display-version', '').trim();
 const requestedOtaVersionBase = readArgValue(
     'ota-version-base',
     process.env.ANDROID_OTA_VERSION_BASE?.trim() || '',
@@ -202,6 +205,7 @@ const bundleUrl = `${assetsBaseUrl}/app-updates/android/${channel}/bundles/${enc
 const latestManifestUrl = `${assetsBaseUrl}/app-updates/android/${channel}/latest.json`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;
 const validOtaVersionBasePattern = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+const MIN_ANDROID_OTA_DISPLAY_VERSION = 600;
 const releaseAndroidAppId = 'top.easyboardgame.app';
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
 
@@ -218,6 +222,39 @@ if (!explicitBundleVersion && !validOtaVersionBasePattern.test(otaVersionBase)) 
         `非法 OTA 游标基线: ${otaVersionBase || '(空)'}。`
         + ' 未显式传 --version 时，--ota-version-base 必须是类似 0.6.0 或 6.0.0 的版本号。',
     );
+}
+
+const parseDisplayVersion = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    const text = String(value).trim();
+    if (!/^\d+$/.test(text)) {
+        return null;
+    }
+    const parsed = Number.parseInt(text, 10);
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const readLatestDisplayVersion = async () => {
+    try {
+        const response = await fetch(`${latestManifestUrl}?probe=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache' },
+            signal: AbortSignal.timeout(30_000),
+        });
+        if (!response.ok) {
+            return null;
+        }
+        const latestManifest = await response.json();
+        return parseDisplayVersion(latestManifest.displayVersion);
+    } catch {
+        return null;
+    }
+};
+
+const explicitDisplayVersionNumber = parseDisplayVersion(explicitDisplayVersion);
+if (explicitDisplayVersion && explicitDisplayVersionNumber === null) {
+    throw new Error(`Android OTA 显示发布号非法：${explicitDisplayVersion}。请使用 600、601 这类非负整数。`);
 }
 
 if (!expectedBaseVersion) {
@@ -298,8 +335,17 @@ if (zipBuffer.length > MAX_ANDROID_OTA_ZIP_BYTES) {
 }
 const checksum = createHash('sha256').update(zipBuffer).digest('hex');
 const publishedAt = new Date();
+const latestDisplayVersion = await readLatestDisplayVersion();
+const displayVersion = String(
+    explicitDisplayVersionNumber ?? Math.max(
+        MIN_ANDROID_OTA_DISPLAY_VERSION,
+        (latestDisplayVersion ?? (MIN_ANDROID_OTA_DISPLAY_VERSION - 1)) + 1,
+    ),
+);
 const manifest = {
     version: bundleVersion,
+    displayVersion,
+    productVersion: packageJson.version,
     url: bundleUrl,
     checksum,
     channel,
@@ -361,6 +407,8 @@ const distStats = statSync(path.join(distDir, 'index.html'));
 console.log(dryRun ? 'OTA bundle 预演完成（未上传）' : 'OTA bundle 已发布');
 console.log(`channel=${channel}`);
 console.log(`bundleVersion=${bundleVersion}`);
+console.log(`displayVersion=${displayVersion}`);
+console.log(`productVersion=${packageJson.version}`);
 console.log(`bundleVersionHumanTime=${bundleVersionHumanTime}`);
 console.log(`otaVersionBase=${explicitBundleVersion ? '(explicit-version)' : otaVersionBase}`);
 console.log(`nativeVersion=${nativeVersion}`);

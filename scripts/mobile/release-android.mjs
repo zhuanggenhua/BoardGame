@@ -41,6 +41,7 @@ ota / native / full 额外选项:
 
 ota 额外选项:
   --version <bundleVersion>     显式指定 OTA 内部游标
+  --display-version <number>    显式指定用户可见更新号；不传则从线上 latest.json 自动递增，最低 600
 
 ota / full 额外选项:
   --ota-version-base <semver>   未显式 --version 时的 OTA 游标基线，可与产品版本解耦
@@ -233,6 +234,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
         'version',
+        'display-version',
         'ota-version-base',
         'native-version',
         'expected-base-version',

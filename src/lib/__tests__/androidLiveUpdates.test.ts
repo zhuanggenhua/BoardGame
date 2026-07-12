@@ -12,7 +12,6 @@ import {
     shouldTryAllSocketTransports,
 } from '../socketConnectionConfig';
 import {
-    checkAndroidNativeUpdateAvailability,
     fetchAndroidNativeUpdateManifest,
     isAndroidNativeUpdateAvailable,
     readAndroidNativeUpdateConfig,
@@ -417,6 +416,74 @@ describe('androidLiveUpdates', () => {
             enabled: true,
             nativeAndroid: true,
             updaterLoaded: false,
+        });
+    });
+
+    it('读取 OTA 快照时会保留用户可见更新号', async () => {
+        vi.resetModules();
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: vi.fn().mockResolvedValue({
+                    native: '0.6.4',
+                    bundle: {
+                        id: 'bundle-current',
+                        version: '6.0.0-ota-2026-07-12T02-09-07-688Z',
+                        downloaded: '2026-07-12T02:10:17.804Z',
+                        checksum: 'abc',
+                        status: 'success',
+                    },
+                }),
+                list: vi.fn(),
+                download: vi.fn(),
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: vi.fn(),
+            },
+        }));
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            status: 200,
+            ok: true,
+            headers: {
+                get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+            },
+            json: async () => ({
+                version: '6.0.0-ota-2026-07-12T02-09-07-688Z',
+                displayVersion: '600',
+                productVersion: '0.6.4',
+                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/6.0.0-ota-2026-07-12T02-09-07-688Z.zip',
+                checksum: 'abc',
+                channel: 'stable',
+                forceUpdate: true,
+            }),
+        }));
+
+        const { readAndroidLiveUpdateSnapshot } = await import('../mobile/androidLiveUpdates');
+        const snapshot = await readAndroidLiveUpdateSnapshot({
+            includeManifest: true,
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+            },
+        });
+
+        expect(snapshot).toMatchObject({
+            currentBundleVersion: '6.0.0-ota-2026-07-12T02-09-07-688Z',
+            currentDisplayVersion: '600',
+            manifestVersion: '6.0.0-ota-2026-07-12T02-09-07-688Z',
+            manifestDisplayVersion: '600',
+            manifestProductVersion: '0.6.4',
         });
     });
 

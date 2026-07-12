@@ -24,6 +24,10 @@ on:
         description: '显式 OTA bundle 内部游标（可选；留空自动按 OTA Version Base + UTC 时间生成）'
         required: false
         type: string
+      display_version:
+        description: '用户可见更新号（可选，例如 600、601；留空自动递增，最低 600）'
+        required: false
+        type: string
       ota_version_base:
         description: 'OTA 内部游标基线（可选，例如 6.0.0 用于桥接旧客户端；留空默认 package.json.version）'
         required: false
@@ -82,6 +86,7 @@ jobs:
             force_update_message="${{ inputs.force_update_message }}"
             expected_base_version="${{ inputs.expected_base_version }}"
             explicit_version="${{ inputs.version }}"
+            display_version="${{ inputs.display_version }}"
             ota_version_base="${{ inputs.ota_version_base }}"
             source_mode="manual"
           else
@@ -108,6 +113,7 @@ jobs:
             echo "target_ref=${target_ref}"
             echo "expected_base_version=${expected_base_version}"
             echo "explicit_version=${explicit_version}"
+            echo "display_version=${display_version}"
             echo "ota_version_base=${ota_version_base}"
             echo "dry_run=${dry_run}"
             echo "skip_latest=${skip_latest}"
@@ -289,6 +295,10 @@ jobs:
             args+=(--force-update-message "${{ steps.params.outputs.force_update_message }}")
           fi
 
+          if [[ -n "${{ steps.params.outputs.display_version }}" ]]; then
+            args+=(--display-version "${{ steps.params.outputs.display_version }}")
+          fi
+
           npm run mobile:android:ota:publish -- "${args[@]}"
 
       - name: Write workflow summary
@@ -306,6 +316,7 @@ jobs:
             echo "| Expected Base Version | ${{ steps.params.outputs.expected_base_version || '未提供' }} |"
             echo "| OTA Version Base | ${{ steps.bundle.outputs.ota_version_base || '未生成' }} |"
             echo "| Bundle Version | ${{ steps.bundle.outputs.bundle_version || '未生成' }} |"
+            echo "| Display Version | ${{ steps.params.outputs.display_version || '自动递增' }} |"
             echo "| Dry Run | ${{ steps.params.outputs.dry_run }} |"
             echo "| Skip Latest | ${{ steps.params.outputs.skip_latest }} |"
             echo "| Force Update | true（项目硬门禁） |"
