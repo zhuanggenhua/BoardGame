@@ -48,6 +48,7 @@ import {
 import { createLobbyCoordinator } from './src/server/lobbyCoordinator';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
+import { shouldRefreshPublicRoomSummaryAfterCommand } from './src/games/serverLobbySummary';
 import { getAiSeatIds } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
 import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
@@ -484,6 +485,12 @@ const gameTransport = new GameTransportServer({
         const game = normalizeGameName(gameName);
         if (game && isSupportedGame(game)) {
             lobbyCoordinator.scheduleLobbySnapshot(game, `gameover: ${matchID}`);
+        }
+    },
+    onCommandSucceeded: (matchID, gameName, commandType) => {
+        const game = normalizeGameName(gameName);
+        if (game && isSupportedGame(game) && shouldRefreshPublicRoomSummaryAfterCommand(game, commandType)) {
+            lobbyCoordinator.scheduleLobbySnapshot(game, `command:${commandType}:${matchID}`);
         }
     },
 });

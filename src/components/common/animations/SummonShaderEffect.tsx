@@ -20,6 +20,7 @@ import React from 'react';
 import { ShaderCanvas } from '../../../engine/fx/shader/ShaderCanvas';
 import { SUMMON_FRAG } from '../../../engine/fx/shader/shaders/summon.frag';
 import { registerShader } from '../../../engine/fx/shader/ShaderPrecompile';
+import type { FxQuality } from '../../../engine/fx';
 import type { SummonIntensity, SummonColorTheme, SummonColorSet } from './SummonEffect';
 
 // 模块加载时自动注册 shader 到预编译队列
@@ -38,6 +39,7 @@ export interface SummonShaderEffectProps {
   originY?: number;
   /** 暗角遮罩强度（0=无遮罩 1=最暗，默认 0.55） */
   dimStrength?: number;
+  quality?: FxQuality;
   onComplete?: () => void;
   className?: string;
 }
@@ -99,6 +101,7 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
   customColors,
   originY = 0.78,
   dimStrength = 0.55,
+  quality = 'full',
   onComplete,
   className = '',
 }) => {
@@ -129,6 +132,8 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
       duration={dur}
       onComplete={onComplete}
       maxDpr={1}
+      quality={quality}
+      reducedMaxDpr={1}
       className={`absolute inset-0 ${className}`}
     />
   );

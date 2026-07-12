@@ -2564,6 +2564,17 @@ function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set
         if (fixedTargetRoomId) {
             connectedIds.add(fixedTargetRoomId);
         }
+        if (room.markerTokens?.includes('secretPassage')) {
+            for (const secretPassageRoom of rooms) {
+                if (
+                    secretPassageRoom.id !== room.id
+                    && secretPassageRoom.state === 'discovered'
+                    && secretPassageRoom.markerTokens?.includes('secretPassage')
+                ) {
+                    connectedIds.add(secretPassageRoom.id);
+                }
+            }
+        }
     }
     for (const sourceRoom of rooms) {
         if (sourceRoom.state !== 'discovered') {

@@ -34,6 +34,29 @@ export type FxCue = string;
 /** 特效坐标空间 */
 export type FxSpace = 'cell' | 'screen' | 'ui';
 
+/** 特效质量档：full 保留完整表现，reduced 保留主体表现但降低移动端重绘成本 */
+export type FxQuality = 'full' | 'reduced';
+
+/** 特效影响区域，用于声明预算和后续统一调度 */
+export type FxAreaPolicy = 'cell' | 'path' | 'area' | 'screen';
+
+/** 特效预估成本，用于注册表和调度层做并发/降级决策 */
+export type FxEstimatedCost = 'low' | 'medium' | 'high';
+
+/** 特效性能预算：声明 DPR、影响区域、成本和默认质量档 */
+export interface FxPerformanceBudget {
+  /** 默认质量档，运行时可通过 ctx/params 覆盖 */
+  quality?: FxQuality;
+  /** full 档 DPR 上限 */
+  maxDpr?: number;
+  /** reduced 档 DPR 上限 */
+  reducedMaxDpr?: number;
+  /** 影响区域：格子、路径、局部区域或整屏 */
+  areaPolicy?: FxAreaPolicy;
+  /** 预估成本，用于限制高成本特效并发 */
+  estimatedCost?: FxEstimatedCost;
+}
+
 /** 棋盘格坐标 */
 export interface FxCellCoord {
   row: number;
@@ -54,6 +77,8 @@ export interface FxContext {
   screenPos?: { xPct: number; yPct: number };
   /** 强度 */
   intensity?: 'normal' | 'strong';
+  /** 特效质量档；通常由设置或调度层注入 */
+  quality?: FxQuality;
   /** 自定义标签（用于过滤/查询） */
   tags?: string[];
 }
@@ -181,13 +206,15 @@ export interface FxRendererOptions {
   debounceMs?: number;
   /** 安全超时（ms，超时自动移除，默认 5000） */
   timeoutMs?: number;
+  /** 性能预算（DPR、区域、成本、默认质量档） */
+  budget?: FxPerformanceBudget;
 }
 
 /** 注册表中存储的完整条目 */
 export interface FxRegistryEntry {
   cue: FxCue;
   renderer: FxRenderer;
-  options: Required<FxRendererOptions>;
+  options: Required<Omit<FxRendererOptions, 'budget'>> & { budget: Required<FxPerformanceBudget> };
   /** 反馈包：音效 + 震动（注册时声明，运行时自动触发） */
   feedback?: FeedbackPack;
 }

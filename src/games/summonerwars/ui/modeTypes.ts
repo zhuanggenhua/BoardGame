@@ -32,6 +32,20 @@ export interface ChantEntanglementModeState {
   selectedTargets: CellCoord[]; // 最多2个
 }
 
+/** 莫古：共生自愈任意数量目标选择模式 */
+export interface MoguSymbioticSelfHealingModeState {
+  cardId: string;
+  validTargets: CellCoord[];
+  selectedTargets: CellCoord[];
+}
+
+/** 莫古：释放菌袍至多两个落位选择模式 */
+export interface MoguReleaseSporesModeState {
+  cardId: string;
+  validTargets: CellCoord[];
+  selectedTargets: CellCoord[];
+}
+
 /** 撤退模式：选费用→选目标位置 */
 export interface WithdrawModeState {
   sourceUnitId: string;

@@ -178,6 +178,7 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
     const currentBgmKeyRef = useRef<string | null>(null);
     const currentBgmGroupRef = useRef<BgmGroupId | null>(null);
     const contextualPreloadRef = useRef<Set<SoundKey>>(new Set());
+    const warmPreloadRef = useRef<Set<SoundKey>>(new Set());
     const { setPlaylist, playBgm, stopBgm, bgmSelections, setActiveBgmContext } = useAudio();
     const [registryLoaded, setRegistryLoaded] = useState(false);
     const eventEntriesVersion = (() => {
@@ -337,6 +338,20 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
         // preloadKeys 内部已走 requestIdleCallback 空闲调度，不会与图片竞争连接
         AudioManager.preloadKeys(pending);
     }, [registryLoaded, contextualPreloadSignature, contextualPreloadKeys.length]);
+
+    useEffect(() => {
+        if (!registryLoaded || !initializedRef.current) return;
+        if (!config.warmSounds || config.warmSounds.length === 0) return;
+
+        const criticalSounds = new Set(config.criticalSounds ?? []);
+        const uniqueKeys = Array.from(new Set(config.warmSounds)).filter((key) => !criticalSounds.has(key));
+        const pending = uniqueKeys.filter((key) => !warmPreloadRef.current.has(key));
+        if (pending.length === 0) return;
+
+        pending.forEach((key) => warmPreloadRef.current.add(key));
+        // 非核心预热复用 preloadKeys 的关键图片/BGM/空闲调度，不阻塞进入房间。
+        AudioManager.preloadKeys(pending);
+    }, [registryLoaded, config.warmSounds, config.criticalSounds]);
 
     useEffect(() => {
         if (!initializedRef.current || !registryLoaded) return;

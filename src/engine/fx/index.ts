@@ -27,6 +27,10 @@ export type {
   FxSpace,
   FxCellCoord,
   FxContext,
+  FxQuality,
+  FxAreaPolicy,
+  FxEstimatedCost,
+  FxPerformanceBudget,
   FxParams,
   FxEvent,
   FxEventInput,
@@ -38,6 +42,14 @@ export type {
   FxShakeConfig,
   FeedbackPack,
 } from './types';
+
+export {
+  resolveFxQuality,
+  resolveFxDpr,
+  setupCanvas2d,
+  type FxDprOptions,
+  type FxCanvasSize,
+} from './performance';
 
 // 注册表
 export { FxRegistry } from './FxRegistry';

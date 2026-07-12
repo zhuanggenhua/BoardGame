@@ -136,6 +136,12 @@ export interface GameAudioConfig {
      */
     criticalSounds?: SoundKey[];
     /**
+     * 非核心音效列表（进入游戏后后台预热）
+     * 用于不影响首屏交互、但用户进入房间后可尽早准备的补充音效。
+     * 实际加载仍由 AudioManager 等关键图片放行或超时后再空闲分批执行。
+     */
+    warmSounds?: SoundKey[];
+    /**
      * 上下文预加载音效（选派系/卡组后增量预热）
      * 用于派系/卡组等可预测但不适合全量预加载的音效。
      */

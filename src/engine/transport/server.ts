@@ -883,6 +883,8 @@ export interface GameTransportServerConfig {
     ) => boolean | Promise<boolean>;
     /** 游戏结束回调（可选） */
     onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
+    /** 命令成功后回调（可选），用于刷新大厅摘要等非游戏状态视图 */
+    onCommandSucceeded?: (matchID: string, gameName: string, commandType: string) => void;
     trainingDataRecorder?: TrainingDataRecorder;
     trainingDataMinCompletedMatchDurationMs?: number;
     rulesVersion?: string | null;
@@ -906,6 +908,7 @@ export class GameTransportServer {
     private readonly offlineGraceMs: number;
     private readonly authenticate?: GameTransportServerConfig['authenticate'];
     private readonly onGameOver?: GameTransportServerConfig['onGameOver'];
+    private readonly onCommandSucceeded?: GameTransportServerConfig['onCommandSucceeded'];
     private readonly trainingDataRecorder?: TrainingDataRecorder;
     private readonly trainingDataMinCompletedMatchDurationMs: number | null;
     private readonly rulesVersion: string | null;
@@ -934,6 +937,7 @@ export class GameTransportServer {
         this.offlineGraceMs = config.offlineGraceMs ?? 30000;
         this.authenticate = config.authenticate;
         this.onGameOver = config.onGameOver;
+        this.onCommandSucceeded = config.onCommandSucceeded;
         this.trainingDataRecorder = config.trainingDataRecorder;
         this.trainingDataMinCompletedMatchDurationMs = (
             Number.isFinite(config.trainingDataMinCompletedMatchDurationMs)
@@ -4567,6 +4571,7 @@ export class GameTransportServer {
             randomCursor: match.getRandomCursor(),
         };
         await this.storage.setState(match.matchID, storedState);
+        this.onCommandSucceeded?.(match.matchID, engineConfig.gameId, effectiveCommandType);
 
         const gameOver = result.state.sys.gameover;
         const postTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;

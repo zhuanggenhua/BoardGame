@@ -124,6 +124,11 @@ type TheGangHarnessState = {
         rules?: {
             config?: {
                 gameMode?: string;
+                exitChipMode?: string;
+                omaha?: boolean;
+                twoHand?: boolean;
+                automode?: boolean;
+                antiTroll?: boolean;
                 challenges?: Record<string, number>;
             };
         };
@@ -238,20 +243,46 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByTestId('the-gang-rules-modal')).toBeVisible();
         await page.getByTestId('the-gang-mode-seven-card-stud').click();
         await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-pressed', 'true');
-        await game.screenshot('桌面正式规则设置弹窗已切到七张梭哈', testInfo);
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('data-state', 'selected');
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toContainText('已选择');
+        await expect(page.getByTestId('the-gang-rule-toggle-omaha')).toBeVisible();
+        await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toBeVisible();
+        await expect(page.getByTestId('the-gang-rule-toggle-automode')).toBeVisible();
+        await expect(page.getByTestId('the-gang-rule-toggle-antiTroll')).toBeVisible();
+        await expect(page.getByTestId('the-gang-exit-mode-mastermind')).toBeVisible();
+        await page.getByTestId('the-gang-rule-toggle-omaha').click();
+        await page.getByTestId('the-gang-exit-mode-mastermind').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-omaha')).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByTestId('the-gang-exit-mode-mastermind')).toHaveAttribute('aria-pressed', 'true');
+        const quickAccessCard = page.getByRole('img', { name: '快速通道' });
+        await expect(quickAccessCard).toHaveAttribute('data-debug-current-src', /\/assets\/i18n\/zh-CN\/the-gang\/rule-assets\/challenges\/compressed\/quick-access\.webp/);
+        await expect
+            .poll(async () => quickAccessCard.evaluate((img) => (img as HTMLImageElement).naturalWidth), { message: '等待 TTS 快速通道挑战卡图加载完成' })
+            .toBeGreaterThan(0);
+        await game.screenshot('桌面正式规则设置弹窗已覆盖TTS开局配置', testInfo);
         await page.getByRole('button', { name: '确认设置' }).click();
         await expect
             .poll(async () => {
                 const state = await getTheGangState(page);
                 return {
                     gameMode: state?.core?.rules?.config?.gameMode,
+                    exitChipMode: state?.core?.rules?.config?.exitChipMode,
+                    omaha: state?.core?.rules?.config?.omaha,
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                    automode: state?.core?.rules?.config?.automode,
+                    antiTroll: state?.core?.rules?.config?.antiTroll,
                     handCards: state?.core?.players?.['0']?.pocketCards?.length,
                     personalCommunityCards: state?.core?.players?.['0']?.communityCards?.length,
                     sharedCommunityCards: state?.core?.communityCards?.length,
                 };
-            }, { message: '等待七张梭哈扩展配置通过真实入口生效' })
+            }, { message: '等待 TTS 开局配置通过真实入口生效' })
             .toEqual({
                 gameMode: 'seven-card-stud',
+                exitChipMode: 'mastermind',
+                omaha: true,
+                twoHand: false,
+                automode: false,
+                antiTroll: false,
                 handCards: 3,
                 personalCommunityCards: 1,
                 sharedCommunityCards: 0,
@@ -259,15 +290,144 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         const toolsPanel = page.getByTestId('the-gang-tools-panel');
         await expect(toolsPanel).toBeVisible();
-        await page.getByRole('button', { name: '发放工具牌' }).click();
+        await expect(toolsPanel.getByRole('button', { name: '重设工具牌' })).toBeVisible();
+        await expect(toolsPanel.getByRole('button', { name: '重设专家牌' })).toBeVisible();
+        await game.screenshot('桌面工具专家承载区空态', testInfo);
+
+        let localTools: string[] = [];
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            await toolsPanel.getByRole('button', { name: '发放工具牌' }).click();
+            await expect
+                .poll(async () => {
+                    const state = await getTheGangState(page);
+                    return {
+                        allToolCounts: Object.values(state?.core?.players ?? {})
+                            .map((player) => player.toolCards?.length ?? 0),
+                        localTools: state?.core?.players?.['0']?.toolCards ?? [],
+                    };
+                }, { message: '等待工具牌通过真实入口发到每名玩家手中' })
+                .toEqual({
+                    allToolCounts: [1, 1, 1],
+                    localTools: expect.arrayContaining([expect.any(String)]),
+                });
+            const state = await getTheGangState(page);
+            localTools = state?.core?.players?.['0']?.toolCards ?? [];
+            if (localTools.includes('burner-phone')) break;
+            await toolsPanel.getByRole('button', { name: '重设工具牌' }).click();
+            await expect
+                .poll(async () => {
+                    const stateAfterReset = await getTheGangState(page);
+                    return {
+                        allToolCounts: Object.values(stateAfterReset?.core?.players ?? {})
+                            .map((player) => player.toolCards?.length ?? 0),
+                        toolDeck: stateAfterReset?.core?.toolDeck?.length,
+                    };
+                }, { message: '等待工具牌重设回牌堆' })
+                .toEqual({
+                    allToolCounts: [0, 0, 0],
+                    toolDeck: 12,
+                });
+        }
+        expect(localTools).toContain('burner-phone');
         await expect
             .poll(async () => {
                 const state = await getTheGangState(page);
-                return Object.values(state?.core?.players ?? {})
-                    .map((player) => player.toolCards?.length ?? 0);
+                return {
+                    allToolCounts: Object.values(state?.core?.players ?? {})
+                        .map((player) => player.toolCards?.length ?? 0),
+                    localTools: state?.core?.players?.['0']?.toolCards ?? [],
+                };
             }, { message: '等待工具牌通过真实入口发到每名玩家手中' })
-            .toEqual([1, 1, 1]);
+            .toEqual({
+                allToolCounts: [1, 1, 1],
+                localTools: expect.arrayContaining([expect.any(String)]),
+            });
+        const localToolGrid = page.getByTestId('the-gang-tool-card-grid');
+        await expect(localToolGrid).toBeVisible();
+        const dealtToolCard = localToolGrid.locator('img[data-debug-current-src*="/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/"]').first();
+        await expect(dealtToolCard).toBeVisible();
+        await expect
+            .poll(async () => dealtToolCard.evaluate((img) => (img as HTMLImageElement).naturalWidth), { message: '等待 TTS 工具牌图加载完成' })
+            .toBeGreaterThan(0);
+        await expect
+            .poll(async () => dealtToolCard.evaluate((img) => {
+                const rect = (img as HTMLImageElement).getBoundingClientRect();
+                return Math.round(rect.width);
+            }), { message: '等待 TTS 工具牌作为面板主体显示' })
+            .toBeGreaterThanOrEqual(130);
+        await expect
+            .poll(async () => dealtToolCard.evaluate((img) => {
+                const cardShell = img.parentElement;
+                return cardShell ? window.getComputedStyle(cardShell).opacity : '';
+            }), { message: '等待 TTS 工具牌正面不被禁用态透明度压暗' })
+            .toBe('1');
         await game.screenshot('桌面工具专家牌区已发放工具牌', testInfo);
+
+        await localToolGrid.getByRole('button', { name: /一次性手机/ }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    localTools: state?.core?.players?.['0']?.toolCards ?? [],
+                    activeTools: state?.core?.players?.['0']?.activeTools ?? [],
+                    localSpecialists: state?.core?.players?.['0']?.specialistCards ?? [],
+                    specialistDeck: state?.core?.specialistDeck?.length,
+                    toolDiscardPile: state?.core?.toolDiscardPile ?? [],
+                };
+            }, { message: '等待一次性手机按 TTS 脚本抽出 2 张专家牌' })
+            .toEqual({
+                localTools: [],
+                activeTools: expect.arrayContaining(['burner-phone']),
+                localSpecialists: expect.arrayContaining([expect.any(String), expect.any(String)]),
+                specialistDeck: 8,
+                toolDiscardPile: expect.arrayContaining(['burner-phone']),
+            });
+        const localSpecialistGrid = page.getByTestId('the-gang-specialist-card-grid');
+        await expect(localSpecialistGrid).toBeVisible();
+        const specialistCards = localSpecialistGrid.locator('img[data-debug-current-src*="/assets/i18n/zh-CN/the-gang/rule-assets/specialists/compressed/"]');
+        await expect(specialistCards).toHaveCount(2);
+        await expect
+            .poll(async () => specialistCards.first().evaluate((img) => (img as HTMLImageElement).naturalWidth), { message: '等待 TTS 专家牌图加载完成' })
+            .toBeGreaterThan(0);
+        await game.screenshot('桌面一次性手机抽出专家牌', testInfo);
+
+        await toolsPanel.getByRole('button', { name: '重设专家牌' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    localSpecialists: state?.core?.players?.['0']?.specialistCards ?? [],
+                    specialistDeck: state?.core?.specialistDeck?.length,
+                    specialistDiscardPile: state?.core?.specialistDiscardPile ?? [],
+                };
+            }, { message: '等待专家牌重设回专家牌堆' })
+            .toEqual({
+                localSpecialists: [],
+                specialistDeck: 10,
+                specialistDiscardPile: [],
+            });
+        await expect(page.getByTestId('the-gang-specialist-card-grid')).toHaveCount(0);
+        await game.screenshot('桌面专家牌区重设后回到承载面', testInfo);
+
+        await toolsPanel.getByRole('button', { name: '重设工具牌' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    localTools: state?.core?.players?.['0']?.toolCards ?? [],
+                    activeTools: state?.core?.players?.['0']?.activeTools ?? [],
+                    toolDeck: state?.core?.toolDeck?.length,
+                    toolDiscardPile: state?.core?.toolDiscardPile ?? [],
+                };
+            }, { message: '等待工具牌重设回工具牌堆' })
+            .toEqual({
+                localTools: [],
+                activeTools: [],
+                toolDeck: 12,
+                toolDiscardPile: [],
+            });
+        await expect(page.getByTestId('the-gang-tool-card-grid')).toHaveCount(0);
+        await game.screenshot('桌面工具牌区重设后回到承载面', testInfo);
     });
 
     test('桌面端 6 人满人数布局可显示所有玩家席位', async ({ game, page }, testInfo) => {
@@ -285,6 +445,10 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
+        await page.getByTestId('the-gang-hand-rank-nameplate-toggle').click();
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toBeVisible();
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toContainText('等待公共牌');
         await expect(page.getByTestId('the-gang-hotseat-switcher')).toHaveCount(0);
         await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(5);
         await expectChipRoundForPlayerCount(page, '白筹码', 6);
@@ -497,10 +661,27 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '高牌' })).toBeVisible();
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '皇家同花顺' })).toBeVisible();
-        await game.screenshot('桌面牌型辅助表展开', testInfo);
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
+        await page.getByTestId('the-gang-hand-rank-nameplate-toggle').click();
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toContainText('等待公共牌');
+        await game.screenshot('桌面牌型辅助表展开且当前牌型等待公共牌', testInfo);
 
         await expectChipRound(page, '白筹码');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeDisabled();
+        const initialLayoutGeometry = await page.evaluate(() => {
+            const middle = document.querySelector('[data-bgg-zone="middle-zone"]')?.getBoundingClientRect();
+            const hand = document.querySelector('[data-bgg-zone="hand-groupzone"]')?.getBoundingClientRect();
+            const bottom = document.querySelector('[data-bgg-zone="bottom-zone"]');
+            return {
+                middleBottom: middle?.bottom ?? 0,
+                handTop: hand?.top ?? 0,
+                handBottomGap: window.innerHeight - (hand?.bottom ?? 0),
+                bottomPosition: bottom ? getComputedStyle(bottom).position : '',
+            };
+        });
+        expect(initialLayoutGeometry.bottomPosition).toBe('absolute');
+        expect(initialLayoutGeometry.middleBottom).toBeGreaterThan(initialLayoutGeometry.handTop);
+        expect(initialLayoutGeometry.handBottomGap).toBeLessThan(140);
         await game.screenshot('桌面首轮可操作状态', testInfo);
 
         await chooseAllPlayerChips(page, '白筹码');
@@ -511,6 +692,11 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await confirmProgressForAllPlayers(page, '下一轮');
         await expectChipRound(page, '黄筹码');
+        await expect(page.getByTestId('the-gang-current-hand-rank')).not.toContainText('等待公共牌');
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toContainText(/高牌|一对|两对|三条|顺子|同花|葫芦|四条|五花|五花顺|五条|同花顺|皇家同花顺|公共牌最大/u);
+        await expect(page.getByTestId('the-gang-current-hand-rank-detail')).toHaveCount(0);
+        await expect(page.getByTestId('the-gang-current-hand-rank-best-cards')).toHaveCount(0);
+        await game.screenshot('桌面局中自动牌型提示和辅助表展开', testInfo);
         await chooseAllPlayerChips(page, '黄筹码');
 
         await confirmProgressForAllPlayers(page, '下一轮');
@@ -524,6 +710,17 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await chooseRoundChipsByCommand(page, { 1: 1, 2: 3 });
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
         await expectMiddleRoundFullState(page);
+        const fullLayoutGeometry = await page.evaluate(() => {
+            const middle = document.querySelector('[data-bgg-zone="middle-zone"]')?.getBoundingClientRect();
+            const hand = document.querySelector('[data-bgg-zone="hand-groupzone"]')?.getBoundingClientRect();
+            return {
+                middleBottom: middle?.bottom ?? 0,
+                handTop: hand?.top ?? 0,
+                handBottomGap: window.innerHeight - (hand?.bottom ?? 0),
+            };
+        });
+        expect(fullLayoutGeometry.middleBottom).toBeGreaterThan(fullLayoutGeometry.handTop);
+        expect(fullLayoutGeometry.handBottomGap).toBeLessThan(140);
         await game.screenshot('桌面中局满元素已拿新筹码待摊牌', testInfo);
 
         await confirmProgressForAllPlayers(page, '摊牌');

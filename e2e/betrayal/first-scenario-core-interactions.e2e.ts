@@ -241,6 +241,7 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await expect(page.getByText('首剧本开始：恶兆前探索')).toBeHidden();
         await expect(page.getByTestId('betrayal-room-focus-target')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-trade-shortcut')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-room-trade-status-cue')).toHaveCount(0);
         await assertTradeLayoutDoesNotCoverMap(page);
         await assertTradeActionBarKeepsButtons(page);
         await saveScreenshot(page, TRADE_INITIAL_SCREENSHOT);
@@ -252,9 +253,15 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await saveScreenshot(page, TRADE_ITEM_SELECTED_SCREENSHOT);
 
-        await page.getByTestId('betrayal-bottom-teammate-1').click();
+        const mapTeammateTarget = page.getByTestId('betrayal-room-occupant-hallway-1');
+        await expect(mapTeammateTarget, '交易目标主路径必须点击地图上的队友 token 本体').toBeVisible();
+        await expect(mapTeammateTarget, '地图队友 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-hallway-1'), '地图队友 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
+        await mapTeammateTarget.click();
         await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('兔脚');
-        await expect(page.getByTestId('betrayal-trade-target-1')).toContainText('丽贝卡·艾伦博士');
+        await expect(page.getByTestId('betrayal-trade-target-1')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-trade-status')).toContainText('可交易给');
+        await expect(page.getByTestId('betrayal-trade-status')).toContainText('AI 2 号位');
         await assertTradeLayoutDoesNotCoverMap(page);
         await assertTradeActionBarKeepsButtons(page);
         await assertSelectedInventoryCardHasVisibleOutline(page);
@@ -306,9 +313,12 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-action-use')).toContainText('调查杰克');
         await expect(page.getByTestId('betrayal-room-focus-target')).toContainText('调查杰克');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toHaveAttribute('data-role', 'status');
+        await expect(page.getByTestId('betrayal-room-upper-west')).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-focus-card-highlight-upper-west')).toHaveAttribute('data-highlight-shape', 'room');
         await saveScreenshot(page, LEARN_READY_SCREENSHOT);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
-        await page.getByTestId('betrayal-action-use').click();
+        await page.getByTestId('betrayal-room-upper-west').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/Crimson Jack|线索|查到/);
         await saveScreenshot(page, LEARN_DONE_SCREENSHOT);
 
@@ -327,6 +337,9 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-action-use')).toContainText('调查杰克');
         await expect(page.getByTestId('betrayal-room-focus-target')).toContainText('调查杰克');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toHaveAttribute('data-role', 'status');
+        await expect(page.getByTestId('betrayal-room-upper-west')).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-focus-card-highlight-upper-west')).toHaveAttribute('data-highlight-shape', 'room');
         await expect.poll(async () => page.evaluate(() => {
             const state = (window as typeof window & {
                 __BG_TEST_HARNESS__?: {
@@ -344,7 +357,7 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await saveScreenshot(page, LEARN_TEAMMATE_READY_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
-        await page.getByTestId('betrayal-action-use').click();
+        await page.getByTestId('betrayal-room-upper-west').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/Crimson Jack|线索|交给|丽贝卡/);
         await expect.poll(async () => page.evaluate(() => {
             const state = (window as typeof window & {
@@ -360,7 +373,7 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
             }).__BG_TEST_HARNESS__?.state?.get?.();
             return state?.core?.scenarioRuntime?.knowledgeOfJackPlayerIds ?? [];
         })).toEqual(['0', '1']);
-        await expect(page.getByTestId('betrayal-bottom-teammate-knowledge-1')).toContainText('Knowledge of Jack');
+        await expect(page.getByTestId('betrayal-bottom-teammate-knowledge-1')).toContainText('掌握杰克线索');
         await saveScreenshot(page, LEARN_TEAMMATE_DONE_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-first-scenario-learn-jack-for-teammate-interaction', diagnostics }]);
@@ -375,9 +388,12 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-action-use')).toContainText('研究法阵');
         await expect(page.getByTestId('betrayal-room-focus-target')).toContainText('研究法阵');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toHaveAttribute('data-role', 'status');
+        await expect(page.getByTestId('betrayal-room-upper-north')).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-focus-card-highlight-upper-north')).toHaveAttribute('data-highlight-shape', 'room');
         await saveScreenshot(page, STUDY_READY_SCREENSHOT);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
-        await page.getByTestId('betrayal-action-use').click();
+        await page.getByTestId('betrayal-room-upper-north').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/法阵|驱魔|研究/);
         await saveScreenshot(page, STUDY_DONE_SCREENSHOT);
 
@@ -397,10 +413,13 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-action-use')).toContainText('驱魔');
         await expect(page.getByTestId('betrayal-room-focus-target')).toContainText(/驱魔|驱散杰克之灵/);
+        await expect(page.getByTestId('betrayal-room-focus-target')).toHaveAttribute('data-role', 'status');
+        await expect(page.getByTestId('betrayal-room-basement-landing')).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-focus-card-highlight-basement-landing')).toHaveAttribute('data-highlight-shape', 'room');
         await saveScreenshot(page, EXORCISE_NO_CIRCLE_READY_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.01]);
-        await page.getByTestId('betrayal-action-use').click();
+        await page.getByTestId('betrayal-room-basement-landing').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/驱魔失败|反扑/);
         await saveScreenshot(page, EXORCISE_NO_CIRCLE_DONE_SCREENSHOT);
 
@@ -414,10 +433,14 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await openBetrayalBoard(page, context);
         await injectCore(page, createHeroAttackTraitorReadyRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('betrayal-room-focus-target')).toContainText('攻击叛徒');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toHaveCount(0);
         await saveScreenshot(page, ATTACK_READY_SCREENSHOT);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
-        await page.getByTestId('betrayal-room-focus-target').click();
+        const traitorMapTarget = page.getByTestId('betrayal-room-occupant-basement-east-2');
+        await expect(traitorMapTarget, '英雄攻击叛徒主路径必须点击地图上的叛徒 token 本体').toBeVisible();
+        await expect(traitorMapTarget, '叛徒 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-basement-east-2'), '叛徒 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
+        await traitorMapTarget.click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/攻击|造成|physical damage|击倒/);
         await saveScreenshot(page, ATTACK_DONE_SCREENSHOT);
 

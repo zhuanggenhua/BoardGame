@@ -36,7 +36,14 @@ import {
   type ConditionNode as PrimitiveConditionNode,
   type ExpressionNode as PrimitiveExpressionNode,
 } from '../../../engine/primitives';
-import { getBaseCardId, isUndeadCard, isPlagueZombieCard, isFortressUnit, CARD_IDS } from './ids';
+import {
+  getBaseCardId,
+  isUndeadCard,
+  isPlagueZombieCard,
+  isFortressUnit,
+  isMoguSporePlagueBodyCard,
+  CARD_IDS,
+} from './ids';
 import { buildUsageKey } from './utils';
 
 // ============================================================================
@@ -226,6 +233,9 @@ registerConditionHandler(swConditionRegistry, 'hasCardInDiscard', (params, ctx) 
     }
     if (cardType === 'plagueZombie') {
       return isPlagueZombieCard(card);
+    }
+    if (cardType === 'mogu_spore_plague_body') {
+      return isMoguSporePlagueBodyCard(card);
     }
     return card.cardType === cardType;
   });

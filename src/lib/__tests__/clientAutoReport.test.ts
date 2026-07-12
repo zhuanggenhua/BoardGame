@@ -668,6 +668,25 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 
+    it('dice-box-threejs 第三方渲染空值噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('dice-box-null-trim-render-noise', {
+            content: "[auto][window.error] Cannot read properties of null (reading 'trim')",
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'client',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of null (reading 'trim')",
+            errorSource: 'https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3105:314',
+            stack: "TypeError: Cannot read properties of null (reading 'trim')\n    at new ou (https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3105:314)\n    at Object._ [as acquireProgram] (https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3109:9979)",
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('Script error. 浏览器通用噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

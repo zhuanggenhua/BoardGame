@@ -1331,6 +1331,36 @@ const buildSimpleChoicePayload = (
     return { interactionId, optionIds };
 };
 
+const isSmashUpReactionChoiceLiveValidation = (current: EngineInteractionDescriptor): boolean => {
+    if (!isSmashUpReactionChoiceInteraction(current)) {
+        return false;
+    }
+    const data = current.data as { responseValidationMode?: unknown; revalidateOnRespond?: unknown };
+    return data.responseValidationMode === 'live' || data.revalidateOnRespond === true;
+};
+
+const filterOptionsAcceptedByCurrentInteraction = (
+    current: EngineInteractionDescriptor,
+    options: Array<Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption>,
+): Array<Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption> => {
+    if (!isSmashUpReactionChoiceLiveValidation(current)) {
+        return options;
+    }
+
+    const currentOptions = Array.isArray((current.data as { options?: unknown }).options)
+        ? (current.data as { options: SmashUpInteractionOption[] }).options
+        : [];
+    const acceptedIds = new Set(
+        currentOptions
+            .filter((option) => typeof option.id === 'string' && option.disabled !== true)
+            .map((option) => option.id as string),
+    );
+    if (acceptedIds.size === 0) {
+        return options;
+    }
+    return options.filter((option) => acceptedIds.has(option.id));
+};
+
 const enumerateInteractionOptionCombinations = <T extends { id: string }>(
     options: T[],
     minCount: number,
@@ -1409,10 +1439,11 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
     const options = resolvedOptions.filter((option): option is Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption => {
         return typeof option.id === 'string' && option.disabled !== true;
     });
+    const acceptedOptions = filterOptionsAcceptedByCurrentInteraction(current, options);
     const minCount = data.multi?.min ?? 1;
     const maxCount = data.multi?.max ?? minCount;
     const actions: AiLegalAction[] = [];
-    const hasExplicitControlOption = options.some((option) => isInteractionControlValue(option.value));
+    const hasExplicitControlOption = acceptedOptions.some((option) => isInteractionControlValue(option.value));
 
     if (minCount === 0 && !hasExplicitControlOption) {
         actions.push({
@@ -1434,7 +1465,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         });
     }
 
-    if (options.length === 0 || options.length < Math.max(1, minCount)) {
+    if (acceptedOptions.length === 0 || acceptedOptions.length < Math.max(1, minCount)) {
         return actions.length > 0
             ? actions
             : [{
@@ -1457,8 +1488,8 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
 
     if (data.multi) {
         const combinations = (data.multi.ordered
-            ? enumerateInteractionOptionPermutations(options, minCount, maxCount)
-            : enumerateInteractionOptionCombinations(options, minCount, maxCount))
+            ? enumerateInteractionOptionPermutations(acceptedOptions, minCount, maxCount)
+            : enumerateInteractionOptionCombinations(acceptedOptions, minCount, maxCount))
             .filter((combination) => {
                 if (combination.length === 0) return false;
                 const controlOptionCount = combination.filter((option) => isInteractionControlValue(option.value)).length;
@@ -1496,7 +1527,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
             });
     }
 
-    actions.push(...options.map((option, index) => {
+    actions.push(...acceptedOptions.map((option, index) => {
         const aiHints = option._ai ? [option._ai] : undefined;
         return {
             actionId: createAiLegalActionId('interaction', current.id, option.id),

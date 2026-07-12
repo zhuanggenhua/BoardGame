@@ -24,10 +24,11 @@
  * ```
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { createProgram, setUniforms } from './ShaderMaterial';
 import { COMMON_VERT } from './shaders/common.vert';
 import type { ShaderCanvasProps, UniformValue } from './types';
+import { resolveFxDpr } from '../performance';
 
 // ============================================================================
 // Fullscreen Quad 顶点数据
@@ -51,12 +52,16 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
   duration,
   onComplete,
   maxDpr,
+  quality = 'full',
+  reducedMaxDpr,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // 稳定化外部 uniforms 引用（避免每帧重建对象）
   const uniformsRef = useRef(uniforms);
@@ -72,7 +77,7 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
     const ch = parent?.offsetHeight ?? canvas.offsetHeight;
 
     // DPI 缩放（默认 1.5x 上限，特效天然模糊，超过几乎无视觉收益）
-    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr ?? 1.5);
+    const dpr = resolveFxDpr({ quality, maxDpr, reducedMaxDpr });
     canvas.width = Math.round(cw * dpr);
     canvas.height = Math.round(ch * dpr);
     canvas.style.width = `${cw}px`;
@@ -182,7 +187,7 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
       if (positionBuffer) gl.deleteBuffer(positionBuffer);
       if (program) gl.deleteProgram(program);
     };
-  }, [fragmentShader, duration, maxDpr]);
+  }, [fragmentShader, duration, quality, maxDpr, reducedMaxDpr]);
 
   useEffect(() => {
     const cleanup = render();

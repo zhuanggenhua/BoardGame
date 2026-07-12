@@ -174,9 +174,24 @@ const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.t
 const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
 const typesSource = readFileSync(resolve(__dirname, '..', 'domain', 'types.ts'), 'utf-8');
 
+const getRegisteredAtlasBlock = (atlasId: string): string => {
+    const start = cardAtlasSource.indexOf(`registerCardAtlasSource(${atlasId},`);
+    expect(start).toBeGreaterThanOrEqual(0);
+    const nextStart = cardAtlasSource.indexOf('registerCardAtlasSource(', start + 1);
+    return nextStart === -1 ? cardAtlasSource.slice(start) : cardAtlasSource.slice(start, nextStart);
+};
+
 describe('Qidahen Board 结构门禁', () => {
-    it('纪年卡预览继续绑定纪年图集而不是蒙古图集', () => {
-        expect(cardAtlasSource).toContain("image: 'qidahen/cards/atlases/chronology-deck-atlas'");
+    it('纪年卡预览应从蒙古图集中的纪年卡格子取图，禁止回到普通手牌图集', () => {
+        const chronologyAtlasBlock = getRegisteredAtlasBlock('QIDAHEN_CHRONOLOGY_ATLAS_ID');
+
+        expect(chronologyAtlasBlock).toContain("image: 'qidahen/cards/atlases/mongol-faction-deck-atlas'");
+        expect(chronologyAtlasBlock).toContain('[1434, 1912, 2390, 2868, 3346, 3824, 4302]');
+        expect(chronologyAtlasBlock).toContain('[663, 1326, 1989, 2652, 3315, 3978]');
+        expect(chronologyAtlasBlock).toContain('478,');
+        expect(chronologyAtlasBlock).toContain('663,');
+        expect(chronologyAtlasBlock).not.toContain("image: 'qidahen/cards/atlases/chronology-deck-atlas'");
+        expect(chronologyAtlasBlock).not.toContain("image: 'qidahen/cards/atlases/ordinary-hand-atlas05'");
     });
 
     it('三势力手牌预览继续绑定各自牌库图集，而不是退回牌背', () => {
@@ -251,6 +266,10 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘必须显示共享行动标记，并且只高亮当前阶段真正可点击的落点', () => {
         expect(boardSource).toContain("wheelMarker: 'qidahen/markers/chronology-year-marker'");
+        expect(boardSource).toContain('const renderQidahenWheelVerticalText = (');
+        expect(boardSource).toContain('<tspan key={`${text}-${index}-${char}`}');
+        expect(boardSource).not.toContain('writingMode:');
+        expect(boardSource).not.toContain('textOrientation:');
         expect(boardSource).toContain('const activatableMoveChoices = moveChoices.filter');
         expect(boardSource).toContain('activatableMoveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length)');
         expect(boardSource).toContain('className="pointer-events-none group absolute left-[136px] top-[-16px] z-30 h-[438px] w-[438px]"');
@@ -634,10 +653,16 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('右侧交互区必须保留固定动作栏与独立交互槽位，瞬时面板不得再把动作按钮往下挤', () => {
-        expect(boardSource).toContain('const ACTIONS_DOCK_WIDTH = 420;');
+        expect(boardSource).toContain('const ACTIONS_DOCK_WIDTH = 350;');
         expect(boardSource).toContain('const ACTIONS_DOCK_HEIGHT = 470;');
         expect(boardSource).toContain('const ACTIONS_DOCK_LEFT = STAGE_WIDTH - ACTIONS_DOCK_RIGHT - ACTIONS_DOCK_WIDTH;');
         expect(boardSource).toContain("'--qidahen-mobile-edge-pull': `${stageMetrics.mobileEdgePull}px`");
+        expect(boardSource).toContain("'--qidahen-mobile-top-inset': `${stageMetrics.mobileTopInset}px`");
+        expect(boardSource).toContain('MOBILE_LANDSCAPE_TOP_SAFE_INSET');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_CHRONOLOGY_TOP = 670;');
+        expect(boardSource).toContain('mobileChronologyTop: nextLandscapeMobileViewport ? MOBILE_LANDSCAPE_CHRONOLOGY_TOP : 542,');
+        expect(boardSource).toContain("'--qidahen-mobile-chronology-top': `${stageMetrics.mobileChronologyTop}px`,");
+        expect(boardSource).toContain("style={{ top: 'var(--qidahen-mobile-chronology-top, 542px)' }}");
         expect(boardSource).toContain('data-testid="qidahen-action-slot"');
         expect(boardSource).toContain('className="mt-3 shrink-0"');
         expect(boardSource).toContain('className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot"');
@@ -696,7 +721,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (');
         expect(boardSource).toContain('const visibleCardCount = Math.min(handCount, MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT);');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 20;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 0;');
         expect(boardSource).toContain('mobileBottomInset: BOTTOM_DOCK_INSET,');
         expect(boardSource).toContain('? visibleWidth / STAGE_WIDTH');
         expect(boardSource).toContain('? Math.min(0, visibleHeight - STAGE_HEIGHT * scale)');

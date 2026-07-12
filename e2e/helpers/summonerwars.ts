@@ -24,6 +24,7 @@ export const SUMMONERWARS_FACTION_INDEX: Record<string, number> = {
   goblin: 3,
   frost: 4,
   barbaric: 5,
+  mogu: 6,
 };
 
 // ============================================================================
@@ -703,9 +704,9 @@ export const setupSWOnlineMatch = async (
     await selectFactionsViaDispatch(hostPage, guestPage, hostFactionId, guestFactionId);
   } catch {
     // dispatch 失败时 fallback 到 UI 点击
-    // 阵营索引映射：necromancer=0, trickster=1, paladin=2, goblin=3, frost=4, barbaric=5
+    // 阵营索引映射：necromancer=0, trickster=1, paladin=2, goblin=3, frost=4, barbaric=5, mogu=6
     const factionIndexMap: Record<string, number> = {
-      necromancer: 0, trickster: 1, paladin: 2, goblin: 3, frost: 4, barbaric: 5,
+      ...SUMMONERWARS_FACTION_INDEX,
     };
     const hostIdx = factionIndexMap[hostFactionId] ?? 0;
     const guestIdx = factionIndexMap[guestFactionId] ?? 0;

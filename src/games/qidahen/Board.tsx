@@ -381,8 +381,17 @@ const UI_SURFACE = {
         'linear-gradient(180deg, rgba(142,53,38,0.9) 0%, rgba(69,32,22,0.88) 100%)',
         'radial-gradient(circle at 15% 12%, rgba(238,198,127,0.18), transparent 38%)',
     ].join(', '),
+    mapOpenPanel: [
+        'linear-gradient(180deg, rgba(255,246,220,0.92) 0%, rgba(236,210,153,0.86) 100%)',
+        'radial-gradient(circle at 18% 14%, rgba(255,252,236,0.38), transparent 38%)',
+    ].join(', '),
+    mapOpenPanelSelected: [
+        'linear-gradient(180deg, rgba(245,201,142,0.9) 0%, rgba(224,151,99,0.82) 100%)',
+        'radial-gradient(circle at 16% 12%, rgba(255,238,186,0.34), transparent 38%)',
+    ].join(', '),
     mapPanelShadow: '0 2px 0 rgba(7,5,3,0.7), 0 10px 18px rgba(22,14,8,0.32)',
     mapPanelInset: 'inset 0 0 0 1px rgba(232,200,133,0.2), inset 0 -2px 0 rgba(0,0,0,0.2)',
+    mapOpenPanelShadow: '0 3px 8px rgba(56,35,15,0.1), inset 0 0 0 1px rgba(255,250,232,0.62), inset 0 -1px 0 rgba(95,71,45,0.1)',
     cutCorner: 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)',
     smallCutCorner: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
 } as const;
@@ -395,7 +404,9 @@ const CARD_DIMENSIONS = {
 } as const;
 
 const BOTTOM_DOCK_INSET = 0;
-const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 20;
+const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 0;
+const MOBILE_LANDSCAPE_TOP_SAFE_INSET = 18;
+const MOBILE_LANDSCAPE_CHRONOLOGY_TOP = 670;
 const HAND_DOCK_WIDTH = 1310;
 const MOBILE_LANDSCAPE_HAND_DOCK_WIDTH = 1460;
 const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 168;
@@ -407,7 +418,7 @@ const QIDAHEN_STAGE_BG = '#c8a970';
 const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;
 const HAND_INTERACTION_TRAY_WIDTH = 860;
 const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 10;
-const ACTIONS_DOCK_WIDTH = 420;
+const ACTIONS_DOCK_WIDTH = 350;
 const ACTIONS_DOCK_RIGHT = 80;
 
 const getQidahenHandCardTutorialTargetId = (card: QidahenHandCard): string => (
@@ -492,6 +503,43 @@ const polarToPoint = (center: number, radius: number, angleDeg: number) => {
         x: center + Math.cos(radians) * radius,
         y: center + Math.sin(radians) * radius,
     };
+};
+
+const renderQidahenWheelVerticalText = (
+    text: string,
+    x: number,
+    y: number,
+    options: {
+        className: string;
+        fontSize: number;
+        fontWeight: number;
+    },
+) => {
+    const chars = Array.from(text);
+    const lineHeight = options.fontSize * 1.12;
+    const top = y - ((chars.length - 1) * lineHeight) / 2;
+
+    return (
+        <text
+            x={x}
+            y={top}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className={options.className}
+            style={{
+                fontFamily: 'KaiTi, STKaiti, Songti SC, serif',
+                fontSize: `${options.fontSize}px`,
+                fontWeight: options.fontWeight,
+                letterSpacing: 0,
+            }}
+        >
+            {chars.map((char, index) => (
+                <tspan key={`${text}-${index}-${char}`} x={x} y={top + index * lineHeight}>
+                    {char}
+                </tspan>
+            ))}
+        </text>
+    );
 };
 
 const getQidahenMobileLandscapeHandLayout = (dockWidth: number) => {
@@ -1368,7 +1416,9 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         left: 0,
         top: 0,
         mobileEdgePull: 0,
+        mobileTopInset: 0,
         mobileBottomInset: BOTTOM_DOCK_INSET,
+        mobileChronologyTop: 542,
         isMobileLandscape: false,
     });
 
@@ -1395,9 +1445,13 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 left,
                 top,
                 mobileEdgePull: nextLandscapeMobileViewport && scale > 0 ? left / scale : 0,
+                mobileTopInset: nextLandscapeMobileViewport && scale > 0
+                    ? Math.max(0, (-top + MOBILE_LANDSCAPE_TOP_SAFE_INSET) / scale)
+                    : 0,
                 mobileBottomInset: nextLandscapeMobileViewport && scale > 0
                     ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET / scale
                     : BOTTOM_DOCK_INSET,
+                mobileChronologyTop: nextLandscapeMobileViewport ? MOBILE_LANDSCAPE_CHRONOLOGY_TOP : 542,
                 isMobileLandscape: nextLandscapeMobileViewport,
             });
         };
@@ -1435,10 +1489,14 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     transformOrigin: 'top left',
                     overflow: stageMetrics.isMobileLandscape ? 'visible' : 'hidden',
                     '--qidahen-mobile-edge-pull': `${stageMetrics.mobileEdgePull}px`,
+                    '--qidahen-mobile-top-inset': `${stageMetrics.mobileTopInset}px`,
                     '--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,
+                    '--qidahen-mobile-chronology-top': `${stageMetrics.mobileChronologyTop}px`,
                 } as React.CSSProperties & {
                     '--qidahen-mobile-edge-pull': string;
+                    '--qidahen-mobile-top-inset': string;
                     '--qidahen-mobile-bottom-inset': string;
+                    '--qidahen-mobile-chronology-top': string;
                 }}
             >
                 {children}
@@ -1472,47 +1530,47 @@ const PlayerChip: React.FC<{
         });
     return (
         <div
-            className="relative flex h-[74px] min-w-0 flex-1 items-center gap-3 overflow-hidden border-[3px] px-3.5"
+            className="relative flex h-[46px] min-w-0 flex-1 items-center gap-1.5 overflow-hidden border px-2"
             data-testid={`qidahen-player-${faction.id}`}
             style={{
                 borderColor: current ? tone.border : UI_STYLE.mapInk,
-                background: current ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
-                color: UI_STYLE.mapIvory,
-                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
-                borderRadius: 3,
+                background: current ? UI_SURFACE.mapOpenPanelSelected : UI_SURFACE.mapOpenPanel,
+                color: UI_STYLE.ink,
+                boxShadow: current ? UI_SURFACE.mapOpenPanelShadow : '0 2px 7px rgba(56,35,15,0.08), inset 0 0 0 1px rgba(255,250,232,0.42)',
+                borderRadius: 9,
             }}
         >
             <span
-                className="pointer-events-none absolute inset-y-0 left-0 w-[8px]"
+                className="pointer-events-none absolute inset-y-0 left-0 w-[5px]"
                 style={{ background: current ? tone.border : 'rgba(210,183,117,0.72)' }}
             />
             <span className="pointer-events-none absolute inset-x-[16px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.34)' }} />
             <OptimizedImage
                 src={tone.chip}
                 alt={faction.name}
-                className="h-10 w-10 shrink-0 rounded-full border-2 object-cover"
-                style={{ borderColor: tone.border, boxShadow: `0 0 0 2px rgba(32,21,13,0.92), 0 3px 8px rgba(0,0,0,0.34)` }}
+                className="h-7 w-7 shrink-0 rounded-full border object-cover"
+                style={{ borderColor: tone.border, boxShadow: '0 2px 6px rgba(56,35,15,0.18)' }}
                 draggable={false}
                 placeholder={false}
             />
-            <div className="min-w-0 flex-1 text-[19px] font-black leading-none tracking-[0.02em] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">
+            <div className="min-w-0 flex-1 text-[13px] font-black leading-none tracking-[0.02em]">
                 <div className="min-w-0 whitespace-nowrap">
                     <span>{faction.name}</span>
-                    <span className="ml-3 text-[15px]" style={{ color: UI_STYLE.mapGold }}>VP{effectiveVp}</span>
+                    <span className="ml-1.5 text-[11px]" style={{ color: UI_STYLE.bronze }}>VP{effectiveVp}</span>
                     {prestigeBonus > 0 ? (
-                        <span className="ml-2 text-[11px]" style={{ color: '#f3d1a5' }}>
+                        <span className="ml-1.5 text-[10px]" style={{ color: UI_STYLE.bronze }}>
                             {t('board.player.prestigeBonus', {
                                 bonus: prestigeBonus,
                                 defaultValue: '汉城+{{bonus}}',
                             })}
                         </span>
                     ) : null}
-                    <span className="ml-3 text-[15px]" style={{ color: UI_STYLE.mapGold }}>{faction.handCount}/{faction.handLimit}</span>
+                    <span className="ml-1.5 text-[11px]" style={{ color: UI_STYLE.bronze }}>{faction.handCount}/{faction.handLimit}</span>
                 </div>
                 <div
-                    className="mt-1 truncate text-[11px] leading-none"
+                    className="mt-0.5 truncate text-[10px] leading-none"
                     data-testid={`qidahen-armaments-${faction.id}`}
-                    style={{ color: '#f3d1a5' }}
+                    style={{ color: UI_STYLE.mutedInk }}
                 >
                     {t('board.player.armaments', {
                         summary: armamentSummary,
@@ -1520,21 +1578,21 @@ const PlayerChip: React.FC<{
                     })}
                 </div>
                 <div
-                    className="mt-1 truncate text-[11px] leading-none"
+                    className="mt-0.5 truncate text-[10px] leading-none"
                     data-testid={`qidahen-character-markers-${faction.id}`}
-                    style={{ color: markedCharacters.length > 0 ? '#f3d1a5' : 'rgba(243,209,165,0.62)' }}
+                    style={{ color: markedCharacters.length > 0 ? UI_STYLE.mutedInk : 'rgba(42,31,21,0.62)' }}
                 >
                     {characterSummary}
                 </div>
             </div>
             {faction.defeatMarkers > 0 ? (
                 <span
-                    className="grid h-[26px] min-w-[42px] shrink-0 place-items-center border-2 px-1.5 text-[12px] font-black"
+                    className="grid h-[19px] min-w-[30px] shrink-0 place-items-center border px-1 text-[9px] font-black"
                     style={{
                         borderColor: UI_STYLE.mapInk,
-                        background: 'rgba(87, 35, 24, 0.92)',
-                        color: '#f3d1a5',
-                        boxShadow: `0 2px 6px ${UI_STYLE.shadowSoft}`,
+                        background: 'rgba(238, 210, 159, 0.78)',
+                        color: UI_STYLE.ink,
+                        boxShadow: `0 2px 5px ${UI_STYLE.shadowSoft}`,
                         borderRadius: 2,
                     }}
                 >
@@ -1546,12 +1604,12 @@ const PlayerChip: React.FC<{
             ) : null}
             {current ? (
                 <span
-                    className="grid h-[28px] w-[48px] shrink-0 place-items-center border-2 text-[12px] font-black"
+                    className="grid h-[19px] w-[34px] shrink-0 place-items-center border text-[9px] font-black"
                     style={{
-                        background: 'linear-gradient(180deg, rgba(196,81,61,0.96) 0%, rgba(159,52,38,0.96) 100%)',
+                        background: 'linear-gradient(180deg, rgba(216,123,82,0.78) 0%, rgba(180,76,54,0.72) 100%)',
                         borderColor: UI_STYLE.mapInk,
-                        color: '#f8e7c9',
-                        boxShadow: `0 3px 7px ${UI_STYLE.cinnabarGlow}`,
+                        color: UI_STYLE.ink,
+                        boxShadow: `0 2px 5px ${UI_STYLE.cinnabarGlow}`,
                         borderRadius: 2,
                     }}
                 >
@@ -1566,10 +1624,13 @@ const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => {
     const prestigeBonusByFaction = getQidahenPrestigeBonusByFaction(core);
     return (
         <div
-            className="pointer-events-auto absolute left-[720px] top-[36px] z-40 flex w-[700px] gap-3"
+            className="pointer-events-auto absolute left-[820px] top-[16px] z-40 flex w-[560px] gap-1.5"
             data-testid="qidahen-player-float"
             data-ui-anchor="top-right"
-            style={{ left: 'calc(720px + var(--qidahen-mobile-edge-pull, 0px))' }}
+            style={{
+                left: 'calc(780px + var(--qidahen-mobile-edge-pull, 0px))',
+                top: 'calc(16px + var(--qidahen-mobile-top-inset, 0px))',
+            }}
         >
             {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
                 <PlayerChip
@@ -3112,7 +3173,10 @@ const WheelPanel: React.FC<{
             data-testid="qidahen-action-wheel"
             data-tutorial-id="qidahen-action-wheel"
             data-ui-anchor="left-top"
-            style={{ left: 'calc(136px - var(--qidahen-mobile-edge-pull, 0px))' }}
+            style={{
+                left: 'calc(136px - var(--qidahen-mobile-edge-pull, 0px))',
+                top: 'calc(-16px + var(--qidahen-mobile-top-inset, 0px))',
+            }}
         >
             <div
                 className="relative h-full w-full"
@@ -3169,6 +3233,9 @@ const WheelPanel: React.FC<{
                         const selectedTarget = showCommittedMoveSelection ? index === selectedMoveTargetIndex : false;
                         const activeTarget = index === activeMoveTargetIndex;
                         const labelPoint = polarToPoint(WHEEL_CENTER, WHEEL_LABEL_RADIUS, sector.angle);
+                        const labelClassName = candidateTarget && emphasized ? 'fill-[#f5f2df]' : 'fill-[#241b14]';
+                        const labelFontSize = selectedTarget || activeTarget ? 13 : 12;
+                        const labelFontWeight = candidateTarget && emphasized ? 900 : 650;
                         return (
                             <g
                                 key={sector.id}
@@ -3201,26 +3268,16 @@ const WheelPanel: React.FC<{
                                     strokeWidth={selectedTarget ? 4 : candidateTarget && emphasized ? (activeTarget ? 4 : 3) : 0.9}
                                     strokeLinejoin="round"
                                 />
-                                <text
-                                    x={labelPoint.x - 9}
-                                    y={labelPoint.y}
-                                    textAnchor="middle"
-                                    dominantBaseline="middle"
-                                    className={candidateTarget && emphasized ? 'fill-[#f5f2df]' : 'fill-[#241b14]'}
-                                    style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: selectedTarget || activeTarget ? '13px' : '12px', fontWeight: candidateTarget && emphasized ? 900 : 650, writingMode: 'vertical-rl', textOrientation: 'upright', letterSpacing: '0.6px' }}
-                                >
-                                    {sector.label[0]}
-                                </text>
-                                <text
-                                    x={labelPoint.x + 10}
-                                    y={labelPoint.y}
-                                    textAnchor="middle"
-                                    dominantBaseline="middle"
-                                    className={candidateTarget && emphasized ? 'fill-[#f5f2df]' : 'fill-[#241b14]'}
-                                    style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: selectedTarget || activeTarget ? '13px' : '12px', fontWeight: candidateTarget && emphasized ? 900 : 650, writingMode: 'vertical-rl', textOrientation: 'upright', letterSpacing: '0.6px' }}
-                                >
-                                    {sector.label[1]}
-                                </text>
+                                {renderQidahenWheelVerticalText(sector.label[0], labelPoint.x - 9, labelPoint.y, {
+                                    className: labelClassName,
+                                    fontSize: labelFontSize,
+                                    fontWeight: labelFontWeight,
+                                })}
+                                {renderQidahenWheelVerticalText(sector.label[1], labelPoint.x + 10, labelPoint.y, {
+                                    className: labelClassName,
+                                    fontSize: labelFontSize,
+                                    fontWeight: labelFontWeight,
+                                })}
                             </g>
                         );
                     })}
@@ -3413,7 +3470,12 @@ const ChronologyZone: React.FC<{
     locale?: string;
     onMagnify?: (target: QidahenMagnifyTarget) => void;
 }> = ({ cards, locale, onMagnify }) => (
-    <div className="pointer-events-auto absolute left-[80px] top-[542px] z-20" data-testid="qidahen-chronology-zone" data-ui-anchor="left-middle">
+    <div
+        className="pointer-events-auto absolute left-[80px] top-[542px] z-20"
+        data-testid="qidahen-chronology-zone"
+        data-ui-anchor="left-middle"
+        style={{ top: 'var(--qidahen-mobile-chronology-top, 542px)' }}
+    >
         <div className="flex items-end gap-3">
             {cards.slice(0, 2).map((card) => (
                 <YearCardSlot key={card.id} card={card} locale={locale} onMagnify={onMagnify} />
@@ -3433,6 +3495,7 @@ const KoreaZone: React.FC<{
             className="pointer-events-auto absolute right-[80px] top-[92px] z-20 flex gap-4"
             data-testid="qidahen-korea-zone"
             data-ui-anchor="right-top"
+            style={{ top: 'calc(92px + var(--qidahen-mobile-top-inset, 0px))' }}
         >
             <DeckStack
                 src={ASSETS.koreaCard}
@@ -3474,45 +3537,45 @@ const TopPromptBanner: React.FC<{
     testId,
 }) => {
     const isWheel = tone === 'wheel';
-    const width = MAP_SELECTION_BANNER_WIDTH;
+    const width = 256;
     const left = (STAGE_WIDTH - width) / 2;
 
     return (
         <div
-            className="pointer-events-none absolute z-50 border-[3px] px-4 py-3"
+            className="pointer-events-none absolute z-50 border px-2.5 py-1.5"
             data-testid={testId}
             style={{
                 left,
-                top: MAP_SELECTION_BANNER_TOP,
+                top: `calc(${MAP_SELECTION_BANNER_TOP}px + var(--qidahen-mobile-top-inset, 0px))`,
                 width,
                 borderColor: isWheel ? '#5fb772' : UI_STYLE.oldGold,
-                background: isWheel ? 'rgba(20, 63, 34, 0.94)' : UI_SURFACE.mapPanelSelected,
-                color: UI_STYLE.mapIvory,
-                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
-                borderRadius: 3,
+                background: isWheel ? 'rgba(225, 235, 190, 0.68)' : UI_SURFACE.mapOpenPanelSelected,
+                color: UI_STYLE.ink,
+                boxShadow: UI_SURFACE.mapOpenPanelShadow,
+                borderRadius: 10,
             }}
         >
             <div
-                className="inline-flex items-center border px-2 py-1 text-[10px] font-black tracking-[0.18em]"
+                className="inline-flex items-center border px-1.5 py-0.5 text-[8px] font-black tracking-[0.1em]"
                 style={{
                     borderColor: isWheel ? '#a7e6b4' : '#f6d5a8',
-                    color: isWheel ? '#e7ffd8' : '#f6d5a8',
-                    background: isWheel ? 'rgba(76, 142, 88, 0.18)' : 'rgba(109,74,23,0.18)',
+                    color: UI_STYLE.ink,
+                    background: isWheel ? 'rgba(126, 166, 93, 0.2)' : 'rgba(109,74,23,0.18)',
                 }}
             >
                 {badgeLabel}
             </div>
             <div
-                className="mt-2 text-[18px] font-black leading-6 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]"
+                className="mt-0.5 text-[12px] font-black leading-4"
                 data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-title' : undefined}
             >
                 {title}
             </div>
             {hint ? (
                 <div
-                    className="mt-1 text-[12px] font-black leading-5"
+                    className="mt-0.5 text-[9px] font-black leading-3"
                     data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-hint' : undefined}
-                    style={{ color: isWheel ? '#dbf5cf' : '#f3d1a5' }}
+                    style={{ color: UI_STYLE.bronze }}
                 >
                     {hint}
                 </div>
@@ -3531,10 +3594,10 @@ const ActionButton: React.FC<{
     const { t } = useTranslation('game-qidahen');
     const borderColor = engaged ? UI_STYLE.cinnabar : focused ? UI_STYLE.mapGold : UI_STYLE.mapInk;
     const background = engaged
-        ? UI_SURFACE.mapPanelSelected
+        ? UI_SURFACE.mapOpenPanelSelected
         : focused
-            ? 'linear-gradient(180deg, rgba(102,74,30,0.92) 0%, rgba(41,29,18,0.9) 100%)'
-            : UI_SURFACE.mapPanel;
+            ? 'linear-gradient(180deg, rgba(239,213,157,0.86) 0%, rgba(203,162,91,0.76) 100%)'
+            : UI_SURFACE.mapOpenPanel;
     const accentColor = engaged ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.76)';
     const glowShadow = focused && !engaged
         ? ', 0 0 0 2px rgba(232,200,133,0.18)'
@@ -3547,19 +3610,19 @@ const ActionButton: React.FC<{
             data-tutorial-id={`qidahen-action-${action.id}`}
             title={action.detail}
             disabled={disabled}
-            className="group relative inline-flex h-[52px] min-w-[146px] items-center justify-between gap-3 overflow-visible border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
+            className="group relative inline-flex h-[38px] min-w-[104px] items-center justify-between gap-1.5 overflow-visible border px-2.5 text-left text-[13px] font-black tracking-[0.02em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
             onClick={onClick}
             style={{
                 borderColor,
                 background,
-                color: engaged ? '#f6d5a8' : UI_STYLE.mapIvory,
-                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}${glowShadow}`,
-                borderRadius: 3,
+                color: UI_STYLE.ink,
+                boxShadow: `${UI_SURFACE.mapOpenPanelShadow}${glowShadow}`,
+                borderRadius: 9,
             }}
         >
-            <span className="pointer-events-none absolute inset-y-0 left-0 w-[8px]" style={{ background: accentColor }} />
+            <span className="pointer-events-none absolute inset-y-0 left-0 w-[5px]" style={{ background: accentColor }} />
             <span className="pointer-events-none absolute inset-x-[14px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.3)' }} />
-            <span className="min-w-0 whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">{action.label}</span>
+            <span className="min-w-0 whitespace-nowrap">{action.label}</span>
             <span
                 className="pointer-events-none absolute right-[calc(100%+12px)] top-1/2 z-30 hidden w-[248px] -translate-y-1/2 border-[3px] px-3 py-2 text-[11px] font-black leading-5 tracking-normal text-[#f6e8c9] shadow-[0_8px_18px_rgba(0,0,0,0.28)] group-hover:block group-focus:block"
                 data-testid={`qidahen-action-tooltip-${action.id}`}
@@ -3730,7 +3793,7 @@ const ActionsZone: React.FC<{
 
     return (
         <div
-            className="pointer-events-auto absolute z-40 flex flex-col"
+            className="pointer-events-auto absolute z-40 flex flex-col items-end"
             data-testid="qidahen-actions-zone"
             data-tutorial-id="qidahen-actions-zone"
             data-ui-anchor="right-middle"
@@ -3742,13 +3805,13 @@ const ActionsZone: React.FC<{
             }}
         >
             <div
-                className="mb-3 shrink-0 border-[3px] px-3 py-2 text-[13px] font-black leading-5"
+                className="mb-1.5 w-fit shrink-0 border px-2 py-1 text-[10px] font-black leading-3"
                 data-testid="qidahen-turn-banner"
                 data-tutorial-id="qidahen-turn-banner"
-                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
+                style={{ borderColor: 'rgba(49,35,21,0.42)', background: 'rgba(255,246,220,0.88)', color: UI_STYLE.ink, boxShadow: '0 2px 7px rgba(56,35,15,0.08)', borderRadius: 9 }}
             >
                 <div>{formatQidahenVisibleTurnLabel(visibleTurnLabel)}</div>
-                <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                <div className="mt-0.5 text-[9px]" style={{ color: UI_STYLE.bronze }}>
                     {t('board.actions.turnStatus', {
                         year: core.currentYear,
                         wheelStatus: core.wheelActionUsed
@@ -3827,10 +3890,10 @@ const ActionsZone: React.FC<{
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
                     data-testid="qidahen-season-summary"
-                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapOpenPanel, color: UI_STYLE.ink, boxShadow: UI_SURFACE.mapOpenPanelShadow, borderRadius: 3 }}
                 >
                     <div>{core.lastSeasonSummary.title}</div>
-                    <div className="mt-1 space-y-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                    <div className="mt-1 space-y-1 text-[11px]" style={{ color: UI_STYLE.bronze }}>
                         {seasonSummaryLines.map((line) => (
                             <div key={line}>{line}</div>
                         ))}

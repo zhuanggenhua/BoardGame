@@ -35,7 +35,7 @@ import {
 import { createDeckByFactionId } from '../config/factions';
 import { buildGameDeckFromCustom } from '../config/deckBuilder';
 import { buildUsageKey } from './utils';
-import { getBaseCardId, CARD_IDS } from './ids';
+import { getBaseCardId, CARD_IDS, isMoguFungalBeastCard, isMoguSporePlagueBodyCard } from './ids';
 
 // ============================================================================
 // 状态归约
@@ -64,7 +64,16 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       };
       const player = core.players[playerId];
       if (fromDiscard) {
-        const { discard: newDiscard } = removeFromDiscard(player.discard, cardId);
+        let cardToRemoveId = cardId;
+        if (card.faction === 'mogu') {
+          const hasExactDiscardCard = player.discard.some(c => c.id === cardId);
+          if (!hasExactDiscardCard && isMoguFungalBeastCard(card)) {
+            cardToRemoveId = player.discard.find(isMoguFungalBeastCard)?.id ?? cardId;
+          } else if (!hasExactDiscardCard && isMoguSporePlagueBodyCard(card)) {
+            cardToRemoveId = player.discard.find(isMoguSporePlagueBodyCard)?.id ?? cardId;
+          }
+        }
+        const { discard: newDiscard } = removeFromDiscard(player.discard, cardToRemoveId);
         return { ...core, board: newBoard, players: { ...core.players, [playerId]: { ...player, discard: newDiscard } } };
       } else {
         const { hand: newHand } = removeFromHand(player.hand, cardId);
@@ -146,16 +155,23 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
     }
 
     case SW_EVENTS.UNIT_MOVED: {
-      const { from, to } = payload as { from: CellCoord; to: CellCoord; path?: CellCoord[] };
+      const { from, to, reason } = payload as { from: CellCoord; to: CellCoord; path?: CellCoord[]; reason?: string };
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       const unit = newBoard[from.row][from.col].unit;
       if (!unit) return { ...core, board: newBoard };
       newBoard[from.row][from.col].unit = undefined;
-      newBoard[to.row][to.col].unit = { ...unit, position: to, hasMoved: true };
+      const consumesMoveAction = reason !== 'grab';
+      newBoard[to.row][to.col].unit = { ...unit, position: to, hasMoved: consumesMoveAction ? true : unit.hasMoved };
       const pid = unit.owner as PlayerId;
       return {
         ...core, board: newBoard, selectedUnit: undefined,
-        players: { ...core.players, [pid]: { ...core.players[pid], moveCount: core.players[pid].moveCount + 1 } },
+        players: {
+          ...core.players,
+          [pid]: {
+            ...core.players[pid],
+            moveCount: consumesMoveAction ? core.players[pid].moveCount + 1 : core.players[pid].moveCount,
+          },
+        },
       };
     }
 

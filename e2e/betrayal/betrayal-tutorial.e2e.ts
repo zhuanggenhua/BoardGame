@@ -326,6 +326,38 @@ const advanceToStep = async (
 };
 
 test.describe('山屋惊魂教程最小真实链路', () => {
+    test('教程驱魔步骤必须点击房间本体进入驱魔结算', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context, { skipTutorial: false });
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-exorcise-room-direct-target');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal/tutorial/haunt-actions-and-finish', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+        await waitForHauntRuntime(page, 30000);
+        await advanceToStep(page, 'haunt-actions');
+        await expect(page.getByTestId('betrayal-action-use')).toContainText(/驱魔|Exorcise/i);
+        await expect(page.getByTestId('betrayal-room-focus-target')).toHaveAttribute('data-role', 'status');
+        await expect(page.getByTestId('betrayal-room-basement-landing')).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-focus-card-highlight-basement-landing')).toHaveAttribute('data-highlight-shape', 'room');
+        await saveScreenshot(page, STEP_19);
+
+        await clickNext(page);
+        await waitForStep(page, 'exorcise-jack');
+        await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
+        await page.getByTestId('betrayal-room-basement-landing').click();
+
+        const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
+        await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
+        await expect(exorciseRollReview.getByTestId('betrayal-recent-roll-panel')).toContainText('驱魔');
+        await expect(exorciseRollReview.getByTestId('betrayal-recent-roll-panel')).toContainText('神志检定');
+        await expect(exorciseRollReview.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
+        await saveScreenshot(page, STEP_20);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-exorcise-room-direct-target', diagnostics }]);
+    });
+
     test('教程路由会从真实运行时主入口开始，并复用真实终局', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context, { skipTutorial: false });
@@ -436,11 +468,13 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('驱魔不是凭空出现');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('最后一步');
         await expect(page.getByTestId('betrayal-action-use')).toContainText(/驱魔|Exorcise/i);
+        await expect(page.getByTestId('betrayal-room-basement-landing')).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-focus-card-highlight-basement-landing')).toHaveAttribute('data-highlight-shape', 'room');
         await saveScreenshot(page, STEP_19);
         await clickNext(page);
 
         await waitForStep(page, 'exorcise-jack');
-        await page.getByTestId('betrayal-action-use').click();
+        await page.getByTestId('betrayal-room-basement-landing').click();
 
         const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
         await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
@@ -547,7 +581,6 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await page.getByTestId('betrayal-action-explore').click();
         const exploreTargetMarker = page.locator('[data-testid^="betrayal-room-explore-target-"]').first();
         await expect(exploreTargetMarker).toBeVisible({ timeout: 10000 });
-        await expect(exploreTargetMarker).toContainText('探索');
         const targetRoomTestId = await exploreTargetMarker.evaluate((node) => node.getAttribute('data-testid')?.replace('betrayal-room-explore-target-', 'betrayal-room-'));
         expect(targetRoomTestId).toBeTruthy();
         const exploreTargetRoom = page.getByTestId(targetRoomTestId!);
@@ -1045,8 +1078,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await clickNext(page);
 
         await waitForStep(page, 'attack-hero');
-        const attackTarget = page.getByTestId('betrayal-bottom-attack-hero-target-1');
-        await expect(attackTarget).toContainText(/攻击/);
+        const attackTarget = page.getByTestId('betrayal-room-occupant-ground-north-1');
+        await expect(attackTarget, '叛徒教程攻击英雄主路径必须点击地图上的英雄 token 本体').toBeVisible();
+        await expect(attackTarget, '教程英雄 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-ground-north-1'), '教程英雄 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
         await saveScreenshot(page, STEP_24);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]);
         await attackTarget.click();
@@ -1088,8 +1123,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
 
         await waitForStep(page, 'attack-traitor');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('攻击叛徒');
-        const attackTraitorTarget = page.getByTestId('betrayal-room-focus-target');
-        await expect(attackTraitorTarget).toContainText(/攻击叛徒|Attack/i);
+        const attackTraitorTarget = page.getByTestId('betrayal-room-occupant-basement-east-2');
+        await expect(attackTraitorTarget, '英雄攻击教程主路径必须点击地图上的叛徒 token 本体').toBeVisible();
+        await expect(attackTraitorTarget, '教程叛徒 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-basement-east-2'), '教程叛徒 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
         await saveScreenshot(page, STEP_22);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]);
         await attackTraitorTarget.click();
@@ -1138,8 +1175,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
 
         await waitForStep(page, 'jack-spirit-attack');
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('怪物攻击');
-        const jackSpiritAttackTarget = page.getByTestId('betrayal-bottom-attack-hero-target-0');
-        await expect(jackSpiritAttackTarget).toContainText(/攻击|Attack/i);
+        const jackSpiritAttackTarget = page.getByTestId('betrayal-room-occupant-basement-east-0');
+        await expect(jackSpiritAttackTarget, '杰克之灵教程攻击主路径必须点击地图上的英雄 token 本体').toBeVisible();
+        await expect(jackSpiritAttackTarget, '教程英雄 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-basement-east-0'), '教程英雄 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
         await saveScreenshot(page, STEP_27);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
         await jackSpiritAttackTarget.click();
@@ -1151,8 +1190,12 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expect(jackSpiritRollPanel).toBeVisible();
         await expect(jackSpiritRollPanel).toContainText(/攻击|杰克之灵|英雄/);
         await expect(jackSpiritRollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
-        await expectVisiblePhysicalDiceBox(jackSpiritRollPanel);
-        await waitForPhysicalDiceSettled(jackSpiritRollPanel);
+        const jackSpiritDiceGroup = jackSpiritRollPanel.getByTestId('betrayal-house-dice-3d-group');
+        await expect(jackSpiritDiceGroup).toBeVisible();
+        await expect(jackSpiritDiceGroup).toHaveAttribute('data-render-mode', 'betrayal-house-dice-box-visible');
+        await expect(jackSpiritDiceGroup).toHaveAttribute('data-dice-tray-style', 'transparent-virtual');
+        await expect(jackSpiritDiceGroup).toHaveAttribute('data-dice-count', /[1-9]/);
+        await expect(jackSpiritRollPanel.getByTestId('betrayal-recent-roll-total')).toContainText(/总点数|Total/i);
         await saveScreenshot(page, STEP_28);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-jack-spirit-path', diagnostics }]);

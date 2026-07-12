@@ -23,6 +23,7 @@ import type { SoulTransferModeState, MindCaptureModeState, AfterAttackAbilityMod
 import type { BloodSummonModeState, AnnihilateModeState, FuneralPyreModeState } from './StatusBanners';
 import type {
   EventTargetModeState, MindControlModeState, ChantEntanglementModeState,
+  MoguSymbioticSelfHealingModeState, MoguReleaseSporesModeState,
   WithdrawModeState, GlacialShiftModeState, SneakModeState,
   StunModeState, HypnoticLureModeState, TelekinesisTargetModeState,
 } from './modeTypes';
@@ -44,6 +45,8 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.BARBARIC_CHANT_OF_GROWTH,
   CARD_IDS.BARBARIC_CHANT_OF_WEAVING,
   CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT,
+  CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
+  CARD_IDS.MOGU_RELEASE_SPORES,
   CARD_IDS.GOBLIN_SNEAK,
   CARD_IDS.FROST_GLACIAL_SHIFT,
 ]);
@@ -215,6 +218,42 @@ export function useEventCardModes({
       selectedTargets,
     };
   }, [chantEntanglementOptions, selectedMultiTargetOptionIdSet, swInteraction]);
+
+  const moguSymbioticSelfHealingOptions = useMemo(
+    () => extractTargetPositionOptions('mogu_symbiotic_self_healing_select_targets', 'mogu_symbiotic_self_healing_target'),
+    [extractTargetPositionOptions],
+  );
+
+  const moguSymbioticSelfHealingMode = useMemo<MoguSymbioticSelfHealingModeState | null>(() => {
+    if (!swInteraction || swInteraction.type !== 'mogu_symbiotic_self_healing_select_targets') return null;
+    const cardId = typeof swInteraction.meta?.cardId === 'string' ? swInteraction.meta.cardId : '';
+    const selectedTargets = moguSymbioticSelfHealingOptions
+      .filter((option) => selectedMultiTargetOptionIdSet.has(option.optionId))
+      .map((option) => option.position);
+    return {
+      cardId,
+      validTargets: moguSymbioticSelfHealingOptions.map((option) => option.position),
+      selectedTargets,
+    };
+  }, [moguSymbioticSelfHealingOptions, selectedMultiTargetOptionIdSet, swInteraction]);
+
+  const moguReleaseSporesOptions = useMemo(
+    () => extractTargetPositionOptions('mogu_release_spores_select_positions', 'mogu_release_spores_position'),
+    [extractTargetPositionOptions],
+  );
+
+  const moguReleaseSporesMode = useMemo<MoguReleaseSporesModeState | null>(() => {
+    if (!swInteraction || swInteraction.type !== 'mogu_release_spores_select_positions') return null;
+    const cardId = typeof swInteraction.meta?.cardId === 'string' ? swInteraction.meta.cardId : '';
+    const selectedTargets = moguReleaseSporesOptions
+      .filter((option) => selectedMultiTargetOptionIdSet.has(option.optionId))
+      .map((option) => option.position);
+    return {
+      cardId,
+      validTargets: moguReleaseSporesOptions.map((option) => option.position),
+      selectedTargets,
+    };
+  }, [moguReleaseSporesOptions, selectedMultiTargetOptionIdSet, swInteraction]);
 
   const bloodSummonMode = useMemo<BloodSummonModeState | null>(() => {
     if (!swInteraction) return null;
@@ -388,6 +427,7 @@ export function useEventCardModes({
 
   const hasActiveEventMode = !!(eventTargetMode || bloodSummonMode || annihilateMode
     || funeralPyreMode || mindControlMode || stunMode || hypnoticLureMode || chantEntanglementMode
+    || moguSymbioticSelfHealingMode || moguReleaseSporesMode
     || sneakMode || glacialShiftMode || withdrawMode || telekinesisTargetMode);
 
   const lastInteractionIdRef = useRef<string | null>(null);
@@ -448,6 +488,10 @@ export function useEventCardModes({
         break;
       }
       case 'chant_entanglement_select_targets': {
+        break;
+      }
+      case 'mogu_symbiotic_self_healing_select_targets':
+      case 'mogu_release_spores_select_positions': {
         break;
       }
       case 'sneak_select_unit':
@@ -515,6 +559,16 @@ export function useEventCardModes({
     if (!chantEntanglementMode) return [];
     return chantEntanglementMode.validTargets;
   }, [chantEntanglementMode]);
+
+  const moguSymbioticSelfHealingHighlights = useMemo(() => {
+    if (!moguSymbioticSelfHealingMode) return [];
+    return moguSymbioticSelfHealingMode.validTargets;
+  }, [moguSymbioticSelfHealingMode]);
+
+  const moguReleaseSporesHighlights = useMemo(() => {
+    if (!moguReleaseSporesMode) return [];
+    return moguReleaseSporesMode.validTargets;
+  }, [moguReleaseSporesMode]);
 
   const glacialShiftHighlights = useMemo(() => {
     if (!glacialShiftMode) return [];
@@ -800,6 +854,34 @@ export function useEventCardModes({
       return true;
     }
 
+    // 莫古：共生自愈目标选择模式
+    if (moguSymbioticSelfHealingMode) {
+      const option = moguSymbioticSelfHealingOptions.find((item) => item.position.row === gameRow && item.position.col === gameCol);
+      if (option) {
+        setSelectedMultiTargetOptionIds((current) => (
+          current.includes(option.optionId)
+            ? current.filter((optionId) => optionId !== option.optionId)
+            : [...current, option.optionId]
+        ));
+      }
+      return true;
+    }
+
+    // 莫古：释放菌袍落位选择模式
+    if (moguReleaseSporesMode) {
+      const option = moguReleaseSporesOptions.find((item) => item.position.row === gameRow && item.position.col === gameCol);
+      if (option) {
+        setSelectedMultiTargetOptionIds((current) => {
+          if (current.includes(option.optionId)) {
+            return current.filter((optionId) => optionId !== option.optionId);
+          }
+          if (current.length >= 2) return current;
+          return [...current, option.optionId];
+        });
+      }
+      return true;
+    }
+
     // 催眠引诱目标选择模式
     if (hypnoticLureMode) {
       const isValid = hypnoticLureMode.validTargets.some(p => p.row === gameRow && p.col === gameCol);
@@ -831,8 +913,9 @@ export function useEventCardModes({
     glacialShiftMode, glacialShiftHighlights,
     sneakMode, sneakHighlights,
     chantEntanglementMode,
+    moguSymbioticSelfHealingMode, moguReleaseSporesMode,
     hypnoticLureMode, eventTargetMode,
-    chantEntanglementOptions, mindControlOptions, annihilateOptions,
+    chantEntanglementOptions, moguSymbioticSelfHealingOptions, moguReleaseSporesOptions, mindControlOptions, annihilateOptions,
     findInteractionOptionId, respondInteractionOption,
     respondPositionOption, swInteraction]);
 
@@ -973,6 +1056,21 @@ export function useEventCardModes({
         activated = true;
         break;
       }
+      case CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING: {
+        const targets = getPlayerUnits(core, myPlayerId as '0' | '1')
+          .filter(u => u.card.unitClass !== 'summoner');
+        if (targets.length === 0) break;
+        activated = true;
+        break;
+      }
+      case CARD_IDS.MOGU_RELEASE_SPORES: {
+        const summoner = getSummoner(core, myPlayerId as '0' | '1');
+        if (!summoner) { failReason = t('eventCard.noSummoner'); break; }
+        const hasOpenSpace = getAdjacentCells(summoner.position).some(adj => isValidCoord(adj) && isCellEmpty(core, adj));
+        if (!hasOpenSpace) break;
+        activated = true;
+        break;
+      }
       default: {
         // 无需多步骤交互的事件卡，直接 dispatch
         dispatch(SW_COMMANDS.PLAY_EVENT, { cardId });
@@ -1026,6 +1124,36 @@ export function useEventCardModes({
     respondInteractionOption(null, selectedMultiTargetOptionIds);
   }, [chantEntanglementMode, respondInteractionOption, selectedMultiTargetOptionIds, swInteraction]);
 
+  const handleConfirmMoguSymbioticSelfHealing = useCallback(() => {
+    if (!moguSymbioticSelfHealingMode || moguSymbioticSelfHealingMode.selectedTargets.length === 0) return;
+    if (swInteraction?.type !== 'mogu_symbiotic_self_healing_select_targets') return;
+    respondInteractionOption(null, selectedMultiTargetOptionIds);
+  }, [moguSymbioticSelfHealingMode, respondInteractionOption, selectedMultiTargetOptionIds, swInteraction]);
+
+  const handleSkipMoguSymbioticSelfHealing = useCallback(() => {
+    if (swInteraction?.type !== 'mogu_symbiotic_self_healing_select_targets') return;
+    const optionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string; skip?: boolean } | undefined;
+      return value?.action === 'mogu_symbiotic_self_healing_finish' || value?.skip === true;
+    });
+    respondInteractionOption(optionId);
+  }, [findInteractionOptionId, respondInteractionOption, swInteraction]);
+
+  const handleConfirmMoguReleaseSpores = useCallback(() => {
+    if (!moguReleaseSporesMode || moguReleaseSporesMode.selectedTargets.length === 0) return;
+    if (swInteraction?.type !== 'mogu_release_spores_select_positions') return;
+    respondInteractionOption(null, selectedMultiTargetOptionIds);
+  }, [moguReleaseSporesMode, respondInteractionOption, selectedMultiTargetOptionIds, swInteraction]);
+
+  const handleSkipMoguReleaseSpores = useCallback(() => {
+    if (swInteraction?.type !== 'mogu_release_spores_select_positions') return;
+    const optionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string; skip?: boolean } | undefined;
+      return value?.action === 'mogu_release_spores_finish' || value?.skip === true;
+    });
+    respondInteractionOption(optionId);
+  }, [findInteractionOptionId, respondInteractionOption, swInteraction]);
+
   // ---------- 副作用 ----------
 
   // ---------- 返回 ----------
@@ -1039,6 +1167,8 @@ export function useEventCardModes({
     stunMode,
     hypnoticLureMode,
     chantEntanglementMode,
+    moguSymbioticSelfHealingMode,
+    moguReleaseSporesMode,
     sneakMode,
     glacialShiftMode,
     withdrawMode,
@@ -1047,7 +1177,7 @@ export function useEventCardModes({
     clearAllEventModes, hasActiveEventMode,
     // 高亮
     validEventTargets, bloodSummonHighlights, annihilateHighlights,
-    mindControlHighlights, entanglementHighlights, glacialShiftHighlights,
+    mindControlHighlights, entanglementHighlights, moguSymbioticSelfHealingHighlights, moguReleaseSporesHighlights, glacialShiftHighlights,
     sneakHighlights, stunHighlights, hypnoticLureHighlights,
     withdrawHighlights, afterAttackAbilityHighlights, telekinesisHighlights,
     // 回调
@@ -1055,5 +1185,7 @@ export function useEventCardModes({
     handleConfirmMindControl,
     handleConfirmGlacialShift, handleConfirmSneak,
     handleConfirmEntanglement,
+    handleConfirmMoguSymbioticSelfHealing, handleSkipMoguSymbioticSelfHealing,
+    handleConfirmMoguReleaseSpores, handleSkipMoguReleaseSpores,
   };
 }

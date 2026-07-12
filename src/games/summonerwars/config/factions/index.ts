@@ -8,6 +8,7 @@ export * from './paladin';
 export * from './goblin';
 export * from './frost';
 export * from './barbaric';
+export * from './mogu';
 export { DECK_SYMBOLS } from '../symbols';
 
 import { createNecromancerDeck } from './necromancer';
@@ -16,6 +17,7 @@ import { createPaladinDeck } from './paladin';
 import { createGoblinDeck } from './goblin';
 import { createFrostDeck } from './frost';
 import { createBarbaricDeck } from './barbaric';
+import { createMoguDeck } from './mogu';
 import type { FactionId } from '../../domain/types';
 
 // 派系 ID 常量
@@ -26,6 +28,7 @@ export const FACTION_IDS = {
   BARBARIC: 'barbaric',
   FROST: 'frost',
   GOBLIN: 'goblin',
+  MOGU: 'mogu',
 } as const;
 
 /** 中文阵营名 → 阵营 ID 映射 */
@@ -36,6 +39,7 @@ export const FACTION_NAME_TO_ID: Record<string, FactionId> = {
   '洞穴地精': 'goblin',
   '极地矮人': 'frost',
   '炽原精灵': 'barbaric',
+  '莫古': 'mogu',
 };
 
 /** 将中文阵营名或阵营 ID 统一解析为 FactionId */
@@ -53,6 +57,8 @@ export interface FactionCatalogEntry {
   tipImagePath: string;
   /** 是否可选（未实现的阵营设为 false） */
   selectable: boolean;
+  /** 用户可见实施状态；实施中对象必须显示共享斜条横幅 */
+  statusTag?: 'under_construction';
 }
 
 export const FACTION_CATALOG: FactionCatalogEntry[] = [
@@ -98,6 +104,14 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     tipImagePath: 'summonerwars/hero/Barbaric/tip',
     selectable: true,
   },
+  {
+    id: 'mogu',
+    nameKey: 'factions.mogu',
+    heroImagePath: 'summonerwars/hero/mogu/hero',
+    tipImagePath: 'summonerwars/hero/mogu/tip',
+    selectable: true,
+    statusTag: 'under_construction',
+  },
 ];
 
 /** 根据阵营 ID 创建牌组 */
@@ -109,6 +123,7 @@ export function createDeckByFactionId(factionId: FactionId) {
     case 'goblin': return createGoblinDeck();
     case 'frost': return createFrostDeck();
     case 'barbaric': return createBarbaricDeck();
+    case 'mogu': return createMoguDeck();
     default: return createNecromancerDeck();
   }
 }

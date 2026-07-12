@@ -3562,6 +3562,36 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(recorder.completedMatches[0][0].postState).toBeTruthy();
     });
 
+    it('成功命令后应通知调用方刷新房间摘要', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const onCommandSucceeded = vi.fn();
+
+        await storage.createMatch('match-summary-refresh', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-summary'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onCommandSucceeded,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-summary-refresh');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-summary-refresh', '0', 'cred-summary');
+        await socket.clientEmit('command', 'match-summary-refresh', 'TEST_CMD', { foo: 'bar' }, 'cred-summary');
+
+        expect(onCommandSucceeded).toHaveBeenCalledTimes(1);
+        expect(onCommandSucceeded).toHaveBeenCalledWith('match-summary-refresh', 'test-game', 'TEST_CMD');
+    });
+
     it('教程 AI 裸 RESPOND 经过 socket command 入口时，应自动补当前 interactionId', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

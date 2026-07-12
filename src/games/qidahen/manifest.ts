@@ -43,7 +43,6 @@ const entry: GameManifestEntry = {
         'qidahen/cards/backs/mongol-deck-back',
         'qidahen/cards/backs/jin-deck-back',
         'qidahen/cards/atlases/jin-faction-deck-atlas',
-        'qidahen/cards/atlases/chronology-deck-atlas',
         'qidahen/markers/mongol-control-diplomacy-marker-a',
         'qidahen/markers/ming-control-diplomacy-marker-b',
         'qidahen/markers/mongol-control-diplomacy-marker-b',

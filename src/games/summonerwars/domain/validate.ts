@@ -54,6 +54,8 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT,
   CARD_IDS.FROST_GLACIAL_SHIFT,
   CARD_IDS.GOBLIN_SNEAK,
+  CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
+  CARD_IDS.MOGU_RELEASE_SPORES,
 ]);
 
 const hasAdjacentEmptyCell = (core: SummonerWarsCore, position: CellCoord): boolean => {
@@ -123,6 +125,13 @@ const hasValidEventInteractionTargets = (
       const commons = friendlyUnits.filter((unit) =>
         unit.card.unitClass === 'common' && manhattanDistance(summoner.position, unit.position) <= 3);
       return commons.length >= 2;
+    }
+    case CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING: {
+      return friendlyUnits.some((unit) => unit.card.unitClass !== 'summoner');
+    }
+    case CARD_IDS.MOGU_RELEASE_SPORES: {
+      if (!summoner) return false;
+      return hasAdjacentEmptyCell(core, summoner.position);
     }
     case CARD_IDS.FROST_GLACIAL_SHIFT: {
       if (!summoner) return false;

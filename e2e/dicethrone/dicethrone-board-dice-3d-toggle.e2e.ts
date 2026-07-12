@@ -102,6 +102,7 @@ async function saveBoardDiceWebglBufferScreenshot(
 ): Promise<string> {
     await expect(page.locator('canvas[data-testid="dicethrone-board-dice-box-canvas"]')).toBeVisible({ timeout: 5000 });
     const dataUrl = await page.evaluate(() => {
+        (window as unknown as { __dicethroneBoardDiceDebug?: () => unknown }).__dicethroneBoardDiceDebug?.();
         const canvas = document.querySelector('canvas[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLCanvasElement | null;
         return canvas?.toDataURL('image/png') ?? null;
     });
@@ -187,6 +188,85 @@ async function expectBoardDiceCanvasScreenshotHasVisibleDice(screenshotPath: str
     expect(
         sampledRows.size,
         `棋盘 3D 骰子 canvas 可见像素纵向分布过窄，疑似只截到噪点或单个高光: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(5);
+}
+
+async function expectBoardDiceWebglBufferHasVisibleDice(screenshotPath: string): Promise<void> {
+    const { data, info } = await sharp(screenshotPath)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    let opaquePixelCount = 0;
+    let visiblePixelCount = 0;
+    let brightDiceFacePixelCount = 0;
+    let texturedPixelCount = 0;
+    const sampledColumns = new Set<number>();
+    const sampledRows = new Set<number>();
+
+    for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+            const offset = ((y * info.width) + x) * info.channels;
+            const r = data[offset] ?? 0;
+            const g = data[offset + 1] ?? 0;
+            const b = data[offset + 2] ?? 0;
+            const a = data[offset + 3] ?? 0;
+            if (a < 16) continue;
+
+            opaquePixelCount += 1;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const saturation = max - min;
+            const isVisibleDicePixel = max > 38 && (saturation > 18 || max > 105);
+            if (!isVisibleDicePixel) continue;
+
+            visiblePixelCount += 1;
+            sampledColumns.add(Math.floor(x / 8));
+            sampledRows.add(Math.floor(y / 8));
+            if (r > 118 && g > 118 && b > 118 && saturation < 84) {
+                brightDiceFacePixelCount += 1;
+            }
+            if (saturation > 28 && max > 60) {
+                texturedPixelCount += 1;
+            }
+        }
+    }
+
+    const diagnostics = {
+        screenshotPath,
+        width: info.width,
+        height: info.height,
+        opaquePixelCount,
+        visiblePixelCount,
+        brightDiceFacePixelCount,
+        texturedPixelCount,
+        sampledColumnBuckets: sampledColumns.size,
+        sampledRowBuckets: sampledRows.size,
+    };
+
+    expect(
+        opaquePixelCount,
+        `棋盘 3D 骰子 WebGL 原始画布全透明，真实骰子没有被渲染进画布: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(900);
+    expect(
+        visiblePixelCount,
+        `棋盘 3D 骰子 WebGL 原始画布里没有足够的真实可见骰子像素: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(900);
+    expect(
+        brightDiceFacePixelCount,
+        `棋盘 3D 骰子 WebGL 原始画布里缺少可辨认的骰面亮部: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(160);
+    expect(
+        texturedPixelCount,
+        `棋盘 3D 骰子 WebGL 原始画布里缺少贴图/边缘纹理像素: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(260);
+    expect(
+        sampledColumns.size,
+        `棋盘 3D 骰子 WebGL 原始画布可见像素横向分布过窄，疑似只截到噪点或单个高光: ${JSON.stringify(diagnostics)}`,
+    ).toBeGreaterThan(5);
+    expect(
+        sampledRows.size,
+        `棋盘 3D 骰子 WebGL 原始画布可见像素纵向分布过窄，疑似只截到噪点或单个高光: ${JSON.stringify(diagnostics)}`,
     ).toBeGreaterThan(5);
 }
 
@@ -299,7 +379,7 @@ async function waitForBoardDiceSettled(page: Page): Promise<void> {
         const isMobileBoard = window.innerWidth <= 1023;
         const expectedWorldWidthScale = isMobileBoard ? '0.5' : '0.44';
         const expectedWorldHeightScale = isMobileBoard ? '0.72' : '0.44';
-        const expectedCameraZoom = isMobileBoard ? '1.66' : '1';
+        const expectedCameraZoom = isMobileBoard ? '1.66' : '1.32';
         if (canvasNode.dataset.worldWidthScale !== expectedWorldWidthScale) return false;
         if (canvasNode.dataset.worldHeightScale !== expectedWorldHeightScale) return false;
         if (canvasNode.dataset.cameraZoom !== expectedCameraZoom) return false;
@@ -466,6 +546,18 @@ type BoardDiceVisualBounds = {
     width: number;
     height: number;
 };
+
+function expectBoardDiceFacesAreReadable(rects: DiceRectSnapshot[]): void {
+    const unreadable = rects.filter((rect) => (
+        rect.rotateX === null
+        || rect.rotateY === null
+        || !Number.isFinite(rect.rotateX)
+        || !Number.isFinite(rect.rotateY)
+        || Math.abs(rect.rotateX) > 0.42
+        || Math.abs(rect.rotateY) > 0.42
+    ));
+    expect(unreadable, `棋盘 3D 骰子最终姿态不应接近侧翻，否则骰面贴图会显示不全: ${JSON.stringify(rects)}`).toHaveLength(0);
+}
 
 async function readBoardDieRects(page: Page, dieIds: number[]): Promise<DiceRectSnapshot[]> {
     return await page.evaluate((ids) => ids.map((dieId) => {
@@ -1463,9 +1555,11 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         const diagnosticsPath = getEvidenceScreenshotPath(testInfo, '03c-确认重投后-3D骰子运行时诊断').replace(/\.jpg$/, '.json');
         await mkdir(dirname(diagnosticsPath), { recursive: true });
         await writeFile(diagnosticsPath, JSON.stringify(settledCanvasDiagnostics, null, 2), 'utf-8');
-        await expectBoardDiceCanvasScreenshotHasVisibleDice(settledCanvasScreenshotPath);
+        await expectBoardDiceWebglBufferHasVisibleDice(settledWebglBufferScreenshotPath);
         await game.screenshot('03-确认重投后-3D骰子稳定完成', testInfo);
         const settledRects = await readBoardDieRects(page, [0, 1]);
+        const settledAllRects = await readBoardDieRects(page, [0, 1, 2, 3, 4]);
+        expectBoardDiceFacesAreReadable(settledAllRects);
         const settledMoveDistance = Math.max(
             ...settledRects.map((position, posIndex) => getVisualMoveDistance(position, baselineRects[posIndex])),
         );

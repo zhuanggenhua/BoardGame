@@ -13,7 +13,7 @@ import type { FactionId, UnitCard } from './types';
 
 /** 所有合法阵营 ID（从 FactionId 类型派生） */
 export const VALID_FACTION_IDS: readonly FactionId[] = [
-  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric',
+  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu',
 ] as const;
 
 // ============================================================================
@@ -58,6 +58,12 @@ export const CARD_IDS = {
   BARBARIC_CHANT_OF_GROWTH: 'barbaric-chant-of-growth',
   BARBARIC_CHANT_OF_ENTANGLEMENT: 'barbaric-chant-of-entanglement',
   BARBARIC_RALLYING_CRY: 'barbaric-rallying-cry',
+
+  // 莫古事件卡
+  MOGU_COMMAND: 'mogu-command',
+  MOGU_SYMBIOTIC_SELF_HEALING: 'mogu-symbiotic-self-healing',
+  MOGU_FANATICAL_FUNGUS: 'mogu-fanatical-fungus',
+  MOGU_RELEASE_SPORES: 'mogu-release-spores',
 } as const;
 
 // ============================================================================
@@ -83,6 +89,18 @@ export function getBaseCardId(id: string): string {
  */
 export function isPlagueZombieCard(card: { id: string; name: string }): boolean {
   return card.id.includes('plague-zombie') || card.name.includes('疫病体');
+}
+
+/** 判断卡牌是否为莫古的菌袍疫病体 */
+export function isMoguSporePlagueBodyCard(card: { id: string; name: string; faction?: string }): boolean {
+  return card.faction === 'mogu'
+    && (getBaseCardId(card.id) === 'mogu-spore-plague-body' || card.name.includes('菌袍疫病'));
+}
+
+/** 判断卡牌是否为莫古的菌化野兽 */
+export function isMoguFungalBeastCard(card: { id: string; name: string; faction?: string }): boolean {
+  return card.faction === 'mogu'
+    && (getBaseCardId(card.id) === 'mogu-fungal-beast' || card.name.includes('菌化野兽'));
 }
 
 /**

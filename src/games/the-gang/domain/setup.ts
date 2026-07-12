@@ -9,6 +9,7 @@ import {
     getBlackedRankForHeist,
     isChallengeActive,
     normalizeRulesConfig,
+    THE_GANG_EXIT_CHIP_MODES,
 } from './expansions';
 import type { PlayingCard, TheGangCore, TheGangPlayerState, TheGangRulesConfig } from './types';
 
@@ -101,6 +102,18 @@ export function createInitialHeistCore(
     };
 }
 
-export function getChipValues(playerCount: number): number[] {
-    return Array.from({ length: playerCount }, (_, index) => index + 1);
+export function getExitChipCount(playerCount: number, config?: Partial<TheGangRulesConfig>): number {
+    const normalized = normalizeRulesConfig(config ?? DEFAULT_THE_GANG_RULES_CONFIG);
+    if (normalized.exitChipMode === 'ultra-mastermind') return 0;
+    const baseCount = playerCount >= 10 ? 3 : playerCount >= 8 ? 2 : playerCount >= 7 ? 1 : 0;
+    return Math.max(0, Math.min(baseCount - THE_GANG_EXIT_CHIP_MODES[normalized.exitChipMode].reduction, 3));
+}
+
+export function getChipValues(
+    playerCount: number,
+    config?: Partial<TheGangRulesConfig>,
+    round: number = 1,
+): number[] {
+    const chipCount = playerCount + (round === 4 ? getExitChipCount(playerCount, config) : 0);
+    return Array.from({ length: chipCount }, (_, index) => index + 1);
 }

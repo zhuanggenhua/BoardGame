@@ -58,8 +58,23 @@ export function readExplicitBetrayalScenarioId(setupData?: unknown): BetrayalSce
     return undefined;
 }
 
-export function buildBetrayalPublicRoomSummary(setupData?: Record<string, unknown>): PublicSetupSummary {
-    const scenarioId = readExplicitBetrayalScenarioId(setupData);
+function readRuntimeBetrayalScenarioId(runtimeState?: unknown): BetrayalScenarioId | undefined {
+    const stateRecord = asRecord(runtimeState);
+    const coreRecord = asRecord(stateRecord?.core) ?? stateRecord;
+    if (coreRecord?.phase === 'characterSelect') {
+        return undefined;
+    }
+    if (typeof coreRecord?.phase !== 'string') {
+        return undefined;
+    }
+    return normalizeScenarioId(coreRecord.scenarioId);
+}
+
+export function buildBetrayalPublicRoomSummary(
+    setupData?: Record<string, unknown>,
+    runtimeState?: unknown,
+): PublicSetupSummary {
+    const scenarioId = readExplicitBetrayalScenarioId(setupData) ?? readRuntimeBetrayalScenarioId(runtimeState);
     if (!scenarioId || !BETRAYAL_SCENARIO_CONFIGS[scenarioId]) {
         return {};
     }

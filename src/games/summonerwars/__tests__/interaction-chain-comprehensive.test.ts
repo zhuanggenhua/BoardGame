@@ -5030,6 +5030,115 @@ describe('usesPerTurn 限制', () => {
     expect(getUnitAt(duplicateResponse.state.core, followTo)?.instanceId).toBe(grabber.instanceId);
     expect(getUnitAt(duplicateResponse.state.core, grabberPos)).toBeUndefined();
   });
+
+  it('[grab] 两个抓附手应逐个结算，跳过第一个不应跳过第二个，抓附跟随不消耗移动', () => {
+    core.phase = 'move';
+    core.currentPlayer = '0' as PlayerId;
+    core.players['0'].moveCount = 0;
+    const firstGrabberPos = { row: 4, col: 2 };
+    const secondGrabberPos = { row: 4, col: 4 };
+    const moverFrom = { row: 4, col: 3 };
+    const moverTo = { row: 3, col: 3 };
+    const secondFollowTo = { row: 3, col: 4 };
+    const firstGrabber = putUnit(core, firstGrabberPos, mkUnit('goblin-grabber-a', {
+      name: '左侧抓附手',
+      abilities: ['grab'],
+      faction: 'goblin',
+      unitClass: 'common',
+    }), '0');
+    const secondGrabber = putUnit(core, secondGrabberPos, mkUnit('goblin-grabber-b', {
+      name: '右侧抓附手',
+      abilities: ['grab'],
+      faction: 'goblin',
+      unitClass: 'common',
+    }), '0');
+    const mover = putUnit(core, moverFrom, mkUnit('goblin-mover', {
+      faction: 'goblin',
+      unitClass: 'common',
+    }), '0');
+    putUnit(core, { row: 2, col: 3 }, mkUnit('block-up', { faction: 'goblin' }), '0');
+    putUnit(core, { row: 3, col: 2 }, mkUnit('block-left', { faction: 'goblin' }), '0');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const moved = runGamePipeline(state, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      playerId: '0',
+      payload: { from: moverFrom, to: moverTo, path: [moverFrom, moverTo] },
+    });
+    expect(moved.success).toBe(true);
+    state = moved.state;
+
+    expect(getUnitAt(state.core, moverTo)?.instanceId).toBe(mover.instanceId);
+    expect(state.core.players['0'].moveCount).toBe(1);
+    expect(getSwCurrentType(state)).toBe('grab_follow');
+    expect(state.sys.interaction.queue).toHaveLength(1);
+
+    let current = state.sys.interaction.current;
+    expect(current?.id).toContain(firstGrabber.instanceId);
+    const firstData = current?.data as {
+      titleKey?: string;
+      titleParams?: { unit?: string; position?: string };
+    } | undefined;
+    expect(firstData?.titleKey).toBe('interaction.sw.grabFollowWithSource');
+    expect(firstData?.titleParams).toMatchObject({ unit: '左侧抓附手', position: '5,3' });
+    expect(getUnitAt(state.core, firstGrabberPos)?.hasMoved).toBe(false);
+    expect(getUnitAt(state.core, secondGrabberPos)?.hasMoved).toBe(false);
+
+    const skipFirst = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: 'skip' },
+    });
+    expect(skipFirst.success).toBe(true);
+    state = skipFirst.state;
+
+    expect(getUnitAt(state.core, firstGrabberPos)?.instanceId).toBe(firstGrabber.instanceId);
+    expect(getUnitAt(state.core, firstGrabberPos)?.hasMoved).toBe(false);
+    expect(state.core.players['0'].moveCount).toBe(1);
+    expect(getSwCurrentType(state)).toBe('grab_follow');
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    current = state.sys.interaction.current;
+    expect(current?.id).toContain(secondGrabber.instanceId);
+    const secondData = current?.data as {
+      titleKey?: string;
+      titleParams?: { unit?: string; position?: string };
+      options?: PromptOption[];
+    } | undefined;
+    expect(secondData?.titleKey).toBe('interaction.sw.grabFollowWithSource');
+    expect(secondData?.titleParams).toMatchObject({ unit: '右侧抓附手', position: '5,5' });
+
+    const followOptionId = secondData?.options?.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'grab_follow'
+        && value.targetPosition?.row === secondFollowTo.row
+        && value.targetPosition?.col === secondFollowTo.col;
+    })?.id;
+    expect(followOptionId).toBeTruthy();
+
+    const pickedSecond = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: followOptionId },
+    });
+    expect(pickedSecond.success).toBe(true);
+    state = pickedSecond.state;
+
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(getUnitAt(state.core, secondFollowTo)?.instanceId).toBe(secondGrabber.instanceId);
+    expect(getUnitAt(state.core, secondFollowTo)?.hasMoved).toBe(false);
+    expect(getUnitAt(state.core, secondGrabberPos)).toBeUndefined();
+    expect(state.core.players['0'].moveCount).toBe(1);
+    expect(pickedSecond.events.filter(e =>
+      e.type === SW_EVENTS.UNIT_MOVED
+      && e.payload?.unitId === secondGrabber.instanceId
+      && e.payload?.reason === 'grab'
+    )).toHaveLength(1);
+  });
 });
 
 // ============================================================================

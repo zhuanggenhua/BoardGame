@@ -54,13 +54,47 @@ function isDisabledFlag(value) {
   return /^(0|false|off|no)$/i.test((value || '').trim());
 }
 
+function sanitizeCacheSegment(value) {
+  const segment = String(value || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return segment || 'default';
+}
+
+function resolveEffectiveVitePort(explicitPort) {
+  const configuredPort = explicitPort?.trim() || process.env.VITE_DEV_PORT?.trim();
+  const preferredPort = Number(configuredPort);
+  const resolvedPort = Number.isFinite(preferredPort) && preferredPort > 0
+    ? preferredPort
+    : DEFAULT_VITE_DEV_PORT;
+  process.env.VITE_DEV_PORT = String(resolvedPort);
+  return String(resolvedPort);
+}
+
+function resolveViteCacheDir() {
+  const explicitCacheDir = process.env.VITE_CACHE_DIR?.trim()
+    || process.env.BG_VITE_CACHE_DIR?.trim();
+  if (explicitCacheDir) {
+    process.env.VITE_CACHE_DIR = explicitCacheDir;
+    return explicitCacheDir;
+  }
+
+  const cacheKey = process.env.BG_VITE_CACHE_KEY?.trim()
+    || `port-${resolveEffectiveVitePort()}`;
+  const cacheDir = join(process.cwd(), 'node_modules', '.vite', sanitizeCacheSegment(cacheKey));
+  process.env.VITE_CACHE_DIR = cacheDir;
+  return cacheDir;
+}
+
 function cleanViteOptimizedDepsOnStart() {
   if (isDisabledFlag(process.env.BG_VITE_CLEAN_DEPS_ON_START)) {
     log('[CACHE] 已跳过 Vite 预构建依赖缓存清理：BG_VITE_CLEAN_DEPS_ON_START 禁用');
     return;
   }
 
-  const depsDir = join(process.cwd(), 'node_modules', '.vite', 'deps');
+  const depsDir = join(resolveViteCacheDir(), 'deps');
   if (!existsSync(depsDir)) {
     log('[CACHE] Vite 预构建依赖缓存不存在，无需清理');
     return;
@@ -116,8 +150,8 @@ function createViteArgs() {
   const hasExplicitHost = viteArgs.some((arg) => arg === '--host' || arg.startsWith('--host='));
   const hasExplicitPort = viteArgs.some((arg) => arg === '--port' || arg.startsWith('--port='));
   const explicitHost = readCliFlagValue(viteArgs, '--host');
+  const explicitPort = readCliFlagValue(viteArgs, '--port');
   const configuredHost = explicitHost || process.env.VITE_HOST?.trim() || '127.0.0.1';
-  const configuredPort = process.env.VITE_DEV_PORT?.trim();
   const preferredTsConfigPath = join(process.cwd(), 'vite.config.ts');
   const resolvedConfigFile = configFile || (existsSync(preferredTsConfigPath) ? preferredTsConfigPath : '');
 
@@ -130,11 +164,9 @@ function createViteArgs() {
   }
 
   if (!hasExplicitPort) {
-    const preferredPort = Number(configuredPort);
-    const resolvedPort = Number.isFinite(preferredPort) && preferredPort > 0
-      ? preferredPort
-      : DEFAULT_VITE_DEV_PORT;
-    process.env.VITE_DEV_PORT = String(resolvedPort);
+    resolveEffectiveVitePort();
+  } else if (explicitPort) {
+    resolveEffectiveVitePort(explicitPort);
   }
 
   const effectivePort = process.env.VITE_DEV_PORT?.trim();
@@ -155,10 +187,12 @@ log(`日志文件: ${logFile}`);
 log(`Node 版本: ${process.version}`);
 log(`工作目录: ${process.cwd()}`);
 log(`内存限制: ${process.execArgv.join(' ')}`);
-cleanViteOptimizedDepsOnStart();
 
 const viteEntry = 'scripts/infra/vite-cli-safe.mjs';
 const viteArgs = createViteArgs();
+const viteCacheDir = resolveViteCacheDir();
+log(`Vite 缓存目录: ${viteCacheDir}`);
+cleanViteOptimizedDepsOnStart();
 const shouldForceInline = process.env.BG_VITE_FORCE_INLINE === '1';
 
 function resolveMaxOldSpaceSizeArg(defaultMb = 8192) {

@@ -3,6 +3,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import type { EventStreamEntry, GameEvent } from '../../../engine/types';
 import { computeEventStreamDelta, shouldConsumeChargeEvent, type AbilityModeState } from '../ui/useGameEvents';
@@ -166,6 +167,7 @@ describe('systemInteractionAdapter', () => {
       'telekinesis_instead',
       'high_telekinesis_instead',
       'vanish',
+      'mogu_blood_infusion',
     ]);
   });
 
@@ -1596,5 +1598,14 @@ describe('systemInteractionAdapter', () => {
       expect(source).not.toMatch(/defaultValue\s*:/);
       expect(source).not.toMatch(/t\(\s*['"`][^'"`]+['"`]\s*,\s*['"`]/);
     }
+  });
+
+  it('攻击骰子结果不应被后续技能交互自动关闭', () => {
+    const boardSource = readFileSync(resolve(__dirname, '../Board.tsx'), 'utf-8');
+
+    expect(boardSource).toContain('<DiceResultOverlay');
+    expect(boardSource).toContain('<CardSelectorOverlay');
+    expect(boardSource).not.toContain('board_auto_close_dice_for_interaction');
+    expect(boardSource).not.toMatch(/if\s*\(\s*!diceResult\s*\|\|\s*!swInteraction\s*\)\s*return[\s\S]{0,300}handleCloseDiceResult\s*\(\s*\)/);
   });
 });

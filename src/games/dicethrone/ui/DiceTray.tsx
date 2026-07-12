@@ -836,6 +836,9 @@ export const DiceTray = ({
                     const overlayZIndex = projectedLayout && isBoardPresentation
                         ? 20 + Math.round(projectedLayout.maxY)
                         : (scatterSlot.zIndex ?? 1) + 20;
+                    const boardOperationZIndex = isBoardPresentation && (showOverlayAdjustButtons || showOverlayAnyModeButtons)
+                        ? overlayZIndex + 1000
+                        : overlayZIndex;
 
                     if (isOverlayPresentation) {
                         return (
@@ -867,15 +870,17 @@ export const DiceTray = ({
                                 className={clsx(
                                     'absolute rounded-full transition-[left,top,width,height,transform,filter] duration-75 ease-out',
                                     isBoardPresentation
-                                        ? 'pointer-events-none'
+                                        ? ((showOverlayAdjustButtons || showOverlayAnyModeButtons)
+                                            ? 'pointer-events-none'
+                                            : (clickable ? 'pointer-events-auto' : 'pointer-events-none'))
                                         : 'pointer-events-auto',
-                                    clickable ? 'cursor-pointer' : 'cursor-default',
+                                    clickable && !showOverlayAdjustButtons && !showOverlayAnyModeButtons ? 'cursor-pointer' : 'cursor-default',
                                 )}
                                 data-board-dice-interaction-armed={boardInteractionArmed ? 'true' : 'false'}
                                 style={{
                                     left: projectedLayout ? `${centerX}px` : scatterSlot.left,
                                     top: projectedLayout ? `${centerY}px` : scatterSlot.top,
-                                    zIndex: overlayZIndex,
+                                    zIndex: boardOperationZIndex,
                                     width: overlayWidth,
                                     height: overlayHeight,
                                     transform: 'translate(-50%, -50%)',
@@ -1355,7 +1360,7 @@ export const BoardDiceStage = ({
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
     isPassiveRerollMode?: boolean;
 }) => {
-    const { t } = useTranslation('dicethrone');
+    const { t } = useTranslation('game-dicethrone');
     const dtMeta = getDtMeta(interaction);
     const isInteractionMode = Boolean(dtMeta);
     const isModifyMode = dtMeta?.dtType === 'modifyDie';

@@ -3,6 +3,8 @@ import { createHeistRecord } from './showdown';
 import { createInitialHeistCore, discardHighestCard, discardLowestCard } from './setup';
 import {
     buildDealPlan,
+    createSpecialistDeck,
+    createToolDeck,
     isChallengeActive,
     normalizeRulesConfig,
 } from './expansions';
@@ -14,6 +16,7 @@ import {
     type TheGangEvent,
     type TheGangProgressKind,
     type TheGangRound,
+    type TheGangSpecialistId,
     type TheGangToolId,
 } from './types';
 
@@ -21,6 +24,15 @@ const timestampOf = (command: TheGangCommand) =>
     typeof command.timestamp === 'number' ? command.timestamp : 0;
 
 type CardList = TheGangCore['deck'];
+
+const shuffleItems = <T,>(items: readonly T[], random: RandomFn): T[] => {
+    const next = [...items];
+    for (let index = next.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(random.random() * (index + 1));
+        [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    }
+    return next;
+};
 
 interface RoundAdvanceDraw {
     revealedCards: CardList;
@@ -230,6 +242,24 @@ export function execute(
                 timestamp,
             }];
         }
+        case THE_GANG_COMMANDS.RESET_TOOLS:
+            return [{
+                type: THE_GANG_EVENTS.TOOLS_RESET,
+                payload: {
+                    toolDeck: shuffleItems<TheGangToolId>(createToolDeck(), random),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        case THE_GANG_COMMANDS.RESET_SPECIALISTS:
+            return [{
+                type: THE_GANG_EVENTS.SPECIALISTS_RESET,
+                payload: {
+                    specialistDeck: shuffleItems<TheGangSpecialistId>(createSpecialistDeck(), random),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
         case THE_GANG_COMMANDS.USE_TOOL:
             return [{
                 type: THE_GANG_EVENTS.TOOL_USED,
@@ -328,6 +358,39 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 ...core,
                 players,
                 toolDeck: event.payload.remainingToolDeck,
+            };
+        }
+        case THE_GANG_EVENTS.TOOLS_RESET: {
+            const players = Object.fromEntries(core.playerIds.map((playerId) => {
+                const player = core.players[playerId];
+                return [playerId, {
+                    ...player,
+                    toolCards: [],
+                    activeTools: [],
+                    flashlightCards: [],
+                    nightVisionCards: [],
+                }];
+            }));
+            return {
+                ...core,
+                players,
+                toolDeck: event.payload.toolDeck,
+                toolDiscardPile: [],
+            };
+        }
+        case THE_GANG_EVENTS.SPECIALISTS_RESET: {
+            const players = Object.fromEntries(core.playerIds.map((playerId) => {
+                const player = core.players[playerId];
+                return [playerId, {
+                    ...player,
+                    specialistCards: [],
+                }];
+            }));
+            return {
+                ...core,
+                players,
+                specialistDeck: event.payload.specialistDeck,
+                specialistDiscardPile: [],
             };
         }
         case THE_GANG_EVENTS.TOOL_USED: {

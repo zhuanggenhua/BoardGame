@@ -38,6 +38,7 @@ export const ACTIVATED_ABILITY_IDS = [
   'telekinesis_instead',
   'high_telekinesis_instead',
   'vanish',
+  'mogu_blood_infusion',
 ] as const;
 
 type ActivatedAbilityId = typeof ACTIVATED_ABILITY_IDS[number];
@@ -497,6 +498,20 @@ export function listSystemAbilityPositionTargets(
       .filter((position): position is CellCoord => !!position);
   }
 
+  if (abilityMode.abilityId === 'mogu_fanatical_fungus' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as {
+          action?: string;
+          targetPosition?: CellCoord;
+          newPosition?: CellCoord;
+        } | undefined;
+        if (value?.action !== 'after_move_mogu_fanatical_fungus_target') return null;
+        return isCellCoord(value.newPosition) ? value.newPosition : value.targetPosition;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
   return [];
 }
 
@@ -519,6 +534,19 @@ export function findSystemAbilityPositionOption(
 
   if (abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition') {
     return findActivatedAbilityTargetOptionByPosition(swInteraction, 'revive_undead', position, 'selectPosition');
+  }
+
+  if (abilityMode.abilityId === 'mogu_fanatical_fungus' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as {
+        action?: string;
+        targetPosition?: CellCoord;
+        newPosition?: CellCoord;
+      } | undefined;
+      if (value?.action !== 'after_move_mogu_fanatical_fungus_target') return false;
+      const target = isCellCoord(value.newPosition) ? value.newPosition : value.targetPosition;
+      return target?.row === position.row && target.col === position.col;
+    }) ?? null;
   }
 
   return null;
@@ -611,6 +639,21 @@ export function findSystemAbilityUnitOptionByPosition(
     }) ?? null;
   }
 
+  if (abilityMode.abilityId === 'mogu_transmission' && swInteraction.type === 'after_move_mogu_transmission') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as {
+        action?: string;
+        targetPosition?: CellCoord;
+      } | undefined;
+      return (
+        (value?.action === 'after_move_mogu_transmission_source'
+          || value?.action === 'after_move_mogu_transmission_target')
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col
+      );
+    }) ?? null;
+  }
+
   if (abilityMode.abilityId === 'vanish') {
     return findActivatedAbilityTargetOptionByPosition(
       swInteraction,
@@ -633,6 +676,15 @@ export function findSystemAbilityUnitOptionByPosition(
     return findActivatedAbilityTargetOptionByPosition(
       swInteraction,
       'telekinesis_instead',
+      position,
+      'selectUnit',
+    );
+  }
+
+  if (abilityMode.abilityId === 'mogu_blood_infusion') {
+    return findActivatedAbilityTargetOptionByPosition(
+      swInteraction,
+      'mogu_blood_infusion',
       position,
       'selectUnit',
     );
@@ -670,6 +722,7 @@ export function getSystemAbilityUiRoute(
     (abilityMode.abilityId === 'structure_shift' && abilityMode.step === 'selectUnit')
     || (abilityMode.abilityId === 'structure_shift' && abilityMode.step === 'selectNewPosition')
     || (abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'mogu_fanatical_fungus' && abilityMode.step === 'selectPosition')
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit')
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection')
   ) {
@@ -683,15 +736,21 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'spirit_bond'
       || abilityMode.abilityId === 'ancestral_bond'
       || abilityMode.abilityId === 'frost_axe'
+      || abilityMode.abilityId === 'mogu_transmission'
       || abilityMode.abilityId === 'vanish'
       || abilityMode.abilityId === 'telekinesis_instead'
       || abilityMode.abilityId === 'high_telekinesis_instead'
+      || abilityMode.abilityId === 'mogu_blood_infusion'
     )
   ) {
     return 'board-cell-unit';
   }
 
   if (abilityMode.abilityId === 'blood_rune' && abilityMode.step === 'selectUnit') {
+    return 'status-banner-choice';
+  }
+
+  if (abilityMode.abilityId === 'mogu_transmission' && abilityMode.step === 'selectChoice') {
     return 'status-banner-choice';
   }
 
@@ -791,10 +850,41 @@ export function deriveSystemAbilityMode(
     };
   }
 
+  if (swInteraction.type === 'after_move_mogu_transmission') {
+    return {
+      abilityId: 'mogu_transmission',
+      step: meta.step === 'selectSource' || meta.step === 'selectTarget' ? 'selectUnit' : 'selectChoice',
+      sourceUnitId: meta.sourceUnitId,
+      systemStep: meta.step,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
+    };
+  }
+
+  if (swInteraction.type === 'after_move_mogu_fanatical_fungus') {
+    return {
+      abilityId: 'mogu_fanatical_fungus',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
   if (swInteraction.type === 'activated_ability_target' && isActivatedAbilityId(meta.abilityId)) {
     if (meta.abilityId === 'vanish' && meta.step === 'selectUnit') {
       return {
         abilityId: 'vanish',
+        step: 'selectUnit',
+        sourceUnitId: meta.sourceUnitId,
+      };
+    }
+
+    if (meta.abilityId === 'mogu_blood_infusion' && meta.step === 'selectUnit') {
+      return {
+        abilityId: 'mogu_blood_infusion',
         step: 'selectUnit',
         sourceUnitId: meta.sourceUnitId,
       };
