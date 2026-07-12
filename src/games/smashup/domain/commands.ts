@@ -23,7 +23,7 @@ import { canPlayActionFromDiscard } from './discardActionPlayability';
 import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
-import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility } from './baseAbilities';
+import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility, type BaseAbilityContext } from './baseAbilities';
 import {
     getActionPlayRestrictionError,
     validateActionPlaySemantics,
@@ -814,14 +814,15 @@ export function validate(
                 }
             }
 
-            const canUse = canUseActiveBaseAbility(base.defId, {
+            const baseAbilityContext: BaseAbilityContext = {
                 state: core,
                 matchState: state,
                 baseIndex,
                 baseDefId: base.defId,
                 playerId: command.playerId,
                 now: core.turnNumber ?? 0,
-            } as any);
+            };
+            const canUse = canUseActiveBaseAbility(base.defId, baseAbilityContext);
             if (!canUse) {
                 return { valid: false, error: '当前不能使用该基地能力' };
             }

@@ -25,7 +25,7 @@ import {
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import { SU_EVENTS } from '../domain/types';
-import type { CardInstance, CardSuppressedEvent, DeckReorderedEvent, MinionPlayedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { CardInstance, CardSuppressedEvent, CardsDrawnEvent, DeckReorderedEvent, MinionPlayedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { registerCardAbilitySuppression, registerProtection, registerTrigger, type ProtectionCheckContext, type TriggerContext } from '../domain/ongoingEffects';
 import { getEffectivePower } from '../domain/ongoingModifiers';
@@ -219,7 +219,7 @@ function buildSuperheroesDeckSearchResolutionEvents(params: {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: { playerId, count: 1, cardUids: [selected.uid] },
             timestamp,
-        } as any,
+        } as CardsDrawnEvent,
         grantExtraMinion(playerId, sourceId, timestamp),
         {
             type: SU_EVENTS.MINION_PLAYED,
@@ -365,7 +365,7 @@ const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext,
         ),
         (state) => [createSkipOption(), ...buildSmallMinionDiscardOptions(state.core, context.playerId)],
     ),
-    onResolve: ({ context, state, playerId, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, timestamp }) => {
         const choices = Array.isArray(value) ? value as CardChoice[] : [];
         const selected = choices.filter((choice) => !choice.skip && choice.cardUid && choice.defId);
         if (selected.length === 0) return { events: [] };
