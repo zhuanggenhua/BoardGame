@@ -1232,6 +1232,28 @@ export function registerPodOngoingAliases(): void {
     baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
 
 
+    const baseVpModifiersToAdd: BaseVpModifierEntry[] = [];
+    for (const entry of baseVpModifierRegistry) {
+        const { sourceDefId, checker } = entry;
+
+        if (sourceDefId.endsWith('_pod')) continue;
+        if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
+
+        const podDefId = `${sourceDefId}_pod`;
+
+        const alreadyRegistered = baseVpModifierRegistry.some(
+            e => e.sourceDefId === podDefId && e.checker === checker
+        );
+        if (alreadyRegistered) continue;
+
+        baseVpModifiersToAdd.push({ sourceDefId: podDefId, checker, generatedPodAlias: true });
+        _mappedCount++;
+    }
+
+    baseVpModifierRegistry.push(...baseVpModifiersToAdd);
+
+
     const cardSuppressionsToAdd: CardAbilitySuppressionEntry[] = [];
     for (const entry of cardAbilitySuppressionRegistry) {
         const { sourceDefId, checker } = entry;

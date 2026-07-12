@@ -173,6 +173,14 @@ export function canControllerPlayTitan(
     const activeTitan = getTitanByController(state, controllerId);
     if (!activeTitan) return true;
     if (activeTitan.uid === titanUid) return true;
+    const core = 'core' in state ? state.core : state;
+    const redTrooperPodInPlay = core.bases.some(base =>
+        base.minions.some(minion =>
+            minion.controller === controllerId
+            && minion.defId === 'mega_troopers_red_trooper_pod',
+        ),
+    );
+    if (redTrooperPodInPlay) return true;
     return options?.allowConcurrentOwnTitan === true;
 }
 

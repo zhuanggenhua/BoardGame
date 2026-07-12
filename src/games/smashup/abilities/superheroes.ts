@@ -29,6 +29,7 @@ import type { CardInstance, CardSuppressedEvent, DeckReorderedEvent, MinionPlaye
 import { getCardDef, getBaseDef } from '../data/cards';
 import { registerCardAbilitySuppression, registerProtection, registerTrigger, type ProtectionCheckContext, type TriggerContext } from '../domain/ongoingEffects';
 import { getEffectivePower } from '../domain/ongoingModifiers';
+import { matchesDefId } from '../domain/utils';
 
 type SuperheroesPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -942,7 +943,7 @@ function superheroesAwesomeGuyProtection(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.minions.some((minion) =>
-        minion.defId === 'superheroes_awesome_guy'
+        matchesDefId(minion.defId, 'superheroes_awesome_guy')
         && minion.controller === ctx.targetMinion.controller,
     );
 }
@@ -950,7 +951,7 @@ function superheroesAwesomeGuyProtection(ctx: ProtectionCheckContext): boolean {
 function superheroesExpandedPowerProtection(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     return ctx.targetMinion.attachedActions.some((action) =>
-        action.defId === 'superheroes_expanded_power'
+        matchesDefId(action.defId, 'superheroes_expanded_power')
         && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.targetMinion.controller),
     );
 }
@@ -961,7 +962,7 @@ function superheroesSecretBaseProtection(ctx: ProtectionCheckContext): boolean {
     if (!base) return false;
     if (getEffectivePower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) > 3) return false;
     return base.ongoingActions.some((action) =>
-        action.defId === 'superheroes_secret_base'
+        matchesDefId(action.defId, 'superheroes_secret_base')
         && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.targetMinion.controller),
     );
 }
@@ -969,7 +970,7 @@ function superheroesSecretBaseProtection(ctx: ProtectionCheckContext): boolean {
 function superheroesConvertedCaveProtection(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     const base = ctx.state.bases[ctx.targetBaseIndex];
-    if (!base || base.defId !== 'base_converted_cave') return false;
+    if (!base || !matchesDefId(base.defId, 'base_converted_cave')) return false;
     return getEffectivePower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
 }
 
@@ -981,7 +982,7 @@ function superheroesMyOnlyWeaknessSuppression(
     for (const base of state.bases) {
         for (const minion of base.minions) {
             const hasActiveWeakness = minion.attachedActions.some((action) => (
-                action.defId === 'superheroes_my_only_weakness'
+                matchesDefId(action.defId, 'superheroes_my_only_weakness')
                 && !turnScopedSuppressedCardUids.has(action.uid)
             ));
             if (hasActiveWeakness) {

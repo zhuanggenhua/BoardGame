@@ -35,10 +35,15 @@ import type {
     SmashUpEvent,
 } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import { matchesDefId } from '../domain/utils';
 
 const WALKING_CASTLE = 'magical_girls_walking_castle';
 const POWER_MAID = 'magical_girls_power_maid';
 const LUNAR_CAPTAIN = 'magical_girls_lunar_captain';
+
+function getVariantScopedDefId(sourceDefId: string, baseDefId: string): string {
+    return sourceDefId.endsWith('_pod') ? `${baseDefId}_pod` : baseDefId;
+}
 
 type MinionTarget = {
     uid: string;
@@ -571,7 +576,9 @@ function collectNamedMinionSearchChoices(state: SmashUpCore, playerId: PlayerId,
     return [...fromDeck, ...fromDiscard];
 }
 
-function searchNamedMinion(ctx: AbilityContext, sourceId: string, targetDefId: string): AbilityResult {
+function searchNamedMinion(ctx: AbilityContext, sourceBaseDefId: string, targetBaseDefId: string): AbilityResult {
+    const sourceId = getVariantScopedDefId(ctx.defId, sourceBaseDefId);
+    const targetDefId = getVariantScopedDefId(ctx.defId, targetBaseDefId);
     const choices = collectNamedMinionSearchChoices(ctx.state, ctx.playerId, targetDefId);
     if (choices.length === 0) return noTargets(ctx);
     if (choices.length === 1) {
@@ -588,21 +595,13 @@ function searchNamedMinion(ctx: AbilityContext, sourceId: string, targetDefId: s
         value: choice,
         displayCard: { defId: choice.defId, cardUid: choice.cardUid },
     }));
-    const interaction = sourceId === 'magical_girls_white_magicat'
-        ? createSimpleChoice(
-            `magical_girls_white_magicat_${ctx.now}`,
-            ctx.playerId,
-            `${cardLabel(ctx.defId)}：搜索 ${cardLabel(targetDefId)} 加入手牌`,
-            options,
-            { sourceId: 'magical_girls_white_magicat', targetType: 'generic' },
-        )
-        : createSimpleChoice(
-            `magical_girls_black_magicat_${ctx.now}`,
-            ctx.playerId,
-            `${cardLabel(ctx.defId)}：搜索 ${cardLabel(targetDefId)} 加入手牌`,
-            options,
-            { sourceId: 'magical_girls_black_magicat', targetType: 'generic' },
-        );
+    const interaction = createSimpleChoice(
+        `${sourceId}_${ctx.now}`,
+        ctx.playerId,
+        `${cardLabel(ctx.defId)}：搜索 ${cardLabel(targetDefId)} 加入手牌`,
+        options,
+        { sourceId, targetType: 'generic' },
+    );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -622,7 +621,7 @@ function powerMaid(ctx: AbilityContext): AbilityResult {
         && ctx.state.bases.length > 1);
     return queueMinionPrompt(
         ctx,
-        'magical_girls_power_maid',
+        ctx.defId,
         '女仆：选择力量不高于你这里随从数量的随从，将其移入或移出这里',
         targets,
         'move',
@@ -799,7 +798,7 @@ function fancySuitLadProtection(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base || ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     return base.minions.some(minion =>
-        minion.defId === 'magical_girls_fancy_suit_lad'
+        matchesDefId(minion.defId, 'magical_girls_fancy_suit_lad')
         && minion.controller === ctx.targetMinion.controller
         && minion.uid !== ctx.targetMinion.uid);
 }
@@ -807,9 +806,9 @@ function fancySuitLadProtection(ctx: ProtectionCheckContext): boolean {
 function magicalStaffInterceptor(_state: SmashUpCore, event: SmashUpEvent): SmashUpEvent | null | undefined {
     if (event.type !== SU_EVENTS.ONGOING_DETACHED) return undefined;
     const payload = (event as OngoingDetachedEvent).payload;
-    if (payload.defId !== 'magical_girls_magical_staff') return undefined;
+    if (!matchesDefId(payload.defId, 'magical_girls_magical_staff')) return undefined;
     if (!payload.reason.includes('destroy') && !payload.reason.includes('discard')) return undefined;
-    return buildCardToDeckTop(payload.cardUid, payload.defId, payload.ownerId, 'magical_girls_magical_staff', event.timestamp);
+    return buildCardToDeckTop(payload.cardUid, payload.defId, payload.ownerId, payload.defId, event.timestamp);
 }
 
 export function registerMagicalGirlsAbilities(): void {
@@ -1095,14 +1094,29 @@ export function registerMagicalGirlsInteractionHandlers(): void {
     registerInteractionHandler('magical_girls_power_maid', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number };
         if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-        const source = findMinion(state.core, state.core.bases.flatMap(base => base.minions).find(minion => minion.defId === POWER_MAID && minion.controller === playerId)?.uid ?? '');
-        const target = findMinion(state.core, selected.minionUid);
-        if (!source || !target) return { state, events: [] };
         const continuation = (data?.continuationContext as {
             sourceCardUid?: string;
             sourceDefId?: string;
             sourceBaseIndex?: number;
         } | undefined);
+        const source = continuation?.sourceCardUid
+            ? findMinion(state.core, continuation.sourceCardUid)
+            : findMinion(
+                state.core,
+                state.core.bases
+                    .flatMap(base => base.minions)
+                    .find(minion => matchesDefId(minion.defId, POWER_MAID) && minion.controller === playerId)?.uid ?? '',
+            );
+        const target = findMinion(state.core, selected.minionUid);
+        if (
+            !source
+            || !target
+            || source.minion.controller !== playerId
+            || !matchesDefId(source.minion.defId, POWER_MAID)
+            || (continuation?.sourceDefId !== undefined && source.minion.defId !== continuation.sourceDefId)
+        ) {
+            return { state, events: [] };
+        }
         const destinations = state.core.bases
             .map((_base, baseIndex) => baseIndex)
             .filter(baseIndex => target.baseIndex === source.baseIndex ? baseIndex !== source.baseIndex : baseIndex === source.baseIndex);
@@ -1114,7 +1128,7 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                 minionDefId: target.minion.defId,
                 fromBaseIndex: target.baseIndex,
                 toBaseIndex: destinations[0],
-                reason: 'magical_girls_power_maid',
+                reason: continuation?.sourceDefId ?? source.minion.defId,
                 now: timestamp,
                 sourcePlayerId: playerId,
                 sourceCardUid: continuation?.sourceCardUid,
