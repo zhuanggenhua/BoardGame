@@ -7,6 +7,10 @@
  *
  * HERO_ATLAS 用原始 PNG 尺寸（hero.webp 等比缩放，百分比裁切一致）。
  * PORTAL_ATLAS 用 webp 压缩后尺寸（Portal.webp 非等比缩放，必须匹配实际 webp 尺寸）。
+ *
+ * @atlas-contract 召唤战争图集裁剪依据：旧版 hero/cards/Portal/dice 沿用既有源图尺寸注释；
+ * mogu/cards.jpg 已用本地源图尺寸探测确认 8088x1454，按 8列 x 2行均分为 1011x727；
+ * mogu/hero.png 已用本地源图尺寸探测确认 1267x908，全图单帧；mogu 卡图 slot 11-15 为空白占位。
  */
 
 import type { CSSProperties } from 'react';
