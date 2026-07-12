@@ -35,7 +35,7 @@ import {
   SYSTEM_CARD_SELECTOR_ABILITY_IDS,
   type SwSimpleChoiceInteraction,
 } from '../ui/systemInteractionAdapter';
-import { getAbilityModeBannerFallbackText } from '../ui/StatusBanners';
+import { getAbilityModeBannerFallbackText } from '../ui/statusBannerText';
 
 function makeEntry(id: number): EventStreamEntry {
   const event: GameEvent = { type: 'TEST_EVENT', payload: {}, timestamp: id };
@@ -1589,6 +1589,7 @@ describe('systemInteractionAdapter', () => {
   it('关键 UI 文案入口不再依赖 fallback/defaultValue 掩盖缺 key', () => {
     const uiSources = [
       '../ui/StatusBanners.tsx',
+      '../ui/statusBannerText.ts',
       '../ui/HandArea.tsx',
       '../ui/CustomDeckCard.tsx',
       '../ui/deckbuilder/MyDeckPanel.tsx',
