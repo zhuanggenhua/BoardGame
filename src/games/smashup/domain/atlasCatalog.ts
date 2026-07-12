@@ -29,6 +29,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS11, kind: 'card', image: 'smashup/cards/yuanhou', grid: { rows: 6, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS12, kind: 'card', image: 'smashup/cards/longzu', grid: { rows: 5, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS13, kind: 'card', image: 'smashup/cards/zhongguo', grid: { rows: 7, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.MARVEL_WAVE_ONE_CARDS, kind: 'card', image: 'smashup/cards/marvel_wave_one', grid: { rows: 6, cols: 9 } },
     { id: SMASHUP_ATLAS_IDS.KITTY_CATS_POD_CARDS, kind: 'card', image: 'smashup/cards/kitty_cats_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.MYTHIC_HORSES_POD_CARDS, kind: 'card', image: 'smashup/cards/mythic_horses_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.FAIRIES_POD_CARDS, kind: 'card', image: 'smashup/cards/fairies_pod', grid: { rows: 4, cols: 5 } },

@@ -1,0 +1,26 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "smashup",
+  "basePrefix": "official/smashup/",
+  "files": {
+    "cards/compressed/marvel_wave_one": {
+      "variants": {
+        "webp": {
+          "sha256": "50c3addaf130dd61821f25e4f8a1b2767351f1845071f77b30530ae2d89db5ef",
+          "bytes": 1103642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/marvel_wave_one": {
+      "variants": {
+        "png": {
+          "sha256": "1d0e1bdfc79005ae2fdac697c4d5ac47f5b00bb219e707c1e44258a4986d95e1",
+          "bytes": 36067834,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

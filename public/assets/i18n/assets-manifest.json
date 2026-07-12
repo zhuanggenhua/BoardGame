@@ -5652,8 +5652,8 @@
     "zh-CN/dicethrone/images/artificial/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
-          "bytes": 720,
+          "sha256": "0df23aa8f4032900736ebb80c5a20a31dab87f9fdb80485349ff4b875e88c328",
+          "bytes": 771,
           "mime": "application/json"
         }
       }
@@ -6152,8 +6152,8 @@
     "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
-          "bytes": 604,
+          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
+          "bytes": 647,
           "mime": "application/json"
         }
       }
@@ -7264,8 +7264,8 @@
     "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
-          "bytes": 370,
+          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
+          "bytes": 397,
           "mime": "application/json"
         }
       }
@@ -9340,6 +9340,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/marvel_wave_one": {
+      "variants": {
+        "webp": {
+          "sha256": "50c3addaf130dd61821f25e4f8a1b2767351f1845071f77b30530ae2d89db5ef",
+          "bytes": 1103642,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/mermaids_pod": {
       "variants": {
         "webp": {
@@ -9471,6 +9480,15 @@
         "png": {
           "sha256": "090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13",
           "bytes": 42040387,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/marvel_wave_one": {
+      "variants": {
+        "png": {
+          "sha256": "1d0e1bdfc79005ae2fdac697c4d5ac47f5b00bb219e707c1e44258a4986d95e1",
+          "bytes": 36067834,
           "mime": "image/png"
         }
       }

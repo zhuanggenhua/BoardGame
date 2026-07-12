@@ -29,6 +29,7 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS11: 'smashup:cards11',
     CARDS12: 'smashup:cards12',
     CARDS13: 'smashup:cards13',
+    MARVEL_WAVE_ONE_CARDS: 'smashup:marvel-wave-one-cards',
     KITTY_CATS_POD_CARDS: 'smashup:kitty-cats-pod-cards',
     MYTHIC_HORSES_POD_CARDS: 'smashup:mythic-horses-pod-cards',
     FAIRIES_POD_CARDS: 'smashup:fairies-pod-cards',
@@ -52,6 +53,10 @@ export const SMASHUP_CARD_BACK = {
 } as const;
 
 export const SMASHUP_FACTION_IDS = {
+    AVENGERS: 'avengers',
+    SHIELD: 'shield',
+    SPIDER_VERSE: 'spider_verse',
+    ULTIMATES: 'ultimates',
     ALIENS: 'aliens',
     ANCIENT_EGYPTIANS: 'ancient_egyptians',
     ANCIENT_EGYPTIANS_POD: 'ancient_egyptians_pod',
@@ -184,6 +189,10 @@ export function isSmashUpFactionImplementationInProgress(factionId: string): boo
 
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
+    [SMASHUP_FACTION_IDS.AVENGERS]: '复仇者',
+    [SMASHUP_FACTION_IDS.SHIELD]: '神盾局',
+    [SMASHUP_FACTION_IDS.SPIDER_VERSE]: '蜘蛛宇宙',
+    [SMASHUP_FACTION_IDS.ULTIMATES]: '终极战队',
     [SMASHUP_FACTION_IDS.PIRATES]: '海盗',
     [SMASHUP_FACTION_IDS.PIRATES_POD]: '海盗 (POD版)',
     [SMASHUP_FACTION_IDS.NINJAS]: '忍者',

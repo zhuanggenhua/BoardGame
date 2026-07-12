@@ -57,6 +57,8 @@ import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers 
 import { registerHuluwawaAbilities } from './huluwawa';
 import { registerPaladinAbilities } from './paladins';
 import { registerZhongguoAbilities } from './zhongguo';
+import { registerAvengersAbilities } from './avengers';
+import { registerMarvelAbilities } from './marvel';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -182,6 +184,8 @@ export function initAllAbilities(): void {
     registerHuluwawaAbilities();
     registerPaladinAbilities();
     registerZhongguoAbilities();
+    registerAvengersAbilities();
+    registerMarvelAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 
