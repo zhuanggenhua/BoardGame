@@ -20,6 +20,7 @@ import React from 'react';
 import { ShaderCanvas } from '../../../engine/fx/shader/ShaderCanvas';
 import { VORTEX_FRAG } from '../../../engine/fx/shader/shaders/vortex.frag';
 import { registerShader } from '../../../engine/fx/shader/ShaderPrecompile';
+import type { FxQuality } from '../../../engine/fx';
 import type { VortexIntensity, VortexColorTheme, VortexColorSet } from './VortexEffect';
 
 // 模块加载时自动注册 shader 到预编译队列
@@ -36,6 +37,7 @@ export interface VortexShaderEffectProps {
   customColors?: VortexColorSet;
   /** 旋涡缩放系数，默认 1.0（>1 放大，<1 缩小） */
   size?: number;
+  quality?: FxQuality;
   onComplete?: () => void;
   className?: string;
 }
@@ -108,6 +110,7 @@ export const VortexShaderEffect: React.FC<VortexShaderEffectProps> = ({
   color = 'blue',
   customColors,
   size = 2,
+  quality = 'full',
   onComplete,
   className = '',
 }) => {
@@ -134,6 +137,9 @@ export const VortexShaderEffect: React.FC<VortexShaderEffectProps> = ({
       }}
       duration={dur}
       onComplete={onComplete}
+      quality={quality}
+      maxDpr={1.25}
+      reducedMaxDpr={1}
       className={`absolute inset-0 ${className}`}
     />
   );

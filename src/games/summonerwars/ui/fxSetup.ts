@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../engine/fx';
+import { FxRegistry, resolveFxQuality, type FxRendererProps, type FeedbackPack, type FxQuality } from '../../../engine/fx';
 import { SummonHybridEffect } from '../../../components/common/animations/SummonHybridEffect';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
 import { ConeBlast } from '../../../components/common/animations/ConeBlast';
@@ -115,6 +115,10 @@ function useStableComplete(onComplete: () => void): () => void {
   return useCallback(() => ref.current(), []);
 }
 
+function resolveEventQuality(event: FxRendererProps['event'], fallback: FxQuality = 'full'): FxQuality {
+  return resolveFxQuality(event.params?.quality, resolveFxQuality(event.ctx.quality, fallback));
+}
+
 // ============================================================================
 // 渲染器：召唤光柱
 // ============================================================================
@@ -133,6 +137,7 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const pos = getCellPosition(cell.row, cell.col);
   // 召唤光柱统一蓝色，与传送门视觉一致
   const color = (event.params?.color as 'blue' | 'gold') ?? 'blue';
+  const quality = resolveEventQuality(event);
 
   const scale = 7.5;
   const box = scaledCellBox(pos, scale);
@@ -146,6 +151,7 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
       intensity: event.ctx.intensity ?? 'normal',
       color,
       originY: 0.5,
+      quality,
       onImpact,
       onComplete: stableComplete,
     }),
@@ -164,6 +170,7 @@ const ChargeVortexRenderer: React.FC<FxRendererProps> = ({ event, getCellPositio
   if (!cell) { stableComplete(); return null; }
 
   const pos = getCellPosition(cell.row, cell.col);
+  const quality = resolveEventQuality(event);
 
   const scale = 4;
   const box = scaledCellBox(pos, scale);
@@ -175,6 +182,7 @@ const ChargeVortexRenderer: React.FC<FxRendererProps> = ({ event, getCellPositio
     React.createElement(VortexShaderEffect, {
       active: true,
       intensity: event.ctx.intensity ?? 'normal',
+      quality,
       onComplete: stableComplete,
     }),
   );
@@ -267,7 +275,7 @@ const ShockwaveRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, 
       start: pathBox.start,
       end: pathBox.end,
       intensity: event.ctx.intensity ?? 'normal',
-      quality: event.params?.quality === 'reduced' ? 'reduced' : 'full',
+      quality: resolveEventQuality(event),
       onComplete: handleRangedComplete,
     }),
   );
@@ -384,18 +392,50 @@ function createRegistry(): FxRegistry {
   // 召唤光柱：震动强度跟随 event.ctx.intensity 动态覆盖（normal/strong）
   registry.register(SW_FX.SUMMON, SummonRenderer, {
     timeoutMs: 4000,
+    maxConcurrent: 1,
+    debounceMs: 80,
+    budget: {
+      areaPolicy: 'cell',
+      estimatedCost: 'high',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   }, SUMMON_FEEDBACK);
 
   registry.register(SW_FX.CHARGE_VORTEX, ChargeVortexRenderer, {
     timeoutMs: 3000,
+    maxConcurrent: 2,
+    debounceMs: 60,
+    budget: {
+      areaPolicy: 'cell',
+      estimatedCost: 'high',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   });
 
   registry.register(SW_FX.COMBAT_SHOCKWAVE, ShockwaveRenderer, {
     timeoutMs: 3000,
+    maxConcurrent: 2,
+    debounceMs: 80,
+    budget: {
+      areaPolicy: 'path',
+      estimatedCost: 'high',
+      maxDpr: 1.5,
+      reducedMaxDpr: 1,
+    },
   }, COMBAT_SHOCKWAVE_FEEDBACK);
 
   registry.register(SW_FX.COMBAT_DAMAGE, DamageRenderer, {
     timeoutMs: 3000,
+    maxConcurrent: 4,
+    debounceMs: 20,
+    budget: {
+      areaPolicy: 'cell',
+      estimatedCost: 'medium',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   }, COMBAT_DAMAGE_FEEDBACK);
 
   return registry;
