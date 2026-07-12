@@ -107,6 +107,8 @@
     },
     "ttsSetupOptions": "TTS 开局开关",
     "ttsSetupOptionsSource": "对应 TTS 桌面 [ ] 按钮",
+    "ttsSetupOptionSelectedPrefix": "[x] ",
+    "ttsSetupOptionIdlePrefix": "[ ] ",
     "ttsSetupOptionLabels": {
       "omaha": "奥马哈",
       "twoHand": "两副手牌",

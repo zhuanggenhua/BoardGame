@@ -2225,6 +2225,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 {
                   id: 'stay',
                   label: '不推拉',
+                  labelKey: 'actions.moguFanaticalFungusStay',
                   value: {
                     action: 'after_move_mogu_fanatical_fungus_target',
                     targetPosition: sourcePosition,

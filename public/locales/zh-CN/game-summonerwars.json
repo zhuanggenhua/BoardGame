@@ -39,6 +39,9 @@
     "closePreview": "关闭预览",
     "close": "关闭",
     "cancel": "取消",
+    "moguTransmissionSelf": "从自身传输",
+    "moguTransmissionAlly": "从友方传输",
+    "moguFanaticalFungusStay": "不推拉",
     "magnify": "放大查看",
     "confirm": "确认",
     "confirmDiscard": "确认弃牌",
@@ -539,7 +542,9 @@
       "telekinesisInstead": "念力代替攻击：选择一个目标进行推拉",
       "highTelekinesisInstead": "高阶念力代替攻击：选择一个目标进行推拉",
       "vanish": "神出鬼没：选择一个 0 费友方单位交换位置",
-      "moguBloodInfusion": "鲜血灌注：选择 2 格内一个友方单位"
+      "moguBloodInfusion": "鲜血灌注：选择 2 格内一个友方单位",
+      "moguTransmission": "菌落传导：选择充能传输方式",
+      "moguFanaticalFungus": "狂热真菌：选择推拉落点"
     },
     "beforeAttack": {
       "lifeDrain": "攻击前技能：吸取生命已就绪，选择攻击目标",

@@ -5286,7 +5286,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     >
                                                         {selectedMaskTargetRoomIdsByTokenId[token.id]
                                                             ? maskTargetRooms.find((room) => room.id === selectedMaskTargetRoomIdsByTokenId[token.id])?.name
-                                                            : '待选'}
+                                                            : t('board.status.tradeStepPending')}
                                                     </span>
                                                 </div>
                                             ))}

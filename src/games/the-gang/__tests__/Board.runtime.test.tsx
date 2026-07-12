@@ -336,7 +336,7 @@ describe('The Gang Board 运行入口', () => {
 
         expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('三条');
+        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('三条A + 单K + 单6');
         expect(screen.queryByTestId('the-gang-current-hand-rank-detail')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-current-hand-rank-best-cards')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-current-hand-rank-hand-cards')).not.toBeInTheDocument();
@@ -372,6 +372,7 @@ describe('The Gang Board 运行入口', () => {
 
         expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
+        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('葫芦：三条A + 对K');
         expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('board.currentHandRankBoardOnly');
         expect(screen.queryByTestId('the-gang-current-hand-rank-detail')).not.toBeInTheDocument();
         expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveAttribute('title', expect.stringContaining('葫芦：三条A + 对K'));

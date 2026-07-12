@@ -107,6 +107,8 @@
     },
     "ttsSetupOptions": "TTS setup toggles",
     "ttsSetupOptionsSource": "Matches the TTS [ ] table buttons",
+    "ttsSetupOptionSelectedPrefix": "[x] ",
+    "ttsSetupOptionIdlePrefix": "[ ] ",
     "ttsSetupOptionLabels": {
       "omaha": "Omaha",
       "twoHand": "2Hand",

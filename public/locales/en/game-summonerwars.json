@@ -39,6 +39,9 @@
     "closePreview": "Close Preview",
     "close": "Close",
     "cancel": "Cancel",
+    "moguTransmissionSelf": "Transfer from self",
+    "moguTransmissionAlly": "Transfer from ally",
+    "moguFanaticalFungusStay": "Do not push or pull",
     "magnify": "Magnify",
     "confirm": "Confirm",
     "confirmDiscard": "Confirm Discard",
@@ -501,7 +504,9 @@
       "telekinesisInstead": "Telekinesis Instead of Attack: Select a target to push or pull",
       "highTelekinesisInstead": "High Telekinesis Instead of Attack: Select a target to push or pull",
       "vanish": "Vanish: Select a 0-cost friendly unit to swap positions",
-      "moguBloodInfusion": "Blood Infusion: Select a friendly unit within 2 spaces"
+      "moguBloodInfusion": "Blood Infusion: Select a friendly unit within 2 spaces",
+      "moguTransmission": "Fungal Transmission: Choose charge transfer mode",
+      "moguFanaticalFungus": "Fanatical Fungus: Choose push or pull destination"
     },
     "beforeAttack": {
       "lifeDrain": "Pre-attack: Life Drain ready, select an attack target",

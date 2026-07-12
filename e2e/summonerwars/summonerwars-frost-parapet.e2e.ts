@@ -79,6 +79,29 @@ test.describe('召唤师战争 - 护城墙', () => {
       await parapetCard.click({ force: true });
       await expect(parapetCard).toHaveAttribute('data-selected', 'true', { timeout: 5000 });
 
+      const targetCell = hostPage.getByTestId(`sw-cell-${prepared.targetPosition.row}-${prepared.targetPosition.col}`);
+      await expect(targetCell).toHaveAttribute('data-valid-build', 'true', { timeout: 5000 });
+      await expect.poll(async () => targetCell.evaluate((node) => {
+        const style = window.getComputedStyle(node);
+        return {
+          borderTopColor: style.borderTopColor,
+          backgroundColor: style.backgroundColor,
+        };
+      }), { timeout: 5000 }).toEqual({
+        borderTopColor: 'rgb(74, 222, 128)',
+        backgroundColor: 'rgba(74, 222, 128, 0.3)',
+      });
+
+      await hostPage.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, '护城墙-绿色可放置高亮', {
+          subdir: 'summonerwars/summonerwars-frost-parapet.e2e/护城墙：手牌点选后点击棋盘成功放置为建筑',
+          requireChineseName: true,
+        }),
+        fullPage: true,
+        type: 'jpeg',
+        quality: 90,
+      });
+
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${prepared.targetPosition.row}-${prepared.targetPosition.col}"]`);
 
       await expect(getBoardStructure(hostPage, prepared.targetPosition.row, prepared.targetPosition.col)).toBeVisible({ timeout: 8000 });

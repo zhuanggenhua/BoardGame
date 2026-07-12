@@ -335,7 +335,7 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isBloodSummonTarget) return baseCellVisualStyle('rgba(244,63,94,1)', 'rgba(244,63,94,0.3)', 'animate-pulse');
   if (isValidEventTarget) return baseCellVisualStyle('rgba(251,146,60,1)', 'rgba(251,146,60,0.3)', 'animate-pulse');
   if (isValidSummon) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.3)');
-  if (isValidBuild) return baseCellVisualStyle('rgba(192,132,252,1)', 'rgba(192,132,252,0.3)');
+  if (isValidBuild) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.3)');
   if (isAbilityPos) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.5)', 'animate-pulse');
   if (isAbilityUnit) return baseCellVisualStyle('rgba(251,191,36,1)', 'rgba(251,191,36,0.4)', 'animate-pulse');
   if (isValidMove) return baseCellVisualStyle('rgba(96,165,250,1)', 'rgba(96,165,250,0.25)');

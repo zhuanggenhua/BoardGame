@@ -307,8 +307,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
               ? t('statusBanners.ability.frostAxeChargeOnly')
               : t('statusBanners.ability.frostAxe')
           )}
-          {abilityMode.abilityId === 'mogu_transmission' && t('interaction.sw.moguTransmission')}
-          {abilityMode.abilityId === 'mogu_fanatical_fungus' && t('interaction.sw.moguFanaticalFungus')}
+          {abilityMode.abilityId === 'mogu_transmission' && t('statusBanners.ability.moguTransmission')}
+          {abilityMode.abilityId === 'mogu_fanatical_fungus' && t('statusBanners.ability.moguFanaticalFungus')}
           {getAbilityModeBannerFallbackText(t, abilityMode)}
           {abilityMode.abilityId === 'vanish' && t('statusBanners.ability.vanish')}
         </span>

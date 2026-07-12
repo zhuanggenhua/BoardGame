@@ -448,20 +448,20 @@ function CurrentHandRankMarker({
     if (!visible) return null;
 
     const label = hint
-        ? `${hint.label}${hint.boardOnly ? ` ${t('board.currentHandRankBoardOnly')}` : ''}`
+        ? `${hint.detail}${hint.boardOnly ? ` ${t('board.currentHandRankBoardOnly')}` : ''}`
         : t('board.currentHandRankPending');
     const markerStyle = PLAYER_HAND_RANK_MARKER_STYLES[playerIndex % PLAYER_HAND_RANK_MARKER_STYLES.length];
 
     return (
         <div
-            className="flex h-7 min-w-[5.25rem] max-w-[8.75rem] items-center justify-center border border-black/70 px-2 text-center text-[0.56rem] font-black leading-none tracking-[0.02em] text-black shadow-[0.14rem_0.16rem_0_rgba(0,0,0,0.45)] lg:h-8 lg:min-w-[6.75rem] lg:max-w-[10.5rem] lg:text-[0.68rem]"
+            className="flex h-7 min-w-[5.25rem] items-center justify-center border border-black/70 px-2.5 text-center text-[0.56rem] font-black leading-none tracking-[0.02em] text-black shadow-[0.14rem_0.16rem_0_rgba(0,0,0,0.45)] lg:h-8 lg:min-w-[6.75rem] lg:px-3 lg:text-[0.68rem]"
             data-testid="the-gang-current-hand-rank"
             data-bgg-zone="hand-rank-current"
             aria-label={hint ? t('board.currentHandRankAria', { rank: hint.label, detail: hint.detail, cards: hint.bestCards }) : t('board.currentHandRankPendingAria')}
             title={hint ? `${hint.detail} | ${hint.bestCards}${hint.handCards ? ` | ${hint.handCards}` : ''}` : undefined}
             style={markerStyle}
         >
-            <span className="truncate">{label}</span>
+            <span className="whitespace-nowrap">{label}</span>
         </div>
     );
 }
@@ -626,7 +626,7 @@ function RulesConfigPanel({
                                                 data-testid={`the-gang-rule-toggle-${option}`}
                                             >
                                                 <span className="block text-sm font-black tracking-[0.08em]">
-                                                    {active ? '[x] ' : '[ ] '}
+                                                    {t(active ? 'board.ttsSetupOptionSelectedPrefix' : 'board.ttsSetupOptionIdlePrefix')}
                                                     {t(`board.ttsSetupOptionLabels.${option}`)}
                                                 </span>
                                                 <span className="mt-2 block text-[0.66rem] font-bold leading-relaxed opacity-78 lg:text-xs">
