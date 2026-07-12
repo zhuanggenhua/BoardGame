@@ -59,7 +59,8 @@ const MAGNIFY_ICON_STYLE: React.CSSProperties = {
 };
 
 /** 计算格子位置（百分比） */
-function getCellPosition(row: number, col: number, grid: GridConfig) {
+// eslint-disable-next-line react-refresh/only-export-components
+export function getCellPosition(row: number, col: number, grid: GridConfig) {
   const cellBounds = cellToNormalizedBounds({ row, col }, grid);
   return {
     left: cellBounds.x * 100,
