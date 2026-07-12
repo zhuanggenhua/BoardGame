@@ -50,3 +50,9 @@
 - 本次真实冲突已解决，没有保留冲突标记。
 - `getCellPosition` 由独立 helper 提供，避免组件文件导出非组件带来的新增告警。
 - 版本号更新保留自最新 `origin/main`。
+
+## 2026-07-12 POD 基地图集 fallback 补充
+
+- 远端质量门失败原因是 PR90 新增的 8 个 POD 基地没有英文 POD 图集映射：`base_wyrms_desolation_pod`、`base_dragons_lair_pod`、`base_converted_cave_pod`、`base_crystal_fortress_pod`、`base_akihabara_high_pod`、`base_q_point_pod`、`base_moon_dumpster_pod`、`base_juice_bar_pod`。
+- 已核对 PR90 随包资源：`public/assets/i18n/en/smashup` 下包含龙族 POD、超级英雄 POD、魔法少女 POD、超级战队 POD 的英文卡牌图，但没有这 8 个基地对应的英文 POD 基地整图。
+- 继续沿用“不虚构不存在的 atlas 槽位”的规则；在真实基地美术到位前，这 8 个基地先记录为文字 fallback POD 基地。
