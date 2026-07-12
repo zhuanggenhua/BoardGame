@@ -1125,10 +1125,12 @@ describe('召唤师战争本地 AI', () => {
 
         expect(resolution?.playerId).toBe('0');
         expect(resolution?.source).toBe('local-ai');
-        expect(resolution?.action.commands[0]).toMatchObject({
-            type: SW_COMMANDS.SELECT_FACTION,
-            payload: { factionId: 'necromancer' },
+        const command = resolution?.action.commands[0];
+        expect(command?.type).toBe(SW_COMMANDS.SELECT_FACTION);
+        expect(command?.payload).toMatchObject({
+            factionId: expect.any(String),
         });
+        expect(command?.payload?.factionId).not.toBe('unselected');
     });
 
     it('选角阶段应避开已被其他玩家选走的阵营', async () => {

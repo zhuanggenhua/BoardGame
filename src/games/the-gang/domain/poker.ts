@@ -244,3 +244,23 @@ export function evaluateBestTexasHoldemHand(cards: PlayingCard[], options?: Poke
         return best;
     }, null) as EvaluatedHand;
 }
+
+export function evaluateBestTheGangHand(
+    handCards: PlayingCard[],
+    boardCards: PlayingCard[],
+    options?: PokerEvaluationOptions,
+): EvaluatedHand {
+    if (options?.rulesConfig?.omaha === true && handCards.length >= 2 && boardCards.length >= 3) {
+        return combinations(handCards, 2)
+            .flatMap((handCombo) => combinations(boardCards, 3).map((boardCombo) => [...handCombo, ...boardCombo]))
+            .reduce<EvaluatedHand | null>((best, combo) => {
+                const strength = evaluateFiveCardHand(combo, options);
+                if (!best || compareHandStrength(strength, best.strength) > 0) {
+                    return { strength, cards: combo };
+                }
+                return best;
+            }, null) as EvaluatedHand;
+    }
+
+    return evaluateBestTexasHoldemHand([...handCards, ...boardCards], options);
+}

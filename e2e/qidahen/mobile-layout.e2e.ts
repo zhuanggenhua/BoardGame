@@ -27,6 +27,14 @@ const screenshot = async (page: Page, testName: string, fileName: string) => {
     return filePath;
 };
 
+const readMapViewportState = async (page: Page) => page.evaluate(() => {
+    const mapLayer = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-layer"]');
+    const zoom = Number(mapLayer?.dataset.mapZoom ?? '0');
+    const panX = Number(mapLayer?.dataset.mapPanX ?? '0');
+    const panY = Number(mapLayer?.dataset.mapPanY ?? '0');
+    return { zoom, panX, panY };
+});
+
 const mountQidahenBoardHarness = async (page: Page) => {
     await page.evaluate(async () => {
         window.__qidahenHarnessStatus = 'starting';
@@ -59,9 +67,10 @@ const mountQidahenBoardHarness = async (page: Page) => {
             modalRoot.id = 'modal-root';
             host.append(boardMount, modalRoot);
 
-            const ReactModule = await import('/node_modules/.vite/deps/react.js');
+            const viteDepsRoot = `/node_modules/.vite/port-${window.location.port}/deps`;
+            const ReactModule = await import(`${viteDepsRoot}/react.js`);
             const React = ReactModule.default;
-            const ReactDomModule = await import('/node_modules/.vite/deps/react-dom_client.js');
+            const ReactDomModule = await import(`${viteDepsRoot}/react-dom_client.js`);
             const ReactDOM = ReactDomModule.default;
             const BoardModule = await import('/src/games/qidahen/Board.tsx');
             const AudioModule = await import('/src/contexts/AudioContext.tsx');
@@ -173,6 +182,10 @@ test.describe('七大恨移动端布局兼容', () => {
             const mapLayer = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-layer"]');
             const mapContent = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-content"]');
             const actionsZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-actions-zone"]');
+            const playerFloat = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-player-float"]');
+            const actionWheel = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-action-wheel"]');
+            const chronologyZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-chronology-zone"]');
+            const koreaZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-korea-zone"]');
             const handZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-hand-zone"]');
             const drawPile = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-draw-pile"]');
             const discardPile = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-discard-pile"]');
@@ -209,8 +222,8 @@ test.describe('七大恨移动端布局兼容', () => {
                     && box.top >= -1
                     && box.bottom <= window.innerHeight + 1
                 ));
-            const comfortableHandCardRects = completeHandCardRects.filter((box) => (
-                window.innerHeight - box.bottom >= 16
+            const bottomDockedHandCardRects = completeHandCardRects.filter((box) => (
+                Math.abs(window.innerHeight - box.bottom) <= 2
             ));
             const getVisibleRatio = (box: DOMRect, clipBox?: DOMRect | null) => {
                 const left = Math.max(box.left, 0, clipBox?.left ?? 0);
@@ -252,6 +265,10 @@ test.describe('七大恨移动端布局兼容', () => {
                 mapLayerRect: rect(mapLayer),
                 mapContentRect: rect(mapContent),
                 actionsZoneRect: rect(actionsZone),
+                playerFloatRect: rect(playerFloat),
+                actionWheelRect: rect(actionWheel),
+                chronologyZoneRect: rect(chronologyZone),
+                koreaZoneRect: rect(koreaZone),
                 handZoneRect: rect(handZone),
                 drawPileRect: rect(drawPile),
                 discardPileRect: rect(discardPile),
@@ -259,7 +276,7 @@ test.describe('七大恨移动端布局兼容', () => {
                 handCards: handCardButtons.length,
                 visibleHandCards: visibleHandCardRects.length,
                 completeHandCards: completeHandCardRects.length,
-                comfortableHandCards: comfortableHandCardRects.length,
+                bottomDockedHandCards: bottomDockedHandCardRects.length,
                 readableHandCards: readableHandCardRects.length,
                 loadedHandCardAtlasImages: loadedHandCardAtlasImages.length,
             };
@@ -271,13 +288,17 @@ test.describe('七大恨移动端布局兼容', () => {
         expect(metrics.mapLayerRect, '应渲染 Qidahen 地图交互层').not.toBeNull();
         expect(metrics.mapContentRect, '应渲染 Qidahen 地图内容').not.toBeNull();
         expect(metrics.actionsZoneRect, '应渲染 Qidahen 操作区').not.toBeNull();
+        expect(metrics.playerFloatRect, '应渲染 Qidahen 玩家状态条').not.toBeNull();
+        expect(metrics.actionWheelRect, '应渲染 Qidahen 轮盘').not.toBeNull();
+        expect(metrics.chronologyZoneRect, '应渲染 Qidahen 纪年卡区域').not.toBeNull();
+        expect(metrics.koreaZoneRect, '应渲染 Qidahen 朝鲜牌堆').not.toBeNull();
         expect(metrics.handZoneRect, '应渲染 Qidahen 手牌区域').not.toBeNull();
         expect(metrics.drawPileRect, '应渲染 Qidahen 己方抽牌堆').not.toBeNull();
         expect(metrics.discardPileRect, '应渲染 Qidahen 己方弃牌堆').not.toBeNull();
         expect(metrics.handCards, 'Qidahen 手机横屏时应渲染玩家手牌按钮').toBeGreaterThan(0);
         expect(metrics.visibleHandCards, 'Qidahen 手机横屏时手牌区应保留至少一张视口内可见卡牌').toBeGreaterThan(0);
         expect(metrics.completeHandCards, 'Qidahen 手机横屏时至少一张手牌主体应完整进入视口').toBeGreaterThan(0);
-        expect(metrics.comfortableHandCards, 'Qidahen 手机横屏时至少一张完整手牌应留出可见底部余量').toBeGreaterThan(0);
+        expect(metrics.bottomDockedHandCards, 'Qidahen 开放式手机横屏时至少一张完整手牌应贴住视口底边，而不是额外悬空留黑边').toBeGreaterThan(0);
         expect(metrics.readableHandCards, 'Qidahen 手机横屏时不能只有中间手牌可辨，当前手牌主体应在可视容器内完整可辨').toBe(metrics.handCards);
         expect(metrics.loadedHandCardAtlasImages, 'Qidahen 手机横屏时每张手牌都应加载真实牌面图集图片').toBe(metrics.handCards);
 
@@ -287,6 +308,15 @@ test.describe('七大恨移动端布局兼容', () => {
         expect(metrics.mapLayerRect!.width, 'Qidahen 地图交互层在手机横屏下不应塌成窄条').toBeGreaterThan(240);
         expect(metrics.mapLayerRect!.height, 'Qidahen 地图交互层在手机横屏下不应塌成横条').toBeGreaterThan(120);
         expect(metrics.actionsZoneRect!.bottom, 'Qidahen 操作区不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.playerFloatRect!.top, 'Qidahen 手机横屏时玩家状态条不应被视口上沿裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.playerFloatRect!.right, 'Qidahen 手机横屏时玩家状态条不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
+        expect(metrics.actionWheelRect!.top, 'Qidahen 手机横屏时轮盘不应被视口上沿裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.actionWheelRect!.left, 'Qidahen 手机横屏时轮盘不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.chronologyZoneRect!.left, 'Qidahen 手机横屏时纪年卡区域不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.chronologyZoneRect!.bottom, 'Qidahen 手机横屏时纪年卡区域不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.chronologyZoneRect!.top, 'Qidahen 手机横屏时纪年卡区域应下移避开轮盘遮挡').toBeGreaterThanOrEqual(metrics.actionWheelRect!.bottom + 4);
+        expect(metrics.koreaZoneRect!.top, 'Qidahen 手机横屏时朝鲜牌堆不应被视口上沿裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.koreaZoneRect!.right, 'Qidahen 手机横屏时朝鲜牌堆不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.drawPileRect!.left, 'Qidahen 手机横屏时左侧抽牌堆不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
         expect(metrics.drawPileRect!.bottom, 'Qidahen 手机横屏时左侧抽牌堆不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
         expect(metrics.discardPileRect!.right, 'Qidahen 手机横屏时右侧弃牌堆不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
@@ -298,6 +328,36 @@ test.describe('七大恨移动端布局兼容', () => {
         }
 
         await screenshot(page, testName, '01-手机横屏-四张手牌完整可见.png');
+
+        const beforeViewport = await readMapViewportState(page);
+        const mapBox = await page.locator('#qidahen-harness-root [data-testid="qidahen-map-layer"]').boundingBox();
+        expect(mapBox, 'Qidahen 地图层应有可交互尺寸').not.toBeNull();
+        const mapCenter = {
+            x: mapBox!.x + mapBox!.width / 2,
+            y: mapBox!.y + mapBox!.height / 2,
+        };
+        await page.mouse.move(mapCenter.x, mapCenter.y);
+        await page.mouse.wheel(0, -420);
+        const zoomedViewport = await readMapViewportState(page);
+        expect(zoomedViewport.zoom, 'Qidahen 手机横屏滚轮应能放大地图，不应被固定在初始比例').toBeGreaterThan(beforeViewport.zoom + 0.01);
+
+        await page.mouse.move(mapCenter.x, mapCenter.y);
+        await page.mouse.down();
+        await page.mouse.move(mapCenter.x + 92, mapCenter.y + 38, { steps: 5 });
+        await page.mouse.up();
+        const draggedViewport = await readMapViewportState(page);
+        expect(
+            Math.abs(draggedViewport.panX - zoomedViewport.panX) + Math.abs(draggedViewport.panY - zoomedViewport.panY),
+            'Qidahen 手机横屏拖拽应改变地图平移，不能清回自动追焦或初始位置',
+        ).toBeGreaterThan(8);
+        await page.waitForTimeout(250);
+        const settledViewport = await readMapViewportState(page);
+        expect(settledViewport.zoom, 'Qidahen 手机横屏用户放大后不应被自动追焦重置缩放').toBeCloseTo(draggedViewport.zoom, 2);
+        expect(
+            Math.abs(settledViewport.panX - draggedViewport.panX) + Math.abs(settledViewport.panY - draggedViewport.panY),
+            'Qidahen 手机横屏用户拖拽后不应被自动追焦重置平移',
+        ).toBeLessThan(2);
+        await screenshot(page, testName, '01b-手机横屏-地图手动放大拖拽保持.png');
 
         const firstMagnifyButton = page.locator(
             '#qidahen-harness-root button[data-testid^="qidahen-hand-card-magnify-"]',
@@ -319,5 +379,17 @@ test.describe('七大恨移动端布局兼容', () => {
         await screenshot(page, testName, '02-手机横屏-手牌放大查看.png');
         await page.getByRole('button', { name: '关闭查看' }).click();
         await expect(magnifyOverlay).toBeHidden();
+    });
+
+    test('PC 基准截图用于和手机横屏开放式布局对比', async ({ page }) => {
+        const testName = 'PC 基准截图用于和手机横屏开放式布局对比';
+
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-board"]')).toBeVisible();
+        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-action-wheel"]')).toBeVisible();
+        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-player-float"]')).toBeVisible();
+        await expect(page.locator('#qidahen-harness-root [data-testid="qidahen-korea-zone"]')).toBeVisible();
+
+        await screenshot(page, testName, '00-PC-1920x1080-基准全局布局.png');
     });
 });

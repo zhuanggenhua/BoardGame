@@ -5637,6 +5637,11 @@
     },
     "zh-CN/dicethrone/images/artificial/status-icons-atlas": {
       "variants": {
+        "json": {
+          "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
+          "bytes": 720,
+          "mime": "application/json"
+        },
         "png": {
           "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
           "bytes": 637977,
@@ -5866,6 +5871,15 @@
           "sha256": "ec7ad0fa3384af0cb042acdef0c72ffaf1874e180783c7ca084276438b3f356d",
           "bytes": 10392432,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
+          "bytes": 387,
+          "mime": "application/json"
         }
       }
     },
@@ -6123,6 +6137,11 @@
     },
     "zh-CN/dicethrone/images/cursed/status-icons-atlas": {
       "variants": {
+        "json": {
+          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
+          "bytes": 604,
+          "mime": "application/json"
+        },
         "png": {
           "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
           "bytes": 317204,
@@ -6283,6 +6302,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/gunslinger/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
+          "bytes": 738,
+          "mime": "application/json"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/gunslinger/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6355,6 +6383,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/monk/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
+          "bytes": 640,
+          "mime": "application/json"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/monk/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6424,6 +6461,15 @@
           "sha256": "7a5181be493f85b090bfd8b291ac818d580450e622dad3c748790f9bf07bb939",
           "bytes": 10679102,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
+          "bytes": 642,
+          "mime": "application/json"
         }
       }
     },
@@ -6553,6 +6599,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/ninja/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
+          "bytes": 526,
+          "mime": "application/json"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/ninja/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6613,6 +6668,15 @@
           "sha256": "8c8db55689d4871ee6a6575ac7dfbb97c20ab69a38edd6cbf64849fd9b7f6ee5",
           "bytes": 9831345,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
+          "bytes": 797,
+          "mime": "application/json"
         }
       }
     },
@@ -6694,6 +6758,15 @@
           "sha256": "f6121f44c06c076bac3f017e8fffc9b8dfc389cd90851484f97dc813e42e1742",
           "bytes": 10753329,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
+          "bytes": 664,
+          "mime": "application/json"
         }
       }
     },
@@ -6796,6 +6869,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/samurai/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
+          "bytes": 627,
+          "mime": "application/json"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/samurai/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -6856,6 +6938,15 @@
           "sha256": "cf0a1bef74e0a84d1305b6ca3ac0218160d7b99259af6698dbf8cbe66f9a9da7",
           "bytes": 9007989,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
+          "bytes": 521,
+          "mime": "application/json"
         }
       }
     },
@@ -6991,6 +7082,15 @@
           "sha256": "ca7df6144dd6323bd9e71f7e57591eeaa6957534337bbf6f47120363e936fcb4",
           "bytes": 58772,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
+          "bytes": 789,
+          "mime": "application/json"
         }
       }
     },
@@ -7149,6 +7249,11 @@
     },
     "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas": {
       "variants": {
+        "json": {
+          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
+          "bytes": 370,
+          "mime": "application/json"
+        },
         "png": {
           "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
           "bytes": 135997,
@@ -7990,24 +8095,6 @@
           "sha256": "019ba850018746b50abe3fc9bd9bd86b573f65486b24171d69fe0ffe8257cbc4",
           "bytes": 100275,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/qidahen/cards/atlases/chronology-deck-atlas": {
-      "variants": {
-        "jpg": {
-          "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
-          "bytes": 4138087,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/qidahen/cards/atlases/compressed/chronology-deck-atlas": {
-      "variants": {
-        "webp": {
-          "sha256": "2d607caad2eae3b9a3e2f0830bc0f7cabd0983b7b1c24efa3ff053c4eef86e6a",
-          "bytes": 368140,
-          "mime": "image/webp"
         }
       }
     },
@@ -9649,6 +9736,60 @@
         }
       }
     },
+    "zh-CN/summonerwars/hero/mogu/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "3492708c7039daafb454e8e1c4a4d3e2917256acdd58f84d73773d3ba0e7a985",
+          "bytes": 1345629,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/mogu/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "4c35deb3fe40dd0ff7f819ba4cb4ccc3a827ac2d4501281acebf3956613c07e3",
+          "bytes": 137518,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/mogu/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "77aabcbe1509c5251dd9da1f0398e899dc20a6114976c8e7c916f1f7ba84cde4",
+          "bytes": 131218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/mogu/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "6fa1c6eb1fe5564b7f38bef01c7ba83449fe60cc70f46e1e54cbc31a4703ab10",
+          "bytes": 61882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/mogu/hero": {
+      "variants": {
+        "png": {
+          "sha256": "7ad03743d7b7cbcd767641ba354d6152fc77cfc8db55a044f3004a39d202f11d",
+          "bytes": 2499139,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/mogu/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "c9eca14f42e989fe297404dab7c7574edeefd46991bf047f112eb19a5c697fae",
+          "bytes": 149002,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "zh-CN/summonerwars/hero/Necromancer/compressed/cards": {
       "variants": {
         "webp": {
@@ -11130,6 +11271,978 @@
         "png": {
           "sha256": "63f36075881b23a128c8e48ade13983a3db7ce6d779a284b9ddf89452b3cf1ae",
           "bytes": 199584,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/all-out-attack": {
+      "variants": {
+        "png": {
+          "sha256": "24cd867cb2cd6f7c032e313a8246d039e38f5efa74006f3de2a173f3c56c2d63",
+          "bytes": 1333354,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/balance": {
+      "variants": {
+        "png": {
+          "sha256": "e936d7811f64137345233f6357acb921e08787e4abd0a80a981676162e84a54d",
+          "bytes": 778098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/blackout": {
+      "variants": {
+        "png": {
+          "sha256": "abf956e8df58d6f5e9bad14829ed189883bd975770bbf30b94431babe82cb218",
+          "bytes": 673919,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/cluttered-toolbox": {
+      "variants": {
+        "png": {
+          "sha256": "27bb054350173dccfc3c107e1c42d4a81700a56e1a35726902d8d9316396aaf0",
+          "bytes": 898791,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/all-out-attack": {
+      "variants": {
+        "webp": {
+          "sha256": "262a0814adf100edfc821194364a4f869dd951a2adf77b24b32d7b9c622c6bd9",
+          "bytes": 239974,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/balance": {
+      "variants": {
+        "webp": {
+          "sha256": "931098029cd76287a0e0a7782da2a44d6ad2b99df61f999267ed5aa7e0cef32b",
+          "bytes": 91842,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/blackout": {
+      "variants": {
+        "webp": {
+          "sha256": "c2b61495f7064cd1160d621179578410b26a785d04190708101b07e25772e5a9",
+          "bytes": 67860,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/cluttered-toolbox": {
+      "variants": {
+        "webp": {
+          "sha256": "5db7d46b78597450174a14cbf38752c6348ab4907e767fb94f6805a747ed1bac",
+          "bytes": 155344,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/extra-hours": {
+      "variants": {
+        "webp": {
+          "sha256": "ff08050a802dfeec35ab1a1161d4c5ecf880de2992587b673fbd3bb1f262fa21",
+          "bytes": 105420,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/fingerprint-scan": {
+      "variants": {
+        "webp": {
+          "sha256": "415eb993f28ca6a46272b6f399e0a39c26f843c3cca9e6f8e82cf71045d68d75",
+          "bytes": 111774,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/foot-door": {
+      "variants": {
+        "webp": {
+          "sha256": "5791b7dc1698841b95144abd6e6487aa5a7a35242525206dacbd06de41b02d4c",
+          "bytes": 78380,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/grinding-gears": {
+      "variants": {
+        "webp": {
+          "sha256": "896f3d09aee36e5b5e16c28f41d8f7e5de48d4f6b35726b4d6f74a4bb529f726",
+          "bytes": 123658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/hasty-getaway": {
+      "variants": {
+        "webp": {
+          "sha256": "8b0f8b9f991574f1a02afded7d300bdd53451ccebd4624ba95eebd315bdc8f9f",
+          "bytes": 89050,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/intricate-lock": {
+      "variants": {
+        "webp": {
+          "sha256": "66fadb101a877fcf3cbbb15b2cc14da5391392d418516ba619a13b788db312bd",
+          "bytes": 103344,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/laser-tripwires": {
+      "variants": {
+        "webp": {
+          "sha256": "a419f75cde374b1be4537d19150050b22dcf78f01a77faa18888178eec7bbf97",
+          "bytes": 86306,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/lengthy-finish": {
+      "variants": {
+        "webp": {
+          "sha256": "ca3fe889529984a6ee3a4bdd481675e9a10ac97fad8658994a668a70c2f43a25",
+          "bytes": 105798,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/master-key": {
+      "variants": {
+        "webp": {
+          "sha256": "aaa5f0f1956e25edf3df6179f7d219ee0c00fcb86c1a431d43d83df4fb7170af",
+          "bytes": 71722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/motion-detector": {
+      "variants": {
+        "webp": {
+          "sha256": "efa1657012151f908b0a013fffaf67635623b2a85bf3804b7520e0630ffb77d1",
+          "bytes": 86200,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/no-color": {
+      "variants": {
+        "webp": {
+          "sha256": "38872163dacb252f8d83f168ca097fbb4c1c4b913563fecf7d5905aa7aca6dc4",
+          "bytes": 117974,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/noise-sensor": {
+      "variants": {
+        "webp": {
+          "sha256": "bc7704a3b5ef3ee8952f4e77aba4d46d6b2adbd3da72faac3b7a6c9d7e3c8690",
+          "bytes": 95942,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/quantum-chaos": {
+      "variants": {
+        "webp": {
+          "sha256": "2771ee9ed2f632facfb21cec3a33dec2116941d1fd5464d2ec75b8e3063539b9",
+          "bytes": 204284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/quick-access": {
+      "variants": {
+        "webp": {
+          "sha256": "530c5f2c58281ab234b72e7a7e6cd13a48217f5e080c8ae0c46492d1bdde3f28",
+          "bytes": 105542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/quick-execution": {
+      "variants": {
+        "webp": {
+          "sha256": "2aadae637598b992373e30e5e2a6dca6c9fdedcab60a3f55ed93974811ce7bb3",
+          "bytes": 93804,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/retina-scan": {
+      "variants": {
+        "webp": {
+          "sha256": "ff3e1ef817cbd8614f3bf8bade4c71a575128fffc924875f3c2be3d63b47487f",
+          "bytes": 92692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/reverse-run": {
+      "variants": {
+        "webp": {
+          "sha256": "bcb5c8b6555cedb9b64c4c52ab37d2e18f75097516fa292d0324688e01699189",
+          "bytes": 82588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/rough-kickoff": {
+      "variants": {
+        "webp": {
+          "sha256": "2ffb90e7ea04aa74b995521e9ad9c2a45841010781225a7171d7d6917c24be79",
+          "bytes": 152252,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/security-camera": {
+      "variants": {
+        "webp": {
+          "sha256": "f75aa3ec559131e2451d0e0db61c94e8a8ea4ba563de4bd03652117d6b9625eb",
+          "bytes": 68530,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/sleeping-guard": {
+      "variants": {
+        "webp": {
+          "sha256": "429a4d0ca282769d33d07f8bcffaede560baddc302030a2d065f828a10d9b429",
+          "bytes": 102402,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/the-joker": {
+      "variants": {
+        "webp": {
+          "sha256": "57eae52513e7b3b1fcd81c48ef775468b9553909eff8f3821e08778089a64b36",
+          "bytes": 176816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/uninvited-guest": {
+      "variants": {
+        "webp": {
+          "sha256": "5e5c47c33e3c45eea633904219be2f186016df3ecd8b94826608ec925ff663ee",
+          "bytes": 83616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/compressed/ventilation-shaft": {
+      "variants": {
+        "webp": {
+          "sha256": "361dd3afdf77f1a054c44dced989746603240144db853fcd53e3857a56b5a60c",
+          "bytes": 83982,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/extra-hours": {
+      "variants": {
+        "png": {
+          "sha256": "8e89e1bec443fb720c30a0a867f13374ffcfe47cafe9d10ac83c9983cf9393c6",
+          "bytes": 555958,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/fingerprint-scan": {
+      "variants": {
+        "png": {
+          "sha256": "17e7d957b57042c3f8c0d3904391fef4dcdc7770ac3cfddf563c4736568af8f7",
+          "bytes": 768522,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/foot-door": {
+      "variants": {
+        "png": {
+          "sha256": "94307f3638e2abec42f90c8696af210a3bddf9b11e1f41e8ad7570e50c081a9c",
+          "bytes": 412517,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/grinding-gears": {
+      "variants": {
+        "png": {
+          "sha256": "6c867ee76c1cb803e6fe2c04b9ccdcf323688fc54db81d9fea55a8e1cd91f547",
+          "bytes": 763619,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/hasty-getaway": {
+      "variants": {
+        "png": {
+          "sha256": "61bf057e01feb76de3e7a5491126fe47b1e2cf9a8a2a3a0e3230b739a4ee4128",
+          "bytes": 753232,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/intricate-lock": {
+      "variants": {
+        "png": {
+          "sha256": "eea12a7d3d8755ad383b8489e592d5d555288b6f341ee0fdfff1638c7f85a98f",
+          "bytes": 458898,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/laser-tripwires": {
+      "variants": {
+        "png": {
+          "sha256": "5d44b978a1f93f05a525993073d75adc69e23bfc94d02f32e9b167f01fcddca9",
+          "bytes": 719138,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/lengthy-finish": {
+      "variants": {
+        "png": {
+          "sha256": "1eadf351dc8f33096042e42569d4e81005e257f2d546acdd63db3ebb9595fbd8",
+          "bytes": 539868,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/master-key": {
+      "variants": {
+        "png": {
+          "sha256": "7b89d8939ceccfd311b5a487f2f7bd9b71d7e3ac1c96d43df15d168b9506f954",
+          "bytes": 449720,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/motion-detector": {
+      "variants": {
+        "png": {
+          "sha256": "ee7cc44c4e9684350c206d0a464603f34b09a305df844ce3f0371c8ab1fc5263",
+          "bytes": 669176,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/no-color": {
+      "variants": {
+        "png": {
+          "sha256": "d6e18ac504391b6e1ca68e01e7844ed662c25e9a14e1846d000555efaa8832c4",
+          "bytes": 639469,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/noise-sensor": {
+      "variants": {
+        "png": {
+          "sha256": "733e037608c64cbc11e433cc865038fcbec529d68053e33bf0f324892021f8ad",
+          "bytes": 640715,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/quantum-chaos": {
+      "variants": {
+        "png": {
+          "sha256": "7575902f278ba58d545e3bd0d251fdd7e9711184fce1669b5a36a985ba122746",
+          "bytes": 1099905,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/quick-access": {
+      "variants": {
+        "png": {
+          "sha256": "8bc1bd02edf947be98d9baf5aefe8ffbd41060954b51a7d59394651d35d06090",
+          "bytes": 832151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/quick-execution": {
+      "variants": {
+        "png": {
+          "sha256": "fbcbf7eada7fd6430aabd575ba55159ee71a20a315934177e8f12619eb40fd7e",
+          "bytes": 694069,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/retina-scan": {
+      "variants": {
+        "png": {
+          "sha256": "737146f11fdba54975cb184545d2917ef37821ac1b7b5679aa30048c18a557cf",
+          "bytes": 640874,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/reverse-run": {
+      "variants": {
+        "png": {
+          "sha256": "671b38456488c1e2c47a76fc62c41ed014fc064673510e09a09e773569c2dd91",
+          "bytes": 655757,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/rough-kickoff": {
+      "variants": {
+        "png": {
+          "sha256": "28bfa5a7455f4dbc9fed8301a7bfe7e30cb3372db32dca0d14c24956243d5de0",
+          "bytes": 928400,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/security-camera": {
+      "variants": {
+        "png": {
+          "sha256": "a87012a36f43166cccba772a574209536c57797526ccbe99c2e015dd2f22fb15",
+          "bytes": 716617,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/sleeping-guard": {
+      "variants": {
+        "png": {
+          "sha256": "31a2072a387bf2df42a53dbd95bf37a2ac6d9af497c985e6edea5766f8a23f38",
+          "bytes": 561738,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/the-joker": {
+      "variants": {
+        "png": {
+          "sha256": "ae22c869279e5c6367c180b44f32bf30f22cba92b937d29b522fcfd555b88dbe",
+          "bytes": 830521,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/uninvited-guest": {
+      "variants": {
+        "png": {
+          "sha256": "e427cc8eccf19829b553ff9f216752b08708f440b40bc5abfe56b74e8fb2cb27",
+          "bytes": 452417,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/challenges/ventilation-shaft": {
+      "variants": {
+        "png": {
+          "sha256": "6f82c170fa182309baebfbaa23044d81eb4582e03fd44ff2848e61c3a6ac64ec",
+          "bytes": 585604,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/con-artist": {
+      "variants": {
+        "webp": {
+          "sha256": "d02e90a81ad5e87c35a4c541d84c51c4bbf5df3b17df43d7ef0bebea52035aa8",
+          "bytes": 207650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/coordinator": {
+      "variants": {
+        "webp": {
+          "sha256": "d999a7f466355d24c4ea1d1ac5d3abfd9caa9affe36f2e57eadb96af18f264ca",
+          "bytes": 215178,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/getaway-driver": {
+      "variants": {
+        "webp": {
+          "sha256": "eab7d490beecdde89edec0b640bafc01a8ef7c0e7845a976e82761e4a2166aa1",
+          "bytes": 217308,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/hacker": {
+      "variants": {
+        "webp": {
+          "sha256": "009128cc06f49787544853afdcffbcdcf0cad41588cdb70eba38efc448d00422",
+          "bytes": 208310,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/information": {
+      "variants": {
+        "webp": {
+          "sha256": "1f1accbb23382e07992195299eec2bf3bbab61929bffb5f2a62c648d7637b78e",
+          "bytes": 231720,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/investor": {
+      "variants": {
+        "webp": {
+          "sha256": "d1d4b0d07ea289eb197d7650d88c0343dbdf09cfa718217ae4509da20dc16007",
+          "bytes": 202464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/jack": {
+      "variants": {
+        "webp": {
+          "sha256": "9f608761105f06640a8752bd587c4c0b130ea1c87a62949c8fd73c2f1c15b08f",
+          "bytes": 219204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/mastermind": {
+      "variants": {
+        "webp": {
+          "sha256": "727b1d4845e3db450e1b68caf3be808543e900496ba0c67fc09e5ba58837d44b",
+          "bytes": 215890,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/math-wiz": {
+      "variants": {
+        "webp": {
+          "sha256": "65ad1f45df7611bd8e7385ec4105bbbc3daeccf65b18f02cbd0afa1ce8390507",
+          "bytes": 190116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/muscle": {
+      "variants": {
+        "webp": {
+          "sha256": "a72800866458ed51feb2c1ae1534b83e0cc3a9109c844510e2ac14214c4e2fb2",
+          "bytes": 229698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/compressed/specialist-deck-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "026727a7adbc2e8f86e0c9cda7055a2f0601dcfecd491c4db38a1ac847b501e6",
+          "bytes": 2167392,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/con-artist": {
+      "variants": {
+        "png": {
+          "sha256": "c3371eb51f75968e10678099e27586088527012554b96ff21cc31f3b4b3edff6",
+          "bytes": 2312517,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/coordinator": {
+      "variants": {
+        "png": {
+          "sha256": "c16a92cfda7781e2688d1c2967ae5daf46b9c916067b0bc0acf81e72ba26d3ad",
+          "bytes": 2343329,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/getaway-driver": {
+      "variants": {
+        "png": {
+          "sha256": "4c9e1fdc72c7f7a317fa67cba3f0570aaa2f670307abf2157ad82382afd20b8c",
+          "bytes": 2384724,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/hacker": {
+      "variants": {
+        "png": {
+          "sha256": "6131bf81e86b17dab10b5225a19c566ab3dda05220eba5607395504ef6f1cf87",
+          "bytes": 2316378,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/information": {
+      "variants": {
+        "png": {
+          "sha256": "da8aaa0d3f6aa50072915ce774bd4572450c443374e24849406f6a5f43aab0b7",
+          "bytes": 2488824,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/investor": {
+      "variants": {
+        "png": {
+          "sha256": "75244f7f1318bbac049b0b5d20f56fb05790123a189fdfc898762bd16690ad73",
+          "bytes": 2307536,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/jack": {
+      "variants": {
+        "png": {
+          "sha256": "b34609d8e907f3ee9202fc6a0f078accb7e22d5aaae953481b22bb085332722a",
+          "bytes": 2323703,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/mastermind": {
+      "variants": {
+        "png": {
+          "sha256": "a84b81c8c1282b1d5816735062d43e43e6e4b32380a964c6ab88fc986c04f1ef",
+          "bytes": 2306764,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/math-wiz": {
+      "variants": {
+        "png": {
+          "sha256": "08bbd8e3779f6f61e8842a9e912fe0c3c7d33c1de535b002426c84addeb42351",
+          "bytes": 2238463,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/muscle": {
+      "variants": {
+        "png": {
+          "sha256": "0d133e621623dab61ef05f6f131b69619a8a6b3aa17b1b9d095a76131b5d1a20",
+          "bytes": 2438235,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/specialists/specialist-deck-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "51e387b4ca6204911a64ce9cad5bd87760470c77c2d57aa28b960d43997cdc1a",
+          "bytes": 5110415,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/challenge-zone": {
+      "variants": {
+        "png": {
+          "sha256": "b088eea0f521dbd1e1efd44adbd594c498f97f56a4fd47b9ad9fb9f97ca78a8c",
+          "bytes": 93168,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/compressed/challenge-zone": {
+      "variants": {
+        "webp": {
+          "sha256": "87bd4abe2c6cddd52bc16f6110410037258a7eb2f4d75c61a5bf09dce836931c",
+          "bytes": 18648,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/compressed/specialists-discard-zone": {
+      "variants": {
+        "webp": {
+          "sha256": "57afad7938f0c16a2ddd6c6b6b69940928e383ea4bc7f86e2b1658758585f848",
+          "bytes": 398,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/compressed/specialists-zone": {
+      "variants": {
+        "webp": {
+          "sha256": "9ae448068ba1a5b1eac4bbb71939b76e3e12a9f901b22c74176c83798ca04e72",
+          "bytes": 84314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/compressed/tools-discard-zone": {
+      "variants": {
+        "webp": {
+          "sha256": "57afad7938f0c16a2ddd6c6b6b69940928e383ea4bc7f86e2b1658758585f848",
+          "bytes": 398,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/compressed/tools-zone": {
+      "variants": {
+        "webp": {
+          "sha256": "bafbcb8ec1218e1d77cd937727301d49dc86d5636e05de25df5a04ced5c79b18",
+          "bytes": 85930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/specialists-discard-zone": {
+      "variants": {
+        "png": {
+          "sha256": "6e8add77d3fb9c360abe12680a70d5aa226b8e217a4bc7e50d366dcd169da079",
+          "bytes": 25656,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/specialists-zone": {
+      "variants": {
+        "png": {
+          "sha256": "6a82b63de60db0b1ebeeeeaca4fe37a3241f608f56588e38af56d2b39a2e42dd",
+          "bytes": 789921,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/tools-discard-zone": {
+      "variants": {
+        "png": {
+          "sha256": "6e8add77d3fb9c360abe12680a70d5aa226b8e217a4bc7e50d366dcd169da079",
+          "bytes": 25656,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/surfaces/tools-zone": {
+      "variants": {
+        "png": {
+          "sha256": "365ca21a5b7996a85c1d07c9dd190ec4b86057570a5e19bfbae7e766bac31bad",
+          "bytes": 787700,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/airpods": {
+      "variants": {
+        "png": {
+          "sha256": "72c8d759e1c92ddeb317da2a8dd65f727411637ff7ce242facb26870a3c8fbac",
+          "bytes": 1200984,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/backdoor-key": {
+      "variants": {
+        "png": {
+          "sha256": "c74812f309339c3e38f6c0c2b20caeb15adf992c069e1bc456b4655ab9935609",
+          "bytes": 1218147,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/burner-phone": {
+      "variants": {
+        "png": {
+          "sha256": "b4f4d39657213487e03295ca1e1cb9ed5d98ca69e6a4ff80f4b6699afadcdf3f",
+          "bytes": 1333157,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/airpods": {
+      "variants": {
+        "webp": {
+          "sha256": "48640e0e4106aadbf0522acd20cb1a8bbfba2d0d79f141e0c2dc5761dfff16a5",
+          "bytes": 261588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/backdoor-key": {
+      "variants": {
+        "webp": {
+          "sha256": "a065bef9bf7e76e46131ea24e2064511096cda9e92dbc9e2992bb3e38a5ced69",
+          "bytes": 289660,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/burner-phone": {
+      "variants": {
+        "webp": {
+          "sha256": "a812ab7def713d4913dacb0fed2174c1b32a7d63168a81f1e3e7e64027cf8274",
+          "bytes": 281180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/crowbar": {
+      "variants": {
+        "webp": {
+          "sha256": "999cd5c74bee16b05e339ee4e896a3a7daa0077739e6b2b2c348e104874360b1",
+          "bytes": 333998,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/flashlight": {
+      "variants": {
+        "webp": {
+          "sha256": "b37da0d9fedb1ccdcb7bddb16159d9bf78c1eefa2f24c01068e059e17b3c1eb4",
+          "bytes": 289388,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/jamming-device": {
+      "variants": {
+        "webp": {
+          "sha256": "190a5a380d67275b4d72c2f0954fc6c3797c640f7c9db59bd01c3c4a4cfd7df7",
+          "bytes": 294176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/lock-pick": {
+      "variants": {
+        "webp": {
+          "sha256": "b294a8873efddfe5be2e4b46e15ee7a928c618dceea02f616aac7f42cd585a35",
+          "bytes": 280450,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/lubricant": {
+      "variants": {
+        "webp": {
+          "sha256": "1895a25efeab17cea9a408d954e3f2b519ddd7c5490264e3c510e053a27cdea2",
+          "bytes": 88228,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/night-vision-goggles": {
+      "variants": {
+        "webp": {
+          "sha256": "3418abe39ce3626caae227e03ce7ed8ed8d999e16656c7d783fd07826f65b85e",
+          "bytes": 275838,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/smoke-grenade": {
+      "variants": {
+        "webp": {
+          "sha256": "65cee033375224eff2f377aa73c366892d98c946f8e7db612179e814ff1a44f8",
+          "bytes": 269048,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/compressed/tool-deck-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "f8c90f66945e154cde988f1bc8a2f031d713aa1bb3139f331ac14f7d7d21c2ee",
+          "bytes": 2680300,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/crowbar": {
+      "variants": {
+        "png": {
+          "sha256": "3579b1f1949a57960f1ffc5dc65d37ad20f5238850a9061535400b7c04de8f68",
+          "bytes": 1298080,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/flashlight": {
+      "variants": {
+        "png": {
+          "sha256": "d84fe611b0f8bb54ff188e191e89ee7e1db9a4586fbd5714a81ef70d8ce5bbf5",
+          "bytes": 1167196,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/jamming-device": {
+      "variants": {
+        "png": {
+          "sha256": "8bb19d3e642730995f64b361ba56f6e212f6476b73dd030f8af1cabffe7ce4ab",
+          "bytes": 1265714,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/lock-pick": {
+      "variants": {
+        "png": {
+          "sha256": "10bed501c4aa1cf0ee0b05df15a81d767efef894426923ca5190f74b5cdc00ec",
+          "bytes": 1269209,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/lubricant": {
+      "variants": {
+        "png": {
+          "sha256": "ca9d2b9a03b5825b89f7aed37b0ef9543884eea025f103c9177532c48ba121ac",
+          "bytes": 427774,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/night-vision-goggles": {
+      "variants": {
+        "png": {
+          "sha256": "796f83292957bea959461b1f187ed6d1e7d91a935d2d29cd7898321afb96ab6b",
+          "bytes": 1276369,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/smoke-grenade": {
+      "variants": {
+        "png": {
+          "sha256": "14fc00bbda72bc3f3c86403b28ee2e9b22a445bd2c4bfff1655fbfabe39d9183",
+          "bytes": 1255599,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/the-gang/rule-assets/tools/tool-deck-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "ffc43e673eb53151fbb82f9e08a982884af2fcc49ea2712a19feb94fde0e8b60",
+          "bytes": 4804788,
           "mime": "image/png"
         }
       }

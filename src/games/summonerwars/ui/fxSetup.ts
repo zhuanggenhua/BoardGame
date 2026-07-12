@@ -62,6 +62,47 @@ function scaledCellBox(
   return { left: `${l}%`, top: `${t}%`, width: `${w}%`, height: `${h}%` };
 }
 
+/** 让远程攻击气浪只在飞行路径附近重绘，避免一个特效每帧清掉整层棋盘画布。 */
+function pathEffectBox(
+  source: { left: number; top: number; width: number; height: number },
+  target: { left: number; top: number; width: number; height: number },
+) {
+  const srcCx = source.left + source.width / 2;
+  const srcCy = source.top + source.height / 2;
+  const tgtCx = target.left + target.width / 2;
+  const tgtCy = target.top + target.height / 2;
+  const cellSpan = Math.max(source.width, source.height, target.width, target.height);
+  const padding = cellSpan * 1.35;
+  const minSize = cellSpan * 2.25;
+
+  const pathLeft = Math.min(srcCx, tgtCx);
+  const pathTop = Math.min(srcCy, tgtCy);
+  const pathWidth = Math.abs(tgtCx - srcCx);
+  const pathHeight = Math.abs(tgtCy - srcCy);
+  const width = Math.max(pathWidth + padding * 2, minSize);
+  const height = Math.max(pathHeight + padding * 2, minSize);
+  const left = pathLeft - (width - pathWidth) / 2;
+  const top = pathTop - (height - pathHeight) / 2;
+
+  return {
+    style: {
+      left: `${left}%`,
+      top: `${top}%`,
+      width: `${width}%`,
+      height: `${height}%`,
+      overflow: 'visible' as const,
+    },
+    start: {
+      xPct: ((srcCx - left) / width) * 100,
+      yPct: ((srcCy - top) / height) * 100,
+    },
+    end: {
+      xPct: ((tgtCx - left) / width) * 100,
+      yPct: ((tgtCy - top) / height) * 100,
+    },
+  };
+}
+
 // ============================================================================
 // 稳定回调 hook（避免父组件重新渲染导致动画重播）
 // ============================================================================
@@ -216,18 +257,20 @@ const ShockwaveRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, 
   const srcPos = getCellPosition(source.row, source.col);
   const tgtPos = getCellPosition(cell.row, cell.col);
 
-  const srcCx = srcPos.left + srcPos.width / 2;
-  const srcCy = srcPos.top + srcPos.height / 2;
-  const tgtCx = tgtPos.left + tgtPos.width / 2;
-  const tgtCy = tgtPos.top + tgtPos.height / 2;
+  const pathBox = pathEffectBox(srcPos, tgtPos);
 
-  return React.createElement(ConeBlast, {
-    start: { xPct: srcCx, yPct: srcCy },
-    end: { xPct: tgtCx, yPct: tgtCy },
-    intensity: event.ctx.intensity ?? 'normal',
-    onComplete: handleRangedComplete,
-    className: 'z-30',
-  });
+  return React.createElement('div', {
+    className: 'absolute pointer-events-none z-30',
+    style: pathBox.style,
+  },
+    React.createElement(ConeBlast, {
+      start: pathBox.start,
+      end: pathBox.end,
+      intensity: event.ctx.intensity ?? 'normal',
+      quality: event.params?.quality === 'reduced' ? 'reduced' : 'full',
+      onComplete: handleRangedComplete,
+    }),
+  );
 };
 
 // ============================================================================
@@ -256,6 +299,7 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const pos = getCellPosition(cell.row, cell.col);
   const isStrong = event.ctx.intensity === 'strong';
   const dmg = (event.params?.damageAmount as number) ?? (isStrong ? 3 : 1);
+  const reduced = event.params?.reduced === true;
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none flex items-center justify-center z-30',
@@ -274,7 +318,8 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
       React.createElement(ImpactContainer, {
         isActive: true,
         damage: dmg,
-        effects: { shake: true, hitStop: false },
+        effects: { shake: !reduced, hitStop: false },
+        shakeDuration: reduced ? 180 : undefined,
         className: 'absolute inset-0',
         style: { overflow: 'visible' },
         onComplete: stableComplete,
@@ -283,6 +328,9 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
           active: true,
           damage: dmg,
           intensity: event.ctx.intensity ?? 'normal',
+          showSlash: !reduced,
+          showRedPulse: true,
+          showNumber: true,
         }),
       ),
     ),
@@ -298,7 +346,7 @@ const SUMMON_SOUND_KEY = 'magic.general.spells_variations_vol_1.open_temporal_ri
 
 // 攻击音效（用于预览模式的 fallback）
 const MELEE_ATTACK_FALLBACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
-const RANGED_ATTACK_FALLBACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.bow.sfx_weapon_bow_shoot_1';
+const _RANGED_ATTACK_FALLBACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.bow.sfx_weapon_bow_shoot_1';
 
 /** 召唤光柱反馈：爆发瞬间播放音效 + 震动（强度跟随 event.ctx.intensity 动态覆盖） */
 const SUMMON_FEEDBACK: FeedbackPack = {

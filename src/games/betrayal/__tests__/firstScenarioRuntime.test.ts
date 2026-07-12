@@ -1761,15 +1761,21 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
             '0',
-            { targetRoomId: 'hallway' },
+            { targetRoomId: 'basement-landing' },
         );
 
         expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.knowledge).toBe(5);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('secretPassage');
-        expect(core.rooms.find((room) => room.id === 'hallway')?.markerTokens ?? []).toContain('secretPassage');
+        expect(core.rooms.find((room) => room.id === 'basement-landing')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.latestDiscovery?.detail).toContain('在当前板块放置秘密通道标志物');
-        expect(core.latestDiscovery?.detail).toContain('在门厅放置秘密通道标志物');
+        expect(core.latestDiscovery?.detail).toContain('在地下室起始点放置秘密通道标志物');
+        expect(resolveMoveTargetRooms(core).map((room) => room.id)).toContain('basement-landing');
+
+        core.movesRemaining = 1;
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.movesRemaining).toBe(0);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2411,7 +2417,7 @@ describe('Betrayal first scenario runtime', () => {
         ).valid).toBe(false);
     });
 
-    it('倒塌房间结束回合速度检定 5+ 时不会坠落或受伤', () => {
+    it('倒塌房间结束回合速度检定成功时不会坠落或受伤', () => {
         let core = createStartedFirstScenarioCore();
         core.roomDiscoveryOrderByFloor.upper = [
             BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'collapsedRoom')!,

@@ -1,0 +1,440 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "chips",
+  "basePrefix": "official/i18n/zh-CN/the-gang/chips/",
+  "files": {
+    "compressed/round-1-white-1": {
+      "variants": {
+        "webp": {
+          "sha256": "09891be28733d5efe9cc50d7257c9a24f244eef85e3656d3c8540a7974c3cef9",
+          "bytes": 29914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-1-white-2": {
+      "variants": {
+        "webp": {
+          "sha256": "60dd49c91ec8dc8ba2cb7d3ad28125f4bf04800453248b37199477b33c924b89",
+          "bytes": 29846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-1-white-3": {
+      "variants": {
+        "webp": {
+          "sha256": "741a1bdfdec44e9ad65990e2838a82a604463f06e9d8e4060950d4baf06f3013",
+          "bytes": 30444,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-1-white-4": {
+      "variants": {
+        "webp": {
+          "sha256": "d2a2f899857c039c85f74d3dafb1e0a7ffa45c7b703b21cdf40a07b7d6e745b7",
+          "bytes": 29788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-1-white-5": {
+      "variants": {
+        "webp": {
+          "sha256": "b6ffdff354468cb1b659c65fd8bd6ac4490742a753a2a85b0101d3fe3e77ddbd",
+          "bytes": 30234,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-1-white-6": {
+      "variants": {
+        "webp": {
+          "sha256": "26121b8f65f29d9c422ba588fa753c214ad81bfc858d66f2440a3dff8ad0eb8b",
+          "bytes": 29874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-2-yellow-1": {
+      "variants": {
+        "webp": {
+          "sha256": "4a154e0df86905f6234ef0c5ee6e1ecf6a6ed37219ace8e68fc0e6807c0168d2",
+          "bytes": 35320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-2-yellow-2": {
+      "variants": {
+        "webp": {
+          "sha256": "4a154e0df86905f6234ef0c5ee6e1ecf6a6ed37219ace8e68fc0e6807c0168d2",
+          "bytes": 35320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-2-yellow-3": {
+      "variants": {
+        "webp": {
+          "sha256": "4456635becd8bd9ba4eb8d5f72439c0a1a801463ee35c699babb67a364ae0c64",
+          "bytes": 35584,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-2-yellow-4": {
+      "variants": {
+        "webp": {
+          "sha256": "ab7a4c03dfb2fa329f75fe8c1ca28ba8bfe2debb8ced628f08b60b8213b4f27a",
+          "bytes": 35370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-2-yellow-5": {
+      "variants": {
+        "webp": {
+          "sha256": "0b4ab85b6ff20fca98c55d4118a0da13d96cba73e503dd94cf9aa6a8031c92fd",
+          "bytes": 35278,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-2-yellow-6": {
+      "variants": {
+        "webp": {
+          "sha256": "5a1faaa520c6c70a9d687c6c0ab79aeadf99e46abf86f9a6772952dc6718558a",
+          "bytes": 35350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-3-orange-1": {
+      "variants": {
+        "webp": {
+          "sha256": "36b7fc0cab2e5a1396cfadb29c891972d527fa797d72326e33c379d4a379308e",
+          "bytes": 35458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-3-orange-2": {
+      "variants": {
+        "webp": {
+          "sha256": "36b7fc0cab2e5a1396cfadb29c891972d527fa797d72326e33c379d4a379308e",
+          "bytes": 35458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-3-orange-3": {
+      "variants": {
+        "webp": {
+          "sha256": "ffa09c1bea0c3c1b0795536604dce5f194b1d5fccda72259425f17f8db452e2a",
+          "bytes": 35888,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-3-orange-4": {
+      "variants": {
+        "webp": {
+          "sha256": "8f132ee2bbe2ff36ff42b2ee7f6a922fd758b924629bdfa01e1e23c3396eb4ca",
+          "bytes": 35486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-3-orange-5": {
+      "variants": {
+        "webp": {
+          "sha256": "abcabffbd076ec7598f4f3b2c34b1a4722f2c179244d9d9f8631b82f21ffba38",
+          "bytes": 35604,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-3-orange-6": {
+      "variants": {
+        "webp": {
+          "sha256": "17f23ad55602e210c12e58259dce5609e5bdc337c074d92a1208e152f6a27d7a",
+          "bytes": 35630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-4-red-1": {
+      "variants": {
+        "webp": {
+          "sha256": "a22527eabdf98c5330520e0b02a36145d24063840a94ccb34521f2768436a789",
+          "bytes": 33914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-4-red-2": {
+      "variants": {
+        "webp": {
+          "sha256": "6e481610aaa3cf8f48e087e453c5180b355610f814187cf76041c894760265ee",
+          "bytes": 33930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-4-red-3": {
+      "variants": {
+        "webp": {
+          "sha256": "48d6c57ca912e86d004157715842dc33aab07a83eb879da62d2acda72693a7b6",
+          "bytes": 34030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-4-red-4": {
+      "variants": {
+        "webp": {
+          "sha256": "f3655de1a675e70fff425a818fc2728e0bbd73b84ce8c6a6d8298ebf77101580",
+          "bytes": 33620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-4-red-5": {
+      "variants": {
+        "webp": {
+          "sha256": "fa08cbb04f73439c975cc88543cf71506401cb2b98e1943a802025a17570dde0",
+          "bytes": 33654,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/round-4-red-6": {
+      "variants": {
+        "webp": {
+          "sha256": "7f2f3ec5f050e8b4bbdcc708eec10634f37a5b62b2a94377bf12590806912510",
+          "bytes": 33794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "round-1-white-1": {
+      "variants": {
+        "png": {
+          "sha256": "6e55dc3b000436531cbf62acce13825c4854973d64322cd0ac093f234af8e8ff",
+          "bytes": 95430,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-1-white-2": {
+      "variants": {
+        "png": {
+          "sha256": "4062740986f86132818d6dcb988c132f4683ba495145ce25e38049326a9e687a",
+          "bytes": 95055,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-1-white-3": {
+      "variants": {
+        "png": {
+          "sha256": "71ec60ce826247192323e53001f62d51af3c6eceee5f6cdabcc89d2bc952d872",
+          "bytes": 95259,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-1-white-4": {
+      "variants": {
+        "png": {
+          "sha256": "8eb8fc55c235e3acfcea1e85078a82bc2dc7a90a4535daa6315e4bc7a1ac1380",
+          "bytes": 94840,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-1-white-5": {
+      "variants": {
+        "png": {
+          "sha256": "aff389e29cd11570aa9e4e0d343aee667c31f20b452fea4b5b46273441b67315",
+          "bytes": 94928,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-1-white-6": {
+      "variants": {
+        "png": {
+          "sha256": "895317d00c6c89c34f52b28bd35716e7619a49d0284fce9070f980f1d1b077d6",
+          "bytes": 94879,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-2-yellow-1": {
+      "variants": {
+        "png": {
+          "sha256": "1d41133002397584e3931eb537e4c86c1724385b7bdef0f5180ae0f67706033a",
+          "bytes": 184504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-2-yellow-2": {
+      "variants": {
+        "png": {
+          "sha256": "1d41133002397584e3931eb537e4c86c1724385b7bdef0f5180ae0f67706033a",
+          "bytes": 184504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-2-yellow-3": {
+      "variants": {
+        "png": {
+          "sha256": "0477471e81a64a8cdae440ca13e3be315b3fde063e25627b24ac0c78aeff51f9",
+          "bytes": 187059,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-2-yellow-4": {
+      "variants": {
+        "png": {
+          "sha256": "11e3ec54ef27594cc12657dde9df4f8dc7f38562a8a50a3dc7f6ed4f82a83a0b",
+          "bytes": 186271,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-2-yellow-5": {
+      "variants": {
+        "png": {
+          "sha256": "53b4b8a12cd87aea8c339b92f41b2a0672a1c3038b5fa8de547d44066a62876a",
+          "bytes": 186598,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-2-yellow-6": {
+      "variants": {
+        "png": {
+          "sha256": "6b062f530a1581288854992a85c93bb332f7e6251c649b9c4a5899df58034374",
+          "bytes": 186221,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-3-orange-1": {
+      "variants": {
+        "png": {
+          "sha256": "5503697af9425889fd6f410e77363baaf275050c119928495347a5bdb3012f06",
+          "bytes": 194685,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-3-orange-2": {
+      "variants": {
+        "png": {
+          "sha256": "5503697af9425889fd6f410e77363baaf275050c119928495347a5bdb3012f06",
+          "bytes": 194685,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-3-orange-3": {
+      "variants": {
+        "png": {
+          "sha256": "9cbb4da95832a606e58f19b18412960cc35d293f055034ae4ad9b45239679eca",
+          "bytes": 197106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-3-orange-4": {
+      "variants": {
+        "png": {
+          "sha256": "2cd885e4ff803378517ae46bf82db71e7dae4e331b8ab230fbb55a9b94c4361d",
+          "bytes": 196454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-3-orange-5": {
+      "variants": {
+        "png": {
+          "sha256": "81a258f7f0839db89b785d3669039d98c2ab4f7ed8bd177e55a4176062d176c3",
+          "bytes": 196627,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-3-orange-6": {
+      "variants": {
+        "png": {
+          "sha256": "3253a10b84942d5fe11da57b933339a5f7d212fcf91853db1e0050a9d822ce1a",
+          "bytes": 196325,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-4-red-1": {
+      "variants": {
+        "png": {
+          "sha256": "619baa9f6d910c616afa1787c9b61dbaad71af9399c9247b3174c221e62ff3ac",
+          "bytes": 201472,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-4-red-2": {
+      "variants": {
+        "png": {
+          "sha256": "9ed5c731b26da2bd9d65021bbc2b17122fa376f76f17bc039e81c4191e63b614",
+          "bytes": 200151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-4-red-3": {
+      "variants": {
+        "png": {
+          "sha256": "37bf5da36152583510a62a19d995f075dd749ebb37399f8523164ed8576afeb6",
+          "bytes": 200378,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-4-red-4": {
+      "variants": {
+        "png": {
+          "sha256": "d6927ad2304ba8c693590ee5c65fa32e78ee4893b8544fba6f905a09233d117a",
+          "bytes": 199764,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-4-red-5": {
+      "variants": {
+        "png": {
+          "sha256": "b41c38bb9a4761f0d035727c1598e8fc53dae3e1feb031e1183b4b32a8332f78",
+          "bytes": 199959,
+          "mime": "image/png"
+        }
+      }
+    },
+    "round-4-red-6": {
+      "variants": {
+        "png": {
+          "sha256": "63f36075881b23a128c8e48ade13983a3db7ce6d779a284b9ddf89452b3cf1ae",
+          "bytes": 199584,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

@@ -49,18 +49,18 @@
       "confirm": "Confirm",
       "back": "Back",
       "emptySeat": "Empty",
-      "scenarioStepTitle": "Choose Scenario",
-      "scenarioSelected": "Current Scenario",
-      "scenarioDialogTitle": "Choose Scenario",
+      "scenarioStepTitle": "Confirm In-Match Scenario",
+      "scenarioSelected": "In-Match Scenario",
+      "scenarioDialogTitle": "Confirm In-Match Scenario",
       "scenarioDossier": "Scenario Dossier",
       "scenarioCaseNo": "File 01 / Haunt Record",
       "scenarioDossierDetail": "Scenario Text",
       "closeScenarioDialog": "Close",
-      "scenarioOnly": "Available Scenario",
-      "scenarioStepSubtitle": "The first scenario is available in this build. Confirm to enter pre-haunt exploration.",
+      "scenarioOnly": "In-Match Confirmation",
+      "scenarioStepSubtitle": "This match uses Crimson Jack Returns. Confirm to enter pre-haunt exploration.",
       "viewScenarioDetails": "Read Full Scenario",
       "hideScenarioDetails": "Close File",
-      "useScenario": "Use Scenario",
+      "useScenario": "Confirm Scenario",
       "pageUp": "Previous explorers",
       "pageDown": "Next explorers"
     },
@@ -167,12 +167,15 @@
       "actionCueAttackTraitor": "Now: attack the traitor",
       "actionCueAttackHero": "Now: attack {{player}}",
       "actionCueEndTurn": "Now: tap End Turn",
+      "actionCueEndTurnRoomEffect": "Now: resolve the room stay effect",
       "usePreview": "Use: {{effect}}",
       "cardUsedThisTurn": "Used this turn",
       "cardUsedTag": "Used",
       "cardUnavailableThisTurn": "New this turn, usable next turn",
       "cardUnavailableTag": "Next turn",
-      "frontMissing": "Front missing"
+      "frontMissing": "Front missing",
+      "floorUp": "Switch to upper floor",
+      "floorDown": "Switch to lower floor"
     },
     "feedback": {
       "label": "Latest",
@@ -200,7 +203,7 @@
       "monsterGoal": "After the traitor is knocked down, Jack's Spirit appears as a monster. The traitor controls it, moves it, attacks heroes, and tries to return to the corpse room to revive.",
       "readerTitle": "Haunt Dossier / Full Scenario",
       "readerSubtitle": "",
-  "readerLead": "This dossier fully takes over after the haunt begins. The heroes are no longer only exploring the house: they must learn the truth about Crimson Jack, prepare exorcism circles, and finish the final banishment once Jack's Spirit appears.",
+  "readerLead": "This dossier becomes the active scenario after the haunt begins. It covers the hero rules, traitor rules, and Jack's Spirit: heroes investigate Jack and prepare circles, the traitor hunts heroes, and Jack's Spirit takes over after the traitor falls.",
   "readerCaseLabel": "File",
   "readerStatusLabel": "Status",
   "readerPageLabel": "Page",
@@ -209,21 +212,21 @@
   "readerNext": "Next",
   "reader": {
         "prologueLabel": "House Signs",
-        "prologue": "Crimson traces return through the old house. Books, wall cracks, and dark rooms all point to one name: Jack. Exploration continues, but every omen can push the house into the haunt.",
+        "prologue": "Crimson traces return through the old house. Books, wall cracks, and dark rooms all point to one name: Jack.\n\nAs the explorers speak about the old killer, one companion's smile changes. The haunt is revealed: the explorer who revealed the haunt is the traitor.",
         "setupLabel": "Opening Record",
-        "setup": "After explorers are confirmed, the game begins in pre-haunt exploration. When the haunt triggers, this dossier becomes the active scenario. The Library is the key place to investigate Jack, and rooms with event symbols become candidates for studying exorcism circles.",
+        "setup": "The heroes have no extra setup. After the haunt begins, the player to the traitor's left takes the first turn.\n\nNeeded tokens: Jack's Spirit large monster token, 2 Sanity tokens as exorcism circles, and 2 Might tokens as Knowledge of Jack.\n\nThe Library is the key place to investigate Jack. Rooms with event symbols are where heroes can study exorcism circles.",
         "heroManualLabel": "Hero Manual",
-        "heroManual": "Living heroes need to investigate Jack in the Library. The investigation uses a Knowledge check; on 5 or higher, a hero gains Jack's clue. A hero who knows Jack is better prepared for later clashes with Jack's Spirit.",
+        "heroManual": "Heroes win by completing the final exorcism and banishing Jack's Spirit. To reach that point, they usually need to defeat the traitor first so Jack's Spirit appears.\n\nOnce during a hero's turn, that hero may Learn about Jack in the Library with a Knowledge roll. If the result is 5 or higher, give a Knowledge of Jack token to a hero who does not already have one. If the result is 4 or lower, nothing happens.\n\nA hero with Knowledge of Jack adds 2 to rolls when attacking the traitor or when attacked by Jack's Spirit.",
         "circleManualLabel": "Exorcism Circles",
-        "circleManual": "Heroes may study an exorcism circle in a room with an event symbol. This also uses a Knowledge check; on 5 or higher, place one circle in that room. Failure causes mental backlash. Only one study attempt is allowed each turn, and at least two circles are required before the final exorcism can be attempted.",
+        "circleManual": "Once during a hero's turn, that hero may Study the Exorcism while on a tile with an event symbol. Make a Knowledge roll.\n\nIf the result is 5 or higher, place an exorcism circle on that tile, or move one there if both circles are already on the board. If the result is 4 or lower, that hero takes 2 Mental damage.\n\nExorcism circles make the final exorcism safer: each circle in the same region adds to the exorcism roll.",
         "traitorManualLabel": "Traitor Manual",
-        "traitorManual": "The traitor's job is to slow the investigation, prevent the circles from forming, and hunt heroes directly. The traitor may attack heroes in the same room. If every hero falls, the traitor side wins the dossier.",
+        "traitorManual": "The traitor wins when all heroes are dead. After the haunt is revealed, the traitor stays in the game, heals all traits, and improves physical traits.\n\nThe traitor should slow investigation, block circles, and attack heroes. If the traitor has not attacked and has no line of sight to a hero, the traitor may Stalk the Prey: move to an Upper or Ground Floor tile outside every hero's line of sight.\n\nIf the traitor dies, the traitor does not lose immediately. Jack's Spirit is released.",
         "spiritManualLabel": "Jack's Spirit",
-        "spiritManual": "Knocking down the traitor does not immediately end the haunt. Jack's Spirit appears in a discovered room away from the corpse and continues as a monster. The dead traitor controls it, moving it to adjacent discovered rooms, attacking heroes, and trying to return to the corpse room to revive.",
+        "spiritManual": "When the traitor dies, place Jack's Spirit on the Omen-symbol tile farthest from the corpse. Repeat this each time the traitor dies.\n\nWhile the traitor is dead, the traitor player takes turns with Jack's Spirit. Jack's Spirit is a monster with Might 5, Speed 3, Sanity 4, and Knowledge 4. It may move between adjacent tiles even without doorways, and it cannot be stunned.\n\nAt the start of the monster turn, if Jack's Spirit is on the traitor's corpse tile, heal the traitor, return control to the explorer, and remove Jack's Spirit from the house.",
         "exorcismManualLabel": "Final Exorcism",
-        "exorcismManual": "When Jack's Spirit has appeared, a hero is in its room, and at least two exorcism circles are on the board, a living hero may attempt the exorcism. The check uses Sanity and gains a bonus from circles in the same region. A total of 7 or higher banishes Jack's Spirit.",
+        "exorcismManual": "A living hero on the same tile as Jack's Spirit may attempt to exorcise it with a Sanity roll.\n\nAdd 1 for each exorcism circle in the same region. If the result is 7 or higher, the heroes win and Jack's Spirit is banished. If the result is 6 or lower, every hero takes 1 Physical damage and Jack's Spirit remains.\n\nThe safer path is to investigate Jack, prepare circles, and track the traitor and Jack's Spirit before committing to the exorcism.",
         "endingManualLabel": "Win Conditions",
-        "endingManual": "Heroes win by completing the final exorcism and banishing Jack's Spirit. The traitor wins by stopping the exorcism and making every hero fall. If Jack's Spirit returns to the corpse room and revives the traitor, the heroes must face the traitor side again."
+        "endingManual": "Heroes win by defeating the traitor, bringing out Jack's Spirit, and completing the final exorcism. Once Jack's Spirit vanishes, the survivors escape.\n\nThe traitor wins by stopping the investigation and exorcism until every hero is dead. If Jack's Spirit returns to the corpse and revives the traitor, the heroes must face the traitor again.\n\nSuggested reading order: goals first, then hero actions, traitor actions, Jack's Spirit, and finally exorcism and win conditions."
       },
       "statusLabel": "Current State",
       "haunt": "Haunt",
@@ -243,7 +246,8 @@
       "exorciseJack": "Exorcise",
       "attack": "Attack",
       "roomEffectMysticElevator": "Mystic Elevator",
-      "endTurn": "End Turn"
+      "endTurn": "End Turn",
+      "endTurnRoomEffect": "Resolve Room"
     },
     "traits": {
       "might": "Might",
@@ -286,10 +290,24 @@
     "preview": "Zoom preview",
     "obstacle": "Obstacle",
     "secretPassage": "Secret Passage",
-    "rewards": {
+      "rewards": {
         "event": "Event",
         "item": "Item",
         "omen": "Omen"
+      },
+      "endTurnEffects": {
+        "physicalDamage1": {
+          "title": "{{room}}: end-turn damage",
+          "detail": "Ending your turn here deals 1 physical damage."
+        },
+        "speedCheckFallToBasement": {
+          "title": "{{room}}: end-turn check",
+          "detail": "Ending your turn here rolls Speed; failure drops you to the basement landing."
+        },
+        "moveToBasementLanding": {
+          "title": "{{room}}: end-turn slide",
+          "detail": "Ending your turn here moves you to the basement landing."
+        }
       },
       "discovered": {
         "event": "Event resolved",

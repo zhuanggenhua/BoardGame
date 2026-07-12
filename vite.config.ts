@@ -111,6 +111,26 @@ const resolveGitCommitSha = (): string | undefined => {
 }
 
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa'])
+const sanitizeViteCacheSegment = (value: string) => (
+  value
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    || 'default'
+)
+
+const resolveViteCacheDir = (devPort: number) => {
+  const explicitCacheDir = process.env.VITE_CACHE_DIR?.trim()
+    || process.env.BG_VITE_CACHE_DIR?.trim()
+  if (explicitCacheDir) {
+    return explicitCacheDir
+  }
+
+  const cacheKey = process.env.BG_VITE_CACHE_KEY?.trim()
+    || `port-${devPort}`
+  return path.resolve(configDir, 'node_modules/.vite', sanitizeViteCacheSegment(cacheKey))
+}
 
 const isNonReleaseAndroidAppId = (appId: string) => (
   appId
@@ -567,6 +587,7 @@ export default defineConfig(({ mode }) => {
   const useStableE2EOptimizeDeps = forceInlineVite || suppressE2EProxyNoise
   const devApiDisabled = isTruthyFlag(env.VITE_DEV_SKIP_API || process.env.VITE_DEV_SKIP_API)
   const backendUrl = env.VITE_BACKEND_URL || ''
+  const viteCacheDir = resolveViteCacheDir(devPort)
 
   const isIgnorableProxyError = (err: Error & NodeJS.ErrnoException) => {
     if (err.code === 'ECONNABORTED') return true
@@ -580,6 +601,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    cacheDir: viteCacheDir,
     define: {
       'globalThis.__APP_VERSION__': JSON.stringify(appVersion),
       'globalThis.__APP_COMMIT_SHA__': JSON.stringify(appCommitSha),

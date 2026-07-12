@@ -257,6 +257,19 @@ function isAnonymousInjectedWindowErrorNoise(payload: ClientAutoReportPayload): 
     return isUndefinedGlobal || isAnonymousPropertyRead;
 }
 
+function isKnownDiceBoxThirdPartyRenderNoise(payload: ClientAutoReportPayload): boolean {
+    if ((payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE) !== 'client-window-error') {
+        return false;
+    }
+
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}\n${payload.jsStack ?? ''}\n${payload.errorSource ?? ''}`.toLowerCase();
+    return normalizedName === 'typeerror'
+        && normalizedMessage === "cannot read properties of null (reading 'trim')"
+        && normalizedStack.includes('dice-box-threejs');
+}
+
 function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim();
     const normalizedName = payload.errorName.trim();
@@ -294,6 +307,9 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isCloudflareBeaconNoise(payload)) {
+        return true;
+    }
+    if (isKnownDiceBoxThirdPartyRenderNoise(payload)) {
         return true;
     }
     if (isAnonymousInjectedWindowErrorNoise(payload)) {

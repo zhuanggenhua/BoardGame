@@ -91,6 +91,7 @@ import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { shouldBlockHandInteraction } from './ui/handInteractionBusy';
 import { swAttackDebugLog } from './ui/attackDebug';
 import { isTestEnvironment } from '../../engine/testing/environment';
+import { useSummonerWarsCombatEffectPreference } from './ui/useSummonerWarsCombatEffectPreference';
 
 type Props = GameBoardProps<SummonerWarsCore>;
 
@@ -114,6 +115,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isTutorialMode = gameMode?.mode === 'tutorial';
   const effectiveLocale = locale || 'zh-CN';
   const { t } = useTranslation('game-summonerwars');
+  const { reducedCombatEffects } = useSummonerWarsCombatEffectPreference();
   const viewport = useRuntimeViewport();
   const viewportSafeWidth = useMemo(() => {
     const safeWidth = viewport.width - viewport.safeArea.left - viewport.safeArea.right;
@@ -121,6 +123,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   }, [viewport.safeArea.left, viewport.safeArea.right, viewport.width]);
   const isMobileViewport = viewport.width <= 1023;
   const isLandscapeMobileViewport = isMobileViewport && viewport.width > viewport.height;
+  const shouldReduceCombatEffects = reducedCombatEffects && isMobileViewport;
   const desktopReferenceWidth = Math.min(
     SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
     viewportSafeWidth || SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
@@ -600,21 +603,22 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       window.setTimeout(() => {
         clearPendingAttack();
         const hitIntensity = attackSnapshot.hits >= 3 ? 'strong' : 'normal';
+        const reducedHitIntensity = shouldReduceCombatEffects ? 'normal' : hitIntensity;
+        const attackSoundKey = resolveAttackSoundKey(attackSnapshot.attackType, core, attackSnapshot.attacker);
         // 只 push 气浪，伤害特效等气浪到达目标后再播放
         waitingForShockwaveRef.current = true;
         pendingRangedDamagesRef.current = [...attackSnapshot.damages];
         pendingRangedShakeRef.current = attackSnapshot.hits >= 3;
         // 远程攻击音 + 震动：由 COMBAT_SHOCKWAVE 的 FeedbackPack 自动处理
-        const attackSoundKey = resolveAttackSoundKey(attackSnapshot.attackType, core, attackSnapshot.attacker);
         swAttackDebugLog('board_push_ranged_shockwave', {
           attackEventId: attackSnapshot.attackEventId,
           attackType: attackSnapshot.attackType,
-          hitIntensity,
+          hitIntensity: reducedHitIntensity,
           pendingRangedDamageCount: pendingRangedDamagesRef.current.length,
           attacker: attackSnapshot.attacker,
           target: attackSnapshot.target,
         });
-        fxBus.push(SW_FX.COMBAT_SHOCKWAVE, { cell: attackSnapshot.target, intensity: hitIntensity }, { attackType: attackSnapshot.attackType, source: attackSnapshot.attacker, soundKey: attackSoundKey });
+        fxBus.push(SW_FX.COMBAT_SHOCKWAVE, { cell: attackSnapshot.target, intensity: reducedHitIntensity }, { attackType: attackSnapshot.attackType, source: attackSnapshot.attacker, soundKey: attackSoundKey, quality: shouldReduceCombatEffects ? 'reduced' : 'full' });
         // 伤害特效和 flushPendingDestroys 由 handleFxComplete 在气浪完成时触发
       }, 180);
     } else {
@@ -628,15 +632,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       setAttackAnimState({ attacker: pending.attacker, target: pending.target, hits: pending.hits });
     }
   };
-
-  useEffect(() => {
-    if (!diceResult || !swInteraction) return;
-    swAttackDebugLog('board_auto_close_dice_for_interaction', {
-      interactionId: swInteraction.id,
-      interactionType: swInteraction.type,
-    });
-    handleCloseDiceResult();
-  }, [diceResult, swInteraction?.id]);
 
   // 近战攻击命中回调（卡牌冲到目标时触发，播放伤害特效）
   const handleAttackHit = () => {
@@ -654,7 +649,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       releaseDamageSnapshot(impactPositions);
     }
 
-    const hitIntensity = pending.hits >= 3 ? 'strong' : 'normal';
+    const hitIntensity = shouldReduceCombatEffects ? 'normal' : pending.hits >= 3 ? 'strong' : 'normal';
     // 近战攻击音 + 震动：由 COMBAT_SHOCKWAVE 的 FeedbackPack 自动处理
     const attackSoundKey = resolveAttackSoundKey(pending.attackType, core, pending.attacker);
     swAttackDebugLog('board_push_melee_shockwave', {
@@ -663,11 +658,15 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       attacker: pending.attacker,
       target: pending.target,
     });
-    fxBus.push(SW_FX.COMBAT_SHOCKWAVE, { cell: pending.target, intensity: hitIntensity }, { attackType: pending.attackType, source: pending.attacker, soundKey: attackSoundKey });
+    if (!shouldReduceCombatEffects) {
+      fxBus.push(SW_FX.COMBAT_SHOCKWAVE, { cell: pending.target, intensity: hitIntensity }, { attackType: pending.attackType, source: pending.attacker, soundKey: attackSoundKey });
+    } else {
+      playSound(attackSoundKey);
+    }
     for (const dmg of pending.damages) {
       // 受伤音：由 COMBAT_DAMAGE 的 FeedbackPack 自动处理
       const damageSoundKey = resolveDamageSoundKey(dmg.damage);
-      fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey, suppressShake: true });
+      fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: shouldReduceCombatEffects ? 'normal' : dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey, suppressShake: true, reduced: shouldReduceCombatEffects });
     }
   };
 
@@ -701,7 +700,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       // 气浪到达目标：播放伤害特效（音效 + 震动由 FeedbackPack 自动处理）
       for (const dmg of pendingRangedDamagesRef.current) {
         const damageSoundKey = resolveDamageSoundKey(dmg.damage);
-        fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey, suppressShake: true });
+        fxBus.push(SW_FX.COMBAT_DAMAGE, { cell: dmg.position, intensity: shouldReduceCombatEffects ? 'normal' : dmg.damage >= 3 ? 'strong' : 'normal' }, { damageAmount: dmg.damage, soundKey: damageSoundKey, suppressShake: true, reduced: shouldReduceCombatEffects });
       }
       swAttackDebugLog('board_ranged_shockwave_resolved', {
         fxId: id,
@@ -716,7 +715,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     if (cue === SW_FX.SUMMON || cue === SW_FX.COMBAT_SHOCKWAVE) {
       tutorialAnimationComplete();
     }
-  }, [flushPendingDestroys, fxBus, releaseDamageSnapshot, tutorialAnimationComplete]);
+  }, [flushPendingDestroys, fxBus, releaseDamageSnapshot, shouldReduceCombatEffects, tutorialAnimationComplete]);
 
   // 卡牌放大
   const handleMagnifyCard = useCallback((card: Card) => {
@@ -1150,6 +1149,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         mindControlSelectedTargets={interaction.mindControlMode?.selectedTargets ?? []}
                         entanglementHighlights={interaction.entanglementHighlights}
                         entanglementSelectedTargets={interaction.chantEntanglementMode?.selectedTargets ?? []}
+                        moguSymbioticSelfHealingHighlights={interaction.moguSymbioticSelfHealingHighlights}
+                        moguSymbioticSelfHealingSelectedTargets={interaction.moguSymbioticSelfHealingMode?.selectedTargets ?? []}
+                        moguReleaseSporesHighlights={interaction.moguReleaseSporesHighlights}
+                        moguReleaseSporesSelectedTargets={interaction.moguReleaseSporesMode?.selectedTargets ?? []}
                         sneakHighlights={interaction.sneakHighlights}
                         glacialShiftHighlights={interaction.glacialShiftHighlights}
                         withdrawHighlights={interaction.withdrawHighlights}
@@ -1158,6 +1161,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         afterAttackAbilityHighlights={interaction.afterAttackAbilityHighlights}
                         telekinesisHighlights={interaction.telekinesisHighlights}
                         attackAnimState={attackAnimState}
+                        reducedCombatEffects={shouldReduceCombatEffects}
                         destroyingCells={destroyingCells}
                         dyingEntities={dyingEntities}
                         damageBuffer={damageBuffer}
@@ -1347,6 +1351,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     funeralPyreMode={interaction.funeralPyreMode}
                     mindControlMode={interaction.mindControlMode}
                     chantEntanglementMode={interaction.chantEntanglementMode}
+                    moguSymbioticSelfHealingMode={interaction.moguSymbioticSelfHealingMode}
+                    moguReleaseSporesMode={interaction.moguReleaseSporesMode}
                     sneakMode={interaction.sneakMode}
                     glacialShiftMode={interaction.glacialShiftMode}
                     withdrawMode={interaction.withdrawMode}
@@ -1379,6 +1385,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     onCancelMindControl={handleCancelMindControl}
                     onConfirmEntanglement={handleConfirmEntanglement}
                     onCancelEntanglement={handleCancelEntanglement}
+                    onConfirmMoguSymbioticSelfHealing={interaction.handleConfirmMoguSymbioticSelfHealing}
+                    onSkipMoguSymbioticSelfHealing={interaction.handleSkipMoguSymbioticSelfHealing}
+                    onConfirmMoguReleaseSpores={interaction.handleConfirmMoguReleaseSpores}
+                    onSkipMoguReleaseSpores={interaction.handleSkipMoguReleaseSpores}
                     onConfirmSneak={handleConfirmSneak}
                     onCancelSneak={handleCancelSneak}
                     onConfirmGlacialShift={handleConfirmGlacialShift}
@@ -1394,6 +1404,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     onCancelRapidFire={handleCancelRapidFire}
                     onCancelTelekinesis={handleCancelTelekinesis}
                     onAfterMoveSelfCharge={handleAfterMoveSelfCharge}
+                    onSystemAbilityChoice={interaction.handleSystemAbilityChoice}
                     onPlayMagicEvent={interaction.handlePlayMagicEvent}
                     onDiscardMagicEvent={interaction.handleDiscardMagicEvent}
                     onCancelMagicEventChoice={interaction.handleCancelMagicEventChoice}

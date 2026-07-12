@@ -46,7 +46,7 @@ export type GamePhase =
 export const PHASE_ORDER: GamePhase[] = ['summon', 'move', 'build', 'attack', 'magic', 'draw'];
 
 /** 阵营 ID */
-export type FactionId = 'necromancer' | 'trickster' | 'paladin' | 'goblin' | 'frost' | 'barbaric';
+export type FactionId = 'necromancer' | 'trickster' | 'paladin' | 'goblin' | 'frost' | 'barbaric' | 'mogu';
 
 /**
  * 阵营目录的唯一权威来源：config/factions/index.ts 的 FACTION_CATALOG

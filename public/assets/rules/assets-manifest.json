@@ -1,0 +1,17 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "rules",
+  "basePrefix": "official/rules/",
+  "files": {
+    "七大恨规则": {
+      "variants": {
+        "md": {
+          "sha256": "236e96fe9c57dfe0ed60c06b4ed4dffb7f423663c0b6dc8cf7cf544e159c208e",
+          "bytes": 32685,
+          "mime": "application/octet-stream"
+        }
+      }
+    }
+  }
+}

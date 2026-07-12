@@ -44,7 +44,7 @@ function buildMatchPlayers(metadata: MatchMetadata): Array<{ id: number; name?: 
     }));
 }
 
-export function buildLobbyMatch(matchID: string, metadata: MatchMetadata): LobbyMatch {
+export function buildLobbyMatch(matchID: string, metadata: MatchMetadata, runtimeState?: unknown): LobbyMatch {
     const normalizedGameName = normalizeGameName(metadata.gameName);
     const setupDataRecord = readSetupDataRecord(metadata);
     const players = buildMatchPlayers(metadata);
@@ -62,7 +62,7 @@ export function buildLobbyMatch(matchID: string, metadata: MatchMetadata): Lobby
             ? setupDataRecord.ownerType
             : undefined,
         isLocked: typeof setupDataRecord?.password === 'string' && setupDataRecord.password.length > 0,
-        publicSetupSummary: buildGamePublicRoomSummary(normalizedGameName, setupDataRecord),
+        publicSetupSummary: buildGamePublicRoomSummary(normalizedGameName, setupDataRecord, runtimeState),
         gameover: !!metadata.gameover,
         status: resolveMatchStatus(metadata),
     };

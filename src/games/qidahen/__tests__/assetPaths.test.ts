@@ -19,9 +19,10 @@ const REQUIRED_CARD_ATLASES = [
     'qidahen/cards/atlases/mongol-faction-deck-atlas',
     'qidahen/cards/atlases/jin-faction-deck-atlas',
     'qidahen/cards/atlases/korea-special-deck-atlas',
-    'qidahen/cards/atlases/chronology-deck-atlas',
     'qidahen/cards/atlases/ordinary-hand-atlas05',
 ] as const;
+
+const FORBIDDEN_CHRONOLOGY_ATLAS_ALIAS = 'qidahen/cards/atlases/chronology-deck-atlas';
 
 const TTS_CONFIRMED_MARKERS = [
     'qidahen/markers/ming-control-diplomacy-marker-b',
@@ -70,6 +71,14 @@ const FORBIDDEN_MISSING_CARD_BACKS = [
 ] as const;
 
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf8');
+const qidahenAssetManifestSource = readFileSync(resolve(
+    process.cwd(),
+    'public/assets/i18n/zh-CN/qidahen/assets-manifest.json',
+), 'utf8');
+const i18nAssetManifestSource = readFileSync(resolve(
+    process.cwd(),
+    'public/assets/i18n/assets-manifest.json',
+), 'utf8');
 
 const getCompressedAssetFile = (assetPath: string): string => resolve(
     process.cwd(),
@@ -80,6 +89,15 @@ const getCompressedAssetFile = (assetPath: string): string => resolve(
     dirname(assetPath),
     'compressed',
     `${basename(assetPath)}.webp`,
+);
+
+const getSourceAssetFile = (assetPath: string, extension: string): string => resolve(
+    process.cwd(),
+    'public',
+    'assets',
+    'i18n',
+    'zh-CN',
+    `${assetPath}.${extension}`,
 );
 
 describe('七大恨牌背资源路径合同', () => {
@@ -144,6 +162,24 @@ describe('七大恨正式卡牌图集资源路径合同', () => {
             expect(resolverImages).toContain(assetPath);
             expect(existsSync(getCompressedAssetFile(assetPath))).toBe(true);
         }
+    });
+
+    it('纪年卡路径不得再登记为普通手牌图集的重复别名', () => {
+        const manifestImages = [
+            ...QIDAHEN_MANIFEST.criticalImages,
+            ...(QIDAHEN_MANIFEST.warmImages ?? []),
+        ];
+        const resolverImages = [
+            ...qidahenCriticalImageResolver(undefined).critical,
+            ...qidahenCriticalImageResolver(undefined).warm,
+        ];
+
+        expect(manifestImages).not.toContain(FORBIDDEN_CHRONOLOGY_ATLAS_ALIAS);
+        expect(resolverImages).not.toContain(FORBIDDEN_CHRONOLOGY_ATLAS_ALIAS);
+        expect(qidahenAssetManifestSource).not.toContain('chronology-deck-atlas');
+        expect(i18nAssetManifestSource).not.toContain('chronology-deck-atlas');
+        expect(existsSync(getSourceAssetFile(FORBIDDEN_CHRONOLOGY_ATLAS_ALIAS, 'jpg'))).toBe(false);
+        expect(existsSync(getCompressedAssetFile(FORBIDDEN_CHRONOLOGY_ATLAS_ALIAS))).toBe(false);
     });
 });
 

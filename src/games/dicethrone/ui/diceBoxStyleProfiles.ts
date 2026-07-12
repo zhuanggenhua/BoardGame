@@ -19,6 +19,11 @@ export const DICETHRONE_DICE_BOX_STYLE_PROFILE = {
     gravityMultiplier: 400,
     lightIntensity: 0.86,
     baseScale: 38,
+    // 只放大 PC 棋盘 3D 骰子的相机投影，不改变骰子实体、物理墙或自然落点。
+    // 目标是让正式贴图骰面更接近插件截图的可读尺寸，避免用放大实体引入碰撞/瞬移。
+    cameraZoom: 1.32,
+    // 投掷物理结束后只平滑修正最终朝向，不移动落点，避免骰面停在侧翻角度导致贴图显示不全。
+    settledFaceForwardAnimationMs: 180,
     strength: 0.92,
     iterationLimit: 1000,
     // dice-box-threejs 的 setDimensions 会同步重建 Cannon 物理墙体。

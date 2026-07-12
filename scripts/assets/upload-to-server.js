@@ -6,6 +6,8 @@
  *   npm run assets:upload:force       — 强制发布所有可发布文件
  *   npm run assets:check              — 只检查本地待发布文件
  *   npm run assets:sync               — 发布并刷新安卓素材包；不删除服务器历史 release
+ *   node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/summonerwars/hero/mogu
+ *                                      — 只检查/发布指定 public/assets 相对路径前缀
  *   node scripts/assets/upload-to-server.js --android-package-publish-plan <path...> — 预演安卓素材包刷新
  */
 
@@ -27,6 +29,40 @@ const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--che
 const skipAndroidPackagePublish = process.env.SKIP_ANDROID_PACKAGE_PUBLISH === '1' || process.argv.includes('--skip-android-package-publish');
 const androidPackagePublishPlanArgIndex = process.argv.indexOf('--android-package-publish-plan');
 const uploadBatchSize = Number.parseInt(process.env.ASSET_UPLOAD_BATCH_SIZE || '200', 10);
+
+function readRepeatedArg(name) {
+  const values = [];
+  const flag = `--${name}`;
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const arg = process.argv[index];
+    if (arg === flag && process.argv[index + 1]) {
+      values.push(process.argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith(`${flag}=`)) {
+      values.push(arg.slice(flag.length + 1));
+    }
+  }
+  return values;
+}
+
+function normalizeRelativePrefix(value) {
+  return value
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/^public\/assets\//, '')
+    .replace(/^official\//, '')
+    .replace(/\/+$/, '');
+}
+
+const assetPrefixes = readRepeatedArg('asset-prefix').map(normalizeRelativePrefix).filter(Boolean);
+
+function matchesAssetPrefix(relativePath) {
+  if (assetPrefixes.length === 0) return true;
+  const normalized = relativePath.replace(/\\/g, '/');
+  return assetPrefixes.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`));
+}
 
 function chunkArray(items, chunkSize) {
   const safeChunkSize = Number.isFinite(chunkSize) && chunkSize > 0 ? chunkSize : 200;
@@ -244,7 +280,9 @@ async function main() {
     throw new Error(`本地素材目录不存在: ${assetsDir}`);
   }
 
-  const files = getAllFiles(assetsDir).filter(shouldUpload);
+  const files = getAllFiles(assetsDir)
+    .filter((file) => matchesAssetPrefix(relative(assetsDir, file)))
+    .filter(shouldUpload);
   const packageManagedGames = discoverPackageManagedGames();
   const uploadedPackageManagedGames = new Set();
   let hasUploadedSharedAudioAssets = false;
@@ -255,6 +293,9 @@ async function main() {
   }
   if (checkOnly) {
     console.log('检查模式：只列出会发布到服务器的对象');
+  }
+  if (assetPrefixes.length > 0) {
+    console.log(`路径过滤：${assetPrefixes.join(', ')}`);
   }
 
   const uploadPlan = [];

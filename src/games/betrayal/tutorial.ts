@@ -263,7 +263,7 @@ const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.HAUNT_ATTACK],
-            randomPolicy: { mode: 'fixed', values: [3, 3, 3, 3, 1, 1, 1, 1] },
+            randomPolicy: { mode: 'sequence', values: [3, 3, 1, 3, 2, 1, 1] },
             advanceOnEvents: [{ type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } }],
             viewAs: '2',
         },

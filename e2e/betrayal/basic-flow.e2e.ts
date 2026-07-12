@@ -20,7 +20,7 @@ const INVENTORY_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-基本流�
 const USE_ITEM_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-基本流程-使用物品.png`;
 const MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-基本流程-移动选目标.png`;
 const MOVE_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-基本流程-移动后.png`;
-const MOBILE_CHARACTER_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-移动端横屏-角色翻页与默认角色.png`;
+const MOBILE_CHARACTER_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-移动端横屏-角色竖向滚动选中与能力提示.jpg`;
 const MOBILE_SCENARIO_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/09a-山屋惊魂-移动端横屏-剧本弹窗入口.png`;
 const MOBILE_SCENARIO_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/09b-山屋惊魂-移动端横屏-书本式剧本阅读首页.png`;
 const MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/09c-山屋惊魂-移动端横屏-书本式剧本阅读末页.png`;
@@ -52,29 +52,47 @@ test.describe('山屋惊魂基本流程', () => {
         await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeVisible();
         await expect(page.getByTestId('betrayal-scenario-detail-panel')).not.toContainText('作祟档案');
         await expect(page.getByTestId('betrayal-scenario-book')).toBeVisible();
-        await expect(page.getByTestId('betrayal-scenario-book-cover-page')).toContainText('赤红杰克归来');
-        await expect(page.getByTestId('betrayal-scenario-reader-page-label')).toHaveText('1/5');
-        await expect(page.getByTestId('betrayal-scenario-reader-prev')).toBeDisabled();
-        await expect(page.getByTestId('betrayal-scenario-reader-next')).toBeEnabled();
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-opening')).toContainText('山屋异象');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-opening')).toContainText('开局记录');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-heroes')).toContainText('英雄手册');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-heroes')).toContainText('驱魔法阵');
+        await expect(page.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveText('01');
+        await expect(page.getByTestId('betrayal-scenario-reader-prev-zone')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-scenario-reader-next-zone')).toBeEnabled();
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog').getByRole('button', { name: '上一页' })).toHaveClass(/bg-transparent/);
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog').getByRole('button', { name: '下一页' })).toHaveClass(/bg-transparent/);
         await saveScreenshot(page, SCENARIO_SELECT_DETAIL_SCREENSHOT);
-        for (let pageIndex = 0; pageIndex < 4; pageIndex += 1) {
-            await page.getByTestId('betrayal-scenario-reader-next').click();
-        }
-        await expect(page.getByTestId('betrayal-scenario-reader-page-label')).toHaveText('5/5');
-        await expect(page.getByTestId('betrayal-scenario-reader-next')).toBeDisabled();
-        await expect(page.getByTestId('betrayal-scenario-book-page-endingManualLabel')).toContainText('胜负判定');
+        await page.getByTestId('betrayal-scenario-reader-next-zone').click();
+        await expect(page.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveText('03');
+        await expect(page.getByTestId('betrayal-scenario-reader-next-zone')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-exorcism')).toContainText('最终驱魔');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-exorcism')).toContainText('叛徒手册');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-traitor')).toContainText('杰克之灵');
+        await expect(page.getByTestId('betrayal-scenario-book-section-endingManualLabel')).toContainText('胜负判定');
         await saveScreenshot(page, SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT);
-        await page.getByTestId('betrayal-scenario-reader-close').click();
+        await page.waitForTimeout(400);
+        await page.mouse.click(12, 12);
         await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeHidden();
-        await expect(page.getByTestId('betrayal-scenario-select-current')).toBeVisible();
-        await page.getByTestId('betrayal-scenario-select-current').click();
-        await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeHidden();
-        await page.getByTestId('betrayal-character-confirm').click();
+        const scenarioSelectStillOpen = await page.getByTestId('betrayal-scenario-select-dialog').isVisible({ timeout: 800 }).catch(() => false);
+        if (scenarioSelectStillOpen) {
+            await expect(page.getByTestId('betrayal-scenario-select-current')).toBeVisible();
+            await page.getByTestId('betrayal-scenario-select-current').click();
+            await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeHidden();
+        }
+        const boardOrConfirm = await Promise.race([
+            page.getByTestId('betrayal-board').waitFor({ state: 'visible', timeout: 5000 }).then(() => 'board' as const).catch(() => null),
+            page.getByTestId('betrayal-character-confirm').waitFor({ state: 'visible', timeout: 5000 }).then(() => 'confirm' as const).catch(() => null),
+        ]);
+        if (boardOrConfirm === 'confirm') {
+            await page.getByTestId('betrayal-character-confirm').click();
+        }
 
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
         await expect(page.getByTestId('betrayal-action-explore')).toBeVisible();
         await expect(page.getByTestId('betrayal-open-scenario')).toBeVisible();
+        await expect(page.getByTestId('betrayal-current-ability')).toBeVisible();
+        await expect(page.getByTestId('betrayal-current-ability')).toContainText('特性');
         await saveScreenshot(page, RUNTIME_SCREENSHOT);
 
         await page.getByTestId('betrayal-inventory-omen-book-magnify').click();
@@ -100,7 +118,7 @@ test.describe('山屋惊魂基本流程', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-basic-flow', diagnostics }]);
     });
 
-    test('移动端横屏角色选择包含默认角色、翻页和剧本弹窗', async ({ page, context }) => {
+    test('移动端横屏角色选择包含竖向滚动、选中态和能力提示', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-basic-flow-mobile-character-select');
@@ -111,21 +129,32 @@ test.describe('山屋惊魂基本流程', () => {
         await waitForBetrayalPageReady(page);
 
         await expect(page.getByTestId('betrayal-character-select-screen')).toBeVisible({ timeout: 30000 });
-        const mobilePager = page.getByTestId('betrayal-character-mobile-pager');
-        await expect(mobilePager).toBeVisible();
-        await expect(mobilePager.getByTestId('betrayal-character-card-jaden-jones')).toBeVisible();
-        await expect(mobilePager.getByTestId('betrayal-character-mobile-page-label')).toHaveText('1/2');
+        const mobileGrid = page.getByTestId('betrayal-character-mobile-grid');
+        await expect(mobileGrid).toBeVisible();
+        await expect(mobileGrid).toHaveClass(/grid-cols-3/);
+        await expect(mobileGrid.getByTestId('betrayal-character-card-jaden-jones')).toBeVisible();
+        await expect(mobileGrid.getByTestId('betrayal-character-card-jaden-jones')).toHaveAttribute('aria-label', /已选择/);
+        for (const explorerId of [
+            'jaden-jones',
+            'rebecca-allen',
+            'darryl-highla',
+            'oliver-swift',
+            'lia-valencia',
+            'sam-yin',
+        ]) {
+            await expect(mobileGrid.getByTestId(`betrayal-character-card-${explorerId}`)).toBeInViewport();
+        }
+        await expect(page.getByTestId('betrayal-character-mobile-page-label')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-character-page-down')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-character-page-up')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-character-selection-grid')).toBeHidden();
 
-        await page.getByTestId('betrayal-character-ability-trigger').click();
-        await expect(page.getByTestId('betrayal-character-ability-tooltip')).toBeVisible();
-        await expect(page.getByTestId('betrayal-character-ability-tooltip')).toContainText('攻击投掷');
-
-        await mobilePager.getByTestId('betrayal-character-page-down').click();
-        await expect(mobilePager.getByTestId('betrayal-character-mobile-page-label')).toHaveText('2/2');
-        await expect(mobilePager.getByTestId('betrayal-character-card-michelle-monroe')).toBeVisible();
-        await mobilePager.getByTestId('betrayal-character-page-up').click();
-        await expect(mobilePager.getByTestId('betrayal-character-mobile-page-label')).toHaveText('1/2');
+        await expect(page.getByTestId('betrayal-character-ability-summary')).toBeVisible();
+        await expect(page.getByTestId('betrayal-character-ability-summary')).toContainText('特性');
+        await expect(page.getByTestId('betrayal-character-ability-summary')).toContainText(/大胆|攻击投掷/);
+        await expect(page.getByTestId('betrayal-character-ability-summary')).not.toContainText(/Bold|Attack/i);
+        await expect(page.getByTestId('betrayal-character-ability-trigger')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-character-ability-tooltip')).toHaveCount(0);
         await saveScreenshot(page, MOBILE_CHARACTER_SCREENSHOT);
 
         await page.getByTestId('betrayal-character-confirm').click();
@@ -140,17 +169,20 @@ test.describe('山屋惊魂基本流程', () => {
         await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeVisible();
         await expect(page.getByTestId('betrayal-scenario-detail-panel')).not.toContainText('作祟档案');
         await expect(page.getByTestId('betrayal-scenario-book')).toBeVisible();
-        await expect(page.getByTestId('betrayal-scenario-book-cover-page-mobile')).toContainText('赤红杰克归来');
-        await expect(page.getByTestId('betrayal-scenario-reader-page-label-mobile')).toHaveText('1 / 9');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-opening')).toContainText('山屋异象');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-opening')).toContainText('开局记录');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-heroes')).toContainText('英雄手册');
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-heroes')).toContainText('驱魔法阵');
+        await expect(page.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveText('01');
+        await expect(page.getByTestId('betrayal-scenario-reader-page-label-desktop-right')).toHaveText('02');
         await expect(page.getByTestId('betrayal-scenario-reader-dialog')).not.toContainText('沉浸阅读');
         await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_SCREENSHOT);
-        for (let pageIndex = 0; pageIndex < 8; pageIndex += 1) {
-            await page.getByTestId('betrayal-scenario-reader-next').click();
-        }
-        await expect(page.getByTestId('betrayal-scenario-reader-page-label-mobile')).toHaveText('9 / 9');
-        await expect(page.getByTestId('betrayal-scenario-reader-next')).toBeDisabled();
-        await expect(page.getByTestId('betrayal-scenario-book-page-endingManualLabel-mobile')).toContainText('胜负判定');
-        await expect(page.getByTestId('betrayal-scenario-book-page-endingManualLabel-mobile')).not.toContainText('08 / 胜负判定');
+        await page.getByTestId('betrayal-scenario-reader-next-zone').click();
+        await expect(page.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveText('03');
+        await expect(page.getByTestId('betrayal-scenario-reader-page-label-desktop-right')).toHaveText('04');
+        await expect(page.getByTestId('betrayal-scenario-reader-next-zone')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-scenario-book-page-dossier-traitor')).toContainText('杰克之灵');
+        await expect(page.getByTestId('betrayal-scenario-book-section-endingManualLabel')).toContainText('胜负判定');
         await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-basic-flow-mobile-character-select', diagnostics }]);

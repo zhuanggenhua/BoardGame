@@ -2,6 +2,7 @@ import type {
     PlayingCard,
     Rank,
     TheGangChallengeId,
+    TheGangExitChipMode,
     TheGangGameMode,
     TheGangRulesConfig,
     TheGangSpecialistId,
@@ -19,6 +20,13 @@ export interface TheGangGameModeRule {
     perGap?: boolean;
     perPlayer?: boolean;
     incompatibleChallenges: readonly TheGangChallengeId[];
+}
+
+export interface TheGangExitChipModeRule {
+    id: TheGangExitChipMode;
+    label: string;
+    reduction: number;
+    summary: string;
 }
 
 export interface TheGangChallengeRule {
@@ -49,6 +57,11 @@ export interface TheGangSpecialistRule {
 
 export const DEFAULT_THE_GANG_RULES_CONFIG: TheGangRulesConfig = {
     gameMode: 'texas-holdem',
+    exitChipMode: 'default',
+    omaha: false,
+    twoHand: false,
+    automode: false,
+    antiTroll: false,
     challenges: {},
 };
 
@@ -97,6 +110,33 @@ export const THE_GANG_GAME_MODES: Record<TheGangGameMode, TheGangGameModeRule> =
             'foot-door',
             'reverse-run',
         ],
+    },
+};
+
+export const THE_GANG_EXIT_CHIP_MODES: Record<TheGangExitChipMode, TheGangExitChipModeRule> = {
+    default: {
+        id: 'default',
+        label: '普通',
+        reduction: 0,
+        summary: '按 TTS 默认撤离筹码数量启用。',
+    },
+    mastermind: {
+        id: 'mastermind',
+        label: '智囊',
+        reduction: 1,
+        summary: '撤离筹码数量比默认少 1。',
+    },
+    'mega-mastermind': {
+        id: 'mega-mastermind',
+        label: '超级智囊',
+        reduction: 2,
+        summary: '撤离筹码数量比默认少 2。',
+    },
+    'ultra-mastermind': {
+        id: 'ultra-mastermind',
+        label: '终极智囊',
+        reduction: 3,
+        summary: '撤离筹码数量降到 0。',
     },
 };
 
@@ -471,6 +511,9 @@ export function normalizeRulesConfig(config?: Partial<TheGangRulesConfig>): TheG
     const gameMode = config?.gameMode && THE_GANG_GAME_MODES[config.gameMode]
         ? config.gameMode
         : DEFAULT_THE_GANG_RULES_CONFIG.gameMode;
+    const exitChipMode = config?.exitChipMode && THE_GANG_EXIT_CHIP_MODES[config.exitChipMode]
+        ? config.exitChipMode
+        : DEFAULT_THE_GANG_RULES_CONFIG.exitChipMode;
     const mode = THE_GANG_GAME_MODES[gameMode];
     const challenges: Partial<Record<TheGangChallengeId, number>> = {};
 
@@ -488,6 +531,11 @@ export function normalizeRulesConfig(config?: Partial<TheGangRulesConfig>): TheG
 
     return {
         gameMode,
+        exitChipMode,
+        omaha: config?.omaha === true,
+        twoHand: gameMode === 'texas-holdem' && config?.twoHand === true,
+        automode: config?.automode === true,
+        antiTroll: config?.antiTroll === true,
         challenges,
         lockedHandRanks: config?.lockedHandRanks ? [...config.lockedHandRanks] : [],
     };

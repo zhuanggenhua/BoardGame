@@ -339,6 +339,7 @@ describe('DiceTray tutorial anchor', () => {
             width: '70px',
             height: '70px',
         });
+        expect(operationAnchor).toHaveClass('pointer-events-auto');
         expect(screen.getByTestId('die-selected-operation-ring-0').parentElement).toBe(operationAnchor);
         const visibleValue = screen.getByTestId('die-board-visible-value-0');
         expect(visibleValue).toHaveTextContent('1');
@@ -375,6 +376,8 @@ describe('DiceTray tutorial anchor', () => {
             width: '128px',
             height: '128px',
         });
+        expect(operationAnchor).toHaveClass('pointer-events-none');
+        expect(Number(operationAnchor.style.zIndex)).toBeGreaterThan(1000);
         expect(screen.getByTestId('die-board-visible-value-0')).toHaveTextContent('1');
         expect(screen.getByTestId('die-board-adjust-controls-0')).toContainElement(decrementButton);
         expect(screen.getByTestId('die-board-adjust-controls-0')).toContainElement(incrementButton);

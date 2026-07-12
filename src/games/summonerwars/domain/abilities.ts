@@ -18,6 +18,7 @@ import { GOBLIN_ABILITIES } from './abilities-goblin';
 import { PALADIN_ABILITIES } from './abilities-paladin';
 import { FROST_ABILITIES } from './abilities-frost';
 import { BARBARIC_ABILITIES } from './abilities-barbaric';
+import { MOGU_ABILITIES } from './abilities-mogu';
 import { abilityText } from './abilityTextHelper';
 import type { InteractionChain } from '../../../engine/primitives/ability';
 
@@ -671,3 +672,6 @@ abilityRegistry.registerAll(FROST_ABILITIES);
 
 // 注册炽原精灵技能
 abilityRegistry.registerAll(BARBARIC_ABILITIES);
+
+// 注册莫古技能
+abilityRegistry.registerAll(MOGU_ABILITIES);

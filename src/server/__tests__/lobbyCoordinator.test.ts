@@ -33,9 +33,10 @@ function buildMetadata(overrides?: Partial<MatchMetadata>): MatchMetadata {
     };
 }
 
-function createStorage(records: Record<string, MatchMetadata>) {
-    const fetch = vi.fn(async (matchID: string, _opts: FetchOpts): Promise<FetchResult> => ({
-        metadata: records[matchID],
+function createStorage(records: Record<string, MatchMetadata>, states: Record<string, StoredMatchState> = {}) {
+    const fetch = vi.fn(async (matchID: string, opts: FetchOpts): Promise<FetchResult> => ({
+        metadata: opts.metadata ? records[matchID] : undefined,
+        state: opts.state ? states[matchID] : undefined,
     }));
     const listMatches = vi.fn(async (opts?: ListMatchesOpts): Promise<string[]> => (
         Object.entries(records)
@@ -211,5 +212,55 @@ describe('createLobbyCoordinator', () => {
         ]);
         expect((emitted[0]?.payload as { match?: { matchID?: string } }).match?.matchID).toBe('match-1');
         expect((emitted[4]?.payload as { matchID?: string }).matchID).toBe('match-1');
+    });
+
+    it('山屋房间列表在局内确认后显示当前剧本，确认前仍显示未定', async () => {
+        const records: Record<string, MatchMetadata> = {
+            'match-pending': buildMetadata({
+                gameName: 'betrayal',
+                players: {
+                    '0': { name: 'Alice', isConnected: true },
+                    '1': {},
+                    '2': {},
+                },
+                setupData: {},
+            }),
+            'match-confirmed': buildMetadata({
+                gameName: 'betrayal',
+                players: {
+                    '0': { name: 'Alice', isConnected: true },
+                    '1': {},
+                    '2': {},
+                },
+                setupData: {},
+            }),
+        };
+        const states: Record<string, StoredMatchState> = {
+            'match-pending': {
+                G: { core: { phase: 'characterSelect', scenarioId: 'first-scenario' } },
+                _stateID: 1,
+            },
+            'match-confirmed': {
+                G: { core: { phase: 'preHaunt', scenarioId: 'first-scenario' } },
+                _stateID: 2,
+            },
+        };
+        const { storage, fetch } = createStorage(records, states);
+        const coordinator = createLobbyCoordinator({
+            storage,
+            supportedGames: ['betrayal'] as const,
+            isSupportedGame: (gameName: string): gameName is 'betrayal' => gameName === 'betrayal',
+            normalizeGameName: (name?: string) => (name || '').toLowerCase(),
+            logger: { warn: vi.fn() },
+        });
+
+        const snapshot = await coordinator.getLobbySnapshot('betrayal');
+
+        expect(snapshot.find((match) => match.matchID === 'match-pending')?.publicSetupSummary).toEqual({});
+        expect(snapshot.find((match) => match.matchID === 'match-confirmed')?.publicSetupSummary).toEqual({
+            scenarioId: 'first-scenario',
+        });
+        expect(fetch).toHaveBeenCalledWith('match-pending', { metadata: true, state: true });
+        expect(fetch).toHaveBeenCalledWith('match-confirmed', { metadata: true, state: true });
     });
 });

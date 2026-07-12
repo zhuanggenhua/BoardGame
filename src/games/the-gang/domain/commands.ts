@@ -22,6 +22,9 @@ export function validate(
             return validateSetRulesConfig(core, command.playerId);
         case THE_GANG_COMMANDS.DEAL_TOOLS:
             return validateDealTools(core, command.playerId);
+        case THE_GANG_COMMANDS.RESET_TOOLS:
+        case THE_GANG_COMMANDS.RESET_SPECIALISTS:
+            return validateResetRuleCards(core, command.playerId);
         case THE_GANG_COMMANDS.USE_TOOL:
             return validateUseTool(core, command.playerId, command.payload.tool, command.payload.cardIndex);
         case THE_GANG_COMMANDS.END_ROUND:
@@ -38,7 +41,7 @@ export function validate(
 function validateTakeChip(core: TheGangCore, playerId: string, chip: number): ValidationResult {
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
-    if (!getChipValues(core.playerIds.length).includes(chip)) return failure('invalidChip');
+    if (!getChipValues(core.playerIds.length, core.rules.config, core.round).includes(chip)) return failure('invalidChip');
     if (core.currentRoundChips[playerId] === chip) return failure('chipAlreadyHeld');
 
     return success();
@@ -55,6 +58,11 @@ function validateDealTools(core: TheGangCore, playerId: string): ValidationResul
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
     if (core.toolDeck.length < core.playerIds.length) return failure('toolDeckEmpty');
     if (core.playerIds.some((id) => core.players[id].toolCards.length > 0)) return failure('toolsAlreadyDealt');
+    return success();
+}
+
+function validateResetRuleCards(core: TheGangCore, playerId: string): ValidationResult {
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
     return success();
 }
 

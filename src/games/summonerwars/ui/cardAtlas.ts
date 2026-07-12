@@ -114,6 +114,35 @@ export const NECROMANCER_CARDS_ATLAS: SpriteAtlasConfig = {
 export const NECROMANCER_HERO_ATLAS = HERO_ATLAS;
 
 /**
+ * mogu/cards.jpg 配置（新一批横向图集）
+ * 原图 8088x1454，8列2行，每帧 1011x727，slot 11-15 为空白占位。
+ */
+export const MOGU_CARDS_ATLAS: SpriteAtlasConfig = {
+  imageW: 8088,
+  imageH: 1454,
+  cols: 8,
+  rows: 2,
+  colStarts: [0, 1011, 2022, 3033, 4044, 5055, 6066, 7077],
+  colWidths: [1011, 1011, 1011, 1011, 1011, 1011, 1011, 1011],
+  rowStarts: [0, 727],
+  rowHeights: [727, 727],
+};
+
+/**
+ * mogu/hero.png 配置（新一批单张召唤师图）
+ */
+export const MOGU_HERO_ATLAS: SpriteAtlasConfig = {
+  imageW: 1267,
+  imageH: 908,
+  cols: 1,
+  rows: 1,
+  colStarts: [0],
+  colWidths: [1267],
+  rowStarts: [0],
+  rowHeights: [908],
+};
+
+/**
  * dice.png 配置（骰子面精灵图）
  * 3x3 布局，约 1024x1024
  */
@@ -148,10 +177,11 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
   goblin: 'Goblin',
   frost: 'Frost',
   barbaric: 'Barbaric',
+  mogu: 'mogu',
 };
 
 /** 所有阵营目录名列表 */
-const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric'] as const;
+const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu'] as const;
 
 /**
  * 根据阵营名获取精灵图 atlas ID
@@ -172,6 +202,7 @@ const CARD_ID_PREFIX_MAP: Record<string, FactionId> = {
   goblin: 'goblin',
   frost: 'frost',
   barb: 'barbaric',
+  mogu: 'mogu',
 };
 
 /**
@@ -198,19 +229,24 @@ export function initSpriteAtlases(locale?: string): void {
     const heroBase = `summonerwars/hero/${dir}/hero`;
     const localizedHeroBase = getLocalizedAssetPath(heroBase, effectiveLocale);
     const heroUrls = getOptimizedImageUrls(localizedHeroBase);
+    const heroConfig = dir === 'mogu' ? MOGU_HERO_ATLAS : HERO_ATLAS;
     registerSpriteAtlas(`sw:${dir.toLowerCase()}:hero`, {
       image: heroUrls.webp,
-      config: HERO_ATLAS,
+      config: heroConfig,
     });
     registerCardAtlasSource(`sw:${dir.toLowerCase()}:hero`, {
       image: heroBase,
-      config: HERO_ATLAS,
+      config: heroConfig,
     });
 
     const cardsBase = `summonerwars/hero/${dir}/cards`;
     const localizedCardsBase = getLocalizedAssetPath(cardsBase, effectiveLocale);
     const cardsUrls = getOptimizedImageUrls(localizedCardsBase);
-    const cardsConfig = dir === 'Necromancer' ? NECROMANCER_CARDS_ATLAS : CARDS_ATLAS;
+    const cardsConfig = dir === 'Necromancer'
+      ? NECROMANCER_CARDS_ATLAS
+      : dir === 'mogu'
+        ? MOGU_CARDS_ATLAS
+        : CARDS_ATLAS;
     registerSpriteAtlas(`sw:${dir.toLowerCase()}:cards`, {
       image: cardsUrls.webp,
       config: cardsConfig,

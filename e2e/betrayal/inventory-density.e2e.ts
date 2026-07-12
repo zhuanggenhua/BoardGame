@@ -19,6 +19,8 @@ const PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-高密度持有区-�
 const EXTREME_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-极限持有区-运行时.png`;
 const EXTREME_INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-极限持有区-局部.png`;
 const MOBILE_MAP_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-手机横屏-地图卡放大完整显示.png`;
+const MAP_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-地图物品-房间牌直选目标.png`;
+const MAP_USED_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-地图物品-使用后.png`;
 
 function createDenseInventoryCore(): BetrayalCore {
     const core = createRuntimeCore();
@@ -72,6 +74,7 @@ function createMapInventoryCore(): BetrayalCore {
 
     core.currentExplorer.inventory = mapInventory.map((card) => ({ ...card }));
     core.currentExplorerInventory = mapInventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = ['map'];
     core.usedCardIdsThisTurn = [];
     core.recommendedAction = 'use';
 
@@ -215,5 +218,37 @@ test.describe('山屋惊魂持有区高密度证据', () => {
         await expect(previewOverlay).toBeHidden();
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-map-card-mobile-preview', diagnostics }]);
+    });
+
+    test('地图物品通过房间牌本体选择目标并放置探索者', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-map-card-room-target-flow');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await injectCore(page, createMapInventoryCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+
+        await page.getByTestId('betrayal-inventory-map').click();
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveText('地图');
+        await expect(page.getByTestId('betrayal-inventory-target-room-selector')).toBeVisible();
+        await page.getByTestId('betrayal-room-floor-up').click();
+        await expect(page.getByTestId('betrayal-room-inventory-target-card-highlight-upper-landing')).toBeVisible();
+        await saveScreenshot(page, MAP_TARGET_SCREENSHOT);
+
+        await page.getByTestId('betrayal-room-upper-landing').click();
+        await expect(page.getByTestId('betrayal-inventory-target-room-upper-landing')).toHaveClass(/text-\[#eef4a8\]/);
+        await page.getByTestId('betrayal-action-use').click();
+
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('地图');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('上层起始点');
+        await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0')).toBeVisible();
+        await saveScreenshot(page, MAP_USED_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-map-card-room-target-flow', diagnostics }]);
     });
 });

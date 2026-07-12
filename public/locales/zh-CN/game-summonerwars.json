@@ -32,7 +32,8 @@
     "paladin": "先锋卫队",
     "goblin": "洞穴地精",
     "frost": "极地矮人",
-    "barbaric": "野蛮部落"
+    "barbaric": "野蛮部落",
+    "mogu": "莫古"
   },
   "actions": {
     "closePreview": "关闭预览",
@@ -84,6 +85,16 @@
     "activeEvents": "持续效果",
     "attached": "附加",
     "click_to_magnify": "点击放大"
+  },
+  "hud": {
+    "combatEffects": {
+      "title": "战斗表现",
+      "hint": "只影响移动端本机攻击动画，不改变结算、伤害或音效音量。",
+      "reduced": "降低攻击特效",
+      "reducedHint": "卡顿时开启：移动端保留远程气浪、命中闪光和伤害数字，并降低最重的粒子、震动和冲刺表现。",
+      "enabled": "已开启",
+      "disabled": "已关闭"
+    }
   },
   "debug": {
     "phase_labels": {
@@ -460,6 +471,7 @@
       "glacialShiftDestination": "冰川位移：选择目标位置",
       "infection": "感染：选择要复活的疫病体",
       "grabFollow": "抓附：选择跟随位置",
+      "grabFollowWithSource": "抓附：{{unit}}（{{position}}）选择跟随位置",
       "soulTransfer": "灵魂转移：确认是否移动",
       "mindCapture": "心灵捕获：选择控制或造成伤害",
       "iceShards": "寒冰碎屑：确认是否消耗充能",
@@ -526,7 +538,8 @@
       "iceRamSelectPush": "寒冰冲撞：选择推拉方向（或跳过）",
       "telekinesisInstead": "念力代替攻击：选择一个目标进行推拉",
       "highTelekinesisInstead": "高阶念力代替攻击：选择一个目标进行推拉",
-      "vanish": "神出鬼没：选择一个 0 费友方单位交换位置"
+      "vanish": "神出鬼没：选择一个 0 费友方单位交换位置",
+      "moguBloodInfusion": "鲜血灌注：选择 2 格内一个友方单位"
     },
     "beforeAttack": {
       "lifeDrain": "攻击前技能：吸取生命已就绪，选择攻击目标",
@@ -554,6 +567,12 @@
     },
     "entanglement": {
       "message": "交缠颂歌：选择召唤师 3 格内的两个友方士兵（已选 {{count}} 个）"
+    },
+    "moguSymbioticSelfHealing": {
+      "message": "共生自愈：已选择 {{count}} 个单位"
+    },
+    "moguReleaseSpores": {
+      "message": "释放菌袍：已选择 {{count}} 个落位"
     },
     "sneak": {
       "selectUnit": "潜行：选择 0 费友方单位推拉 1 格（已选 {{count}} 个）",
@@ -617,7 +636,9 @@
     "guidance": "📖 指引（抽取两张卡牌）",
     "bloodRune": "🩸 鲜血符文（自伤或消耗魔力充能）",
     "feedBeast": "🍖 喂养巨食兽（移除相邻友方或自毁）",
-    "inspire": "✨ 启悟（充能相邻友方单位）"
+    "inspire": "✨ 启悟（充能相邻友方单位）",
+    "moguBloodInfusion": "🩸 鲜血灌注（友方单位受伤并充能）",
+    "moguTransmission": "🧬 菌落传导（转移充能到友方单位）"
   },
   "status": {
     "yourTurn": "你的回合",

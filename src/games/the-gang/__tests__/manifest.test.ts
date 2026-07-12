@@ -56,6 +56,22 @@ describe('The Gang manifest', () => {
         expect(rootAssetManifest.files?.[rootCompressedThumbnailKey]).toBeDefined();
     });
 
+    test('TTS 扩展规则、工具牌和专家牌素材进入正式资源清单', () => {
+        const gameAssetManifest = readAssetManifest('public/assets/i18n/zh-CN/the-gang/assets-manifest.json');
+        const rootAssetManifest = readAssetManifest('public/assets/i18n/assets-manifest.json');
+
+        expect(gameAssetManifest.files?.['rule-assets/challenges/compressed/quick-access']).toBeDefined();
+        expect(gameAssetManifest.files?.['rule-assets/challenges/compressed/master-key']).toBeDefined();
+        expect(gameAssetManifest.files?.['rule-assets/tools/compressed/burner-phone']).toBeDefined();
+        expect(gameAssetManifest.files?.['rule-assets/tools/compressed/flashlight']).toBeDefined();
+        expect(gameAssetManifest.files?.['rule-assets/specialists/compressed/mastermind']).toBeDefined();
+        expect(gameAssetManifest.files?.['rule-assets/surfaces/compressed/challenge-zone']).toBeDefined();
+
+        expect(rootAssetManifest.files?.['zh-CN/the-gang/rule-assets/challenges/compressed/quick-access']).toBeDefined();
+        expect(rootAssetManifest.files?.['zh-CN/the-gang/rule-assets/tools/compressed/burner-phone']).toBeDefined();
+        expect(rootAssetManifest.files?.['zh-CN/the-gang/rule-assets/specialists/compressed/mastermind']).toBeDefined();
+    });
+
     test('大厅缩略图会生成移动端可回退到官方资源域名的新压缩图片候选地址', () => {
         setLocalizedImageIndexForTesting({
             'i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail': 1,

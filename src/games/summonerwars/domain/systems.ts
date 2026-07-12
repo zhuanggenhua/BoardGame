@@ -37,7 +37,7 @@ import {
   BOARD_ROWS,
   BOARD_COLS,
 } from './helpers';
-import { getBaseCardId, CARD_IDS, isPlagueZombieCard, isFortressUnit, isUndeadCard } from './ids';
+import { getBaseCardId, CARD_IDS, isPlagueZombieCard, isFortressUnit, isUndeadCard, isMoguSporePlagueBodyCard } from './ids';
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -52,6 +52,8 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT,
   CARD_IDS.FROST_GLACIAL_SHIFT,
   CARD_IDS.GOBLIN_SNEAK,
+  CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
+  CARD_IDS.MOGU_RELEASE_SPORES,
 ]);
 
 function buildBloodRuneOptions(core: SummonerWarsCore, owner: PlayerId): PromptOption<SwInteractionValue>[] {
@@ -149,6 +151,14 @@ type SwInteractionMeta =
     }
   | {
       type: 'chant_entanglement_select_targets';
+      cardId: string;
+    }
+  | {
+      type: 'mogu_symbiotic_self_healing_select_targets';
+      cardId: string;
+    }
+  | {
+      type: 'mogu_release_spores_select_positions';
       cardId: string;
     }
   | {
@@ -290,13 +300,29 @@ type SwInteractionMeta =
       sourcePosition: CellCoord;
     }
   | {
+      type: 'after_move_mogu_transmission';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      step: 'selectMode' | 'selectSource' | 'selectTarget' | 'selectAmount';
+      mode?: 'self_to_target' | 'target_to_target';
+      fromPosition?: CellCoord;
+      toPosition?: CellCoord;
+    }
+  | {
+      type: 'after_move_mogu_fanatical_fungus';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+    }
+  | {
       type: 'activated_ability_target';
       abilityId:
         | 'revive_undead'
         | 'fortress_power'
         | 'telekinesis_instead'
         | 'high_telekinesis_instead'
-        | 'vanish';
+        | 'vanish'
+        | 'mogu_blood_infusion';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
@@ -336,6 +362,10 @@ type SwInteractionValue =
   | { action: 'stun_destination'; targetPosition: CellCoord; moveRow: number; moveCol: number; distance: number }
   | { action: 'hypnotic_lure_target'; targetPosition: CellCoord }
   | { action: 'chant_entanglement_target'; targetPosition: CellCoord }
+  | { action: 'mogu_symbiotic_self_healing_target'; targetPosition: CellCoord }
+  | { action: 'mogu_symbiotic_self_healing_finish'; skip?: boolean }
+  | { action: 'mogu_release_spores_position'; targetPosition: CellCoord }
+  | { action: 'mogu_release_spores_finish'; skip?: boolean }
   | { action: 'sneak_unit'; position: CellCoord }
   | { action: 'sneak_destination'; newPosition: CellCoord; targetPosition: CellCoord }
   | { action: 'sneak_finish'; skip?: boolean }
@@ -364,6 +394,11 @@ type SwInteractionValue =
   | { action: 'after_move_structure_shift_target'; targetPosition: CellCoord }
   | { action: 'after_move_structure_shift_direction'; targetPosition: CellCoord; newPosition: CellCoord }
   | { action: 'after_move_frost_axe'; choice: 'self' | 'attach'; targetPosition?: CellCoord }
+  | { action: 'after_move_mogu_transmission_mode'; mode: 'self_to_target' | 'target_to_target' }
+  | { action: 'after_move_mogu_transmission_source'; targetPosition: CellCoord }
+  | { action: 'after_move_mogu_transmission_target'; targetPosition: CellCoord }
+  | { action: 'after_move_mogu_transmission_amount'; amount: number }
+  | { action: 'after_move_mogu_fanatical_fungus_target'; targetPosition: CellCoord; newPosition?: CellCoord }
   | { action: 'activated_ability_target'; abilityId: string; targetPosition?: CellCoord; targetCardId?: string }
   | { action: 'fire_sacrifice_summon'; sacrificeUnitId: string }
   | { action: 'ice_ram_target'; targetPosition: CellCoord }
@@ -396,6 +431,107 @@ function isSkipValue(value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as { skip?: boolean; __cancel__?: boolean };
   return candidate.skip === true || candidate.__cancel__ === true;
+}
+
+function formatCellCoord(pos: CellCoord): string {
+  return `${pos.row + 1},${pos.col + 1}`;
+}
+
+function buildGrabFollowOptions(
+  core: SummonerWarsCore,
+  movedTo: CellCoord,
+  grabberUnitId: string,
+): PromptOption<SwInteractionValue>[] {
+  const positions = getAdjacentCells(movedTo).filter((pos) => isCellEmpty(core, pos));
+  return [
+    ...buildPositionOptions(positions, (pos) => ({
+      action: 'grab_follow',
+      sourceUnitId: grabberUnitId,
+      targetPosition: pos,
+    })),
+    {
+      id: 'skip',
+      label: '跳过',
+      labelKey: 'actions.skip',
+      value: { skip: true },
+    },
+  ];
+}
+
+function buildMoguTransmissionModeInteraction(
+  timestamp: number | undefined,
+  sourceUnit: NonNullable<ReturnType<typeof getUnitAt>>,
+  sourceUnitId: string,
+  sourcePosition: CellCoord,
+): ReturnType<typeof createSimpleChoice> {
+  const options: PromptOption<SwInteractionValue>[] = [
+    {
+      id: 'self_to_target',
+      label: '从自身传输',
+      labelKey: 'actions.moguTransmissionSelf',
+      value: { action: 'after_move_mogu_transmission_mode', mode: 'self_to_target' },
+    },
+    {
+      id: 'target_to_target',
+      label: '从友方传输',
+      labelKey: 'actions.moguTransmissionAlly',
+      value: { action: 'after_move_mogu_transmission_mode', mode: 'target_to_target' },
+    },
+    {
+      id: 'skip',
+      label: '跳过',
+      labelKey: 'actions.skip',
+      value: { skip: true },
+    },
+  ];
+  const interaction = createSimpleChoice(
+    `sw-mogu-transmission-mode-${timestamp ?? 0}-${sourceUnitId}`,
+    sourceUnit.owner,
+    'interaction.sw.moguTransmission',
+    options,
+    { sourceId: 'mogu_transmission', targetType: 'minion', autoResolveIfSingle: false },
+  );
+  const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+  interaction.data = {
+    ...interactionData,
+    sw: {
+      type: 'after_move_mogu_transmission',
+      sourceUnitId,
+      sourcePosition,
+      step: 'selectMode',
+    } satisfies SwInteractionMeta,
+  };
+  return interaction;
+}
+
+function createMoguTransmissionInteraction(
+  timestamp: number | undefined,
+  owner: PlayerId,
+  sourceUnitId: string,
+  sourcePosition: CellCoord,
+  step: 'selectMode' | 'selectSource' | 'selectTarget' | 'selectAmount',
+  options: PromptOption<SwInteractionValue>[],
+  meta: Pick<Extract<SwInteractionMeta, { type: 'after_move_mogu_transmission' }>, 'mode' | 'fromPosition' | 'toPosition'> = {},
+): ReturnType<typeof createSimpleChoice> {
+  const interaction = createSimpleChoice(
+    `sw-mogu-transmission-${step}-${timestamp ?? 0}-${sourceUnitId}`,
+    owner,
+    'interaction.sw.moguTransmission',
+    options,
+    { sourceId: 'mogu_transmission', targetType: 'minion', autoResolveIfSingle: false },
+  );
+  const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+  interaction.data = {
+    ...interactionData,
+    sw: {
+      type: 'after_move_mogu_transmission',
+      sourceUnitId,
+      sourcePosition,
+      step,
+      ...meta,
+    } satisfies SwInteractionMeta,
+  };
+  return interaction;
 }
 
 function applyPhaseEndResolution(
@@ -772,6 +908,42 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           return { halt: true, state: queueInteraction(state, interaction) };
         }
 
+        if (abilityId === 'mogu_blood_infusion') {
+          const targetPosition = payload.targetPosition as CellCoord | undefined;
+          if (targetPosition) return;
+          const candidates = getPlayerUnits(state.core, playerId)
+            .filter((unit) => manhattanDistance(sourcePosition, unit.position) <= 2);
+          if (candidates.length === 0) return;
+          const options: PromptOption<SwInteractionValue>[] = candidates.map((unit) => ({
+            id: `pos:${unit.position.row},${unit.position.col}`,
+            label: unit.card.name,
+            value: {
+              action: 'activated_ability_target',
+              abilityId: 'mogu_blood_infusion',
+              targetPosition: unit.position,
+            },
+          }));
+          const interaction = createSimpleChoice(
+            `sw-activate-mogu-blood-infusion-${state.core.turnNumber}-${sourceUnitId}`,
+            playerId,
+            'interaction.sw.moguBloodInfusion',
+            options,
+            { sourceId: 'mogu_blood_infusion', targetType: 'minion', autoResolveIfSingle: false },
+          );
+          const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+          interaction.data = {
+            ...interactionData,
+            sw: {
+              type: 'activated_ability_target',
+              abilityId: 'mogu_blood_infusion',
+              sourceUnitId,
+              sourcePosition,
+              step: 'selectUnit',
+            } satisfies SwInteractionMeta,
+          };
+          return { halt: true, state: queueInteraction(state, interaction) };
+        }
+
         if (abilityId === 'telekinesis_instead' || abilityId === 'high_telekinesis_instead') {
           const targetPosition = payload.targetPosition as CellCoord | undefined;
           const moveRow = payload.moveRow as number | undefined;
@@ -1069,6 +1241,58 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               );
               break;
             }
+            case CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING: {
+              const targets = friendlyUnits
+                .filter((unit) => unit.card.unitClass !== 'summoner')
+                .map((unit) => unit.position);
+              const options: PromptOption<SwInteractionValue>[] = [
+                ...buildPositionOptions(targets, (pos) => ({
+                  action: 'mogu_symbiotic_self_healing_target',
+                  targetPosition: pos,
+                })),
+                {
+                  id: 'skip',
+                  label: '跳过',
+                  labelKey: 'actions.skip',
+                  value: { action: 'mogu_symbiotic_self_healing_finish', skip: true },
+                },
+              ];
+              queueEventInteraction(
+                'mogu-symbiotic-self-healing',
+                'interaction.sw.moguSymbioticSelfHealing',
+                options,
+                { type: 'mogu_symbiotic_self_healing_select_targets', cardId: payload.cardId },
+                { sourceId: baseId, targetType: 'minion', multi: { min: 0 } },
+              );
+              break;
+            }
+            case CARD_IDS.MOGU_RELEASE_SPORES: {
+              if (!summoner) break;
+              const hasDiscardBody = player.discard.some((card) => card.cardType === 'unit' && isMoguSporePlagueBodyCard(card));
+              if (!hasDiscardBody) break;
+              const targets = getAdjacentCells(summoner.position)
+                .filter((pos) => isValidCoord(pos) && isCellEmpty(newState.core, pos));
+              const options: PromptOption<SwInteractionValue>[] = [
+                ...buildPositionOptions(targets, (pos) => ({
+                  action: 'mogu_release_spores_position',
+                  targetPosition: pos,
+                })),
+                {
+                  id: 'skip',
+                  label: '跳过',
+                  labelKey: 'actions.skip',
+                  value: { action: 'mogu_release_spores_finish', skip: true },
+                },
+              ];
+              queueEventInteraction(
+                'mogu-release-spores',
+                'interaction.sw.moguReleaseSpores',
+                options,
+                { type: 'mogu_release_spores_select_positions', cardId: payload.cardId },
+                { sourceId: baseId, targetType: 'cell', multi: { min: 0, max: 2 } },
+              );
+              break;
+            }
             case CARD_IDS.GOBLIN_SNEAK: {
               const targets = friendlyUnits
                 .filter((unit) => unit.card.unitClass !== 'summoner' && unit.card.cost === 0)
@@ -1268,30 +1492,33 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           const grabber = getUnitAt(newState.core, payload.grabberPosition);
           if (!grabber) continue;
           const playerId = grabber.owner;
-          const adj = getAdjacentCells(payload.movedTo);
-          const positions = adj.filter((pos) => isCellEmpty(newState.core, pos));
-          if (positions.length === 0) continue;
-
-          const options: PromptOption<SwInteractionValue>[] = [
-            ...buildPositionOptions(positions, (pos) => ({
-              action: 'grab_follow',
-              sourceUnitId: payload.grabberUnitId,
-              targetPosition: pos,
-            })),
-            {
-              id: 'skip',
-              label: '跳过',
-              labelKey: 'actions.skip',
-              value: { skip: true },
-            },
-          ];
+          const options = buildGrabFollowOptions(newState.core, payload.movedTo, payload.grabberUnitId);
+          const hasFollowPosition = options.some((option) => {
+            const value = option.value as SwInteractionValue;
+            return value && 'action' in value && value.action === 'grab_follow';
+          });
+          if (!hasFollowPosition) continue;
 
           const interaction = createSimpleChoice(
             `sw-grab-follow-${event.timestamp ?? 0}-${payload.grabberUnitId}`,
             playerId,
             'interaction.sw.grabFollow',
             options,
-            { sourceId: 'grab', autoResolveIfSingle: false },
+            {
+              sourceId: 'grab',
+              titleKey: 'interaction.sw.grabFollowWithSource',
+              titleParams: {
+                unit: grabber.card.name,
+                position: formatCellCoord(payload.grabberPosition),
+              },
+              autoResolveIfSingle: false,
+              responseValidationMode: 'live',
+              optionsGenerator: (state) => buildGrabFollowOptions(
+                state.core as SummonerWarsCore,
+                payload.movedTo,
+                payload.grabberUnitId,
+              ),
+            },
           );
           const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
           interaction.data = {
@@ -1983,6 +2210,63 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               };
               newState = queueInteraction(newState, interaction);
             }
+
+            if (abilityId === 'mogu_transmission') {
+              newState = queueInteraction(newState, buildMoguTransmissionModeInteraction(
+                event.timestamp,
+                sourceUnit,
+                sourceUnitId,
+                sourcePosition,
+              ));
+            }
+
+            if (abilityId === 'mogu_fanatical_fungus') {
+              const destinations = [
+                {
+                  id: 'stay',
+                  label: '不推拉',
+                  value: {
+                    action: 'after_move_mogu_fanatical_fungus_target',
+                    targetPosition: sourcePosition,
+                  },
+                },
+                ...getAdjacentCells(sourcePosition)
+                  .filter((pos) => isCellEmpty(newState.core, pos))
+                  .map((pos) => ({
+                    id: `pos:${pos.row},${pos.col}`,
+                    label: `(${pos.row},${pos.col})`,
+                    value: {
+                      action: 'after_move_mogu_fanatical_fungus_target' as const,
+                      targetPosition: sourcePosition,
+                      newPosition: pos,
+                    },
+                  })),
+                {
+                  id: 'skip',
+                  label: '跳过',
+                  labelKey: 'actions.skip',
+                  value: { skip: true },
+                },
+              ];
+              const interaction = createSimpleChoice(
+                `sw-mogu-fanatical-fungus-${event.timestamp ?? 0}-${sourceUnitId}`,
+                sourceUnit.owner,
+                'interaction.sw.moguFanaticalFungus',
+                destinations,
+                { sourceId: 'mogu_fanatical_fungus', targetType: 'minion', autoResolveIfSingle: false },
+              );
+              const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+              interaction.data = {
+                ...interactionData,
+                sw: {
+                  type: 'after_move_mogu_fanatical_fungus',
+                  sourceUnitId,
+                  sourcePosition,
+                  targetPosition: sourcePosition,
+                } satisfies SwInteractionMeta,
+              };
+              newState = queueInteraction(newState, interaction);
+            }
           }
         }
 
@@ -2421,6 +2705,40 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 payload: {
                   cardId: sw.cardId,
                   targets: selectedTargets,
+                },
+              }));
+            }
+          }
+
+          if (sw.type === 'mogu_symbiotic_self_healing_select_targets') {
+            const finish = values.find((item) => item.action === 'mogu_symbiotic_self_healing_finish');
+            const selectedTargets = values
+              .filter((item) => item.action === 'mogu_symbiotic_self_healing_target')
+              .map((item) => item.targetPosition);
+            if (finish || selectedTargets.length > 0) {
+              nextEvents.push(...executeSwCommand(newState, random, {
+                type: SW_COMMANDS.PLAY_EVENT,
+                payload: {
+                  cardId: sw.cardId,
+                  targets: finish ? [] : selectedTargets,
+                },
+              }));
+            }
+          }
+
+          if (sw.type === 'mogu_release_spores_select_positions') {
+            const finish = values.find((item) => item.action === 'mogu_release_spores_finish');
+            const selectedTargets = values
+              .filter((item) => item.action === 'mogu_release_spores_position')
+              .map((item) => item.targetPosition)
+              .slice(0, 2);
+            if (finish || selectedTargets.length > 0) {
+              nextEvents.push(...executeSwCommand(newState, random, {
+                type: SW_COMMANDS.PLAY_EVENT,
+                payload: {
+                  cardId: sw.cardId,
+                  cardIds: finish ? [] : undefined,
+                  targets: finish ? [] : selectedTargets,
                 },
               }));
             }
@@ -3119,6 +3437,146 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             }));
           }
 
+          if (sw.type === 'after_move_mogu_transmission') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            if (hasSkip) continue;
+
+            if (sw.step === 'selectMode') {
+              const picked = values.find((item) => item.action === 'after_move_mogu_transmission_mode') as
+                { action: 'after_move_mogu_transmission_mode'; mode: 'self_to_target' | 'target_to_target' } | undefined;
+              if (!picked) continue;
+              if (picked.mode === 'target_to_target') {
+                const sources = getPlayerUnits(newState.core, payload.playerId)
+                  .filter((unit) => unit.instanceId !== sw.sourceUnitId
+                    && normalizeUnitBoosts(unit.boosts) > 0
+                    && manhattanDistance(sw.sourcePosition, unit.position) <= 2)
+                  .map((unit) => unit.position);
+                if (sources.length === 0) continue;
+                newState = queueInteraction(newState, createMoguTransmissionInteraction(
+                  event.timestamp,
+                  payload.playerId,
+                  sw.sourceUnitId,
+                  sw.sourcePosition,
+                  'selectSource',
+                  buildPositionOptions(sources, (pos) => ({
+                    action: 'after_move_mogu_transmission_source',
+                    targetPosition: pos,
+                  })),
+                  { mode: picked.mode },
+                ));
+                continue;
+              }
+
+              const targets = getPlayerUnits(newState.core, payload.playerId)
+                .filter((unit) => unit.instanceId !== sw.sourceUnitId
+                  && manhattanDistance(sw.sourcePosition, unit.position) <= 2)
+                .map((unit) => unit.position);
+              if (targets.length === 0) continue;
+              newState = queueInteraction(newState, createMoguTransmissionInteraction(
+                event.timestamp,
+                payload.playerId,
+                sw.sourceUnitId,
+                sw.sourcePosition,
+                'selectTarget',
+                buildPositionOptions(targets, (pos) => ({
+                  action: 'after_move_mogu_transmission_target',
+                  targetPosition: pos,
+                })),
+                { mode: picked.mode },
+              ));
+              continue;
+            }
+
+            if (sw.step === 'selectSource') {
+              const picked = values.find((item) => item.action === 'after_move_mogu_transmission_source') as
+                { action: 'after_move_mogu_transmission_source'; targetPosition: CellCoord } | undefined;
+              if (!picked?.targetPosition || !sw.mode) continue;
+              const targets = getPlayerUnits(newState.core, payload.playerId)
+                .filter((unit) => unit.position.row !== picked.targetPosition.row
+                  || unit.position.col !== picked.targetPosition.col)
+                .filter((unit) => manhattanDistance(sw.sourcePosition, unit.position) <= 2)
+                .map((unit) => unit.position);
+              if (targets.length === 0) continue;
+              newState = queueInteraction(newState, createMoguTransmissionInteraction(
+                event.timestamp,
+                payload.playerId,
+                sw.sourceUnitId,
+                sw.sourcePosition,
+                'selectTarget',
+                buildPositionOptions(targets, (pos) => ({
+                  action: 'after_move_mogu_transmission_target',
+                  targetPosition: pos,
+                })),
+                { mode: sw.mode, fromPosition: picked.targetPosition },
+              ));
+              continue;
+            }
+
+            if (sw.step === 'selectTarget') {
+              const picked = values.find((item) => item.action === 'after_move_mogu_transmission_target') as
+                { action: 'after_move_mogu_transmission_target'; targetPosition: CellCoord } | undefined;
+              if (!picked?.targetPosition || !sw.mode) continue;
+              const sourcePosition = sw.mode === 'self_to_target' ? sw.sourcePosition : sw.fromPosition;
+              if (!sourcePosition) continue;
+              const source = getUnitAt(newState.core, sourcePosition);
+              const maxAmount = normalizeUnitBoosts(source?.boosts ?? 0);
+              if (maxAmount <= 0) continue;
+              const options: PromptOption<SwInteractionValue>[] = Array.from({ length: maxAmount }, (_, index) => {
+                const amount = index + 1;
+                return {
+                  id: `amount:${amount}`,
+                  label: `${amount}`,
+                  value: { action: 'after_move_mogu_transmission_amount', amount },
+                };
+              });
+              newState = queueInteraction(newState, createMoguTransmissionInteraction(
+                event.timestamp,
+                payload.playerId,
+                sw.sourceUnitId,
+                sw.sourcePosition,
+                'selectAmount',
+                options,
+                { mode: sw.mode, fromPosition: sw.fromPosition, toPosition: picked.targetPosition },
+              ));
+              continue;
+            }
+
+            if (sw.step === 'selectAmount') {
+              const picked = values.find((item) => item.action === 'after_move_mogu_transmission_amount') as
+                { action: 'after_move_mogu_transmission_amount'; amount: number } | undefined;
+              if (!picked || !sw.mode || !sw.toPosition) continue;
+              nextEvents.push(...executeSwCommand(newState, random, {
+                type: SW_COMMANDS.ACTIVATE_ABILITY,
+                payload: {
+                  abilityId: 'mogu_transmission',
+                  sourceUnitId: sw.sourceUnitId,
+                  mode: sw.mode,
+                  fromPosition: sw.fromPosition,
+                  toPosition: sw.toPosition,
+                  amount: picked.amount,
+                  _noSnapshot: true,
+                },
+              }));
+            }
+          }
+
+          if (sw.type === 'after_move_mogu_fanatical_fungus') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_move_mogu_fanatical_fungus_target') as
+              { action: 'after_move_mogu_fanatical_fungus_target'; targetPosition: CellCoord; newPosition?: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'mogu_fanatical_fungus',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
           if (sw.type === 'activated_ability_target') {
             const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
             if (hasSkip) continue;
@@ -3197,6 +3655,21 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 type: SW_COMMANDS.ACTIVATE_ABILITY,
                 payload: {
                   abilityId: 'vanish',
+                  sourceUnitId: sw.sourceUnitId,
+                  targetPosition: picked.targetPosition,
+                  _noSnapshot: true,
+                },
+              }));
+            }
+
+            if (sw.abilityId === 'mogu_blood_infusion' && sw.step === 'selectUnit') {
+              const picked = values.find((item) => item.action === 'activated_ability_target') as
+                { action: 'activated_ability_target'; targetPosition?: CellCoord } | undefined;
+              if (!picked?.targetPosition) continue;
+              nextEvents.push(...executeSwCommand(newState, random, {
+                type: SW_COMMANDS.ACTIVATE_ABILITY,
+                payload: {
+                  abilityId: 'mogu_blood_infusion',
                   sourceUnitId: sw.sourceUnitId,
                   targetPosition: picked.targetPosition,
                   _noSnapshot: true,

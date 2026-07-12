@@ -2,6 +2,7 @@ import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engi
 
 export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
 export type TheGangGameMode = 'texas-holdem' | 'seven-card-stud' | 'banana-split';
+export type TheGangExitChipMode = 'default' | 'mastermind' | 'mega-mastermind' | 'ultra-mastermind';
 export type TheGangChallengeId =
     | 'quick-access'
     | 'noise-sensor'
@@ -143,6 +144,11 @@ export interface TheGangPlayerState {
 
 export interface TheGangRulesConfig {
     gameMode: TheGangGameMode;
+    exitChipMode: TheGangExitChipMode;
+    omaha: boolean;
+    twoHand: boolean;
+    automode: boolean;
+    antiTroll: boolean;
     challenges: Partial<Record<TheGangChallengeId, number>>;
     lockedHandRanks?: TheGangHandRankCode[];
 }
@@ -180,6 +186,8 @@ export const THE_GANG_COMMANDS = {
     TAKE_CHIP: 'TAKE_CHIP',
     SET_RULES_CONFIG: 'SET_RULES_CONFIG',
     DEAL_TOOLS: 'DEAL_TOOLS',
+    RESET_TOOLS: 'RESET_TOOLS',
+    RESET_SPECIALISTS: 'RESET_SPECIALISTS',
     USE_TOOL: 'USE_TOOL',
     END_ROUND: 'END_ROUND',
     REVEAL_SHOWDOWN: 'REVEAL_SHOWDOWN',
@@ -195,6 +203,14 @@ export interface SetRulesConfigCommand extends Command<typeof THE_GANG_COMMANDS.
 }
 
 export interface DealToolsCommand extends Command<typeof THE_GANG_COMMANDS.DEAL_TOOLS> {
+    payload: Record<string, never>;
+}
+
+export interface ResetToolsCommand extends Command<typeof THE_GANG_COMMANDS.RESET_TOOLS> {
+    payload: Record<string, never>;
+}
+
+export interface ResetSpecialistsCommand extends Command<typeof THE_GANG_COMMANDS.RESET_SPECIALISTS> {
     payload: Record<string, never>;
 }
 
@@ -221,6 +237,8 @@ export type TheGangCommand =
     | TakeChipCommand
     | SetRulesConfigCommand
     | DealToolsCommand
+    | ResetToolsCommand
+    | ResetSpecialistsCommand
     | UseToolCommand
     | EndRoundCommand
     | RevealShowdownCommand
@@ -230,6 +248,8 @@ export type TheGangCommandMap = {
     [THE_GANG_COMMANDS.TAKE_CHIP]: { chip: number };
     [THE_GANG_COMMANDS.SET_RULES_CONFIG]: { config: Partial<TheGangRulesConfig> };
     [THE_GANG_COMMANDS.DEAL_TOOLS]: Record<string, never>;
+    [THE_GANG_COMMANDS.RESET_TOOLS]: Record<string, never>;
+    [THE_GANG_COMMANDS.RESET_SPECIALISTS]: Record<string, never>;
     [THE_GANG_COMMANDS.USE_TOOL]: { tool: TheGangToolId; cardIndex?: number };
     [THE_GANG_COMMANDS.END_ROUND]: Record<string, never>;
     [THE_GANG_COMMANDS.REVEAL_SHOWDOWN]: Record<string, never>;
@@ -240,6 +260,8 @@ export const THE_GANG_EVENTS = {
     CHIP_TAKEN: 'CHIP_TAKEN',
     RULES_CONFIG_SET: 'RULES_CONFIG_SET',
     TOOLS_DEALT: 'TOOLS_DEALT',
+    TOOLS_RESET: 'TOOLS_RESET',
+    SPECIALISTS_RESET: 'SPECIALISTS_RESET',
     TOOL_USED: 'TOOL_USED',
     PROGRESS_APPROVED: 'PROGRESS_APPROVED',
     ROUND_ENDED: 'ROUND_ENDED',
@@ -266,6 +288,18 @@ export interface ToolsDealtEvent extends GameEvent<typeof THE_GANG_EVENTS.TOOLS_
     payload: {
         dealtTools: Record<PlayerId, TheGangToolId>;
         remainingToolDeck: TheGangToolId[];
+    };
+}
+
+export interface ToolsResetEvent extends GameEvent<typeof THE_GANG_EVENTS.TOOLS_RESET> {
+    payload: {
+        toolDeck: TheGangToolId[];
+    };
+}
+
+export interface SpecialistsResetEvent extends GameEvent<typeof THE_GANG_EVENTS.SPECIALISTS_RESET> {
+    payload: {
+        specialistDeck: TheGangSpecialistId[];
     };
 }
 
@@ -319,6 +353,8 @@ export type TheGangEvent =
     | ChipTakenEvent
     | RulesConfigSetEvent
     | ToolsDealtEvent
+    | ToolsResetEvent
+    | SpecialistsResetEvent
     | ToolUsedEvent
     | ProgressApprovedEvent
     | RoundEndedEvent

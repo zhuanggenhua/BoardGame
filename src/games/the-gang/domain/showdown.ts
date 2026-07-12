@@ -1,18 +1,18 @@
-import { compareHandStrength, evaluateBestTexasHoldemHand } from './poker';
+import { compareHandStrength, evaluateBestTheGangHand } from './poker';
 import type { HeistRecord, ShowdownPlayerResult, TheGangCore } from './types';
 
 export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] {
     return core.playerIds.map((playerId) => {
         const playerCommunity = core.players[playerId].communityCards ?? core.communityCards;
-        const toolCards = [
-            ...core.players[playerId].flashlightCards,
+        const handCards = [
+            ...core.players[playerId].pocketCards,
             ...core.players[playerId].nightVisionCards,
         ];
-        const evaluated = evaluateBestTexasHoldemHand([
-            ...core.players[playerId].pocketCards,
+        const boardCards = [
             ...playerCommunity,
-            ...toolCards,
-        ], {
+            ...core.players[playerId].flashlightCards,
+        ];
+        const evaluated = evaluateBestTheGangHand(handCards, boardCards, {
             rulesConfig: core.rules.config,
             blankedRank: core.rules.blankedRank,
         });
@@ -20,7 +20,7 @@ export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] 
             playerId,
             chip: core.currentRoundChips[playerId],
             strength: evaluated.strength,
-            pocketCards: [...core.players[playerId].pocketCards, ...core.players[playerId].nightVisionCards],
+            pocketCards: handCards,
             bestCards: evaluated.cards,
         };
     });

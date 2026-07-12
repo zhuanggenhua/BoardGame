@@ -3397,7 +3397,11 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createMonkMirrorNoResponseSetup(),
+                setup: (playerIds, setupRandom) => {
+                    const state = createMonkMirrorNoResponseSetup()(playerIds, setupRandom);
+                    state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 5;
+                    return state;
+                },
                 assertFn: assertState,
                 silent: true,
             });
@@ -3409,11 +3413,8 @@ describe('王权骰铸流程测试', () => {
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'lotus-palm' }),
-                    cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll
-                    cmd('ROLL_DICE', '1'),
-                    cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
-                    cmd('ADVANCE_PHASE', '1'), // defensiveRoll -> main2
+                    cmd('ADVANCE_PHASE', '0'), // 固定不可防御，跳过 defensiveRoll 并进入太极加伤响应
+                    cmd('SKIP_TOKEN_RESPONSE', '0'), // 跳过加伤响应后结算伤害与 postDamage 太极效果
                 ],
                 expect: {
                     turnPhase: 'main2',

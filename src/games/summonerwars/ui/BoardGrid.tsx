@@ -101,6 +101,11 @@ interface BoardGridProps {
   // 交缠颂歌高亮
   entanglementHighlights: CellCoord[];
   entanglementSelectedTargets: CellCoord[];
+  // 莫古事件牌高亮
+  moguSymbioticSelfHealingHighlights: CellCoord[];
+  moguSymbioticSelfHealingSelectedTargets: CellCoord[];
+  moguReleaseSporesHighlights: CellCoord[];
+  moguReleaseSporesSelectedTargets: CellCoord[];
   // 潜行高亮
   sneakHighlights: CellCoord[];
   // 冰川位移高亮
@@ -121,6 +126,8 @@ interface BoardGridProps {
   dyingEntities?: DyingEntity[];
   // 视觉伤害缓冲：攻击动画期间冻结 damage 值，使用框架层 useVisualStateBuffer
   damageBuffer?: UseVisualStateBufferReturn;
+  // 降低攻击表现成本：保留命中反馈，跳过卡牌本体冲刺
+  reducedCombatEffects?: boolean;
   // 回调
   onCellClick: (row: number, col: number) => void;
   onAttackHit: () => void;
@@ -222,6 +229,16 @@ function getCardTargetHighlight(row: number, col: number, props: BoardGridProps)
   if (isEntanglementSelected) return 'ring-2 ring-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]';
   if (isEntanglementTarget) return 'ring-2 ring-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse';
 
+  const isMoguSelfHealingSelected = props.moguSymbioticSelfHealingSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguSelfHealingTarget = props.moguSymbioticSelfHealingHighlights.some(p => p.row === row && p.col === col);
+  if (isMoguSelfHealingSelected) return 'ring-2 ring-fuchsia-300 shadow-[0_0_12px_rgba(240,171,252,0.75)]';
+  if (isMoguSelfHealingTarget) return 'ring-2 ring-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.65)] animate-pulse';
+
+  const isMoguReleaseSporesSelected = props.moguReleaseSporesSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguReleaseSporesTarget = props.moguReleaseSporesHighlights.some(p => p.row === row && p.col === col);
+  if (isMoguReleaseSporesSelected) return 'ring-2 ring-lime-300 shadow-[0_0_12px_rgba(190,242,100,0.75)]';
+  if (isMoguReleaseSporesTarget) return 'ring-2 ring-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.65)] animate-pulse';
+
   if (props.sneakHighlights.some(p => p.row === row && p.col === col))
     return 'ring-2 ring-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.6)] animate-pulse';
   if (props.glacialShiftHighlights.some(p => p.row === row && p.col === col))
@@ -286,6 +303,10 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   const isMindControlTarget = props.mindControlHighlights.some(p => p.row === row && p.col === col);
   const isEntanglementSelected = props.entanglementSelectedTargets.some(p => p.row === row && p.col === col);
   const isEntanglementTarget = props.entanglementHighlights.some(p => p.row === row && p.col === col);
+  const isMoguSelfHealingSelected = props.moguSymbioticSelfHealingSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguSelfHealingTarget = props.moguSymbioticSelfHealingHighlights.some(p => p.row === row && p.col === col);
+  const isMoguReleaseSporesSelected = props.moguReleaseSporesSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguReleaseSporesTarget = props.moguReleaseSporesHighlights.some(p => p.row === row && p.col === col);
   const isSneakTarget = props.sneakHighlights.some(p => p.row === row && p.col === col);
   const isGlacialShiftTarget = props.glacialShiftHighlights.some(p => p.row === row && p.col === col);
   const isWithdrawTarget = props.withdrawHighlights.some(p => p.row === row && p.col === col);
@@ -300,6 +321,10 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isMindControlTarget) return baseCellVisualStyle('rgba(6,182,212,1)', 'rgba(6,182,212,0.3)', 'animate-pulse');
   if (isEntanglementSelected) return baseCellVisualStyle('rgba(52,211,153,1)', 'rgba(52,211,153,0.5)', 'ring-2 ring-emerald-300');
   if (isEntanglementTarget) return baseCellVisualStyle('rgba(16,185,129,1)', 'rgba(16,185,129,0.3)', 'animate-pulse');
+  if (isMoguSelfHealingSelected) return baseCellVisualStyle('rgba(240,171,252,1)', 'rgba(240,171,252,0.5)', 'ring-2 ring-fuchsia-200');
+  if (isMoguSelfHealingTarget) return baseCellVisualStyle('rgba(232,121,249,1)', 'rgba(232,121,249,0.3)', 'animate-pulse');
+  if (isMoguReleaseSporesSelected) return baseCellVisualStyle('rgba(190,242,100,1)', 'rgba(190,242,100,0.5)', 'ring-2 ring-lime-200');
+  if (isMoguReleaseSporesTarget) return baseCellVisualStyle('rgba(163,230,53,1)', 'rgba(163,230,53,0.3)', 'animate-pulse');
   if (isSneakTarget) return baseCellVisualStyle('rgba(163,230,53,1)', 'rgba(163,230,53,0.3)', 'animate-pulse');
   if (isGlacialShiftTarget) return baseCellVisualStyle('rgba(56,189,248,1)', 'rgba(56,189,248,0.3)', 'animate-pulse');
   if (isWithdrawTarget) return baseCellVisualStyle('rgba(251,191,36,1)', 'rgba(251,191,36,0.3)', 'animate-pulse');
@@ -529,6 +554,12 @@ const UnitCell: React.FC<{
 
     const run = async () => {
       try {
+        if (props.reducedCombatEffects) {
+          props.onAttackHit();
+          await new Promise(r => window.setTimeout(r, 120));
+          return;
+        }
+
         // 冲向目标
         await animate(scope.current, {
           x: `${lungeXPct}%`, y: `${lungeYPct}%`, scale: 1.05,

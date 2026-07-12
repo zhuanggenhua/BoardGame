@@ -84,6 +84,43 @@ function applyTutorialDiscoveryOrder(core: BetrayalCore): BetrayalCore {
     return core;
 }
 
+function cloneTestExplorer(explorer: BetrayalCore['currentExplorer']): BetrayalCore['currentExplorer'] {
+    return {
+        ...explorer,
+        traits: { ...explorer.traits },
+        inventory: explorer.inventory.map((card) => ({ ...card })),
+    };
+}
+
+function focusCoreOnExplorer(core: BetrayalCore, playerId: string): BetrayalCore {
+    const explorers = [core.currentExplorer, ...core.otherExplorers];
+    const currentExplorer = explorers.find((explorer) => explorer.playerId === playerId);
+    if (!currentExplorer) {
+        throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
+    }
+    const controlledRoomId = core.scenarioRuntime.traitorPlayerId === playerId
+        && core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
+        && core.scenarioRuntime.jackSpiritReleased
+        && core.scenarioRuntime.jackSpiritRoomId
+        ? core.scenarioRuntime.jackSpiritRoomId
+        : currentExplorer.roomId;
+    const nextCurrentExplorer = cloneTestExplorer(currentExplorer);
+    return {
+        ...core,
+        currentPlayer: playerId,
+        currentExplorer: nextCurrentExplorer,
+        otherExplorers: explorers
+            .filter((explorer) => explorer.playerId !== playerId)
+            .map(cloneTestExplorer),
+        activeRoomId: controlledRoomId,
+        currentExplorerTraits: { ...nextCurrentExplorer.traits },
+        currentExplorerInventory: nextCurrentExplorer.inventory.map((card) => ({ ...card })),
+        turnStartInventoryCardIds: nextCurrentExplorer.inventory.map((card) => card.id),
+        usedCardIdsThisTurn: [],
+        recommendedAction: 'move',
+    };
+}
+
 export function createStartedFirstScenarioTutorialCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
     return applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(playerIds));
 }
@@ -335,7 +372,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
 
-    return core;
+    return focusCoreOnExplorer(core, '2');
 }
 
 export function createFirstScenarioReadyToTraitorVictoryTutorialCore(): BetrayalCore {
@@ -426,7 +463,7 @@ export function createJackSpiritMovementRollReadyCore(): BetrayalCore {
 export function createJackSpiritPostReviveAttackReadyCore(): BetrayalCore {
     let core = createJackSpiritReviveReadyCore();
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
-    return core;
+    return focusCoreOnExplorer(core, '2');
 }
 
 export function createJackSpiritPostReviveAttackReadyTutorialCore(): BetrayalCore {
