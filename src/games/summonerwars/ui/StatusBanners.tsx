@@ -24,7 +24,7 @@ import type {
   TelekinesisTargetModeState,
 } from './modeTypes';
 
-type BannerTranslate = (...args: any[]) => string;
+type BannerTranslate = (key: string, options?: Record<string, unknown>) => string;
 
 // ============================================================================
 // 类型定义
@@ -54,7 +54,7 @@ export interface FuneralPyreModeState {
   charges: number;
 }
 
-export function getAbilityModeBannerFallbackText(
+function getAbilityModeBannerFallbackText(
   t: BannerTranslate,
   abilityMode: AbilityModeState,
 ): string {

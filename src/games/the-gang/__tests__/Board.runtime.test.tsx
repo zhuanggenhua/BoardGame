@@ -336,12 +336,16 @@ describe('The Gang Board 运行入口', () => {
 
         expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('三条A + 单K + 单6');
+        const marker = screen.getByTestId('the-gang-current-hand-rank');
+        expect(marker).toHaveTextContent('三条A + K + 6');
+        expect(marker).not.toHaveTextContent('单');
+        expect(marker.querySelector('[data-card-suit="hearts"]')).toHaveTextContent('K');
+        expect(marker.querySelector('[data-card-suit="diamonds"]')).toHaveTextContent('6');
         expect(screen.queryByTestId('the-gang-current-hand-rank-detail')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-current-hand-rank-best-cards')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-current-hand-rank-hand-cards')).not.toBeInTheDocument();
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveAttribute('title', expect.stringContaining('三条A + 单K + 单6'));
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveAttribute('title', expect.stringContaining('A♠'));
+        expect(marker).toHaveAttribute('title', expect.stringContaining('三条A + K + 6'));
+        expect(marker).toHaveAttribute('title', expect.stringContaining('A♠'));
     });
 
     test('当前牌型提示在公共牌自己成牌时标出公共牌最大', () => {

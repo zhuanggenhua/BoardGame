@@ -130,10 +130,16 @@ type CardFaceEmphasis = 'table' | 'river' | 'hand' | 'showdown';
 interface CurrentHandRankHint {
     label: string;
     detail: string;
+    detailParts: HandRankDetailPart[];
     bestCards: string;
     handCards: string;
     boardOnly: boolean;
 }
+
+type HandRankDetailPart = {
+    text: string;
+    card?: PlayingCard;
+};
 
 const PLAYER_HAND_RANK_MARKER_STYLES = [
     { backgroundColor: '#ffffff' },
@@ -175,7 +181,7 @@ const rankChain = (values: number[]) => values.filter((value) => value > 0).map(
 
 const kickerDetails = (values: number[]) => values
     .filter((value) => value > 0)
-    .map((value) => ` + 单${valueLabel(value)}`)
+    .map((value) => ` + ${valueLabel(value)}`)
     .join('');
 
 const cardSortValue = (card: PlayingCard) => RANK_VALUE[card.rank] ?? 0;
@@ -184,6 +190,89 @@ const formatCardChain = (cards: PlayingCard[]) => [...cards]
     .sort((left, right) => cardSortValue(right) - cardSortValue(left) || formatCard(left).localeCompare(formatCard(right)))
     .map(formatCard)
     .join(' > ');
+
+const suitTextClass = (suit: PlayingCard['suit']) => {
+    switch (suit) {
+        case 'hearts':
+            return 'text-red-700';
+        case 'diamonds':
+            return 'text-red-600';
+        case 'spades':
+            return 'text-slate-950';
+        case 'clubs':
+            return 'text-emerald-950';
+        case 'gear':
+            return 'text-amber-800';
+        case 'special':
+        default:
+            return 'text-purple-800';
+    }
+};
+
+const cardsByRankValue = (cards: PlayingCard[]) => {
+    const byValue = new Map<number, PlayingCard[]>();
+    [...cards]
+        .sort((left, right) => cardSortValue(right) - cardSortValue(left) || formatCard(left).localeCompare(formatCard(right)))
+        .forEach((card) => {
+            const value = cardSortValue(card);
+            byValue.set(value, [...(byValue.get(value) ?? []), card]);
+        });
+    return byValue;
+};
+
+const cardForRankValue = (cards: PlayingCard[], value?: number) => {
+    if (!value) return undefined;
+    return cardsByRankValue(cards).get(value)?.[0];
+};
+
+const detailPartText = (parts: HandRankDetailPart[]) => parts.map((part) => part.text).join('');
+
+const cardRankPart = (cards: PlayingCard[], value?: number): HandRankDetailPart => {
+    const card = cardForRankValue(cards, value);
+    return { text: valueLabel(value), card };
+};
+
+const kickerDetailParts = (cards: PlayingCard[], values: number[]) => values
+    .filter((value) => value > 0)
+    .flatMap((value): HandRankDetailPart[] => [
+        { text: ' + ' },
+        cardRankPart(cards, value),
+    ]);
+
+const describeHandStrengthParts = (hint: {
+    code?: string;
+    label: string;
+    ranks: number[];
+    cards: PlayingCard[];
+}): HandRankDetailPart[] => {
+    const [primary, secondary, ...rest] = hint.ranks;
+    switch (hint.code) {
+        case '4s':
+            return [{ text: `四条${valueLabel(primary)}` }, ...kickerDetailParts(hint.cards, [secondary])];
+        case 'FH':
+            return [{ text: `葫芦：三条${valueLabel(primary)} + 对${valueLabel(secondary)}` }];
+        case 'FL':
+            return [{ text: `同花：${rankChain(hint.ranks)}` }];
+        case '3s':
+            return [{ text: `三条${valueLabel(primary)}` }, ...kickerDetailParts(hint.cards, [secondary, ...rest])];
+        case 'FA':
+            return [{ text: '五花：' }, ...[...hint.cards]
+                .sort((left, right) => cardSortValue(right) - cardSortValue(left) || formatCard(left).localeCompare(formatCard(right)))
+                .flatMap((card, index): HandRankDetailPart[] => [
+                    ...(index === 0 ? [] : [{ text: ' > ' }]),
+                    { text: formatCard(card), card },
+                ])];
+        case '2p':
+            return [
+                { text: `两对：对${valueLabel(primary)} + 对${valueLabel(secondary)}` },
+                ...kickerDetailParts(hint.cards, rest),
+            ];
+        case '1p':
+            return [{ text: `一对${valueLabel(primary)}` }, ...kickerDetailParts(hint.cards, [secondary, ...rest])];
+        default:
+            return [{ text: describeHandStrength(hint) }];
+    }
+};
 
 const describeHandStrength = (hint: {
     code?: string;
@@ -238,14 +327,16 @@ const buildCurrentHandRankHint = (
         : false;
     const detailSource = boardOnly && boardOnlyEvaluation ? boardOnlyEvaluation : evaluated;
     const usedHandCards = boardOnly ? [] : evaluated.cards.filter((card) => handCards.includes(card));
+    const detailParts = describeHandStrengthParts({
+        code: detailSource.strength.code,
+        label: detailSource.strength.label,
+        ranks: detailSource.strength.ranks,
+        cards: detailSource.cards,
+    });
     return {
         label: detailSource.strength.label,
-        detail: describeHandStrength({
-            code: detailSource.strength.code,
-            label: detailSource.strength.label,
-            ranks: detailSource.strength.ranks,
-            cards: detailSource.cards,
-        }),
+        detail: detailPartText(detailParts),
+        detailParts,
         bestCards: formatCardChain(detailSource.cards),
         handCards: formatCardChain(usedHandCards),
         boardOnly,
@@ -461,7 +552,24 @@ function CurrentHandRankMarker({
             title={hint ? `${hint.detail} | ${hint.bestCards}${hint.handCards ? ` | ${hint.handCards}` : ''}` : undefined}
             style={markerStyle}
         >
-            <span className="whitespace-nowrap">{label}</span>
+            <span className="whitespace-nowrap">
+                {hint
+                    ? (
+                        <>
+                            {hint.detailParts.map((part, index) => (
+                                <span
+                                    key={`${part.text}-${index}`}
+                                    className={part.card ? suitTextClass(part.card.suit) : undefined}
+                                    data-card-suit={part.card?.suit}
+                                >
+                                    {part.text}
+                                </span>
+                            ))}
+                            {hint.boardOnly ? ` ${t('board.currentHandRankBoardOnly')}` : ''}
+                        </>
+                    )
+                    : label}
+            </span>
         </div>
     );
 }

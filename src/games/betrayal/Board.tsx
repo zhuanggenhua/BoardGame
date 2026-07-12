@@ -1157,7 +1157,6 @@ function CharacterSelectScreen({
     core,
     matchData,
     effectiveLocale,
-    isPhoneLandscapeLayout,
     viewerPlayerId,
     selectedExplorerId,
     onSelectExplorer,
@@ -1167,7 +1166,6 @@ function CharacterSelectScreen({
     core: BetrayalCore;
     matchData?: MatchPlayerInfo[];
     effectiveLocale: string;
-    isPhoneLandscapeLayout: boolean;
     viewerPlayerId: string;
     selectedExplorerId: string;
     onSelectExplorer: (explorerId: string) => void;
@@ -1281,11 +1279,6 @@ function CharacterSelectScreen({
     const scenarioReaderRightPage = scenarioReaderPages[scenarioReaderSpreadIndex * 2 + 1] ?? null;
     const canTurnScenarioReaderBack = scenarioReaderSpreadIndex > 0;
     const canTurnScenarioReaderForward = scenarioReaderSpreadIndex < scenarioReaderSpreadCount - 1;
-    const scenarioReaderCurrentStartPage = Math.min((scenarioReaderSpreadIndex * 2) + 1, scenarioReaderPages.length);
-    const scenarioReaderCurrentEndPage = Math.min((scenarioReaderSpreadIndex * 2) + (scenarioReaderRightPage ? 2 : 1), scenarioReaderPages.length);
-    const scenarioReaderSpreadLabel = scenarioReaderCurrentStartPage === scenarioReaderCurrentEndPage
-        ? `${scenarioReaderCurrentStartPage} / ${scenarioReaderPages.length}`
-        : `${scenarioReaderCurrentStartPage}-${scenarioReaderCurrentEndPage} / ${scenarioReaderPages.length}`;
     const handleScenarioReaderTurn = React.useCallback((direction: 'back' | 'forward') => {
         const nextSpreadIndex = direction === 'back'
             ? Math.max(0, scenarioReaderSpreadIndex - 1)
@@ -3014,27 +3007,36 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         () => core.rooms.filter((room) => room.state === 'discovered'),
         [core.rooms],
     );
-    const maskTargetTokens = selectedInventoryUseEffectMode === 'moveOthersInRoom'
-        ? [
-            ...core.otherExplorers
-                .filter((explorer) => (
-                    explorer.roomId === core.currentExplorer.roomId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                ))
-                .map((explorer) => ({
-                    id: explorer.playerId,
-                    name: resolvePlayerName(explorer.playerId, explorer.displayName, matchData),
-                    kind: 'explorer' as const,
-                })),
-            ...core.monsters
-                .filter((monster) => monster.roomId === core.currentExplorer.roomId)
-                .map((monster) => ({
-                    id: monster.id,
-                    name: monster.name,
-                    kind: 'monster' as const,
-                })),
-        ]
-        : [];
+    const maskTargetTokens = React.useMemo(() => (
+        selectedInventoryUseEffectMode === 'moveOthersInRoom'
+            ? [
+                ...core.otherExplorers
+                    .filter((explorer) => (
+                        explorer.roomId === core.currentExplorer.roomId
+                        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                    ))
+                    .map((explorer) => ({
+                        id: explorer.playerId,
+                        name: resolvePlayerName(explorer.playerId, explorer.displayName, matchData),
+                        kind: 'explorer' as const,
+                    })),
+                ...core.monsters
+                    .filter((monster) => monster.roomId === core.currentExplorer.roomId)
+                    .map((monster) => ({
+                        id: monster.id,
+                        name: monster.name,
+                        kind: 'monster' as const,
+                    })),
+            ]
+            : []
+    ), [
+        core.currentExplorer.roomId,
+        core.monsters,
+        core.otherExplorers,
+        core.scenarioRuntime.deadExplorerPlayerIds,
+        matchData,
+        selectedInventoryUseEffectMode,
+    ]);
     const selectedMaskTargetRoomIdsByTokenId = selectedInventoryUseEffectMode === 'moveOthersInRoom'
         ? Object.fromEntries(
             maskTargetTokens.map((token) => {
@@ -3218,16 +3220,24 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedAttackWeaponCardId = attackWeaponCards.some((card) => card.id === previewState.selectedAttackWeaponCardId)
         ? previewState.selectedAttackWeaponCardId
         : null;
-    const healTargetExplorers = selectedInventoryUseEffectMode === 'healTraits'
-        && selectedInventoryHealTarget === 'selfOrSameRoomExplorer'
-        ? [
-            core.currentExplorer,
-            ...core.otherExplorers.filter((explorer) => (
-                explorer.roomId === core.currentExplorer.roomId
-                && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-            )),
-        ]
-        : [];
+    const healTargetExplorers = React.useMemo(() => (
+        selectedInventoryUseEffectMode === 'healTraits'
+            && selectedInventoryHealTarget === 'selfOrSameRoomExplorer'
+            ? [
+                core.currentExplorer,
+                ...core.otherExplorers.filter((explorer) => (
+                    explorer.roomId === core.currentExplorer.roomId
+                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                )),
+            ]
+            : []
+    ), [
+        core.currentExplorer,
+        core.otherExplorers,
+        core.scenarioRuntime.deadExplorerPlayerIds,
+        selectedInventoryHealTarget,
+        selectedInventoryUseEffectMode,
+    ]);
     const selectedInventoryTargetPlayerId = selectedInventoryUseEffectMode === 'healTraits'
         && selectedInventoryHealTarget === 'selfOrSameRoomExplorer'
         ? healTargetExplorers.some((explorer) => explorer.playerId === previewState.selectedInventoryTargetPlayerId)
@@ -4407,7 +4417,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     core={baseCore}
                     matchData={matchData}
                     effectiveLocale={effectiveLocale}
-                    isPhoneLandscapeLayout={isPhoneLandscapeLayout}
                     viewerPlayerId={viewerPlayerId}
                     selectedExplorerId={selectedExplorerId}
                     onSelectExplorer={handleSelectExplorer}
