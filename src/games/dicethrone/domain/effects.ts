@@ -36,26 +36,10 @@ import { CP_MAX } from './types';
 import { buildDrawEvents } from './deckEvents';
 import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
 import {
-    shouldOpenTokenResponse,
-    createPendingDamage,
-    createTokenResponseRequestedEvent,
-    hasBeforeDamageReceivedCard,
+    maybeCreateDamageResponseEvent,
 } from './tokenResponse';
 import type { AbilityDef } from './combat';
 import { reduce as reduceDiceThroneCore } from './reducer';
-
-const resolveDamageResponseType = (
-    state: DiceThroneCore,
-    defenderId: PlayerId,
-    rawTokenResponseType: 'attackerBoost' | 'defenderMitigation' | null,
-): 'attackerBoost' | 'defenderMitigation' | null => {
-    const isUltimateDamage = state.pendingAttack?.isUltimate === true;
-    const hasDefenderCardResponse = hasBeforeDamageReceivedCard(state, defenderId);
-    if (rawTokenResponseType === 'attackerBoost') return 'attackerBoost';
-    if (isUltimateDamage) return null;
-    if (rawTokenResponseType === 'defenderMitigation') return 'defenderMitigation';
-    return hasDefenderCardResponse ? 'defenderMitigation' : null;
-};
 
 // ============================================================================
 // 效果上下文
@@ -488,48 +472,6 @@ export function createDTPassiveTriggerHandler(
 }
 
 /**
- * 估算既有护盾吸收后的有效伤害，仅用于 Token 响应开窗门禁。
- *
- * 注意：
- * - 这里只做“是否还剩可响应伤害”的判断，不会真正消耗护盾。
- * - 真正的护盾消耗仍由 reducer 在 DAMAGE_DEALT 时统一处理，避免双扣。
- */
-function estimateDamageAfterExistingShields(
-    state: DiceThroneCore,
-    targetId: PlayerId,
-    incomingDamage: number,
-    options?: { bypassShields?: boolean },
-): number {
-    if (incomingDamage <= 0) return 0;
-    if (options?.bypassShields) return incomingDamage;
-    if (state.pendingAttack?.isUltimate) return incomingDamage;
-
-    const target = state.players[targetId];
-    const shields = target?.damageShields ?? [];
-    if (shields.length === 0) return incomingDamage;
-
-    let remainingDamage = incomingDamage;
-    const percentShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent !== undefined);
-    const fixedShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent === undefined);
-
-    for (const shield of percentShields) {
-        if (remainingDamage <= 0) break;
-        const reductionPercent = shield.reductionPercent ?? 0;
-        const reductionAmount = Math.ceil(remainingDamage * (reductionPercent / 100));
-        remainingDamage = Math.max(0, remainingDamage - reductionAmount);
-    }
-
-    for (const shield of fixedShields) {
-        if (remainingDamage <= 0) break;
-        remainingDamage = Math.max(0, remainingDamage - shield.value);
-    }
-
-    return remainingDamage;
-}
-
-
-
-/**
  * 将单个效果动作转换为事件
  */
 function resolveEffectAction(
@@ -606,46 +548,31 @@ function resolveEffectAction(
                     sourceName: m.sourceName,
                 }));
 
-                // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口。
-                // 不可防御伤害仍允许攻击方增伤，但禁止防御方减伤/闪避类响应。
+                // target: 'all'/'allOpponents' 的全体伤害不触发 Token/卡牌响应窗口。
                 if (action.target !== 'all' && action.target !== 'allOpponents') {
-                    const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
-                        state,
-                        dmgTargetId,
-                        result.finalDamage,
-                    );
-
-                    const rawTokenResponseType = shouldOpenTokenResponse(
+                    const tokenResponseEvent = maybeCreateDamageResponseEvent({
                         state,
                         attackerId,
-                        dmgTargetId,
-                        effectiveDamageForTokenResponse,
-                        ctx.isDefensiveContext,
-                        action.damageScope ?? 'attack'
-                    );
-                    const tokenResponseType = resolveDamageResponseType(
-                        state,
-                        dmgTargetId,
-                        rawTokenResponseType,
-                    );
-
-                    if (tokenResponseType) {
-                        // 创建待处理伤害，暂停伤害结算
-                        const responseType = tokenResponseType === 'attackerBoost'
-                            ? 'beforeDamageDealt'
-                            : 'beforeDamageReceived';
-                        const pendingDamage = createPendingDamage(
-                            attackerId,
-                            dmgTargetId,
-                            result.finalDamage,
-                            responseType,
-                            sourceAbilityId,
+                        sourceAbilityId,
+                        timestamp,
+                        isDefensiveContext: ctx.isDefensiveContext,
+                        allowAttackerBoost: (action.damageScope ?? 'attack') === 'attack',
+                        damageEvent: {
+                            type: 'DAMAGE_DEALT',
+                            payload: {
+                                targetId: dmgTargetId,
+                                amount: result.finalDamage,
+                                actualDamage: result.finalDamage,
+                                sourceAbilityId,
+                                damageScope: action.damageScope ?? 'attack',
+                                ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
+                                ...(action.unblockable ? { unblockable: true } : {}),
+                            },
+                            sourceCommandType: 'ABILITY_EFFECT',
                             timestamp,
-                            passiveModifiers.length > 0 ? passiveModifiers : undefined,
-                            action.damageScope ?? 'attack',
-                            action.unblockable === true,
-                        );
-                        const tokenResponseEvent = createTokenResponseRequestedEvent(pendingDamage, timestamp);
+                        } as DamageDealtEvent,
+                    });
+                    if (tokenResponseEvent) {
                         events.push(tokenResponseEvent);
                         // 不在这里生成 DAMAGE_DEALT，等待 Token 响应完成后再生成
                         continue;
@@ -883,74 +810,29 @@ function resolveEffectAction(
                     });
                 }
 
-                // Token 响应窗口后处理：
+                // Token/卡牌响应窗口后处理：
                 // 防御技能的反击伤害不是"攻击"（规则 §7.2），不触发 Token 响应窗口。
-                // 进攻技能通过 custom action 产生的 DAMAGE_DEALT 需要经过 shouldOpenTokenResponse 检查。
-                const shouldCheckTokenResponse = !ctx.isDefensiveContext;
-
-                // custom action 统一伤害累计入口 + Token 响应窗口拦截：
+                // 进攻技能通过 custom action 产生的 DAMAGE_DEALT 需要经过统一响应检查。
+                // custom action 统一伤害累计入口 + 响应窗口拦截：
                 // 扫描 handler 产出的 DAMAGE_DEALT 事件，对符合条件的伤害替换为 TOKEN_RESPONSE_REQUESTED。
                 for (let i = 0; i < handledEvents.length; i++) {
                     const handledEvent = handledEvents[i];
                     if (handledEvent.type === 'DAMAGE_DEALT') {
                         const dmgPayload = (handledEvent as DamageDealtEvent).payload;
-                        const dmgAmount = dmgPayload.amount ?? 0;
-                        const dmgTargetId = dmgPayload.targetId;
-                        const isUnblockable = dmgPayload.unblockable === true;
-                        const bypassShields = dmgPayload.bypassShields === true;
                         const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
-
-                        // 检查是否需要打开 Token 响应窗口。
-                        // 普通不可防御伤害只跳过防御技能，卡牌与状态 Token 仍按自身条件响应。
-                        // 终极技能的防御方响应由 resolveDamageResponseType 统一封锁。
-                        const shouldAllowAttackerBoost = damageScope === 'attack';
-                        if (
-                            shouldCheckTokenResponse
-                            && dmgAmount > 0
-                            && (shouldAllowAttackerBoost || !isUnblockable || hasBeforeDamageReceivedCard(state, dmgTargetId))
-                        ) {
-                            const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
-                                state,
-                                dmgTargetId,
-                                dmgAmount,
-                                { bypassShields },
-                            );
-
-                            const rawTokenResponseType = shouldOpenTokenResponse(
-                                state,
-                                attackerId,
-                                dmgTargetId,
-                                effectiveDamageForTokenResponse,
-                                ctx.isDefensiveContext,
-                                damageScope
-                            );
-                            const tokenResponseType = resolveDamageResponseType(
-                                state,
-                                dmgTargetId,
-                                rawTokenResponseType,
-                            );
-
-                            if (tokenResponseType) {
-                                // 替换 DAMAGE_DEALT 为 TOKEN_RESPONSE_REQUESTED
-                                const responseType = tokenResponseType === 'attackerBoost'
-                                    ? 'beforeDamageDealt'
-                                    : 'beforeDamageReceived';
-                                const pendingDamage = createPendingDamage(
-                                    attackerId,
-                                    dmgTargetId,
-                                    dmgAmount,
-                                    responseType,
-                                    sourceAbilityId,
-                                    timestamp,
-                                    undefined,
-                                    damageScope,
-                                    isUnblockable,
-                                );
-                                const tokenResponseEvent = createTokenResponseRequestedEvent(pendingDamage, timestamp);
-                                handledEvents[i] = tokenResponseEvent;
-                                // 不累计伤害（等待 Token 响应完成后再结算）
-                                continue;
-                            }
+                        const tokenResponseEvent = maybeCreateDamageResponseEvent({
+                            state,
+                            attackerId,
+                            sourceAbilityId,
+                            timestamp,
+                            isDefensiveContext: ctx.isDefensiveContext,
+                            allowAttackerBoost: damageScope === 'attack',
+                            damageEvent: handledEvent as DamageDealtEvent,
+                        });
+                        if (tokenResponseEvent) {
+                            handledEvents[i] = tokenResponseEvent;
+                            // 不累计伤害（等待 Token 响应完成后再结算）
+                            continue;
                         }
 
                         // 没有 Token 响应，正常累计伤害

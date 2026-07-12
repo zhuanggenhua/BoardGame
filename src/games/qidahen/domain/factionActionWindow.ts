@@ -25,7 +25,7 @@ const playEventCardActionChoice: QidahenActionChoice = {
     id: 'play-event-card',
     label: '执行事件',
     cost: 1,
-    detail: '打出 1 张已确认事件牌，并记录该事件牌的规则摘要；完整事件效果仍需逐张实现。',
+    detail: '打出 1 张已确认事件牌，记录规则摘要，并按当前已接入的逐牌效果结算。',
 };
 
 const defaultActionIdByFaction: Record<QidahenFactionId, string> = {

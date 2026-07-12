@@ -453,6 +453,25 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('音频资源 502 加载失败会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-load-status-502', {
+            content: '[auto][unhandledrejection] Failed loading audio file with status: 502.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Failed loading audio file with status: 502.',
+            errorSource: 'window.unhandledrejection',
+            stack: 'Error: Failed loading audio file with status: 502.\n    at c (https://easyboardgame.top/assets/index.js:192:42706)\n    at _.<anonymous> (https://easyboardgame.top/assets/vendor-howler-Bp1HXCiM.js:1:19873)',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('Howler 音频错误码噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

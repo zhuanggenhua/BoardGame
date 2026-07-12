@@ -34,6 +34,9 @@ export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   'zh-CN/dicethrone/images/treant/status-icons-atlas.json',
   'zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json',
   'zh-CN/qidahen/assets-manifest.json',
+  // Android 测试壳/首装场景可能尚未安装七大恨游戏包；
+  // 主地图是进入对局后的关键首屏资产，只保留压缩版作为离线兜底。
+  'zh-CN/qidahen/board/compressed/qidahen-main-map.webp',
   'zh-CN/smashup/assets-manifest.json',
   'zh-CN/splendor/assets-manifest.json',
   'zh-CN/tictactoe/assets-manifest.json',

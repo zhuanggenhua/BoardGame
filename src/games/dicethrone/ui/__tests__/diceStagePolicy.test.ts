@@ -72,6 +72,18 @@ describe('diceStagePolicy', () => {
         })).toBe(false);
     });
 
+    it('防御响应窗口中改对方骰子时，开启 3D 应显示棋盘骰台', () => {
+        expect(shouldUseBoardDiceStage({
+            ...baseParams,
+            boardDice3dEnabled: true,
+            isSelfView: false,
+            isViewRolling: false,
+            currentResponderId: '1',
+            diceInteractionPlayerId: '1',
+            hasDiceMultistepInteraction: true,
+        })).toBe(true);
+    });
+
     it('普通掷骰阶段只有开启 3D 开关时才应显示棋盘骰台', () => {
         expect(shouldUseBoardDiceStage({
             ...baseParams,

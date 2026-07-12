@@ -12,19 +12,44 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 
 export const SERVER_PUBLISH_MANIFEST_FILE = '.boardgame-publish-manifest.json';
 const DEFAULT_SSH_TARGET = 'admin@8.148.71.102';
+const MAX_PROCESS_OUTPUT_CHARS = 256 * 1024;
+
+const appendProcessOutput = (current, chunk) => {
+    const next = current + chunk.toString();
+    if (next.length <= MAX_PROCESS_OUTPUT_CHARS) {
+        return next;
+    }
+    return next.slice(-MAX_PROCESS_OUTPUT_CHARS);
+};
+
+const removeStagingRoot = async (stagingRoot) => {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+            rmSync(stagingRoot, { recursive: true, force: true });
+            return;
+        } catch (error) {
+            if (attempt === 3) {
+                console.warn(`[server-primary] 临时目录清理失败，稍后可手动删除: ${stagingRoot} (${error.code || error.message})`);
+                return;
+            }
+            await delay(250 * attempt);
+        }
+    }
+};
 
 const waitForProcess = (child, label) => new Promise((resolve, reject) => {
     let stderr = '';
     let stdout = '';
 
     child.stderr?.on('data', (chunk) => {
-        stderr += chunk.toString();
+        stderr = appendProcessOutput(stderr, chunk);
     });
     child.stdout?.on('data', (chunk) => {
-        stdout += chunk.toString();
+        stdout = appendProcessOutput(stdout, chunk);
     });
     child.on('error', reject);
     child.on('close', (code) => {
@@ -116,7 +141,7 @@ export const stagePrimaryAssetUploads = async (uploads) => {
         );
         return { stagingRoot, objects };
     } catch (error) {
-        rmSync(stagingRoot, { recursive: true, force: true });
+        await removeStagingRoot(stagingRoot);
         throw error;
     }
 };
@@ -180,6 +205,6 @@ export const publishPrimaryAssetBatch = async (uploads, options = {}) => {
             objectCount: staged.objects.length,
         };
     } finally {
-        rmSync(staged.stagingRoot, { recursive: true, force: true });
+        await removeStagingRoot(staged.stagingRoot);
     }
 };

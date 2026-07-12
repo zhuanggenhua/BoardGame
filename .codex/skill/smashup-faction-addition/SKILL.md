@@ -1,6 +1,6 @@
 ---
 name: smashup-faction-addition
-description: "Smash Up 新增派系端到端流程。用于用户说“新增派系”“新派系增加流程”“加了卡牌和基地素材”“把派系做进游戏”“从素材做到可玩”等场景；默认整合 intake、图片上传、静态数据、玩法实现、审计、E2E 与 evidence，除非用户明确说只做 intake。"
+description: "Smash Up 新增派系端到端流程。用于新增派系、卡牌/基地素材、从素材做到可玩；含 intake、上传、数据、玩法、审计、E2E。"
 ---
 
 # Smash Up 新增派系端到端流程

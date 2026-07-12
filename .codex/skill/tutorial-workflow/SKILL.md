@@ -1,6 +1,6 @@
 ---
 name: tutorial-workflow
-description: BoardGame 项目内的教程与新手引导 workflow。用于重构 tutorial/onboarding、重写教程文案、补教程 E2E、或用户指出“教程像规则书/只在教按钮/没教会玩家怎么玩”时触发。负责先锁教程文案，再改实现，再补截图与 skill/规范收口。
+description: "BoardGame 教程/新手引导流程。用于 tutorial/onboarding、教程文案、教程 E2E、教程像规则书或没教会玩法。"
 ---
 
 # Tutorial Workflow

@@ -1708,9 +1708,9 @@
       "name": "花开见佛",
       "description": "莲花绽放，太极圆满。",
       "effects": {
-        "damage5": "造成 5 点伤害",
-        "taijiCapMax": "太极标记堆叠上限 +1，并立即获得最大数量的太极标记",
-        "unblockable": "你可以花费 2 个太极标记令此次攻击不可防御"
+        "damage5": "造成 5 点不可防御伤害",
+        "taijiCapMax": "太极标记堆叠上限 +1，并获得 5 个太极标记",
+        "unblockable": "造成 5 点不可防御伤害"
       }
     },
     "lotus-palm-2": {

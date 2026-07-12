@@ -282,6 +282,11 @@ export class DiceBoxThreeEngine {
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
         }
+        if (typeof window !== 'undefined' && config?.canvasTestId === 'dicethrone-board-dice-box-canvas') {
+            (window as unknown as {
+                __dicethroneBoardDiceDebug?: () => unknown;
+            }).__dicethroneBoardDiceDebug = () => engine.getDebugSnapshot();
+        }
         if ((config?.rendererMode ?? 'debug-visible') === 'physics-only') {
             box.renderer.domElement.style.opacity = '0';
             box.renderer.domElement.style.visibility = 'hidden';
@@ -311,6 +316,84 @@ export class DiceBoxThreeEngine {
         if (typeof skinsReady === 'boolean') {
             canvas.dataset.skinsReady = skinsReady ? 'true' : 'false';
         }
+    }
+
+    getDebugSnapshot(): unknown {
+        const sceneChildren = this.box.scene?.children ?? [];
+        const camera = this.box.camera as {
+            fov?: number;
+            aspect?: number;
+            zoom?: number;
+            position?: { x?: number; y?: number; z?: number };
+            near?: number;
+            far?: number;
+        } | undefined;
+        const rendererCanvas = this.box.renderer?.domElement;
+        return {
+            diceListLength: this.box.diceList.length,
+            sceneChildren: sceneChildren.map((child: {
+                type?: string;
+                name?: string;
+                isMesh?: boolean;
+                geometry?: { boundingBox?: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }; computeBoundingBox?: () => void };
+                position?: { x?: number; y?: number; z?: number };
+                scale?: { x?: number; y?: number; z?: number };
+                visible?: boolean;
+                material?: unknown;
+            }, index: number) => ({
+                index,
+                type: child.type,
+                name: child.name,
+                isMesh: child.isMesh,
+                visible: child.visible,
+                position: child.position ? { x: child.position.x, y: child.position.y, z: child.position.z } : null,
+                scale: child.scale ? { x: child.scale.x, y: child.scale.y, z: child.scale.z } : null,
+                materialCount: Array.isArray(child.material) ? child.material.length : (child.material ? 1 : 0),
+            })),
+            dice: this.box.diceList.map((die, index) => {
+                const dieWithBody = die as DiceBoxDieWithBody;
+                if (!die.geometry.boundingBox) {
+                    die.geometry.computeBoundingBox?.();
+                }
+                const bounds = die.geometry.boundingBox;
+                return {
+                    index,
+                    position: { x: die.position.x, y: die.position.y, z: die.position.z },
+                    bodyPosition: dieWithBody.body?.position
+                        ? { x: dieWithBody.body.position.x, y: dieWithBody.body.position.y, z: dieWithBody.body.position.z }
+                        : null,
+                    bounds: bounds
+                        ? {
+                            min: { x: bounds.min.x, y: bounds.min.y, z: bounds.min.z },
+                            max: { x: bounds.max.x, y: bounds.max.y, z: bounds.max.z },
+                        }
+                        : null,
+                    layout: this.getProjectedLayout(index, index),
+                    value: readDieValue(die),
+                    materialCount: Array.isArray(die.material) ? die.material.length : (die.material ? 1 : 0),
+                };
+            }),
+            camera: camera
+                ? {
+                    fov: camera.fov,
+                    aspect: camera.aspect,
+                    zoom: camera.zoom,
+                    near: camera.near,
+                    far: camera.far,
+                    position: camera.position ? { x: camera.position.x, y: camera.position.y, z: camera.position.z } : null,
+                }
+                : null,
+            canvas: rendererCanvas
+                ? {
+                    width: rendererCanvas.width,
+                    height: rendererCanvas.height,
+                    clientWidth: rendererCanvas.clientWidth,
+                    clientHeight: rendererCanvas.clientHeight,
+                    dataset: { ...rendererCanvas.dataset },
+                }
+                : null,
+            worldBounds: this.worldBounds,
+        };
     }
 
     clear(): void {
@@ -347,6 +430,7 @@ export class DiceBoxThreeEngine {
             x: worldWidth,
             y: worldHeight,
         });
+        this.applyCameraProfile();
 
         const canvas = this.box.renderer?.domElement;
         if (canvas) {
@@ -578,16 +662,26 @@ export class DiceBoxThreeEngine {
                     die: dieWithBody,
                     index,
                     start: { x: position.x, y: position.y, z: position.z },
+                    startQuaternion: new Quaternion(
+                        dieWithBody.quaternion?.x ?? 0,
+                        dieWithBody.quaternion?.y ?? 0,
+                        dieWithBody.quaternion?.z ?? 0,
+                        dieWithBody.quaternion?.w ?? 1,
+                    ),
                 };
             })
             .filter((entry): entry is {
                 die: DiceBoxDieWithBody;
                 index: number;
                 start: { x: number; y: number; z: number };
+                startQuaternion: Quaternion;
             } => Boolean(entry));
         const assignments = entries.map((entry, sortedIndex) => ({
             ...entry,
             yaw: screenSlots[sortedIndex]?.yaw,
+            targetQuaternion: typeof screenSlots[sortedIndex]?.yaw === 'number'
+                ? this.getSettledQuaternionForDie(entry.die, { yaw: screenSlots[sortedIndex].yaw })
+                : null,
             target: (() => {
                 const slot = slots[sortedIndex];
                 const screenSlot = screenSlots[sortedIndex];
@@ -627,7 +721,7 @@ export class DiceBoxThreeEngine {
                 const progress = clampNumber((now - startAt) / durationMs, 0, 1);
                 const eased = 1 - ((1 - progress) ** 3);
 
-                assignments.forEach(({ die, start, target, yaw }) => {
+                assignments.forEach(({ die, start, target, startQuaternion, targetQuaternion }) => {
                     const position = {
                         x: start.x + ((target.x - start.x) * eased),
                         y: start.y + ((target.y - start.y) * eased),
@@ -635,9 +729,9 @@ export class DiceBoxThreeEngine {
                     };
                     this.setVector(die.position, position);
                     this.setVector(die.body?.position, position);
-                    if (typeof yaw === 'number') {
-                        const settledQuaternion = new Quaternion()
-                            .setFromAxisAngle(WORLD_UP, yaw)
+                    if (targetQuaternion) {
+                        const settledQuaternion = startQuaternion.clone()
+                            .slerp(targetQuaternion, eased)
                             .normalize();
                         this.setQuaternion(die.quaternion as DiceBoxQuaternionLike | undefined, settledQuaternion);
                         this.setQuaternion(die.body?.quaternion, settledQuaternion);
@@ -839,17 +933,18 @@ export class DiceBoxThreeEngine {
             const canvas = this.box.renderer?.domElement;
             const visualHalfWidth = (layout?.visualWidth ?? layout?.width ?? 0) / 2;
             const visualHalfHeight = (layout?.visualHeight ?? layout?.height ?? 0) / 2;
+            const projectedMargin = options.strictProjectedBounds ? 18 : 4;
             const isFullyInsideProjectedStage = Boolean(layout && canvas
-                && layout.x - visualHalfWidth >= -4
-                && layout.x + visualHalfWidth <= canvas.clientWidth + 4
-                && layout.y - visualHalfHeight >= -4
-                && layout.y + visualHalfHeight <= canvas.clientHeight + 4);
+                && layout.x - visualHalfWidth >= projectedMargin
+                && layout.x + visualHalfWidth <= canvas.clientWidth - projectedMargin
+                && layout.y - visualHalfHeight >= projectedMargin
+                && layout.y + visualHalfHeight <= canvas.clientHeight - projectedMargin);
             const isProjectedOutside = Boolean(layout && canvas && (
                 options.strictProjectedBounds
-                    ? layout.x - visualHalfWidth < -4
-                        || layout.x + visualHalfWidth > canvas.clientWidth + 4
-                        || layout.y - visualHalfHeight < -4
-                        || layout.y + visualHalfHeight > canvas.clientHeight + 4
+                    ? layout.x - visualHalfWidth < projectedMargin
+                        || layout.x + visualHalfWidth > canvas.clientWidth - projectedMargin
+                        || layout.y - visualHalfHeight < projectedMargin
+                        || layout.y + visualHalfHeight > canvas.clientHeight - projectedMargin
                     : layout.maxX < -canvas.clientWidth * 0.45
                         || layout.minX > canvas.clientWidth * 1.45
                         || layout.maxY < -canvas.clientHeight * 0.45
@@ -874,6 +969,31 @@ export class DiceBoxThreeEngine {
             const useCameraSafeSpread = (this.styleProfile.settledSpreadAnimationMs ?? 0) > 0;
             const target = useNearestBoundsRecovery
                 ? (() => {
+                    if (options.strictProjectedBounds && layout && canvas) {
+                        const safeCenterX = clampNumber(
+                            layout.x,
+                            visualHalfWidth + projectedMargin,
+                            canvas.clientWidth - visualHalfWidth - projectedMargin,
+                        );
+                        const safeCenterY = clampNumber(
+                            layout.y,
+                            visualHalfHeight + projectedMargin,
+                            canvas.clientHeight - visualHalfHeight - projectedMargin,
+                        );
+                        const z = position.z > maxZ || position.z < minZ
+                            ? clampNumber(position.z, baseScale * 0.58, maxZ * 0.35)
+                            : position.z;
+                        const safeWorldPoint = this.getWorldPointAtScreenFraction(
+                            safeCenterX / Math.max(canvas.clientWidth, 1),
+                            safeCenterY / Math.max(canvas.clientHeight, 1),
+                            z,
+                        );
+                        return {
+                            x: safeWorldPoint.x,
+                            y: safeWorldPoint.y,
+                            z,
+                        };
+                    }
                     return {
                         x: clampNumber(position.x, centerOffsetX - safeHalfWidth, centerOffsetX + safeHalfWidth),
                         y: clampNumber(position.y, centerOffsetY - safeHalfHeight, centerOffsetY + safeHalfHeight),
@@ -1370,24 +1490,20 @@ export class DiceBoxThreeEngine {
 
     private applyPrimarySkinToDicePreset(): boolean {
         const primarySkin = this.dieSkins.find(Boolean);
-        const faceLabels = primarySkin?.faceLabels;
         if (!primarySkin || this.activePresetSkinId === primarySkin.id) return false;
 
         const preset = this.box.DiceFactory?.get('d6');
         if (!preset) return false;
 
-        if (faceLabels) {
-            preset.labels = [
-                '',
-                '',
-                faceLabels[1] ?? '',
-                faceLabels[2] ?? '',
-                faceLabels[3] ?? '',
-                faceLabels[4] ?? '',
-                faceLabels[5] ?? '',
-                faceLabels[6] ?? '',
-            ];
+        const presetValues = Array.isArray(preset.values) ? preset.values : [1, 2, 3, 4, 5, 6];
+        const labels = ['', '', '', '', '', '', '', ''];
+        for (const [valueIndex, faceValue] of presetValues.entries()) {
+            const label = primarySkin.faceLabels?.[Number(faceValue)];
+            labels[valueIndex + 2] = typeof label === 'string' ? label : '';
         }
+        // Full-face canvas skins must clear dice-box's default symbol labels to avoid
+        // drawing an extra layer, while explicit text-label skins may opt back in.
+        preset.labels = labels;
         if (this.box.DiceFactory?.materials_cache) {
             this.box.DiceFactory.materials_cache = {};
         }
@@ -1654,10 +1770,10 @@ export class DiceBoxThreeEngine {
         material.envMapIntensity = 0.35;
         material.bumpMap = null;
         material.opacity = 1;
-        material.transparent = true;
+        material.transparent = false;
         material.alphaTest = 0;
-        material.depthTest = false;
-        material.depthWrite = false;
+        material.depthTest = true;
+        material.depthWrite = true;
         material.needsUpdate = true;
     }
 

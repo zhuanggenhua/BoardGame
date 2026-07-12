@@ -395,12 +395,16 @@ describe('Qidahen compatibility source guards', () => {
 
         expect(board).toContain('data-testid="qidahen-bottom-dock"');
         expect(board).toContain('className="pointer-events-none absolute inset-x-0 bottom-0 z-[80]"');
-        expect(board).toContain('const dockBottomInset = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET : BOTTOM_DOCK_INSET;');
+        expect(board).toContain('mobileBottomInset: BOTTOM_DOCK_INSET,');
+        expect(board).toContain('mobileBottomInset: nextLandscapeMobileViewport && scale > 0');
+        expect(board).toContain("'--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,");
+        expect(board).toContain("const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';");
         expect(board).toContain('height: BOTTOM_DOCK_HEIGHT,');
         expect(board).toContain('bottom: dockBottomInset,');
         expect(board).toContain('data-testid="qidahen-hand-zone"');
         expect(board).toContain('data-ui-role="qidahen-hand-dock"');
-        expect(board).toContain("maxWidth: 'calc(100vw - 320px)'");
+        expect(board).toContain('const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : \'calc(100vw - 320px)\';');
+        expect(board).toContain('maxWidth: handDockMaxWidth,');
     });
 
     it('训练写链应由 troopTraining owner 承接，且训练 owner 不应继续内嵌 caller 专属 note 文案', () => {

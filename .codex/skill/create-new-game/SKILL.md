@@ -1,6 +1,6 @@
 ---
 name: create-new-game
-description: "为本项目创建新游戏或先做新游戏资源/data intake。当用户要求新增游戏，或只给图片/位置就希望先开工时使用。基于 dicethrone/summonerwars/smashup 的真实模式，分阶段完成，并带启动询问、素材 intake 与验收门禁。"
+description: "BoardGame 新游戏创建或资源/data intake 流程。用于新增游戏、只给图片/位置先开工；按现有游戏模式分阶段推进并验收。"
 ---
 
 # 创建新游戏（分阶段工作流）

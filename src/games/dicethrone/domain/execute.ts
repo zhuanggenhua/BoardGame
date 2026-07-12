@@ -157,7 +157,7 @@ const buildSwappedSeatingOrder = (
  * 设计原则（规则 §4.3/§4.4）：
  * - 进攻技能默认可防御（进入防御阶段）
  * - 标记 'unblockable' 的技能/变体不可防御
- * - 终极技能（'ultimate' tag）不可防御（规则 §4.4：不可阻挡）
+ * - 终极技能（'ultimate' tag）产生 Ultimate Damage，因此不可防御且不可避免
  * - 没有任何伤害效果的技能不进入防御阶段（无需防御）
  */
 const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId: string): boolean => {
@@ -170,7 +170,7 @@ const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId
     const variantTags = match.variant?.tags ?? [];
     const abilityTags = match.ability.tags ?? [];
 
-    // 终极技能：不可阻挡（规则 §4.4）
+    // 终极技能会产生 Ultimate Damage：不可防御且不可避免
     if (abilityTags.includes('ultimate')) return false;
 
     // 不可防御标签：跳过防御阶段
@@ -542,7 +542,7 @@ export function execute(
                     : (getDefaultOpponentId(state, state.activePlayerId) ?? getNextPlayerId(state));
                 const isDefendable = isDefendableAttack(state, state.activePlayerId, abilityId);
                 
-                // 检查是否为终极技能
+                // 检查这次技能是否会产生 Ultimate Damage
                 const match = findPlayerAbility(state, state.activePlayerId, abilityId);
                 const isUltimate = match?.ability?.tags?.includes('ultimate') ?? false;
                 
@@ -681,6 +681,7 @@ export function execute(
             const { dieId } = command.payload as { dieId: number };
             const die = state.dice.find(d => d.id === dieId);
             const newValue = random.d(6);
+            const rollerId = getRollerId(state, phase);
             const duelAttackerDieActive = state.pendingAttack?.defenseAbilityId === 'duel'
                 && phase === 'defensiveRoll'
                 && dieId === 1
@@ -694,7 +695,7 @@ export function execute(
                         : die?.value ?? newValue,
                     newValue,
                     playerId: command.playerId,
-                    ownerId: duelAttackerDieActive ? state.pendingAttack?.attackerId : die?.ownerId,
+                    ownerId: duelAttackerDieActive ? state.pendingAttack?.attackerId : die?.ownerId ?? rollerId,
                 },
                 sourceCommandType: command.type,
                 timestamp,

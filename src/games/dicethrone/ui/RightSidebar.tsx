@@ -219,7 +219,6 @@ export const RightSidebar = ({
                         interaction={isDiceMultistep ? interaction : undefined}
                         multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
                         isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
-                        rootPlayerId={rootPlayerId}
                     />
                 </div>
                 )}

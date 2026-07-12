@@ -120,7 +120,8 @@ function isKnownClientAudioCodecNoise(payload: ClientAutoReportPayload): boolean
         return false;
     }
     return normalizedMessage.includes('no codec support for selected audio sources')
-        || normalizedMessage.includes('decoding audio data failed');
+        || normalizedMessage.includes('decoding audio data failed')
+        || /^failed loading audio file with status: \d+\.?$/.test(normalizedMessage);
 }
 
 function isKnownClientAudioHowlerCodeNoise(payload: ClientAutoReportPayload): boolean {

@@ -2,31 +2,13 @@
   "manifestVersion": 1,
   "scope": "official",
   "id": "the-gang",
-  "basePrefix": "official/the-gang/",
+  "basePrefix": "official/i18n/zh-CN/the-gang/",
   "files": {
-    "board/compressed/slot-tile": {
-      "variants": {
-        "webp": {
-          "sha256": "af81d442f17d91cbfc160b312be3d01c8b70112f1d2b2f3d390210256b174545",
-          "bytes": 388,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "board/slot-tile": {
-      "variants": {
-        "jpg": {
-          "sha256": "6e8add77d3fb9c360abe12680a70d5aa226b8e217a4bc7e50d366dcd169da079",
-          "bytes": 25656,
-          "mime": "image/jpeg"
-        }
-      }
-    },
     "cards/ace-clubs": {
       "variants": {
         "png": {
-          "sha256": "5db0e5b4fb2b49b747f69ddacb42e1ea603d97058d63dd8cce31d0764b3edd44",
-          "bytes": 18799,
+          "sha256": "d76404f0d37bc4d5e10718766afa45d9ad02082bebea8ed513ffecf9d470ad3a",
+          "bytes": 25943,
           "mime": "image/png"
         }
       }
@@ -34,8 +16,8 @@
     "cards/ace-diamonds": {
       "variants": {
         "png": {
-          "sha256": "6a62bae965d33f32d0cfbc619bb484af3d8bb5ed0c34af2f0f65d4d7fa2a0ab2",
-          "bytes": 17706,
+          "sha256": "24ce5421325d1d323f48315b3fc454fdec207d13a89882713d4a952d0317e003",
+          "bytes": 23085,
           "mime": "image/png"
         }
       }
@@ -43,8 +25,8 @@
     "cards/ace-hearts": {
       "variants": {
         "png": {
-          "sha256": "2d7098cdc87b482fac6866853a3da594d2c16c247fa9ebb09eb4f515eaf702ec",
-          "bytes": 16771,
+          "sha256": "702c19d5dc122603ea1e99ecd307f800a2650a92fcfa4eac64bf3246d6738301",
+          "bytes": 22679,
           "mime": "image/png"
         }
       }
@@ -52,8 +34,8 @@
     "cards/ace-spades": {
       "variants": {
         "png": {
-          "sha256": "3d1ed38f663374da61d6ff851a3f4469c99b781104701798475eb275d65c8517",
-          "bytes": 19326,
+          "sha256": "f21c4ba0c7c98c32e32b96a76a40e0648e888ae7a5b61f7ca2c33d68ea29dab9",
+          "bytes": 24301,
           "mime": "image/png"
         }
       }
@@ -61,8 +43,8 @@
     "cards/card-back": {
       "variants": {
         "png": {
-          "sha256": "d1790daddaf5b4e23747462f785e9c96d22392e046e9c63b6564005f66d07649",
-          "bytes": 228947,
+          "sha256": "b659aeb0a174340b0ba55dbceaa79590cfa9e37b2dadbcd7d1c342f2a8a2fa57",
+          "bytes": 2267299,
           "mime": "image/png"
         }
       }
@@ -70,8 +52,8 @@
     "cards/compressed/ace-clubs": {
       "variants": {
         "webp": {
-          "sha256": "b32e3da93f753e023d378bd5b5ca123227b586c8c17323e64df849f794aa0f2a",
-          "bytes": 10808,
+          "sha256": "6bb267474d395c1fc2a214f0a2a05c0d54d6ed1071ca6b3e4bbc9c9072f736b6",
+          "bytes": 11374,
           "mime": "image/webp"
         }
       }
@@ -79,8 +61,8 @@
     "cards/compressed/ace-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "8b610461e212798a603c13ad649cbd52d3ef51ca846036ade25684ceec738866",
-          "bytes": 10660,
+          "sha256": "577a1cbba0055a25b78febbc116a4f5a61e6601304417fdbf6ecf32ec5c107c6",
+          "bytes": 10986,
           "mime": "image/webp"
         }
       }
@@ -88,8 +70,8 @@
     "cards/compressed/ace-hearts": {
       "variants": {
         "webp": {
-          "sha256": "dd528abc74e283f827aea489cc0e46ebaaefe346b5bd801a50b872c7bbc3023e",
-          "bytes": 10572,
+          "sha256": "3db2e8f7b189a7abb97bcc7c0fe793aa64c0a839c7ad7622c7b46ebbd626d730",
+          "bytes": 10650,
           "mime": "image/webp"
         }
       }
@@ -97,8 +79,8 @@
     "cards/compressed/ace-spades": {
       "variants": {
         "webp": {
-          "sha256": "3409e88a6dff80b48e389ed5eda01cc81073da74cc555529678a2dec0badfbe9",
-          "bytes": 8230,
+          "sha256": "3bcc6eef56893e737b19afff44cbf9cb0c1ffd208dce034b548f6535b9e8862c",
+          "bytes": 8676,
           "mime": "image/webp"
         }
       }
@@ -106,8 +88,8 @@
     "cards/compressed/card-back": {
       "variants": {
         "webp": {
-          "sha256": "c05dc921157d9a6f386ef84ecb2c1d6965c1afec88a4af31571fd7abf07a0e7a",
-          "bytes": 139874,
+          "sha256": "0bf74e8eb072e8e6bb29b15a294d4cc17c4b20117578ac7e89a6120165e187c9",
+          "bytes": 190434,
           "mime": "image/webp"
         }
       }
@@ -115,8 +97,8 @@
     "cards/compressed/eight-clubs": {
       "variants": {
         "webp": {
-          "sha256": "7e921ad3998ed1fb70c571004ed5ff94a11d32105bffec8da52779a46f8732f8",
-          "bytes": 16392,
+          "sha256": "bf6129243f17e82fd0a4db446cf9c11ea28bc430981ffb8021188c9617917f2d",
+          "bytes": 16718,
           "mime": "image/webp"
         }
       }
@@ -124,8 +106,8 @@
     "cards/compressed/eight-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "c361dc673045dfd567bfbb50873d3e7dcd4dc8dfd776dabba067420aa94b6c0d",
-          "bytes": 15782,
+          "sha256": "d594ce05dc5b985882b00f214169802a73b4cb2ca82864432a94c6260c2b5cd3",
+          "bytes": 16072,
           "mime": "image/webp"
         }
       }
@@ -133,8 +115,8 @@
     "cards/compressed/eight-hearts": {
       "variants": {
         "webp": {
-          "sha256": "2f97e4a9dbdc2873d0f1881f982fdbdd8bf5f44148de0e75d2d656e99b23ea44",
-          "bytes": 15610,
+          "sha256": "e4568393108f49009f9b977938e2552215b3941f23457ec70eef60bac885cd0f",
+          "bytes": 16130,
           "mime": "image/webp"
         }
       }
@@ -142,8 +124,8 @@
     "cards/compressed/eight-spades": {
       "variants": {
         "webp": {
-          "sha256": "d15ecd3833a1e6fcf724c1c4473dc4d9851c16332c25dfee935a21c9f4ced43b",
-          "bytes": 12236,
+          "sha256": "141d918bcaa909db0a8434350f038a5bb7e215928356d630748dcdc7a23749e7",
+          "bytes": 13138,
           "mime": "image/webp"
         }
       }
@@ -151,8 +133,8 @@
     "cards/compressed/five-clubs": {
       "variants": {
         "webp": {
-          "sha256": "97c0fa444093d8d64703c79fb8e68089ec12d00bd3cf8f4cb3e1d61fe3534ef3",
-          "bytes": 13088,
+          "sha256": "f5b90a54c58d76f6b1097d2801d5cb99d6fa9bc03a7653125dab29fdcd608a88",
+          "bytes": 13496,
           "mime": "image/webp"
         }
       }
@@ -160,8 +142,8 @@
     "cards/compressed/five-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "3cfe80967dd3b1aa35f2824bbd89ce9435e5b6096b11c70eeda210ec84c32bb1",
-          "bytes": 12424,
+          "sha256": "34c37fb20de09414f90b612b37eec12d437d8c33011688a1cb1c34d9f940e944",
+          "bytes": 13098,
           "mime": "image/webp"
         }
       }
@@ -169,8 +151,8 @@
     "cards/compressed/five-hearts": {
       "variants": {
         "webp": {
-          "sha256": "484cae3bc3f62c59aae44871841255fd28920478b42ec4dc01b3898c81cb29e2",
-          "bytes": 12602,
+          "sha256": "b3f3dfb6f5fe82bc889f7a44c66ab891e6f86613109d6c58f2fe31d17daefbfd",
+          "bytes": 13616,
           "mime": "image/webp"
         }
       }
@@ -178,8 +160,8 @@
     "cards/compressed/five-spades": {
       "variants": {
         "webp": {
-          "sha256": "51e636c56d1713341653ce07d0a5e60b3678597a4f7e139d638aa311d6b40c4d",
-          "bytes": 9844,
+          "sha256": "06c2640807704d9d39d4b7fb92e7172abf5cc3cad87e59dfaeeef05d8a7d3b15",
+          "bytes": 10486,
           "mime": "image/webp"
         }
       }
@@ -187,8 +169,8 @@
     "cards/compressed/four-clubs": {
       "variants": {
         "webp": {
-          "sha256": "02e6bfb879ccbba447773898dbdaa1dfbc511ca7797a9075c9b3c70be24a0e06",
-          "bytes": 11436,
+          "sha256": "214893a0bf225337206ed0338535fb78de897f82d94085776178d9a4c40cb339",
+          "bytes": 11574,
           "mime": "image/webp"
         }
       }
@@ -196,8 +178,8 @@
     "cards/compressed/four-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "8493bb10922a50bc09681c3ee87847a3f910b1a9b43cfe023afe64c91f8b6f93",
-          "bytes": 10642,
+          "sha256": "1768034bbb3fad3ce507f33f49396112c73fd78825f9df096221491d2dc91bbe",
+          "bytes": 11302,
           "mime": "image/webp"
         }
       }
@@ -205,8 +187,8 @@
     "cards/compressed/four-hearts": {
       "variants": {
         "webp": {
-          "sha256": "a04669f37f92956054a731b6745565f1f043d637251611ef2057eae6c5a98682",
-          "bytes": 10796,
+          "sha256": "f97f71c66c47d6f32167affb64c2e1dc1bda81d8c1bec204b0c62976da671018",
+          "bytes": 11648,
           "mime": "image/webp"
         }
       }
@@ -214,8 +196,8 @@
     "cards/compressed/four-spades": {
       "variants": {
         "webp": {
-          "sha256": "745cc3cc6afb6a4bbd4b9648b2d436d3427239e2935486c3de50211d2f38d460",
-          "bytes": 10400,
+          "sha256": "3e0ec895f4b81acba0749a51adbb9f6438cd0b4ab488732b556115db7aba0962",
+          "bytes": 11314,
           "mime": "image/webp"
         }
       }
@@ -223,8 +205,8 @@
     "cards/compressed/jack-clubs": {
       "variants": {
         "webp": {
-          "sha256": "d6d2abcad099d077432e2185b7421bccfbf126ea47ff467485d9e1a5c3c47e69",
-          "bytes": 41940,
+          "sha256": "c35e2ec0dcc8bb8fde0afc81cae56329942ec0cb1f3848511e0bd8b68bea382f",
+          "bytes": 45158,
           "mime": "image/webp"
         }
       }
@@ -232,8 +214,8 @@
     "cards/compressed/jack-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "2b6e0ee73bee828f8a54a6df87892e59757765bddd10ae0cf891c7efe5ffbeb8",
-          "bytes": 40518,
+          "sha256": "48538b9205e8ea2e65dccfd801ec86eea3a7d862d78783e5c975508a740215d3",
+          "bytes": 43006,
           "mime": "image/webp"
         }
       }
@@ -241,8 +223,8 @@
     "cards/compressed/jack-hearts": {
       "variants": {
         "webp": {
-          "sha256": "45220ae526df0f58b51d61386e951bbc09ecb4e2a84a1d412dc9c6ffa58ff7df",
-          "bytes": 43036,
+          "sha256": "a355f6ca06920388e990688de36631294de1a01485a801e24faa808737fe2c87",
+          "bytes": 45746,
           "mime": "image/webp"
         }
       }
@@ -250,8 +232,8 @@
     "cards/compressed/jack-spades": {
       "variants": {
         "webp": {
-          "sha256": "3b0e57177d0015ebd5924d812a362a90abf3b0389f28623ed3798bf33a08d223",
-          "bytes": 32202,
+          "sha256": "e4f5446a34f879bb19711cf5d7aa9aea9b46b0b846c479ecd0452a5561997d6b",
+          "bytes": 34884,
           "mime": "image/webp"
         }
       }
@@ -259,8 +241,8 @@
     "cards/compressed/king-clubs": {
       "variants": {
         "webp": {
-          "sha256": "b02d36791996d2f1b68aca7ddcecf7a575b0cc80050e3eeaa84edbdcd5c98082",
-          "bytes": 45190,
+          "sha256": "71d08bdd5d20a11903b07f03014e501e2555b0d21a3d3637da55d961e84ffe45",
+          "bytes": 48138,
           "mime": "image/webp"
         }
       }
@@ -268,8 +250,8 @@
     "cards/compressed/king-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "18d6434d93db6c8ac7da3fae3108ba6cc1d35234010e02f125348eb7182023ac",
-          "bytes": 42874,
+          "sha256": "3547025fc991b6c017dc9570dc18efab99fa37321358b35cb16c5abcb38519b9",
+          "bytes": 45598,
           "mime": "image/webp"
         }
       }
@@ -277,8 +259,8 @@
     "cards/compressed/king-hearts": {
       "variants": {
         "webp": {
-          "sha256": "9c2b9aac0d6fc7b1aa8219cf366b8aefeeebf36586b8fd99e64993c0baa2bc01",
-          "bytes": 42992,
+          "sha256": "622e785be121a8b5f2ccaa32eb0376c144fd944829366eb5b1ea0e36f8954c8a",
+          "bytes": 47216,
           "mime": "image/webp"
         }
       }
@@ -286,8 +268,8 @@
     "cards/compressed/king-spades": {
       "variants": {
         "webp": {
-          "sha256": "81fce1ddbbb25cff3161f5df1e597bb275c5c24d9b7244ad69226eed91b28ff1",
-          "bytes": 42306,
+          "sha256": "d0696e7771ddd62d2ffdf384bd3ec5f69bbe8ce2a138a068e6eea4b22bdba493",
+          "bytes": 45596,
           "mime": "image/webp"
         }
       }
@@ -295,8 +277,8 @@
     "cards/compressed/nine-clubs": {
       "variants": {
         "webp": {
-          "sha256": "0d181c94b1178ed273cd3f8ad2303f0a33b66e93e6393a4b92666dbfb30a4d14",
-          "bytes": 17728,
+          "sha256": "be3b484b4b82c0839d03d7a498f3351457146e9c8ece056a6e7d613b02370661",
+          "bytes": 18732,
           "mime": "image/webp"
         }
       }
@@ -304,8 +286,8 @@
     "cards/compressed/nine-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "376fa8e37ff32ee040c602e90690fb5f6192f74ede7e428a1ba194161ea6574e",
-          "bytes": 16870,
+          "sha256": "6f6b2639a00e24b83deddce4f20e1014d71ac1db88aaffe54593432d6a25d629",
+          "bytes": 17260,
           "mime": "image/webp"
         }
       }
@@ -313,8 +295,8 @@
     "cards/compressed/nine-hearts": {
       "variants": {
         "webp": {
-          "sha256": "04b824b80b323f6131c8d4c0f36bd33b35e6192eda84cf11ad6b721ad5622094",
-          "bytes": 16312,
+          "sha256": "6e94ca9461a0e1e4e30c1c3bf4ea5110cbb6f29c50400d72f13f2d1bc3edaadd",
+          "bytes": 17562,
           "mime": "image/webp"
         }
       }
@@ -322,8 +304,8 @@
     "cards/compressed/nine-spades": {
       "variants": {
         "webp": {
-          "sha256": "667410c7edb7f856080254432d07853cda7cf01ffa276119826fcce109917ca7",
-          "bytes": 13116,
+          "sha256": "b1e75608ef609f34c5e1de8a953f0f5fb3204710475bcd664b63829b8e8500e5",
+          "bytes": 14272,
           "mime": "image/webp"
         }
       }
@@ -331,8 +313,8 @@
     "cards/compressed/queen-clubs": {
       "variants": {
         "webp": {
-          "sha256": "3bee70c1d6dfa1ee53aed95e637ba92d03c54197ccac2300042c7aa3fde79b3d",
-          "bytes": 49100,
+          "sha256": "50c67b13f2f37d59d29c71ada04d44c79306cdc9d49d3cad8f485413ea75e72e",
+          "bytes": 52244,
           "mime": "image/webp"
         }
       }
@@ -340,8 +322,8 @@
     "cards/compressed/queen-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "559f6b1b512cff515abfc872dd96328e72cf42acc9c0f4427238ddb9ed6bd2e6",
-          "bytes": 43952,
+          "sha256": "160f4ae546d8fd326683fccdbefb93589ec8109429de3629cca2003eae24d81c",
+          "bytes": 47092,
           "mime": "image/webp"
         }
       }
@@ -349,8 +331,8 @@
     "cards/compressed/queen-hearts": {
       "variants": {
         "webp": {
-          "sha256": "d17522fd55e9ee1850b03748612ea458305c9eed30ed91d6b616ea3b3a075e38",
-          "bytes": 49634,
+          "sha256": "2efbf0aed75510352182bdb72e825f10fd23ad090108d179d87b512dd5dd84a1",
+          "bytes": 52732,
           "mime": "image/webp"
         }
       }
@@ -358,8 +340,8 @@
     "cards/compressed/queen-spades": {
       "variants": {
         "webp": {
-          "sha256": "9251e549acde2f9c3c92e8f26751bb45be9ac26fbc3e4c5e3dcf8b174cf127cc",
-          "bytes": 43866,
+          "sha256": "34f4b833efa6552e992c8412b276391883e4301ec7572cb88ad92044606b90d4",
+          "bytes": 46326,
           "mime": "image/webp"
         }
       }
@@ -367,8 +349,8 @@
     "cards/compressed/seven-clubs": {
       "variants": {
         "webp": {
-          "sha256": "c1989fcf5a5957d8f3ff04ec009abf8c10c55364b02145ca9ea8c29dbca0d710",
-          "bytes": 14316,
+          "sha256": "35cff2fb7c658c70bb46e12e7feb429556968003cc919cf910adb87900b45e35",
+          "bytes": 14870,
           "mime": "image/webp"
         }
       }
@@ -376,8 +358,8 @@
     "cards/compressed/seven-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "b9bd3d91b18b4e1f01979e52dd218de9288d2356e387546db96b05ccd972f299",
-          "bytes": 13728,
+          "sha256": "512b833c9ae5a73d56322bbcdb42d22d92b8c954da0bd8925a1ca6a7ae171f82",
+          "bytes": 15106,
           "mime": "image/webp"
         }
       }
@@ -385,8 +367,8 @@
     "cards/compressed/seven-hearts": {
       "variants": {
         "webp": {
-          "sha256": "a0222e96a0fffafe92fe497412c9f71f2112aa6e7b23ef0d56abc85f256b1f45",
-          "bytes": 14036,
+          "sha256": "2071d642f8b68398b8030cdd098dfeaa907bce1285321ce63a3ee63ccff2230e",
+          "bytes": 14676,
           "mime": "image/webp"
         }
       }
@@ -394,8 +376,8 @@
     "cards/compressed/seven-spades": {
       "variants": {
         "webp": {
-          "sha256": "5289b5c5b0c4e78ad8633f0deaba7d88170e766715978746c24a67ff38f33a62",
-          "bytes": 11112,
+          "sha256": "e072a8c996d9cb1f5943bfd97fe937828535028b74adb9d507c96c7b474ad83c",
+          "bytes": 11710,
           "mime": "image/webp"
         }
       }
@@ -403,8 +385,8 @@
     "cards/compressed/six-clubs": {
       "variants": {
         "webp": {
-          "sha256": "378bff9a6686ae6642bc1d5a6573f3eec2b0defe9da47ae1dbb8d43ba92edef3",
-          "bytes": 13668,
+          "sha256": "705cb7051c6988f72d9b5381f3e7103648a61e4c2437937dd400e1ea44c3da4f",
+          "bytes": 15246,
           "mime": "image/webp"
         }
       }
@@ -412,8 +394,8 @@
     "cards/compressed/six-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "ef348564f312bf73c0e8bfa5fc95d2239b3678d2459c7e4de72b624c51973871",
-          "bytes": 13624,
+          "sha256": "98f597651539d5fa69e8e02dfe0369a85fd0f76757fb47271d33f8f8636c0ca8",
+          "bytes": 13954,
           "mime": "image/webp"
         }
       }
@@ -421,8 +403,8 @@
     "cards/compressed/six-hearts": {
       "variants": {
         "webp": {
-          "sha256": "d0b5f2d33f05f1b6c9c6f1151f8689ccc9e10f68bd3ab2555afb06cce3e9936f",
-          "bytes": 14124,
+          "sha256": "50c2d6c1fa8d166cf57f6fd6aa2d42f8ae68be8ac65c3bc3cc0e754aac9a7698",
+          "bytes": 14702,
           "mime": "image/webp"
         }
       }
@@ -430,8 +412,8 @@
     "cards/compressed/six-spades": {
       "variants": {
         "webp": {
-          "sha256": "09a5c51e3fa7741492f26cd2ff780b1d25acd0a9c94b897835e8f6e1999ad80b",
-          "bytes": 12456,
+          "sha256": "086cddc04dee629807f352104570b029e8d96d237b4181a3fa74d8062a479652",
+          "bytes": 13402,
           "mime": "image/webp"
         }
       }
@@ -439,8 +421,8 @@
     "cards/compressed/ten-clubs": {
       "variants": {
         "webp": {
-          "sha256": "563c90a517bf2dbc74ed77a0dd70d27f25159675232fb45a17192419c67299ea",
-          "bytes": 17844,
+          "sha256": "ed72949839e4b04f0740ac6b94359368b7c1ec9125a50e6356ff9ab076d18436",
+          "bytes": 20098,
           "mime": "image/webp"
         }
       }
@@ -448,8 +430,8 @@
     "cards/compressed/ten-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "077847547a069ae53ee7fd010d70c005cb1f53c43726c92115c7fe77afded2bd",
-          "bytes": 17650,
+          "sha256": "741b8e1ab6542988ef1e7504a22eef8f219a95f36cdc5e547455925ec5579423",
+          "bytes": 18448,
           "mime": "image/webp"
         }
       }
@@ -457,8 +439,8 @@
     "cards/compressed/ten-hearts": {
       "variants": {
         "webp": {
-          "sha256": "eeda18e451e0d1e6f1bd58ee391dbd91a7293e0e710d6ab84f762c9e012b7d40",
-          "bytes": 17112,
+          "sha256": "9fc4c770a8b51b20749da5565703f2d76c436d210852ab89758273634bbe0cc4",
+          "bytes": 18338,
           "mime": "image/webp"
         }
       }
@@ -466,8 +448,8 @@
     "cards/compressed/ten-spades": {
       "variants": {
         "webp": {
-          "sha256": "166f5f087a84e6d58b913724dac66e1db301fb70464af34a70862953a98aa413",
-          "bytes": 13724,
+          "sha256": "d0f9dff2991fc84842599add60c1e676dcc0cfc4189d723e6e11ce71aa09aa6f",
+          "bytes": 14898,
           "mime": "image/webp"
         }
       }
@@ -475,8 +457,8 @@
     "cards/compressed/three-clubs": {
       "variants": {
         "webp": {
-          "sha256": "3d928c1edf41122e0ca78755660a3280d9aab47192985fad695511c2db4964a6",
-          "bytes": 10780,
+          "sha256": "ea6180dafcbbcf3c5b3fada04bac6380c47c5aa9b2e5d559466518db80c4eaf0",
+          "bytes": 10924,
           "mime": "image/webp"
         }
       }
@@ -484,8 +466,8 @@
     "cards/compressed/three-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "7bae8cf9aa421d4fda8838eb37c2a2ae991e314b4143d7133e5ebf7fc0bf97eb",
-          "bytes": 10574,
+          "sha256": "abb8707e9e3a62f0eff865c3e35413afa87f9601a1ce94627f8fa4c37c7b1646",
+          "bytes": 11010,
           "mime": "image/webp"
         }
       }
@@ -493,8 +475,8 @@
     "cards/compressed/three-hearts": {
       "variants": {
         "webp": {
-          "sha256": "06bbe71b122d5a6a01d6012dab3a24c6e491c25152cc72d9f21bcbbe1266ac60",
-          "bytes": 10590,
+          "sha256": "be73f66557b323b705e399f2ea3ea038051fb54f1c9a5fb9e48d19f967b6f217",
+          "bytes": 11062,
           "mime": "image/webp"
         }
       }
@@ -502,8 +484,8 @@
     "cards/compressed/three-spades": {
       "variants": {
         "webp": {
-          "sha256": "d0b164a345ee276661ad36556ef4ede48049c2d5af64902d2dd196febcc870d2",
-          "bytes": 10170,
+          "sha256": "c477979c131c01e0c63445750d52aa9bf696c4e1a9d857fc89a6e956dbe0a4bd",
+          "bytes": 11112,
           "mime": "image/webp"
         }
       }
@@ -511,8 +493,8 @@
     "cards/compressed/two-clubs": {
       "variants": {
         "webp": {
-          "sha256": "337b80a045fe696399c1e6dcd787b155273f3b52d1980e7530a6bc9a98156142",
-          "bytes": 9578,
+          "sha256": "0fd30bf65ed9e7a2db3d603005355d1ec830e06e982dc460b703855eaabe7528",
+          "bytes": 9962,
           "mime": "image/webp"
         }
       }
@@ -520,8 +502,8 @@
     "cards/compressed/two-diamonds": {
       "variants": {
         "webp": {
-          "sha256": "146fa76541d8c5f6dd599d219229fcefd178012e1cd6bef813a6ab2b9e87ec5e",
-          "bytes": 9214,
+          "sha256": "8df5af3f2984f008f0b00d2bfc2c399d313dcd1566e901317bf1d0261cec4028",
+          "bytes": 9852,
           "mime": "image/webp"
         }
       }
@@ -529,8 +511,8 @@
     "cards/compressed/two-hearts": {
       "variants": {
         "webp": {
-          "sha256": "bdd0b459cb23e2da74769d99d0a469c8ae8ae94d99ae5909a5f52247908e12de",
-          "bytes": 9106,
+          "sha256": "18ffee32cdbfff7d9190b2eb4f36167d48ccbd80069e935a1d623589a0419348",
+          "bytes": 9912,
           "mime": "image/webp"
         }
       }
@@ -538,8 +520,8 @@
     "cards/compressed/two-spades": {
       "variants": {
         "webp": {
-          "sha256": "3b3b0ab09049886812efdd1e4b6f9f3b54b4d38f5129770ec84abd4ce5892f51",
-          "bytes": 7464,
+          "sha256": "fd2d3a2b46eb480fb15940e3a5f1092c68adf8c957a8fd02ca07c8b81a6256c1",
+          "bytes": 8166,
           "mime": "image/webp"
         }
       }
@@ -547,8 +529,8 @@
     "cards/eight-clubs": {
       "variants": {
         "png": {
-          "sha256": "88d97d385bd8673701f83a0691a141c9b27dd5914cc1d71147cebaa0d01e437d",
-          "bytes": 23986,
+          "sha256": "57904cda5262637677dc45967945db1bd8e5c1b98e958e58baf49f742fb2cd35",
+          "bytes": 30344,
           "mime": "image/png"
         }
       }
@@ -556,8 +538,8 @@
     "cards/eight-diamonds": {
       "variants": {
         "png": {
-          "sha256": "8a3256d05b755ac9316bb08a82b3969ba53178ceba57d084c29b74cd993640aa",
-          "bytes": 32624,
+          "sha256": "ff2c33456fb9fb90d41a1782efc33973f1457ac76171a4059e2f78a56997a9e3",
+          "bytes": 36932,
           "mime": "image/png"
         }
       }
@@ -565,8 +547,8 @@
     "cards/eight-hearts": {
       "variants": {
         "png": {
-          "sha256": "d2ba95c8b067995f30f44b73306f2ea98c9d67d1a30f74343742f0e75cb0342d",
-          "bytes": 23626,
+          "sha256": "fecab182dc03dd793126022b3be6972b6a1d17b04f865428853a993fb3ea5ec0",
+          "bytes": 29203,
           "mime": "image/png"
         }
       }
@@ -574,8 +556,8 @@
     "cards/eight-spades": {
       "variants": {
         "png": {
-          "sha256": "7ccb91141ae8033c80edfaf69fbf5d48bbd74736d902362a90888c496d56884e",
-          "bytes": 29218,
+          "sha256": "1e7b91b3920d7878b197b7c9b0cb0d3888cafb6b276fbb0c391c5729ee4daf3d",
+          "bytes": 31949,
           "mime": "image/png"
         }
       }
@@ -583,8 +565,8 @@
     "cards/five-clubs": {
       "variants": {
         "png": {
-          "sha256": "700014540d352c5912dfdcd2ef56d8f2d65881087a0ecad77570967d41a66d7e",
-          "bytes": 24692,
+          "sha256": "26e128e7f8fa413862a71731311bb55c019f14a3ce07e6e0bb3d323c7caa09b6",
+          "bytes": 30475,
           "mime": "image/png"
         }
       }
@@ -592,8 +574,8 @@
     "cards/five-diamonds": {
       "variants": {
         "png": {
-          "sha256": "9878c52224ecbea522cba264de4339b4ab0d6ea42485d917c181c4d1c0ad6dba",
-          "bytes": 19679,
+          "sha256": "bf06ef5bbaac01d0a8ee3f3f75741ca536ad4d73e860b0f38ef527d85ca715fa",
+          "bytes": 23455,
           "mime": "image/png"
         }
       }
@@ -601,8 +583,8 @@
     "cards/five-hearts": {
       "variants": {
         "png": {
-          "sha256": "d0240704457fdf2ad5d14f8e7ef82872a7cb26f9df2b76cc1a7d86faeaf7d8d8",
-          "bytes": 19443,
+          "sha256": "987baf0147a888b1afcdb5a043880878731e4d74b831200b6a0b32f794f5f5e7",
+          "bytes": 24056,
           "mime": "image/png"
         }
       }
@@ -610,8 +592,8 @@
     "cards/five-spades": {
       "variants": {
         "png": {
-          "sha256": "7c8c2d1e06d5df7f707ad0fd428f30f18dbf6d881ba21298f078830feb2dc654",
-          "bytes": 22687,
+          "sha256": "43036a7cb813dc5c7db29e86ad4d77b48164f3baf76e070158a94d3c333d8cc2",
+          "bytes": 25242,
           "mime": "image/png"
         }
       }
@@ -619,8 +601,8 @@
     "cards/four-clubs": {
       "variants": {
         "png": {
-          "sha256": "e4d0834b6e763330dd02db490b77042fa3d0b448409216c44d8104fdabf8bc8d",
-          "bytes": 22138,
+          "sha256": "0a25848e99f05edeeefa175f0dab50beec9cb3af059e47b3b95f97e0deca75ed",
+          "bytes": 27425,
           "mime": "image/png"
         }
       }
@@ -628,8 +610,8 @@
     "cards/four-diamonds": {
       "variants": {
         "png": {
-          "sha256": "66e3f4a1f2702a653a78c984804e548465e79a819cc5364d3f25ccf3c58fa27b",
-          "bytes": 17832,
+          "sha256": "fd2b1615b1ae7f37e0227efafb013a1000e222025aabad8ec50fbe3cfe487282",
+          "bytes": 21288,
           "mime": "image/png"
         }
       }
@@ -637,8 +619,8 @@
     "cards/four-hearts": {
       "variants": {
         "png": {
-          "sha256": "b6f42eedf1209eae0582a93c25b166b38aa6673a218ac4c95fe2ebb06fd2b7dd",
-          "bytes": 17326,
+          "sha256": "7d8f3b9aa51cc4da4567a3099efffcd76541d3ac43fa481be238daed5832f27d",
+          "bytes": 20986,
           "mime": "image/png"
         }
       }
@@ -646,8 +628,8 @@
     "cards/four-spades": {
       "variants": {
         "png": {
-          "sha256": "b92691480c64d702c4b47b1e2b06a4e4374d7a7322439041fffa037128802e50",
-          "bytes": 99140,
+          "sha256": "a2dff8ce53d169f8909908db065d1c5336902dfa21029c6e5ce3074705dc1c96",
+          "bytes": 134338,
           "mime": "image/png"
         }
       }
@@ -655,8 +637,8 @@
     "cards/jack-clubs": {
       "variants": {
         "png": {
-          "sha256": "df47e4c3ec22734364df4d8b1ee363ff4826584d508f5b8c77ae4742edbe61ae",
-          "bytes": 64586,
+          "sha256": "aa8e48e7cc5224be3162142ce76f2e064f2c0536c0ca51cb5500f7be6a249c49",
+          "bytes": 90437,
           "mime": "image/png"
         }
       }
@@ -664,8 +646,8 @@
     "cards/jack-diamonds": {
       "variants": {
         "png": {
-          "sha256": "547d1dcea2d4c8b608167353efd5d4580f71ed79f2f2d1099ec1133b0b410fc6",
-          "bytes": 65953,
+          "sha256": "cdf08c055c47d14b98833bb15449b4aeab77f391cb01e0048699451c3e61daea",
+          "bytes": 92761,
           "mime": "image/png"
         }
       }
@@ -673,8 +655,8 @@
     "cards/jack-hearts": {
       "variants": {
         "png": {
-          "sha256": "7508a5cda11de019e7e4037d364f26992ad27a98c53288f5f86c3391606cc810",
-          "bytes": 70185,
+          "sha256": "5c715d31e3c290c5dea8d952f4f779fa18a9c16fbdc24abf80719d51ba461e1c",
+          "bytes": 93796,
           "mime": "image/png"
         }
       }
@@ -682,8 +664,8 @@
     "cards/jack-spades": {
       "variants": {
         "png": {
-          "sha256": "79f166d9f95617f6f9beff0043d5e06065d1ac78aa341a446031eeadcfde09fe",
-          "bytes": 66026,
+          "sha256": "86ead5237b288d2037acedbfb3f7cc68250fff37ed94845ac1384cc5fc1c9b5f",
+          "bytes": 89325,
           "mime": "image/png"
         }
       }
@@ -691,8 +673,8 @@
     "cards/king-clubs": {
       "variants": {
         "png": {
-          "sha256": "df77442ea4199d823b0d6a69741860cc669868be059d32e534c4d7f93876fb62",
-          "bytes": 72219,
+          "sha256": "d3cb46f5e23f98cd4ff7ae81d8f28c7d497034cb82404de52fe768b713dbea01",
+          "bytes": 93383,
           "mime": "image/png"
         }
       }
@@ -700,8 +682,8 @@
     "cards/king-diamonds": {
       "variants": {
         "png": {
-          "sha256": "8386ed34c7f1335b11042a275950f1aaa8ee681e6b195eb43881b19e36d6c10e",
-          "bytes": 71623,
+          "sha256": "fb8f0d0d90e083dc099904d7b019cab4be7e56f7d2e7d24fc07b07d31cc5d2e3",
+          "bytes": 98640,
           "mime": "image/png"
         }
       }
@@ -709,8 +691,8 @@
     "cards/king-hearts": {
       "variants": {
         "png": {
-          "sha256": "6789fad10f83a16699a0c5157766ec0352f97a76a004accf1e58cc6eff083c4b",
-          "bytes": 67961,
+          "sha256": "e0e0ab8d5870ef8e4c38058e07ebb5fcbec2c37c4bd343f8c40fda9df77e1efb",
+          "bytes": 92205,
           "mime": "image/png"
         }
       }
@@ -718,8 +700,8 @@
     "cards/king-spades": {
       "variants": {
         "png": {
-          "sha256": "315e7f2dac2419b0d129ee2d6c78572e39af6cabd55f771ee39453dceedeeff9",
-          "bytes": 80344,
+          "sha256": "358eea8224781eb852c5bf83aef8e75b0840c88b83866d300a8b3daf9bbfb2de",
+          "bytes": 106235,
           "mime": "image/png"
         }
       }
@@ -727,8 +709,8 @@
     "cards/nine-clubs": {
       "variants": {
         "png": {
-          "sha256": "b940eec01909c58fc3220b0222648d6969304535f3032f4e4f51817fd920c4a9",
-          "bytes": 38967,
+          "sha256": "ef54ddc93fdb673f239245df96d06b21816c0d9a0033b63655515c290c7ad7c1",
+          "bytes": 46611,
           "mime": "image/png"
         }
       }
@@ -736,8 +718,8 @@
     "cards/nine-diamonds": {
       "variants": {
         "png": {
-          "sha256": "e3fd567b5eacf6e7c1c190eda50c28a77746490708e1ecc84b81041f77cbe0f2",
-          "bytes": 26421,
+          "sha256": "fb7256e196153d9b7342dbca0ee9061151ca61792ffcfddc021963dadc90293f",
+          "bytes": 31376,
           "mime": "image/png"
         }
       }
@@ -745,8 +727,8 @@
     "cards/nine-hearts": {
       "variants": {
         "png": {
-          "sha256": "20ea739d9d09345e43a327bcd1ea33d7536922eb62d0f9ee3f580dcf49bed06f",
-          "bytes": 25958,
+          "sha256": "39e54b4acc8adbdfbc1041732688d36a89462d1a133dca0e328f81389bb78bb5",
+          "bytes": 30881,
           "mime": "image/png"
         }
       }
@@ -754,8 +736,8 @@
     "cards/nine-spades": {
       "variants": {
         "png": {
-          "sha256": "cb6bf41e5a9e4087557f51374ce8f08c59c1bebd15e74282ea290e9ccbebeb96",
-          "bytes": 30726,
+          "sha256": "f2206c67ce42fa7bdce2fd000f216cdce14a65dacb7ae4d3573c8badc09402ef",
+          "bytes": 33465,
           "mime": "image/png"
         }
       }
@@ -763,8 +745,8 @@
     "cards/queen-clubs": {
       "variants": {
         "png": {
-          "sha256": "1011e127704efc69d65349f567660d2b4a1e05fd45b3bd7144bc4b7c95a036f3",
-          "bytes": 147302,
+          "sha256": "833b372dfd4c263ab9581ec105e35080df6064c47d13db8f49875a4f96bb81e7",
+          "bytes": 198548,
           "mime": "image/png"
         }
       }
@@ -772,8 +754,8 @@
     "cards/queen-diamonds": {
       "variants": {
         "png": {
-          "sha256": "b9493b5447b102885997a95e33606942f300c06be324e12e0e08150559318b9a",
-          "bytes": 71578,
+          "sha256": "339d259afd818e0cb00f1c70b1c22ae09b7473e7b71f88c3924ff60590e00402",
+          "bytes": 96960,
           "mime": "image/png"
         }
       }
@@ -781,8 +763,8 @@
     "cards/queen-hearts": {
       "variants": {
         "png": {
-          "sha256": "7db681c2e6d130dfd8da3916d95a3705982e928775182f6d9168126783d5752d",
-          "bytes": 75653,
+          "sha256": "adf127c72c1fedfa0a4a6aeea95f2d1b9e5d157ce7c21721a428cd6198469e60",
+          "bytes": 98224,
           "mime": "image/png"
         }
       }
@@ -790,8 +772,8 @@
     "cards/queen-spades": {
       "variants": {
         "png": {
-          "sha256": "37e11ef724569ec41afec7837a2f61ca8c7029a53cdd8706cadadcacb0cfa998",
-          "bytes": 89491,
+          "sha256": "ac86c4b4b49507a3c4da6fdf99fc1c4973b16f97ace6b5a2d3cb4e26631f06da",
+          "bytes": 122418,
           "mime": "image/png"
         }
       }
@@ -799,8 +781,8 @@
     "cards/seven-clubs": {
       "variants": {
         "png": {
-          "sha256": "eb71d06e4c97710cac31dd27355952c6fe8e12a6e3810cb67bb0f14376d78f7b",
-          "bytes": 21313,
+          "sha256": "ca1d2d1c38ee71a8cd8f5353038bbe0e95d2dc53aafcae1d9ff073e20a620dab",
+          "bytes": 26801,
           "mime": "image/png"
         }
       }
@@ -808,8 +790,8 @@
     "cards/seven-diamonds": {
       "variants": {
         "png": {
-          "sha256": "d508128df2e7cd6e14dac5001b0d1a7ee75e4e115aac3df91234f3d77c4080f3",
-          "bytes": 22356,
+          "sha256": "69293f09b853cca432dc171b8b1f44dd4c8e0de4abb1b0acd5dee1e05bb12dfe",
+          "bytes": 27330,
           "mime": "image/png"
         }
       }
@@ -817,8 +799,8 @@
     "cards/seven-hearts": {
       "variants": {
         "png": {
-          "sha256": "83fd1046a3b7b77a960368bded975596fd9aecaf059eacbe3ffff1f2e9bd36e9",
-          "bytes": 20887,
+          "sha256": "663a2b330a98b5154a99213be448aff1861d75c882d09afa8ec4b51d34da6290",
+          "bytes": 26293,
           "mime": "image/png"
         }
       }
@@ -826,8 +808,8 @@
     "cards/seven-spades": {
       "variants": {
         "png": {
-          "sha256": "8e0448d73a98b7cb397a97b94d36a457a30e397f11f668709347ebc2f955ee3a",
-          "bytes": 25476,
+          "sha256": "87e7641574c20ac946d4a1aed31a6d4d4afee81906220852840aa8d18766a871",
+          "bytes": 28501,
           "mime": "image/png"
         }
       }
@@ -835,8 +817,8 @@
     "cards/six-clubs": {
       "variants": {
         "png": {
-          "sha256": "708db20f571e699988df900d9fc30130045dfea3cb016d4fca3676d1b5b8bc2a",
-          "bytes": 19983,
+          "sha256": "0eeb610569a433e7f3581d5c5fbd1559a57d7df38ddab77a89888384d6eb0bd6",
+          "bytes": 25312,
           "mime": "image/png"
         }
       }
@@ -844,8 +826,8 @@
     "cards/six-diamonds": {
       "variants": {
         "png": {
-          "sha256": "55a2d205c8be1e17128dcfe9c5b002d57eb627125b09511ace626b14bab929a3",
-          "bytes": 21849,
+          "sha256": "8589f1a1ba0baea8ac7c15203ca1a60f414f8eb39c953747c7ac663b6269d6ac",
+          "bytes": 25855,
           "mime": "image/png"
         }
       }
@@ -853,8 +835,8 @@
     "cards/six-hearts": {
       "variants": {
         "png": {
-          "sha256": "509fd1080ecf5177db1858d606cc1d2afc30eb9e02dda8f080b25e596e076b0d",
-          "bytes": 33396,
+          "sha256": "b8c8b175bae85f0cadfd06ea084052c2e33ac85aa0329b206bcd7cb76105201a",
+          "bytes": 39973,
           "mime": "image/png"
         }
       }
@@ -862,8 +844,8 @@
     "cards/six-spades": {
       "variants": {
         "png": {
-          "sha256": "d958683e0444c0683ec6793748bb8e8754eb0c5e36b2886a2fb5f95577ef747e",
-          "bytes": 132073,
+          "sha256": "eb5c54177cad76ef0fcf0be6fceaa4752a1fe4c46dc2705908f049db03515a63",
+          "bytes": 179392,
           "mime": "image/png"
         }
       }
@@ -871,8 +853,8 @@
     "cards/ten-clubs": {
       "variants": {
         "png": {
-          "sha256": "ab31e3ee79be70639a295a6f43b68025a12f623f9ad2b7218c87b7857920c2df",
-          "bytes": 25253,
+          "sha256": "fe8124cb5718c30a646e11f3749aa0f2095094e26d8b76205fc5c70a57ae41f9",
+          "bytes": 32412,
           "mime": "image/png"
         }
       }
@@ -880,8 +862,8 @@
     "cards/ten-diamonds": {
       "variants": {
         "png": {
-          "sha256": "e6784b49b052d862635fc841729be512e1d2393b178839888e4b8ed5043b180b",
-          "bytes": 27481,
+          "sha256": "645f86e7435af201d19b0b15ed579fa8791d3796ae1c22e48e734695e89c8e55",
+          "bytes": 33058,
           "mime": "image/png"
         }
       }
@@ -889,8 +871,8 @@
     "cards/ten-hearts": {
       "variants": {
         "png": {
-          "sha256": "3d16db69fc16f5f2b5fe1b4eb0ac7b39b9afe959a6f79ed0f110699bd8b2a147",
-          "bytes": 25830,
+          "sha256": "49691f1c31f13f6a3954d46485d4b3005846997fc07752a4569fa112b447e988",
+          "bytes": 32379,
           "mime": "image/png"
         }
       }
@@ -898,8 +880,8 @@
     "cards/ten-spades": {
       "variants": {
         "png": {
-          "sha256": "7183650ef21f8044e082b283ab8cb26dfb0ef4beb092fc1d317af8f262daa284",
-          "bytes": 32312,
+          "sha256": "f204484dc31bce9fa8e286eea1b9ba1b8b2b80a25d5b1b6610acce7f3e349a0d",
+          "bytes": 35250,
           "mime": "image/png"
         }
       }
@@ -907,8 +889,8 @@
     "cards/three-clubs": {
       "variants": {
         "png": {
-          "sha256": "a29469d039c5a1ef3ed82340541495541b78aaf2fe06750a01a7dc000f302998",
-          "bytes": 16950,
+          "sha256": "4c2a25fb0ffd0fc85b549ca1b3bd3298cfe2cce7ac0df857ec084b1f0e62eb63",
+          "bytes": 20335,
           "mime": "image/png"
         }
       }
@@ -916,8 +898,8 @@
     "cards/three-diamonds": {
       "variants": {
         "png": {
-          "sha256": "29027d2bcad1158101f73a3f702422981aaf695d28bfa9dd7e6a80f11d363834",
-          "bytes": 17310,
+          "sha256": "f74225f3f8e8392e7e0524593b8d494be3450d69cf17b1ac19f995d5476d39a5",
+          "bytes": 20714,
           "mime": "image/png"
         }
       }
@@ -925,8 +907,8 @@
     "cards/three-hearts": {
       "variants": {
         "png": {
-          "sha256": "cf9f2add2986c14d48dc6f7713bc8facad07f14f4dc99655414bb781b9d50023",
-          "bytes": 17135,
+          "sha256": "ecc57de0f65490e484756d1defe65f40c1b9875c438810f24fa7811faa0bde90",
+          "bytes": 20512,
           "mime": "image/png"
         }
       }
@@ -934,8 +916,8 @@
     "cards/three-spades": {
       "variants": {
         "png": {
-          "sha256": "2cc4a48182441dfc8dfc13b485ac5c2ea9b2d2c2fb6913e1c18db03cc26e7bc1",
-          "bytes": 97158,
+          "sha256": "4b28de230e705074ac4fb27d7cb43fc78154aee546e27238accb2677dc658227",
+          "bytes": 138775,
           "mime": "image/png"
         }
       }
@@ -943,8 +925,8 @@
     "cards/two-clubs": {
       "variants": {
         "png": {
-          "sha256": "752f6d743d7cd175e67b4a916be375e3849efd1d2be8c078ad3f62d50db7d80d",
-          "bytes": 15328,
+          "sha256": "d7163fb8fc375bcd655b8bb724675628b9ae71bf71afd955ed3d846b577df760",
+          "bytes": 18486,
           "mime": "image/png"
         }
       }
@@ -952,8 +934,8 @@
     "cards/two-diamonds": {
       "variants": {
         "png": {
-          "sha256": "5be19562668ed2db3bcb983d7000534ef888bd4d40dda2ec4864b3c495c1ecce",
-          "bytes": 15842,
+          "sha256": "e35c8b9f35ff0af7db6485964c861521fc78f797433cb89beaadb473a9b1b900",
+          "bytes": 18477,
           "mime": "image/png"
         }
       }
@@ -961,8 +943,8 @@
     "cards/two-hearts": {
       "variants": {
         "png": {
-          "sha256": "c06ab64ade3281c1142a645c66f6d34c49db46727251c0b26b215daf13440e4b",
-          "bytes": 15247,
+          "sha256": "ac9a185e5245fefc7cd9a7fe5f134fcdcd055b6ef9dfc77738ceca175959655f",
+          "bytes": 18451,
           "mime": "image/png"
         }
       }
@@ -970,8 +952,8 @@
     "cards/two-spades": {
       "variants": {
         "png": {
-          "sha256": "6fe87801060fcab4f72dd1e7d2a4cd6c2ffbf944ca7fc9a11144dc14bada1de3",
-          "bytes": 17590,
+          "sha256": "b2c1780420df9c67834f5a7519d3ee98989e173e48cb20459cea701dc4765b70",
+          "bytes": 19266,
           "mime": "image/png"
         }
       }
@@ -979,8 +961,8 @@
     "chips/compressed/round-1-white-1": {
       "variants": {
         "webp": {
-          "sha256": "b654622ee7534fbf7223b2284dac8ad51fc8bd2eadcc7483d2947e7d4c3e6526",
-          "bytes": 25424,
+          "sha256": "09891be28733d5efe9cc50d7257c9a24f244eef85e3656d3c8540a7974c3cef9",
+          "bytes": 29914,
           "mime": "image/webp"
         }
       }
@@ -988,8 +970,8 @@
     "chips/compressed/round-1-white-2": {
       "variants": {
         "webp": {
-          "sha256": "eca112dad551b689b54f18b0c14549a3940efd915f023faac149410de20c81ff",
-          "bytes": 39632,
+          "sha256": "60dd49c91ec8dc8ba2cb7d3ad28125f4bf04800453248b37199477b33c924b89",
+          "bytes": 29846,
           "mime": "image/webp"
         }
       }
@@ -997,8 +979,8 @@
     "chips/compressed/round-1-white-3": {
       "variants": {
         "webp": {
-          "sha256": "bdae02fcab91ba08238c8d28a5160f5107e045be9564d5896924bc07a12b0b40",
-          "bytes": 39732,
+          "sha256": "741a1bdfdec44e9ad65990e2838a82a604463f06e9d8e4060950d4baf06f3013",
+          "bytes": 30444,
           "mime": "image/webp"
         }
       }
@@ -1006,8 +988,8 @@
     "chips/compressed/round-1-white-4": {
       "variants": {
         "webp": {
-          "sha256": "6100adb5fc4b718ced871dd26d1f9e496e88a21f4572cd65f00eed9761ad1cc0",
-          "bytes": 39386,
+          "sha256": "d2a2f899857c039c85f74d3dafb1e0a7ffa45c7b703b21cdf40a07b7d6e745b7",
+          "bytes": 29788,
           "mime": "image/webp"
         }
       }
@@ -1015,8 +997,8 @@
     "chips/compressed/round-1-white-5": {
       "variants": {
         "webp": {
-          "sha256": "417365746847430a99a5b5e6a9dbfc63459679ebae3fc7cadc5a431f97b3b468",
-          "bytes": 39534,
+          "sha256": "b6ffdff354468cb1b659c65fd8bd6ac4490742a753a2a85b0101d3fe3e77ddbd",
+          "bytes": 30234,
           "mime": "image/webp"
         }
       }
@@ -1024,8 +1006,8 @@
     "chips/compressed/round-1-white-6": {
       "variants": {
         "webp": {
-          "sha256": "7f79905b7be5429c03ebc311ab355881ed783ae0488781816afe5e29f7f501d6",
-          "bytes": 39794,
+          "sha256": "26121b8f65f29d9c422ba588fa753c214ad81bfc858d66f2440a3dff8ad0eb8b",
+          "bytes": 29874,
           "mime": "image/webp"
         }
       }
@@ -1033,8 +1015,8 @@
     "chips/compressed/round-2-yellow-1": {
       "variants": {
         "webp": {
-          "sha256": "a7ebc6dccbf024755051f10677bdbd167c42b415efb87b044230774c4c07dfcc",
-          "bytes": 47536,
+          "sha256": "4a154e0df86905f6234ef0c5ee6e1ecf6a6ed37219ace8e68fc0e6807c0168d2",
+          "bytes": 35320,
           "mime": "image/webp"
         }
       }
@@ -1042,8 +1024,8 @@
     "chips/compressed/round-2-yellow-2": {
       "variants": {
         "webp": {
-          "sha256": "79348ef0b08a8c3c918d363cd8ebeaae20cbe05c982f151141fff332a3d6fea3",
-          "bytes": 47112,
+          "sha256": "4a154e0df86905f6234ef0c5ee6e1ecf6a6ed37219ace8e68fc0e6807c0168d2",
+          "bytes": 35320,
           "mime": "image/webp"
         }
       }
@@ -1051,8 +1033,8 @@
     "chips/compressed/round-2-yellow-3": {
       "variants": {
         "webp": {
-          "sha256": "d4f074ed3dfc6fe588be2c7f7704923d29880f8d20aa1ec1039e017a6c449594",
-          "bytes": 47248,
+          "sha256": "4456635becd8bd9ba4eb8d5f72439c0a1a801463ee35c699babb67a364ae0c64",
+          "bytes": 35584,
           "mime": "image/webp"
         }
       }
@@ -1060,8 +1042,8 @@
     "chips/compressed/round-2-yellow-4": {
       "variants": {
         "webp": {
-          "sha256": "3de6c6029cace55b6d7795d422dad0ee7b18457e52e964b30d2c3b4aefb08e71",
-          "bytes": 47290,
+          "sha256": "ab7a4c03dfb2fa329f75fe8c1ca28ba8bfe2debb8ced628f08b60b8213b4f27a",
+          "bytes": 35370,
           "mime": "image/webp"
         }
       }
@@ -1069,8 +1051,8 @@
     "chips/compressed/round-2-yellow-5": {
       "variants": {
         "webp": {
-          "sha256": "c8ef57b60d6b528c2c24da6cb16a1943895086a643c83d1d534f247f52f5bb37",
-          "bytes": 46898,
+          "sha256": "0b4ab85b6ff20fca98c55d4118a0da13d96cba73e503dd94cf9aa6a8031c92fd",
+          "bytes": 35278,
           "mime": "image/webp"
         }
       }
@@ -1078,8 +1060,8 @@
     "chips/compressed/round-2-yellow-6": {
       "variants": {
         "webp": {
-          "sha256": "5da3f98eb2250ce585e0e50423cb279def8958205b3b2dd90fb69da31979e83c",
-          "bytes": 47024,
+          "sha256": "5a1faaa520c6c70a9d687c6c0ab79aeadf99e46abf86f9a6772952dc6718558a",
+          "bytes": 35350,
           "mime": "image/webp"
         }
       }
@@ -1087,8 +1069,8 @@
     "chips/compressed/round-3-orange-1": {
       "variants": {
         "webp": {
-          "sha256": "1b1682a16799c0228921fae84ee5834d0051853380fe7f83fa6180da056d4aa4",
-          "bytes": 46732,
+          "sha256": "36b7fc0cab2e5a1396cfadb29c891972d527fa797d72326e33c379d4a379308e",
+          "bytes": 35458,
           "mime": "image/webp"
         }
       }
@@ -1096,8 +1078,8 @@
     "chips/compressed/round-3-orange-2": {
       "variants": {
         "webp": {
-          "sha256": "1672087202710bc742963769d2308a02cf3cb660a5646b7050ff71874709bd30",
-          "bytes": 47332,
+          "sha256": "36b7fc0cab2e5a1396cfadb29c891972d527fa797d72326e33c379d4a379308e",
+          "bytes": 35458,
           "mime": "image/webp"
         }
       }
@@ -1105,8 +1087,8 @@
     "chips/compressed/round-3-orange-3": {
       "variants": {
         "webp": {
-          "sha256": "d25db77d4aaafa66b30090684d7781b140a0c9e15ab9be18145b5cf801e9e50f",
-          "bytes": 47218,
+          "sha256": "ffa09c1bea0c3c1b0795536604dce5f194b1d5fccda72259425f17f8db452e2a",
+          "bytes": 35888,
           "mime": "image/webp"
         }
       }
@@ -1114,8 +1096,8 @@
     "chips/compressed/round-3-orange-4": {
       "variants": {
         "webp": {
-          "sha256": "e07f36750a744b0579c3fcadae033c29c3c8cb9238c5e9c5fc6c4dff1fa7f761",
-          "bytes": 46788,
+          "sha256": "8f132ee2bbe2ff36ff42b2ee7f6a922fd758b924629bdfa01e1e23c3396eb4ca",
+          "bytes": 35486,
           "mime": "image/webp"
         }
       }
@@ -1123,8 +1105,8 @@
     "chips/compressed/round-3-orange-5": {
       "variants": {
         "webp": {
-          "sha256": "093db2cee5ea6885c41efcb3f37ef3d4fa818dd6fbca402650ec80eacc125598",
-          "bytes": 47170,
+          "sha256": "abcabffbd076ec7598f4f3b2c34b1a4722f2c179244d9d9f8631b82f21ffba38",
+          "bytes": 35604,
           "mime": "image/webp"
         }
       }
@@ -1132,8 +1114,8 @@
     "chips/compressed/round-3-orange-6": {
       "variants": {
         "webp": {
-          "sha256": "e28568e66e19020ff5894fb4912549044ec6c67b52fdaa9f0b633c8f760c4bc2",
-          "bytes": 47302,
+          "sha256": "17f23ad55602e210c12e58259dce5609e5bdc337c074d92a1208e152f6a27d7a",
+          "bytes": 35630,
           "mime": "image/webp"
         }
       }
@@ -1141,8 +1123,8 @@
     "chips/compressed/round-4-red-1": {
       "variants": {
         "webp": {
-          "sha256": "3ec69d5dc715415a51eb7eedebbd1240ac6f056b392f553fa44ee84bfa6faada",
-          "bytes": 31194,
+          "sha256": "a22527eabdf98c5330520e0b02a36145d24063840a94ccb34521f2768436a789",
+          "bytes": 33914,
           "mime": "image/webp"
         }
       }
@@ -1150,8 +1132,8 @@
     "chips/compressed/round-4-red-2": {
       "variants": {
         "webp": {
-          "sha256": "8a7f0120253486f2887645a04639abcd14e41990db0ad421c24a2d4ee13b10e6",
-          "bytes": 45110,
+          "sha256": "6e481610aaa3cf8f48e087e453c5180b355610f814187cf76041c894760265ee",
+          "bytes": 33930,
           "mime": "image/webp"
         }
       }
@@ -1159,8 +1141,8 @@
     "chips/compressed/round-4-red-3": {
       "variants": {
         "webp": {
-          "sha256": "ce66e42dc0a30bccae2e36f9ddd22b1d48967ccc070da78f8aa8f96cc7a7ff32",
-          "bytes": 32072,
+          "sha256": "48d6c57ca912e86d004157715842dc33aab07a83eb879da62d2acda72693a7b6",
+          "bytes": 34030,
           "mime": "image/webp"
         }
       }
@@ -1168,8 +1150,8 @@
     "chips/compressed/round-4-red-4": {
       "variants": {
         "webp": {
-          "sha256": "b1e8742065de44925b389c1e5673d42d2b708a6642de005d2b90460ad9ff2d5f",
-          "bytes": 31800,
+          "sha256": "f3655de1a675e70fff425a818fc2728e0bbd73b84ce8c6a6d8298ebf77101580",
+          "bytes": 33620,
           "mime": "image/webp"
         }
       }
@@ -1177,8 +1159,8 @@
     "chips/compressed/round-4-red-5": {
       "variants": {
         "webp": {
-          "sha256": "61ef06b54db9ac2e088f6b31373c44d8c8298a3b5bdc9b7cd46afbba16869d5e",
-          "bytes": 44864,
+          "sha256": "fa08cbb04f73439c975cc88543cf71506401cb2b98e1943a802025a17570dde0",
+          "bytes": 33654,
           "mime": "image/webp"
         }
       }
@@ -1186,8 +1168,8 @@
     "chips/compressed/round-4-red-6": {
       "variants": {
         "webp": {
-          "sha256": "2c907ca6f5b5d4cc1564d6de03d78d2150f35d73138b8ac1eaa81f070ee91550",
-          "bytes": 44920,
+          "sha256": "7f2f3ec5f050e8b4bbdcc708eec10634f37a5b62b2a94377bf12590806912510",
+          "bytes": 33794,
           "mime": "image/webp"
         }
       }
@@ -1195,8 +1177,8 @@
     "chips/round-1-white-1": {
       "variants": {
         "png": {
-          "sha256": "ad74b183f2c4c5398d934828af8e9b839251964ebcfc06818d2c6180169b1555",
-          "bytes": 104490,
+          "sha256": "6e55dc3b000436531cbf62acce13825c4854973d64322cd0ac093f234af8e8ff",
+          "bytes": 95430,
           "mime": "image/png"
         }
       }
@@ -1204,8 +1186,8 @@
     "chips/round-1-white-2": {
       "variants": {
         "png": {
-          "sha256": "bb220aef48215d58e52bcd071d0f02bdfe3d1fdad9d87d55ee202937e769cfb3",
-          "bytes": 153600,
+          "sha256": "4062740986f86132818d6dcb988c132f4683ba495145ce25e38049326a9e687a",
+          "bytes": 95055,
           "mime": "image/png"
         }
       }
@@ -1213,8 +1195,8 @@
     "chips/round-1-white-3": {
       "variants": {
         "png": {
-          "sha256": "cc4a500c3e277ae3ff1628b8bad05383cd9a416ac699658e7cbcbc88eeb7b1e5",
-          "bytes": 154251,
+          "sha256": "71ec60ce826247192323e53001f62d51af3c6eceee5f6cdabcc89d2bc952d872",
+          "bytes": 95259,
           "mime": "image/png"
         }
       }
@@ -1222,8 +1204,8 @@
     "chips/round-1-white-4": {
       "variants": {
         "png": {
-          "sha256": "04c185751d76945839867878ea0d9256110b23f7b8f37ff5b9343b6243049745",
-          "bytes": 153371,
+          "sha256": "8eb8fc55c235e3acfcea1e85078a82bc2dc7a90a4535daa6315e4bc7a1ac1380",
+          "bytes": 94840,
           "mime": "image/png"
         }
       }
@@ -1231,8 +1213,8 @@
     "chips/round-1-white-5": {
       "variants": {
         "png": {
-          "sha256": "f2e9c95d330c1345a61d9c661ff8ee9ce259217efb98a68ae4bf78fbfb4b954a",
-          "bytes": 153341,
+          "sha256": "aff389e29cd11570aa9e4e0d343aee667c31f20b452fea4b5b46273441b67315",
+          "bytes": 94928,
           "mime": "image/png"
         }
       }
@@ -1240,8 +1222,8 @@
     "chips/round-1-white-6": {
       "variants": {
         "png": {
-          "sha256": "c4b5ab92631383f0b6f94d37a2535b203f3cbc3b87d81bd263e1c7a6c4d51ee1",
-          "bytes": 153618,
+          "sha256": "895317d00c6c89c34f52b28bd35716e7619a49d0284fce9070f980f1d1b077d6",
+          "bytes": 94879,
           "mime": "image/png"
         }
       }
@@ -1249,8 +1231,8 @@
     "chips/round-2-yellow-1": {
       "variants": {
         "png": {
-          "sha256": "60364ec97229114eabbff33c8704b0f306c8da72220bd8792734e837c4efd683",
-          "bytes": 297085,
+          "sha256": "1d41133002397584e3931eb537e4c86c1724385b7bdef0f5180ae0f67706033a",
+          "bytes": 184504,
           "mime": "image/png"
         }
       }
@@ -1258,8 +1240,8 @@
     "chips/round-2-yellow-2": {
       "variants": {
         "png": {
-          "sha256": "bdaa96e3a05abf66def0cf30f6761e7317d33f3f25ba23a336687973230f3a85",
-          "bytes": 293623,
+          "sha256": "1d41133002397584e3931eb537e4c86c1724385b7bdef0f5180ae0f67706033a",
+          "bytes": 184504,
           "mime": "image/png"
         }
       }
@@ -1267,8 +1249,8 @@
     "chips/round-2-yellow-3": {
       "variants": {
         "png": {
-          "sha256": "212b64f8815421d37d442c74eb203b52cca4d9885069464ca095a75091af4244",
-          "bytes": 294819,
+          "sha256": "0477471e81a64a8cdae440ca13e3be315b3fde063e25627b24ac0c78aeff51f9",
+          "bytes": 187059,
           "mime": "image/png"
         }
       }
@@ -1276,8 +1258,8 @@
     "chips/round-2-yellow-4": {
       "variants": {
         "png": {
-          "sha256": "98d139e701474d353b0958f3cd3903434824b32766c9e726341fb7bd4243cec7",
-          "bytes": 293708,
+          "sha256": "11e3ec54ef27594cc12657dde9df4f8dc7f38562a8a50a3dc7f6ed4f82a83a0b",
+          "bytes": 186271,
           "mime": "image/png"
         }
       }
@@ -1285,8 +1267,8 @@
     "chips/round-2-yellow-5": {
       "variants": {
         "png": {
-          "sha256": "d0270d190bf91b5917c63d5e0d0c683212776833f2c1888e6a7e9587ccfaad5a",
-          "bytes": 293396,
+          "sha256": "53b4b8a12cd87aea8c339b92f41b2a0672a1c3038b5fa8de547d44066a62876a",
+          "bytes": 186598,
           "mime": "image/png"
         }
       }
@@ -1294,8 +1276,8 @@
     "chips/round-2-yellow-6": {
       "variants": {
         "png": {
-          "sha256": "d0f4445aeda6909fa3f902e2ddfec4febd78a798c4b018381b9b266f005cb306",
-          "bytes": 293201,
+          "sha256": "6b062f530a1581288854992a85c93bb332f7e6251c649b9c4a5899df58034374",
+          "bytes": 186221,
           "mime": "image/png"
         }
       }
@@ -1303,8 +1285,8 @@
     "chips/round-3-orange-1": {
       "variants": {
         "png": {
-          "sha256": "cfcab295d5c44969f095665c11bac291af90636fbe05d10a5d4a696f7d47ea2c",
-          "bytes": 311917,
+          "sha256": "5503697af9425889fd6f410e77363baaf275050c119928495347a5bdb3012f06",
+          "bytes": 194685,
           "mime": "image/png"
         }
       }
@@ -1312,8 +1294,8 @@
     "chips/round-3-orange-2": {
       "variants": {
         "png": {
-          "sha256": "90a423f2b525a848164e5ec6190262efcfc7356d16ee6780bc011e1853991044",
-          "bytes": 308689,
+          "sha256": "5503697af9425889fd6f410e77363baaf275050c119928495347a5bdb3012f06",
+          "bytes": 194685,
           "mime": "image/png"
         }
       }
@@ -1321,8 +1303,8 @@
     "chips/round-3-orange-3": {
       "variants": {
         "png": {
-          "sha256": "f6573f4e347371ce177b2c22edec52fad050564e472f56751d9130dd1a2ab521",
-          "bytes": 309661,
+          "sha256": "9cbb4da95832a606e58f19b18412960cc35d293f055034ae4ad9b45239679eca",
+          "bytes": 197106,
           "mime": "image/png"
         }
       }
@@ -1330,8 +1312,8 @@
     "chips/round-3-orange-4": {
       "variants": {
         "png": {
-          "sha256": "d0bb899fc51ccd85b667eba9aa18c9b1cb4a8ab9bdf47fd8d05340a78faf607c",
-          "bytes": 308504,
+          "sha256": "2cd885e4ff803378517ae46bf82db71e7dae4e331b8ab230fbb55a9b94c4361d",
+          "bytes": 196454,
           "mime": "image/png"
         }
       }
@@ -1339,8 +1321,8 @@
     "chips/round-3-orange-5": {
       "variants": {
         "png": {
-          "sha256": "66804d6329f06f1a2b7137b089774ac65e6d3baf374468c6e94809ac66066250",
-          "bytes": 308186,
+          "sha256": "81a258f7f0839db89b785d3669039d98c2ab4f7ed8bd177e55a4176062d176c3",
+          "bytes": 196627,
           "mime": "image/png"
         }
       }
@@ -1348,8 +1330,8 @@
     "chips/round-3-orange-6": {
       "variants": {
         "png": {
-          "sha256": "5ecee9a7151178d568852732b056925459d93656aea6d67a6c86a346b7f9cbb4",
-          "bytes": 308001,
+          "sha256": "3253a10b84942d5fe11da57b933339a5f7d212fcf91853db1e0050a9d822ce1a",
+          "bytes": 196325,
           "mime": "image/png"
         }
       }
@@ -1357,8 +1339,8 @@
     "chips/round-4-red-1": {
       "variants": {
         "png": {
-          "sha256": "87069e42362e37da163565e8e8f46975d65c44ad0e7d67631ed26a6cdbec658d",
-          "bytes": 209767,
+          "sha256": "619baa9f6d910c616afa1787c9b61dbaad71af9399c9247b3174c221e62ff3ac",
+          "bytes": 201472,
           "mime": "image/png"
         }
       }
@@ -1366,8 +1348,8 @@
     "chips/round-4-red-2": {
       "variants": {
         "png": {
-          "sha256": "0e71db96c031a82015543e0fd4e4a8af1c6c6a98a580005e7848e5cd1b09666b",
-          "bytes": 316883,
+          "sha256": "9ed5c731b26da2bd9d65021bbc2b17122fa376f76f17bc039e81c4191e63b614",
+          "bytes": 200151,
           "mime": "image/png"
         }
       }
@@ -1375,8 +1357,8 @@
     "chips/round-4-red-3": {
       "variants": {
         "png": {
-          "sha256": "e853a75843b8ba7b83631ba2c860fdf40dfc9869046d1ac783ca83da17ee86a2",
-          "bytes": 215220,
+          "sha256": "37bf5da36152583510a62a19d995f075dd749ebb37399f8523164ed8576afeb6",
+          "bytes": 200378,
           "mime": "image/png"
         }
       }
@@ -1384,8 +1366,8 @@
     "chips/round-4-red-4": {
       "variants": {
         "png": {
-          "sha256": "c4f1e35ce1c86b31715346ecb67d2969e41ab5570e0ec0a5bad40d84ca6ad3f6",
-          "bytes": 213559,
+          "sha256": "d6927ad2304ba8c693590ee5c65fa32e78ee4893b8544fba6f905a09233d117a",
+          "bytes": 199764,
           "mime": "image/png"
         }
       }
@@ -1393,8 +1375,8 @@
     "chips/round-4-red-5": {
       "variants": {
         "png": {
-          "sha256": "2d0cfaac3512d57dfc69c4613356442b14b6539d429252081977c1a3219066f5",
-          "bytes": 316846,
+          "sha256": "b41c38bb9a4761f0d035727c1598e8fc53dae3e1feb031e1183b4b32a8332f78",
+          "bytes": 199959,
           "mime": "image/png"
         }
       }
@@ -1402,71 +1384,8 @@
     "chips/round-4-red-6": {
       "variants": {
         "png": {
-          "sha256": "ddb2f7ee5fa71fc820d49ca8b0d6ab7125a51c440b89f3b24685c8eee4f99c40",
-          "bytes": 316386,
-          "mime": "image/png"
-        }
-      }
-    },
-    "markers/alarm-token": {
-      "variants": {
-        "png": {
-          "sha256": "9c99ce98d31ec7d309c3cf4d920f1497ef38d4bded117a334cea625f78d1d108",
-          "bytes": 285781,
-          "mime": "image/png"
-        }
-      }
-    },
-    "markers/alarm-token-back": {
-      "variants": {
-        "png": {
-          "sha256": "b38f858bb04216903926f02dc17de7c7593de03e9a2b344697702fd0b0923645",
-          "bytes": 379296,
-          "mime": "image/png"
-        }
-      }
-    },
-    "markers/compressed/alarm-token": {
-      "variants": {
-        "webp": {
-          "sha256": "252e9802f18345cbb14ec73fb7ca34239b6e7eb0087a685038f2807396237bd2",
-          "bytes": 13512,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "markers/compressed/alarm-token-back": {
-      "variants": {
-        "webp": {
-          "sha256": "b7a3d270b7f66c34687368c994bdad00986d9591c6d0d814ee0c75e20e7a64e1",
-          "bytes": 29052,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "markers/compressed/gold-ingot": {
-      "variants": {
-        "webp": {
-          "sha256": "1d85c4c649bc24313af2a64fd64f57560f2e1a27425b3d8f231dc4cc5670587f",
-          "bytes": 20120,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "markers/gold-ingot": {
-      "variants": {
-        "png": {
-          "sha256": "fa7a1945df46f413304c4cfe0ae9392c83c4278ce31bfc2f8f7860dad1208c8d",
-          "bytes": 47892,
-          "mime": "image/png"
-        }
-      }
-    },
-    "thumbnails/the-gang-vault-heist-thumbnail": {
-      "variants": {
-        "png": {
-          "sha256": "9c7b5fdee4de1c811e3fdb86db195953aba22024ba4d4794ed16fcf5dbf4bbdd",
-          "bytes": 295968,
+          "sha256": "63f36075881b23a128c8e48ade13983a3db7ce6d779a284b9ddf89452b3cf1ae",
+          "bytes": 199584,
           "mime": "image/png"
         }
       }
@@ -1477,6 +1396,15 @@
           "sha256": "467b496553441c48a946e782e391613f55de814cc10e878cae15bf55573883eb",
           "bytes": 67012,
           "mime": "image/webp"
+        }
+      }
+    },
+    "thumbnails/the-gang-vault-heist-thumbnail": {
+      "variants": {
+        "png": {
+          "sha256": "9c7b5fdee4de1c811e3fdb86db195953aba22024ba4d4794ed16fcf5dbf4bbdd",
+          "bytes": 295968,
+          "mime": "image/png"
         }
       }
     }

@@ -1,6 +1,6 @@
 ---
 name: android-app-release
-description: "本项目 Android App 打包/上传/发布/验包 workflow。用于用户要求“打 app 包”“发安卓包”“上传 APK”“发布原生更新”“更新网站下载的 app”“检查下载到的是正式版还是测试版”“缩 Android 包体”“发 OTA / 发 native”，以及在本项目里说“更新部署 / 部署最新 / 发线上”时。核心目标是把 Android 发布固定成：选对发布类型 -> 正式壳构建或 OTA 发布 -> 上传正确入口 -> 回查 latest.json 与 CORS 预检 -> 验证线上产物，不允许停留在本地构建成功、服务器部署成功或只看 manifest。"
+description: "BoardGame Android 打包、上传、发布和验包流程。用于 APK、原生更新、OTA/native、线上下载包、包体缩减和正式/测试版核验。"
 ---
 
 # Android App 发布 Skill

@@ -1525,9 +1525,9 @@
       "name": "Lotus Bloom",
       "description": "Lotus blooms, Taiji perfected",
       "effects": {
-        "damage5": "Deal 5 damage",
-        "taijiCapMax": "Taiji stack limit +1 and immediately gain the maximum Taiji tokens",
-        "unblockable": "You may spend 2 Taiji tokens to make this attack undefendable"
+        "damage5": "Deal 5 undefendable damage",
+        "taijiCapMax": "Taiji stack limit +1 and gain 5 Taiji tokens",
+        "unblockable": "Deal 5 undefendable damage"
       }
     },
     "lotus-palm-2": {

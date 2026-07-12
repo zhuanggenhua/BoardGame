@@ -1,6 +1,6 @@
 ---
 name: add-new-faction
-description: "项目通用新增派系/角色/英雄完整交付 workflow。用于用户要求新增 Smash Up 派系、Dice Throne 英雄、SummonerWars 阵营/派系、或语义等价的“新增派系/新增角色/新增英雄/从素材做到可玩/数据录入+资源上传+审计+端到端”。强制把数据录入、资源压缩与上传、规则/机制实现、审计 evidence、真实入口 E2E 和截图核验作为同一交付门禁，防止只完成选角或静态接入就误报完成。"
+description: "BoardGame 新增派系/角色/英雄端到端流程。用于 Smash Up、Dice Throne、SummonerWars 从素材、数据、资源、规则到审计、E2E 与截图验收。"
 ---
 
 # 新增派系/角色完整交付工作流

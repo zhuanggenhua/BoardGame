@@ -1094,7 +1094,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 }
 
                 // ========== 潜行判定：防御方有潜行时跳过防御掷骰、免除伤害 ==========
-                // 终极技能不可被任何方式回避（规则 §4.4）
+                // Ultimate Damage 不可被防御方以状态效果回避；普通不可防御伤害不走这个封锁口径。
                 // 规则：潜行触发时只免伤（跳过防御掷骰），不消耗标记
                 // 标记的移除只在"经过一个完整的自己回合后，回合末清除"（见 discard 阶段退出逻辑）
                 const defender = core.pendingAttack.defenderId

@@ -1,6 +1,6 @@
 ---
 name: pua-debugging
-description: "BoardGame 的恢复/收敛路由 skill。遇到连续失败、反复返工或需要把问题转回项目 workflow 时使用；通用恢复逻辑优先走全局 pua。"
+description: "BoardGame 恢复/收敛路由。用于连续失败、反复返工或把问题转回项目 workflow；通用恢复优先全局 pua。"
 ---
 
 # Route To Global `pua`

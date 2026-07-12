@@ -1,6 +1,6 @@
 ---
 name: data-entry-workflow
-description: "用于本项目里基于图片、规则书、Wiki、PDF、截图做业务数据录入、核对、裁图、资源索引登记、文案同步时。先执行零猜测数据录入门禁，再按 gameId 进入对应 workflow；适用于 Dice Throne 角色录入、Smash Up 派系 intake / implementation 交接，以及其他游戏的数据真相源锁定与核对契约建立。"
+description: "BoardGame 数据录入与核对流程。用于图片、规则书、Wiki、PDF、截图、裁图、资源索引和文案同步；先零猜测锁真相源。"
 ---
 
 # 数据录入工作流

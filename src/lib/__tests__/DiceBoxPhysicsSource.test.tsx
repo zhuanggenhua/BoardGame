@@ -17,6 +17,42 @@ describe('DiceBoxPhysicsSource', () => {
         createEngineMock.mockReset();
     });
 
+    it('运行期渲染失败时会清空物理状态并停用 3D 物理源', async () => {
+        const onPhysicsStatesChange = vi.fn();
+        const engineMock = {
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            setCanvasDiagnostics: vi.fn(),
+            setDieSkins: vi.fn(),
+            recoverOutOfBoundsDice: vi.fn(),
+            freezeSettledDice: vi.fn(),
+            separateOverlappingDice: vi.fn(),
+            getPhysicsState: vi.fn(),
+            hasDice: vi.fn().mockReturnValue(false),
+            rollToValues: vi.fn(),
+            rerollToValues: vi.fn(),
+            syncSettledValues: vi.fn(),
+            previewValues: vi.fn(),
+            clear: vi.fn(),
+            removeDice: vi.fn(),
+            restoreValues: vi.fn().mockRejectedValueOnce(new Error('renderer failed')),
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+
+        render(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                isRolling={false}
+                onPhysicsStatesChange={onPhysicsStatesChange}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(engineMock.destroy).toHaveBeenCalled();
+        });
+        expect(onPhysicsStatesChange).toHaveBeenCalledWith([]);
+    });
+
     it('同一颗骰子的连续同面重掷不会吞掉第二次动画', async () => {
         let finishFirstReroll: (() => void) | undefined;
         const firstReroll = new Promise<void>((resolve) => {

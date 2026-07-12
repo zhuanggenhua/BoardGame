@@ -5,8 +5,10 @@ import { resolve } from 'path';
 const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-board"',
     'data-testid="qidahen-desktop-stage"',
-    'data-testid="qidahen-map-layer"',
-    'data-tutorial-id="qidahen-map-layer"',
+    'containerTestId="qidahen-map-layer"',
+    "'data-tutorial-id': 'qidahen-map-layer'",
+    'width: STAGE_WIDTH,',
+    'height: STAGE_HEIGHT,',
     'data-testid="qidahen-map-hitmap-canvas"',
     'data-testid="qidahen-map-overlay"',
     'data-testid="qidahen-map-region-mask-overlay"',
@@ -255,12 +257,13 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('className={`pointer-events-auto outline-none transition-[fill,stroke]');
         expect(boardSource).toContain('data-testid="qidahen-wheel-current-marker"');
         expect(boardSource).toContain('data-wheel-current-position={selectedId}');
-        expect(boardSource).toContain('h-[46px] w-[46px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full');
+        expect(boardSource).toContain('const currentMarkerPoint = polarToPoint(WHEEL_CENTER, WHEEL_OUTER_RADIUS - 18, selectedAngle);');
+        expect(boardSource).toContain('h-[38px] w-[38px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full');
         expect(boardSource).toContain('className="h-full w-full scale-[1.08] object-cover"');
     });
 
     it('教程高亮锚点会真实挂到棋盘主区域，而不是只留 tutorial manifest', () => {
-        expect(boardSource).toContain('data-tutorial-id="qidahen-map-layer"');
+        expect(boardSource).toContain("'data-tutorial-id': 'qidahen-map-layer'");
         expect(boardSource).toContain('data-tutorial-id="qidahen-action-wheel"');
         expect(boardSource).toContain('data-tutorial-id="qidahen-actions-zone"');
         expect(boardSource).toContain('data-tutorial-id="qidahen-hand-zone"');
@@ -537,14 +540,15 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const projectQidahenMapPointToStage = (');
         expect(boardSource).toContain('data-testid="qidahen-map-viewport-controls"');
         expect(boardSource).toContain('data-testid="qidahen-map-content"');
-        expect(boardSource).toContain('data-map-zoom={viewport.zoom}');
-        expect(boardSource).toContain('data-map-pan-x={viewport.panX}');
-        expect(boardSource).toContain('data-map-pan-y={viewport.panY}');
+        expect(boardSource).toContain("'data-map-zoom': viewport.zoom,");
+        expect(boardSource).toContain("'data-map-pan-x': viewport.panX,");
+        expect(boardSource).toContain("'data-map-pan-y': viewport.panY,");
         expect(boardSource).toContain('data-testid="qidahen-map-zoom-in"');
         expect(boardSource).toContain('data-testid="qidahen-map-zoom-out"');
         expect(boardSource).toContain('data-testid="qidahen-map-zoom-reset"');
-        expect(boardSource).toContain('onWheel={handleMapWheel}');
-        expect(boardSource).toContain('onPointerDown={handlePointerDown}');
+        expect(boardSource).toContain('wheelZoomFactor={1.14}');
+        expect(boardSource).toContain('controlledViewport={controlledMapViewport}');
+        expect(boardSource).toContain('onControlledViewportChange={handleControlledViewportChange}');
         expect(boardSource).toContain('onPointerUp={handlePointerUp}');
         expect(boardSource).toContain('viewport={mapViewport}');
         expect(boardSource).toContain('onViewportChange={setMapViewport}');
@@ -633,10 +637,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const ACTIONS_DOCK_WIDTH = 420;');
         expect(boardSource).toContain('const ACTIONS_DOCK_HEIGHT = 470;');
         expect(boardSource).toContain('const ACTIONS_DOCK_LEFT = STAGE_WIDTH - ACTIONS_DOCK_RIGHT - ACTIONS_DOCK_WIDTH;');
+        expect(boardSource).toContain("'--qidahen-mobile-edge-pull': `${stageMetrics.mobileEdgePull}px`");
         expect(boardSource).toContain('data-testid="qidahen-action-slot"');
         expect(boardSource).toContain('className="mt-3 shrink-0"');
         expect(boardSource).toContain('className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot"');
-        expect(boardSource).toContain('left: ACTIONS_DOCK_LEFT,');
+        expect(boardSource).toContain('left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,');
         expect(boardSource).toContain('width: ACTIONS_DOCK_WIDTH,');
         expect(boardSource).toContain('height: ACTIONS_DOCK_HEIGHT,');
     });
@@ -674,7 +679,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("const focusedRegion = displayHoveredRegion ?? displaySelectedRegion;");
         expect(boardSource).toContain('if (compactRegionTip && core.explicitRegionId) {');
         expect(boardSource).toContain('const selectedRegion = core.explicitRegionId');
-        expect(boardSource).toContain('data-map-selected={core.explicitRegionId ?? \'\'}');
+        expect(boardSource).toContain("'data-map-selected': core.explicitRegionId ?? '',");
         expect(boardSource).toContain('{!compactRegionTip && activePassageSummary ? (');
         expect(boardSource).toContain('{!compactRegionTip && activeMovementPreview ? (');
         expect(boardSource).toContain('{!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (');
@@ -683,14 +688,21 @@ describe('Qidahen Board 结构门禁', () => {
     it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {
         expect(boardSource).toContain('const HAND_CARD_SELECTED_LIFT = 26;');
         expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 112;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 138;');
-        expect(boardSource).toContain('const getQidahenMobileLandscapeHandLayout = (viewportWidth: number) => {');
+        expect(boardSource).toContain('const HAND_DOCK_WIDTH = 1310;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_DOCK_WIDTH = 1460;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 168;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 206;');
+        expect(boardSource).toContain('const getQidahenMobileLandscapeHandLayout = (dockWidth: number) => {');
         expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (');
         expect(boardSource).toContain('const visibleCardCount = Math.min(handCount, MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT);');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 72;');
-        expect(boardSource).toContain('const dockBottomInset = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET : BOTTOM_DOCK_INSET;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 20;');
+        expect(boardSource).toContain('mobileBottomInset: BOTTOM_DOCK_INSET,');
+        expect(boardSource).toContain('? visibleWidth / STAGE_WIDTH');
+        expect(boardSource).toContain('? Math.min(0, visibleHeight - STAGE_HEIGHT * scale)');
+        expect(boardSource).toContain('mobileBottomInset: nextLandscapeMobileViewport && scale > 0');
+        expect(boardSource).toContain("'--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,");
+        expect(boardSource).toContain("const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';");
         expect(boardSource).toContain('bottom: dockBottomInset,');
         expect(boardSource).toContain('mapTargetSelectionActive?: boolean;');
         expect(boardSource).toContain("className={`${mapTargetSelectionActive ? 'pointer-events-none' : 'pointer-events-auto'} absolute left-1/2 flex items-end ${isMobileLandscapeViewport ? 'justify-start' : 'justify-center'} overflow-x-auto overflow-y-visible`}");
@@ -698,7 +710,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;');
         expect(boardSource).toContain('mapTargetSelectionActive={mapTargetSelectionActive}');
         expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
-        expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
+        expect(boardSource).toContain('const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : \'calc(100vw - 320px)\';');
+        expect(boardSource).toContain('width: handDockWidth,');
+        expect(boardSource).toContain('maxWidth: handDockMaxWidth,');
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('data-testid={`qidahen-hand-card-magnify-${card.id}`}');

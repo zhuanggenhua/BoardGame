@@ -291,6 +291,7 @@ describe('formatSummonerWarsActionEntry — i18n segments', () => {
         const entry = normalizeEntries(formatSummonerWarsActionEntry({
             command,
             state: { core: createCore() } as MatchState<SummonerWarsCore>,
+            afterEventsRound: 1,
             events: [{
                 type: SW_EVENTS.CARD_DRAWN,
                 payload: { playerId: '0', count: 2, sourceAbilityId: 'judgment' },
@@ -298,12 +299,28 @@ describe('formatSummonerWarsActionEntry — i18n segments', () => {
             } as GameEvent],
         }));
 
-        expect(entry).toHaveLength(2);
+        expect(entry).toHaveLength(1);
         const drawEntry = entry.find((item) => item.kind === SW_EVENTS.CARD_DRAWN);
         expect(drawEntry).toBeTruthy();
         const drawSeg = findI18nSegment(drawEntry!.segments, 'actionLog.cardDrawn');
         expect(drawSeg).toBeTruthy();
         expect(drawSeg!.params).toEqual({ playerId: '0', count: 2 });
+    });
+
+    it('DECLARE_ATTACK 没有真实攻击事件时不生成未知攻击日志', () => {
+        const command: Command = {
+            type: SW_COMMANDS.DECLARE_ATTACK,
+            playerId: '0',
+            payload: { attacker: { row: 4, col: 2 }, target: { row: 4, col: 3 } },
+        };
+
+        const entry = normalizeEntries(formatSummonerWarsActionEntry({
+            command,
+            state: { core: createCore() } as MatchState<SummonerWarsCore>,
+            events: [] as GameEvent[],
+        }));
+
+        expect(entry).toHaveLength(0);
     });
 
     it('DECLARE_ATTACK 治疗模式显示治疗量', () => {

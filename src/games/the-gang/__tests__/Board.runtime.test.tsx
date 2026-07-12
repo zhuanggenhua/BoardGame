@@ -1,6 +1,6 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { useUndo } from '../../../contexts/UndoContext';
@@ -306,5 +306,87 @@ describe('The Gang Board 运行入口', () => {
         render(<HarnessBoard />);
 
         expect(screen.getByTestId('undo-provider-state')).toHaveTextContent('0:local');
+    });
+
+    test('扩展设置面板复用牌桌折叠入口并派发规则配置命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        render(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-rules-config')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
+        expect(screen.getByTestId('the-gang-rules-modal')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('the-gang-mode-seven-card-stud'));
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
+            __internalPlayerId: '0',
+            config: {
+                gameMode: 'seven-card-stud',
+                challenges: {},
+                lockedHandRanks: [],
+            },
+        });
+    });
+
+    test('工具面板可以发放工具牌并通过已实现工具派发使用命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const localToolCore: TheGangCore = {
+            ...initial,
+            players: {
+                ...initial.players,
+                '0': {
+                    ...initial.players['0'],
+                    toolCards: ['burner-phone', 'flashlight'],
+                },
+            },
+        };
+
+        const { unmount } = render(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-tools-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'board.dealTools' }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.DEAL_TOOLS, {
+            __internalPlayerId: '0',
+        });
+        unmount();
+
+        render(
+            <Board
+                G={stateOf(localToolCore)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /一次性手机/ }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
+            __internalPlayerId: '0',
+            tool: 'burner-phone',
+        });
+        fireEvent.click(screen.getByRole('button', { name: /手电筒/ }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
+            __internalPlayerId: '0',
+            tool: 'flashlight',
+        });
     });
 });

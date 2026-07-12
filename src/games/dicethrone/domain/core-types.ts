@@ -434,7 +434,7 @@ export interface PendingDamage {
     sourceAbilityId?: string;
     /** 伤害范围（attack=攻击伤害，direct=直接伤害） */
     damageScope?: 'attack' | 'direct';
-    /** 是否为不可防御伤害（仍允许攻击方增伤，但禁止防御方减伤/闪避） */
+    /** 是否为不可防御伤害（只跳过防御技能；终极伤害另行封锁降低/回避） */
     unblockable?: boolean;
     /** 响应窗口类型 */
     responseType: 'beforeDamageDealt' | 'beforeDamageReceived';
@@ -463,6 +463,8 @@ export interface PendingDamage {
         actualDamage: number;
         sourceAbilityId?: string;
         sourcePlayerId?: PlayerId;
+        damageScope?: 'attack' | 'direct';
+        unblockable?: boolean;
         sourceCommandType?: string;
     }>;
 }

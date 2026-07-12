@@ -251,6 +251,65 @@ function factionHandCards(core: QidahenCore, factionId: QidahenFactionId) {
     return core.handCards.filter((card) => card.faction === factionId);
 }
 
+function keepOnlyMingHomelandFallback(core: QidahenCore, fallbackRegionId = 'song-jin'): QidahenCore {
+    core.regions = core.regions.map((region) => {
+        if (region.isLogicalRegion) {
+            return region;
+        }
+        if (region.id === fallbackRegionId) {
+            return {
+                ...region,
+                controller: 'ming',
+                controlLabel: '大明',
+                diplomacyMarkerFaction: null,
+                diplomacyMarkerSide: null,
+            };
+        }
+        if (region.controller === 'ming' && region.id !== fallbackRegionId) {
+            return {
+                ...region,
+                controller: 'neutral',
+                controlLabel: '中立',
+                diplomacyMarkerFaction: null,
+                diplomacyMarkerSide: null,
+                troops: 0,
+                specialTroops: [],
+                cityState: region.cityState
+                    ? {
+                        ...region.cityState,
+                        troops: 0,
+                        specialTroops: [],
+                    }
+                    : region.cityState,
+                siegeState: null,
+            };
+        }
+        return region;
+    });
+    return core;
+}
+
+function clearRuntimeBattleFixture(core: QidahenCore): QidahenCore {
+    core.regions = core.regions.map((region) => {
+        if (region.isLogicalRegion) {
+            return region;
+        }
+        return {
+            ...region,
+            controller: 'neutral',
+            controlLabel: '中立',
+            diplomacyMarkerFaction: null,
+            diplomacyMarkerSide: null,
+            troops: 0,
+            population: 0,
+            specialTroops: [],
+            cityState: null,
+            siegeState: null,
+        };
+    });
+    return core;
+}
+
 function setRegionCavalry(
     core: QidahenCore,
     regionId: string,
@@ -1368,7 +1427,7 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.discardPileCount).toBe(core.discardPileCount);
         expect(executed.factions.ming.discardPileCount).toBe(core.factions.ming.discardPileCount);
         expect(executed.lastSeasonSummary?.title).toBe('执行事件');
-        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('各个击破 需要特定打出时机或地图目标选择');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('只能在遭到攻击时作为防守响应打出');
         expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('本次未消耗手牌，也未结算事件效果。');
         expect(executed.actionLog[0]?.text).toContain('尝试执行事件「各个击破」');
     });
@@ -2307,6 +2366,7 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.lastSeasonSummary?.title).toBe('执行事件');
         expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('打出事件牌：七大恨');
         expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('结算效果：在 建州 建立 2 个 3 级后金步兵。');
+        expect(executed.lastSeasonSummary?.lines.join(' ')).not.toContain('其它完整事件效果仍待逐张实现');
         expect(executed.actionLog[0]?.text).toContain('执行事件「七大恨」');
         expect(executed.actionLog[0]?.text).toContain('在 建州 建立 2 个 3 级后金步兵');
     });
@@ -5463,6 +5523,7 @@ describe('七大恨支付手牌选择', () => {
 
     it('征召军队不会把正规军建在附庸区，而会回退到本土控制区', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        keepOnlyMingHomelandFallback(core);
         core.selectedRegionId = 'city-region-22';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -7373,6 +7434,7 @@ describe('七大恨支付手牌选择', () => {
 
     it('马市贸易不会把正规军建在大明附庸区，而会回退到大明本土控制区', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        keepOnlyMingHomelandFallback(core);
         core.currentPlayer = '1';
         core.selectedRegionId = 'city-region-22';
         core.selectedActionId = 'ma-shi-trade';
@@ -8560,7 +8622,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('轮盘调度目标选择现在会正式挂到交互提示，并通过提示响应收口', () => {
-        const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
+        const core = setRegionCavalry(clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random)), 'city-region-24', 'ming', 2);
         core.selectedRegionId = 'city-region-24';
         let state: MatchState<QidahenCore> = {
             core,
@@ -8598,7 +8660,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('轮盘调度目标选择挂到 sys.interaction 后，仍可继续点地图锁定目标区', () => {
-        const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
+        const core = setRegionCavalry(clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random)), 'city-region-24', 'ming', 2);
         core.selectedRegionId = 'city-region-24';
         let state: MatchState<QidahenCore> = {
             core,
@@ -8632,7 +8694,12 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('轮盘调度 resolver 现在可以直接吃 interaction 快照，而不是硬依赖 core.wheelDispatchProgress 留在宿主上', () => {
-        const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
+        const core = setRegionCavalry(
+            clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random)),
+            'city-region-24',
+            'ming',
+            2,
+        );
         core.selectedRegionId = 'city-region-24';
         let state: MatchState<QidahenCore> = {
             core,
@@ -11135,7 +11202,12 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('突袭待结算会阻塞轮转，直到完成当前结算后才能继续本回合', () => {
-        const core = setRegionCavalry(QidahenDomain.setup(['0', '1', '2'], random), 'city-region-24', 'ming', 2);
+        const core = setRegionCavalry(
+            clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random)),
+            'city-region-24',
+            'ming',
+            2,
+        );
         core.selectedRegionId = 'city-region-24';
 
         const pending = apply(core, {
@@ -11156,12 +11228,28 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.pendingTargetAction).toBeNull();
-        expect(resolved.turnPhase).toBe('action-window');
-        expect(resolved.selectedRegionId).toBe('city-region-24');
+        expect(resolved.turnPhase).toBe('post-battle-decision');
         expect(resolved.currentPlayer).toBe('0');
+        expect(resolved.postBattleSelection?.targetRuntimeRegionId).toBe(resolved.selectedRegionId);
         expect(resolved.factionActionUsed).toBe(true);
 
-        const next = apply(resolved, {
+        expect(QidahenDomain.validate(stateOf(resolved), {
+            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            playerId: '0',
+            payload: { moveId: 'move-1-free' },
+        }).valid).toBe(false);
+
+        const settled = apply(resolved, {
+            type: QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION,
+            playerId: '0',
+            payload: { choiceId: 'occupy' },
+        });
+
+        expect(settled.postBattleSelection).toBeNull();
+        expect(settled.turnPhase).toBe('action-window');
+        expect(settled.selectedRegionId).toBe(resolved.selectedRegionId);
+
+        const next = apply(settled, {
             type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
             playerId: '0',
             payload: { moveId: 'move-1-free' },
@@ -11632,7 +11720,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('调骑 4 在结构化兵种区域只会投入骑兵，不会拿步兵冒充骑兵', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-16';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -11697,7 +11785,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('调骑 4 占领空区时会转移骑兵栈，而不是转移高等级步兵栈', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-16';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -11793,7 +11881,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('调步 2 占领空区时不会把骑兵栈当作步兵转移', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.actionWheelPosition = 'wheel-recruit-train';
         core.selectedRegionId = 'city-region-24';
         core.regions = core.regions.map((region) => {
@@ -11899,7 +11987,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('结构化区域没有骑兵时不会进入调骑 4 目标选择', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-16';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -12296,7 +12384,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('战后处理可按人口数量选择劫掠并按低保真抽牌结算', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-24';
         core.actionWheelPosition = 'wheel-recruit-train';
         core.regions = core.regions.map((region) => {
@@ -12498,7 +12586,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('阿敏在场时后金攻陷朝鲜区域会额外多抽 1 张朝鲜牌', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.currentPlayer = '2';
         core.actionWheelPosition = 'wheel-diplomacy';
         core.selectedRegionId = 'city-region-5';
@@ -12740,7 +12828,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('战后处理会把相邻友好区也列为可回退目标', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.actionWheelPosition = 'wheel-recruit-train';
         core.selectedRegionId = 'city-region-24';
         core.regions = core.regions.map((region) => {
@@ -12814,7 +12902,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('战斗胜负会按剩余部队数判定，攻方即使未杀光守军也可突破进入战后处理', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.actionWheelPosition = 'wheel-recruit-train';
         core.selectedRegionId = 'city-region-24';
         core.regions = core.regions.map((region) => {
@@ -13573,7 +13661,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('鸟真超哈打出后会让本次野战攻方步兵掷骰等级 +1', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         setFactionCharactersInPlay(core, 'jin', []);
         core.pendingTargetAction = {
             actionId: 'raid',
@@ -13696,7 +13784,7 @@ describe('七大恨支付手牌选择', () => {
         playerId,
         defenderFactionId,
     }) => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.pendingTargetAction = {
             actionId: 'raid',
             title: '突袭作战待结算',
@@ -16999,7 +17087,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('结构化川兵攻下空区后会随幸存部队进驻目标区', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.regions = core.regions.map((region) => {
@@ -17075,7 +17163,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('杨镐在场时大明突袭可指挥最多 10 个部队', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.factions = {
@@ -17542,7 +17630,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('野战守军战败但未死光时会自动断后并把残部撤到相邻友方区域', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.regions = core.regions.map((region) => {
@@ -17621,7 +17709,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('野战守军自动撤退选区时会按 cityState 合并后的兵力优先选择友方城市', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.regions = core.regions.map((region) => {
@@ -18077,7 +18165,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('代善在场时后金守军战败撤退不执行部队损失惩罚', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.factions = {
@@ -18149,7 +18237,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('野战守军战败撤退时可选择溃败让残部全灭', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.regions = core.regions.map((region) => {
@@ -19395,7 +19483,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('野战攻方未突破但仍有残部时会自动断后再撤回源区', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.regions = core.regions.map((region) => {
@@ -19454,7 +19542,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('代善在场时后金攻方未突破撤回源区不执行部队损失惩罚', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.currentPlayer = '2';
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
@@ -19513,7 +19601,7 @@ describe('七大恨支付手牌选择', () => {
     });
 
     it('野战攻方未突破撤退时可选择溃败让残部全灭', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = clearRuntimeBattleFixture(QidahenDomain.setup(['0', '1', '2'], random));
         core.selectedRegionId = 'city-region-14';
         core.selectedActionId = 'raid';
         core.regions = core.regions.map((region) => {
@@ -23373,15 +23461,16 @@ describe('七大恨支付手牌选择', () => {
 
         expect(next.actionWheelPosition).toBe('wheel-midyear');
         expect(next.turnPhase).toBe('action-window');
-        expect(next.selectedRegionId).toBe('song-jin');
+        expect(next.selectedRegionId).toBe('city-region-28');
         expect(next.currentYear).toBe('天命四年 1619');
-        expect(next.factions.ming.handCount).toBe(12);
+        expect(next.factions.ming.handCount).toBe(20);
         expect(next.factions.ming.drawPileCount).toBe(15);
-        expect(next.factions.mongol.handCount).toBe(8);
+        expect(next.factions.mongol.handCount).toBe(9);
         expect(next.factions.mongol.drawPileCount).toBe(18);
         expect(factionHandCards(next, 'mongol')).toHaveLength(8);
         expect(next.lastSeasonSummary?.title).toBe('年中结算');
-        expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('大明 因土地税赋获得 4 张手牌');
+        expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('大明 因土地税赋获得 12 张手牌');
+        expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('蒙古 因土地税赋获得 1 张手牌');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('大明因江南漕运获得 5 张手牌');
         expect(next.actionLog[0]?.text).toContain('轮盘停在年中');
     });
@@ -23532,8 +23621,8 @@ describe('七大恨支付手牌选择', () => {
 
         expect(next.actionWheelPosition).toBe('wheel-midyear');
         expect(next.turnPhase).toBe('internal-dispatch-choice');
-        expect(next.selectedRegionId).toBe('city-region-25');
-        expect(getInternalDispatchSelection(next)?.sourceRegionId).toBe('city-region-25');
+        expect(next.selectedRegionId).toBe('city-region-28');
+        expect(getInternalDispatchSelection(next)?.sourceRegionId).toBe('city-region-28');
         expect(next.factions.ming.defeatMarkers).toBe(0);
         expect(next.factions.mongol.defeatMarkers).toBe(0);
         expect(next.factions.jin.defeatMarkers).toBe(0);
@@ -23588,7 +23677,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(next.turnPhase).toBe('action-window');
-        expect(next.selectedRegionId).toBe('song-jin');
+        expect(next.selectedRegionId).toBe('city-region-28');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('毛文龙(d10) 掷 9→8：下野，回到大明人物牌堆');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('林丹·乎图克图(d12) 掷 10：无效果');
         expect(next.factions.ming.characters.find((character) => character.id === 'ming-mao-wenlong')?.inPlay).toBe(false);
@@ -23624,7 +23713,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(next.turnPhase).toBe('action-window');
-        expect(next.selectedRegionId).toBe('song-jin');
+        expect(next.selectedRegionId).toBe('city-region-28');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('额亦都(2) 掷 4');
         expect(next.lastSeasonSummary?.lines.join(' | ')).not.toContain('额亦都(2) 掷 4→3');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('林丹·乎图克图(1) 掷 1 离场');
@@ -23698,7 +23787,7 @@ describe('七大恨支付手牌选择', () => {
 
         expect(next.actionWheelPosition).toBe('wheel-midyear');
         expect(next.turnPhase).toBe('action-window');
-        expect(next.selectedRegionId).toBe('song-jin');
+        expect(next.selectedRegionId).toBe('city-region-28');
         expect(next.factions.jin.handCount - baseline.factions.jin.handCount).toBe(4);
         expect(next.factions.jin.drawPileCount).toBe(6);
         expect(baseline.factions.jin.drawPileCount).toBe(10);
@@ -23727,7 +23816,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(next.turnPhase).toBe('action-window');
-        expect(next.selectedRegionId).toBe('song-jin');
+        expect(next.selectedRegionId).toBe('city-region-28');
         expect(next.lastSeasonSummary?.lines.join(' | ')).toContain('阿敏(d10) 掷 2→1：叛逃，进入大明人物牌堆');
         expect(next.factions.jin.characters.some((character) => character.id === 'jin-amin')).toBe(false);
         expect(next.factions.ming.characters.find((character) => character.id === 'jin-amin')).toMatchObject({
@@ -23851,8 +23940,8 @@ describe('七大恨支付手牌选择', () => {
         expect(settled.currentYear).toBe('天命五年 1620');
         expect(settled.currentPlayer).toBe('0');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-22');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-22');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(settled.lastSeasonSummary?.title).toBe('新年结算');
         expect(settled.lastSeasonSummary?.lines.join(' | ')).toContain('大明 因朝鲜朝贡获得 1 张朝鲜牌');
         expect(settled.koreaDeckCount).toBe(core.koreaDeckCount - 1);
@@ -24470,8 +24559,8 @@ describe('七大恨支付手牌选择', () => {
         expect(settled.currentYearIndex).toBe(1);
         expect(settled.currentPlayer).toBe('0');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-25');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-25');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(settled.fortifications.every((fortification) => fortification.ruined)).toBe(true);
         expect(settled.lastSeasonSummary?.lines.join(' | ')).toContain('大明放弃维护 内长城，改为破败');
         expect(settled.lastSeasonSummary?.lines.join(' | ')).toContain('大明放弃维护 锦州，改为破败');
@@ -24515,8 +24604,8 @@ describe('七大恨支付手牌选择', () => {
         expect(settled.fortifications.find((fortification) => fortification.id === 'jinzhou')?.ruined).toBe(true);
         expect(settled.currentPlayer).toBe('0');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-25');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-25');
+        expect(settled.selectedRegionId).toBe('city-region-15');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-15');
         expect(settled.lastSeasonSummary?.lines.join(' | ')).toContain('大明失去 蓟镇，山海关 本轮无法修缮，改为破败');
         expect(settled.lastSeasonSummary?.lines.join(' | ')).toContain('大明失去 辽西，宁远 本轮无法修缮，改为破败');
         expect(settled.lastSeasonSummary?.lines.join(' | ')).toContain('大明失去 辽西，锦州 本轮无法修缮，改为破败');
@@ -24738,8 +24827,8 @@ describe('七大恨支付手牌选择', () => {
         const songjin = settled.regions.find((region) => region.id === 'song-jin');
         const remainingSongjinPieceIds = songjin?.specialTroops[0]?.pieceIds ?? [];
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-22');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-22');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(songjin?.troops).toBe(1);
         expect(songjin?.specialTroops).toHaveLength(1);
         expect(songjin?.specialTroops).toEqual(expect.arrayContaining([
@@ -24809,8 +24898,8 @@ describe('七大恨支付手牌选择', () => {
         const songjin = settled.regions.find((region) => region.id === 'song-jin');
         expect(pending.selectedRegionId).toBe('song-jin');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-25');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-25');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(songjin?.troops).toBe(2);
         expect(songjin?.specialTroops).toHaveLength(1);
         expect(songjin?.specialTroops).toEqual(expect.arrayContaining([
@@ -24868,8 +24957,8 @@ describe('七大恨支付手牌选择', () => {
         const songjin = settled.regions.find((region) => region.id === 'song-jin');
         expect(pending.selectedRegionId).toBe('song-jin');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-22');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-22');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(songjin?.troops).toBe(1);
         expect(songjin?.specialTroops).toHaveLength(1);
         expect(songjin?.specialTroops).toEqual(expect.arrayContaining([
@@ -25039,7 +25128,7 @@ describe('七大恨支付手牌选择', () => {
         expect(hanseong?.troops).toBe(2);
         expect(hanseong?.specialTroops).toHaveLength(1);
         expect(hanseong?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({ id: 'ming-hanseong-mercenary-lv3', label: '朝鲜雇佣军', faction: 'ming', troopKind: 'infantry', count: 2, level: 3 }),
+            expect.objectContaining({ label: '朝鲜雇佣军', faction: 'ming', troopKind: 'infantry', count: 2, level: 2 }),
         ]));
         expect(hanseong?.note).not.toContain('朝鲜耗损');
         expect(settled.lastSeasonSummary?.lines.join(' | ')).not.toContain('大明 在 汉城 触发朝鲜耗损');
@@ -25087,8 +25176,8 @@ describe('七大恨支付手牌选择', () => {
         const baoding = settled.regions.find((region) => region.id === 'city-region-27');
         expect(pending.selectedRegionId).toBe('song-jin');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-25');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-25');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(baoding?.troops).toBe(0);
         expect(baoding?.specialTroops).toEqual([]);
         expect(baoding?.note).toContain('中立耗损');
@@ -25136,8 +25225,8 @@ describe('七大恨支付手牌选择', () => {
         const tumote = settled.regions.find((region) => region.id === 'city-region-20');
         expect(pending.selectedRegionId).toBe('song-jin');
         expect(settled.turnPhase).toBe('gao-di-dispatch-choice');
-        expect(settled.selectedRegionId).toBe('city-region-22');
-        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-22');
+        expect(settled.selectedRegionId).toBe('city-region-28');
+        expect(settled.gaoDiDispatchSelection?.sourceRegionId).toBe('city-region-28');
         expect(tumote?.troops).toBe(1);
         expect(tumote?.specialTroops).toHaveLength(1);
         expect(tumote?.specialTroops).toEqual(expect.arrayContaining([
@@ -25384,6 +25473,7 @@ describe('七大恨支付手牌选择', () => {
 
     it('轮盘征兵训练不会把正规军加到附庸区，而会回退到本土控制区', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        keepOnlyMingHomelandFallback(core);
         core.selectedRegionId = 'city-region-22';
         core.regions = core.regions.map((region) => {
             if (region.isLogicalRegion) {
@@ -26045,6 +26135,7 @@ describe('七大恨支付手牌选择', () => {
 
     it('轮盘外交雇佣若当前选中区不是合法来源，会把 selectedRegionId 收到回退后的真实来源区', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        keepOnlyMingHomelandFallback(core);
         core.actionWheelPosition = 'wheel-hire';
         core.selectedRegionId = 'city-region-22';
         core.regions = core.regions.map((region) => {
@@ -28778,6 +28869,7 @@ describe('七大恨支付手牌选择', () => {
 
     it('王化贞在场时会在新的大明行动窗口前进入免费内部调度选择，点击绿色目标后本窗口不重复触发', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        keepOnlyMingHomelandFallback(core);
         core.currentPlayer = '0';
         core.selectedRegionId = 'song-jin';
         core.factions = {
@@ -29162,6 +29254,7 @@ describe('七大恨支付手牌选择', () => {
 
     it('熊廷弼在场时会在新的大明行动窗口前免费训练最多4个部队，且同一窗口不重复触发', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
+        keepOnlyMingHomelandFallback(core);
         core.currentPlayer = '0';
         core.selectedRegionId = 'song-jin';
         core.factions = {
@@ -29700,10 +29793,10 @@ describe('七大恨支付手牌选择', () => {
             expect.objectContaining({ id: 'ming-shanhaiguan-infantry-lv1', label: '大明步兵', faction: 'ming', count: 2, level: 1 }),
         ]));
         expect(core.regions.find((region) => region.id === 'city-region-22')?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({ id: 'ming-dongjiang-infantry-lv1', label: '大明步兵', faction: 'ming', count: 1, level: 1 }),
+            expect.objectContaining({ label: '大明步兵', faction: 'ming', troopKind: 'infantry', count: 1, level: 1 }),
         ]));
         expect(core.regions.find((region) => region.id === 'city-region-28-jizhen')?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({ id: 'ming-jizhen-infantry-lv1', label: '大明步兵', faction: 'ming', count: 1, level: 1 }),
+            expect.objectContaining({ label: '大明步兵', faction: 'ming', troopKind: 'infantry', count: 1, level: 1 }),
         ]));
         expect(core.regions.find((region) => region.id === 'jinzhou')?.specialTroops).toEqual(expect.arrayContaining([
             expect.objectContaining({ id: 'jin-jinzhou-infantry-lv2', label: '后金步兵', faction: 'jin', count: 2, level: 2 }),
@@ -29714,8 +29807,8 @@ describe('七大恨支付手牌选择', () => {
             troops: 3,
             population: 2,
             specialTroops: expect.arrayContaining([
-                expect.objectContaining({ id: 'jin-jianzhou-infantry-lv4', label: '后金精锐步兵', faction: 'jin', troopKind: 'infantry', count: 2, level: 4 }),
-                expect.objectContaining({ id: 'jin-jianzhou-infantry-lv2', label: '后金步兵', faction: 'jin', troopKind: 'infantry', count: 1, level: 2 }),
+                expect.objectContaining({ label: '后金步兵', faction: 'jin', troopKind: 'infantry', count: 2, level: 4 }),
+                expect.objectContaining({ label: '后金步兵', faction: 'jin', troopKind: 'infantry', count: 1, level: 2 }),
             ]),
         });
         expect(core.regions.find((region) => region.id === 'city-region-11')).toMatchObject({
@@ -29724,7 +29817,7 @@ describe('七大恨支付手牌选择', () => {
             troops: 2,
             population: 2,
             specialTroops: expect.arrayContaining([
-                expect.objectContaining({ id: 'jin-changbai-infantry-lv2', label: '后金步兵', faction: 'jin', troopKind: 'infantry', count: 2, level: 2 }),
+                expect.objectContaining({ label: '后金步兵', faction: 'jin', troopKind: 'infantry', count: 2, level: 2 }),
             ]),
         });
         expect(core.regions.find((region) => region.id === 'city-region-14')).toMatchObject({
@@ -29733,7 +29826,7 @@ describe('七大恨支付手牌选择', () => {
             troops: 3,
             population: 3,
             specialTroops: expect.arrayContaining([
-                expect.objectContaining({ id: 'mongol-chahar-cavalry-lv3', label: '蒙古骑兵', faction: 'mongol', troopKind: 'cavalry', count: 3, level: 3 }),
+                expect.objectContaining({ label: '蒙古骑兵', faction: 'mongol', troopKind: 'cavalry', count: 3, level: 3 }),
             ]),
         });
         const getArmyTokens = (baseId: string) => core.mapTokens.filter((token) => (
@@ -29805,7 +29898,7 @@ describe('七大恨支付手牌选择', () => {
         expect(core.mapTokens.some((token) => token.id === 'xianxing-army-1')).toBe(false);
         expect(core.mapTokens.some((token) => token.id === 'xianxing-army-2')).toBe(false);
         expect(core.regions.find((region) => region.id === 'xian-xing')?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({ label: '朝鲜雇佣军', faction: 'ming', count: 1, level: 2 }),
+            expect.objectContaining({ label: '雇佣军', faction: 'ming', troopClass: 'auxiliary', count: 1, level: 2 }),
         ]));
     });
 

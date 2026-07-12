@@ -1475,6 +1475,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         } : undefined,
         closeOnBackdrop: false,
         closeOnEsc: false,
+        allowPointerThrough: Boolean(interactiveBonusDiceSettlement?.allowDiceModification),
         onClose: () => undefined,
         render: () => (
             <BonusDieOverlay
@@ -1532,6 +1533,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 characterId={interactiveBonusDiceSettlement ? G.selectedCharacters[interactiveBonusDiceSettlement.attackerId] : undefined}
                 forceAutoCloseDelay={isTutorialMode ? 3000 : undefined}
                 manualCloseOnly={!isTutorialMode}
+                allowBackgroundInteraction={Boolean(interactiveBonusDiceSettlement?.allowDiceModification)}
                 usePortal={false}
             />
         ),

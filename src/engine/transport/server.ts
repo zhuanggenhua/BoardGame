@@ -118,6 +118,22 @@ const extractSetupSeatControllers = (setupData: unknown): Record<string, { type?
     return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
 };
 
+const extractStateSeatControllers = (
+    state: MatchState<unknown> | undefined,
+): Record<string, { type?: unknown } | undefined> | undefined => {
+    const core = state?.core;
+    if (!core || typeof core !== 'object' || Array.isArray(core)) {
+        return undefined;
+    }
+
+    const rawSeatControllers = (core as { seatControllers?: unknown }).seatControllers;
+    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
+        return undefined;
+    }
+
+    return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
+};
+
 const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): boolean => {
     if (!setupData || typeof setupData !== 'object' || Array.isArray(setupData)) {
         return false;
@@ -131,6 +147,24 @@ const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): bool
     return Object.values(rawSeatControllers as Record<string, { type?: unknown } | undefined>).some(
         (controller) => controller?.type === 'local-ai' || controller?.type === 'remote-ai',
     );
+};
+
+const resolveRawOnlineAiWatchdogSeatControllers = (
+    state: MatchState<unknown> | undefined,
+    setupData: unknown,
+): Record<string, { type?: unknown } | undefined> | undefined => {
+    const setupSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(setupData)
+        ? extractSetupSeatControllers(setupData)
+        : undefined;
+    const stateSeatControllers = extractStateSeatControllers(state);
+    if (!setupSeatControllers && !stateSeatControllers) {
+        return undefined;
+    }
+
+    return {
+        ...(setupSeatControllers ?? {}),
+        ...(stateSeatControllers ?? {}),
+    };
 };
 
 type GameManifestIndex = Record<string, Pick<GameManifestEntry, 'ai'> | undefined>;
@@ -1569,9 +1603,10 @@ export class GameTransportServer {
                 continue;
             }
 
-            const rawSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(match.metadata.setupData)
-                ? extractSetupSeatControllers(match.metadata.setupData)
-                : undefined;
+            const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers(
+                match.state,
+                match.metadata.setupData,
+            );
             const seatControllers = Object.fromEntries(
                 Object.keys(match.metadata.players).map((playerId) => {
                     const controller = rawSeatControllers?.[playerId];
@@ -2538,8 +2573,8 @@ export class GameTransportServer {
         playerId: string,
         seatView: MatchState<unknown>,
     ): Promise<OnlineAiRecoveryAiSummary> {
-        const setupSeatControllers = extractSetupSeatControllers(match.metadata.setupData);
-        const seatControllerType = resolveSeatControllerTypeForTraining(setupSeatControllers, playerId);
+        const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers(match.state, match.metadata.setupData);
+        const seatControllerType = resolveSeatControllerTypeForTraining(rawSeatControllers, playerId);
 
         try {
             const decisionContext = buildAiDecisionContext({
@@ -2570,7 +2605,7 @@ export class GameTransportServer {
                 };
             }
 
-            const seatController = setupSeatControllers?.[playerId] as aiModule.AiSeatController | undefined;
+            const seatController = rawSeatControllers?.[playerId] as aiModule.AiSeatController | undefined;
             const previewPolicy = seatControllerType === 'local-ai' && seatController?.type === 'local-ai'
                 ? aiModule.resolveLocalAiPolicy(runtime, seatController)
                 : seatControllerType === 'remote-ai'

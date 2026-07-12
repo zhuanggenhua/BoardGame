@@ -324,7 +324,7 @@ export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
         modifiers?: DamageModifier[];
         /** 伤害计算明细（新管线格式，优先使用）*/
         breakdown?: DamageBreakdown;
-        /** 是否为不可防御伤害（custom action 后处理据此跳过 Token 响应） */
+        /** 是否为不可防御伤害（只跳过防御技能；普通不可防御仍可被卡牌/状态效果避免） */
         unblockable?: boolean;
         /** 伤害范围（attack=攻击伤害，direct=直接伤害） */
         damageScope?: 'attack' | 'direct';

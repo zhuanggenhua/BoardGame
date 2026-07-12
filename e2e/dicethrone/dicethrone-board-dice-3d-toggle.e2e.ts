@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Page } from '@playwright/test';
 import sharp from 'sharp';
@@ -58,6 +58,17 @@ async function closeFabSettingsPanel(page: Page) {
     await expect(settingsPanel).not.toBeVisible({ timeout: 5000 });
 }
 
+async function dismissCardSpotlightIfPresent(page: Page): Promise<void> {
+    const spotlight = page.getByTestId('card-spotlight-overlay');
+    if (!(await spotlight.isVisible().catch(() => false))) return;
+
+    await page.keyboard.press('Escape');
+    if (!(await spotlight.isVisible().catch(() => false))) return;
+
+    await page.mouse.click(24, 24);
+    await expect(spotlight).not.toBeVisible({ timeout: 5000 });
+}
+
 async function saveBoardDiceStageScreenshot(
     page: Page,
     name: string,
@@ -76,11 +87,34 @@ async function saveBoardDiceCanvasScreenshot(
     name: string,
     testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
 ): Promise<string> {
-    const canvas = page.getByTestId('dicethrone-board-dice-box-canvas');
+    const canvas = page.locator('canvas[data-testid="dicethrone-board-dice-box-canvas"]');
     await expect(canvas).toBeVisible({ timeout: 5000 });
     const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
     await mkdir(dirname(screenshotPath), { recursive: true });
     await canvas.screenshot({ path: screenshotPath });
+    return screenshotPath;
+}
+
+async function saveBoardDiceWebglBufferScreenshot(
+    page: Page,
+    name: string,
+    testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
+): Promise<string> {
+    await expect(page.locator('canvas[data-testid="dicethrone-board-dice-box-canvas"]')).toBeVisible({ timeout: 5000 });
+    const dataUrl = await page.evaluate(() => {
+        const canvas = document.querySelector('canvas[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLCanvasElement | null;
+        return canvas?.toDataURL('image/png') ?? null;
+    });
+    if (!dataUrl) {
+        throw new Error('未能导出棋盘 3D 骰子的 WebGL 原始画布像素');
+    }
+
+    const screenshotPath = getEvidenceScreenshotPath(testInfo, name).replace(/\.jpg$/, '.png');
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await writeFile(
+        screenshotPath,
+        Buffer.from(dataUrl.replace(/^data:image\/png;base64,/, ''), 'base64'),
+    );
     return screenshotPath;
 }
 
@@ -154,6 +188,46 @@ async function expectBoardDiceCanvasScreenshotHasVisibleDice(screenshotPath: str
         sampledRows.size,
         `棋盘 3D 骰子 canvas 可见像素纵向分布过窄，疑似只截到噪点或单个高光: ${JSON.stringify(diagnostics)}`,
     ).toBeGreaterThan(5);
+}
+
+async function inspectBoardDiceCanvasPixels(screenshotPath: string): Promise<{
+    redBounds: { left: number; top: number; right: number; bottom: number; width: number; height: number } | null;
+    redPixelCount: number;
+}> {
+    const { data, info } = await sharp(screenshotPath)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    let left = Number.POSITIVE_INFINITY;
+    let top = Number.POSITIVE_INFINITY;
+    let right = Number.NEGATIVE_INFINITY;
+    let bottom = Number.NEGATIVE_INFINITY;
+    let redPixelCount = 0;
+
+    for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+            const offset = ((y * info.width) + x) * info.channels;
+            const r = data[offset] ?? 0;
+            const g = data[offset + 1] ?? 0;
+            const b = data[offset + 2] ?? 0;
+            const a = data[offset + 3] ?? 0;
+            if (a < 16) continue;
+            if (r < 72 || g > 58 || b > 58 || r < g * 1.45 || r < b * 1.45) continue;
+            redPixelCount += 1;
+            left = Math.min(left, x);
+            top = Math.min(top, y);
+            right = Math.max(right, x);
+            bottom = Math.max(bottom, y);
+        }
+    }
+
+    return {
+        redPixelCount,
+        redBounds: redPixelCount > 0
+            ? { left, top, right, bottom, width: right - left + 1, height: bottom - top + 1 }
+            : null,
+    };
 }
 
 async function saveSettingsPanelScreenshot(
@@ -383,6 +457,16 @@ type DiceRectSnapshot = {
     rotateZ: number | null;
 };
 
+type BoardDiceVisualBounds = {
+    dieId: number;
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+};
+
 async function readBoardDieRects(page: Page, dieIds: number[]): Promise<DiceRectSnapshot[]> {
     return await page.evaluate((ids) => ids.map((dieId) => {
         const node = document.querySelector(
@@ -447,6 +531,87 @@ async function readVisibleBoardDieRects(page: Page): Promise<DiceRectSnapshot[]>
             rotateZ: Number(element.dataset.rotateZ ?? Number.NaN),
         };
     }), []);
+}
+
+async function readBoardDiceVisualBounds(page: Page): Promise<{
+    stage: { left: number; top: number; right: number; bottom: number; width: number; height: number };
+    dice: BoardDiceVisualBounds[];
+}> {
+    return await page.evaluate(() => {
+        const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]') as HTMLElement | null;
+        if (!stage) {
+            throw new Error('未找到棋盘 3D 骰子舞台');
+        }
+        const stageRect = stage.getBoundingClientRect();
+        const dice = Array.from(stage.querySelectorAll('[data-testid^="die-button-"]')).map((node) => {
+            const element = node as HTMLElement;
+            const rect = element.getBoundingClientRect();
+            const projectedWidth = Number(element.dataset.projectedWidth ?? Number.NaN);
+            const projectedHeight = Number(element.dataset.projectedHeight ?? Number.NaN);
+            const projectedVisualWidth = Number(element.dataset.projectedVisualWidth ?? Number.NaN);
+            const projectedVisualHeight = Number(element.dataset.projectedVisualHeight ?? Number.NaN);
+            const width = Number.isFinite(projectedVisualWidth) && projectedVisualWidth > 0
+                ? projectedVisualWidth
+                : Number.isFinite(projectedWidth) && projectedWidth > 0
+                    ? projectedWidth
+                    : rect.width;
+            const height = Number.isFinite(projectedVisualHeight) && projectedVisualHeight > 0
+                ? projectedVisualHeight
+                : Number.isFinite(projectedHeight) && projectedHeight > 0
+                    ? projectedHeight
+                    : rect.height;
+            const left = rect.left + ((rect.width - width) / 2);
+            const top = rect.top + ((rect.height - height) / 2);
+            const testId = element.dataset.testid ?? element.getAttribute('data-testid') ?? '';
+            const match = testId.match(/die-button-(\d+)/);
+            return {
+                dieId: match ? Number(match[1]) : -1,
+                left,
+                top,
+                right: left + width,
+                bottom: top + height,
+                width,
+                height,
+            };
+        });
+
+        return {
+            stage: {
+                left: stageRect.left,
+                top: stageRect.top,
+                right: stageRect.right,
+                bottom: stageRect.bottom,
+                width: stageRect.width,
+                height: stageRect.height,
+            },
+            dice,
+        };
+    });
+}
+
+function expectBoardDiceFullyInsideStage(
+    snapshot: Awaited<ReturnType<typeof readBoardDiceVisualBounds>>,
+    label: string,
+): void {
+    expect(snapshot.dice, `${label}: 必须渲染 5 颗 3D 骰子`).toHaveLength(5);
+    for (const die of snapshot.dice) {
+        expect(die.left, `${label}: 骰子 ${die.dieId} 左侧不能被裁切 ${JSON.stringify(snapshot)}`)
+            .toBeGreaterThanOrEqual(snapshot.stage.left + 2);
+        expect(die.top, `${label}: 骰子 ${die.dieId} 上侧不能被裁切 ${JSON.stringify(snapshot)}`)
+            .toBeGreaterThanOrEqual(snapshot.stage.top + 2);
+        expect(die.right, `${label}: 骰子 ${die.dieId} 右侧不能被裁切 ${JSON.stringify(snapshot)}`)
+            .toBeLessThanOrEqual(snapshot.stage.right - 2);
+        expect(die.bottom, `${label}: 骰子 ${die.dieId} 下侧不能被裁切 ${JSON.stringify(snapshot)}`)
+            .toBeLessThanOrEqual(snapshot.stage.bottom - 2);
+        expect(
+            Math.min(die.width, die.height),
+            `${label}: 骰子 ${die.dieId} 不能小到看不清 ${JSON.stringify(snapshot)}`,
+        ).toBeGreaterThanOrEqual(30);
+        expect(
+            Math.max(die.width, die.height),
+            `${label}: 骰子 ${die.dieId} 太大，会导致真实画布只露出局部骰面 ${JSON.stringify(snapshot)}`,
+        ).toBeLessThanOrEqual(snapshot.stage.width * 0.34);
+    }
 }
 
 async function sampleVisibleBoardDieCount(page: Page, durationMs: number): Promise<{ min: number; counts: number[] }> {
@@ -1007,6 +1172,7 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
     });
 
     test('默认关闭，打开后切到棋盘 3D 骰子，重投时不是原地静止', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
         await page.addInitScript((storageKey) => {
             localStorage.removeItem(storageKey);
             localStorage.setItem('hud_fab_position', JSON.stringify({
@@ -1174,7 +1340,130 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
             5,
             'PC 重投结束后的静置态',
         );
+        await dismissCardSpotlightIfPresent(page);
+        await waitForBoardDiceSettled(page);
         await saveBoardDiceStageScreenshot(page, '03a-确认重投后-3D骰子稳定完成-局部', testInfo);
+        const settledCanvasScreenshotPath = await saveBoardDiceCanvasScreenshot(
+            page,
+            '03b-确认重投后-3D骰子稳定完成-真实画布',
+            testInfo,
+        );
+        const settledWebglBufferScreenshotPath = await saveBoardDiceWebglBufferScreenshot(
+            page,
+            '03d-确认重投后-3D骰子WebGL原始像素',
+            testInfo,
+        );
+        const settledCanvasDiagnostics = await page.evaluate(() => {
+            const rectOf = (element: Element | null) => {
+                if (!element) return null;
+                const rect = element.getBoundingClientRect();
+                return {
+                    left: rect.left,
+                    top: rect.top,
+                    right: rect.right,
+                    bottom: rect.bottom,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            };
+            const stage = document.querySelector('[data-testid="dicethrone-board-dice-stage"]');
+            const canvasHost = document.querySelector('[data-testid="dicethrone-board-dice-box-canvas"]') as HTMLElement | null;
+            const physicsSource = document.querySelector('[data-testid="dicethrone-board-dice-physics-source"]') as HTMLElement | null;
+            const webglCanvas = (
+                canvasHost instanceof HTMLCanvasElement
+                    ? canvasHost
+                    : canvasHost?.querySelector('canvas')
+            ) as HTMLCanvasElement | null;
+            const dice = Array.from(document.querySelectorAll(
+                '[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]',
+            )).map((node) => {
+                const element = node as HTMLElement;
+                return {
+                    testId: element.getAttribute('data-testid'),
+                    rect: rectOf(element),
+                    dataset: { ...element.dataset },
+                };
+            });
+            const runtime = (window as unknown as {
+                __dicethroneBoardDiceDebug?: () => unknown;
+            }).__dicethroneBoardDiceDebug?.();
+            const relatedNodes = Array.from(document.querySelectorAll(
+                'canvas, [data-testid="dicethrone-board-dice-box-canvas"], [data-testid="dicethrone-board-dice-physics-source"], [data-testid="dice-field-3d-canvas"], [data-testid="dice-3d"], [data-testid="dice-3d-canvas"], [data-testid="dicethrone-board-dice-stage"], [data-testid="dicethrone-center-dice-stage"]',
+            )).map((node, index) => {
+                const element = node as HTMLElement;
+                const style = window.getComputedStyle(element);
+                return {
+                    index,
+                    tagName: element.tagName,
+                    testId: element.getAttribute('data-testid'),
+                    rect: rectOf(element),
+                    className: element.getAttribute('class'),
+                    zIndex: style.zIndex,
+                    opacity: style.opacity,
+                    transform: style.transform,
+                    dataset: { ...element.dataset },
+                    parentTestId: element.parentElement?.getAttribute('data-testid') ?? null,
+                    parentClassName: element.parentElement?.getAttribute('class') ?? null,
+                };
+            });
+            const stageRect = stage?.getBoundingClientRect();
+            const intersectingNodes = stageRect
+                ? Array.from(document.body.querySelectorAll('*')).flatMap((node, index) => {
+                    const element = node as HTMLElement;
+                    const rect = element.getBoundingClientRect();
+                    if (rect.width <= 0 || rect.height <= 0) return [];
+                    if (
+                        rect.right < stageRect.left
+                        || rect.left > stageRect.right
+                        || rect.bottom < stageRect.top
+                        || rect.top > stageRect.bottom
+                    ) return [];
+                    const testId = element.getAttribute('data-testid');
+                    const className = element.getAttribute('class');
+                    const style = window.getComputedStyle(element);
+                    const hasDiceSignal = Boolean(
+                        testId?.includes('dice')
+                        || String(className ?? '').includes('dice')
+                        || element.tagName === 'CANVAS'
+                    );
+                    if (!hasDiceSignal) return [];
+                    return [{
+                        index,
+                        tagName: element.tagName,
+                        testId,
+                        rect: rectOf(element),
+                        className,
+                        zIndex: style.zIndex,
+                        opacity: style.opacity,
+                        transform: style.transform,
+                        parentTestId: element.parentElement?.getAttribute('data-testid') ?? null,
+                        parentClassName: element.parentElement?.getAttribute('class') ?? null,
+                    }];
+                }).slice(0, 80)
+                : [];
+            return {
+                stage: rectOf(stage),
+                canvasHost: rectOf(canvasHost),
+                canvasHostDataset: canvasHost ? { ...canvasHost.dataset } : null,
+                physicsSource: rectOf(physicsSource),
+                physicsSourceDataset: physicsSource ? { ...physicsSource.dataset } : null,
+                webglCanvas: rectOf(webglCanvas),
+                webglCanvasWidth: webglCanvas?.width ?? null,
+                webglCanvasHeight: webglCanvas?.height ?? null,
+                webglCanvasDataset: webglCanvas ? { ...webglCanvas.dataset } : null,
+                runtime,
+                dice,
+                relatedNodes,
+                intersectingNodes,
+            };
+        });
+        const settledCanvasPixelDiagnostics = await inspectBoardDiceCanvasPixels(settledCanvasScreenshotPath);
+        (settledCanvasDiagnostics as Record<string, unknown>).pixelDiagnostics = settledCanvasPixelDiagnostics;
+        (settledCanvasDiagnostics as Record<string, unknown>).webglBufferScreenshotPath = settledWebglBufferScreenshotPath;
+        const diagnosticsPath = getEvidenceScreenshotPath(testInfo, '03c-确认重投后-3D骰子运行时诊断').replace(/\.jpg$/, '.json');
+        await mkdir(dirname(diagnosticsPath), { recursive: true });
+        await writeFile(diagnosticsPath, JSON.stringify(settledCanvasDiagnostics, null, 2), 'utf-8');
+        await expectBoardDiceCanvasScreenshotHasVisibleDice(settledCanvasScreenshotPath);
         await game.screenshot('03-确认重投后-3D骰子稳定完成', testInfo);
         const settledRects = await readBoardDieRects(page, [0, 1]);
         const settledMoveDistance = Math.max(
@@ -1234,6 +1523,16 @@ test.describe('DiceThrone - 棋盘内 3D 骰子开关', () => {
         await expect(page.locator('[data-tutorial-id="dice-tray"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid^="die-button-"]')).toHaveCount(5);
         await waitForBoardDiceSettled(page);
+        expectBoardDiceFullyInsideStage(
+            await readBoardDiceVisualBounds(page),
+            'PC 已开启 3D 骰子真实画布',
+        );
+        const enabledCanvasScreenshotPath = await saveBoardDiceCanvasScreenshot(
+            page,
+            '06a-PC已开启3D骰子真实画布',
+            testInfo,
+        );
+        await expectBoardDiceCanvasScreenshotHasVisibleDice(enabledCanvasScreenshotPath);
 
         const firstBoardDie = page.locator('[data-testid="dicethrone-board-dice-stage"] [data-testid="die-button-0"]');
         await expect(firstBoardDie).toBeVisible({ timeout: 5000 });

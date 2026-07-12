@@ -196,6 +196,8 @@ export function executeTokenCommand(
                             actualDamage: payload.actualDamage ?? payload.amount,
                             sourceAbilityId: payload.sourceAbilityId,
                             sourcePlayerId: payload.sourcePlayerId,
+                            damageScope: payload.damageScope,
+                            unblockable: payload.unblockable,
                             sourceCommandType: customEvent.sourceCommandType,
                         });
                     }

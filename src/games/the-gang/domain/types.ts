@@ -1,11 +1,96 @@
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
 
 export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
-export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
+export type TheGangGameMode = 'texas-holdem' | 'seven-card-stud' | 'banana-split';
+export type TheGangChallengeId =
+    | 'quick-access'
+    | 'noise-sensor'
+    | 'motion-detector'
+    | 'retina-scan'
+    | 'hasty-getaway'
+    | 'ventilation-shaft'
+    | 'laser-tripwires'
+    | 'blackout'
+    | 'fingerprint-scan'
+    | 'security-camera'
+    | 'the-joker'
+    | 'uninvited-guest'
+    | 'reverse-run'
+    | 'master-key'
+    | 'balance'
+    | 'quick-execution'
+    | 'lengthy-finish'
+    | 'rough-kickoff'
+    | 'quantum-chaos'
+    | 'no-color'
+    | 'all-out-attack'
+    | 'sleeping-guard'
+    | 'intricate-lock'
+    | 'cluttered-toolbox'
+    | 'foot-door'
+    | 'extra-hours'
+    | 'grinding-gears';
+export type TheGangToolId =
+    | 'airpods'
+    | 'backdoor-key'
+    | 'burner-phone'
+    | 'crowbar'
+    | 'flashlight'
+    | 'jamming-device'
+    | 'lock-pick'
+    | 'lubricant'
+    | 'night-vision-goggles'
+    | 'smoke-grenade';
+export type TheGangSpecialistId =
+    | 'con-artist'
+    | 'coordinator'
+    | 'getaway-driver'
+    | 'hacker'
+    | 'information'
+    | 'investor'
+    | 'jack'
+    | 'mastermind'
+    | 'math-wiz'
+    | 'muscle';
+export type TheGangHandRankCode =
+    | 'RF'
+    | '5s'
+    | 'SF'
+    | 'FS'
+    | '4s'
+    | 'FH'
+    | 'FL'
+    | 'ST'
+    | '3s'
+    | 'FA'
+    | '2p'
+    | '1p'
+    | 'HC';
+export type Rank =
+    | '2'
+    | '3'
+    | '4'
+    | '5'
+    | '6'
+    | '7'
+    | '8'
+    | '9'
+    | '10'
+    | 'J'
+    | 'Q'
+    | 'K'
+    | 'A'
+    | 'B'
+    | 'C'
+    | 'D'
+    | 'Joker'
+    | 'Wild'
+    | 'Blank';
 
 export interface PlayingCard {
-    suit: Suit;
+    suit: Suit | 'gear' | 'special';
     rank: Rank;
+    kind?: 'standard' | 'joker' | 'wild' | 'blank';
 }
 
 export type TheGangRound = 1 | 2 | 3 | 4;
@@ -21,6 +106,7 @@ export interface HandStrength {
     category: number;
     ranks: number[];
     label: string;
+    code?: TheGangHandRankCode;
 }
 
 export interface ShowdownPlayerResult {
@@ -47,13 +133,35 @@ export interface TheGangProgressConfirmation {
 export interface TheGangPlayerState {
     id: PlayerId;
     pocketCards: PlayingCard[];
+    communityCards?: PlayingCard[];
+    toolCards: TheGangToolId[];
+    specialistCards: TheGangSpecialistId[];
+    activeTools: TheGangToolId[];
+    flashlightCards: PlayingCard[];
+    nightVisionCards: PlayingCard[];
+}
+
+export interface TheGangRulesConfig {
+    gameMode: TheGangGameMode;
+    challenges: Partial<Record<TheGangChallengeId, number>>;
+    lockedHandRanks?: TheGangHandRankCode[];
+}
+
+export interface TheGangRulesRuntime {
+    config: TheGangRulesConfig;
+    blankedRank?: Rank;
 }
 
 export interface TheGangCore {
     playerIds: PlayerId[];
     players: Record<PlayerId, TheGangPlayerState>;
+    rules: TheGangRulesRuntime;
     deck: PlayingCard[];
     discardPile: PlayingCard[];
+    toolDeck: TheGangToolId[];
+    toolDiscardPile: TheGangToolId[];
+    specialistDeck: TheGangSpecialistId[];
+    specialistDiscardPile: TheGangSpecialistId[];
     communityCards: PlayingCard[];
     round: TheGangRound;
     phase: TheGangPhase;
@@ -70,6 +178,9 @@ export interface TheGangCore {
 
 export const THE_GANG_COMMANDS = {
     TAKE_CHIP: 'TAKE_CHIP',
+    SET_RULES_CONFIG: 'SET_RULES_CONFIG',
+    DEAL_TOOLS: 'DEAL_TOOLS',
+    USE_TOOL: 'USE_TOOL',
     END_ROUND: 'END_ROUND',
     REVEAL_SHOWDOWN: 'REVEAL_SHOWDOWN',
     START_NEXT_HEIST: 'START_NEXT_HEIST',
@@ -77,6 +188,21 @@ export const THE_GANG_COMMANDS = {
 
 export interface TakeChipCommand extends Command<typeof THE_GANG_COMMANDS.TAKE_CHIP> {
     payload: { chip: number };
+}
+
+export interface SetRulesConfigCommand extends Command<typeof THE_GANG_COMMANDS.SET_RULES_CONFIG> {
+    payload: { config: Partial<TheGangRulesConfig> };
+}
+
+export interface DealToolsCommand extends Command<typeof THE_GANG_COMMANDS.DEAL_TOOLS> {
+    payload: Record<string, never>;
+}
+
+export interface UseToolCommand extends Command<typeof THE_GANG_COMMANDS.USE_TOOL> {
+    payload: {
+        tool: TheGangToolId;
+        cardIndex?: number;
+    };
 }
 
 export interface EndRoundCommand extends Command<typeof THE_GANG_COMMANDS.END_ROUND> {
@@ -93,12 +219,18 @@ export interface StartNextHeistCommand extends Command<typeof THE_GANG_COMMANDS.
 
 export type TheGangCommand =
     | TakeChipCommand
+    | SetRulesConfigCommand
+    | DealToolsCommand
+    | UseToolCommand
     | EndRoundCommand
     | RevealShowdownCommand
     | StartNextHeistCommand;
 
 export type TheGangCommandMap = {
     [THE_GANG_COMMANDS.TAKE_CHIP]: { chip: number };
+    [THE_GANG_COMMANDS.SET_RULES_CONFIG]: { config: Partial<TheGangRulesConfig> };
+    [THE_GANG_COMMANDS.DEAL_TOOLS]: Record<string, never>;
+    [THE_GANG_COMMANDS.USE_TOOL]: { tool: TheGangToolId; cardIndex?: number };
     [THE_GANG_COMMANDS.END_ROUND]: Record<string, never>;
     [THE_GANG_COMMANDS.REVEAL_SHOWDOWN]: Record<string, never>;
     [THE_GANG_COMMANDS.START_NEXT_HEIST]: Record<string, never>;
@@ -106,6 +238,9 @@ export type TheGangCommandMap = {
 
 export const THE_GANG_EVENTS = {
     CHIP_TAKEN: 'CHIP_TAKEN',
+    RULES_CONFIG_SET: 'RULES_CONFIG_SET',
+    TOOLS_DEALT: 'TOOLS_DEALT',
+    TOOL_USED: 'TOOL_USED',
     PROGRESS_APPROVED: 'PROGRESS_APPROVED',
     ROUND_ENDED: 'ROUND_ENDED',
     SHOWDOWN_REVEALED: 'SHOWDOWN_REVEALED',
@@ -121,6 +256,32 @@ export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TA
     };
 }
 
+export interface RulesConfigSetEvent extends GameEvent<typeof THE_GANG_EVENTS.RULES_CONFIG_SET> {
+    payload: {
+        nextCore: TheGangCore;
+    };
+}
+
+export interface ToolsDealtEvent extends GameEvent<typeof THE_GANG_EVENTS.TOOLS_DEALT> {
+    payload: {
+        dealtTools: Record<PlayerId, TheGangToolId>;
+        remainingToolDeck: TheGangToolId[];
+    };
+}
+
+export interface ToolUsedEvent extends GameEvent<typeof THE_GANG_EVENTS.TOOL_USED> {
+    payload: {
+        playerId: PlayerId;
+        tool: TheGangToolId;
+        remainingDeck?: PlayingCard[];
+        discardPile?: PlayingCard[];
+        drawnCard?: PlayingCard;
+        remainingSpecialistDeck?: TheGangSpecialistId[];
+        specialistCards?: TheGangSpecialistId[];
+        movedCardIndex?: number;
+    };
+}
+
 export interface ProgressApprovedEvent extends GameEvent<typeof THE_GANG_EVENTS.PROGRESS_APPROVED> {
     payload: TheGangProgressConfirmation;
 }
@@ -130,6 +291,9 @@ export interface RoundEndedEvent extends GameEvent<typeof THE_GANG_EVENTS.ROUND_
         round: TheGangRound;
         nextRound: TheGangRound;
         revealedCards: PlayingCard[];
+        playerRevealedCards?: Record<PlayerId, PlayingCard[]>;
+        playerDrawnCards?: Record<PlayerId, PlayingCard[]>;
+        cardsConsumed?: number;
     };
 }
 
@@ -153,6 +317,9 @@ export interface GameFinishedEvent extends GameEvent<typeof THE_GANG_EVENTS.GAME
 
 export type TheGangEvent =
     | ChipTakenEvent
+    | RulesConfigSetEvent
+    | ToolsDealtEvent
+    | ToolUsedEvent
     | ProgressApprovedEvent
     | RoundEndedEvent
     | ShowdownRevealedEvent

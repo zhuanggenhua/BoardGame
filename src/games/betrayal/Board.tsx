@@ -3,6 +3,7 @@ import { useInRouterContext } from 'react-router-dom';
 import {
     BookOpen,
     ChevronDown,
+    ChevronLeft,
     ChevronRight,
     ChevronUp,
     Compass,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
+import { HudPortal, UI_Z_INDEX } from '../../core';
 import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
@@ -57,6 +59,7 @@ import {
     canUseMysticElevator,
     createBetrayalCharacterSelectCore,
     getBetrayalScenarioConfig,
+    isBetrayalLibraryRoom,
     resolveAttackWeaponCards,
     resolveDogTradeTargets,
     resolveExplorableRoomSlots,
@@ -209,6 +212,7 @@ const INVENTORY_PREVIEW_MAX_WIDTH = 360;
 const INVENTORY_PREVIEW_VIEWPORT_WIDTH_RATIO = 0.84;
 const INVENTORY_PREVIEW_VERTICAL_GUTTER = 80;
 const COMPACT_INVENTORY_CARD_WIDTH = 64;
+const SCENARIO_READER_MODAL_Z_INDEX = UI_Z_INDEX.emergencyHud + 20;
 
 type ReferencePageId = 'scenario' | 'front' | 'back' | 'traitor' | 'monster';
 
@@ -924,8 +928,8 @@ function ExplorerPentagonCard({
     onClick?: () => void;
 }) {
     const stateLabel = taken && !selected ? '已占用' : ready ? '已就绪' : selected ? '已选择' : '选择';
-    const assetHeightClass = compact ? 'h-[104px] sm:h-[112px] lg:h-[232px]' : 'h-[112px] sm:h-[168px] lg:h-[280px]';
-    const widthClass = compact ? 'w-[132px] sm:w-[146px] lg:w-[224px]' : 'w-full max-w-[150px] sm:max-w-[240px] lg:max-w-[348px]';
+    const assetHeightClass = compact ? 'h-[92px] sm:h-[108px] lg:h-[232px]' : 'h-[112px] sm:h-[168px] lg:h-[280px]';
+    const widthClass = compact ? 'w-[120px] sm:w-[138px] lg:w-[224px]' : 'w-full max-w-[150px] sm:max-w-[240px] lg:max-w-[348px]';
     const stateToneClass = taken && !selected
         ? 'border-[#5c5548] bg-[rgba(14,14,12,0.9)] text-[#8e8371]'
         : ready
@@ -1003,6 +1007,10 @@ function CharacterSelectScreen({
     }) ?? EXPLORER_CATALOG[0]!;
     const scenarioConfig = getBetrayalScenarioConfig(core.scenarioId);
     const [scenarioSelectionOpen, setScenarioSelectionOpen] = React.useState(false);
+    const [scenarioDetailsOpen, setScenarioDetailsOpen] = React.useState(false);
+    const [scenarioReaderSpreadIndex, setScenarioReaderSpreadIndex] = React.useState(0);
+    const [scenarioReaderMobilePageIndex, setScenarioReaderMobilePageIndex] = React.useState(0);
+    const [scenarioReaderTurnDirection, setScenarioReaderTurnDirection] = React.useState<'back' | 'forward' | null>(null);
     const [mobileExplorerPage, setMobileExplorerPage] = React.useState(0);
     const [abilityTooltipOpen, setAbilityTooltipOpen] = React.useState(false);
     const mobileExplorerPageSize = 6;
@@ -1020,6 +1028,9 @@ function CharacterSelectScreen({
     React.useEffect(() => {
         if (!isReady) {
             setScenarioSelectionOpen(false);
+            setScenarioDetailsOpen(false);
+            setScenarioReaderSpreadIndex(0);
+            setScenarioReaderMobilePageIndex(0);
         }
     }, [isReady]);
 
@@ -1037,8 +1048,69 @@ function CharacterSelectScreen({
 
     const handleScenarioDialogClose = React.useCallback((event?: React.SyntheticEvent) => {
         event?.stopPropagation();
-        setScenarioSelectionOpen(false);
+        window.setTimeout(() => {
+            setScenarioSelectionOpen(false);
+            setScenarioDetailsOpen(false);
+            setScenarioReaderSpreadIndex(0);
+            setScenarioReaderMobilePageIndex(0);
+        }, 0);
     }, []);
+    const handleScenarioReaderClose = React.useCallback((event?: React.SyntheticEvent) => {
+        event?.stopPropagation();
+        setScenarioDetailsOpen(false);
+        setScenarioReaderSpreadIndex(0);
+        setScenarioReaderMobilePageIndex(0);
+    }, []);
+    const scenarioReaderSections = React.useMemo(() => ([
+        { id: 'prologueLabel', labelKey: 'game-betrayal:board.scenario.reader.prologueLabel', bodyKey: 'game-betrayal:board.scenario.reader.prologue', accentClass: 'border-[#8f5a22]' },
+        { id: 'setupLabel', labelKey: 'game-betrayal:board.scenario.reader.setupLabel', bodyKey: 'game-betrayal:board.scenario.reader.setup', accentClass: 'border-[#607f3a]' },
+        { id: 'heroManualLabel', labelKey: 'game-betrayal:board.scenario.reader.heroManualLabel', bodyKey: 'game-betrayal:board.scenario.reader.heroManual', accentClass: 'border-[#43717a]' },
+        { id: 'circleManualLabel', labelKey: 'game-betrayal:board.scenario.reader.circleManualLabel', bodyKey: 'game-betrayal:board.scenario.reader.circleManual', accentClass: 'border-[#a16c24]' },
+        { id: 'traitorManualLabel', labelKey: 'game-betrayal:board.scenario.reader.traitorManualLabel', bodyKey: 'game-betrayal:board.scenario.reader.traitorManual', accentClass: 'border-[#8f3c2e]' },
+        { id: 'spiritManualLabel', labelKey: 'game-betrayal:board.scenario.reader.spiritManualLabel', bodyKey: 'game-betrayal:board.scenario.reader.spiritManual', accentClass: 'border-[#684b87]' },
+        { id: 'exorcismManualLabel', labelKey: 'game-betrayal:board.scenario.reader.exorcismManualLabel', bodyKey: 'game-betrayal:board.scenario.reader.exorcismManual', accentClass: 'border-[#6f7f24]' },
+        { id: 'endingManualLabel', labelKey: 'game-betrayal:board.scenario.reader.endingManualLabel', bodyKey: 'game-betrayal:board.scenario.reader.endingManual', accentClass: 'border-[#8f5a22]' },
+    ]), []);
+    const scenarioReaderPages = React.useMemo(() => ([
+        {
+            id: 'dossier-cover',
+            type: 'cover' as const,
+            pageNumber: 1,
+        },
+        ...scenarioReaderSections.map((section, index) => ({
+            id: section.id,
+            type: 'section' as const,
+            section,
+            sectionIndex: index,
+            pageNumber: index + 2,
+        })),
+    ]), [scenarioReaderSections]);
+    const scenarioReaderSpreadCount = Math.max(1, Math.ceil(scenarioReaderPages.length / 2));
+    const scenarioReaderLeftPage = scenarioReaderPages[scenarioReaderSpreadIndex * 2] ?? null;
+    const scenarioReaderRightPage = scenarioReaderPages[scenarioReaderSpreadIndex * 2 + 1] ?? null;
+    const scenarioReaderMobilePage = scenarioReaderPages[scenarioReaderMobilePageIndex] ?? null;
+    const canTurnScenarioReaderBack = scenarioReaderSpreadIndex > 0 || scenarioReaderMobilePageIndex > 0;
+    const canTurnScenarioReaderForward = scenarioReaderSpreadIndex < scenarioReaderSpreadCount - 1 || scenarioReaderMobilePageIndex < scenarioReaderPages.length - 1;
+    const scenarioReaderCurrentStartPage = Math.min((scenarioReaderSpreadIndex * 2) + 1, scenarioReaderPages.length);
+    const scenarioReaderCurrentEndPage = Math.min((scenarioReaderSpreadIndex * 2) + (scenarioReaderRightPage ? 2 : 1), scenarioReaderPages.length);
+    const scenarioReaderSpreadLabel = scenarioReaderCurrentStartPage === scenarioReaderCurrentEndPage
+        ? `${scenarioReaderCurrentStartPage} / ${scenarioReaderPages.length}`
+        : `${scenarioReaderCurrentStartPage}-${scenarioReaderCurrentEndPage} / ${scenarioReaderPages.length}`;
+    const scenarioReaderMobileLabel = `${Math.min(scenarioReaderMobilePageIndex + 1, scenarioReaderPages.length)} / ${scenarioReaderPages.length}`;
+    const handleScenarioReaderTurn = React.useCallback((direction: 'back' | 'forward') => {
+        const nextSpreadIndex = direction === 'back'
+            ? Math.max(0, scenarioReaderSpreadIndex - 1)
+            : Math.min(scenarioReaderSpreadCount - 1, scenarioReaderSpreadIndex + 1);
+        const nextMobilePageIndex = direction === 'back'
+            ? Math.max(0, scenarioReaderMobilePageIndex - 1)
+            : Math.min(scenarioReaderPages.length - 1, scenarioReaderMobilePageIndex + 1);
+
+        if (nextSpreadIndex === scenarioReaderSpreadIndex && nextMobilePageIndex === scenarioReaderMobilePageIndex) return;
+        setScenarioReaderTurnDirection(direction);
+        setScenarioReaderSpreadIndex(nextSpreadIndex);
+        setScenarioReaderMobilePageIndex(nextMobilePageIndex);
+        window.setTimeout(() => setScenarioReaderTurnDirection(null), 360);
+    }, [scenarioReaderMobilePageIndex, scenarioReaderPages.length, scenarioReaderSpreadCount, scenarioReaderSpreadIndex]);
 
     return (
         <div
@@ -1096,10 +1168,10 @@ function CharacterSelectScreen({
                         </div>
                     </header>
 
-                    <main className="grid min-h-0 flex-1 grid-cols-[158px_minmax(0,1fr)_118px] gap-1.5 px-1.5 pb-1.5 pt-1.5 sm:grid-cols-[190px_minmax(0,1fr)_132px] lg:grid-cols-[440px_minmax(0,1fr)] lg:px-5 lg:pb-3 lg:pt-4 xl:grid-cols-[472px_minmax(0,1fr)]">
-                        <aside className="relative flex min-h-0 flex-col pr-1 lg:pr-6">
+                    <main className="grid min-h-0 flex-1 grid-cols-[minmax(178px,0.78fr)_minmax(0,1fr)] gap-0 px-2 pb-2 pt-2 sm:grid-cols-[minmax(220px,0.85fr)_minmax(0,1fr)] lg:grid-cols-[440px_minmax(0,1fr)] lg:px-5 lg:pb-3 lg:pt-4 xl:grid-cols-[472px_minmax(0,1fr)]">
+                        <aside className="relative flex min-h-0 flex-col pr-2 lg:pr-6">
                             <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
-                            <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-1 pb-1.5 pt-1.5 lg:px-5 lg:pb-4 lg:pt-4">
+                            <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2 lg:px-5 lg:pb-4 lg:pt-4">
                                 <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28),transparent)]" />
                                 <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
                                 <div className="flex justify-center px-1 pt-0 lg:px-2 lg:pt-1">
@@ -1175,7 +1247,7 @@ function CharacterSelectScreen({
                                                 onMouseLeave={() => setAbilityTooltipOpen(false)}
                                                 onFocus={() => setAbilityTooltipOpen(true)}
                                                 onBlur={() => setAbilityTooltipOpen(false)}
-                                                className="inline-flex min-h-[26px] max-w-full cursor-pointer items-center gap-1 rounded-full border border-[rgba(110,133,66,0.46)] bg-[rgba(23,33,19,0.62)] px-2 py-0.5 text-[8.5px] font-semibold uppercase tracking-[0.1em] text-[#b5ef42] transition hover:border-[#b5ef42] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5ef42] lg:min-h-[32px] lg:gap-2 lg:px-3 lg:py-1 lg:text-[11px] lg:tracking-[0.18em]"
+                                                className="inline-flex min-h-[32px] cursor-pointer items-center gap-2 rounded-full border border-[rgba(110,133,66,0.46)] bg-[rgba(23,33,19,0.62)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#b5ef42] transition hover:border-[#b5ef42] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5ef42] lg:text-[11px] lg:tracking-[0.18em]"
                                             >
                                                 <span className="h-1.5 w-1.5 rounded-full bg-[#b5ef42]" />
                                                 <span className="truncate">{selectedExplorer.abilityName}</span>
@@ -1224,38 +1296,20 @@ function CharacterSelectScreen({
                                 })}
                             </div>
                             <div
-                                className="grid h-full min-h-0 w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-2 py-0.5 lg:hidden"
+                                className="flex h-full min-h-0 w-full flex-col items-center justify-center gap-1.5 py-1 lg:hidden"
                                 data-testid="betrayal-character-mobile-pager"
                             >
-                                <div className="flex h-full min-h-0 flex-col items-center justify-center gap-1">
-                                    <button
-                                        type="button"
-                                        data-testid="betrayal-character-page-up"
-                                        aria-label={t('board.characterSelect.pageUp')}
-                                        disabled={mobileExplorerPage === 0}
-                                        onClick={() => setMobileExplorerPage((page) => Math.max(0, page - 1))}
-                                        className="grid h-14 w-8 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
-                                    >
-                                        <ChevronUp size={16} />
-                                    </button>
-                                    <span
-                                        data-testid="betrayal-character-mobile-page-label"
-                                        className="[writing-mode:vertical-rl] text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]"
-                                    >
-                                        {mobileExplorerPage + 1}/{mobileExplorerPageCount}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        data-testid="betrayal-character-page-down"
-                                        aria-label={t('board.characterSelect.pageDown')}
-                                        disabled={mobileExplorerPage >= mobileExplorerPageCount - 1}
-                                        onClick={() => setMobileExplorerPage((page) => Math.min(mobileExplorerPageCount - 1, page + 1))}
-                                        className="grid h-14 w-8 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
-                                    >
-                                        <ChevronDown size={16} />
-                                    </button>
-                                </div>
-                                <div className="grid min-h-0 grid-cols-3 content-center justify-items-center gap-x-1.5 gap-y-1">
+                                <button
+                                    type="button"
+                                    data-testid="betrayal-character-page-up"
+                                    aria-label={t('board.characterSelect.pageUp')}
+                                    disabled={mobileExplorerPage === 0}
+                                    onClick={() => setMobileExplorerPage((page) => Math.max(0, page - 1))}
+                                    className="grid h-8 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
+                                >
+                                    <ChevronUp size={16} />
+                                </button>
+                                <div className="grid min-h-0 flex-1 grid-cols-3 content-center justify-items-center gap-x-1 gap-y-0.5">
                                     {mobileVisibleExplorers.map((explorer) => {
                                         const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
                                         const selected = explorer.explorerId === selectedExplorerId;
@@ -1274,75 +1328,29 @@ function CharacterSelectScreen({
                                         );
                                     })}
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        data-testid="betrayal-character-page-down"
+                                        aria-label={t('board.characterSelect.pageDown')}
+                                        disabled={mobileExplorerPage >= mobileExplorerPageCount - 1}
+                                        onClick={() => setMobileExplorerPage((page) => Math.min(mobileExplorerPageCount - 1, page + 1))}
+                                        className="grid h-8 w-14 place-items-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] text-[#e2c57e] transition disabled:cursor-not-allowed disabled:opacity-35"
+                                    >
+                                        <ChevronDown size={16} />
+                                    </button>
+                                    <span
+                                        data-testid="betrayal-character-mobile-page-label"
+                                        className="min-w-[3.5rem] text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]"
+                                    >
+                                        {mobileExplorerPage + 1}/{mobileExplorerPageCount}
+                                    </span>
+                                </div>
                             </div>
                         </section>
-
-                        <aside className="relative flex min-h-0 flex-col gap-1.5 border-l border-[#5e4b2e] bg-[rgba(7,12,10,0.42)] px-1 py-1.5 lg:hidden">
-                            <div className="grid grid-cols-3 gap-1">
-                                {Array.from({ length: 6 }).map((_, seatIndex) => {
-                                    const playerId = core.playerIds[seatIndex] ?? null;
-                                    const selectedId = playerId
-                                        ? (core.selectedExplorerByPlayerId[playerId]
-                                            ?? (playerId === viewerPlayerId ? selectedExplorerId : null))
-                                        : null;
-                                    const ready = playerId ? readySet.has(playerId) : false;
-                                    return (
-                                        <div
-                                            key={playerId ?? `mobile-empty-seat-${seatIndex}`}
-                                            className={`min-w-0 border px-1 py-1 text-center ${
-                                                ready
-                                                    ? 'border-[rgba(132,171,82,0.42)] bg-[rgba(39,57,28,0.36)] text-[#b5ef42]'
-                                                    : selectedId
-                                                        ? 'border-[rgba(214,191,129,0.24)] bg-[rgba(39,31,18,0.32)] text-[#d8bf81]'
-                                                        : 'border-[rgba(93,79,54,0.18)] bg-[rgba(9,13,12,0.18)] text-[#676253]'
-                                            }`}
-                                        >
-                                            <div className="text-[8px] font-semibold tracking-[0.08em]">P{seatIndex + 1}</div>
-                                            <div className="mt-0.5 truncate text-[7px]">
-                                                {ready ? t('board.characterSelect.ready') : selectedId ? t('board.characterSelect.pending') : t('board.characterSelect.emptySeat')}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => onSelectExplorer(availableExplorer.explorerId)}
-                                className="relative inline-flex min-h-[36px] items-center justify-center border border-[rgba(214,191,129,0.24)] bg-[rgba(18,23,18,0.62)] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
-                            >
-                                {t('board.characterSelect.random')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setScenarioSelectionOpen(true)}
-                                data-testid="betrayal-character-scenario-button-mobile"
-                                aria-haspopup="dialog"
-                                aria-expanded={scenarioSelectionOpen}
-                                className="relative inline-flex min-h-[44px] min-w-0 flex-col items-center justify-center border border-[rgba(214,191,129,0.24)] bg-[rgba(18,23,18,0.62)] px-1.5 text-center transition hover:bg-[rgba(214,191,129,0.06)]"
-                            >
-                                <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#c9a35e]">
-                                    {t('board.characterSelect.scenarioSelected')}
-                                </span>
-                                <span className="max-w-full truncate text-[10px] font-bold tracking-[0.03em] text-[#fff0b8]">
-                                    {t('board.scenario.hauntValue')}
-                                </span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handlePrimaryAction}
-                                data-testid="betrayal-character-confirm-mobile"
-                                data-tutorial-id="betrayal-character-confirm-mobile"
-                                className="relative mt-auto inline-flex min-h-[72px] flex-none items-center justify-center bg-[linear-gradient(180deg,rgba(95,135,44,0.28),rgba(54,81,22,0.8))] px-2 text-[16px] font-semibold uppercase tracking-[0.1em] text-[#dfff8f] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.34),rgba(61,91,25,0.86))]"
-                            >
-                                <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
-                                {!isReady
-                                    ? t('board.characterSelect.confirm')
-                                    : t('board.characterSelect.startScenario')}
-                            </button>
-                        </aside>
                     </main>
 
-                    <footer className="hidden grid-cols-[minmax(0,1fr)_minmax(220px,260px)] border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))] lg:grid lg:grid-cols-[minmax(0,1fr)_520px]">
+                    <footer className="grid grid-cols-[minmax(0,1fr)_minmax(220px,260px)] border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))] lg:grid-cols-[minmax(0,1fr)_520px]">
                         <div className="grid grid-cols-[54px_repeat(6,minmax(34px,1fr))] overflow-hidden lg:grid-cols-[124px_repeat(6,minmax(92px,1fr))]">
                             <div className="flex flex-col justify-center border-r border-[#5e4b2e] px-1 py-1.5 text-center lg:px-3 lg:py-3">
                                 <div className="text-[8px] uppercase tracking-[0.12em] text-[#d8bf81] lg:text-[11px] lg:tracking-[0.2em]">{t('board.characterSelect.playersLabel')}</div>
@@ -1443,53 +1451,296 @@ function CharacterSelectScreen({
                 </div>
             </div>
             {scenarioSelectionOpen ? (
+                <HudPortal>
                 <div
                     role="dialog"
                     aria-modal="true"
                     data-testid="betrayal-scenario-select-dialog"
-                    className="pointer-events-auto absolute inset-0 z-50 grid place-items-center bg-[rgba(2,6,5,0.72)] px-4 py-3"
+                    className="pointer-events-auto fixed inset-0 grid place-items-center bg-[rgba(2,6,5,0.72)] px-4 py-3"
+                    style={{ zIndex: SCENARIO_READER_MODAL_Z_INDEX }}
                     onClick={handleScenarioDialogClose}
                 >
                     <div
-                        className="pointer-events-auto relative w-full max-w-[560px] overflow-hidden border border-[rgba(214,191,129,0.46)] bg-[linear-gradient(180deg,rgba(30,24,16,0.98),rgba(8,12,10,0.98))] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.48)] lg:p-6"
+                        className="pointer-events-auto relative max-h-[calc(100vh-24px)] w-full max-w-[640px] overflow-y-auto border border-[#7b633d] bg-[linear-gradient(135deg,rgba(48,37,22,0.98),rgba(20,17,12,0.98)_46%,rgba(7,10,8,0.98))] p-3 text-[#f3e0b4] shadow-[0_26px_70px_rgba(0,0,0,0.58)] lg:p-5"
                         onClick={(event) => event.stopPropagation()}
                     >
-                        <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.12)]" />
+                        <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.16)]" />
+                        <div className="pointer-events-none absolute left-0 top-0 h-full w-2 bg-[linear-gradient(180deg,rgba(198,152,71,0.5),rgba(58,31,18,0.34))]" />
                         <div className="relative">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c9a35e] lg:text-[12px]">
-                                {t('board.characterSelect.scenarioDialogTitle')}
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#c9a35e] lg:text-[12px]">
+                                        {t('board.characterSelect.scenarioDossier')}
+                                    </div>
+                                    <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#8f8065]">
+                                        {t('board.characterSelect.scenarioCaseNo')}
+                                    </div>
+                                </div>
+                                <div className="border border-[rgba(214,191,129,0.3)] bg-[rgba(10,12,9,0.48)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d6b56d]">
+                                    {t('board.characterSelect.scenarioOnly')}
+                                </div>
                             </div>
-                            <button
-                                type="button"
+                            <div
                                 data-testid="betrayal-scenario-option-first-scenario"
-                                aria-pressed="true"
-                                onClick={handleScenarioDialogClose}
-                                className="mt-3 w-full cursor-pointer rounded-[12px] border border-[#b5ef42] bg-[rgba(41,62,25,0.42)] p-3 text-left shadow-[inset_0_0_0_1px_rgba(181,239,66,0.14)] lg:p-4"
+                                className="mt-3 w-full border border-[#8b7044] bg-[linear-gradient(180deg,rgba(54,43,25,0.92),rgba(21,23,16,0.94))] p-3 text-left shadow-[inset_0_0_0_1px_rgba(255,240,184,0.08)] lg:p-4"
                             >
-                                <div className="text-[18px] font-bold tracking-[0.06em] text-[#fff0b8] lg:text-[24px]">
-                                    {t('board.scenario.hauntValue')}
+                                <div className="flex items-start justify-between gap-3 border-b border-[rgba(214,191,129,0.2)] pb-2">
+                                    <div>
+                                        <div className="text-[18px] font-bold tracking-[0.08em] text-[#fff0b8] lg:text-[26px]">
+                                            {t('board.scenario.hauntValue')}
+                                        </div>
+                                        <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-[#9fb98b] lg:text-[13px]">
+                                            {scenarioConfig.presentation.runtimeObjective}
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 border border-[rgba(181,239,66,0.36)] bg-[rgba(34,48,20,0.54)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#dfff8f]">
+                                        {t('board.characterSelect.scenarioSelected')}
+                                    </div>
                                 </div>
-                                <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-[#9fb98b] lg:text-[13px]">
-                                    {scenarioConfig.presentation.runtimeObjective}
-                                </div>
-                                <div className="mt-3 text-[12px] leading-5 text-[#e8dfc8] lg:text-[14px]">
+                                <div className="mt-3 border-l-2 border-[rgba(214,191,129,0.34)] pl-3 text-[12px] leading-5 text-[#e8dfc8] lg:text-[14px]">
                                     {t('board.characterSelect.scenarioStepSubtitle')}
                                 </div>
-                            </button>
+                                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[rgba(214,191,129,0.16)] pt-3">
+                                    <button
+                                        type="button"
+                                        data-testid="betrayal-scenario-detail-toggle"
+                                        aria-haspopup="dialog"
+                                        aria-expanded={scenarioDetailsOpen}
+                                        onClick={() => setScenarioDetailsOpen(true)}
+                                        className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.78)] px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] transition hover:border-[#e2c57e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e]"
+                                    >
+                                        {t('board.characterSelect.viewScenarioDetails')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-testid="betrayal-scenario-select-current"
+                                        onClick={handleScenarioDialogClose}
+                                        className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-[rgba(181,239,66,0.44)] bg-[rgba(32,52,18,0.68)] px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#dfff8f] transition hover:border-[#b5ef42] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b5ef42]"
+                                    >
+                                        {t('board.characterSelect.useScenario')}
+                                    </button>
+                                </div>
+                            </div>
                             <div className="mt-4 flex justify-end">
                                 <button
                                     type="button"
                                     data-testid="betrayal-scenario-dialog-close"
                                     onPointerDown={(event) => event.stopPropagation()}
                                     onClick={handleScenarioDialogClose}
-                                    className="relative z-10 inline-flex min-h-[44px] cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] transition hover:border-[#e2c57e]"
+                                    className="inline-flex min-h-[34px] cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.34)] bg-[rgba(18,23,18,0.72)] px-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] transition hover:border-[#e2c57e]"
                                 >
                                     {t('board.characterSelect.closeScenarioDialog')}
                                 </button>
                             </div>
                         </div>
                     </div>
+                    {scenarioDetailsOpen ? (
+                        <div
+                            role="dialog"
+                            aria-modal="true"
+                            data-testid="betrayal-scenario-reader-dialog"
+                            className="pointer-events-auto fixed inset-0 grid place-items-center bg-[radial-gradient(circle_at_50%_12%,rgba(96,67,29,0.34),rgba(2,6,5,0.9)_52%,rgba(0,0,0,0.96))] px-3 py-3"
+                            style={{ zIndex: SCENARIO_READER_MODAL_Z_INDEX }}
+                            onClick={handleScenarioReaderClose}
+                        >
+                            <article
+                                data-testid="betrayal-scenario-detail-panel"
+                                className="relative flex max-h-[calc(100vh-18px)] w-full max-w-[1120px] flex-col overflow-hidden border border-[#9a7b46] bg-[linear-gradient(135deg,rgba(52,34,20,0.98),rgba(18,14,10,0.99)_48%,rgba(5,7,6,0.99))] text-[#3a2414] shadow-[0_34px_90px_rgba(0,0,0,0.72)]"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.14)]" />
+                                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_5%,rgba(216,171,88,0.16),transparent_34%)]" />
+                                <button
+                                    type="button"
+                                    data-testid="betrayal-scenario-reader-close"
+                                    onClick={handleScenarioReaderClose}
+                                    aria-label={t('board.characterSelect.hideScenarioDetails')}
+                                    className="absolute right-3 top-3 z-20 inline-flex h-10 min-w-10 cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.82)] px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] shadow-[0_8px_24px_rgba(0,0,0,0.38)] transition hover:border-[#e2c57e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e]"
+                                >
+                                    {t('board.characterSelect.hideScenarioDetails')}
+                                </button>
+                                <div className="relative min-h-0 px-2 py-2 lg:px-3 lg:py-3">
+                                    <div
+                                        data-testid="betrayal-scenario-book"
+                                        className={`relative mx-auto grid h-[min(84vh,760px)] min-h-[360px] w-full max-w-[1120px] grid-cols-1 overflow-hidden border border-[#5a371a] bg-[#2a170d] p-[7px] shadow-[0_26px_62px_rgba(0,0,0,0.58),inset_0_0_0_1px_rgba(236,196,117,0.18)] transition-[transform,opacity,filter] duration-300 ease-out sm:grid-cols-2 lg:h-[min(86vh,780px)] ${
+                                            scenarioReaderTurnDirection === 'forward'
+                                                ? 'translate-x-1 opacity-95 brightness-110'
+                                                : scenarioReaderTurnDirection === 'back'
+                                                    ? '-translate-x-1 opacity-95 brightness-110'
+                                                    : 'translate-x-0 opacity-100 brightness-100'
+                                        }`}
+                                    >
+                                        <div className="pointer-events-none absolute inset-[7px] hidden sm:block sm:bg-[linear-gradient(90deg,rgba(53,30,14,0)_0%,rgba(52,30,15,0)_47%,rgba(52,30,15,0.74)_50%,rgba(255,236,187,0.10)_51%,rgba(52,30,15,0)_54%,rgba(52,30,15,0)_100%)]" />
+                                        {scenarioReaderMobilePage ? (
+                                            <section
+                                                key={`mobile-${scenarioReaderMobilePage.id}`}
+                                                data-testid={scenarioReaderMobilePage.type === 'cover' ? 'betrayal-scenario-book-cover-page-mobile' : `betrayal-scenario-book-page-${scenarioReaderMobilePage.section?.id}-mobile`}
+                                                className="relative min-h-0 overflow-hidden border border-[#c7a06b] bg-[radial-gradient(circle_at_48%_18%,rgba(255,243,204,0.92),rgba(229,200,151,0.98)_58%,rgba(205,164,102,0.98)_100%)] p-4 shadow-[inset_0_0_0_1px_rgba(255,246,215,0.36),inset_0_0_42px_rgba(95,54,19,0.18)] sm:hidden"
+                                            >
+                                                <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(0deg,rgba(92,55,24,0.08)_0_1px,transparent_1px_8px),radial-gradient(circle_at_18%_22%,rgba(88,49,18,0.12),transparent_18%),radial-gradient(circle_at_80%_70%,rgba(96,55,21,0.10),transparent_22%)]" />
+                                                <div className="pointer-events-none absolute inset-[10px] border border-[#b98343]/40" />
+                                                <div
+                                                    data-testid="betrayal-scenario-reader-page-label-mobile"
+                                                    aria-label={t('board.scenario.readerPageAria', { mobile: scenarioReaderMobileLabel, desktop: scenarioReaderSpreadLabel })}
+                                                    className="absolute bottom-3 right-4 z-10 text-[11px] font-bold tracking-[0.16em] text-[#86643f]"
+                                                >
+                                                    {scenarioReaderMobileLabel}
+                                                </div>
+                                                {scenarioReaderMobilePage.type === 'cover' ? (
+                                                    <div className="relative flex h-full flex-col justify-between">
+                                                        <div>
+                                                            <h2 className="mt-3 text-[32px] font-black leading-none tracking-[0.08em] text-[#402411]">
+                                                                {t('board.scenario.hauntValue')}
+                                                            </h2>
+                                                            <div className="mt-3 h-px w-28 bg-[#8f5a22]" />
+                                                            <p className="mt-4 text-[15px] font-semibold leading-7 text-[#57361f]">
+                                                                {t('board.scenario.readerLead')}
+                                                            </p>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2 text-[10px] uppercase tracking-[0.12em] text-[#6b4727]">
+                                                            <div className="border border-[#b98343]/46 bg-[rgba(255,239,199,0.24)] p-2">
+                                                                <div>{t('board.scenario.readerCaseLabel')}</div>
+                                                                <div className="mt-1 font-bold text-[#402411]">{t('board.characterSelect.scenarioCaseNo')}</div>
+                                                            </div>
+                                                            <div className="border border-[#607f3a]/42 bg-[rgba(236,245,193,0.20)] p-2">
+                                                                <div>{t('board.scenario.readerStatusLabel')}</div>
+                                                                <div className="mt-1 font-bold text-[#425421]">{t('board.characterSelect.scenarioOnly')}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#86643f]">
+                                                            {String(scenarioReaderMobilePage.pageNumber).padStart(2, '0')}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative flex h-full flex-col">
+                                                        <div className={`border-l-4 pl-3 ${scenarioReaderMobilePage.section?.accentClass ?? 'border-[#8f5a22]'}`}>
+                                                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7d5129]" aria-hidden="true">
+                                                                {String((scenarioReaderMobilePage.sectionIndex ?? 0) + 1).padStart(2, '0')}
+                                                            </div>
+                                                            <h3 className="mt-1 text-[24px] font-black tracking-[0.05em] text-[#3b2211]">
+                                                                {scenarioReaderMobilePage.section ? t(scenarioReaderMobilePage.section.labelKey) : ''}
+                                                            </h3>
+                                                        </div>
+                                                        <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 text-[15px] font-medium leading-7 text-[#4e321c]">
+                                                            {scenarioReaderMobilePage.section ? t(scenarioReaderMobilePage.section.bodyKey) : ''}
+                                                        </div>
+                                                        <div className="mt-3 flex items-center justify-between border-t border-[#b98343]/36 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#86643f]">
+                                                            <span>{t('board.scenario.hauntValue')}</span>
+                                                            <span>{String(scenarioReaderMobilePage.pageNumber).padStart(2, '0')}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </section>
+                                        ) : null}
+                                        {[scenarioReaderLeftPage, scenarioReaderRightPage].map((page, sideIndex) => {
+                                            if (!page) {
+                                                return (
+                                                    <div
+                                                        key={`blank-${sideIndex}`}
+                                                        className="relative hidden overflow-hidden border border-[#c7a06b] bg-[linear-gradient(135deg,#ead3a8,#d9b77b)] shadow-[inset_0_0_38px_rgba(96,55,22,0.24)] sm:block"
+                                                    />
+                                                );
+                                            }
+
+                                            const pageSideClassName = sideIndex === 0
+                                                ? 'hidden sm:block sm:mr-[8px] sm:border-r-0'
+                                                : 'hidden sm:block sm:ml-[8px] sm:border-l-0';
+
+                                            return (
+                                                <section
+                                                    key={page.id}
+                                                    data-testid={page.type === 'cover' ? 'betrayal-scenario-book-cover-page' : `betrayal-scenario-book-page-${page.section?.id}`}
+                                                    className={`relative min-h-0 overflow-hidden border border-[#c7a06b] bg-[radial-gradient(circle_at_48%_18%,rgba(255,243,204,0.92),rgba(229,200,151,0.98)_58%,rgba(205,164,102,0.98)_100%)] p-4 shadow-[inset_0_0_0_1px_rgba(255,246,215,0.36),inset_0_0_42px_rgba(95,54,19,0.18)] lg:p-6 ${pageSideClassName}`}
+                                                >
+                                                    <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(0deg,rgba(92,55,24,0.08)_0_1px,transparent_1px_8px),radial-gradient(circle_at_18%_22%,rgba(88,49,18,0.12),transparent_18%),radial-gradient(circle_at_80%_70%,rgba(96,55,21,0.10),transparent_22%)]" />
+                                                    <div className="pointer-events-none absolute inset-[10px] border border-[#b98343]/40" />
+                                                    <div
+                                                        data-testid={sideIndex === 0 ? 'betrayal-scenario-reader-page-label-desktop-left' : 'betrayal-scenario-reader-page-label-desktop-right'}
+                                                        aria-hidden={sideIndex !== 0}
+                                                        className={`absolute bottom-3 z-10 text-[11px] font-bold tracking-[0.16em] text-[#86643f] ${sideIndex === 0 ? 'left-4' : 'right-4'}`}
+                                                    >
+                                                        {String(page.pageNumber).padStart(2, '0')}
+                                                    </div>
+                                                    {page.type === 'cover' ? (
+                                                        <div className="relative flex h-full flex-col justify-between">
+                                                            <div>
+                                                                <h2 className="mt-3 text-[32px] font-black leading-none tracking-[0.08em] text-[#402411] lg:text-[46px]">
+                                                                    {t('board.scenario.hauntValue')}
+                                                                </h2>
+                                                                <div className="mt-3 h-px w-28 bg-[#8f5a22]" />
+                                                                <p className="mt-4 text-[15px] font-semibold leading-7 text-[#57361f] lg:text-[17px] lg:leading-8">
+                                                                    {t('board.scenario.readerLead')}
+                                                                </p>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-2 text-[10px] uppercase tracking-[0.12em] text-[#6b4727] lg:text-[11px]">
+                                                                <div className="border border-[#b98343]/46 bg-[rgba(255,239,199,0.24)] p-2">
+                                                                    <div>{t('board.scenario.readerCaseLabel')}</div>
+                                                                    <div className="mt-1 font-bold text-[#402411]">{t('board.characterSelect.scenarioCaseNo')}</div>
+                                                                </div>
+                                                                <div className="border border-[#607f3a]/42 bg-[rgba(236,245,193,0.20)] p-2">
+                                                                    <div>{t('board.scenario.readerStatusLabel')}</div>
+                                                                    <div className="mt-1 font-bold text-[#425421]">{t('board.characterSelect.scenarioOnly')}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#86643f]">
+                                                                {String(page.pageNumber).padStart(2, '0')}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="relative flex h-full flex-col">
+                                                            <div className={`border-l-4 pl-3 ${page.section?.accentClass ?? 'border-[#8f5a22]'}`}>
+                                                                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7d5129]" aria-hidden="true">
+                                                                    {String((page.sectionIndex ?? 0) + 1).padStart(2, '0')}
+                                                                </div>
+                                                                <h3 className="mt-1 text-[24px] font-black tracking-[0.05em] text-[#3b2211] lg:text-[32px]">
+                                                                    {page.section ? t(page.section.labelKey) : ''}
+                                                                </h3>
+                                                            </div>
+                                                            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 text-[15px] font-medium leading-7 text-[#4e321c] lg:text-[18px] lg:leading-8">
+                                                                {page.section ? t(page.section.bodyKey) : ''}
+                                                            </div>
+                                                            <div className="mt-3 flex items-center justify-between border-t border-[#b98343]/36 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#86643f]">
+                                                                <span>{t('board.scenario.hauntValue')}</span>
+                                                                <span>{String(page.pageNumber).padStart(2, '0')}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </section>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            data-testid="betrayal-scenario-reader-prev"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleScenarioReaderTurn('back');
+                                            }}
+                                            disabled={!canTurnScenarioReaderBack}
+                                            aria-label={t('board.scenario.readerPrev')}
+                                            className="absolute left-2 top-1/2 z-20 inline-flex h-12 w-10 -translate-y-1/2 cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.36)] bg-[rgba(18,23,18,0.68)] text-[#e2c57e] shadow-[0_10px_28px_rgba(0,0,0,0.36)] transition hover:border-[#e2c57e] hover:bg-[rgba(18,23,18,0.84)] disabled:cursor-not-allowed disabled:opacity-35 sm:left-3"
+                                        >
+                                            <ChevronLeft size={18} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            data-testid="betrayal-scenario-reader-next"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleScenarioReaderTurn('forward');
+                                            }}
+                                            disabled={!canTurnScenarioReaderForward}
+                                            aria-label={t('board.scenario.readerNext')}
+                                            className="absolute right-2 top-1/2 z-20 inline-flex h-12 w-10 -translate-y-1/2 cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.36)] bg-[rgba(18,23,18,0.68)] text-[#e2c57e] shadow-[0_10px_28px_rgba(0,0,0,0.36)] transition hover:border-[#e2c57e] hover:bg-[rgba(18,23,18,0.84)] disabled:cursor-not-allowed disabled:opacity-35 sm:right-3"
+                                        >
+                                            <ChevronRight size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    ) : null}
                 </div>
+                </HudPortal>
             ) : null}
         </div>
     );
@@ -2575,6 +2826,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedInventoryCard = core.currentExplorerInventory.find((item) => item.id === previewState.selectedInventoryCardId)
         ?? null;
     const selectedInventoryUseEffect = selectedInventoryCard ? resolveUseEffect(selectedInventoryCard) : null;
+    const selectedInventoryUseEffectMode = selectedInventoryUseEffect?.mode ?? null;
+    const selectedInventoryHealTarget = selectedInventoryUseEffect?.mode === 'healTraits'
+        ? selectedInventoryUseEffect.target
+        : null;
     const previewInventoryCard = core.currentExplorerInventory.find((item) => item.id === inventoryPreviewCardId) ?? null;
     const inventoryPreviewFrameWidth = React.useMemo(() => {
         if (runtimeViewport.width <= 0 || runtimeViewport.height <= 0) {
@@ -2645,11 +2900,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         () => core.rooms.filter((room) => room.state === 'discovered'),
         [core.rooms],
     );
-    const maskTargetTokens = React.useMemo(() => {
-        if (selectedInventoryUseEffect?.mode !== 'moveOthersInRoom') {
-            return [];
-        }
-        return [
+    const maskTargetTokens = selectedInventoryUseEffectMode === 'moveOthersInRoom'
+        ? [
             ...core.otherExplorers
                 .filter((explorer) => (
                     explorer.roomId === core.currentExplorer.roomId
@@ -2667,40 +2919,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     name: monster.name,
                     kind: 'monster' as const,
                 })),
-        ];
-    }, [
-        core.currentExplorer.roomId,
-        core.monsters,
-        core.otherExplorers,
-        core.scenarioRuntime.deadExplorerPlayerIds,
-        matchData,
-        selectedInventoryUseEffect?.mode,
-    ]);
-    const selectedMaskTargetRoomIdsByTokenId = React.useMemo(() => {
-        if (selectedInventoryUseEffect?.mode !== 'moveOthersInRoom') {
-            return {};
-        }
-        const validTargetRoomIds = new Set(maskTargetRooms.map((room) => room.id));
-        return Object.fromEntries(
+        ]
+        : [];
+    const selectedMaskTargetRoomIdsByTokenId = selectedInventoryUseEffectMode === 'moveOthersInRoom'
+        ? Object.fromEntries(
             maskTargetTokens.map((token) => {
                 const selectedRoomId = previewState.selectedMaskTargetRoomIdsByTokenId[token.id];
+                const validTargetRoomIds = new Set(maskTargetRooms.map((room) => room.id));
                 return [
                     token.id,
                     selectedRoomId && validTargetRoomIds.has(selectedRoomId) ? selectedRoomId : '',
                 ];
             }),
-        );
-    }, [
-        maskTargetRooms,
-        maskTargetTokens,
-        previewState.selectedMaskTargetRoomIdsByTokenId,
-        selectedInventoryUseEffect?.mode,
-    ]);
-    const selectedInventoryTargetRoomId = selectedInventoryUseEffect?.mode === 'moveOthersInRoom'
+        )
+        : {};
+    const selectedInventoryTargetRoomId = selectedInventoryUseEffectMode === 'moveOthersInRoom'
         ? maskTargetTokens[0]
             ? selectedMaskTargetRoomIdsByTokenId[maskTargetTokens[0].id] ?? null
             : null
-        : selectedInventoryUseEffect?.mode === 'placeExplorer'
+        : selectedInventoryUseEffectMode === 'placeExplorer'
             ? inventoryTargetRooms.some((room) => room.id === previewState.selectedInventoryTargetRoomId)
                 ? previewState.selectedInventoryTargetRoomId
                 : null
@@ -2739,25 +2976,18 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedAttackWeaponCardId = attackWeaponCards.some((card) => card.id === previewState.selectedAttackWeaponCardId)
         ? previewState.selectedAttackWeaponCardId
         : null;
-    const healTargetExplorers = React.useMemo(() => {
-        if (selectedInventoryUseEffect?.mode !== 'healTraits' || selectedInventoryUseEffect.target !== 'selfOrSameRoomExplorer') {
-            return [];
-        }
-        return [
+    const healTargetExplorers = selectedInventoryUseEffectMode === 'healTraits'
+        && selectedInventoryHealTarget === 'selfOrSameRoomExplorer'
+        ? [
             core.currentExplorer,
             ...core.otherExplorers.filter((explorer) => (
                 explorer.roomId === core.currentExplorer.roomId
                 && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
             )),
-        ];
-    }, [
-        core.currentExplorer,
-        core.otherExplorers,
-        core.scenarioRuntime.deadExplorerPlayerIds,
-        selectedInventoryUseEffect,
-    ]);
-    const selectedInventoryTargetPlayerId = selectedInventoryUseEffect?.mode === 'healTraits'
-        && selectedInventoryUseEffect.target === 'selfOrSameRoomExplorer'
+        ]
+        : [];
+    const selectedInventoryTargetPlayerId = selectedInventoryUseEffectMode === 'healTraits'
+        && selectedInventoryHealTarget === 'selfOrSameRoomExplorer'
         ? healTargetExplorers.some((explorer) => explorer.playerId === previewState.selectedInventoryTargetPlayerId)
             ? previewState.selectedInventoryTargetPlayerId
             : null
@@ -2854,10 +3084,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             .map((card) => card.id)),
         [core],
     );
-        const selectedCardNeedsTargetRoom = selectedInventoryUseEffect?.mode === 'moveOthersInRoom';
-    const selectedCardNeedsPlaceRoom = selectedInventoryUseEffect?.mode === 'placeExplorer';
-    const selectedCardNeedsHealTarget = selectedInventoryUseEffect?.mode === 'healTraits'
-        && selectedInventoryUseEffect.target === 'selfOrSameRoomExplorer'
+    const selectedCardNeedsTargetRoom = selectedInventoryUseEffectMode === 'moveOthersInRoom';
+    const selectedCardNeedsPlaceRoom = selectedInventoryUseEffectMode === 'placeExplorer';
+    const selectedCardNeedsHealTarget = selectedInventoryUseEffectMode === 'healTraits'
+        && selectedInventoryHealTarget === 'selfOrSameRoomExplorer'
         && healTargetExplorers.length > 0;
     const selectedCardUseDisabled = !selectedInventoryCard || Boolean(
         (!selectedInventoryUseEffect && !selectedCardCanUseRabbitFoot)
@@ -2926,8 +3156,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(core.currentExplorer.playerId);
         const canLearnAboutJack = !isTraitor
             && !isDead
-            && core.activeRoomId === 'upper-west'
-            && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)
+            && isBetrayalLibraryRoom(activeRoom)
+            && [core.currentExplorer, ...core.otherExplorers].some((explorer) => (
+                explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+                && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(explorer.playerId)
+            ))
             && !core.usedCardIdsThisTurn.includes('learn-about-jack');
         const canStudyExorcism = !isTraitor
             && !isDead
@@ -2937,7 +3171,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             && !isDead
             && Boolean(core.scenarioRuntime.jackSpiritReleased)
             && core.activeRoomId === core.scenarioRuntime.jackSpiritRoomId
-            && core.scenarioRuntime.exorcismCircleRoomIds.length >= 2
             && !core.usedCardIdsThisTurn.includes('exorcise-jack');
         const canAttackTraitor = !isTraitor
             && !isDead
@@ -2955,6 +3188,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (canExorciseJack) {
             return {
                 actionKind: 'use' as const,
+                commandType: BETRAYAL_COMMANDS.EXORCISE_JACK,
                 label: t('board.status.focusExorciseJack'),
                 cue: t('board.status.actionCueExorciseJack'),
             };
@@ -2962,6 +3196,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (canLearnAboutJack) {
             return {
                 actionKind: 'use' as const,
+                commandType: BETRAYAL_COMMANDS.LEARN_ABOUT_JACK,
                 label: t('board.status.focusLearnAboutJack'),
                 cue: t('board.status.actionCueLearnAboutJack'),
             };
@@ -2969,6 +3204,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         if (canStudyExorcism) {
             return {
                 actionKind: 'use' as const,
+                commandType: BETRAYAL_COMMANDS.STUDY_EXORCISM,
                 label: t('board.status.focusStudyExorcism'),
                 cue: t('board.status.actionCueStudyExorcism'),
             };
@@ -3348,17 +3584,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     const handleUseAction = () => {
         if (core.phase === 'haunt' && hauntActionContext?.actionKind === 'use') {
-            if (core.activeRoomId === 'upper-west' && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)) {
-                dispatchCommand(BETRAYAL_COMMANDS.LEARN_ABOUT_JACK, {});
-            } else if (
-                core.scenarioRuntime.jackSpiritReleased
-                && core.activeRoomId === core.scenarioRuntime.jackSpiritRoomId
-                && core.scenarioRuntime.exorcismCircleRoomIds.length >= 2
-            ) {
-                dispatchCommand(BETRAYAL_COMMANDS.EXORCISE_JACK, {});
-            } else {
-                dispatchCommand(BETRAYAL_COMMANDS.STUDY_EXORCISM, {});
-            }
+            dispatchCommand(hauntActionContext.commandType, {});
             setInventoryPreviewCardId(null);
             setPreviewState((previousState) => ({
                 ...previousState,
@@ -3379,7 +3605,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 cardId,
                 ...(selectedInventoryTargetPlayerId ? { targetPlayerId: selectedInventoryTargetPlayerId } : {}),
                 ...(selectedInventoryTargetRoomId ? { targetRoomId: selectedInventoryTargetRoomId } : {}),
-                ...(selectedInventoryUseEffect?.mode === 'moveOthersInRoom'
+                ...(selectedInventoryUseEffectMode === 'moveOthersInRoom'
                     ? { targetRoomIdsByTokenId: selectedMaskTargetRoomIdsByTokenId }
                     : {}),
             }
@@ -3536,15 +3762,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         {
             id: 'use',
             label: hauntActionContext?.actionKind === 'use'
-                ? (
-                    core.activeRoomId === 'upper-west'
-                        ? t('board.actions.learnAboutJack')
-                        : core.scenarioRuntime.jackSpiritReleased
-                            && core.activeRoomId === core.scenarioRuntime.jackSpiritRoomId
-                            && core.scenarioRuntime.exorcismCircleRoomIds.length >= 2
-                            ? t('board.actions.exorciseJack')
-                            : t('board.actions.studyExorcism')
-                )
+                ? hauntActionContext.commandType === BETRAYAL_COMMANDS.LEARN_ABOUT_JACK
+                    ? t('board.actions.learnAboutJack')
+                    : hauntActionContext.commandType === BETRAYAL_COMMANDS.EXORCISE_JACK
+                        ? t('board.actions.exorciseJack')
+                        : t('board.actions.studyExorcism')
                 : t('board.actions.use'),
             disabled: hauntActionContext?.actionKind === 'use'
                 ? false
@@ -3966,7 +4188,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             <div
                 className={`relative h-full min-h-full w-full overflow-hidden ${
                     isPhoneLandscapeLayout
-                        ? 'px-1.5 py-1.5'
+                        ? 'p-0'
                         : 'px-3 py-3 md:px-4 md:py-4'
                 }`}
                 data-testid={isPhoneLandscapeLayout ? 'betrayal-mobile-landscape-layout' : 'betrayal-desktop-layout'}
@@ -4007,114 +4229,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 </header>
 
                 <main className="absolute inset-0 overflow-hidden">
-                    {isPhoneLandscapeLayout ? (
-                        <section
-                            data-testid="betrayal-mobile-stage-status"
-                            className="pointer-events-none absolute left-2 top-2 z-40 flex min-w-[188px] max-w-[224px] items-start gap-2 rounded-[16px] border border-[#5a4930] bg-[rgba(27,20,16,0.9)] px-2.5 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.38)] backdrop-blur-sm"
-                        >
-                            <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#6b5a3d] bg-[rgba(13,18,14,0.86)]">
-                                <OptimizedImage
-                                    src={core.currentExplorer.portraitAsset}
-                                    locale={effectiveLocale}
-                                    alt={core.currentExplorer.displayName}
-                                    className="h-full w-full object-contain"
-                                    draggable={false}
-                                />
-                            </div>
-                            <div className="min-w-0">
-                                <div className="truncate text-[13px] font-semibold tracking-[0.04em] text-[#efe2c4]">
-                                    {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
-                                </div>
-                                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#c8f05e]">
-                                    <span>{t('board.hud.moveLabel')} {core.movesRemaining}</span>
-                                    <span className="text-[#7d725d]">/</span>
-                                    <span>{phaseLabel}</span>
-                                </div>
-                                <div
-                                    data-testid="betrayal-mobile-traits-strip"
-                                    className="mt-1.5 grid grid-cols-4 gap-1"
-                                >
-                                    {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
-                                        <span
-                                            key={`mobile-current-trait-${trait}`}
-                                            className={`inline-flex h-[22px] min-w-[24px] items-center justify-center rounded-[7px] border border-[rgba(214,191,129,0.22)] bg-[rgba(12,16,14,0.76)] px-1.5 text-[12px] font-bold ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
-                                            title={`${TRAIT_LABEL_LOCAL[trait]} ${core.currentExplorer.traits[trait]}`}
-                                        >
-                                            {core.currentExplorer.traits[trait]}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
-                    ) : null}
-                    {isPhoneLandscapeLayout ? (
-                        <section
-                            data-testid="betrayal-mobile-context-strip"
-                            aria-label={t('board.mobile.contextStripLabel')}
-                            className="pointer-events-auto absolute right-2 top-2 z-40 grid w-[min(360px,40vw)] min-w-[276px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[16px] border border-[#5a4930] bg-[rgba(27,20,16,0.9)] px-2.5 py-2 text-[#efe2c4] shadow-[0_10px_24px_rgba(0,0,0,0.38)] backdrop-blur-sm"
-                        >
-                            <div className="min-w-0">
-                                <div
-                                    data-testid="betrayal-mobile-deck-summary"
-                                    className="grid grid-cols-3 gap-1 text-[11px] leading-none"
-                                >
-                                    {deckItems.map((item) => (
-                                        <span key={`mobile-${item.id}`} className="inline-flex min-w-0 items-center justify-between gap-1 rounded-[7px] border border-[rgba(214,191,129,0.12)] bg-[rgba(12,16,14,0.55)] px-1.5 py-1">
-                                            <span className="truncate text-[#c4a265]">{item.label.replace('牌堆', '')}</span>
-                                            <span className="font-bold text-[#f0e2c0]">{item.count}</span>
-                                        </span>
-                                    ))}
-                                </div>
-                                <div
-                                    data-testid="betrayal-mobile-discard-summary"
-                                    className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-none text-[#a89d84]"
-                                >
-                                    <span>{t('board.sections.discard')}</span>
-                                    {discardItems.map((item) => (
-                                        <span key={`mobile-${item.id}`} className="inline-flex items-center gap-1">
-                                            <span className="max-w-[42px] truncate">{item.label.split(' · ')[0].replace('牌堆', '')}</span>
-                                            <span className="font-bold text-[#d8bf81]">{item.count}</span>
-                                        </span>
-                                    ))}
-                                </div>
-                                <div
-                                    data-testid="betrayal-mobile-teammates-summary"
-                                    className="mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[10px] leading-none text-[#b7aa92]"
-                                >
-                                    <span className="shrink-0 text-[#c4a265]">{t('board.hud.teammatesLabel')}</span>
-                                    {core.otherExplorers.slice(0, 2).map((explorer) => (
-                                        <span
-                                            key={`mobile-teammate-${explorer.playerId}`}
-                                            className="truncate rounded-full bg-[rgba(12,16,14,0.62)] px-1.5 py-1"
-                                            title={`${resolvePlayerName(explorer.playerId, explorer.displayName, matchData)} · ${core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown')}`}
-                                        >
-                                            {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="grid gap-1">
-                                <button
-                                    type="button"
-                                    onClick={openScenarioReference}
-                                    data-testid="betrayal-mobile-open-scenario"
-                                    className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
-                                    title={scenarioConfig.presentation.referenceTitle}
-                                >
-                                    <BookOpen size={14} />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomPreviewId(core.activeRoomId)}
-                                    data-testid="betrayal-mobile-open-active-room-preview"
-                                    className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#58472f] bg-[rgba(13,15,12,0.78)] text-[#d8bf81]"
-                                    title={t('board.rooms.preview')}
-                                >
-                                    <House size={14} />
-                                </button>
-                            </div>
-                        </section>
-                    ) : null}
                     <section
                         data-testid="betrayal-left-status-rail"
                         className={`pointer-events-none absolute left-3 top-3 z-40 max-h-[calc(100vh-1.5rem)] w-[286px] min-h-0 content-start gap-2 overflow-visible ${
@@ -4410,7 +4524,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             data-testid="betrayal-room-panel"
                             data-tutorial-id="betrayal-room-board"
                             className={`flex min-h-0 flex-col bg-transparent p-0 ${
-                                isPhoneLandscapeLayout ? 'pb-[108px] pt-9' : 'pb-[86px] lg:pb-0'
+                                isPhoneLandscapeLayout ? 'pb-0 pt-0' : 'pb-[86px] lg:pb-0'
                             }`}
                             data-mobile-role={isPhoneLandscapeLayout ? 'primary-board-stage' : undefined}
                         >
@@ -4695,7 +4809,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 </div>
                             ) : null}
 
-                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || selectedCorpseLootTarget || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 0) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
+                            {(roomFocusState || (tradeShortcutState && core.recommendedAction !== 'trade') || useDogTrade || (canUseDogTrade && dogTradeTargets.length > 0) || selectedCorpseLootTarget || (hauntActionContext?.actionKind?.startsWith('attack-') && attackWeaponCards.length > 0) || (selectedInventoryUseEffectMode === 'healTraits' && healTargetExplorers.length > 0) || ((canDeclareHolySymbolExplore || canDeclareIdolExplore) && explorableRoomSlots.length > 0) || (selectedInventoryUseEffectMode === 'placeExplorer' && inventoryTargetRooms.length > 0) || (selectedCardNeedsTargetRoom && maskTargetTokens.length > 0 && maskTargetRooms.length > 0)) ? (
                                 <div className="pointer-events-auto absolute left-1/2 top-[86px] z-50 flex max-w-[min(880px,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1">
                                     {roomFocusState ? (
                                         <button
@@ -4745,7 +4859,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 })}
                                         </div>
                                     ) : null}
-                                    {selectedInventoryUseEffect?.mode === 'placeExplorer' && inventoryTargetRooms.length > 0 ? (
+                                    {selectedInventoryUseEffectMode === 'placeExplorer' && inventoryTargetRooms.length > 0 ? (
                                         <div
                                             data-testid="betrayal-inventory-target-room-selector"
                                             className="inline-flex max-w-[min(720px,calc(100vw-2rem))] flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
@@ -4771,7 +4885,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             })}
                                         </div>
                                     ) : null}
-                                    {selectedInventoryUseEffect?.mode === 'healTraits' && healTargetExplorers.length > 0 ? (
+                                    {selectedInventoryUseEffectMode === 'healTraits' && healTargetExplorers.length > 0 ? (
                                         <div
                                             data-testid="betrayal-inventory-target-player-selector"
                                             className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
@@ -5232,15 +5346,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     );
                                     })}
                                 </ZoomPanViewport>
-                            {visibleActionItems.length > 0 && !isEndgameExorciseRollReview ? (
+                            {visibleActionItems.length > 0 && !isEndgameExorciseRollReview && !isPhoneLandscapeLayout ? (
                                 <div
                                     data-testid="betrayal-action-rail"
-                                    data-mobile-role={isPhoneLandscapeLayout ? 'pc-action-rail-adapted' : undefined}
-                                    className={`pointer-events-none absolute inset-x-0 z-50 flex-col items-center justify-end gap-0.5 ${
-                                        isPhoneLandscapeLayout
-                                            ? 'bottom-[calc(var(--safe-area-bottom)+0.2rem)] flex'
-                                            : 'bottom-1 hidden md:flex'
-                                    }`}
+                                    className="pointer-events-none absolute inset-x-0 bottom-1 z-50 hidden flex-col items-center justify-end gap-0.5 md:flex"
                                 >
                                     {core.recommendedAction === 'trade' ? (
                                         <div
@@ -5510,6 +5619,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         ) : null}
                                                     </div>
                                                     <div className="mt-0.5 truncate text-[10px] text-[#b7aa92]">{roomName}</div>
+                                                    {core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(explorer.playerId) ? (
+                                                        <div
+                                                            className="mt-1 truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c5df6b]"
+                                                            data-testid={`betrayal-bottom-teammate-knowledge-${explorer.playerId}`}
+                                                        >
+                                                            {t('board.players.knowledgeOfJack')}
+                                                        </div>
+                                                    ) : null}
                                                     <div className="mt-1 flex items-center gap-1">
                                                         {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
                                                             <span

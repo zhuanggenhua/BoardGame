@@ -4,11 +4,17 @@ import {
     combinations,
     compareRankArrays,
 } from './cards';
-import type { HandStrength, PlayingCard } from './types';
+import type { HandStrength, PlayingCard, Rank, TheGangHandRankCode, TheGangRulesConfig } from './types';
+import { isChallengeActive } from './expansions';
 
 export interface EvaluatedHand {
     strength: HandStrength;
     cards: PlayingCard[];
+}
+
+export interface PokerEvaluationOptions {
+    rulesConfig?: TheGangRulesConfig;
+    blankedRank?: Rank;
 }
 
 export interface PokerHandRankRule {
@@ -26,8 +32,15 @@ export const TEXAS_HOLDEM_HAND_RANK_RULES: readonly PokerHandRankRule[] = [
     { category: 5, label: HAND_LABELS[5], description: '五张同花色牌，强于顺子。' },
     { category: 6, label: HAND_LABELS[6], description: '三条加一对，强于同花。' },
     { category: 7, label: HAND_LABELS[7], description: '四张同点数牌，强于葫芦。' },
-    { category: 8, label: HAND_LABELS[8], description: '同花色且连续的五张牌。' },
-    { category: 9, label: HAND_LABELS[9], description: 'A-K-Q-J-10 同花顺，是最强牌型。' },
+    { category: 8, label: '同花顺', description: '同花色且连续的五张牌。' },
+    { category: 9, label: '皇家同花顺', description: 'A-K-Q-J-10 同花顺，是最强牌型。' },
+] as const;
+
+export const THE_GANG_EXPANDED_HAND_RANK_RULES: readonly PokerHandRankRule[] = [
+    ...TEXAS_HOLDEM_HAND_RANK_RULES,
+    { category: 7.5, label: '五花顺', description: '齿轮扩展中，五张牌点数连续且覆盖五种花色。' },
+    { category: 3.5, label: '五花', description: '齿轮扩展中，五张牌覆盖五种花色。' },
+    { category: 8.5, label: '五条', description: '万能牌或鬼牌扩展中，五张同点数牌。' },
 ] as const;
 
 const sortDescending = (values: number[]) => [...values].sort((a, b) => b - a);
@@ -48,13 +61,109 @@ const getStraightHigh = (values: number[]): number | null => {
     return null;
 };
 
+const codeCategory: Record<TheGangHandRankCode, number> = {
+    HC: 0,
+    '1p': 1,
+    '2p': 2,
+    '3s': 3,
+    FA: 3.5,
+    ST: 4,
+    FL: 5,
+    FH: 6,
+    '4s': 7,
+    FS: 7.5,
+    SF: 8,
+    '5s': 8.5,
+    RF: 9,
+};
+
+const isLocked = (code: TheGangHandRankCode, options?: PokerEvaluationOptions) =>
+    options?.rulesConfig?.lockedHandRanks?.includes(code) === true;
+
+const isFlushEnabled = (options?: PokerEvaluationOptions) =>
+    !options?.rulesConfig || !isChallengeActive(options.rulesConfig, 'no-color');
+
+const isFlashEnabled = (options?: PokerEvaluationOptions) =>
+    options?.rulesConfig ? isChallengeActive(options.rulesConfig, 'grinding-gears') : false;
+
+const normalCardsOf = (cards: PlayingCard[], options?: PokerEvaluationOptions) => cards.filter((card) => (
+    card.kind !== 'wild'
+    && card.kind !== 'joker'
+    && card.kind !== 'blank'
+    && card.rank !== options?.blankedRank
+));
+
+const wildCardsOf = (cards: PlayingCard[]) => cards.filter((card) => (
+    card.kind === 'wild'
+    || card.kind === 'joker'
+));
+
+const makeStrength = (code: TheGangHandRankCode, ranks: number[], label: string): HandStrength => ({
+    category: codeCategory[code],
+    ranks,
+    label,
+    code,
+});
+
+const applyQuantumValues = (cards: PlayingCard[], options?: PokerEvaluationOptions): PlayingCard[] => {
+    if (!options?.rulesConfig || !isChallengeActive(options.rulesConfig, 'quantum-chaos')) return cards;
+    const normalOrder: Rank[] = isChallengeActive(options.rulesConfig, 'extra-hours')
+        ? ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'B', 'C', 'D']
+        : ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const reversed = [...normalOrder].reverse();
+    const rankMap = Object.fromEntries(normalOrder.map((rank, index) => [rank, reversed[index]])) as Partial<Record<Rank, Rank>>;
+    return cards.map((card) => rankMap[card.rank] ? { ...card, rank: rankMap[card.rank] } : card);
+};
+
 export function compareHandStrength(left: HandStrength, right: HandStrength): number {
     const categoryDelta = left.category - right.category;
     if (categoryDelta !== 0) return categoryDelta;
     return compareRankArrays(left.ranks, right.ranks);
 }
 
-export function evaluateFiveCardHand(cards: PlayingCard[]): HandStrength {
+export function evaluateFiveCardHand(cards: PlayingCard[], options?: PokerEvaluationOptions): HandStrength {
+    const wildCards = wildCardsOf(cards);
+    const regularCards = normalCardsOf(applyQuantumValues(cards, options), options);
+    const values = regularCards.map((card) => RANK_VALUE[card.rank]);
+
+    if (values.length === 0 && wildCards.length === 0) {
+        return makeStrength('HC', [0], HAND_LABELS[0]);
+    }
+
+    const minHandValue = regularCards.length > 0 ? Math.min(...values) : 2;
+    const maxHandValue = regularCards.length > 0 ? Math.max(...values) : 14;
+    const minWildValue = options?.rulesConfig && isChallengeActive(options.rulesConfig, 'all-out-attack') ? maxHandValue : 2;
+    const maxWildValue = options?.rulesConfig && isChallengeActive(options.rulesConfig, 'sleeping-guard') ? minHandValue : 17;
+
+    const candidateValues = Array.from(new Set([
+        ...values,
+        ...Array.from({ length: Math.max(0, maxWildValue - minWildValue + 1) }, (_, index) => minWildValue + index),
+    ])).filter((value) => value >= 2 && value <= 17);
+
+    const expandedHands = expandWildCards(regularCards, wildCards.length, candidateValues);
+    return expandedHands.reduce<HandStrength | null>((best, candidateCards) => {
+        const strength = evaluateFiveCardHandWithoutWilds(candidateCards, options);
+        if (!best || compareHandStrength(strength, best) > 0) return strength;
+        return best;
+    }, null) ?? makeStrength('HC', [0], HAND_LABELS[0]);
+}
+
+function expandWildCards(cards: PlayingCard[], wildCount: number, candidateValues: number[]): PlayingCard[][] {
+    if (wildCount <= 0) return [cards];
+    const suits: PlayingCard['suit'][] = ['spades', 'hearts', 'diamonds', 'clubs', 'gear'];
+    const ranks = Object.entries(RANK_VALUE)
+        .filter(([, value]) => candidateValues.includes(value))
+        .map(([rank]) => rank as Rank);
+    const substitutions = ranks.flatMap((rank) => suits.map((suit) => ({ suit, rank, kind: 'standard' as const })));
+
+    let hands = [cards];
+    for (let index = 0; index < wildCount; index += 1) {
+        hands = hands.flatMap((hand) => substitutions.map((substitution) => [...hand, substitution]));
+    }
+    return hands;
+}
+
+function evaluateFiveCardHandWithoutWilds(cards: PlayingCard[], options?: PokerEvaluationOptions): HandStrength {
     const values = cards.map((card) => RANK_VALUE[card.rank]);
     const counts = new Map<number, number>();
     for (const value of values) {
@@ -64,60 +173,71 @@ export function evaluateFiveCardHand(cards: PlayingCard[]): HandStrength {
     const groups = Array.from(counts.entries())
         .map(([value, count]) => ({ value, count }))
         .sort((a, b) => b.count - a.count || b.value - a.value);
-    const flush = cards.every((card) => card.suit === cards[0].suit);
+    const flush = isFlushEnabled(options) && cards.every((card) => card.suit === cards[0].suit);
+    const flash = isFlashEnabled(options) && new Set(cards.map((card) => card.suit)).size >= 5;
     const straightHigh = getStraightHigh(values);
 
-    if (flush && straightHigh === 14) {
-        return { category: 9, ranks: [14], label: HAND_LABELS[9] };
+    const five = groups.find((group) => group.count === 5);
+    if (five && !isLocked('5s', options)) {
+        return makeStrength('5s', [five.value], '五条');
     }
-    if (flush && straightHigh !== null) {
-        return { category: 8, ranks: [straightHigh], label: HAND_LABELS[8] };
+    if (flush && straightHigh === 14 && !isLocked('RF', options)) {
+        return makeStrength('RF', [14], '皇家同花顺');
+    }
+    if (flush && straightHigh !== null && !isLocked('SF', options)) {
+        return makeStrength('SF', [straightHigh], '同花顺');
+    }
+    if (flash && straightHigh !== null && !isLocked('FS', options)) {
+        return makeStrength('FS', [straightHigh], '五花顺');
     }
 
     const four = groups.find((group) => group.count === 4);
-    if (four) {
+    if (four && !isLocked('4s', options)) {
         const kicker = groups.find((group) => group.count === 1)?.value ?? 0;
-        return { category: 7, ranks: [four.value, kicker], label: HAND_LABELS[7] };
+        return makeStrength('4s', [four.value, kicker], HAND_LABELS[7]);
     }
 
     const three = groups.find((group) => group.count === 3);
     const pair = groups.find((group) => group.count === 2);
-    if (three && pair) {
-        return { category: 6, ranks: [three.value, pair.value], label: HAND_LABELS[6] };
+    if (three && pair && !isLocked('FH', options)) {
+        return makeStrength('FH', [three.value, pair.value], HAND_LABELS[6]);
     }
 
-    if (flush) {
-        return { category: 5, ranks: sortDescending(values), label: HAND_LABELS[5] };
+    if (flush && !isLocked('FL', options)) {
+        return makeStrength('FL', sortDescending(values), HAND_LABELS[5]);
     }
-    if (straightHigh !== null) {
-        return { category: 4, ranks: [straightHigh], label: HAND_LABELS[4] };
+    if (straightHigh !== null && !isLocked('ST', options)) {
+        return makeStrength('ST', [straightHigh], HAND_LABELS[4]);
     }
-    if (three) {
+    if (three && !isLocked('3s', options)) {
         const kickers = groups.filter((group) => group.count === 1).map((group) => group.value);
-        return { category: 3, ranks: [three.value, ...sortDescending(kickers)], label: HAND_LABELS[3] };
+        return makeStrength('3s', [three.value, ...sortDescending(kickers)], HAND_LABELS[3]);
+    }
+    if (flash && !isLocked('FA', options)) {
+        return makeStrength('FA', sortDescending(values), '五花');
     }
 
     const pairs = groups.filter((group) => group.count === 2).map((group) => group.value);
-    if (pairs.length >= 2) {
+    if (pairs.length >= 2 && !isLocked('2p', options)) {
         const sortedPairs = sortDescending(pairs);
         const kicker = groups.find((group) => group.count === 1)?.value ?? 0;
-        return { category: 2, ranks: [...sortedPairs, kicker], label: HAND_LABELS[2] };
+        return makeStrength('2p', [...sortedPairs, kicker], HAND_LABELS[2]);
     }
-    if (pairs.length === 1) {
+    if (pairs.length === 1 && !isLocked('1p', options)) {
         const kickers = groups.filter((group) => group.count === 1).map((group) => group.value);
-        return { category: 1, ranks: [pairs[0], ...sortDescending(kickers)], label: HAND_LABELS[1] };
+        return makeStrength('1p', [pairs[0], ...sortDescending(kickers)], HAND_LABELS[1]);
     }
 
-    return { category: 0, ranks: sortDescending(values), label: HAND_LABELS[0] };
+    return makeStrength('HC', sortDescending(values), HAND_LABELS[0]);
 }
 
-export function evaluateBestTexasHoldemHand(cards: PlayingCard[]): EvaluatedHand {
+export function evaluateBestTexasHoldemHand(cards: PlayingCard[], options?: PokerEvaluationOptions): EvaluatedHand {
     if (cards.length < 5) {
         throw new Error('At least five cards are required to evaluate a poker hand.');
     }
 
     return combinations(cards, 5).reduce<EvaluatedHand | null>((best, combo) => {
-        const strength = evaluateFiveCardHand(combo);
+        const strength = evaluateFiveCardHand(combo, options);
         if (!best || compareHandStrength(strength, best.strength) > 0) {
             return { strength, cards: combo };
         }

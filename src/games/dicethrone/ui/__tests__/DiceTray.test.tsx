@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import { DiceActions, DiceTray } from '../DiceTray';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BoardDiceStage, DiceActions, DiceTray } from '../DiceTray';
 import type { InteractionDescriptor, MultistepChoiceData } from '../../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../../engine/systems/useMultistepInteraction';
 import type { Die } from '../../types';
@@ -20,6 +20,10 @@ vi.mock('react-i18next', () => ({
 const dice3DCalls: Array<Record<string, unknown>> = [];
 const diceField3DCalls: Array<Record<string, unknown>> = [];
 const diceBoxPhysicsSourceCalls: Array<Record<string, unknown>> = [];
+
+afterEach(() => {
+    vi.useRealTimers();
+});
 
 vi.mock('../Dice3D', () => ({
     Dice3D: (props: Record<string, unknown>) => {
@@ -109,9 +113,15 @@ const boardDice: Die[] = [
 ];
 
 function createModifyInteraction(
-    mode: 'adjust' | 'any' = 'adjust',
+    mode: 'adjust' | 'any' | 'set' | 'copy' = 'adjust',
     selectCount = 1,
 ): InteractionDescriptor<MultistepChoiceData<DiceModifyStep, DiceModifyResult>> {
+    const dieModifyConfig = mode === 'adjust'
+        ? { mode: 'adjust' as const, adjustRange: { min: -1, max: 1 } }
+        : mode === 'set'
+            ? { mode: 'set' as const, targetValue: 6 }
+            : { mode };
+
     return {
         id: `modify-${mode}`,
         kind: 'multistep-choice',
@@ -126,9 +136,7 @@ function createModifyInteraction(
             toCommands: () => [],
             meta: {
                 dtType: 'modifyDie',
-                dieModifyConfig: mode === 'adjust'
-                    ? { mode: 'adjust', adjustRange: { min: -1, max: 1 } }
-                    : { mode: 'any' },
+                dieModifyConfig,
                 selectCount,
                 diceOwnerId: undefined,
                 targetOpponentDice: false,
@@ -298,7 +306,7 @@ describe('DiceTray tutorial anchor', () => {
         expect(container.querySelector('[data-testid="die-locked-ring-1"].rounded-2xl')).toBeNull();
     });
 
-    it('棋盘内 3D 骰子的选择框应为圆形而不是方角框', () => {
+    it('棋盘内 3D 骰子的选择框应锚定在真实物理骰投影上', () => {
         render(
             <DiceTray
                 dice={boardDice}
@@ -321,9 +329,26 @@ describe('DiceTray tutorial anchor', () => {
         });
         expect(selectedRing.closest('[data-testid="die-button-0"]')).toBeNull();
         expect(selectedRing).not.toHaveClass('rounded-2xl');
+
+        const operationAnchor = screen.getByTestId('die-button-0');
+        expect(operationAnchor).toHaveAttribute('data-render-mode', 'engine');
+        expect(operationAnchor).toHaveAttribute('data-board-dice-operation-anchor', 'true');
+        expect(operationAnchor).toHaveStyle({
+            left: '120px',
+            top: '90px',
+            width: '70px',
+            height: '70px',
+        });
+        expect(screen.getByTestId('die-selected-operation-ring-0').parentElement).toBe(operationAnchor);
+        const visibleValue = screen.getByTestId('die-board-visible-value-0');
+        expect(visibleValue).toHaveTextContent('1');
+        expect(visibleValue).toHaveAttribute('data-visible-die-value', '1');
+        expect(visibleValue).toHaveClass('rounded-full');
+        expect(visibleValue).not.toHaveClass('bg-slate-950/88');
     });
 
-    it('棋盘内 3D 改骰应显示可点击的加减按钮而不是只靠点骰子循环', () => {
+    it('棋盘内 3D 改骰应显示提示、可见骰面和完整加减操作条', () => {
+        vi.useFakeTimers();
         const step = vi.fn();
         render(
             <DiceTray
@@ -341,13 +366,122 @@ describe('DiceTray tutorial anchor', () => {
 
         const decrementButton = screen.getByTestId('die-adjust-decrement-0');
         const incrementButton = screen.getByTestId('die-adjust-increment-0');
+        const operationAnchor = screen.getByTestId('die-button-0');
         expect(decrementButton).toBeVisible();
         expect(incrementButton).toBeVisible();
+        expect(operationAnchor).toHaveStyle({
+            left: '120px',
+            top: '90px',
+            width: '128px',
+            height: '128px',
+        });
+        expect(screen.getByTestId('die-board-visible-value-0')).toHaveTextContent('1');
+        expect(screen.getByTestId('die-board-adjust-controls-0')).toContainElement(decrementButton);
+        expect(screen.getByTestId('die-board-adjust-controls-0')).toContainElement(incrementButton);
+        expect(operationAnchor).toHaveAttribute('data-board-dice-interaction-armed', 'false');
+
+        incrementButton.click();
+        expect(step).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.advanceTimersByTime(180);
+        });
+
         expect(decrementButton).toHaveClass('pointer-events-auto');
         expect(incrementButton).toHaveClass('pointer-events-auto');
+        expect(decrementButton.closest('[data-testid="die-button-0"]')).toHaveAttribute('data-board-dice-operation-anchor', 'true');
+        expect(incrementButton.closest('[data-testid="die-button-0"]')).toHaveAttribute('data-board-dice-operation-anchor', 'true');
+        expect(operationAnchor).toHaveAttribute('data-board-dice-interaction-armed', 'true');
 
         incrementButton.click();
         expect(step).toHaveBeenCalledWith({ action: 'adjust', dieId: 0, delta: 1, currentValue: 1 });
+    });
+
+    it('棋盘整体 HUD 应承接 3D 复制改骰源骰和目标骰提示', () => {
+        render(
+            <BoardDiceStage
+                dice={boardDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract={true}
+                isRolling={false}
+                presentation="board"
+                interaction={createModifyInteraction('copy', 2)}
+                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 })}
+            />,
+        );
+
+        expect(screen.getByTestId('dicethrone-board-dice-operation-hint')).toHaveTextContent('interaction.hint_copy_step1');
+
+        render(
+            <BoardDiceStage
+                dice={boardDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract={true}
+                isRolling={false}
+                presentation="board"
+                interaction={createModifyInteraction('copy', 2)}
+                multistepInteraction={createMultistepState({ modifications: { 0: 1 }, modCount: 1, totalAdjustment: 0 })}
+            />,
+        );
+
+        expect(screen.getAllByTestId('dicethrone-board-dice-operation-hint')[1]).toHaveTextContent('interaction.hint_copy_step2');
+    });
+
+    it('棋盘整体 HUD 应承接 3D 任意改面提示，不塞进骰台内部', () => {
+        render(
+            <BoardDiceStage
+                dice={boardDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract={true}
+                isRolling={false}
+                interaction={createModifyInteraction('adjust')}
+                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 })}
+            />,
+        );
+
+        const hint = screen.getByTestId('dicethrone-board-dice-operation-hint');
+        expect(hint).toHaveTextContent('interaction.hint_adjust');
+        expect(hint).toHaveClass('fixed');
+        expect(hint.closest('[data-testid="dicethrone-board-dice-stage"]')).not.toBeNull();
+        expect(hint.closest('[data-testid="dicethrone-board-dice-stage"]')).toContainElement(screen.getByTestId('die-button-0'));
+    });
+
+    it('棋盘内 3D 选骰刚接管时不吃拖牌释放后的残留点击', () => {
+        vi.useFakeTimers();
+        const step = vi.fn();
+        render(
+            <DiceTray
+                dice={boardDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="defensiveRoll"
+                canInteract={true}
+                isRolling={false}
+                presentation="board"
+                interaction={createSelectInteraction()}
+                multistepInteraction={createMultistepState({ selectedDiceIds: [] }, step)}
+            />,
+        );
+
+        const operationAnchor = screen.getByTestId('die-button-0');
+        expect(operationAnchor).toHaveAttribute('data-board-dice-interaction-armed', 'false');
+
+        fireEvent.click(operationAnchor);
+        expect(step).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.advanceTimersByTime(180);
+        });
+
+        expect(operationAnchor).toHaveAttribute('data-board-dice-interaction-armed', 'true');
+        fireEvent.click(operationAnchor);
+        expect(step).toHaveBeenCalledWith({ action: 'toggle', dieId: 0 });
     });
 
     it('右侧传统骰盘的任意改面模式应允许分别修改两颗骰子', () => {

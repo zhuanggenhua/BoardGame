@@ -120,6 +120,24 @@ async function expectMiddleRoundFullState(page: Page) {
 type TheGangHarnessState = {
     core?: {
         currentRoundChips?: Record<string, unknown>;
+        communityCards?: unknown[];
+        rules?: {
+            config?: {
+                gameMode?: string;
+                challenges?: Record<string, number>;
+            };
+        };
+        players?: Record<string, {
+            pocketCards?: unknown[];
+            communityCards?: unknown[];
+            toolCards?: string[];
+            specialistCards?: string[];
+            activeTools?: string[];
+            flashlightCards?: unknown[];
+            nightVisionCards?: unknown[];
+        }>;
+        toolDeck?: string[];
+        specialistDeck?: string[];
     };
 };
 
@@ -202,6 +220,56 @@ async function expectHudActionLogAndUndoAvailable(page: Page) {
 }
 
 test.describe('The Gang 测试入口与代表态截图', () => {
+    test('桌面端扩展选择和工具牌发放通过真实入口生效', async ({ game, page }, testInfo) => {
+        test.setTimeout(120000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 3,
+            seed: 'the-gang-expansion-tools-e2e',
+            seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        const rulesPanel = page.getByTestId('the-gang-rules-config');
+        await expect(rulesPanel).toBeVisible();
+        await rulesPanel.getByRole('button', { name: '扩展' }).click();
+        await expect(page.getByTestId('the-gang-rules-modal')).toBeVisible();
+        await page.getByTestId('the-gang-mode-seven-card-stud').click();
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-pressed', 'true');
+        await game.screenshot('桌面正式规则设置弹窗已切到七张梭哈', testInfo);
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    gameMode: state?.core?.rules?.config?.gameMode,
+                    handCards: state?.core?.players?.['0']?.pocketCards?.length,
+                    personalCommunityCards: state?.core?.players?.['0']?.communityCards?.length,
+                    sharedCommunityCards: state?.core?.communityCards?.length,
+                };
+            }, { message: '等待七张梭哈扩展配置通过真实入口生效' })
+            .toEqual({
+                gameMode: 'seven-card-stud',
+                handCards: 3,
+                personalCommunityCards: 1,
+                sharedCommunityCards: 0,
+            });
+
+        const toolsPanel = page.getByTestId('the-gang-tools-panel');
+        await expect(toolsPanel).toBeVisible();
+        await page.getByRole('button', { name: '发放工具牌' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return Object.values(state?.core?.players ?? {})
+                    .map((player) => player.toolCards?.length ?? 0);
+            }, { message: '等待工具牌通过真实入口发到每名玩家手中' })
+            .toEqual([1, 1, 1]);
+        await game.screenshot('桌面工具专家牌区已发放工具牌', testInfo);
+    });
+
     test('桌面端 6 人满人数布局可显示所有玩家席位', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
         await page.setViewportSize({ width: 1920, height: 1080 });

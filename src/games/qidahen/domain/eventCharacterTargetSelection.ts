@@ -131,14 +131,14 @@ function buildQidahenTributeEdictActionSelection(
                 cardId: 'grant-pardon',
                 cardLabel: '赐印招安',
                 cardDefId: null,
-                detail: `${targetFaction.name}选择执行赐印招安；具体地图目标承接仍需后续接入。`,
+                detail: `${targetFaction.name}选择执行赐印招安；随后进入目标部队和接收区选择。`,
             },
             {
                 id: 'drive-tiger',
                 cardId: 'drive-tiger',
                 cardLabel: '驱虎吞狼',
                 cardDefId: null,
-                detail: `${targetFaction.name}选择执行驱虎吞狼；具体地图目标承接仍需后续接入。`,
+                detail: `${targetFaction.name}选择执行驱虎吞狼；随后进入既有同意与调度进攻链。`,
             },
         ],
     };
@@ -547,7 +547,9 @@ export function resolveQidahenEventOpponentHandChoice(
                     discardedCardCount > 0
                         ? `额外弃 ${discardedCardCount} 张手牌作为费用。`
                         : '没有额外弃牌费用。',
-                    `${choice.cardLabel}的地图目标和正式行动结算仍需后续承接。`,
+                    choice.id === 'grant-pardon'
+                        ? '随后进入赐印招安的目标部队和接收区选择。'
+                        : '随后进入驱虎吞狼的同意与调度进攻流程。',
                 ],
             },
             actionLog: [

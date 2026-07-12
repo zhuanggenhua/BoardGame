@@ -37,11 +37,9 @@ describe('DiceThrone 骰盒皮肤画布导出', () => {
         const skin = await loadDiceThroneDiceBoxSkin('monk-dice', 'zh-CN');
 
         expect(Object.keys(skin.faceCanvases)).toHaveLength(6);
-        expect(Object.keys(skin.faceImages)).toHaveLength(6);
         expect('preferPresetMaterials' in skin).toBe(false);
         expect(skin.faceCanvases[1].width).toBe(1024);
         expect(skin.faceCanvases[1].height).toBe(1024);
-        expect(skin.faceImages[1]).toBe(skin.faceCanvases[1]);
         expect(skin.edgeCanvas.width).toBe(1024);
         expect(skin.edgeCanvas.height).toBe(1024);
         expect(toDataURLSpy).not.toHaveBeenCalled();

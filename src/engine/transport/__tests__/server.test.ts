@@ -5077,6 +5077,84 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(feedbackReporter).not.toHaveBeenCalled();
     });
 
+    it('online AI watchdog 应以当前状态座位控制权为准，不得用旧 AI 配置抢走真人可见交互', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const initialState = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'defensiveRoll',
+            interaction: {
+                current: createSimpleChoice(
+                    'human-state-choice-1',
+                    '1',
+                    '真人当前选项',
+                    [{
+                        id: 'reroll-die-1',
+                        label: '重掷骰子',
+                        value: { dieId: 1 },
+                    }],
+                    {
+                        sourceId: 'dicethrone-human-state-interaction',
+                        targetType: 'die',
+                    },
+                ),
+                queue: [],
+                isBlocked: false,
+            },
+        });
+        initialState.G.core = {
+            ...initialState.G.core,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+            },
+        };
+
+        await storage.createMatch('match-watchdog-state-human-overrides-stale-ai', {
+            initialState,
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'dicethrone',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('dicethrone')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-state-human-overrides-stale-ai');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+        const resolveDispatchSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(resolveDispatchSpy).not.toHaveBeenCalled();
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
     it('online AI watchdog 在缺失 interaction id 的 AI 交互上应先取消交互，避免误发 ADVANCE_PHASE', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

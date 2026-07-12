@@ -5,6 +5,7 @@ import {
 } from '../helpers/common';
 import {
     createFirstScenarioReadyToLearnAboutJackRuntimeCore,
+    createFirstScenarioReadyToExorciseRuntimeCore,
     createFirstScenarioReadyToStudyExorcismRuntimeCore,
     createHeroAttackTraitorReadyRuntimeCore,
     createTradeReadyRuntimeCore,
@@ -16,16 +17,20 @@ import {
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = 'evidence/山屋惊魂-首剧本核心交互';
-const TRADE_INITIAL_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-交易-初始待选择.png`;
-const TRADE_ITEM_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-交易-已选物品.png`;
-const TRADE_TARGET_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-交易-已选目标待确认.png`;
-const TRADE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-交易-交出后.png`;
-const LEARN_READY_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-调查杰克-执行前.png`;
-const LEARN_DONE_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-调查杰克-成功后.png`;
-const STUDY_READY_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-研究法阵-执行前.png`;
-const STUDY_DONE_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-研究法阵-成功后.png`;
-const ATTACK_READY_SCREENSHOT = `${EVIDENCE_DIR}/09-山屋惊魂-英雄攻击叛徒-执行前.png`;
-const ATTACK_DONE_SCREENSHOT = `${EVIDENCE_DIR}/10-山屋惊魂-英雄攻击叛徒-命中后.png`;
+const TRADE_INITIAL_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-交易-初始待选择.jpg`;
+const TRADE_ITEM_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-交易-已选物品.jpg`;
+const TRADE_TARGET_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-交易-已选目标待确认.jpg`;
+const TRADE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-交易-交出后.jpg`;
+const LEARN_READY_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-调查杰克-执行前.jpg`;
+const LEARN_DONE_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-调查杰克-成功后.jpg`;
+const STUDY_READY_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-研究法阵-执行前.jpg`;
+const STUDY_DONE_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-研究法阵-成功后.jpg`;
+const ATTACK_READY_SCREENSHOT = `${EVIDENCE_DIR}/09-山屋惊魂-英雄攻击叛徒-执行前.jpg`;
+const ATTACK_DONE_SCREENSHOT = `${EVIDENCE_DIR}/10-山屋惊魂-英雄攻击叛徒-命中后.jpg`;
+const LEARN_TEAMMATE_READY_SCREENSHOT = `${EVIDENCE_DIR}/11-山屋惊魂-调查杰克-帮队友前.jpg`;
+const LEARN_TEAMMATE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-调查杰克-帮队友后.jpg`;
+const EXORCISE_NO_CIRCLE_READY_SCREENSHOT = `${EVIDENCE_DIR}/13-山屋惊魂-无 法阵驱魔-执行前.jpg`;
+const EXORCISE_NO_CIRCLE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/14-山屋惊魂-无 法阵驱魔-反扑后.jpg`;
 
 async function assertTradeLayoutDoesNotCoverMap(page: import('@playwright/test').Page) {
     const metrics = await page.evaluate(() => {
@@ -310,6 +315,57 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-first-scenario-learn-jack-interaction', diagnostics }]);
     });
 
+    test('真实页面允许已掌握线索的英雄继续调查并把线索交给队友', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-first-scenario-learn-jack-for-teammate-interaction');
+
+        await openBetrayalBoard(page, context);
+        const core = createFirstScenarioReadyToLearnAboutJackRuntimeCore();
+        core.scenarioRuntime.knowledgeOfJackPlayerIds = ['0'];
+        core.usedCardIdsThisTurn = [];
+        await injectCore(page, core);
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-action-use')).toContainText('调查杰克');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toContainText('调查杰克');
+        await expect.poll(async () => page.evaluate(() => {
+            const state = (window as typeof window & {
+                __BG_TEST_HARNESS__?: {
+                    state?: {
+                        get?: () => {
+                            core?: {
+                                scenarioRuntime?: { knowledgeOfJackPlayerIds?: string[] };
+                            };
+                        };
+                    };
+                };
+            }).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.core?.scenarioRuntime?.knowledgeOfJackPlayerIds ?? [];
+        })).toEqual(['0']);
+        await saveScreenshot(page, LEARN_TEAMMATE_READY_SCREENSHOT);
+
+        await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
+        await page.getByTestId('betrayal-action-use').click();
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/Crimson Jack|线索|交给|丽贝卡/);
+        await expect.poll(async () => page.evaluate(() => {
+            const state = (window as typeof window & {
+                __BG_TEST_HARNESS__?: {
+                    state?: {
+                        get?: () => {
+                            core?: {
+                                scenarioRuntime?: { knowledgeOfJackPlayerIds?: string[] };
+                            };
+                        };
+                    };
+                };
+            }).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.core?.scenarioRuntime?.knowledgeOfJackPlayerIds ?? [];
+        })).toEqual(['0', '1']);
+        await expect(page.getByTestId('betrayal-bottom-teammate-knowledge-1')).toContainText('Knowledge of Jack');
+        await saveScreenshot(page, LEARN_TEAMMATE_DONE_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-first-scenario-learn-jack-for-teammate-interaction', diagnostics }]);
+    });
+
     test('真实页面可研究驱魔法阵', async ({ page, context }) => {
         test.setTimeout(120000);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-first-scenario-study-exorcism-interaction');
@@ -326,6 +382,29 @@ test.describe('山屋惊魂首剧本核心交互补充', () => {
         await saveScreenshot(page, STUDY_DONE_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-first-scenario-study-exorcism-interaction', diagnostics }]);
+    });
+
+    test('真实页面允许没有法阵时尝试驱魔并结算失败反扑', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-first-scenario-exorcise-without-circle-interaction');
+
+        await openBetrayalBoard(page, context);
+        const core = createFirstScenarioReadyToExorciseRuntimeCore();
+        core.scenarioRuntime.exorcismCircleRoomIds = [];
+        core.currentExplorer.traits.sanity = 1;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        await injectCore(page, core);
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-action-use')).toContainText('驱魔');
+        await expect(page.getByTestId('betrayal-room-focus-target')).toContainText(/驱魔|驱散杰克之灵/);
+        await saveScreenshot(page, EXORCISE_NO_CIRCLE_READY_SCREENSHOT);
+
+        await setHarnessRandomQueue(page, [0.01]);
+        await page.getByTestId('betrayal-action-use').click();
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/驱魔失败|反扑/);
+        await saveScreenshot(page, EXORCISE_NO_CIRCLE_DONE_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-first-scenario-exorcise-without-circle-interaction', diagnostics }]);
     });
 
     test('真实页面可由英雄攻击叛徒', async ({ page, context }) => {

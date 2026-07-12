@@ -154,7 +154,26 @@ function handleLotusPalmUnblockableChoice({ targetId, sourceAbilityId, state, ti
     } as ChoiceRequestedEvent];
 }
 
-/** 花开见佛：太极上限+1，并立即补满太极 */
+/** 花开见佛：太极上限+1，然后获得5气（受新上限限制） */
+function handleLotusPalmTaijiCapUpAndGrant5({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
+    const player = state.players[targetId];
+    if (!player) return [];
+    const currentLimitRaw = player.tokenStackLimits?.[TOKEN_IDS.TAIJI];
+    const currentLimit = typeof currentLimitRaw === 'number' ? (currentLimitRaw === 0 ? Infinity : currentLimitRaw) : getTokenStackLimit(state, targetId, TOKEN_IDS.TAIJI);
+    if (currentLimit === Infinity) return [];
+    const events: DiceThroneEvent[] = [];
+    const newLimit = currentLimit + 1;
+    events.push({ type: 'TOKEN_LIMIT_CHANGED', payload: { playerId: targetId, tokenId: TOKEN_IDS.TAIJI, delta: 1, newLimit, sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as TokenLimitChangedEvent);
+    const currentAmount = player.tokens?.[TOKEN_IDS.TAIJI] ?? 0;
+    const newTotal = Math.min(currentAmount + 5, newLimit);
+    const amountToAdd = Math.max(0, newTotal - currentAmount);
+    if (amountToAdd > 0) {
+        events.push({ type: 'TOKEN_GRANTED', payload: { targetId, tokenId: TOKEN_IDS.TAIJI, amount: amountToAdd, newTotal, sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as TokenGrantedEvent);
+    }
+    return events;
+}
+
+/** 超凡入圣：太极上限+1，并立即补满太极 */
 function handleLotusPalmTaijiCapUpAndFill({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const player = state.players[targetId];
     if (!player) return [];
@@ -370,6 +389,9 @@ export function registerMonkCustomActions(): void {
 
     registerCustomActionHandler('lotus-palm-unblockable-choice', handleLotusPalmUnblockableChoice, {
         categories: ['choice'],
+    });
+    registerCustomActionHandler('lotus-palm-taiji-cap-up-and-grant5', handleLotusPalmTaijiCapUpAndGrant5, {
+        categories: ['resource'],
     });
     registerCustomActionHandler('lotus-palm-taiji-cap-up-and-fill', handleLotusPalmTaijiCapUpAndFill, {
         categories: ['resource'],

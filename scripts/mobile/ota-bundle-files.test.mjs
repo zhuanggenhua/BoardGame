@@ -22,6 +22,8 @@ test('OTA 仅保留资源清单，不携带嵌套游戏资源', () => {
         'assets/i18n/assets-manifest.json',
         'assets/i18n/zh-CN/dicethrone/assets-manifest.json',
         'assets/atlas-configs/assets-manifest.json',
+        'logos/weixin.jpg',
+        'logos/zhifubao.jpg',
     ]) {
         assert.equal(classifyOtaBundleFile(relativePath), 'include', relativePath);
     }
@@ -32,7 +34,7 @@ test('OTA 仅保留资源清单，不携带嵌套游戏资源', () => {
         'assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
         'assets/i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json',
         'assets/common/audio/bgm/compressed/theme.ogg',
-        'logos/weixin.jpg',
+        'logos/logo_1_grid.png',
         'locales/en/lobby.json',
         'audio_assets.md',
     ]) {

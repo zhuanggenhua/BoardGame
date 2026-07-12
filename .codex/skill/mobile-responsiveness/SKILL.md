@@ -1,6 +1,6 @@
 ---
 name: mobile-responsiveness
-description: "BoardGame 的移动端路由 skill。用于把通用 mobile-first 诉求转回本项目的移动端适配入口；涉及本项目移动端适配时，默认走 adapt-game-mobile。"
+description: "BoardGame 移动端路由。用于 mobile-first、响应式、手机/平板适配诉求；默认转入 adapt-game-mobile。"
 ---
 
 # Route To Project Mobile Workflow

@@ -1,6 +1,6 @@
 ---
 name: screenshot-delivery
-description: BoardGame 项目内的截图交付 workflow。用于用户明确说“打开图”“给我看图”“看截图”“图呢”或要求端到端截图交付时。最终 E2E/验收截图默认发布到服务器图片预览站；只有用户明确要求本机打开时才调用本机开图动作。
+description: "BoardGame 截图交付流程。用于打开图、给我看图、看截图、图呢、端到端截图；最终验收图默认走图片预览站。"
 ---
 
 # Screenshot Delivery

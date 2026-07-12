@@ -57,6 +57,25 @@ export function DiceBoxPhysicsSource({
     const [engineReady, setEngineReady] = React.useState(false);
     const [settled, setSettled] = React.useState(true);
 
+    const failEngine = React.useCallback((error: unknown) => {
+        console.warn('[DiceBoxPhysicsSource] dice-box-threejs failed; disabling physics source', error);
+        const engine = engineRef.current;
+        engineRef.current = null;
+        previousDiceIdsRef.current = [];
+        activeMotionRef.current = null;
+        pendingRerollMotionRef.current = null;
+        settledRef.current = true;
+        lastPhysicsSnapshotRef.current = '';
+        setEngineReady(false);
+        setSettled(true);
+        onPhysicsStatesChange?.([]);
+        try {
+            engine?.destroy();
+        } catch {
+            // Ignore cleanup failures after WebGL errors.
+        }
+    }, [onPhysicsStatesChange]);
+
     const values = React.useMemo(() => dice.map((die) => die.value), [dice]);
     const valuesKey = React.useMemo(() => values.join(','), [values]);
     const rollingIndices = React.useMemo(
@@ -150,10 +169,9 @@ export function DiceBoxPhysicsSource({
                 });
                 setEngineReady(true);
                 setEngineVersion((count) => count + 1);
-            } catch {
+            } catch (error) {
                 if (cancelled) return;
-                engineRef.current = null;
-                setEngineReady(false);
+                failEngine(error);
             }
         };
 
@@ -165,7 +183,7 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [canvasTestId, dice.length, rendererMode, requireDieSkins, styleProfile]);
+    }, [canvasTestId, dice.length, failEngine, rendererMode, requireDieSkins, styleProfile]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -193,14 +211,19 @@ export function DiceBoxPhysicsSource({
                 return;
             }
             lastEmitAt = now;
-            engine.recoverOutOfBoundsDice({
-                strictProjectedBounds: settledRef.current && !activeMotionRef.current,
-            });
-            if (!settledRef.current && activeMotionRef.current) {
-                engine.separateOverlappingDice();
-            }
+            try {
+                engine.recoverOutOfBoundsDice({
+                    strictProjectedBounds: settledRef.current && !activeMotionRef.current,
+                });
+                if (!settledRef.current && activeMotionRef.current) {
+                    engine.separateOverlappingDice();
+                }
 
-            emitPhysicsStates(engine, settledRef.current);
+                emitPhysicsStates(engine, settledRef.current);
+            } catch (error) {
+                failEngine(error);
+                return;
+            }
             frameId = window.requestAnimationFrame(tick);
         };
 
@@ -216,7 +239,7 @@ export function DiceBoxPhysicsSource({
             window.cancelAnimationFrame(frameId);
             observer?.disconnect();
         };
-    }, [dice, emitPhysicsStates, engineVersion]);
+    }, [dice, emitPhysicsStates, engineVersion, failEngine]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -351,8 +374,10 @@ export function DiceBoxPhysicsSource({
             setSettledState(true);
         };
 
-        void run();
-    }, [dice, emitPhysicsStates, engineReady, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
+        void run().catch((error) => {
+            failEngine(error);
+        });
+    }, [dice, emitPhysicsStates, engineReady, failEngine, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
 
     return (
         <div

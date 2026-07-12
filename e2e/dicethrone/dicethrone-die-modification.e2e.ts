@@ -231,4 +231,127 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         expect(finalEventTypes).toContain('CARD_PLAYED');
         expect(finalEventTypes).toContain('DIE_MODIFIED');
     });
+
+    test('主要阶段待结算奖励骰应允许红牌打出并修改奖励骰', async ({ page, game }, testInfo) => {
+        await game.openTestGame('dicethrone');
+
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: ['card-play-six'],
+                resources: { CP: 2, HP: 50 },
+            },
+            player1: {
+                resources: { HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'main1',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                rollCount: 0,
+                rollLimit: 3,
+                rollConfirmed: true,
+                dice: [],
+                pendingBonusDiceSettlement: {
+                    id: 'e2e-main1-bonus-die-modification',
+                    sourceAbilityId: 'e2e-bonus-die',
+                    attackerId: '0',
+                    targetId: '1',
+                    dice: [
+                        {
+                            index: 0,
+                            value: 3,
+                            face: 'palm',
+                            effectKey: 'bonusDie.effect.damage',
+                            effectParams: { value: 3 },
+                            presentationKind: 'choice',
+                        },
+                    ],
+                    rerollCostTokenId: 'taiji',
+                    rerollCostAmount: 1,
+                    rerollCount: 0,
+                    maxRerollCount: 0,
+                    readyToSettle: false,
+                    showTotal: true,
+                    resolutionMode: 'damage',
+                    allowDiceModification: true,
+                },
+            },
+        });
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                hasCard: !!state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'card-play-six'),
+                bonusDieValue: state?.core?.pendingBonusDiceSettlement?.dice?.[0]?.value ?? null,
+                allowDiceModification: state?.core?.pendingBonusDiceSettlement?.allowDiceModification ?? false,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'main1',
+            hasCard: true,
+            bonusDieValue: 3,
+            allowDiceModification: true,
+        });
+
+        await game.screenshot('main1-bonus-die-before-red-card', testInfo);
+
+        await dragHandCardToPlay(page, 'card-play-six');
+
+        await expect.poll(async () => {
+            const interaction = (await game.getState())?.sys?.interaction?.current;
+            const meta = interaction?.data?.meta;
+            return {
+                dtType: meta?.dtType ?? null,
+                mode: meta?.dieModifyConfig?.mode ?? null,
+                targetValue: meta?.dieModifyConfig?.targetValue ?? null,
+                allowedDieIds: interaction?.data?.allowedDieIds ?? null,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            dtType: 'modifyDie',
+            mode: 'set',
+            targetValue: 6,
+            allowedDieIds: [0],
+        });
+
+        await game.screenshot('main1-bonus-die-red-card-selecting-die', testInfo);
+
+        const dieButton = page.locator('[data-testid="die-button-0"]').first();
+        await expect(dieButton).toBeVisible({ timeout: 5000 });
+        await expect(dieButton).toHaveAttribute('data-clickable', 'true');
+        await dieButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const lastEvents = (state?.sys?.eventStream?.entries ?? []).slice(-8);
+            return {
+                bonusDieValue: state?.core?.pendingBonusDiceSettlement?.dice?.[0]?.value ?? null,
+                bonusDieFace: state?.core?.pendingBonusDiceSettlement?.dice?.[0]?.face ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                handIds: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+                lastEventTypes: lastEvents.map((entry: any) => entry.event?.type),
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            bonusDieValue: 6,
+            bonusDieFace: 'lotus',
+            interactionKind: null,
+            handIds: [],
+        });
+
+        await game.screenshot('main1-bonus-die-red-card-modified', testInfo);
+
+        const finalState = await game.getState();
+        const finalHandIds = (finalState?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id);
+        const finalEventTypes = (finalState?.sys?.eventStream?.entries ?? [])
+            .slice(-8)
+            .map((entry: any) => entry.event?.type);
+
+        expect(finalState?.sys?.phase ?? null).toBe('main1');
+        expect(finalState?.core?.pendingBonusDiceSettlement?.dice?.[0]?.value ?? null).toBe(6);
+        expect(finalState?.core?.pendingBonusDiceSettlement?.dice?.[0]?.face ?? null).toBe('lotus');
+        expect(finalHandIds).not.toContain('card-play-six');
+        expect(finalEventTypes).toContain('CARD_PLAYED');
+        expect(finalEventTypes).toContain('DIE_MODIFIED');
+    });
 });

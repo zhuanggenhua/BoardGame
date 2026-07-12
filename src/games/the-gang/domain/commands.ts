@@ -18,6 +18,12 @@ export function validate(
     switch (command.type) {
         case THE_GANG_COMMANDS.TAKE_CHIP:
             return validateTakeChip(core, command.playerId, command.payload.chip);
+        case THE_GANG_COMMANDS.SET_RULES_CONFIG:
+            return validateSetRulesConfig(core, command.playerId);
+        case THE_GANG_COMMANDS.DEAL_TOOLS:
+            return validateDealTools(core, command.playerId);
+        case THE_GANG_COMMANDS.USE_TOOL:
+            return validateUseTool(core, command.playerId, command.payload.tool, command.payload.cardIndex);
         case THE_GANG_COMMANDS.END_ROUND:
             return validateEndRound(core, command.playerId);
         case THE_GANG_COMMANDS.REVEAL_SHOWDOWN:
@@ -35,6 +41,43 @@ function validateTakeChip(core: TheGangCore, playerId: string, chip: number): Va
     if (!getChipValues(core.playerIds.length).includes(chip)) return failure('invalidChip');
     if (core.currentRoundChips[playerId] === chip) return failure('chipAlreadyHeld');
 
+    return success();
+}
+
+function validateSetRulesConfig(core: TheGangCore, playerId: string): ValidationResult {
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    if (core.heistNumber !== 1 || core.round !== 1 || core.phase !== 'chip-selection') return failure('rulesLocked');
+    if (Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) return failure('rulesLocked');
+    return success();
+}
+
+function validateDealTools(core: TheGangCore, playerId: string): ValidationResult {
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    if (core.toolDeck.length < core.playerIds.length) return failure('toolDeckEmpty');
+    if (core.playerIds.some((id) => core.players[id].toolCards.length > 0)) return failure('toolsAlreadyDealt');
+    return success();
+}
+
+function validateUseTool(
+    core: TheGangCore,
+    playerId: string,
+    tool: TheGangCore['players'][string]['toolCards'][number],
+    cardIndex?: number,
+): ValidationResult {
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    const player = core.players[playerId];
+    if (!player.toolCards.includes(tool)) return failure('toolNotHeld');
+    if (player.activeTools.includes(tool)) return failure('toolAlreadyActive');
+    if (tool === 'burner-phone' && core.specialistDeck.length < 2) return failure('specialistDeckEmpty');
+    if (tool === 'flashlight' && core.deck.length < 1) return failure('deckEmpty');
+    if (tool === 'night-vision-goggles') {
+        if (typeof cardIndex !== 'number') return failure('missingCardIndex');
+        if (cardIndex < 0 || cardIndex >= player.pocketCards.length) return failure('invalidCardIndex');
+        if (player.nightVisionCards.length > 0) return failure('toolAlreadyActive');
+    }
+    if (tool !== 'burner-phone' && tool !== 'flashlight' && tool !== 'lubricant' && tool !== 'night-vision-goggles') {
+        return failure('toolNotImplemented');
+    }
     return success();
 }
 
@@ -61,7 +104,7 @@ function validateRevealShowdown(core: TheGangCore, playerId: string): Validation
     if (!core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined)) {
         return failure('missingChips');
     }
-    if (core.communityCards.length !== 5) return failure('missingCommunityCards');
+    if (core.communityCards.length < 5) return failure('missingCommunityCards');
     return success();
 }
 

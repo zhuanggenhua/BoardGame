@@ -35,6 +35,19 @@ const MIME_BY_EXT = {
 
 const toPosixPath = (value) => value.split(path.sep).join('/');
 
+const resolveBasePrefix = (entry) => {
+    const relativeToAssetsRoot = toPosixPath(path.relative(ASSETS_ROOT, entry.dirPath));
+    if (
+        relativeToAssetsRoot
+        && relativeToAssetsRoot !== '.'
+        && !relativeToAssetsRoot.startsWith('..')
+        && !path.isAbsolute(relativeToAssetsRoot)
+    ) {
+        return `official/${relativeToAssetsRoot}/`;
+    }
+    return `official/${entry.id}/`;
+};
+
 const fileExists = async (filePath) => {
     try {
         await fs.access(filePath);
@@ -144,15 +157,9 @@ const getMimeType = (ext) => MIME_BY_EXT[ext] || 'application/octet-stream';
 
 const resolveLogicalKey = (posixRelativePath) => {
     const lower = posixRelativePath.toLowerCase();
-    if (lower.endsWith('.atlas.json')) {
-        return { logicalKey: posixRelativePath, variantExt: 'json' };
-    }
     const ext = path.posix.extname(lower);
     if (!ext) {
         throw new Error(`[Manifest] 资源缺少扩展名: ${posixRelativePath}`);
-    }
-    if (ext === '.json') {
-        return { logicalKey: posixRelativePath, variantExt: 'json' };
     }
     return {
         logicalKey: posixRelativePath.slice(0, -ext.length),
@@ -192,11 +199,12 @@ const buildManifestFiles = async (dirPath) => {
 
 const buildManifest = async ({ id, dirPath }) => {
     const files = await buildManifestFiles(dirPath);
+    const basePrefix = resolveBasePrefix({ id, dirPath });
     return {
         manifestVersion: MANIFEST_VERSION,
         scope: DEFAULT_SCOPE,
         id,
-        basePrefix: `official/${id}/`,
+        basePrefix,
         files,
     };
 };
@@ -205,7 +213,7 @@ const createEmptyManifest = (entry) => ({
     manifestVersion: MANIFEST_VERSION,
     scope: DEFAULT_SCOPE,
     id: entry.id,
-    basePrefix: `official/${entry.id}/`,
+    basePrefix: resolveBasePrefix(entry),
     files: {},
 });
 
@@ -235,7 +243,7 @@ const buildIncrementalManifest = async (entry) => {
         manifestVersion: MANIFEST_VERSION,
         scope: DEFAULT_SCOPE,
         id: entry.id,
-        basePrefix: `official/${entry.id}/`,
+        basePrefix: resolveBasePrefix(entry),
         files: sortFilesObject({
             ...(base.files && typeof base.files === 'object' ? base.files : {}),
             ...local.files,
@@ -263,7 +271,7 @@ const compareManifest = (entry, actual, expected, { full }) => {
     if (actual.id !== entry.id) {
         errors.push(`[Manifest] id 不一致: ${entry.id} (${actual.id ?? 'missing'})`);
     }
-    const expectedBasePrefix = `official/${entry.id}/`;
+    const expectedBasePrefix = resolveBasePrefix(entry);
     if (actual.basePrefix !== expectedBasePrefix) {
         errors.push(`[Manifest] basePrefix 不一致: ${entry.id} (${actual.basePrefix ?? 'missing'})`);
     }

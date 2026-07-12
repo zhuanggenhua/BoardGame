@@ -47,7 +47,7 @@ describe('DiceBoxThreeEngine', () => {
         engine.setDieSkins([skin]);
 
         expect(box.DiceFactory.get).toHaveBeenCalledWith('d6');
-        expect(preset.labels).toEqual(['', '', '1', '2', '3', '4', '5', '6']);
+        expect(preset.labels).toEqual(['', '', '', '', '', '', '', '']);
         expect(box.DiceFactory.materials_cache).toEqual({});
     });
 

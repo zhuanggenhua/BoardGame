@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "scope": "official",
   "id": "qidahen",
-  "basePrefix": "official/qidahen/",
+  "basePrefix": "official/i18n/zh-CN/qidahen/",
   "files": {
     "aids/compressed/jin-player-aid": {
       "variants": {

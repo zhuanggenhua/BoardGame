@@ -228,6 +228,134 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveTextContent('队友一');
     });
 
+    it('第一剧本真实图书馆不在 upper-west 时也能显示调查杰克入口', async () => {
+        const core = createFirstScenarioHauntCore();
+        const actor = {
+            ...core.currentExplorer,
+            roomId: 'upper-north',
+        };
+        core.currentExplorer = actor;
+        core.currentExplorerTraits = { ...actor.traits };
+        core.currentExplorerInventory = [...actor.inventory];
+        core.activeRoomId = 'upper-north';
+        core.recommendedAction = 'use';
+        core.rooms = core.rooms.map((room) => {
+            if (room.id === 'upper-west') {
+                return {
+                    ...room,
+                    name: '书房',
+                    visualId: 'study',
+                    tags: ['知识', '调查'],
+                };
+            }
+            if (room.id === 'upper-north') {
+                return {
+                    ...room,
+                    name: '图书馆',
+                    state: 'discovered',
+                    discoveryReward: null,
+                    visualId: 'library',
+                    tags: ['知识', '调查', '图书馆'],
+                };
+            }
+            return room;
+        });
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('调查杰克');
+        fireEvent.click(screen.getByTestId('betrayal-action-use'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('图书馆');
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('Crimson Jack');
+        });
+    });
+
+    it('第一剧本已掌握线索的英雄仍可在图书馆帮队友调查杰克', async () => {
+        const core = createFirstScenarioHauntCore();
+        const actor = {
+            ...core.currentExplorer,
+            roomId: 'upper-west',
+        };
+        core.currentExplorer = actor;
+        core.currentExplorerTraits = { ...actor.traits };
+        core.currentExplorerInventory = [...actor.inventory];
+        core.activeRoomId = 'upper-west';
+        core.currentExplorerRoomId = 'upper-west';
+        core.recommendedAction = 'use';
+        core.scenarioRuntime.knowledgeOfJackPlayerIds = ['0'];
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('调查杰克');
+        fireEvent.click(screen.getByTestId('betrayal-action-use'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('Crimson Jack');
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('丽贝卡·艾伦博士');
+            expect(screen.getByTestId('betrayal-bottom-teammate-knowledge-1')).toHaveTextContent('Knowledge of Jack');
+        });
+    });
+
+    it('第一剧本杰克之灵同房时没有法阵也会从页面入口尝试驱魔', async () => {
+        const core = createFirstScenarioHauntCore();
+        const actor = {
+            ...core.currentExplorer,
+            roomId: 'upper-north',
+            traits: {
+                ...core.currentExplorer.traits,
+                sanity: 1,
+            },
+        };
+        core.currentExplorer = actor;
+        core.currentExplorerTraits = { ...actor.traits };
+        core.currentExplorerInventory = [...actor.inventory];
+        core.activeRoomId = 'upper-north';
+        core.currentExplorerRoomId = 'upper-north';
+        core.recommendedAction = 'use';
+        core.scenarioRuntime.exorcismCircleRoomIds = [];
+        core.scenarioRuntime.jackSpiritReleased = true;
+        core.scenarioRuntime.jackSpiritRoomId = 'upper-north';
+        core.monsters = [{
+            id: 'jack-spirit',
+            name: '杰克之灵',
+            portraitAsset: 'betrayal/monsters/spirit',
+            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            roomId: 'upper-north',
+            might: 5,
+            speed: 3,
+            sanity: 4,
+            knowledge: 4,
+            damage: 1,
+        }];
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('驱魔');
+        fireEvent.click(screen.getByTestId('betrayal-action-use'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('驱魔');
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('反扑');
+        });
+    });
+
     it('真实 reducer 驱动下可以使用物品并进入移动选目标', () => {
         render(
             <HarnessBoard

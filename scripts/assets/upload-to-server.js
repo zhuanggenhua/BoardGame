@@ -26,6 +26,16 @@ const forceUpload = process.env.FORCE_UPLOAD === '1' || process.argv.includes('-
 const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--check');
 const skipAndroidPackagePublish = process.env.SKIP_ANDROID_PACKAGE_PUBLISH === '1' || process.argv.includes('--skip-android-package-publish');
 const androidPackagePublishPlanArgIndex = process.argv.indexOf('--android-package-publish-plan');
+const uploadBatchSize = Number.parseInt(process.env.ASSET_UPLOAD_BATCH_SIZE || '200', 10);
+
+function chunkArray(items, chunkSize) {
+  const safeChunkSize = Number.isFinite(chunkSize) && chunkSize > 0 ? chunkSize : 200;
+  const chunks = [];
+  for (let index = 0; index < items.length; index += safeChunkSize) {
+    chunks.push(items.slice(index, index + safeChunkSize));
+  }
+  return chunks;
+}
 
 function discoverPackageManagedGames() {
   const gamesRoot = join(process.cwd(), 'src', 'games');
@@ -271,13 +281,18 @@ async function main() {
   }
 
   if (!checkOnly && uploadPlan.length > 0) {
-    await publishPrimaryAssetBatch(uploadPlan.map((entry) => ({
+    const uploadBatches = chunkArray(uploadPlan.map((entry) => ({
       key: entry.key,
       body: entry.body,
       size: entry.size,
       contentType: entry.contentType,
       cacheControl: entry.cacheControl,
-    })));
+    })), uploadBatchSize);
+    console.log(`分批发布服务器对象：${uploadBatches.length} 批，每批最多 ${uploadBatchSize} 个`);
+    for (let index = 0; index < uploadBatches.length; index += 1) {
+      console.log(`发布服务器对象批次 ${index + 1}/${uploadBatches.length}: ${uploadBatches[index].length} 个`);
+      await publishPrimaryAssetBatch(uploadBatches[index]);
+    }
     for (const entry of uploadPlan) {
       console.log(`已发布: ${entry.key}`);
       if (entry.packageManagedGameId) {

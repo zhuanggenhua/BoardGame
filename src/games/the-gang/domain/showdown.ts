@@ -3,15 +3,24 @@ import type { HeistRecord, ShowdownPlayerResult, TheGangCore } from './types';
 
 export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] {
     return core.playerIds.map((playerId) => {
+        const playerCommunity = core.players[playerId].communityCards ?? core.communityCards;
+        const toolCards = [
+            ...core.players[playerId].flashlightCards,
+            ...core.players[playerId].nightVisionCards,
+        ];
         const evaluated = evaluateBestTexasHoldemHand([
             ...core.players[playerId].pocketCards,
-            ...core.communityCards,
-        ]);
+            ...playerCommunity,
+            ...toolCards,
+        ], {
+            rulesConfig: core.rules.config,
+            blankedRank: core.rules.blankedRank,
+        });
         return {
             playerId,
             chip: core.currentRoundChips[playerId],
             strength: evaluated.strength,
-            pocketCards: [...core.players[playerId].pocketCards],
+            pocketCards: [...core.players[playerId].pocketCards, ...core.players[playerId].nightVisionCards],
             bestCards: evaluated.cards,
         };
     });

@@ -273,6 +273,28 @@ describe('僧侣 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
+    // lotus-palm-taiji-cap-up-and-grant5: 太极上限+1并获得5太极
+    // ========================================================================
+    describe('lotus-palm-taiji-cap-up-and-grant5 (花开见佛上限+1并获得5太极)', () => {
+        it('上限10→11，太极0→5，不会补满到11', () => {
+            const state = createState({ taiji: 0, taijiLimit: 10 });
+            const handler = getCustomActionHandler('lotus-palm-taiji-cap-up-and-grant5')!;
+            const ctx = buildCtx(state, 'lotus-palm-taiji-cap-up-and-grant5', { targetSelf: true });
+            ctx.targetId = '0' as any;
+            const events = handler(ctx);
+
+            const limit = eventsOfType(events, 'TOKEN_LIMIT_CHANGED');
+            expect(limit).toHaveLength(1);
+            expect((limit[0] as any).payload.newLimit).toBe(11);
+
+            const token = eventsOfType(events, 'TOKEN_GRANTED');
+            expect(token).toHaveLength(1);
+            expect((token[0] as any).payload.amount).toBe(5);
+            expect((token[0] as any).payload.newTotal).toBe(5);
+        });
+    });
+
+    // ========================================================================
     // lotus-palm-taiji-cap-up-and-fill: 太极上限+1并补满
     // ========================================================================
     describe('lotus-palm-taiji-cap-up-and-fill (花开见佛上限+1)', () => {

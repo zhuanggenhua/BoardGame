@@ -140,8 +140,8 @@ const ASSETS = {
     coverCard: 'qidahen/cards/backs/qidahen-common-card-back',
     koreaCard: 'qidahen/cards/backs/korea-deck-back',
     mingCard: 'qidahen/cards/backs/ming-deck-back',
-    mongolCard: 'qidahen/cards/backs/mongol-card-back',
-    jinCard: 'qidahen/cards/backs/jin-card-back',
+    mongolCard: 'qidahen/cards/backs/mongol-deck-back',
+    jinCard: 'qidahen/cards/backs/jin-deck-back',
     mingMarker: 'qidahen/markers/ming-control-diplomacy-marker-a',
     mongolMarker: 'qidahen/markers/mongol-control-diplomacy-marker-a',
     jinMarker: 'qidahen/markers/jin-control-diplomacy-marker-a',
@@ -395,9 +395,11 @@ const CARD_DIMENSIONS = {
 } as const;
 
 const BOTTOM_DOCK_INSET = 0;
-const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 72;
-const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 112;
-const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 138;
+const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 20;
+const HAND_DOCK_WIDTH = 1310;
+const MOBILE_LANDSCAPE_HAND_DOCK_WIDTH = 1460;
+const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 168;
+const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 206;
 const HAND_ROW_HORIZONTAL_PADDING = 16;
 const MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT = 6;
 const HAND_CARD_SELECTED_LIFT = 26;
@@ -492,8 +494,8 @@ const polarToPoint = (center: number, radius: number, angleDeg: number) => {
     };
 };
 
-const getQidahenMobileLandscapeHandLayout = (viewportWidth: number) => {
-    const availableWidth = Math.max(280, viewportWidth - 320);
+const getQidahenMobileLandscapeHandLayout = (dockWidth: number) => {
+    const availableWidth = Math.max(720, dockWidth - HAND_ROW_HORIZONTAL_PADDING * 2);
     const fourCardWidth = Math.floor((availableWidth - HAND_ROW_HORIZONTAL_PADDING) / 4);
     const width = Math.max(
         MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH,
@@ -1361,7 +1363,14 @@ const QidahenCardMagnifyOverlay: React.FC<{
 
 const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
-    const [stageMetrics, setStageMetrics] = React.useState({ scale: 1, left: 0, top: 0 });
+    const [stageMetrics, setStageMetrics] = React.useState({
+        scale: 1,
+        left: 0,
+        top: 0,
+        mobileEdgePull: 0,
+        mobileBottomInset: BOTTOM_DOCK_INSET,
+        isMobileLandscape: false,
+    });
 
     React.useEffect(() => {
         const element = containerRef.current;
@@ -1372,11 +1381,24 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             const nextLandscapeMobileViewport = window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH && window.innerWidth > window.innerHeight;
             const visibleWidth = nextLandscapeMobileViewport ? Math.min(rect.width, window.innerWidth) : rect.width;
             const visibleHeight = nextLandscapeMobileViewport ? Math.min(rect.height, window.innerHeight) : rect.height;
-            const scale = Math.min(visibleWidth / STAGE_WIDTH, visibleHeight / STAGE_HEIGHT);
+            const scale = nextLandscapeMobileViewport
+                ? visibleWidth / STAGE_WIDTH
+                : Math.min(visibleWidth / STAGE_WIDTH, visibleHeight / STAGE_HEIGHT);
+            const left = nextLandscapeMobileViewport
+                ? 0
+                : Math.max(0, (visibleWidth - STAGE_WIDTH * scale) / 2);
+            const top = nextLandscapeMobileViewport
+                ? Math.min(0, visibleHeight - STAGE_HEIGHT * scale)
+                : Math.max(0, (visibleHeight - STAGE_HEIGHT * scale) / 2);
             setStageMetrics({
                 scale,
-                left: Math.max(0, (visibleWidth - STAGE_WIDTH * scale) / 2),
-                top: Math.max(0, (visibleHeight - STAGE_HEIGHT * scale) / 2),
+                left,
+                top,
+                mobileEdgePull: nextLandscapeMobileViewport && scale > 0 ? left / scale : 0,
+                mobileBottomInset: nextLandscapeMobileViewport && scale > 0
+                    ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET / scale
+                    : BOTTOM_DOCK_INSET,
+                isMobileLandscape: nextLandscapeMobileViewport,
             });
         };
 
@@ -1411,6 +1433,12 @@ const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     color: UI_STYLE.ink,
                     transform: `scale(${stageMetrics.scale})`,
                     transformOrigin: 'top left',
+                    overflow: stageMetrics.isMobileLandscape ? 'visible' : 'hidden',
+                    '--qidahen-mobile-edge-pull': `${stageMetrics.mobileEdgePull}px`,
+                    '--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,
+                } as React.CSSProperties & {
+                    '--qidahen-mobile-edge-pull': string;
+                    '--qidahen-mobile-bottom-inset': string;
                 }}
             >
                 {children}
@@ -1541,6 +1569,7 @@ const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => {
             className="pointer-events-auto absolute left-[720px] top-[36px] z-40 flex w-[700px] gap-3"
             data-testid="qidahen-player-float"
             data-ui-anchor="top-right"
+            style={{ left: 'calc(720px + var(--qidahen-mobile-edge-pull, 0px))' }}
         >
             {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
                 <PlayerChip
@@ -2490,7 +2519,7 @@ const MapSceneLayer: React.FC<{
 
     return (
         <ZoomPanViewport
-            className={`${mapHitTestingDisabled ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-0 z-10 overflow-hidden`}
+            className="pointer-events-auto absolute inset-0 z-10 overflow-hidden"
             contentClassName="absolute inset-0"
             containerTestId="qidahen-map-layer"
             contentTestId="qidahen-map-viewport-content"
@@ -2531,6 +2560,8 @@ const MapSceneLayer: React.FC<{
             } as React.HTMLAttributes<HTMLDivElement>}
             style={{
                 background: '#c8a970',
+                width: STAGE_WIDTH,
+                height: STAGE_HEIGHT,
             }}
         >
             <div
@@ -3051,7 +3082,7 @@ const WheelPanel: React.FC<{
     const moveTargetIndices = new Set(
         activatableMoveChoices.map((choice) => (selectedIndex + choice.steps) % WHEEL_SECTORS.length),
     );
-    const currentMarkerPoint = polarToPoint(WHEEL_CENTER, WHEEL_INNER_RADIUS + 30, selectedAngle);
+    const currentMarkerPoint = polarToPoint(WHEEL_CENTER, WHEEL_OUTER_RADIUS - 18, selectedAngle);
 
     React.useEffect(() => {
         setActiveMoveId(selectedMoveId);
@@ -3081,6 +3112,7 @@ const WheelPanel: React.FC<{
             data-testid="qidahen-action-wheel"
             data-tutorial-id="qidahen-action-wheel"
             data-ui-anchor="left-top"
+            style={{ left: 'calc(136px - var(--qidahen-mobile-edge-pull, 0px))' }}
         >
             <div
                 className="relative h-full w-full"
@@ -3304,7 +3336,7 @@ const WheelPanel: React.FC<{
                     </g>
                 </svg>
                 <div
-                    className="pointer-events-none absolute z-10 h-[46px] w-[46px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
+                    className="pointer-events-none absolute z-10 h-[38px] w-[38px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
                     data-testid="qidahen-wheel-current-marker"
                     data-wheel-current-position={selectedId}
                     style={{
@@ -3703,7 +3735,7 @@ const ActionsZone: React.FC<{
             data-tutorial-id="qidahen-actions-zone"
             data-ui-anchor="right-middle"
             style={{
-                left: ACTIONS_DOCK_LEFT,
+                left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,
                 top: ACTIONS_DOCK_TOP,
                 width: ACTIONS_DOCK_WIDTH,
                 height: ACTIONS_DOCK_HEIGHT,
@@ -4666,12 +4698,8 @@ const HandZone: React.FC<{
         && window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH
         && window.innerWidth > window.innerHeight
     ));
-    const [viewportWidth, setViewportWidth] = React.useState(() => (
-        typeof window !== 'undefined' ? window.innerWidth : STAGE_WIDTH
-    ));
     React.useEffect(() => {
         const updateViewportMode = () => {
-            setViewportWidth(window.innerWidth);
             setIsMobileLandscapeViewport(window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH && window.innerWidth > window.innerHeight);
         };
         updateViewportMode();
@@ -4687,7 +4715,9 @@ const HandZone: React.FC<{
     }
     const currentFaction = core.factions[currentFactionId];
     const currentHandCards = core.handCards.filter((card) => card.faction === currentFactionId);
-    const mobileHandLayout = getQidahenMobileLandscapeHandLayout(viewportWidth);
+    const handDockWidth = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_HAND_DOCK_WIDTH : HAND_DOCK_WIDTH;
+    const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : 'calc(100vw - 320px)';
+    const mobileHandLayout = getQidahenMobileLandscapeHandLayout(handDockWidth);
     const handCardWidth = isMobileLandscapeViewport
         ? mobileHandLayout.width
         : CARD_DIMENSIONS.hand.width;
@@ -4705,7 +4735,7 @@ const HandZone: React.FC<{
         || (core.sunYuanhuaTechSelection?.selectedCardIds.includes(card.id) ?? false)
         || (core.gaoDiDispatchSelection?.selectedCardId === card.id)
     );
-    const dockBottomInset = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET : BOTTOM_DOCK_INSET;
+    const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';
 
     return (
         <div
@@ -4716,7 +4746,11 @@ const HandZone: React.FC<{
                 bottom: dockBottomInset,
             }}
         >
-            <div className="pointer-events-auto absolute left-[44px]" data-testid="qidahen-draw-anchor" style={{ bottom: BOTTOM_DOCK_INSET }}>
+            <div
+                className="pointer-events-auto absolute left-[44px]"
+                data-testid="qidahen-draw-anchor"
+                style={{ bottom: BOTTOM_DOCK_INSET, left: 'calc(44px - var(--qidahen-mobile-edge-pull, 0px))' }}
+            >
                 <DeckStack
                     src={CARD_BACK_BY_FACTION[currentFactionId]}
                     label={`${currentFaction.name}抽牌`}
@@ -4734,8 +4768,8 @@ const HandZone: React.FC<{
                     bottom: BOTTOM_DOCK_INSET,
                     transform: 'translateX(-50%)',
                     height: BOTTOM_DOCK_HEIGHT,
-                    width: 1310,
-                    maxWidth: 'calc(100vw - 320px)',
+                    width: handDockWidth,
+                    maxWidth: handDockMaxWidth,
                 }}
             >
                 <div className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row">
@@ -4822,8 +4856,8 @@ const HandZone: React.FC<{
                     bottom: BOTTOM_DOCK_INSET,
                     transform: 'translateX(-50%)',
                     height: BOTTOM_DOCK_HEIGHT,
-                    width: 1310,
-                    maxWidth: 'calc(100vw - 320px)',
+                    width: handDockWidth,
+                    maxWidth: handDockMaxWidth,
                 }}
             >
                 <div className="mx-auto flex min-w-max items-end justify-center px-2">
@@ -4864,8 +4898,8 @@ const HandZone: React.FC<{
                     bottom: BOTTOM_DOCK_INSET,
                     transform: 'translateX(-50%)',
                     height: BOTTOM_DOCK_HEIGHT,
-                    width: 1310,
-                    maxWidth: 'calc(100vw - 320px)',
+                    width: handDockWidth,
+                    maxWidth: handDockMaxWidth,
                 }}
             >
                 <div className="mx-auto flex min-w-max items-end justify-center px-2">
@@ -4907,7 +4941,11 @@ const HandZone: React.FC<{
                     ))}
                 </div>
             </div>
-            <div className="absolute right-[44px]" data-testid="qidahen-discard-anchor" style={{ bottom: BOTTOM_DOCK_INSET }}>
+            <div
+                className="absolute right-[44px]"
+                data-testid="qidahen-discard-anchor"
+                style={{ bottom: BOTTOM_DOCK_INSET, right: 'calc(44px - var(--qidahen-mobile-edge-pull, 0px))' }}
+            >
                 <DeckStack
                     src={ASSETS.coverCard}
                     label={`${currentFaction.name}弃牌`}

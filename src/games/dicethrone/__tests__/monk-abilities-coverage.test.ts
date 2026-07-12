@@ -12,6 +12,8 @@ type TestAbilityVariant = {
     effects?: Array<{
         action?: {
             type?: string;
+            value?: number;
+            unblockable?: boolean;
             customActionId?: string;
             statusId?: string;
             tokenId?: string;
@@ -23,6 +25,8 @@ type TestAbilityVariant = {
                 triggerChoice?: { options: Array<{ tokenId: string; value: number }> };
             }>;
         };
+        timing?: string;
+        condition?: unknown;
     }>;
     tags?: string[];
 };
@@ -35,6 +39,34 @@ const getReplaceAction = (card: AbilityCard) => (
         newAbilityLevel: number;
     } | undefined
 );
+
+describe('Monk 基础技能图面合同', () => {
+    it('一级花开见佛按玩家板固定造成不可防御伤害，然后上限+1并获得5个太极', () => {
+        const ability = MONK_ABILITIES.find(item => item.id === 'lotus-palm');
+        expect(ability).toBeDefined();
+        expect(ability?.trigger).toEqual({ type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 4 } });
+        expect(ability?.tags).toContain('unblockable');
+
+        const effects = ability?.effects as TestAbilityVariant['effects'];
+        expect(effects?.map(effect => effect.action?.customActionId ?? effect.action?.type)).toEqual([
+            'damage',
+            'lotus-palm-taiji-cap-up-and-grant5',
+        ]);
+
+        expect(effects?.[0]?.action).toMatchObject({
+            type: 'damage',
+            value: 5,
+            unblockable: true,
+        });
+        expect(effects?.[1]?.timing).toBe('postDamage');
+        expect(effects?.[1]?.condition).toBeUndefined();
+        expect(effects?.some(effect => effect.action?.customActionId === 'lotus-palm-unblockable-choice')).toBe(false);
+
+        expect(zhCN.abilities['lotus-palm'].effects.damage5).toContain('不可防御');
+        expect(zhCN.abilities['lotus-palm'].effects.taijiCapMax).toContain('获得 5 个太极标记');
+        expect(zhCN.abilities['lotus-palm'].effects.unblockable).not.toContain('花费');
+    });
+});
 
 describe('Monk 升级卡覆盖测试', () => {
     it('所有升级卡必须包含 replaceAbility 并指向现有技能', () => {
