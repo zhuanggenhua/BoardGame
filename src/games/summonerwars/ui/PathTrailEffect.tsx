@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CellCoord } from '../domain/types';
 import type { GridConfig } from '../../../core/ui/board-layout.types';
-import { getCellPosition } from './BoardGrid';
+import { getCellPosition } from './boardGridGeometry';
 
 interface PathTrailEffectProps {
   /** 移动路径（游戏坐标） */
