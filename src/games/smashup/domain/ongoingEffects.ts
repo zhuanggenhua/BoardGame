@@ -164,6 +164,8 @@ export interface TriggerContext {
     triggerMinionUid?: string;
     /** 触发相关随从 defId */
     triggerMinionDefId?: string;
+    /** 触发相关随从力量 */
+    triggerMinionPower?: number;
     /** 触发相关场上行动牌 UID */
     triggerCardUid?: string;
     /** 触发相关场上行动牌 defId */
@@ -482,10 +484,6 @@ function locateSources(state: SmashUpCore, sourceDefId: string): TriggerSourceLo
     return locations;
 }
 
-function locateSource(state: SmashUpCore, sourceDefId: string): TriggerSourceLocation {
-    return locateSources(state, sourceDefId)[0] ?? {};
-}
-
 function isTriggerSourceEligible(
     entry: TriggerEntry,
     timing: TitanAwareTriggerTiming,
@@ -611,7 +609,7 @@ function createTriggerInstance(
         duelTie: ctx.duelTie,
         triggerMinionUid: ctx.triggerMinionUid,
         triggerMinionDefId: ctx.triggerMinionDefId,
-        triggerMinionPower: (ctx as any).triggerMinionPower,
+        triggerMinionPower: ctx.triggerMinionPower,
         triggerCardUid: ctx.triggerCardUid,
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,
@@ -631,10 +629,10 @@ function createTriggerInstance(
         affectBatchTargets: ctx.affectBatchTargets ? structuredClone(ctx.affectBatchTargets) : undefined,
         rankings: ctx.rankings ? structuredClone(ctx.rankings) : undefined,
         triggerBaseControllersAtTrigger,
-        buriedCardUid: (ctx as any).buriedCardUid,
-        buriedCardDefId: (ctx as any).buriedCardDefId,
-        buriedCardControllerId: (ctx as any).buriedCardControllerId,
-        buriedFrom: (ctx as any).buriedFrom,
+        buriedCardUid: ctx.buriedCardUid,
+        buriedCardDefId: ctx.buriedCardDefId,
+        buriedCardControllerId: ctx.buriedCardControllerId,
+        buriedFrom: ctx.buriedFrom,
         actionTargetBaseIndex: ctx.actionTargetBaseIndex,
         actionTargetType: ctx.actionTargetType,
         actionTargetMinionUid: ctx.actionTargetMinionUid,
@@ -1230,6 +1228,28 @@ export function registerPodOngoingAliases(): void {
     }
 
     baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
+
+
+    const baseVpModifiersToAdd: BaseVpModifierEntry[] = [];
+    for (const entry of baseVpModifierRegistry) {
+        const { sourceDefId, checker } = entry;
+
+        if (sourceDefId.endsWith('_pod')) continue;
+        if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
+
+        const podDefId = `${sourceDefId}_pod`;
+
+        const alreadyRegistered = baseVpModifierRegistry.some(
+            e => e.sourceDefId === podDefId && e.checker === checker
+        );
+        if (alreadyRegistered) continue;
+
+        baseVpModifiersToAdd.push({ sourceDefId: podDefId, checker, generatedPodAlias: true });
+        _mappedCount++;
+    }
+
+    baseVpModifierRegistry.push(...baseVpModifiersToAdd);
 
 
     const cardSuppressionsToAdd: CardAbilitySuppressionEntry[] = [];

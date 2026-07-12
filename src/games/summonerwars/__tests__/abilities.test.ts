@@ -447,7 +447,7 @@ describe('技能触发', () => {
   it('亡灵弓箭手 - 灵魂转移：3格内单位被消灭时可替换位置', () => {
     const soulTransferAbility = abilityRegistry.get('soul_transfer');
     expect(soulTransferAbility).toBeDefined();
-    expect(soulTransferAbility!.trigger).toBe('onKill');
+    expect(soulTransferAbility!.trigger).toBe('onUnitDestroyed');
     expect(soulTransferAbility!.condition).toBeDefined();
     expect(soulTransferAbility!.condition!.type).toBe('isInRange');
   });

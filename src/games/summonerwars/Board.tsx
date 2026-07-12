@@ -59,7 +59,8 @@ import { useGameEvents } from './ui/useGameEvents';
 import type { AbilityModeState, AfterAttackAbilityModeState } from './ui/useGameEvents';
 import { useCellInteraction } from './ui/useCellInteraction';
 import { StatusBanners } from './ui/StatusBanners';
-import { BoardGrid, getCellPosition } from './ui/BoardGrid';
+import { BoardGrid } from './ui/BoardGrid';
+import { getCellPosition } from './ui/boardGridGeometry';
 import { AbilityButtonsPanel } from './ui/AbilityButtonsPanel';
 import { PathTrailEffect } from './ui/PathTrailEffect';
 import {

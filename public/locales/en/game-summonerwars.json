@@ -689,6 +689,54 @@
       "name": "Blood Rage Decay",
       "description": "At the end of your turn, remove 2 charges from this unit."
     },
+    "mogu_blood_bloom": {
+      "name": "Blood Bloom",
+      "description": "After a friendly unit within 2 spaces of this summoner is destroyed, charge each other friendly unit within 2 spaces of this summoner."
+    },
+    "mogu_blood_rage": {
+      "name": "Blood Rage",
+      "description": "Whenever a unit is destroyed during your turn, charge this unit."
+    },
+    "mogu_blood_rage_decay": {
+      "name": "Blood Rage Decay",
+      "description": "At the end of your turn, remove up to 2 charges from this unit."
+    },
+    "mogu_final_form": {
+      "name": "Final Form",
+      "description": "When summoning this unit, if you control a Fungal Beast with at least 5 charges, destroy that unit and place this unit in its space."
+    },
+    "mogu_blood_infusion": {
+      "name": "Blood Infusion",
+      "description": "Once per turn, during your Move phase, target a friendly unit within 2 spaces of this unit. Charge the target, then deal 1 damage to it."
+    },
+    "mogu_transmission": {
+      "name": "Fungal Transmission",
+      "description": "Once per turn, after this unit moves, you may move any number of charges from this unit or a friendly unit within 2 spaces to another friendly unit within 2 spaces of this unit."
+    },
+    "mogu_decay": {
+      "name": "Decay",
+      "description": "At the end of your Move phase, deal 1 damage to this unit. If it survives, charge an adjacent friendly unit twice."
+    },
+    "mogu_infection": {
+      "name": "Infection",
+      "description": "After this unit destroys a unit, you may replace the destroyed unit with a Spore Plague Body from your discard pile."
+    },
+    "mogu_parasite": {
+      "name": "Parasite",
+      "description": "At the end of your Attack phase, remove 1 charge from this unit. If it has no charges, deal 1 damage to it instead."
+    },
+    "mogu_burst": {
+      "name": "Burst",
+      "description": "At the end of your Magic phase, if this unit has at least 3 charges, destroy it."
+    },
+    "mogu_fungal_mutation": {
+      "name": "Fungal Mutation",
+      "description": "When this unit is destroyed with at least 3 charges, you may replace it with a Fungal Beast from your discard pile."
+    },
+    "mogu_fanatical_fungus": {
+      "name": "Fanatical Fungus",
+      "description": "Ongoing. After you move a unit, you may charge it. If you do, first you may push or pull it 1 space, then you must deal 1 damage to it."
+    },
     "sacrifice": {
       "name": "Sacrifice",
       "description": "After this unit is destroyed, deal 1 damage to each adjacent enemy unit."

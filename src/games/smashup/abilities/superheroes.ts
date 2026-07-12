@@ -25,10 +25,11 @@ import {
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import { SU_EVENTS } from '../domain/types';
-import type { CardInstance, CardSuppressedEvent, DeckReorderedEvent, MinionPlayedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { CardInstance, CardSuppressedEvent, CardsDrawnEvent, DeckReorderedEvent, MinionPlayedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { registerCardAbilitySuppression, registerProtection, registerTrigger, type ProtectionCheckContext, type TriggerContext } from '../domain/ongoingEffects';
 import { getEffectivePower } from '../domain/ongoingModifiers';
+import { matchesDefId } from '../domain/utils';
 
 type SuperheroesPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -218,7 +219,7 @@ function buildSuperheroesDeckSearchResolutionEvents(params: {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: { playerId, count: 1, cardUids: [selected.uid] },
             timestamp,
-        } as any,
+        } as CardsDrawnEvent,
         grantExtraMinion(playerId, sourceId, timestamp),
         {
             type: SU_EVENTS.MINION_PLAYED,
@@ -364,7 +365,7 @@ const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext,
         ),
         (state) => [createSkipOption(), ...buildSmallMinionDiscardOptions(state.core, context.playerId)],
     ),
-    onResolve: ({ context, state, playerId, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, timestamp }) => {
         const choices = Array.isArray(value) ? value as CardChoice[] : [];
         const selected = choices.filter((choice) => !choice.skip && choice.cardUid && choice.defId);
         if (selected.length === 0) return { events: [] };
@@ -942,7 +943,7 @@ function superheroesAwesomeGuyProtection(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.minions.some((minion) =>
-        minion.defId === 'superheroes_awesome_guy'
+        matchesDefId(minion.defId, 'superheroes_awesome_guy')
         && minion.controller === ctx.targetMinion.controller,
     );
 }
@@ -950,7 +951,7 @@ function superheroesAwesomeGuyProtection(ctx: ProtectionCheckContext): boolean {
 function superheroesExpandedPowerProtection(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     return ctx.targetMinion.attachedActions.some((action) =>
-        action.defId === 'superheroes_expanded_power'
+        matchesDefId(action.defId, 'superheroes_expanded_power')
         && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.targetMinion.controller),
     );
 }
@@ -961,7 +962,7 @@ function superheroesSecretBaseProtection(ctx: ProtectionCheckContext): boolean {
     if (!base) return false;
     if (getEffectivePower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) > 3) return false;
     return base.ongoingActions.some((action) =>
-        action.defId === 'superheroes_secret_base'
+        matchesDefId(action.defId, 'superheroes_secret_base')
         && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.targetMinion.controller),
     );
 }
@@ -969,7 +970,7 @@ function superheroesSecretBaseProtection(ctx: ProtectionCheckContext): boolean {
 function superheroesConvertedCaveProtection(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     const base = ctx.state.bases[ctx.targetBaseIndex];
-    if (!base || base.defId !== 'base_converted_cave') return false;
+    if (!base || !matchesDefId(base.defId, 'base_converted_cave')) return false;
     return getEffectivePower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
 }
 
@@ -981,7 +982,7 @@ function superheroesMyOnlyWeaknessSuppression(
     for (const base of state.bases) {
         for (const minion of base.minions) {
             const hasActiveWeakness = minion.attachedActions.some((action) => (
-                action.defId === 'superheroes_my_only_weakness'
+                matchesDefId(action.defId, 'superheroes_my_only_weakness')
                 && !turnScopedSuppressedCardUids.has(action.uid)
             ));
             if (hasActiveWeakness) {

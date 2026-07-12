@@ -103,6 +103,10 @@ const HANDLED_BY_COMMAND_FLOW = new Set([
     'radiant_shot_boost',     // → execute DECLARE_ATTACK beforeAttack 被动
     'charge_line_move',       // → execute MOVE_UNIT 冲锋加成
     'speed_up_extra_move',    // → execute/helpers 移动增强
+    'mogu_blood_bloom_charge', // → execute postProcessDeathChecks 后处理友方单位死亡
+    'mogu_final_form_replace', // → execute SUMMON_UNIT 替换高充能菌化野兽
+    'mogu_decay',             // → execute END_PHASE 移动阶段结束处理
+    'mogu_parasite',          // → execute END_PHASE 攻击阶段结束处理
 ]);
 
 /**
@@ -214,6 +218,8 @@ const ACTIVATED_UI_CONFIRMED = new Map<string, string>([
     ['ice_ram',         'eventCard:ui  — 建筑移动/推拉后 useGameEvents 触发 + StatusBanners + cell interaction'],
     ['high_telekinesis_instead', 'button:attack — 攻击阶段按钮代替攻击推拉 + cell interaction 选目标 + telekinesis 方向选择'],
     ['telekinesis_instead', 'button:attack — 攻击阶段按钮代替攻击推拉 + cell interaction 选目标 + telekinesis 方向选择'],
+    ['mogu_blood_infusion', 'button:move — 移动阶段主动技能按钮 + system interaction 选择 2 格内友方单位'],
+    ['mogu_fanatical_fungus', 'eventCard:afterMove — 持续事件在单位移动后创建 system interaction + StatusBanners 推拉选择'],
 ]);
 
 /**

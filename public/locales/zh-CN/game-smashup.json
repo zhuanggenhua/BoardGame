@@ -1181,7 +1181,21 @@
     "spider_verse_deck_selection_title": "选择其中一张加入手牌",
     "spider_verse_view_from_above_minion_option": "角色",
     "spider_verse_view_from_above_action_option": "法术",
-    "spider_verse_view_from_above_title": "高处不胜寒：声明要展示到的牌类型"
+    "spider_verse_view_from_above_title": "高处不胜寒：声明要展示到的牌类型",
+    "mega_troopers_form_megabot_pod_title": "合体超级佐德：选择超级佐德要进入的基地",
+    "mega_troopers_form_megabot_pod_move_title": "合体超级佐德：将任意数量你的随从移动到超级佐德所在基地",
+    "mega_troopers_red_trooper_pod_title": "红骑士：在另一个基地打出或移动超级佐德",
+    "mega_troopers_lightning_crystal_pod_title": "闪电水晶：消灭一张行动牌或一个泰坦",
+    "mega_troopers_its_blitzin_time_pod_title": "闪电时刻：选择你的一个随从",
+    "mega_troopers_plan_for_more_pod_title": "谋划更多：抓取一张牌或额外打出一个展示的随从",
+    "mega_troopers_plan_for_more_pod_order_title": "谋划更多：将其余牌放到牌库顶和/或牌库底",
+    "mega_troopers_beta_6_pod_title": "贝塔6号：在你的一个随从上放置 +1 力量指示物",
+    "mega_troopers_blue_trooper_pod_title": "蓝骑士：抓一张牌或获得 +2 力量",
+    "mega_troopers_blue_trooper_pod_draw": "抓 1 张牌",
+    "mega_troopers_blue_trooper_pod_power": "此随从直到你的回合结束获得 +2 力量",
+    "mega_troopers_lightning_rescue_pod_title": "闪电救援：你可以额外打出一个行动",
+    "mega_troopers_blitzing_sword_attack_pod_title": "闪电剑攻击：消灭一个力量 4 或以下的随从",
+    "mega_troopers_power_pose_pod_after_scoring_title": "胜利姿态：你可以在替换基地额外打出一个随从"
   },
   "mechanics": {
     "madness": {
@@ -1641,6 +1655,22 @@
     "ultimates": {
       "name": "终极战队",
       "description": "围绕移动、临时力量和手牌调度，快速抵达目标基地并放大团队协同。"
+    },
+    "dragons_pod": {
+      "name": "龙族（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与龙族一致。"
+    },
+    "superheroes_pod": {
+      "name": "超级英雄（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与超级英雄一致。"
+    },
+    "magical_girls_pod": {
+      "name": "魔法少女（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与魔法少女一致。"
+    },
+    "mega_troopers_pod": {
+      "name": "超级战队（POD版）",
+      "description": "采用新版计分窗口行动、战队成员特殊能力、超级佐德支援与欧米伽协议的 POD 版本。"
     }
   },
   "tutorial": {
@@ -7008,6 +7038,231 @@
       "name": "争夺",
       "abilityText": "把你的一个角色移动到另一个基地。特别：你可以在计分前打出。",
       "effectText": "把你的一个角色移动到另一个基地。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "mega_troopers_blitzing_sword_attack_pod": {
+      "name": "闪电剑攻击",
+      "effectText": "特殊：在一个有你泰坦的基地计分前，消灭那里一个力量 4 或以下的随从。"
+    },
+    "mega_troopers_form_megabot_pod": {
+      "name": "合体超级佐德！",
+      "effectText": "打出超级佐德，或将任意数量你的随从移动到超级佐德所在基地。"
+    },
+    "mega_troopers_its_blitzin_time_pod": {
+      "name": "闪电时刻！",
+      "effectText": "你的一个随从直到回合结束获得 +4 力量。"
+    },
+    "mega_troopers_lightning_rescue_pod": {
+      "name": "闪电救援！",
+      "effectText": "特殊：在一个基地计分前，若你在那里有随从且力量不是最多，你可以额外打出一个行动。"
+    },
+    "mega_troopers_power_pose_pod": {
+      "name": "胜利姿态",
+      "effectText": "对一个基地打出。持续：此基地计分前，若你的力量不是最多，抓两张牌。此基地计分后，若你获胜，你可以在替换基地额外打出一个力量 3 或以下的随从。"
+    },
+    "mega_troopers_lightning_crystal_pod": {
+      "name": "闪电水晶",
+      "effectText": "消灭一张行动牌或一个泰坦。"
+    },
+    "mega_troopers_omega_protocol_pod": {
+      "name": "欧米伽协议",
+      "effectText": "对一个基地打出。持续：每个其他玩家的回合开始时，此基地直到该回合结束临界点 -10。"
+    },
+    "mega_troopers_plan_for_more_pod": {
+      "name": "谋划更多！",
+      "effectText": "查看你牌库顶三张牌。你可以抓取其中一张，或将其中一个随从作为额外随从打出。将其余牌按任意顺序放到你的牌库顶和/或牌库底。"
+    },
+    "mega_troopers_beta_6_pod": {
+      "name": "贝塔6号",
+      "abilityText": "特殊：任意基地计分前，你可以在你的一个随从上放置一枚 +1 力量指示物。"
+    },
+    "mega_troopers_green_trooper_pod": {
+      "name": "绿骑士",
+      "abilityText": "特殊：一个基地计分前，你可以将此随从作为额外随从打到那里。"
+    },
+    "mega_troopers_pink_trooper_pod": {
+      "name": "粉骑士",
+      "abilityText": "特殊：此基地计分后，将你在这里一个力量 3 或以下的随从返回手牌，而不是置入弃牌堆。"
+    },
+    "mega_troopers_black_trooper_pod": {
+      "name": "黑骑士",
+      "abilityText": "持续：一个特殊能力使用后，此随从直到回合结束获得 +1 力量。"
+    },
+    "mega_troopers_blue_trooper_pod": {
+      "name": "蓝骑士",
+      "abilityText": "特殊：任意基地计分前，你可以抓一张牌，或令此随从直到你的回合结束获得 +2 力量。"
+    },
+    "mega_troopers_yellow_trooper_pod": {
+      "name": "黄骑士",
+      "abilityText": "特殊：此基地计分前，你可以将你的另一个随从移动到这里。"
+    },
+    "mega_troopers_red_trooper_pod": {
+      "name": "红骑士",
+      "abilityText": "持续：你可以额外拥有一个在场泰坦。天赋：在另一个基地打出超级佐德，或移动超级佐德。"
+    },
+    "magical_girls_silver_shard_pod": {
+      "name": "银色碎片",
+      "effectText": "所有玩家将其弃牌堆中的所有随从洗回牌库。"
+    },
+    "magical_girls_coronet_attack_pod": {
+      "name": "冠冕攻击",
+      "effectText": "摧毁一个不由你控制的随从，其力量小于或等于你在同基地的随从数量。"
+    },
+    "magical_girls_magical_staff_pod": {
+      "name": "魔法棒",
+      "effectText": "对你的一个随从打出。持续：此随从获得 +1 力量。当此随从进入弃牌堆时，改为将它置于你的牌库顶。"
+    },
+    "magical_girls_purge_the_demon_pod": {
+      "name": "净化恶魔",
+      "effectText": "选择一张卡牌，摧毁其上的一个法术，或移除其上的所有力量指示物。"
+    },
+    "magical_girls_coordination_pod": {
+      "name": "和谐",
+      "effectText": "额外打出一个随从，或打出移动城堡（泰坦）。"
+    },
+    "magical_girls_lunar_healing_love_spell_pod": {
+      "name": "爱的咒语",
+      "effectText": "在每个玩家的弃牌堆中选择一个随从，并将其置入拥有者手中。"
+    },
+    "magical_girls_kiss_the_sky_spell_pod": {
+      "name": "天吻咒",
+      "effectText": "将你弃牌堆中的一个随从加入手牌。本回合你可以额外打出一个法术。"
+    },
+    "magical_girls_celestial_teleport_pod": {
+      "name": "传送",
+      "effectText": "移动你的一个随从到另一个基地。"
+    },
+    "magical_girls_black_magicat_pod": {
+      "name": "黑魔法猫",
+      "abilityText": "从你的牌库和弃牌堆中搜寻月球骑长，并将其加入手牌。"
+    },
+    "magical_girls_white_magicat_pod": {
+      "name": "白魔法猫",
+      "abilityText": "从你的牌库和弃牌堆中搜寻力量女仆，并将其加入手牌。"
+    },
+    "magical_girls_rainbow_girl_pod": {
+      "name": "彩虹女孩",
+      "abilityText": "你在这里的其他随从直到回合结束获得 +1 力量。"
+    },
+    "magical_girls_fancy_suit_lad_pod": {
+      "name": "花礼服少年",
+      "abilityText": "持续：你在这里的其他随从不受其他玩家卡牌影响。"
+    },
+    "magical_girls_power_maid_pod": {
+      "name": "力量女仆",
+      "abilityText": "天赋：选择一个力量小于或等于你这里随从数量的随从，将其移动到这里，或从这里移走。"
+    },
+    "magical_girls_bewitching_gal_pod": {
+      "name": "迷人的妹子",
+      "abilityText": "天赋：直到回合结束，将本基地的摧毁点减少，减少值等同于你这里的随从数量。"
+    },
+    "magical_girls_technomagical_lass_pod": {
+      "name": "技术魔法少女",
+      "abilityText": "天赋：摧毁这里一个力量小于或等于你在这里随从数量且不由你控制的随从。"
+    },
+    "magical_girls_sakura_warrior_pod": {
+      "name": "樱花战士",
+      "abilityText": "天赋：令本基地一个随从的力量降低，降低值等同于你这里的随从数量，直到你的下回合开始。"
+    },
+    "magical_girls_lunar_captain_pod": {
+      "name": "月球骑长",
+      "abilityText": "天赋：在你的弃牌堆中选择一个力量小于或等于你在这里随从数量的随从，并将它加入手牌。"
+    },
+    "dragons_burn_it_down_pod": {
+      "name": "烧毁它",
+      "effectText": "选择一个基地。将其替换为基地牌库顶牌或基地弃牌堆中的一张基地。"
+    },
+    "dragons_ruins_pod": {
+      "name": "废墟",
+      "effectText": "对基地打出。持续：在此基地计分时，其他玩家获得的 VP 减少 1。"
+    },
+    "dragons_raze_pod": {
+      "name": "夷平",
+      "effectText": "对基地打出。持续：此基地的能力无效。"
+    },
+    "dragons_dangerous_ground_pod": {
+      "name": "险地",
+      "effectText": "对基地打出。持续：其他玩家在此处打出随从后，该玩家弃 1 张牌。"
+    },
+    "dragons_flank_attack_pod": {
+      "name": "侧翼攻击",
+      "effectText": "从你的牌库和/或弃牌堆中选择一张可打在基地上的行动，并将其作为额外行动打出。"
+    },
+    "dragons_intimidating_presence_pod": {
+      "name": "威压",
+      "effectText": "特殊：你可以在基地计分前对基地打出。持续：其他玩家在这里的随从各 -1 力量。"
+    },
+    "dragons_dragon_lands_pod": {
+      "name": "龙之领地",
+      "effectText": "特殊：你可以在基地计分前对基地打出。持续：你在这里的随从各 +1 力量。"
+    },
+    "dragons_bring_down_the_walls_pod": {
+      "name": "推倒城墙",
+      "effectText": "对基地打出。持续：此基地计分前，你可以额外打出一个随从到这里。"
+    },
+    "dragons_hatchling_pod": {
+      "name": "幼龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，那个随从直到回合结束 -1 力量。"
+    },
+    "dragons_imperial_dragon_pod": {
+      "name": "帝国龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，抽 1 张牌。"
+    },
+    "dragons_wyvern_pod": {
+      "name": "飞龙",
+      "abilityText": "打出时：消灭这里一个力量 3 或以下的随从。天赋：将此基地的摧毁点降低 3，直到回合结束。"
+    },
+    "dragons_great_wyrm_pod": {
+      "name": "巨龙",
+      "abilityText": "持续：在此随从所在基地计分时，其他玩家获得的 VP 减少 1。"
+    },
+    "superheroes_not_really_dead_pod": {
+      "name": "并没真死",
+      "effectText": "从任意弃牌堆中选择最多 2 个力量 2 或以下的随从，将它们返回其拥有者手牌。"
+    },
+    "superheroes_justice_friends_pod": {
+      "name": "正义伙伴",
+      "effectText": "选择一个基地。你在这里每有一个力量 5 或以上的随从，便抽 1 张牌。"
+    },
+    "superheroes_my_only_weakness_pod": {
+      "name": "我唯一的弱点",
+      "effectText": "对一个随从打出。持续：此随从 -3 力量。"
+    },
+    "superheroes_golden_age_pod": {
+      "name": "黄金时代",
+      "effectText": "选择最多 3 个随从，将它们放到其拥有者牌库底。"
+    },
+    "superheroes_secret_base_pod": {
+      "name": "秘密基地",
+      "effectText": "对基地打出。持续：其他玩家不能在此基地上打出行动。"
+    },
+    "superheroes_radioactive_exposure_pod": {
+      "name": "放射暴露",
+      "effectText": "选择一个随从。直到回合结束，其获得 +2 力量且不受其他玩家卡牌影响。"
+    },
+    "superheroes_expanded_power_pod": {
+      "name": "强化能力",
+      "effectText": "对你的一个随从打出。持续：此随从 +2 力量。"
+    },
+    "superheroes_sidekick_pod": {
+      "name": "助手",
+      "effectText": "额外打出一个力量 2 或以下的随从。"
+    },
+    "superheroes_mild_mannered_citizen_pod": {
+      "name": "温和市民"
+    },
+    "superheroes_the_burst_pod": {
+      "name": "爆发"
+    },
+    "superheroes_captain_amazing_pod": {
+      "name": "惊奇队长",
+      "abilityText": "天赋：从你的牌库搜寻一个力量 5 或以上的随从，将其作为额外随从打出，然后洗牌。"
+    },
+    "superheroes_mind_lady_pod": {
+      "name": "心灵女士",
+      "abilityText": "选择另一名玩家的一个随从。其能力取消，直到你下回合开始。"
+    },
+    "superheroes_awesome_guy_pod": {
+      "name": "超赞男"
     }
   },
   "debug": {
