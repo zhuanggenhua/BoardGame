@@ -210,6 +210,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('UI_SURFACE.bookPaper');
         expect(boardSource).toContain('UI_SURFACE.bookPage');
         expect(boardSource).toContain('qidahen-scenario-vote-book-page-intro');
+        expect(boardSource).toContain('qidahen-scenario-vote-card-rail');
+        expect(boardSource).toContain('qidahen-scenario-vote-feature-card');
+        expect(boardSource).toContain('data-ui-page="qidahen-scenario-vote-book-page-focus"');
         expect(boardSource).toContain('data-ui-page="qidahen-scenario-vote-book-page-status"');
         expect(boardSource).toContain('CAST_SCENARIO_VOTE');
         expect(boardSource).toContain('core.pendingScenarioCharacterChoices');

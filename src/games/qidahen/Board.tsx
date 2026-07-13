@@ -5333,6 +5333,7 @@ const QidahenScenarioVoteScreen: React.FC<{
     onCastScenarioVote,
 }) => {
     const { t } = useTranslation('game-qidahen');
+    const [inspectedScenarioId, setInspectedScenarioId] = React.useState<QidahenScenarioId | null>(null);
     const scenarioVote = core.scenarioVote;
 
     if (!scenarioVote) {
@@ -5363,20 +5364,32 @@ const QidahenScenarioVoteScreen: React.FC<{
             };
         })
         .filter((row): row is NonNullable<typeof row> => row != null);
-    const hostFactionName = factionRows.find((row) => row.playerId === scenarioVote.hostPlayerId)?.factionName ?? '房主';
     const selectedScenarioLabel = hostSelection
         ? scenarioOptions.find((option) => option.scenarioId === hostSelection)?.label ?? null
+        : null;
+    const firstPlayableScenario = scenarioOptions.find((option) => option.isPlayable) ?? scenarioOptions[0] ?? null;
+    const previewScenarioId = inspectedScenarioId ?? hostSelection ?? firstPlayableScenario?.scenarioId ?? null;
+    const previewScenario = previewScenarioId
+        ? scenarioOptions.find((option) => option.scenarioId === previewScenarioId) ?? firstPlayableScenario
+        : firstPlayableScenario;
+    const previewDisabledReason = previewScenario
+        ? t('board.scenarioVote.unavailableForPlayerCount', {
+            count: scenarioVote.playerCount,
+            supported: previewScenario.supportedPlayerCounts.join('/'),
+            defaultValue: `当前 ${scenarioVote.playerCount} 人房不可用，适用 ${previewScenario.supportedPlayerCounts.join('/')} 人`,
+        })
         : null;
 
     return (
         <div
-            className="absolute inset-0 overflow-hidden px-[60px] py-[40px]"
+            className="absolute inset-0 overflow-hidden px-[52px] py-[34px]"
             data-testid="qidahen-scenario-vote-screen"
             style={{
                 background: [
-                    'radial-gradient(circle at 15% 15%, rgba(159,52,38,0.24), transparent 28%)',
-                    'radial-gradient(circle at 72% 68%, rgba(32,21,13,0.26), transparent 36%)',
-                    'linear-gradient(135deg, rgba(62,43,25,0.93) 0%, rgba(211,185,127,0.96) 42%, rgba(44,30,18,0.9) 100%)',
+                    'radial-gradient(circle at 13% 18%, rgba(159,52,38,0.24), transparent 26%)',
+                    'radial-gradient(circle at 86% 26%, rgba(210,183,117,0.22), transparent 30%)',
+                    'radial-gradient(circle at 72% 76%, rgba(32,21,13,0.34), transparent 36%)',
+                    'linear-gradient(135deg, rgba(46,31,18,0.96) 0%, rgba(159,128,72,0.96) 44%, rgba(35,24,16,0.94) 100%)',
                 ].join(', '),
                 color: UI_STYLE.mapIvory,
             }}
@@ -5397,7 +5410,7 @@ const QidahenScenarioVoteScreen: React.FC<{
                 style={{ borderColor: UI_STYLE.cinnabar }}
             />
             <div
-                className="relative grid h-full min-h-0 grid-cols-[1.35fr_0.9fr] gap-0 border-[4px] p-5"
+                className="relative grid h-full min-h-0 grid-cols-[0.78fr_1.22fr] gap-0 border-[4px] p-5"
                 data-testid="qidahen-scenario-vote-layout"
                 data-ui-family="qidahen-book-setup"
                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.bookPaper, boxShadow: '0 8px 0 rgba(58,37,17,0.26), 0 28px 46px rgba(13,8,4,0.36)', borderRadius: 8 }}
@@ -5408,148 +5421,198 @@ const QidahenScenarioVoteScreen: React.FC<{
                     data-testid="qidahen-scenario-vote-book-page-intro"
                     style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
                 >
-                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                    <div className="flex items-start justify-between gap-4 border-b-[2px] pb-4" style={{ borderColor: UI_STYLE.bronzeFaint }}>
                         <div>
-                        <div className="text-[12px] font-black uppercase tracking-[0.28em]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.scenarioVote.eyebrow', { defaultValue: '局内剧本选择' })}
+                            <div className="text-[12px] font-black uppercase tracking-[0.28em]" style={{ color: UI_STYLE.cinnabar }}>
+                                {t('board.scenarioVote.eyebrow', { defaultValue: '局内剧本选择' })}
+                            </div>
+                            <div className="mt-2 text-[31px] font-black tracking-[0.04em]" data-testid="qidahen-scenario-vote-title" style={{ color: UI_STYLE.ink }}>
+                                {t('board.scenarioVote.title', { defaultValue: '房主选择本局剧本' })}
+                            </div>
+                            <div className="mt-2 text-[13px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                {isHostViewer
+                                    ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
+                                    : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
+                            </div>
                         </div>
-                        <div className="mt-2 text-[31px] font-black tracking-[0.04em]" data-testid="qidahen-scenario-vote-title" style={{ color: UI_STYLE.ink }}>
-                            {t('board.scenarioVote.title', { defaultValue: '房主选择本局剧本' })}
-                        </div>
-                        <div className="mt-2 text-[13px] font-black" style={{ color: UI_STYLE.mutedInk }}>
-                            {isHostViewer
-                                ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
-                                : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
+                        <div
+                            className="shrink-0 border-[3px] px-4 py-2 text-[13px] font-black"
+                            data-testid="qidahen-scenario-vote-player-count"
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
+                        >
+                            {t('board.scenarioVote.playerCount', {
+                                count: scenarioVote.playerCount,
+                                defaultValue: '{{count}} 人房间',
+                            })}
                         </div>
                     </div>
-                    <div
-                        className="border-[3px] px-4 py-2 text-[13px] font-black"
-                        data-testid="qidahen-scenario-vote-player-count"
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
-                    >
-                        {t('board.scenarioVote.playerCount', {
-                            count: scenarioVote.playerCount,
-                            defaultValue: '{{count}} 人房间',
-                        })}
-                    </div>
-                </div>
 
-                    <div className="mt-5 flex min-h-0 flex-1 items-center justify-center gap-10 overflow-x-auto px-8 py-6">
-                    {scenarioOptions.map((option) => {
-                        const isDraft = hostSelection === option.scenarioId;
-                        const disabledReason = t('board.scenarioVote.unavailableForPlayerCount', {
-                            count: scenarioVote.playerCount,
-                            supported: option.supportedPlayerCounts.join('/'),
-                            defaultValue: `当前 ${scenarioVote.playerCount} 人房不可用，适用 ${option.supportedPlayerCounts.join('/')} 人`,
-                        });
-                        return (
-                            <SelectableGameObject
-                                key={option.scenarioId}
-                                data-testid={`qidahen-scenario-vote-option-${option.scenarioId}`}
-                                disabled={!isHostViewer || !option.isPlayable}
-                                selected={isDraft}
-                                available={isHostViewer && option.isPlayable}
-                                aria-label={option.isPlayable ? option.label : `${option.label}，${disabledReason}`}
-                                className={`group h-[390px] w-[282px] shrink-0 rounded-[12px] bg-transparent hover:-translate-y-3 active:translate-y-0 ${isDraft ? '-translate-y-3' : ''}`}
-                                onClick={() => {
-                                    if (isHostViewer && option.isPlayable) {
-                                        onCastScenarioVote(option.scenarioId);
-                                    }
-                                }}
-                            >
-                                <span className="pointer-events-none relative block h-full w-full overflow-hidden rounded-[12px] bg-[#efe3c4] shadow-[0_16px_30px_rgba(44,27,13,0.34)]">
-                                    <CardPreviewFit
-                                        previewRef={getQidahenScenarioCardPreview(option.scenarioId)}
-                                        title={option.label}
-                                        width={282}
-                                        height={390}
-                                        rawWidth={CARD_DIMENSIONS.hand.rawWidth}
-                                        rawHeight={CARD_DIMENSIONS.hand.rawHeight}
-                                    />
-                                </span>
-                                {isDraft ? (
+                    <div className="mt-5 flex min-h-0 flex-1 items-center">
+                        <div className="grid w-full grid-cols-3 gap-5" data-testid="qidahen-scenario-vote-card-rail">
+                        {scenarioOptions.map((option) => {
+                            const isDraft = hostSelection === option.scenarioId;
+                            const isPreview = previewScenario?.scenarioId === option.scenarioId;
+                            const disabledReason = t('board.scenarioVote.unavailableForPlayerCount', {
+                                count: scenarioVote.playerCount,
+                                supported: option.supportedPlayerCounts.join('/'),
+                                defaultValue: `当前 ${scenarioVote.playerCount} 人房不可用，适用 ${option.supportedPlayerCounts.join('/')} 人`,
+                            });
+                            return (
+                                <SelectableGameObject
+                                    key={option.scenarioId}
+                                    data-testid={`qidahen-scenario-vote-option-${option.scenarioId}`}
+                                    disabled={!isHostViewer || !option.isPlayable}
+                                    selected={isDraft}
+                                    available={isHostViewer && option.isPlayable}
+                                    aria-label={option.isPlayable ? option.label : `${option.label}，${disabledReason}`}
+                                    className={`group h-[350px] w-full rounded-[12px] bg-transparent cursor-pointer active:translate-y-0 ${isDraft ? '-translate-y-2' : ''}`}
+                                    onFocus={() => setInspectedScenarioId(option.scenarioId)}
+                                    onMouseEnter={() => setInspectedScenarioId(option.scenarioId)}
+                                    onMouseLeave={() => setInspectedScenarioId(null)}
+                                    onClick={() => {
+                                        if (isHostViewer && option.isPlayable) {
+                                            onCastScenarioVote(option.scenarioId);
+                                        }
+                                    }}
+                                >
+                                    <span className="pointer-events-none relative block h-full w-full overflow-hidden rounded-[12px] bg-[#efe3c4] shadow-[0_14px_24px_rgba(44,27,13,0.32)]">
+                                        <CardPreviewFit
+                                            previewRef={getQidahenScenarioCardPreview(option.scenarioId)}
+                                            title={option.label}
+                                            width={252}
+                                            height={350}
+                                            rawWidth={CARD_DIMENSIONS.hand.rawWidth}
+                                            rawHeight={CARD_DIMENSIONS.hand.rawHeight}
+                                        />
+                                    </span>
                                     <span
-                                        className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-3 py-1 text-[11px] font-black"
-                                        data-testid={`qidahen-scenario-host-selected-${option.scenarioId}`}
+                                        className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-2 py-0.5 text-[10px] font-black"
+                                        style={{
+                                            borderColor: UI_STYLE.mapInk,
+                                            background: isDraft ? UI_STYLE.cinnabar : isPreview ? UI_SURFACE.paperPressed : UI_SURFACE.paper,
+                                            color: isDraft ? UI_STYLE.mapIvory : UI_STYLE.ink,
+                                            boxShadow: UI_SURFACE.hardShadow,
+                                        }}
+                                    >
+                                        {option.label}
+                                    </span>
+                                    {isDraft ? (
+                                        <span
+                                            className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-3 py-1 text-[11px] font-black"
+                                            data-testid={`qidahen-scenario-host-selected-${option.scenarioId}`}
+                                            style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow }}
+                                        >
+                                            {t('board.scenarioVote.myVote', { defaultValue: '本局采用' })}
+                                        </span>
+                                    ) : null}
+                                    {!option.isPlayable ? (
+                                        <span
+                                            className="pointer-events-none absolute inset-x-3 bottom-3 z-20 border-[2px] px-3 py-2 text-center text-[10px] font-black"
+                                            data-testid={`qidahen-scenario-vote-locked-${option.scenarioId}`}
+                                            style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(32,21,13,0.88)', color: UI_STYLE.mapGold, boxShadow: UI_SURFACE.mapPanelShadow }}
+                                        >
+                                            {disabledReason}
+                                        </span>
+                                    ) : null}
+                                </SelectableGameObject>
+                            );
+                        })}
+                        </div>
+                    </div>
+                </section>
+
+                <section
+                    className="flex min-h-0 flex-col border-[3px] p-5"
+                    data-testid="qidahen-scenario-vote-feature-page"
+                    data-ui-page="qidahen-scenario-vote-book-page-focus"
+                    style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, color: UI_STYLE.ink, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
+                >
+                    <div
+                        className="grid grid-cols-3 gap-3 text-[12px] font-black"
+                        data-testid="qidahen-scenario-vote-seat-status"
+                        data-ui-page="qidahen-scenario-vote-book-page-status"
+                    >
+                        {factionRows.map((row) => (
+                            <div
+                                key={row.playerId}
+                                className="min-w-0 border px-3 py-2"
+                                data-testid={`qidahen-scenario-vote-status-${row.playerId}`}
+                                style={{ borderColor: UI_STYLE.bronzeFaint, background: 'rgba(255,249,225,0.56)', color: UI_STYLE.mutedInk, boxShadow: UI_SURFACE.inkInset, borderRadius: 4 }}
+                            >
+                                <div className="truncate" style={{ color: UI_STYLE.ink }}>
+                                    {row.factionName}
+                                    {row.playerId === playerID ? ` · ${t('board.scenarioVote.you', { defaultValue: '你' })}` : ''}
+                                    {row.playerId === scenarioVote.hostPlayerId ? ` · ${t('board.scenarioVote.host', { defaultValue: '房主' })}` : ''}
+                                </div>
+                                <div className="mt-1 truncate">
+                                    {row.confirmedVote
+                                        ? scenarioOptions.find((option) => option.scenarioId === row.confirmedVote)?.label ?? row.confirmedVote
+                                        : row.playerId === scenarioVote.hostPlayerId
+                                            ? t('board.scenarioVote.pendingVote', { defaultValue: '等待房主选择' })
+                                            : t('board.scenarioVote.waitingHost', { defaultValue: '等待剧本结果' })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex min-h-0 flex-1 items-center justify-center py-5">
+                        {previewScenario ? (
+                            <div
+                                className="relative h-[720px] w-[520px] rounded-[16px] bg-[#efe3c4] shadow-[0_22px_46px_rgba(44,27,13,0.38)]"
+                                data-testid="qidahen-scenario-vote-feature-card"
+                            >
+                                <CardPreviewFit
+                                    previewRef={getQidahenScenarioCardPreview(previewScenario.scenarioId)}
+                                    title={previewScenario.label}
+                                    width={520}
+                                    height={720}
+                                    rawWidth={CARD_DIMENSIONS.hand.rawWidth}
+                                    rawHeight={CARD_DIMENSIONS.hand.rawHeight}
+                                />
+                                {hostSelection === previewScenario.scenarioId ? (
+                                    <span
+                                        className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-4 py-1 text-[12px] font-black"
+                                        data-testid={`qidahen-scenario-feature-selected-${previewScenario.scenarioId}`}
                                         style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow }}
                                     >
                                         {t('board.scenarioVote.myVote', { defaultValue: '本局采用' })}
                                     </span>
                                 ) : null}
-                                {!option.isPlayable ? (
+                                {!previewScenario.isPlayable && previewDisabledReason ? (
                                     <span
-                                        className="pointer-events-none absolute inset-x-3 bottom-3 z-20 border-[2px] px-3 py-2 text-center text-[11px] font-black"
-                                        data-testid={`qidahen-scenario-vote-locked-${option.scenarioId}`}
+                                        className="pointer-events-none absolute inset-x-5 bottom-5 z-20 border-[2px] px-3 py-2 text-center text-[12px] font-black"
                                         style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(32,21,13,0.88)', color: UI_STYLE.mapGold, boxShadow: UI_SURFACE.mapPanelShadow }}
                                     >
-                                        {disabledReason}
+                                        {previewDisabledReason}
                                     </span>
                                 ) : null}
-                            </SelectableGameObject>
-                        );
-                    })}
-                    </div>
-                </section>
-
-                <aside className="grid min-h-0 grid-rows-[1fr_auto] gap-4">
-                    <div
-                        className="min-h-0 overflow-y-auto border-[3px] px-4 py-4"
-                        data-testid="qidahen-scenario-vote-seat-status"
-                        data-ui-page="qidahen-scenario-vote-book-page-status"
-                        style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, color: UI_STYLE.ink, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
-                    >
-                        <div className="text-[12px] font-black tracking-[0.14em]" style={{ color: UI_STYLE.cinnabar }}>
-                            {t('board.scenarioVote.seatStatusTitle', { defaultValue: '席位状态' })}
-                        </div>
-                        <div className="mt-3 grid gap-2">
-                            {factionRows.map((row) => (
-                                <div
-                                    key={row.playerId}
-                                    className="flex items-center justify-between gap-3 border-b pb-3 text-[13px]"
-                                    data-testid={`qidahen-scenario-vote-status-${row.playerId}`}
-                                    style={{ borderColor: UI_STYLE.bronzeFaint }}
-                                >
-                                    <div className="font-black">
-                                        {row.factionName}
-                                        {row.playerId === playerID ? ` · ${t('board.scenarioVote.you', { defaultValue: '你' })}` : ''}
-                                        {row.playerId === scenarioVote.hostPlayerId ? ` · ${t('board.scenarioVote.host', { defaultValue: '房主' })}` : ''}
-                                    </div>
-                                    <div className="text-right leading-5" style={{ color: row.confirmedVote ? UI_STYLE.ink : UI_STYLE.mutedInk }}>
-                                        {row.confirmedVote
-                                            ? scenarioOptions.find((option) => option.scenarioId === row.confirmedVote)?.label ?? row.confirmedVote
-                                            : row.playerId === scenarioVote.hostPlayerId
-                                                ? t('board.scenarioVote.pendingVote', { defaultValue: '等待房主选择' })
-                                                : t('board.scenarioVote.waitingHost', { defaultValue: '等待剧本结果' })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="mt-3 text-[12px] leading-5" style={{ color: UI_STYLE.mutedInk }}>
-                            {t('board.scenarioVote.tiebreakNote', {
-                                hostFactionName,
-                                defaultValue: '{{hostFactionName}}点选剧本后立即进入人物与军备前置。',
-                            })}
-                        </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div
-                        className="border-[3px] px-4 py-4"
+                        className="grid grid-cols-[1fr_auto] items-center gap-4 border-[3px] px-4 py-3"
                         data-testid="qidahen-scenario-vote-actions"
                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 5 }}
                     >
-                        <div className="text-[12px] font-black" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.scenarioVote.actionTitle', { defaultValue: isHostViewer ? '房主操作' : '等待房主' })}
+                        <div className="min-w-0">
+                            <div className="text-[12px] font-black" style={{ color: UI_STYLE.mapGold }}>
+                                {t('board.scenarioVote.actionTitle', { defaultValue: isHostViewer ? '房主操作' : '等待房主' })}
+                            </div>
+                            <div className="mt-1 text-[15px] font-black leading-6" style={{ color: UI_STYLE.mapIvory }}>
+                                {isHostViewer
+                                    ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
+                                    : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
+                            </div>
                         </div>
-                        <div className="mt-2 text-[13px] leading-6" style={{ color: UI_STYLE.mapIvory }}>
-                            {isHostViewer
-                                ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
-                                : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
-                        </div>
-                        <div className="mt-3 border px-3 py-2 text-[12px] font-black" style={{ borderColor: 'rgba(210,183,117,0.34)', background: 'rgba(32,21,13,0.42)', color: UI_STYLE.mapGold, clipPath: UI_SURFACE.smallCutCorner }}>
+                        <div
+                            className="min-w-[180px] border px-3 py-2 text-center text-[13px] font-black"
+                            style={{ borderColor: 'rgba(210,183,117,0.34)', background: 'rgba(32,21,13,0.42)', color: UI_STYLE.mapGold, clipPath: UI_SURFACE.smallCutCorner }}
+                        >
                             {selectedScenarioLabel ?? t('board.scenarioVote.noDraft', { defaultValue: '尚未选择剧本' })}
                         </div>
                     </div>
-                </aside>
+                </section>
             </div>
         </div>
     );
