@@ -72,7 +72,7 @@ function eventL3(event) {
   if (['选择属性后投骰', '可选作祟检定', '可选事件投骰', '全属性检定', '特殊移动消费者', '通用伤害选择'].includes(family)) {
     return '已有事件牌页面承接 E2E 代表链；不补逐张截图';
   }
-  return '普通投骰事件已有真实浏览器代表链截图；non-p0 representative E2E 已通过';
+  return '普通投骰事件已有探索目标、卡牌正面、投掷骰子和结果分支步骤截图；non-p0 representative E2E 已通过';
 }
 
 function possessionFamily(card) {
@@ -88,8 +88,8 @@ function possessionFamily(card) {
 
 function possessionL3(card) {
   if (['map', 'notebook', 'manuscript'].includes(card.id)) return '已有地图类目标选择真实页面证据；legacy 对象复用同一链';
-  if (['holy-symbol', 'idol'].includes(card.id)) return 'L3 探索声明替代已有真实浏览器代表链截图';
-  if (['hunting-knife', 'dagger', 'ring'].includes(card.id)) return 'L3 攻击武器已有真实浏览器代表链截图';
+  if (['holy-symbol', 'idol'].includes(card.id)) return 'L3 探索声明替代已有选择前、已选择和跳过事件步骤截图';
+  if (['hunting-knife', 'dagger', 'ring'].includes(card.id)) return 'L3 攻击武器已有选择前、目标高亮、攻击投骰和反馈步骤截图';
   if (card.id === 'rope') return '已有兔脚重掷教程真实入口代表链';
   if (card.id === 'skull') return 'L3 已补头骨死亡保护真实浏览器截图：3 骰、总点数 4、阻止死亡反馈';
   if (card.id === 'dog') return '已有交易代表链；不外推全部主动效果';
