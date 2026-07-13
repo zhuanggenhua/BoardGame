@@ -66,11 +66,13 @@ export interface SmashUpActivatableAbility {
 /**
  * 卡牌打出约束（数据驱动）。
  * - 'requireOwnMinion'：目标基地上必须有自己的至少一个随从
+ * - 'requireNoCharacters'：目标基地上不能有任何角色
  * - { type: 'requireOwnPower', minPower: N }：目标基地上己方力量必须 ≥ N
  * - 'onlyCardInHand'：本卡必须是手牌中的唯一一张
  */
 export type PlayConstraint =
     | 'requireOwnMinion'
+    | 'requireNoCharacters'
     | 'onlyCardInHand'
     | { type: 'requireOwnPower'; minPower: number };
 
@@ -807,6 +809,7 @@ export interface SmashUpCore {
         minionUid: string;
         amount: number;
         expiresOnTurnNumber: number;
+        expiresOnPlayerId?: PlayerId;
         reason: string;
     }>;
     /**
@@ -2023,6 +2026,7 @@ export interface PermanentPowerAddedEvent extends GameEvent<typeof SU_EVENTS.PER
         amount: number;
         reason: string;
         expiresOnTurnNumber?: number;
+        expiresOnPlayerId?: PlayerId;
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;

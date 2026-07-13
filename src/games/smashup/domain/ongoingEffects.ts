@@ -1229,7 +1229,6 @@ export function registerPodOngoingAliases(): void {
 
     baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
 
-
     const baseVpModifiersToAdd: BaseVpModifierEntry[] = [];
     for (const entry of baseVpModifierRegistry) {
         const { sourceDefId, checker } = entry;

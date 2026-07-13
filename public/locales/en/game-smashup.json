@@ -1212,7 +1212,17 @@
     "mega_troopers_blue_trooper_pod_power": "This minion gains +2 power until the end of your turn",
     "mega_troopers_lightning_rescue_pod_title": "Lightning Rescue: you may play an extra action",
     "mega_troopers_blitzing_sword_attack_pod_title": "Blitzing Sword Attack: destroy a minion of power 4 or less",
-    "mega_troopers_power_pose_pod_after_scoring_title": "Power Pose: you may play a minion on the replacement base"
+    "mega_troopers_power_pose_pod_after_scoring_title": "Power Pose: you may play a minion on the replacement base",
+    "marvel_villains_destroy_own_title": "Choose one of your characters to destroy",
+    "marvel_villains_destroy_any_title": "Choose a character to destroy",
+    "marvel_villains_buff_title": "Choose one of your characters to gain the power modifier",
+    "marvel_villains_move_own_title": "Choose one of your characters to move",
+    "marvel_villains_destination_title": "Choose a destination base",
+    "marvel_villains_move_modifier_title": "Choose a base modifier to move",
+    "marvel_villains_mysterio_choice_title": "Mysterio: choose an effect",
+    "marvel_villains_mysterio_extra_base_modifier_option": "Play an extra base modifier",
+    "marvel_villains_mysterio_draw_option": "Draw a card",
+    "marvel_villains_deck_own_minions_title": "Choose up to two of your characters to place on the bottom of your deck"
   },
   "mechanics": {
     "madness": {
@@ -1688,6 +1698,22 @@
     "mega_troopers_pod": {
       "name": "Mega Troopers (POD)",
       "description": "POD edition with revised scoring-window actions, trooper specials, Megabot support, and Omega Protocol."
+    },
+    "hydra": {
+      "name": "Hydra",
+      "description": "Turn sacrificed characters into card draw, low-power redeployment, and relentless board rebuilding."
+    },
+    "kree": {
+      "name": "Kree",
+      "description": "Chain actions, draw cards, and recycle tactics so characters grow stronger as the plan unfolds."
+    },
+    "masters_of_evil": {
+      "name": "Masters of Evil",
+      "description": "Convert VP thresholds, scoring triggers, and destruction protection into extra victory points."
+    },
+    "sinister_six": {
+      "name": "Sinister Six",
+      "description": "Lower base breakpoints and manipulate base modifiers to shut down opponents at vulnerable scoring windows."
     }
   },
   "tutorial": {
@@ -7280,6 +7306,202 @@
     },
     "superheroes_awesome_guy_pod": {
       "name": "Awesome Guy"
+    },
+    "hydra_red_skull": {
+      "name": "Red Skull",
+      "abilityText": "Ongoing: After one of your characters is destroyed, draw a card. Talent: Destroy one of your characters to draw a card."
+    },
+    "hydra_baron_strucker": {
+      "name": "Baron Strucker",
+      "abilityText": "Talent: Destroy one of your characters. After it is destroyed, move up to two of your characters from other bases to here."
+    },
+    "hydra_madame_hydra": {
+      "name": "Madame Hydra",
+      "abilityText": "Talent: Destroy one of your characters to give this character +2 power until the end of the turn."
+    },
+    "hydra_arnim_zola": {
+      "name": "Arnim Zola",
+      "abilityText": "Ongoing: This character has +1 power for each of your other characters here with a printed power of 2 or less."
+    },
+    "hydra_hydra_agent": {
+      "name": "Hydra Agent",
+      "abilityText": "Ongoing: After this character is destroyed, play up to two extra characters of power 2 or less here."
+    },
+    "hydra_fanatical_devotion": {
+      "name": "Fanatical Devotion",
+      "abilityText": "Base modifier. Ongoing: Your characters here each have +2 power if one or more of your characters have been destroyed here this turn."
+    },
+    "hydra_hail_hydra": {
+      "name": "Hail Hydra!",
+      "abilityText": "Destroy one of your characters to draw cards equal to its power."
+    },
+    "hydra_hour_of_destiny": {
+      "name": "Hour of Destiny",
+      "abilityText": "Search your deck for up to two characters of power 2 or less, reveal them, and draw them. Then shuffle your deck."
+    },
+    "hydra_reactivate_agents": {
+      "name": "Reactivate Agents",
+      "abilityText": "Place up to two characters of 2 power or less from your discard pile into your hand."
+    },
+    "hydra_secret_reserves": {
+      "name": "Secret Reserves",
+      "abilityText": "Shuffle any number of characters of power 2 or less from your discard pile into your deck."
+    },
+    "hydra_two_more_shall_take_its_place": {
+      "name": "Two More Shall Take Its Place",
+      "abilityText": "Destroy one of your characters. After it is destroyed, play up to two characters of power 2 or less as extra characters onto that base."
+    },
+    "kree_supreme_intelligence": {
+      "name": "Supreme Intelligence",
+      "abilityText": "Ongoing: After you play an action, one of your other characters gains +1 power until the end of the turn."
+    },
+    "kree_minn_erva": {
+      "name": "Minn-Erva",
+      "abilityText": "Draw two cards."
+    },
+    "kree_ronan_the_accuser": {
+      "name": "Ronan the Accuser",
+      "abilityText": "You may play an extra action."
+    },
+    "kree_kree_sentry": {
+      "name": "Kree Sentry",
+      "abilityText": "Ongoing: This character has +2 power if you have played two or more actions this turn."
+    },
+    "kree_battle_rage": {
+      "name": "Battle Rage",
+      "abilityText": "One of your characters gains +2 power until the end of the turn. Draw a card."
+    },
+    "kree_call_for_backup": {
+      "name": "Call for Backup",
+      "abilityText": "Draw two cards."
+    },
+    "kree_it_begins": {
+      "name": "It Begins",
+      "abilityText": "One of your characters gains +1 power until the end of the turn. Draw a card. You may play an extra action."
+    },
+    "kree_prepare_to_engage": {
+      "name": "Prepare to Engage",
+      "abilityText": "Reveal the top five cards of your deck. Place up to two revealed actions into your hand and shuffle the rest into your deck."
+    },
+    "kree_proven_methods": {
+      "name": "Proven Methods",
+      "abilityText": "Place up to two actions from your discard pile on top of your deck in any order."
+    },
+    "kree_relentless_attack": {
+      "name": "Relentless Attack",
+      "abilityText": "Character modifier. Talent: Play an extra action."
+    },
+    "kree_righteous_fury": {
+      "name": "Righteous Fury",
+      "abilityText": "Character modifier. Ongoing: This character has +3 power."
+    },
+    "kree_speed_up": {
+      "name": "Speed Up",
+      "abilityText": "Play up to two extra actions."
+    },
+    "masters_of_evil_baron_zemo": {
+      "name": "Baron Zemo",
+      "abilityText": "Ongoing: After this base scores, gain 1 VP and place this character on the bottom of its owner's deck."
+    },
+    "masters_of_evil_ulysses_klaw": {
+      "name": "Ulysses Klaw",
+      "abilityText": "Draw a card for every 4 VP you have."
+    },
+    "masters_of_evil_black_mamba": {
+      "name": "Black Mamba",
+      "abilityText": "Ongoing: This character has +1 power for every 4 VP you have."
+    },
+    "masters_of_evil_absorbing_man": {
+      "name": "Absorbing Man",
+      "abilityText": "Talent: Destroy this character and another Absorbing Man to gain 1 VP."
+    },
+    "masters_of_evil_a_portent_of_doom": {
+      "name": "A Portent of Doom",
+      "abilityText": "Base modifier. Play on a base with no player’s characters. Special: When this base scores, if you have 1 or more power here gain 1 VP."
+    },
+    "masters_of_evil_acceptable_losses": {
+      "name": "Acceptable Losses",
+      "abilityText": "Destroy one of your characters of power 4 or more to gain 1 VP."
+    },
+    "masters_of_evil_ball_and_chain": {
+      "name": "Ball and Chain",
+      "abilityText": "Character modifier. Ongoing: This character has +2 power and cannot be destroyed by other players’ cards."
+    },
+    "masters_of_evil_convergence": {
+      "name": "Convergence",
+      "abilityText": "Move one of your characters to another base. After it is moved, if you have four or more characters at that base, gain 1 VP."
+    },
+    "masters_of_evil_gain_the_upper_hand": {
+      "name": "Gain the Upper Hand",
+      "abilityText": "Destroy a character of power 3 or less."
+    },
+    "masters_of_evil_indestructible_form": {
+      "name": "Indestructible Form",
+      "abilityText": "Base modifier. Ongoing: Your characters here cannot be destroyed by other players’ cards."
+    },
+    "masters_of_evil_sonic_shockwave": {
+      "name": "Sonic Shockwave",
+      "abilityText": "Destroy another player’s character with less power than your total power at its base. After it is destroyed, if that character had 5 or more power, gain 1 VP."
+    },
+    "masters_of_evil_world_domination": {
+      "name": "World Domination",
+      "abilityText": "Base modifier. Talent: One of your characters here gains +2 power until the end of the turn. Ongoing: After this base scores, move this action to another base."
+    },
+    "sinister_six_doctor_octopus": {
+      "name": "Doctor Octopus",
+      "abilityText": "Ongoing: At the start of your turn, you may reduce this base’s breakpoint by 4 until the end of the turn."
+    },
+    "sinister_six_mysterio": {
+      "name": "Mysterio",
+      "abilityText": "Talent: Play a base modifier here as an extra action OR draw a card."
+    },
+    "sinister_six_green_goblin": {
+      "name": "Green Goblin",
+      "abilityText": "Talent: Reduce this base’s breakpoint by 3 until the end of the turn."
+    },
+    "sinister_six_vulture": {
+      "name": "Vulture",
+      "abilityText": "You may place a base modifier from your discard pile on top of your deck."
+    },
+    "sinister_six_electro": {
+      "name": "Electro",
+      "abilityText": "Ongoing: This base’s breakpoint is reduced by 2."
+    },
+    "sinister_six_sandman": {
+      "name": "Sandman",
+      "abilityText": "Ongoing: This character has +2 power if the breakpoint here is 19 or less."
+    },
+    "sinister_six_ambush": {
+      "name": "Ambush",
+      "abilityText": "Reduce a base’s breakpoint by 4 until the end of the turn."
+    },
+    "sinister_six_cover_the_exits": {
+      "name": "Cover the Exits",
+      "abilityText": "Base modifier. Ongoing: Your characters here have +1 power. After this base scores, if its breakpoint was 19 or less, shuffle up to two of your characters here into their owners’ deck."
+    },
+    "sinister_six_incite_panic": {
+      "name": "Incite Panic",
+      "abilityText": "Base modifier. Ongoing: Other players’ characters here have -1 power. If the breakpoint here is 19 or less, other players cannot use Special abilities while this base is scoring."
+    },
+    "sinister_six_move_the_goods": {
+      "name": "Move the Goods",
+      "abilityText": "Move a base modifier from one base to another. Special: You may play this after a base scores."
+    },
+    "sinister_six_my_master_plan": {
+      "name": "My Master Plan",
+      "abilityText": "Base modifier. Talent: If the breakpoint here is 19 or less, draw a card."
+    },
+    "sinister_six_pressure_from_all_sides": {
+      "name": "Pressure from All Sides",
+      "abilityText": "Base modifier. Talent: Reduce this base’s breakpoint by 1 for each character on it until the end of the turn."
+    },
+    "sinister_six_reroute_the_power": {
+      "name": "Reroute the Power",
+      "abilityText": "Base modifier. Talent: If the breakpoint here is 19 or less, give one of your characters here +3 power until the start of your next turn."
+    },
+    "sinister_six_witness_our_superiority": {
+      "name": "Witness Our Superiority",
+      "abilityText": "Base modifier. Ongoing: This base’s abilities are cancelled."
     }
   },
   "debug": {

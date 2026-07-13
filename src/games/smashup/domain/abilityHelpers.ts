@@ -1071,6 +1071,7 @@ export function addPermanentPower(
     now: number,
     options?: {
         expiresOnTurnNumber?: number;
+        expiresOnPlayerId?: PlayerId;
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
@@ -1086,6 +1087,7 @@ export function addPermanentPower(
             amount,
             reason,
             ...(options?.expiresOnTurnNumber !== undefined ? { expiresOnTurnNumber: options.expiresOnTurnNumber } : {}),
+            ...(options?.expiresOnPlayerId !== undefined ? { expiresOnPlayerId: options.expiresOnPlayerId } : {}),
             ...(options?.sourcePlayerId !== undefined ? { sourcePlayerId: options.sourcePlayerId } : {}),
             ...(options?.sourceCardUid !== undefined ? { sourceCardUid: options.sourceCardUid } : {}),
             ...(options?.sourceDefId !== undefined ? { sourceDefId: options.sourceDefId } : {}),
