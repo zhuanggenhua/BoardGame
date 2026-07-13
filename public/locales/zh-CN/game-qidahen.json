@@ -88,7 +88,10 @@
       "sunYuanhuaStatus": "需弃 {{requiredCardCount}} 张 · 已择 {{selected}}",
       "sunYuanhuaHint": "点击底部手牌选择要弃掉的牌。",
       "confirmSunYuanhua": "确认打科技",
-      "skipSunYuanhua": "跳过孙元化科技"
+      "skipSunYuanhua": "跳过孙元化科技",
+      "armamentPaymentStatus": "需选 {{cost}} 张军备牌 · 已选 {{selected}} 张",
+      "armamentPaymentHint": "点选要使用的军备牌；先作为升级军备打出，结算后才进入弃牌堆。",
+      "confirmUseArmament": "使用并升级"
     },
     "player": {
       "armamentsUndeveloped": "未开发",
@@ -275,7 +278,15 @@
       "confirmCharacter": "点选人物",
       "armamentLabel": "军备",
       "confirmArmament": "点选军备",
-      "waiting": "等待其他玩家完成其所属阵营的前置项。"
+      "waiting": "等待其他玩家完成其所属阵营的前置项。",
+      "playerPage": "人物与军备",
+      "tablePage": "席位状态",
+      "noWaiting": "本席当前没有等待中的他人前置项。",
+      "privateOnly": "只显示你所属阵营可处理的项目，不暴露他人私有候选。",
+      "missingOfficialCardArt": "缺少正式卡图",
+      "currentSeat": "本席",
+      "pendingItems": "待完成 {{count}} 项",
+      "completed": "已完成"
     },
     "scenarioVote": {
       "eyebrow": "局内剧本选择",

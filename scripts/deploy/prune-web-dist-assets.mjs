@@ -14,6 +14,7 @@ const distCommonDir = path.join(distAssetsDir, 'common');
 const publicI18nDir = path.join(publicAssetsDir, 'i18n');
 const publicCommonDir = path.join(publicAssetsDir, 'common');
 const COMMON_ASSET_DIR_NAMES_TO_REMOVE = ['images', 'logos', 'audio'];
+export const WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE = ['betrayal', 'rules', 'smashup', 'splendor'];
 export const CLOUDFLARE_PAGES_MAX_FILE_BYTES = 25 * 1024 * 1024;
 export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   'assets-manifest.json',
@@ -59,14 +60,17 @@ const DIST_PRUNE_PROFILES = {
   web: {
     allowedLocaleDirs: null,
     maxAssetFileBytes: CLOUDFLARE_PAGES_MAX_FILE_BYTES,
+    assetDirNamesToRemove: WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE,
   },
   'android-embedded': {
     allowedLocaleDirs: ['zh-CN'],
     maxAssetFileBytes: null,
+    assetDirNamesToRemove: [],
   },
   'ios-embedded': {
     allowedLocaleDirs: ['zh-CN'],
     maxAssetFileBytes: null,
+    assetDirNamesToRemove: [],
   },
 };
 
@@ -184,6 +188,7 @@ export const isRetainedDistI18nFile = (relativePath) => DIST_I18N_JSON_RETAIN_RE
 export const isRetainedDistCommonFile = (relativePath) => DIST_COMMON_JSON_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isRetainedDistLogoFile = (relativePath) => DIST_LOGOS_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isCloudflarePagesFileSizeAllowed = (bytes) => bytes <= CLOUDFLARE_PAGES_MAX_FILE_BYTES;
+export const isRemovedWebLegacyGameAssetDir = (dirName) => WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE.includes(dirName);
 
 export function pruneDistAssets(target = 'web') {
   const profile = DIST_PRUNE_PROFILES[target];
@@ -217,6 +222,10 @@ export function pruneDistAssets(target = 'web') {
 
   for (const dirName of COMMON_ASSET_DIR_NAMES_TO_REMOVE) {
     removeDirectoryIfExists(path.join(distCommonDir, dirName), stats);
+  }
+
+  for (const dirName of profile.assetDirNamesToRemove) {
+    removeDirectoryIfExists(path.join(distAssetsDir, dirName), stats);
   }
 
   for (const relativePath of DIST_I18N_JSON_RETAIN_RELATIVE_PATHS) {

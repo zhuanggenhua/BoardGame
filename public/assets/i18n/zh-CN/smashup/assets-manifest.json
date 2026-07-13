@@ -543,6 +543,42 @@
           "mime": "image/webp"
         }
       }
+    },
+    "cards/compressed/itty_critters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "5e3e09cba33325864461a162ce118f5894fe690df506f3e63a979bdae61c9e76",
+          "bytes": 621570,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/time_travelers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "bfe451c3b838c03a31b73bf650a93b911882d89ecec3be458dc9d3de3985ca1b",
+          "bytes": 740164,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/itty_critters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "b6650817dad672723aadcc792d6d8af5ec07f4891760715b5300f9a1fe17de19",
+          "bytes": 5208504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/time_travelers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "1793e25b548566f6a8973ba8d09d9c824dc94e593fdf5a7e8963cca979dda200",
+          "bytes": 4723065,
+          "mime": "image/png"
+        }
+      }
     }
   }
 }

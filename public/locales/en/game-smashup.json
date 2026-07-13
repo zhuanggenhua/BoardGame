@@ -1573,6 +1573,10 @@
       "name": "Itty Critters",
       "description": "Search, play, and recycle tiny power-2 minions for flexible tactical bursts."
     },
+    "itty_critters_pod": {
+      "name": "Itty Critters (POD)",
+      "description": "A POD-ready Itty Critters deck with its own bases and card atlas while sharing the classic play style."
+    },
     "kaiju": {
       "name": "Kaiju",
       "description": "Devastate bases with titan support, play-on-base actions, and breakpoint pressure."
@@ -1600,6 +1604,10 @@
     "time_travelers": {
       "name": "Time Travelers",
       "description": "Recycle discards, return cards to hand, alter base replacement, and replay key turns."
+    },
+    "time_travelers_pod": {
+      "name": "Time Travelers (POD)",
+      "description": "A POD-ready Time Travelers deck with its own bases and card atlas while sharing the classic time-loop toolkit."
     },
     "kung_fu_fighters": {
       "name": "Kung Fu Fighters",
@@ -5757,7 +5765,15 @@
       "name": "I Select You!",
       "effectText": "Search your deck for a minion of power 3 or less and play it as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
     },
+    "itty_critters_i_select_you_pod": {
+      "name": "I Select You!",
+      "effectText": "Search your deck for a minion of power 3 or less and play it as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
     "itty_critters_recall_critter": {
+      "name": "Recall Critter",
+      "effectText": "Play a minion of power 2 or less from your discard pile as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "itty_critters_recall_critter_pod": {
       "name": "Recall Critter",
       "effectText": "Play a minion of power 2 or less from your discard pile as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
     },
@@ -5765,7 +5781,15 @@
       "name": "Evolution",
       "effectText": "Choose one of your minions. Destroy it to either play Rainboroc there, or search your deck for a minion with up to 1 more power and play it there as an extra minion."
     },
+    "itty_critters_evolution_pod": {
+      "name": "Evolution",
+      "effectText": "Choose one of your minions. Destroy it to either play Rainboroc there, or search your deck for a minion with up to 1 more power and play it there as an extra minion."
+    },
     "itty_critters_gotta_get_em_all": {
+      "name": "Gotta Get ‘Em All",
+      "effectText": "Shuffle one of each minion with a different name from your discard pile into your deck."
+    },
+    "itty_critters_gotta_get_em_all_pod": {
       "name": "Gotta Get ‘Em All",
       "effectText": "Shuffle one of each minion with a different name from your discard pile into your deck."
     },
@@ -5773,7 +5797,15 @@
       "name": "Critter Cube",
       "effectText": "Choose a minion in play of power 3 or less, owned by any player, and shuffle it into your deck."
     },
+    "itty_critters_critter_cube_pod": {
+      "name": "Critter Cube",
+      "effectText": "Choose a minion in play of power 3 or less, owned by any player, and shuffle it into your deck."
+    },
     "itty_critters_super_effective": {
+      "name": "Super Effective!",
+      "effectText": "Destroy an action on a minion or on a base."
+    },
+    "itty_critters_super_effective_pod": {
       "name": "Super Effective!",
       "effectText": "Destroy an action on a minion or on a base."
     },
@@ -5781,7 +5813,15 @@
       "name": "Ittypedia",
       "effectText": "Play on a base. Ongoing: After you play a minion here, it gains +1 power until the end of the turn."
     },
+    "itty_critters_ittypedia_pod": {
+      "name": "Ittypedia",
+      "effectText": "Play on a base. Ongoing: After you play a minion here, it gains +1 power until the end of the turn."
+    },
     "itty_critters_coach_combat": {
+      "name": "Coach Combat",
+      "effectText": "Choose one of your minions. Destroy a minion with lower power at its base."
+    },
+    "itty_critters_coach_combat_pod": {
       "name": "Coach Combat",
       "effectText": "Choose one of your minions. Destroy a minion with lower power at its base."
     },
@@ -5789,7 +5829,15 @@
       "name": "Leafaroo",
       "abilityText": "You may shuffle a card from your discard pile into your deck."
     },
+    "itty_critters_leafaroo_pod": {
+      "name": "Leafaroo",
+      "abilityText": "You may shuffle a card from your discard pile into your deck."
+    },
     "itty_critters_flooffairy": {
+      "name": "Flooffairy",
+      "abilityText": "You may draw a card."
+    },
+    "itty_critters_flooffairy_pod": {
       "name": "Flooffairy",
       "abilityText": "You may draw a card."
     },
@@ -5797,7 +5845,15 @@
       "name": "Calicoin",
       "abilityText": "You may place +1 power counter on another minion here."
     },
+    "itty_critters_calicoin_pod": {
+      "name": "Calicoin",
+      "abilityText": "You may place +1 power counter on another minion here."
+    },
     "itty_critters_tadpour": {
+      "name": "Tadpour",
+      "abilityText": "You may move another minion from here to another base."
+    },
+    "itty_critters_tadpour_pod": {
       "name": "Tadpour",
       "abilityText": "You may move another minion from here to another base."
     },
@@ -5805,7 +5861,15 @@
       "name": "Krakatoad",
       "abilityText": "You may choose another minion here to gain +2 power until the end of the turn."
     },
+    "itty_critters_krakatoad_pod": {
+      "name": "Krakatoad",
+      "abilityText": "You may choose another minion here to gain +2 power until the end of the turn."
+    },
     "itty_critters_critter_coach": {
+      "name": "Critter Coach",
+      "abilityText": "You may search your deck for a minion of power 2 or less and play it here as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "itty_critters_critter_coach_pod": {
       "name": "Critter Coach",
       "abilityText": "You may search your deck for a minion of power 2 or less and play it here as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
     },
@@ -5813,7 +5877,15 @@
       "name": "Shellshock",
       "abilityText": "You may destroy another minion of power 2 or less here."
     },
+    "itty_critters_shellshock_pod": {
+      "name": "Shellshock",
+      "abilityText": "You may destroy another minion of power 2 or less here."
+    },
     "itty_critters_critter_champion": {
+      "name": "Critter Champion",
+      "abilityText": "Talent: Search your deck for a minion of power 2 or less and play it here as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "itty_critters_critter_champion_pod": {
       "name": "Critter Champion",
       "abilityText": "Talent: Search your deck for a minion of power 2 or less and play it here as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
     },
@@ -6181,7 +6253,15 @@
       "name": "It's Astounding",
       "effectText": "Play an action from your discard pile as an extra action."
     },
+    "time_travelers_its_astounding_pod": {
+      "name": "It's Astounding",
+      "effectText": "Play an action from your discard pile as an extra action."
+    },
     "time_travelers_time_is_fleeting": {
+      "name": "Time is Fleeting",
+      "effectText": "Special: Play after a base scores. If there is at least one base in the discard pile, choose one of them instead of drawing a new base from the base deck."
+    },
+    "time_travelers_time_is_fleeting_pod": {
       "name": "Time is Fleeting",
       "effectText": "Special: Play after a base scores. If there is at least one base in the discard pile, choose one of them instead of drawing a new base from the base deck."
     },
@@ -6189,7 +6269,15 @@
       "name": "Into the Time Slip",
       "effectText": "Return a card in play to its owner's hand."
     },
+    "time_travelers_into_the_time_slip_pod": {
+      "name": "Into the Time Slip",
+      "effectText": "Return a card in play to its owner's hand."
+    },
     "time_travelers_1_21_gigawatts": {
+      "name": "1.21 Gigawatts",
+      "effectText": "Shuffle all actions or all minions from your discard pile into your deck."
+    },
+    "time_travelers_1_21_gigawatts_pod": {
       "name": "1.21 Gigawatts",
       "effectText": "Shuffle all actions or all minions from your discard pile into your deck."
     },
@@ -6197,7 +6285,15 @@
       "name": "Do Over!",
       "effectText": "Return one of your minions from a base to your hand. You may play it again as an extra minion."
     },
+    "time_travelers_do_over_pod": {
+      "name": "Do Over!",
+      "effectText": "Return one of your minions from a base to your hand. You may play it again as an extra minion."
+    },
     "time_travelers_jumper": {
+      "name": "Jumper",
+      "abilityText": "Ongoing: When this minion goes to the discard pile from play, you may return it to your hand."
+    },
+    "time_travelers_jumper_pod": {
       "name": "Jumper",
       "abilityText": "Ongoing: When this minion goes to the discard pile from play, you may return it to your hand."
     },
@@ -6205,7 +6301,15 @@
       "name": "Stasis Field",
       "effectText": "Play on a base. Ongoing: This base cannot score. At the start of your turn, destroy this action."
     },
+    "time_travelers_stasis_field_pod": {
+      "name": "Stasis Field",
+      "effectText": "Play on a base. Ongoing: This base cannot score. At the start of your turn, destroy this action."
+    },
     "time_travelers_time_raider": {
+      "name": "Time Raider",
+      "abilityText": "Talent: Place a card from your discard pile on the bottom of your deck."
+    },
+    "time_travelers_time_raider_pod": {
       "name": "Time Raider",
       "abilityText": "Talent: Place a card from your discard pile on the bottom of your deck."
     },
@@ -6213,7 +6317,15 @@
       "name": "Time Walk",
       "effectText": "You may play an extra minion and an extra action this turn. Draw 2 cards. Place this card on the bottom of your deck instead of the discard pile."
     },
+    "time_travelers_time_walk_pod": {
+      "name": "Time Walk",
+      "effectText": "You may play an extra minion and an extra action this turn. Draw 2 cards. Place this card on the bottom of your deck instead of the discard pile."
+    },
     "time_travelers_repeater_perfect": {
+      "name": "Repeater Perfect",
+      "abilityText": "Place an action from your discard pile on top of your deck."
+    },
+    "time_travelers_repeater_perfect_pod": {
       "name": "Repeater Perfect",
       "abilityText": "Place an action from your discard pile on top of your deck."
     },
@@ -6221,7 +6333,15 @@
       "name": "Wormhole",
       "effectText": "Special: Play after a base scores. Shuffle your minions here into your deck instead of placing them in the discard pile."
     },
+    "time_travelers_wormhole_pod": {
+      "name": "Wormhole",
+      "effectText": "Special: Play after a base scores. Shuffle your minions here into your deck instead of placing them in the discard pile."
+    },
     "time_travelers_doctor_when": {
+      "name": "Doctor When",
+      "abilityText": "You may return another of your minions in play to your hand. You may play it again as an extra minion."
+    },
+    "time_travelers_doctor_when_pod": {
       "name": "Doctor When",
       "abilityText": "You may return another of your minions in play to your hand. You may play it again as an extra minion."
     },
