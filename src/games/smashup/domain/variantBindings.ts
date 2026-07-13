@@ -104,6 +104,8 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
         mega_troopers_red_trooper: { ability: 'separate', interaction: 'separate' },
     }),
     createVariantProfile(SMASHUP_FACTION_IDS.VIKINGS, SMASHUP_FACTION_IDS.VIKINGS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.ITTY_CRITTERS, SMASHUP_FACTION_IDS.ITTY_CRITTERS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.TIME_TRAVELERS, SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.SHARKS, SMASHUP_FACTION_IDS.SHARKS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.TORNADOS, SMASHUP_FACTION_IDS.TORNADOS_POD),
 ];

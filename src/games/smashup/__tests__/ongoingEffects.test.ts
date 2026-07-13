@@ -140,13 +140,22 @@ describe('持续效果拦截框架', () => {
 
         test('getRegisteredOngoingEffectIds 不应暴露无实体的自动 _pod alias sourceId', () => {
             registerProtection('ghost_haunting', 'destroy', () => true);
-            registerProtection('time_travelers_stasis_field', 'destroy', () => true);
+            registerProtection('synthetic_guard', 'destroy', () => true);
 
             registerPodOngoingAliases();
 
             const ids = getRegisteredOngoingEffectIds();
             expect(ids.protectionIds.has('ghost_haunting_pod')).toBe(true);
-            expect(ids.protectionIds.has('time_travelers_stasis_field_pod')).toBe(false);
+            expect(ids.protectionIds.has('synthetic_guard_pod')).toBe(false);
+        });
+
+        test('getRegisteredOngoingEffectIds 会暴露真实存在的 POD ongoing sourceId', () => {
+            registerProtection('time_travelers_stasis_field', 'destroy', () => true);
+
+            registerPodOngoingAliases();
+
+            const ids = getRegisteredOngoingEffectIds();
+            expect(ids.protectionIds.has('time_travelers_stasis_field_pod')).toBe(true);
         });
 
         test('POD alias 若继承 consumable protection，仍应保留 consumable 语义', () => {

@@ -2626,5 +2626,21 @@
   "base_castle_of_ice_pod": {
     "atlasId": "smashup:pretty-pretty-pod-bases",
     "index": 7
+  },
+  "base_critter_combat_club_pod": {
+    "atlasId": "smashup:base8",
+    "index": 4
+  },
+  "base_itty_city_pod": {
+    "atlasId": "smashup:base8",
+    "index": 5
+  },
+  "base_the_nexus_pod": {
+    "atlasId": "smashup:base9",
+    "index": 0
+  },
+  "base_portal_room_pod": {
+    "atlasId": "smashup:base9",
+    "index": 1
   }
 }

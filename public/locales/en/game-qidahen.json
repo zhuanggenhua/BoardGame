@@ -88,7 +88,10 @@
       "sunYuanhuaStatus": "Discard {{requiredCardCount}} card(s) · Selected {{selected}}",
       "sunYuanhuaHint": "Click a hand card at the bottom to discard it.",
       "confirmSunYuanhua": "Confirm tech",
-      "skipSunYuanhua": "Skip Sun Yuanhua tech"
+      "skipSunYuanhua": "Skip Sun Yuanhua tech",
+      "armamentPaymentStatus": "Select {{cost}} armament card(s) · Selected {{selected}}",
+      "armamentPaymentHint": "Select the armament card to use; it is played as an armament upgrade first, then goes to the discard pile after resolving.",
+      "confirmUseArmament": "Use and upgrade"
     },
     "player": {
       "armamentsUndeveloped": "Not developed",
@@ -275,7 +278,15 @@
       "confirmCharacter": "Pick characters",
       "armamentLabel": "Armaments",
       "confirmArmament": "Pick armaments",
-      "waiting": "Waiting for other players to finish the setup items for their factions."
+      "waiting": "Waiting for other players to finish the setup items for their factions.",
+      "playerPage": "Characters and armaments",
+      "tablePage": "Seat status",
+      "noWaiting": "This seat has no pending setup items from other players.",
+      "privateOnly": "Only items available to your faction are shown; other players' private options stay hidden.",
+      "missingOfficialCardArt": "Missing official card art",
+      "currentSeat": "This seat",
+      "pendingItems": "{{count}} item(s) pending",
+      "completed": "Complete"
     },
     "scenarioVote": {
       "eyebrow": "In-match scenario selection",

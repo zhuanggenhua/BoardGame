@@ -1556,6 +1556,10 @@
       "name": "迷你萌宠",
       "description": "以低力量萌宠的检索、临时上场与回收循环来适应不同基地。"
     },
+    "itty_critters_pod": {
+      "name": "迷你萌宠（POD）",
+      "description": "POD 版迷你萌宠，使用独立基地与专属卡图，同时沿用经典萌宠的检索、临时上场与回收打法。"
+    },
     "kaiju": {
       "name": "怪兽",
       "description": "围绕泰坦、基地行动与破坏点压制，逐步把基地变成怪兽战场。"
@@ -1583,6 +1587,10 @@
     "time_travelers": {
       "name": "时间旅行者",
       "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
+    },
+    "time_travelers_pod": {
+      "name": "时间旅行者（POD）",
+      "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
     },
     "kung_fu_fighters": {
       "name": "功夫斗士",
@@ -5732,7 +5740,15 @@
       "name": "我选择你！",
       "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
+    "itty_critters_i_select_you_pod": {
+      "name": "我选择你！",
+      "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
     "itty_critters_recall_critter": {
+      "name": "召回萌宠",
+      "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_recall_critter_pod": {
       "name": "召回萌宠",
       "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -5740,7 +5756,15 @@
       "name": "进化论",
       "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
     },
+    "itty_critters_evolution_pod": {
+      "name": "进化论",
+      "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
+    },
     "itty_critters_gotta_get_em_all": {
+      "name": "我要得到一切",
+      "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
+    },
+    "itty_critters_gotta_get_em_all_pod": {
       "name": "我要得到一切",
       "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
     },
@@ -5748,7 +5772,15 @@
       "name": "生物立方",
       "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
     },
+    "itty_critters_critter_cube_pod": {
+      "name": "生物立方",
+      "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
+    },
     "itty_critters_super_effective": {
+      "name": "超级有效！",
+      "effectText": "摧毁一张打在随从上或基地上的行动牌。"
+    },
+    "itty_critters_super_effective_pod": {
       "name": "超级有效！",
       "effectText": "摧毁一张打在随从上或基地上的行动牌。"
     },
@@ -5756,7 +5788,15 @@
       "name": "小小百科",
       "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
     },
+    "itty_critters_ittypedia_pod": {
+      "name": "小小百科",
+      "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
+    },
     "itty_critters_coach_combat": {
+      "name": "战斗训练",
+      "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
+    },
+    "itty_critters_coach_combat_pod": {
       "name": "战斗训练",
       "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
     },
@@ -5764,7 +5804,15 @@
       "name": "叶袋兽",
       "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
     },
+    "itty_critters_leafaroo_pod": {
+      "name": "叶袋兽",
+      "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
+    },
     "itty_critters_flooffairy": {
+      "name": "芙露仙灵",
+      "abilityText": "你可以抓 1 张牌。"
+    },
+    "itty_critters_flooffairy_pod": {
       "name": "芙露仙灵",
       "abilityText": "你可以抓 1 张牌。"
     },
@@ -5772,7 +5820,15 @@
       "name": "金币猫",
       "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
     },
+    "itty_critters_calicoin_pod": {
+      "name": "金币猫",
+      "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
+    },
     "itty_critters_tadpour": {
+      "name": "塔德波尔",
+      "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
+    },
+    "itty_critters_tadpour_pod": {
       "name": "塔德波尔",
       "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
     },
@@ -5780,7 +5836,15 @@
       "name": "克拉卡蟾",
       "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
     },
+    "itty_critters_krakatoad_pod": {
+      "name": "克拉卡蟾",
+      "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
+    },
     "itty_critters_critter_coach": {
+      "name": "导师",
+      "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_critter_coach_pod": {
       "name": "导师",
       "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -5788,7 +5852,15 @@
       "name": "壳震",
       "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
     },
+    "itty_critters_shellshock_pod": {
+      "name": "壳震",
+      "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
+    },
     "itty_critters_critter_champion": {
+      "name": "宠物冠军",
+      "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_critter_champion_pod": {
       "name": "宠物冠军",
       "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -6164,7 +6236,15 @@
       "name": "令人震惊",
       "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
     },
+    "time_travelers_its_astounding_pod": {
+      "name": "令人震惊",
+      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
+    },
     "time_travelers_time_is_fleeting": {
+      "name": "时间流逝",
+      "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
+    },
+    "time_travelers_time_is_fleeting_pod": {
       "name": "时间流逝",
       "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
     },
@@ -6172,7 +6252,15 @@
       "name": "时间流动",
       "effectText": "将场上的一张牌返回其拥有者的手牌。"
     },
+    "time_travelers_into_the_time_slip_pod": {
+      "name": "时间流动",
+      "effectText": "将场上的一张牌返回其拥有者的手牌。"
+    },
     "time_travelers_1_21_gigawatts": {
+      "name": "千兆瓦",
+      "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
+    },
+    "time_travelers_1_21_gigawatts_pod": {
       "name": "千兆瓦",
       "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
     },
@@ -6180,7 +6268,15 @@
       "name": "从头来过",
       "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },
+    "time_travelers_do_over_pod": {
+      "name": "从头来过",
+      "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    },
     "time_travelers_jumper": {
+      "name": "跳跃者",
+      "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
+    },
+    "time_travelers_jumper_pod": {
       "name": "跳跃者",
       "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
     },
@@ -6188,7 +6284,15 @@
       "name": "静滞立场",
       "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
     },
+    "time_travelers_stasis_field_pod": {
+      "name": "静滞立场",
+      "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
+    },
     "time_travelers_time_raider": {
+      "name": "时间掠夺者",
+      "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
+    },
+    "time_travelers_time_raider_pod": {
       "name": "时间掠夺者",
       "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
     },
@@ -6196,7 +6300,15 @@
       "name": "时间旅行",
       "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
     },
+    "time_travelers_time_walk_pod": {
+      "name": "时间旅行",
+      "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
+    },
     "time_travelers_repeater_perfect": {
+      "name": "重复时间者",
+      "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
+    },
+    "time_travelers_repeater_perfect_pod": {
       "name": "重复时间者",
       "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
     },
@@ -6204,7 +6316,15 @@
       "name": "虫洞",
       "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
     },
+    "time_travelers_wormhole_pod": {
+      "name": "虫洞",
+      "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
+    },
     "time_travelers_doctor_when": {
+      "name": "时间博士",
+      "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    },
+    "time_travelers_doctor_when_pod": {
       "name": "时间博士",
       "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },

@@ -5012,7 +5012,9 @@ const QidahenSetupObjectChoice: React.FC<{
     selected: boolean;
     testId: string;
     onClick: () => void;
-}> = ({ label, previewRef, selected, testId, onClick }) => (
+}> = ({ label, previewRef, selected, testId, onClick }) => {
+    const { t } = useTranslation('game-qidahen');
+    return (
     <SelectableGameObject
         aria-label={label}
         selected={selected}
@@ -5036,11 +5038,12 @@ const QidahenSetupObjectChoice: React.FC<{
         ) : (
             <span className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[9px] border-[2px] border-dashed px-3 text-center" style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.paperQuiet, color: UI_STYLE.ink }}>
                 <span className="text-[15px] font-black">{label}</span>
-                <span className="text-[11px]" style={{ color: UI_STYLE.mutedInk }}>缺少正式卡图</span>
+                <span className="text-[11px]" style={{ color: UI_STYLE.mutedInk }}>{t('board.setup.missingOfficialCardArt', { defaultValue: '缺少正式卡图' })}</span>
             </span>
         )}
     </SelectableGameObject>
-);
+    );
+};
 
 const QidahenInMatchSetupOverlay: React.FC<{
     core: QidahenCore;
@@ -5136,6 +5139,8 @@ const QidahenInMatchSetupOverlay: React.FC<{
         ));
     }, [pendingArmamentChoices, pendingCharacterChoices]);
 
+    const currentSeatLabel = t('board.setup.currentSeat', { defaultValue: '本席' });
+
     return (
         <div
             className="absolute inset-0 z-[140] flex items-center justify-center bg-[rgba(14,10,7,0.78)] px-6 py-8 backdrop-blur-[2px]"
@@ -5176,7 +5181,7 @@ const QidahenInMatchSetupOverlay: React.FC<{
                     >
                         <div className="mb-3 flex items-center justify-between gap-3 border-b pb-2" style={{ borderColor: UI_STYLE.bronzeFaint }}>
                             <div className="text-[12px] font-black tracking-[0.16em]" style={{ color: UI_STYLE.cinnabar }}>
-                                {viewerFactionId ? core.factions[viewerFactionId]?.name ?? '本席' : '本席'}
+                                {viewerFactionId ? core.factions[viewerFactionId]?.name ?? currentSeatLabel : currentSeatLabel}
                             </div>
                             <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
                                 {t('board.setup.playerPage', { defaultValue: '人物与军备' })}
@@ -5311,7 +5316,10 @@ const QidahenInMatchSetupOverlay: React.FC<{
                                 return (
                                     <div key={factionId} className="flex items-center justify-between border-b pb-2" style={{ borderColor: UI_STYLE.bronzeFaint }}>
                                         <span>{faction.name}</span>
-                                        <span>{ownCharacterCount + ownArmamentCount > 0 ? `待完成 ${ownCharacterCount + ownArmamentCount} 项` : '已完成'}</span>
+                                        <span>{ownCharacterCount + ownArmamentCount > 0
+                                            ? t('board.setup.pendingItems', { count: ownCharacterCount + ownArmamentCount, defaultValue: '待完成 {{count}} 项' })
+                                            : t('board.setup.completed', { defaultValue: '已完成' })}
+                                        </span>
                                     </div>
                                 );
                             })}
