@@ -34,7 +34,7 @@ const getPayloadValue = (command: Command, key: string): unknown => (
 const formatQidahenFallbackLogText = (core: QidahenCore, command: Command): string => {
     switch (command.type) {
         case QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE:
-            return getPayloadValue(command, 'scenarioId') ? '提交剧本投票' : '撤回剧本投票';
+            return getPayloadValue(command, 'scenarioId') ? '房主选择剧本' : '清空剧本选择';
         case QIDAHEN_COMMANDS.SELECT_REGION: {
             const regionId = getPayloadValue(command, 'regionId');
             const regionName = typeof regionId === 'string'

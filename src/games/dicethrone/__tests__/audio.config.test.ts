@@ -392,8 +392,8 @@ describe('DiceThrone 音效配置', () => {
     });
 
     describe('BGM 配置', () => {
-        it('应有 16 首 BGM（4 normal + 12 battle）', () => {
-            expect(DICETHRONE_AUDIO_CONFIG.bgm).toHaveLength(16);
+        it('应有 8 首可随 Android 公共音频包播放的 BGM（4 normal + 4 battle）', () => {
+            expect(DICETHRONE_AUDIO_CONFIG.bgm).toHaveLength(8);
         });
 
         it('BGM 不应与 SW 撞曲（禁止 Corsair / Lonely Bard / Luminesce / Wind Chime / Elder Awakening / Feysong Fields）', () => {

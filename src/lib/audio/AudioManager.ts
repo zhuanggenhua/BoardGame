@@ -192,6 +192,8 @@ const notifyAudioPlaybackFailure = (
     });
 };
 
+const SFX_FRESH_PLAY_WINDOW_MS = 1000;
+
 class AudioManagerClass {
     private sounds: Map<SoundKey, Howl> = new Map();
     private soundDefinitions: Map<SoundKey, SoundDefinition> = new Map();
@@ -732,6 +734,7 @@ class AudioManagerClass {
             }
             this.soundDefinitions.set(key, definition);
             this._loadingCount++;
+            const requestedAt = Date.now();
             howl = this.createHowlWithFallback(definition.src, {
                 volume: (definition.volume ?? 1.0) * this._sfxVolume,
                 loop: definition.loop ?? false,
@@ -742,6 +745,9 @@ class AudioManagerClass {
                 },
                 onFallbackReady: (nextHowl) => {
                     const retryPlay = () => {
+                        if (Date.now() - requestedAt > SFX_FRESH_PLAY_WINDOW_MS) {
+                            return;
+                        }
                         const retriedSoundId = nextHowl.play(spriteKey);
                         if (onEnd && retriedSoundId != null) {
                             nextHowl.once('end', onEnd, retriedSoundId);
@@ -773,6 +779,20 @@ class AudioManagerClass {
                 return null;
             }
             this.sounds.set(key, howl);
+            if (howl.state() === 'loading') {
+                const playFreshlyLoadedSound = () => {
+                    if (Date.now() - requestedAt > SFX_FRESH_PLAY_WINDOW_MS) {
+                        return;
+                    }
+                    this.resumeContextIfNeeded();
+                    const loadedSoundId = howl.play(spriteKey);
+                    if (onEnd && loadedSoundId != null) {
+                        howl.once('end', onEnd, loadedSoundId);
+                    }
+                };
+                howl.once('load', playFreshlyLoadedSound);
+                return null;
+            }
         } else if (howl.state() === 'loading') {
             // 音频仍在加载中，不再重复入队，避免加载完成后延迟播放过时的音效
             return null;
@@ -1062,6 +1082,8 @@ class AudioManagerClass {
                             'audioRuntime.toast.preload_failed_title',
                         );
                     },
+                }).catch(() => {
+                    // 后台预加载失败已在 onError 中记录并降级，不能冒泡成 window.unhandledrejection。
                 });
             }
             if (index < pending.length) {

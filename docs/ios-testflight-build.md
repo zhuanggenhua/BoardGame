@@ -139,7 +139,7 @@ npm run mobile:ios:ota:publish -- --channel stable --expected-base-version 0.5.8
 npm run mobile:ios:ota:publish -- --channel stable --expected-base-version 0.5.8
 ```
 
-发布脚本会读取 `dist/ios-build-meta.json`，只接受 `mode=ios` 且 `appId=top.easyboardgame.app` 的产物。R2 路径为 `official/app-updates/ios/<channel>/...`，不会覆盖 Android 的 `official/app-updates/android/<channel>/...`。
+发布脚本会读取 `dist/ios-build-meta.json`，只接受 `mode=ios` 且 `appId=top.easyboardgame.app` 的产物。服务器资源主源路径为 `official/app-updates/ios/<channel>/...`，不会覆盖 Android 的 `official/app-updates/android/<channel>/...`。
 
 ## 热更边界
 

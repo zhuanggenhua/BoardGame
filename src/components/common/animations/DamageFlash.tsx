@@ -24,7 +24,8 @@
  * ```
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import type { FxQuality } from '../../../engine/fx';
 import { RiftSlash, getRiftPresetByDamage } from './RiftSlash';
 import { RedPulse } from './RedPulse';
 import { DamageNumber } from './DamageNumber';
@@ -42,6 +43,8 @@ export interface DamageFlashProps {
   showRedPulse?: boolean;
   /** 是否显示伤害数字 */
   showNumber?: boolean;
+  /** 特效质量档 */
+  quality?: FxQuality;
   /** 完成回调 */
   onComplete?: () => void;
   className?: string;
@@ -54,6 +57,7 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
   showSlash = true,
   showRedPulse = true,
   showNumber = true,
+  quality = 'full',
   onComplete,
   className = '',
 }) => {
@@ -65,7 +69,9 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
 
   // 用 ref 持有 onComplete，避免父组件传内联函数导致 useEffect 重跑
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!active) return;
@@ -100,7 +106,7 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
       style={{ overflow: 'visible' }}
     >
       {/* 斜切 */}
-      {showSlash && <RiftSlash isActive={slashActive} {...preset} />}
+      {showSlash && <RiftSlash isActive={slashActive} {...preset} quality={quality} />}
 
       {/* 红色脉冲 */}
       {showRedPulse && <RedPulse active={pulseActive} strong={isStrong} />}

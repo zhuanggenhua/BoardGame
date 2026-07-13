@@ -364,6 +364,13 @@ export interface InteractionDescriptor {
     completedDieIds?: number[];
     /** 为 true 时，UI 只允许选择已有状态效果/token 的玩家（如"移除所有状态"） */
     requiresTargetWithStatus?: boolean;
+    /**
+     * 攻击结算中途挂起的交互完成后，应恢复当前攻击收口。
+     * 只用于技能效果链内的后续交互（如回血后清状态），不得用于选择攻击目标或防御选择。
+     */
+    resumeAttackSettlementOnComplete?: {
+        stage: PendingAttackSettlementStage;
+    };
 }
 
 /** @deprecated 使用 InteractionDescriptor 代替 */
@@ -427,7 +434,7 @@ export interface PendingDamage {
     sourceAbilityId?: string;
     /** 伤害范围（attack=攻击伤害，direct=直接伤害） */
     damageScope?: 'attack' | 'direct';
-    /** 是否为不可防御伤害（仍允许攻击方增伤，但禁止防御方减伤/闪避） */
+    /** 是否为不可防御伤害（只跳过防御技能；终极伤害另行封锁降低/回避） */
     unblockable?: boolean;
     /** 响应窗口类型 */
     responseType: 'beforeDamageDealt' | 'beforeDamageReceived';
@@ -456,6 +463,8 @@ export interface PendingDamage {
         actualDamage: number;
         sourceAbilityId?: string;
         sourcePlayerId?: PlayerId;
+        damageScope?: 'attack' | 'direct';
+        unblockable?: boolean;
         sourceCommandType?: string;
     }>;
 }
@@ -485,6 +494,8 @@ export interface BonusDieInfo {
     effectKey?: string;
     /** 效果描述参数（例如 {{value}}） */
     effectParams?: Record<string, string | number>;
+    /** 展示语义：默认是真实投骰；choice 表示玩家固定选择的结果，不播放投骰误导 */
+    presentationKind?: 'roll' | 'choice';
 }
 
 /**
@@ -545,6 +556,8 @@ export interface PendingBonusDiceSettlement {
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
     /** 自定义奖励骰收口处理器 ID（用于非“点数总和即伤害”的特殊结算） */
     customResolutionId?: string;
+    /** 允许普通改骰牌修改这组奖励骰，并在确认结算时读取改后的结果 */
+    allowDiceModification?: boolean;
 }
 
 export interface HeroState {

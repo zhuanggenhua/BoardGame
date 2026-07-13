@@ -179,15 +179,16 @@ export const getQidahenRecruitSelectionForCore = (
 const isGrantPardonSourceRegion = (
     state: QidahenCore,
     region: QidahenCore['regions'][number],
+    executorFactionId: QidahenFactionId,
 ): boolean => (
     !region.isLogicalRegion
-    && region.controller !== 'ming'
+    && region.controller !== executorFactionId
     && getNonSiegedCityActionSourceSnapshot(region).troops > 0
     && region.adjacentRegionIds.some((adjacentRegionId) => (
         state.regions.some((adjacentRegion) => (
             !adjacentRegion.isLogicalRegion
             && adjacentRegion.id === adjacentRegionId
-            && adjacentRegion.controller === 'ming'
+            && adjacentRegion.controller === executorFactionId
         ))
     ))
 );
@@ -195,17 +196,19 @@ const isGrantPardonSourceRegion = (
 export const buildGrantPardonSelectionFromRegionSemantics = (
     state: QidahenCore,
     regionSemantics: QidahenExplicitRegionSelectionSemantics,
+    executorFactionId: QidahenFactionId = 'ming',
 ): QidahenGrantPardonSelection | null => {
+    const executorFactionName = state.factions[executorFactionId].name;
     const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
     const preferredSourceRegion = state.regions.find((region) => (
         region.id === selectedRuntimeRegionId
-        && isGrantPardonSourceRegion(state, region)
+        && isGrantPardonSourceRegion(state, region, executorFactionId)
     )) ?? null;
     const sourceRegions = [
         ...(preferredSourceRegion ? [preferredSourceRegion] : []),
         ...state.regions.filter((region) => (
             region.id !== preferredSourceRegion?.id
-            && isGrantPardonSourceRegion(state, region)
+            && isGrantPardonSourceRegion(state, region, executorFactionId)
         )),
     ];
     const choices = sourceRegions.flatMap((sourceRegion) => (
@@ -213,7 +216,7 @@ export const buildGrantPardonSelectionFromRegionSemantics = (
             const targetRegion = state.regions.find((region) => (
                 !region.isLogicalRegion
                 && region.id === targetRegionId
-                && region.controller === 'ming'
+                && region.controller === executorFactionId
             ));
             if (!targetRegion) {
                 return [];
@@ -230,7 +233,7 @@ export const buildGrantPardonSelectionFromRegionSemantics = (
                 targetFactionId: sourceRegion.controller,
                 targetFactionName,
                 label: `${sourceRegionName} → ${targetRegionName}`,
-                detail: `指定${targetFactionName}在 ${sourceRegionName} 的 1 个部队，移动到相邻的大明控制区 ${targetRegionName} 并改为大明部队。`,
+                detail: `指定${targetFactionName}在 ${sourceRegionName} 的 1 个部队，移动到相邻的${executorFactionName}控制区 ${targetRegionName} 并改为${executorFactionName}部队。`,
             }];
         })
     ));
@@ -243,7 +246,8 @@ export const buildGrantPardonSelectionFromRegionSemantics = (
         : null;
     return {
         title: '赐印招安：选择目标部队和接收区',
-        summary: '指定 1 个对手相邻于大明控制区域的部队，再指定相邻的大明控制区域接收并转为大明部队。',
+        summary: `指定 1 个对手相邻于${executorFactionName}控制区域的部队，再指定相邻的${executorFactionName}控制区域接收并转为${executorFactionName}部队。`,
+        ...(executorFactionId === 'ming' ? {} : { executorFactionId }),
         preferredSourceRegionId: preferredSourceRegion?.id ?? null,
         sourceRegionId: sourceRegion?.id ?? null,
         sourceRegionName: sourceRegion ? getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId) : null,

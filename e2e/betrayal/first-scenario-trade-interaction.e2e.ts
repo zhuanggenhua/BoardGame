@@ -262,9 +262,19 @@ async function assertTradeTargetKeepsTeammateCard(page: Page) {
     expect(metrics, '交易目标按钮必须存在').not.toBeNull();
     expect(metrics!.avatarCount, '交易目标按钮必须保留队友头像，不得退成文字按钮').toBe(1);
     expect(metrics!.statBadges, '交易目标按钮必须保留队友属性徽标，不得退成文字按钮').toBe(4);
-    expect(metrics!.text, '交易目标按钮必须保留目标名字').toContain('丽贝卡·艾伦博士');
+    expect(metrics!.text, '队友定位卡必须保留当前运行时目标名字').toContain('AI 2 号位');
     expect(metrics!.text, '交易目标按钮必须保留房间上下文').toContain('门厅');
     expect(metrics!.borderWidth, '交易目标按钮本体不应被改成单独黑边框文字按钮').toBe('0px');
+}
+
+async function assertTradeTargetUsesMapToken(page: Page) {
+    const mapTeammateTarget = page.getByTestId('betrayal-room-occupant-hallway-1');
+    await expect(mapTeammateTarget, '交易目标主路径必须点击地图上的队友 token 本体').toBeVisible();
+    await expect(mapTeammateTarget, '地图队友 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+    await expect(
+        page.getByTestId('betrayal-room-occupant-target-outline-hallway-1'),
+        '地图队友 token 必须有贴合本体的五边形高亮',
+    ).toHaveAttribute('data-highlight-shape', 'pentagon');
 }
 
 async function assertSelectedInventoryCardHasVisibleOutline(page: Page) {
@@ -322,19 +332,24 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertTradeLayoutDoesNotCoverMap(page);
         await assertTradeActionBarKeepsButtons(page);
         await assertTradeTargetKeepsTeammateCard(page);
+        await assertTradeTargetUsesMapToken(page);
         await saveScreenshot(page, TRADE_INITIAL_SCREENSHOT);
 
         await page.getByTestId('betrayal-inventory-rope').click();
         await assertTradeLayoutDoesNotCoverMap(page);
         await assertTradeActionBarKeepsButtons(page);
         await assertTradeTargetKeepsTeammateCard(page);
+        await assertTradeTargetUsesMapToken(page);
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await saveScreenshot(page, TRADE_ITEM_SELECTED_SCREENSHOT);
 
-        await page.getByTestId('betrayal-bottom-teammate-1').click();
+        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
         await assertTradeLayoutDoesNotCoverMap(page);
         await assertTradeActionBarKeepsButtons(page);
         await assertTradeTargetKeepsTeammateCard(page);
+        await expect(page.getByTestId('betrayal-trade-target-1')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-trade-status')).toContainText('可交易给');
+        await expect(page.getByTestId('betrayal-trade-status')).toContainText('AI 2 号位');
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await saveScreenshot(page, TRADE_TARGET_SELECTED_SCREENSHOT);
 

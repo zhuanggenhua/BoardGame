@@ -801,10 +801,10 @@ describe('Monk 技能完整覆盖测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
-        it('花开见佛: 4莲花造成5伤害+太极上限+1并补满', () => {
+        it('花开见佛: 4莲花造成5点不可防御伤害+太极上限+1并获得5太极', () => {
             // 4莲花: [6,6,6,6,1]
-            // 需要初始太极>=2才能触发花费2太极使攻击不可防御的选择
-            // 初始太极=5(满),花费2后剩3,postDamage 上限+1=6 并补满到6
+            // 一级图面为“造成5不可防御伤害。然后气的堆叠上限提升1，并获得5气。”
+            // 不需要花费太极，也不需要命中后才触发补满。
             const diceValues = [6, 6, 6, 6, 1, 1, 1, 1, 1];
             const random = createQueuedRandom(diceValues);
 
@@ -828,24 +828,23 @@ describe('Monk 技能完整覆盖测试', () => {
             });
 
             const result = runner.run({
-                name: '花开见佛 4莲花=5伤害+太极上限+1',
+                name: '花开见佛 4莲花=5不可防御伤害+太极上限+1',
                 commands: [
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '0'),
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'lotus-palm' }),
-                    cmd('ADVANCE_PHASE', '0'), // preDefense 选择是否花费太极 → halt
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }), // 选择花费2太极使攻击不可防御
-                    // autoContinue 触发 onPhaseExit(offensiveRoll),isDefendable=false 直接结算
-                    // 剩余3太极触发 TOKEN_RESPONSE_REQUESTED(beforeDamageDealt 加伤响应)
-                    cmd('SKIP_TOKEN_RESPONSE', '0'), // 跳过加伤响应 → 攻击结算 → postDamage 太极上限+1并补满 → main2
+                    // autoContinue 触发 onPhaseExit(offensiveRoll)，固定不可防御直接进入伤害结算。
+                    // 攻击方仍有太极，触发 TOKEN_RESPONSE_REQUESTED(beforeDamageDealt 加伤响应)。
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('SKIP_TOKEN_RESPONSE', '0'), // 跳过加伤响应 → 攻击结算 → postDamage 太极上限+1并获得5太极 → main2
                 ],
                 expect: {
                     turnPhase: 'main2',
                     players: {
                         '0': {
                             tokens: {
-                                // 花费2太极后,命中触发 postDamage 效果:上限+1变成6,然后补满到6
+                                // 不花费太极；postDamage 效果：上限+1变成6，然后获得5太极，受上限封顶到6。
                                 [TOKEN_IDS.TAIJI]: 6,
                             },
                         },

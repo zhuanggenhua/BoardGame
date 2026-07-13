@@ -34,12 +34,20 @@ import {
   getPassedThroughUnitPositions,
   getMovePath,
   findUnitPositionByInstanceId,
+  normalizeUnitBoosts,
   HAND_SIZE,
 } from './helpers';
 import { rollDice, countHits } from '../config/dice';
 import { createDeckByFactionId } from '../config/factions';
 import { buildGameDeckFromCustom } from '../config/deckBuilder';
-import { getEffectiveStrengthValue, getEffectiveLife, getEffectiveStructureLife, triggerAbilities, hasHellfireBlade } from './abilityResolver';
+import {
+  getEffectiveStrengthValue,
+  getEffectiveLife,
+  getEffectiveStructureLife,
+  triggerAbilities,
+  triggerAllUnitsAbilities,
+  hasHellfireBlade,
+} from './abilityResolver';
 import { reduceEvent } from './reduce';
 import type { AbilityContext } from './abilityResolver';
 import {
@@ -52,7 +60,7 @@ import {
 } from './execute/helpers';
 import { executeActivateAbility } from './execute/abilities';
 import { executePlayEvent } from './execute/eventCards';
-import { getBaseCardId, CARD_IDS, isFortressUnit } from './ids';
+import { getBaseCardId, CARD_IDS, isFortressUnit, isMoguFungalBeastCard } from './ids';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 // 辅助函数已迁移到 execute/helpers.ts
@@ -115,6 +123,22 @@ export function executeCommand(
               playerId: playerId as '0' | '1', timestamp, reason: 'fire_sacrifice_summon',
             }));
             summonPosition = victim.position;
+          }
+        }
+
+        const hasMoguFinalForm = (unitCard.abilities ?? []).includes('mogu_final_form');
+        if (hasMoguFinalForm) {
+          const replacementTarget = getPlayerUnits(core, playerId as PlayerId)
+            .find(unit => isMoguFungalBeastCard(unit.card) && normalizeUnitBoosts(unit.boosts) >= 5);
+          if (replacementTarget) {
+            events.push(...emitDestroyWithTriggers(core, replacementTarget, replacementTarget.position, {
+              playerId: playerId as PlayerId,
+              timestamp,
+              reason: 'mogu_final_form',
+              triggerOnDeath: true,
+              skipMagicReward: true,
+            }));
+            summonPosition = replacementTarget.position;
           }
         }
 
@@ -294,11 +318,18 @@ export function executeCommand(
             'ancestral_bond',    // 祖灵羁绊：充能+转移给3格内友方
             'structure_shift',   // 结构变换：推拉3格内友方建筑
             'frost_axe',         // 冰霜战斧：充能 / 消耗充能附加
+            'mogu_transmission', // 鲜血萨满：移动后传输充能
           ];
           for (const abilityId of afterMoveChoiceAbilities) {
             if (unitAbilities.includes(abilityId)) {
               events.push(createAbilityTriggeredEvent(`afterMove:${abilityId}`, unit.instanceId, to, timestamp));
             }
+          }
+          const hasMoguFanaticalFungus = core.players[playerId]?.activeEvents.some(ev =>
+            getBaseCardId(ev.id) === CARD_IDS.MOGU_FANATICAL_FUNGUS && ev.isActive
+          );
+          if (hasMoguFanaticalFungus) {
+            events.push(createAbilityTriggeredEvent('afterMove:mogu_fanatical_fungus', unit.instanceId, to, timestamp));
           }
         }
       }
@@ -809,6 +840,71 @@ export function executeCommand(
         }
       }
 
+      if (currentPhase === 'magic') {
+        events.push(...triggerAllUnitsAbilities('onPhaseEnd', core, playerId as PlayerId, {
+          timestamp,
+          phase: currentPhase,
+        }));
+      }
+
+      if (currentPhase === 'move') {
+        for (const unit of getPlayerUnits(core, playerId as PlayerId)) {
+          if (!getUnitAbilities(unit, core).includes('mogu_decay')) continue;
+          events.push({
+            type: SW_EVENTS.UNIT_DAMAGED,
+            payload: {
+              position: unit.position,
+              damage: 1,
+              reason: 'mogu_decay',
+              sourceAbilityId: 'mogu_decay',
+              sourcePlayerId: playerId,
+            },
+            timestamp,
+          });
+          const decaySurvives = unit.damage + 1 < getEffectiveLife(unit, core);
+          if (!decaySurvives) continue;
+          const adjDirs = [
+            { row: -1, col: 0 }, { row: 1, col: 0 },
+            { row: 0, col: -1 }, { row: 0, col: 1 },
+          ];
+          const targetPos = adjDirs
+            .map(d => ({ row: unit.position.row + d.row, col: unit.position.col + d.col }))
+            .find(pos => isValidCoord(pos) && getUnitAt(core, pos)?.owner === playerId);
+          if (targetPos) {
+            events.push({
+              type: SW_EVENTS.UNIT_CHARGED,
+              payload: { position: targetPos, delta: 2, sourceAbilityId: 'mogu_decay' },
+              timestamp,
+            });
+          }
+        }
+      }
+
+      if (currentPhase === 'attack') {
+        for (const unit of getPlayerUnits(core, playerId as PlayerId)) {
+          if (!getUnitAbilities(unit, core).includes('mogu_parasite')) continue;
+          if (normalizeUnitBoosts(unit.boosts) > 0) {
+            events.push({
+              type: SW_EVENTS.UNIT_CHARGED,
+              payload: { position: unit.position, delta: -1, sourceAbilityId: 'mogu_parasite' },
+              timestamp,
+            });
+          } else {
+            events.push({
+              type: SW_EVENTS.UNIT_DAMAGED,
+              payload: {
+                position: unit.position,
+                damage: 1,
+                reason: 'mogu_parasite',
+                sourceAbilityId: 'mogu_parasite',
+                sourcePlayerId: playerId,
+              },
+              timestamp,
+            });
+          }
+        }
+      }
+
       events.push({
         type: SW_EVENTS.PHASE_CHANGED,
         payload: { from: currentPhase, to: nextPhase },
@@ -816,6 +912,9 @@ export function executeCommand(
       });
 
       if (isLastPhase(currentPhase)) {
+        events.push(...triggerAllUnitsAbilities('onTurnEnd', core, playerId as PlayerId, {
+          timestamp,
+        }));
         const nextPlayer = playerId === '0' ? '1' : '0';
         events.push({
           type: SW_EVENTS.TURN_CHANGED,
@@ -1007,6 +1106,58 @@ export function executeCommand(
     for (let i = 0; i < destroyCount; i++) {
       processedEvents.push(...getFuneralPyreChargeEvents(core, timestamp));
     }
+  }
+
+  // 后处理2b：莫古召唤师“血腥绽放” — 2格内友方单位被消灭后，2格内所有友方单位充能
+  const moguBloomDestroyed = processedEvents.filter(e => e.type === SW_EVENTS.UNIT_DESTROYED);
+  if (moguBloomDestroyed.length > 0) {
+    for (const destroyEvent of moguBloomDestroyed) {
+      const destroyPayload = destroyEvent.payload as { position: CellCoord; owner?: PlayerId };
+      const owner = destroyPayload.owner;
+      if (!owner) continue;
+      const summoner = getSummoner(core, owner);
+      if (!summoner || !getUnitAbilities(summoner, core).includes('mogu_blood_bloom')) continue;
+      if (manhattanDistance(summoner.position, destroyPayload.position) > 2) continue;
+      for (const unit of getPlayerUnits(core, owner)) {
+        if (unit.instanceId === summoner.instanceId) continue;
+        if (manhattanDistance(summoner.position, unit.position) <= 2) {
+          processedEvents.push({
+            type: SW_EVENTS.UNIT_CHARGED,
+            payload: { position: unit.position, delta: 1, sourceAbilityId: 'mogu_blood_bloom' },
+            timestamp,
+          });
+        }
+      }
+    }
+  }
+
+  // 后处理2c：莫古“菌化变异” — 直接消灭事件也要触发 onDeath 替换链
+  for (const destroyEvent of processedEvents.filter(e => e.type === SW_EVENTS.UNIT_DESTROYED)) {
+    const destroyPayload = destroyEvent.payload as { position: CellCoord; owner?: PlayerId; instanceId?: string; cardId?: string };
+    const destroyedUnit = findBoardUnitByInstanceId(core, destroyPayload.instanceId ?? '')
+      ?? (destroyPayload.cardId ? findBoardUnitByCardId(core, destroyPayload.cardId, destroyPayload.owner) : undefined)
+      ?? (() => {
+        const unit = getUnitAt(core, destroyPayload.position);
+        return unit ? { unit, position: destroyPayload.position } : undefined;
+      })();
+    if (!destroyedUnit) continue;
+    if (!getUnitAbilities(destroyedUnit.unit, core).includes('mogu_fungal_mutation')) continue;
+    const alreadySummoned = processedEvents.some(e => {
+      if (e.type !== SW_EVENTS.UNIT_SUMMONED) return false;
+      const p = e.payload as { position?: CellCoord; sourceAbilityId?: string };
+      return p.sourceAbilityId === 'mogu_fungal_mutation'
+        && p.position?.row === destroyedUnit.position.row
+        && p.position?.col === destroyedUnit.position.col;
+    });
+    if (alreadySummoned) continue;
+    const deathCtx: AbilityContext = {
+      state: core,
+      sourceUnit: destroyedUnit.unit,
+      sourcePosition: destroyedUnit.position,
+      ownerId: destroyedUnit.unit.owner,
+      timestamp,
+    };
+    processedEvents.push(...triggerAbilities('onDeath', deathCtx));
   }
 
   // 后处理3：交缠颂歌清理 — 被消灭的单位是交缠目标时，弃置交缠颂歌

@@ -3,7 +3,7 @@
  *
  * 卡牌规则：选择对手的1颗骰子，强制他重掷该骰子
  * - 费用：1 CP
- * - timing: roll（只能在投掷阶段使用）
+ * - timing: roll（通常在投掷阶段使用；非投掷阶段若仍保留已确认骰子判定结果，也可响应骰面）
  * - playCondition:
  *   - requireIsNotRoller: 不能是当前投掷方（只能在对手投掷时使用）
  *   - requireRollConfirmed: 对手必须已确认骰面
@@ -25,6 +25,7 @@ import {
 } from './test-utils';
 
 const giveHandCard = COMMON_CARDS.find(c => c.id === 'card-give-hand')!;
+const playSixCard = COMMON_CARDS.find(c => c.id === 'card-play-six')!;
 
 /** 构造最小化的 core 状态用于 checkPlayCard 单元测试 */
 const makeCore = (overrides: Partial<DiceThroneCore> = {}): DiceThroneCore => ({
@@ -124,16 +125,27 @@ describe('抬一手（card-give-hand）边界测试', () => {
             expect((result as any).reason).toBe('requireIsNotRoller');
         });
 
-        it('main1 阶段不能打出（timing=roll 限制）', () => {
+        it('main1 阶段有已确认骰子判定结果时可以打出', () => {
             const core = makeCore({ rollConfirmed: true, rollCount: 1 });
             const result = checkPlayCard(core, '1', giveHandCard, 'main1');
-            expect(result.ok).toBe(false);
-            expect((result as any).reason).toBe('wrongPhaseForRoll');
+            expect(result.ok).toBe(true);
         });
 
-        it('main2 阶段不能打出', () => {
+        it('main2 阶段有已确认骰子判定结果时可以打出', () => {
             const core = makeCore({ rollConfirmed: true, rollCount: 1 });
             const result = checkPlayCard(core, '1', giveHandCard, 'main2');
+            expect(result.ok).toBe(true);
+        });
+
+        it('upkeep 阶段有已确认骰子判定结果时可以打出', () => {
+            const core = makeCore({ rollConfirmed: true, rollCount: 1 });
+            const result = checkPlayCard(core, '1', giveHandCard, 'upkeep');
+            expect(result.ok).toBe(true);
+        });
+
+        it('main1 阶段骰面未确认时不能打出', () => {
+            const core = makeCore({ rollConfirmed: false, rollCount: 1 });
+            const result = checkPlayCard(core, '1', giveHandCard, 'main1');
             expect(result.ok).toBe(false);
             expect((result as any).reason).toBe('wrongPhaseForRoll');
         });
@@ -142,6 +154,56 @@ describe('抬一手（card-give-hand）边界测试', () => {
             const core = makeCore({ rollConfirmed: true, rollCount: 1 });
             const result = checkPlayCard(core, '1', giveHandCard, 'discard');
             expect(result.ok).toBe(false);
+            expect((result as any).reason).toBe('wrongPhaseForRoll');
+        });
+
+        it('主要阶段待结算奖励骰可被骰子主人用红色改骰牌修改', () => {
+            const core = makeCore({
+                activePlayerId: '1',
+                dice: [],
+                rollCount: 0,
+                rollConfirmed: false,
+                pendingBonusDiceSettlement: {
+                    id: 'powder-keg-bonus-die',
+                    sourceAbilityId: 'powder-keg',
+                    attackerId: '0',
+                    targetId: '0',
+                    dice: [{ index: 0, value: 6, face: 'fist' }],
+                    rerollCostTokenId: 'taiji',
+                    rerollCostAmount: 0,
+                    rerollCount: 0,
+                    readyToSettle: false,
+                    allowDiceModification: true,
+                } as any,
+            });
+            core.players['0'].hand = [playSixCard];
+
+            const result = checkPlayCard(core, '0', playSixCard, 'main1');
+            expect(result.ok).toBe(true);
+        });
+
+        it('主要阶段待结算奖励骰可被对手用抬一手响应', () => {
+            const core = makeCore({
+                activePlayerId: '1',
+                dice: [],
+                rollCount: 0,
+                rollConfirmed: false,
+                pendingBonusDiceSettlement: {
+                    id: 'powder-keg-bonus-die',
+                    sourceAbilityId: 'powder-keg',
+                    attackerId: '0',
+                    targetId: '0',
+                    dice: [{ index: 0, value: 6, face: 'fist' }],
+                    rerollCostTokenId: 'taiji',
+                    rerollCostAmount: 0,
+                    rerollCount: 0,
+                    readyToSettle: false,
+                    allowDiceModification: true,
+                } as any,
+            });
+
+            const result = checkPlayCard(core, '1', giveHandCard, 'main1');
+            expect(result.ok).toBe(true);
         });
     });
 

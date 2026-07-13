@@ -39,3 +39,4 @@ export * from './types';
 export * from './cards';
 export * from './poker';
 export * from './showdown';
+export * from './expansions';

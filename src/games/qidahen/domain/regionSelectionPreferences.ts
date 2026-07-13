@@ -4,6 +4,7 @@ import {
     isRegionFriendlyToFaction,
 } from './battleState';
 import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState';
+import { getQidahenEffectivePopulation } from './populationRules';
 import { isQidahenCityRuntimeRegion } from './regionConfig';
 import type { QidahenCore, QidahenFactionId } from './types';
 
@@ -37,7 +38,9 @@ const getPreferredNonSiegedControlledRuntimeRegion = (
         .sort((left, right) => {
             const leftSource = getNonSiegedCityActionSourceSnapshot(left);
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
-            return rightSource.troops - leftSource.troops || rightSource.population - leftSource.population;
+            return rightSource.troops - leftSource.troops
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population);
         })
         .at(0)
         ?? null
@@ -52,7 +55,9 @@ const getPreferredControlledRuntimeRegion = (
         .sort((left, right) => {
             const leftSource = getFriendlyReceivingRegionSnapshot(left);
             const rightSource = getFriendlyReceivingRegionSnapshot(right);
-            return rightSource.troops - leftSource.troops || rightSource.population - leftSource.population;
+            return rightSource.troops - leftSource.troops
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population);
         })
         .at(0)
         ?? null
@@ -100,7 +105,8 @@ export const getPreferredRegularTroopPlacementRegion = (
             const leftSource = getNonSiegedCityActionSourceSnapshot(left);
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
             return rightSource.troops - leftSource.troops
-                || rightSource.population - leftSource.population
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
         })
         .at(0)
@@ -132,7 +138,8 @@ export const getPreferredActionWindowSelectedRegionIdForFaction = (
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
             return right.siegeState!.attackerTroops - left.siegeState!.attackerTroops
                 || rightSource.troops - leftSource.troops
-                || rightSource.population - leftSource.population
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
         })
         .at(0);

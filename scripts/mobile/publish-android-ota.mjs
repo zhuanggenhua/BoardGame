@@ -2,31 +2,17 @@ import { config } from 'dotenv';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { zipSync } from 'fflate';
+import { publishPrimaryAssetBatch } from '../assets/publish-primary-assets.mjs';
 import {
+    resolveAndroidOtaVersionBase,
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
-import {
-    DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS,
-    DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
-    DIST_LOGOS_RETAIN_RELATIVE_PATHS,
-} from '../deploy/prune-web-dist-assets.mjs';
+import { classifyOtaBundleFile } from './ota-bundle-files.mjs';
+import { waitForServerAssets } from './wait-for-server-assets.mjs';
 
 const rootDir = process.cwd();
-const OTA_REMOTE_EXCLUDED_PREFIXES = [
-    'assets/common/audio/',
-];
-const OTA_ALLOWED_LOCALE_PREFIX = 'locales/zh-CN/';
 const MAX_ANDROID_OTA_ZIP_BYTES = 20 * 1024 * 1024;
-const OTA_ALLOWED_EMBEDDED_ASSET_FILES = new Set([
-    ...DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS.map((relativePath) => `assets/common/${relativePath}`),
-    ...DIST_I18N_JSON_RETAIN_RELATIVE_PATHS.map((relativePath) => `assets/i18n/${relativePath}`),
-    ...DIST_LOGOS_RETAIN_RELATIVE_PATHS.map((relativePath) => `logos/${relativePath}`),
-]);
-const OTA_ALLOWED_EMBEDDED_ASSET_PREFIXES = [
-    'assets/region-mask-',
-];
 
 for (const file of ['.env', '.env.android', '.env.android.local', '.env.example']) {
     const fullPath = path.join(rootDir, file);
@@ -39,6 +25,7 @@ const args = process.argv.slice(2);
 const allowedValueArgs = new Set([
     'channel',
     'version',
+    'display-version',
     'ota-version-base',
     'native-version',
     'expected-base-version',
@@ -58,7 +45,9 @@ Android OTA 发布脚本
 
 默认策略：
 - OTA 默认面向所有已安装版本，不按原生版本做 target/min/max 门禁
-- 如需让客户端拿到更新后立即切换 bundle，可显式传 --force-update
+- 所有 OTA 都强制更新，客户端必须阻塞下载并立即切换 bundle
+- --no-force-update 已禁用，任何发布入口都不得关闭强制更新
+- OTA 只携带 H5 代码、中文语言包、字体和资源清单；游戏资源继续走服务器资源链
 - 若误传任何 target/min/max 原生版本兼容参数，脚本会直接失败，防止再次发出“只给某个原生版本”的错误 OTA
 
 常见用法：
@@ -69,15 +58,16 @@ Android OTA 发布脚本
 参数：
 - --channel <name>
 - --version <bundleVersion>
+- --display-version <number> 用户可见发布号；不传则从线上 latest.json 自动递增，最低 600
 - --ota-version-base <semver> 仅用于未显式 --version 时生成 OTA 内部游标；默认取 package.json.version
 - --native-version <version>
 - --expected-base-version <package.json.version>
-- --force-update / --no-force-update
+- --force-update 兼容旧命令，可省略
 - --force-update-title <text>
 - --force-update-message <text>
 - --notes <text>
 - --dry-run
-- --skip-latest
+- --skip-latest 仅允许 dry-run 诊断；正式发布禁止跳过 latest.json
 - --help
 `.trim();
 
@@ -142,10 +132,21 @@ const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.tr
 const nativeVersion = readArgValue('native-version', packageJson.version);
 const expectedBaseVersion = readArgValue('expected-base-version', '').trim();
 const explicitBundleVersion = readArgValue('version', '');
-const otaVersionBase = readArgValue(
+const explicitDisplayVersion = readArgValue('display-version', '').trim();
+const requestedOtaVersionBase = readArgValue(
     'ota-version-base',
-    process.env.ANDROID_OTA_VERSION_BASE?.trim() || packageJson.version,
+    process.env.ANDROID_OTA_VERSION_BASE?.trim() || '',
 ).trim();
+const otaVersionBase = resolveAndroidOtaVersionBase({
+    packageVersion: packageJson.version,
+    requestedVersionBase: requestedOtaVersionBase,
+});
+if (explicitBundleVersion) {
+    resolveAndroidOtaVersionBase({
+        packageVersion: packageJson.version,
+        requestedVersionBase: explicitBundleVersion,
+    });
+}
 const notes = readArgValue('notes', 'Android embedded OTA bundle');
 const forbiddenCompatibilityArgs = [
     'target-native-version',
@@ -164,14 +165,15 @@ const {
     forceUpdateTitle,
     forceUpdateMessage,
 } = resolveOtaForceUpdateOptions({
-    forceUpdateFlag: hasFlag('force-update'),
     noForceUpdateFlag: hasFlag('no-force-update'),
     forceUpdateTitle: readArgValue('force-update-title', ''),
     forceUpdateMessage: readArgValue('force-update-message', ''),
-    defaultForceUpdate: false,
 });
 const dryRun = hasFlag('dry-run');
 const skipLatest = hasFlag('skip-latest');
+if (skipLatest && !dryRun) {
+    throw new Error('正式 Android OTA 发布禁止使用 --skip-latest。手机端依赖 latest.json 发现更新，跳过会导致无法更新。');
+}
 const distDir = path.join(rootDir, 'dist');
 const androidBuildMetaPath = path.join(distDir, 'android-build-meta.json');
 const buildInstant = new Date();
@@ -200,8 +202,10 @@ const versionManifestKey = `${manifestPrefix}/manifests/${bundleVersion}.json`;
 const latestManifestKey = `${manifestPrefix}/latest.json`;
 const assetsBaseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
 const bundleUrl = `${assetsBaseUrl}/app-updates/android/${channel}/bundles/${encodeURIComponent(bundleVersion)}.zip`;
+const latestManifestUrl = `${assetsBaseUrl}/app-updates/android/${channel}/latest.json`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;
 const validOtaVersionBasePattern = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+const MIN_ANDROID_OTA_DISPLAY_VERSION = 600;
 const releaseAndroidAppId = 'top.easyboardgame.app';
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
 
@@ -218,6 +222,39 @@ if (!explicitBundleVersion && !validOtaVersionBasePattern.test(otaVersionBase)) 
         `非法 OTA 游标基线: ${otaVersionBase || '(空)'}。`
         + ' 未显式传 --version 时，--ota-version-base 必须是类似 0.6.0 或 6.0.0 的版本号。',
     );
+}
+
+const parseDisplayVersion = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    const text = String(value).trim();
+    if (!/^\d+$/.test(text)) {
+        return null;
+    }
+    const parsed = Number.parseInt(text, 10);
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const readLatestDisplayVersion = async () => {
+    try {
+        const response = await fetch(`${latestManifestUrl}?probe=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache' },
+            signal: AbortSignal.timeout(30_000),
+        });
+        if (!response.ok) {
+            return null;
+        }
+        const latestManifest = await response.json();
+        return parseDisplayVersion(latestManifest.displayVersion);
+    } catch {
+        return null;
+    }
+};
+
+const explicitDisplayVersionNumber = parseDisplayVersion(explicitDisplayVersion);
+if (explicitDisplayVersion && explicitDisplayVersionNumber === null) {
+    throw new Error(`Android OTA 显示发布号非法：${explicitDisplayVersion}。请使用 600、601 这类非负整数。`);
 }
 
 if (!expectedBaseVersion) {
@@ -254,53 +291,21 @@ if (androidBuildMeta.appId.trim() !== releaseAndroidAppId) {
 if (isNonReleaseAndroidAppId(androidBuildMeta.appId.trim())) {
     throw new Error(`dist/android-build-meta.json 检测到测试壳 appId=${androidBuildMeta.appId.trim()}，已阻止 OTA 发布。`);
 }
-
-if (!dryRun) {
-    const requiredEnv = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME'];
-    const missingEnv = requiredEnv.filter((key) => !process.env[key]);
-    if (missingEnv.length > 0) {
-        throw new Error(`缺少 R2 环境变量: ${missingEnv.join(', ')}`);
-    }
+if (androidBuildMeta.otaEnabled !== true) {
+    throw new Error('dist/android-build-meta.json 显示 OTA 未启用。已阻止发布，避免正式 App 更新后误报“测试壳已禁用 OTA”。');
 }
-
-const s3Client = new S3Client({
-    region: 'auto',
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    },
-});
-
-const classifyOtaFile = (relativePath) => {
-    if (OTA_REMOTE_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
-        return 'optional-skip';
-    }
-
-    if (relativePath.startsWith('locales/')) {
-        return relativePath.startsWith(OTA_ALLOWED_LOCALE_PREFIX) ? 'include' : 'blocked-skip';
-    }
-
-    if (relativePath.startsWith('assets/common/') || relativePath.startsWith('assets/i18n/') || relativePath.startsWith('logos/')) {
-        if (OTA_ALLOWED_EMBEDDED_ASSET_FILES.has(relativePath)) {
-            return 'include';
-        }
-        if (OTA_ALLOWED_EMBEDDED_ASSET_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
-            return 'include';
-        }
-        return 'blocked-skip';
-    }
-
-    return 'include';
-};
+if (typeof androidBuildMeta.otaManifestUrl !== 'string' || !/^https?:\/\//i.test(androidBuildMeta.otaManifestUrl.trim())) {
+    throw new Error('dist/android-build-meta.json 缺少合法 otaManifestUrl。已阻止发布，请通过统一 Android OTA 入口重新构建。');
+}
+if (androidBuildMeta.otaChannel !== channel) {
+    throw new Error(`Android OTA 构建 channel 与发布目标不一致：构建=${String(androidBuildMeta.otaChannel || '')}，发布=${channel}`);
+}
 
 const collectFiles = (dirPath, baseDir, entries = {}, stats = {
     includedFiles: 0,
     includedBytes: 0,
-    blockedSkippedFiles: 0,
-    blockedSkippedBytes: 0,
-    optionalSkippedFiles: 0,
-    optionalSkippedBytes: 0,
+    remoteSkippedFiles: 0,
+    remoteSkippedBytes: 0,
 }) => {
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
         const fullPath = path.join(dirPath, entry.name);
@@ -311,15 +316,10 @@ const collectFiles = (dirPath, baseDir, entries = {}, stats = {
 
         const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
         const fileBuffer = new Uint8Array(readFileSync(fullPath));
-        const classification = classifyOtaFile(relativePath);
-        if (classification === 'blocked-skip') {
-            stats.blockedSkippedFiles += 1;
-            stats.blockedSkippedBytes += fileBuffer.byteLength;
-            continue;
-        }
-        if (classification === 'optional-skip') {
-            stats.optionalSkippedFiles += 1;
-            stats.optionalSkippedBytes += fileBuffer.byteLength;
+        const classification = classifyOtaBundleFile(relativePath);
+        if (classification === 'remote-skip') {
+            stats.remoteSkippedFiles += 1;
+            stats.remoteSkippedBytes += fileBuffer.byteLength;
             continue;
         }
         entries[relativePath] = fileBuffer;
@@ -334,61 +334,90 @@ const {
     entries: otaEntries,
     stats: otaCollectionStats,
 } = collectFiles(distDir, distDir);
-if (otaCollectionStats.blockedSkippedFiles > 0) {
-    throw new Error(
-        `检测到当前 dist 含有不允许进入 OTA 的文件：skippedFiles=${otaCollectionStats.blockedSkippedFiles}, `
-        + `skippedBytes=${otaCollectionStats.blockedSkippedBytes}。`
-        + ' 这通常说明你没有走最新的 Android 专用构建裁剪链路，'
-        + ' 或 dist 混入了本该继续走本地的非法资源。'
-        + ' 为避免再次打出整包，发布已强制中止。',
-    );
-}
 const zipBuffer = Buffer.from(zipSync(otaEntries, { level: 9 }));
 if (zipBuffer.length > MAX_ANDROID_OTA_ZIP_BYTES) {
     throw new Error(
         `Android OTA 包体异常过大：${zipBuffer.length} bytes。`
-        + ' 当前发布链路会自动排除默认走 R2 的图片/音频资源，并只保留本地必需文件。'
+        + ' 当前发布链路会自动排除远程素材目录，并只保留本地必需文件。'
         + ' 请检查 dist 是否混入了不应进入 OTA 的大资源，禁止继续发布。',
     );
 }
 const checksum = createHash('sha256').update(zipBuffer).digest('hex');
 const publishedAt = new Date();
+const latestDisplayVersion = await readLatestDisplayVersion();
+const displayVersion = String(
+    explicitDisplayVersionNumber ?? Math.max(
+        MIN_ANDROID_OTA_DISPLAY_VERSION,
+        (latestDisplayVersion ?? (MIN_ANDROID_OTA_DISPLAY_VERSION - 1)) + 1,
+    ),
+);
 const manifest = {
     version: bundleVersion,
+    displayVersion,
+    productVersion: packageJson.version,
     url: bundleUrl,
     checksum,
     channel,
-    ...(forceUpdate ? { forceUpdate: true } : {}),
-    ...(forceUpdateTitle ? { forceUpdateTitle } : {}),
-    ...(forceUpdateMessage ? { forceUpdateMessage } : {}),
+    forceUpdate,
+    forceUpdateTitle,
+    forceUpdateMessage,
     publishedAt: publishedAt.toISOString(),
     size: zipBuffer.length,
     notes,
 };
 const publishedAtHumanTime = formatHumanTime(publishedAt);
 
-const uploadObject = async (key, body, contentType, cacheControl) => {
-    await s3Client.send(new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Key: key,
-        Body: body,
-        ContentType: contentType,
-        CacheControl: cacheControl,
-    }));
-};
+const versionManifestBody = `${JSON.stringify(manifest, null, 2)}\n`;
+const latestManifestBody = versionManifestBody;
 
 if (!dryRun) {
-    await uploadObject(bundleKey, zipBuffer, 'application/zip', 'public, max-age=31536000, immutable');
-    await uploadObject(versionManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
-    if (!skipLatest) {
-        await uploadObject(latestManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
-    }
+    await publishPrimaryAssetBatch([
+        {
+            key: bundleKey,
+            body: zipBuffer,
+            size: zipBuffer.length,
+            contentType: 'application/zip',
+            cacheControl: 'public, max-age=31536000, immutable',
+        },
+        {
+            key: versionManifestKey,
+            body: versionManifestBody,
+            size: Buffer.byteLength(versionManifestBody),
+            contentType: 'application/json',
+            cacheControl: 'public, max-age=60, must-revalidate',
+        },
+        ...(!skipLatest
+            ? [{
+                key: latestManifestKey,
+                body: latestManifestBody,
+                size: Buffer.byteLength(latestManifestBody),
+                contentType: 'application/json',
+                cacheControl: 'public, max-age=60, must-revalidate',
+            }]
+            : []),
+    ]);
+}
+
+if (!dryRun && !skipLatest) {
+    await waitForServerAssets([
+        {
+            url: bundleUrl,
+            expectedSize: zipBuffer.length,
+        },
+        {
+            url: latestManifestUrl,
+            expectedSize: Buffer.byteLength(latestManifestBody),
+            expectedSha256: createHash('sha256').update(latestManifestBody).digest('hex'),
+        },
+    ], { requireCorsPreflight: true });
 }
 
 const distStats = statSync(path.join(distDir, 'index.html'));
 console.log(dryRun ? 'OTA bundle 预演完成（未上传）' : 'OTA bundle 已发布');
 console.log(`channel=${channel}`);
 console.log(`bundleVersion=${bundleVersion}`);
+console.log(`displayVersion=${displayVersion}`);
+console.log(`productVersion=${packageJson.version}`);
 console.log(`bundleVersionHumanTime=${bundleVersionHumanTime}`);
 console.log(`otaVersionBase=${explicitBundleVersion ? '(explicit-version)' : otaVersionBase}`);
 console.log(`nativeVersion=${nativeVersion}`);
@@ -399,10 +428,8 @@ console.log(`skipLatest=${skipLatest ? 'true' : 'false'}`);
 console.log(`zipBytes=${zipBuffer.length}`);
 console.log(`otaIncludedFiles=${otaCollectionStats.includedFiles}`);
 console.log(`otaIncludedBytes=${otaCollectionStats.includedBytes}`);
-console.log(`otaBlockedSkippedFiles=${otaCollectionStats.blockedSkippedFiles}`);
-console.log(`otaBlockedSkippedBytes=${otaCollectionStats.blockedSkippedBytes}`);
-console.log(`otaOptionalSkippedFiles=${otaCollectionStats.optionalSkippedFiles}`);
-console.log(`otaOptionalSkippedBytes=${otaCollectionStats.optionalSkippedBytes}`);
+console.log(`otaRemoteSkippedFiles=${otaCollectionStats.remoteSkippedFiles}`);
+console.log(`otaRemoteSkippedBytes=${otaCollectionStats.remoteSkippedBytes}`);
 console.log(`indexMtime=${distStats.mtime.toISOString()}`);
 console.log(`androidBuildBackendUrl=${androidBuildMeta.backendUrl}`);
 console.log(`androidBuildBuiltAt=${androidBuildMeta.builtAt || '(unknown)'}`);

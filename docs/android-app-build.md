@@ -7,10 +7,10 @@
 - Android Release / OTA workflow 默认优先读取与 `.env.example` 一致的同名配置。
 - 后端地址优先使用 GitHub Variables 的 `VITE_BACKEND_URL`。
 - `ANDROID_VITE_BACKEND_URL` 只作为兼容旧配置的别名，不再是唯一入口。
-- OTA 对象存储仍使用 GitHub Secrets：`R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`。
+- OTA 发布到服务器素材主源，不再要求对象存储凭据。
 - 推荐最小配置：
   - Variables: `VITE_BACKEND_URL`、`VITE_ASSETS_BASE_URL`、`CAPACITOR_APP_ID`、`CAPACITOR_APP_NAME`
-  - Secrets: `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`
+  - Secrets: 服务器素材主源发布所需的受限 SSH / 发布令牌
 
 ## 命令
 
@@ -40,7 +40,7 @@
 - `embedded`：默认模式（未显式指定时生效）
   - 将 `dist/` 同步到 `android/app/src/main/assets/public/`
   - APK 只内置壳运行必需的 H5 bundle 与轻量静态文件
-  - `public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路，禁止跟随 embedded 打进 APK
+  - `public/assets/common/audio/**` 这类运行时大资源必须继续走服务器素材主源 / 游戏包链路，禁止跟随 embedded 打进 APK
   - 这是当前主线发布方案
 - `remote`：仅在明确指定时启用
   - 通过 `Capacitor server.url` 加载线上页面
@@ -92,7 +92,7 @@ ANDROID_REMOTE_WEB_URL=https://your-domain.com
   - `assets/common/images/home-v2/overview-spread/**`
   - `assets/common/images/home-v2/reference-homepage/**`
   - `assets/common/images/home-v2/reference-thumbnails/**`
-- 这条门禁的本质约束是：**native APK 不得重复内置本应从 R2 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
+- 这条门禁的本质约束是：**native APK 不得重复内置本应从服务器素材主源 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
 
 ## 原生 APK 自更新
 
@@ -132,11 +132,7 @@ npm run mobile:android:native-update:publish -- --channel stable --dry-run
 npm run mobile:android:native-update:publish -- --channel stable
 ```
 
-如果只想先上传 APK 和版本 manifest，不切 `latest.json`：
-
-```bash
-npm run mobile:android:native-update:publish -- --channel stable --skip-latest
-```
+正式 Android 原生更新必须切换 `latest.json`，否则手机端无法发现新版 APK。`--skip-latest` 仅允许配合 `--dry-run` 做参数诊断，正式发布传入会直接失败。
 
 当前默认发布路径：
 
@@ -165,9 +161,9 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
 ## 当前 OTA 实现
 
 - 运行时插件：`@capgo/capacitor-updater`
-- 发布源：自托管 manifest + zip bundle，当前约定放在对象存储 `official/app-updates/android/<channel>/...`
-- 当前默认发布策略：**后台 OTA**
-- 默认行为：启动后后台检查；一旦发现兼容的新 bundle，后台下载并排队，切到后台或下次重启后生效
+- 发布源：自托管 manifest + zip bundle，当前约定放在服务器素材主源 `official/app-updates/android/<channel>/...`
+- 当前发布策略：**所有 OTA 强制更新**
+- 默认行为：启动后检查；一旦发现新的 bundle，立即显示阻塞式更新页，下载完成后切换 bundle 并重启页面
 - 启动确认：App 每次原生启动时尽早调用 `notifyAppReady()`，避免已下载 bundle 被插件自动回滚
 
 ### OTA 何时生效
@@ -178,16 +174,10 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
 
 ### 当前升级策略
 
-- 普通 OTA
-  - 这是当前默认发布策略
-  - manifest 默认不声明 `forceUpdate: true`
-  - App 启动后后台检查，兼容则后台下载
-  - 下载完成后排队，切到后台或下次重启后生效
-  - 不阻塞用户
-- 带 `forceUpdate: true` 的 OTA
-  - 对兼容当前原生壳的 bundle，仍然按普通 OTA 处理
-  - 不再在当前会话显示阻塞式下载/切换页
-  - 仍然是后台下载并排队，切到后台或下次重启后生效
+- 所有 OTA manifest 必须声明 `forceUpdate: true`
+- 自动启动检查遇到新 bundle 时必须进入立即模式，显示阻塞式下载与切换反馈
+- 发布脚本、后台发布中心和 GitHub Actions 都不得提供有效的非强制 OTA 入口
+- `--no-force-update` 或等价的 `forceUpdate=false` 必须被拒绝
 - 原生版本门禁（已废弃）
   - 不再按 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion` 做 OTA 分流
   - 即便 manifest 误带这些字段，运行时也会忽略并继续走 OTA
@@ -294,11 +284,11 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 - `official/mobile-packages/android/<channel>/manifests/<gameId>/<version>.json`
 - `official/mobile-packages/android/<channel>/games/<gameId>.json`
 
-### R2 单文件资源更新
+### 服务器素材主源单文件资源更新
 
 日常只替换少量游戏资源时，不应默认重发完整 ZIP。正确链路是：
 
-1. 上传变更后的 R2 单文件对象，例如 `official/i18n/zh-CN/dicethrone/.../compressed/player-board.webp`
+1. 上传变更后的服务器素材主源单文件对象，例如 `official/i18n/zh-CN/dicethrone/.../compressed/player-board.webp`
 2. 刷新目标游戏的 `file-index/<gameId>/<version>.json`
 3. 刷新 `games/<gameId>.json` 指到新的差异索引版本
 4. App 读取远端 `file-index`，与本地 `installed-files-index.json` 比对，只下载新增或哈希变化文件
@@ -306,7 +296,7 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 本地预演某个资源路径会触发哪个 App 素材包刷新：
 
 ```bash
-node scripts/assets/upload-to-r2.js --android-package-publish-plan official/i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp
+node scripts/assets/upload-to-server.js --android-package-publish-plan official/i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp
 ```
 
 普通游戏资源变更的预期命令应包含：
@@ -327,7 +317,7 @@ node scripts/mobile/publish-android-game-packages.mjs --channel stable --game di
 
 验收时必须拆开三件事：
 
-- R2 单文件对象是否已上传并可访问
+- 服务器素材主源单文件对象是否已上传并可访问
 - `games/<gameId>.json` 是否已指向新的 `file-index` 版本
 - 真机 App 是否只下载 changed 文件，并且本地哈希与远端 `file-index` 一致
 
@@ -383,13 +373,7 @@ manifest 结构示例：
 node scripts/mobile/release-android.mjs ota --channel stable --dry-run
 ```
 
-4. 如果只想先上传 bundle 和版本 manifest，不立刻切 `latest.json`：
-
-```bash
-node scripts/mobile/release-android.mjs ota --channel stable --skip-latest
-```
-
-5. 确认无误后再正式更新 channel 的 `latest.json`：
+4. 正式更新 channel 的 `latest.json`：
 
 ```bash
 node scripts/mobile/release-android.mjs ota --channel stable
@@ -398,14 +382,15 @@ node scripts/mobile/release-android.mjs ota --channel stable
 当前 OTA 规则已改为统一全量更新：
 
 - OTA manifest 默认不再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`
-- 所有 channel（包括 `stable`）默认都面向所有已安装版本
-- 如果需要客户端拿到更新后立即切换 bundle，可显式传 `--force-update`
+- 所有 channel（包括 `stable`）都面向所有已安装版本，并固定写入 `forceUpdate: true`
+- 客户端检测到新 OTA 后必须阻塞下载并立即切换；`--no-force-update` 已禁用
+- OTA 打包器只保留 H5 代码、中文语言包、字体、必要公共文件和资源清单；嵌套游戏资源继续走服务器资源主源或移动游戏包
 - 若误传任何原生版本兼容参数，发布脚本会直接失败，防止再次发出“只给某个原生版本”的错误 OTA
 
 如果你要自定义强更文案：
 
 ```bash
-node scripts/mobile/release-android.mjs ota --channel stable --force-update --force-update-title "正在更新" --force-update-message "正在下载必要更新，请稍候"
+node scripts/mobile/release-android.mjs ota --channel stable --force-update-title "正在更新" --force-update-message "正在下载必要更新，请稍候"
 ```
 
 如果走 GitHub Actions 自动化：
@@ -413,6 +398,7 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 - 只允许通过 Actions `Android OTA Publish` 手动触发；普通 `push main` 不得自动发布 **stable OTA**。
 - `stable` 应绑定 `android-ota-production` Environment 审批。
 - **原生壳更新始终手动发包**，不走 `main` 自动流程。
+- Android stable OTA 与原生发布 workflow 的整次运行上限为 30 分钟；资源 URL、校验目标、预期大小或摘要无效时必须立即失败，不得进入长时间传播重试。
 - 手动触发时，workflow 只保留发布必要参数；原生版本门禁参数已移除。
 - 如需桥接旧客户端曾经记住的错误大版本，可填 `ota_version_base=6.0.0`，生成 `6.0.0-ota-...` 内部游标。
 - 后台发布中心触发 OTA 时，默认通过 GitHub Actions dispatch 发起 `android-ota-publish.yml`，避免生产机本地构建。生产环境至少配置：
@@ -434,20 +420,20 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 - `--version <bundleVersion>`：手动指定 bundle 版本号
 - `--ota-version-base <semver>`：未显式指定 `--version` 时，用于生成 bundle 内部游标；可与 `package.json.version` 解耦
 - `--native-version <version>`：当前打包对应的原生版本，默认取 `package.json.version`
-- `--force-update`：这次 OTA 下载完成后立即切换 bundle
-- `--no-force-update`：关闭“下载完成后立即切换”的行为
+- `--force-update`：旧命令兼容参数，可省略；所有 OTA 本来就会强制更新
+- `--no-force-update`：已禁用，传入后发布直接失败
 - `--force-update-title <text>`：覆盖 OTA 更新提示标题
 - `--force-update-message <text>`：覆盖 OTA 更新提示正文
 - `--notes <text>`：写入 manifest 备注
 - `--dry-run`：只打 zip、算 checksum、打印 manifest，不上传
-- `--skip-latest`：上传 zip 和版本 manifest，但不覆盖 `<channel>/latest.json`
+- `--skip-latest`：仅允许配合 `--dry-run` 做参数诊断；正式 Android OTA 禁止跳过 `<channel>/latest.json`
 
 兼容字段生成规则：
 
 - OTA manifest 默认不再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`
 - 所有 channel 默认都面向所有已安装版本
 - 如误传任何原生版本兼容参数，发布脚本会直接失败
-- `forceUpdate` 只表示客户端拿到更新后是否立即切换 bundle，不再承担“按原生版本阻断”的语义
+- `forceUpdate` 固定为 `true`，表示客户端必须阻塞下载并立即切换 bundle，不承担“按原生版本阻断”的语义
 
 当前发布脚本会写入：
 
@@ -513,8 +499,8 @@ Manifest 字段说明：
 
 - 预演发布先用 `--dry-run`
 - 小流量验证建议先发 `gray` 之类独立 channel，再切 `stable`
-- 当前 App 主线 OTA 语义仍是“启动后后台检查，发现新 bundle 则后台下载并排队”
-- 如需“下载完成后立即切换”，需显式触发即时 OTA（例如通过发布参数 + 客户端即时检查入口）
+- 当前 App 主线 OTA 语义是“启动检查发现新 bundle 后，阻塞下载并立即切换”
+- 必须验证自动启动检查也会进入立即模式，不能只验证手动更新按钮
 - 运行时不再按原生版本门禁阻断 OTA；若涉及原生能力变更，请按原生发布流程更新 APK / AAB
 - 若本次改动涉及原生层，仍必须重新打包安装验证，不能把 OTA 当成原生更新替代品
 
@@ -523,14 +509,14 @@ Manifest 字段说明：
 以后正式 Android OTA 发版统一按当前项目规则执行：
 
 1. OTA 默认面向所有已安装版本，不再通过 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion` 做分流。
-2. 如需客户端下载完成后立即切换 bundle，可显式传 `--force-update`。
+2. 所有 OTA 必须写入 `forceUpdate: true`，客户端下载完成后立即切换 bundle；不允许关闭。
 3. 如果改动涉及原生能力、权限、插件或壳层代码，仍然要另外发原生 APK / AAB；不要把 OTA 当成原生更新替代品。
 4. 正式 OTA 的 bundle 版本必须继续沿用 `<ota-version-base>-ota-UTC时间戳` 或人工显式 `--version` 口径。默认 `ota-version-base=package.json.version`；桥接旧客户端时可临时升到更高内部游标，例如 `6.0.0`。客户端升级主判断依赖这个内部游标单调递增，`publishedAt` 只用于审计和展示。切换发布入口（本地脚本 / GitHub Actions / 手工补发）时，不得擅自改成 `gha-*`、run number 或其他临时展示格式。
 
 推荐命令：
 
 ```bash
-node scripts/mobile/release-android.mjs ota --channel stable --force-update
+node scripts/mobile/release-android.mjs ota --channel stable
 ```
 
 ## 正式发版前检查
@@ -556,10 +542,7 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update
 
 需要的 GitHub Secrets：
 
-- `R2_ACCOUNT_ID`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET_NAME`
+- 服务器素材主源发布所需的受限 SSH / 发布令牌
 
 可选 GitHub Variables：
 

@@ -20,6 +20,7 @@ import {
     getMovableTroopCountForProfile,
     getQidahenCharacterCommittedTroopLimit,
 } from './pendingBattleCommittedTroops';
+import { getQidahenEffectivePopulation } from './populationRules';
 import {
     isFriendlyDispatchSupportTarget,
     isFriendlySiegedCityTarget,
@@ -160,7 +161,8 @@ export const buildWangHuazhenInternalDispatchSelectionFromRegionSemantics = (
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
             return Number(right.id === selectedRuntimeRegionId) - Number(left.id === selectedRuntimeRegionId)
                 || rightSource.troops - leftSource.troops
-                || rightSource.population - leftSource.population
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
         });
     const sourceRegion = candidateSources.find((region) => buildCandidatesForSource(region).length > 0) ?? null;
@@ -243,7 +245,10 @@ export const buildGaoDiDispatchSelectionFromRegionSemantics = (
             if (isSiegeReinforcementTarget) {
                 continue;
             }
-            const maxPopulation = Math.max(0, Math.min(6, actionSourceRegion.population));
+            const maxPopulation = Math.min(
+                6,
+                getQidahenEffectivePopulation(actionSourceRegion),
+            );
             for (let committedPopulation = maxPopulation; committedPopulation >= 1; committedPopulation -= 1) {
                 candidates.push({
                     id: `gao-di:population:${sourceRegion.id}:${targetRegion.id}:${committedPopulation}`,
@@ -276,16 +281,24 @@ export const buildGaoDiDispatchSelectionFromRegionSemantics = (
             && isRegionAvailableForNonDispatchAction(region)
             && (() => {
                 const sourceSnapshot = getNonSiegedCityActionSourceSnapshot(region);
-                return sourceSnapshot.troops > 0 || sourceSnapshot.population > 0;
+                return sourceSnapshot.troops > 0
+                    || getQidahenEffectivePopulation(region, sourceSnapshot.population) > 0;
             })()
         ))
         .sort((left, right) => {
             const leftSource = getNonSiegedCityActionSourceSnapshot(left);
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
             return Number(right.id === selectedRuntimeRegionId) - Number(left.id === selectedRuntimeRegionId)
-                || Math.max(rightSource.troops, rightSource.population) - Math.max(leftSource.troops, leftSource.population)
+                || Math.max(
+                    rightSource.troops,
+                    getQidahenEffectivePopulation(right, rightSource.population),
+                ) - Math.max(
+                    leftSource.troops,
+                    getQidahenEffectivePopulation(left, leftSource.population),
+                )
                 || rightSource.troops - leftSource.troops
-                || rightSource.population - leftSource.population
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
         });
     const sourceRegion = candidateSources.find((region) => buildCandidatesForSource(region).length > 0) ?? null;
@@ -310,7 +323,13 @@ export const buildGaoDiDispatchSelectionFromRegionSemantics = (
             resolvePreferredRegionDisplayAnchor(sourceRegion, displayAnchorRegionId),
         ),
         maxTroops: Math.max(0, Math.min(6, getNonSiegedCityActionSourceSnapshot(sourceRegion).troops)),
-        maxPopulation: Math.max(0, Math.min(6, getNonSiegedCityActionSourceSnapshot(sourceRegion).population)),
+        maxPopulation: Math.min(
+            6,
+            getQidahenEffectivePopulation(
+                sourceRegion,
+                getNonSiegedCityActionSourceSnapshot(sourceRegion).population,
+            ),
+        ),
         candidateCardIds,
         selectedCardId: selectedCardId && candidateCardIds.includes(selectedCardId) ? selectedCardId : null,
         candidates,
@@ -370,7 +389,8 @@ export const getPreferredDispatchSourceRegionIdForSemantics = (
         return rightScore - leftScore
             || rightSiegeTroops - leftSiegeTroops
             || rightSource.troops - leftSource.troops
-            || rightSource.population - leftSource.population
+            || getQidahenEffectivePopulation(right, rightSource.population)
+                - getQidahenEffectivePopulation(left, leftSource.population)
             || left.name.localeCompare(right.name, 'zh-CN');
     };
 

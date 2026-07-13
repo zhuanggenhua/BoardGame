@@ -445,18 +445,38 @@ const waitForHandCardVisualReady = async (page: Page, cardId: string) => {
 const dragHandCardToPlay = async (page: Page, cardId: string) => {
     const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(card).toBeVisible({ timeout: 10000 });
-    const cardBox = await page.evaluate((nextCardId) => {
+    await expect(card).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
+    const dragStart = await page.evaluate((nextCardId) => {
         const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
         if (!node) return null;
         const rect = node.getBoundingClientRect();
-        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        const xFractions = [0.5, 0.35, 0.65];
+        const yFractions = [0.78, 0.62, 0.46, 0.3];
+        for (const yFraction of yFractions) {
+            for (const xFraction of xFractions) {
+                const x = rect.x + (rect.width * xFraction);
+                const y = rect.y + (rect.height * yFraction);
+                const hit = document.elementFromPoint(x, y);
+                if (hit && (hit === node || node.contains(hit))) {
+                    return { x, y };
+                }
+            }
+        }
+        return {
+            x: rect.x + (rect.width / 2),
+            y: rect.y + (rect.height / 2),
+            hitTag: document.elementFromPoint(
+                rect.x + (rect.width / 2),
+                rect.y + (rect.height / 2),
+            )?.tagName ?? null,
+        };
     }, cardId);
-    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
-        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    if (!dragStart || 'hitTag' in dragStart) {
+        throw new Error(`未能找到手牌 ${cardId} 的可拖拽命中点: ${JSON.stringify(dragStart)}`);
     }
 
-    const startX = cardBox.x + (cardBox.width / 2);
-    const startY = cardBox.y + (cardBox.height * 0.78);
+    const startX = dragStart.x;
+    const startY = dragStart.y;
     const endY = Math.max(24, startY - 240);
 
     await page.mouse.move(startX, startY);
@@ -832,6 +852,20 @@ const dismissCardSpotlightIfPresent = async (page: Page) => {
         await spotlight.click({ timeout: 3000, force: true }).catch(() => {});
         await expect(spotlight).toBeHidden({ timeout: 5000 }).catch(() => {});
     }
+};
+
+const dismissAttackShowcaseIfVisible = async (page: Page) => {
+    const foregroundModal = page.locator('#modal-root [role="dialog"], [data-testid="token-response-modal"]');
+    const hasForegroundModal = await foregroundModal.first().isVisible({ timeout: 1000 }).catch(() => false);
+    if (hasForegroundModal) return;
+
+    const dismissButton = page
+        .getByRole('button', { name: /开始防御|继续|Start Defense|Continue/i })
+        .last();
+    const isVisible = await dismissButton.isVisible({ timeout: 1500 }).catch(() => false);
+    if (!isVisible) return;
+    await dismissButton.click();
+    await expect(dismissButton).toBeHidden({ timeout: 5000 });
 };
 
 const dismissDefenseShowcaseIfPresent = async (page: Page) => {
@@ -2981,7 +3015,10 @@ const setupHumanLightTheFuseScenario = async (match: MatchSetup) => {
     });
 };
 
-const setupHumanMercilessPlunderScenario = async (match: MatchSetup) => {
+const setupHumanMercilessPlunderScenario = async (
+    match: MatchSetup,
+    options: { withHostUnexpected?: boolean } = {},
+) => {
     await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
         const root = asRecord(state.G ?? state);
         const core = asRecord(root.core);
@@ -2995,7 +3032,9 @@ const setupHumanMercilessPlunderScenario = async (match: MatchSetup) => {
 
         players['0'] = {
             ...host,
-            hand: [],
+            hand: options.withHostUnexpected
+                ? [cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], COMMON_UNEXPECTED_CARD_ID)]
+                : [],
             discard: [],
             resources: {
                 ...hostResources,
@@ -10366,6 +10405,229 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await clearEvidenceScreenshotsForTest(testInfo);
 
             await playPowderKegUpkeepUntilExplode(match, 1, testInfo);
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('无情劫掠正式发动前应允许对手用意不意外改骰并取消大招选择', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupHumanMercilessPlunderScenario(match, { withHostUnexpected: true });
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const mercilessPlunderSlot = match.guestPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="ultimate"]')
+                .first();
+            await expect(mercilessPlunderSlot).toHaveAttribute('data-base-ability-id', 'merciless-plunder', { timeout: 10000 });
+            await expect(mercilessPlunderSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await mercilessPlunderSlot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'merciless-plunder',
+            });
+            await dismissAttackShowcaseIfVisible(match.hostPage);
+            await dismissAttackShowcaseIfVisible(match.guestPage);
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const responseWindow = asRecord(asRecord(sys.responseWindow).current);
+                const responderQueue = Array.isArray(responseWindow.responderQueue)
+                    ? responseWindow.responderQueue.map(String)
+                    : [];
+                const currentResponderIndex = typeof responseWindow.currentResponderIndex === 'number'
+                    ? responseWindow.currentResponderIndex
+                    : 0;
+                return {
+                    windowType: responseWindow.windowType ?? null,
+                    currentResponderId: responderQueue[currentResponderIndex] ?? null,
+                    pendingAttackSourceId: asRecord(core.pendingAttack).sourceAbilityId ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                windowType: 'afterRollConfirmed',
+                currentResponderId: '0',
+                pendingAttackSourceId: 'merciless-plunder',
+                rollConfirmed: true,
+            });
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const host = asRecord(asRecordMap(core.players)['0']);
+                const hostHand = Array.isArray(host.hand) ? host.hand as JsonRecord[] : [];
+                const interaction = asRecord(asRecord(sys.interaction).current);
+                const meta = asRecord(asRecord(interaction.data).meta);
+                if (interaction.kind === 'multistep-choice' && meta.dtType === 'modifyDie') {
+                    return 'interaction';
+                }
+                if (hostHand.some(card => card.id === COMMON_UNEXPECTED_CARD_ID)) {
+                    return 'hand';
+                }
+                return 'pending';
+            }, { timeout: 10000 }).toMatch(/^(hand|interaction)$/);
+
+            const waitForUnexpectedResponseEntry = async (): Promise<'hand' | 'interaction'> => {
+                const deadline = Date.now() + 15000;
+                let lastDiagnostics: JsonRecord = {};
+                while (Date.now() < deadline) {
+                    const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                    const host = asRecord(asRecordMap(core.players)['0']);
+                    const hand = Array.isArray(host.hand) ? host.hand as JsonRecord[] : [];
+                    const discard = Array.isArray(host.discard) ? host.discard as JsonRecord[] : [];
+                    const interaction = asRecord(asRecord(sys.interaction).current);
+                    const meta = asRecord(asRecord(interaction.data).meta);
+                    const responseWindow = asRecord(asRecord(sys.responseWindow).current);
+                    const responderQueue = Array.isArray(responseWindow.responderQueue)
+                        ? responseWindow.responderQueue.map(String)
+                        : [];
+                    const currentResponderIndex = typeof responseWindow.currentResponderIndex === 'number'
+                        ? responseWindow.currentResponderIndex
+                        : 0;
+                    const cardState = await match.hostPage.evaluate((cardId) => {
+                        const card = document.querySelector(
+                            `[data-testid="hand-area"] [data-card-id="${cardId}"]`,
+                        );
+                        return {
+                            exists: card != null,
+                            canDrag: card?.getAttribute('data-can-drag') ?? null,
+                            isFlipped: card?.getAttribute('data-is-flipped') ?? null,
+                            atlasFrameReady: !!card?.querySelector(
+                                '[data-card-atlas-frame="true"]:not(.atlas-shimmer)',
+                            ),
+                        };
+                    }, COMMON_UNEXPECTED_CARD_ID);
+
+                    if (interaction.kind === 'multistep-choice' && meta.dtType === 'modifyDie') {
+                        return 'interaction';
+                    }
+                    if (
+                        hand.some(card => card.id === COMMON_UNEXPECTED_CARD_ID)
+                        && cardState.exists
+                        && cardState.canDrag === 'true'
+                    ) {
+                        return 'hand';
+                    }
+
+                    lastDiagnostics = {
+                        handIds: hand.map(card => card.id),
+                        discardIds: discard.map(card => card.id),
+                        interactionKind: interaction.kind ?? null,
+                        interactionPlayerId: interaction.playerId ?? null,
+                        interactionDtType: meta.dtType ?? null,
+                        responseWindowType: responseWindow.windowType ?? null,
+                        currentResponderId: responderQueue[currentResponderIndex] ?? null,
+                        pendingAttackSourceId: asRecord(core.pendingAttack).sourceAbilityId ?? null,
+                        rollConfirmed: core.rollConfirmed ?? null,
+                        cardState,
+                    };
+                    await match.hostPage.waitForTimeout(250);
+                }
+                throw new Error(`意不意外响应入口未就绪: ${JSON.stringify(lastDiagnostics)}`);
+            };
+
+            const responseEntry = await waitForUnexpectedResponseEntry();
+            if (responseEntry === 'hand') {
+                const unexpectedCard = match.hostPage
+                    .locator(`[data-testid="hand-area"] [data-card-id="${COMMON_UNEXPECTED_CARD_ID}"]`)
+                    .first();
+                await expect(unexpectedCard).toBeVisible({ timeout: 10000 });
+                await saveEvidenceScreenshot(match.hostPage, testInfo, '110a-无情劫掠发动前-对手可打出意不意外');
+                await dragHandCardToPlay(match.hostPage, COMMON_UNEXPECTED_CARD_ID);
+            }
+
+            const waitForUnexpectedInteraction = async (): Promise<void> => {
+                const deadline = Date.now() + 10000;
+                let lastDiagnostics: JsonRecord = {};
+                while (Date.now() < deadline) {
+                    const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                    const host = asRecord(asRecordMap(core.players)['0']);
+                    const hand = Array.isArray(host.hand) ? host.hand as JsonRecord[] : [];
+                    const discard = Array.isArray(host.discard) ? host.discard as JsonRecord[] : [];
+                    const interaction = asRecord(asRecord(sys.interaction).current);
+                    const meta = asRecord(asRecord(interaction.data).meta);
+                    const responseWindow = asRecord(asRecord(sys.responseWindow).current);
+                    const responderQueue = Array.isArray(responseWindow.responderQueue)
+                        ? responseWindow.responderQueue.map(String)
+                        : [];
+                    const currentResponderIndex = typeof responseWindow.currentResponderIndex === 'number'
+                        ? responseWindow.currentResponderIndex
+                        : 0;
+                    const eventEntries = Array.isArray(asRecord(sys.eventStream).entries)
+                        ? asRecord(sys.eventStream).entries as JsonRecord[]
+                        : [];
+                    const cardState = await match.hostPage.evaluate((cardId) => {
+                        const card = document.querySelector(
+                            `[data-testid="hand-area"] [data-card-id="${cardId}"]`,
+                        );
+                        return {
+                            exists: card != null,
+                            canDrag: card?.getAttribute('data-can-drag') ?? null,
+                            isFlipped: card?.getAttribute('data-is-flipped') ?? null,
+                        };
+                    }, COMMON_UNEXPECTED_CARD_ID);
+
+                    if (
+                        interaction.kind === 'multistep-choice'
+                        && interaction.playerId === '0'
+                        && meta.dtType === 'modifyDie'
+                        && meta.selectCount === 2
+                    ) {
+                        return;
+                    }
+
+                    lastDiagnostics = {
+                        handIds: hand.map(card => card.id),
+                        discardIds: discard.map(card => card.id),
+                        interactionKind: interaction.kind ?? null,
+                        interactionPlayerId: interaction.playerId ?? null,
+                        interactionDtType: meta.dtType ?? null,
+                        interactionSelectCount: meta.selectCount ?? null,
+                        responseWindowType: responseWindow.windowType ?? null,
+                        currentResponderId: responderQueue[currentResponderIndex] ?? null,
+                        pendingAttackSourceId: asRecord(core.pendingAttack).sourceAbilityId ?? null,
+                        rollConfirmed: core.rollConfirmed ?? null,
+                        recentEventTypes: eventEntries.slice(-8).map(entry => asRecord(entry.event).type ?? null),
+                        cardState,
+                    };
+                    await match.hostPage.waitForTimeout(250);
+                }
+                throw new Error(`意不意外未进入改骰交互: ${JSON.stringify(lastDiagnostics)}`);
+            };
+            await waitForUnexpectedInteraction();
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '110a-无情劫掠发动前-意不意外已进入改骰交互');
+
+            const firstDieDecrement = match.hostPage.getByTestId('die-adjust-decrement-0');
+            const secondDieDecrement = match.hostPage.getByTestId('die-adjust-decrement-1');
+            await expect(firstDieDecrement).toBeVisible({ timeout: 10000 });
+            await expect(secondDieDecrement).toBeVisible({ timeout: 10000 });
+            await firstDieDecrement.click();
+            await secondDieDecrement.click();
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '110b-意不意外-两颗骰子改为5待确认');
+            await match.hostPage.getByRole('button', { name: /确认|Confirm/i }).click();
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const dice = Array.isArray(core.dice) ? core.dice as JsonRecord[] : [];
+                return {
+                    diceValues: dice.map(die => die.value),
+                    pendingAttackSourceId: asRecord(core.pendingAttack).sourceAbilityId ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    interactionKind: asRecord(asRecord(sys.interaction).current).kind ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                diceValues: [5, 5, 6, 6, 6],
+                pendingAttackSourceId: null,
+                rollConfirmed: false,
+                interactionKind: null,
+            });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '110c-改骰确认后-大招选择已取消');
         } finally {
             await cleanupDTMatch(match);
         }

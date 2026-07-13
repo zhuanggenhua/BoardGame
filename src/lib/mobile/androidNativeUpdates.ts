@@ -114,7 +114,7 @@ export interface AndroidAppInfo {
 
 export interface AndroidNativeUpdateAvailability {
     available: boolean;
-    reason?: 'disabled' | 'not-native' | 'manifest-missing' | 'up-to-date';
+    reason?: 'disabled' | 'not-native' | 'up-to-date';
     manifest?: AndroidNativeUpdateManifest;
     appInfo?: AndroidAppInfo;
 }
@@ -350,8 +350,13 @@ export const readAndroidAppInfo = async (): Promise<AndroidAppInfo | null> => {
 export const fetchAndroidNativeUpdateManifest = async (
     manifestUrl: string,
     fetchImpl: typeof fetch = fetch,
+    options: { strict?: boolean } = {},
 ): Promise<AndroidNativeUpdateManifest | null> => {
+    const strict = options.strict === true;
     if (!isAbsoluteHttpUrl(manifestUrl)) {
+        if (strict) {
+            throw new Error(`原生更新清单地址无效：${manifestUrl || '(empty)'}`);
+        }
         return null;
     }
 
@@ -366,7 +371,7 @@ export const fetchAndroidNativeUpdateManifest = async (
 
         if (response.status === 404) {
             logMobileRuntime('NativeUpdate', 'manifest-missing', { manifestUrl }, 'warn');
-            return null;
+            throw new Error(`原生更新清单不存在：${manifestUrl}`);
         }
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -376,6 +381,9 @@ export const fetchAndroidNativeUpdateManifest = async (
         const version = typeof data.version === 'string' ? data.version.trim() : '';
         const url = typeof data.url === 'string' ? data.url.trim() : '';
         if (!version || !isAbsoluteHttpUrl(url)) {
+            if (strict) {
+                throw new Error(`原生更新清单格式无效：${manifestUrl}`);
+            }
             return null;
         }
 
@@ -402,6 +410,9 @@ export const fetchAndroidNativeUpdateManifest = async (
             manifestUrl,
             error: error instanceof Error ? error.message : String(error),
         });
+        if (strict) {
+            throw error;
+        }
         return null;
     }
 };
@@ -477,11 +488,10 @@ export const checkAndroidNativeUpdateAvailability = async (): Promise<AndroidNat
         return { available: false, reason: 'not-native' };
     }
 
-    const manifest = await fetchAndroidNativeUpdateManifest(config.manifestUrl);
+    const manifest = await fetchAndroidNativeUpdateManifest(config.manifestUrl, fetch, { strict: true });
     if (!manifest) {
-        return { available: false, reason: 'manifest-missing', appInfo };
+        throw new Error(`原生更新清单格式无效：${config.manifestUrl}`);
     }
-
     if (!isAndroidNativeUpdateAvailable(manifest, appInfo)) {
         return { available: false, reason: 'up-to-date', manifest, appInfo };
     }

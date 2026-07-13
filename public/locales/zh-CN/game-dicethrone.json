@@ -479,6 +479,7 @@
     "confirmRollDefenseWithAbility": "确认防御投掷（{{abilityName}}）：",
     "compareRollPrefix": "对掷结果：",
     "cardRollResult": "投掷结果：",
+    "cardChoiceResult": "选择结果：",
     "dieModified": "修改骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieModifiedSource": "（{{source}}）",
     "dieRerolled": "重投骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
@@ -979,6 +980,7 @@
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
     "rerollLimitReached": "已达到本次重掷上限",
     "diceResult": "投掷结果",
+    "choiceResult": "选择结果",
     "total": "总伤害",
     "closeSpotlight": "关闭特写",
     "confirmDamage": "确认伤害",
@@ -1706,9 +1708,9 @@
       "name": "花开见佛",
       "description": "莲花绽放，太极圆满。",
       "effects": {
-        "damage5": "造成 5 点伤害",
-        "taijiCapMax": "太极标记堆叠上限 +1，并立即获得最大数量的太极标记",
-        "unblockable": "你可以花费 2 个太极标记令此次攻击不可防御"
+        "damage5": "造成 5 点不可防御伤害",
+        "taijiCapMax": "太极标记堆叠上限 +1，并获得 5 个太极标记",
+        "unblockable": "造成 5 点不可防御伤害"
       }
     },
     "lotus-palm-2": {

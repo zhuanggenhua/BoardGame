@@ -11,7 +11,7 @@
    这类优先放到全局 / 用户级 skill；项目目录只保留 BoardGame 的增量约束。
 
 2. **BoardGame 专属 workflow**  
-   只要内容依赖本仓库目录、脚本、游戏模型、验收门禁、evidence、R2/CDN、manifest、E2E 口径，就应放在本目录。
+   只要内容依赖本仓库目录、脚本、游戏模型、验收门禁、evidence、服务器素材主源、manifest、E2E 口径，就应放在本目录。
 
 3. **BoardGame 对通用 skill 的补充层（overlay）**  
    如果只是“在通用 skill 之上再加本项目约束”，本目录里只保留增量规则：

@@ -156,7 +156,7 @@ const buildScenarioVoteActions = (
     playerId: string,
 ): AiLegalAction[] => {
     const scenarioVote = state.core.scenarioVote;
-    if (!scenarioVote || !state.core.playerIds.includes(playerId)) {
+    if (!scenarioVote || playerId !== scenarioVote.hostPlayerId) {
         return [];
     }
     if (scenarioVote.votes[playerId] != null) {
@@ -166,9 +166,9 @@ const buildScenarioVoteActions = (
     const actions: AiLegalAction[] = [];
     for (const option of scenarioVote.options) {
         appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
-            actionId: createAiLegalActionId('scenario-vote', option.scenarioId),
-            kind: 'scenario-vote',
-            label: `投票剧本：${option.label}`,
+            actionId: createAiLegalActionId('scenario-host-pick', option.scenarioId),
+            kind: 'scenario-host-pick',
+            label: `房主选择剧本：${option.label}`,
             commandType: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
             payload: {
                 scenarioId: option.scenarioId,

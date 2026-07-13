@@ -22,6 +22,7 @@
  * - 洞穴地精：CLAW（爪子）、MASK（面具）
  * - 极地矮人：SNOWFLAKE（雪花）、DROPLET（水滴）
  * - 炽原精灵：STAR（星形）、RHOMBUS（菱形）
+ * - 莫古：SPORE（孢子）、MYCELIUM（菌丝）
  */
 export const DECK_SYMBOLS = {
   // 通用符号（所有召唤师都有）
@@ -50,6 +51,10 @@ export const DECK_SYMBOLS = {
   // 炽原精灵符号 (Savanna Elves / Barbaric)
   STAR: 'star',           // ✧ 星形
   RHOMBUS: 'rhombus',     // 🔶 菱形
+
+  // 莫古符号 (Mogu)
+  SPORE: 'spore',
+  MYCELIUM: 'mycelium',
 } as const;
 
 export type DeckSymbol = typeof DECK_SYMBOLS[keyof typeof DECK_SYMBOLS];
@@ -66,4 +71,5 @@ export const FACTION_ICONS = {
   GOBLIN: 'claw',          // 🐾 爪子 - 洞穴地精
   FROST: 'claw',           // 🐾 爪子 - 极地矮人
   BARBARIC: 'totem',       // 🔱 图腾 - 炽原精灵
+  MOGU: 'spore',           // 孢子 - 莫古
 } as const;

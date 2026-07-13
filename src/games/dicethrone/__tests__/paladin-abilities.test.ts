@@ -232,5 +232,14 @@ describe('圣骑士技能定义', () => {
                 diceCount: 4,
             });
         });
+
+        it('圣光术基础版应掷 2 颗奖励骰', () => {
+            const holyLight = PALADIN_ABILITIES.find(ability => ability.id === 'holy-light');
+            const bonusRoll = holyLight?.effects.find(effect => effect.action.type === 'rollDie');
+            expect(bonusRoll?.action).toMatchObject({
+                type: 'rollDie',
+                diceCount: 2,
+            });
+        });
     });
 });

@@ -368,6 +368,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         setIsRolling,
         rerollingDiceIds,
         setRerollingDiceIds,
+        rerollAnimationSeq,
+        setRerollAnimationSeq,
         activatingAbilityId,
         setActivatingAbilityId,
         discardHighlighted,
@@ -451,6 +453,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     useDieRerollAnimationConsumer({
         eventStreamEntries: rawG.sys.eventStream?.entries ?? [],
         setRerollingDiceIds,
+        setRerollAnimationSeq,
     });
 
     // 追踪已激活的攻击修正卡
@@ -546,6 +549,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     localReducer: (current: unknown, step: unknown) =>
                         diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, selectCount),
                     toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, selectCount),
+                    getCompletedSteps: (result: DiceModifyResult) => result.modCount,
                     // any/adjust 模式：手动确认，禁用 auto-confirm
                     maxSteps: isManualConfirmMode ? undefined : originalData.maxSteps,
                     minSteps: isManualConfirmMode ? 1 : originalData.minSteps,
@@ -555,14 +559,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
         if (meta.dtType === 'selectDie') {
             const originalData = sysInteraction.data as Record<string, unknown>;
+            const selectCount = Number(meta.selectCount) || 1;
             return {
                 ...sysInteraction,
                 data: {
                     ...sysInteraction.data,
                     initialResult: { selectedDiceIds: [] } as DiceSelectResult,
                     localReducer: (current: unknown, step: unknown) =>
-                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep),
-                    toCommands: diceSelectToCommands,
+                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, selectCount),
+                    toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, selectCount),
+                    getCompletedSteps: (result: DiceSelectResult) => result.selectedDiceIds.length,
                     maxSteps: undefined,
                     minSteps: 1,
                     allowedDieIds: originalData.allowedDieIds,
@@ -1098,9 +1104,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             dieId
         );
         setRerollSelectingAction(null);
-        setRerollingDiceIds([dieId]);
-        setTimeout(() => setRerollingDiceIds([]), 600);
-    }, [rerollSelectingAction, engineMoves, setRerollingDiceIds, G.dice]);
+    }, [rerollSelectingAction, engineMoves, G.dice]);
 
     const passiveAbilityProps = React.useMemo(() => {
         if (playerPassives.length === 0) return null;
@@ -1137,14 +1141,39 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const duelAttackerDisplayDie = React.useMemo(() => createDuelAttackerDisplayDie(G, currentPhase), [G, currentPhase]);
     const duelDefenderDisplayDie = React.useMemo(() => createDuelDefenderDisplayDie(G, currentPhase), [G, currentPhase]);
+    const bonusDiceInteractionDice = React.useMemo(() => {
+        const settlement = G.pendingBonusDiceSettlement;
+        if (!diceMultistepInteraction || !settlement?.allowDiceModification) {
+            return null;
+        }
+
+        return getPendingBonusSettlementDice(settlement).map((bonusDie) => {
+            const existingDie = G.dice.find((die) => die.id === bonusDie.index) ?? G.dice[bonusDie.index];
+            return {
+                ...(existingDie ?? {
+                    id: bonusDie.index,
+                    value: bonusDie.value,
+                    isKept: false,
+                }),
+                id: bonusDie.index,
+                value: bonusDie.value,
+                symbol: bonusDie.face ?? existingDie?.symbol ?? null,
+                symbols: bonusDie.face ? [bonusDie.face] : (existingDie?.symbols ?? []),
+                isKept: false,
+                ownerId: settlement.attackerId,
+                displayOnly: false,
+            } as Die;
+        });
+    }, [G.dice, G.pendingBonusDiceSettlement, diceMultistepInteraction]);
     const rightSidebarDice = React.useMemo(() => {
-        const baseDice = getRailDiceForCurrentBoard(G.dice, useBoardDiceStage);
+        const sourceDice = bonusDiceInteractionDice ?? G.dice;
+        const baseDice = getRailDiceForCurrentBoard(sourceDice, useBoardDiceStage);
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, useBoardDiceStage]);
+    }, [G.dice, bonusDiceInteractionDice, duelAttackerDisplayDie, duelDefenderDisplayDie, useBoardDiceStage]);
     const boardStageDice = React.useMemo(() => {
-        const baseDice = G.dice;
+        const baseDice = bonusDiceInteractionDice ?? G.dice;
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
+    }, [G.dice, bonusDiceInteractionDice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -1446,6 +1475,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         } : undefined,
         closeOnBackdrop: false,
         closeOnEsc: false,
+        allowPointerThrough: Boolean(interactiveBonusDiceSettlement?.allowDiceModification),
         onClose: () => undefined,
         render: () => (
             <BonusDieOverlay
@@ -1503,6 +1533,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 characterId={interactiveBonusDiceSettlement ? G.selectedCharacters[interactiveBonusDiceSettlement.attackerId] : undefined}
                 forceAutoCloseDelay={isTutorialMode ? 3000 : undefined}
                 manualCloseOnly={!isTutorialMode}
+                allowBackgroundInteraction={Boolean(interactiveBonusDiceSettlement?.allowDiceModification)}
                 usePortal={false}
             />
         ),
@@ -1966,7 +1997,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         advanceQueue(id);
                     }}
                     onEffectComplete={(id) => {
-                        // 动画完成：兜底推进队列中的下一步（正常情况下会在 impact 时已推进）
+                        // 动画完成：若 impact 回调被跳过，仍必须释放 HP 冻结，避免血条延迟到下一回合才刷新。
+                        const info = fxImpactMapRef.current.get(id);
+                        if (info) {
+                            if (info.bufferKey) {
+                                damageBuffer.release([info.bufferKey]);
+                            }
+                            fxImpactMapRef.current.delete(id);
+                        }
                         advanceQueue(id);
                     }}
                 />
@@ -2024,6 +2062,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 canInteract={canInteractDice || !!rerollSelectingAction}
                                 isRolling={isRolling}
                                 rerollingDiceIds={rerollingDiceIds}
+                                rerollAnimationSeq={rerollAnimationSeq}
                                 locale={locale}
                             onToggleLock={(id) => {
                                 if (rerollSelectingAction) {
@@ -2049,7 +2088,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         isRolling={isRolling}
                         setIsRolling={(rolling: boolean) => setIsRolling(rolling)}
                         rerollingDiceIds={rerollingDiceIds}
-                        setRerollingDiceIds={setRerollingDiceIds}
+                        rerollAnimationSeq={rerollAnimationSeq}
                         locale={locale}
                         onToggleLock={(id) => {
                             // 被动重掷选择模式：点击骰子直接执行重掷

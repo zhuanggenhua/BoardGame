@@ -9,9 +9,10 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
     goblin: 'Goblin',
     frost: 'Frost',
     barbaric: 'Barbaric',
+    mogu: 'mogu',
 };
 
-const ALL_FACTIONS: FactionId[] = ['necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric'];
+const ALL_FACTIONS: FactionId[] = ['necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu'];
 
 const SELECTION_CRITICAL = [
     'summonerwars/common/map',

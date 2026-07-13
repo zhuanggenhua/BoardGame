@@ -26,6 +26,7 @@ import { RESOURCE_IDS } from './resources';
 import { CP_MAX } from './core-types';
 import { getActiveDice } from './rules';
 import { isRemovableStatusId } from './statusRemoval';
+import { updatePendingAttackSettlementStage } from './utils';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -33,6 +34,7 @@ const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'min-selection-unreachable',
     'no-legal-actions',
 ]);
+
 type EmergencySkipContext = {
     sourceId?: string;
     interactionData?: unknown;
@@ -164,6 +166,31 @@ function syncCurrentChoiceAnchorWithInteraction(
     };
 }
 
+function markCurrentAttackReadyAfterInteraction(
+    state: MatchState<DiceThroneCore>,
+    interactionData: DtInteractionDescriptor,
+): MatchState<DiceThroneCore> {
+    const sourceId = interactionData.sourceCardId;
+    const pendingAttack = state.core.pendingAttack;
+    const resume = interactionData.resumeAttackSettlementOnComplete;
+    if (
+        !resume
+        || !sourceId
+        || !pendingAttack
+        || pendingAttack.sourceAbilityId !== sourceId
+    ) {
+        return state;
+    }
+
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            pendingAttack: updatePendingAttackSettlementStage(pendingAttack, resume.stage) ?? pendingAttack,
+        },
+    };
+}
+
 function applyEmergencySkipFallback(core: DiceThroneCore, context: EmergencySkipContext): DiceThroneCore | null {
     if (!core.pendingAttack) return null;
 
@@ -239,6 +266,7 @@ export function diceModifyReducer(
     if (step.action === 'select') {
         // set 模式：选中骰子，记录目标值
         if (mode === 'set') {
+            if (Object.prototype.hasOwnProperty.call(current.modifications, String(step.dieId))) return current;
             if (hasReachedSelectionLimit(step.dieId)) return current;
             const targetValue = config?.targetValue ?? step.dieValue;
             return {
@@ -250,6 +278,7 @@ export function diceModifyReducer(
         // copy 模式：第一颗记录源值，第二颗复制源值
         if (mode === 'copy') {
             const entries = Object.entries(current.modifications);
+            if (Object.prototype.hasOwnProperty.call(current.modifications, String(step.dieId))) return current;
             if (entries.length === 0) {
                 if (hasReachedSelectionLimit(step.dieId)) return current;
                 // 第一颗：记录源骰子（值不变）
@@ -265,7 +294,7 @@ export function diceModifyReducer(
             return {
                 ...current,
                 modifications: { ...current.modifications, [step.dieId]: sourceValue },
-                modCount: 2,
+                modCount: current.modCount + 1,
             };
         }
         return current;
@@ -326,11 +355,18 @@ export function diceModifyToCommands(
  * 骰子选择 localReducer（重掷）
  * 导出供客户端在序列化边界后重新注入
  */
-export function diceSelectReducer(current: DiceSelectResult, step: DiceSelectStep): DiceSelectResult {
+export function diceSelectReducer(
+    current: DiceSelectResult,
+    step: DiceSelectStep,
+    maxSelectCount?: number,
+): DiceSelectResult {
     if (step.action === 'toggle') {
         const idx = current.selectedDiceIds.indexOf(step.dieId);
         if (idx >= 0) {
             return { selectedDiceIds: current.selectedDiceIds.filter(id => id !== step.dieId) };
+        }
+        if (typeof maxSelectCount === 'number' && maxSelectCount > 0 && current.selectedDiceIds.length >= maxSelectCount) {
+            return current;
         }
         return { selectedDiceIds: [...current.selectedDiceIds, step.dieId] };
     }
@@ -341,8 +377,14 @@ export function diceSelectReducer(current: DiceSelectResult, step: DiceSelectSte
  * 骰子选择 toCommands：将选中骰子转换为 REROLL_DIE 命令列表
  * 导出供客户端在序列化边界后重新注入
  */
-export function diceSelectToCommands(result: DiceSelectResult): Array<{ type: string; payload: unknown }> {
-    return result.selectedDiceIds.map(dieId => ({
+export function diceSelectToCommands(
+    result: DiceSelectResult,
+    maxSelectCount?: number,
+): Array<{ type: string; payload: unknown }> {
+    const selectedDiceIds = result.selectedDiceIds
+        .slice(0, typeof maxSelectCount === 'number' && maxSelectCount > 0 ? maxSelectCount : undefined);
+
+    return selectedDiceIds.map(dieId => ({
         type: 'REROLL_DIE',
         payload: { dieId },
     }));
@@ -523,6 +565,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
                             localReducer: (current, step) => diceModifyReducer(current, step, config, selectCount),
                             toCommands: (result) => diceModifyToCommands(result, selectCount),
+                            getCompletedSteps: (result) => result.modCount,
                             allowedDieIds,
                             completedDieIds,
                             meta: {
@@ -562,8 +605,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             maxSteps: selectCount,
                             minSteps: 1,
                             initialResult: { selectedDiceIds: [] },
-                            localReducer: diceSelectReducer,
-                            toCommands: diceSelectToCommands,
+                            localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
+                            toCommands: (result) => diceSelectToCommands(result, selectCount),
+                            getCompletedSteps: (result) => result.selectedDiceIds.length,
                             allowedDieIds,
                             completedDieIds,
                             meta: {
@@ -650,6 +694,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             && dtEvent.type === 'CARD_DISCARDED';
                         if (isStatusSelectionCompleted || isHandCardSelectionCompleted) {
                             statusInteractionCompleted = true;
+                            newState = markCurrentAttackReadyAfterInteraction(newState, interactionData);
                             // 业务完成事件已经由领域层生成；系统层只清理当前交互。
                             newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                         }

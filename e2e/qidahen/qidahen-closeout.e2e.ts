@@ -30,6 +30,7 @@ const TUTORIAL_STEP_12 = `${TUTORIAL_DIR}/12-教程第12步-看当前轮盘会�
 const TUTORIAL_STEP_13 = `${TUTORIAL_DIR}/12a-教程第13步-完成基础回合骨架收口.png`;
 const WHEEL_COST_STEP_01 = `${TUTORIAL_DIR}/13-轮盘第1步-先看走3会让两家对手摸牌.png`;
 const WHEEL_COST_STEP_02 = `${TUTORIAL_DIR}/14-轮盘第2步-看蒙古后金手牌同时增加.png`;
+const WHEEL_COST_STEP_02A = `${TUTORIAL_DIR}/14a-轮盘第2a步-先选择参与进攻的部队.png`;
 const WHEEL_COST_STEP_03 = `${TUTORIAL_DIR}/15-轮盘第3步-进入进攻调度落点.png`;
 const WHEEL_COST_STEP_04 = `${TUTORIAL_DIR}/15g-轮盘第7步-主章节续到开垦教程.png`;
 const WHEEL_RECLAIM_STEP_01 = `${TUTORIAL_DIR}/15a-开垦第1步-先把轮盘推进到开垦.png`;
@@ -175,6 +176,8 @@ const clickWheelMoveUntilTutorialStep = async (
 };
 
 test.describe('七大恨新游戏收口', () => {
+    test.describe.configure({ mode: 'serial' });
+
     test.beforeAll(() => {
         resetScreenshotDir(TUTORIAL_DIR);
     });
@@ -386,14 +389,25 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="choose-move"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘落点行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择推进几格');
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-wheel-current-marker"]')).toHaveAttribute(
+            'data-wheel-current-position',
+            'wheel-military-farm',
+        );
+        await expect(page.locator('[data-testid="qidahen-wheel-sector"][data-wheel-candidate="true"]')).toHaveCount(1);
+        await expect(page.locator('[data-wheel-sector-id="wheel-hire"]')).toHaveAttribute('data-wheel-candidate', 'true');
         await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('6/10');
         await expect(page.locator('[data-testid="qidahen-player-jin"]')).toContainText('10/10');
         await saveScreenshot(page, WHEEL_COST_STEP_01);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
 
         await expect(page.locator('[data-tutorial-step="draw-result"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="qidahen-wheel-current-marker"]')).toHaveAttribute(
+            'data-wheel-current-position',
+            'wheel-hire',
+        );
         await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('8/10');
         await expect(page.locator('[data-testid="qidahen-player-jin"]')).toContainText('12/10');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('各补了 2 张手牌');
@@ -403,6 +417,14 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-tutorial-step="dispatch-ready"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('进攻目标');
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')).toHaveCount(0);
+        const committedTroopToken = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]').first();
+        await expect(committedTroopToken).toBeVisible();
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘落点是进攻调度');
+        await saveScreenshot(page, WHEEL_COST_STEP_02A);
+
+        await committedTroopToken.click();
+        await expect(committedTroopToken).toHaveAttribute('data-pending-committed-selected', 'true');
         await expect(page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')).toHaveCount(3);
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('轮盘落点是进攻调度');
         await saveScreenshot(page, WHEEL_COST_STEP_03);
@@ -434,7 +456,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="choose-move"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘落点行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('推进到开垦');
         await saveScreenshot(page, WHEEL_RECLAIM_STEP_01);
@@ -472,7 +494,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="choose-move"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘落点行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('推进到军屯');
         await saveScreenshot(page, WHEEL_MILITARY_FARM_STEP_01);
@@ -516,7 +538,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="choose-move"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘落点行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('推进到征兵训练');
         await saveScreenshot(page, WHEEL_RECRUIT_TRAIN_STEP_01);
@@ -564,9 +586,10 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="choose-action"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-tutorial-id="qidahen-atlas05-1626-artillery-tech"]')).toBeVisible();
+        const artilleryTechCard = page.locator('[data-tutorial-id="qidahen-atlas05-1626-artillery-tech"]').first();
+        await expect(artilleryTechCard).toBeVisible();
         await saveScreenshot(page, ARMAMENT_STEP_01);
-        await page.locator('[data-tutorial-id="qidahen-atlas05-1626-artillery-tech"]').click();
+        await artilleryTechCard.click();
 
         await expect(page.locator('[data-tutorial-step="pay-cards"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('需弃 2');
@@ -668,9 +691,69 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="move-entry"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵和步兵一次走 1 格');
-        await saveScreenshot(page, FIELD_BATTLE_STEP_01);
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')).toHaveCount(0);
+        const participatingTroops = page.locator(
+            '[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]',
+        );
+        await expect(participatingTroops).toHaveCount(2);
+        await participatingTroops.nth(0).click();
+        await participatingTroops.nth(1).click();
+        await expect(page.locator(
+            '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
+        )).toHaveCount(2);
         await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('当前目标：察哈尔');
+        const guideGeometry = await page.evaluate(() => {
+            const selectedTokens = Array.from(document.querySelectorAll<HTMLElement>(
+                '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
+            ));
+            const routeLine = document.querySelector<SVGPathElement>(
+                '[data-testid="qidahen-map-guide-line-city-region-14"]',
+            );
+            const target = document.querySelector<HTMLElement>(
+                '[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]',
+            );
+            const matrix = routeLine?.getScreenCTM() ?? null;
+            if (selectedTokens.length <= 0 || !routeLine || !target || !matrix) {
+                return null;
+            }
+            const sourceCenter = selectedTokens.reduce(
+                (center, token) => {
+                    const rect = token.getBoundingClientRect();
+                    return {
+                        x: center.x + (rect.left + rect.width / 2) / selectedTokens.length,
+                        y: center.y + (rect.top + rect.height / 2) / selectedTokens.length,
+                    };
+                },
+                { x: 0, y: 0 },
+            );
+            const targetRect = target.getBoundingClientRect();
+            const targetCenter = {
+                x: targetRect.left + targetRect.width / 2,
+                y: targetRect.top + targetRect.height / 2,
+            };
+            const pathStart = new DOMPoint(
+                routeLine.getPointAtLength(0).x,
+                routeLine.getPointAtLength(0).y,
+            ).matrixTransform(matrix);
+            const pathEndPoint = routeLine.getPointAtLength(routeLine.getTotalLength());
+            const pathEnd = new DOMPoint(pathEndPoint.x, pathEndPoint.y).matrixTransform(matrix);
+            const distance = (left: { x: number; y: number }, right: { x: number; y: number }) => (
+                Math.hypot(left.x - right.x, left.y - right.y)
+            );
+            return {
+                startToSelectedTroops: distance(pathStart, sourceCenter),
+                startToTarget: distance(pathStart, targetCenter),
+                endToSelectedTroops: distance(pathEnd, sourceCenter),
+                endToTarget: distance(pathEnd, targetCenter),
+            };
+        });
+        expect(guideGeometry).not.toBeNull();
+        expect(guideGeometry!.startToSelectedTroops).toBeLessThan(40);
+        expect(guideGeometry!.startToSelectedTroops).toBeLessThan(guideGeometry!.startToTarget);
+        expect(guideGeometry!.endToTarget).toBeLessThan(guideGeometry!.endToSelectedTroops);
+        await saveScreenshot(page, FIELD_BATTLE_STEP_01);
         await page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]').click();
 
         await expect(page.locator('[data-tutorial-step="border-width"]')).toBeVisible({ timeout: 10000 });
@@ -686,14 +769,68 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="tactic-window"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('每场战斗通常只打 1 张');
+        const pendingGuideGeometry = await page.evaluate(() => {
+            const selectedTokens = Array.from(document.querySelectorAll<HTMLElement>(
+                '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
+            ));
+            const targetTokens = Array.from(document.querySelectorAll<HTMLElement>(
+                '[data-qidahen-map-token-type="army"][data-qidahen-map-token-region="city-region-14"]',
+            ));
+            const routeLine = document.querySelector<SVGPathElement>(
+                '[data-testid="qidahen-map-guide-line-city-region-14"]',
+            );
+            const matrix = routeLine?.getScreenCTM() ?? null;
+            if (selectedTokens.length <= 0 || targetTokens.length <= 0 || !routeLine || !matrix) {
+                return null;
+            }
+            const sourceCenter = selectedTokens.reduce(
+                (center, token) => {
+                    const rect = token.getBoundingClientRect();
+                    return {
+                        x: center.x + (rect.left + rect.width / 2) / selectedTokens.length,
+                        y: center.y + (rect.top + rect.height / 2) / selectedTokens.length,
+                    };
+                },
+                { x: 0, y: 0 },
+            );
+            const pathStartPoint = routeLine.getPointAtLength(0);
+            const pathStart = new DOMPoint(pathStartPoint.x, pathStartPoint.y).matrixTransform(matrix);
+            const pathEndPoint = routeLine.getPointAtLength(routeLine.getTotalLength());
+            const pathEnd = new DOMPoint(pathEndPoint.x, pathEndPoint.y).matrixTransform(matrix);
+            const targetTokenRects = targetTokens.map((token) => token.getBoundingClientRect());
+            const nearestTargetTokenDistance = Math.min(...targetTokenRects.map((rect) => (
+                Math.hypot(
+                    pathEnd.x - (rect.left + rect.width / 2),
+                    pathEnd.y - (rect.top + rect.height / 2),
+                )
+            )));
+            const overlapsTargetToken = targetTokenRects.some((rect) => (
+                pathEnd.x >= rect.left - 6
+                && pathEnd.x <= rect.right + 6
+                && pathEnd.y >= rect.top - 6
+                && pathEnd.y <= rect.bottom + 6
+            ));
+            return {
+                startToSelectedTroops: Math.hypot(
+                    pathStart.x - sourceCenter.x,
+                    pathStart.y - sourceCenter.y,
+                ),
+                nearestTargetTokenDistance,
+                overlapsTargetToken,
+            };
+        });
+        expect(pendingGuideGeometry).not.toBeNull();
+        expect(pendingGuideGeometry!.startToSelectedTroops).toBeLessThan(40);
+        expect(pendingGuideGeometry!.nearestTargetTokenDistance).toBeGreaterThan(28);
+        expect(pendingGuideGeometry!.overlapsTargetToken).toBe(false);
         await saveScreenshot(page, FIELD_BATTLE_STEP_03);
         const beforeTacticCore = await readQidahenCore(page) as {
             discardPileCount: number;
             handCards: Array<{ id: string; cardDefId?: string | null }>;
         };
-        const tacticCard = beforeTacticCore.handCards.find((card) => card.cardDefId === 'qidahen-atlas05-1615-arrows-like-rain');
+        const tacticCard = beforeTacticCore.handCards.find((card) => card.cardDefId === 'qidahen-atlas05-1618-cavalry-charge');
         expect(tacticCard).toBeTruthy();
-        await page.locator('[data-tutorial-id="qidahen-atlas05-1615-arrows-like-rain"]').click();
+        await page.locator('[data-tutorial-id="qidahen-atlas05-1618-cavalry-charge"]').click();
 
         await expect(page.locator('[data-tutorial-step="battle-damage"]')).toBeVisible({ timeout: 10000 });
         const afterTacticCore = await readQidahenCore(page) as {
@@ -937,7 +1074,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="wheel-entry"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘落点行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]')).toBeVisible();
         await saveScreenshot(page, DIPLOMACY_STEP_01);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
@@ -953,7 +1090,9 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="friendly-mark"]')).toBeVisible({ timeout: 10000 });
-        await page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-24"][data-action="select-region"]').click();
+        const friendlyMarkTarget = page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-24"][data-action="select-region"]');
+        await expect(friendlyMarkTarget).toBeInViewport();
+        await friendlyMarkTarget.click();
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
         await saveScreenshot(page, DIPLOMACY_STEP_02);
         await page.locator('[data-testid="qidahen-diplomacy-choice-place-friendly"]').click();
@@ -965,8 +1104,10 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-diplomacy-choice-flip-vassal"]').click();
 
         await expect(page.locator('[data-tutorial-step="remove-mark"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-22"][data-action="select-region"]')).toBeVisible();
-        await page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-22"][data-action="select-region"]').click();
+        const removeMarkTarget = page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-22"][data-action="select-region"]');
+        await expect(removeMarkTarget).toBeVisible();
+        await expect(removeMarkTarget).toBeInViewport();
+        await removeMarkTarget.click();
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('移除控制标记');
         await expect(page.locator('[data-testid="qidahen-diplomacy-choice-remove-marker"]')).toContainText('移除控制标记');
         await saveScreenshot(page, DIPLOMACY_STEP_02B);
@@ -1002,7 +1143,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="advance-midyear"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘落点行动');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
         await expect(page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]')).toBeVisible();
         await clickWheelMoveUntilTutorialStep(page, 'move-2-one-opponent', 'midyear-tax');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('税赋');

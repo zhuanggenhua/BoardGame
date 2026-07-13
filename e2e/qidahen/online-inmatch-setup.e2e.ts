@@ -15,11 +15,21 @@ import {
     waitForFrontendAssets,
     waitForHomeGameList,
 } from '../helpers/common';
+import { getMatchState, injectMatchState } from '../helpers/state-injection';
 
 type PlayerPage = {
     context: BrowserContext;
     page: Page;
 };
+
+type QidahenCoreHarnessPatch = Record<string, unknown> & {
+    factions: Record<string, Record<string, unknown>>;
+    handCards: Array<Record<string, unknown>>;
+    playerIds?: unknown;
+    currentPlayer?: unknown;
+};
+
+const E2E_ARTILLERY_TECH_CARD_ID = 'qidahen-e2e-artillery-tech';
 
 async function captureEvidence(
     page: Page,
@@ -136,7 +146,7 @@ async function joinAsSeat(
 async function waitForScenarioVoteScreen(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('qidahen-scenario-vote-title')).toContainText('投票', { timeout: 15000 });
+    await expect(page.getByTestId('qidahen-scenario-vote-title')).toContainText('房主选择', { timeout: 15000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
 }
 
@@ -153,9 +163,8 @@ async function assertVoteOverlay(page: Page, playerId: string): Promise<void> {
     await expect(page.getByTestId(`qidahen-scenario-vote-status-${playerId}`)).toContainText('你');
 }
 
-async function confirmScenarioVote(page: Page, scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622'): Promise<void> {
+async function hostPickScenario(page: Page, scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622'): Promise<void> {
     await page.getByTestId(`qidahen-scenario-vote-option-${scenarioId}`).click();
-    await page.getByTestId('qidahen-scenario-vote-confirm').click();
 }
 
 async function assertHostMingView(hostPage: Page): Promise<void> {
@@ -168,8 +177,7 @@ async function assertHostMingView(hostPage: Page): Promise<void> {
 }
 
 async function assertMongolWaitingOnly(page: Page): Promise<void> {
-    await expect(page.getByTestId('qidahen-inmatch-setup-waiting')).toContainText('大明');
-    await expect(page.getByTestId('qidahen-inmatch-setup-waiting')).toContainText('后金');
+    await expect(page.getByTestId('qidahen-inmatch-setup-waiting')).toBeVisible();
     await expect(page.locator('[data-testid^="qidahen-inmatch-setup-character-"]')).toHaveCount(0);
     await expect(page.locator('[data-testid^="qidahen-inmatch-setup-armament-"]')).toHaveCount(0);
 }
@@ -184,25 +192,61 @@ async function assertJinView(page: Page): Promise<void> {
 
 async function resolveMingSetup(hostPage: Page): Promise<void> {
     await hostPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:ming:character:0-ming-xiong-tingbi').click();
-    await hostPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:ming:character:0').click();
 
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:0-artillery-tech').click();
-    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:0').click();
 
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:1-long-barreled-musket').click();
-    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:1').click();
 }
 
 async function resolveJinSetup(jinPage: Page): Promise<void> {
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:0-jin-fan-wencheng').click();
-    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:0').click();
 
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:1-jin-manggultai').click();
-    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:1').click();
+}
+
+async function injectMingArmamentHandCard(matchId: string, page: Page): Promise<void> {
+    const state = await getMatchState(matchId, page);
+    const next = structuredClone(state);
+    const core = next.core as QidahenCoreHarnessPatch;
+    const withoutDuplicate = core.handCards.filter((card) => card.id !== E2E_ARTILLERY_TECH_CARD_ID);
+    core.handCards = [
+        {
+            id: E2E_ARTILLERY_TECH_CARD_ID,
+            label: '火炮技术',
+            faction: 'ming',
+            previewRef: {
+                type: 'atlas',
+                atlasId: 'qidahen:atlas05-ordinary-hand-preview',
+                index: 26,
+            },
+            accent: 'ming',
+            status: 'payable',
+            cardKind: 'armament',
+            armamentId: 'artillery-tech',
+            cardDefId: 'qidahen-atlas05-1626-artillery-tech',
+            rulesSummary: '炮兵可训练等级 +1，原始值为 0；每个炮兵战斗掷骰数 +1；后金、蒙古可选择同上或建立 1 个 Lv1 炮兵。',
+            previewKind: 'unknown',
+            previewIdentityId: 'qidahen-atlas05-1626-artillery-tech',
+        },
+        ...withoutDuplicate,
+    ];
+    core.factions.ming.handCount = core.handCards.filter((card) => card.faction === 'ming').length;
+    const playerIds = Array.isArray(core.playerIds)
+        ? core.playerIds.filter((playerId): playerId is string => typeof playerId === 'string')
+        : ['0', '1', '2'];
+    const currentPlayer = typeof core.currentPlayer === 'string'
+        ? core.currentPlayer
+        : playerIds[0] ?? '0';
+    next.sys = {
+        ...next.sys,
+        turnOrder: playerIds,
+        currentPlayerIndex: Math.max(0, playerIds.indexOf(currentPlayer)),
+    };
+    await injectMatchState(matchId, next, page);
 }
 
 test.describe('七大恨联机局内前置选择', () => {
-    test('在线房间先在局内完成剧本介绍与投票，再进入各席位自己的前置项', async ({ browser, page }, testInfo) => {
+    test('在线房间先由房主在局内选择剧本，再进入各席位自己的前置项', async ({ browser, page }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const guests: PlayerPage[] = [];
@@ -241,11 +285,10 @@ test.describe('七大恨联机局内前置选择', () => {
             await assertVoteOverlay(mongolPage, '1');
             await assertVoteOverlay(jinPage, '2');
 
-            await captureEvidence(page, testInfo, '七大恨-联机局内剧本投票-01-房主进入剧本介绍与投票页.png');
+            await captureEvidence(page, testInfo, '七大恨-联机局内剧本选择-01-房主进入剧本书页并可点选.png');
 
-            await confirmScenarioVote(page, 'shanhaiguan-1622');
-            await confirmScenarioVote(mongolPage, 'shanhaiguan-1622');
-            await confirmScenarioVote(jinPage, 'post-sarhu-1619');
+            await expect(mongolPage.getByTestId('qidahen-scenario-vote-actions')).toContainText('等待房主');
+            await hostPickScenario(page, 'shanhaiguan-1622');
 
             await Promise.all([
                 waitForInMatchSetupOverlay(page),
@@ -275,6 +318,14 @@ test.describe('七大恨联机局内前置选择', () => {
 
             await expect(page.getByTestId('qidahen-action-wheel')).toBeVisible({ timeout: 30000 });
             await captureEvidence(page, testInfo, '七大恨-联机局内前置-05-全部前置完成后进入联机棋盘.png');
+
+            await injectMingArmamentHandCard(matchId, page);
+            const artilleryTechCard = page.locator('[data-tutorial-id="qidahen-atlas05-1626-artillery-tech"]').first();
+            await expect(artilleryTechCard).toBeVisible({ timeout: 15000 });
+            await artilleryTechCard.click();
+            await expect(page.locator('[data-qidahen-hand-card-selected="true"]')).toBeVisible({ timeout: 15000 });
+            await expect(page.getByTestId('qidahen-action-payment-panel')).toContainText('使用并升级', { timeout: 15000 });
+            await captureEvidence(page, testInfo, '七大恨-联机局内前置-06-手牌选中完整描边与使用后弃牌文案.png');
 
             assertNoFatalFrontendErrors([
                 { label: 'qidahen-online-host', diagnostics: hostDiagnostics },

@@ -71,12 +71,16 @@ interface BonusDieOverlayProps {
     summaryEffectParams?: Record<string, string | number>;
     /** 特写展示事件身份；变化时即使点数不变也要重播滚动动画 */
     presentationKey?: string | number;
+    /** 展示语义：choice 表示固定选择结果，不按随机投骰展示 */
+    presentationKind?: 'roll' | 'choice';
     /** 最近一次被重掷的奖励骰索引，仅用于限定动画目标 */
     lastRerolledDieIndex?: number;
     /** 最近一次重掷表现事件身份，仅用于区分连续重掷 */
     rerollPresentationKey?: string | number;
     /** 已由 modal stack 承载时，禁止再次 portal */
     usePortal?: boolean;
+    /** 展示型奖励骰允许点击后方牌桌，用于打出可修改该奖励骰的卡牌 */
+    allowBackgroundInteraction?: boolean;
 }
 
 export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
@@ -103,9 +107,11 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     summaryEffectKey,
     summaryEffectParams,
     presentationKey,
+    presentationKind,
     lastRerolledDieIndex,
     rerollPresentationKey,
     usePortal,
+    allowBackgroundInteraction,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     // 只要有 bonusDice 就进入多骰模式，不依赖 onReroll 或 displayOnly
@@ -179,12 +185,23 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     }, [bonusDice?.length, handleOverlayClose, onSkipReroll]);
     const handleEmergencyDismiss = React.useCallback((event?: React.MouseEvent) => {
         event?.stopPropagation();
-        if (isRerollMode && !displayOnly && typeof onSkipReroll === 'function') {
+        if (
+            isRerollMode
+            && typeof onSkipReroll === 'function'
+            && (!displayOnly || allowBackgroundInteraction)
+        ) {
             handleConfirmDamage();
             return;
         }
         handleOverlayClose();
-    }, [displayOnly, handleConfirmDamage, handleOverlayClose, isRerollMode, onSkipReroll]);
+    }, [
+        allowBackgroundInteraction,
+        displayOnly,
+        handleConfirmDamage,
+        handleOverlayClose,
+        isRerollMode,
+        onSkipReroll,
+    ]);
 
     // 调试日志：组件渲染
     React.useEffect(() => {
@@ -219,8 +236,9 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
             : bonusDice.length >= 5
                 ? '0.8vw'
                 : '1.2vw';
-        // 阻塞式奖励骰结算必须始终保留显式确认入口；是否还能点骰子重掷是另一层语义。
-        const requiresExplicitSettlement = !displayOnly && typeof onSkipReroll === 'function';
+        // 可改骰的展示态也必须保留最终结算入口，但不能封锁后方手牌交互。
+        const requiresExplicitSettlement = typeof onSkipReroll === 'function'
+            && (!displayOnly || allowBackgroundInteraction);
         const canSelectDieToReroll = canReroll === true;
         const shouldDisableAutoClose = isManualCloseOnly || requiresExplicitSettlement;
 
@@ -240,8 +258,8 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                 isVisible={isVisible}
                 onClose={handleOverlayClose}
                 disableAutoClose={shouldDisableAutoClose && !hasForceAutoClose}
-                disableBackdropClose={requiresExplicitSettlement}
-                blockPointerEvents={requiresExplicitSettlement}
+                disableBackdropClose={requiresExplicitSettlement || allowBackgroundInteraction}
+                blockPointerEvents={requiresExplicitSettlement && !allowBackgroundInteraction}
                 autoCloseDelay={resolvedAutoCloseDelay}
                 zIndex={UI_Z_INDEX.overlayRaised + 100}
                 closeOnContentClick={!requiresExplicitSettlement}
@@ -267,7 +285,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                     >
                         <span className="text-white text-[1.4vw] font-bold tracking-wide">
                             {displayOnly
-                                ? t('bonusDie.diceResult')
+                                ? t(presentationKind === 'choice' ? 'bonusDie.choiceResult' : 'bonusDie.diceResult')
                                 : canReroll
                                     ? t('bonusDie.selectToReroll', { cost: costAmount, token: tokenName })
                                     : rerollLimitReached
@@ -299,7 +317,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                         locale={locale}
                                         size={multiDieSize}
                                         rollingDurationMs={600 + die.index * 100}
-                                        animateOnMount={shouldAnimateDie}
+                                        animateOnMount={shouldAnimateDie && die.presentationKind !== 'choice'}
                                         presentationKey={diePresentationKey}
                                         characterId={characterId}
                                         compact={!isSingleDieRerollSpotlight}
@@ -449,6 +467,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                     effectParams={effectParams}
                     locale={locale}
                     size="8vw"
+                    animateOnMount={presentationKind !== 'choice'}
                     presentationKey={presentationKey}
                     characterId={characterId}
                 />

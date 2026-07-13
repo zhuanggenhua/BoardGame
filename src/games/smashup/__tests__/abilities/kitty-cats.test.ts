@@ -461,4 +461,146 @@ describe('Kitty Cats abilities', () => {
         expect(resolved.finalState.core.bases[1].minions[0]?.attachedActions.map(action => action.uid)).toEqual([]);
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('hang-1');
     });
+
+    it('kitty_cats_muffin_pod 只临时夺取力量 3 或以下对手随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('muffin-pod-1', 'kitty_cats_muffin_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('enemy-small', 'pirate_first_mate', '1', 3),
+                    makeMinion('enemy-big', 'dino_king_rex', '1', 7),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'muffin-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        expect(played.success, played.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'kitty_cats_muffin_pod');
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-small')).toBe(true);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-big')).toBe(false);
+    });
+
+    it('kitty_cats_nine_lives_pod 消灭己方随从后授予额外随从额度而不是额外行动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('nine-pod-1', 'kitty_cats_nine_lives_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('victim-1', 'robot_microbot_alpha', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'nine-pod-1' } },
+            defaultTestRandom,
+        );
+        const prompt = getSimpleChoicePrompt(played.finalState, 'kitty_cats_nine_lives_pod');
+        const victim = getPromptOption(prompt, option => option.value?.minionUid === 'victim-1', 'own minion');
+        const resolved = respondToPrompt(played.finalState, victim.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('victim-1');
+        expect(resolved.finalState.core.players['0'].minionLimit).toBe(2);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(1);
+    });
+
+    it('kitty_cats_whiskers_pod 授予额外行动并消灭所选己方随从，不给 +1 力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('whiskers-pod-1', 'kitty_cats_whiskers_pod', '0', 4),
+                    makeMinion('victim-1', 'robot_microbot_alpha', '0', 2),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'whiskers-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getSimpleChoicePrompt(used.finalState, 'kitty_cats_whiskers_pod');
+        const victim = getPromptOption(prompt, option => option.value?.minionUid === 'victim-1', 'own minion');
+        const resolved = respondToPrompt(used.finalState, victim.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('victim-1');
+        const whiskers = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'whiskers-pod-1')!;
+        expect(getEffectivePower(resolved.finalState.core, whiskers, 0)).toBe(4);
+    });
+
+    it('kitty_cats_can_has_cheeseburger_pod 计分前只临时控制该基地力量 3 或以下随从', () => {
+        const special = resolveSpecial('kitty_cats_can_has_cheeseburger_pod');
+        expect(special).toBeDefined();
+
+        const core = makeState({
+            scoringEligibleBaseIndices: [0],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cheese-pod-1', 'kitty_cats_can_has_cheeseburger_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('enemy-small', 'pirate_first_mate', '1', 3),
+                    makeMinion('enemy-big', 'dino_king_rex', '1', 7),
+                ],
+                ongoingActions: [],
+            }],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'scoreBases';
+        matchState.sys.responseWindow = {
+            current: {
+                id: 'me-first-test',
+                windowType: 'meFirst',
+                sourceId: 'test',
+                responderQueue: ['0', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+                sourceBaseIndex: 0,
+            },
+        } as any;
+
+        const result = special!({
+            playerId: '0',
+            state: core,
+            matchState,
+            random: defaultTestRandom,
+            now: 1000,
+            cardUid: 'cheese-pod-1',
+            defId: 'kitty_cats_can_has_cheeseburger_pod',
+            baseIndex: 0,
+            targetBaseIndex: 0,
+        });
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'kitty_cats_can_has_cheeseburger_pod');
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-small')).toBe(true);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-big')).toBe(false);
+    });
 });

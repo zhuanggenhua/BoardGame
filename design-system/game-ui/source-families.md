@@ -21,7 +21,7 @@
 | 底部非阻塞卡牌查看/选择面板 | 弃牌浏览、revealed cards、少量卡牌候选、底部查看+选择 | `src/games/smashup/ui/PromptOverlay.tsx` 中 `displayCards` | 面板自己进入底部槽位；与底部主卡区职责分清；不靠正常流挤走别的主入口 | 把它做成第二套手牌 dock，或插进主手牌正常流顶开主交互 |
 | 中央 ownership / waiting shell | 非当前操作者的等待态、局内 setup 的 ownership 阻塞、中央响应窗口 | `src/games/smashup/ui/MeFirstOverlay.tsx` | 非 owner 只显示紧凑等待壳；owner 看中央唯一主交互；不摊开别人私有候选 | 等待页仍把别人可点候选摊出来，或等待态和主操作态双屏并存 |
 | 主交互承接面单一路由 | 一步交互到底由手牌、棋盘还是 overlay 承接 | `src/games/smashup/Board.tsx` 中 `activePromptSurface` | 每一步只有一个主承接面；其余 UI 最多做提示，不抢第一点击 | 同时让棋盘、手牌、按钮条、确认区都像第一入口 |
-| 局内独立 setup 壳层 | 剧本投票、人物/军备前置、阵营私有前置项 | `src/games/qidahen/Board.tsx` 中 `QidahenScenarioVoteScreen` / `QidahenInMatchSetupOverlay` | setup 在局内完成，但与正式棋盘 HUD 分层；等待态不泄露他人私有候选 | 一边保留正式 HUD，一边再压一层 setup，让用户误读已进局但被挡住 |
+| 局内独立 setup 壳层 | 剧本选择、人物/军备前置、阵营私有前置项 | `src/games/qidahen/Board.tsx` 中 `QidahenScenarioVoteScreen` / `QidahenInMatchSetupOverlay` | setup 在局内完成，但与正式棋盘 HUD 分层；等待态不泄露他人私有候选；正式剧本卡、人物牌、军备牌或辅助页存在时，必须显示并直接点击对象本体 | 一边保留正式 HUD，一边再压一层 setup；用文字按钮、列表行或摘要卡替代已存在的正式素材 |
 | 底部手牌上方确认条 | 支付、弃牌、科技弃牌、需要先选手牌再确认的链路 | `src/games/qidahen/Board.tsx` 中 `HandInteractionTray` | 确认条附着底部手牌槽位；用户不用去右侧另找确认；手牌本体仍是候选承接面 | 把支付/弃牌确认改成右侧新面板，导致主手牌区和确认区分裂成两块主入口 |
 
 ## 选型时最低要写清

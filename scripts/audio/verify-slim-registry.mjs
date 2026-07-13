@@ -5,13 +5,17 @@
  * 检查项：
  * 1. 所有代码中引用的音效 key 都在 slim registry 中
  * 2. slim registry 中的所有条目都在代码中被引用
- * 3. 条目数量稳定（多次生成结果一致）
+ * 3. 所有 Android 包管理游戏实际配置的 BGM 都能进入公共音频包
+ * 4. 条目数量稳定（多次生成结果一致）
  */
-import { readFileSync, readdirSync, statSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 const REGISTRY_PATH = 'src/assets/audio/registry.json';
 const SLIM_PATH = 'src/assets/audio/registry-slim.json';
+const GAMES_ROOT = 'src/games';
+const ASSETS_ROOT = 'public/assets';
+const COMMON_AUDIO_BASE_PATH = 'common/audio';
 
 // 递归收集源码文件
 function walkDir(dir, files = []) {
@@ -58,6 +62,41 @@ for (const file of srcFiles) {
   }
 }
 
+function toCommonAudioPackagePath(src) {
+  const normalized = src.replace(/\\/g, '/').replace(/^\/+/, '');
+  const lastSlash = normalized.lastIndexOf('/');
+  const dir = lastSlash >= 0 ? normalized.slice(0, lastSlash) : '';
+  const filename = lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+  return `${COMMON_AUDIO_BASE_PATH}/${dir ? `${dir}/` : ''}compressed/${filename}`;
+}
+
+function discoverPackageManagedGamesWithAudioConfig() {
+  const results = [];
+  for (const entry of readdirSync(GAMES_ROOT, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = join(GAMES_ROOT, entry.name, 'manifest.ts');
+    const audioConfigPath = join(GAMES_ROOT, entry.name, 'audio.config.ts');
+    if (!existsSync(manifestPath) || !existsSync(audioConfigPath)) continue;
+
+    const manifest = readFileSync(manifestPath, 'utf-8');
+    if (!/mode:\s*'package-managed'/.test(manifest)) continue;
+
+    results.push({
+      gameId: entry.name,
+      audioConfigPath,
+    });
+  }
+  return results.sort((left, right) => left.gameId.localeCompare(right.gameId));
+}
+
+function collectConfiguredBgmKeys(audioConfigPath) {
+  const content = readFileSync(audioConfigPath, 'utf-8');
+  return [...new Set(
+    [...content.matchAll(/['"`](bgm\.[^'"`]+)['"`]/g)]
+      .map(match => match[1])
+  )].sort((left, right) => left.localeCompare(right));
+}
+
 console.log(`代码中引用的音效 key: ${usedKeys.size} 个\n`);
 
 // 已知的占位符 key（FX 系统、音频系统的抽象 key，不对应实际文件）
@@ -82,6 +121,7 @@ const PLACEHOLDER_KEYS = new Set([
 
 // 3. 检查 slim registry 中的条目
 const slimKeys = new Set(slim.entries.map(e => e.key));
+const slimEntriesByKey = new Map(slim.entries.map(e => [e.key, e]));
 
 // 检查是否有遗漏（代码中引用但不在 slim 中，排除占位符）
 const missing = [...usedKeys].filter(k => !slimKeys.has(k) && !PLACEHOLDER_KEYS.has(k));
@@ -107,7 +147,51 @@ if (invalid.length > 0) {
   process.exit(1);
 }
 
+// 5. Android 包管理游戏的 BGM 会优先走公共音频包，本地包里必须有对应压缩 OGG
+const packageManagedGames = discoverPackageManagedGamesWithAudioConfig();
+const missingPackageBgmFiles = [];
+const invalidPackageBgmEntries = [];
+let packageManagedBgmCount = 0;
+
+for (const game of packageManagedGames) {
+  const bgmKeys = collectConfiguredBgmKeys(game.audioConfigPath);
+  packageManagedBgmCount += bgmKeys.length;
+  for (const key of bgmKeys) {
+    const entry = slimEntriesByKey.get(key);
+    if (!entry || entry.type !== 'bgm' || !entry.src) {
+      invalidPackageBgmEntries.push({
+        gameId: game.gameId,
+        key,
+      });
+      continue;
+    }
+    const packagePath = toCommonAudioPackagePath(entry.src);
+    if (!existsSync(join(ASSETS_ROOT, packagePath))) {
+      missingPackageBgmFiles.push({
+        gameId: game.gameId,
+        key,
+        packagePath,
+      });
+    }
+  }
+}
+
+if (invalidPackageBgmEntries.length > 0) {
+  console.error('❌ 错误：以下 Android 包管理游戏 BGM 配置没有有效 registry-slim 条目：');
+  invalidPackageBgmEntries.forEach(item => console.error(`  - ${item.gameId}: ${item.key}`));
+  process.exit(1);
+}
+
+if (missingPackageBgmFiles.length > 0) {
+  console.error('❌ 错误：以下 Android 包管理游戏 BGM 不在公共音频包本地文件中：');
+  missingPackageBgmFiles.forEach(item => console.error(`  - ${item.gameId}: ${item.key}`));
+  console.error('对应公共音频包路径：');
+  missingPackageBgmFiles.forEach(item => console.error(`  - ${item.packagePath}`));
+  process.exit(1);
+}
+
 console.log('✅ 验证通过！');
 console.log(`   - 所有代码引用的音效都在 slim registry 中`);
 console.log(`   - 所有 slim 条目都在全量注册表中`);
+console.log(`   - ${packageManagedGames.length} 个 Android 包管理游戏的 ${packageManagedBgmCount} 个 BGM 都在公共音频包中`);
 console.log(`   - 精简版大小: ${(JSON.stringify(slim).length / 1024).toFixed(1)} KB`);

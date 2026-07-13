@@ -32,12 +32,16 @@
     "paladin": "先锋卫队",
     "goblin": "洞穴地精",
     "frost": "极地矮人",
-    "barbaric": "野蛮部落"
+    "barbaric": "野蛮部落",
+    "mogu": "莫古"
   },
   "actions": {
     "closePreview": "关闭预览",
     "close": "关闭",
     "cancel": "取消",
+    "moguTransmissionSelf": "从自身传输",
+    "moguTransmissionAlly": "从友方传输",
+    "moguFanaticalFungusStay": "不推拉",
     "magnify": "放大查看",
     "confirm": "确认",
     "confirmDiscard": "确认弃牌",
@@ -84,6 +88,16 @@
     "activeEvents": "持续效果",
     "attached": "附加",
     "click_to_magnify": "点击放大"
+  },
+  "hud": {
+    "combatEffects": {
+      "title": "战斗表现",
+      "hint": "只影响移动端本机攻击动画，不改变结算、伤害或音效音量。",
+      "reduced": "降低攻击特效",
+      "reducedHint": "卡顿时开启：移动端保留远程气浪、命中闪光和伤害数字，并降低最重的粒子、震动和冲刺表现。",
+      "enabled": "已开启",
+      "disabled": "已关闭"
+    }
   },
   "debug": {
     "phase_labels": {
@@ -460,6 +474,7 @@
       "glacialShiftDestination": "冰川位移：选择目标位置",
       "infection": "感染：选择要复活的疫病体",
       "grabFollow": "抓附：选择跟随位置",
+      "grabFollowWithSource": "抓附：{{unit}}（{{position}}）选择跟随位置",
       "soulTransfer": "灵魂转移：确认是否移动",
       "mindCapture": "心灵捕获：选择控制或造成伤害",
       "iceShards": "寒冰碎屑：确认是否消耗充能",
@@ -526,7 +541,10 @@
       "iceRamSelectPush": "寒冰冲撞：选择推拉方向（或跳过）",
       "telekinesisInstead": "念力代替攻击：选择一个目标进行推拉",
       "highTelekinesisInstead": "高阶念力代替攻击：选择一个目标进行推拉",
-      "vanish": "神出鬼没：选择一个 0 费友方单位交换位置"
+      "vanish": "神出鬼没：选择一个 0 费友方单位交换位置",
+      "moguBloodInfusion": "鲜血灌注：选择 2 格内一个友方单位",
+      "moguTransmission": "菌落传导：选择充能传输方式",
+      "moguFanaticalFungus": "狂热真菌：选择推拉落点"
     },
     "beforeAttack": {
       "lifeDrain": "攻击前技能：吸取生命已就绪，选择攻击目标",
@@ -554,6 +572,12 @@
     },
     "entanglement": {
       "message": "交缠颂歌：选择召唤师 3 格内的两个友方士兵（已选 {{count}} 个）"
+    },
+    "moguSymbioticSelfHealing": {
+      "message": "共生自愈：已选择 {{count}} 个单位"
+    },
+    "moguReleaseSpores": {
+      "message": "释放菌袍：已选择 {{count}} 个落位"
     },
     "sneak": {
       "selectUnit": "潜行：选择 0 费友方单位推拉 1 格（已选 {{count}} 个）",
@@ -617,7 +641,9 @@
     "guidance": "📖 指引（抽取两张卡牌）",
     "bloodRune": "🩸 鲜血符文（自伤或消耗魔力充能）",
     "feedBeast": "🍖 喂养巨食兽（移除相邻友方或自毁）",
-    "inspire": "✨ 启悟（充能相邻友方单位）"
+    "inspire": "✨ 启悟（充能相邻友方单位）",
+    "moguBloodInfusion": "🩸 鲜血灌注（友方单位受伤并充能）",
+    "moguTransmission": "🧬 菌落传导（转移充能到友方单位）"
   },
   "status": {
     "yourTurn": "你的回合",
@@ -662,6 +688,54 @@
     "blood_rage_decay": {
       "name": "血腥狂怒衰减",
       "description": "在你的回合结束时，从本单位上移除 2 点充能。"
+    },
+    "mogu_blood_bloom": {
+      "name": "血腥绽放",
+      "description": "当本召唤师 2 个区格以内的一个友方单位被消灭后，将本召唤师 2 个区格以内的其他友方单位充能。"
+    },
+    "mogu_blood_rage": {
+      "name": "血腥狂怒",
+      "description": "每当一个单位在你的回合中被消灭时，将本单位充能。"
+    },
+    "mogu_blood_rage_decay": {
+      "name": "血腥狂怒衰减",
+      "description": "在你的回合结束时，从本单位上移除至多 2 点充能。"
+    },
+    "mogu_final_form": {
+      "name": "最终形态",
+      "description": "在召唤本单位时，如果你控制一个至少有 5 点充能的菌化野兽，则消灭该单位，并将本单位放置到其所在区格。"
+    },
+    "mogu_blood_infusion": {
+      "name": "鲜血灌注",
+      "description": "每回合一次，在你的移动阶段，指定本单位 2 个区格以内的一个友方单位为目标。将目标充能，然后对其造成 1 点伤害。"
+    },
+    "mogu_transmission": {
+      "name": "菌落传导",
+      "description": "每回合一次，在本单位移动之后，你可以将本单位或其 2 个区格以内一个友方单位上的任意数量充能，移动到本单位 2 个区格以内的另一个友方单位上。"
+    },
+    "mogu_decay": {
+      "name": "腐坏",
+      "description": "在你的移动阶段结束时，对本单位造成 1 点伤害。若本单位存活，将其相邻的一个友方单位充能 2 次。"
+    },
+    "mogu_infection": {
+      "name": "感染",
+      "description": "在本单位消灭一个单位之后，你可以使用弃牌堆中的一个菌袍疫病体替换被消灭的单位。"
+    },
+    "mogu_parasite": {
+      "name": "寄生",
+      "description": "在你的攻击阶段结束时，从本单位上移除 1 点充能；如果本单位没有充能，则改为对其造成 1 点伤害。"
+    },
+    "mogu_burst": {
+      "name": "爆裂",
+      "description": "在你的魔力阶段结束时，如果本单位至少有 3 点充能，则将其消灭。"
+    },
+    "mogu_fungal_mutation": {
+      "name": "菌化变异",
+      "description": "当至少有 3 点充能的本单位被消灭时，你可以使用弃牌堆中的一个菌化野兽替换它。"
+    },
+    "mogu_fanatical_fungus": {
+      "name": "狂热菌菇",
+      "description": "持续。在你移动一个单位之后，可以将其充能。如果你这样做，首先可以将其推拉 1 个区格，然后必须对其造成 1 点伤害。"
     },
     "sacrifice": {
       "name": "献祭",

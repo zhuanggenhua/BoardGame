@@ -120,7 +120,8 @@ function isKnownClientAudioCodecNoise(payload: ClientAutoReportPayload): boolean
         return false;
     }
     return normalizedMessage.includes('no codec support for selected audio sources')
-        || normalizedMessage.includes('decoding audio data failed');
+        || normalizedMessage.includes('decoding audio data failed')
+        || /^failed loading audio file with status: \d+\.?$/.test(normalizedMessage);
 }
 
 function isKnownClientAudioHowlerCodeNoise(payload: ClientAutoReportPayload): boolean {
@@ -192,9 +193,13 @@ function isCloudflareBeaconNoise(payload: ClientAutoReportPayload): boolean {
     if (!normalizedStack.includes('static.cloudflareinsights.com/beacon.min.js')) {
         return false;
     }
+    if (hasAppStackFrame(payload.stack) || hasAppStackFrame(payload.jsStack) || hasAppStackFrame(payload.componentStack)) {
+        return false;
+    }
 
     return normalizedMessage === "cannot read properties of undefined (reading 'readystate')"
-        || normalizedMessage === 'cannot read properties of undefined (reading "readystate")';
+        || normalizedMessage === 'cannot read properties of undefined (reading "readystate")'
+        || normalizedMessage.endsWith('.at is not a function');
 }
 
 function isAnonymousTopLevelDocumentSource(errorSource: string): boolean {
@@ -252,6 +257,19 @@ function isAnonymousInjectedWindowErrorNoise(payload: ClientAutoReportPayload): 
     return isUndefinedGlobal || isAnonymousPropertyRead;
 }
 
+function isKnownDiceBoxThirdPartyRenderNoise(payload: ClientAutoReportPayload): boolean {
+    if ((payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE) !== 'client-window-error') {
+        return false;
+    }
+
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}\n${payload.jsStack ?? ''}\n${payload.errorSource ?? ''}`.toLowerCase();
+    return normalizedName === 'typeerror'
+        && normalizedMessage === "cannot read properties of null (reading 'trim')"
+        && normalizedStack.includes('dice-box-threejs');
+}
+
 function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim();
     const normalizedName = payload.errorName.trim();
@@ -289,6 +307,9 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isCloudflareBeaconNoise(payload)) {
+        return true;
+    }
+    if (isKnownDiceBoxThirdPartyRenderNoise(payload)) {
         return true;
     }
     if (isAnonymousInjectedWindowErrorNoise(payload)) {

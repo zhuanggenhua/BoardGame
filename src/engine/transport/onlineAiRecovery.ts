@@ -1340,9 +1340,66 @@ export function resolveManualForceEndAiPhase(args: {
 
     const candidate = resolveForceEndTurnForStalledAi(args);
     if (candidate?.legalActionOnly) {
+        const phase = typeof args.sharedState.sys?.phase === 'string'
+            ? args.sharedState.sys.phase
+            : '';
+        const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
+            engineConfig: args.engineConfig,
+            gameId: args.gameId,
+        });
+        if (!advancePhaseCommandType) {
+            return null;
+        }
+
+        const suffix = `manual-force-advance:${candidate.playerId}:${phase || 'unknown-phase'}`;
+        return {
+            playerId: candidate.playerId,
+            reason: 'active-turn',
+            fingerprintHint: suffix,
+            resolution: buildForceEndTurnResolution({
+                playerId: candidate.playerId,
+                suffix,
+                commands: [{ type: advancePhaseCommandType, payload: {} }],
+            }),
+        };
+    }
+    if (candidate) {
+        return candidate;
+    }
+
+    const phase = typeof args.sharedState.sys?.phase === 'string'
+        ? args.sharedState.sys.phase
+        : '';
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(args.sharedState, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
+    const manualFallbackPlayerId = currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human'
+        ? currentPlayerId
+        : null;
+    if (!manualFallbackPlayerId) {
         return null;
     }
-    return candidate;
+
+    const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
+    if (!advancePhaseCommandType) {
+        return null;
+    }
+
+    const suffix = `manual-force-fallback:${manualFallbackPlayerId}:${phase || 'unknown-phase'}`;
+    return {
+        playerId: manualFallbackPlayerId,
+        reason: 'active-turn',
+        fingerprintHint: suffix,
+        resolution: buildForceEndTurnResolution({
+            playerId: manualFallbackPlayerId,
+            suffix,
+            commands: [{ type: advancePhaseCommandType, payload: {} }],
+        }),
+    };
 }
 
 export function resolveForceEndTurnRecoveryStep(args: {

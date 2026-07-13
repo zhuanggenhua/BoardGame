@@ -26,6 +26,7 @@ import {
     getPromptSourceId,
     getPromptTargetType,
     getPromptsBySourceId,
+    getOptionalSimpleChoicePrompt,
     getSimpleChoicePrompt,
     invokeRegisteredRuntimePromptHandlerContract,
     makeBase,
@@ -844,7 +845,6 @@ describe('蒸汽朋克 ongoing 能力', () => {
             } as any, defaultTestRandom);
 
             expect(result.success, result.error).toBe(true);
-            const current = getSimpleChoicePrompt(result.finalState, 'steampunk_mechanic');
             const step1 = respondToPromptOption(
                 result.finalState,
                 option => option.value?.cardUid === 'dis-4',
@@ -1540,14 +1540,15 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 makeBase({
                     minions: [makeMinion({ uid: 'm2', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
                 }),
+                makeBase(),
             ]);
 
             const firstStep = useOngoingTalent(core, '0', 'oa1', 0);
             expect(firstStep.success, firstStep.error).toBe(true);
             const step1 = respondToPromptOption(
                 firstStep.finalState,
-                option => option.value?.minionUid === 'm2',
-                'zeppelin minion m2 option',
+                option => option.value?.minionUid === 'm1',
+                'zeppelin minion m1 option',
                 '0',
                 dummyRandom,
             );
@@ -1568,15 +1569,16 @@ describe('蒸汽朋克 ongoing 能力', () => {
                     core.bases[0],
                     {
                         ...core.bases[1],
-                        minions: [],
+                        minions: [makeMinion({ uid: 'm2', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
                     },
+                    core.bases[2],
                 ],
             });
 
             const step2 = respondToPromptOption(
                 withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBasePrompt),
-                option => option.value?.baseIndex === 0,
-                'zeppelin destination base 0 option',
+                option => option.value?.baseIndex === 1,
+                'zeppelin destination base 1 option',
                 '0',
                 dummyRandom,
             );
@@ -1603,8 +1605,8 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(firstStep.success, firstStep.error).toBe(true);
             const step1 = respondToPromptOption(
                 firstStep.finalState,
-                option => option.value?.minionUid === 'm2',
-                'zeppelin second source minion option',
+                option => option.value?.minionUid === 'home-minion',
+                'zeppelin second source home minion option',
                 '0',
                 dummyRandom,
             );
@@ -1625,7 +1627,7 @@ describe('蒸汽朋克 ongoing 能力', () => {
 
             const step2 = respondToPromptOption(
                 withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBasePrompt),
-                option => option.value?.baseIndex === 0,
+                option => option.value?.baseIndex === 1,
                 'zeppelin stale source base option',
                 '0',
                 dummyRandom,
@@ -1657,12 +1659,13 @@ describe('蒸汽朋克 ongoing 能力', () => {
             );
             expect(resolved.success, resolved.error).toBe(true);
 
-            const chooseBasePrompt = getSimpleChoicePrompt(resolved.finalState, 'steampunk_zeppelin_choose_base');
-            const options = getPromptOptions(chooseBasePrompt);
-            expect(getPromptSourceId(chooseBasePrompt)).toBe('steampunk_zeppelin_choose_base');
-            expect(chooseBasePrompt?.autoResolveIfSingle ?? getPromptHandlerData(chooseBasePrompt).autoResolveIfSingle).toBe(true);
-            expect(options).toHaveLength(1);
-            expect(options[0]?.value?.baseIndex).toBe(0);
+            expect(getOptionalSimpleChoicePrompt(resolved.finalState, 'steampunk_zeppelin_choose_base')).toBeUndefined();
+            expect(resolved.events.some(event => (
+                event.type === SU_EVENTS.MINION_MOVED
+                && event.payload?.minionUid === 'away-minion'
+                && event.payload?.fromBaseIndex === 1
+                && event.payload?.toBaseIndex === 0
+            ))).toBe(true);
         });
 
         test('从齐柏林所在基地选择随从时，只能移动到其他基地', () => {

@@ -122,7 +122,8 @@
 7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E；本轮又对“发现牌揭示 / 骰面 / 参考页”做了当前现场复核：
    - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
    - 默认教程是 `basic-setup-and-turn`
-   - 当前已补 5 个短章：`basic-setup-and-turn`、`move-explore-use`、`crimson-jack-objective`、`haunt-actions-and-finish`、`traitor-path`
+   - 当前可见教程已压成 3 个章节：`basic-setup-and-turn`、`haunt-actions-and-finish`、`traitor-path`
+   - `move-explore-use`、`crimson-jack-objective` 仅保留为隐藏兼容入口，分别指向基础回合和驱魔章节
    - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`
    - `Board.tsx` 已把角色选择、动作区、持有区、房间区、帮助入口和终局挂上真实 `data-tutorial-id`
    - `e2e/betrayal/betrayal-tutorial.e2e.ts` 已通过，截图证据位于 `evidence/betrayal-tutorial/`

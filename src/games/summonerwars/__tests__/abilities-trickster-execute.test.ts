@@ -428,10 +428,6 @@ describe('掷术师 - 念力 (telekinesis) ACTIVATE_ABILITY', () => {
     // 敌方被推到 (4,5)
     expect(newState.board[4][5].unit?.cardId).toBe('test-enemy');
     expect(newState.board[4][4].unit).toBeUndefined();
-
-    // 代替攻击必须真实消耗本单位的一次攻击行动。
-    expect(newState.board[4][2].unit?.hasAttacked).toBe(true);
-    expect(newState.players['0'].attackCount).toBe(1);
   });
 
   it('推拉导致远离缠斗单位时，伤害应作用在推拉后的位置', () => {
@@ -1187,6 +1183,10 @@ describe('清风法师 - 念力代替攻击 (telekinesis_instead)', () => {
     // 敌方被推到 (4,5)
     expect(newState.board[4][5].unit?.cardId).toBe('test-enemy');
     expect(newState.board[4][4].unit).toBeUndefined();
+
+    // 代替攻击必须真实消耗本单位的一次攻击行动。
+    expect(newState.board[4][2].unit?.hasAttacked).toBe(true);
+    expect(newState.players['0'].attackCount).toBe(1);
   });
 
   it('已攻击的单位不能使用代替攻击', () => {

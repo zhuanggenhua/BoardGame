@@ -714,6 +714,7 @@ function buildWrenchStrikeBonusEvents(
     face: string,
     timestamp: number,
     value: number,
+    presentationKind: 'roll' | 'choice' = 'roll',
 ): DiceThroneEvent[] {
     const faceToEffectKey: Record<string, string> = {
         [ARTIFICER_DICE_FACE_IDS.WRENCH]: 'bonusDie.effect.artificerWrenchStrikeWrench',
@@ -728,6 +729,7 @@ function buildWrenchStrikeBonusEvents(
             playerId: attackerId,
             targetPlayerId: state.pendingAttack?.defenderId ?? attackerId,
             effectKey: faceToEffectKey[face] ?? 'bonusDie.effect.artificerWrenchStrikeWrench',
+            presentationKind,
         },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
@@ -779,13 +781,13 @@ function handleWrenchStrikeBranch({ attackerId, sourceAbilityId, state, timestam
     }
 
     if (followUpChoice === WRENCH_STRIKE_SPEND_WRENCH_CHOICE_ID) {
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.WRENCH, timestamp, 1);
+        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.WRENCH, timestamp, 1, 'choice');
     }
     if (followUpChoice === WRENCH_STRIKE_SPEND_GEAR_CHOICE_ID) {
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.GEAR, timestamp, 4);
+        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.GEAR, timestamp, 4, 'choice');
     }
     if (followUpChoice === WRENCH_STRIKE_SPEND_ELECTRICITY_CHOICE_ID) {
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.ELECTRICITY, timestamp, 6);
+        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.ELECTRICITY, timestamp, 6, 'choice');
     }
 
     const synth = player.tokens[TOKEN_IDS.SYNTH] ?? 0;

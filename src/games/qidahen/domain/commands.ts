@@ -29,7 +29,46 @@ import {
     isQidahenCityRuntimeRegion,
     isQidahenKoreaRuntimeRegionId,
 } from './regionConfig';
-import { countCompatTroopsByKind } from './troopCompat';
+import {
+    countCompatTroopsByKind,
+    expandSpecialTroopStacksToCompatPieces,
+} from './troopCompat';
+import { getPendingActionSourceForceSnapshot } from './battleState';
+import { takeCommittedSpecialTroopStacks } from './movementProfileTroopSelection';
+import {
+    buildQidahenPincerAdvanceSelection,
+    QIDAHEN_PINCER_ADVANCE_CARD_DEF_ID,
+} from './pincerAdvanceSelection';
+import {
+    buildQidahenInfantryCavalryCombinedSelection,
+    QIDAHEN_INFANTRY_CAVALRY_COMBINED_CARD_DEF_ID,
+} from './infantryCavalryCombinedSelection';
+import {
+    buildQidahenInstigateDefectionSelection,
+    QIDAHEN_INSTIGATE_DEFECTION_ALT_CARD_DEF_ID,
+} from './instigateDefectionSelection';
+import {
+    buildQidahenWuzhenChaohaSelection,
+    QIDAHEN_WUZHEN_CHAOHA_CARD_DEF_ID,
+} from './wuzhenChaohaSelection';
+import {
+    getQidahenDefeatInDetailSelectableSourceRegionIds,
+    isQidahenDefeatInDetailOrderSelectionActive,
+    isQidahenDefeatInDetailPlayable,
+} from './defeatInDetail';
+import { QIDAHEN_RAID_AND_AMBUSH_CARD_DEF_ID } from './raidAndAmbushSelection';
+import {
+    isQidahenFeignedRetreatCardPlayable,
+} from './feignedRetreatSelection';
+import {
+    pendingAttackHasCommittedTroopKind,
+    pendingBattleHasDefenderArtillery,
+} from './pendingBattleCombatSupport';
+
+const INSTIGATE_DEFECT_ARTILLERY_CARD_DEF_IDS = new Set([
+    'qidahen-atlas05-1604-instigate-defection-insider',
+    'qidahen-atlas05-1611-instigate-defection',
+]);
 
 export const QIDAHEN_COMMANDS = {
     CAST_SCENARIO_VOTE: 'CAST_SCENARIO_VOTE',
@@ -50,6 +89,16 @@ export const QIDAHEN_COMMANDS = {
     EXECUTE_ACTION: 'EXECUTE_ACTION',
     RESOLVE_PENDING_ACTION: 'RESOLVE_PENDING_ACTION',
     PLAY_TACTIC_CARD: 'PLAY_TACTIC_CARD',
+    PLAY_BATTLE_RESPONSE_EVENT_CARD: 'PLAY_BATTLE_RESPONSE_EVENT_CARD',
+    TOGGLE_PINCER_ADVANCE_TROOP: 'TOGGLE_PINCER_ADVANCE_TROOP',
+    RESOLVE_PINCER_ADVANCE: 'RESOLVE_PINCER_ADVANCE',
+    CANCEL_PINCER_ADVANCE: 'CANCEL_PINCER_ADVANCE',
+    RESOLVE_INFANTRY_CAVALRY_COMBINED: 'RESOLVE_INFANTRY_CAVALRY_COMBINED',
+    RESOLVE_INSTIGATE_DEFECTION: 'RESOLVE_INSTIGATE_DEFECTION',
+    CANCEL_INSTIGATE_DEFECTION: 'CANCEL_INSTIGATE_DEFECTION',
+    SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT: 'SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT',
+    RESOLVE_WUZHEN_CHAOHA: 'RESOLVE_WUZHEN_CHAOHA',
+    CANCEL_WUZHEN_CHAOHA: 'CANCEL_WUZHEN_CHAOHA',
     RESOLVE_POST_BATTLE_DECISION: 'RESOLVE_POST_BATTLE_DECISION',
     RESOLVE_KHAN_EDICT_CHOICE: 'RESOLVE_KHAN_EDICT_CHOICE',
     RESOLVE_DIPLOMACY_CHOICE: 'RESOLVE_DIPLOMACY_CHOICE',
@@ -63,6 +112,8 @@ export const QIDAHEN_COMMANDS = {
     RESOLVE_SCENARIO_CHARACTER_CHOICE: 'RESOLVE_SCENARIO_CHARACTER_CHOICE',
     RESOLVE_SCENARIO_ARMAMENT_CHOICE: 'RESOLVE_SCENARIO_ARMAMENT_CHOICE',
 } as const;
+
+const MOUNTED_INFANTRY_CARD_DEF_ID = 'qidahen-atlas05-1620-mounted-infantry';
 
 const hasPendingScenarioChoices = (state: MatchState<QidahenCore>): boolean => (
     state.core.scenarioVote != null
@@ -80,6 +131,10 @@ const hasBlockingSelection = (state: MatchState<QidahenCore>): boolean => (
     || state.core.grantPardonSelection != null
     || state.core.sunYuanhuaTechSelection != null
     || state.core.gaoDiDispatchSelection != null
+    || state.core.pincerAdvanceSelection != null
+    || state.core.infantryCavalryCombinedSelection != null
+    || state.core.instigateDefectionSelection != null
+    || state.core.wuzhenChaohaSelection != null
 );
 
 const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): boolean => (
@@ -193,9 +248,26 @@ const isQidahenPendingActionEligibleForCavalryPlunder = (
     return Math.min(cavalryCount, pendingTargetAction.committedTroops) > 0;
 };
 
-const isQidahenTacticCardPlayableForPendingBattle = (
+const pendingAttackIncludesCommittedAuxiliaryTroop = (
     core: QidahenCore,
-    card: Pick<QidahenCore['handCards'][number], 'cardDefId' | 'rulesSummary'>,
+    pendingTargetAction: NonNullable<QidahenCore['pendingTargetAction']>,
+): boolean => {
+    const sourceRegion = getPendingActionSourceForceSnapshot(core, pendingTargetAction);
+    if (!sourceRegion) {
+        return false;
+    }
+    const committedSpecialTroops = takeCommittedSpecialTroopStacks(
+        sourceRegion,
+        pendingTargetAction.committedTroops,
+        pendingTargetAction.movementProfileId,
+    );
+    return expandSpecialTroopStacksToCompatPieces(committedSpecialTroops)
+        .some((piece) => piece.troopClass === 'auxiliary');
+};
+
+export const isQidahenTacticCardPlayableForPendingBattle = (
+    core: QidahenCore,
+    card: Pick<QidahenCore['handCards'][number], 'id' | 'cardDefId' | 'rulesSummary'>,
     pendingTargetAction: NonNullable<QidahenCore['pendingTargetAction']>,
     side: 'attacker' | 'defender',
 ): boolean => {
@@ -216,12 +288,42 @@ const isQidahenTacticCardPlayableForPendingBattle = (
                 && card.cardDefId === 'qidahen-atlas05-1636-cheval-de-frise'
             );
     }
+    if (card.cardDefId === QIDAHEN_PINCER_ADVANCE_CARD_DEF_ID) {
+        return pendingTargetAction.battleMode === 'field'
+            && buildQidahenPincerAdvanceSelection(core, card.id) != null;
+    }
+    if (card.cardDefId === QIDAHEN_INFANTRY_CAVALRY_COMBINED_CARD_DEF_ID) {
+        return buildQidahenInfantryCavalryCombinedSelection(core, card.id) != null;
+    }
+    if (card.cardDefId === QIDAHEN_INSTIGATE_DEFECTION_ALT_CARD_DEF_ID) {
+        return buildQidahenInstigateDefectionSelection(core, card.id) != null;
+    }
+    if (
+        card.cardDefId != null
+        && INSTIGATE_DEFECT_ARTILLERY_CARD_DEF_IDS.has(card.cardDefId)
+    ) {
+        return pendingBattleHasDefenderArtillery(core, pendingTargetAction);
+    }
+    if (card.cardDefId === QIDAHEN_WUZHEN_CHAOHA_CARD_DEF_ID) {
+        return buildQidahenWuzhenChaohaSelection(core, card.id) != null;
+    }
     if (card.cardDefId === 'qidahen-atlas05-1612-raid-grain') {
         return isQidahenPendingActionEligibleForCavalryPlunder(core, pendingTargetAction);
     }
+    if (card.cardDefId === 'qidahen-atlas05-1615-arrows-like-rain') {
+        return pendingTargetAction.battleMode === 'field'
+            && pendingAttackHasCommittedTroopKind(core, pendingTargetAction, 'infantry');
+    }
+    if (card.cardDefId === MOUNTED_INFANTRY_CARD_DEF_ID) {
+        return pendingAttackIncludesCommittedAuxiliaryTroop(core, pendingTargetAction);
+    }
+    if (card.cardDefId === 'qidahen-atlas05-1640-jirinai-infantry') {
+        return pendingTargetAction.battleMode === 'field'
+            && pendingTargetAction.defenderFactionId === 'ming';
+    }
     if (
         rulesSummary.includes('敌人增援时')
-        || rulesSummary.includes('取消对手宣告的附兵劫掠')
+        || rulesSummary.includes('取消对手宣告的骑兵劫掠')
         || rulesSummary.includes('扎营过程中')
         || rulesSummary.includes('野战骑兵阶段使用')
         || rulesSummary.includes('附兵部队视为步兵部队')
@@ -270,7 +372,7 @@ export function validate(
             if (!hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'unknownAction' };
             }
-            if (!state.core.playerIds.includes(command.playerId)) {
+            if (command.playerId !== state.core.scenarioVote.hostPlayerId) {
                 return { valid: false, error: 'unknownAction' };
             }
             if (command.payload.scenarioId == null) {
@@ -282,6 +384,26 @@ export function validate(
         case QIDAHEN_COMMANDS.SELECT_REGION:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            {
+                const pendingTargetAction = getQidahenPendingTargetActionForCore(
+                    state.core,
+                    state.sys.interaction?.current,
+                );
+                const selectableSourceRegionIds = getQidahenDefeatInDetailSelectableSourceRegionIds(
+                    pendingTargetAction,
+                );
+                if (selectableSourceRegionIds.length > 0) {
+                    const defenderPlayerId = pendingTargetAction?.defenderFactionId !== 'neutral'
+                        ? state.core.factions[pendingTargetAction!.defenderFactionId]?.playerId
+                        : null;
+                    if (defenderPlayerId !== command.playerId) {
+                        return { valid: false, error: 'notCurrentPlayer' };
+                    }
+                    return selectableSourceRegionIds.includes(command.payload.regionId)
+                        ? { valid: true }
+                        : { valid: false, error: 'unknownRegion' };
+                }
             }
             if (!isCurrentSeatCommand(state, command) && !isCurrentInteractionSeatCommand(state, command)) {
                 return { valid: false, error: 'notCurrentPlayer' };
@@ -520,16 +642,79 @@ export function validate(
             if (!isPendingTargetActionSeatCommand(state, command, currentInteraction)) {
                 return { valid: false, error: 'notCurrentPlayer' };
             }
-            return getQidahenPendingTargetActionForCore(state.core, currentInteraction)
-                ? { valid: true }
-                : { valid: false, error: 'noPendingAction' };
+            if (
+                state.core.pincerAdvanceSelection
+                || state.core.infantryCavalryCombinedSelection
+                || state.core.raidAndAmbushSelection
+                || state.core.feignedRetreatSelection
+                || state.core.instigateDefectionSelection
+                || state.core.wuzhenChaohaSelection
+            ) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            {
+                const pendingTargetAction = getQidahenPendingTargetActionForCore(state.core, currentInteraction);
+                if (isQidahenDefeatInDetailOrderSelectionActive(pendingTargetAction)) {
+                    return { valid: false, error: 'unknownAction' };
+                }
+                return pendingTargetAction
+                    ? { valid: true }
+                    : { valid: false, error: 'noPendingAction' };
+            }
         case QIDAHEN_COMMANDS.PLAY_TACTIC_CARD: {
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };
             }
             const pendingTargetAction = getQidahenPendingTargetActionForCore(state.core, currentInteraction);
-            if (!pendingTargetAction) {
+            if (
+                !pendingTargetAction
+                || state.core.pincerAdvanceSelection
+                || state.core.infantryCavalryCombinedSelection
+                || state.core.instigateDefectionSelection
+                || state.core.wuzhenChaohaSelection
+            ) {
                 return { valid: false, error: 'noPendingAction' };
+            }
+            const feignedRetreatSelection = state.core.feignedRetreatSelection;
+            if (feignedRetreatSelection) {
+                const defenderPlayerId = state.core.factions[feignedRetreatSelection.factionId]?.playerId;
+                if (defenderPlayerId !== command.playerId) {
+                    return { valid: false, error: 'notCurrentPlayer' };
+                }
+                const card = state.core.handCards.find((candidate) => candidate.id === command.payload.cardId);
+                return card && isQidahenFeignedRetreatCardPlayable(state.core, card)
+                    ? { valid: true }
+                    : { valid: false, error: 'unknownPaymentCard' };
+            }
+            const raidAndAmbushSelection = state.core.raidAndAmbushSelection;
+            if (raidAndAmbushSelection) {
+                const defenderPlayerId = state.core.factions[raidAndAmbushSelection.factionId]?.playerId;
+                if (defenderPlayerId !== command.playerId) {
+                    return { valid: false, error: 'notCurrentPlayer' };
+                }
+                const card = state.core.handCards.find((candidate) => (
+                    candidate.id === command.payload.cardId
+                    && candidate.faction === raidAndAmbushSelection.factionId
+                    && candidate.cardKind === 'tactic'
+                    && candidate.status !== 'disabled'
+                ));
+                if (!card || raidAndAmbushSelection.phase === 'select-troop-kind') {
+                    return { valid: false, error: 'unknownPaymentCard' };
+                }
+                if (raidAndAmbushSelection.phase === 'offer') {
+                    return card.id === raidAndAmbushSelection.cardId
+                        && card.cardDefId === QIDAHEN_RAID_AND_AMBUSH_CARD_DEF_ID
+                        ? { valid: true }
+                        : { valid: false, error: 'unknownPaymentCard' };
+                }
+                return isQidahenTacticCardPlayableForPendingBattle(
+                    state.core,
+                    card,
+                    pendingTargetAction,
+                    'defender',
+                )
+                    ? { valid: true }
+                    : { valid: false, error: 'unknownPaymentCard' };
             }
             const attackerPlayerId = state.core.factions[pendingTargetAction.attackerFactionId]?.playerId;
             if (attackerPlayerId !== command.playerId) {
@@ -558,6 +743,114 @@ export function validate(
             ))
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
+        }
+        case QIDAHEN_COMMANDS.PLAY_BATTLE_RESPONSE_EVENT_CARD: {
+            if (hasPendingScenarioVote(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            const pendingTargetAction = getQidahenPendingTargetActionForCore(state.core, currentInteraction);
+            if (
+                !pendingTargetAction
+                || state.core.pincerAdvanceSelection
+                || state.core.infantryCavalryCombinedSelection
+                || state.core.raidAndAmbushSelection
+                || state.core.feignedRetreatSelection
+                || state.core.instigateDefectionSelection
+                || state.core.wuzhenChaohaSelection
+            ) {
+                return { valid: false, error: 'noPendingAction' };
+            }
+            const defenderPlayerId = pendingTargetAction.defenderFactionId !== 'neutral'
+                ? state.core.factions[pendingTargetAction.defenderFactionId]?.playerId
+                : null;
+            if (defenderPlayerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            const card = state.core.handCards.find((candidate) => candidate.id === command.payload.cardId);
+            return card && isQidahenDefeatInDetailPlayable(state.core, card, pendingTargetAction)
+                ? { valid: true }
+                : { valid: false, error: 'unknownPaymentCard' };
+        }
+        case QIDAHEN_COMMANDS.TOGGLE_PINCER_ADVANCE_TROOP: {
+            const selection = state.core.pincerAdvanceSelection;
+            if (!selection || state.core.factions[selection.factionId]?.playerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            if (!selection.choices.some((choice) => choice.id === command.payload.choiceId)) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            return selection.selectedChoiceIds.includes(command.payload.choiceId)
+                || selection.selectedChoiceIds.length < selection.maxTroops
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_PINCER_ADVANCE: {
+            const selection = state.core.pincerAdvanceSelection;
+            if (!selection || state.core.factions[selection.factionId]?.playerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return selection.selectedChoiceIds.length > 0
+                && selection.selectedChoiceIds.length <= selection.maxTroops
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.CANCEL_PINCER_ADVANCE: {
+            const selection = state.core.pincerAdvanceSelection;
+            return selection && state.core.factions[selection.factionId]?.playerId === command.playerId
+                ? { valid: true }
+                : { valid: false, error: 'notCurrentPlayer' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_INFANTRY_CAVALRY_COMBINED: {
+            const selection = state.core.infantryCavalryCombinedSelection;
+            return selection
+                && state.core.factions[selection.factionId]?.playerId === command.playerId
+                && (
+                    command.payload.mode === 'withdraw-cavalry'
+                    || command.payload.mode === 'joint-attack'
+                )
+                ? { valid: true }
+                : { valid: false, error: 'notCurrentPlayer' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_INSTIGATE_DEFECTION: {
+            const selection = state.core.instigateDefectionSelection;
+            if (!selection || state.core.factions[selection.factionId]?.playerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return selection.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.CANCEL_INSTIGATE_DEFECTION: {
+            const selection = state.core.instigateDefectionSelection;
+            return selection && state.core.factions[selection.factionId]?.playerId === command.playerId
+                ? { valid: true }
+                : { valid: false, error: 'notCurrentPlayer' };
+        }
+        case QIDAHEN_COMMANDS.SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT: {
+            const selection = state.core.wuzhenChaohaSelection;
+            if (!selection || state.core.factions[selection.factionId]?.playerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return Number.isInteger(command.payload.count)
+                && command.payload.count >= 0
+                && command.payload.count <= selection.maxDestroyedArtilleryTechCount
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_WUZHEN_CHAOHA: {
+            const selection = state.core.wuzhenChaohaSelection;
+            if (!selection || state.core.factions[selection.factionId]?.playerId !== command.playerId) {
+                return { valid: false, error: 'notCurrentPlayer' };
+            }
+            return selection.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.CANCEL_WUZHEN_CHAOHA: {
+            const selection = state.core.wuzhenChaohaSelection;
+            return selection && state.core.factions[selection.factionId]?.playerId === command.playerId
+                ? { valid: true }
+                : { valid: false, error: 'notCurrentPlayer' };
         }
         case QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION:
             if (hasPendingScenarioVote(state)) {

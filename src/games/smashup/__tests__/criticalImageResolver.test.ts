@@ -117,6 +117,20 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/base/aiji_base');
     });
 
+    it('漫威四派系会共享预热 marvel_wave_one 卡图', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['avengers', 'shield'],
+                '1': ['spider_verse', 'ultimates'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/marvel_wave_one');
+        expect(result.critical.filter(path => path === 'smashup/cards/marvel_wave_one')).toHaveLength(1);
+    });
+
     it('fairies 会命中 Pretty Pretty card atlas 与共享 Pretty Pretty base atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

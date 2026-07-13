@@ -10,7 +10,8 @@
  * 基于自研 Canvas 粒子引擎，零 DOM 动画。
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -27,6 +28,8 @@ export interface ConeBlastProps {
   end: { xPct: number; yPct: number };
   /** 强度 */
   intensity?: 'normal' | 'strong';
+  /** 低成本模式：保留飞行和命中感，减少移动端最重的全屏粒子绘制 */
+  quality?: FxQuality;
   /** 保留兼容 */
   showProjectile?: boolean;
   /** 完成回调 */
@@ -97,6 +100,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
   start,
   end,
   intensity = 'normal',
+  quality = 'full',
   onComplete,
   className = '',
 }) => {
@@ -104,9 +108,12 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const isStrong = intensity === 'strong';
+  const isReduced = quality === 'reduced';
 
   // 解构坐标值，避免对象引用变化导致 useCallback 重建
   const { xPct: sx0, yPct: sy0 } = start;
@@ -119,7 +126,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.5, reducedMaxDpr: 1 });
     // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
     const cw = container.offsetWidth;
     const ch = container.offsetHeight;
@@ -152,7 +159,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
     // 视觉缩放因子：基于飞行像素距离，让特效大小与格子间距成比例
     // 参考基准：totalDist ~250px 时 scale=1（原始设计值），再乘 3 倍放大
-    const vScale = Math.max(0.5, totalDist / 250) * 3;
+    const vScale = Math.min(isReduced ? 2.25 : 3.4, Math.max(0.8, totalDist / 250) * (isReduced ? 1.6 : 2.2));
 
     // 头部参数（基于 vScale 缩放）
     const headRadius = (isStrong ? 5 : 3.5) * vScale;
@@ -161,20 +168,20 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     // 尾迹粒子池
     const trailParticles: Particle[] = [];
     // 每帧喷射数量
-    const spawnPerFrame = isStrong ? 5 : 3;
+    const spawnPerFrame = isReduced ? (isStrong ? 2 : 1) : (isStrong ? 3 : 2);
 
     // 命中粒子池
     const impactParticles: Particle[] = [];
     const impactPreset: ParticlePreset = {
       ...IMPACT_PRESET,
-      count: isStrong ? 24 : 16,
+      count: isReduced ? (isStrong ? 10 : 6) : (isStrong ? 16 : 10),
       speed: { min: IMPACT_PRESET.speed.min * vScale, max: IMPACT_PRESET.speed.max * vScale },
       size: { min: IMPACT_PRESET.size.min * vScale, max: IMPACT_PRESET.size.max * vScale },
       spread: (IMPACT_PRESET.spread ?? 6) * vScale,
     };
 
     // 命中阶段
-    const hitDuration = 0.3;
+    const hitDuration = isReduced ? 0.18 : 0.24;
     let hitPhase = false;
     let hitTime = 0;
     let impactSpawned = false;
@@ -203,7 +210,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         // ---- 喷射尾迹粒子 ----
         for (let i = 0; i < spawnPerFrame; i++) {
           // 粒子从头部位置生成，速度方向为反向 + 横向扩散
-          const spreadAngle = (Math.random() - 0.5) * (isStrong ? 1.2 : 0.8);
+          const spreadAngle = (Math.random() - 0.5) * (isStrong ? 1.0 : 0.7);
           const backSpeed = (1 + Math.random() * 3) * vScale;
           const vx = (-dirX * backSpeed + perpX * Math.sin(spreadAngle) * 2 * vScale) * (0.7 + Math.random() * 0.6);
           const vy = (-dirY * backSpeed + perpY * Math.sin(spreadAngle) * 2 * vScale) * (0.7 + Math.random() * 0.6);
@@ -229,8 +236,8 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         ctx.globalCompositeOperation = 'lighter';
 
         // ---- 柔和锥形渐变（头部后方的扩散光晕） ----
-        const coneLen = Math.min(flown, isStrong ? totalDist * 0.4 : totalDist * 0.3);
-        if (coneLen > 5) {
+        const coneLen = Math.min(flown, isStrong ? totalDist * 0.34 : totalDist * 0.26);
+        if (!isReduced && coneLen > 5) {
           // 锥形尾部中心
           const tailX = hx - dirX * coneLen;
           const tailY = hy - dirY * coneLen;
@@ -361,7 +368,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [sx0, sy0, ex0, ey0, isStrong]);
+  }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality]);
 
   useEffect(() => {
     render();

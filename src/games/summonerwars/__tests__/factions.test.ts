@@ -74,6 +74,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('洞穴地精')).toBe('goblin');
         expect(resolveFactionId('极地矮人')).toBe('frost');
         expect(resolveFactionId('炽原精灵')).toBe('barbaric');
+        expect(resolveFactionId('莫古')).toBe('mogu');
     });
 
     it('英文阵营 ID 应原样返回', () => {
@@ -83,6 +84,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('goblin')).toBe('goblin');
         expect(resolveFactionId('frost')).toBe('frost');
         expect(resolveFactionId('barbaric')).toBe('barbaric');
+        expect(resolveFactionId('mogu')).toBe('mogu');
     });
 
     it('未知字符串应原样返回（兜底）', () => {
@@ -109,6 +111,31 @@ describe('FACTION_NAME_TO_ID', () => {
         for (const factionId of Object.values(FACTION_NAME_TO_ID)) {
             expect(idValues.has(factionId)).toBe(true);
         }
+    });
+});
+
+// ============================================================================
+// 卡面数值录入
+// ============================================================================
+
+describe('召唤师战争卡面数值录入', () => {
+    it('洞穴地精召唤师思尼克斯的攻击力应录入为卡面右下角的 3 点战力', () => {
+        const deck = createDeckByFactionId('goblin');
+
+        expect(deck.summoner.name).toBe('思尼克斯');
+        expect(deck.summoner.strength).toBe(3);
+    });
+
+    it('莫古应作为实施中新派系接入基础牌组与新格式图集', () => {
+        const catalogEntry = FACTION_CATALOG.find(faction => faction.id === 'mogu');
+        expect(catalogEntry?.statusTag).toBe('under_construction');
+
+        const deck = createDeckByFactionId('mogu');
+        expect(deck.summoner.name).toBe('库鞭克');
+        expect(deck.summoner.spriteAtlas).toBe('hero');
+
+        const cardsAtlasCard = deck.deck.find(card => card.spriteAtlas === 'cards' && card.spriteIndex === 10);
+        expect(cardsAtlasCard?.name).toBe('菌袍疫病体');
     });
 });
 

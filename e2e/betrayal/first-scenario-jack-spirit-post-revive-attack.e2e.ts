@@ -16,28 +16,32 @@ import {
 const EVIDENCE_DIR = 'evidence/betrayal-first-scenario-jack-spirit-post-revive-attack';
 const READY_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-第一剧本-叛徒复活后可攻击英雄.png`;
 const ATTACKED_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-第一剧本-复活叛徒攻击英雄后.png`;
+const HUMAN_TRAITOR_TEST_URL = '/play/betrayal?players=3&playerID=2&seat0=human&seat1=human&seat2=human';
 
 test.describe('山屋惊魂第一剧本叛徒复活后继续战斗', () => {
-    test('叛徒复活后，可通过正式房间焦点入口继续攻击同房间英雄', async ({ page, context }) => {
+    test('叛徒复活后，可通过地图英雄 token 继续攻击同房间英雄', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-first-scenario-jack-spirit-post-revive-attack');
 
         await page.setViewportSize({ width: 1600, height: 900 });
         await warmBetrayalFrontend(context);
-        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await page.goto(HUMAN_TRAITOR_TEST_URL, { waitUntil: 'domcontentloaded' });
         await waitForBetrayalPageReady(page);
 
         await injectCore(page, createJackSpiritPostReviveAttackReadyRuntimeCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('达里尔·海拉');
-        await expect(page.getByTestId('betrayal-room-focus-target')).toContainText(/攻击杰登·琼斯/);
+        const heroMapTarget = page.getByTestId('betrayal-room-occupant-basement-east-0');
+        await expect(heroMapTarget, '叛徒复活后攻击主路径必须点击地图上的英雄 token 本体').toBeVisible();
+        await expect(heroMapTarget, '英雄 token 必须标记为直选目标').toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-basement-east-0'), '英雄 token 必须有贴合本体的五边形高亮').toHaveAttribute('data-highlight-shape', 'pentagon');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/恢复肉身|重新回到宅邸|轮到达里尔/i);
         await saveScreenshot(page, READY_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01, 0.01]);
-        await page.getByTestId('betrayal-room-focus-target').click();
+        await heroMapTarget.click();
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/击倒了一名英雄|造成 .* physical damage|扑向英雄/i);
         await saveScreenshot(page, ATTACKED_SCREENSHOT);

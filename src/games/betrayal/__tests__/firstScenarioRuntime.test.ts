@@ -1761,15 +1761,21 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
             '0',
-            { targetRoomId: 'hallway' },
+            { targetRoomId: 'basement-landing' },
         );
 
         expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.knowledge).toBe(5);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('secretPassage');
-        expect(core.rooms.find((room) => room.id === 'hallway')?.markerTokens ?? []).toContain('secretPassage');
+        expect(core.rooms.find((room) => room.id === 'basement-landing')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.latestDiscovery?.detail).toContain('在当前板块放置秘密通道标志物');
-        expect(core.latestDiscovery?.detail).toContain('在门厅放置秘密通道标志物');
+        expect(core.latestDiscovery?.detail).toContain('在地下室起始点放置秘密通道标志物');
+        expect(resolveMoveTargetRooms(core).map((room) => room.id)).toContain('basement-landing');
+
+        core.movesRemaining = 1;
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.movesRemaining).toBe(0);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2411,7 +2417,7 @@ describe('Betrayal first scenario runtime', () => {
         ).valid).toBe(false);
     });
 
-    it('倒塌房间结束回合速度检定 5+ 时不会坠落或受伤', () => {
+    it('倒塌房间结束回合速度检定成功时不会坠落或受伤', () => {
         let core = createStartedFirstScenarioCore();
         core.roomDiscoveryOrderByFloor.upper = [
             BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'collapsedRoom')!,
@@ -3473,6 +3479,23 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(learnCore.scenarioRuntime.knowledgeOfJackPlayerIds).toContain('0');
 
+        learnCore.currentExplorer = {
+            ...learnCore.currentExplorer,
+            roomId: 'upper-west',
+        };
+        learnCore.activeRoomId = 'upper-west';
+        learnCore.currentExplorerRoomId = 'upper-west';
+        learnCore.usedCardIdsThisTurn = [];
+        learnCore = applyBetrayalCommand(
+            learnCore,
+            BETRAYAL_COMMANDS.LEARN_ABOUT_JACK,
+            '0',
+            {},
+            101,
+            createBetrayalScriptedRandom(3, 3, 2, 1),
+        );
+        expect(learnCore.scenarioRuntime.knowledgeOfJackPlayerIds).toContain('1');
+
         let studyCore = createFirstScenarioReadyToStudyExorcismCore();
         studyCore.currentExplorer = {
             ...studyCore.currentExplorer,
@@ -4075,14 +4098,14 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recentRoll?.playerId).toBe('0');
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 2 }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 0 }),
         ).valid).toBe(true);
 
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
             '0',
-            { cardId: 'rope', dieIndex: 2 },
+            { cardId: 'rope', dieIndex: 0 },
             101,
             createBetrayalScriptedRandom(3),
         );
@@ -4127,6 +4150,27 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult).toBeNull();
         expect(core.scenarioRuntime.hauntTriggered).toBe(false);
         expect(core.rooms.some((room) => room.id === 'upper-west' && room.name === '图书馆')).toBe(true);
+    });
+
+    it('叛徒开局按人数获得 {1/1/2/2} 点力量和速度加成', () => {
+        const cases = [
+            { playerIds: ['0', '1', '2'], expectedBonus: 1 },
+            { playerIds: ['0', '1', '2', '3'], expectedBonus: 1 },
+            { playerIds: ['0', '1', '2', '3', '4'], expectedBonus: 2 },
+            { playerIds: ['0', '1', '2', '3', '4', '5'], expectedBonus: 2 },
+        ];
+
+        for (const { playerIds, expectedBonus } of cases) {
+            const hauntCore = createFirstScenarioHauntCore(playerIds);
+            const traitorPlayerId = hauntCore.scenarioRuntime.traitorPlayerId!;
+            const traitorAfterHaunt = hauntCore.currentExplorer.playerId === traitorPlayerId
+                ? hauntCore.currentExplorer
+                : hauntCore.otherExplorers.find((explorer) => explorer.playerId === traitorPlayerId)!;
+            const template = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === traitorAfterHaunt.explorerId)!;
+
+            expect(traitorAfterHaunt.traits.might).toBe(template.traits.might + expectedBonus);
+            expect(traitorAfterHaunt.traits.speed).toBe(template.traits.speed + expectedBonus);
+        }
     });
 
     it('英雄线可击倒叛徒、释放杰克之灵并完成驱魔结算', () => {
@@ -4220,6 +4264,13 @@ describe('Betrayal first scenario runtime', () => {
         core.scenarioRuntime.jackSpiritRoomId = 'upper-north';
         const teammateBefore = core.otherExplorers.find((explorer) => explorer.playerId === '1');
         const actorBefore = { ...core.currentExplorer.traits };
+        core.scenarioRuntime.exorcismCircleRoomIds = [];
+        const exorciseWithoutCirclesValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.EXORCISE_JACK, '0', {}),
+        );
+        expect(exorciseWithoutCirclesValidation.valid).toBe(true);
+
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXORCISE_JACK, '0', {}, 100, hauntActionRandom);
         const teammateAfter = core.otherExplorers.find((explorer) => explorer.playerId === '1');
 
@@ -4490,10 +4541,18 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
         expect(core.currentPlayer).toBe('1');
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(2, 2, 1),
+        );
 
         expect(core.currentPlayer).toBe('2');
         expect(core.activeRoomId).toBe(core.scenarioRuntime.jackSpiritRoomId);
+        expect(core.movesRemaining).toBe(2);
 
         const moveTargets = ['hallway', 'basement-landing', 'basement-east'].map((roomId) => (
             BetrayalDomain.validate(
@@ -4898,7 +4957,7 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
-        withoutBonus = applyBetrayalCommand(withoutBonus, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        withoutBonus = applyBetrayalCommand(withoutBonus, BETRAYAL_COMMANDS.END_TURN, '1', {}, 100, createBetrayalScriptedRandom(2, 2, 1));
         const noBonusHeroBefore = withoutBonus.otherExplorers.find((explorer) => explorer.playerId === '0')!;
         withoutBonus = applyBetrayalCommand(
             withoutBonus,
@@ -4926,7 +4985,7 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
         withBonus.scenarioRuntime.knowledgeOfJackPlayerIds = ['0'];
-        withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.END_TURN, '1', {}, 100, createBetrayalScriptedRandom(2, 2, 1));
         const bonusHeroBefore = withBonus.otherExplorers.find((explorer) => explorer.playerId === '0')!;
         withBonus = applyBetrayalCommand(
             withBonus,
@@ -4962,18 +5021,29 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {}, 100, createBetrayalScriptedRandom(2, 2, 1));
 
         expect(core.currentPlayer).toBe('2');
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('2');
         expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+        expect(core.recentRoll?.kind).toBe('monsterMoveRoll');
+        expect(core.recentRoll?.dice).toEqual([1, 1, 0]);
+        expect(core.movesRemaining).toBe(2);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' });
         expect(core.scenarioRuntime.jackSpiritRoomId).toBe('basement-landing');
         expect(core.scenarioRuntime.traitorCorpseRoomId).toBe('basement-east');
+        expect(core.movesRemaining).toBe(1);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-east' });
         expect(core.scenarioRuntime.jackSpiritRoomId).toBe('basement-east');
+        expect(core.movesRemaining).toBe(0);
+
+        const moveAfterAllowanceSpent = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' }),
+        );
+        expect(moveAfterAllowanceSpent.valid).toBe(false);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
@@ -4986,6 +5056,9 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.monsters.find((monster) => monster.id === 'jack-spirit')).toBeUndefined();
         expect(core.currentExplorer.playerId).toBe('2');
         expect(core.currentExplorer.traits.might).toBeGreaterThan(1);
+        const template = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === core.currentExplorer.explorerId)!;
+        expect(core.currentExplorer.traits.might).toBe(template.traits.might);
+        expect(core.currentExplorer.traits.speed).toBe(template.traits.speed);
     });
 
     it('同房间尸体上的 Item/Omen 应可每回合搜刮 1 件，且同一尸体同回合不能连续搜刮', () => {

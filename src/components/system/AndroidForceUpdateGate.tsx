@@ -76,6 +76,7 @@ export const AndroidForceUpdateGate = ({
     const hasMeasuredDownloadProgress = state.phase === 'downloading' && typeof progressPercent === 'number';
     const isProgressVisible = state.phase === 'downloading';
     const isRetryVisible = state.phase === 'native-update-required' || state.phase === 'error';
+    const displayVersion = state.displayVersion || state.version;
 
     return (
         <div
@@ -103,12 +104,12 @@ export const AndroidForceUpdateGate = ({
                         {description}
                     </p>
 
-                    {(state.version || state.currentNativeVersion || state.requiredNativeVersion) && (
+                    {(displayVersion || state.currentNativeVersion || state.requiredNativeVersion) && (
                         <div className="mt-5 rounded-2xl border border-amber-200/12 bg-black/20 px-4 py-3 text-left text-xs text-amber-100/70">
-                            {state.version && (
+                            {displayVersion && (
                                 <div className="flex items-center justify-between gap-3">
                                     <span>{t('ota.forceUpdate.bundleVersion')}</span>
-                                    <span className="font-medium text-amber-50">{state.version}</span>
+                                    <span className="font-medium text-amber-50">{displayVersion}</span>
                                 </div>
                             )}
                             {state.currentNativeVersion && (

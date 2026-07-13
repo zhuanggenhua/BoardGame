@@ -18,6 +18,7 @@ import { GOBLIN_ABILITIES } from './abilities-goblin';
 import { PALADIN_ABILITIES } from './abilities-paladin';
 import { FROST_ABILITIES } from './abilities-frost';
 import { BARBARIC_ABILITIES } from './abilities-barbaric';
+import { MOGU_ABILITIES } from './abilities-mogu';
 import { abilityText } from './abilityTextHelper';
 import type { InteractionChain } from '../../../engine/primitives/ability';
 
@@ -44,6 +45,7 @@ export type AbilityTrigger =
   | 'passive'            // 被动效果（暴怒）
   | 'onDamageCalculation' // 伤害计算时（暴怒加成）
   | 'onMove'             // 移动时（飞行、迅捷等移动增强）
+  | 'afterMove'          // 移动后（祖灵羁绊、祖灵交流等）
   | 'onAdjacentEnemyAttack' // 相邻敌方攻击时（迷魂减伤）
   | 'onAdjacentEnemyLeave'; // 相邻敌方离开时（缠斗）
 
@@ -670,3 +672,6 @@ abilityRegistry.registerAll(FROST_ABILITIES);
 
 // 注册炽原精灵技能
 abilityRegistry.registerAll(BARBARIC_ABILITIES);
+
+// 注册莫古技能
+abilityRegistry.registerAll(MOGU_ABILITIES);

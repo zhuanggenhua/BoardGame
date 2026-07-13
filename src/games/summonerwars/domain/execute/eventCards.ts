@@ -32,7 +32,7 @@ import {
   emitDestroyWithTriggers,
   createAbilityTriggeredEvent,
 } from './helpers';
-import { getBaseCardId, CARD_IDS } from '../ids';
+import { getBaseCardId, CARD_IDS, isMoguSporePlagueBodyCard } from '../ids';
 
 export function executePlayEvent(
   events: GameEvent[],
@@ -581,6 +581,92 @@ export function executePlayEvent(
               targetPosition: targets[0],
             }));
           }
+        }
+        break;
+      }
+
+      // ============ 莫古事件卡 ============
+
+      case CARD_IDS.MOGU_COMMAND: {
+        if (targets && targets.length > 0 && summoner) {
+          const target = getUnitAt(core, targets[0]);
+          if (target && target.owner === playerId
+            && target.card.unitClass === 'common'
+            && manhattanDistance(summoner.position, targets[0]) <= 3) {
+            events.push({
+              type: SW_EVENTS.EXTRA_ATTACK_GRANTED,
+              payload: {
+                targetPosition: targets[0],
+                targetUnitId: target.instanceId,
+                sourceAbilityId: 'mogu_command',
+              },
+              timestamp,
+            });
+            events.push(...emitDestroyWithTriggers(core, target, targets[0], {
+              playerId,
+              timestamp,
+              reason: 'mogu_command',
+              triggerOnDeath: true,
+            }));
+          }
+        }
+        break;
+      }
+
+      case CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING: {
+        for (const targetPos of targets ?? []) {
+          const target = getUnitAt(core, targetPos);
+          if (!target || target.owner !== playerId || target.card.unitClass === 'summoner') continue;
+          if (target.damage > 0) {
+            events.push({
+              type: SW_EVENTS.UNIT_HEALED,
+              payload: { position: targetPos, amount: 1, sourceAbilityId: 'mogu_symbiotic_self_healing' },
+              timestamp,
+            });
+          }
+          events.push({
+            type: SW_EVENTS.UNIT_CHARGED,
+            payload: { position: targetPos, delta: 1, sourceAbilityId: 'mogu_symbiotic_self_healing' },
+            timestamp,
+          });
+        }
+        break;
+      }
+
+      case CARD_IDS.MOGU_FANATICAL_FUNGUS: {
+        // 持续事件：进入 activeEvents，后续由 mogu_fanatical_fungus 执行器手动结算。
+        break;
+      }
+
+      case CARD_IDS.MOGU_RELEASE_SPORES: {
+        if (!summoner) break;
+        const selectedCards = payload.cardIds as string[] | undefined;
+        const selectedPositions = targets ?? [];
+        const discardBodies = player.discard
+          .filter(c => c.cardType === 'unit' && isMoguSporePlagueBodyCard(c))
+          .slice(0, 2);
+        const cardsToSummon = selectedCards
+          ? selectedCards
+            .map(id => player.discard.find(c => c.id === id))
+            .filter((c): c is typeof discardBodies[number] => !!c && c.cardType === 'unit' && isMoguSporePlagueBodyCard(c))
+            .slice(0, 2)
+          : discardBodies;
+        for (let i = 0; i < cardsToSummon.length; i++) {
+          const targetPos = selectedPositions[i];
+          if (!targetPos || !isCellEmpty(core, targetPos)) continue;
+          if (manhattanDistance(summoner.position, targetPos) !== 1) continue;
+          events.push({
+            type: SW_EVENTS.UNIT_SUMMONED,
+            payload: {
+              playerId,
+              cardId: cardsToSummon[i].id,
+              position: targetPos,
+              card: cardsToSummon[i],
+              fromDiscard: true,
+              sourceAbilityId: 'mogu_release_spores',
+            },
+            timestamp,
+          });
         }
         break;
       }

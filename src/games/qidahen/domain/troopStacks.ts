@@ -1,4 +1,9 @@
-import type { QidahenFactionId, QidahenSpecialTroopStack, QidahenTroopKind } from './types';
+import type {
+    QidahenFactionId,
+    QidahenSpecialTroopStack,
+    QidahenTroopClass,
+    QidahenTroopKind,
+} from './types';
 import { getFactionDisplayName } from './factionLabelSemantics';
 
 const QIDAHEN_TROOP_KIND_LABELS: Record<QidahenTroopKind, string> = {
@@ -28,6 +33,8 @@ export const buildRegularTroopStack = (
         id: `${factionId}-${sourceId}-regular-${troopKind}-lv${level}`,
         label: `${getFactionDisplayName(factionId)}${getQidahenTroopKindLabel(troopKind)}`,
         faction: factionId,
+        originalFaction: factionId,
+        troopClass: 'regular',
         troopKind,
         count,
         level,
@@ -41,10 +48,13 @@ export const buildFactionTroopStack = (
     count: number,
     level = 2,
     label = `${getFactionDisplayName(factionId)}${getQidahenTroopKindLabel(troopKind)}`,
+    troopClass: QidahenTroopClass = 'regular',
 ): QidahenSpecialTroopStack => ({
     id: `${factionId}-${sourceId}-${troopKind}-lv${clampTroopLevel(level)}`,
     label,
     faction: factionId,
+    originalFaction: factionId,
+    troopClass,
     troopKind,
     count,
     level: clampTroopLevel(level),
@@ -59,6 +69,8 @@ export const buildArtilleryTroopStack = (
     id: `${factionId}-${sourceId}-regular-artillery-lv${clampTroopLevel(level)}`,
     label: `${getFactionDisplayName(factionId)}炮兵`,
     faction: factionId,
+    originalFaction: factionId,
+    troopClass: 'regular',
     troopKind: 'artillery',
     count,
     level: clampTroopLevel(level),
@@ -77,4 +89,23 @@ export const buildMercenaryTroopStack = (
     count,
     level,
     troopKind === 'cavalry' ? '雇佣骑兵' : troopKind === 'artillery' ? '雇佣炮兵' : '雇佣军',
+    'auxiliary',
 );
+
+export const buildSecondaryTroopStack = (
+    factionId: QidahenFactionId,
+    sourceId: string,
+    count: number,
+    level = 2,
+): QidahenSpecialTroopStack => {
+    const troopKind = getRegularTroopKindForFaction(factionId);
+    return buildFactionTroopStack(
+        factionId,
+        `${sourceId}-secondary`,
+        troopKind,
+        count,
+        level,
+        `${getFactionDisplayName(factionId)}次级${getQidahenTroopKindLabel(troopKind)}`,
+        'secondary',
+    );
+};

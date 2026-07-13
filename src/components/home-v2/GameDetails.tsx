@@ -1898,12 +1898,18 @@ export const Right = ({ game }: RightProps) => {
                                             const roomExpansionSummary = enabledExpansionLabels.length > 0
                                                 ? `${t('lobby:rooms.enabledExpansions', { defaultValue: '扩展' })}：${enabledExpansionLabels.join(' / ')}`
                                                 : '';
+                                            const isBetrayalRoom = room.gameName?.trim().toLowerCase() === 'betrayal';
                                             const scenarioLabel = room.publicSetupSummary?.scenarioId
                                                 ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
-                                                : '';
+                                                : isBetrayalRoom
+                                                    ? t('lobby:rooms.scenarioPending', { defaultValue: '未定剧本' })
+                                                    : '';
                                             const roomScenarioSummary = scenarioLabel
                                                 ? `${t('lobby:rooms.scenario', { defaultValue: '剧本' })}：${scenarioLabel}`
                                                 : '';
+                                            const roomSetupSummary = [roomExpansionSummary, roomScenarioSummary]
+                                                .filter(Boolean)
+                                                .join(' · ');
                                             const actionLabel = roomState.key === 'locked'
                                                 ? t('lobby:homeV2.lockedRoomLabel')
                                                 : roomState.key === 'full'
@@ -1941,8 +1947,8 @@ export const Right = ({ game }: RightProps) => {
                                                                     {getRoomTitle(room.matchID, t, room.roomName)}
                                                                 </div>
                                                                 <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} truncate leading-[1.2] text-[#5e3d27]`}>
-                                                                    {isCompactLandscape && roomExpansionSummary
-                                                                        ? `${getRoomSeatLine(room, t)} · ${roomExpansionSummary}`
+                                                                    {isCompactLandscape && roomSetupSummary
+                                                                        ? `${getRoomSeatLine(room, t)} · ${roomSetupSummary}`
                                                                         : getRoomSeatLine(room, t)}
                                                                 </div>
                                                                 {!isCompactLandscape && roomExpansionSummary ? (

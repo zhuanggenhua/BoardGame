@@ -1,4 +1,4 @@
-import type { GameAudioConfig } from '../../lib/audio/types';
+import type { AudioEvent, AudioRuntimeContext, GameAudioConfig } from '../../lib/audio/types';
 import { createFeedbackResolver, collectPreloadKeys } from '../../lib/audio/defineEvents';
 import { CARDIA_EVENTS } from './domain/events';
 import { ABILITY_IDS } from './domain/ids';
@@ -10,8 +10,8 @@ import { ABILITY_IDS } from './domain/ids';
  * Cardia 游戏体量小，使用单一 BGM 即可
  */
 
-// 主 BGM（动感魔法主题 - Dragon Dance）
-const BGM_DRAGON_DANCE = 'bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_main';
+// 主 BGM：只引用当前 Android 公共音频包中已有压缩 OGG 的曲目。
+const BGM_MAIN_KEY = 'bgm.villains_music_pack_vol.double_agent_rt_5.villains_double_agent_main';
 
 /**
  * 能力音效映射表
@@ -67,6 +67,21 @@ const ABILITY_SOUND_MAP: Record<string, string> = {
     [ABILITY_IDS.ELF]: 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win',
 };
 
+type CardiaAudioPayload = {
+    abilityId?: string;
+    value?: number;
+    winnerId?: string;
+};
+
+const getCurrentPlayerId = (context: AudioRuntimeContext): string | undefined => {
+    if ('playerId' in context && typeof context.playerId === 'string') return context.playerId;
+    if (context.ctx && typeof context.ctx === 'object' && 'playerId' in context.ctx) {
+        const playerId = context.ctx.playerId;
+        return typeof playerId === 'string' ? playerId : undefined;
+    }
+    return undefined;
+};
+
 /**
  * Cardia 音频配置
  */
@@ -89,29 +104,30 @@ export const CARDIA_AUDIO_CONFIG: GameAudioConfig = {
         ...Object.values(ABILITY_SOUND_MAP),
     ])),
 
-    // BGM 列表（单一主题 BGM - 动感魔法风格）
+    // BGM 列表（单一主题 BGM）
     bgm: [
-        { 
-            key: BGM_DRAGON_DANCE, 
-            name: 'Dragon Dance', 
-            src: '', 
-            volume: 0.5, 
-            category: { group: 'bgm', sub: 'main' } 
+        {
+            key: BGM_MAIN_KEY,
+            name: 'Double Agent',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'main' },
         },
     ],
 
     // BGM 分组（单一分组）
     bgmGroups: {
-        main: [BGM_DRAGON_DANCE],
+        main: [BGM_MAIN_KEY],
     },
 
     // 事件音效解析器（自定义以支持动态音效选择）
-    feedbackResolver: (event: any, context?: any) => {
+    feedbackResolver: (event: AudioEvent, context: AudioRuntimeContext) => {
         const { type } = event;
+        const payload = event.payload as CardiaAudioPayload | undefined;
         
         // ABILITY_ACTIVATED：根据 abilityId 返回对应的音效
         if (type === CARDIA_EVENTS.ABILITY_ACTIVATED.type) {
-            const abilityId = event.payload?.abilityId;
+            const abilityId = payload?.abilityId;
             if (abilityId && ABILITY_SOUND_MAP[abilityId]) {
                 return ABILITY_SOUND_MAP[abilityId];
             }
@@ -121,7 +137,7 @@ export const CARDIA_AUDIO_CONFIG: GameAudioConfig = {
         
         // 处理动态音效选择
         if (type === CARDIA_EVENTS.MODIFIER_TOKEN_PLACED.type) {
-            const value = event.payload?.value ?? 0;
+            const value = payload?.value ?? 0;
             return value >= 0  // 注意：零值也返回增益音效
                 ? 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a'
                 : 'status.general.player_status_sound_fx_pack_vol.mental_and_magical_debuffs.cursed_a';
@@ -129,8 +145,8 @@ export const CARDIA_AUDIO_CONFIG: GameAudioConfig = {
         
         // 处理游戏胜利/失败音效选择
         if (type === CARDIA_EVENTS.GAME_WON.type) {
-            const winnerId = event.payload?.winnerId;
-            const currentPlayerId = context?.playerId;
+            const winnerId = payload?.winnerId;
+            const currentPlayerId = getCurrentPlayerId(context);
             
             // 如果当前玩家是获胜者，播放胜利音效；否则播放失败音效
             return winnerId === currentPlayerId
@@ -147,7 +163,7 @@ export const CARDIA_AUDIO_CONFIG: GameAudioConfig = {
     bgmRules: [
         {
             when: () => true,
-            key: BGM_DRAGON_DANCE,
+            key: BGM_MAIN_KEY,
             group: 'main',
         },
     ],

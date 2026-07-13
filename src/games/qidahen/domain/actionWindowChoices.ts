@@ -122,6 +122,7 @@ interface QidahenActionWindowChoiceDependencies {
         factions: QidahenCore['factions'],
         timestamp: number,
         choice?: QidahenGrantPardonChoice | null,
+        executorFactionId?: QidahenFactionId,
     ) => {
         factions: QidahenCore['factions'];
         lastSeasonSummary: QidahenSeasonSummary | null;
@@ -278,12 +279,14 @@ export const resolveQidahenGrantPardonInteractionChoice = (
     if (!selection || !choice) {
         return state;
     }
+    const executorFactionId = selection.executorFactionId ?? 'ming';
     if (selection.executionSource === 'tribute-edict') {
         const resolution = dependencies.resolveGrantPardonExecution(
             state,
             state.factions,
             timestamp,
             choice,
+            executorFactionId,
         );
         return dependencies.advanceTurnIfReady(dependencies.updateTurnLabel({
             ...state,
@@ -303,7 +306,7 @@ export const resolveQidahenGrantPardonInteractionChoice = (
             factions: resolution.factions,
             regions: resolution.regions,
             lastSeasonSummary: dependencies.buildSeasonSummary('封贡敕书', timestamp, [
-                '大明选择执行赐印招安。',
+                `${state.factions[executorFactionId].name}选择执行赐印招安。`,
                 ...(resolution.lastSeasonSummary?.lines.map((line) => `赐印招安：${line}`) ?? [
                     '赐印招安：当前没有可招安的相邻敌军。',
                 ]),
@@ -315,6 +318,7 @@ export const resolveQidahenGrantPardonInteractionChoice = (
         state.factions,
         timestamp,
         choice,
+        executorFactionId,
     );
     return dependencies.advanceTurnIfReady(dependencies.updateTurnLabel({
         ...state,
@@ -375,7 +379,7 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
             diplomacyProgress: null,
             wheelDispatchProgress: null,
             lastSeasonSummary: dependencies.buildSeasonSummary('驱虎吞狼', timestamp, [
-                `${state.factions[selection.targetFactionId].name} 拒绝接受大明指挥，本次驱虎吞狼不生效。`,
+                `${state.factions[selection.targetFactionId].name} 拒绝接受${state.factions[selection.commanderFactionId].name}指挥，本次驱虎吞狼不生效。`,
             ]),
             actionLog: [
                 {
@@ -410,8 +414,8 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         handCards: dependencies.buildDrawnHandCards(state, acceptedSelection.attackerFactionId, drawResult.drawnCards),
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('驱虎吞狼', timestamp, [
-            `${state.factions[selection.targetFactionId].name} 同意接受大明指挥，并获得 ${drawResult.drawnCards} 张手牌。`,
-            `进入调度目标选择，由大明指挥其执行进攻。`,
+            `${state.factions[selection.targetFactionId].name} 同意接受${state.factions[selection.commanderFactionId].name}指挥，并获得 ${drawResult.drawnCards} 张手牌。`,
+            `进入调度目标选择，由${state.factions[selection.commanderFactionId].name}指挥其执行进攻。`,
         ]),
         actionLog: [
             {

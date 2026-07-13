@@ -34,21 +34,21 @@
 | P0 | `locked-L4已补` | `intimidate` | 雌狮(barbaric-lioness) | afterAttack | 1 | 攻击后触发；每回合次数；充能/boost | L4 已补：刷新/重连后仍只保留 1 个充能点；不回录入层 |
 | P0 | `locked-L4已补` | `judgment` | 城塞圣武士(paladin-fortress-warrior) | afterAttack | - | 攻击后触发；custom结算 | L4 已补：刷新/重连后不重复抓牌；不回录入层 |
 | P1 | `locked-规则原文已锁` | `high_telekinesis` | 卡拉(trickster-kara) | afterAttack | 1 | 攻击后触发；每回合次数；交互/目标选择；资源/状态改写 | 已锁官方原文 Greater Push；下一步实现对照，不回录入层 |
-| P1 | `locked-规则原文已锁` | `inspire` | 凯鲁尊者(barbaric-kalu) | activated | - | 充能/boost | 已锁官方原文 Inspire；下一步实现对照，不回录入层 |
+| P1 | `locked-规则原文已锁` | `inspire` | 凯鲁尊者(barbaric-kalu) | afterMove | - | 充能/boost | 2026-07-10 已将静态触发合同从 `activated` 修正为 `afterMove`；移动后自动结算与 AI 候选排除回归通过 |
 | P1 | `locked-规则原文已锁` | `mind_transmission` | 古尔壮(trickster-gulzhuang) | afterAttack | 1 | 攻击后触发；每回合次数；交互/目标选择；资源/状态改写 | 已锁官方原文 Telepathic Command；下一步实现对照，不回录入层 |
 | P1 | `locked-规则原文已锁` | `prepare` | 梅肯达·露(barbaric-makinda-ru)、边境弓箭手(barbaric-frontier-archer) | activated | 1 | 每回合次数；充能/boost | 已锁官方原文 Prepare；下一步实现对照，不回录入层 |
 | P1 | `locked-规则原文已锁` | `rapid_fire` | 梅肯达·露(barbaric-makinda-ru)、边境弓箭手(barbaric-frontier-archer) | afterAttack | 1 | 攻击后触发；每回合次数；custom结算 | 已锁官方原文 Swift Shot；下一步实现对照，不回录入层 |
 | P1 | `locked-规则原文已锁` | `telekinesis` | 清风法师(trickster-wind-mage) | afterAttack | 1 | 攻击后触发；每回合次数；交互/目标选择；资源/状态改写 | 已锁官方原文 Push；下一步实现对照，不回录入层 |
 | P1 | `locked-规则原文已锁` | `withdraw` | 凯鲁尊者(barbaric-kalu) | afterAttack | 1 | 攻击后触发；每回合次数；custom结算；交互/目标选择 | 已锁官方原文 Withdraw；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `aerial_strike` | 葛拉克(trickster-gelak) | passive | - | custom结算 | 已锁官方原文 Levitate；下一步实现对照，不回录入层 |
-| P2 | `locked-规则原文已锁` | `ancestral_bond` | 阿布亚·石(barbaric-summoner) | activated | - | custom结算；交互/目标选择 | B3 已锁官方 Spirit Bond 原文；下一步进入实现对照 |
+| P2 | `locked-规则原文已锁` | `ancestral_bond` | 阿布亚·石(barbaric-summoner) | afterMove | - | custom结算；交互/目标选择 | 2026-07-10 已修正静态触发合同；完整炽原精灵 AI 回合不再重复直推该能力并可正常结束 |
 | P2 | `locked-规则原文已锁` | `blood_rune` | 布拉夫(goblin-blarf) | onPhaseStart | - | custom结算；交互/目标选择 | B3 已锁官方 Blood Runes 原文；下一步进入实现对照 |
 | P2 | `locked-规则原文已锁` | `charge` | 野兽骑手(goblin-beast-rider) | onMove | - | custom结算；充能/boost | 已锁官方原文 Charge；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `divine_shield` | 科琳·布莱顿(paladin-corin) | passive | - | custom结算 | 已锁官方原文 Divine Shield；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `feed_beast` | 巨食兽(goblin-glutton) | onPhaseEnd | 1 | 每回合次数；custom结算；交互/目标选择 | B3 已锁官方 Feed the Eater 原文；下一步进入实现对照 |
 | P2 | `disputed-待本地卡图合同裁定` | `ferocity` | 史米革(goblin-smirg) / 部落投石手(goblin-slinger)归属未裁定 | passive | - | custom结算 | C85 后不再接受官方在线文本包作为审计阶段归属裁定；现有配置/测试改动只能视为待裁定候选，必须回到本地卡图合同层裁定 |
 | P2 | `locked-规则原文已锁` | `fortress_elite` | 瓦伦蒂娜·斯托哈特(paladin-valentina) | onDamageCalculation | - | custom结算 | 已锁官方原文 Citadel Champion；下一步实现对照，不回录入层 |
-| P2 | `locked-规则原文已锁` | `frost_axe` | 寒冰锻造师(frost-ice-smith) | activated | - | custom结算；交互/目标选择 | B3 已锁官方 Frost Axe 原文；下一步进入实现对照 |
+| P2 | `locked-规则原文已锁` | `frost_axe` | 寒冰锻造师(frost-ice-smith) | afterMove | - | custom结算；交互/目标选择 | 2026-07-10 已修正静态触发合同；原移动后交互与攻击消费回归继续通过 |
 | P2 | `locked-规则原文已锁` | `frost_bolt` | 冰霜法师(frost-mage) | onDamageCalculation | - | custom结算 | 已锁官方原文 Frost Bolt；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `grab` | 部落抓附手(goblin-grabber) | passive | - | custom结算；交互/目标选择 | B3 已锁官方 Cling 原文；下一步进入实现对照 |
 | P2 | `locked-规则原文已锁` | `greater_frost_bolt` | 纳蒂亚娜(frost-natiana) | onDamageCalculation | - | custom结算 | 已锁官方原文 Greater Frost Bolt；下一步实现对照，不回录入层 |
@@ -71,9 +71,9 @@
 | P2 | `locked-规则原文已锁` | `revive_undead` | 瑞特-塔鲁斯(necro-summoner) | activated | 1 | 每回合次数；交互/目标选择；资源/状态改写 | B3 已锁官方 Raise the Dead 原文；下一步进入实现对照 |
 | P2 | `locked-规则原文已锁` | `soul_transfer` | 亡灵弓箭手(necro-undead-archer) | onKill | - | custom结算 | 已锁官方原文 Soul Shift；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `speed_up` | 犀牛(barbaric-rhinoceros) | onMove | - | custom结算 | 已锁官方原文 Imbued Speed；下一步实现对照，不回录入层 |
-| P2 | `locked-规则原文已锁` | `spirit_bond` | 祖灵法师(barbaric-spirit-mage) | activated | 1 | 每回合次数；custom结算；交互/目标选择 | B3 已锁官方 Commune with Spirits 原文；下一步进入实现对照 |
+| P2 | `locked-规则原文已锁` | `spirit_bond` | 祖灵法师(barbaric-spirit-mage) | afterMove | 1 | 每回合次数；custom结算；交互/目标选择 | 2026-07-10 已修正静态触发合同；移动后强制二选一与重复响应回归继续通过 |
 | P2 | `locked-规则原文已锁` | `stable` | 卡拉(trickster-kara) | passive | - | custom结算 | 已锁官方原文 Steadfast；下一步实现对照，不回录入层 |
-| P2 | `locked-规则原文已锁` | `structure_shift` | 丝瓦拉(frost-summoner) | activated | - | custom结算；交互/目标选择 | B3 已锁官方 Structural Shift 原文；下一步进入实现对照 |
+| P2 | `locked-规则原文已锁` | `structure_shift` | 丝瓦拉(frost-summoner) | afterMove | - | custom结算；交互/目标选择 | 2026-07-10 已修正静态触发合同；移动后两步建筑推移与重复响应回归继续通过 |
 | P2 | `locked-规则原文已锁` | `telekinesis_instead` | 清风法师(trickster-wind-mage) | activated | - | 交互/目标选择；资源/状态改写 | 已锁官方原文 Push 的代替攻击分支；下一步实现对照，不回录入层 |
 | P2 | `locked-规则原文已锁` | `vanish` | 思尼克斯(goblin-summoner) | activated | 1 | 每回合次数；custom结算；交互/目标选择 | B3 已锁官方 Sly 原文；下一步进入实现对照 |
 | P3 | `locked-规则原文已锁` | `blood_rage` | 亡灵战士(necro-undead-warrior) | onUnitDestroyed | - | 充能/boost | B6 已锁官方 Blood Fury：你的回合内单位被消灭则本单位充能；你的回合结束移除 2 充能；进入实现对照 |

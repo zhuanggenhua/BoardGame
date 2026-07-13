@@ -27,6 +27,7 @@ import { reduce } from '../domain/reduce';
 import { createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import type { ActionCardDef, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import { matchesDefId } from '../domain/utils';
 import { getBaseDef, getCardDef } from '../data/cards';
 
 type DragonsTarget = {
@@ -938,14 +939,14 @@ export function registerDragonAbilities(): void {
     });
 
     registerBaseAbilitySuppression('dragons_raze', (state, baseIndex) =>
-        state.bases[baseIndex]?.ongoingActions.some(action => action.defId === 'dragons_raze') ?? false,
+        state.bases[baseIndex]?.ongoingActions.some(action => matchesDefId(action.defId, 'dragons_raze')) ?? false,
     );
     registerBaseVpModifier('dragons_great_wyrm', (state, baseIndex, playerId, currentVp) => {
         if (currentVp <= 0) return 0;
         const base = state.bases[baseIndex];
         if (!base) return 0;
         const penalty = base.minions.filter(minion =>
-            minion.defId === 'dragons_great_wyrm'
+            matchesDefId(minion.defId, 'dragons_great_wyrm')
             && minion.controller !== playerId,
         ).length;
         return -penalty;
@@ -955,7 +956,7 @@ export function registerDragonAbilities(): void {
         const base = state.bases[baseIndex];
         if (!base) return 0;
         const penalty = base.ongoingActions.filter(action =>
-            action.defId === 'dragons_ruins'
+            matchesDefId(action.defId, 'dragons_ruins')
             && getOngoingActionControllerId(action) !== playerId,
         ).length;
         return -penalty;

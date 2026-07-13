@@ -1,26 +1,32 @@
 ## ADDED Requirements
 
-### Requirement: R2 单文件更新驱动素材包索引刷新
-系统 SHALL 在 package-managed 游戏资源上传到 R2 后，刷新对应游戏或共享资源包的远端文件索引与最新 manifest，并默认避免重新上传完整 ZIP。
+### Requirement: 服务器单文件更新驱动素材包索引刷新
+系统 SHALL 在 package-managed 游戏资源发布到服务器主源后，刷新对应游戏或共享资源包的远端文件索引与最新 manifest，并默认避免重新上传完整 ZIP。
 
 #### Scenario: 单个游戏素材变更
-- **WHEN** `assets:upload` 上传的 R2 对象路径属于某个 package-managed 游戏
+- **WHEN** `assets:upload` 发布的服务器对象路径属于某个 package-managed 游戏
 - **THEN** 系统 MUST 重新生成该游戏目标版本的 `file-index`
 - **AND** MUST 更新 `mobile-packages/android/<channel>/games/<gameId>.json`
 - **AND** MUST NOT 默认上传新的完整 ZIP
 
 #### Scenario: 共享音频素材变更
-- **WHEN** `assets:upload` 上传的 R2 对象路径属于共享音频包
+- **WHEN** `assets:upload` 发布的服务器对象路径属于共享音频包
 - **THEN** 系统 MUST 刷新共享音频包的 `file-index` 与共享包 manifest
 - **AND** MUST 刷新依赖共享音频包的游戏 manifest 指针
 
 #### Scenario: 显式完整包重建
 - **WHEN** 发布命令显式要求完整包重建、首次发布或兼容兜底
-- **THEN** 系统 MAY 生成并上传完整 ZIP
+- **THEN** 系统 MAY 生成并发布完整 ZIP
 - **AND** MUST 同时生成对应 `file-index` 与 manifest
 
+#### Scenario: 差异发布成功判据
+- **WHEN** index/manifest-only 发布写入新的单文件对象、`file-index` 和最新 manifest
+- **THEN** 发布命令 MUST 从服务器主源读取本次唯一 `file-index`
+- **AND** MUST 校验其正文大小和 `fileIndexChecksum`
+- **AND** MUST NOT 使用旧完整 ZIP 或 fallback URL 可读取作为差异发布成功证据
+
 ### Requirement: 远端文件索引作为 App 素材包更新真相源
-系统 SHALL 使用 R2 单文件对象、远端 `file-index` 和游戏包 manifest 共同定义 App 素材包目标状态，完整 ZIP 仅作为首装与回退载体。
+系统 SHALL 使用服务器单文件对象、远端 `file-index` 和游戏包 manifest 共同定义 App 素材包目标状态，完整 ZIP 仅作为首装与回退载体。
 
 #### Scenario: Manifest 携带文件索引
 - **WHEN** 游戏包 manifest 包含 `assetPack.fileIndexUrl`
@@ -34,14 +40,14 @@
 
 #### Scenario: 路径合同一致
 - **WHEN** `file-index.files[].path` 描述一个素材文件
-- **THEN** 该路径 MUST 与 R2 key `official/<path>`、原生落盘 `current/assets/<path>`、H5 读取 `readInstalledAsset(gameId, <path>)` 保持同构
+- **THEN** 该路径 MUST 与服务器公开对象 `official/<path>`、原生落盘 `current/assets/<path>`、H5 读取 `readInstalledAsset(gameId, <path>)` 保持同构
 
 ### Requirement: 客户端文件级差异安装
 系统 SHALL 在具备远端文件索引和本地已安装文件索引时，仅下载本地缺失或哈希不一致的文件，并复用未变更文件。
 
 #### Scenario: 部分文件变更
 - **WHEN** 远端 `file-index` 中只有部分文件哈希不同
-- **THEN** 客户端 MUST 只从 R2 下载哈希不同或本地缺失的文件
+- **THEN** 客户端 MUST 只从服务器公开对象下载哈希不同或本地缺失的文件
 - **AND** MUST 从当前安装目录复用哈希相同的文件
 - **AND** MUST 在安装完成后得到与同版本完整 ZIP 安装等价的文件集合
 
@@ -86,24 +92,15 @@
 - **AND** MUST 回退完整 ZIP 安装
 
 #### Scenario: 原生增量入口不可用
-- **WHEN** 当前 App 原生壳不支持 `installGamePackageIncremental`
-- **THEN** JS 层 MUST 回退调用完整 ZIP 安装
-- **AND** 日志 MUST 标注为增量入口不可用导致的 fallback
+- **WHEN** 当前 Android 原生壳不支持文件级差异入口
+- **THEN** JS 层 MUST 回退完整 ZIP 安装
+- **AND** MUST 将该状态标注为 full fallback
 
-### Requirement: 差异更新进度与验收证据
-系统 SHALL 在差异更新过程中暴露足够状态，让用户和日志能区分真实差异安装与完整包兜底。
-
-#### Scenario: 差异安装进度
-- **WHEN** 客户端执行文件级差异安装
-- **THEN** 系统 MUST 汇报变更文件数、已下载变更文件数、变更总字节数和已下载字节数
-
-#### Scenario: fallback 状态
-- **WHEN** 客户端从差异安装回退到完整 ZIP 安装
-- **THEN** 系统 MUST 在日志或状态中标注 `full fallback`
-- **AND** MUST 保留触发 fallback 的原因
+### Requirement: 差异更新验收必须证明真实变更下载
+系统 SHALL 在发布侧和客户端侧分别证明差异更新链路生效，不能只用完整 ZIP 可读或安装成功替代。
 
 #### Scenario: 单图替换验收
-- **WHEN** 只替换 DiceThrone 某一个玩家面板素材
+- **WHEN** 替换 DiceThrone 某一个玩家面板素材
 - **THEN** 发布验收 MUST 证明远端 manifest/file-index 已更新
 - **AND** App 验收 MUST 证明只下载该变更素材及必要派生产物
 - **AND** 本地文件哈希 MUST 与远端 `file-index` 一致

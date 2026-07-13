@@ -208,10 +208,12 @@ export function formatSummonerWarsActionEntry({
     command,
     state: _state,
     events,
+    afterEventsRound = 0,
 }: {
     command: Command;
     state: MatchState<unknown>;
     events: GameEvent[];
+    afterEventsRound?: number;
 }): ActionLogEntry | ActionLogEntry[] | null {
     const state = _state as MatchState<SummonerWarsCore>;
     const { core } = state;
@@ -308,6 +310,7 @@ export function formatSummonerWarsActionEntry({
             case SW_COMMANDS.DECLARE_ATTACK: {
                 const attackEvent = [...events].reverse().find((e) => e.type === SW_EVENTS.UNIT_ATTACKED) as
                     | { payload?: { hits?: number; target?: { row: number; col: number }; attackerId?: string; diceResults?: DiceFaceResult[]; healingMode?: boolean; healAmount?: number; baseStrength?: number; diceCount?: number } } | undefined;
+                if (!attackEvent) return null;
                 const hits = attackEvent?.payload?.hits;
                 const diceResults = attackEvent?.payload?.diceResults;
                 const isHealing = attackEvent?.payload?.healingMode === true;
@@ -408,9 +411,6 @@ export function formatSummonerWarsActionEntry({
             case SW_COMMANDS.END_PHASE: {
                 const phaseEvent = [...events].reverse().find((e) => e.type === SW_EVENTS.PHASE_CHANGED) as
                     | { payload?: { to?: string } } | undefined;
-                const phaseSuffix = phaseEvent?.payload?.to
-                    ? `：${phaseEvent.payload.to}`
-                    : '';
                 return {
                     id: `${command.type}-${command.playerId}-${timestamp}`,
                     timestamp, actorId, kind: command.type,
@@ -519,7 +519,7 @@ export function formatSummonerWarsActionEntry({
         }
     })();
 
-    if (commandEntry) entries.push(commandEntry);
+    if (afterEventsRound === 0 && commandEntry) entries.push(commandEntry);
 
     // ========================================================================
     // 事件格式化

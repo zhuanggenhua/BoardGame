@@ -10,6 +10,7 @@ import type {
     QidahenDriveTigerConsentSelection,
     QidahenEventCharacterTargetSelection,
     QidahenEventOpponentHandChoiceSelection,
+    QidahenFeignedRetreatSelection,
     QidahenFortificationMaintenanceMode,
     QidahenFortificationMaintenanceSelection,
     QidahenGrantPardonChoice,
@@ -19,8 +20,10 @@ import type {
     QidahenKhanEdictChoice,
     QidahenKhanEdictSelection,
     QidahenMaShiTradeSelection,
+    QidahenOpenGateSurrenderSelection,
     QidahenPendingTargetAction,
     QidahenPostBattleSelection,
+    QidahenRaidAndAmbushSelection,
     QidahenRecruitChoice,
     QidahenRecruitSelection,
     QidahenWheelDispatchSelection,
@@ -84,6 +87,11 @@ interface QidahenEventOpponentHandChoiceValue {
     choiceId: string;
 }
 
+interface QidahenOpenGateSurrenderChoiceValue {
+    choiceId: string;
+    tokenId?: string;
+}
+
 export type QidahenHandLimitDiscardInteraction = InteractionDescriptor<
     SimpleChoiceData<QidahenHandLimitDiscardChoiceValue> & {
         qidahenHandLimitDiscardSelection: QidahenHandLimitDiscardSelection;
@@ -117,6 +125,18 @@ export type QidahenWheelDispatchInteraction = InteractionDescriptor<
 export type QidahenPendingTargetInteraction = InteractionDescriptor<
     SimpleChoiceData<QidahenPendingTargetChoiceValue> & {
         qidahenPendingTargetAction: QidahenPendingTargetAction;
+    }
+>;
+
+export type QidahenRaidAndAmbushInteraction = InteractionDescriptor<
+    SimpleChoiceData<{ choiceId: string }> & {
+        qidahenRaidAndAmbushSelection: QidahenRaidAndAmbushSelection;
+    }
+>;
+
+export type QidahenFeignedRetreatInteraction = InteractionDescriptor<
+    SimpleChoiceData<{ choiceId: string }> & {
+        qidahenFeignedRetreatSelection: QidahenFeignedRetreatSelection;
     }
 >;
 
@@ -165,5 +185,11 @@ export type QidahenEventCharacterTargetInteraction = InteractionDescriptor<
 export type QidahenEventOpponentHandChoiceInteraction = InteractionDescriptor<
     SimpleChoiceData<QidahenEventOpponentHandChoiceValue> & {
         qidahenEventOpponentHandChoiceSelection: QidahenEventOpponentHandChoiceSelection;
+    }
+>;
+
+export type QidahenOpenGateSurrenderInteraction = InteractionDescriptor<
+    SimpleChoiceData<QidahenOpenGateSurrenderChoiceValue> & {
+        qidahenOpenGateSurrenderSelection: QidahenOpenGateSurrenderSelection;
     }
 >;

@@ -3,6 +3,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import type { EventStreamEntry, GameEvent } from '../../../engine/types';
 import { computeEventStreamDelta, shouldConsumeChargeEvent, type AbilityModeState } from '../ui/useGameEvents';
@@ -34,7 +35,7 @@ import {
   SYSTEM_CARD_SELECTOR_ABILITY_IDS,
   type SwSimpleChoiceInteraction,
 } from '../ui/systemInteractionAdapter';
-import { getAbilityModeBannerFallbackText } from '../ui/StatusBanners';
+import { getAbilityModeBannerFallbackText } from '../ui/statusBannerText';
 
 function makeEntry(id: number): EventStreamEntry {
   const event: GameEvent = { type: 'TEST_EVENT', payload: {}, timestamp: id };
@@ -166,6 +167,7 @@ describe('systemInteractionAdapter', () => {
       'telekinesis_instead',
       'high_telekinesis_instead',
       'vanish',
+      'mogu_blood_infusion',
     ]);
   });
 
@@ -1587,6 +1589,7 @@ describe('systemInteractionAdapter', () => {
   it('关键 UI 文案入口不再依赖 fallback/defaultValue 掩盖缺 key', () => {
     const uiSources = [
       '../ui/StatusBanners.tsx',
+      '../ui/statusBannerText.ts',
       '../ui/HandArea.tsx',
       '../ui/CustomDeckCard.tsx',
       '../ui/deckbuilder/MyDeckPanel.tsx',
@@ -1596,5 +1599,29 @@ describe('systemInteractionAdapter', () => {
       expect(source).not.toMatch(/defaultValue\s*:/);
       expect(source).not.toMatch(/t\(\s*['"`][^'"`]+['"`]\s*,\s*['"`]/);
     }
+  });
+
+  it('攻击骰子结果不应被后续技能交互自动关闭', () => {
+    const boardSource = readFileSync(resolve(__dirname, '../Board.tsx'), 'utf-8');
+
+    expect(boardSource).toContain('<DiceResultOverlay');
+    expect(boardSource).toContain('<CardSelectorOverlay');
+    expect(boardSource).not.toContain('board_auto_close_dice_for_interaction');
+    expect(boardSource).not.toMatch(/if\s*\(\s*!diceResult\s*\|\|\s*!swInteraction\s*\)\s*return[\s\S]{0,300}handleCloseDiceResult\s*\(\s*\)/);
+  });
+
+  it('近战攻击动画应与骰子浮层关闭分离，骰子揭示完成即可启动位移动画', () => {
+    const boardSource = readFileSync(resolve(__dirname, '../Board.tsx'), 'utf-8');
+    const diceOverlaySource = readFileSync(resolve(__dirname, '../ui/DiceResultOverlay.tsx'), 'utf-8');
+
+    expect(boardSource).toContain('const DICE_RESULT_OVERLAY_DURATION_MS = 3000;');
+    expect(boardSource).toContain("startPendingAttackVisual('dice-reveal-complete')");
+    expect(boardSource).toContain("startPendingAttackVisual('dice-close')");
+    expect(boardSource).toContain('startedAttackAnimEventIdRef.current === pending.attackEventId');
+    expect(boardSource).toContain('duration={DICE_RESULT_OVERLAY_DURATION_MS}');
+    expect(boardSource).not.toContain('duration={3000}');
+    expect(boardSource).not.toContain('OPPONENT_MELEE_DICE_RESULT_DURATION_MS');
+    expect(diceOverlaySource).toContain('onRevealComplete?: () => void;');
+    expect(diceOverlaySource).toContain('dice_overlay_reveal_complete');
   });
 });

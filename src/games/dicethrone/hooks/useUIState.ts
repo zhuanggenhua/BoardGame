@@ -80,6 +80,8 @@ export interface UIState {
     setIsRolling: (rolling: boolean) => void;
     rerollingDiceIds: number[];
     setRerollingDiceIds: (ids: number[]) => void;
+    rerollAnimationSeq: number;
+    setRerollAnimationSeq: (seq: number | ((seq: number) => number)) => void;
     activatingAbilityId: string | undefined;
     setActivatingAbilityId: (id: string | undefined) => void;
     
@@ -128,6 +130,7 @@ export function useUIState(): UIState {
     // 动画状态
     const [isRolling, setIsRolling] = useState(false);
     const [rerollingDiceIds, setRerollingDiceIds] = useState<number[]>([]);
+    const [rerollAnimationSeq, setRerollAnimationSeq] = useState(0);
     const [activatingAbilityId, setActivatingAbilityId] = useState<string | undefined>(undefined);
     
     // 拖拽高亮状态
@@ -222,6 +225,8 @@ export function useUIState(): UIState {
         setIsRolling,
         rerollingDiceIds,
         setRerollingDiceIds,
+        rerollAnimationSeq,
+        setRerollAnimationSeq,
         activatingAbilityId,
         setActivatingAbilityId,
         

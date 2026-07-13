@@ -1,6 +1,6 @@
 ---
 name: game-ai-adaptation
-description: BoardGame 项目的 AI 接入唯一入口。给游戏添加或修改 AI/机器人/自动玩家/ai.ts/自动响应/watchdog/强制跳过/卡死兜底时使用。覆盖 InteractionSystem、ResponseWindowSystem、onlineAiRecovery、playerView 隐藏交互、AI 当前阶段 + human 响应窗口、allowedCommands / responder 门禁、以及 AI 专项审计与测试留证。
+description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩家、ai.ts、自动响应、watchdog、强制跳过、卡死兜底和响应窗口门禁。"
 ---
 
 # Game AI Adaptation

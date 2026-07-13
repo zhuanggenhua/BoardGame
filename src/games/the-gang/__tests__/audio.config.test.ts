@@ -6,10 +6,10 @@ import {
     THE_GANG_AUDIO_CONFIG,
     THE_GANG_CHIP_TAKEN_KEY,
     THE_GANG_NEXT_HEIST_KEY,
+    THE_GANG_PROGRESS_APPROVED_KEY,
     THE_GANG_ROUND_ENDED_KEY,
     THE_GANG_SHOWDOWN_REVEALED_KEY,
     THE_GANG_SHOWDOWN_LOSE_KEY,
-    THE_GANG_SHOWDOWN_SUCCESS_KEY,
     THE_GANG_SHOWDOWN_WIN_KEY,
 } from '../audio.config';
 import { THE_GANG_EVENTS, type TheGangCore } from '../domain/types';
@@ -59,7 +59,7 @@ const collectConfiguredAudioKeys = () => {
 describe('The Gang 音频配置', () => {
     it('核心游戏事件映射到对应音效', () => {
         expect(resolveKey({ type: THE_GANG_EVENTS.CHIP_TAKEN })).toBe(THE_GANG_CHIP_TAKEN_KEY);
-        expect(resolveKey({ type: THE_GANG_EVENTS.PROGRESS_APPROVED })).toBe(THE_GANG_SHOWDOWN_SUCCESS_KEY);
+        expect(resolveKey({ type: THE_GANG_EVENTS.PROGRESS_APPROVED })).toBe(THE_GANG_PROGRESS_APPROVED_KEY);
         expect(resolveKey({ type: THE_GANG_EVENTS.ROUND_ENDED })).toBe(THE_GANG_ROUND_ENDED_KEY);
         expect(resolveKey({ type: THE_GANG_EVENTS.NEXT_HEIST_STARTED })).toBe(THE_GANG_NEXT_HEIST_KEY);
     });

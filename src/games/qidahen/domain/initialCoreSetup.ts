@@ -127,6 +127,13 @@ export const createInitialCore = (
         hanseongPrestigeUnlocked: false,
         guihuaPrestigeMarkerController: null,
         victoryStatus: null,
+        pincerAdvanceSelection: null,
+        infantryCavalryCombinedSelection: null,
+        raidAndAmbushSelection: null,
+        feignedRetreatSelection: null,
+        instigateDefectionSelection: null,
+        wuzhenChaohaSelection: null,
+        openGateSurrenderSelection: null,
         factions,
         regions,
         fortifications,
@@ -211,7 +218,7 @@ export const createInitialCoreForInMatchScenarioVote = (
             {
                 id: 'log-scenario-vote-intro',
                 faction: baseCore.currentFactionOrder[0] ?? 'ming',
-                text: '进入局内剧本介绍与投票阶段，全部席位确认后才会进入正式开局前置。',
+                text: '进入局内剧本介绍与房主选择阶段，房主选择后才会进入正式开局前置。',
             },
         ],
     };

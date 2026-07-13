@@ -209,7 +209,7 @@ export const NODES: ArchNode[] = [
   { id: 'restapi', label: '🌐 NestJS API', desc: 'Docker web容器 · 认证·社交·管理后台（13个模块）', col: 4, row: 8, colSpan: 2, color: C.server, layer: 'server', details: ['🎯 NestJS 单体服务 — Docker web 容器直接监听 :80', '同域部署: 前端静态文件 + API + WebSocket 代理 → 无CORS', '13个模块: auth·admin·friend·message·invite·review·custom-deck·layout·ugc(搁置)·sponsor·feedback·user-settings·health', '🎲 例: 注册账号 → JWT登录 → 添加好友 → 发送邀请'] },
   { id: 'mongodb', label: '🗄 MongoDB', desc: '游戏状态·用户·自定义卡组（Docker容器）', col: 0, row: 9, colSpan: 2, color: C.server, layer: 'server', storyIndex: 5, details: ['🎯 所有需要长期保存的数据都在这里', '游戏状态(断线重连) · 用户数据(账号) · 自定义卡组', 'Docker 容器内部通信，不暴露端口到宿主机', '🎲 例: 对战到一半掉线 → 重新打开 → 对局还在, 从上次继续'] },
   { id: 'redis', label: '⚡ Redis', desc: '会话缓存·在线状态·实时数据', col: 2, row: 9, colSpan: 2, color: C.server, layer: 'server', details: ['🎯 高速缓存层 — 毫秒级读写', 'Redis 7 Alpine · Docker 容器', '会话管理 · 在线状态 · 实时数据缓存', '🎲 例: 查询好友在线状态 → Redis 直接返回, 无需查数据库'] },
-  { id: 'static', label: '☁️ Cloudflare CDN + R2', desc: '全站HTTPS + 静态资源缓存 + 对象存储 + 全球加速', col: 4, row: 9, colSpan: 2, color: C.server, layer: 'server', details: ['🎯 Cloudflare 代理全站流量 — HTTPS + CDN + 防护 + R2对象存储', '架构: Cloudflare(HTTPS) → 服务器:80 → Docker web容器(NestJS)', 'SSL模式: Flexible（源站HTTP，Cloudflare自动加速）', 'R2对象存储: 压缩图片/音频资源 · 自动生成registry.json · 全球CDN加速', '自动缓存静态资源(JS/CSS/图片)，服务器只承担API和WebSocket', '🎲 例: 玩家在海外打开游戏 → CDN就近加载, 秒开'] },
+  { id: 'static', label: '☁️ Cloudflare CDN + 服务器资源', desc: '全站HTTPS + 静态资源缓存 + 服务器主源 + 全球加速', col: 4, row: 9, colSpan: 2, color: C.server, layer: 'server', details: ['🎯 Cloudflare 代理全站流量 — HTTPS + CDN + 防护 + 服务器资源主源', '架构: Cloudflare(HTTPS) → 服务器:80 → Docker web容器(NestJS)', 'SSL模式: Flexible（源站HTTP，Cloudflare自动加速）', '服务器资源主源: 压缩图片/音频资源 · 自动生成registry.json · Cloudflare 缓存加速', '自动缓存静态资源(JS/CSS/图片)，服务器承担API、WebSocket和正式资源主源', '🎲 例: 玩家在海外打开游戏 → Cloudflare 就近缓存资源, 源站保持单一真相'] },
 ];
 
 // ============================================================================
@@ -346,7 +346,7 @@ export const OVERVIEW_LAYERS: OverviewLayer[] = [
     id: 'server', emoji: '🖧', label: '服务端',
     whatItDoes: '联机同步、用户账号、数据存储',
     whyItExists: '没有它 → 只能自己跟自己玩',
-    tags: ['GameTransportServer', '实时通信', 'NestJS API', 'MongoDB', 'Redis', 'Cloudflare CDN + R2'],
+    tags: ['GameTransportServer', '实时通信', 'NestJS API', 'MongoDB', 'Redis', 'Cloudflare CDN + 服务器资源'],
     color: C.server,
   },
 ];

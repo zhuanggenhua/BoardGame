@@ -2155,18 +2155,6 @@
     "atlasId": "tts_atlas_0a564692f2",
     "index": 4
   },
-  "base_cat_fanciers_alley_pod": {
-    "atlasId": "tts_atlas_52",
-    "index": 11
-  },
-  "base_house_of_nine_lives_pod": {
-    "atlasId": "tts_atlas_1219",
-    "index": 3
-  },
-  "base_beautiful_castle_pod": {
-    "atlasId": "tts_atlas_1219",
-    "index": 7
-  },
   "base_ritual_site_pod": {
     "atlasId": "tts_atlas_0b888d02fd",
     "index": 3
@@ -2606,6 +2594,38 @@
   "pecos_bill": {
     "atlasId": "tts_atlas_8789f47742",
     "index": 30
+  },
+  "base_enchanted_glade_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 0
+  },
+  "base_fairy_ring_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 1
+  },
+  "base_house_of_nine_lives_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 2
+  },
+  "base_cat_fanciers_alley_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 3
+  },
+  "base_land_of_balance_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 4
+  },
+  "base_pony_paradise_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 5
+  },
+  "base_beautiful_castle_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 6
+  },
+  "base_castle_of_ice_pod": {
+    "atlasId": "smashup:pretty-pretty-pod-bases",
+    "index": 7
   },
   "base_critter_combat_club_pod": {
     "atlasId": "smashup:base8",

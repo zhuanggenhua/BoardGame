@@ -92,9 +92,12 @@ export interface AndroidLiveUpdateSnapshot {
     updaterLoaded: boolean;
     nativeVersion?: string;
     currentBundleVersion?: string;
+    currentDisplayVersion?: string;
     currentBundleId?: string;
     currentBundleStatus?: BundleStatus;
     manifestVersion?: string;
+    manifestDisplayVersion?: string;
+    manifestProductVersion?: string;
     manifestForceUpdate?: boolean;
     compatible?: boolean;
     compatibilityReason?: string;
@@ -107,6 +110,8 @@ export interface ReadAndroidLiveUpdateSnapshotOptions {
 
 export interface AndroidOtaManifest {
     version: string;
+    displayVersion?: string;
+    productVersion?: string;
     url: string;
     checksum?: string;
     channel?: string;
@@ -123,8 +128,13 @@ export interface AndroidOtaManifest {
     forceUpdateMessage?: string;
 }
 
+type AndroidOtaManifestReadResult =
+    | { status: 'success'; manifest: AndroidOtaManifest }
+    | { status: 'missing' }
+    | { status: 'error'; reason: string };
+
 export type AndroidLiveUpdateResult =
-    | { status: 'disabled' | 'not-native' | 'manifest-missing' | 'up-to-date' }
+    | { status: 'disabled' | 'not-native' | 'up-to-date' }
     | { status: 'incompatible'; version: string; reason: string; requiredNativeVersion?: string }
     | { status: 'queued'; version: string; source: 'downloaded' | 'cached'; mode: 'background' | 'immediate' }
     | { status: 'error'; reason: string };
@@ -143,6 +153,7 @@ export interface AndroidForceUpdateState {
     phase: AndroidForceUpdatePhase;
     blocking: boolean;
     version?: string;
+    displayVersion?: string;
     progressPercent?: number;
     currentNativeVersion?: string;
     requiredNativeVersion?: string;
@@ -161,6 +172,7 @@ export interface AndroidLiveUpdateActivityState {
     active: boolean;
     phase: AndroidLiveUpdateActivityPhase;
     version?: string;
+    displayVersion?: string;
     progressPercent?: number;
 }
 
@@ -320,12 +332,13 @@ const setLiveUpdateActivityState = (state: AndroidLiveUpdateActivityState) => {
 
 const setImmediateActivityPhase = (
     phase: Exclude<AndroidLiveUpdateActivityPhase, 'idle'>,
-    options: { version?: string; progressPercent?: number } = {},
+    options: { version?: string; displayVersion?: string; progressPercent?: number } = {},
 ) => {
     setLiveUpdateActivityState({
         active: true,
         phase,
         version: options.version,
+        displayVersion: options.displayVersion,
         progressPercent: options.progressPercent,
     });
 };
@@ -390,6 +403,12 @@ const buildForceUpdateMessage = (
     return customMessage || fallback;
 };
 
+const getManifestDisplayVersion = (manifest: AndroidOtaManifest) => (
+    manifest.displayVersion?.trim()
+    || manifest.productVersion?.trim()
+    || manifest.version
+);
+
 const emitCriticalOtaLog = (
     stage: string,
     payload?: Record<string, unknown>,
@@ -398,6 +417,27 @@ const emitCriticalOtaLog = (
 };
 
 const updateOtaDebugState = (_patch: Record<string, unknown>) => {};
+
+const emitOtaErrorState = (
+    onForceStateChange: AndroidLiveUpdateStartOptions['onForceStateChange'],
+    options: {
+        version?: string;
+        displayVersion?: string;
+        title?: string;
+        message: string;
+        reason: string;
+    },
+) => {
+    emitForceState(onForceStateChange, {
+        phase: 'error',
+        blocking: true,
+        version: options.version,
+        displayVersion: options.displayVersion,
+        title: options.title ?? '更新失败',
+        message: options.message,
+        reason: options.reason,
+    });
+};
 
 export const compareVersion = (left: string, right: string) => {
     const leftParts = parseVersionParts(left);
@@ -526,10 +566,16 @@ const getConfigFromMetaEnv = (envOverride?: Record<string, string | boolean | un
     return readAndroidLiveUpdateConfig(metaEnv);
 };
 
+const buildManifestRequestUrl = (url: string) => {
+    const parsedUrl = new URL(url);
+    parsedUrl.searchParams.set('ota-check', String(Date.now()));
+    return parsedUrl.toString();
+};
+
 const readManifest = async (
     url: string,
     timeoutMs: number = DEFAULT_MANIFEST_TIMEOUT_MS,
-): Promise<AndroidOtaManifest | null> => {
+): Promise<AndroidOtaManifestReadResult> => {
     logMobileRuntime('OTA', 'manifest-fetch-start', { url, timeoutMs });
     emitCriticalOtaLog('manifest-fetch-start', { url, timeoutMs });
     const abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -537,18 +583,16 @@ const readManifest = async (
         abortController?.abort();
     }, timeoutMs);
     try {
-        const response = await fetch(url, {
+        const response = await fetch(buildManifestRequestUrl(url), {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
-                'Cache-Control': 'no-cache',
             },
-            cache: 'no-store',
             ...(abortController ? { signal: abortController.signal } : {}),
         });
         if (response.status === 404) {
             logMobileRuntime('OTA', 'manifest-fetch-404', { url }, 'warn');
-            return null;
+            return { status: 'missing' };
         }
         if (!response.ok) {
             throw new Error(`manifest request failed: ${response.status}`);
@@ -566,6 +610,8 @@ const readManifest = async (
 
         const manifest = {
             version: data.version,
+            displayVersion: data.displayVersion?.trim() || undefined,
+            productVersion: data.productVersion?.trim() || undefined,
             url: data.url,
             checksum: data.checksum,
             channel: data.channel,
@@ -585,13 +631,16 @@ const readManifest = async (
         emitCriticalOtaLog('manifest-fetch-success', {
             url,
             manifestVersion: manifest.version,
+            manifestDisplayVersion: manifest.displayVersion,
+            manifestProductVersion: manifest.productVersion,
             manifestForceUpdate: manifest.forceUpdate === true,
             targetNativeVersion: manifest.targetNativeVersion,
             minNativeVersion: manifest.minNativeVersion,
             maxNativeVersion: manifest.maxNativeVersion,
         });
-        return manifest;
+        return { status: 'success', manifest };
     } catch (error) {
+        const reason = getErrorMessage(error);
         console.warn('[OTA] 读取 manifest 失败', error);
         logMobileRuntime('OTA', 'manifest-fetch-failed', {
             url,
@@ -601,7 +650,7 @@ const readManifest = async (
             url,
             error,
         });
-        return null;
+        return { status: 'error', reason };
     } finally {
         clearTimeout(timeoutHandle);
     }
@@ -661,7 +710,8 @@ export const readAndroidLiveUpdateSnapshot = async (
         return snapshot;
     }
 
-    const manifest = includeManifest ? await readManifest(config.manifestUrl) : null;
+    const manifestResult = includeManifest ? await readManifest(config.manifestUrl) : null;
+    const manifest = manifestResult?.status === 'success' ? manifestResult.manifest : null;
     let current: CurrentBundleResult;
     try {
         current = await updaterModule.CapacitorUpdater.current();
@@ -681,6 +731,7 @@ export const readAndroidLiveUpdateSnapshot = async (
     const compatibility = manifest
         ? isManifestCompatibleWithNativeVersion(manifest, current.native)
         : undefined;
+    const manifestDisplayVersion = manifest ? getManifestDisplayVersion(manifest) : undefined;
 
     const snapshot: AndroidLiveUpdateSnapshot = {
         ...baseSnapshot,
@@ -688,9 +739,14 @@ export const readAndroidLiveUpdateSnapshot = async (
         updaterLoaded: true,
         nativeVersion: current.native,
         currentBundleVersion: current.bundle.version,
+        currentDisplayVersion: manifest && manifest.version === current.bundle.version
+            ? manifestDisplayVersion
+            : undefined,
         currentBundleId: current.bundle.id,
         currentBundleStatus: current.bundle.status,
         manifestVersion: manifest?.version,
+        manifestDisplayVersion,
+        manifestProductVersion: manifest?.productVersion,
         manifestForceUpdate: manifest?.forceUpdate === true,
         compatible: compatibility?.compatible,
         compatibilityReason: compatibility?.reason,
@@ -1016,28 +1072,66 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 return { status: 'error', reason: '未能加载 OTA 插件' } as const;
             }
 
-            const manifest = await readManifest(
+            const manifestResult = await readManifest(
                 config.manifestUrl,
                 Math.max(DEFAULT_MANIFEST_TIMEOUT_MS, config.appReadyTimeoutMs),
             );
-            if (!manifest) {
+            if (manifestResult.status === 'missing') {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
+                const reason = `OTA 清单不存在：${config.manifestUrl}`;
                 logMobileRuntime('OTA', 'background-check-manifest-missing', {
                     manifestUrl: config.manifestUrl,
+                    reason,
                 }, 'warn');
                 emitCriticalOtaLog('background-check-manifest-missing', {
                     manifestUrl: config.manifestUrl,
+                    reason,
                 });
                 updateOtaDebugState({
                     stage: 'background-check-manifest-missing',
-                    resultStatus: 'manifest-missing',
+                    resultStatus: 'error',
+                    reason,
                 });
-                return { status: 'manifest-missing' } as const;
+                emitOtaErrorState(onForceStateChange, {
+                    title: '更新清单不存在',
+                    message: '无法找到更新清单，请稍后重试或重新安装最新版本。',
+                    reason,
+                });
+                return { status: 'error', reason } as const;
+            }
+            if (manifestResult.status === 'error') {
+                if (applyMode === 'immediate') {
+                    clearImmediateActivityPhase();
+                }
+                const reason = `OTA 清单读取失败：${manifestResult.reason}`;
+                logMobileRuntime('OTA', 'background-check-manifest-error', {
+                    manifestUrl: config.manifestUrl,
+                    reason,
+                }, 'error');
+                emitCriticalOtaLog('background-check-manifest-error', {
+                    manifestUrl: config.manifestUrl,
+                    reason,
+                });
+                updateOtaDebugState({
+                    stage: 'background-check-manifest-error',
+                    resultStatus: 'error',
+                    reason,
+                });
+                emitOtaErrorState(onForceStateChange, {
+                    title: '更新失败',
+                    message: '无法读取更新清单，请检查网络后重试。',
+                    reason,
+                });
+                return { status: 'error', reason } as const;
             }
 
+            const manifest = manifestResult.manifest;
+            const manifestDisplayVersion = getManifestDisplayVersion(manifest);
+
             const isForceUpdate = manifest.forceUpdate === true;
+            const resolvedApplyMode = isForceUpdate ? 'immediate' : applyMode;
 
             try {
                 const { CapacitorUpdater } = updaterModule;
@@ -1083,7 +1177,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     compatibility,
                 });
                 if (!compatibility.compatible) {
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         clearImmediateActivityPhase();
                     }
                     const requiredNativeVersion = resolveManifestRequiredNativeVersion(manifest);
@@ -1105,6 +1199,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                             phase: 'native-update-required',
                             blocking: true,
                             version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
                             currentNativeVersion: current.native,
                             requiredNativeVersion,
                             title: buildForceUpdateTitle(manifest, '需要更新 App'),
@@ -1129,7 +1224,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
 
                 const manifestVsCurrent = compareBundleVersion(manifest.version, current.bundle.version);
                 if (manifestVsCurrent <= 0) {
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         clearImmediateActivityPhase();
                     }
                     emitCriticalOtaLog('already-up-to-date', {
@@ -1146,12 +1241,16 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     return { status: 'up-to-date' } as const;
                 }
 
-                if (applyMode === 'immediate') {
-                    setImmediateActivityPhase('checking', { version: manifest.version });
+                if (resolvedApplyMode === 'immediate') {
+                    setImmediateActivityPhase('checking', {
+                        version: manifest.version,
+                        displayVersion: manifestDisplayVersion,
+                    });
                     emitForceState(onForceStateChange, {
                         phase: 'checking',
                         blocking: true,
                         version: manifest.version,
+                        displayVersion: manifestDisplayVersion,
                         title: '正在准备更新',
                         message: '正在检查并应用新版本，请稍候。',
                     });
@@ -1181,15 +1280,17 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     logMobileRuntime('OTA', 'cached-bundle-hit', {
                         cachedBundle,
                     });
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         setImmediateActivityPhase('applying', {
                             version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
                             progressPercent: 100,
                         });
                         emitForceState(onForceStateChange, {
                             phase: 'applying',
                             blocking: true,
                             version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
                             progressPercent: 100,
                             title: '正在重启应用',
                             message: '更新包已准备完成，正在重启并切换到新版本。',
@@ -1240,12 +1341,16 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 const downloadHandle: PluginListenerHandle | null = null;
 
                 try {
-                    if (applyMode === 'immediate') {
-                        setImmediateActivityPhase('downloading', { version: manifest.version });
+                    if (resolvedApplyMode === 'immediate') {
+                        setImmediateActivityPhase('downloading', {
+                            version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
+                        });
                         emitForceState(onForceStateChange, {
                             phase: 'downloading',
                             blocking: true,
                             version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
                             title: '正在下载更新',
                             message: '正在下载并准备重启应用，请稍候。',
                         });
@@ -1291,15 +1396,17 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
 
                     await removeListenerSafely(downloadHandle);
 
-                    if (applyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate') {
                         setImmediateActivityPhase('applying', {
                             version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
                             progressPercent: 100,
                         });
                         emitForceState(onForceStateChange, {
                             phase: 'applying',
                             blocking: true,
                             version: manifest.version,
+                            displayVersion: manifestDisplayVersion,
                             progressPercent: 100,
                             title: '正在重启应用',
                             message: '更新已下载完成，正在重启并切换到新版本。',
@@ -1347,14 +1454,14 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         status: 'queued',
                         version: manifest.version,
                         source: 'downloaded',
-                        mode: applyMode,
+                        mode: resolvedApplyMode,
                     } as const;
                 } catch (error) {
                     await removeListenerSafely(downloadHandle);
                     throw error;
                 }
             } catch (error) {
-                if (applyMode === 'immediate') {
+                if (resolvedApplyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
                 const reason = error instanceof Error ? error.message : String(error);
@@ -1372,16 +1479,13 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     reason,
                     manifestVersion: manifest.version,
                 });
-                if (isForceUpdate) {
-                    emitForceState(onForceStateChange, {
-                        phase: 'error',
-                        blocking: true,
-                        version: manifest.version,
-                        title: buildForceUpdateTitle(manifest, '更新失败'),
-                        message: buildForceUpdateMessage(manifest, '下载或切换新版本失败，请重试。'),
-                        reason,
-                    });
-                }
+                emitOtaErrorState(onForceStateChange, {
+                    version: manifest.version,
+                    displayVersion: manifestDisplayVersion,
+                    title: buildForceUpdateTitle(manifest, '更新失败'),
+                    message: buildForceUpdateMessage(manifest, '下载或切换新版本失败，请重试。'),
+                    reason,
+                });
                 return {
                     status: 'error',
                     reason,

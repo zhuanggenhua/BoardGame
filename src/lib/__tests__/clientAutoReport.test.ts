@@ -453,6 +453,25 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('音频资源 502 加载失败会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-load-status-502', {
+            content: '[auto][unhandledrejection] Failed loading audio file with status: 502.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Failed loading audio file with status: 502.',
+            errorSource: 'window.unhandledrejection',
+            stack: 'Error: Failed loading audio file with status: 502.\n    at c (https://easyboardgame.top/assets/index.js:192:42706)\n    at _.<anonymous> (https://easyboardgame.top/assets/vendor-howler-Bp1HXCiM.js:1:19873)',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('Howler 音频错误码噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
@@ -597,6 +616,72 @@ describe('clientAutoReport', () => {
             errorMessage: "Cannot read properties of undefined (reading 'readyState')",
             errorSource: 'window.unhandledrejection',
             stack: "TypeError: Cannot read properties of undefined (reading 'readyState')\n    at r.onreadystatechange (https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:12345)\n    at <anonymous>:1:32811",
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        [
+            'this.i.at is not a function',
+            'TypeError: this.i.at is not a function\n    at e.u (https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:136)',
+        ],
+        [
+            't.entries.at is not a function',
+            'TypeError: t.entries.at is not a function\n    at https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773',
+        ],
+    ])('Cloudflare 统计脚本的旧 Safari at 兼容噪音会被过滤：%s', async (message, stack) => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce(`cloudflare-beacon-at-noise:${message}`, {
+            content: `[auto][window.error] ${message}`,
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: message,
+            errorSource: `https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:136`,
+            stack,
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('Cloudflare 堆栈中混入站内调用时不会按 at 兼容噪音过滤', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('cloudflare-beacon-at-with-app-frame', {
+            content: '[auto][window.error] t.entries.at is not a function',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 't.entries.at is not a function',
+            errorSource: 'https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773',
+            stack: 'TypeError: t.entries.at is not a function\n    at https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773\n    at reportMetric (https://easyboardgame.top/src/lib/metrics.ts:12:3)',
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('dice-box-threejs 第三方渲染空值噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('dice-box-null-trim-render-noise', {
+            content: "[auto][window.error] Cannot read properties of null (reading 'trim')",
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'client',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of null (reading 'trim')",
+            errorSource: 'https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3105:314',
+            stack: "TypeError: Cannot read properties of null (reading 'trim')\n    at new ou (https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3105:314)\n    at Object._ [as acquireProgram] (https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3109:9979)",
         });
 
         expect(globalThis.fetch).not.toHaveBeenCalled();

@@ -1,0 +1,149 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createAssetRouter } from './index.mjs';
+
+const createEnv = () => ({
+    ORIGIN_BASE_URL: 'https://origin.example.test',
+    ORIGIN_TIMEOUT_MS: '1500',
+    ORIGIN_TOKEN: 'test-token',
+});
+
+test('大型发布路径必须请求服务器源', async () => {
+    let requestedOriginUrl = '';
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOriginUrl = request.url;
+            return new Response('origin-package', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json'),
+        createEnv(),
+    );
+
+    assert.equal(requestedOriginUrl, 'https://origin.example.test/official/app-updates/android/stable/latest.json');
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(await response.text(), 'origin-package');
+});
+
+test('OPTIONS 预检返回跨域头且不访问源站', async () => {
+    let originRequested = false;
+    const router = createAssetRouter({
+        fetchImpl: async () => {
+            originRequested = true;
+            return new Response('origin-body', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json', {
+            method: 'OPTIONS',
+            headers: {
+                Origin: 'http://localhost',
+                'Access-Control-Request-Method': 'GET',
+                'Access-Control-Request-Headers': 'cache-control',
+            },
+        }),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 204);
+    assert.equal(originRequested, false);
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.equal(response.headers.get('Access-Control-Allow-Methods'), 'GET, HEAD, OPTIONS');
+    assert.equal(response.headers.get('Access-Control-Allow-Headers'), 'cache-control');
+    assert.equal(response.headers.get('X-Asset-Source'), 'preflight');
+    assert.equal(await response.text(), '');
+});
+
+test('源站成功时保留响应并标识 server', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => new Response('origin-body', {
+            status: 200,
+            headers: {
+                'CDN-Cache-Control': 'no-store',
+                ETag: '"origin-etag"',
+            },
+        }),
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/image.webp'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.equal(response.headers.has('CDN-Cache-Control'), false);
+    assert.equal(await response.text(), 'origin-body');
+});
+
+test('源站 404 不再回退对象存储', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => new Response('missing', { status: 404 }),
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/missing.webp'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 404);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(await response.text(), 'missing');
+});
+
+test('源站 5xx 标识 server-error 且不回退对象存储', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => new Response('bad gateway', { status: 502 }),
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/file.bin'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 502);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server-error');
+    assert.equal(await response.text(), 'bad gateway');
+});
+test('源站离线返回 server-error，不读取任何对象存储兜底', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => {
+            throw new Error('origin offline');
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/file.bin'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 502);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server-error');
+    assert.equal(await response.text(), 'Asset origin unavailable');
+});
+
+test('HEAD 请求不返回响应体', async () => {
+    const router = createAssetRouter({
+        fetchImpl: async () => new Response('origin-body', {
+            status: 200,
+            headers: {
+                'Content-Length': '11',
+            },
+        }),
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/common/file.bin', {
+            method: 'HEAD',
+        }),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(await response.text(), '');
+});

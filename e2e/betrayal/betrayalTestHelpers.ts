@@ -10,6 +10,7 @@ import {
 import {
     createCorpseLootReadyCore,
     createFirstScenarioHauntCore,
+    createJackSpiritMovementRollReadyCore,
     createJackSpiritReviveReadyCore,
     createJackSpiritPostReviveAttackReadyCore,
     createFirstScenarioReadyToLearnAboutJackCore,
@@ -217,6 +218,10 @@ export function createCorpseLootReadyRuntimeCore(): BetrayalCore {
 
 export function createJackSpiritReviveReadyRuntimeCore(): BetrayalCore {
     return createJackSpiritReviveReadyCore();
+}
+
+export function createJackSpiritMovementRollReadyRuntimeCore(): BetrayalCore {
+    return createJackSpiritMovementRollReadyCore();
 }
 
 export function createJackSpiritPostReviveAttackReadyRuntimeCore(): BetrayalCore {

@@ -8,6 +8,7 @@ import {
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import {
+    addTempPower,
     addPermanentPower,
     buildActionMinionTargetOptions,
     buildBaseTargetOptions,
@@ -119,6 +120,7 @@ type FairiesTransferPromptContext = FairiesPromptContext & {
 };
 
 type FairiesTitaniaReturnPromptContext = FairiesPromptContext;
+type FairiesTitaniaPodReturnPromptContext = FairiesPromptContext;
 
 type FairiesGlymmerPromptContext = FairiesPromptContext & {
     sourceCardUid: string;
@@ -269,12 +271,17 @@ function buildGlymmerTargetOptions(state: SmashUpCore, sourceCardUid: string, so
     }));
 }
 
-function buildTitaniaReturnOptions(state: SmashUpCore, playerId: PlayerId) {
+function buildTitaniaReturnOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (minion: MinionOnBase) => boolean = () => true,
+) {
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
     for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex++) {
         const base = state.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {
+            if (!predicate(minion)) continue;
             const minionName = getCardDef(minion.defId)?.name ?? minion.defId;
             candidates.push({
                 uid: minion.uid,
@@ -467,8 +474,12 @@ function createFairiesBranchEffectContext(
     return { matchState: state, playerId, random, now: timestamp };
 }
 
-function createTitaniaReturnBranchFootprint(state: SmashUpCore, playerId: PlayerId) {
-    const options = buildTitaniaReturnOptions(state, playerId);
+function createTitaniaReturnBranchFootprint(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (minion: MinionOnBase) => boolean = () => true,
+) {
+    const options = buildTitaniaReturnOptions(state, playerId, predicate);
     const reads: SmashUpReactionResourceRef[] = [];
     const writes: SmashUpReactionResourceRef[] = [{ kind: 'targetAvailability' }];
 
@@ -621,6 +632,50 @@ const fairiesTitaniaReturnPromptProgram = createPromptProgram<FairiesTitaniaRetu
                 minionDefId: selected.defId ?? '',
                 fromBaseIndex: selected.baseIndex,
                 reason: 'fairies_titania',
+                now: timestamp,
+                sourcePlayerId: playerId,
+            }),
+        };
+    },
+});
+
+const fairiesTitaniaPodReturnPromptProgram = createPromptProgram<FairiesTitaniaPodReturnPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_titania_pod_return_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_titania_pod_return_minion_${context.now}`,
+        context.playerId,
+        'Titania：选择一个对手随从移回其拥有者手牌',
+        buildTitaniaReturnOptions(
+            context.matchState.core,
+            context.playerId,
+            minion => minion.controller !== context.playerId,
+        ),
+        {
+            sourceId: 'fairies_titania_pod_return_minion',
+            titleKey: 'ui.fairies_titania_pod_return_title',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const isStillValidTarget = buildTitaniaReturnOptions(
+            state.core,
+            playerId,
+            minion => minion.controller !== playerId,
+        ).some(
+            option => option.value.minionUid === selected.minionUid && option.value.baseIndex === selected.baseIndex,
+        );
+        if (!isStillValidTarget) return { events: [] };
+        return {
+            events: buildValidatedReturnEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId ?? '',
+                fromBaseIndex: selected.baseIndex,
+                reason: 'fairies_titania_pod',
                 now: timestamp,
                 sourcePlayerId: playerId,
             }),
@@ -957,11 +1012,14 @@ const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesP
 
 export function registerFairiesAbilities(): void {
     registerSimpleAbility('fairies_titania', 'onPlay', fairiesTitania);
+    registerSimpleAbility('fairies_titania_pod', 'onPlay', fairiesTitaniaPod);
     registerAbilityProgram('fairies_glymmer', 'talent', { program: fairiesGlymmerProgram });
+    registerAbilityProgram('fairies_glymmer_pod', 'talent', { program: fairiesGlymmerProgram });
     registerSimpleAbility('fairies_puck', 'onPlay', fairiesPuck);
     registerAbilityProgram('fairies_tinx', 'onPlay', { program: fairiesTinxProgram });
     registerAbilityProgram('fairies_ladybug', 'talent', { program: fairiesLadybugProgram });
     registerAbilityProgram('fairies_leaf_armor', 'talent', { program: fairiesLeafArmorProgram });
+    registerAbilityProgram('fairies_leaf_armor_pod', 'talent', { program: fairiesLeafArmorPodProgram });
     registerSimpleAbility('fairies_magic_acorns', 'onPlay', fairiesMagicAcorns);
     registerSimpleAbility('fairies_playful_tricks', 'onPlay', fairiesPlayfulTricks);
     registerAbilityProgram('fairies_enchantment', 'onPlay', { program: fairiesEnchantmentProgram });
@@ -1000,6 +1058,47 @@ function fairiesTitania(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             sourceId: 'fairies_titania',
             title: 'Titania：将一个随从移回其拥有者手牌，或额外打出一个随从',
+            executeBranch: runFairiesTitaniaBranch,
+            targetType: 'generic',
+            upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
+            options,
+        }),
+    };
+}
+
+function fairiesTitaniaPod(ctx: AbilityContext): AbilityResult {
+    const promptContext: FairiesPromptContext = {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    };
+    const options: BranchingChoiceOption[] = [
+        createButtonBranchOption(
+            'extra-minion',
+            '额外打出一个随从',
+            'extra_minion',
+            fairiesTitaniaExtraMinionPrimitive.footprint(promptContext),
+        ),
+        createButtonBranchOption(
+            'return-minion',
+            '将一个对手随从移回其拥有者手牌',
+            'return_minion_pod',
+            createTitaniaReturnBranchFootprint(
+                ctx.state,
+                ctx.playerId,
+                minion => minion.controller !== ctx.playerId,
+            ),
+        ),
+    ];
+
+    return {
+        events: [],
+        matchState: queueBranchingChoice({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceId: 'fairies_titania_pod',
+            title: 'Titania：将一个对手随从移回其拥有者手牌，或额外打出一个随从',
             executeBranch: runFairiesTitaniaBranch,
             targetType: 'generic',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
@@ -1105,6 +1204,16 @@ const fairiesLeafArmorProgram = createTransferSelfAbilityProgram(
     'ui.fairies_leaf_armor_title',
     'fairies_leaf_armor',
 );
+
+const fairiesLeafArmorPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const attached = findAttachedActionState(ctx.state, ctx.cardUid);
+    if (!attached) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    return {
+        events: [addTempPower(attached.minionUid, attached.baseIndex, 2, 'fairies_leaf_armor_pod', ctx.now)],
+    };
+});
 
 function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
     const branchContext = createFairiesBranchEffectContext(ctx.matchState, ctx.playerId, ctx.random, ctx.now);
@@ -1251,6 +1360,12 @@ const runFairiesTitaniaBranch: BranchExecutor = ({ state, playerId, selection, t
         return runtimeResultToBranchResult(executeAbilityProgram(
             fairiesTitaniaReturnPromptProgram,
             { matchState: state, playerId, now: timestamp } satisfies FairiesTitaniaReturnPromptContext,
+        ), state);
+    }
+    if (branchId === 'return_minion_pod') {
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesTitaniaPodReturnPromptProgram,
+            { matchState: state, playerId, now: timestamp } satisfies FairiesTitaniaPodReturnPromptContext,
         ), state);
     }
     return { state, events: [] };

@@ -26,7 +26,7 @@ on:
         default: false
         type: boolean
       skip_latest:
-        description: '上传 APK 与版本 manifest，但不覆盖 latest.json'
+        description: '仅允许 dry_run 诊断；正式发布禁止跳过 latest.json'
         required: true
         default: false
         type: boolean
@@ -41,7 +41,10 @@ concurrency:
 jobs:
   publish-native-update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-native-production' || 'android-native-nonprod' }}
+    env:
+      BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
 
     steps:
       - name: Resolve publish parameters
@@ -63,6 +66,11 @@ jobs:
             exit 1
           fi
 
+          if [[ "${skip_latest}" == "true" && "${dry_run}" != "true" ]]; then
+            echo "::error::正式 Android 原生更新发布禁止跳过 latest.json。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。"
+            exit 1
+          fi
+
           {
             echo "channel=${channel}"
             echo "target_ref=${target_ref}"
@@ -80,10 +88,8 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
           DRY_RUN: ${{ steps.params.outputs.dry_run }}
         run: |
           missing=()
@@ -95,10 +101,8 @@ jobs:
           [[ -n "${ANDROID_KEY_PASSWORD}" ]] || missing+=("ANDROID_KEY_PASSWORD")
 
           if [[ "${DRY_RUN}" != "true" ]]; then
-            [[ -n "${R2_ACCOUNT_ID}" ]] || missing+=("R2_ACCOUNT_ID")
-            [[ -n "${R2_ACCESS_KEY_ID}" ]] || missing+=("R2_ACCESS_KEY_ID")
-            [[ -n "${R2_SECRET_ACCESS_KEY}" ]] || missing+=("R2_SECRET_ACCESS_KEY")
-            [[ -n "${R2_BUCKET_NAME}" ]] || missing+=("R2_BUCKET_NAME")
+            [[ -n "${ASSET_SERVER_SSH_PRIVATE_KEY}" ]] || missing+=("ASSET_SERVER_SSH_PRIVATE_KEY")
+            [[ -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}" ]] || missing+=("ASSET_SERVER_SSH_KNOWN_HOSTS")
           fi
 
           if [[ ${#missing[@]} -eq 0 ]]; then
@@ -186,18 +190,31 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
-          R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
           EOF
 
       - name: Build signed release APK
         if: steps.prereq.outputs.ready == 'true'
         run: npm run mobile:android:build:release
 
+      - name: Configure asset server SSH
+        if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
+        shell: bash
+        env:
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
+          chmod 600 "${HOME}/.ssh/asset-publisher"
+          printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
       - name: Publish native update package
         if: steps.prereq.outputs.ready == 'true'
+        env:
+          ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
+          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
         run: |
           args=(--channel "${{ steps.params.outputs.channel }}")
           if [ "${{ steps.params.outputs.dry_run }}" = "true" ]; then

@@ -1,6 +1,6 @@
 ---
 name: game-ai-strategy-design
-description: BoardGame 项目的策略型游戏 AI 设计与重构流程。用户要求 AI 变聪明、优化打法、对比大杀四方等成熟 AI、重做评分器、设计英雄/派系/卡组画像、改进掷骰/出牌/选技能策略、或把单点 if 重构成可解释可验证的策略模型时使用。若任务是 AI 卡死、自动跳过、响应窗口、watchdog 或交互闭环，改用 game-ai-adaptation。
+description: "BoardGame 策略型 AI 设计/重构流程。用于优化打法、评分器、英雄/派系/卡组画像、掷骰/出牌/选技能策略。"
 ---
 
 # Game AI Strategy Design

@@ -9,7 +9,7 @@
 - 骰面、Token、能力、卡牌静态数据录入
 - i18n 与规则文档同步
 - 资源 manifest 重建
-- R2 上传与 CDN 回查
+- 发布到服务器资源主源并回查公开资源域名
 - Vitest / E2E / evidence 收口
 
 本工作流面向“已有图片与规则材料，先完成正确录入”的场景，不替代复杂机制设计本身。
@@ -48,7 +48,7 @@
 - 汉化图 / 当前任务约定图片：中文名称、中文描述、图内顺序、裁图定位
 - 官方规则书 / 官方 PDF / 官方图：高优先级英文对照源
 - Wiki：辅助英文名、补充裁定、发现冲突，不反向覆盖中文主真相源
-- 当前任务 worktree：本轮资源、裁图、manifest、上传结果的唯一工作现场
+- 当前任务 worktree：本轮资源、裁图、manifest、服务器资源主源发布结果的唯一工作现场
 - Fandom / Rulepop / 其他页面如果被转录成项目内静态快照、fixture、JSON 或 TS 常量，必须为每个对象或每批对象保留可访问来源链接与获取日期；没有这些链接的本地快照只能算“历史对照数据”，不得继续写成“官方 Wiki 权威快照”
 - 任何本地对照快照一旦与 `ability-cards.webp` 完整单卡、角色板、提示板或官方 PDF 冲突，默认先判本地快照失信，回到主真相源重录；不得要求图片去迁就旧 fixture
 - 用户反馈也是冲突信号，不是可直接落库的权威文本。用户说出的名称、分支或效果只能作为定位线索；若与主真相源图面不一致，最终录入必须以主真相源图面或用户明确指定的权威来源为准，并把被否定的用户口径写入冲突记录，防止再次误录。
@@ -62,7 +62,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 本地 `public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/*.webp` 存在
 - `public/assets/i18n/zh-CN/dicethrone/assets-manifest.json` 已重建
 - 运行时代码已接入引用
-- 远端 R2 / CDN 对代表性 URL 返回 `200`
+- `https://assets.easyboardgame.top/official/...` 公开资源域名对代表性 URL 返回 `200`，且内容来自服务器主源
 
 ## 禁止提前收口（强制）
 
@@ -90,12 +90,12 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
    - 若用户要求“彻底完成才停”，存在 L2/L3 未实现项时不得停；只能继续实现或明确硬阻塞。
 3. **资源门禁**
    - 原始图、正式压缩图、atlas JSON、manifest、运行时代码引用必须逐项对上。
-   - 若 `public/**/*.webp` 被 `.gitignore` 忽略，必须在证据文档里单列“忽略但必须存在/已上传”的资源清单；不得只看 `git status`。
+   - 若 `public/**/*.webp` 被 `.gitignore` 忽略，必须在证据文档里单列“忽略但必须存在/已发布到服务器资源主源”的资源清单；不得只看 `git status`。
    - 共享资源（如 `Common/compressed/background.webp`、`character-portraits.webp`）也必须在隔离 worktree 中存在并被截图证明，否则 E2E 图像证据无效。
-   - 新增或修改 Token / 状态图标时，资源审计不能只查 `webp`、manifest、上传结果；必须逐项核对 `status-icons-atlas.json` 是否被运行时真实消费，并证明对应徽章命中 sprite，而不是退成纯色 fallback。
-4. **上传门禁**
+   - 新增或修改 Token / 状态图标时，资源审计不能只查 `webp`、manifest、服务器资源主源发布结果；必须逐项核对 `status-icons-atlas.json` 是否被运行时真实消费，并证明对应徽章命中 sprite，而不是退成纯色 fallback。
+4. **发布门禁**
    - `npm run assets:upload` 成功只是必要条件；必须对本轮新增/依赖的代表性远端 URL 做 `HEAD` 回查。
-   - atlas JSON 若按项目现有规则不上传，必须明确写“本地 `/assets/atlas-configs/**` 加载”，并验证构建产物能引用，不得误报“atlas 已上传”。
+   - atlas JSON 若按项目现有规则不发布到服务器资源主源，必须明确写“本地 `/assets/atlas-configs/**` 加载”，并验证构建产物能引用，不得误报“atlas 已发布”。
 5. **审计门禁**
    - 审计文档必须写明权威来源、逐项结论、D 维度、测试/截图证据、未覆盖风险。
    - 如果存在 L1/L2/L3/L4 分层，不得把 L1/L2 说成“发布级完成”。
@@ -123,6 +123,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 角色选择头像是共享运行时资源，必须单独保护：
   - 老角色头像继续使用既有 `character-portraits` 合同；新角色即使有不同规格头像来源，也不得把新来源的尺寸、行列或索引覆盖到老角色共享合同上
   - 如果新角色头像确实来自另一张图集，必须做按角色分流或新增独立头像合同；禁止直接替换全局 `PORTRAIT_ATLAS` / `CHARACTER_PORTRAIT_INDEX` / `ASSETS.AVATAR` 让老角色跟着变
+  - 新头像图集接入前必须建立完整的 `角色 ID -> 从 0 开始的图集索引` 对照表；不能只登记当轮点名的部分角色。每个正式启用角色都必须有“命中新图集 + 精确裁切位置”的合同测试，禁止缺项后通过旧图集或 `?? 0` 静默显示另一名角色
   - 任何修改共享头像合同的尝试，必须先列出所有受影响老角色，并提供 PC 与移动端至少各一个老角色选角截图；没有这些证据，不允许合并
   - 如果只有移动端异常、PC 正常，先检查浏览器缓存、CDN 缓存、manifest hash、实际请求 URL 与响应体；不得把缓存问题当成 atlas 合同问题修
 - 因此不能把“单卡图能显示”当成 Dice Throne 新英雄 intake 的默认收口条件。
@@ -141,7 +142,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 
 若用户一次给出多个新角色，必须先建立批次矩阵：
 
-| heroId | 素材 | 数据录入 | 机制 | 资源上传 | E2E | 审计 |
+| heroId | 素材 | 数据录入 | 机制 | 资源发布 | E2E | 审计 |
 | --- | --- | --- | --- | --- | --- | --- |
 
 每格只能填可验证状态：`pending / in_progress / passed / blocked / scoped-debt`。未跑证据不得填 `passed`。
@@ -186,7 +187,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 强制补充：
 
 - `crops/ability-cards/` 默认只是真相源裁图，不自动等于运行时素材。
-- 只要是为了录入生成的裁图，不论只是普通几何裁切，还是额外做了 OCR / 放大 / normalized preview，都必须进 `temp/`；禁止把这类图继续放在 `public/assets/.../crops/**`、manifest 或 R2/CDN 上传链
+- 只要是为了录入生成的裁图，不论只是普通几何裁切，还是额外做了 OCR / 放大 / normalized preview，都必须进 `temp/`；禁止把这类图继续放在 `public/assets/.../crops/**`、manifest 或服务器资源主源发布链
 - 默认优先级永远是：
   - 能直接复用原 `ability-cards` atlas 的，继续走 atlas
   - 录入时可以参考同源 `slot-xx.webp` 裁片；但正式 `ability-cards.webp` / 正式 atlas 的读法高于任何临时裁片，若两者冲突，先重切高清裁片再裁定
@@ -328,7 +329,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - `previewRef` / atlas：是否仍沿用老角色手牌预览合同，而不是临时发明新的 atlas 语义
 - Token / 状态图标运行时消费链：只要新增或修改 `tokens.ts`、状态、`statusAtlasId`、`statusAtlasPath` 或 `status-icons-atlas.*`，必须和至少 1 个成熟老角色逐项对比下面链路，不能只看资源文件存在：
   `TokenDef.frameId / atlasId -> ALL_TOKEN_DEFINITIONS -> STATUS_EFFECT_META / TOKEN_META / getVisualMetaById -> CHARACTER_DATA_MAP.statusAtlasId / statusAtlasPath -> loadStatusAtlases -> getStatusEffectIconNode -> StatusEffectsContainer / TokensContainer -> 血条上方徽章 hasSprite=true`
-- `status-icons-atlas.json` 是本地配置文件，应走 `/assets/i18n/<locale>/...` 或等价本地路径加载；它不属于必须上传到 R2 的媒体资源。旧角色远端 JSON 404 不能直接推导为“资源缺失”，必须回到本地 JSON 加载链和真实 DOM 消费结果核对。
+- `status-icons-atlas.json` 是本地配置文件，应走 `/assets/i18n/<locale>/...` 或等价本地路径加载；它不属于必须发布到服务器资源主源的媒体资源。旧角色远端 JSON 404 不能直接推导为“资源缺失”，必须回到本地 JSON 加载链和真实 DOM 消费结果核对。
 - Token / 状态图标核对必须覆盖 frame key 与定义 ID 是否一致，例如 `frameId`、`atlasId`、`statusAtlasId`、`statusAtlasPath`、JSON `frames` key 是否能被 `getVisualMetaById` 命中；只验证“徽章数量存在 / 可见 / 可点击”不得算图标显示通过。
 - 通用卡索引：如果顺序和老角色不同，是否已有显式映射与专项 evidence
 - AI / 阶段门禁：响应牌、roll 牌、main 牌是否仍走共享验证函数
@@ -353,7 +354,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 
 - `src/games/dicethrone/rule/王权骰铸规则.md`
 
-### 7. 资源上传前的固定检查
+### 7. 资源发布前的固定检查
 
 先执行：
 
@@ -368,12 +369,12 @@ node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN 
 - 本轮临时裁图、核对图、临时 atlas 是否留在 `temp/` / `test-results/` / 忽略目录，而不是 `public/assets/`
 - `CardPreview` / `OptimizedImage` / `getOptimizedImageUrls()` 最终请求的路径是否真实存在
 
-### 8. 上传 R2 并回查
+### 8. 发布到服务器资源主源并回查
 
-本步骤的“是否必须上传、失败后如何汇报”按通用规则执行：
+本步骤的“是否必须发布、失败后如何汇报”按通用规则执行：
 
 - `docs/ai-rules/data-entry.md` § 资源上传收口
-- `docs/ai-rules/asset-pipeline.md` § R2 / CDN 上传收口规则（强制）
+- `docs/deploy.md` § 生产素材域名：服务器主源
 
 建议顺序：
 
@@ -382,7 +383,7 @@ npm run assets:check
 npm run assets:upload
 ```
 
-上传后必须至少回查这些代表性 URL：
+发布后必须至少用公开资源域名回查这些代表性 URL：
 
 - `player-board.webp` 1 个
 - `tip.webp` 1 个
@@ -398,9 +399,9 @@ npm run assets:upload
 - JSON 本地路径
 - 构建是否通过
 - E2E 是否真实消费该 atlas
-- 远端媒体是否已上传
+- 远端媒体是否已发布到服务器资源主源
 
-禁止把 JSON 的 404 写成资源上传成功。
+禁止把 JSON 的 404 写成资源发布成功。
 
 ### 9. 进入机制实现前的建模门禁
 

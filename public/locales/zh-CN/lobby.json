@@ -262,6 +262,7 @@
     "mine": "我的",
     "enabledExpansions": "扩展",
     "scenario": "剧本",
+    "scenarioPending": "未定剧本",
     "seatSeparator": " / ",
     "emptySlot": "空位",
     "ownerMustReconnect": "这是您创建的房间，请重连进入",
@@ -372,25 +373,25 @@
       "currentVersionTitle": "当前版本 {{version}}",
       "clickToCollapse": "点击收起完整版本号",
       "clickToExpand": "点击展开完整版本号",
-      "currentBundleTitle": "当前资源包 {{version}}",
+      "currentBundleTitle": "当前更新号 {{version}}",
       "currentAppShellTitle": "App 壳版本 {{version}}",
-      "latestOtaTitle": "最新 OTA {{version}}",
+      "latestOtaTitle": "最新更新号 {{version}}",
       "statusDisabled": "状态：当前测试壳已禁用 OTA，请改用正式版 App",
       "statusCheckingAndApplying": "状态：正在检查并应用 OTA 更新",
-      "statusMismatchUpdateNow": "状态：当前 Bundle 与最新 OTA 不一致，点击立即更新",
+      "statusMismatchUpdateNow": "状态：当前更新号与最新更新不一致，点击立即更新",
       "statusCheckNow": "状态：点击立即检查 OTA 更新",
-      "bundleLabel": "资源包 {{version}}",
+      "bundleLabel": "更新号 {{version}}",
       "appLabel": "App {{version}}",
-      "latestLabel": "最新版本 {{version}}",
+      "latestLabel": "最新更新 {{version}}",
       "disabledLabel": "当前测试壳已禁用 OTA",
       "updatingNow": "正在立即更新",
       "mismatchUpdateNow": "OTA 未对齐，点击立即更新",
       "checkingNow": "正在检查更新",
       "checkNow": "点击检查更新",
       "ariaVersion": "当前版本 {{version}}",
-      "ariaBundleAndApp": "当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}",
-      "ariaBundleAndAppMismatch": "当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}，最新 OTA {{latestVersion}}，版本未对齐",
-      "ariaBundleAndAppDisabled": "当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}，当前测试壳已禁用 OTA"
+      "ariaBundleAndApp": "当前更新号 {{bundleVersion}}，App 壳版本 {{appVersion}}",
+      "ariaBundleAndAppMismatch": "当前更新号 {{bundleVersion}}，App 壳版本 {{appVersion}}，最新更新 {{latestVersion}}，版本未对齐",
+      "ariaBundleAndAppDisabled": "当前更新号 {{bundleVersion}}，App 壳版本 {{appVersion}}，当前测试壳已禁用 OTA"
     },
     "forceUpdate": {
       "eyebrow": "更新中",
@@ -405,7 +406,7 @@
       "requiredDescriptionWithVersion": "当前 App 版本过旧，需要升级到 {{version}} 或更高版本后继续使用。",
       "errorTitle": "更新失败",
       "errorDescription": "下载或切换新版本失败，请重试。",
-      "bundleVersion": "目标本体版本",
+      "bundleVersion": "目标更新号",
       "currentAppVersion": "当前 App 版本",
       "requiredAppVersion": "所需 App 版本",
       "progressLabel": "下载进度",
@@ -431,6 +432,7 @@
       "permission": "需要允许安装未知来源应用后才能继续。",
       "installing": "正在拉起系统安装器，请稍候。",
       "error": "安装包下载或校验失败，请重试。",
+      "checkFailed": "无法读取应用更新清单，请检查发布入口的最新版本清单和网络连接。",
       "default": "正在准备更新，请稍候。"
     },
     "eyebrow": "应用更新",
@@ -1060,7 +1062,8 @@
         "release_ready": "发布环境"
       },
       "ota": {
-        "title": "Android OTA"
+        "title": "Android OTA",
+        "force_update_required": "所有 OTA 均为强制更新：客户端检测到新版本后会阻塞下载并立即切换，发布入口不允许关闭。"
       },
       "packages": {
         "title": "Android 游戏包"

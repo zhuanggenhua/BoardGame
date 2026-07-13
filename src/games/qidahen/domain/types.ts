@@ -5,6 +5,7 @@ export type QidahenFactionId = 'ming' | 'mongol' | 'jin';
 export type QidahenRetreatLossMode = 'rear-guard' | 'rout';
 export type QidahenFortificationMaintenanceMode = 'auto-pay' | 'skip-all';
 export type QidahenTroopKind = 'infantry' | 'cavalry' | 'artillery';
+export type QidahenTroopClass = 'regular' | 'secondary' | 'auxiliary';
 export type QidahenPlunderSource = 'attacker' | 'defender';
 export type QidahenArmamentId =
     | 'artillery-tech'
@@ -127,6 +128,7 @@ export interface QidahenRegionEventMarker {
     label: string;
     sourceCardDefId: string;
     imageSrc?: string;
+    mapLabel?: string;
 }
 
 interface QidahenRegionSummary {
@@ -158,6 +160,8 @@ export interface QidahenSpecialTroopStack {
     id: string;
     label: string;
     faction: QidahenFactionId;
+    originalFaction?: QidahenFactionId;
+    troopClass?: QidahenTroopClass;
     troopKind: QidahenTroopKind;
     count: number;
     level: number;
@@ -171,6 +175,8 @@ export interface QidahenPiece {
     sourceStackId: string;
     label: string;
     faction: QidahenFactionId;
+    originalFaction?: QidahenFactionId;
+    troopClass?: QidahenTroopClass;
     troopKind: QidahenTroopKind;
     level: number;
     regionId: string;
@@ -218,6 +224,133 @@ export interface QidahenActionChoice {
 
 export type QidahenBattleMode = 'field' | 'city';
 
+export interface QidahenBattleForceCommitment {
+    id: string;
+    sourceRegionId: string;
+    sourceRegionName: string;
+    sourceAvailableTroops: number;
+    committedTroops: number;
+    movementProfileId?: string | null;
+    battleWidth: number;
+    boundaryUnitCap: number | null;
+    attackBoundaryType: string;
+    selectedSpecialPieceIds?: string[];
+    selectedGenericTroops?: number;
+}
+
+export interface QidahenBattleForceOutcome extends QidahenBattleForceCommitment {
+    attackerLosses: number;
+    survivingTroops: number;
+    survivingSpecialTroops: QidahenSpecialTroopStack[];
+}
+
+export interface QidahenDefeatInDetailState {
+    cardId: string;
+    sourceCommitments: QidahenBattleForceCommitment[];
+    phase: 'select-order' | 'resolving';
+    orderedSourceRegionIds: string[];
+    remainingSourceRegionIds: string[];
+    currentSourceIndex: number | null;
+    currentSourceRegionId: string | null;
+}
+
+export interface QidahenPincerAdvanceTroopChoice {
+    id: string;
+    tokenId: string;
+    sourceRegionId: string;
+    sourceRegionName: string;
+    troopIndex: number;
+    troopKind: QidahenTroopKind;
+    pieceId: string | null;
+    movementProfileId: 'infantry' | 'cavalry';
+    pathRegionIds: string[];
+    totalTravelCost: number;
+    label: string;
+}
+
+export interface QidahenPincerAdvanceSelection {
+    cardId: string;
+    cardDefId: 'qidahen-atlas05-1632-pincer-advance';
+    factionId: QidahenFactionId;
+    targetRuntimeRegionId: string;
+    targetRegionName: string;
+    maxTroops: 2;
+    choices: QidahenPincerAdvanceTroopChoice[];
+    selectedChoiceIds: string[];
+}
+
+export type QidahenInfantryCavalryCombinedMode = 'withdraw-cavalry' | 'joint-attack';
+
+export interface QidahenInfantryCavalryCombinedSelection {
+    cardId: string;
+    cardDefId: 'qidahen-atlas05-1628-infantry-cavalry-combined';
+    factionId: QidahenFactionId;
+    targetRegionName: string;
+    infantryCount: number;
+    cavalryCount: number;
+}
+
+export interface QidahenRaidAndAmbushSelection {
+    cardId: string;
+    cardDefId: 'qidahen-atlas05-1622-raid-and-ambush';
+    factionId: QidahenFactionId;
+    attackerFactionId: QidahenFactionId;
+    targetRuntimeRegionId: string;
+    targetRegionName: string;
+    phase: 'offer' | 'select-troop-kind' | 'follow-up';
+    eligibleTroopKinds: QidahenTroopKind[];
+    selectedTroopKind: QidahenTroopKind | null;
+}
+
+export interface QidahenFeignedRetreatSelection {
+    cardId: string;
+    cardDefId: 'qidahen-atlas05-1660-feigned-retreat-lure-enemy';
+    factionId: QidahenFactionId;
+    attackerFactionId: QidahenFactionId;
+    targetRuntimeRegionId: string;
+    targetRegionName: string;
+    pendingTargetAction: QidahenPendingTargetAction;
+    cavalryPlunderPayload: PendingActionResolvedEvent['payload'];
+}
+
+export interface QidahenInstigateDefectionChoice {
+    id: string;
+    tokenId: string;
+    pieceId: string;
+    troopKind: QidahenTroopKind;
+    label: string;
+}
+
+export interface QidahenInstigateDefectionSelection {
+    cardId: string;
+    cardDefId: 'qidahen-atlas05-1629-instigate-defection-alt';
+    factionId: QidahenFactionId;
+    targetRuntimeRegionId: string;
+    targetRegionName: string;
+    choices: QidahenInstigateDefectionChoice[];
+}
+
+export interface QidahenWuzhenChaohaChoice {
+    id: string;
+    tokenId: string;
+    sourceRegionId: string;
+    sourceRegionName: string;
+    troopIndex: number;
+    pieceId: string | null;
+    label: string;
+}
+
+export interface QidahenWuzhenChaohaSelection {
+    cardId: string;
+    cardDefId: 'qidahen-atlas05-1650-wuzhen-chaoha-special';
+    factionId: QidahenFactionId;
+    targetRuntimeRegionId: string;
+    targetRegionName: string;
+    choices: QidahenWuzhenChaohaChoice[];
+    maxDestroyedArtilleryTechCount: number;
+    destroyedArtilleryTechCount: number;
+}
+
 export interface QidahenWheelMoveChoice {
     id: string;
     label: string;
@@ -249,26 +382,35 @@ export interface QidahenPendingTargetAction {
     attackBoundaryType: string;
     resolutionHint: string;
     defenderPayCost: number | null;
+    forceCommitments?: QidahenBattleForceCommitment[];
     tacticModifiers?: QidahenBattleTacticModifier[];
+    defeatInDetail?: QidahenDefeatInDetailState;
 }
 
 export interface QidahenBattleTacticModifier {
     id: string;
     sourceCardDefId: string | null;
+    playedAt?: number;
     label: string;
     side: 'attacker' | 'defender';
     troopKind: QidahenTroopKind;
     levelBonus: number;
+    levelOverride?: number;
     diceCountBonus?: number;
     rollValueDivisor?: number;
     priorityRoll?: boolean;
     rollAsPhase?: Extract<QidahenBattleRollPhase, 'artillery' | 'cavalry' | 'infantry'>;
     rollUnitCount?: number;
+    cancelEnemyTacticSourceCardDefIds?: string[];
     cancelEnemyPrioritySourceCardDefIds?: string[];
     cancelEnemyRollAsPhaseSourceCardDefIds?: string[];
     cavalryPlunderCounterDamageDisabled?: boolean;
     casualtyPriority?: QidahenBattleCasualtyPriority;
     convertEnemyTroopCount?: number;
+    targetTroopClass?: QidahenTroopClass;
+    targetPieceId?: string;
+    targetTokenId?: string;
+    treatAsTroopKind?: QidahenTroopKind;
 }
 
 export interface QidahenWheelDispatchCandidate {
@@ -428,6 +570,7 @@ export interface QidahenGrantPardonSelection {
     title: string;
     summary: string;
     executionSource?: 'tribute-edict';
+    executorFactionId?: QidahenFactionId;
     preferredSourceRegionId: string | null;
     sourceRegionId: string | null;
     sourceRegionName: string | null;
@@ -551,6 +694,8 @@ export interface QidahenPostBattleSelection {
     summary: string;
     battleRollSummary?: string | null;
     battleRolls?: QidahenBattleRolls | null;
+    forceCommitments?: QidahenBattleForceCommitment[];
+    forceOutcomes?: QidahenBattleForceOutcome[];
     choices: QidahenPostBattleChoice[];
 }
 
@@ -607,7 +752,7 @@ export interface QidahenEventCharacterTargetChoice {
 }
 
 export interface QidahenEventCharacterTargetSelection {
-    source: 'counter-spy-plot' | 'power-struggle-coup-character-judgement';
+    source: 'counter-spy-plot';
     title: string;
     summary: string;
     eventCardId: string;
@@ -649,6 +794,25 @@ export interface QidahenEventOpponentHandChoiceSelection {
     choices: QidahenEventOpponentHandChoice[];
 }
 
+export type QidahenOpenGateSurrenderEffectChoice = 'jin-effect' | 'ming-effect' | 'both';
+
+export interface QidahenOpenGateSurrenderSelection {
+    phase: 'choose-effects' | 'jin-characters' | 'jin-troops' | 'ming-faction';
+    eventCardId: string;
+    eventCardDefId: 'qidahen-atlas05-1621-power-struggle-coup';
+    eventCardLabel: string;
+    ownerFactionId: QidahenFactionId;
+    ownerFactionName: string;
+    paymentCardIds: string[];
+    effectChoice: QidahenOpenGateSurrenderEffectChoice | null;
+    executeJinEffect: boolean;
+    executeMingEffect: boolean;
+    discardedJinCharacterIds: string[];
+    requiredJinTroopLoss: number;
+    rawRequiredJinTroopLoss: number;
+    summaryLines: string[];
+}
+
 export interface QidahenHandCard {
     id: string;
     label: string;
@@ -682,6 +846,8 @@ export interface QidahenMapToken {
     faction: QidahenFactionId | 'neutral';
     regionId?: string;
     troopIndex?: number;
+    troopKind?: QidahenTroopKind;
+    pieceId?: string;
     imageSrc?: string;
     size?: number;
     value?: number | string;
@@ -755,6 +921,7 @@ export interface QidahenCore {
         | 'drive-tiger-consent'
         | 'event-character-target'
         | 'event-opponent-hand-choice'
+        | 'open-gate-surrender'
         | 'dispatch-targeting'
         | 'resolve-pending'
         | 'post-battle-decision'
@@ -786,7 +953,14 @@ export interface QidahenCore {
     wheelDispatchProgress: QidahenWheelDispatchSelection | null;
     eventCharacterTargetSelection: QidahenEventCharacterTargetSelection | null;
     eventOpponentHandChoiceSelection: QidahenEventOpponentHandChoiceSelection | null;
+    openGateSurrenderSelection: QidahenOpenGateSurrenderSelection | null;
     pendingTargetAction: QidahenPendingTargetAction | null;
+    pincerAdvanceSelection: QidahenPincerAdvanceSelection | null;
+    infantryCavalryCombinedSelection: QidahenInfantryCavalryCombinedSelection | null;
+    raidAndAmbushSelection: QidahenRaidAndAmbushSelection | null;
+    feignedRetreatSelection: QidahenFeignedRetreatSelection | null;
+    instigateDefectionSelection: QidahenInstigateDefectionSelection | null;
+    wuzhenChaohaSelection: QidahenWuzhenChaohaSelection | null;
     postBattleSelection: QidahenPostBattleSelection | null;
     lastCharacterActionWindowTriggerKey: string | null;
     lastSeasonSummary: QidahenSeasonSummary | null;
@@ -919,6 +1093,58 @@ export interface PlayTacticCardCommand extends Command<'PLAY_TACTIC_CARD'> {
     };
 }
 
+export interface PlayBattleResponseEventCardCommand extends Command<'PLAY_BATTLE_RESPONSE_EVENT_CARD'> {
+    payload: {
+        cardId: string;
+    };
+}
+
+export interface TogglePincerAdvanceTroopCommand extends Command<'TOGGLE_PINCER_ADVANCE_TROOP'> {
+    payload: {
+        choiceId: string;
+    };
+}
+
+export interface ResolvePincerAdvanceCommand extends Command<'RESOLVE_PINCER_ADVANCE'> {
+    payload: Record<string, never>;
+}
+
+export interface CancelPincerAdvanceCommand extends Command<'CANCEL_PINCER_ADVANCE'> {
+    payload: Record<string, never>;
+}
+
+export interface ResolveInfantryCavalryCombinedCommand extends Command<'RESOLVE_INFANTRY_CAVALRY_COMBINED'> {
+    payload: {
+        mode: QidahenInfantryCavalryCombinedMode;
+    };
+}
+
+export interface ResolveInstigateDefectionCommand extends Command<'RESOLVE_INSTIGATE_DEFECTION'> {
+    payload: {
+        choiceId: string;
+    };
+}
+
+export interface CancelInstigateDefectionCommand extends Command<'CANCEL_INSTIGATE_DEFECTION'> {
+    payload: Record<string, never>;
+}
+
+export interface SetWuzhenChaohaArtilleryTechCountCommand extends Command<'SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT'> {
+    payload: {
+        count: number;
+    };
+}
+
+export interface ResolveWuzhenChaohaCommand extends Command<'RESOLVE_WUZHEN_CHAOHA'> {
+    payload: {
+        choiceId: string;
+    };
+}
+
+export interface CancelWuzhenChaohaCommand extends Command<'CANCEL_WUZHEN_CHAOHA'> {
+    payload: Record<string, never>;
+}
+
 export interface ResolvePostBattleDecisionCommand extends Command<'RESOLVE_POST_BATTLE_DECISION'> {
     payload: {
         choiceId: string;
@@ -1019,6 +1245,16 @@ export type QidahenCommand =
     | ExecuteActionCommand
     | ResolvePendingActionCommand
     | PlayTacticCardCommand
+    | PlayBattleResponseEventCardCommand
+    | TogglePincerAdvanceTroopCommand
+    | ResolvePincerAdvanceCommand
+    | CancelPincerAdvanceCommand
+    | ResolveInfantryCavalryCombinedCommand
+    | ResolveInstigateDefectionCommand
+    | CancelInstigateDefectionCommand
+    | SetWuzhenChaohaArtilleryTechCountCommand
+    | ResolveWuzhenChaohaCommand
+    | CancelWuzhenChaohaCommand
     | ResolvePostBattleDecisionCommand
     | ResolveKhanEdictChoiceCommand
     | ResolveDiplomacyChoiceCommand
@@ -1149,6 +1385,7 @@ export interface PendingActionResolvedEvent extends GameEvent<'PENDING_ACTION_RE
         attackerCasualtyPriority?: QidahenCasualtyPriority;
         defenderCasualtyPriority?: QidahenCasualtyPriority;
         battleRolls?: QidahenBattleRolls | null;
+        feignedRetreatResponseResolved?: boolean;
     };
 }
 
@@ -1156,6 +1393,72 @@ export interface TacticCardPlayedEvent extends GameEvent<'TACTIC_CARD_PLAYED'> {
     payload: {
         playerId: PlayerId;
         cardId: string;
+    };
+}
+
+export interface BattleResponseEventCardPlayedEvent extends GameEvent<'BATTLE_RESPONSE_EVENT_CARD_PLAYED'> {
+    payload: {
+        playerId: PlayerId;
+        cardId: string;
+    };
+}
+
+export interface PincerAdvanceTroopToggledEvent extends GameEvent<'PINCER_ADVANCE_TROOP_TOGGLED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: string;
+    };
+}
+
+export interface PincerAdvanceResolvedEvent extends GameEvent<'PINCER_ADVANCE_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+    };
+}
+
+export interface PincerAdvanceCancelledEvent extends GameEvent<'PINCER_ADVANCE_CANCELLED'> {
+    payload: {
+        playerId: PlayerId;
+    };
+}
+
+export interface InfantryCavalryCombinedResolvedEvent extends GameEvent<'INFANTRY_CAVALRY_COMBINED_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        mode: QidahenInfantryCavalryCombinedMode;
+    };
+}
+
+export interface InstigateDefectionResolvedEvent extends GameEvent<'INSTIGATE_DEFECTION_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: string;
+    };
+}
+
+export interface InstigateDefectionCancelledEvent extends GameEvent<'INSTIGATE_DEFECTION_CANCELLED'> {
+    payload: {
+        playerId: PlayerId;
+    };
+}
+
+export interface WuzhenChaohaArtilleryTechCountSetEvent extends GameEvent<'WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT_SET'> {
+    payload: {
+        playerId: PlayerId;
+        count: number;
+    };
+}
+
+export interface WuzhenChaohaResolvedEvent extends GameEvent<'WUZHEN_CHAOHA_RESOLVED'> {
+    payload: {
+        playerId: PlayerId;
+        choiceId: string;
+    };
+}
+
+export interface WuzhenChaohaCancelledEvent extends GameEvent<'WUZHEN_CHAOHA_CANCELLED'> {
+    payload: {
+        playerId: PlayerId;
     };
 }
 
@@ -1281,6 +1584,16 @@ export type QidahenEvent =
     | SelectedActionExecutedEvent
     | PendingActionResolvedEvent
     | TacticCardPlayedEvent
+    | BattleResponseEventCardPlayedEvent
+    | PincerAdvanceTroopToggledEvent
+    | PincerAdvanceResolvedEvent
+    | PincerAdvanceCancelledEvent
+    | InfantryCavalryCombinedResolvedEvent
+    | InstigateDefectionResolvedEvent
+    | InstigateDefectionCancelledEvent
+    | WuzhenChaohaArtilleryTechCountSetEvent
+    | WuzhenChaohaResolvedEvent
+    | WuzhenChaohaCancelledEvent
     | PostBattleDecisionResolvedEvent
     | KhanEdictChoiceResolvedEvent
     | DiplomacyChoiceResolvedEvent
@@ -1313,6 +1626,16 @@ export interface QidahenCommandMap extends Record<string, unknown> {
     EXECUTE_ACTION: ExecuteActionCommand['payload'];
     RESOLVE_PENDING_ACTION: ResolvePendingActionCommand['payload'];
     PLAY_TACTIC_CARD: PlayTacticCardCommand['payload'];
+    PLAY_BATTLE_RESPONSE_EVENT_CARD: PlayBattleResponseEventCardCommand['payload'];
+    TOGGLE_PINCER_ADVANCE_TROOP: TogglePincerAdvanceTroopCommand['payload'];
+    RESOLVE_PINCER_ADVANCE: ResolvePincerAdvanceCommand['payload'];
+    CANCEL_PINCER_ADVANCE: CancelPincerAdvanceCommand['payload'];
+    RESOLVE_INFANTRY_CAVALRY_COMBINED: ResolveInfantryCavalryCombinedCommand['payload'];
+    RESOLVE_INSTIGATE_DEFECTION: ResolveInstigateDefectionCommand['payload'];
+    CANCEL_INSTIGATE_DEFECTION: CancelInstigateDefectionCommand['payload'];
+    SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT: SetWuzhenChaohaArtilleryTechCountCommand['payload'];
+    RESOLVE_WUZHEN_CHAOHA: ResolveWuzhenChaohaCommand['payload'];
+    CANCEL_WUZHEN_CHAOHA: CancelWuzhenChaohaCommand['payload'];
     RESOLVE_POST_BATTLE_DECISION: ResolvePostBattleDecisionCommand['payload'];
     RESOLVE_KHAN_EDICT_CHOICE: ResolveKhanEdictChoiceCommand['payload'];
     RESOLVE_DIPLOMACY_CHOICE: ResolveDiplomacyChoiceCommand['payload'];

@@ -19,9 +19,10 @@
  * ```
  */
 
-import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { SummonShaderEffect } from './SummonShaderEffect';
+import { setupCanvas2d, type FxQuality } from '../../../engine/fx';
 import type { SummonIntensity, SummonColorTheme, SummonColorSet } from './SummonEffect';
 import {
   type Particle,
@@ -42,6 +43,7 @@ export interface SummonHybridEffectProps {
   customColors?: SummonColorSet;
   /** 光柱原点 Y 位置（0~1，相对于容器高度从顶部算起，默认 0.78） */
   originY?: number;
+  quality?: FxQuality;
   /** 爆发瞬间回调（progress ≈ 0.12，光柱冲天时触发，用于落地震动/音效） */
   onImpact?: () => void;
   onComplete?: () => void;
@@ -156,6 +158,7 @@ interface ParticleLayerProps {
   intensity: SummonIntensity;
   colors: SummonColorSet;
   originY: number;
+  quality: FxQuality;
   totalDuration: number;
   onImpact: () => void;
   onAllParticlesDone: () => void;
@@ -164,7 +167,7 @@ interface ParticleLayerProps {
 /**
  * 粒子层组件 — 使用 function 声明确保 Vite HMR 正确识别组件边界
  */
-function ParticleLayer({ active, intensity, colors, originY, totalDuration, onImpact, onAllParticlesDone }: ParticleLayerProps) {
+function ParticleLayer({ active, intensity, colors, originY, quality, totalDuration, onImpact, onAllParticlesDone }: ParticleLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const onDoneRef = useRef(onAllParticlesDone);
@@ -184,15 +187,12 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
     // 使用 offsetWidth/offsetHeight（不受 transform scale 影响）
-    const cw = parent.offsetWidth;
-    const ch = parent.offsetHeight;
-    canvas.width = cw * dpr;
-    canvas.height = ch * dpr;
-    canvas.style.width = `${cw}px`;
-    canvas.style.height = `${ch}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const { width: cw, height: ch } = setupCanvas2d(canvas, parent, {
+      quality,
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    });
 
     const cx = cw / 2;
     const cy = ch * originY;
@@ -245,14 +245,14 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
       const pillarW = pillarBaseWidth * breathe;
 
       // 每帧最大生成数（控制粒子密度，作为 Shader 的点缀而非主体）
-      const maxPerFrame = isStrong ? 2 : 1;
+      const maxPerFrame = quality === 'reduced' ? 1 : (isStrong ? 2 : 1);
 
       // ================================================================
       // 阶段 1：蓄力期(0–0.12) — 粒子从四周向原点聚拢
       // ================================================================
       const gatherRate = smoothstep(0, 0.03, t) * (1 - smoothstep(0.10, 0.12, t));
       for (let i = 0; i < maxPerFrame; i++) {
-        if (gatherRate > 0 && Math.random() < gatherRate * (isStrong ? 0.5 : 0.35)) {
+        if (gatherRate > 0 && Math.random() < gatherRate * (quality === 'reduced' ? 0.22 : (isStrong ? 0.5 : 0.35))) {
           const angle = Math.random() * Math.PI * 2;
           const dist = 30 + Math.random() * 100;
           const px = cx + Math.cos(angle) * dist;
@@ -277,7 +277,7 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
       const burstRate = smoothstep(0.12, 0.15, t) * (1 - smoothstep(0.30, 0.35, t));
       // 径向爆发粒子
       for (let i = 0; i < maxPerFrame; i++) {
-        if (burstRate > 0 && Math.random() < burstRate * (isStrong ? 0.5 : 0.35)) {
+        if (burstRate > 0 && Math.random() < burstRate * (quality === 'reduced' ? 0.28 : (isStrong ? 0.5 : 0.35))) {
           const angle = Math.random() * Math.PI * 2;
           const spd = 5 + Math.random() * 8;
           const rgb = particleColors[Math.floor(Math.random() * particleColors.length)];
@@ -295,7 +295,7 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
       // 沿柱体上升粒子
       const riseRate = smoothstep(0.14, 0.20, t) * (1 - smoothstep(0.60, 0.68, t));
       for (let i = 0; i < maxPerFrame; i++) {
-        if (riseRate > 0 && pillarH > 5 && Math.random() < riseRate * (isStrong ? 0.5 : 0.35)) {
+        if (riseRate > 0 && pillarH > 5 && Math.random() < riseRate * (quality === 'reduced' ? 0.25 : (isStrong ? 0.5 : 0.35))) {
           const px = cx + (Math.random() - 0.5) * pillarW * 1.0;
           const py = cy - Math.random() * pillarH * 0.6;
           const rgb = particleColors[Math.floor(Math.random() * particleColors.length)];
@@ -315,7 +315,7 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
       // ================================================================
       const sustainRate = smoothstep(0.35, 0.40, t) * (1 - smoothstep(0.58, 0.65, t));
       for (let i = 0; i < maxPerFrame; i++) {
-        if (sustainRate > 0 && pillarH > 5 && Math.random() < sustainRate * (isStrong ? 0.4 : 0.25)) {
+        if (sustainRate > 0 && pillarH > 5 && Math.random() < sustainRate * (quality === 'reduced' ? 0.16 : (isStrong ? 0.4 : 0.25))) {
           const px = cx + (Math.random() - 0.5) * pillarW * 0.8;
           const py = cy - Math.random() * pillarH * 0.5;
           const rgb = particleColors[Math.floor(Math.random() * particleColors.length)];
@@ -335,7 +335,7 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
       // ================================================================
       const emberRate = smoothstep(0.65, 0.70, t) * (1 - smoothstep(0.88, 0.95, t));
       for (let i = 0; i < maxPerFrame; i++) {
-        if (emberRate > 0 && Math.random() < emberRate * (isStrong ? 0.4 : 0.25)) {
+        if (emberRate > 0 && Math.random() < emberRate * (quality === 'reduced' ? 0.14 : (isStrong ? 0.4 : 0.25))) {
           const px = cx + (Math.random() - 0.5) * pillarW * 2;
           const py = cy - Math.random() * pillarH * 0.4;
           const angle = Math.random() * Math.PI * 2;
@@ -377,7 +377,7 @@ function ParticleLayer({ active, intensity, colors, originY, totalDuration, onIm
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [colors, isStrong, originY, totalDuration]);
+  }, [colors, isStrong, originY, quality, totalDuration]);
 
   useEffect(() => {
     if (!active) return;
@@ -415,12 +415,15 @@ interface DimmingOverlayProps {
 }
 
 function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayProps) {
-  const [opacity, setOpacity] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 动画重置需同步清零避免闪烁
-    if (!active) { setOpacity(0); return; }
+    const overlay = overlayRef.current;
+    if (!active || !overlay) {
+      if (overlay) overlay.style.opacity = '0';
+      return;
+    }
 
     let startTime = 0;
     const loop = (now: number) => {
@@ -431,7 +434,7 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
       // 与 shader 原始 dimUp/dimDown 曲线一致
       const dimUp = smoothstep(0, 0.25, t);
       const dimDown = 1 - smoothstep(0.65, 1.0, t);
-      setOpacity(dimUp * dimDown * dimStrength);
+      overlay.style.opacity = String(dimUp * dimDown * dimStrength);
 
       if (t < 1) {
         rafRef.current = requestAnimationFrame(loop);
@@ -447,10 +450,11 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
   // 不使用 originY（那是 FX 容器内的相对坐标，受 transform scale 影响）
   const overlay = (
     <div
+      ref={overlayRef}
       className="fixed inset-0 pointer-events-none"
       style={{
         zIndex: 50,
-        opacity,
+        opacity: 0,
         background: `radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.92) 100%)`,
       }}
     />
@@ -470,6 +474,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
   color = 'blue',
   customColors,
   originY = 0.78,
+  quality = 'full',
   onImpact,
   onComplete,
   className = '',
@@ -550,6 +555,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
           customColors={customColors}
           originY={originY}
           dimStrength={0}
+          quality={quality}
           onComplete={handleShaderComplete}
         />
       </div>
@@ -559,6 +565,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
         intensity={intensity}
         colors={colors}
         originY={originY}
+        quality={quality}
         totalDuration={totalDuration}
         onImpact={handleImpact}
         onAllParticlesDone={handleParticlesDone}

@@ -14,6 +14,11 @@ export interface QidahenRuntimeRegionAnchor {
     };
 }
 
+export interface QidahenRuntimeRegionPoint {
+    x: number;
+    y: number;
+}
+
 const EMPTY_OWNER = -1;
 
 const projectPointIntoMask = (
@@ -85,7 +90,7 @@ export const resolveQidahenSharedPrintedRegionAnchors = (
         y: height / 2,
     };
 
-    return runtimeRegionIds.map((runtimeRegionId, runtimeIndex) => {
+    return runtimeRegionIds.map((runtimeRegionId) => {
         const target = getQidahenRuntimeRegionAnchorTargetPoint(runtimeRegionId) ?? fallbackCenter;
         const pixelIndex = projectPointIntoMask(target.x, target.y, regionMask, width, height, occupied);
         if (pixelIndex == null) {
@@ -243,4 +248,62 @@ export const buildQidahenRuntimeRegionIdByPixel = (
     }
 
     return regionIdByPixel;
+};
+
+export const resolveQidahenRuntimeRegionEntryPoint = (
+    regionIdByPixel: readonly (string | null)[],
+    width: number,
+    height: number,
+    targetRegionId: string,
+    sourcePoint: QidahenRuntimeRegionPoint,
+    targetPoint: QidahenRuntimeRegionPoint,
+    insetDistance: number = 12,
+): QidahenRuntimeRegionPoint | null => {
+    if (width <= 0 || height <= 0 || regionIdByPixel.length < width * height) {
+        return null;
+    }
+    const dx = targetPoint.x - sourcePoint.x;
+    const dy = targetPoint.y - sourcePoint.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= 0) {
+        return null;
+    }
+    const ownerAtRatio = (ratio: number): string | null => {
+        const x = Math.max(0, Math.min(width - 1, Math.round(sourcePoint.x + dx * ratio)));
+        const y = Math.max(0, Math.min(height - 1, Math.round(sourcePoint.y + dy * ratio)));
+        return regionIdByPixel[(y * width) + x] ?? null;
+    };
+    const sampleCount = Math.max(1, Math.ceil(distance * 2));
+    let previousRatio = 0;
+    let entryRatio: number | null = ownerAtRatio(0) === targetRegionId ? 0 : null;
+    for (let index = 1; entryRatio == null && index <= sampleCount; index += 1) {
+        const ratio = index / sampleCount;
+        if (ownerAtRatio(ratio) !== targetRegionId) {
+            previousRatio = ratio;
+            continue;
+        }
+        let low = previousRatio;
+        let high = ratio;
+        for (let iteration = 0; iteration < 10; iteration += 1) {
+            const middle = (low + high) / 2;
+            if (ownerAtRatio(middle) === targetRegionId) {
+                high = middle;
+            } else {
+                low = middle;
+            }
+        }
+        entryRatio = high;
+    }
+    if (entryRatio == null) {
+        return null;
+    }
+    const insetRatio = Math.min(
+        1 - entryRatio,
+        Math.max(0, insetDistance) / distance,
+    );
+    const resolvedRatio = entryRatio + insetRatio;
+    return {
+        x: sourcePoint.x + dx * resolvedRatio,
+        y: sourcePoint.y + dy * resolvedRatio,
+    };
 };
